@@ -1,0 +1,86 @@
+div.annbox_cls, div.toolbox_cls {
+    height: 100vh;
+}
+div.annbox_cls {
+    width: calc(100% - 300px);
+    background-color: black;
+    overflow: scroll;
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+div.toolbox_cls {
+    width: 300px;
+    background-color: white;
+    overflow-y: scroll;
+    position: absolute;
+    top: 0;
+    right: 0;
+}
+
+canvas.canvas_cls {
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+.id_dialog {
+    width: 400px;
+    height: 400px;
+    background-color: rgba(0, 0, 0, 0.0);
+    position: absolute;
+    display: none;
+}
+
+.ender_outer {
+    display: block;
+    position: absolute;
+    width: 50px;
+    height: 50px;
+    background-color: white;
+    border-radius: 25px;
+}
+.ender_inner {
+    display: block;
+    position: absolute;
+    left: 20px;
+    top: 20px;
+    width: 10px;
+    height: 10px;
+    background-color: black;
+    border-radius: 10px;
+}
+
+a.md-btn {
+    display: block;
+    padding: 10px;
+    margin: 0 auto;
+    width: 90%;
+    margin-bottom: 10px;
+    text-decoration: none;
+    background-color: rgba(231, 231, 231, 1);
+    color: black;
+    font-size: 1.2em;
+    font-family: sans-serif;
+}
+
+a.md-btn:hover {
+    background-color: rgb(136, 136, 136);
+}
+
+a.md-btn.sel {
+    background-color: rgb(136, 136, 136);
+}
+
+
+.editable {
+    display: none;
+    position: absolute;
+    width: 50px;
+    height: 50px;
+    background-color: white;
+    border-radius: 25px;
+}
+.editable.soft {
+    opacity: 0.7;
+}
