@@ -9,6 +9,7 @@ A browser-based tool for annotating images with aleatoric uncertainty
 ```
 git clone git@github.com:SenteraLLC/ULabel.git
 cd ULabel
+git checkout migrate
 npm install
 node demo/server.js
 ```
