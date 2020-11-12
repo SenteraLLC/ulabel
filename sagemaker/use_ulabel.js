@@ -46,7 +46,8 @@ $(document).ready(function() {
     
     function done_callback(payload) {
         // TODO handles what to do when the platform is indicating that the user has finished
-        console.log("Called done on:", payload);
+        $("#" + cfg["strings"]["dst_field"]).val(JSON.stringify(payload));
+        $("crowd-button").click();
     }
 
     var ulabel = new ULabel(

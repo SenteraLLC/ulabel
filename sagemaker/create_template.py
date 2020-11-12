@@ -21,6 +21,7 @@ if __name__ == "__main__":
 
 
     liquid_str = """<script src="https://assets.crowd.aws/crowd-html-elements.js"></script>
+    
 <script
   src="https://code.jquery.com/jquery-3.5.1.min.js"
   integrity="sha256-9/aliU8dGd2tb6OSsuzixeV4y/faTqgFtohetphbbj0="
@@ -60,7 +61,7 @@ var JOB_CONFIG = {
 <div id="ulabel-cont"></div>
 
 <crowd-form>
-    <input name="whole-field" type="text" />
+    <input id="whole-field" name="whole-field" type="text" />
 </crowd-form>"""
 
     with open(str(Path(__file__).parent / "template.liquid.html"), "w") as f:
