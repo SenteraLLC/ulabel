@@ -262,6 +262,10 @@ class ULabel {
             }
             $("#" + sp_id).append(ap_html);
         }
+        // TODO noconflict
+        $("#" + sp_id).append(`
+            <a href="#" id="submit-button">Submit</a>
+        `);
     }
     
     static build_id_dialog(ul) {
@@ -402,6 +406,14 @@ class ULabel {
             $("#" + mouse_event.target.id).addClass("sel");
         });
 
+        // Button to save annotations
+        $("a#submit-button").on("click", function() {
+            var submit_payload = [];
+            for (var i = 0; i < ul.annotations["ordering"].length; i++) {
+                submit_payload.push(ul.annotations["access"][ul.annotations["ordering"][i]]);
+            }
+            ul.config["done_callback"](submit_payload);
+        });
 
     }
 

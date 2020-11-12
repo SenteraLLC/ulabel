@@ -25,7 +25,13 @@
 
                 function on_done(annotations) {
                     console.log("Done");
-                    console.log(JSON.stringify(annotations, null, 2));
+                    var element = document.createElement('a');
+                    element.setAttribute("href", 'data:text/plain;charset=utf-8,' + encodeURIComponent(JSON.stringify(annotations, null, 2)));
+                    element.setAttribute("download", "annotations.json");
+                    element.style.display = 'none';
+                    document.body.appendChild(element);
+                    element.click();
+                    document.body.removeChild(element);
                 }
 
                 // Initial ULabel configuration
