@@ -42,18 +42,19 @@ if __name__ == "__main__":
 // If no second item is provided, the first must not fail
 var JOB_CONFIG = {
     "strings": {
-        "image_url": ["{{image_url}}", "/demo_image.jpg"],
+        "image_url": ["{{task.input.source-ref | grant_read_access}}", "/demo_image.jpg"],
         "container": ["ulabel-cont"],
         "annotator": ["__placeholder__"],
-        "batch_id": ["{{batch_id}}", "demo-batch"],
+        "batch_id": ["{{task.input.batch_id}}", "demo-batch"],
         "dst_field": ["whole-field"]
     },
     "stringified_objs": {
         "taxonomy": [`null`], 
-        "class_defs": [`null`], 
-        "allowed_modes": [`{{allowed_modes}}`, `["polygon", "bounding-box", "contour"]`],
+        "class_defs": [`null`],
+        "allowed_modes": [`["polygon", "bounding-box", "contour"]`],
     }
 }
+console.log(JOB_CONFIG);
 /* ================================== USE_ULABEL.js ================================== */
 """ + use_ulabel_js_str + """
 </script>

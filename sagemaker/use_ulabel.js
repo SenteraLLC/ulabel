@@ -1,7 +1,7 @@
 /* global JOB_CONFIG */
 
-function lq_wrap(key) {
-    return "{" + "{" + key + "}" + "}";
+function not_templated(key) {
+    return (key.substring(0,2) == "{" + "{");
 }
 
 function process_configuration(raw_cfg) {
@@ -10,21 +10,21 @@ function process_configuration(raw_cfg) {
         "stringified_objs": {}
     };
     for (const [key, val] of Object.entries(raw_cfg["strings"])) {
-        if (val[0] != lq_wrap(key)) {
-            cfg["strings"][key] = val[0];
-        }
-        else {
+        if (not_templated(val[0])) {
             console.log("Template value for " + key + " was not provided. Using default value.");
             cfg["strings"][key] = val[1];
         }
+        else {
+            cfg["strings"][key] = val[0];
+        }
     }
     for (const [key, val] of Object.entries(raw_cfg["stringified_objs"])) {
-        if (val[0] != lq_wrap(key)) {
-            cfg["stringified_objs"][key] = JSON.parse(val[0]);
-        }
-        else {
+        if (not_templated(val[0])) {
             console.log("Template value for " + key + " was not provided. Using default value.");
             cfg["stringified_objs"][key] = JSON.parse(val[1]);
+        }
+        else {
+            cfg["stringified_objs"][key] = JSON.parse(val[0]);
         }
     }
     return cfg;

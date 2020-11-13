@@ -222,8 +222,6 @@ class ULabel {
         <div id="${ul.config["annbox_id"]}" class="annbox_cls">
             <div id="${ul.config["imwrap_id"]}" class="imwrap_cls ${ul.config["imgsz_class"]}">
                 <img id="${ul.config["image_id"]}" src="${ul.config["image_url"]}" class="imwrap_cls ${ul.config["imgsz_class"]}" />
-                <canvas id="${ul.config["canvas_bid"]}" class="${ul.config["canvas_class"]} ${ul.config["imgsz_class"]} canvas_cls" height=${ul.config["image_height"]} width=${ul.config["image_width"]}></canvas>
-                <canvas id="${ul.config["canvas_fid"]}" class="${ul.config["canvas_class"]} ${ul.config["imgsz_class"]} canvas_cls" height=${ul.config["image_height"]} width=${ul.config["image_width"]} oncontextmenu="return false"></canvas>
             </div>
         </div>
         <div id="${ul.config["toolbox_id"]}" class="toolbox_cls"></div>`;
@@ -532,21 +530,39 @@ class ULabel {
     }
 
     init(callback) {
-        // Load image asynchronously
-        this.image = new Image();
+        // Place image element
+        ULabel.prep_window_html(this);        
+
+        // Get image details
+        var image = document.getElementById(this.config["image_id"]);
+
         var that = this;
-        this.image.onload = function() {
-            // Get image details
-            that.config["image_height"] = this.height;
-            that.config["image_width"] = this.width;
-
-            // Add static HTML elements given configuration
-            ULabel.prep_window_html(that);
-            
+        image.onload = function() {
+            that.config["image_height"] = image.naturalHeight;
+            that.config["image_width"] = image.naturalWidth;
+    
+            $("#" + that.config["imwrap_id"]).append(`
+                <canvas 
+                    id="${that.config["canvas_bid"]}" 
+                    class="${that.config["canvas_class"]} ${that.config["imgsz_class"]} canvas_cls" 
+                    height=${that.config["image_height"]} 
+                    width=${that.config["image_width"]}></canvas>
+                <canvas 
+                    id="${that.config["canvas_fid"]}" 
+                    class="${that.config["canvas_class"]} ${that.config["imgsz_class"]} canvas_cls" 
+                    height=${that.config["image_height"]} 
+                    width=${that.config["image_width"]} 
+                    oncontextmenu="return false"></canvas>
+            `);
+    
             // Get canvas contexts
-            that.canvas_state["front_context"] = document.getElementById(that.config["canvas_fid"]).getContext("2d");
-            that.canvas_state["back_context"] = document.getElementById(that.config["canvas_bid"]).getContext("2d");
-
+            that.canvas_state["front_context"] = document.getElementById(
+                that.config["canvas_fid"]
+            ).getContext("2d");
+            that.canvas_state["back_context"] = document.getElementById(
+                that.config["canvas_bid"]
+            ).getContext("2d");
+    
             // Add the HTML for the ID dialog to the window
             ULabel.build_id_dialog(that);
             
@@ -557,16 +573,15 @@ class ULabel {
             ULabel.create_listeners(that);
             
             // Indicate that the object is now init!
-            this.is_init = true;
-
+            that.is_init = true;
+    
             // TODO why is this necessary?
             // that.viewer_state["zoom_val"] = that.get_empirical_scale();
             that.rezoom(0, 0);
-
+    
             // Call the user-provided callback
             callback.bind(that);
-        };
-        this.image.src = this.image_url;
+        }
     }
 
     // ================= Instance Utilities =================

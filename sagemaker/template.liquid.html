@@ -348,8 +348,6 @@ class ULabel {
         <div id="${ul.config["annbox_id"]}" class="annbox_cls">
             <div id="${ul.config["imwrap_id"]}" class="imwrap_cls ${ul.config["imgsz_class"]}">
                 <img id="${ul.config["image_id"]}" src="${ul.config["image_url"]}" class="imwrap_cls ${ul.config["imgsz_class"]}" />
-                <canvas id="${ul.config["canvas_bid"]}" class="${ul.config["canvas_class"]} ${ul.config["imgsz_class"]} canvas_cls" height=${ul.config["image_height"]} width=${ul.config["image_width"]}></canvas>
-                <canvas id="${ul.config["canvas_fid"]}" class="${ul.config["canvas_class"]} ${ul.config["imgsz_class"]} canvas_cls" height=${ul.config["image_height"]} width=${ul.config["image_width"]} oncontextmenu="return false"></canvas>
             </div>
         </div>
         <div id="${ul.config["toolbox_id"]}" class="toolbox_cls"></div>`;
@@ -658,21 +656,39 @@ class ULabel {
     }
 
     init(callback) {
-        // Load image asynchronously
-        this.image = new Image();
+        // Place image element
+        ULabel.prep_window_html(this);        
+
+        // Get image details
+        var image = document.getElementById(this.config["image_id"]);
+
         var that = this;
-        this.image.onload = function() {
-            // Get image details
-            that.config["image_height"] = this.height;
-            that.config["image_width"] = this.width;
-
-            // Add static HTML elements given configuration
-            ULabel.prep_window_html(that);
-            
+        image.onload = function() {
+            that.config["image_height"] = image.naturalHeight;
+            that.config["image_width"] = image.naturalWidth;
+    
+            $("#" + that.config["imwrap_id"]).append(`
+                <canvas 
+                    id="${that.config["canvas_bid"]}" 
+                    class="${that.config["canvas_class"]} ${that.config["imgsz_class"]} canvas_cls" 
+                    height=${that.config["image_height"]} 
+                    width=${that.config["image_width"]}></canvas>
+                <canvas 
+                    id="${that.config["canvas_fid"]}" 
+                    class="${that.config["canvas_class"]} ${that.config["imgsz_class"]} canvas_cls" 
+                    height=${that.config["image_height"]} 
+                    width=${that.config["image_width"]} 
+                    oncontextmenu="return false"></canvas>
+            `);
+    
             // Get canvas contexts
-            that.canvas_state["front_context"] = document.getElementById(that.config["canvas_fid"]).getContext("2d");
-            that.canvas_state["back_context"] = document.getElementById(that.config["canvas_bid"]).getContext("2d");
-
+            that.canvas_state["front_context"] = document.getElementById(
+                that.config["canvas_fid"]
+            ).getContext("2d");
+            that.canvas_state["back_context"] = document.getElementById(
+                that.config["canvas_bid"]
+            ).getContext("2d");
+    
             // Add the HTML for the ID dialog to the window
             ULabel.build_id_dialog(that);
             
@@ -683,16 +699,15 @@ class ULabel {
             ULabel.create_listeners(that);
             
             // Indicate that the object is now init!
-            this.is_init = true;
-
+            that.is_init = true;
+    
             // TODO why is this necessary?
             // that.viewer_state["zoom_val"] = that.get_empirical_scale();
             that.rezoom(0, 0);
-
+    
             // Call the user-provided callback
             callback.bind(that);
-        };
-        this.image.src = this.image_url;
+        }
     }
 
     // ================= Instance Utilities =================
@@ -1557,23 +1572,24 @@ class ULabel {
 // If no second item is provided, the first must not fail
 var JOB_CONFIG = {
     "strings": {
-        "image_url": ["{{image_url}}", "/demo_image.jpg"],
+        "image_url": ["{{task.input.source-ref | grant_read_access}}", "/demo_image.jpg"],
         "container": ["ulabel-cont"],
         "annotator": ["__placeholder__"],
-        "batch_id": ["{{batch_id}}", "demo-batch"],
+        "batch_id": ["{{task.input.batch_id}}", "demo-batch"],
         "dst_field": ["whole-field"]
     },
     "stringified_objs": {
         "taxonomy": [`null`], 
-        "class_defs": [`null`], 
-        "allowed_modes": [`{{allowed_modes}}`, `["polygon", "bounding-box", "contour"]`],
+        "class_defs": [`null`],
+        "allowed_modes": [`["polygon", "bounding-box", "contour"]`],
     }
 }
+console.log(JOB_CONFIG);
 /* ================================== USE_ULABEL.js ================================== */
 /* global JOB_CONFIG */
 
-function lq_wrap(key) {
-    return "{" + "{" + key + "}" + "}";
+function not_templated(key) {
+    return (key.substring(0,2) == "{" + "{");
 }
 
 function process_configuration(raw_cfg) {
@@ -1582,21 +1598,21 @@ function process_configuration(raw_cfg) {
         "stringified_objs": {}
     };
     for (const [key, val] of Object.entries(raw_cfg["strings"])) {
-        if (val[0] != lq_wrap(key)) {
-            cfg["strings"][key] = val[0];
-        }
-        else {
+        if (not_templated(val[0])) {
             console.log("Template value for " + key + " was not provided. Using default value.");
             cfg["strings"][key] = val[1];
         }
+        else {
+            cfg["strings"][key] = val[0];
+        }
     }
     for (const [key, val] of Object.entries(raw_cfg["stringified_objs"])) {
-        if (val[0] != lq_wrap(key)) {
-            cfg["stringified_objs"][key] = JSON.parse(val[0]);
-        }
-        else {
+        if (not_templated(val[0])) {
             console.log("Template value for " + key + " was not provided. Using default value.");
             cfg["stringified_objs"][key] = JSON.parse(val[1]);
+        }
+        else {
+            cfg["stringified_objs"][key] = JSON.parse(val[0]);
         }
     }
     return cfg;
@@ -1618,11 +1634,7 @@ $(document).ready(function() {
     
     function done_callback(payload) {
         // TODO handles what to do when the platform is indicating that the user has finished
-        console.log("Called done on:", payload);
-        console.log("getting", "#" + cfg["strings"]["dst_field"]);
-        console.log("before", $("#" + cfg["strings"]["dst_field"]).val());
         $("#" + cfg["strings"]["dst_field"]).val(JSON.stringify(payload));
-        console.log("after", $("#" + cfg["strings"]["dst_field"]).val());
         $("crowd-button").click();
     }
 
