@@ -112,7 +112,7 @@ class ULabel {
     
     // Return the point on a polygon that's closest to a reference along with its distance
     static get_nearest_point_on_polygon(ref_x, ref_y, spatial_payload, dstmax=Infinity, include_segments=false) {
-        const poly_pts = spatial_payload["keypoints"];
+        const poly_pts = spatial_payload;
 
         // Initialize return value to null object
         var ret = {
@@ -158,10 +158,9 @@ class ULabel {
             "distance": null,
             "point": null
         };
-        var bbij = ["start-point", "end-point"];
         for (var bbi = 0; bbi < 2; bbi++) {
             for (var bbj = 0; bbj < 2; bbj++) {
-                var kp = [spatial_payload[bbij[bbi]][0], spatial_payload[bbij[bbj]][1]];
+                var kp = [spatial_payload[bbi][0], spatial_payload[bbj][1]];
                 var kpdst = Math.sqrt(Math.pow(kp[0] - ref_x, 2) + Math.pow(kp[1] - ref_y, 2));
                 if (ret["distance"] == null || kpdst < ret["distance"]) {
                     ret["access"] = `${bbi}${bbj}`;
@@ -621,18 +620,16 @@ class ULabel {
         ];
         switch (annotation_mode) {
             case "bounding-box":
-                return {
-                    "start-point": mouse_loc,
-                    "end-point": mouse_loc
-                };
+                return [
+                    mouse_loc,
+                    mouse_loc
+                ];
             case "polygon":
             case "contour":
-                return {
-                    "keypoints": [
-                        mouse_loc,
-                        mouse_loc
-                    ]
-                };
+                return [
+                    mouse_loc,
+                    mouse_loc
+                ];
             default:
                 // TODO broader refactor of error handling and detecting/preventing corruption
                 this.raise_error("Annotation mode is not understood", ULabel.elvl_info);
@@ -644,28 +641,27 @@ class ULabel {
 
     // Access a point in a spatial payload using access string
     get_with_access_string(annid, access_str) {
-        switch (this.annotations["access"][annid]["annotation-type"]) {
+        switch (this.annotations["access"][annid]["spatial_type"]) {
             case "bounding-box":
                 const bbi = parseInt(access_str[0], 10);
                 const bbj = parseInt(access_str[1], 10);
-                const bbij = ["start-point", "end-point"];
-                let bbox_pts = this.annotations["access"][annid]["spatial-payload"];
-                return [bbox_pts[bbij[bbi]][0], bbox_pts[bbij[bbj]][1]];
+                let bbox_pts = this.annotations["access"][annid]["spatial_payload"];
+                return [bbox_pts[bbi][0], bbox_pts[bbj][1]];
             case "polygon":
                 const bas = parseInt(access_str, 10);
                 const dif = parseFloat(access_str) - bas;
                 if (dif < 0.005) {
-                    return this.annotations["access"][annid]["spatial-payload"]["keypoints"][bas];
+                    return this.annotations["access"][annid]["spatial_payload"][bas];
                 }
                 else {
                     return ULabel.interpolate_poly_segment(
-                        this.annotations["access"][annid]["spatial-payload"]["keypoints"], 
+                        this.annotations["access"][annid]["spatial_payload"], 
                         bas, dif
                     );
                 }
             default:
                 this.raise_error(
-                    "Unable to apply access string to annotation of type " + this.annotations["access"][annid]["annotation-type"],
+                    "Unable to apply access string to annotation of type " + this.annotations["access"][annid]["spatial_type"],
                     ULabel.elvl_standard
                 );
         }
@@ -673,39 +669,38 @@ class ULabel {
     
     // Set a point in a spatial payload using access string
     set_with_access_string(annid, access_str, val) {
-        switch (this.annotations["access"][annid]["annotation-type"]) {
+        switch (this.annotations["access"][annid]["spatial_type"]) {
             case "bounding-box":
                 var bbi = parseInt(access_str[0], 10);
                 var bbj = parseInt(access_str[1], 10);
-                var bbij = ["start-point", "end-point"];
-                this.annotations["access"][annid]["spatial-payload"][bbij[bbi]][0] = val[0];
-                this.annotations["access"][annid]["spatial-payload"][bbij[bbj]][1] = val[1];
+                this.annotations["access"][annid]["spatial_payload"][bbi][0] = val[0];
+                this.annotations["access"][annid]["spatial_payload"][bbj][1] = val[1];
                 break;
             case "polygon":
                 var bas = parseInt(access_str, 10);
                 var dif = parseFloat(access_str) - bas;
                 if (dif < 0.005) {
                     var acint = parseInt(access_str, 10);
-                    var npts = this.annotations["access"][annid]["spatial-payload"]["keypoints"].length;
+                    var npts = this.annotations["access"][annid]["spatial_payload"].length;
                     if ((acint == 0) || (acint == (npts - 1))) {
-                        this.annotations["access"][annid]["spatial-payload"]["keypoints"][0] = val;
-                        this.annotations["access"][annid]["spatial-payload"]["keypoints"][npts - 1] = val;
+                        this.annotations["access"][annid]["spatial_payload"][0] = val;
+                        this.annotations["access"][annid]["spatial_payload"][npts - 1] = val;
                     }
                     else {
-                        this.annotations["access"][annid]["spatial-payload"]["keypoints"][acint] = val;
+                        this.annotations["access"][annid]["spatial_payload"][acint] = val;
                     }
                 }
                 else {
                     var newpt = ULabel.interpolate_poly_segment(
-                        this.annotations["access"][annid]["spatial-payload"]["keypoints"], 
+                        this.annotations["access"][annid]["spatial_payload"], 
                         bas, dif
                     );
-                    this.annotations["access"][annid]["spatial-payload"]["keypoints"].splice(bas+1, 0, newpt);
+                    this.annotations["access"][annid]["spatial_payload"].splice(bas+1, 0, newpt);
                 }
                 break;
             default:
                 this.raise_error(
-                    "Unable to apply access string to annotation of type " + this.annotations["access"][annid]["annotation-type"],
+                    "Unable to apply access string to annotation of type " + this.annotations["access"][annid]["spatial_type"],
                     ULabel.elvl_standard
                 );
         }
@@ -730,8 +725,8 @@ class ULabel {
         ctx.globalCompositeOperation = "source-over";
     
         // Draw the box
-        const sp = annotation_object["spatial-payload"]["start-point"];
-        const ep = annotation_object["spatial-payload"]["end-point"];
+        const sp = annotation_object["spatial_payload"][0];
+        const ep = annotation_object["spatial_payload"][1];
         ctx.beginPath();
         ctx.moveTo(sp[0], sp[1]);
         ctx.lineTo(sp[0], ep[1]);
@@ -759,7 +754,7 @@ class ULabel {
         ctx.globalCompositeOperation = "source-over";
     
         // Draw the box
-        const pts = annotation_object["spatial-payload"]["keypoints"];
+        const pts = annotation_object["spatial_payload"];
         ctx.beginPath();
         ctx.moveTo(pts[0][0], pts[0][1]);
         for (var pti = 1; pti < pts.length; pti++) {
@@ -785,7 +780,7 @@ class ULabel {
         ctx.globalCompositeOperation = "source-over";
     
         // Draw the box
-        const pts = annotation_object["spatial-payload"]["keypoints"];
+        const pts = annotation_object["spatial_payload"];
         ctx.beginPath();
         ctx.moveTo(pts[0][0], pts[0][1]);
         for (var pti = 1; pti < pts.length; pti++) {
@@ -804,7 +799,7 @@ class ULabel {
         if (annotation_object["deprecated"]) return;
     
         // Dispatch to annotation type's drawing function
-        switch (annotation_object["annotation-type"]) {
+        switch (annotation_object["spatial_type"]) {
             case "bounding-box":
                 this.draw_bounding_box(annotation_object);
                 break;
@@ -815,7 +810,7 @@ class ULabel {
                 this.draw_contour(annotation_object);
                 break;
             default:
-                this.raise_error("Warning: Annotation " + annotation_object["unique-id"] + " not understood", ULabel.elvl_info);
+                this.raise_error("Warning: Annotation " + annotation_object["id"] + " not understood", ULabel.elvl_info);
                 break;
         }
     }
@@ -951,11 +946,11 @@ class ULabel {
         for (var edi = 0; edi < this.annotations["ordering"].length; edi++) {
             edid = this.annotations["ordering"][edi];
             let npi = null;
-            switch (this.annotations["access"][edid]["annotation-type"]) {
+            switch (this.annotations["access"][edid]["spatial_type"]) {
                 case "bounding-box":
                     npi = ULabel.get_nearest_point_on_bounding_box(
                         global_x, global_y, 
-                        this.annotations["access"][edid]["spatial-payload"],
+                        this.annotations["access"][edid]["spatial_payload"],
                         max_dist
                     );
                     if (npi["distance"] < ret["distance"]) {
@@ -968,7 +963,7 @@ class ULabel {
                 case "polygon":
                     npi = ULabel.get_nearest_point_on_polygon(
                         global_x, global_y, 
-                        this.annotations["access"][edid]["spatial-payload"],
+                        this.annotations["access"][edid]["spatial_payload"],
                         max_dist, false
                     );
                     if (npi["distance"] < ret["distance"]) {
@@ -998,14 +993,14 @@ class ULabel {
         };
         for (var edi = 0; edi < this.annotations["ordering"].length; edi++) {
             var edid = this.annotations["ordering"][edi];
-            switch (this.annotations["access"][edid]["annotation-type"]) {
+            switch (this.annotations["access"][edid]["spatial_type"]) {
                 case "bounding-box":
                     // Can't propose new bounding box points
                     break;
                 case "polygon":
                     var npi = ULabel.get_nearest_point_on_polygon(
                         global_x, global_y, 
-                        this.annotations["access"][edid]["spatial-payload"],
+                        this.annotations["access"][edid]["spatial_payload"],
                         max_dist, true
                     );
                     if (npi["distance"] != null && npi["distance"] < ret["distance"]) {
@@ -1034,16 +1029,15 @@ class ULabel {
 
         // Add this annotation to annotations object
         this.annotations["access"][unq_id] = {
-            "unique-id": unq_id,
-            "batch-id": this.config["batch_id"],
-            "scale": this.get_empirical_scale(),
-            "made-by": this.config["annotator"],
-            "made-at": ULabel.get_time(),
-            "derived-from": null,
+            "id": unq_id,
+            "task_id": this.config["batch_id"],
+            "parent_id": null,
+            "created_by": this.config["annotator"],
+            "created_at": ULabel.get_time(),
             "deprecated": false,
-            "annotation-type": this.annotation_state["mode"],
-            "spatial-payload": this.get_init_spatial(mouse_event, this.annotation_state["mode"]),
-            "id-payload": null
+            "spatial_type": this.annotation_state["mode"],
+            "spatial_payload": this.get_init_spatial(mouse_event, this.annotation_state["mode"]),
+            "classification_payloads": null
         };
         this.annotations["ordering"].push(unq_id);
     
@@ -1068,35 +1062,35 @@ class ULabel {
                 this.get_global_mouse_y(mouse_event)
             ];
             // Handle annotation continuation based on the annotation mode
-            switch (this.annotations["access"][actid]["annotation-type"]) {
+            switch (this.annotations["access"][actid]["spatial_type"]) {
                 case "bounding-box":
-                    this.annotations["access"][actid]["spatial-payload"]["end-point"] = ms_loc;
+                    this.annotations["access"][actid]["spatial_payload"][1] = ms_loc;
                     this.redraw_all_annotations(); // tobuffer
                     break;
                 case "polygon":
                     // Store number of keypoints for easy access
-                    const n_kpts = this.annotations["access"][actid]["spatial-payload"]["keypoints"].length;
+                    const n_kpts = this.annotations["access"][actid]["spatial_payload"].length;
 
                     // If hovering over the ender, snap to its center
-                    const ender_pt = this.annotations["access"][actid]["spatial-payload"]["keypoints"][0];
+                    const ender_pt = this.annotations["access"][actid]["spatial_payload"][0];
                     const ender_dist = Math.pow(Math.pow(ms_loc[0] - ender_pt[0], 2) + Math.pow(ms_loc[1] - ender_pt[1], 2), 0.5);
                     const ender_thresh = $("#ender_" + actid).width()/(2*this.get_empirical_scale());
                     if (ender_dist < ender_thresh) {
-                        this.annotations["access"][actid]["spatial-payload"]["keypoints"][n_kpts-1] = ender_pt;
+                        this.annotations["access"][actid]["spatial_payload"][n_kpts-1] = ender_pt;
                     }
                     else { // Else, just redirect line to mouse position
-                        this.annotations["access"][actid]["spatial-payload"]["keypoints"][n_kpts-1] = ms_loc;
+                        this.annotations["access"][actid]["spatial_payload"][n_kpts-1] = ms_loc;
                     }
 
                     // If this mouse event is a click, add a new member to the list of keypoints 
                     //    ender clicks are filtered before they get here
                     if (isclick) {
-                        this.annotations["access"][actid]["spatial-payload"]["keypoints"].push(ms_loc);
+                        this.annotations["access"][actid]["spatial_payload"].push(ms_loc);
                     }
                     this.redraw_all_annotations(); // tobuffer
                     break;
                 case "contour":
-                    this.annotations["access"][actid]["spatial-payload"]["keypoints"].push(ms_loc);
+                    this.annotations["access"][actid]["spatial_payload"].push(ms_loc);
                     this.redraw_all_annotations(); // TODO tobuffer, no need to redraw here, can just draw over
                     break;
                 default:
@@ -1123,7 +1117,7 @@ class ULabel {
                 this.get_global_mouse_y(mouse_event)
             ];
             // Clicks are handled elsewhere
-            switch (this.annotations["access"][actid]["annotation-type"]) {
+            switch (this.annotations["access"][actid]["spatial_type"]) {
                 case "bounding-box":
                     this.set_with_access_string(actid, this.annotation_state["edit_candidate"]["access"], ms_loc);
                     this.redraw_all_annotations(); // tobuffer
@@ -1152,11 +1146,11 @@ class ULabel {
         // Convenience
         const actid = this.annotation_state["active_id"];
         // Record last point and redraw if necessary
-        switch (this.annotations["access"][actid]["annotation-type"]) {
+        switch (this.annotations["access"][actid]["spatial_type"]) {
             case "polygon":
-                const n_kpts = this.annotations["access"][actid]["spatial-payload"]["keypoints"].length;
-                const start_pt = this.annotations["access"][actid]["spatial-payload"]["keypoints"][0];
-                this.annotations["access"][actid]["spatial-payload"]["keypoints"][n_kpts-1] = start_pt;
+                const n_kpts = this.annotations["access"][actid]["spatial_payload"].length;
+                const start_pt = this.annotations["access"][actid]["spatial_payload"][0];
+                this.annotations["access"][actid]["spatial_payload"][n_kpts-1] = start_pt;
                 this.redraw_all_annotations(); // tobuffer
                 $("#ender_" + actid).remove(); // TODO remove from visible dialogs
             case "bounding-box":
@@ -1167,7 +1161,7 @@ class ULabel {
         }
     
         // If ID has not been assigned to this annotation, build a dialog for it
-        // if (this.annotations["access"][actid]["id-payload"] == null) {
+        // if (this.annotations["access"][actid]["classification_payloads"] == null) {
         //     this.show_id_dialog(mouse_event, actid);
         // }
     
@@ -1178,7 +1172,7 @@ class ULabel {
     
     finish_edit(mouse_event) {
         // Record last point and redraw if necessary
-        switch (this.annotations["access"][this.annotation_state["active_id"]]["annotation-type"]) {
+        switch (this.annotations["access"][this.annotation_state["active_id"]]["spatial_type"]) {
             case "polygon":
             case "bounding-box":
             case "contour":
