@@ -12,7 +12,7 @@ div.annbox_cls {
 div.toolbox_cls {
     width: 300px;
     background-color: white;
-    overflow-y: scroll;
+    overflow-y: hidden;
     position: absolute;
     top: 0;
     right: 0;

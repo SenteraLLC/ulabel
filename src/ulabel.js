@@ -223,7 +223,7 @@ class ULabel {
                 <img id="${ul.config["image_id"]}" src="${ul.config["image_url"]}" class="imwrap_cls ${ul.config["imgsz_class"]}" />
             </div>
         </div>
-        <div id="${ul.config["toolbox_id"]}" class="toolbox_cls"></div>`;
+        <div id="${ul.config["toolbox_id"]}" class="toolbox_cls"><div class="toolbox_inner_cls"></div></div>`;
         $("#" + ul.container_id).html(tool_html);
 
         // Initialize toolbox based on configuration
@@ -257,12 +257,17 @@ class ULabel {
                     `;
                     break;
             }
-            $("#" + sp_id).append(ap_html);
+            $("#" + sp_id + " .toolbox_inner_cls").append(ap_html);
         }
         // TODO noconflict
-        $("#" + sp_id).append(`
+        $("#" + sp_id + " .toolbox_inner_cls").append(`
             <a href="#" id="submit-button">Submit</a>
         `);
+
+        // Make sure that entire toolbox is shown
+        if ($("#" + ul.config["toolbox_id"] + " .toolbox_inner_cls").height() > $("#" + ul.container_id).height()) {
+            $("#" + ul.config["toolbox_id"]).css("overflow-y", "scroll");
+        }
     }
     
     static build_id_dialog(ul) {
