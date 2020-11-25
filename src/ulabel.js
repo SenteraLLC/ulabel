@@ -6,6 +6,7 @@ Sentera Inc.
 /* global $ */
 /* global Image */
 /* global ResizeObserver */
+/* global uuidv4 */
 
 class ULabel {
 
@@ -20,8 +21,8 @@ class ULabel {
     static get_dialog_colors(taxonomy) {
         if (taxonomy == null) return [];
         var colors = [];
-        for (var txi = 0; txi < taxonomy["schema"].length; txi++) {
-            colors.push(taxonomy["schema"][txi]["color"]);
+        for (var txi = 0; txi < taxonomy.length; txi++) {
+            colors.push(taxonomy[txi]["color"]);
         }
         return colors;
     }
@@ -30,15 +31,15 @@ class ULabel {
         if (taxonomy == null) return [];
         // TODO real names here, not colors!
         var colors = [];
-        for (var txi = 0; txi < taxonomy["schema"].length; txi++) {
-            colors.push(taxonomy["schema"][txi]["color"]);
+        for (var txi = 0; txi < taxonomy.length; txi++) {
+            colors.push(taxonomy[txi]["color"]);
         }
         return colors;
     }
 
     // Returns current epoch time in milliseconds
     static get_time() {
-        return (new Date()).getTime();
+        return (new Date()).toISOString();
     }
     
     // Get the point at a certain proportion of the segment between two points in a polygon
@@ -232,12 +233,12 @@ class ULabel {
             let sel = "";
             let ap_html = "";
             switch (ul.config["allowed_modes"][ami]) {
-                case "bounding-box":
-                    if (ul.annotation_state["mode"] == "bounding-box") {
+                case "bbox":
+                    if (ul.annotation_state["mode"] == "bbox") {
                         sel = " sel";
                     }
                     ap_html = `
-                        <a href="#" id="md-btn--bounding-box" class="md-btn${sel}">Bounding Box</a>
+                        <a href="#" id="md-btn--bbox" class="md-btn${sel}">Bounding Box</a>
                     `;
                     break;
                 case "polygon":
@@ -281,8 +282,8 @@ class ULabel {
         const center_coord = wdt/2;
         var colors = [];
         if (ul.config["taxonomy"] != null) {
-            for (var txi = 0; txi < ul.config["taxonomy"]["schema"].length; txi++) {
-                colors.push(ul.config["taxonomy"]["schema"][txi]["color"]);
+            for (var txi = 0; txi < ul.config["taxonomy"].length; txi++) {
+                colors.push(ul.config["taxonomy"][txi]["color"]);
             }
         }
 
@@ -432,6 +433,24 @@ class ULabel {
         };
     }
 
+    static compile_configuration(ul) {
+        // Make sure taxonomy exists, and 
+        // determine whether we're in single class mode
+        let ret = {};
+        if (ul.config["taxonomy"] == null) {
+            msg = "Taxonomy must be non-null";
+            alert(msg);
+            throw new Error(msg);
+        }
+        else {
+            ret["single_class_mode"] = (
+                (ul.config["taxonomy"].length == 1) && 
+                (ul.config["taxonomy"][0]["type"] == "class")
+            );
+        }
+        return ret;
+    }
+
     // ================= Construction/Initialization =================
         
     constructor(container_id, image_url, annotator, batch_id, taxonomy, class_defs, save_callback, exit_callback, done_callback, allowed_modes, resume_from=null) {
@@ -468,7 +487,7 @@ class ULabel {
             "batch_id": batch_id,
             "default_annotation_color": "#fa9d2a"
         };
-        
+
         // Store ID dialog configuration
         this.id_dialog_config = {
             "id": "id_dialog", // TODO noconflict
@@ -477,6 +496,10 @@ class ULabel {
             "cl_opacity": 0.4,
             "outer_diameter": 400
         };
+
+        // Finished storing configuration. Make sure it's valid
+        // Store frequent check values for performance
+        this.compiled_config = ULabel.compile_configuration(this);
         
         // Store state of ID dialog element
         // TODO much more here when full interaction is built
@@ -530,14 +553,12 @@ class ULabel {
             "is_in_progress": false,
             "is_in_edit": false,
             "edit_candidate": null,
-            "increment": 0,
             "undone_stack": []
         };
         
         // Create holder for annotations
         // TODO use resume_from if not null, 
-        //    redraw all annotations if 
-        //    potentially modify increment
+        //    redraw all annotations if bringing some in
         this.annotations = {
             "ordering": [],
             "access": {}
@@ -612,9 +633,8 @@ class ULabel {
 
     // Get a unique ID for new annotations
     make_new_annotation_id() {
-        var unq_str = "unq-ann-id"; // TODO use batch, username, image, etc.
-        this.annotation_state["increment"] += 1;
-        return unq_str + "__" + this.annotation_state["increment"];
+        var unq_str = uuidv4();
+        return unq_str;
     }
 
     // Get the start of a spatial payload based on mouse event and current annotation mode
@@ -624,7 +644,7 @@ class ULabel {
             this.get_global_mouse_y(mouse_event)
         ];
         switch (annotation_mode) {
-            case "bounding-box":
+            case "bbox":
                 return [
                     mouse_loc,
                     mouse_loc
@@ -647,7 +667,7 @@ class ULabel {
     // Access a point in a spatial payload using access string
     get_with_access_string(annid, access_str) {
         switch (this.annotations["access"][annid]["spatial_type"]) {
-            case "bounding-box":
+            case "bbox":
                 const bbi = parseInt(access_str[0], 10);
                 const bbj = parseInt(access_str[1], 10);
                 let bbox_pts = this.annotations["access"][annid]["spatial_payload"];
@@ -675,7 +695,7 @@ class ULabel {
     // Set a point in a spatial payload using access string
     set_with_access_string(annid, access_str, val) {
         switch (this.annotations["access"][annid]["spatial_type"]) {
-            case "bounding-box":
+            case "bbox":
                 var bbi = parseInt(access_str[0], 10);
                 var bbj = parseInt(access_str[1], 10);
                 this.annotations["access"][annid]["spatial_payload"][bbi][0] = val[0];
@@ -805,7 +825,7 @@ class ULabel {
     
         // Dispatch to annotation type's drawing function
         switch (annotation_object["spatial_type"]) {
-            case "bounding-box":
+            case "bbox":
                 this.draw_bounding_box(annotation_object);
                 break;
             case "polygon":
@@ -952,7 +972,7 @@ class ULabel {
             edid = this.annotations["ordering"][edi];
             let npi = null;
             switch (this.annotations["access"][edid]["spatial_type"]) {
-                case "bounding-box":
+                case "bbox":
                     npi = ULabel.get_nearest_point_on_bounding_box(
                         global_x, global_y, 
                         this.annotations["access"][edid]["spatial_payload"],
@@ -999,7 +1019,7 @@ class ULabel {
         for (var edi = 0; edi < this.annotations["ordering"].length; edi++) {
             var edid = this.annotations["ordering"][edi];
             switch (this.annotations["access"][edid]["spatial_type"]) {
-                case "bounding-box":
+                case "bbox":
                     // Can't propose new bounding box points
                     break;
                 case "polygon":
@@ -1068,7 +1088,7 @@ class ULabel {
             ];
             // Handle annotation continuation based on the annotation mode
             switch (this.annotations["access"][actid]["spatial_type"]) {
-                case "bounding-box":
+                case "bbox":
                     this.annotations["access"][actid]["spatial_payload"][1] = ms_loc;
                     this.redraw_all_annotations(); // tobuffer
                     break;
@@ -1123,7 +1143,7 @@ class ULabel {
             ];
             // Clicks are handled elsewhere
             switch (this.annotations["access"][actid]["spatial_type"]) {
-                case "bounding-box":
+                case "bbox":
                     this.set_with_access_string(actid, this.annotation_state["edit_candidate"]["access"], ms_loc);
                     this.redraw_all_annotations(); // tobuffer
                     this.annotation_state["edit_candidate"]["point"] = ms_loc;
@@ -1158,7 +1178,7 @@ class ULabel {
                 this.annotations["access"][actid]["spatial_payload"][n_kpts-1] = start_pt;
                 this.redraw_all_annotations(); // tobuffer
                 $("#ender_" + actid).remove(); // TODO remove from visible dialogs
-            case "bounding-box":
+            case "bbox":
             case "contour":
                  // tobuffer this is where the annotation moves to back canvas
             default:
@@ -1169,6 +1189,15 @@ class ULabel {
         // if (this.annotations["access"][actid]["classification_payloads"] == null) {
         //     this.show_id_dialog(mouse_event, actid);
         // }
+        // TODO build a dialog here when necessary
+        if (this.compiled_config["single_class_mode"]) {
+            this.annotations["access"][actid]["classification_payloads"] = [
+                {
+                    "class_id": this.config["taxonomy"][0]["id"],
+                    "confidence": 1.0
+                }
+            ]
+        }
     
         // Set mode to no active annotation
         this.annotation_state["active_id"] = null;
@@ -1179,7 +1208,7 @@ class ULabel {
         // Record last point and redraw if necessary
         switch (this.annotations["access"][this.annotation_state["active_id"]]["spatial_type"]) {
             case "polygon":
-            case "bounding-box":
+            case "bbox":
             case "contour":
                  // tobuffer this is where the annotation moves to back canvas
             default:
