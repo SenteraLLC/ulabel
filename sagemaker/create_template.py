@@ -3,6 +3,17 @@ import json
 
 if __name__ == "__main__":
 
+    # Get current version
+    with (Path(__file__).parent.parent / ".version").open() as f:
+        version = f.read()
+
+    print()
+    new_version = input("Enter version number [{}]: ".format(version))
+    if new_version != "":
+        version = new_version
+        with (Path(__file__).parent.parent / ".version").open("w") as f:
+            f.write(version)
+
     # Get ULabel Source for insertion
     ulabel_js_str = ""
     with open(str(Path(__file__).parent.parent.resolve() / "src/ulabel.js")) as f:
@@ -65,5 +76,20 @@ console.log(JOB_CONFIG);
     <input id="whole-field" name="whole-field" type="text" />
 </crowd-form>"""
 
-    with open(str(Path(__file__).parent / "template.liquid.html"), "w") as f:
+    destination = Path(__file__).parent / "ulabel-{}.liquid.html".format(version)
+    with open(str(destination), "w") as f:
         print(liquid_str, file=f)
+
+    print()
+    print("Template successfully created at {}".format(str(destination)))
+    print()
+    print("Use the following commands to upload the new template to s3")
+    print()
+    print("aws s3 cp {} s3://sentera-labeling-jobs/ulabel-templates/{}".format(
+        str(destination), destination.name
+    ))
+    print()
+    print("aws s3 cp s3://sentera-labeling-jobs/ulabel-templates/{} s3://sentera-labeling-jobs/ulabel-templates/ulabel-latest.liquid.html".format(
+        destination.name
+    ))
+    print()
