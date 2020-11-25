@@ -38,6 +38,9 @@ if __name__ == "__main__":
   integrity="sha256-9/aliU8dGd2tb6OSsuzixeV4y/faTqgFtohetphbbj0="
   crossorigin="anonymous"></script>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/uuid/8.1.0/uuidv4.min.js"></script>
+
+
 <style type="text/css">
 /* ================================== ULABEL.css ================================== */
 """ + use_ulabel_css_str + """
@@ -54,15 +57,17 @@ if __name__ == "__main__":
 var JOB_CONFIG = {
     "strings": {
         "image_url": ["{{task.input.source-ref | grant_read_access}}", "/demo_image.jpg"],
+        "image_id": ["{{task.input.id}}", "__no_image_id_provided__"],
         "container": ["ulabel-cont"],
         "annotator": ["__placeholder__"],
-        "batch_id": ["{{task.input.batch_id}}", "demo-batch"],
+        "batch_id": ["{{task.input.batch_id}}", "__no_batch_id_provided__"],
+        "task_id": ["{{task.input.task_id}}", "__no_task_id_provided__"],
         "dst_field": ["whole-field"]
     },
     "stringified_objs": {
         "taxonomy": [`null`], 
         "class_defs": [`null`],
-        "allowed_modes": [`["polygon", "bounding-box", "contour"]`],
+        "allowed_modes": [`["polygon", "bbox", "contour"]`],
     }
 }
 console.log(JOB_CONFIG);

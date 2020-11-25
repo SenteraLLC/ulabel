@@ -48,7 +48,6 @@
                     "container", // ID of container to build ULabel inside
                     "/demo_image.jpg", // Image to annotate
                     "TestUser", // User ID
-                    uuidv4(), // Batch ID
                     [
                         {
                             "type": "class",
@@ -65,7 +64,12 @@
                     on_exit, // Exit callback
                     on_done, // Done callback
                     ["polygon", "bbox", "contour"], // Allowed annotation modes
-                    null // Resume from
+                    null, // Resume from
+                    {
+                        "task_id": uuidv4(),
+                        "batch_id": uuidv4(),
+                        "image_id": uuidv4()
+                    } // meta
                 );
 
                 // Wait for ULabel instance to finish initialization

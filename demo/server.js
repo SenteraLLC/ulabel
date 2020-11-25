@@ -19,9 +19,6 @@ const server = http.createServer(function(req, res) {
         case "/demo_image.jpg":
             static_demo_server(req, res, finalhandler(req, res));
             break;
-        case "/template.liquid.html":
-            static_sagemaker_server(req, res, finalhandler(req, res));
-            break;    
         case "/ulabel.js":
         case "/ulabel.css":
             static_ulabel_server(req, res, finalhandler(req, res));
@@ -30,7 +27,11 @@ const server = http.createServer(function(req, res) {
             res.statusCode = 302;
             res.setHeader('Location', 'https://sentera.com/wp-content/uploads/2018/03/Favicon.png');
             res.end()
-        default:
+        case "/template.liquid.html":
+        case "/ulabel-0.0.2-dev.liquid.html":
+            static_sagemaker_server(req, res, finalhandler(req, res));
+            break;    
+            default:
             res.statusCode = 404;
             res.end();
             break;

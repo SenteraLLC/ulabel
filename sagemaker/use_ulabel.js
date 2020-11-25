@@ -54,14 +54,18 @@ $(document).ready(function() {
         cfg["strings"]["container"],
         cfg["strings"]["image_url"],
         cfg["strings"]["annotator"],
-        cfg["strings"]["batch_id"],
         cfg["stringified_objs"]["taxonomy"],
         cfg["stringified_objs"]["class_defs"],
         save_callback,
         exit_callback,
         done_callback,
         cfg["stringified_objs"]["allowed_modes"], 
-        null
+        null,
+        {
+            "task_id": cfg["strings"]["task_id"],
+            "batch_id": cfg["strings"]["batch_id"],
+            "image_id": cfg["strings"]["image_id"]
+        }
     );
     ulabel.init(function() {
         console.log("inited!");
