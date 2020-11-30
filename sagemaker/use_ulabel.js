@@ -65,7 +65,12 @@ $(document).ready(function() {
             "task_id": cfg["strings"]["task_id"],
             "batch_id": cfg["strings"]["batch_id"],
             "image_id": cfg["strings"]["image_id"]
-        }
+        }, // task_meta
+        {
+            "task_id": cfg["strings"]["task_id"],
+            "batch_id": cfg["strings"]["batch_id"],
+            "image_id": cfg["strings"]["image_id"]
+        } // annotation_meta
     );
     ulabel.init(function() {
         console.log("inited!");
