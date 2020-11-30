@@ -66,10 +66,14 @@
                     ["polygon", "bbox", "contour"], // Allowed annotation modes
                     null, // Resume from
                     {
+                        "task_meta": "is_assigned_to_the_top_level",
                         "task_id": uuidv4(),
                         "batch_id": uuidv4(),
                         "image_id": uuidv4()
-                    } // meta
+                    }, // task_meta
+                    {
+                        "annotation_meta": "is_assigned_to_each_annotation"
+                    } // annotation_meta
                 );
 
                 // Wait for ULabel instance to finish initialization

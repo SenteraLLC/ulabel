@@ -411,9 +411,12 @@ class ULabel {
 
         // Button to save annotations
         $("a#submit-button").on("click", function() {
-            var submit_payload = [];
+            var submit_payload = {
+                "task_meta": ul.config["task_meta"],
+                "annotations": []
+            };
             for (var i = 0; i < ul.annotations["ordering"].length; i++) {
-                submit_payload.push(ul.annotations["access"][ul.annotations["ordering"][i]]);
+                submit_payload["annotations"].push(ul.annotations["access"][ul.annotations["ordering"][i]]);
             }
             ul.config["done_callback"](submit_payload);
         });
@@ -474,7 +477,7 @@ class ULabel {
 
     // ================= Construction/Initialization =================
         
-    constructor(container_id, image_url, annotator, taxonomy, class_defs, save_callback, exit_callback, done_callback, allowed_modes, resume_from=null, meta=null) {
+    constructor(container_id, image_url, annotator, taxonomy, class_defs, save_callback, exit_callback, done_callback, allowed_modes, resume_from=null, task_meta=null, annotation_meta=null) {
         // Store config data
         this.container_id = container_id; // TODO make sure the element exists, and get its dimensions
         this.taxonomy = taxonomy; // TODO make sure classes are defined in class defs
@@ -483,8 +486,11 @@ class ULabel {
         this.image_url = image_url; // TODO make sure image exists and load it
         this.image = null;
 
-        if (meta == null) {
-            meta = {};
+        if (task_meta == null) {
+            task_meta = {};
+        }
+        if (annotation_meta == null) {
+            annotation_meta = {};
         }
 
         // Store tool configuration
@@ -510,7 +516,8 @@ class ULabel {
             "resume_from": resume_from,
             "allowed_modes": allowed_modes,
             "default_annotation_color": "#fa9d2a",
-            "meta": meta
+            "annotation_meta": annotation_meta,
+            "task_meta": task_meta
         };
 
         // Store ID dialog configuration
@@ -1088,7 +1095,7 @@ class ULabel {
             "spatial_payload": this.get_init_spatial(mouse_event, this.annotation_state["mode"]),
             "classification_payloads": null
         };
-        for (const [key, value] of Object.entries(this.config["meta"])) {
+        for (const [key, value] of Object.entries(this.config["annotation_meta"])) {
             this.annotations["access"][unq_id][key] = value;
         }
         this.annotations["ordering"].push(unq_id);
