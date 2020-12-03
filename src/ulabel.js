@@ -589,12 +589,19 @@ class ULabel {
         };
         
         // Create holder for annotations
-        // TODO use resume_from if not null, 
-        //    redraw all annotations if bringing some in
         this.annotations = {
             "ordering": [],
             "access": {}
         };
+        // If resuming from not null, then set and draw prior annotations        
+        if (this.config["resume_from"] != null) {
+            for (var i = 0; i < this.config["resume_from"]["annotations"].length; i++) {
+                this.annotations["ordering"].push(this.config["resume_from"][i]["id"]);
+                this.annotations["access"][this.config["resume_from"][i]["id"]] = this.config["resume_from"][i];
+                this.annotations["access"][this.config["resume_from"][i]["id"]]["new"] = false;
+            }
+            this.redraw_all_annotations();
+        }
 
         // Indicate that object must be "init" before use!
         this.is_init = false;
@@ -1087,6 +1094,7 @@ class ULabel {
         // Add this annotation to annotations object
         this.annotations["access"][unq_id] = {
             "id": unq_id,
+            "new": true,
             "parent_id": null,
             "created_by": this.config["annotator"],
             "created_at": ULabel.get_time(),
