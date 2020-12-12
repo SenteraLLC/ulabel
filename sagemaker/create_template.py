@@ -68,6 +68,7 @@ var JOB_CONFIG = {
         "taxonomy": [`null`], 
         "class_defs": [`null`],
         "allowed_modes": [`["polygon", "bbox", "contour"]`],
+        "resume_from": [`{{task.input.resume_from}}`, `null`]
     }
 }
 console.log(JOB_CONFIG);

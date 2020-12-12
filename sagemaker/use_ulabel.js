@@ -59,8 +59,8 @@ $(document).ready(function() {
         save_callback,
         exit_callback,
         done_callback,
-        cfg["stringified_objs"]["allowed_modes"], 
-        null,
+        cfg["stringified_objs"]["allowed_modes"],
+        cfg["stringified_objs"]["resume_from"],
         {
             "task_id": cfg["strings"]["task_id"],
             "batch_id": cfg["strings"]["batch_id"],
