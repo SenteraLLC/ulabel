@@ -2,6 +2,14 @@
 
 A browser-based tool for annotating images with aleatoric uncertainty
 
+## Local
+
+
+
+## SageMaker
+
+
+
 ## Development
 
 ### Quick Start:
@@ -20,6 +28,3 @@ Depends:
 - npm (`sudo apt install npm`)
 - nodejs (`sudo apt install nodejs`)
 
-## SageMaker Deployment
-
-Instructions for creating a custom labeling job using this tool can be found [on confluence](https://sentera.atlassian.net/wiki/spaces/DS/pages/1739849729/Custom+Sagemaker+Labeling+Jobs). For the "Template" field, use the `sagemaker/template.liquid.html` file in this repository.
