@@ -14,6 +14,17 @@
     {% endblock %}
 </head>
 <body>
+    <div id="header">
+        <div id="header-content">
+            <div id="header-left">
+                <a href="/" id="header-logo">ULabel</a>
+            </div>
+            <div id="header-right">
+                <a href="https://github.com/SenteraLLC/ULabel/">View on GitHub</a>
+            </div>
+        </div>
+    </div>
+
     {% block content %}{% endblock %}
 </body>
 </html>
