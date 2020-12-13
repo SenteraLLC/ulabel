@@ -4,7 +4,12 @@ const path = require('path');
 exports.get_jobs = function() {
     adb_proc = spawnSync(
         'poetry', ['run', 'dbapi', 'get-jobs'], {
-            cwd: path.resolve(__dirname, '../py-dbapi')
+            cwd: path.resolve(__dirname, '../py-dbapi'),
+            env: {
+                ...process.env,
+                "DB_ENV": "prod",
+                "SSH_CONNECT": "True"
+            }
         }
     )
     if (adb_proc.status == 0) {
@@ -13,7 +18,12 @@ exports.get_jobs = function() {
     }
     else {
         console.log("IPC error getting jobs")
-        console.log(adb_proc.stderr.toString());
+        if (adb_proc.stderr != null) {
+            console.log(adb_proc.stderr.toString());
+        }
+        else {
+            console.log(JSON.stringify(adb_proc, null, 2));
+        }
         result = null;
     }
     return result;

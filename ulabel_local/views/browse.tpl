@@ -10,5 +10,5 @@
 
 {% block content %}
     {% parent %}
-    
+    {{ debug }}
 {% endblock %}

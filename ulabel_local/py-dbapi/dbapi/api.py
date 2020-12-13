@@ -1,11 +1,23 @@
 import sys
 import json
 
-import analytics_db
+from analytics_db.connection import session_scope
+import analytics_db.services.query as dbquery
 
 
 def api():
-    print(json.dumps({"message": "Hello!"}))
+    result = []
+    with session_scope(env="prod") as session:
+
+        result_attached = dbquery.collections(session)
+        result = [
+            c.name for c in result_attached
+        ]
+    print(json.dumps({
+        "message": "Hello!",
+        "result": result
+    }))
+    sys.stdout.flush()
 
 
 def main():
