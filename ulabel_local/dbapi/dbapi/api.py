@@ -1,5 +1,11 @@
+import sys
+import json
+
+import analytics_db
+
+
 def api():
-    print("Hello, world! (api)")
+    print(json.dumps({"message": "Hello!"}))
 
 
 def main():
