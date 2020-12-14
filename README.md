@@ -46,3 +46,8 @@ pwd # Should be /path/to/ULabel
 node ulabel_local/server.js
 ```
 
+## TODO
+
+A better UI/scheme for filtering images
+- "Amazon shopping-style" pane on left with settings
+- Button for redoing submit

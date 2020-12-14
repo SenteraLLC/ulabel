@@ -66,14 +66,16 @@ position: relative;
 /* Rest */
 div#browse-content {
     width: 100%;
-    max-width: 1400px;
-    margin: 0 auto;
+    /* max-width: 1400px;
+    margin: 0 auto; */
 }
 div#browse-message-center {
-    display: block;
-    width: 100%;
+    position: fixed;
+    right: 0;
+    bottom: 0;
     padding-bottom: 10px;
     min-height: 24px;
+    text-align: right;
 }
 p.message {
     margin-top: 10px;
@@ -90,6 +92,51 @@ p.message.lvl-warn {
 p.message.lvl-error {
     color: rgb(173, 35, 16);
 }
+
+div#options-pane {
+    width: 100%;
+    height: 70px;
+    text-align: center;
+}
+
+div#filter-pane {
+    display: inline-block;
+    vertical-align: top;
+    width: 300px;
+}
+div#filter-container {
+    padding-left: 30px;
+}
+a#submit-filters {
+    display: block;
+    margin: 0 auto;
+    text-align: center;
+    background-color: lightgray;
+    color: white;
+    padding: 10px 0;
+    border-radius: 5px;
+}
+
+
+div#results-pane {
+    display: inline-block;
+    width: calc(100% - 300px);
+    vertical-align: top;
+}
+div#table-container {
+    padding: 30px;
+    padding-top: 0;
+}
+
+a.op-opt {
+    display: inline-block;
+    padding: 10px;
+    border: 1px solid lightgray;
+    margin: 10px;
+    border-radius: 5px;
+    color: gray;
+}
+
 
 
 div#browse-table {
