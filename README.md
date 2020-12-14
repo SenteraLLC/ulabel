@@ -48,6 +48,10 @@ node ulabel_local/server.js
 
 ## TODO
 
-A better UI/scheme for filtering images
-- "Amazon shopping-style" pane on left with settings
-- Button for redoing submit
+For each of the following filtering options, a dialog is needed and JS is needed to handle them
+- Select a collection
+
+
+Ability to apply filters based on URL data
+
+Support the ability to search (e.g., UUID)
