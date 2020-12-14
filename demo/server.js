@@ -28,7 +28,7 @@ const server = http.createServer(function(req, res) {
             res.setHeader('Location', 'https://sentera.com/wp-content/uploads/2018/03/Favicon.png');
             res.end()
         case "/template.liquid.html":
-        case "/ulabel-0.0.4-dev.liquid.html":
+        case "/ulabel-0.0.5-dev.liquid.html":
             static_sagemaker_server(req, res, finalhandler(req, res));
             break;    
         default:
