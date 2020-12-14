@@ -5,19 +5,28 @@ from analytics_db.connection import session_scope
 import analytics_db.services.query as dbquery
 
 
-def api():
-    # TODO dispatch based on sys.argv
+def send_collections(req):
     result = []
     with session_scope(env="prod") as session:
         result_attached = dbquery.collections(session)
         result = [
-            c.name for c in result_attached
+            {
+                "id": c.id,
+                "name": c.name,
+                "crop": str(c.crop_type),
+                "created_at": c.created_at.timestamp()
+            }
+            for c in result_attached
         ]
-    print(json.dumps({
-        "error": False,
-        "result": result
-    }))
+    print(json.dumps(result))
     sys.stdout.flush()
+
+
+def api():
+    request = json.loads(sys.argv[1])
+    # TODO dispatch based on sys.argv
+    if request["from"] =="collections":
+        send_collections(request)
 
 
 def main():

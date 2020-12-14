@@ -12,7 +12,7 @@
     {% parent %}
     <div id="browse-content">
         <div id="browse-message-center">
-            <p class="message lvl-info">Loading collections...</p>
+            <p id="loading-message" class="message lvl-info">Loading collections...</p>
         </div>
         <div id="browse-table">
             <div id="c1-list" class="bt-list">

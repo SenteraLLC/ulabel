@@ -95,6 +95,7 @@ p.message.lvl-error {
 div#browse-table {
     display: block;
     width: 100%;
+    padding-bottom: 30px;
 }
 div.bt-list {
     display: inline-block;
@@ -139,6 +140,31 @@ a.bt-list-item {
     padding: 5px;
     width: calc(100% - 10px);
 }
+a.bt-list-item.lilhead span.item-attr {
+    font-weight: bold;
+}
 a.bt-list-item.odd {
     background-color: rgb(240, 240, 240);
+}
+a.bt-list-item:hover {
+    background-color: rgb(148, 199, 148);
+}
+a.bt-list-item span.item-attr {
+    /* padding: 0 5px; */
+}
+a.bt-list-item span.id-attr {
+    display: inline-block;
+    width: 30px; 
+}
+a.bt-list-item span.name-attr {
+    display: inline-block;
+    width: 80px;
+}
+a.bt-list-item span.crop-attr {
+    display: inline-block;
+    width: calc(40% - 55px);
+}
+a.bt-list-item span.created-attr {
+    display: inline-block;
+    width: calc(60% - 55px);
 }

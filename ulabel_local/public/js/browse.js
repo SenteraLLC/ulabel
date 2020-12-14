@@ -8,51 +8,73 @@ $(document).ready(function() {
         task: null
     };
 
+    function format_etime(etime) {
+        let date = new Date(etime*1000);
+        return date.toLocaleString("en-US"); 
+    }
 
+    function format_crop(crop) {
+        return crop.substr(9);
+    }
 
     function load_collections() {
 
-        // TODO fetch with AJAX
-        collections = [
-            {
-                name: "collection 1",
-                id: 1,
-                crop: "soybean"
-            },
-            {
-                name: "collection 2",
-                id: 2,
-                crop: "corn"
-            },
-            {
-                name: "collection 3",
-                id: 3,
-                crop: "soybean"
-            },
-            {
-                name: "collection 4",
-                id: 4,
-                crop: "corn"
-            }
-        ];
-
-        // Clear what's presently there
-        $("div#c1-list-content").html("");
-
-        // Fill in from response
-        let even = "";
-        for (var i = 0; i < collections.length; i++) {
-            if (i%2 == 0) {
-                even = " even";
-            }
-            else {
-                even = " odd";
-            }
-            $("div#c1-list-content").append(`<a class="bt-list-item${even}" href="#">Item!</a>`)
+        // Get collections asynchronously with AJAX
+        request = {
+            from: "collections"
         }
+        $.post("/query", request, function(collections) {
+            // TODO delete later
+            console.log(collections);
+            collections.unshift({
+                id: "ID",
+                name: "Name",
+                crop: "Crop Type",
+                created_at: "Created At"
+            })
 
-        // Hide loading message
-        // TODO
+            // Clear what's presently there
+            $("div#c1-list-content").html("");
+
+            // Fill in from response
+            let even = "";
+            let created = "";
+            let crop = "";
+            for (var i = 0; i < collections.length; i++) {
+                if (i == 0) {
+                    lilhead = " lilhead";
+                    created = collections[i].created_at;
+                    crop = collections[i].crop;
+                }
+                else {
+                    lilhead = "";
+                    created = format_etime(collections[i].created_at);
+                    crop = format_crop(collections[i].crop);
+                }
+                if (i%2 == 0) {
+                    even = " even";
+                }
+                else {
+                    even = " odd";
+                }
+                let id = collections[i].id;
+                let name = collections[i].name;
+                $("div#c1-list-content").append(`
+                    <a class="bt-list-item${even}${lilhead}" href="#">
+                        <span class="item-attr id-attr">${id}</span><!--
+                        --><span class="item-attr name-attr">${name}</span><!--
+                        --><span class="item-attr crop-attr">${crop}</span><!--
+                        --><span class="item-attr created-attr">${created}</span>
+                    </a>
+                `);
+            }
+
+            // Hide loading message
+            $("#loading-message").remove();
+
+
+        });
+
 
     }
 

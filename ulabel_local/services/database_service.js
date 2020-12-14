@@ -1,9 +1,10 @@
 const { spawnSync } = require('child_process');
 const path = require('path');
 
-exports.get_jobs_ = function() {
+
+exports.query_db = (arg) => {
     adb_proc = spawnSync(
-        'poetry', ['run', 'dbapi', 'get-jobs'], {
+        'poetry', ['run', 'dbapi', arg], {
             cwd: path.resolve(__dirname, '../py-dbapi'),
             env: {
                 ...process.env,
@@ -27,18 +28,4 @@ exports.get_jobs_ = function() {
         result = null;
     }
     return result;
-}
-
-exports.get_jobs = function() {
-    return [
-        {
-            name: "Job 1"
-        },
-        {
-            name: "Job 2"
-        },
-        {
-            name: "Job 3"
-        }
-    ]
 }
