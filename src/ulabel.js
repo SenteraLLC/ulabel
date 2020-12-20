@@ -391,7 +391,7 @@ class ULabel {
 
                 // Apply new zoom
                 ul.viewer_state["zoom_val"] *= (1 + dlta/10);
-                ul.rezoom(wheel_event.screenX, wheel_event.screenY);
+                ul.rezoom(wheel_event.clientX, wheel_event.clientY);
             } 
         };
         
@@ -653,7 +653,7 @@ class ULabel {
             that.is_init = true;
     
             // TODO why is this necessary?
-            // that.viewer_state["zoom_val"] = that.get_empirical_scale();
+            that.viewer_state["zoom_val"] = that.get_empirical_scale();
             that.rezoom(0, 0);
 
             // Draw resumed from annotations
@@ -1472,8 +1472,8 @@ class ULabel {
         this.drag_state["active_key"] = drag_key;
         this.drag_state["release_button"] = release_button;
         this.drag_state[drag_key]["mouse_start"] = [
-            mouse_event.screenX,
-            mouse_event.screenY
+            mouse_event.clientX,
+            mouse_event.clientY
         ];
         this.drag_state[drag_key]["zoom_val_start"] = this.viewer_state["zoom_val"];
         this.drag_state[drag_key]["offset_start"] = [
@@ -1539,8 +1539,8 @@ class ULabel {
         var annbox = $("#" + this.config["annbox_id"]);
 
         // Pan based on mouse position
-        const aX = mouse_event.screenX;
-        const aY = mouse_event.screenY;
+        const aX = mouse_event.clientX;
+        const aY = mouse_event.clientY;
         annbox.scrollLeft(
             this.drag_state["pan"]["offset_start"][0] + (this.drag_state["pan"]["mouse_start"][0] - aX)
         );
@@ -1551,7 +1551,7 @@ class ULabel {
     
     // Handle zooming by click-drag
     drag_rezoom(mouse_event) {
-        const aY = mouse_event.screenY;
+        const aY = mouse_event.clientY;
         this.viewer_state["zoom_val"] = (
             this.drag_state["zoom"]["zoom_val_start"]*Math.pow(
                 1.1, (aY - this.drag_state["zoom"]["mouse_start"][1])/10
@@ -1562,9 +1562,11 @@ class ULabel {
     
     // Handle zooming at a certain focus
     rezoom(foc_x, foc_y) {
-        // Get old size and position
+        // JQuery convenience
         var imwrap = $("#" + this.config["imwrap_id"]);
         var annbox = $("#" + this.config["annbox_id"]);
+
+        // Get old size and position
         const old_width = imwrap.width();
         const old_height = imwrap.height();
         const old_left = annbox.scrollLeft();
@@ -1580,7 +1582,10 @@ class ULabel {
         toresize.css("height", new_height + "px");
 
         // Compute and apply new position
-        annbox.scrollLeft(Math.round((old_left + foc_x)*new_width/old_width - foc_x));
-        annbox.scrollTop(Math.round((old_top + foc_y)*new_height/old_height - foc_y));
+        const new_left = (old_left + foc_x)*new_width/old_width - foc_x;
+        const new_top = (old_top + foc_y)*new_height/old_height - foc_y;
+        annbox.scrollLeft(new_left);
+        annbox.scrollTop(new_top);
+
     }
 }
