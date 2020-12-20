@@ -51,25 +51,32 @@ canvas.canvas_cls {
     border-radius: 10px;
 }
 
+div.mode-selection {
+    padding: 30px;
+}
+div.mode-opt {
+    display: inline-block;
+}
 a.md-btn {
     display: block;
+    text-align: center;
+    height: 30px;
+    width: 30px;
     padding: 10px;
     margin: 0 auto;
-    width: 90%;
-    margin-top: 10px;
     text-decoration: none;
-    background-color: rgba(231, 231, 231, 1);
+    /* background-color: rgba(231, 231, 231, 1); */
     color: black;
     font-size: 1.2em;
     font-family: sans-serif;
 }
 
 a.md-btn:hover {
-    background-color: rgb(136, 136, 136);
+    background-color: rgba(255, 181, 44, 0.397);
 }
 
 a.md-btn.sel {
-    background-color: rgb(136, 136, 136);
+    background-color: rgba(100, 148, 237, 0.459);
 }
 
 

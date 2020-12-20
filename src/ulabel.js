@@ -225,48 +225,60 @@ class ULabel {
             </div>
         </div>
         <div id="${ul.config["toolbox_id"]}" class="toolbox_cls"><div class="toolbox_inner_cls"></div></div>`;
-        $("#" + ul.container_id).html(tool_html);
+        $("#" + ul.config["container_id"]).html(tool_html);
 
         // Initialize toolbox based on configuration
         const sp_id = ul.config["toolbox_id"];
+        $("#" + sp_id + " .toolbox_inner_cls").append(`<div class="mode-selection"></div>`);
+        let md_buttons = [];
         for (var ami = 0; ami < ul.config["allowed_modes"].length; ami++) {
+            let href=` href="#"`;
             let sel = "";
             let ap_html = "";
             switch (ul.config["allowed_modes"][ami]) {
                 case "bbox":
                     if (ul.annotation_state["mode"] == "bbox") {
                         sel = " sel";
+                        href = "";
                     }
-                    ap_html = `
-                        <a href="#" id="md-btn--bbox" class="md-btn${sel}">Bounding Box</a>
-                    `;
+                    md_buttons.push(`<div class="mode-opt">
+                        <a${href} id="md-btn--bbox" class="md-btn${sel}" amdname="Bounding Box">
+                            <img class="mode-selector" src="/media/bbox.svg" height=30 width=30 alt="Mode: Bounding Box">
+                        </a>
+                    </div>`);
                     break;
                 case "polygon":
                     if (ul.annotation_state["mode"] == "polygon") {
                         sel = " sel";
+                        href = "";
                     }
-                    ap_html = `
-                        <a href="#" id="md-btn--polygon" class="md-btn${sel}">Polygon</a>
-                    `;
+                    md_buttons.push(`<div class="mode-opt">
+                        <a${href} id="md-btn--polygon" class="md-btn${sel}" amdname="Polygon">
+                            <img class="mode-selector" src="/media/polygon.svg" height=30 width=30  alt="Mode: Polygon">
+                        </a>
+                    </div>`);
                     break;
                 case "contour":
                     if (ul.annotation_state["mode"] == "contour") {
                         sel = " sel";
+                        href = "";
                     }
-                    ap_html = `
-                        <a href="#" id="md-btn--contour" class="md-btn${sel}">Contour</a>
-                    `;
+                    md_buttons.push(`<div class="mode-opt">
+                        <a${href} id="md-btn--contour" class="md-btn${sel}" amdname="Contour">
+                            <img class="mode-selector" src="/media/contour.svg" height=30 width=30  alt="Mode: Contour">
+                        </a>
+                    </div>`);
                     break;
             }
-            $("#" + sp_id + " .toolbox_inner_cls").append(ap_html);
         }
+        $("#" + sp_id + " .toolbox_inner_cls .mode-selection").append(md_buttons.join("<!-- -->"));
         // TODO noconflict
         $("#" + sp_id + " .toolbox_inner_cls").append(`
             <a href="#" id="submit-button">Submit</a>
         `);
 
         // Make sure that entire toolbox is shown
-        if ($("#" + ul.config["toolbox_id"] + " .toolbox_inner_cls").height() > $("#" + ul.container_id).height()) {
+        if ($("#" + ul.config["toolbox_id"] + " .toolbox_inner_cls").height() > $("#" + ul.config["container_id"]).height()) {
             $("#" + ul.config["toolbox_id"]).css("overflow-y", "scroll");
         }
     }
@@ -403,10 +415,12 @@ class ULabel {
 
         // Buttons to change annotation mode
         $("a.md-btn").click(function(mouse_event) {
-            var new_mode = mouse_event.target.id.split("--")[1];
+            var new_mode = $(this).attr("id").split("--")[1];
             ul.annotation_state["mode"] = new_mode;
+            $("a.md-btn.sel").attr("href", "#");
             $("a.md-btn.sel").removeClass("sel");
-            $("#" + mouse_event.target.id).addClass("sel");
+            $(this).addClass("sel");
+            $(this).removeAttr("href");
         });
 
         // Button to save annotations
@@ -477,15 +491,20 @@ class ULabel {
 
     // ================= Construction/Initialization =================
         
-    constructor(container_id, image_url, annotator, taxonomy, class_defs, save_callback, exit_callback, done_callback, allowed_modes, resume_from=null, task_meta=null, annotation_meta=null) {
-        // Store config data
-        this.container_id = container_id; // TODO make sure the element exists, and get its dimensions
-        this.taxonomy = taxonomy; // TODO make sure classes are defined in class defs
-        this.allowed_modes = allowed_modes; // TODO error check -- make sure they exist
-        this.resume_from = resume_from; // TODO validate
-        this.image_url = image_url; // TODO make sure image exists and load it
-        this.image = null;
-
+    constructor(
+        container_id,
+        image_data,
+        annotator,
+        taxonomy,
+        class_defs,
+        save_callback,
+        exit_callback,
+        done_callback,
+        allowed_modes,
+        resume_from=null,
+        task_meta=null,
+        annotation_meta=null
+    ) {
         if (task_meta == null) {
             task_meta = {};
         }
@@ -504,7 +523,7 @@ class ULabel {
             "image_id": "ann_image", // TODO noconflict
             "imgsz_class": "imgsz", // TODO noconflict
             "toolbox_id": "toolbox", // TODO noconflict
-            "image_url": image_url,
+            "image_url": image_data,
             "image_width": null,
             "image_height": null,
             "annotator": annotator,

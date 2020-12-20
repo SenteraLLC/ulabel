@@ -21,7 +21,10 @@ const server = http.createServer(function(req, res) {
             break;
         case "/ulabel.js":
         case "/ulabel.css":
-            static_ulabel_server(req, res, finalhandler(req, res));
+        case "/media/polygon.svg":
+        case "/media/bbox.svg":
+        case "/media/contour.svg":
+                    static_ulabel_server(req, res, finalhandler(req, res));
             break;
         case "/favicon.ico":
             res.statusCode = 302;
