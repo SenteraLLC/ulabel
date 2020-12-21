@@ -688,11 +688,31 @@ class ULabel {
     
     static build_edit_suggestion(ul) {
         // TODO noconflict
+
+        // Local
         $("#" + ul.config["imwrap_id"]).append(`
             <a href="#" id="edit_suggestion" class="editable"></a>
         `);
         ul.viewer_state["visible_dialogs"].push({
             "id": "edit_suggestion",
+            "left": 0.0,
+            "top": 0.0,
+            "pin": "center"
+        });
+
+        // Global
+        $("#" + ul.config["imwrap_id"]).append(`
+            <div id="global_edit_suggestion" class="glob_editable">
+                <a href="#" class="move_suggestion global_sub_suggestion">
+                    <img src="data:image/png;base64,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">
+                </a><!--
+                --><a href="#" class="delete_suggestion global_sub_suggestion">
+                    <span class="bigx">&#215;</span>
+                </a>
+            </div>
+        `);
+        ul.viewer_state["visible_dialogs"].push({
+            "id": "global_edit_suggestion",
             "left": 0.0,
             "top": 0.0,
             "pin": "center"
@@ -1444,11 +1464,23 @@ class ULabel {
     }
 
     show_global_edit_sugestion(annid) {
-        // TODO
+        var esjq = $("#global_edit_suggestion");
+        esjq.css("display", "block");
+
+        let cbox = this.annotations["access"][annid]["containing_box"];
+
+        for (var vdgi = 0; vdgi < this.viewer_state["visible_dialogs"].length; vdgi++) {
+            if (this.viewer_state["visible_dialogs"][vdgi]["id"] == "global_edit_suggestion") {
+                this.viewer_state["visible_dialogs"][vdgi]["left"] = (cbox["tlx"] + cbox["brx"])/(2*this.config["image_width"]);
+                this.viewer_state["visible_dialogs"][vdgi]["top"] = (cbox["tly"] + cbox["bry"])/(2*this.config["image_height"]);
+                break;
+            }
+        }
+        this.reposition_dialogs();
     }
 
     hide_global_edit_suggestion() {
-        // TODO
+        $("#global_edit_suggestion").css("display", "none");
     }
 
     show_id_dialog(mouse_e, active_ann) {
@@ -1680,6 +1712,19 @@ class ULabel {
         // console.log(ms_loc, this.annotations["access"][actid]["containing_box"]);
     }
 
+    rebuild_containing_box(actid) {
+        let init_pt = this.annotations["access"][actid]["spatial_payload"][0];
+        this.annotations["access"][actid]["containing_box"] = {
+            "tlx": init_pt[0],
+            "tly": init_pt[1],
+            "brx": init_pt[0],
+            "bry": init_pt[1]
+        }
+        for (var pti = 1; pti < this.annotations["access"][actid]["spatial_payload"].length; pti++) {
+            this.update_containing_box(this.annotations["access"][actid]["spatial_payload"][pti], actid);
+        }
+    }
+
     continue_annotation(mouse_event, isclick=false) {
         // Convenience
         const actid = this.annotation_state["active_id"];
@@ -1751,17 +1796,20 @@ class ULabel {
             switch (this.annotations["access"][actid]["spatial_type"]) {
                 case "bbox":
                     this.set_with_access_string(actid, this.annotation_state["edit_candidate"]["access"], ms_loc);
-                    this.update_containing_box(ms_loc, actid);
+                    this.rebuild_containing_box(actid);
                     this.redraw_all_annotations(); // tobuffer
                     this.annotation_state["edit_candidate"]["point"] = ms_loc;
                     this.show_edit_suggestion(this.annotation_state["edit_candidate"], true);
+                    this.show_global_edit_sugestion(this.annotation_state["edit_candidate"]["annid"]);
                     break;
                 case "polygon":
                     this.set_with_access_string(actid, this.annotation_state["edit_candidate"]["access"], ms_loc);
-                    this.update_containing_box(ms_loc, actid);
+                    console.log("here");
+                    this.rebuild_containing_box(actid);
                     this.redraw_all_annotations(); // tobuffer
                     this.annotation_state["edit_candidate"]["point"] = ms_loc;
                     this.show_edit_suggestion(this.annotation_state["edit_candidate"], true);
+                    this.show_global_edit_sugestion(this.annotation_state["edit_candidate"]["annid"]);
                     // this.suggest_edits(mouse_event);
                     break;
                 case "contour":

@@ -274,6 +274,41 @@ div.lstyl-row div.setting a[href="#"]:hover {
     background-color: rgba(255, 181, 44, 0.397);
 }
 
+div#global_edit_suggestion {
+    display: none;
+    position: absolute;
+    width: 150px;
+    height: 75px;
+    /* background-color: white; */
+}
+a.global_sub_suggestion {
+    width: 60px;
+    height: 60px;
+    margin: 7.5px;
+    display: inline-block;
+    border-radius: 37.5px;
+    background-color: white;
+    overflow: hidden;
+}
+a.global_sub_suggestion img {
+    display: block;
+    width: 40px;
+    height: 40px;
+    padding: 10px;
+}
+a.global_sub_suggestion span.bigx {
+    position: absolute;
+    display: block;
+    font-size: 4em;
+    text-align: center;
+    width: 60px;
+    top: 50%;
+    -ms-transform: translateY(-50%);
+    transform: translateY(-50%);
+    color: black;
+    text-decoration: none;
+}
+
 .editable {
     display: none;
     position: absolute;
