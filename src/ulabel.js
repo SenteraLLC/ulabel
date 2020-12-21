@@ -1129,11 +1129,8 @@ class ULabel {
     }
 
     // Get the start of a spatial payload based on mouse event and current annotation mode
-    get_init_spatial(mouse_event, annotation_mode) {
-        var mouse_loc = [
-            this.get_global_mouse_x(mouse_event),
-            this.get_global_mouse_y(mouse_event)
-        ];
+    get_init_spatial(gmx, gmy, annotation_mode) {
+        var mouse_loc = [gmx, gmy];
         switch (annotation_mode) {
             case "bbox":
                 return [
@@ -1446,6 +1443,14 @@ class ULabel {
         $("#edit_suggestion").css("display", "none");
     }
 
+    show_global_edit_sugestion(annid) {
+        // TODO
+    }
+
+    hide_global_edit_suggestion() {
+        // TODO
+    }
+
     show_id_dialog(mouse_e, active_ann) {
         // Record which annotation this dialog is associated with
         // TODO
@@ -1503,17 +1508,20 @@ class ULabel {
         }
     }
 
-    get_nearest_active_keypoint(global_x, global_y, max_dist) {
+    get_nearest_active_keypoint(global_x, global_y, max_dist, candidates=null) {
         var ret = {
             "annid": null,
             "access": null,
             "distance": max_dist/this.get_empirical_scale(),
             "point": null
         };
+        if (candidates == null) {
+            candidates = this.annotations["ordering"];
+        }
         // Iterate through and find any close enough defined points
         var edid = null;
-        for (var edi = 0; edi < this.annotations["ordering"].length; edi++) {
-            edid = this.annotations["ordering"][edi];
+        for (var edi = 0; edi < candidates.length; edi++) {
+            edid = candidates[edi];
             let npi = null;
             switch (this.annotations["access"][edid]["spatial_type"]) {
                 case "bbox":
@@ -1553,15 +1561,18 @@ class ULabel {
         return ret;
     }
     
-    get_nearest_segment_point(global_x, global_y, max_dist) {
+    get_nearest_segment_point(global_x, global_y, max_dist, candidates=null) {
         var ret = {
             "annid": null,
             "access": null,
             "distance": max_dist/this.get_empirical_scale(),
             "point": null
         };
-        for (var edi = 0; edi < this.annotations["ordering"].length; edi++) {
-            var edid = this.annotations["ordering"][edi];
+        if (candidates == null) {
+            candidates = this.annotations["ordering"];
+        }
+        for (var edi = 0; edi < candidates.length; edi++) {
+            var edid = candidates[edi];
             switch (this.annotations["access"][edid]["spatial_type"]) {
                 case "bbox":
                     // Can't propose new bounding box points
@@ -1614,6 +1625,9 @@ class ULabel {
 
         let line_size = this.get_line_size();
 
+        const gmx = this.get_global_mouse_x(mouse_event);
+        const gmy = this.get_global_mouse_y(mouse_event);
+
         // Add this annotation to annotations object
         this.annotations["access"][unq_id] = {
             "id": unq_id,
@@ -1623,9 +1637,15 @@ class ULabel {
             "created_at": ULabel.get_time(),
             "deprecated": false,
             "spatial_type": this.annotation_state["mode"],
-            "spatial_payload": this.get_init_spatial(mouse_event, this.annotation_state["mode"]),
+            "spatial_payload": this.get_init_spatial(gmx, gmy, this.annotation_state["mode"]),
             "classification_payloads": null,
-            "line_size": line_size
+            "line_size": line_size,
+            "containing_box": {
+                "tlx": gmx,
+                "tly": gmy,
+                "brx": gmx,
+                "bry": gmy
+            }
         };
         for (const [key, value] of Object.entries(this.config["annotation_meta"])) {
             this.annotations["access"][unq_id][key] = value;
@@ -1643,6 +1663,23 @@ class ULabel {
         this.annotation_state["is_in_progress"] = true;
     }
 
+    update_containing_box(ms_loc, actid) {
+        // console.log(ms_loc, this.annotations["access"][actid]["containing_box"]);
+        if (ms_loc[0] < this.annotations["access"][actid]["containing_box"]["tlx"]) {
+            this.annotations["access"][actid]["containing_box"]["tlx"] = ms_loc[0];
+        }
+        else if (ms_loc[0] > this.annotations["access"][actid]["containing_box"]["brx"]) {
+            this.annotations["access"][actid]["containing_box"]["brx"] = ms_loc[0];
+        }
+        if (ms_loc[1] < this.annotations["access"][actid]["containing_box"]["tly"]) {
+            this.annotations["access"][actid]["containing_box"]["tly"] = ms_loc[1];
+        }
+        else if (ms_loc[1] > this.annotations["access"][actid]["containing_box"]["bry"]) {
+            this.annotations["access"][actid]["containing_box"]["bry"] = ms_loc[1];
+        }
+        // console.log(ms_loc, this.annotations["access"][actid]["containing_box"]);
+    }
+
     continue_annotation(mouse_event, isclick=false) {
         // Convenience
         const actid = this.annotation_state["active_id"];
@@ -1656,6 +1693,7 @@ class ULabel {
             switch (this.annotations["access"][actid]["spatial_type"]) {
                 case "bbox":
                     this.annotations["access"][actid]["spatial_payload"][1] = ms_loc;
+                    this.update_containing_box(ms_loc, actid);
                     this.redraw_all_annotations(); // tobuffer
                     break;
                 case "polygon":
@@ -1677,11 +1715,13 @@ class ULabel {
                     //    ender clicks are filtered before they get here
                     if (isclick) {
                         this.annotations["access"][actid]["spatial_payload"].push(ms_loc);
+                        this.update_containing_box(ms_loc, actid);
                     }
                     this.redraw_all_annotations(); // tobuffer
                     break;
                 case "contour":
                     this.annotations["access"][actid]["spatial_payload"].push(ms_loc);
+                    this.update_containing_box(ms_loc, actid);
                     this.redraw_all_annotations(); // TODO tobuffer, no need to redraw here, can just draw over
                     break;
                 default:
@@ -1711,12 +1751,14 @@ class ULabel {
             switch (this.annotations["access"][actid]["spatial_type"]) {
                 case "bbox":
                     this.set_with_access_string(actid, this.annotation_state["edit_candidate"]["access"], ms_loc);
+                    this.update_containing_box(ms_loc, actid);
                     this.redraw_all_annotations(); // tobuffer
                     this.annotation_state["edit_candidate"]["point"] = ms_loc;
                     this.show_edit_suggestion(this.annotation_state["edit_candidate"], true);
                     break;
                 case "polygon":
                     this.set_with_access_string(actid, this.annotation_state["edit_candidate"]["access"], ms_loc);
+                    this.update_containing_box(ms_loc, actid);
                     this.redraw_all_annotations(); // tobuffer
                     this.annotation_state["edit_candidate"]["point"] = ms_loc;
                     this.show_edit_suggestion(this.annotation_state["edit_candidate"], true);
@@ -1785,29 +1827,71 @@ class ULabel {
         this.annotation_state["active_id"] = null;
         this.annotation_state["is_in_edit"] = false;
     }
+
+    get_edit_candidates(gblx, gbly, dst_thresh) {
+        let ret = {
+            "candidate_ids": [],
+            "best": null
+        };
+        let minsize = Infinity;
+        for (var edi = 0; edi < this.annotations["ordering"].length; edi++) {
+            let id = this.annotations["ordering"][edi];
+            let cbox = this.annotations["access"][id]["containing_box"];
+            if (
+                (gblx >= cbox["tlx"] - dst_thresh) && 
+                (gblx <= cbox["brx"] + dst_thresh) &&
+                (gbly >= cbox["tly"] - dst_thresh) && 
+                (gbly <= cbox["bry"] + dst_thresh)
+            ) {
+                ret["candidate_ids"].push(id);
+                let boxsize = (cbox["brx"] - cbox["tlx"])*(cbox["bry"] - cbox["tly"]);
+                if (boxsize < minsize) {
+                    minsize = boxsize;
+                    ret["best"] = id;
+                }
+            }
+        }
+        return ret;
+    }
     
     suggest_edits(mouse_event) {
         // TODO better dynamic handling of the size of the suggestion queue
         const dst_thresh = 20;
         const global_x = this.get_global_mouse_x(mouse_event);
         const global_y = this.get_global_mouse_y(mouse_event);
+
+        const edit_candidates = this.get_edit_candidates(
+            global_x,
+            global_y,
+            dst_thresh
+        );
+
+        if (edit_candidates["best"] == null) {
+            this.hide_global_edit_suggestion();
+            return;
+        }
         
         // Look for an existing point that's close enough to suggest editing it
-        const nearest_active_keypoint = this.get_nearest_active_keypoint(global_x, global_y, dst_thresh);
+        const nearest_active_keypoint = this.get_nearest_active_keypoint(global_x, global_y, dst_thresh, edit_candidates["candidate_ids"]);
         if (nearest_active_keypoint != null) {
             this.annotation_state["edit_candidate"] = nearest_active_keypoint;
             this.show_edit_suggestion(nearest_active_keypoint, true);
+            edit_candidates["best"] = nearest_active_keypoint["annid"];
         }
         else { // If none are found, look for a point along a segment that's close enough
-            const nearest_segment_point = this.get_nearest_segment_point(global_x, global_y, dst_thresh);
+            const nearest_segment_point = this.get_nearest_segment_point(global_x, global_y, dst_thresh, edit_candidates["candidate_ids"]);
             if (nearest_segment_point != null) {
                 this.annotation_state["edit_candidate"] = nearest_segment_point;
                 this.show_edit_suggestion(nearest_segment_point, false);
+                edit_candidates["best"] = nearest_segment_point["annid"];
             }
             else {
                 this.hide_edit_suggestion();
             }
         }
+
+        // Show global edit dialogs for "best" candidate
+        this.show_global_edit_sugestion(edit_candidates["best"]);
     }
 
 
