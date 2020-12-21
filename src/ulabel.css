@@ -1,8 +1,12 @@
+div.full_ulabel_container_ {
+    font-family: sans-serif;
+}
+
 div.annbox_cls, div.toolbox_cls {
     height: 100%;
 }
 div.annbox_cls {
-    width: calc(100% - 300px);
+    width: calc(100% - 320px);
     background-color: black;
     overflow: scroll;
     position: absolute;
@@ -10,7 +14,7 @@ div.annbox_cls {
     left: 0;
 }
 div.toolbox_cls {
-    width: 300px;
+    width: 320px;
     background-color: white;
     overflow-y: hidden;
     position: absolute;
@@ -51,8 +55,27 @@ canvas.canvas_cls {
     border-radius: 10px;
 }
 
-div.mode-selection {
-    padding: 30px;
+/* ================== TOOLBOX ================== */
+
+div.toolbox-divider {
+    width: 90%;
+    margin: 0 auto;
+    height: 1px;
+    background-color: lightgray;
+}
+
+
+div.mode-selection, div.zoom-pan {
+    padding: 10px 30px;
+}
+
+/* === Annotation Mode === */
+p.current_mode_container {
+    margin-top: 0px;
+    margin-bottom: 5px;
+}
+span.current_mode {
+    color: cornflowerblue;
 }
 div.mode-opt {
     display: inline-block;
@@ -79,6 +102,169 @@ a.md-btn.sel {
     background-color: rgba(100, 148, 237, 0.459);
 }
 
+/* === Pan & Zoom === */
+
+div.zoom-pan {
+    padding-bottom: 0;
+    padding-top: 0;
+}
+div.half-tb {
+    display: inline-block;    
+    width: 50%;
+    vertical-align: middle;
+}
+span.htblbl {
+    display: inline-block;
+    /* font-weight: bold; */
+    vertical-align: middle;
+}
+span.htbpyld {
+    display: inline-block;
+    vertical-align: middle;
+}
+
+span.panudlr {
+    display: inline-block;
+    position: relative;
+    width: 60px;
+    height: 60px;
+    border-radius: 30px;
+}
+
+a.zbutt {
+    display: inline-block;
+    height: 20px;
+    width: 20px;
+    background-color: lightgray;
+    vertical-align: middle;
+    text-align: center;
+    text-decoration: none;
+    color: white;
+    border-radius: 11px;
+    line-height: 20px;
+    border: 1px solid rgb(168, 168, 168);
+
+}
+span.panudlr {
+    transform: rotate(-45deg);
+}
+a.pbutt {
+    display: block;
+    position: absolute;
+    width: 28px;
+    height: 28px;
+    border-radius: 0;
+    border: 1px solid rgb(168, 168, 168);
+    background-color: lightgray;
+}
+a.pbutt.up {
+    right: 0;
+    top: 0;
+    border-top-right-radius: 30px;
+}
+a.pbutt.down {
+    left: 0;
+    bottom: 0;
+    border-bottom-left-radius: 30px;
+}
+a.pbutt.left {
+    left: 0;
+    top: 0;
+    border-top-left-radius: 30px;
+}
+a.pbutt.right {
+    right: 0;
+    bottom: 0;
+    border-bottom-right-radius: 30px;
+}
+a.pbutt:hover, a.zbutt:hover {
+    background-color: rgba(100, 148, 237, 0.486);
+}
+a.pbutt:active, a.zbutt:active {
+    background-color:cornflowerblue;
+}
+span.spokes {
+    position: absolute;
+    left: 19px;
+    top: 19px;
+    height: 20px;
+    width: 20px;
+    background-color: white;
+    border-radius: 10px;
+    border: 1px solid gray;
+}
+div.zpcont {
+    height: 90px;
+    position: relative;
+    background-color: white;
+}
+div.zpcont:hover {
+    background-color: rgba(0,0,0,0);
+}
+div.zpcont div.lblpyldcont {
+    position: absolute;
+    top: 50%;
+    -ms-transform: translateY(-50%);
+    transform: translateY(-50%);
+}
+div.htbmain {
+    position: relative;
+}
+p.shortcut-tip {
+    font-size: 10px;
+    text-align: left;
+    color: gray;
+    position: absolute;
+    bottom: 3px;
+    margin: 0;
+}
+div.linestyle {
+    padding: 10px 30px;
+}
+div.linestyle p.tb-header {
+    margin: 0;
+    margin-bottom: 5px;
+}
+canvas.demo-canvas {
+    width: 120px;
+    height: 40px;
+    border: 1px solid lightgray;
+}
+div.line-expl {
+    width: 175px;
+}
+div.line-expl a {
+    display: inline-block;
+    vertical-align: middle;
+}
+div.line-expl canvas {
+    display: inline-block;
+    vertical-align: middle;
+}
+div.lstyl-row div.line-expl, div.lstyl-row div.setting {
+    display: inline-block;
+    vertical-align: middle;
+}
+div.setting {
+    width: calc(100% - 175px);
+    text-align: right;
+}
+div.lstyl-row div.setting a {
+    display: inline-block;
+    border-radius: 5px;
+    padding: 3px 6px;
+    margin-bottom: 5px;
+    text-decoration: none;
+    color: black;
+    font-size: 14px;
+}
+div.lstyl-row div.setting a.sel {
+    background-color: rgba(100, 148, 237, 0.479);
+    color: black;
+}
+div.lstyl-row div.setting a[href="#"]:hover {
+    background-color: rgba(255, 181, 44, 0.397);
+}
 
 .editable {
     display: none;

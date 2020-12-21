@@ -8,6 +8,8 @@ Sentera Inc.
 /* global ResizeObserver */
 /* global uuidv4 */
 
+const DEMO_ANNOTATION = {"id":"7c64913a-9d8c-475a-af1a-658944e37c31","new":true,"parent_id":null,"created_by":"TestUser","created_at":"2020-12-21T02:41:47.304Z","deprecated":false,"spatial_type":"contour","spatial_payload":[[4,25],[4,25],[4,24],[4,23],[4,22],[4,22],[5,22],[5,21],[5,20],[6,20],[6,19],[7,19],[7,18],[8,18],[8,18],[10,18],[11,18],[11,17],[12,17],[12,16],[12,16],[13,16],[14,15],[16,14],[16,14],[17,14],[18,14],[18,13],[19,13],[20,13],[20,13],[21,13],[22,13],[23,13],[24,13],[24,13],[25,13],[26,13],[27,13],[28,13],[28,13],[29,13],[30,13],[31,13],[32,13],[34,13],[36,14],[36,14],[37,15],[40,15],[40,16],[41,16],[42,17],[43,17],[44,18],[44,18],[45,18],[46,18],[47,18],[47,18],[48,18],[48,18],[49,19],[50,20],[52,20],[52,20],[53,21],[54,21],[55,21],[56,21],[57,21],[58,22],[59,22],[60,22],[60,22],[61,22],[63,22],[64,22],[64,22],[65,22],[66,22],[67,22],[68,22],[68,21],[69,21],[70,20],[70,19],[71,19],[71,18],[72,18],[72,18],[72,18],[73,18],[75,17],[75,16],[76,16],[76,16],[76,15],[77,14],[78,14],[79,14],[79,13],[79,12],[80,12],[81,12],[82,11],[83,11],[84,10],[85,10],[86,10],[87,10],[88,10],[88,10],[89,10],[90,10],[91,10],[92,10],[92,10],[93,10],[94,10],[94,10],[95,10],[96,10],[96,11],[96,11],[98,11],[98,12],[99,12],[100,13],[100,14],[101,14],[101,15],[102,15],[104,16],[104,17],[104,18],[105,18],[106,18],[106,18],[107,18],[107,19],[107,20],[108,20],[108,21],[108,21],[108,22],[109,22],[109,22],[109,23]],"classification_payloads":[{"class_id":2,"confidence":1}],"annotation_meta":"is_assigned_to_each_annotation"};
+
 class ULabel {
 
     // ================= Internal constants =================
@@ -219,17 +221,76 @@ class ULabel {
     static prep_window_html(ul) {
         // Bring image and annotation scaffolding in
         const tool_html = `
-        <div id="${ul.config["annbox_id"]}" class="annbox_cls">
-            <div id="${ul.config["imwrap_id"]}" class="imwrap_cls ${ul.config["imgsz_class"]}">
-                <img id="${ul.config["image_id"]}" src="${ul.config["image_url"]}" class="imwrap_cls ${ul.config["imgsz_class"]}" />
+        <div class="full_ulabel_container_">
+            <div id="${ul.config["annbox_id"]}" class="annbox_cls">
+                <div id="${ul.config["imwrap_id"]}" class="imwrap_cls ${ul.config["imgsz_class"]}">
+                    <img id="${ul.config["image_id"]}" src="${ul.config["image_url"]}" class="imwrap_cls ${ul.config["imgsz_class"]}" />
+                </div>
             </div>
-        </div>
-        <div id="${ul.config["toolbox_id"]}" class="toolbox_cls"><div class="toolbox_inner_cls"></div></div>`;
+            <div id="${ul.config["toolbox_id"]}" class="toolbox_cls">
+                <div class="toolbox_inner_cls">
+                    <div class="mode-selection">
+                        <p class="current_mode_container">
+                            <span class="cmlbl">Mode:</span>
+                            <span class="current_mode"></span>
+                        </p>
+                    </div>
+                    <div class="toolbox-divider"></div>
+                    <div class="zoom-pan">
+                        <div class="half-tb htbmain set-zoom">
+                            <p class="shortcut-tip">ctrl+scroll or shift+drag</p>
+                            <div class="zpcont">
+                                <div class="lblpyldcont">
+                                    <span class="pzlbl htblbl">Zoom</span>
+                                    <span class="zinout htbpyld">
+                                        <a href="#" class="zbutt zin">+</a>
+                                        <a href="#" class="zbutt zout">-</a>
+                                    </span>
+                                </div>
+                            </div>
+                        </div><!--
+                        --><div class="half-tb htbmain set-pan">
+                            <p class="shortcut-tip">scrollclick+drag or ctrl+drag</p>
+                            <div class="zpcont">
+                                <div class="lblpyldcont">
+                                    <span class="pzlbl htblbl">Pan</span>
+                                    <span class="panudlr htbpyld">
+                                        <a href="#" class="pbutt left"></a>
+                                        <a href="#" class="pbutt right"></a>
+                                        <a href="#" class="pbutt up"></a>
+                                        <a href="#" class="pbutt down"></a>
+                                        <span class="spokes"></span>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="toolbox-divider"></div>
+                    <div class="linestyle">
+                        <p class="tb-header">Line Width</p>
+                        <div class="lstyl-row">
+                            <div class="line-expl">
+                                <a href="#" class="zbutt zout">-</a>
+                                <canvas 
+                                    id="${ul.config["canvas_did"]}" 
+                                    class="demo-canvas" 
+                                    width=${ul.config["demo_width"]} 
+                                    height=${ul.config["demo_height"]}></canvas>
+                                <a href="#" class="zbutt zin">+</a>
+                            </div><!--
+                            --><div class="setting">
+                                <a class="fixed-setting sel">Fixed</a><br>
+                                <a href="#" class="fixed-zadj">Zoom</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>`;
         $("#" + ul.config["container_id"]).html(tool_html);
 
         // Initialize toolbox based on configuration
         const sp_id = ul.config["toolbox_id"];
-        $("#" + sp_id + " .toolbox_inner_cls").append(`<div class="mode-selection"></div>`);
         let md_buttons = [];
         for (var ami = 0; ami < ul.config["allowed_modes"].length; ami++) {
             let href=` href="#"`;
@@ -276,6 +337,8 @@ class ULabel {
         $("#" + sp_id + " .toolbox_inner_cls").append(`
             <a href="#" id="submit-button">Submit</a>
         `);
+        // Show current mode label
+        ul.show_annotation_mode();
 
         // Make sure that entire toolbox is shown
         if ($("#" + ul.config["toolbox_id"] + " .toolbox_inner_cls").height() > $("#" + ul.config["container_id"]).height()) {
@@ -412,15 +475,16 @@ class ULabel {
             ul.reposition_dialogs();
         }).observe(document.getElementById(ul.config["imwrap_id"]));
 
-
         // Buttons to change annotation mode
         $("a.md-btn").click(function(mouse_event) {
+            if ($(this).hasClass("sel")) return;
             var new_mode = $(this).attr("id").split("--")[1];
             ul.annotation_state["mode"] = new_mode;
             $("a.md-btn.sel").attr("href", "#");
             $("a.md-btn.sel").removeClass("sel");
             $(this).addClass("sel");
             $(this).removeAttr("href");
+            ul.show_annotation_mode($(this));
         });
 
         // Button to save annotations
@@ -439,13 +503,22 @@ class ULabel {
         document.onkeypress = function(keypress_event) {
             const shift = keypress_event.shiftKey;
             const ctrl = keypress_event.ctrlKey;
-            if ((keypress_event.key == "z" || keypress_event.key == "Z") && ctrl) {
+            if (ctrl &&
+                (
+                    keypress_event.key == "z" || 
+                    keypress_event.key == "Z" ||
+                    keypress_event.code == "KeyZ"
+                )
+            ) {
                 if (shift) {
                     ul.redo();
                 }
                 else {
                     ul.undo();
                 }
+            }
+            else {
+                console.log(keypress_event);
             }
         };
     }
@@ -519,6 +592,7 @@ class ULabel {
             "imwrap_id": "imwrap", // TODO noconfict
             "canvas_fid": "front-canvas", // TODO noconflict
             "canvas_bid": "back-canvas", // TODO noconflict
+            "canvas_did": "demo-canvas", // TODO noconflict
             "canvas_class": "easel", // TODO noconflict
             "image_id": "ann_image", // TODO noconflict
             "imgsz_class": "imgsz", // TODO noconflict
@@ -526,6 +600,8 @@ class ULabel {
             "image_url": image_data,
             "image_width": null,
             "image_height": null,
+            "demo_width": 120,
+            "demo_height": 40,
             "annotator": annotator,
             "class_defs": class_defs,
             "taxonomy": taxonomy,
@@ -594,7 +670,8 @@ class ULabel {
         // Canvasses' display/drawing states
         this.canvas_state = {
             "front_context": null,
-            "back_context": null
+            "back_context": null,
+            "demo_context": null
         };
         
         // State data for annotation interactions
@@ -658,6 +735,9 @@ class ULabel {
             that.canvas_state["back_context"] = document.getElementById(
                 that.config["canvas_bid"]
             ).getContext("2d");
+            that.canvas_state["demo_context"] = document.getElementById(
+                that.config["canvas_did"]
+            ).getContext("2d");
     
             // Add the HTML for the ID dialog to the window
             ULabel.build_id_dialog(that);
@@ -675,6 +755,9 @@ class ULabel {
             that.viewer_state["zoom_val"] = that.get_empirical_scale();
             that.rezoom(0, 0);
 
+            // Draw demo annotation
+            that.redraw_demo();
+
             // Draw resumed from annotations
             if (that.config["resume_from"] != null) {
                 that.redraw_all_annotations();
@@ -683,6 +766,22 @@ class ULabel {
             // Call the user-provided callback
             callback.bind(that);
         }
+    }
+
+    // ================= Toolbox Functions ==================
+    // Show annotation mode
+    show_annotation_mode(el=null) {
+        if (el == null) {
+            el = $("a.md-btn.sel");
+        }
+        let new_name = el.attr("amdname");
+        $("#" + this.config["toolbox_id"] + " .current_mode").html(new_name);
+    }
+
+    // Draw demo annotation in demo canvas
+    redraw_demo() {
+        this.canvas_state["demo_context"].clearRect(0, 0, this.config["demo_width"], this.config["demo_height"]);
+        this.draw_annotation(DEMO_ANNOTATION, "demo_context");
     }
 
     // ================= Instance Utilities =================
@@ -795,9 +894,9 @@ class ULabel {
 
     // ================= Drawing Functions =================
 
-    draw_bounding_box(annotation_object) {
+    draw_bounding_box(annotation_object, cvs_ctx="front_context") {
         // TODO buffered contexts
-        let ctx = this.canvas_state["front_context"];
+        let ctx = this.canvas_state[cvs_ctx];
     
         // TODO do we want variable widths?
         const lnwidth = 10.0;
@@ -824,9 +923,9 @@ class ULabel {
         ctx.stroke();
     }
     
-    draw_polygon(annotation_object) {
+    draw_polygon(annotation_object, cvs_ctx="front_context") {
         // TODO buffered contexts
-        let ctx = this.canvas_state["front_context"];
+        let ctx = this.canvas_state[cvs_ctx];
     
         // TODO do we want variable widths?
         const lnwidth = 10.0;
@@ -850,9 +949,9 @@ class ULabel {
         ctx.stroke();
     }
     
-    draw_contour(annotation_object) {
+    draw_contour(annotation_object, cvs_ctx="front_context") {
         // TODO buffered contexts
-        let ctx = this.canvas_state["front_context"];
+        let ctx = this.canvas_state[cvs_ctx];
     
         // TODO do we want variable widths?
         const lnwidth = 10.0;
@@ -876,10 +975,7 @@ class ULabel {
         ctx.stroke();
     }
     
-    draw_annotation(annotation_id) {
-        // Get actual annotation object
-        var annotation_object = this.annotations["access"][annotation_id];
-    
+    draw_annotation(annotation_object, cvs_ctx="front_context") {    
         // DEBUG left here for refactor reference, but I don't think it's needed moving forward
         //    there may be a use case for drawing depreacted annotations 
         // Don't draw if deprecated
@@ -888,24 +984,28 @@ class ULabel {
         // Dispatch to annotation type's drawing function
         switch (annotation_object["spatial_type"]) {
             case "bbox":
-                this.draw_bounding_box(annotation_object);
+                this.draw_bounding_box(annotation_object, cvs_ctx);
                 break;
             case "polygon":
-                this.draw_polygon(annotation_object);
+                this.draw_polygon(annotation_object, cvs_ctx);
                 break;
             case "contour":
-                this.draw_contour(annotation_object);
+                this.draw_contour(annotation_object, cvs_ctx);
                 break;
             default:
                 this.raise_error("Warning: Annotation " + annotation_object["id"] + " not understood", ULabel.elvl_info);
                 break;
         }
     }
+
+    draw_annotation_from_id(id, cvs_ctx="front_context") {
+        this.draw_annotation(this.annotations["access"][id], cvs_ctx);
+    }
     
     // Draws the first n annotations on record
     draw_n_annotations(n) {
         for (var i = 0; i < n; i++) {
-            this.draw_annotation(this.annotations["ordering"][i]);
+            this.draw_annotation_from_id(this.annotations["ordering"][i]);
         }
     }
     
@@ -1172,7 +1272,7 @@ class ULabel {
         }
     
         // Draw annotation, and set state to annotation in progress
-        this.draw_annotation(unq_id);
+        this.draw_annotation_from_id(unq_id);
         this.annotation_state["active_id"] = unq_id;
         this.annotation_state["is_in_progress"] = true;
     }
