@@ -94,6 +94,11 @@ a.md-btn {
     font-family: sans-serif;
 }
 
+a.md-btn svg {
+    height: 30px;
+    width: 30px;
+}
+
 a.md-btn:hover {
     background-color: rgba(255, 181, 44, 0.397);
 }
