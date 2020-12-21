@@ -243,8 +243,8 @@ class ULabel {
                                 <div class="lblpyldcont">
                                     <span class="pzlbl htblbl">Zoom</span>
                                     <span class="zinout htbpyld">
-                                        <a href="#" class="zbutt zin">+</a>
                                         <a href="#" class="zbutt zout">-</a>
+                                        <a href="#" class="zbutt zin">+</a>
                                     </span>
                                 </div>
                             </div>
@@ -270,17 +270,17 @@ class ULabel {
                         <p class="tb-header">Line Width</p>
                         <div class="lstyl-row">
                             <div class="line-expl">
-                                <a href="#" class="zbutt zout">-</a>
+                                <a href="#" class="wbutt wout">-</a>
                                 <canvas 
                                     id="${ul.config["canvas_did"]}" 
                                     class="demo-canvas" 
                                     width=${ul.config["demo_width"]} 
                                     height=${ul.config["demo_height"]}></canvas>
-                                <a href="#" class="zbutt zin">+</a>
+                                <a href="#" class="wbutt win">+</a>
                             </div><!--
                             --><div class="setting">
                                 <a class="fixed-setting sel">Fixed</a><br>
-                                <a href="#" class="fixed-zadj">Zoom</a>
+                                <a href="#" class="fixed-zadj">Dynamic</a>
                             </div>
                         </div>
                     </div>
@@ -485,6 +485,31 @@ class ULabel {
             $(this).addClass("sel");
             $(this).removeAttr("href");
             ul.show_annotation_mode($(this));
+        });
+
+        $("#" + ul.config["toolbox_id"] + " .zbutt").click(function(mouse_event) {
+            if ($(this).hasClass("zin")) {
+                ul.viewer_state["zoom_val"] *= 1.1;
+            }
+            else if ($(this).hasClass("zout")) {
+                ul.viewer_state["zoom_val"] *= 0.9;
+            }
+            ul.rezoom();
+        });
+        $("#" + ul.config["toolbox_id"] + " .pbutt").click(function(mouse_event) {
+            let annbox = $("#" + ul.config["annbox_id"]);
+            if ($(this).hasClass("up")) {
+                annbox.scrollTop(annbox.scrollTop() - 20);
+            }
+            else if ($(this).hasClass("down")) {
+                annbox.scrollTop(annbox.scrollTop() + 20);
+            }
+            else if ($(this).hasClass("left")) {
+                annbox.scrollLeft(annbox.scrollLeft() - 20);
+            }
+            else if ($(this).hasClass("right")) {
+                annbox.scrollLeft(annbox.scrollLeft() + 20);
+            }
         });
 
         // Button to save annotations
@@ -1680,10 +1705,17 @@ class ULabel {
     }
     
     // Handle zooming at a certain focus
-    rezoom(foc_x, foc_y) {
+    rezoom(foc_x=null, foc_y=null) {
         // JQuery convenience
         var imwrap = $("#" + this.config["imwrap_id"]);
         var annbox = $("#" + this.config["annbox_id"]);
+
+        if (foc_x == null) {
+            foc_x = annbox.width()/2;
+        }
+        if (foc_y == null) {
+            foc_y = annbox.height()/2;
+        }
 
         // Get old size and position
         const old_width = imwrap.width();
