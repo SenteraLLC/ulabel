@@ -181,10 +181,10 @@ a.pbutt.right {
     bottom: 0;
     border-bottom-right-radius: 30px;
 }
-a.pbutt:hover, a.zbutt:hover {
+a.pbutt:hover, a.zbutt:hover, a.wbutt:hover {
     background-color: rgba(100, 148, 237, 0.486);
 }
-a.pbutt:active, a.zbutt:active {
+a.pbutt:active, a.zbutt:active, a.wbutt:active {
     background-color:cornflowerblue;
 }
 span.spokes {
@@ -262,8 +262,12 @@ div.lstyl-row div.setting a {
     color: black;
     font-size: 14px;
 }
-div.lstyl-row div.setting a.sel {
+div.lstyl-row div.setting a {
     background-color: rgba(100, 148, 237, 0.479);
+    color: black;
+}
+div.lstyl-row div.setting a[href="#"] {
+    background-color: rgba(0,0,0,0);
     color: black;
 }
 div.lstyl-row div.setting a[href="#"]:hover {

@@ -557,8 +557,8 @@ class ULabel {
                                 <a href="#" class="wbutt win">+</a>
                             </div><!--
                             --><div class="setting">
-                                <a class="fixed-setting sel">Fixed</a><br>
-                                <a href="#" class="fixed-zadj">Dynamic</a>
+                                <a class="fixed-setting">Fixed</a><br>
+                                <a href="#" class="dyn-setting">Dynamic</a>
                             </div>
                         </div>
                     </div>
@@ -770,7 +770,7 @@ class ULabel {
                 ul.viewer_state["zoom_val"] *= 1.1;
             }
             else if ($(this).hasClass("zout")) {
-                ul.viewer_state["zoom_val"] *= 0.9;
+                ul.viewer_state["zoom_val"] /= 1.1;
             }
             ul.rezoom();
         });
@@ -788,6 +788,31 @@ class ULabel {
             else if ($(this).hasClass("right")) {
                 annbox.scrollLeft(annbox.scrollLeft() + 20);
             }
+        });
+        $("#" + ul.config["toolbox_id"] + " .wbutt").click(function(mouse_event) {
+            if ($(this).hasClass("win")) {
+                ul.annotation_state["line_size"] *= 1.1;
+            }
+            else if ($(this).hasClass("wout")) {
+                ul.annotation_state["line_size"] /= 1.1;
+            }
+            ul.redraw_demo();
+        });
+        $("#" + ul.config["toolbox_id"] + " .setting a").click(function(mouse_event) {
+            if (!this.hasAttribute("href")) return;
+            if ($(this).hasClass("fixed-setting")){
+                $("#" + ul.config["toolbox_id"] + " .setting a.fixed-setting").removeAttr("href");
+                $("#" + ul.config["toolbox_id"] + " .setting a.dyn-setting").attr("href", "#");
+                ul.annotation_state["line_size"] = ul.annotation_state["line_size"]*ul.viewer_state["zoom_val"];
+                ul.annotation_state["size_mode"] = "fixed";
+            }
+            else if ($(this).hasClass("dyn-setting")) {
+                $("#" + ul.config["toolbox_id"] + " .setting a.dyn-setting").removeAttr("href");
+                $("#" + ul.config["toolbox_id"] + " .setting a.fixed-setting").attr("href", "#");
+                ul.annotation_state["line_size"] = ul.get_line_size();
+                ul.annotation_state["size_mode"] = "dynamic";
+            }
+            ul.redraw_demo();
         });
 
         // Button to save annotations
@@ -984,7 +1009,9 @@ class ULabel {
             "is_in_progress": false,
             "is_in_edit": false,
             "edit_candidate": null,
-            "undone_stack": []
+            "undone_stack": [],
+            "line_size": 10.0,
+            "size_mode": "fixed"
         };
         
         // Create holder for annotations
@@ -1084,7 +1111,7 @@ class ULabel {
     // Draw demo annotation in demo canvas
     redraw_demo() {
         this.canvas_state["demo_context"].clearRect(0, 0, this.config["demo_width"], this.config["demo_height"]);
-        this.draw_annotation(DEMO_ANNOTATION, "demo_context");
+        this.draw_annotation(DEMO_ANNOTATION, "demo_context", true);
     }
 
     // ================= Instance Utilities =================
@@ -1197,19 +1224,24 @@ class ULabel {
 
     // ================= Drawing Functions =================
 
-    draw_bounding_box(annotation_object, cvs_ctx="front_context") {
+    draw_bounding_box(annotation_object, cvs_ctx="front_context", demo=false) {
         // TODO buffered contexts
         let ctx = this.canvas_state[cvs_ctx];
-    
-        // TODO do we want variable widths?
-        const lnwidth = 10.0;
+
+        let line_size = null;
+        if ("line_size" in annotation_object) {
+            line_size = annotation_object["line_size"];
+        }
+        else {
+            line_size = this.get_line_size(demo);
+        }
     
         // TODO draw annotation according to id payload colors
         // Prep for bbox drawing
         ctx.fillStyle = this.config["default_annotation_color"];
         ctx.strokeStyle = this.config["default_annotation_color"];
         ctx.lineJoin = "round";
-        ctx.lineWidth = lnwidth;
+        ctx.lineWidth = line_size;
         ctx.imageSmoothingEnabled = false;
         ctx.globalCompositeOperation = "source-over";
     
@@ -1226,19 +1258,25 @@ class ULabel {
         ctx.stroke();
     }
     
-    draw_polygon(annotation_object, cvs_ctx="front_context") {
+    draw_polygon(annotation_object, cvs_ctx="front_context", demo=false) {
         // TODO buffered contexts
         let ctx = this.canvas_state[cvs_ctx];
-    
-        // TODO do we want variable widths?
-        const lnwidth = 10.0;
-    
+
+        let line_size = null;
+        if ("line_size" in annotation_object) {
+            line_size = annotation_object["line_size"];
+        }
+        else {
+            line_size = this.get_line_size(demo);
+        }
+
+        
         // TODO draw annotation according to id payload colors
         // Prep for bbox drawing
         ctx.fillStyle = this.config["default_annotation_color"];
         ctx.strokeStyle = this.config["default_annotation_color"];
         ctx.lineJoin = "round";
-        ctx.lineWidth = lnwidth;
+        ctx.lineWidth = line_size;
         ctx.imageSmoothingEnabled = false;
         ctx.globalCompositeOperation = "source-over";
     
@@ -1252,19 +1290,25 @@ class ULabel {
         ctx.stroke();
     }
     
-    draw_contour(annotation_object, cvs_ctx="front_context") {
+    draw_contour(annotation_object, cvs_ctx="front_context", demo=false) {
         // TODO buffered contexts
         let ctx = this.canvas_state[cvs_ctx];
-    
-        // TODO do we want variable widths?
-        const lnwidth = 10.0;
+
+        let line_size = null;
+        if ("line_size" in annotation_object) {
+            line_size = annotation_object["line_size"];
+        }
+        else {
+            line_size = this.get_line_size(demo);
+        }
+
     
         // TODO draw annotation according to id payload colors
         // Prep for bbox drawing
         ctx.fillStyle = this.config["default_annotation_color"];
         ctx.strokeStyle = this.config["default_annotation_color"];
         ctx.lineJoin = "round";
-        ctx.lineWidth = lnwidth;
+        ctx.lineWidth = line_size;
         ctx.imageSmoothingEnabled = false;
         ctx.globalCompositeOperation = "source-over";
     
@@ -1278,7 +1322,7 @@ class ULabel {
         ctx.stroke();
     }
     
-    draw_annotation(annotation_object, cvs_ctx="front_context") {    
+    draw_annotation(annotation_object, cvs_ctx="front_context", demo=false) {    
         // DEBUG left here for refactor reference, but I don't think it's needed moving forward
         //    there may be a use case for drawing depreacted annotations 
         // Don't draw if deprecated
@@ -1287,13 +1331,13 @@ class ULabel {
         // Dispatch to annotation type's drawing function
         switch (annotation_object["spatial_type"]) {
             case "bbox":
-                this.draw_bounding_box(annotation_object, cvs_ctx);
+                this.draw_bounding_box(annotation_object, cvs_ctx, demo);
                 break;
             case "polygon":
-                this.draw_polygon(annotation_object, cvs_ctx);
+                this.draw_polygon(annotation_object, cvs_ctx, demo);
                 break;
             case "contour":
-                this.draw_contour(annotation_object, cvs_ctx);
+                this.draw_contour(annotation_object, cvs_ctx, demo);
                 break;
             default:
                 this.raise_error("Warning: Annotation " + annotation_object["id"] + " not understood", ULabel.elvl_info);
@@ -1546,11 +1590,29 @@ class ULabel {
         return ret;
     }
     
+    get_line_size(demo=false) {
+        let line_size = this.annotation_state["line_size"];
+        if (demo) {
+            if (this.annotation_state["size_mode"] == "dynamic") {
+                line_size *= this.viewer_state["zoom_val"];
+            }
+            return line_size;
+        }
+        else {
+            if (this.annotation_state["size_mode"] == "fixed") {
+                line_size /= this.viewer_state["zoom_val"];
+            }
+            return line_size;
+        }
+    }
+
     begin_annotation(mouse_event) {
         this.annotation_state["undone_stack"] = [];
 
         // Give the new annotation a unique ID
         const unq_id = this.make_new_annotation_id();
+
+        let line_size = this.get_line_size();
 
         // Add this annotation to annotations object
         this.annotations["access"][unq_id] = {
@@ -1562,7 +1624,8 @@ class ULabel {
             "deprecated": false,
             "spatial_type": this.annotation_state["mode"],
             "spatial_payload": this.get_init_spatial(mouse_event, this.annotation_state["mode"]),
-            "classification_payloads": null
+            "classification_payloads": null,
+            "line_size": line_size
         };
         for (const [key, value] of Object.entries(this.config["annotation_meta"])) {
             this.annotations["access"][unq_id][key] = value;
@@ -2016,5 +2079,7 @@ class ULabel {
         annbox.scrollLeft(new_left);
         annbox.scrollTop(new_top);
 
+        // Redraw demo annotation
+        this.redraw_demo();
     }
 }
