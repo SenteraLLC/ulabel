@@ -993,7 +993,8 @@ class ULabel {
         // Create object for current ulabel state
         this.viewer_state = {
             "zoom_val": 1.0,
-            "visible_dialogs": []
+            "visible_dialogs": [],
+            "last_move": null
         };
 
         // Create object for dragging interaction state
@@ -1596,8 +1597,7 @@ class ULabel {
 
     redo() {
         if (this.actions["undone_stack"].length > 0) {
-            this.actions["stream"].push(this.actions["undone_stack"].pop());
-            this.redo_action(this.actions["stream"][this.actions["stream"].length - 1]);
+            this.redo_action(this.actions["undone_stack"].pop());
         }
     }
 
@@ -1724,19 +1724,23 @@ class ULabel {
 
     // Action Stream Events
 
-    record_action(action) {
+    record_action(action, is_redo=false) {
         // After a new action, you can no longer redo old actions
-        this.actions["undone_stack"] = [];
+        if (!is_redo) {
+            this.actions["undone_stack"] = [];
+        }
 
         // Add to strea
         this.actions["stream"].push(action);
-
     }
 
     undo_action(action) {
         switch(action.act_type) {
             case "begin_annotation":
                 this.begin_annotation__undo(action.undo_payload);
+                break;
+            case "continue_annotation":
+                this.continue_annotation__undo(action.undo_payload);
                 break;
             default:
                 console.log("Undo error :(");
@@ -1749,6 +1753,9 @@ class ULabel {
             case "begin_annotation":
                 this.begin_annotation(null, action.redo_payload);
                 break;
+            case "continue_annotation":
+                this.continue_annotation(null, null, action.redo_payload);
+                break;
             default:
                 console.log("Redo error :(");
                 break;
@@ -1760,6 +1767,7 @@ class ULabel {
         let unq_id = null;
         let line_size = null;
         let annotation_mode = null;
+        let redoing = false;
         if (redo_payload == null) {
             unq_id = this.make_new_annotation_id();
             line_size = this.get_line_size();
@@ -1770,6 +1778,7 @@ class ULabel {
             line_size = redo_payload.line_size;
             mouse_event = redo_payload.mouse_event;
             annotation_mode = redo_payload.annotation_mode;
+            redoing = true;
         }
 
         const gmx = this.get_global_mouse_x(mouse_event);
@@ -1821,7 +1830,10 @@ class ULabel {
             undo_payload: {
                 ann_str: JSON.stringify(this.annotations["access"][unq_id])
             }
-        });
+        }, redoing);
+        if (redoing) {
+            this.continue_annotation(this.viewer_state["last_move"]);
+        }
     }
     begin_annotation__undo(undo_payload) {
         // Parse necessary data
@@ -1884,9 +1896,20 @@ class ULabel {
         }
     }
 
-    continue_annotation(mouse_event, isclick=false) {
+    continue_annotation(mouse_event, isclick=false, redo_payload=null) {
         // Convenience
-        const actid = this.annotation_state["active_id"];
+        let actid = null;
+        let redoing = false;
+        if (redo_payload == null) {
+            actid = this.annotation_state["active_id"];
+        }
+        else {
+            mouse_event = redo_payload.mouse_event;
+            isclick = redo_payload.isclick;
+            actid = redo_payload.actid;
+            redoing = true;
+        }
+
         // TODO big performance gains with buffered canvasses
         if (actid && (actid)) {
             const ms_loc = [
@@ -1923,6 +1946,21 @@ class ULabel {
                     if (isclick) {
                         this.annotations["access"][actid]["spatial_payload"].push(ms_loc);
                         this.update_containing_box(ms_loc, actid);
+                        // Only an undoable action if placing a polygon keypoint
+                        this.record_action({
+                            act_type: "continue_annotation",
+                            redo_payload: {
+                                mouse_event: mouse_event,
+                                isclick: isclick,
+                                actid: actid
+                            },
+                            undo_payload: {
+                                actid: actid
+                            }
+                        }, redoing);
+                        if (redoing) {
+                            this.continue_annotation(this.viewer_state["last_move"]);
+                        }
                     }
                     this.redraw_all_annotations(); // tobuffer
                     break;
@@ -1936,6 +1974,11 @@ class ULabel {
                     break;
             }
         }
+    }
+    continue_annotation__undo(undo_payload) {
+        this.annotations["access"][undo_payload.actid]["spatial_payload"].pop();
+        this.rebuild_containing_box(undo_payload.actid);
+        this.continue_annotation(this.viewer_state["last_move"]);
     }
     
     begin_edit(mouse_event) {
@@ -2264,6 +2307,7 @@ class ULabel {
     }
     
     handle_mouse_move(mouse_event) {
+        this.viewer_state["last_move"] = mouse_event;
         // If the ID dialog is visible, let it's own handler take care of this
         if (this.id_dialog_state["visible"]) {
             return;
