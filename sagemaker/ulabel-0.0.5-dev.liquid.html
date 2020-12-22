@@ -23,11 +23,15 @@ html, body, #ulabel-cont {
     height: 100vh;
 }
 /* ================================== ULABEL.css ================================== */
+div.full_ulabel_container_ {
+    font-family: sans-serif;
+}
+
 div.annbox_cls, div.toolbox_cls {
     height: 100%;
 }
 div.annbox_cls {
-    width: calc(100% - 300px);
+    width: calc(100% - 320px);
     background-color: black;
     overflow: scroll;
     position: absolute;
@@ -35,7 +39,7 @@ div.annbox_cls {
     left: 0;
 }
 div.toolbox_cls {
-    width: 300px;
+    width: 320px;
     background-color: white;
     overflow-y: hidden;
     position: absolute;
@@ -76,27 +80,259 @@ canvas.canvas_cls {
     border-radius: 10px;
 }
 
+/* ================== TOOLBOX ================== */
+
+div.toolbox-divider {
+    width: 90%;
+    margin: 0 auto;
+    height: 1px;
+    background-color: lightgray;
+}
+
+
+div.mode-selection, div.zoom-pan {
+    padding: 10px 30px;
+}
+
+/* === Annotation Mode === */
+p.current_mode_container {
+    margin-top: 0px;
+    margin-bottom: 5px;
+}
+span.current_mode {
+    color: cornflowerblue;
+}
+div.mode-opt {
+    display: inline-block;
+}
 a.md-btn {
     display: block;
+    text-align: center;
+    height: 30px;
+    width: 30px;
     padding: 10px;
     margin: 0 auto;
-    width: 90%;
-    margin-top: 10px;
     text-decoration: none;
-    background-color: rgba(231, 231, 231, 1);
+    /* background-color: rgba(231, 231, 231, 1); */
     color: black;
     font-size: 1.2em;
     font-family: sans-serif;
 }
 
+a.md-btn svg {
+    height: 30px;
+    width: 30px;
+}
+
 a.md-btn:hover {
-    background-color: rgb(136, 136, 136);
+    background-color: rgba(255, 181, 44, 0.397);
 }
 
 a.md-btn.sel {
-    background-color: rgb(136, 136, 136);
+    background-color: rgba(100, 148, 237, 0.459);
 }
 
+/* === Pan & Zoom === */
+
+div.zoom-pan {
+    padding-bottom: 0;
+    padding-top: 0;
+}
+div.half-tb {
+    display: inline-block;    
+    width: 50%;
+    vertical-align: middle;
+}
+span.htblbl {
+    display: inline-block;
+    /* font-weight: bold; */
+    vertical-align: middle;
+}
+span.htbpyld {
+    display: inline-block;
+    vertical-align: middle;
+}
+
+span.panudlr {
+    display: inline-block;
+    position: relative;
+    width: 60px;
+    height: 60px;
+    border-radius: 30px;
+}
+
+a.zbutt, a.wbutt {
+    display: inline-block;
+    height: 20px;
+    width: 20px;
+    background-color: lightgray;
+    vertical-align: middle;
+    text-align: center;
+    text-decoration: none;
+    color: white;
+    border-radius: 11px;
+    line-height: 20px;
+    border: 1px solid rgb(168, 168, 168);
+}
+span.panudlr {
+    transform: rotate(-45deg);
+}
+a.pbutt {
+    display: block;
+    position: absolute;
+    width: 28px;
+    height: 28px;
+    border-radius: 0;
+    border: 1px solid rgb(168, 168, 168);
+    background-color: lightgray;
+}
+a.pbutt.up {
+    right: 0;
+    top: 0;
+    border-top-right-radius: 30px;
+}
+a.pbutt.down {
+    left: 0;
+    bottom: 0;
+    border-bottom-left-radius: 30px;
+}
+a.pbutt.left {
+    left: 0;
+    top: 0;
+    border-top-left-radius: 30px;
+}
+a.pbutt.right {
+    right: 0;
+    bottom: 0;
+    border-bottom-right-radius: 30px;
+}
+a.pbutt:hover, a.zbutt:hover, a.wbutt:hover {
+    background-color: rgba(100, 148, 237, 0.486);
+}
+a.pbutt:active, a.zbutt:active, a.wbutt:active {
+    background-color:cornflowerblue;
+}
+span.spokes {
+    position: absolute;
+    left: 19px;
+    top: 19px;
+    height: 20px;
+    width: 20px;
+    background-color: white;
+    border-radius: 10px;
+    border: 1px solid gray;
+}
+div.zpcont {
+    height: 90px;
+    position: relative;
+    background-color: white;
+}
+div.zpcont:hover {
+    background-color: rgba(0,0,0,0);
+}
+div.zpcont div.lblpyldcont {
+    position: absolute;
+    top: 50%;
+    -ms-transform: translateY(-50%);
+    transform: translateY(-50%);
+}
+div.htbmain {
+    position: relative;
+}
+p.shortcut-tip {
+    font-size: 10px;
+    text-align: left;
+    color: gray;
+    position: absolute;
+    bottom: 3px;
+    margin: 0;
+}
+div.linestyle {
+    padding: 10px 30px;
+}
+div.linestyle p.tb-header {
+    margin: 0;
+    margin-bottom: 5px;
+}
+canvas.demo-canvas {
+    width: 120px;
+    height: 40px;
+    border: 1px solid lightgray;
+}
+div.line-expl {
+    width: 175px;
+}
+div.line-expl a {
+    display: inline-block;
+    vertical-align: middle;
+}
+div.line-expl canvas {
+    display: inline-block;
+    vertical-align: middle;
+}
+div.lstyl-row div.line-expl, div.lstyl-row div.setting {
+    display: inline-block;
+    vertical-align: middle;
+}
+div.setting {
+    width: calc(100% - 175px);
+    text-align: right;
+}
+div.lstyl-row div.setting a {
+    display: inline-block;
+    border-radius: 5px;
+    padding: 3px 6px;
+    margin-bottom: 5px;
+    text-decoration: none;
+    color: black;
+    font-size: 14px;
+}
+div.lstyl-row div.setting a {
+    background-color: rgba(100, 148, 237, 0.479);
+    color: black;
+}
+div.lstyl-row div.setting a[href="#"] {
+    background-color: rgba(0,0,0,0);
+    color: black;
+}
+div.lstyl-row div.setting a[href="#"]:hover {
+    background-color: rgba(255, 181, 44, 0.397);
+}
+
+div#global_edit_suggestion {
+    display: none;
+    position: absolute;
+    width: 150px;
+    height: 75px;
+    /* background-color: white; */
+}
+a.global_sub_suggestion {
+    width: 60px;
+    height: 60px;
+    margin: 7.5px;
+    display: inline-block;
+    border-radius: 37.5px;
+    background-color: white;
+    overflow: hidden;
+}
+a.global_sub_suggestion img {
+    display: block;
+    width: 40px;
+    height: 40px;
+    padding: 10px;
+}
+a.global_sub_suggestion span.bigx {
+    position: absolute;
+    display: block;
+    font-size: 4em;
+    text-align: center;
+    width: 60px;
+    top: 50%;
+    -ms-transform: translateY(-50%);
+    transform: translateY(-50%);
+    color: black;
+    text-decoration: none;
+}
 
 .editable {
     display: none;
@@ -135,6 +371,286 @@ Sentera Inc.
 /* global Image */
 /* global ResizeObserver */
 /* global uuidv4 */
+
+const DEMO_ANNOTATION = {"id":"7c64913a-9d8c-475a-af1a-658944e37c31","new":true,"parent_id":null,"created_by":"TestUser","created_at":"2020-12-21T02:41:47.304Z","deprecated":false,"spatial_type":"contour","spatial_payload":[[4,25],[4,25],[4,24],[4,23],[4,22],[4,22],[5,22],[5,21],[5,20],[6,20],[6,19],[7,19],[7,18],[8,18],[8,18],[10,18],[11,18],[11,17],[12,17],[12,16],[12,16],[13,16],[14,15],[16,14],[16,14],[17,14],[18,14],[18,13],[19,13],[20,13],[20,13],[21,13],[22,13],[23,13],[24,13],[24,13],[25,13],[26,13],[27,13],[28,13],[28,13],[29,13],[30,13],[31,13],[32,13],[34,13],[36,14],[36,14],[37,15],[40,15],[40,16],[41,16],[42,17],[43,17],[44,18],[44,18],[45,18],[46,18],[47,18],[47,18],[48,18],[48,18],[49,19],[50,20],[52,20],[52,20],[53,21],[54,21],[55,21],[56,21],[57,21],[58,22],[59,22],[60,22],[60,22],[61,22],[63,22],[64,22],[64,22],[65,22],[66,22],[67,22],[68,22],[68,21],[69,21],[70,20],[70,19],[71,19],[71,18],[72,18],[72,18],[72,18],[73,18],[75,17],[75,16],[76,16],[76,16],[76,15],[77,14],[78,14],[79,14],[79,13],[79,12],[80,12],[81,12],[82,11],[83,11],[84,10],[85,10],[86,10],[87,10],[88,10],[88,10],[89,10],[90,10],[91,10],[92,10],[92,10],[93,10],[94,10],[94,10],[95,10],[96,10],[96,11],[96,11],[98,11],[98,12],[99,12],[100,13],[100,14],[101,14],[101,15],[102,15],[104,16],[104,17],[104,18],[105,18],[106,18],[106,18],[107,18],[107,19],[107,20],[108,20],[108,21],[108,21],[108,22],[109,22],[109,22],[109,23]],"classification_payloads":[{"class_id":2,"confidence":1}],"annotation_meta":"is_assigned_to_each_annotation"};
+const BBOX_SVG = `
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="100mm"
+   height="100mm"
+   viewBox="0 0 100 100"
+   version="1.1"
+   id="svg7244"
+   inkscape:version="0.92.5 (2060ec1f9f, 2020-04-08)"
+   sodipodi:docname="bbox.svg">
+  <defs
+     id="defs7238">
+    <marker
+       inkscape:stockid="DotL"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="DotL"
+       style="overflow:visible"
+       inkscape:isstock="true">
+      <path
+         inkscape:connector-curvature="0"
+         id="path4587"
+         d="m -2.5,-1 c 0,2.76 -2.24,5 -5,5 -2.76,0 -5,-2.24 -5,-5 0,-2.76 2.24,-5 5,-5 2.76,0 5,2.24 5,5 z"
+         style="fill:#000000;fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:1.00000003pt;stroke-opacity:1"
+         transform="matrix(0.8,0,0,0.8,5.92,0.8)" />
+    </marker>
+    <marker
+       inkscape:stockid="DotL"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="marker7235"
+       style="overflow:visible"
+       inkscape:isstock="true">
+      <path
+         inkscape:connector-curvature="0"
+         id="path7233"
+         d="m -2.5,-1 c 0,2.76 -2.24,5 -5,5 -2.76,0 -5,-2.24 -5,-5 0,-2.76 2.24,-5 5,-5 2.76,0 5,2.24 5,5 z"
+         style="fill:#000000;fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:1.00000003pt;stroke-opacity:1"
+         transform="matrix(0.8,0,0,0.8,5.92,0.8)" />
+    </marker>
+  </defs>
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="1.4"
+     inkscape:cx="319.49724"
+     inkscape:cy="182.97951"
+     inkscape:document-units="mm"
+     inkscape:current-layer="layer1"
+     showgrid="false"
+     inkscape:window-width="1848"
+     inkscape:window-height="1016"
+     inkscape:window-x="1992"
+     inkscape:window-y="111"
+     inkscape:window-maximized="1" />
+  <metadata
+     id="metadata7241">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title />
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(0,-197)">
+    <path
+       style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:1.48994207;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;marker-start:url(#DotL);marker-mid:url(#DotL);paint-order:stroke fill markers"
+       d="m 10,207 v 80 h 80 v -80 z"
+       id="path3715"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="ccccc" />
+  </g>
+</svg>
+`;
+POLYGON_SVG = `
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="100mm"
+   height="100mm"
+   viewBox="0 0 100 100"
+   version="1.1"
+   id="svg7244"
+   inkscape:version="0.92.5 (2060ec1f9f, 2020-04-08)"
+   sodipodi:docname="polygon.svg">
+  <defs
+     id="defs7238">
+    <marker
+       inkscape:stockid="DotL"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="DotL"
+       style="overflow:visible"
+       inkscape:isstock="true">
+      <path
+         inkscape:connector-curvature="0"
+         id="path4587"
+         d="m -2.5,-1 c 0,2.76 -2.24,5 -5,5 -2.76,0 -5,-2.24 -5,-5 0,-2.76 2.24,-5 5,-5 2.76,0 5,2.24 5,5 z"
+         style="fill:#000000;fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:1.00000003pt;stroke-opacity:1"
+         transform="matrix(0.8,0,0,0.8,5.92,0.8)" />
+    </marker>
+    <marker
+       inkscape:stockid="DotL"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="marker7235"
+       style="overflow:visible"
+       inkscape:isstock="true">
+      <path
+         inkscape:connector-curvature="0"
+         id="path7233"
+         d="m -2.5,-1 c 0,2.76 -2.24,5 -5,5 -2.76,0 -5,-2.24 -5,-5 0,-2.76 2.24,-5 5,-5 2.76,0 5,2.24 5,5 z"
+         style="fill:#000000;fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:1.00000003pt;stroke-opacity:1"
+         transform="matrix(0.8,0,0,0.8,5.92,0.8)" />
+    </marker>
+  </defs>
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="1.4"
+     inkscape:cx="446.28295"
+     inkscape:cy="182.97951"
+     inkscape:document-units="mm"
+     inkscape:current-layer="layer1"
+     showgrid="false"
+     inkscape:window-width="1848"
+     inkscape:window-height="1016"
+     inkscape:window-x="1992"
+     inkscape:window-y="111"
+     inkscape:window-maximized="1" />
+  <metadata
+     id="metadata7241">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(0,-197)">
+    <path
+       style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:1.48994207;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;marker-start:url(#DotL);marker-mid:url(#DotL);paint-order:stroke fill markers"
+       d="m 41.284493,204.35565 -33.5734849,28.74943 7.6220859,56.71655 76.946838,-12.1256 -41.921509,-38.137 z"
+       id="path3715"
+       inkscape:connector-curvature="0" />
+  </g>
+</svg>
+`;
+CONTOUR_SVG = `
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="100mm"
+   height="100mm"
+   viewBox="0 0 100 100"
+   version="1.1"
+   id="svg7244"
+   inkscape:version="0.92.5 (2060ec1f9f, 2020-04-08)"
+   sodipodi:docname="contour.svg">
+  <defs
+     id="defs7238">
+    <marker
+       inkscape:stockid="DotL"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="DotL"
+       style="overflow:visible"
+       inkscape:isstock="true">
+      <path
+         inkscape:connector-curvature="0"
+         id="path4587"
+         d="m -2.5,-1 c 0,2.76 -2.24,5 -5,5 -2.76,0 -5,-2.24 -5,-5 0,-2.76 2.24,-5 5,-5 2.76,0 5,2.24 5,5 z"
+         style="fill:#000000;fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:1.00000003pt;stroke-opacity:1"
+         transform="matrix(0.8,0,0,0.8,5.92,0.8)" />
+    </marker>
+    <marker
+       inkscape:stockid="DotL"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="marker7235"
+       style="overflow:visible"
+       inkscape:isstock="true">
+      <path
+         inkscape:connector-curvature="0"
+         id="path7233"
+         d="m -2.5,-1 c 0,2.76 -2.24,5 -5,5 -2.76,0 -5,-2.24 -5,-5 0,-2.76 2.24,-5 5,-5 2.76,0 5,2.24 5,5 z"
+         style="fill:#000000;fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:1.00000003pt;stroke-opacity:1"
+         transform="matrix(0.8,0,0,0.8,5.92,0.8)" />
+    </marker>
+  </defs>
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="1.4"
+     inkscape:cx="194.1401"
+     inkscape:cy="180.12237"
+     inkscape:document-units="mm"
+     inkscape:current-layer="layer1"
+     showgrid="false"
+     inkscape:window-width="1848"
+     inkscape:window-height="1016"
+     inkscape:window-x="1992"
+     inkscape:window-y="111"
+     inkscape:window-maximized="1" />
+  <metadata
+     id="metadata7241">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title />
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(0,-197)">
+    <path
+       style="fill:none;stroke:#000000;stroke-width:5.465;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="m 81.075893,208.17559 c -34.584822,16.06399 -59.342262,13.60715 -61.988096,34.01786 -2.645833,20.41071 1.700893,48.38095 11.150298,49.51488 9.449403,1.13393 31.938986,1.13393 37.986607,-6.4256 6.047618,-7.55952 12.284226,-19.65476 12.095237,-30.80505 -0.188987,-11.1503 -6.425594,-34.01786 -34.206844,-52.34971"
+       id="path865"
+       inkscape:connector-curvature="0" />
+  </g>
+</svg>
+`;
+
 
 class ULabel {
 
@@ -347,54 +863,127 @@ class ULabel {
     static prep_window_html(ul) {
         // Bring image and annotation scaffolding in
         const tool_html = `
-        <div id="${ul.config["annbox_id"]}" class="annbox_cls">
-            <div id="${ul.config["imwrap_id"]}" class="imwrap_cls ${ul.config["imgsz_class"]}">
-                <img id="${ul.config["image_id"]}" src="${ul.config["image_url"]}" class="imwrap_cls ${ul.config["imgsz_class"]}" />
+        <div class="full_ulabel_container_">
+            <div id="${ul.config["annbox_id"]}" class="annbox_cls">
+                <div id="${ul.config["imwrap_id"]}" class="imwrap_cls ${ul.config["imgsz_class"]}">
+                    <img id="${ul.config["image_id"]}" src="${ul.config["image_url"]}" class="imwrap_cls ${ul.config["imgsz_class"]}" />
+                </div>
             </div>
-        </div>
-        <div id="${ul.config["toolbox_id"]}" class="toolbox_cls"><div class="toolbox_inner_cls"></div></div>`;
-        $("#" + ul.container_id).html(tool_html);
+            <div id="${ul.config["toolbox_id"]}" class="toolbox_cls">
+                <div class="toolbox_inner_cls">
+                    <div class="mode-selection">
+                        <p class="current_mode_container">
+                            <span class="cmlbl">Mode:</span>
+                            <span class="current_mode"></span>
+                        </p>
+                    </div>
+                    <div class="toolbox-divider"></div>
+                    <div class="zoom-pan">
+                        <div class="half-tb htbmain set-zoom">
+                            <p class="shortcut-tip">ctrl+scroll or shift+drag</p>
+                            <div class="zpcont">
+                                <div class="lblpyldcont">
+                                    <span class="pzlbl htblbl">Zoom</span>
+                                    <span class="zinout htbpyld">
+                                        <a href="#" class="zbutt zout">-</a>
+                                        <a href="#" class="zbutt zin">+</a>
+                                    </span>
+                                </div>
+                            </div>
+                        </div><!--
+                        --><div class="half-tb htbmain set-pan">
+                            <p class="shortcut-tip">scrollclick+drag or ctrl+drag</p>
+                            <div class="zpcont">
+                                <div class="lblpyldcont">
+                                    <span class="pzlbl htblbl">Pan</span>
+                                    <span class="panudlr htbpyld">
+                                        <a href="#" class="pbutt left"></a>
+                                        <a href="#" class="pbutt right"></a>
+                                        <a href="#" class="pbutt up"></a>
+                                        <a href="#" class="pbutt down"></a>
+                                        <span class="spokes"></span>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="toolbox-divider"></div>
+                    <div class="linestyle">
+                        <p class="tb-header">Line Width</p>
+                        <div class="lstyl-row">
+                            <div class="line-expl">
+                                <a href="#" class="wbutt wout">-</a>
+                                <canvas 
+                                    id="${ul.config["canvas_did"]}" 
+                                    class="demo-canvas" 
+                                    width=${ul.config["demo_width"]} 
+                                    height=${ul.config["demo_height"]}></canvas>
+                                <a href="#" class="wbutt win">+</a>
+                            </div><!--
+                            --><div class="setting">
+                                <a class="fixed-setting">Fixed</a><br>
+                                <a href="#" class="dyn-setting">Dynamic</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+        $("#" + ul.config["container_id"]).html(tool_html);
 
         // Initialize toolbox based on configuration
         const sp_id = ul.config["toolbox_id"];
+        let md_buttons = [];
         for (var ami = 0; ami < ul.config["allowed_modes"].length; ami++) {
+            let href=` href="#"`;
             let sel = "";
             let ap_html = "";
             switch (ul.config["allowed_modes"][ami]) {
                 case "bbox":
                     if (ul.annotation_state["mode"] == "bbox") {
                         sel = " sel";
+                        href = "";
                     }
-                    ap_html = `
-                        <a href="#" id="md-btn--bbox" class="md-btn${sel}">Bounding Box</a>
-                    `;
+                    md_buttons.push(`<div class="mode-opt">
+                        <a${href} id="md-btn--bbox" class="md-btn${sel}" amdname="Bounding Box">
+                            ${BBOX_SVG}
+                        </a>
+                    </div>`);
                     break;
                 case "polygon":
                     if (ul.annotation_state["mode"] == "polygon") {
                         sel = " sel";
+                        href = "";
                     }
-                    ap_html = `
-                        <a href="#" id="md-btn--polygon" class="md-btn${sel}">Polygon</a>
-                    `;
+                    md_buttons.push(`<div class="mode-opt">
+                        <a${href} id="md-btn--polygon" class="md-btn${sel}" amdname="Polygon">
+                            ${POLYGON_SVG}
+                        </a>
+                    </div>`);
                     break;
                 case "contour":
                     if (ul.annotation_state["mode"] == "contour") {
                         sel = " sel";
+                        href = "";
                     }
-                    ap_html = `
-                        <a href="#" id="md-btn--contour" class="md-btn${sel}">Contour</a>
-                    `;
+                    md_buttons.push(`<div class="mode-opt">
+                        <a${href} id="md-btn--contour" class="md-btn${sel}" amdname="Contour">
+                            ${CONTOUR_SVG}
+                        </a>
+                    </div>`);
                     break;
             }
-            $("#" + sp_id + " .toolbox_inner_cls").append(ap_html);
         }
+        $("#" + sp_id + " .toolbox_inner_cls .mode-selection").append(md_buttons.join("<!-- -->"));
         // TODO noconflict
         $("#" + sp_id + " .toolbox_inner_cls").append(`
             <a href="#" id="submit-button">Submit</a>
         `);
+        // Show current mode label
+        ul.show_annotation_mode();
 
         // Make sure that entire toolbox is shown
-        if ($("#" + ul.config["toolbox_id"] + " .toolbox_inner_cls").height() > $("#" + ul.container_id).height()) {
+        if ($("#" + ul.config["toolbox_id"] + " .toolbox_inner_cls").height() > $("#" + ul.config["container_id"]).height()) {
             $("#" + ul.config["toolbox_id"]).css("overflow-y", "scroll");
         }
     }
@@ -463,11 +1052,31 @@ class ULabel {
     
     static build_edit_suggestion(ul) {
         // TODO noconflict
+
+        // Local
         $("#" + ul.config["imwrap_id"]).append(`
             <a href="#" id="edit_suggestion" class="editable"></a>
         `);
         ul.viewer_state["visible_dialogs"].push({
             "id": "edit_suggestion",
+            "left": 0.0,
+            "top": 0.0,
+            "pin": "center"
+        });
+
+        // Global
+        $("#" + ul.config["imwrap_id"]).append(`
+            <div id="global_edit_suggestion" class="glob_editable">
+                <a href="#" class="move_suggestion global_sub_suggestion">
+                    <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAOEAAADhCAMAAAAJbSJIAAAAdVBMVEX///8jHyAAAAD7+/sfGxwcFxhta2s3NDUEAABxcHBqaWnr6+seGRoSCw0yLzC0s7O6ubl4dncLAAN9fHz19fUsKCkWERInIyTW1dV5eHjBwMCko6ODgoJAPj7o5+jw7/BYVleLiopHRUXKysqtrK1PTE0/PD0MlkEbAAAF+ElEQVR4nO2d63aiMBRGIYJTWhyrKPZia2sv7/+IQ7QWYhLITcmXyf41yzWLOXs+GsDmHJLkqsz32X5+3X/yuhSkTEuyGLuMyzElKYVMxy7kUhRHwUaxGLuUyzA9CYaaYtEKhpkiIxii4pQVDO9ELc4FQ0uRSzC0FAUJhpXi7Y1QMJwUC5lgKClO5YJhpNgrGEKKwlU0pBQHEqTcQCv2LDIdReATVXqZOFO8HbtQU5QSRE5RMUHcFJUTRE1RYRVlFOFWVE1BPEVtQbRLv8Yig5miQYIHRZjlxijBgyLIRWMxdLMthzyOXbwKH+aCjeLH2OUrsJ1ZGM62Y5evwKK2MKwRTtNPq7P0c+zyFZisc2PBfD0Zu3wV7kpeUfSzyX+WZ3djF68Gr0jul5zO8v78dM5LEMFGMWUVyVMi+L1F8sR+mKcwgo1i1lUk98lEYDhJmBRhTtEj3RSbBCWGXUWoBCltik2CUsNWESxByinFg6DU8KQIlyDlrmwuB/lRUG7YKDb/EzOcVbTLakHI18Pxz3LD5OGLkMVqvDId0WMYCNEQn2iITzTEJxriEw3xiYb4REN8oiE+0RCfaIhPNMQnGuITDfGJhvhEQ3yiIT7RMABEe6LCojjfpzcD2pmvxC5flllLuSx3Y5d04KMqnh39uEy2L39aXrauDvtcVBZ7wxdkVpO1z5t5XteknpmP9Lk9LA95/uqyJqe85oetZcSwT+PU+VLWvqZ4V5fHEs0aitrOlzzzM8XOLlYTxW7vkp9bI5nN1vqKbHNWvvFP8Wyrta7iefeZf/s/2Y3W2op8e12+8eMKfWK34VoedAZQiPoH841Pe0BXqaBtRb0LVTwwZ+lT01UlbB9TTVE2rGN52aK1kJSolqJk5JFfjzvSGhVSlI5bqd8uXrc6b7LusWFFaYIpebhG6Yo8yMscUOwRvL9O7YpwbWGKijCCpopAgmaKUIImivI+euLn6N+5vGDhUz9YghS9FOWCMz8TpMylvf98inLB5naNqFPZ3p/vHjX+Nb67WJqixSwLlllp9zXhpLYZydCFTdGZYBP4u5XhticWTbqKfaeoLuWLleF36a6UVtFhgmma/bUy/Js5rOU0DMapoFeGPylWTgX9MkxJ1XdjYIZfhvRu5cvxIT0zLN8Sx0f0zTDNkr3D5flwRL8Msy+7kUCiQ/plSIcWBb+W/gfXwyR5DPaepjod1mWK5beVodP70qo9bpjPFlX3wO6eD3O758OVu+fDij2yq2f8wvYZf1U4esbnpvfJU8T8nqbi/3ZY37UJ5y+G9H2pIEEKWIq6CVKgFHsEJQlSgBTNBIEUTQVD+B3wgGCPIsjv8QcF0fdiKAhi7KeRzERXE0TeE6UoKNnXlvq/r01ZEHVvotZJ5v/+Uk5RJ0GK/3uEd+zccF1BhH3eTIr6ggh79Tspmggi9Fv8pqi3yLT43zOz29TmCVIeD31P/go2it+078niC8yL9a59v7vqIJ0v3v146OH7D326RXIB30Nq3FLnKfzN/M3YJbkl/F7uaIhPNMQnGuITDfGJhvhEQ3yiIT7REJ9oiE80xCca4hMN8YmG+ERDfKIhPtEQn2iISfDv5Q7+3eqnAapHRanhT9+Ef/tXB2kHqB4UZYa/jSF+bvDsoTsClzxJDTudL2ApsiNwmxTFhkxrD1SKZ0OMaYqidyM8sR8CpciMof5Jke/YXXLNWTnKisoLNpcD7hPRZyAn6mQt67oaJl8j3OhYDUuho0i8Z1FbGNbSDl6PeLcZijCzmzlxHeTtnQp41agqxWKkj3lbwXW5lfQ/DnJj+K6R6yPqX1QR1Bj9PzZGimavUhkL6WR3OepvNvAD7RSxEqRoKuIJJkmho4i0yLRoXDRwLhMsyiliJkhRTBE1QYpSirgJUhRWVMRVtMvgpR/tQs8zkCL2KXqkVxE/QUrPcqPzIjGfkV40wkiQIkkxlAQpwhTDSZAiGMwUUoIUbkUNK0HKWYqhJUhhFEMUZG7gwjtFj/ymGGaClJ8UQ02QsiBZmpm/KByB+T7bX3ko8T9Zz1H5wFZx8QAAAABJRU5ErkJggg==">
+                </a><!--
+                --><a href="#" class="delete_suggestion global_sub_suggestion">
+                    <span class="bigx">&#215;</span>
+                </a>
+            </div>
+        `);
+        ul.viewer_state["visible_dialogs"].push({
+            "id": "global_edit_suggestion",
             "left": 0.0,
             "top": 0.0,
             "pin": "center"
@@ -519,7 +1128,7 @@ class ULabel {
 
                 // Apply new zoom
                 ul.viewer_state["zoom_val"] *= (1 + dlta/10);
-                ul.rezoom(wheel_event.screenX, wheel_event.screenY);
+                ul.rezoom(wheel_event.clientX, wheel_event.clientY);
             } 
         };
         
@@ -528,13 +1137,66 @@ class ULabel {
             ul.reposition_dialogs();
         }).observe(document.getElementById(ul.config["imwrap_id"]));
 
-
         // Buttons to change annotation mode
         $("a.md-btn").click(function(mouse_event) {
-            var new_mode = mouse_event.target.id.split("--")[1];
+            if ($(this).hasClass("sel")) return;
+            var new_mode = $(this).attr("id").split("--")[1];
             ul.annotation_state["mode"] = new_mode;
+            $("a.md-btn.sel").attr("href", "#");
             $("a.md-btn.sel").removeClass("sel");
-            $("#" + mouse_event.target.id).addClass("sel");
+            $(this).addClass("sel");
+            $(this).removeAttr("href");
+            ul.show_annotation_mode($(this));
+        });
+
+        $("#" + ul.config["toolbox_id"] + " .zbutt").click(function(mouse_event) {
+            if ($(this).hasClass("zin")) {
+                ul.viewer_state["zoom_val"] *= 1.1;
+            }
+            else if ($(this).hasClass("zout")) {
+                ul.viewer_state["zoom_val"] /= 1.1;
+            }
+            ul.rezoom();
+        });
+        $("#" + ul.config["toolbox_id"] + " .pbutt").click(function(mouse_event) {
+            let annbox = $("#" + ul.config["annbox_id"]);
+            if ($(this).hasClass("up")) {
+                annbox.scrollTop(annbox.scrollTop() - 20);
+            }
+            else if ($(this).hasClass("down")) {
+                annbox.scrollTop(annbox.scrollTop() + 20);
+            }
+            else if ($(this).hasClass("left")) {
+                annbox.scrollLeft(annbox.scrollLeft() - 20);
+            }
+            else if ($(this).hasClass("right")) {
+                annbox.scrollLeft(annbox.scrollLeft() + 20);
+            }
+        });
+        $("#" + ul.config["toolbox_id"] + " .wbutt").click(function(mouse_event) {
+            if ($(this).hasClass("win")) {
+                ul.annotation_state["line_size"] *= 1.1;
+            }
+            else if ($(this).hasClass("wout")) {
+                ul.annotation_state["line_size"] /= 1.1;
+            }
+            ul.redraw_demo();
+        });
+        $("#" + ul.config["toolbox_id"] + " .setting a").click(function(mouse_event) {
+            if (!this.hasAttribute("href")) return;
+            if ($(this).hasClass("fixed-setting")){
+                $("#" + ul.config["toolbox_id"] + " .setting a.fixed-setting").removeAttr("href");
+                $("#" + ul.config["toolbox_id"] + " .setting a.dyn-setting").attr("href", "#");
+                ul.annotation_state["line_size"] = ul.annotation_state["line_size"]*ul.viewer_state["zoom_val"];
+                ul.annotation_state["size_mode"] = "fixed";
+            }
+            else if ($(this).hasClass("dyn-setting")) {
+                $("#" + ul.config["toolbox_id"] + " .setting a.dyn-setting").removeAttr("href");
+                $("#" + ul.config["toolbox_id"] + " .setting a.fixed-setting").attr("href", "#");
+                ul.annotation_state["line_size"] = ul.get_line_size();
+                ul.annotation_state["size_mode"] = "dynamic";
+            }
+            ul.redraw_demo();
         });
 
         // Button to save annotations
@@ -553,13 +1215,22 @@ class ULabel {
         document.onkeypress = function(keypress_event) {
             const shift = keypress_event.shiftKey;
             const ctrl = keypress_event.ctrlKey;
-            if ((keypress_event.key == "z" || keypress_event.key == "Z") && ctrl) {
+            if (ctrl &&
+                (
+                    keypress_event.key == "z" || 
+                    keypress_event.key == "Z" ||
+                    keypress_event.code == "KeyZ"
+                )
+            ) {
                 if (shift) {
                     ul.redo();
                 }
                 else {
                     ul.undo();
                 }
+            }
+            else {
+                console.log(keypress_event);
             }
         };
     }
@@ -605,15 +1276,20 @@ class ULabel {
 
     // ================= Construction/Initialization =================
         
-    constructor(container_id, image_url, annotator, taxonomy, class_defs, save_callback, exit_callback, done_callback, allowed_modes, resume_from=null, task_meta=null, annotation_meta=null) {
-        // Store config data
-        this.container_id = container_id; // TODO make sure the element exists, and get its dimensions
-        this.taxonomy = taxonomy; // TODO make sure classes are defined in class defs
-        this.allowed_modes = allowed_modes; // TODO error check -- make sure they exist
-        this.resume_from = resume_from; // TODO validate
-        this.image_url = image_url; // TODO make sure image exists and load it
-        this.image = null;
-
+    constructor(
+        container_id,
+        image_data,
+        annotator,
+        taxonomy,
+        class_defs,
+        save_callback,
+        exit_callback,
+        done_callback,
+        allowed_modes,
+        resume_from=null,
+        task_meta=null,
+        annotation_meta=null
+    ) {
         if (task_meta == null) {
             task_meta = {};
         }
@@ -628,13 +1304,16 @@ class ULabel {
             "imwrap_id": "imwrap", // TODO noconfict
             "canvas_fid": "front-canvas", // TODO noconflict
             "canvas_bid": "back-canvas", // TODO noconflict
+            "canvas_did": "demo-canvas", // TODO noconflict
             "canvas_class": "easel", // TODO noconflict
             "image_id": "ann_image", // TODO noconflict
             "imgsz_class": "imgsz", // TODO noconflict
             "toolbox_id": "toolbox", // TODO noconflict
-            "image_url": image_url,
+            "image_url": image_data,
             "image_width": null,
             "image_height": null,
+            "demo_width": 120,
+            "demo_height": 40,
             "annotator": annotator,
             "class_defs": class_defs,
             "taxonomy": taxonomy,
@@ -703,7 +1382,8 @@ class ULabel {
         // Canvasses' display/drawing states
         this.canvas_state = {
             "front_context": null,
-            "back_context": null
+            "back_context": null,
+            "demo_context": null
         };
         
         // State data for annotation interactions
@@ -713,7 +1393,9 @@ class ULabel {
             "is_in_progress": false,
             "is_in_edit": false,
             "edit_candidate": null,
-            "undone_stack": []
+            "undone_stack": [],
+            "line_size": 10.0,
+            "size_mode": "fixed"
         };
         
         // Create holder for annotations
@@ -767,6 +1449,9 @@ class ULabel {
             that.canvas_state["back_context"] = document.getElementById(
                 that.config["canvas_bid"]
             ).getContext("2d");
+            that.canvas_state["demo_context"] = document.getElementById(
+                that.config["canvas_did"]
+            ).getContext("2d");
     
             // Add the HTML for the ID dialog to the window
             ULabel.build_id_dialog(that);
@@ -781,8 +1466,11 @@ class ULabel {
             that.is_init = true;
     
             // TODO why is this necessary?
-            // that.viewer_state["zoom_val"] = that.get_empirical_scale();
+            that.viewer_state["zoom_val"] = that.get_empirical_scale();
             that.rezoom(0, 0);
+
+            // Draw demo annotation
+            that.redraw_demo();
 
             // Draw resumed from annotations
             if (that.config["resume_from"] != null) {
@@ -792,6 +1480,22 @@ class ULabel {
             // Call the user-provided callback
             callback.bind(that);
         }
+    }
+
+    // ================= Toolbox Functions ==================
+    // Show annotation mode
+    show_annotation_mode(el=null) {
+        if (el == null) {
+            el = $("a.md-btn.sel");
+        }
+        let new_name = el.attr("amdname");
+        $("#" + this.config["toolbox_id"] + " .current_mode").html(new_name);
+    }
+
+    // Draw demo annotation in demo canvas
+    redraw_demo() {
+        this.canvas_state["demo_context"].clearRect(0, 0, this.config["demo_width"], this.config["demo_height"]);
+        this.draw_annotation(DEMO_ANNOTATION, "demo_context", true);
     }
 
     // ================= Instance Utilities =================
@@ -809,11 +1513,8 @@ class ULabel {
     }
 
     // Get the start of a spatial payload based on mouse event and current annotation mode
-    get_init_spatial(mouse_event, annotation_mode) {
-        var mouse_loc = [
-            this.get_global_mouse_x(mouse_event),
-            this.get_global_mouse_y(mouse_event)
-        ];
+    get_init_spatial(gmx, gmy, annotation_mode) {
+        var mouse_loc = [gmx, gmy];
         switch (annotation_mode) {
             case "bbox":
                 return [
@@ -904,19 +1605,24 @@ class ULabel {
 
     // ================= Drawing Functions =================
 
-    draw_bounding_box(annotation_object) {
+    draw_bounding_box(annotation_object, cvs_ctx="front_context", demo=false) {
         // TODO buffered contexts
-        let ctx = this.canvas_state["front_context"];
-    
-        // TODO do we want variable widths?
-        const lnwidth = 10.0;
+        let ctx = this.canvas_state[cvs_ctx];
+
+        let line_size = null;
+        if ("line_size" in annotation_object) {
+            line_size = annotation_object["line_size"];
+        }
+        else {
+            line_size = this.get_line_size(demo);
+        }
     
         // TODO draw annotation according to id payload colors
         // Prep for bbox drawing
         ctx.fillStyle = this.config["default_annotation_color"];
         ctx.strokeStyle = this.config["default_annotation_color"];
         ctx.lineJoin = "round";
-        ctx.lineWidth = lnwidth;
+        ctx.lineWidth = line_size;
         ctx.imageSmoothingEnabled = false;
         ctx.globalCompositeOperation = "source-over";
     
@@ -933,19 +1639,25 @@ class ULabel {
         ctx.stroke();
     }
     
-    draw_polygon(annotation_object) {
+    draw_polygon(annotation_object, cvs_ctx="front_context", demo=false) {
         // TODO buffered contexts
-        let ctx = this.canvas_state["front_context"];
-    
-        // TODO do we want variable widths?
-        const lnwidth = 10.0;
-    
+        let ctx = this.canvas_state[cvs_ctx];
+
+        let line_size = null;
+        if ("line_size" in annotation_object) {
+            line_size = annotation_object["line_size"];
+        }
+        else {
+            line_size = this.get_line_size(demo);
+        }
+
+        
         // TODO draw annotation according to id payload colors
         // Prep for bbox drawing
         ctx.fillStyle = this.config["default_annotation_color"];
         ctx.strokeStyle = this.config["default_annotation_color"];
         ctx.lineJoin = "round";
-        ctx.lineWidth = lnwidth;
+        ctx.lineWidth = line_size;
         ctx.imageSmoothingEnabled = false;
         ctx.globalCompositeOperation = "source-over";
     
@@ -959,19 +1671,25 @@ class ULabel {
         ctx.stroke();
     }
     
-    draw_contour(annotation_object) {
+    draw_contour(annotation_object, cvs_ctx="front_context", demo=false) {
         // TODO buffered contexts
-        let ctx = this.canvas_state["front_context"];
-    
-        // TODO do we want variable widths?
-        const lnwidth = 10.0;
+        let ctx = this.canvas_state[cvs_ctx];
+
+        let line_size = null;
+        if ("line_size" in annotation_object) {
+            line_size = annotation_object["line_size"];
+        }
+        else {
+            line_size = this.get_line_size(demo);
+        }
+
     
         // TODO draw annotation according to id payload colors
         // Prep for bbox drawing
         ctx.fillStyle = this.config["default_annotation_color"];
         ctx.strokeStyle = this.config["default_annotation_color"];
         ctx.lineJoin = "round";
-        ctx.lineWidth = lnwidth;
+        ctx.lineWidth = line_size;
         ctx.imageSmoothingEnabled = false;
         ctx.globalCompositeOperation = "source-over";
     
@@ -985,10 +1703,7 @@ class ULabel {
         ctx.stroke();
     }
     
-    draw_annotation(annotation_id) {
-        // Get actual annotation object
-        var annotation_object = this.annotations["access"][annotation_id];
-    
+    draw_annotation(annotation_object, cvs_ctx="front_context", demo=false) {    
         // DEBUG left here for refactor reference, but I don't think it's needed moving forward
         //    there may be a use case for drawing depreacted annotations 
         // Don't draw if deprecated
@@ -997,24 +1712,28 @@ class ULabel {
         // Dispatch to annotation type's drawing function
         switch (annotation_object["spatial_type"]) {
             case "bbox":
-                this.draw_bounding_box(annotation_object);
+                this.draw_bounding_box(annotation_object, cvs_ctx, demo);
                 break;
             case "polygon":
-                this.draw_polygon(annotation_object);
+                this.draw_polygon(annotation_object, cvs_ctx, demo);
                 break;
             case "contour":
-                this.draw_contour(annotation_object);
+                this.draw_contour(annotation_object, cvs_ctx, demo);
                 break;
             default:
                 this.raise_error("Warning: Annotation " + annotation_object["id"] + " not understood", ULabel.elvl_info);
                 break;
         }
     }
+
+    draw_annotation_from_id(id, cvs_ctx="front_context") {
+        this.draw_annotation(this.annotations["access"][id], cvs_ctx);
+    }
     
     // Draws the first n annotations on record
     draw_n_annotations(n) {
         for (var i = 0; i < n; i++) {
-            this.draw_annotation(this.annotations["ordering"][i]);
+            this.draw_annotation_from_id(this.annotations["ordering"][i]);
         }
     }
     
@@ -1108,6 +1827,26 @@ class ULabel {
         $("#edit_suggestion").css("display", "none");
     }
 
+    show_global_edit_sugestion(annid) {
+        var esjq = $("#global_edit_suggestion");
+        esjq.css("display", "block");
+
+        let cbox = this.annotations["access"][annid]["containing_box"];
+
+        for (var vdgi = 0; vdgi < this.viewer_state["visible_dialogs"].length; vdgi++) {
+            if (this.viewer_state["visible_dialogs"][vdgi]["id"] == "global_edit_suggestion") {
+                this.viewer_state["visible_dialogs"][vdgi]["left"] = (cbox["tlx"] + cbox["brx"])/(2*this.config["image_width"]);
+                this.viewer_state["visible_dialogs"][vdgi]["top"] = (cbox["tly"] + cbox["bry"])/(2*this.config["image_height"]);
+                break;
+            }
+        }
+        this.reposition_dialogs();
+    }
+
+    hide_global_edit_suggestion() {
+        $("#global_edit_suggestion").css("display", "none");
+    }
+
     show_id_dialog(mouse_e, active_ann) {
         // Record which annotation this dialog is associated with
         // TODO
@@ -1165,17 +1904,20 @@ class ULabel {
         }
     }
 
-    get_nearest_active_keypoint(global_x, global_y, max_dist) {
+    get_nearest_active_keypoint(global_x, global_y, max_dist, candidates=null) {
         var ret = {
             "annid": null,
             "access": null,
             "distance": max_dist/this.get_empirical_scale(),
             "point": null
         };
+        if (candidates == null) {
+            candidates = this.annotations["ordering"];
+        }
         // Iterate through and find any close enough defined points
         var edid = null;
-        for (var edi = 0; edi < this.annotations["ordering"].length; edi++) {
-            edid = this.annotations["ordering"][edi];
+        for (var edi = 0; edi < candidates.length; edi++) {
+            edid = candidates[edi];
             let npi = null;
             switch (this.annotations["access"][edid]["spatial_type"]) {
                 case "bbox":
@@ -1215,15 +1957,18 @@ class ULabel {
         return ret;
     }
     
-    get_nearest_segment_point(global_x, global_y, max_dist) {
+    get_nearest_segment_point(global_x, global_y, max_dist, candidates=null) {
         var ret = {
             "annid": null,
             "access": null,
             "distance": max_dist/this.get_empirical_scale(),
             "point": null
         };
-        for (var edi = 0; edi < this.annotations["ordering"].length; edi++) {
-            var edid = this.annotations["ordering"][edi];
+        if (candidates == null) {
+            candidates = this.annotations["ordering"];
+        }
+        for (var edi = 0; edi < candidates.length; edi++) {
+            var edid = candidates[edi];
             switch (this.annotations["access"][edid]["spatial_type"]) {
                 case "bbox":
                     // Can't propose new bounding box points
@@ -1252,11 +1997,32 @@ class ULabel {
         return ret;
     }
     
+    get_line_size(demo=false) {
+        let line_size = this.annotation_state["line_size"];
+        if (demo) {
+            if (this.annotation_state["size_mode"] == "dynamic") {
+                line_size *= this.viewer_state["zoom_val"];
+            }
+            return line_size;
+        }
+        else {
+            if (this.annotation_state["size_mode"] == "fixed") {
+                line_size /= this.viewer_state["zoom_val"];
+            }
+            return line_size;
+        }
+    }
+
     begin_annotation(mouse_event) {
         this.annotation_state["undone_stack"] = [];
 
         // Give the new annotation a unique ID
         const unq_id = this.make_new_annotation_id();
+
+        let line_size = this.get_line_size();
+
+        const gmx = this.get_global_mouse_x(mouse_event);
+        const gmy = this.get_global_mouse_y(mouse_event);
 
         // Add this annotation to annotations object
         this.annotations["access"][unq_id] = {
@@ -1267,8 +2033,15 @@ class ULabel {
             "created_at": ULabel.get_time(),
             "deprecated": false,
             "spatial_type": this.annotation_state["mode"],
-            "spatial_payload": this.get_init_spatial(mouse_event, this.annotation_state["mode"]),
-            "classification_payloads": null
+            "spatial_payload": this.get_init_spatial(gmx, gmy, this.annotation_state["mode"]),
+            "classification_payloads": null,
+            "line_size": line_size,
+            "containing_box": {
+                "tlx": gmx,
+                "tly": gmy,
+                "brx": gmx,
+                "bry": gmy
+            }
         };
         for (const [key, value] of Object.entries(this.config["annotation_meta"])) {
             this.annotations["access"][unq_id][key] = value;
@@ -1281,9 +2054,39 @@ class ULabel {
         }
     
         // Draw annotation, and set state to annotation in progress
-        this.draw_annotation(unq_id);
+        this.draw_annotation_from_id(unq_id);
         this.annotation_state["active_id"] = unq_id;
         this.annotation_state["is_in_progress"] = true;
+    }
+
+    update_containing_box(ms_loc, actid) {
+        // console.log(ms_loc, this.annotations["access"][actid]["containing_box"]);
+        if (ms_loc[0] < this.annotations["access"][actid]["containing_box"]["tlx"]) {
+            this.annotations["access"][actid]["containing_box"]["tlx"] = ms_loc[0];
+        }
+        else if (ms_loc[0] > this.annotations["access"][actid]["containing_box"]["brx"]) {
+            this.annotations["access"][actid]["containing_box"]["brx"] = ms_loc[0];
+        }
+        if (ms_loc[1] < this.annotations["access"][actid]["containing_box"]["tly"]) {
+            this.annotations["access"][actid]["containing_box"]["tly"] = ms_loc[1];
+        }
+        else if (ms_loc[1] > this.annotations["access"][actid]["containing_box"]["bry"]) {
+            this.annotations["access"][actid]["containing_box"]["bry"] = ms_loc[1];
+        }
+        // console.log(ms_loc, this.annotations["access"][actid]["containing_box"]);
+    }
+
+    rebuild_containing_box(actid) {
+        let init_pt = this.annotations["access"][actid]["spatial_payload"][0];
+        this.annotations["access"][actid]["containing_box"] = {
+            "tlx": init_pt[0],
+            "tly": init_pt[1],
+            "brx": init_pt[0],
+            "bry": init_pt[1]
+        }
+        for (var pti = 1; pti < this.annotations["access"][actid]["spatial_payload"].length; pti++) {
+            this.update_containing_box(this.annotations["access"][actid]["spatial_payload"][pti], actid);
+        }
     }
 
     continue_annotation(mouse_event, isclick=false) {
@@ -1299,6 +2102,7 @@ class ULabel {
             switch (this.annotations["access"][actid]["spatial_type"]) {
                 case "bbox":
                     this.annotations["access"][actid]["spatial_payload"][1] = ms_loc;
+                    this.update_containing_box(ms_loc, actid);
                     this.redraw_all_annotations(); // tobuffer
                     break;
                 case "polygon":
@@ -1320,11 +2124,13 @@ class ULabel {
                     //    ender clicks are filtered before they get here
                     if (isclick) {
                         this.annotations["access"][actid]["spatial_payload"].push(ms_loc);
+                        this.update_containing_box(ms_loc, actid);
                     }
                     this.redraw_all_annotations(); // tobuffer
                     break;
                 case "contour":
                     this.annotations["access"][actid]["spatial_payload"].push(ms_loc);
+                    this.update_containing_box(ms_loc, actid);
                     this.redraw_all_annotations(); // TODO tobuffer, no need to redraw here, can just draw over
                     break;
                 default:
@@ -1354,15 +2160,20 @@ class ULabel {
             switch (this.annotations["access"][actid]["spatial_type"]) {
                 case "bbox":
                     this.set_with_access_string(actid, this.annotation_state["edit_candidate"]["access"], ms_loc);
+                    this.rebuild_containing_box(actid);
                     this.redraw_all_annotations(); // tobuffer
                     this.annotation_state["edit_candidate"]["point"] = ms_loc;
                     this.show_edit_suggestion(this.annotation_state["edit_candidate"], true);
+                    this.show_global_edit_sugestion(this.annotation_state["edit_candidate"]["annid"]);
                     break;
                 case "polygon":
                     this.set_with_access_string(actid, this.annotation_state["edit_candidate"]["access"], ms_loc);
+                    console.log("here");
+                    this.rebuild_containing_box(actid);
                     this.redraw_all_annotations(); // tobuffer
                     this.annotation_state["edit_candidate"]["point"] = ms_loc;
                     this.show_edit_suggestion(this.annotation_state["edit_candidate"], true);
+                    this.show_global_edit_sugestion(this.annotation_state["edit_candidate"]["annid"]);
                     // this.suggest_edits(mouse_event);
                     break;
                 case "contour":
@@ -1428,29 +2239,71 @@ class ULabel {
         this.annotation_state["active_id"] = null;
         this.annotation_state["is_in_edit"] = false;
     }
+
+    get_edit_candidates(gblx, gbly, dst_thresh) {
+        let ret = {
+            "candidate_ids": [],
+            "best": null
+        };
+        let minsize = Infinity;
+        for (var edi = 0; edi < this.annotations["ordering"].length; edi++) {
+            let id = this.annotations["ordering"][edi];
+            let cbox = this.annotations["access"][id]["containing_box"];
+            if (
+                (gblx >= cbox["tlx"] - dst_thresh) && 
+                (gblx <= cbox["brx"] + dst_thresh) &&
+                (gbly >= cbox["tly"] - dst_thresh) && 
+                (gbly <= cbox["bry"] + dst_thresh)
+            ) {
+                ret["candidate_ids"].push(id);
+                let boxsize = (cbox["brx"] - cbox["tlx"])*(cbox["bry"] - cbox["tly"]);
+                if (boxsize < minsize) {
+                    minsize = boxsize;
+                    ret["best"] = id;
+                }
+            }
+        }
+        return ret;
+    }
     
     suggest_edits(mouse_event) {
         // TODO better dynamic handling of the size of the suggestion queue
         const dst_thresh = 20;
         const global_x = this.get_global_mouse_x(mouse_event);
         const global_y = this.get_global_mouse_y(mouse_event);
+
+        const edit_candidates = this.get_edit_candidates(
+            global_x,
+            global_y,
+            dst_thresh
+        );
+
+        if (edit_candidates["best"] == null) {
+            this.hide_global_edit_suggestion();
+            return;
+        }
         
         // Look for an existing point that's close enough to suggest editing it
-        const nearest_active_keypoint = this.get_nearest_active_keypoint(global_x, global_y, dst_thresh);
+        const nearest_active_keypoint = this.get_nearest_active_keypoint(global_x, global_y, dst_thresh, edit_candidates["candidate_ids"]);
         if (nearest_active_keypoint != null) {
             this.annotation_state["edit_candidate"] = nearest_active_keypoint;
             this.show_edit_suggestion(nearest_active_keypoint, true);
+            edit_candidates["best"] = nearest_active_keypoint["annid"];
         }
         else { // If none are found, look for a point along a segment that's close enough
-            const nearest_segment_point = this.get_nearest_segment_point(global_x, global_y, dst_thresh);
+            const nearest_segment_point = this.get_nearest_segment_point(global_x, global_y, dst_thresh, edit_candidates["candidate_ids"]);
             if (nearest_segment_point != null) {
                 this.annotation_state["edit_candidate"] = nearest_segment_point;
                 this.show_edit_suggestion(nearest_segment_point, false);
+                edit_candidates["best"] = nearest_segment_point["annid"];
             }
             else {
                 this.hide_edit_suggestion();
             }
         }
+
+        // Show global edit dialogs for "best" candidate
+        this.show_global_edit_sugestion(edit_candidates["best"]);
     }
 
 
@@ -1600,8 +2453,8 @@ class ULabel {
         this.drag_state["active_key"] = drag_key;
         this.drag_state["release_button"] = release_button;
         this.drag_state[drag_key]["mouse_start"] = [
-            mouse_event.screenX,
-            mouse_event.screenY
+            mouse_event.clientX,
+            mouse_event.clientY
         ];
         this.drag_state[drag_key]["zoom_val_start"] = this.viewer_state["zoom_val"];
         this.drag_state[drag_key]["offset_start"] = [
@@ -1667,8 +2520,8 @@ class ULabel {
         var annbox = $("#" + this.config["annbox_id"]);
 
         // Pan based on mouse position
-        const aX = mouse_event.screenX;
-        const aY = mouse_event.screenY;
+        const aX = mouse_event.clientX;
+        const aY = mouse_event.clientY;
         annbox.scrollLeft(
             this.drag_state["pan"]["offset_start"][0] + (this.drag_state["pan"]["mouse_start"][0] - aX)
         );
@@ -1679,7 +2532,7 @@ class ULabel {
     
     // Handle zooming by click-drag
     drag_rezoom(mouse_event) {
-        const aY = mouse_event.screenY;
+        const aY = mouse_event.clientY;
         this.viewer_state["zoom_val"] = (
             this.drag_state["zoom"]["zoom_val_start"]*Math.pow(
                 1.1, (aY - this.drag_state["zoom"]["mouse_start"][1])/10
@@ -1689,10 +2542,19 @@ class ULabel {
     }
     
     // Handle zooming at a certain focus
-    rezoom(foc_x, foc_y) {
-        // Get old size and position
+    rezoom(foc_x=null, foc_y=null) {
+        // JQuery convenience
         var imwrap = $("#" + this.config["imwrap_id"]);
         var annbox = $("#" + this.config["annbox_id"]);
+
+        if (foc_x == null) {
+            foc_x = annbox.width()/2;
+        }
+        if (foc_y == null) {
+            foc_y = annbox.height()/2;
+        }
+
+        // Get old size and position
         const old_width = imwrap.width();
         const old_height = imwrap.height();
         const old_left = annbox.scrollLeft();
@@ -1708,8 +2570,13 @@ class ULabel {
         toresize.css("height", new_height + "px");
 
         // Compute and apply new position
-        annbox.scrollLeft(Math.round((old_left + foc_x)*new_width/old_width - foc_x));
-        annbox.scrollTop(Math.round((old_top + foc_y)*new_height/old_height - foc_y));
+        const new_left = (old_left + foc_x)*new_width/old_width - foc_x;
+        const new_top = (old_top + foc_y)*new_height/old_height - foc_y;
+        annbox.scrollLeft(new_left);
+        annbox.scrollTop(new_top);
+
+        // Redraw demo annotation
+        this.redraw_demo();
     }
 }
 

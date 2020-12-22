@@ -484,6 +484,10 @@ class ULabel {
                 else if ($(mouse_event.target).hasClass("editable")) {
                     return "edit";
                 }
+                else if ($(mouse_event.target).hasClass("movable")) {
+                    mouse_event.preventDefault();
+                    return "move";
+                }
                 else {
                     return null;
                 }
@@ -703,8 +707,8 @@ class ULabel {
         // Global
         $("#" + ul.config["imwrap_id"]).append(`
             <div id="global_edit_suggestion" class="glob_editable">
-                <a href="#" class="move_suggestion global_sub_suggestion">
-                    <img src="data:image/png;base64,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">
+                <a href="#" class="move_suggestion global_sub_suggestion movable">
+                    <img class="movable" src="data:image/png;base64,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">
                 </a><!--
                 --><a href="#" class="delete_suggestion global_sub_suggestion">
                     <span class="bigx">&#215;</span>
@@ -834,6 +838,9 @@ class ULabel {
             }
             ul.redraw_demo();
         });
+        $("#" + ul.config["annbox_id"] + " .delete_suggestion").click(function() {
+            ul.delete_annotation(ul.annotation_state["move_candidate"]);
+        })
 
         // Button to save annotations
         $("a#submit-button").on("click", function() {
@@ -1012,6 +1019,11 @@ class ULabel {
                 "mouse_start": null, // Screen coordinates where the current mouse drag started
                 "offset_start": null, // Scroll values where the current mouse drag started
                 "zoom_val_start": null // zoom_val when the dragging interaction started
+            },
+            "move": {
+                "mouse_start": null, // Screen coordinates where the current mouse drag started
+                "offset_start": null, // Scroll values where the current mouse drag started
+                "zoom_val_start": null // zoom_val when the dragging interaction started
             }
         };
         
@@ -1029,7 +1041,7 @@ class ULabel {
             "is_in_progress": false,
             "is_in_edit": false,
             "edit_candidate": null,
-            "undone_stack": [],
+            "move_candidate": null,
             "line_size": 10.0,
             "size_mode": "fixed"
         };
@@ -1039,6 +1051,14 @@ class ULabel {
             "ordering": [],
             "access": {}
         };
+
+        // Create holder for actions
+        this.actions = {
+            "stream": [],
+            "undone_stack": []
+        }
+        this.action_stream = [];
+
         // If resuming from not null, then set and draw prior annotations        
         if (this.config["resume_from"] != null) {
             for (var i = 0; i < this.config["resume_from"].length; i++) {
@@ -1241,9 +1261,16 @@ class ULabel {
 
     // ================= Drawing Functions =================
 
-    draw_bounding_box(annotation_object, cvs_ctx="front_context", demo=false) {
+    draw_bounding_box(annotation_object, cvs_ctx="front_context", demo=false, offset=null) {
         // TODO buffered contexts
         let ctx = this.canvas_state[cvs_ctx];
+
+        let diffX = 0;
+        let diffY = 0;
+        if (offset != null) {
+            diffX = offset["diffX"];
+            diffY = offset["diffY"];
+        }
 
         let line_size = null;
         if ("line_size" in annotation_object) {
@@ -1266,18 +1293,26 @@ class ULabel {
         const sp = annotation_object["spatial_payload"][0];
         const ep = annotation_object["spatial_payload"][1];
         ctx.beginPath();
-        ctx.moveTo(sp[0], sp[1]);
-        ctx.lineTo(sp[0], ep[1]);
-        ctx.lineTo(ep[0], ep[1]);
-        ctx.lineTo(ep[0], sp[1]);
-        ctx.lineTo(sp[0], sp[1]);
+        ctx.moveTo(sp[0] + diffX, sp[1] + diffY);
+        ctx.lineTo(sp[0] + diffX, ep[1] + diffY);
+        ctx.lineTo(ep[0] + diffX, ep[1] + diffY);
+        ctx.lineTo(ep[0] + diffX, sp[1] + diffY);
+        ctx.lineTo(sp[0] + diffX, sp[1] + diffY);
         ctx.closePath();
         ctx.stroke();
     }
     
-    draw_polygon(annotation_object, cvs_ctx="front_context", demo=false) {
+    draw_polygon(annotation_object, cvs_ctx="front_context", demo=false, offset=null) {
         // TODO buffered contexts
         let ctx = this.canvas_state[cvs_ctx];
+
+        let diffX = 0;
+        let diffY = 0;
+        if (offset != null) {
+            diffX = offset["diffX"];
+            diffY = offset["diffY"];
+        }
+
 
         let line_size = null;
         if ("line_size" in annotation_object) {
@@ -1300,16 +1335,23 @@ class ULabel {
         // Draw the box
         const pts = annotation_object["spatial_payload"];
         ctx.beginPath();
-        ctx.moveTo(pts[0][0], pts[0][1]);
+        ctx.moveTo(pts[0][0] + diffX, pts[0][1] + diffY);
         for (var pti = 1; pti < pts.length; pti++) {
-            ctx.lineTo(pts[pti][0], pts[pti][1]);
+            ctx.lineTo(pts[pti][0] + diffX, pts[pti][1] + diffY);
         }
         ctx.stroke();
     }
     
-    draw_contour(annotation_object, cvs_ctx="front_context", demo=false) {
+    draw_contour(annotation_object, cvs_ctx="front_context", demo=false, offset=null) {
         // TODO buffered contexts
         let ctx = this.canvas_state[cvs_ctx];
+
+        let diffX = 0;
+        let diffY = 0;
+        if (offset != null) {
+            diffX = offset["diffX"];
+            diffY = offset["diffY"];
+        }
 
         let line_size = null;
         if ("line_size" in annotation_object) {
@@ -1332,14 +1374,14 @@ class ULabel {
         // Draw the box
         const pts = annotation_object["spatial_payload"];
         ctx.beginPath();
-        ctx.moveTo(pts[0][0], pts[0][1]);
+        ctx.moveTo(pts[0][0] + diffX, pts[0][1] + diffY);
         for (var pti = 1; pti < pts.length; pti++) {
-            ctx.lineTo(pts[pti][0], pts[pti][1]);
+            ctx.lineTo(pts[pti][0] + diffX, pts[pti][1] + diffY);
         }
         ctx.stroke();
     }
     
-    draw_annotation(annotation_object, cvs_ctx="front_context", demo=false) {    
+    draw_annotation(annotation_object, cvs_ctx="front_context", demo=false, offset=null) {
         // DEBUG left here for refactor reference, but I don't think it's needed moving forward
         //    there may be a use case for drawing depreacted annotations 
         // Don't draw if deprecated
@@ -1348,13 +1390,13 @@ class ULabel {
         // Dispatch to annotation type's drawing function
         switch (annotation_object["spatial_type"]) {
             case "bbox":
-                this.draw_bounding_box(annotation_object, cvs_ctx, demo);
+                this.draw_bounding_box(annotation_object, cvs_ctx, demo, offset);
                 break;
             case "polygon":
-                this.draw_polygon(annotation_object, cvs_ctx, demo);
+                this.draw_polygon(annotation_object, cvs_ctx, demo, offset);
                 break;
             case "contour":
-                this.draw_contour(annotation_object, cvs_ctx, demo);
+                this.draw_contour(annotation_object, cvs_ctx, demo, offset);
                 break;
             default:
                 this.raise_error("Warning: Annotation " + annotation_object["id"] + " not understood", ULabel.elvl_info);
@@ -1362,23 +1404,28 @@ class ULabel {
         }
     }
 
-    draw_annotation_from_id(id, cvs_ctx="front_context") {
-        this.draw_annotation(this.annotations["access"][id], cvs_ctx);
+    draw_annotation_from_id(id, cvs_ctx="front_context", offset=null) {
+        this.draw_annotation(this.annotations["access"][id], cvs_ctx, false, offset);
     }
     
     // Draws the first n annotations on record
-    draw_n_annotations(n) {
+    draw_n_annotations(n, cvs_ctx="front_context", offset=null) {
         for (var i = 0; i < n; i++) {
-            this.draw_annotation_from_id(this.annotations["ordering"][i]);
+            if (offset != null && offset["id"] == this.annotations["ordering"][i]) {
+                this.draw_annotation_from_id(this.annotations["ordering"][i], cvs_ctx, offset);
+            }
+            else {
+                this.draw_annotation_from_id(this.annotations["ordering"][i]);
+            }
         }
     }
     
-    redraw_all_annotations() {
+    redraw_all_annotations(offset=null) {
         // Clear the canvas
         this.canvas_state["front_context"].clearRect(0, 0, this.config["image_width"], this.config["image_height"]);
     
         // Draw them all again
-        this.draw_n_annotations(this.annotations["ordering"].length);
+        this.draw_n_annotations(this.annotations["ordering"].length, "front_context", offset);
     }
 
     // ================= On-Canvas HTML Dialog Utilities =================
@@ -1439,6 +1486,18 @@ class ULabel {
         });
         this.reposition_dialogs();
     }
+    destroy_polygon_ender(polygon_id) {
+        // Create ender id
+        const ender_id = "ender_" + polygon_id;
+        $("#" + ender_id).remove();
+        for (var vsi = 0; vsi < this.viewer_state["visible_dialogs"].length; vsi++) {
+            if (this.viewer_state["visible_dialogs"][vsi]["id"] == ender_id) {
+                this.viewer_state["visible_dialogs"].splice(vsi, 1);
+                break;
+            }
+        }
+        this.reposition_dialogs();
+    };
     
     show_edit_suggestion(nearest_point, currently_exists) {
         var esjq = $("#edit_suggestion");
@@ -1463,16 +1522,23 @@ class ULabel {
         $("#edit_suggestion").css("display", "none");
     }
 
-    show_global_edit_sugestion(annid) {
+    show_global_edit_suggestion(annid, offset=null) {
         var esjq = $("#global_edit_suggestion");
         esjq.css("display", "block");
+
+        let diffX = 0;
+        let diffY = 0;
+        if (offset != null) {
+            diffX = offset["diffX"];
+            diffY = offset["diffY"];
+        }
 
         let cbox = this.annotations["access"][annid]["containing_box"];
 
         for (var vdgi = 0; vdgi < this.viewer_state["visible_dialogs"].length; vdgi++) {
             if (this.viewer_state["visible_dialogs"][vdgi]["id"] == "global_edit_suggestion") {
-                this.viewer_state["visible_dialogs"][vdgi]["left"] = (cbox["tlx"] + cbox["brx"])/(2*this.config["image_width"]);
-                this.viewer_state["visible_dialogs"][vdgi]["top"] = (cbox["tly"] + cbox["bry"])/(2*this.config["image_height"]);
+                this.viewer_state["visible_dialogs"][vdgi]["left"] = (cbox["tlx"] + cbox["brx"] + 2*diffX)/(2*this.config["image_width"]);
+                this.viewer_state["visible_dialogs"][vdgi]["top"] = (cbox["tly"] + cbox["bry"] + 2*diffY)/(2*this.config["image_height"]);
                 break;
             }
         }
@@ -1522,22 +1588,29 @@ class ULabel {
     // ================= Annotation Utilities =================
     
     undo() {
+        if (this.actions["stream"].length > 0) {
+            this.actions["undone_stack"].push(this.actions["stream"].pop());
+            this.undo_action(this.actions["undone_stack"][this.actions["undone_stack"].length - 1]);
+        }
+    }
+
+    redo() {
+        if (this.actions["undone_stack"].length > 0) {
+            this.actions["stream"].push(this.actions["undone_stack"].pop());
+            this.redo_action(this.actions["stream"][this.actions["stream"].length - 1]);
+        }
+    }
+
+    delete_annotation(aid) {
         if (this.annotation_state["active_id"] != null) {
             this.annotation_state["active_id"] = null;
             this.annotation_state["is_in_edit"] = false;
             this.annotation_state["is_in_progress"] = false;
         }
-        if (this.annotations["ordering"].length > 0) {
-            this.annotation_state["undone_stack"].push(this.annotations["ordering"].pop());
-            this.redraw_all_annotations();
-        }
-    }
-
-    redo() {
-        if (this.annotation_state["undone_stack"].length > 0) {
-            this.annotations["ordering"].push(this.annotation_state["undone_stack"].pop());
-            this.redraw_all_annotations();
-        }
+        this.annotations["access"][aid]["deprecated"] = true;
+        this.redraw_all_annotations();
+        this.hide_global_edit_suggestion();
+        // TODO add this action to the undo stack
     }
 
     get_nearest_active_keypoint(global_x, global_y, max_dist, candidates=null) {
@@ -1649,13 +1722,55 @@ class ULabel {
         }
     }
 
-    begin_annotation(mouse_event) {
-        this.annotation_state["undone_stack"] = [];
+    // Action Stream Events
 
+    record_action(action) {
+        // After a new action, you can no longer redo old actions
+        this.actions["undone_stack"] = [];
+
+        // Add to strea
+        this.actions["stream"].push(action);
+
+    }
+
+    undo_action(action) {
+        switch(action.act_type) {
+            case "begin_annotation":
+                this.begin_annotation__undo(action.undo_payload);
+                break;
+            default:
+                console.log("Undo error :(");
+                break;
+        }
+    }
+
+    redo_action(action) {
+        switch(action.act_type) {
+            case "begin_annotation":
+                this.begin_annotation(null, action.redo_payload);
+                break;
+            default:
+                console.log("Redo error :(");
+                break;
+        }
+    }
+
+    begin_annotation(mouse_event, redo_payload=null) {
         // Give the new annotation a unique ID
-        const unq_id = this.make_new_annotation_id();
-
-        let line_size = this.get_line_size();
+        let unq_id = null;
+        let line_size = null;
+        let annotation_mode = null;
+        if (redo_payload == null) {
+            unq_id = this.make_new_annotation_id();
+            line_size = this.get_line_size();
+            annotation_mode = this.annotation_state["mode"];
+        }
+        else {
+            unq_id = redo_payload.unq_id;
+            line_size = redo_payload.line_size;
+            mouse_event = redo_payload.mouse_event;
+            annotation_mode = redo_payload.annotation_mode;
+        }
 
         const gmx = this.get_global_mouse_x(mouse_event);
         const gmy = this.get_global_mouse_y(mouse_event);
@@ -1668,8 +1783,8 @@ class ULabel {
             "created_by": this.config["annotator"],
             "created_at": ULabel.get_time(),
             "deprecated": false,
-            "spatial_type": this.annotation_state["mode"],
-            "spatial_payload": this.get_init_spatial(gmx, gmy, this.annotation_state["mode"]),
+            "spatial_type": annotation_mode,
+            "spatial_payload": this.get_init_spatial(gmx, gmy, annotation_mode),
             "classification_payloads": null,
             "line_size": line_size,
             "containing_box": {
@@ -1693,6 +1808,50 @@ class ULabel {
         this.draw_annotation_from_id(unq_id);
         this.annotation_state["active_id"] = unq_id;
         this.annotation_state["is_in_progress"] = true;
+
+        // Record for potential undo/redo
+        this.record_action({
+            act_type: "begin_annotation",
+            redo_payload: {
+                mouse_event: mouse_event,
+                unq_id: unq_id,
+                line_size: line_size,
+                annotation_mode: annotation_mode
+            },
+            undo_payload: {
+                ann_str: JSON.stringify(this.annotations["access"][unq_id])
+            }
+        });
+    }
+    begin_annotation__undo(undo_payload) {
+        // Parse necessary data
+        let ann = JSON.parse(undo_payload.ann_str);
+        let unq_id = ann["id"];
+
+        // Set annotation state not in progress, nullify active id
+        this.annotation_state["is_in_progress"] = false;
+        this.annotation_state["active_id"] = null;
+
+        // Destroy ender
+        this.destroy_polygon_ender(unq_id);
+
+        // Remove from ordering
+        let end_ann = this.annotations["ordering"].pop();
+        if (end_ann != unq_id) {
+            console.log("We may have a problem... undo replication");
+            console.log(end_ann, unq_id);
+        }
+
+        // Remove from access
+        if (this.annotations["access"].hasOwnProperty(unq_id)) {
+            delete this.annotations["access"][unq_id];
+        }
+        else {
+            console.log("We may have a problem... undo replication");
+        }
+
+        // Delete from view
+        this.redraw_all_annotations();
     }
 
     update_containing_box(ms_loc, actid) {
@@ -1746,7 +1905,10 @@ class ULabel {
                     const n_kpts = this.annotations["access"][actid]["spatial_payload"].length;
 
                     // If hovering over the ender, snap to its center
-                    const ender_pt = this.annotations["access"][actid]["spatial_payload"][0];
+                    const ender_pt = [
+                        this.annotations["access"][actid]["spatial_payload"][0][0],
+                        this.annotations["access"][actid]["spatial_payload"][0][1]
+                    ];
                     const ender_dist = Math.pow(Math.pow(ms_loc[0] - ender_pt[0], 2) + Math.pow(ms_loc[1] - ender_pt[1], 2), 0.5);
                     const ender_thresh = $("#ender_" + actid).width()/(2*this.get_empirical_scale());
                     if (ender_dist < ender_thresh) {
@@ -1800,16 +1962,15 @@ class ULabel {
                     this.redraw_all_annotations(); // tobuffer
                     this.annotation_state["edit_candidate"]["point"] = ms_loc;
                     this.show_edit_suggestion(this.annotation_state["edit_candidate"], true);
-                    this.show_global_edit_sugestion(this.annotation_state["edit_candidate"]["annid"]);
+                    this.show_global_edit_suggestion(this.annotation_state["edit_candidate"]["annid"]);
                     break;
                 case "polygon":
                     this.set_with_access_string(actid, this.annotation_state["edit_candidate"]["access"], ms_loc);
-                    console.log("here");
                     this.rebuild_containing_box(actid);
                     this.redraw_all_annotations(); // tobuffer
                     this.annotation_state["edit_candidate"]["point"] = ms_loc;
                     this.show_edit_suggestion(this.annotation_state["edit_candidate"], true);
-                    this.show_global_edit_sugestion(this.annotation_state["edit_candidate"]["annid"]);
+                    this.show_global_edit_suggestion(this.annotation_state["edit_candidate"]["annid"]);
                     // this.suggest_edits(mouse_event);
                     break;
                 case "contour":
@@ -1822,6 +1983,36 @@ class ULabel {
             }
         }
     }
+
+    begin_move(mouse_event) {
+        this.annotation_state["active_id"] = this.annotation_state["move_candidate"];
+
+        // Revise start to current button center
+        // TODO
+        /*
+        this.drag_state["move"]["mouse_start"][0] = mouse_event.target.pageX 
+        this.drag_state["move"]["mouse_start"][1] +=
+        */
+
+        this.move_annotation(mouse_event);
+    }
+
+    move_annotation(mouse_event, isclick=false) {
+        // Convenience
+        const actid = this.annotation_state["active_id"];
+        // TODO big performance gains with buffered canvasses
+        if (actid && (actid !== null)) {
+            let offset = {
+                "id": this.annotation_state["edit_candidate"]["annid"],
+                "diffX": (mouse_event.clientX - this.drag_state["move"]["mouse_start"][0])/this.viewer_state["zoom_val"],
+                "diffY": (mouse_event.clientY - this.drag_state["move"]["mouse_start"][1])/this.viewer_state["zoom_val"]
+            };
+            this.redraw_all_annotations(offset); // tobuffer
+            this.show_global_edit_suggestion(this.annotation_state["edit_candidate"]["annid"], offset); // TODO handle offset
+            this.reposition_dialogs();
+            return;
+        }
+    }
     
     finish_annotation(mouse_event) {
         // Convenience
@@ -1830,7 +2021,10 @@ class ULabel {
         switch (this.annotations["access"][actid]["spatial_type"]) {
             case "polygon":
                 const n_kpts = this.annotations["access"][actid]["spatial_payload"].length;
-                const start_pt = this.annotations["access"][actid]["spatial_payload"][0];
+                const start_pt = [
+                    this.annotations["access"][actid]["spatial_payload"][0][0],
+                    this.annotations["access"][actid]["spatial_payload"][0][1]
+                ];
                 this.annotations["access"][actid]["spatial_payload"][n_kpts-1] = start_pt;
                 this.redraw_all_annotations(); // tobuffer
                 $("#ender_" + actid).remove(); // TODO remove from visible dialogs
@@ -1876,6 +2070,33 @@ class ULabel {
         this.annotation_state["is_in_edit"] = false;
     }
 
+    finish_move(mouse_event) {
+        // Actually edit spatial payload this time
+        const diffX = (mouse_event.clientX - this.drag_state["move"]["mouse_start"][0])/this.viewer_state["zoom_val"];
+        const diffY = (mouse_event.clientY - this.drag_state["move"]["mouse_start"][1])/this.viewer_state["zoom_val"];
+
+        for (var spi = 0; spi < this.annotations["access"][this.annotation_state["active_id"]]["spatial_payload"].length; spi++) {
+            this.annotations["access"][this.annotation_state["active_id"]]["spatial_payload"][spi][0] += diffX;
+            this.annotations["access"][this.annotation_state["active_id"]]["spatial_payload"][spi][1] += diffY;
+        }
+        this.annotations["access"][this.annotation_state["active_id"]]["containing_box"]["tlx"] += diffX;
+        this.annotations["access"][this.annotation_state["active_id"]]["containing_box"]["brx"] += diffX;
+        this.annotations["access"][this.annotation_state["active_id"]]["containing_box"]["tly"] += diffY;
+        this.annotations["access"][this.annotation_state["active_id"]]["containing_box"]["bry"] += diffY;
+
+        switch (this.annotations["access"][this.annotation_state["active_id"]]["spatial_type"]) {
+            case "polygon":
+            case "bbox":
+            case "contour":
+                 // tobuffer this is where the annotation moves to back canvas
+            default:
+                break;
+        }
+        this.annotation_state["active_id"] = null;
+
+        this.redraw_all_annotations();
+    }
+
     get_edit_candidates(gblx, gbly, dst_thresh) {
         let ret = {
             "candidate_ids": [],
@@ -1884,6 +2105,7 @@ class ULabel {
         let minsize = Infinity;
         for (var edi = 0; edi < this.annotations["ordering"].length; edi++) {
             let id = this.annotations["ordering"][edi];
+            if (this.annotations["access"][id]["deprecated"]) continue;
             let cbox = this.annotations["access"][id]["containing_box"];
             if (
                 (gblx >= cbox["tlx"] - dst_thresh) && 
@@ -1916,6 +2138,7 @@ class ULabel {
 
         if (edit_candidates["best"] == null) {
             this.hide_global_edit_suggestion();
+            this.annotation_state["move_candidate"] = null;
             return;
         }
         
@@ -1939,7 +2162,8 @@ class ULabel {
         }
 
         // Show global edit dialogs for "best" candidate
-        this.show_global_edit_sugestion(edit_candidates["best"]);
+        this.annotation_state["move_candidate"] = edit_candidates["best"];
+        this.show_global_edit_suggestion(edit_candidates["best"]);
     }
 
 
@@ -2070,6 +2294,9 @@ class ULabel {
                 case "edit":
                     this.edit_annotation(mouse_event);
                     break;
+                case "move":
+                    this.move_annotation(mouse_event);
+                    break;
             }
         }
     }
@@ -2108,6 +2335,9 @@ class ULabel {
             case "edit":
                 this.begin_edit(mouse_event);
                 break;
+            case "move":
+                this.begin_move(mouse_event);
+                break;
             default:
                 // No handling necessary for pan and zoom until mousemove
                 break;
@@ -2140,6 +2370,9 @@ class ULabel {
             case "edit":
                 // TODO should be finish edit, right?
                 this.finish_edit(mouse_event);
+                break;
+            case "move":
+                this.finish_move(mouse_event);
                 break;
             default:
                 // No handling necessary for pan and zoom until mousemove
