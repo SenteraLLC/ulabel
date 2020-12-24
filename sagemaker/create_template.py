@@ -82,7 +82,7 @@ console.log(JOB_CONFIG);
     <input id="whole-field" name="whole-field" type="text" />
 </crowd-form>"""
 
-    destination = Path(__file__).parent / "ulabel-{}.liquid.html".format(version)
+    destination = Path(__file__).parent / "dist" / "ulabel-{}.liquid.html".format(version)
     with open(str(destination), "w") as f:
         print(liquid_str, file=f)
 

@@ -1,10 +1,14 @@
 /* global JOB_CONFIG */
 
+const { raw } = require("body-parser");
+
 function not_templated(key) {
-    return (key.substring(0,2) == "{" + "{");
+    return (key.substring(0,2) == "{"+"{");
 }
 
 function process_configuration(raw_cfg) {
+    console.log("RAW CONFIGURATION");
+    console.log(JSON.stringify(raw_cfg, null, 2));
     let cfg = {
         "strings": {},
         "stringified_objs": {}
@@ -27,6 +31,8 @@ function process_configuration(raw_cfg) {
             cfg["stringified_objs"][key] = JSON.parse(val[0]);
         }
     }
+    console.log("Job Configuration");
+    console.log(JSON.stringify(cfg, null, 2));
     return cfg;
 }
 
