@@ -325,6 +325,15 @@ class ULabel {
         return (new Date()).toISOString();
     }
     
+    static l2_norm(pt1, pt2) {
+        let ndim = pt1.length;
+        let sq = 0;
+        for (var i = 0; i < ndim; i++) {
+            sq += (pt1[i] - pt2[i])*(pt1[i] - pt2[i]);
+        }
+        return Math.sqrt(sq);
+    }
+
     // Get the point at a certain proportion of the segment between two points in a polygon
     static interpolate_poly_segment(pts, i, prop) {
         const pt1 = pts[i%(pts.length - 1)];
@@ -842,7 +851,7 @@ class ULabel {
             ul.redraw_demo();
         });
         $("#" + ul.config["annbox_id"] + " .delete_suggestion").click(function() {
-            ul.delete_annotation(ul.annotation_state["move_candidate"]);
+            ul.delete_annotation(ul.annotation_state["move_candidate"]["annid"]);
         })
 
         // Button to save annotations
@@ -1174,18 +1183,17 @@ class ULabel {
 
     // Get the start of a spatial payload based on mouse event and current annotation mode
     get_init_spatial(gmx, gmy, annotation_mode) {
-        var mouse_loc = [gmx, gmy];
         switch (annotation_mode) {
             case "bbox":
                 return [
-                    mouse_loc,
-                    mouse_loc
+                    [gmx, gmy],
+                    [gmx, gmy]
                 ];
             case "polygon":
             case "contour":
                 return [
-                    mouse_loc,
-                    mouse_loc
+                    [gmx, gmy],
+                    [gmx, gmy]
                 ];
             default:
                 // TODO broader refactor of error handling and detecting/preventing corruption
@@ -2044,9 +2052,11 @@ class ULabel {
                     this.redraw_all_annotations(); // tobuffer
                     break;
                 case "contour":
-                    this.annotations["access"][actid]["spatial_payload"].push(ms_loc);
-                    this.update_containing_box(ms_loc, actid);
-                    this.redraw_all_annotations(); // TODO tobuffer, no need to redraw here, can just draw over
+                    if (ULabel.l2_norm(ms_loc, this.annotations["access"][actid]["spatial_payload"][this.annotations["access"][actid]["spatial_payload"].length-1]) > 3) {
+                        this.annotations["access"][actid]["spatial_payload"].push(ms_loc);
+                        this.update_containing_box(ms_loc, actid);
+                        this.redraw_all_annotations(); // TODO tobuffer, no need to redraw here, can just draw over
+                    }
                     break;
                 default:
                     this.raise_error("Annotation mode is not understood", ULabel.elvl_info);
@@ -2184,7 +2194,7 @@ class ULabel {
     }
 
     begin_move(mouse_event) {
-        this.annotation_state["active_id"] = this.annotation_state["move_candidate"];
+        this.annotation_state["active_id"] = this.annotation_state["move_candidate"]["annid"];
 
         // Revise start to current button center
         // TODO
@@ -2202,12 +2212,12 @@ class ULabel {
         // TODO big performance gains with buffered canvasses
         if (actid && (actid !== null)) {
             let offset = {
-                "id": this.annotation_state["edit_candidate"]["annid"],
+                "id": this.annotation_state["move_candidate"]["annid"],
                 "diffX": (mouse_event.clientX - this.drag_state["move"]["mouse_start"][0])/this.viewer_state["zoom_val"],
                 "diffY": (mouse_event.clientY - this.drag_state["move"]["mouse_start"][1])/this.viewer_state["zoom_val"]
             };
             this.redraw_all_annotations(offset); // tobuffer
-            this.show_global_edit_suggestion(this.annotation_state["edit_candidate"]["annid"], offset); // TODO handle offset
+            this.show_global_edit_suggestion(this.annotation_state["move_candidate"]["annid"], offset); // TODO handle offset
             this.reposition_dialogs();
             return;
         }
@@ -2246,6 +2256,7 @@ class ULabel {
                     }
                 }, redoing);
                 $("#ender_" + actid).remove(); // TODO remove from visible dialogs
+                break;
             case "bbox":
             case "contour":
                 this.record_finish(actid);
@@ -2354,7 +2365,9 @@ class ULabel {
                 let boxsize = (cbox["brx"] - cbox["tlx"])*(cbox["bry"] - cbox["tly"]);
                 if (boxsize < minsize) {
                     minsize = boxsize;
-                    ret["best"] = id;
+                    ret["best"] = {
+                        "annid": id
+                    };
                 }
             }
         }
@@ -2387,14 +2400,14 @@ class ULabel {
         if (nearest_active_keypoint != null) {
             this.annotation_state["edit_candidate"] = nearest_active_keypoint;
             this.show_edit_suggestion(nearest_active_keypoint, true);
-            edit_candidates["best"] = nearest_active_keypoint["annid"];
+            edit_candidates["best"] = nearest_active_keypoint;
         }
         else { // If none are found, look for a point along a segment that's close enough
             const nearest_segment_point = this.get_nearest_segment_point(global_x, global_y, dst_thresh, edit_candidates["candidate_ids"]);
             if (nearest_segment_point != null) {
                 this.annotation_state["edit_candidate"] = nearest_segment_point;
                 this.show_edit_suggestion(nearest_segment_point, false);
-                edit_candidates["best"] = nearest_segment_point["annid"];
+                edit_candidates["best"] = nearest_segment_point;
             }
             else {
                 this.hide_edit_suggestion();
@@ -2403,7 +2416,7 @@ class ULabel {
 
         // Show global edit dialogs for "best" candidate
         this.annotation_state["move_candidate"] = edit_candidates["best"];
-        this.show_global_edit_suggestion(edit_candidates["best"]);
+        this.show_global_edit_suggestion(edit_candidates["best"]["annid"]);
     }
 
 
