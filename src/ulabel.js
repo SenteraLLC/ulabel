@@ -1248,8 +1248,8 @@ class ULabel {
                     var acint = parseInt(access_str, 10);
                     var npts = this.annotations["access"][annid]["spatial_payload"].length;
                     if ((acint == 0) || (acint == (npts - 1))) {
-                        this.annotations["access"][annid]["spatial_payload"][0] = val;
-                        this.annotations["access"][annid]["spatial_payload"][npts - 1] = val;
+                        this.annotations["access"][annid]["spatial_payload"][0] = [val[0], val[1]];
+                        this.annotations["access"][annid]["spatial_payload"][npts - 1] = [val[0], val[1]];
                     }
                     else {
                         this.annotations["access"][annid]["spatial_payload"][acint] = val;
@@ -1603,7 +1603,7 @@ class ULabel {
     
     undo() {
         if (this.actions["stream"].length > 0) {
-            if (this.actions["stream"][this.actions["stream"].length-1].redo_payload.finished == false) {
+            if (this.actions["stream"][this.actions["stream"].length-1].redo_payload.finished === false) {
                 this.finish_action(this.actions["stream"][this.actions["stream"].length-1]);
             }
             this.actions["undone_stack"].push(this.actions["stream"].pop());
@@ -1620,17 +1620,41 @@ class ULabel {
         }
     }
 
-    delete_annotation(aid) {
+    delete_annotation(aid, redo_payload=null) {
+        let annid = aid;
+        let redoing = false;
+        if (redo_payload != null) {
+            redoing = true;
+            annid = redo_payload.annid;
+        }
         if (this.annotation_state["active_id"] != null) {
             this.annotation_state["active_id"] = null;
             this.annotation_state["is_in_edit"] = false;
             this.annotation_state["is_in_progress"] = false;
         }
-        this.annotations["access"][aid]["deprecated"] = true;
+        this.annotations["access"][annid]["deprecated"] = true;
         this.redraw_all_annotations();
         this.hide_global_edit_suggestion();
         // TODO add this action to the undo stack
+        this.record_action({
+            act_type: "delete_annotation",
+            undo_payload: {
+                annid: annid
+            },
+            redo_payload: {
+                annid: annid
+            }
+        }, redoing);
     }
+    delete_annotation__undo(undo_payload) {
+        this.annotations["access"][undo_payload.annid]["deprecated"] = false;
+        this.redraw_all_annotations();
+        this.suggest_edits(this.viewer_state["last_move"]);
+    }
+    delete_annotation__redo(redo_payload) {
+        this.delete_annotation(null, redo_payload);
+    }
+
 
     get_nearest_active_keypoint(global_x, global_y, max_dist, candidates=null) {
         var ret = {
@@ -1770,6 +1794,15 @@ class ULabel {
         this.actions["stream"][i].redo_payload.finished = true;
     }
 
+    record_finish_move(diffX, diffY) {
+        let i = this.actions["stream"].length - 1;
+        this.actions["stream"][i].redo_payload.diffX = diffX;
+        this.actions["stream"][i].redo_payload.diffY = diffY;
+        this.actions["stream"][i].undo_payload.diffX = -diffX;
+        this.actions["stream"][i].undo_payload.diffY = -diffY;
+        this.actions["stream"][i].redo_payload.finished = true;
+    }
+
     undo_action(action) {
         switch(action.act_type) {
             case "begin_annotation":
@@ -1783,6 +1816,12 @@ class ULabel {
                 break;
             case "edit_annotation":
                 this.edit_annotation__undo(action.undo_payload);
+                break;
+            case "move_annotation":
+                this.move_annotation__undo(action.undo_payload);
+                break;
+            case "delete_annotation":
+                this.delete_annotation__undo(action.undo_payload);
                 break;
             default:
                 console.log("Undo error :(");
@@ -1804,6 +1843,12 @@ class ULabel {
             case "edit_annotation":
                 this.edit_annotation__redo(action.redo_payload);
                 break;
+            case "move_annotation":
+                this.move_annotation__redo(action.redo_payload);
+                break;
+            case "delete_annotation":
+                this.delete_annotation__redo(action.redo_payload);
+                break;
             default:
                 console.log("Redo error :(");
                 break;
@@ -1814,6 +1859,7 @@ class ULabel {
         switch(action.act_type) {
             case "begin_annotation":
             case "edit_annotation":
+            case "move_annotation":
                 this.end_drag(this.viewer_state["last_move"]);
                 break;
             default:
@@ -2204,7 +2250,23 @@ class ULabel {
         this.drag_state["move"]["mouse_start"][0] = mouse_event.target.pageX 
         this.drag_state["move"]["mouse_start"][1] +=
         */
-
+        let mc = JSON.parse(JSON.stringify(this.annotation_state["move_candidate"]));
+        this.record_action({
+            act_type: "move_annotation",
+            undo_payload: {
+                actid: this.annotation_state["active_id"],
+                move_candidate: mc,
+                diffX: 0,
+                diffY: 0,
+            },
+            redo_payload: {
+                actid: this.annotation_state["active_id"],
+                move_candidate: mc,
+                diffX: 0,
+                diffY: 0,
+                finished: false
+            }
+        });
         this.move_annotation(mouse_event);
     }
 
@@ -2345,6 +2407,67 @@ class ULabel {
         this.annotation_state["active_id"] = null;
 
         this.redraw_all_annotations();
+
+        this.record_finish_move(diffX, diffY);
+    }
+    move_annotation__undo(undo_payload) {
+        const diffX = undo_payload.diffX;
+        const diffY = undo_payload.diffY;
+
+        let actid = undo_payload.move_candidate["annid"];
+
+        for (var spi = 0; spi < this.annotations["access"][actid]["spatial_payload"].length; spi++) {
+            this.annotations["access"][actid]["spatial_payload"][spi][0] += diffX;
+            this.annotations["access"][actid]["spatial_payload"][spi][1] += diffY;
+        }
+        this.annotations["access"][actid]["containing_box"]["tlx"] += diffX;
+        this.annotations["access"][actid]["containing_box"]["brx"] += diffX;
+        this.annotations["access"][actid]["containing_box"]["tly"] += diffY;
+        this.annotations["access"][actid]["containing_box"]["bry"] += diffY;
+
+        this.redraw_all_annotations();
+        this.hide_edit_suggestion();
+        this.hide_global_edit_suggestion();
+        this.reposition_dialogs();
+        this.suggest_edits(this.viewer_state["last_move"]);
+    }
+    move_annotation__redo(redo_payload) {
+        const diffX = redo_payload.diffX;
+        const diffY = redo_payload.diffY;
+
+        let actid = redo_payload.move_candidate["annid"];
+
+        for (var spi = 0; spi < this.annotations["access"][actid]["spatial_payload"].length; spi++) {
+            this.annotations["access"][actid]["spatial_payload"][spi][0] += diffX;
+            this.annotations["access"][actid]["spatial_payload"][spi][1] += diffY;
+        }
+        this.annotations["access"][actid]["containing_box"]["tlx"] += diffX;
+        this.annotations["access"][actid]["containing_box"]["brx"] += diffX;
+        this.annotations["access"][actid]["containing_box"]["tly"] += diffY;
+        this.annotations["access"][actid]["containing_box"]["bry"] += diffY;
+
+        this.redraw_all_annotations();
+        this.hide_edit_suggestion();
+        this.hide_global_edit_suggestion();
+        this.reposition_dialogs();
+        this.suggest_edits(this.viewer_state["last_move"]);
+
+        this.record_action({
+            act_type: "move_annotation",
+            undo_payload: {
+                actid: this.annotation_state["active_id"],
+                move_candidate: redo_payload.move_candidate,
+                diffX: -diffX,
+                diffY: -diffY,
+            },
+            redo_payload: {
+                actid: this.annotation_state["active_id"],
+                move_candidate: redo_payload.move_candidate,
+                diffX: diffX,
+                diffY: diffY,
+                finished: true
+            }
+        }, true);
     }
 
     get_edit_candidates(gblx, gbly, dst_thresh) {
