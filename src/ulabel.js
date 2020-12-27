@@ -1341,6 +1341,7 @@ class ULabel {
         ctx.strokeStyle = this.config["default_annotation_color"];
         ctx.lineJoin = "round";
         ctx.lineWidth = line_size;
+        ctx.lineCap = "round";
         ctx.imageSmoothingEnabled = false;
         ctx.globalCompositeOperation = "source-over";
     
@@ -1380,6 +1381,7 @@ class ULabel {
         ctx.strokeStyle = this.config["default_annotation_color"];
         ctx.lineJoin = "round";
         ctx.lineWidth = line_size;
+        ctx.lineCap = "round";
         ctx.imageSmoothingEnabled = false;
         ctx.globalCompositeOperation = "source-over";
     
