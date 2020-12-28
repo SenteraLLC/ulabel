@@ -1055,7 +1055,7 @@ class ULabel {
             "is_in_edit": false,
             "edit_candidate": null,
             "move_candidate": null,
-            "line_size": 10.0,
+            "line_size": 4.0,
             "size_mode": "fixed"
         };
         

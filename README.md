@@ -51,6 +51,7 @@ node ulabel_local/server.js
 For each of the following filtering options, a dialog is needed and JS is needed to handle them
 - Select a collection
 
+Thumbnails that are accessible via the database
 
 Ability to apply filters based on URL data
 
