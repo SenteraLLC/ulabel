@@ -2137,9 +2137,7 @@ class ULabel {
     }
     continue_annotation__undo(undo_payload) {
         this.annotations["access"][undo_payload.actid]["spatial_payload"].pop();
-        console.log(this.annotations["access"][undo_payload.actid]["containing_box"]);
         this.rebuild_containing_box(undo_payload.actid, true);
-        console.log(this.annotations["access"][undo_payload.actid]["containing_box"]);
         this.continue_annotation(this.viewer_state["last_move"]);
     }
     
