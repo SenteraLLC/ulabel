@@ -1205,7 +1205,8 @@ class ULabel {
     // ================= Access string utilities =================
 
     // Access a point in a spatial payload using access string
-    get_with_access_string(annid, access_str) {
+    // Optional arg at the end is for finding position of a moved splice point through its original access string
+    get_with_access_string(annid, access_str, as_though_pre_splice=false) {
         switch (this.annotations["access"][annid]["spatial_type"]) {
             case "bbox":
                 const bbi = parseInt(access_str[0], 10);
@@ -1213,8 +1214,12 @@ class ULabel {
                 let bbox_pts = this.annotations["access"][annid]["spatial_payload"];
                 return [bbox_pts[bbi][0], bbox_pts[bbj][1]];
             case "polygon":
-                const bas = parseInt(access_str, 10);
-                const dif = parseFloat(access_str) - bas;
+                let bas = parseInt(access_str, 10);
+                let dif = parseFloat(access_str) - bas;
+                if (as_though_pre_splice) {
+                    dif = 0;
+                    bas += 1;
+                }
                 if (dif < 0.005) {
                     return this.annotations["access"][annid]["spatial_payload"][bas];
                 }
@@ -1233,7 +1238,7 @@ class ULabel {
     }
     
     // Set a point in a spatial payload using access string
-    set_with_access_string(annid, access_str, val) {
+    set_with_access_string(annid, access_str, val, undoing=null) {
         switch (this.annotations["access"][annid]["spatial_type"]) {
             case "bbox":
                 var bbi = parseInt(access_str[0], 10);
@@ -1256,11 +1261,19 @@ class ULabel {
                     }
                 }
                 else {
-                    var newpt = ULabel.interpolate_poly_segment(
-                        this.annotations["access"][annid]["spatial_payload"], 
-                        bas, dif
-                    );
-                    this.annotations["access"][annid]["spatial_payload"].splice(bas+1, 0, newpt);
+                    if (undoing === true) {
+                        this.annotations["access"][annid]["spatial_payload"].splice(bas+1, 1);
+                    }
+                    else if (undoing === false) {
+                        this.annotations["access"][annid]["spatial_payload"].splice(bas+1, 0, [val[0], val[1]]);
+                    }
+                    else {
+                        var newpt = ULabel.interpolate_poly_segment(
+                            this.annotations["access"][annid]["spatial_payload"], 
+                            bas, dif
+                        );
+                        this.annotations["access"][annid]["spatial_payload"].splice(bas+1, 0, newpt);
+                    }
                 }
                 break;
             default:
@@ -1787,7 +1800,8 @@ class ULabel {
         let i = this.actions["stream"].length - 1;
         let fin_pt = this.get_with_access_string(
             actid, 
-            this.actions["stream"][i].redo_payload.edit_candidate["access"]
+            this.actions["stream"][i].redo_payload.edit_candidate["access"],
+            true
         );
         this.actions["stream"][i].redo_payload.ending_x = fin_pt[0];
         this.actions["stream"][i].redo_payload.ending_y = fin_pt[1];
@@ -1922,7 +1936,7 @@ class ULabel {
         this.annotations["ordering"].push(unq_id);
     
         // If a polygon was just started, we need to add a clickable to end the shape
-        if (this.annotation_state["mode"] == "polygon") {
+        if (annotation_mode == "polygon") {
             this.create_polygon_ender(gmx, gmy, unq_id);
         }
     
@@ -1942,14 +1956,14 @@ class ULabel {
                 gmx: gmx,
                 gmy: gmy,
                 init_spatial: init_spatial,
-                finished: redoing || this.annotation_state["mode"] == "polygon"
+                finished: redoing || annotation_mode == "polygon"
             },
             undo_payload: {
                 ann_str: JSON.stringify(this.annotations["access"][unq_id])
             },
         }, redoing);
         if (redoing) {
-            if (this.annotation_state["mode"] == "polygon") {
+            if (annotation_mode == "polygon") {
                 this.continue_annotation(this.viewer_state["last_move"]);
             }
             else {
@@ -2121,18 +2135,19 @@ class ULabel {
     begin_edit(mouse_event) {
         this.annotation_state["active_id"] = this.annotation_state["edit_candidate"]["annid"];
         this.annotation_state["is_in_edit"] = true;
+        let ec = JSON.parse(JSON.stringify(this.annotation_state["edit_candidate"]));
+        let stpt = this.get_with_access_string(this.annotation_state["edit_candidate"]["annid"], ec["access"]);
         this.edit_annotation(mouse_event);
         this.suggest_edits(mouse_event);
         let gmx = this.get_global_mouse_x(mouse_event);
         let gmy = this.get_global_mouse_y(mouse_event);
-        let ec = JSON.parse(JSON.stringify(this.annotation_state["edit_candidate"]));
         this.record_action({
             act_type: "edit_annotation",
             undo_payload: {
                 actid: this.annotation_state["active_id"],
                 edit_candidate: ec,
-                starting_x: gmx,
-                starting_y: gmy
+                starting_x: stpt[0],
+                starting_y: stpt[1]
             },
             redo_payload: {
                 actid: this.annotation_state["active_id"],
@@ -2190,13 +2205,13 @@ class ULabel {
         ];
         switch (this.annotations["access"][actid]["spatial_type"]) {
             case "bbox":
-                this.set_with_access_string(actid, undo_payload.edit_candidate["access"], ms_loc);
+                this.set_with_access_string(actid, undo_payload.edit_candidate["access"], ms_loc, true);
                 this.rebuild_containing_box(actid);
                 this.redraw_all_annotations(); // tobuffer
                 this.suggest_edits(this.viewer_state["last_move"]);
                 break;
             case "polygon":
-                this.set_with_access_string(actid, undo_payload.edit_candidate["access"], ms_loc);
+                this.set_with_access_string(actid, undo_payload.edit_candidate["access"], ms_loc, true);
                 this.rebuild_containing_box(actid);
                 this.redraw_all_annotations(); // tobuffer
                 this.suggest_edits(this.viewer_state["last_move"]);
@@ -2217,7 +2232,7 @@ class ULabel {
                 this.suggest_edits(this.viewer_state["last_move"]);
                 break;
             case "polygon":
-                this.set_with_access_string(actid, redo_payload.edit_candidate["access"], ms_loc);
+                this.set_with_access_string(actid, redo_payload.edit_candidate["access"], ms_loc, false);
                 this.rebuild_containing_box(actid);
                 this.redraw_all_annotations(); // tobuffer
                 this.suggest_edits(this.viewer_state["last_move"]);
@@ -2238,7 +2253,7 @@ class ULabel {
                 ending_y: redo_payload.ending_y,
                 finished: true
             }
-        });
+        }, true);
     }
 
     begin_move(mouse_event) {
