@@ -1216,18 +1216,21 @@ class ULabel {
             case "polygon":
                 let bas = parseInt(access_str, 10);
                 let dif = parseFloat(access_str) - bas;
-                if (as_though_pre_splice) {
-                    dif = 0;
-                    bas += 1;
-                }
                 if (dif < 0.005) {
                     return this.annotations["access"][annid]["spatial_payload"][bas];
                 }
                 else {
-                    return ULabel.interpolate_poly_segment(
-                        this.annotations["access"][annid]["spatial_payload"], 
-                        bas, dif
-                    );
+                    if (as_though_pre_splice) {
+                        dif = 0;
+                        bas += 1;
+                        return this.annotations["access"][annid]["spatial_payload"][bas];
+                    }
+                    else {
+                        return ULabel.interpolate_poly_segment(
+                            this.annotations["access"][annid]["spatial_payload"], 
+                            bas, dif
+                        );
+                    }
                 }
             default:
                 this.raise_error(
@@ -1625,12 +1628,14 @@ class ULabel {
                 this.actions["undone_stack"][this.actions["undone_stack"].length - 1] = newact
             }
         }
+        // console.log("AFTER UNDO", this.actions["stream"], this.actions["undone_stack"]);
     }
 
     redo() {
         if (this.actions["undone_stack"].length > 0) {
             this.redo_action(this.actions["undone_stack"].pop());
         }
+        // console.log("AFTER REDO", this.actions["stream"], this.actions["undone_stack"]);
     }
 
     delete_annotation(aid, redo_payload=null) {
@@ -2024,7 +2029,7 @@ class ULabel {
         // console.log(ms_loc, this.annotations["access"][actid]["containing_box"]);
     }
 
-    rebuild_containing_box(actid) {
+    rebuild_containing_box(actid, ignore_final=false) {
         let init_pt = this.annotations["access"][actid]["spatial_payload"][0];
         this.annotations["access"][actid]["containing_box"] = {
             "tlx": init_pt[0],
@@ -2032,7 +2037,11 @@ class ULabel {
             "brx": init_pt[0],
             "bry": init_pt[1]
         }
-        for (var pti = 1; pti < this.annotations["access"][actid]["spatial_payload"].length; pti++) {
+        let npts = this.annotations["access"][actid]["spatial_payload"].length;
+        if (ignore_final) {
+            npts -= 1;
+        }
+        for (var pti = 1; pti < npts; pti++) {
             this.update_containing_box(this.annotations["access"][actid]["spatial_payload"][pti], actid);
         }
     }
@@ -2128,7 +2137,9 @@ class ULabel {
     }
     continue_annotation__undo(undo_payload) {
         this.annotations["access"][undo_payload.actid]["spatial_payload"].pop();
-        this.rebuild_containing_box(undo_payload.actid);
+        console.log(this.annotations["access"][undo_payload.actid]["containing_box"]);
+        this.rebuild_containing_box(undo_payload.actid, true);
+        console.log(this.annotations["access"][undo_payload.actid]["containing_box"]);
         this.continue_annotation(this.viewer_state["last_move"]);
     }
     
@@ -2237,18 +2248,17 @@ class ULabel {
                 this.redraw_all_annotations(); // tobuffer
                 this.suggest_edits(this.viewer_state["last_move"]);
         }
-        let ec = JSON.parse(JSON.stringify(this.annotation_state["edit_candidate"]));
         this.record_action({
             act_type: "edit_annotation",
             undo_payload: {
                 actid: redo_payload.actid,
-                edit_candidate: redo_payload.edit_candidate,
+                edit_candidate: JSON.parse(JSON.stringify(redo_payload.edit_candidate)),
                 starting_x: cur_loc[0],
                 starting_y: cur_loc[1]
             },
             redo_payload: {
                 actid: redo_payload.actid,
-                edit_candidate: redo_payload.edit_candidate,
+                edit_candidate: JSON.parse(JSON.stringify(redo_payload.edit_candidate)),
                 ending_x: redo_payload.ending_x,
                 ending_y: redo_payload.ending_y,
                 finished: true
@@ -2363,6 +2373,8 @@ class ULabel {
         this.annotation_state["is_in_progress"] = false;
     }
     finish_annotation__undo(undo_payload) {
+        // This is only ever invoked for polygons
+        // Note that undoing a finish should not change containing box
         this.annotation_state["is_in_progress"] = true;
         this.annotation_state["active_id"] = undo_payload.actid;
 
