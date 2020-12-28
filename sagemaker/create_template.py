@@ -14,14 +14,6 @@ if __name__ == "__main__":
         with (Path(__file__).parent.parent / ".version").open("w") as f:
             f.write(version)
 
-    # Get ULabel Source for insertion
-    ulabel_js_str = ""
-    with open(str(Path(__file__).parent.parent.resolve() / "src/ulabel.js")) as f:
-        ulabel_js_str = f.read()
-    ulabel_css_str = ""
-    with open(str(Path(__file__).parent.parent.resolve() / "src/ulabel.css")) as f:
-        ulabel_css_str = f.read()
-
     # Get source of helper files to aid in ULabel setup atop SageMaker's environment
     use_ulabel_js_str = ""
     with open(str(Path(__file__).parent.resolve() / "use_ulabel.js")) as f:
@@ -31,7 +23,11 @@ if __name__ == "__main__":
         use_ulabel_css_str = f.read()
 
 
-    liquid_str = """<script src="https://assets.crowd.aws/crowd-html-elements.js"></script>
+    liquid_str = """
+<link rel="stylesheet" href="https://ulabel-versions.s3.amazonaws.com/ulabel-"""+version+""".css">
+
+
+<script src="https://assets.crowd.aws/crowd-html-elements.js"></script>
     
 <script
   src="https://code.jquery.com/jquery-3.5.1.min.js"
@@ -40,17 +36,15 @@ if __name__ == "__main__":
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/uuid/8.1.0/uuidv4.min.js"></script>
 
+<script src="https://ulabel-versions.s3.amazonaws.com/ulabel-"""+version+""".js"></script>
+
 
 <style type="text/css">
 /* ================================== ULABEL.css ================================== */
 """ + use_ulabel_css_str + """
-/* ================================== ULABEL.css ================================== */
-""" + ulabel_css_str + """
 </style>
 
 <script>
-/* ================================== ULABEL.js ================================== */
-""" + ulabel_js_str + """
 /* ================================== from CREATE_TEMPLATE.py ================================== */
 // The first item is with templating, the second is a backup if tempate isn't run
 // If no second item is provided, the first must not fail
@@ -86,10 +80,21 @@ console.log(JOB_CONFIG);
     with open(str(destination), "w") as f:
         print(liquid_str, file=f)
 
+    ulabel_js = Path(__file__).parent.parent / "src"/ "ulabel.js"
+    ulabel_css = Path(__file__).parent.parent / "src"/ "ulabel.css"
+
     print()
     print("Template successfully created at {}".format(str(destination)))
     print()
     print("Use the following commands to upload the new template to s3")
+    print()
+    print("aws s3 cp {} s3://ulabel-versions/ulabel-{}.js".format(
+        str(ulabel_js), version
+    ))
+    print("aws s3 cp {} s3://ulabel-versions/ulabel-{}.css".format(
+        str(ulabel_css), version
+    ))
+    print("Then be sure to make the files public!")
     print()
     print("aws s3 cp {} s3://sentera-labeling-jobs/ulabel-templates/{}".format(
         str(destination), destination.name
