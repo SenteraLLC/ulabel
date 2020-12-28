@@ -308,6 +308,13 @@ a.global_sub_suggestion span.bigx {
     color: black;
     text-decoration: none;
 }
+div.classification {
+    padding: 10px 30px;
+}
+div.classification p.tb-header {
+    margin: 0;
+    margin-bottom: 5px;
+}
 
 .editable {
     display: none;

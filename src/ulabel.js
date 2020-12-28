@@ -578,6 +578,11 @@ class ULabel {
                             </div>
                         </div>
                     </div>
+                    <div class="toolbox-divider"></div>
+                    <div class="classification">
+                        <p class="tb-header">Annotation ID</p>
+                        <div class="id-toolbox-app"></div>
+                    </div>
                 </div>
             </div>
         </div>`;
@@ -1070,7 +1075,6 @@ class ULabel {
             "stream": [],
             "undone_stack": []
         }
-        this.action_stream = [];
 
         // If resuming from not null, then set and draw prior annotations        
         if (this.config["resume_from"] != null) {
