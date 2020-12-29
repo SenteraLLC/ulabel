@@ -522,6 +522,16 @@ class ULabel {
                 </div>
             </div>
             <div id="${ul.config["toolbox_id"]}" class="toolbox_cls">
+                <div class="toolbox-name-header">
+                    <h1 class="toolname"><a href="https://github.com/SenteraLLC/ULabel">ULABEL</a></h1><!--
+                    --><div class="night-button-cont">
+                        <a href="#" class="night-button">
+                            <div class="night-button-track">
+                                <div class="night-status"></div>
+                            </div>
+                        </a>
+                    </div>
+                </div>
                 <div class="toolbox_inner_cls">
                     <div class="mode-selection">
                         <p class="current_mode_container">
@@ -645,7 +655,7 @@ class ULabel {
         }
     }
     
-    static build_id_dialog(ul) {
+    static build_id_dialogs(ul) {
         const id = ul.id_dialog_config["id"];
         const wdt = ul.id_dialog_config["outer_diameter"];
         // TODO noconflict
@@ -653,29 +663,32 @@ class ULabel {
         <div id="${id}" class="id_dialog" style="width: ${wdt}px; height: ${wdt}px;">
             <svg width="${wdt}" height="${wdt}">
         `;
+        var toolbox_html = `<div class="toolbox-id-app-payload">`;
         const center_coord = wdt/2;
-        var colors = [];
+        var class_ids = [];
+        console.log(ul.config["taxonomy"]);
         if (ul.config["taxonomy"] != null) {
             for (var txi = 0; txi < ul.config["taxonomy"].length; txi++) {
-                colors.push(ul.config["taxonomy"][txi]["color"]);
+                class_ids.push(ul.config["taxonomy"][txi]["id"]);
             }
         }
 
         // TODO real names here!
-        const names = ul.id_dialog_config["names"];
         const inner_rad = 0.25*wdt;
         const outer_rad = 0.5*wdt;
         const totdist = 2*Math.PI*inner_rad;
 
-        const ths_pct = totdist/colors.length;
+        const ths_pct = totdist/class_ids.length;
         const gap_pct = totdist - ths_pct;
-        const srt_wdt = 2*(outer_rad - inner_rad)/colors.length;
+        const srt_wdt = 2*(outer_rad - inner_rad)/class_ids.length;
         const ful_wdt = 2*(outer_rad - inner_rad);
         const cl_opacity = 0.4;
-        for (var i = 0; i < colors.length; i++) {
+        let tbid = ul.config["toolbox_id"];
+        for (var i = 0; i < class_ids.length; i++) {
             let cum_pct = i*ths_pct;
-            let ths_col = colors[i];
-            let ths_nam = names[i];
+            let ths_id = class_ids[i];
+            let ths_col = ul.config["class_defs"][ths_id.toString()]["color"];
+            let ths_nam = ul.config["class_defs"][ths_id.toString()]["name"];
             dialog_html += `
             <circle
                 r="${inner_rad}" cx="${center_coord}" cy="${center_coord}" 
@@ -685,7 +698,7 @@ class ULabel {
                 stroke-dasharray="${ths_pct} ${gap_pct}" 
                 stroke-dashoffset="${cum_pct}" />
             <circle
-                id="circ_${ths_nam}"
+                id="circ_${ths_id}"
                 r="${inner_rad}" cx="${center_coord}" cy="${center_coord}"
                 stroke="${ths_col}" 
                 stroke-opacity="1"
@@ -693,12 +706,28 @@ class ULabel {
                 stroke-dasharray="${ths_pct} ${gap_pct}" 
                 stroke-dashoffset="${cum_pct}" />
             `;
+
+            if (ul.config["soft-id"]) {
+                let msg = "Only hard id is currently supported";
+                throw new Error(msg);
+            }
+            else {
+                toolbox_html += `
+                    <a href="#" id="${tbid}_sel_${ths_id}" class="tbid-opt">
+                        <div class="colprev ${tbid}_colprev_${ths_id}" style="background-color: ${ths_col}"></div> <span class="tb-cls-nam">${ths_nam}</span>
+                    </a>
+                `;
+            }
         }
         dialog_html += `
                 <circle fill="black" class="centcirc" r="${inner_rad}" cx="${center_coord}" cy="${center_coord}" />
             </svg>
         </div>`;
+        toolbox_html += `
+        </div>
+        `;
         $("#" + ul.config["imwrap_id"]).append(dialog_html);
+        $("#" + ul.config["toolbox_id"] + " div.id-toolbox-app").html(toolbox_html);
         ul.viewer_state["visible_dialogs"].push({
             "id": "id_dialog",
             "left": 0.0,
@@ -871,6 +900,15 @@ class ULabel {
             ul.config["done_callback"](submit_payload);
         });
 
+        $("#" + ul.config["toolbox_id"] + " a.night-button").click(function() {
+            if ($("#" + ul.config["container_id"]).hasClass("ulabel-night")) {
+                $("#" + ul.config["container_id"]).removeClass("ulabel-night");
+            }
+            else {
+                $("#" + ul.config["container_id"]).addClass("ulabel-night");
+            }
+        })
+
         // Keyboard only events
         document.onkeypress = function(keypress_event) {
             const shift = keypress_event.shiftKey;
@@ -926,11 +964,12 @@ class ULabel {
                 (ul.config["taxonomy"][0]["type"] == "class")
             );
         }
-        if (!ret["single_class_mode"]) {
-            let msg = "Currently only single class mode is supported";
-            console.log(msg);
-            throw new Error(msg);
-        }
+        // TODO commenting this error out during development
+        // if (!ret["single_class_mode"]) {
+        //     let msg = "Currently only single class mode is supported";
+        //     console.log(msg);
+        //     throw new Error(msg);
+        // }
         return ret;
     }
 
@@ -977,6 +1016,7 @@ class ULabel {
             "annotator": annotator,
             "class_defs": class_defs,
             "taxonomy": taxonomy,
+            "soft-id": false, // TODO allow soft eventually
             "save_callback": save_callback,
             "exit_callback": exit_callback,
             "done_callback": done_callback,
@@ -1127,7 +1167,7 @@ class ULabel {
             ).getContext("2d");
     
             // Add the HTML for the ID dialog to the window
-            ULabel.build_id_dialog(that);
+            ULabel.build_id_dialogs(that);
             
             // Add the HTML for the edit suggestion to the window
             ULabel.build_edit_suggestion(that);
