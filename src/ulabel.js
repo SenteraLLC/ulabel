@@ -301,7 +301,7 @@ class ULabel {
 
     // ================= Static Utilities =================
     
-    static get_dialog_colors(taxonomy) {
+    static get_dialog_colors(taxonomy) { // DEPRECATED
         if (taxonomy == null) return [];
         var colors = [];
         for (var txi = 0; txi < taxonomy.length; txi++) {
@@ -310,7 +310,7 @@ class ULabel {
         return colors;
     }
     
-    static get_dialog_names(taxonomy) {
+    static get_dialog_names(taxonomy) { // DEPRECATED
         if (taxonomy == null) return [];
         // TODO real names here, not colors!
         var colors = [];
@@ -661,6 +661,7 @@ class ULabel {
         // TODO noconflict
         var dialog_html = `
         <div id="${id}" class="id_dialog" style="width: ${wdt}px; height: ${wdt}px;">
+            <a class="id-dialog-clickable-indicator" href="#"></a>
             <svg width="${wdt}" height="${wdt}">
         `;
         var toolbox_html = `<div class="toolbox-id-app-payload">`;
@@ -675,7 +676,10 @@ class ULabel {
 
         // TODO real names here!
         const inner_rad = 0.25*wdt;
+        const inner_diam = inner_rad*2;
         const outer_rad = 0.5*wdt;
+        const inner_top = outer_rad - inner_rad;
+        const inner_lft = outer_rad - inner_rad;
         const totdist = 2*Math.PI*inner_rad;
 
         const ths_pct = totdist/class_ids.length;
@@ -685,6 +689,12 @@ class ULabel {
         const cl_opacity = 0.4;
         let tbid = ul.config["toolbox_id"];
         for (var i = 0; i < class_ids.length; i++) {
+            let sel = "";
+            let href = ' href="#"';
+            if (i == 0) {
+                sel = " sel";
+                href = "";
+            }
             let cum_pct = i*ths_pct;
             let ths_id = class_ids[i];
             let ths_col = ul.config["class_defs"][ths_id.toString()]["color"];
@@ -713,15 +723,17 @@ class ULabel {
             }
             else {
                 toolbox_html += `
-                    <a href="#" id="${tbid}_sel_${ths_id}" class="tbid-opt">
+                    <a${href} id="${tbid}_sel_${ths_id}" class="tbid-opt${sel}">
                         <div class="colprev ${tbid}_colprev_${ths_id}" style="background-color: ${ths_col}"></div> <span class="tb-cls-nam">${ths_nam}</span>
                     </a>
                 `;
             }
         }
         dialog_html += `
-                <circle fill="black" class="centcirc" r="${inner_rad}" cx="${center_coord}" cy="${center_coord}" />
             </svg>
+            <div class="centcirc" 
+                 style="position: absolute; top: ${inner_top}px; left: ${inner_lft}px; width: ${inner_diam}px; height: ${inner_diam}px; background-color: black; border-radius: ${inner_rad}px;">
+            </div>
         </div>`;
         toolbox_html += `
         </div>
@@ -884,6 +896,29 @@ class ULabel {
             }
             ul.redraw_demo();
         });
+
+        // Listener for soft id toolbox buttons
+        $("#" + ul.config["toolbox_id"] + ' a.tbid-opt').click(function() {
+            if ($(this).attr("href") == "#") {
+                $("a.tbid-opt.sel").attr("href", "#");
+                $("a.tbid-opt.sel").removeClass("sel");
+                $(this).addClass("sel");
+                $(this).removeAttr("href");
+                let idarr = $(this).attr("id").split("_");
+                let rawid = parseInt(idarr[idarr.length - 1]);
+                ul.set_id_dialog_payload_nopin(ul.config["class_ids"].indexOf(rawid), 1.0);
+                ul.update_id_dialog_display();
+                if (ul.id_dialog_state["associated_annotation"] != null) {
+                    ul.assign_annotation_id();
+                }
+            }
+        });
+
+        // Listener for id_dialog click interactions
+        $("#" + ul.config["annbox_id"] + " a.id-dialog-clickable-indicator").click(function(e) {
+            ul.handle_id_dialog_click(e);
+        });
+
         $("#" + ul.config["annbox_id"] + " .delete_suggestion").click(function() {
             ul.delete_annotation(ul.annotation_state["move_candidate"]["annid"]);
         })
@@ -996,6 +1031,13 @@ class ULabel {
             annotation_meta = {};
         }
 
+        var class_ids = [];
+        if (taxonomy != null) {
+            for (var txi = 0; txi < taxonomy.length; txi++) {
+                class_ids.push(taxonomy[txi]["id"]);
+            }
+        }
+
         // Store tool configuration
         this.config = {
             "container_id": container_id,
@@ -1016,6 +1058,7 @@ class ULabel {
             "annotator": annotator,
             "class_defs": class_defs,
             "taxonomy": taxonomy,
+            "class_ids": class_ids,
             "soft-id": false, // TODO allow soft eventually
             "save_callback": save_callback,
             "exit_callback": exit_callback,
@@ -1042,9 +1085,14 @@ class ULabel {
         
         // Store state of ID dialog element
         // TODO much more here when full interaction is built
+        let id_payload = [];
+        for (var i = 0; i < class_ids.length; i++) {
+            id_payload.push(1/class_ids.length);
+        }
         this.id_dialog_state = {
+            "visible": false,
             "associated_annotation": null,
-            "edit_suggestion_point": null
+            "id_payload": id_payload
         };
 
         // Create object for current ulabel state
@@ -1331,6 +1379,26 @@ class ULabel {
         }
     }
 
+    get_annotation_color(clf_payload) {
+        if (clf_payload != null) {
+            if (this.config["soft-id"]) {
+                // not currently supported;
+                return this.config["default_annotation_color"];
+            }
+            else {
+                for (var i = 0; i < clf_payload.length; i++) {
+                    if (clf_payload[i] > 0.5) {
+                        return this.config["class_defs"]["" + this.config["class_ids"][i]]["color"];
+                    }
+                }
+                return this.config["default_annotation_color"];
+            }
+        }
+        else {
+            return this.config["default_annotation_color"];
+        }
+    }
+
     // ================= Drawing Functions =================
 
     draw_bounding_box(annotation_object, cvs_ctx="front_context", demo=false, offset=null) {
@@ -1352,10 +1420,10 @@ class ULabel {
             line_size = this.get_line_size(demo);
         }
     
-        // TODO draw annotation according to id payload colors
         // Prep for bbox drawing
-        ctx.fillStyle = this.config["default_annotation_color"];
-        ctx.strokeStyle = this.config["default_annotation_color"];
+        let color = this.get_annotation_color(annotation_object["classification_payloads"]);
+        ctx.fillStyle = color;
+        ctx.strokeStyle = color;
         ctx.lineJoin = "round";
         ctx.lineWidth = line_size;
         ctx.imageSmoothingEnabled = false;
@@ -1395,10 +1463,10 @@ class ULabel {
         }
 
         
-        // TODO draw annotation according to id payload colors
         // Prep for bbox drawing
-        ctx.fillStyle = this.config["default_annotation_color"];
-        ctx.strokeStyle = this.config["default_annotation_color"];
+        let color = this.get_annotation_color(annotation_object["classification_payloads"]);
+        ctx.fillStyle = color;
+        ctx.strokeStyle = color;
         ctx.lineJoin = "round";
         ctx.lineWidth = line_size;
         ctx.lineCap = "round";
@@ -1435,10 +1503,10 @@ class ULabel {
         }
 
     
-        // TODO draw annotation according to id payload colors
         // Prep for bbox drawing
-        ctx.fillStyle = this.config["default_annotation_color"];
-        ctx.strokeStyle = this.config["default_annotation_color"];
+        let color = this.get_annotation_color(annotation_object["classification_payloads"]);
+        ctx.fillStyle = color;
+        ctx.strokeStyle = color;
         ctx.lineJoin = "round";
         ctx.lineWidth = line_size;
         ctx.lineCap = "round";
@@ -1628,6 +1696,7 @@ class ULabel {
         // TODO
         // am_dialog_associated_ann = active_ann;
         this.id_dialog_state["visible"] = true;
+        this.id_dialog_state["associated_annotation"] = active_ann;
 
         // Intelligently choose the position (global point) where the dialog should be shown
         // TODO
@@ -1647,7 +1716,9 @@ class ULabel {
         this.reposition_dialogs();
 
         // Configure the dialog to show the current information for this ann
-        // TODO toid
+        this.set_id_dialog_payload_to_init(active_ann);
+        this.update_id_dialog_display();
+        this.update_id_toolbox_display();
 
         // Show the dialog
         $("#" + this.id_dialog_config["id"]).css("display", "block");
@@ -1655,6 +1726,7 @@ class ULabel {
 
     hide_id_dialog() {
         this.id_dialog_state["visible"] = false;
+        this.id_dialog_state["associated_annotation"] = null;
         $("#" + this.id_dialog_config["id"]).css("display", "none");
     }
 
@@ -2409,6 +2481,9 @@ class ULabel {
                 }
             ]
         }
+        else {
+            this.show_id_dialog(mouse_event, actid);
+        }
     
         // Set mode to no active annotation
         this.annotation_state["active_id"] = null;
@@ -2650,11 +2725,13 @@ class ULabel {
 
     // ----------------- ID Dialog -----------------
 
-    handle_id_dialog_hover(mouse_event) {
+    lookup_id_dialog_mouse_pos(mouse_event) {
+        let idd = $("#" + this.id_dialog_config["id"]);
+
         // Get mouse position relative to center of div
-        const idd_x = mouse_event.offsetX - this.id_dialog_config["outer_diameter"]/2;
-        const idd_y = mouse_event.offsetY - this.id_dialog_config["outer_diameter"]/2;
-    
+        const idd_x = mouse_event.pageX - idd.offset().left - idd.width()/2;
+        const idd_y = mouse_event.pageY - idd.offset().top - idd.height()/2;
+
         // Useful for interpreting mouse loc
         const inner_rad = 0.25*this.id_dialog_config["outer_diameter"];
         const outer_rad = 0.5*this.id_dialog_config["outer_diameter"];
@@ -2664,38 +2741,130 @@ class ULabel {
     
         // If not inside, return
         if (mouse_rad > outer_rad) {
-            return;
+            return null;
         }
     
         // If in the core, return
         if (mouse_rad < inner_rad) {
-            return;
+            return null;
         }
     
         // Get array of classes by name in the dialog
         //    TODO handle nesting case
-        const names = this.id_dialog_config["names"];
+        //    TODO this is not efficient
+        let class_ids = this.config["class_ids"];
     
         // Get the index of that class currently hovering over
         const class_ind = (
             -1*Math.floor(
-                Math.atan2(idd_y, idd_x)/(2*Math.PI)*names.length
-            ) + names.length
-        )%names.length;
+                Math.atan2(idd_y, idd_x)/(2*Math.PI)*class_ids.length
+            ) + class_ids.length
+        )%class_ids.length;
     
         // Get the distance proportion of the hover
-        const dist_prop = (mouse_rad - inner_rad)/(outer_rad - inner_rad);
-    
+        let dist_prop = (mouse_rad - inner_rad)/(outer_rad - inner_rad);
+
+        return {
+            class_ind: class_ind,
+            dist_prop: dist_prop,
+        }
+    }
+
+    set_id_dialog_payload_nopin(class_ind, dist_prop) {
+        let class_ids = this.config["class_ids"];
         // Recompute and render opaque pie slices
-        for (var i = 0; i < names.length; i++) {
-            var circ = document.getElementById("circ_" + names[i]);
+        for (var i = 0; i < class_ids.length; i++) {
             if (i == class_ind) {
-                circ.setAttribute("stroke-width", dist_prop*(outer_rad - inner_rad)*2);
+                this.id_dialog_state["id_payload"][i] = dist_prop;
             }
             else {
-                circ.setAttribute("stroke-width", (1-dist_prop)/(names.length-1)*(outer_rad - inner_rad)*2);
+                this.id_dialog_state["id_payload"][i] = (1 - dist_prop)/(class_ids.length-1);
             }
         }
+    }
+
+    set_id_dialog_payload_to_init(annid) {
+        let anpyld = this.annotations["access"][annid]["classification_payloads"];
+        if (anpyld != null) {
+            this.id_dialog_state["id_payload"] = JSON.parse(JSON.stringify(anpyld));
+        }
+        else {
+            // TODO currently assumes soft
+            if (!this.config["soft-id"]) {
+                let dist_prop = 1.0;
+                let class_ids = this.config["class_ids"];
+                let idarr = $("a.tbid-opt.sel").attr("id").split("_");
+                let class_ind = parseInt(idarr[idarr.length - 1]);
+                // Recompute and render opaque pie slices
+                for (var i = 0; i < class_ids.length; i++) {
+                    if (class_ids[i] == class_ind) {
+                        this.id_dialog_state["id_payload"][i] = dist_prop;
+                    }
+                    else {
+                        this.id_dialog_state["id_payload"][i] = (1 - dist_prop)/(class_ids.length-1);
+                    }
+                }
+            }
+            else {
+                // Not currently supported
+            }
+        }
+    }
+
+    update_id_dialog_display() {
+        const inner_rad = 0.25*this.id_dialog_config["outer_diameter"];
+        const outer_rad = 0.5*this.id_dialog_config["outer_diameter"];
+        let class_ids = this.config["class_ids"];
+        for (var i = 0; i < class_ids.length; i++) {
+            var circ = document.getElementById("circ_" + class_ids[i]);
+            circ.setAttribute("stroke-width", this.id_dialog_state["id_payload"][i]*(outer_rad - inner_rad)*2);
+        }
+    }
+    update_id_toolbox_display() {
+        if (this.config["soft-id"]) {
+            // Not supported yet
+        }
+        else {
+            let class_ids = this.config["class_ids"];
+            for (var i = 0; i < class_ids.length; i++) {
+                let cls = class_ids[i];
+                if (this.id_dialog_state["id_payload"][i] > 0.5) {
+                    if (!($("#" + this.config["toolbox_id"] + " a#toolbox_sel_" + cls).hasClass("sel"))) {
+                        $("#" + this.config["toolbox_id"] + " a.tbid-opt.sel").attr("href", "#");
+                        $("#" + this.config["toolbox_id"] + " a.tbid-opt.sel").removeClass("sel");
+                        $("#" + this.config["toolbox_id"] + " a#toolbox_sel_" + cls).addClass("sel");
+                        $("#" + this.config["toolbox_id"] + " a#toolbox_sel_" + cls).removeAttr("href");
+                    }
+                }
+            }
+        }
+    }
+
+    handle_id_dialog_hover(mouse_event) {
+        let pos_evt = this.lookup_id_dialog_mouse_pos(mouse_event);
+        if (pos_evt != null) {
+            if (!this.config["soft-id"]) {
+                pos_evt.dist_prop = 1.0;
+            }
+            // TODO This assumes no pins
+            this.set_id_dialog_payload_nopin(pos_evt.class_ind, pos_evt.dist_prop);
+            this.update_id_dialog_display();
+            this.update_id_toolbox_display()
+        }
+    }
+
+    assign_annotation_id() {
+        console.log(this.id_dialog_state["associated_annotation"])
+        this.annotations["access"][this.id_dialog_state["associated_annotation"]]["classification_payloads"] = JSON.parse(
+            JSON.stringify(this.id_dialog_state["id_payload"])
+        );
+        this.hide_id_dialog();
+        this.redraw_all_annotations();
+    }
+
+    handle_id_dialog_click(mouse_event) {
+        this.handle_id_dialog_hover(mouse_event);
+        this.assign_annotation_id();
     }
     
     // ================= Viewer/Annotation Interaction Handlers  ================= 
@@ -2703,6 +2872,9 @@ class ULabel {
     handle_mouse_down(mouse_event) {
         const drag_key = ULabel.get_drag_key_start(mouse_event, this);
         if (drag_key != null) {
+            if (drag_key != "pan" && drag_key != "zoom" && this.id_dialog_state["visible"]) {
+                return;
+            }
             mouse_event.preventDefault();
             if (this.drag_state["active_key"] == null) {
                 this.start_drag(drag_key, mouse_event.button, mouse_event);
@@ -2713,11 +2885,11 @@ class ULabel {
     handle_mouse_move(mouse_event) {
         this.viewer_state["last_move"] = mouse_event;
         // If the ID dialog is visible, let it's own handler take care of this
-        if (this.id_dialog_state["visible"]) {
-            return;
-        }
         // If not dragging...
         if (this.drag_state["active_key"] == null) {
+            if (this.id_dialog_state["visible"]) {
+                return;
+            }    
             // If polygon is in progress, redirect last segment
             if (this.annotation_state["is_in_progress"]) {
                 if (this.annotation_state["mode"] == "polygon") { 
@@ -2737,13 +2909,19 @@ class ULabel {
                     this.drag_rezoom(mouse_event);
                     break;
                 case "annotation":
-                    this.continue_annotation(mouse_event);
+                    if (!this.id_dialog_state["visible"]) {
+                        this.continue_annotation(mouse_event);
+                    }
                     break;
                 case "edit":
-                    this.edit_annotation(mouse_event);
+                    if (!this.id_dialog_state["visible"]) {
+                        this.edit_annotation(mouse_event);
+                    }
                     break;
                 case "move":
-                    this.move_annotation(mouse_event);
+                    if (!this.id_dialog_state["visible"]) {
+                        this.move_annotation(mouse_event);
+                    }
                     break;
             }
         }

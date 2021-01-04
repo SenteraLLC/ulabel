@@ -360,6 +360,7 @@ a.tbid-opt {
     text-decoration: none;
     padding: 5px 8px;
     border-radius: 5px;
+    color: black;
 }
 div.colprev {
     display: inline-block;
@@ -457,6 +458,22 @@ div.ulabel-night div.annbox_cls::-webkit-scrollbar-corner {
     background-color:rgb(0, 60, 95);
 }
 
+
+a.id-dialog-clickable-indicator {
+    position: absolute; 
+    top: 0;
+    left: 0;
+    display: block;
+    border-radius: 200px;
+    height: 400px;
+    width: 400px;
+}
+a.id-dialog-clickable-indicator svg {
+    position: absolute; 
+    top: 0;
+    left: 0;
+    border-radius: 200px;    
+}
 
 .editable {
     display: none;
