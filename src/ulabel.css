@@ -320,6 +320,10 @@ div#global_edit_suggestion {
     height: 75px;
     /* background-color: white; */
 }
+div#global_edit_suggestion.mcm {
+    width: 225px;
+    transform: scale(0.66666);
+}
 a.global_sub_suggestion {
     width: 60px;
     height: 60px;

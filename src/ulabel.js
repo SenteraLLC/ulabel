@@ -506,7 +506,7 @@ class ULabel {
             case 1:
                 return "pan";
             case 2:
-                return "zoom";
+                return null;
         }
     }
 
@@ -667,7 +667,6 @@ class ULabel {
         var toolbox_html = `<div class="toolbox-id-app-payload">`;
         const center_coord = wdt/2;
         var class_ids = [];
-        console.log(ul.config["taxonomy"]);
         if (ul.config["taxonomy"] != null) {
             for (var txi = 0; txi < ul.config["taxonomy"].length; txi++) {
                 class_ids.push(ul.config["taxonomy"][txi]["id"]);
@@ -740,12 +739,11 @@ class ULabel {
         `;
         $("#" + ul.config["imwrap_id"]).append(dialog_html);
         $("#" + ul.config["toolbox_id"] + " div.id-toolbox-app").html(toolbox_html);
-        ul.viewer_state["visible_dialogs"].push({
-            "id": "id_dialog",
+        ul.viewer_state["visible_dialogs"]["id_dialog"] = {
             "left": 0.0,
             "top": 0.0,
             "pin": "center"
-        });
+        };
     }
     
     static build_edit_suggestion(ul) {
@@ -755,30 +753,36 @@ class ULabel {
         $("#" + ul.config["imwrap_id"]).append(`
             <a href="#" id="edit_suggestion" class="editable"></a>
         `);
-        ul.viewer_state["visible_dialogs"].push({
-            "id": "edit_suggestion",
+        ul.viewer_state["visible_dialogs"]["edit_suggestion"] = {
             "left": 0.0,
             "top": 0.0,
             "pin": "center"
-        });
+        };
 
         // Global
+        let id_edit = "";
+        let mcm_ind = "";
+        if (!ul.compiled_config["single_class_mode"]) {
+            id_edit = `<!--
+            --><a href="#" class="reid_suggestion global_sub_suggestion gedit-target"></a><!--`;
+            mcm_ind= " mcm";
+        }
         $("#" + ul.config["imwrap_id"]).append(`
-            <div id="global_edit_suggestion" class="glob_editable gedit-target">
+            <div id="global_edit_suggestion" class="glob_editable gedit-target${mcm_ind}">
                 <a href="#" class="move_suggestion global_sub_suggestion movable gedit-target">
                     <img class="movable gedit-target" src="data:image/png;base64,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">
                 </a><!--
+                ${id_edit}
                 --><a href="#" class="delete_suggestion global_sub_suggestion gedit-target">
                     <span class="bigx gedit-target">&#215;</span>
                 </a>
             </div>
         `);
-        ul.viewer_state["visible_dialogs"].push({
-            "id": "global_edit_suggestion",
+        ul.viewer_state["visible_dialogs"]["global_edit_suggestion"] = {
             "left": 0.0,
             "top": 0.0,
             "pin": "center"
-        });
+        };
     }
 
     static create_listeners(ul) {
@@ -1098,7 +1102,7 @@ class ULabel {
         // Create object for current ulabel state
         this.viewer_state = {
             "zoom_val": 1.0,
-            "visible_dialogs": [],
+            "visible_dialogs": {},
             "last_move": null
         };
 
@@ -1380,23 +1384,21 @@ class ULabel {
     }
 
     get_annotation_color(clf_payload) {
-        if (clf_payload != null) {
-            if (this.config["soft-id"]) {
-                // not currently supported;
-                return this.config["default_annotation_color"];
-            }
-            else {
-                for (var i = 0; i < clf_payload.length; i++) {
-                    if (clf_payload[i] > 0.5) {
-                        return this.config["class_defs"]["" + this.config["class_ids"][i]]["color"];
-                    }
-                }
-                return this.config["default_annotation_color"];
-            }
-        }
-        else {
+        if (this.config["soft-id"]) {
+            // not currently supported;
             return this.config["default_annotation_color"];
         }
+        let col_payload = this.id_dialog_state["id_payload"];
+        if (clf_payload != null) {
+            col_payload = clf_payload;
+        }
+
+        for (var i = 0; i < col_payload.length; i++) {
+            if (col_payload[i] > 0.5) {
+                return this.config["class_defs"]["" + this.config["class_ids"][i]]["color"];
+            }
+        }
+        return this.config["default_annotation_color"];
     }
 
     // ================= Drawing Functions =================
@@ -1581,10 +1583,9 @@ class ULabel {
         const new_dimy = imwrap.height();
 
         // Iterate over all visible dialogs and apply new positions
-        // TODO convert this to dict, only reposition the necessary ones
-        for (var i = 0; i < this.viewer_state["visible_dialogs"].length; i++) {
-            let el = this.viewer_state["visible_dialogs"][i];
-            let jqel = $("#" + el["id"]);
+        for (var id in this.viewer_state["visible_dialogs"]) {
+            let el = this.viewer_state["visible_dialogs"][id];
+            let jqel = $("#" + id);
             let new_left = el["left"]*new_dimx;
             let new_top = el["top"]*new_dimy;
             switch(el["pin"]) {
@@ -1620,24 +1621,18 @@ class ULabel {
         $("#" + this.config["imwrap_id"]).append(ender_html);
     
         // Add this id to the list of dialogs with managed positions
-        this.viewer_state["visible_dialogs"].push({
-            "id": ender_id,
+        this.viewer_state["visible_dialogs"][ender_id] = {
             "left": gmx/this.config["image_width"],
             "top": gmy/this.config["image_height"],
             "pin": "center"
-        });
+        };
         this.reposition_dialogs();
     }
     destroy_polygon_ender(polygon_id) {
         // Create ender id
         const ender_id = "ender_" + polygon_id;
         $("#" + ender_id).remove();
-        for (var vsi = 0; vsi < this.viewer_state["visible_dialogs"].length; vsi++) {
-            if (this.viewer_state["visible_dialogs"][vsi]["id"] == ender_id) {
-                this.viewer_state["visible_dialogs"].splice(vsi, 1);
-                break;
-            }
-        }
+        delete this.viewer_state["visible_dialogs"][ender_id];
         this.reposition_dialogs();
     };
     
@@ -1650,13 +1645,8 @@ class ULabel {
         else {
             esjq.addClass("soft");
         }
-        for (var vdgi = 0; vdgi < this.viewer_state["visible_dialogs"].length; vdgi++) {
-            if (this.viewer_state["visible_dialogs"][vdgi]["id"] == "edit_suggestion") {
-                this.viewer_state["visible_dialogs"][vdgi]["left"] = nearest_point["point"][0]/this.config["image_width"];
-                this.viewer_state["visible_dialogs"][vdgi]["top"] = nearest_point["point"][1]/this.config["image_height"];
-                break;
-            }
-        }
+        this.viewer_state["visible_dialogs"]["edit_suggestion"]["left"] = nearest_point["point"][0]/this.config["image_width"];
+        this.viewer_state["visible_dialogs"]["edit_suggestion"]["top"] = nearest_point["point"][1]/this.config["image_height"];
         this.reposition_dialogs();
     }
     
@@ -1676,14 +1666,10 @@ class ULabel {
         }
 
         let cbox = this.annotations["access"][annid]["containing_box"];
-
-        for (var vdgi = 0; vdgi < this.viewer_state["visible_dialogs"].length; vdgi++) {
-            if (this.viewer_state["visible_dialogs"][vdgi]["id"] == "global_edit_suggestion") {
-                this.viewer_state["visible_dialogs"][vdgi]["left"] = (cbox["tlx"] + cbox["brx"] + 2*diffX)/(2*this.config["image_width"]);
-                this.viewer_state["visible_dialogs"][vdgi]["top"] = (cbox["tly"] + cbox["bry"] + 2*diffY)/(2*this.config["image_height"]);
-                break;
-            }
-        }
+        let new_lft = (cbox["tlx"] + cbox["brx"] + 2*diffX)/(2*this.config["image_width"]);
+        let new_top = (cbox["tly"] + cbox["bry"] + 2*diffY)/(2*this.config["image_height"]);
+        this.viewer_state["visible_dialogs"]["global_edit_suggestion"]["left"] = new_lft;
+        this.viewer_state["visible_dialogs"]["global_edit_suggestion"]["top"] = new_top;
         this.reposition_dialogs();
     }
 
@@ -1691,28 +1677,34 @@ class ULabel {
         $("#global_edit_suggestion").css("display", "none");
     }
 
-    show_id_dialog(mouse_e, active_ann) {
+    show_id_dialog(gbx, gby, active_ann, thumbnail=false) {
         // Record which annotation this dialog is associated with
         // TODO
         // am_dialog_associated_ann = active_ann;
         this.id_dialog_state["visible"] = true;
+        this.id_dialog_state["thumbnail"] = thumbnail;
         this.id_dialog_state["associated_annotation"] = active_ann;
 
-        // Intelligently choose the position (global point) where the dialog should be shown
-        // TODO
-        var gbpt = [
-            this.get_global_mouse_x(mouse_e),
-            this.get_global_mouse_y(mouse_e)
-        ];
+        // Add or remove thumbnail class if necessary
+        let idd = $("#" + this.id_dialog_config["id"]);
+        if (thumbnail) {
+            if (!idd.hasClass("thumb")) {
+                idd.addClass("thumb");
+            }
+        }
+        else {
+            if (idd.hasClass("thumb")) {
+                idd.removeClass("thumb");
+            }
+        }
 
         // Add this id to the list of dialogs with managed positions
         // TODO actually only do this when calling append()
-        this.viewer_state["visible_dialogs"].push({
-            "id": this.id_dialog_config["id"],
-            "left": gbpt[0]/this.config["image_width"],
-            "top": gbpt[1]/this.config["image_height"],
+        this.viewer_state["visible_dialogs"][this.id_dialog_config["id"]] = {
+            "left": gbx/this.config["image_width"],
+            "top": gby/this.config["image_height"],
             "pin": "center"
-        });
+        };
         this.reposition_dialogs();
 
         // Configure the dialog to show the current information for this ann
@@ -1721,7 +1713,7 @@ class ULabel {
         this.update_id_toolbox_display();
 
         // Show the dialog
-        $("#" + this.id_dialog_config["id"]).css("display", "block");
+        idd.css("display", "block");
     }
 
     hide_id_dialog() {
@@ -2031,7 +2023,6 @@ class ULabel {
             init_spatial = redo_payload.init_spatial;
         }
 
-
         // Add this annotation to annotations object
         this.annotations["access"][unq_id] = {
             "id": unq_id,
@@ -2051,6 +2042,8 @@ class ULabel {
                 "bry": gmy
             }
         };
+        this.set_id_dialog_payload_to_init(unq_id);
+
         for (const [key, value] of Object.entries(this.config["annotation_meta"])) {
             this.annotations["access"][unq_id][key] = value;
         }
@@ -2482,7 +2475,7 @@ class ULabel {
             ]
         }
         else {
-            this.show_id_dialog(mouse_event, actid);
+            this.show_id_dialog(this.get_global_mouse_x(mouse_event), this.get_global_mouse_y(mouse_event), actid);
         }
     
         // Set mode to no active annotation
@@ -2854,7 +2847,6 @@ class ULabel {
     }
 
     assign_annotation_id() {
-        console.log(this.id_dialog_state["associated_annotation"])
         this.annotations["access"][this.id_dialog_state["associated_annotation"]]["classification_payloads"] = JSON.parse(
             JSON.stringify(this.id_dialog_state["id_payload"])
         );
