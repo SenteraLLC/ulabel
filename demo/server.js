@@ -15,7 +15,8 @@ let static_sagemaker_server = servestatic(path.resolve(base_dir, "sagemaker"), {
 const server = http.createServer(function(req, res) {
     var url = new URL("https://ulabel.pl:" + port + req.url);
     switch (url.pathname) {
-        case "/demo.html":
+        case "/male_female.html":
+        case "/single_class.html":
         case "/demo_image.jpg":
             static_demo_server(req, res, finalhandler(req, res));
             break;
@@ -42,6 +43,8 @@ const server = http.createServer(function(req, res) {
 });
 
 server.listen(port, function() {
-    console.log("Demo running at http://localhost:" + port + "/demo.html");
-    open("http://localhost:" + port + "/demo.html");
+    console.log("Demo running at");
+    console.log(" http://localhost:" + port + "/male_female.html");
+    console.log(" http://localhost:" + port + "/single_class.html");
+    open("http://localhost:" + port + "/male_female.html");
 });
