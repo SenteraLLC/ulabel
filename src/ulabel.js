@@ -1388,7 +1388,7 @@ class ULabel {
             // not currently supported;
             return this.config["default_annotation_color"];
         }
-        let col_payload = this.id_dialog_state["id_payload"];
+        let col_payload = JSON.parse(JSON.stringify(this.id_dialog_state["id_payload"]));
         if (clf_payload != null) {
             col_payload = clf_payload;
         }
@@ -1726,6 +1726,7 @@ class ULabel {
     // ================= Annotation Utilities =================
     
     undo() {
+        this.hide_id_dialog();
         if (this.actions["stream"].length > 0) {
             if (this.actions["stream"][this.actions["stream"].length-1].redo_payload.finished === false) {
                 this.finish_action(this.actions["stream"][this.actions["stream"].length-1]);
@@ -2004,6 +2005,7 @@ class ULabel {
         let gmx = null;
         let gmy = null;
         let init_spatial = null;
+        let init_idpyld = null;
         if (redo_payload == null) {
             unq_id = this.make_new_annotation_id();
             line_size = this.get_line_size();
@@ -2021,6 +2023,7 @@ class ULabel {
             gmx = redo_payload.gmx;
             gmy = redo_payload.gmy;
             init_spatial = redo_payload.init_spatial;
+            init_idpyld = redo_payload.init_payload;
         }
 
         // Add this annotation to annotations object
@@ -2042,7 +2045,7 @@ class ULabel {
                 "bry": gmy
             }
         };
-        this.set_id_dialog_payload_to_init(unq_id);
+        this.set_id_dialog_payload_to_init(unq_id, init_idpyld);
 
         for (const [key, value] of Object.entries(this.config["annotation_meta"])) {
             this.annotations["access"][unq_id][key] = value;
@@ -2070,7 +2073,8 @@ class ULabel {
                 gmx: gmx,
                 gmy: gmy,
                 init_spatial: init_spatial,
-                finished: redoing || annotation_mode == "polygon"
+                finished: redoing || annotation_mode == "polygon",
+                init_payload: JSON.parse(JSON.stringify(this.id_dialog_state["id_payload"]))
             },
             undo_payload: {
                 ann_str: JSON.stringify(this.annotations["access"][unq_id])
@@ -2475,7 +2479,12 @@ class ULabel {
             ]
         }
         else {
-            this.show_id_dialog(this.get_global_mouse_x(mouse_event), this.get_global_mouse_y(mouse_event), actid);
+            if (!redoing) {
+                this.show_id_dialog(this.get_global_mouse_x(mouse_event), this.get_global_mouse_y(mouse_event), actid);
+            }
+            else {
+                this.assign_annotation_id(actid);
+            }
         }
     
         // Set mode to no active annotation
@@ -2776,30 +2785,36 @@ class ULabel {
         }
     }
 
-    set_id_dialog_payload_to_init(annid) {
-        let anpyld = this.annotations["access"][annid]["classification_payloads"];
-        if (anpyld != null) {
-            this.id_dialog_state["id_payload"] = JSON.parse(JSON.stringify(anpyld));
+    set_id_dialog_payload_to_init(annid, pyld=null) {
+        if (pyld != null) {
+            this.id_dialog_state["id_payload"] = JSON.parse(JSON.stringify(pyld));
+            this.update_id_toolbox_display();
         }
         else {
-            // TODO currently assumes soft
-            if (!this.config["soft-id"]) {
-                let dist_prop = 1.0;
-                let class_ids = this.config["class_ids"];
-                let idarr = $("a.tbid-opt.sel").attr("id").split("_");
-                let class_ind = parseInt(idarr[idarr.length - 1]);
-                // Recompute and render opaque pie slices
-                for (var i = 0; i < class_ids.length; i++) {
-                    if (class_ids[i] == class_ind) {
-                        this.id_dialog_state["id_payload"][i] = dist_prop;
-                    }
-                    else {
-                        this.id_dialog_state["id_payload"][i] = (1 - dist_prop)/(class_ids.length-1);
-                    }
-                }
+            let anpyld = this.annotations["access"][annid]["classification_payloads"];
+            if (anpyld != null) {
+                this.id_dialog_state["id_payload"] = JSON.parse(JSON.stringify(anpyld));
             }
             else {
-                // Not currently supported
+                // TODO currently assumes soft
+                if (!this.config["soft-id"]) {
+                    let dist_prop = 1.0;
+                    let class_ids = this.config["class_ids"];
+                    let idarr = $("a.tbid-opt.sel").attr("id").split("_");
+                    let class_ind = parseInt(idarr[idarr.length - 1]);
+                    // Recompute and render opaque pie slices
+                    for (var i = 0; i < class_ids.length; i++) {
+                        if (class_ids[i] == class_ind) {
+                            this.id_dialog_state["id_payload"][i] = dist_prop;
+                        }
+                        else {
+                            this.id_dialog_state["id_payload"][i] = (1 - dist_prop)/(class_ids.length-1);
+                        }
+                    }
+                }
+                else {
+                    // Not currently supported
+                }
             }
         }
     }
@@ -2846,8 +2861,14 @@ class ULabel {
         }
     }
 
-    assign_annotation_id() {
-        this.annotations["access"][this.id_dialog_state["associated_annotation"]]["classification_payloads"] = JSON.parse(
+    assign_annotation_id(actid=null) {
+        if (actid == null) {
+            actid = this.id_dialog_state["associated_annotation"];
+            if (actid == null) {
+                console.log("Assigning to unknown annotation!");
+            }
+        }
+        this.annotations["access"][actid]["classification_payloads"] = JSON.parse(
             JSON.stringify(this.id_dialog_state["id_payload"])
         );
         this.hide_id_dialog();
