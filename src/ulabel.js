@@ -2154,7 +2154,8 @@ class ULabel {
                 this.continue_annotation(this.viewer_state["last_move"]);
             }
             else {
-                this.finish_annotation();
+                redo_payload.actid = redo_payload.unq_id;
+                this.finish_annotation(null, redo_payload);
                 this.rebuild_containing_box(unq_id);
                 this.suggest_edits(this.viewer_state["last_move"]);
             }
@@ -2549,6 +2550,7 @@ class ULabel {
         }
         else {
             if (!redoing) {
+                this.assign_annotation_id(actid);
                 this.show_id_dialog(this.get_global_mouse_x(mouse_event), this.get_global_mouse_y(mouse_event), actid);
             }
             else {
