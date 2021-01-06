@@ -679,45 +679,61 @@ class ULabel {
         const outer_rad = 0.5*wdt;
         const inner_top = outer_rad - inner_rad;
         const inner_lft = outer_rad - inner_rad;
-        const totdist = 2*Math.PI*inner_rad;
 
-        const ths_pct = totdist/class_ids.length;
-        const gap_pct = totdist - ths_pct;
-        const srt_wdt = 2*(outer_rad - inner_rad)/class_ids.length;
-        const ful_wdt = (outer_rad - inner_rad);
         const cl_opacity = 0.4;
         let tbid = ul.config["toolbox_id"];
+
         for (var i = 0; i < class_ids.length; i++) {
+
+            let srt_prop = 1/class_ids.length;
+
+            let cum_prop = i/class_ids.length;
+            let srk_prop = 1/class_ids.length;
+            let gap_prop = 1.0 - srk_prop;
+
+            let rad_back = inner_rad + 1.0*(outer_rad - inner_rad)/2;
+            let rad_frnt = inner_rad + srt_prop*(outer_rad - inner_rad)/2;
+
+            let wdt_back = 1.0*(outer_rad - inner_rad);
+            let wdt_frnt = srt_prop*(outer_rad - inner_rad);
+
+            let srk_back = 2*Math.PI*rad_back*srk_prop;
+            let gap_back = 2*Math.PI*rad_back*gap_prop;
+            let off_back = 2*Math.PI*rad_back*cum_prop;
+
+            let srk_frnt = 2*Math.PI*rad_frnt*srk_prop;
+            let gap_frnt = 2*Math.PI*rad_frnt*gap_prop;
+            let off_frnt = 2*Math.PI*rad_frnt*cum_prop;
+
+            let ths_id = class_ids[i];
+            let ths_col = ul.config["class_defs"][ths_id.toString()]["color"];
+            let ths_nam = ul.config["class_defs"][ths_id.toString()]["name"];
+            dialog_html += `
+            <circle
+                r="${rad_back}" cx="${center_coord}" cy="${center_coord}" 
+                stroke="${ths_col}" 
+                fill-opacity="0"
+                stroke-opacity="${cl_opacity}"
+                stroke-width="${wdt_back}"; 
+                stroke-dasharray="${srk_back} ${gap_back}" 
+                stroke-dashoffset="${off_back}" />
+            <circle
+                id="circ_${ths_id}"
+                r="${rad_frnt}" cx="${center_coord}" cy="${center_coord}"
+                fill-opacity="0"
+                stroke="${ths_col}" 
+                stroke-opacity="1.0"
+                stroke-width="${wdt_frnt}" 
+                stroke-dasharray="${srk_frnt} ${gap_frnt}" 
+                stroke-dashoffset="${off_frnt}" />
+            `;
+
             let sel = "";
             let href = ' href="#"';
             if (i == 0) {
                 sel = " sel";
                 href = "";
             }
-            let cum_pct = i*ths_pct;
-            let ths_id = class_ids[i];
-            let ths_col = ul.config["class_defs"][ths_id.toString()]["color"];
-            let ths_nam = ul.config["class_defs"][ths_id.toString()]["name"];
-            dialog_html += `
-            <circle
-                r="${inner_rad}" cx="${center_coord}" cy="${center_coord}" 
-                stroke="${ths_col}" 
-                fill-opacity="0"
-                stroke-opacity="${cl_opacity}"
-                stroke-width="${ful_wdt}"; 
-                stroke-dasharray="${ths_pct} ${gap_pct}" 
-                stroke-dashoffset="${cum_pct}" />
-            <circle
-                id="circ_${ths_id}"
-                r="${inner_rad}" cx="${center_coord}" cy="${center_coord}"
-                fill-opacity="0"
-                stroke="${ths_col}" 
-                stroke-opacity="0.6"
-                stroke-width="${srt_wdt}" 
-                stroke-dasharray="${ths_pct} ${gap_pct}" 
-                stroke-dashoffset="${cum_pct}" />
-            `;
-
             if (ul.config["soft-id"]) {
                 let msg = "Only hard id is currently supported";
                 throw new Error(msg);
@@ -754,7 +770,7 @@ class ULabel {
             "left": `${inner_lft}px`,
             "width": `${inner_diam}px`,
             "height": `${inner_diam}px`,
-            "background-color": "rgba(0,0,0,0.1)",
+            "background-color": "black",
             "border-radius": `${inner_rad}px`
         });
 
@@ -783,8 +799,7 @@ class ULabel {
         let id_edit = "";
         let mcm_ind = "";
         if (!ul.compiled_config["single_class_mode"]) {
-            id_edit = `<!--
-            --><a href="#" class="reid_suggestion global_sub_suggestion gedit-target"></a><!--`;
+            id_edit = `--><a href="#" class="reid_suggestion global_sub_suggestion gedit-target"></a><!--`;
             mcm_ind= " mcm";
         }
         $("#" + ul.config["imwrap_id"]).append(`
@@ -814,7 +829,9 @@ class ULabel {
         // Hover interactions
 
         iddg.on("mousemove", function(mouse_event) {
-            ul.handle_id_dialog_hover(mouse_event);
+            if (!ul.id_dialog_state["thumbnail"]) {
+                ul.handle_id_dialog_hover(mouse_event);
+            }
         });
         
         // Clicks
@@ -940,7 +957,22 @@ class ULabel {
 
         // Listener for id_dialog click interactions
         $("#" + ul.config["annbox_id"] + " a.id-dialog-clickable-indicator").click(function(e) {
-            ul.handle_id_dialog_click(e);
+            if (!ul.id_dialog_state["thumbnail"]) {
+                ul.handle_id_dialog_click(e);
+            }
+            else {
+                // It's always covered up as a thumbnail. See below
+            }
+        });
+        $("#global_edit_suggestion a.reid_suggestion").click(function(e) {
+            let annid = ul.id_dialog_state["associated_annotation"];
+            ul.hide_global_edit_suggestion();
+            ul.show_id_dialog(
+                ul.get_global_mouse_x(e),
+                ul.get_global_mouse_y(e),
+                annid,
+                false
+            );
         });
 
         $("#" + ul.config["annbox_id"] + " .delete_suggestion").click(function() {
@@ -1691,11 +1723,19 @@ class ULabel {
         let new_top = (cbox["tly"] + cbox["bry"] + 2*diffY)/(2*this.config["image_height"]);
         this.viewer_state["visible_dialogs"]["global_edit_suggestion"]["left"] = new_lft;
         this.viewer_state["visible_dialogs"]["global_edit_suggestion"]["top"] = new_top;
-        this.reposition_dialogs();
+        // this.reposition_dialogs(); // - done by call below anyways
+
+        // let placeholder = $("#global_edit_suggestion a.reid_suggestion");
+        this.show_id_dialog(
+            (cbox["tlx"] + cbox["brx"] + 2*diffX)/2, 
+            (cbox["tly"] + cbox["bry"] + 2*diffY)/2,
+            annid, true
+        );
     }
 
     hide_global_edit_suggestion() {
         $("#global_edit_suggestion").css("display", "none");
+        this.hide_id_dialog();
     }
 
     show_id_dialog(gbx, gby, active_ann, thumbnail=false) {
@@ -1708,12 +1748,20 @@ class ULabel {
 
         // Add or remove thumbnail class if necessary
         let idd = $("#" + this.id_dialog_config["id"]);
+        let new_height = $("#global_edit_suggestion a.reid_suggestion")[0].getBoundingClientRect().height;
+        let scale_ratio = new_height/this.id_dialog_config["outer_diameter"];
         if (thumbnail) {
             if (!idd.hasClass("thumb")) {
                 idd.addClass("thumb");
             }
+            $("#" + this.id_dialog_config["id"] + ".thumb").css({
+                "transform": `scale(${scale_ratio})`
+            });
         }
         else {
+            $("#" + this.id_dialog_config["id"] + ".thumb").css({
+                "transform": `scale(1.0)`
+            });
             if (idd.hasClass("thumb")) {
                 idd.removeClass("thumb");
             }
@@ -2845,9 +2893,26 @@ class ULabel {
         const outer_rad = 0.5*this.id_dialog_config["outer_diameter"];
         let class_ids = this.config["class_ids"];
         for (var i = 0; i < class_ids.length; i++) {
+
+            let srt_prop = this.id_dialog_state["id_payload"][i];
+
+            let cum_prop = i/class_ids.length;
+            let srk_prop = 1/class_ids.length;
+            let gap_prop = 1.0 - srk_prop;
+
+            let rad_frnt = inner_rad + srt_prop*(outer_rad - inner_rad)/2;
+
+            let wdt_frnt = srt_prop*(outer_rad - inner_rad);
+
+            let srk_frnt = 2*Math.PI*rad_frnt*srk_prop;
+            let gap_frnt = 2*Math.PI*rad_frnt*gap_prop;
+            let off_frnt = 2*Math.PI*rad_frnt*cum_prop;
+
             var circ = document.getElementById("circ_" + class_ids[i]);
-            // circ.setAttribute("r", inner_rad + this.id_dialog_state["id_payload"][i]*(outer_rad - inner_rad));
-            circ.setAttribute("stroke-width", this.id_dialog_state["id_payload"][i]*(outer_rad - inner_rad));
+            circ.setAttribute("r", rad_frnt);
+            circ.setAttribute("stroke-dasharray", `${srk_frnt} ${gap_frnt}`);
+            circ.setAttribute("stroke-dashoffset", off_frnt);
+            circ.setAttribute("stroke-width", wdt_frnt);
         }
     }
     update_id_toolbox_display() {
@@ -2900,6 +2965,7 @@ class ULabel {
     handle_id_dialog_click(mouse_event) {
         this.handle_id_dialog_hover(mouse_event);
         this.assign_annotation_id();
+        this.suggest_edits(this.viewer_state["last_move"]);
     }
     
     // ================= Viewer/Annotation Interaction Handlers  ================= 
@@ -2907,7 +2973,7 @@ class ULabel {
     handle_mouse_down(mouse_event) {
         const drag_key = ULabel.get_drag_key_start(mouse_event, this);
         if (drag_key != null) {
-            if (drag_key != "pan" && drag_key != "zoom" && this.id_dialog_state["visible"]) {
+            if (drag_key != "pan" && drag_key != "zoom" && this.id_dialog_state["visible"] && !this.id_dialog_state["thumbnail"]) {
                 return;
             }
             mouse_event.preventDefault();
@@ -2922,7 +2988,7 @@ class ULabel {
         // If the ID dialog is visible, let it's own handler take care of this
         // If not dragging...
         if (this.drag_state["active_key"] == null) {
-            if (this.id_dialog_state["visible"]) {
+            if (this.id_dialog_state["visible"] && !this.id_dialog_state["thumbnail"]) {
                 return;
             }    
             // If polygon is in progress, redirect last segment
@@ -2944,17 +3010,17 @@ class ULabel {
                     this.drag_rezoom(mouse_event);
                     break;
                 case "annotation":
-                    if (!this.id_dialog_state["visible"]) {
+                    if (!this.id_dialog_state["visible"] || this.id_dialog_state["thumbnail"]) {
                         this.continue_annotation(mouse_event);
                     }
                     break;
                 case "edit":
-                    if (!this.id_dialog_state["visible"]) {
+                    if (!this.id_dialog_state["visible"] || this.id_dialog_state["thumbnail"]) {
                         this.edit_annotation(mouse_event);
                     }
                     break;
                 case "move":
-                    if (!this.id_dialog_state["visible"]) {
+                    if (!this.id_dialog_state["visible"] || this.id_dialog_state["thumbnail"]) {
                         this.move_annotation(mouse_event);
                     }
                     break;

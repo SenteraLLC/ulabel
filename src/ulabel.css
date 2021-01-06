@@ -48,7 +48,13 @@ canvas.canvas_cls {
     position: absolute;
     display: none;
 }
-
+/* .id_dialog.thumb {
+    transform: scale(0.375);
+    opacity: 0.5;
+}
+.id_dialog.thumb:hover {
+    opacity: 1.0;
+} */
 .ender_outer {
     display: block;
     position: absolute;
@@ -350,6 +356,13 @@ a.global_sub_suggestion span.bigx {
     transform: translateY(-50%);
     color: black;
     text-decoration: none;
+}
+a.global_sub_suggestion.reid_suggestion {
+    opacity: 0.3;
+    background-color: black;
+}
+a.global_sub_suggestion.reid_suggestion:hover {
+    opacity: 0; 
 }
 div.classification {
     padding: 10px 30px;
