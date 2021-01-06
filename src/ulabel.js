@@ -674,7 +674,7 @@ class ULabel {
         }
 
         // TODO real names here!
-        const inner_rad = 0.25*wdt;
+        const inner_rad = ul.id_dialog_config["inner_prop"]*wdt/2;
         const inner_diam = inner_rad*2;
         const outer_rad = 0.5*wdt;
         const inner_top = outer_rad - inner_rad;
@@ -684,7 +684,7 @@ class ULabel {
         const ths_pct = totdist/class_ids.length;
         const gap_pct = totdist - ths_pct;
         const srt_wdt = 2*(outer_rad - inner_rad)/class_ids.length;
-        const ful_wdt = 2*(outer_rad - inner_rad);
+        const ful_wdt = (outer_rad - inner_rad);
         const cl_opacity = 0.4;
         let tbid = ul.config["toolbox_id"];
         for (var i = 0; i < class_ids.length; i++) {
@@ -702,6 +702,7 @@ class ULabel {
             <circle
                 r="${inner_rad}" cx="${center_coord}" cy="${center_coord}" 
                 stroke="${ths_col}" 
+                fill-opacity="0"
                 stroke-opacity="${cl_opacity}"
                 stroke-width="${ful_wdt}"; 
                 stroke-dasharray="${ths_pct} ${gap_pct}" 
@@ -709,8 +710,9 @@ class ULabel {
             <circle
                 id="circ_${ths_id}"
                 r="${inner_rad}" cx="${center_coord}" cy="${center_coord}"
+                fill-opacity="0"
                 stroke="${ths_col}" 
-                stroke-opacity="1"
+                stroke-opacity="0.6"
                 stroke-width="${srt_wdt}" 
                 stroke-dasharray="${ths_pct} ${gap_pct}" 
                 stroke-dashoffset="${cum_pct}" />
@@ -730,15 +732,33 @@ class ULabel {
         }
         dialog_html += `
             </svg>
-            <div class="centcirc" 
-                 style="position: absolute; top: ${inner_top}px; left: ${inner_lft}px; width: ${inner_diam}px; height: ${inner_diam}px; background-color: black; border-radius: ${inner_rad}px;">
-            </div>
+            <div class="centcirc"></div>
         </div>`;
         toolbox_html += `
         </div>
         `;
         $("#" + ul.config["imwrap_id"]).append(dialog_html);
         $("#" + ul.config["toolbox_id"] + " div.id-toolbox-app").html(toolbox_html);
+
+        // Style revisions based on the size
+        let idci = $("#" + ul.config["imwrap_id"] + " a.id-dialog-clickable-indicator");
+        idci.css({
+            "height": `${wdt}px`,
+            "width": `${wdt}px`,
+            "border-radius": `${outer_rad}px`,
+        });
+        let ccirc = $("#" + ul.config["imwrap_id"] + " div.centcirc");
+        ccirc.css({
+            "position": "absolute",
+            "top": `${inner_top}px`,
+            "left": `${inner_lft}px`,
+            "width": `${inner_diam}px`,
+            "height": `${inner_diam}px`,
+            "background-color": "rgba(0,0,0,0.1)",
+            "border-radius": `${inner_rad}px`
+        });
+
+
         ul.viewer_state["visible_dialogs"]["id_dialog"] = {
             "left": 0.0,
             "top": 0.0,
@@ -1080,7 +1100,8 @@ class ULabel {
             "names": ULabel.get_dialog_names(this.config["taxonomy"]),
             "colors": ULabel.get_dialog_colors(this.config["taxonomy"]),
             "cl_opacity": 0.4,
-            "outer_diameter": 400
+            "outer_diameter": 200,
+            "inner_prop": 0.3
         };
 
         // Finished storing configuration. Make sure it's valid
@@ -2735,7 +2756,7 @@ class ULabel {
         const idd_y = mouse_event.pageY - idd.offset().top - idd.height()/2;
 
         // Useful for interpreting mouse loc
-        const inner_rad = 0.25*this.id_dialog_config["outer_diameter"];
+        const inner_rad = this.id_dialog_config["inner_prop"]*this.id_dialog_config["outer_diameter"]/2;
         const outer_rad = 0.5*this.id_dialog_config["outer_diameter"];
     
         // Get radius
@@ -2820,12 +2841,13 @@ class ULabel {
     }
 
     update_id_dialog_display() {
-        const inner_rad = 0.25*this.id_dialog_config["outer_diameter"];
+        const inner_rad = this.id_dialog_config["inner_prop"]*this.id_dialog_config["outer_diameter"]/2;
         const outer_rad = 0.5*this.id_dialog_config["outer_diameter"];
         let class_ids = this.config["class_ids"];
         for (var i = 0; i < class_ids.length; i++) {
             var circ = document.getElementById("circ_" + class_ids[i]);
-            circ.setAttribute("stroke-width", this.id_dialog_state["id_payload"][i]*(outer_rad - inner_rad)*2);
+            // circ.setAttribute("r", inner_rad + this.id_dialog_state["id_payload"][i]*(outer_rad - inner_rad));
+            circ.setAttribute("stroke-width", this.id_dialog_state["id_payload"][i]*(outer_rad - inner_rad));
         }
     }
     update_id_toolbox_display() {

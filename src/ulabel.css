@@ -471,12 +471,12 @@ a.id-dialog-clickable-indicator {
     border-radius: 200px;
     height: 400px;
     width: 400px;
+    overflow: hidden;
 }
 a.id-dialog-clickable-indicator svg {
-    position: absolute; 
+    position: absolute;
     top: 0;
     left: 0;
-    border-radius: 200px;    
 }
 
 .editable {
