@@ -949,9 +949,6 @@ class ULabel {
                 let rawid = parseInt(idarr[idarr.length - 1]);
                 ul.set_id_dialog_payload_nopin(ul.config["class_ids"].indexOf(rawid), 1.0);
                 ul.update_id_dialog_display();
-                if (ul.id_dialog_state["associated_annotation"] != null) {
-                    ul.assign_annotation_id();
-                }
             }
         });
 
@@ -1149,7 +1146,8 @@ class ULabel {
         this.id_dialog_state = {
             "visible": false,
             "associated_annotation": null,
-            "id_payload": id_payload
+            "id_payload": id_payload,
+            "first_explicit_assignment": false
         };
 
         // Create object for current ulabel state
@@ -1795,7 +1793,9 @@ class ULabel {
     // ================= Annotation Utilities =================
     
     undo() {
-        this.hide_id_dialog();
+        if (!this.id_dialog_state["thumbnail"]) {
+            this.hide_id_dialog();
+        }
         if (this.actions["stream"].length > 0) {
             if (this.actions["stream"][this.actions["stream"].length-1].redo_payload.finished === false) {
                 this.finish_action(this.actions["stream"][this.actions["stream"].length-1]);
@@ -2020,6 +2020,9 @@ class ULabel {
             case "delete_annotation":
                 this.delete_annotation__undo(action.undo_payload);
                 break;
+            case "assign_annotation_id":
+                this.assign_annotation_id__undo(action.undo_payload);
+                break;
             default:
                 console.log("Undo error :(");
                 break;
@@ -2045,6 +2048,9 @@ class ULabel {
                 break;
             case "delete_annotation":
                 this.delete_annotation__redo(action.redo_payload);
+                break;
+            case "assign_annotation_id":
+                this.assign_annotation_id(null, action.redo_payload);
                 break;
             default:
                 console.log("Redo error :(");
@@ -2473,6 +2479,9 @@ class ULabel {
                 finished: false
             }
         });
+        // Hide point edit suggestion
+        $("#edit_suggestion").css("display", "none");
+
         this.move_annotation(mouse_event);
     }
 
@@ -2550,11 +2559,8 @@ class ULabel {
         }
         else {
             if (!redoing) {
-                this.assign_annotation_id(actid);
+                this.id_dialog_state["first_explicit_assignment"] = true;
                 this.show_id_dialog(this.get_global_mouse_x(mouse_event), this.get_global_mouse_y(mouse_event), actid);
-            }
-            else {
-                this.assign_annotation_id(actid);
             }
         }
     
@@ -2716,7 +2722,11 @@ class ULabel {
         return ret;
     }
     
-    suggest_edits(mouse_event) {
+    suggest_edits(mouse_event=null) {
+        if (mouse_event == null) {
+            mouse_event = this.viewer_state["last_move"];
+        }
+
         // TODO better dynamic handling of the size of the suggestion queue
         const dst_thresh = 20;
         const global_x = this.get_global_mouse_x(mouse_event);
@@ -2950,23 +2960,81 @@ class ULabel {
         }
     }
 
-    assign_annotation_id(actid=null) {
-        if (actid == null) {
-            actid = this.id_dialog_state["associated_annotation"];
+    assign_annotation_id(actid=null, redo_payload=null) {
+        let new_payload = null;
+        let old_payload = null;
+        let redoing = false;
+        if (redo_payload == null) {
             if (actid == null) {
-                console.log("Assigning to unknown annotation!");
+                actid = this.id_dialog_state["associated_annotation"];
+            }
+            old_payload = JSON.parse(JSON.stringify(
+                this.annotations["access"][actid]["classification_payloads"]
+            ));
+            new_payload = JSON.parse(JSON.stringify(
+                this.id_dialog_state["id_payload"]
+            ));
+        }
+        else {
+            redoing = true;
+            old_payload = JSON.parse(JSON.stringify(redo_payload.old_id_payload));
+            new_payload = JSON.parse(JSON.stringify(redo_payload.new_id_payload));
+            actid = redo_payload.actid;
+        }
+
+        // Perform assignment
+        this.annotations["access"][actid]["classification_payloads"] = JSON.parse(JSON.stringify(new_payload));
+
+        // Redraw with correct color and hide id_dialog if applicable
+        if (!redoing) {
+            this.hide_id_dialog();
+        }
+        else {
+            this.suggest_edits();
+        }
+        this.redraw_all_annotations();
+
+        // Explicit changes are undoable
+        // First assignments are treated as though they were done all along
+        if (this.id_dialog_state["first_explicit_assignment"]) {
+            let n = this.actions["stream"].length;
+            for (var i = 0; i < n; i++) {
+                if (this.actions["stream"][n-i-1].act_type == "begin_annotation") {
+                    this.actions["stream"][n-i-1].redo_payload.init_payload = JSON.parse(JSON.stringify(
+                        new_payload
+                    ));
+                    break;
+                }
             }
         }
-        this.annotations["access"][actid]["classification_payloads"] = JSON.parse(
-            JSON.stringify(this.id_dialog_state["id_payload"])
-        );
-        this.hide_id_dialog();
+        else {
+            this.record_action({
+                act_type: "assign_annotation_id",
+                undo_payload: {
+                    actid: actid,
+                    old_id_payload: JSON.parse(JSON.stringify(old_payload))
+                },
+                redo_payload: {
+                    actid: actid,
+                    old_id_payload: JSON.parse(JSON.stringify(old_payload)),
+                    new_id_payload: JSON.parse(JSON.stringify(new_payload))
+                }
+            }, redoing);
+        }
+    }
+    assign_annotation_id__undo(undo_payload) {
+        let actid = undo_payload.actid;
+        let new_payload = JSON.parse(JSON.stringify(undo_payload.old_id_payload));
+        this.annotations["access"][actid]["classification_payloads"] = JSON.parse(JSON.stringify(new_payload));
         this.redraw_all_annotations();
+        this.suggest_edits();
     }
 
     handle_id_dialog_click(mouse_event) {
         this.handle_id_dialog_hover(mouse_event);
+        // TODO need to differentiate between first click and a reassign -- potentially with global state
         this.assign_annotation_id();
+        this.id_dialog_state["first_explicit_assignment"] = false;
         this.suggest_edits(this.viewer_state["last_move"]);
     }
     

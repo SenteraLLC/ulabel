@@ -324,6 +324,7 @@ div#global_edit_suggestion {
     position: absolute;
     width: 150px;
     height: 75px;
+    text-align: center;
     /* background-color: white; */
 }
 div#global_edit_suggestion.mcm {
