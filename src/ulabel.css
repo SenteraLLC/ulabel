@@ -328,10 +328,11 @@ div#global_edit_suggestion {
     text-align: center;
     z-index: 1;
     /* background-color: white; */
+    transform: scale(0.66666);
 }
 div#global_edit_suggestion.mcm {
     width: 225px;
-    transform: scale(0.66666);
+    transform: scale(0.5);
 }
 a.global_sub_suggestion {
     width: 60px;

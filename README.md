@@ -57,6 +57,3 @@ Ability to apply filters based on URL data
 
 Support the ability to search (e.g., UUID)
 
-Bug report from Dimitris
-- Smaller dot
-- Hide suggestions when annotation in progress
