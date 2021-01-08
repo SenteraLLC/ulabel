@@ -61,7 +61,7 @@ var JOB_CONFIG = {
     "stringified_objs": {
         "taxonomy": [`null`], 
         "class_defs": [`null`],
-        "allowed_modes": [`["polygon", "bbox", "contour"]`],
+        "allowed_modes": [``, ["polygon", "bbox", "contour"]`],
         "resume_from": [`{{task.input.resume_from}}`, `null`]
     }
 }

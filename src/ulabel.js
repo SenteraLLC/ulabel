@@ -1349,6 +1349,11 @@ class ULabel {
         }
     }
 
+    get_init_id_payload() {
+        this.set_id_dialog_payload_to_init(null);
+        return JSON.parse(JSON.stringify(this.id_dialog_state["id_payload"]));
+    }
+
     // ================= Access string utilities =================
 
     // Access a point in a spatial payload using access string
@@ -1445,7 +1450,7 @@ class ULabel {
         }
 
         for (var i = 0; i < col_payload.length; i++) {
-            if (col_payload[i] > 0.5) {
+            if (col_payload[i]["confidence"] > 0.5) {
                 return this.config["class_defs"]["" + this.config["class_ids"][i]]["color"];
             }
         }
@@ -1724,11 +1729,13 @@ class ULabel {
         // this.reposition_dialogs(); // - done by call below anyways
 
         // let placeholder = $("#global_edit_suggestion a.reid_suggestion");
-        this.show_id_dialog(
-            (cbox["tlx"] + cbox["brx"] + 2*diffX)/2, 
-            (cbox["tly"] + cbox["bry"] + 2*diffY)/2,
-            annid, true
-        );
+        if (!this.compiled_config["single_class_mode"]) {
+            this.show_id_dialog(
+                (cbox["tlx"] + cbox["brx"] + 2*diffX)/2, 
+                (cbox["tly"] + cbox["bry"] + 2*diffY)/2,
+                annid, true
+            );
+        }
     }
 
     hide_global_edit_suggestion() {
@@ -1777,7 +1784,9 @@ class ULabel {
         // Configure the dialog to show the current information for this ann
         this.set_id_dialog_payload_to_init(active_ann);
         this.update_id_dialog_display();
-        this.update_id_toolbox_display();
+        if (!thumbnail) {
+            this.update_id_toolbox_display();
+        }
 
         // Show the dialog
         idd.css("display", "block");
@@ -2088,6 +2097,9 @@ class ULabel {
             gmx = this.get_global_mouse_x(mouse_event);
             gmy = this.get_global_mouse_y(mouse_event);
             init_spatial = this.get_init_spatial(gmx, gmy, annotation_mode);
+            init_idpyld = this.get_init_id_payload();
+            this.hide_edit_suggestion();
+            this.hide_global_edit_suggestion();
         }
         else {
             unq_id = redo_payload.unq_id;
@@ -2111,7 +2123,7 @@ class ULabel {
             "deprecated": false,
             "spatial_type": annotation_mode,
             "spatial_payload": init_spatial,
-            "classification_payloads": null,
+            "classification_payloads": JSON.parse(JSON.stringify(init_idpyld)),
             "line_size": line_size,
             "containing_box": {
                 "tlx": gmx,
@@ -2120,7 +2132,9 @@ class ULabel {
                 "bry": gmy
             }
         };
-        this.set_id_dialog_payload_to_init(unq_id, init_idpyld);
+        if (redoing) {
+            this.set_id_dialog_payload_to_init(unq_id, init_idpyld);
+        }
 
         for (const [key, value] of Object.entries(this.config["annotation_meta"])) {
             this.annotations["access"][unq_id][key] = value;
@@ -2858,10 +2872,16 @@ class ULabel {
         // Recompute and render opaque pie slices
         for (var i = 0; i < class_ids.length; i++) {
             if (i == class_ind) {
-                this.id_dialog_state["id_payload"][i] = dist_prop;
+                this.id_dialog_state["id_payload"][i] = {
+                    "class_id": class_ids[i],
+                    "confidence": dist_prop
+                };
             }
             else {
-                this.id_dialog_state["id_payload"][i] = (1 - dist_prop)/(class_ids.length-1);
+                this.id_dialog_state["id_payload"][i] = {
+                    "class_id": class_ids[i],
+                    "confidence": (1 - dist_prop)/(class_ids.length - 1)
+                };
             }
         }
     }
@@ -2872,30 +2892,37 @@ class ULabel {
             this.update_id_toolbox_display();
         }
         else {
-            let anpyld = this.annotations["access"][annid]["classification_payloads"];
-            if (anpyld != null) {
-                this.id_dialog_state["id_payload"] = JSON.parse(JSON.stringify(anpyld));
+            if (annid != null) {
+                let anpyld = this.annotations["access"][annid]["classification_payloads"];
+                if (anpyld != null) {
+                    this.id_dialog_state["id_payload"] = JSON.parse(JSON.stringify(anpyld));
+                    return;
+                }
             }
-            else {
-                // TODO currently assumes soft
-                if (!this.config["soft-id"]) {
-                    let dist_prop = 1.0;
-                    let class_ids = this.config["class_ids"];
-                    let idarr = $("a.tbid-opt.sel").attr("id").split("_");
-                    let class_ind = parseInt(idarr[idarr.length - 1]);
-                    // Recompute and render opaque pie slices
-                    for (var i = 0; i < class_ids.length; i++) {
-                        if (class_ids[i] == class_ind) {
-                            this.id_dialog_state["id_payload"][i] = dist_prop;
-                        }
-                        else {
-                            this.id_dialog_state["id_payload"][i] = (1 - dist_prop)/(class_ids.length-1);
-                        }
+            // TODO currently assumes soft
+            if (!this.config["soft-id"]) {
+                let dist_prop = 1.0;
+                let class_ids = this.config["class_ids"];
+                let idarr = $("a.tbid-opt.sel").attr("id").split("_");
+                let class_ind = class_ids.indexOf(parseInt(idarr[idarr.length - 1]));
+                // Recompute and render opaque pie slices
+                for (var i = 0; i < class_ids.length; i++) {
+                    if (i == class_ind) {
+                        this.id_dialog_state["id_payload"][i] = {
+                            "class_id": class_ids[i],
+                            "confidence": dist_prop
+                        };
+                    }
+                    else {
+                        this.id_dialog_state["id_payload"][i] = {
+                            "class_id": class_ids[i],
+                            "confidence": (1 - dist_prop)/(class_ids.length - 1)
+                        };
                     }
                 }
-                else {
-                    // Not currently supported
-                }
+            }
+            else {
+                // Not currently supported
             }
         }
     }
@@ -2906,7 +2933,7 @@ class ULabel {
         let class_ids = this.config["class_ids"];
         for (var i = 0; i < class_ids.length; i++) {
 
-            let srt_prop = this.id_dialog_state["id_payload"][i];
+            let srt_prop = this.id_dialog_state["id_payload"][i]["confidence"];
 
             let cum_prop = i/class_ids.length;
             let srk_prop = 1/class_ids.length;
@@ -2935,7 +2962,7 @@ class ULabel {
             let class_ids = this.config["class_ids"];
             for (var i = 0; i < class_ids.length; i++) {
                 let cls = class_ids[i];
-                if (this.id_dialog_state["id_payload"][i] > 0.5) {
+                if (this.id_dialog_state["id_payload"][i]["confidence"] > 0.5) {
                     if (!($("#" + this.config["toolbox_id"] + " a#toolbox_sel_" + cls).hasClass("sel"))) {
                         $("#" + this.config["toolbox_id"] + " a.tbid-opt.sel").attr("href", "#");
                         $("#" + this.config["toolbox_id"] + " a.tbid-opt.sel").removeClass("sel");
