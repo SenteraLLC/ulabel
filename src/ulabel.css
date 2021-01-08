@@ -62,6 +62,7 @@ canvas.canvas_cls {
     height: 50px;
     background-color: white;
     border-radius: 25px;
+    z-index: 0;
 }
 .ender_inner {
     display: block;
@@ -325,6 +326,7 @@ div#global_edit_suggestion {
     width: 150px;
     height: 75px;
     text-align: center;
+    z-index: 1;
     /* background-color: white; */
 }
 div#global_edit_suggestion.mcm {
@@ -498,10 +500,19 @@ a.id-dialog-clickable-indicator svg {
     position: absolute;
     width: 50px;
     height: 50px;
-    background-color: white;
+    background-color: gray;
+    opacity: 0.7;
     border-radius: 25px;
+    z-index: 0;
 }
 .editable.soft {
+    opacity: 0.4;
+}
+.editable:hover {
+    background-color: white;
+    opacity: 1.0;
+}
+.editable.soft:hover {
     opacity: 0.7;
 }
 

@@ -789,6 +789,12 @@ class ULabel {
         $("#" + ul.config["imwrap_id"]).append(`
             <a href="#" id="edit_suggestion" class="editable"></a>
         `);
+        $("#edit_suggestion").css({
+            "height": ul.config["edit_handle_size"]+"px",
+            "width": ul.config["edit_handle_size"]+"px",
+            "border-radius": ul.config["edit_handle_size"]/2+"px"
+        });
+
         ul.viewer_state["visible_dialogs"]["edit_suggestion"] = {
             "left": 0.0,
             "top": 0.0,
@@ -1120,7 +1126,9 @@ class ULabel {
             "allowed_modes": allowed_modes,
             "default_annotation_color": "#fa9d2a",
             "annotation_meta": annotation_meta,
-            "task_meta": task_meta
+            "task_meta": task_meta,
+            "polygon_ender_size": 30,
+            "edit_handle_size": 30
         };
 
         // Store ID dialog configuration
@@ -1671,10 +1679,22 @@ class ULabel {
         // Build ender html
         const ender_html = `
         <a href="#" id="${ender_id}" class="ender_outer">
-            <span id="${ender_id}" class="ender_inner"></span>
+            <span id="${ender_id}_inner" class="ender_inner"></span>
         </a>
         `;
         $("#" + this.config["imwrap_id"]).append(ender_html);
+        $("#" + ender_id).css({
+            "width": this.config["polygon_ender_size"]+"px",
+            "height": this.config["polygon_ender_size"]+"px",
+            "border-radius": this.config["polygon_ender_size"]/2+"px"
+        });
+        $("#" + ender_id+"_inner").css({
+            "width": this.config["polygon_ender_size"]/5+"px",
+            "height": this.config["polygon_ender_size"]/5+"px",
+            "border-radius": this.config["polygon_ender_size"]/10+"px",
+            "top": 2*this.config["polygon_ender_size"]/5+"px",
+            "left": 2*this.config["polygon_ender_size"]/5+"px"
+        });
     
         // Add this id to the list of dialogs with managed positions
         this.viewer_state["visible_dialogs"][ender_id] = {
@@ -2742,7 +2762,7 @@ class ULabel {
         }
 
         // TODO better dynamic handling of the size of the suggestion queue
-        const dst_thresh = 20;
+        const dst_thresh = this.config["edit_handle_size"]/2;
         const global_x = this.get_global_mouse_x(mouse_event);
         const global_y = this.get_global_mouse_y(mouse_event);
 
@@ -3177,7 +3197,10 @@ class ULabel {
                         this.finish_annotation(mouse_event);
                     }
                     else {
-                        if (mouse_event.target.id == "ender_" + this.annotation_state["active_id"]) {
+                        if (
+                            (mouse_event.target.id == "ender_" + this.annotation_state["active_id"]) ||
+                            (mouse_event.target.id == "ender_" + this.annotation_state["active_id"] + "_inner")
+                        ) {
                             this.finish_annotation(mouse_event);
                         }
                         else {
