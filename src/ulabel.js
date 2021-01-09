@@ -1796,6 +1796,7 @@ class ULabel {
         ctx.beginPath();
         ctx.moveTo(sp[0] + diffX, sp[1] + diffY);
         ctx.lineTo(ep[0] + diffX, ep[1] + diffY);
+        ctx.stroke();
 
         // Draw the cross of the tbar
         let halflen = Math.sqrt(
@@ -1811,12 +1812,13 @@ class ULabel {
             sp[1] + halflen*Math.cos(theta)
         ];
 
+        ctx.lineCap = "square";
+        ctx.beginPath();
         ctx.moveTo(sb[0] + diffX, sb[1] + diffY);
-        ctx.lineCap = "butt";
         ctx.lineTo(eb[0] + diffX, eb[1] + diffY);
+        ctx.stroke();
         ctx.lineCap = "round";
 
-        ctx.stroke();
     }
     
     draw_annotation(annotation_object, cvs_ctx="front_context", demo=false, offset=null) {
