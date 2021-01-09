@@ -691,6 +691,9 @@ class ULabel {
                 class_ids.push(ul.config["taxonomy"][txi]["id"]);
             }
         }
+        else {
+            throw new Error("No taxonomy was provided.");
+        }
 
         // TODO real names here!
         const inner_rad = ul.id_dialog_config["inner_prop"]*wdt/2;
@@ -891,7 +894,7 @@ class ULabel {
                 const dlta = Math.sign(wheel_event.deltaY);
 
                 // Apply new zoom
-                ul.viewer_state["zoom_val"] *= (1 + dlta/10);
+                ul.viewer_state["zoom_val"] *= (1 - dlta/10);
                 ul.rezoom(wheel_event.clientX, wheel_event.clientY);
             } 
         };
@@ -1069,7 +1072,7 @@ class ULabel {
                 }
             ];
             ul.config["class_defs"] = {
-                "1": {
+                "2": {
                     "name": "Weed",
                     "color": "orange"
                 }
@@ -1113,13 +1116,6 @@ class ULabel {
             annotation_meta = {};
         }
 
-        var class_ids = [];
-        if (taxonomy != null) {
-            for (var txi = 0; txi < taxonomy.length; txi++) {
-                class_ids.push(taxonomy[txi]["id"]);
-            }
-        }
-
         // Store tool configuration
         this.config = {
             "container_id": container_id,
@@ -1140,7 +1136,7 @@ class ULabel {
             "annotator": annotator,
             "class_defs": class_defs,
             "taxonomy": taxonomy,
-            "class_ids": class_ids,
+            "class_ids": [],
             "soft-id": false, // TODO allow soft eventually
             "save_callback": save_callback,
             "exit_callback": exit_callback,
@@ -1154,6 +1150,19 @@ class ULabel {
             "edit_handle_size": 30
         };
 
+        // Finished storing configuration. Make sure it's valid
+        // Store frequent check values for performance
+        this.compiled_config = ULabel.compile_configuration(this);
+
+        var class_ids = [];
+        if (this.config["taxonomy"] != null) {
+            for (var txi = 0; txi < this.config["taxonomy"].length; txi++) {
+                class_ids.push(this.config["taxonomy"][txi]["id"]);
+            }
+        }
+        this.config["class_ids"] = class_ids;
+
+
         // Store ID dialog configuration
         this.id_dialog_config = {
             "id": "id_dialog", // TODO noconflict
@@ -1163,10 +1172,6 @@ class ULabel {
             "outer_diameter": 200,
             "inner_prop": 0.3
         };
-
-        // Finished storing configuration. Make sure it's valid
-        // Store frequent check values for performance
-        this.compiled_config = ULabel.compile_configuration(this);
         
         // Store state of ID dialog element
         // TODO much more here when full interaction is built
@@ -1774,7 +1779,7 @@ class ULabel {
         let new_top = (cbox["tly"] + cbox["bry"] + 2*diffY)/(2*this.config["image_height"]);
         this.viewer_state["visible_dialogs"]["global_edit_suggestion"]["left"] = new_lft;
         this.viewer_state["visible_dialogs"]["global_edit_suggestion"]["top"] = new_top;
-        // this.reposition_dialogs(); // - done by call below anyways
+        this.reposition_dialogs();
 
         // let placeholder = $("#global_edit_suggestion a.reid_suggestion");
         if (!this.compiled_config["single_class_mode"]) {
@@ -3280,7 +3285,7 @@ class ULabel {
         const aY = mouse_event.clientY;
         this.viewer_state["zoom_val"] = (
             this.drag_state["zoom"]["zoom_val_start"]*Math.pow(
-                1.1, (aY - this.drag_state["zoom"]["mouse_start"][1])/10
+                1.1, -(aY - this.drag_state["zoom"]["mouse_start"][1])/10
             )
         );
         this.rezoom(this.drag_state["zoom"]["mouse_start"][0], this.drag_state["zoom"]["mouse_start"][1]);

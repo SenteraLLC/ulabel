@@ -10,7 +10,7 @@ const port = 8080;
 const base_dir = path.dirname(__filename).split(path.sep).slice(0, -1).join(path.sep);
 let static_ulabel_server = servestatic(path.resolve(base_dir, "src"), { 'index': false });
 let static_demo_server = servestatic(path.resolve(base_dir, "demo"), { 'index': false });
-let static_sagemaker_server = servestatic(path.resolve(base_dir, "sagemaker"), { 'index': false });
+let static_sagemaker_server = servestatic(path.resolve(base_dir, "sagemaker/dist"), { 'index': false });
 
 const server = http.createServer(function(req, res) {
     var url = new URL("https://ulabel.pl:" + port + req.url);
@@ -33,7 +33,8 @@ const server = http.createServer(function(req, res) {
             res.end()
         case "/template.liquid.html":
         case "/ulabel-0.0.5-dev.liquid.html":
-            static_sagemaker_server(req, res, finalhandler(req, res));
+        case "/ulabel-0.0.6.liquid.html":
+                static_sagemaker_server(req, res, finalhandler(req, res));
             break;    
         default:
             res.statusCode = 404;
