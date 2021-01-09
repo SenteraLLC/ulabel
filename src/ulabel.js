@@ -286,6 +286,103 @@ CONTOUR_SVG = `
   </g>
 </svg>
 `;
+TBAR_SVG = `
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="100mm"
+   height="100mm"
+   viewBox="0 0 100 100"
+   version="1.1"
+   id="svg7244"
+   inkscape:version="0.92.5 (2060ec1f9f, 2020-04-08)"
+   sodipodi:docname="tbar.svg">
+  <defs
+     id="defs7238">
+    <marker
+       inkscape:stockid="DotL"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="DotL"
+       style="overflow:visible"
+       inkscape:isstock="true">
+      <path
+         inkscape:connector-curvature="0"
+         id="path4587"
+         d="m -2.5,-1 c 0,2.76 -2.24,5 -5,5 -2.76,0 -5,-2.24 -5,-5 0,-2.76 2.24,-5 5,-5 2.76,0 5,2.24 5,5 z"
+         style="fill:#000000;fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:1.00000003pt;stroke-opacity:1"
+         transform="matrix(0.8,0,0,0.8,5.92,0.8)" />
+    </marker>
+    <marker
+       inkscape:stockid="DotL"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="marker7235"
+       style="overflow:visible"
+       inkscape:isstock="true">
+      <path
+         inkscape:connector-curvature="0"
+         id="path7233"
+         d="m -2.5,-1 c 0,2.76 -2.24,5 -5,5 -2.76,0 -5,-2.24 -5,-5 0,-2.76 2.24,-5 5,-5 2.76,0 5,2.24 5,5 z"
+         style="fill:#000000;fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:1.00000003pt;stroke-opacity:1"
+         transform="matrix(0.8,0,0,0.8,5.92,0.8)" />
+    </marker>
+  </defs>
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="1.4"
+     inkscape:cx="194.1401"
+     inkscape:cy="180.12237"
+     inkscape:document-units="mm"
+     inkscape:current-layer="layer1"
+     showgrid="false"
+     inkscape:window-width="1920"
+     inkscape:window-height="1043"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1" />
+  <metadata
+     id="metadata7241">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(0,-197)">
+    <path
+       style="fill:none;stroke:#000000;stroke-width:5.54668236;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="m 34.757974,262.61957 54.396902,-54.3973"
+       id="path848"
+       inkscape:connector-curvature="0" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:5.92665672;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="M 7.3110211,235.09974 63.120496,290.9085"
+       id="path850"
+       inkscape:connector-curvature="0" />
+  </g>
+</svg>
+`;
 
 jQuery.fn.outer_html = function() {
     return jQuery('<div />').append(this.eq(0).clone()).html();
@@ -463,6 +560,25 @@ class ULabel {
             }
         }
         return ret;
+    }
+
+    static get_nearest_point_on_tbar(ref_x, ref_y, spatial_payload, dstmax=Infinity) {
+        // TODO intelligently test against three grabbable points
+        var ret = {
+            "access": null,
+            "distance": null,
+            "point": null
+        };
+        for (var tbi = 0; tbi < 2; tbi++) {
+            var kp = [spatial_payload[tbi][0], spatial_payload[tbi][1]];
+            var kpdst = Math.sqrt(Math.pow(kp[0] - ref_x, 2) + Math.pow(kp[1] - ref_y, 2));
+            if (ret["distance"] == null || kpdst < ret["distance"]) {
+                ret["access"] = `${tbi}${tbi}`;
+                ret["distance"] = kpdst;
+                ret["point"] = kp;
+            }
+        }
+        return ret;        
     }
 
     // =========================== NIGHT MODE COOKIES =======================================
@@ -657,6 +773,20 @@ class ULabel {
                             ${CONTOUR_SVG}
                         </a>
                     </div>`);
+                    break;
+                case "tbar":
+                    if (ul.annotation_state["mode"] == "tbar") {
+                        sel = " sel";
+                        href = "";
+                    }
+                    md_buttons.push(`<div class="mode-opt">
+                        <a${href} id="md-btn--tbar" class="md-btn${sel}" amdname="T-Bar">
+                            ${TBAR_SVG}
+                        </a>
+                    </div>`);
+                    break;
+                default:
+                    console.log("Allowed mode \"" + ul.config["allowed_modes"][ami] + "\" not understood. Ignoring.");
                     break;
             }
         }
@@ -1373,12 +1503,9 @@ class ULabel {
     get_init_spatial(gmx, gmy, annotation_mode) {
         switch (annotation_mode) {
             case "bbox":
-                return [
-                    [gmx, gmy],
-                    [gmx, gmy]
-                ];
             case "polygon":
             case "contour":
+            case "tbar":
                 return [
                     [gmx, gmy],
                     [gmx, gmy]
@@ -1425,6 +1552,12 @@ class ULabel {
                         );
                     }
                 }
+            case "tbar":
+                // TODO 3 point method
+                const tbi = parseInt(access_str[0], 10);
+                const tbj = parseInt(access_str[1], 10);
+                let tbar_pts = this.annotations["access"][annid]["spatial_payload"];
+                return [tbar_pts[tbi][0], tbar_pts[tbj][1]];
             default:
                 this.raise_error(
                     "Unable to apply access string to annotation of type " + this.annotations["access"][annid]["spatial_type"],
@@ -1437,6 +1570,13 @@ class ULabel {
     set_with_access_string(annid, access_str, val, undoing=null) {
         switch (this.annotations["access"][annid]["spatial_type"]) {
             case "bbox":
+                var bbi = parseInt(access_str[0], 10);
+                var bbj = parseInt(access_str[1], 10);
+                this.annotations["access"][annid]["spatial_payload"][bbi][0] = val[0];
+                this.annotations["access"][annid]["spatial_payload"][bbj][1] = val[1];
+                break;
+            case "tbar":
+                // TODO 3 points
                 var bbi = parseInt(access_str[0], 10);
                 var bbj = parseInt(access_str[1], 10);
                 this.annotations["access"][annid]["spatial_payload"][bbi][0] = val[0];
@@ -1621,6 +1761,63 @@ class ULabel {
         }
         ctx.stroke();
     }
+
+    draw_tbar(annotation_object, cvs_ctx="front_context", demo=false, offset=null) {
+        // TODO buffered contexts
+        let ctx = this.canvas_state[cvs_ctx];
+
+        let diffX = 0;
+        let diffY = 0;
+        if (offset != null) {
+            diffX = offset["diffX"];
+            diffY = offset["diffY"];
+        }
+
+        let line_size = null;
+        if ("line_size" in annotation_object) {
+            line_size = annotation_object["line_size"];
+        }
+        else {
+            line_size = this.get_line_size(demo);
+        }
+    
+        // Prep for tbar drawing
+        let color = this.get_annotation_color(annotation_object["classification_payloads"]);
+        ctx.fillStyle = color;
+        ctx.strokeStyle = color;
+        ctx.lineJoin = "round";
+        ctx.lineWidth = line_size;
+        ctx.imageSmoothingEnabled = false;
+        ctx.globalCompositeOperation = "source-over";
+    
+        // Draw the tall part of the tbar
+        const sp = annotation_object["spatial_payload"][0];
+        const ep = annotation_object["spatial_payload"][1];
+        ctx.beginPath();
+        ctx.moveTo(sp[0] + diffX, sp[1] + diffY);
+        ctx.lineTo(ep[0] + diffX, ep[1] + diffY);
+
+        // Draw the cross of the tbar
+        let halflen = Math.sqrt(
+            (sp[0] - ep[0])*(sp[0] - ep[0]) + (sp[1] - ep[1])*(sp[1] - ep[1])
+        )/2;
+        let theta = Math.atan((ep[1] - sp[1])/(ep[0] - sp[0]));
+        let sb = [
+            sp[0] + halflen*Math.sin(theta),
+            sp[1] - halflen*Math.cos(theta)
+        ];
+        let eb = [
+            sp[0] - halflen*Math.sin(theta),
+            sp[1] + halflen*Math.cos(theta)
+        ];
+
+        ctx.moveTo(sb[0] + diffX, sb[1] + diffY);
+        ctx.lineCap = "butt";
+        ctx.lineTo(eb[0] + diffX, eb[1] + diffY);
+        ctx.lineCap = "round";
+
+        ctx.stroke();
+    }
     
     draw_annotation(annotation_object, cvs_ctx="front_context", demo=false, offset=null) {
         // DEBUG left here for refactor reference, but I don't think it's needed moving forward
@@ -1638,6 +1835,9 @@ class ULabel {
                 break;
             case "contour":
                 this.draw_contour(annotation_object, cvs_ctx, demo, offset);
+                break;
+            case "tbar":
+                this.draw_tbar(annotation_object, cvs_ctx, demo, offset);
                 break;
             default:
                 this.raise_error("Warning: Annotation " + annotation_object["id"] + " not understood", ULabel.elvl_info);
@@ -1956,6 +2156,19 @@ class ULabel {
                         ret["point"] = npi["point"];
                     }
                     break;
+                case "tbar":
+                    npi = ULabel.get_nearest_point_on_tbar(
+                        global_x, global_y,
+                        this.annotations["access"][edid]["spatial_payload"],
+                        max_dist
+                    );
+                    if (npi["distance"] < ret["distance"]) {
+                        ret["annid"] = edid;
+                        ret["access"] = npi["access"];
+                        ret["distance"] = npi["distance"];
+                        ret["point"] = npi["point"];
+                    }
+                    break;
                 case "contour":
                     // Not editable at the moment (TODO)
                     break;
@@ -1998,6 +2211,9 @@ class ULabel {
                     break;
                 case "contour":
                     // Not editable at the moment (TODO)
+                    break;
+                case "tbar":
+                    // Can't propose new tbar points
                     break;
             }
         }
@@ -2385,6 +2601,11 @@ class ULabel {
                         this.redraw_all_annotations(); // TODO tobuffer, no need to redraw here, can just draw over
                     }
                     break;
+                case "tbar":
+                    this.annotations["access"][actid]["spatial_payload"][1] = ms_loc;
+                    this.rebuild_containing_box(actid);
+                    this.redraw_all_annotations(); // tobuffer
+                    break;
                 default:
                     this.raise_error("Annotation mode is not understood", ULabel.elvl_info);
                     break;
@@ -2456,6 +2677,14 @@ class ULabel {
                     // TODO contour editing
                     this.raise_error("Annotation mode is not currently editable", ULabel.elvl_info);
                     break;
+                case "tbar":
+                    this.set_with_access_string(actid, this.annotation_state["edit_candidate"]["access"], ms_loc);
+                    this.rebuild_containing_box(actid);
+                    this.redraw_all_annotations(); // tobuffer
+                    this.annotation_state["edit_candidate"]["point"] = ms_loc;
+                    this.show_edit_suggestion(this.annotation_state["edit_candidate"], true);
+                    this.show_global_edit_suggestion(this.annotation_state["edit_candidate"]["annid"]);
+                    break;
                 default:
                     this.raise_error("Annotation mode is not understood", ULabel.elvl_info);
                     break;
@@ -2480,6 +2709,13 @@ class ULabel {
                 this.rebuild_containing_box(actid);
                 this.redraw_all_annotations(); // tobuffer
                 this.suggest_edits(this.viewer_state["last_move"]);
+                break;
+            case "tbar":
+                this.set_with_access_string(actid, undo_payload.edit_candidate["access"], ms_loc, true);
+                this.rebuild_containing_box(actid);
+                this.redraw_all_annotations(); // tobuffer
+                this.suggest_edits(this.viewer_state["last_move"]);
+                break;
         }
     }
     edit_annotation__redo(redo_payload) {
@@ -2501,6 +2737,14 @@ class ULabel {
                 this.rebuild_containing_box(actid);
                 this.redraw_all_annotations(); // tobuffer
                 this.suggest_edits(this.viewer_state["last_move"]);
+                break;
+            case "tbar":
+                this.set_with_access_string(actid, redo_payload.edit_candidate["access"], ms_loc, false);
+                this.rebuild_containing_box(actid);
+                this.redraw_all_annotations(); // tobuffer
+                this.suggest_edits(this.viewer_state["last_move"]);
+                break;
+    
         }
         this.record_action({
             act_type: "edit_annotation",
@@ -2605,6 +2849,7 @@ class ULabel {
                 break;
             case "bbox":
             case "contour":
+            case "tbar":
                 this.record_finish(actid);
                  // tobuffer this is where the annotation moves to back canvas
             default:
@@ -2660,6 +2905,7 @@ class ULabel {
         switch (this.annotations["access"][actid]["spatial_type"]) {
             case "polygon":
             case "bbox":
+            case "tbar":
                 this.record_finish_edit(actid);
             case "contour":
                  // tobuffer this is where the annotation moves to back canvas
@@ -2690,6 +2936,7 @@ class ULabel {
             case "polygon":
             case "bbox":
             case "contour":
+            case "tbar":
                  // tobuffer this is where the annotation moves to back canvas
             default:
                 break;
