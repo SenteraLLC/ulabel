@@ -2,36 +2,13 @@
 
 A browser-based tool for annotating images with aleatoric uncertainty
 
-## Local
+## Demo
 
 ### Requirements
 - npm (`sudo apt install npm`)
 - nodejs (`sudo apt install nodejs`)
 
-
-### Installation
-
-First, follow the install instructions for [py-analytics-db](https://github.com/SenteraLLC/py-analytics-db). You must also set the environment variables as described [here](https://github.com/SenteraLLC/py-analytics-db#credentials).
-
-Next, clone this repository and switch to the `migrate` branch.
-
-```bash
-git clone git@github.com:SenteraLLC/ULabel.git
-cd ULabel
-git checkout migrate
-```
-
-Next, install the wrapper package for `py-analytics-db` within `ulabel_local`
-
-```bash
-cd ulabel_local
-pyenv install
-cd dbapi
-poetry install
-cd ../..
-```
-
-Finally, install ULabel's JavaScript dependencies
+### Install Dependencies
 
 ```bash
 npm install
@@ -43,17 +20,5 @@ You should now be able to run the launcher from the repository root.
 
 ```bash
 pwd # Should be /path/to/ULabel
-node ulabel_local/server.js
+node demo/server.js
 ```
-
-## TODO
-
-For each of the following filtering options, a dialog is needed and JS is needed to handle them
-- Select a collection
-
-Thumbnails that are accessible via the database
-
-Ability to apply filters based on URL data
-
-Support the ability to search (e.g., UUID)
-
