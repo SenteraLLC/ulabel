@@ -24,13 +24,13 @@
     },
     "homepage": "https://github.com/SenteraLLC/ULabel",
     "dependencies": {
-        "finalhandler": "^1.1.2",
         "jquery": "^3.5.1",
-        "open": "^7.3.1",
-        "serve-static": "^1.14.1",
         "uuidv4": "^6.2.6"
     },
     "devDependencies": {
+        "finalhandler": "^1.1.2",
+        "open": "^7.3.1",
+        "serve-static": "^1.14.1",
         "webpack": "^5.13.0",
         "webpack-cli": "^4.3.1"
     }
