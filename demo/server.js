@@ -8,7 +8,7 @@ var URL = require('url').URL
 const port = 8080;
 
 const base_dir = path.dirname(__filename).split(path.sep).slice(0, -1).join(path.sep);
-let static_ulabel_server = servestatic(path.resolve(base_dir, "src"), { 'index': false });
+let static_ulabel_server = servestatic(path.resolve(base_dir, "dist"), { 'index': false });
 let static_demo_server = servestatic(path.resolve(base_dir, "demo"), { 'index': false });
 let static_sagemaker_server = servestatic(path.resolve(base_dir, "sagemaker/dist"), { 'index': false });
 
@@ -23,10 +23,7 @@ const server = http.createServer(function(req, res) {
             break;
         case "/ulabel.js":
         case "/ulabel.css":
-        case "/media/polygon.svg":
-        case "/media/bbox.svg":
-        case "/media/contour.svg":
-                    static_ulabel_server(req, res, finalhandler(req, res));
+            static_ulabel_server(req, res, finalhandler(req, res));
             break;
         case "/favicon.ico":
             res.statusCode = 302;
