@@ -18,6 +18,7 @@ const server = http.createServer(function(req, res) {
         case "/multiclass.html":
         case "/single_class.html":
         case "/demo_image.jpg":
+        case "/rdme_demo.html":
         case "/kits21.html":
                 static_demo_server(req, res, finalhandler(req, res));
             break;

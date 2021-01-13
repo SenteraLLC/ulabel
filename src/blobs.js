@@ -916,4 +916,9 @@ div.ulabel-night #submit-button:active {
 }
 `;
 
-export { BBOX_SVG, POLYGON_SVG, CONTOUR_SVG, TBAR_SVG, DEMO_ANNOTATION, INIT_STYLE };
+// TODO more of these
+const COLORS = [
+   "orange", "crimson", "dogerblue", "midnightblue", "seagreen", "tan"
+];
+
+export { BBOX_SVG, POLYGON_SVG, CONTOUR_SVG, TBAR_SVG, DEMO_ANNOTATION, INIT_STYLE, COLORS };

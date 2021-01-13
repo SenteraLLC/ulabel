@@ -14,11 +14,7 @@ const jQuery = $;
 
 const { v4: uuidv4 } = require('uuid');
 
-import { DEMO_ANNOTATION, BBOX_SVG, POLYGON_SVG, CONTOUR_SVG, INIT_STYLE } from './blobs';
-
-
-console.log(uuidv4());
-console.log($);
+import { DEMO_ANNOTATION, BBOX_SVG, POLYGON_SVG, CONTOUR_SVG, INIT_STYLE, COLORS } from './blobs';
 
 jQuery.fn.outer_html = function() {
     return jQuery('<div />').append(this.eq(0).clone()).html();
@@ -44,25 +40,6 @@ class ULabel {
         else {
             style.appendChild(document.createTextNode(INIT_STYLE));
         }
-    }
-    
-    static get_dialog_colors(taxonomy) { // DEPRECATED
-        if (taxonomy == null) return [];
-        var colors = [];
-        for (var txi = 0; txi < taxonomy.length; txi++) {
-            colors.push(taxonomy[txi]["color"]);
-        }
-        return colors;
-    }
-    
-    static get_dialog_names(taxonomy) { // DEPRECATED
-        if (taxonomy == null) return [];
-        // TODO real names here, not colors!
-        var colors = [];
-        for (var txi = 0; txi < taxonomy.length; txi++) {
-            colors.push(taxonomy[txi]["color"]);
-        }
-        return colors;
     }
 
     // Returns current epoch time in milliseconds
@@ -297,11 +274,12 @@ class ULabel {
     
     static prep_window_html(ul) {
         // Bring image and annotation scaffolding in
+        // TODO multi-image with spacing etc.
         const tool_html = `
         <div class="full_ulabel_container_">
             <div id="${ul.config["annbox_id"]}" class="annbox_cls">
                 <div id="${ul.config["imwrap_id"]}" class="imwrap_cls ${ul.config["imgsz_class"]}">
-                    <img id="${ul.config["image_id"]}" src="${ul.config["image_url"]}" class="imwrap_cls ${ul.config["imgsz_class"]}" />
+                    <img id="${ul.config["image_id"]}" src="${ul.config["image_data"]}" class="imwrap_cls ${ul.config["imgsz_class"]}" />
                 </div>
             </div>
             <div id="${ul.config["toolbox_id"]}" class="toolbox_cls">
@@ -464,9 +442,9 @@ class ULabel {
         var toolbox_html = `<div class="toolbox-id-app-payload">`;
         const center_coord = wdt/2;
         var class_ids = [];
-        if (ul.config["taxonomy"] != null) {
-            for (var txi = 0; txi < ul.config["taxonomy"].length; txi++) {
-                class_ids.push(ul.config["taxonomy"][txi]["id"]);
+        if (ul.config["class_defs"] != null) {
+            for (var txi = 0; txi < ul.config["class_defs"].length; txi++) {
+                class_ids.push(ul.config["class_defs"][txi]["id"]);
             }
         }
         else {
@@ -506,8 +484,8 @@ class ULabel {
             let off_frnt = 2*Math.PI*rad_frnt*cum_prop;
 
             let ths_id = class_ids[i];
-            let ths_col = ul.config["class_defs"][ths_id.toString()]["color"];
-            let ths_nam = ul.config["class_defs"][ths_id.toString()]["name"];
+            let ths_col = ul.config["class_defs"][i]["color"];
+            let ths_nam = ul.config["class_defs"][i]["name"];
             dialog_html += `
             <circle
                 r="${rad_back}" cx="${center_coord}" cy="${center_coord}" 
@@ -835,54 +813,48 @@ class ULabel {
         // Make sure taxonomy exists, and 
         // determine whether we're in single class mode
         let ret = {};
-        if (ul.config["taxonomy"] == null) {
-            // TODO this error should probably be the behavior sometime in the future.
-            // let msg = "Taxonomy must be non-null";
-            // console.log(msg);
-            // throw new Error(msg);
+
+        if (ul.config["class_defs"] == null || (ul.config["class_defs"].length == 0)) {
+            // TODO should probably throw an error in this case
 
             // For now, default to weed detection
             ret["single_class_mode"] = true;
-            ul.config["taxonomy"] = [
+            ul.config["class_defs"] = [
                 {
-                    "type": "class",
-                    "id": 2
+                    "name": "Weed",
+                    "color": "Orange",
+                    "id": 2,
                 }
             ];
-            ul.config["class_defs"] = {
-                "2": {
-                    "name": "Weed",
-                    "color": "orange"
-                }
-            };
         }
         else {
-            ret["single_class_mode"] = (
-                (ul.config["taxonomy"].length == 1) && 
-                (ul.config["taxonomy"][0]["type"] == "class")
-            );
+            ret["single_class_mode"] = (ul.config["class_defs"].length == 1);
+            // TODO, what about a mix?
+            for (var i = 0; i < ul.config["class_defs"].length; i++) {
+                if (typeof ul.config["class_defs"][i] == "string") {
+                    let name = ul.config["class_defs"][i];
+                    ul.config["class_defs"][i] = {
+                        "name": name,
+                        "color": COLORS[i],
+                        "id": i
+                    }
+                }
+            }
         }
-        // TODO commenting this error out during development
-        // if (!ret["single_class_mode"]) {
-        //     let msg = "Currently only single class mode is supported";
-        //     console.log(msg);
-        //     throw new Error(msg);
-        // }
         return ret;
     }
 
     // ================= Construction/Initialization =================
         
     constructor(
-        container_id,
-        image_data,
-        annotator,
-        taxonomy,
-        class_defs,
-        save_callback,
-        exit_callback,
-        done_callback,
-        allowed_modes,
+        container_id, 
+        image_data, 
+        username, 
+        classes, 
+        allowed_modes, 
+        on_submit,
+        on_save=null,
+        class_hierarchy=null,
         resume_from=null,
         task_meta=null,
         annotation_meta=null
@@ -906,19 +878,18 @@ class ULabel {
             "image_id": "ann_image", // TODO noconflict
             "imgsz_class": "imgsz", // TODO noconflict
             "toolbox_id": "toolbox", // TODO noconflict
-            "image_url": image_data,
+            "image_data": image_data,
             "image_width": null,
             "image_height": null,
             "demo_width": 120,
             "demo_height": 40,
-            "annotator": annotator,
-            "class_defs": class_defs,
-            "taxonomy": taxonomy,
+            "annotator": username,
+            "class_defs": classes,
+            "class_hierarchy": class_hierarchy,
             "class_ids": [],
             "soft-id": false, // TODO allow soft eventually
-            "save_callback": save_callback,
-            "exit_callback": exit_callback,
-            "done_callback": done_callback,
+            "done_callback": on_submit,
+            "save_callback": on_save,
             "resume_from": resume_from,
             "allowed_modes": allowed_modes,
             "default_annotation_color": "#fa9d2a",
@@ -933,10 +904,8 @@ class ULabel {
         this.compiled_config = ULabel.compile_configuration(this);
 
         var class_ids = [];
-        if (this.config["taxonomy"] != null) {
-            for (var txi = 0; txi < this.config["taxonomy"].length; txi++) {
-                class_ids.push(this.config["taxonomy"][txi]["id"]);
-            }
+        for (var txi = 0; txi < this.config["class_defs"].length; txi++) {
+            class_ids.push(this.config["class_defs"][txi]["id"]);
         }
         this.config["class_ids"] = class_ids;
 
@@ -944,8 +913,6 @@ class ULabel {
         // Store ID dialog configuration
         this.id_dialog_config = {
             "id": "id_dialog", // TODO noconflict
-            "names": ULabel.get_dialog_names(this.config["taxonomy"]),
-            "colors": ULabel.get_dialog_colors(this.config["taxonomy"]),
             "cl_opacity": 0.4,
             "outer_diameter": 200,
             "inner_prop": 0.3
@@ -1282,7 +1249,7 @@ class ULabel {
 
         for (var i = 0; i < col_payload.length; i++) {
             if (col_payload[i]["confidence"] > 0.5) {
-                return this.config["class_defs"]["" + this.config["class_ids"][i]]["color"];
+                return this.config["class_defs"][i]["color"];
             }
         }
         return this.config["default_annotation_color"];
@@ -2516,7 +2483,7 @@ class ULabel {
         if (this.compiled_config["single_class_mode"]) {
             this.annotations["access"][actid]["classification_payloads"] = [
                 {
-                    "class_id": this.config["taxonomy"][0]["id"],
+                    "class_id": this.config["class_defs"][0]["id"],
                     "confidence": 1.0
                 }
             ]
