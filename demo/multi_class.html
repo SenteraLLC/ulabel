@@ -12,17 +12,8 @@
             /* global ULabel */
 
             document.addEventListener("DOMContentLoaded", function() { 
-                function on_save(annotations) {
-                    console.log("Save");
-                    console.log(JSON.stringify(annotations, null, 2));
-                }
 
-                function on_exit(annotations) {
-                    console.log("Exit");
-                    console.log(JSON.stringify(annotations, null, 2));
-                }
-
-                function on_done(annotations) {
+                let on_submit = (annotations) => {
                     console.log("Done");
                     var element = document.createElement('a');
                     element.setAttribute("href", 'data:text/plain;charset=utf-8,' + encodeURIComponent(JSON.stringify(annotations)));//, null, 2)));
@@ -35,27 +26,24 @@
 
                 // Initial ULabel configuration
                 let ulabel = new ULabel(
-                    "container", // ID of container to build ULabel inside
-                    "/demo_image.jpg", // Image to annotate
-                    "TestUser", // User ID
-                    null, //
-                    null, // Class Definitions
-                    on_save, // Save callback
-                    on_exit, // Exit callback
-                    on_done, // Done callback
-                    ["polygon", "bbox", "contour", "tbar"], // Allowed annotation modes
-                    null, // Resume from
-                    {
-                        "task_meta": "is_assigned_to_the_top_level",
-                        "task_id": uuidv4(),
-                        "batch_id": uuidv4(),
-                        "image_id": uuidv4()
-                    }, // task_meta
-                    {
-                        "annotation_meta": "is_assigned_to_each_annotation"
-                    } // annotation_meta
+                    "container", 
+                    "/demo_image.jpg", 
+                    "TestUser", 
+                    [
+                        {
+                            "name": "Male",
+                            "color": "blue",
+                            "id": 3
+                        },
+                        {
+                            "name": "Female",
+                            "color": "pink",
+                            "id": 4
+                        }
+                    ], 
+                    ["polygon", "bbox", "contour", "tbar"], 
+                    on_submit
                 );
-
                 // Wait for ULabel instance to finish initialization
                 ulabel.init(function() {
                     // ULabel is now ready for use

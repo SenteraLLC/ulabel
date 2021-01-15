@@ -14,7 +14,7 @@ const jQuery = $;
 
 const { v4: uuidv4 } = require('uuid');
 
-import { DEMO_ANNOTATION, BBOX_SVG, POLYGON_SVG, CONTOUR_SVG, INIT_STYLE, COLORS } from './blobs';
+import { DEMO_ANNOTATION, BBOX_SVG, POLYGON_SVG, CONTOUR_SVG, INIT_STYLE, COLORS, TBAR_SVG } from './blobs';
 
 jQuery.fn.outer_html = function() {
     return jQuery('<div />').append(this.eq(0).clone()).html();
@@ -1237,14 +1237,37 @@ class ULabel {
         }
     }
 
-    get_annotation_color(clf_payload) {
+    get_annotation_color(clf_payload, demo=false) {
         if (this.config["soft-id"]) {
             // not currently supported;
             return this.config["default_annotation_color"];
         }
         let col_payload = JSON.parse(JSON.stringify(this.id_dialog_state["id_payload"]));
-        if (clf_payload != null) {
-            col_payload = clf_payload;
+        if (demo) {
+            let dist_prop = 1.0;
+            let class_ids = this.config["class_ids"];
+            let idarr = $("a.tbid-opt.sel").attr("id").split("_");
+            let class_ind = class_ids.indexOf(parseInt(idarr[idarr.length - 1]));
+            // Recompute and render opaque pie slices
+            for (var i = 0; i < class_ids.length; i++) {
+                if (i == class_ind) {
+                    col_payload[i] = {
+                        "class_id": class_ids[i],
+                        "confidence": dist_prop
+                    };
+                }
+                else {
+                    col_payload[i] = {
+                        "class_id": class_ids[i],
+                        "confidence": (1 - dist_prop)/(class_ids.length - 1)
+                    };
+                }
+            }
+        }
+        else {
+            if (clf_payload != null) {
+                col_payload = clf_payload;
+            }
         }
 
         for (var i = 0; i < col_payload.length; i++) {
@@ -1320,7 +1343,7 @@ class ULabel {
 
         
         // Prep for bbox drawing
-        let color = this.get_annotation_color(annotation_object["classification_payloads"]);
+        let color = this.get_annotation_color(annotation_object["classification_payloads"], demo);
         ctx.fillStyle = color;
         ctx.strokeStyle = color;
         ctx.lineJoin = "round";
@@ -1360,7 +1383,7 @@ class ULabel {
 
     
         // Prep for bbox drawing
-        let color = this.get_annotation_color(annotation_object["classification_payloads"]);
+        let color = this.get_annotation_color(annotation_object["classification_payloads"], demo);
         ctx.fillStyle = color;
         ctx.strokeStyle = color;
         ctx.lineJoin = "round";
@@ -1399,7 +1422,7 @@ class ULabel {
         }
     
         // Prep for tbar drawing
-        let color = this.get_annotation_color(annotation_object["classification_payloads"]);
+        let color = this.get_annotation_color(annotation_object["classification_payloads"], demo);
         ctx.fillStyle = color;
         ctx.strokeStyle = color;
         ctx.lineJoin = "round";
@@ -2490,8 +2513,9 @@ class ULabel {
         }
         else {
             if (!redoing) {
-                this.id_dialog_state["first_explicit_assignment"] = true;
-                this.show_id_dialog(this.get_global_mouse_x(mouse_event), this.get_global_mouse_y(mouse_event), actid);
+                // Uncommenting would show id dialog after every annotation finishes. Currently this is not desired
+                // this.id_dialog_state["first_explicit_assignment"] = true;
+                // this.show_id_dialog(this.get_global_mouse_x(mouse_event), this.get_global_mouse_y(mouse_event), actid);
             }
         }
     
