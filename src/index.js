@@ -275,6 +275,14 @@ class ULabel {
     static prep_window_html(ul) {
         // Bring image and annotation scaffolding in
         // TODO multi-image with spacing etc.
+
+        let instructions = "";
+        if (ul.config["instructions_url"] != null) {
+            instructions = `
+                <a href="${ul.config["instructions_url"]}" target="_blank" rel="noopener noreferrer">Instructions</a>
+            `;
+        }
+
         const tool_html = `
         <div class="full_ulabel_container_">
             <div id="${ul.config["annbox_id"]}" class="annbox_cls">
@@ -353,6 +361,9 @@ class ULabel {
                     <div class="classification">
                         <p class="tb-header">Annotation ID</p>
                         <div class="id-toolbox-app"></div>
+                    </div>
+                    <div class="toolbox-refs">
+                        ${instructions}
                     </div>
                 </div>
             </div>
@@ -853,9 +864,10 @@ class ULabel {
         classes, 
         allowed_modes, 
         on_submit,
+        resume_from=null,
+        instructions_url=null,
         on_save=null,
         class_hierarchy=null,
-        resume_from=null,
         task_meta=null,
         annotation_meta=null
     ) {
@@ -878,6 +890,7 @@ class ULabel {
             "image_id": "ann_image", // TODO noconflict
             "imgsz_class": "imgsz", // TODO noconflict
             "toolbox_id": "toolbox", // TODO noconflict
+            "instructions_url": instructions_url,
             "image_data": image_data,
             "image_width": null,
             "image_height": null,

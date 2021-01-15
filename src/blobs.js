@@ -893,6 +893,24 @@ a.id-dialog-clickable-indicator svg {
    opacity: 0.7;
 }
 
+div.toolbox-refs {
+   text-align: center;
+}
+div.toolbox-refs a {
+   color: rgb(5, 50, 133);
+   display: inline-block;
+   margin-top: 10px;
+}
+div.toolbox-refs a:hover {
+   color: rgb(44, 77, 139);
+}
+div.ulabel-night div.toolbox-refs a {
+   color: rgb(176, 202, 250);
+}
+div.ulabel-night div.toolbox-refs a:hover {
+   color: rgb(123, 160, 228);
+}
+
 #submit-button {
    display: block;
    padding: 20px;
@@ -903,7 +921,7 @@ a.id-dialog-clickable-indicator svg {
    font-size: 1.5em;
    text-align: center;
    width: 150px;
-   margin: 50px auto;
+   margin: 30px auto;
 }
 #submit-button:hover {
    background-color: rgba(255, 166, 0, 1.0);
