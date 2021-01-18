@@ -825,6 +825,7 @@ class ULabel {
         // determine whether we're in single class mode
         let ret = {};
 
+        // Handle class-id situation
         if (ul.config["class_defs"] == null || (ul.config["class_defs"].length == 0)) {
             // TODO should probably throw an error in this case
 
@@ -852,6 +853,7 @@ class ULabel {
                 }
             }
         }
+
         return ret;
     }
 
@@ -1016,9 +1018,29 @@ class ULabel {
         // If resuming from not null, then set and draw prior annotations        
         if (this.config["resume_from"] != null) {
             for (var i = 0; i < this.config["resume_from"].length; i++) {
+                // Push to ordering and add to access
                 this.annotations["ordering"].push(this.config["resume_from"][i]["id"]);
                 this.annotations["access"][this.config["resume_from"][i]["id"]] = this.config["resume_from"][i];
+
+                // Set new to false
                 this.annotations["access"][this.config["resume_from"][i]["id"]]["new"] = false;
+
+                // Test for line_size
+                if (this.annotations["access"][this.config["resume_from"][i]["id"]]["line_size"] == null) {
+                    this.annotations["access"][this.config["resume_from"][i]["id"]]["line_size"] = this.annotation_state["line_size"];
+                }
+
+                // Make sure it has a containing box
+                this.rebuild_containing_box(this.config["resume_from"][i]["id"]);
+
+                // Ensure that spatial type is allowed
+                // TODO do I really want to do this?
+
+                // Ensure that classification payloads are compatible with config
+                // TODO
+
+                // Same for regression payloads
+                // TODO
             }
         }
 
