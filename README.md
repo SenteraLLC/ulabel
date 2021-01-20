@@ -73,6 +73,8 @@ node demo/server.js
 - Allow for non-absolute position of parent div
 - Flexible handling of classes/hierarchy
 - Better discipline on logging
+- Allow for multiple-task import
+- Regression payloads
 
 Shortly after
 - Center image in window when small
