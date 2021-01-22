@@ -1220,6 +1220,9 @@ class ULabel {
     
     // Set a point in a spatial payload using access string
     set_with_access_string(annid, access_str, val, undoing=null) {
+        // Ensure the values are ints
+        val[0] = Math.round(val[0]);
+        val[1] = Math.round(val[1]);
         switch (this.annotations["access"][annid]["spatial_type"]) {
             case "bbox":
                 var bbi = parseInt(access_str[0], 10);
@@ -2788,12 +2791,12 @@ class ULabel {
     get_global_mouse_x(mouse_event) {
         const scale = this.get_empirical_scale();
         const annbox = $("#" + this.config["annbox_id"]);
-        return (mouse_event.pageX - annbox.offset().left + annbox.scrollLeft())/scale;
+        return Math.round((mouse_event.pageX - annbox.offset().left + annbox.scrollLeft())/scale);
     }
     get_global_mouse_y(mouse_event) {
         const scale = this.get_empirical_scale();
         const annbox = $("#" + this.config["annbox_id"]);
-        return (mouse_event.pageY - annbox.offset().top + annbox.scrollTop())/scale;
+        return Math.round((mouse_event.pageY - annbox.offset().top + annbox.scrollTop())/scale);
     }
 
     // ================= Dialog Interaction Handlers =================
