@@ -70,16 +70,17 @@ node demo/server.js
 ## TODO
 
 Maintenance & "Bug" fixes
-- Make sure "derived from" is getting set
-- Allow for non-absolute position of parent div (test this out)
-- Flexible handling of classes/hierarchy -- get this from manifest file
-- Better discipline on logging
+- Make sure "derived from" is getting set (1)
+- Allow for non-absolute position of parent div (test this out) (5)
+- Flexible handling of classes -- get this from manifest file (3)
+- Better discipline on logging (5)
 
 New features
-- Allow for multiple-task viewing, toggling each user
-- Regression payloads
-- Superpixels
+- Polylines (only two points for row detection) (1)
+- Allow for multiple-task viewing, toggling each user (5)
+- Regression payloads (5)
+- Superpixels (5)
 
 Shortly after
-- Center image in window when small
-- Handle 3D image data
+- Center image in window when small (5)
+- Handle 3D image data (5)
