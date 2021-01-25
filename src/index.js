@@ -2299,6 +2299,10 @@ class ULabel {
     }
     
     begin_edit(mouse_event) {
+        // TODO handle case of editing an annotation that was not originally created by you
+        //   Make new annotation (copy of old)
+        //   Set parent_id and deprecated = true
+
         this.annotation_state["active_id"] = this.annotation_state["edit_candidate"]["annid"];
         this.annotation_state["is_in_edit"] = true;
         let ec = JSON.parse(JSON.stringify(this.annotation_state["edit_candidate"]));

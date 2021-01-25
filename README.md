@@ -67,14 +67,18 @@ pwd # Should be /path/to/ULabel
 node demo/server.js
 ```
 
-## TODO List Prior to Open Source
+## TODO
 
-- ~~Condense with webpack~~
-- Allow for non-absolute position of parent div
-- Flexible handling of classes/hierarchy
+Maintenance & "Bug" fixes
+- Make sure "derived from" is getting set
+- Allow for non-absolute position of parent div (test this out)
+- Flexible handling of classes/hierarchy -- get this from manifest file
 - Better discipline on logging
-- Allow for multiple-task import
+
+New features
+- Allow for multiple-task viewing, toggling each user
 - Regression payloads
+- Superpixels
 
 Shortly after
 - Center image in window when small
