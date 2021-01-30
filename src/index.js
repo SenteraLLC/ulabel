@@ -814,6 +814,9 @@ class ULabel {
                     ul.undo();
                 }
             }
+            else if (keypress_event.key == "l") {
+                console.log(ul.annotations);
+            }
             else {
                 console.log(keypress_event);
             }
@@ -1760,11 +1763,41 @@ class ULabel {
 
     delete_annotation(aid, redo_payload=null) {
         let annid = aid;
+        let old_id = annid;
+        let new_id = old_id;
         let redoing = false;
         if (redo_payload != null) {
             redoing = true;
             annid = redo_payload.annid;
+            old_id = redo_payload.old_id;
         }
+        
+        let deprecate_old = false;
+        if (!this.annotations["access"][old_id]["new"]) {
+            // Make new id and record that you did
+            deprecate_old = true;
+            if (!redoing) {
+                new_id = this.make_new_annotation_id();
+            }
+            else {
+                new_id = redo_payload.new_id;
+            }
+
+            // Make new annotation (copy of old)
+            this.annotations["access"][new_id] = JSON.parse(JSON.stringify(this.annotations["access"][old_id]));
+            this.annotations["access"][new_id]["id"] = new_id;
+            this.annotations["access"][new_id]["created_by"] = this.config["annotator"];
+            this.annotations["access"][new_id]["new"] = true;
+            this.annotations["access"][new_id]["parent_id"] = old_id;
+            this.annotations["ordering"].push(new_id);
+
+            // Set parent_id and deprecated = true
+            this.annotations["access"][old_id]["deprecated"] = true;
+
+            // Work with new annotation from now on
+            annid = new_id;
+        }
+
         if (this.annotation_state["active_id"] != null) {
             this.annotation_state["active_id"] = null;
             this.annotation_state["is_in_edit"] = false;
@@ -1777,15 +1810,32 @@ class ULabel {
         this.record_action({
             act_type: "delete_annotation",
             undo_payload: {
-                annid: annid
+                annid: annid,
+                deprecate_old: deprecate_old,
+                old_id: old_id,
+                new_id: new_id
             },
             redo_payload: {
-                annid: annid
+                annid: annid,
+                deprecate_old: deprecate_old,
+                old_id: old_id,
+                new_id: new_id
             }
         }, redoing);
     }
     delete_annotation__undo(undo_payload) {
-        this.annotations["access"][undo_payload.annid]["deprecated"] = false;
+        let actid = undo_payload.annid;
+        if (undo_payload.deprecate_old) {
+            actid = undo_payload.old_id;
+            this.annotations["access"][actid]["deprecated"] = false;
+            delete this.annotations["access"][undo_payload.new_id];
+            // remove from ordering
+            let ind = this.annotations["ordering"].indexOf(undo_payload.new_id)
+            this.annotations["ordering"].splice(ind, 1);
+        }
+        else {
+            this.annotations["access"][undo_payload.annid]["deprecated"] = false;
+        }
         this.redraw_all_annotations();
         this.suggest_edits(this.viewer_state["last_move"]);
     }
@@ -2299,9 +2349,29 @@ class ULabel {
     }
     
     begin_edit(mouse_event) {
-        // TODO handle case of editing an annotation that was not originally created by you
-        //   Make new annotation (copy of old)
-        //   Set parent_id and deprecated = true
+        // Handle case of editing an annotation that was not originally created by you
+        let deprecate_old = false;
+        let old_id = this.annotation_state["edit_candidate"]["annid"];
+        let new_id = old_id;
+        if (!this.annotations["access"][old_id]["new"]) {
+            // Make new id and record that you did
+            deprecate_old = true;
+            new_id = this.make_new_annotation_id();
+
+            // Make new annotation (copy of old)
+            this.annotations["access"][new_id] = JSON.parse(JSON.stringify(this.annotations["access"][old_id]));
+            this.annotations["access"][new_id]["id"] = new_id;
+            this.annotations["access"][new_id]["created_by"] = this.config["annotator"];
+            this.annotations["access"][new_id]["new"] = true;
+            this.annotations["access"][new_id]["parent_id"] = old_id;
+            this.annotations["ordering"].push(new_id);
+
+            // Set parent_id and deprecated = true
+            this.annotations["access"][old_id]["deprecated"] = true;
+
+            // Change edit candidate to new id
+            this.annotation_state["edit_candidate"]["annid"] = new_id;
+        }
 
         this.annotation_state["active_id"] = this.annotation_state["edit_candidate"]["annid"];
         this.annotation_state["is_in_edit"] = true;
@@ -2317,14 +2387,20 @@ class ULabel {
                 actid: this.annotation_state["active_id"],
                 edit_candidate: ec,
                 starting_x: stpt[0],
-                starting_y: stpt[1]
+                starting_y: stpt[1],
+                deprecate_old: deprecate_old,
+                old_id: old_id,
+                new_id: new_id
             },
             redo_payload: {
                 actid: this.annotation_state["active_id"],
                 edit_candidate: ec,
                 ending_x: gmx,
                 ending_y: gmy,
-                finished: false
+                finished: false,
+                deprecate_old: deprecate_old,
+                old_id: old_id,
+                new_id: new_id
             }
         });
     }
@@ -2376,7 +2452,15 @@ class ULabel {
         }
     }
     edit_annotation__undo(undo_payload) {
-        const actid = undo_payload.actid;
+        let actid = undo_payload.actid;
+        if (undo_payload.deprecate_old) {
+            actid = undo_payload.old_id;
+            this.annotations["access"][actid]["deprecated"] = false;
+            delete this.annotations["access"][undo_payload.new_id];
+            // remove from ordering
+            let ind = this.annotations["ordering"].indexOf(undo_payload.new_id)
+            this.annotations["ordering"].splice(ind, 1);
+        }
         const ms_loc = [
             undo_payload.starting_x,
             undo_payload.starting_y
@@ -2403,7 +2487,17 @@ class ULabel {
         }
     }
     edit_annotation__redo(redo_payload) {
-        const actid = redo_payload.actid;
+        let actid = redo_payload.actid;
+        if (redo_payload.deprecate_old) {
+            actid = redo_payload.new_id;
+            this.annotations["access"][actid] = JSON.parse(JSON.stringify(this.annotations["access"][redo_payload.old_id]));
+            this.annotations["access"][redo_payload.new_id]["id"] = redo_payload.new_id;
+            this.annotations["access"][redo_payload.new_id]["created_by"] = this.config["annotator"];
+            this.annotations["access"][redo_payload.new_id]["new"] = true;
+            this.annotations["access"][redo_payload.new_id]["parent_id"] = redo_payload.old_id;
+            this.annotations["access"][redo_payload.old_id]["deprecated"] = true;
+            this.annotations["ordering"].push(redo_payload.new_id);
+        }
         const ms_loc = [
             redo_payload.ending_x,
             redo_payload.ending_y
@@ -2436,19 +2530,49 @@ class ULabel {
                 actid: redo_payload.actid,
                 edit_candidate: JSON.parse(JSON.stringify(redo_payload.edit_candidate)),
                 starting_x: cur_loc[0],
-                starting_y: cur_loc[1]
+                starting_y: cur_loc[1],
+                deprecate_old: redo_payload.deprecate_old,
+                old_id: redo_payload.old_id,
+                new_id: redo_payload.new_id
             },
             redo_payload: {
                 actid: redo_payload.actid,
                 edit_candidate: JSON.parse(JSON.stringify(redo_payload.edit_candidate)),
                 ending_x: redo_payload.ending_x,
                 ending_y: redo_payload.ending_y,
-                finished: true
+                finished: true,
+                deprecate_old: redo_payload.deprecate_old,
+                old_id: redo_payload.old_id,
+                new_id: redo_payload.new_id
             }
         }, true);
     }
 
     begin_move(mouse_event) {
+
+        let deprecate_old = false;
+        let old_id = this.annotation_state["move_candidate"]["annid"];
+        let new_id = old_id;
+        if (!this.annotations["access"][old_id]["new"]) {
+            // Make new id and record that you did
+            deprecate_old = true;
+            new_id = this.make_new_annotation_id();
+
+            // Make new annotation (copy of old)
+            this.annotations["access"][new_id] = JSON.parse(JSON.stringify(this.annotations["access"][old_id]));
+            this.annotations["access"][new_id]["id"] = new_id;
+            this.annotations["access"][new_id]["created_by"] = this.config["annotator"];
+            this.annotations["access"][new_id]["new"] = true;
+            this.annotations["access"][new_id]["parent_id"] = old_id;
+            this.annotations["ordering"].push(new_id);
+
+            // Set parent_id and deprecated = true
+            this.annotations["access"][old_id]["deprecated"] = true;
+
+            // Change edit candidate to new id
+            this.annotation_state["move_candidate"]["annid"] = new_id;
+        }
+
         this.annotation_state["active_id"] = this.annotation_state["move_candidate"]["annid"];
 
         // Revise start to current button center
@@ -2465,13 +2589,19 @@ class ULabel {
                 move_candidate: mc,
                 diffX: 0,
                 diffY: 0,
+                deprecate_old: deprecate_old,
+                old_id: old_id,
+                new_id: new_id
             },
             redo_payload: {
                 actid: this.annotation_state["active_id"],
                 move_candidate: mc,
                 diffX: 0,
                 diffY: 0,
-                finished: false
+                finished: false,
+                deprecate_old: deprecate_old,
+                old_id: old_id,
+                new_id: new_id
             }
         });
         // Hide point edit suggestion
@@ -2637,6 +2767,13 @@ class ULabel {
         const diffY = undo_payload.diffY;
 
         let actid = undo_payload.move_candidate["annid"];
+        if (undo_payload.deprecate_old) {
+            actid = undo_payload.old_id;
+            this.annotations["access"][actid]["deprecated"] = false;
+            delete this.annotations["access"][undo_payload.new_id];
+            let ind = this.annotations["ordering"].indexOf(undo_payload.new_id);
+            this.annotations["ordering"].splice(ind, 1);
+        }
 
         for (var spi = 0; spi < this.annotations["access"][actid]["spatial_payload"].length; spi++) {
             this.annotations["access"][actid]["spatial_payload"][spi][0] += diffX;
@@ -2658,6 +2795,16 @@ class ULabel {
         const diffY = redo_payload.diffY;
 
         let actid = redo_payload.move_candidate["annid"];
+        if (redo_payload.deprecate_old) {
+            actid = redo_payload.new_id;
+            this.annotations["access"][actid] = JSON.parse(JSON.stringify(this.annotations["access"][redo_payload.old_id]));
+            this.annotations["access"][redo_payload.new_id]["id"] = redo_payload.new_id;
+            this.annotations["access"][redo_payload.new_id]["created_by"] = this.config["annotator"];
+            this.annotations["access"][redo_payload.new_id]["new"] = true;
+            this.annotations["access"][redo_payload.new_id]["parent_id"] = redo_payload.old_id;
+            this.annotations["access"][redo_payload.old_id]["deprecated"] = true;
+            this.annotations["ordering"].push(redo_payload.new_id);
+        }
 
         for (var spi = 0; spi < this.annotations["access"][actid]["spatial_payload"].length; spi++) {
             this.annotations["access"][actid]["spatial_payload"][spi][0] += diffX;
@@ -2681,13 +2828,19 @@ class ULabel {
                 move_candidate: redo_payload.move_candidate,
                 diffX: -diffX,
                 diffY: -diffY,
+                deprecate_old: redo_payload.deprecate_old,
+                old_id: redo_payload.old_id,
+                new_id: redo_payload.new_id
             },
             redo_payload: {
                 actid: this.annotation_state["active_id"],
                 move_candidate: redo_payload.move_candidate,
                 diffX: diffX,
                 diffY: diffY,
-                finished: true
+                finished: true,
+                deprecate_old: redo_payload.deprecate_old,
+                old_id: redo_payload.old_id,
+                new_id: redo_payload.new_id
             }
         }, true);
     }

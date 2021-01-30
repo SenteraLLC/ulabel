@@ -17,8 +17,9 @@ const server = http.createServer(function(req, res) {
     switch (url.pathname) {
         case "/multi_class.html":
         case "/single_class.html":
+        case "/resume_from.html":
         case "/demo_image.jpg":
-                static_demo_server(req, res, finalhandler(req, res));
+            static_demo_server(req, res, finalhandler(req, res));
             break;
         case "/ulabel.js":
         case "/ulabel.css":
