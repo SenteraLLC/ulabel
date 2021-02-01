@@ -2774,15 +2774,16 @@ class ULabel {
             let ind = this.annotations["ordering"].indexOf(undo_payload.new_id);
             this.annotations["ordering"].splice(ind, 1);
         }
-
-        for (var spi = 0; spi < this.annotations["access"][actid]["spatial_payload"].length; spi++) {
-            this.annotations["access"][actid]["spatial_payload"][spi][0] += diffX;
-            this.annotations["access"][actid]["spatial_payload"][spi][1] += diffY;
+        else {
+            for (var spi = 0; spi < this.annotations["access"][actid]["spatial_payload"].length; spi++) {
+                this.annotations["access"][actid]["spatial_payload"][spi][0] += diffX;
+                this.annotations["access"][actid]["spatial_payload"][spi][1] += diffY;
+            }
+            this.annotations["access"][actid]["containing_box"]["tlx"] += diffX;
+            this.annotations["access"][actid]["containing_box"]["brx"] += diffX;
+            this.annotations["access"][actid]["containing_box"]["tly"] += diffY;
+            this.annotations["access"][actid]["containing_box"]["bry"] += diffY;
         }
-        this.annotations["access"][actid]["containing_box"]["tlx"] += diffX;
-        this.annotations["access"][actid]["containing_box"]["brx"] += diffX;
-        this.annotations["access"][actid]["containing_box"]["tly"] += diffY;
-        this.annotations["access"][actid]["containing_box"]["bry"] += diffY;
 
         this.redraw_all_annotations();
         this.hide_edit_suggestion();
