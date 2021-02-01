@@ -70,7 +70,6 @@ node demo/server.js
 ## TODO
 
 Maintenance & "Bug" fixes
-- Make sure "derived from" is getting set (1)
 - Allow for non-absolute position of parent div (test this out) (5)
 - Flexible handling of classes -- get this from manifest file (3)
 - Better discipline on logging (5)
