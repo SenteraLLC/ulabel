@@ -854,6 +854,23 @@ class ULabel {
                         "id": i
                     }
                 }
+                else if (typeof ul.config["class_defs"][i] == 'object') {
+                    let repl = {
+                        "name": `Class ${i}`,
+                        "color": COLORS[i],
+                        "id": i
+                    }
+                    if ("name" in ul.config["class_defs"][i]) {
+                        repl["name"] = ul.config["class_defs"][i]["name"];
+                    }
+                    if ("color" in ul.config["class_defs"][i]) {
+                        repl["color"] = ul.config["class_defs"][i]["color"];
+                    }
+                    if ("id" in ul.config["class_defs"][i]) {
+                        repl["id"] = ul.config["class_defs"][i]["id"];
+                    }
+                    ul.config["class_defs"][i] = repl;
+                }
             }
         }
 

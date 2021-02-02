@@ -936,7 +936,8 @@ div.ulabel-night #submit-button:active {
 
 // TODO more of these
 const COLORS = [
-   "orange", "crimson", "dogerblue", "midnightblue", "seagreen", "tan"
+   "orange", "crimson", "dodgerblue", "midnightblue", "seagreen", "tan", "blueviolet", "chocolate",
+   "darksalmon", "deeppink", "fuchsia"
 ];
 
 export { BBOX_SVG, POLYGON_SVG, CONTOUR_SVG, TBAR_SVG, DEMO_ANNOTATION, INIT_STYLE, COLORS };

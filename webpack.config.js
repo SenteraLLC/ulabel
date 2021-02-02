@@ -6,4 +6,7 @@ module.exports = {
     filename: 'ulabel.js',
     path: path.resolve(__dirname, 'dist'),
   },
+  optimization: {
+    minimize: false
+  }
 };
