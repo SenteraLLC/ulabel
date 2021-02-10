@@ -523,7 +523,7 @@ class ULabel {
                 sel = " sel";
                 href = "";
             }
-            if (ul.config["soft-id"]) {
+            if (ul.config["allow_soft_id"]) {
                 let msg = "Only hard id is currently supported";
                 throw new Error(msg);
             }
@@ -877,21 +877,28 @@ class ULabel {
         return ret;
     }
 
+    static initialize_subtasks(stcs) {
+        // TODO 
+        //  Handle case of single subtask
+        //  Recognize and store single class mode
+        //  Error check classes and allowed modes
+        //  Generate easy-access array of class_ids
+        //  Load "resume_from" data into annotations objs and error check
+        //  Initialize an empty action stream for each subtask
+        //  Each subtask gets a canvas
+        //  Each subtask gets an id_dialog
+        //  Each subtask gets a struct of visible dialogs
+        return stcs;
+    }
+
     // ================= Construction/Initialization =================
         
     constructor(
         container_id, 
         image_data, 
         username, 
-        classes, 
-        allowed_modes, 
         on_submit,
-        resume_from=null,
-        instructions_url=null,
-        on_save=null,
-        class_hierarchy=null,
-        task_meta=null,
-        annotation_meta=null
+        subtasks
     ) {
         if (task_meta == null) {
             task_meta = {};
@@ -900,44 +907,66 @@ class ULabel {
             annotation_meta = {};
         }
 
+        // TODO 
+        // Allow for importing spacing data -- a measure tool would be nice too
         // Store tool configuration
+        // Much of this is hardcoded defaults, 
+        //   some might be offloaded to the constructor eventually...
         this.config = {
             "container_id": container_id,
             "annbox_id": "annbox", // TODO noconfict
             "imwrap_id": "imwrap", // TODO noconfict
+            
+            // At best these will remain prefixes
             "canvas_fid": "front-canvas", // TODO noconflict
             "canvas_bid": "back-canvas", // TODO noconflict
             "canvas_did": "demo-canvas", // TODO noconflict
+
             "canvas_class": "easel", // TODO noconflict
             "image_id": "ann_image", // TODO noconflict
             "imgsz_class": "imgsz", // TODO noconflict
             "toolbox_id": "toolbox", // TODO noconflict
-            "instructions_url": instructions_url,
             "image_data": image_data,
             "image_width": null,
             "image_height": null,
             "demo_width": 120,
             "demo_height": 40,
             "annotator": username,
-            "class_defs": classes,
-            "class_hierarchy": class_hierarchy,
-            "class_ids": [],
-            "soft-id": false, // TODO allow soft eventually
+            "allow_soft_id": false, // TODO allow soft eventually
             "done_callback": on_submit,
-            "save_callback": on_save,
-            "resume_from": resume_from,
-            "allowed_modes": allowed_modes,
             "default_annotation_color": "#fa9d2a",
-            "annotation_meta": annotation_meta,
-            "task_meta": task_meta,
             "polygon_ender_size": 30,
             "edit_handle_size": 30
         };
 
+        // Store provided config for subtasks, but this will be compiled
+        this.subtasks = ULabel.initialize_subtasks(subtasks);
+
+        // TODO
+        // Set current subtask in config
+
+        // Create holder for annotations
+        // TODO one for each subtask
+        this.annotations = {
+            "ordering": [],
+            "access": {}
+        };
+
+        // Create holder for actions
+        // TODO one for each subtask
+        this.actions = {
+            "stream": [],
+            "undone_stack": []
+        }
+
+
         // Finished storing configuration. Make sure it's valid
-        // Store frequent check values for performance
+        // Store frequently checked values for performance
+        // TODO this will is deprecated but still a reference for now
         this.compiled_config = ULabel.compile_configuration(this);
 
+        // TODO
+        // Deprecate this as well
         var class_ids = [];
         for (var txi = 0; txi < this.config["class_defs"].length; txi++) {
             class_ids.push(this.config["class_defs"][txi]["id"]);
@@ -945,6 +974,8 @@ class ULabel {
         this.config["class_ids"] = class_ids;
 
 
+        // TODO
+        // Deprecate this as well
         // Store ID dialog configuration
         this.id_dialog_config = {
             "id": "id_dialog", // TODO noconflict
@@ -953,6 +984,8 @@ class ULabel {
             "inner_prop": 0.3
         };
         
+        // TODO
+        // Deprecate this as well
         // Store state of ID dialog element
         // TODO much more here when full interaction is built
         let id_payload = [];
@@ -966,7 +999,11 @@ class ULabel {
             "first_explicit_assignment": false
         };
 
+        // TODO 
+        // Visible dialogs will be subtask-specific
         // Create object for current ulabel state
+        // TODO
+        // Add and handle a value for current image
         this.viewer_state = {
             "zoom_val": 1.0,
             "visible_dialogs": {},
@@ -1004,6 +1041,8 @@ class ULabel {
             }
         };
         
+        // TODO
+        // Deprecate this as well -- each subtask gets a canvas
         // Canvasses' display/drawing states
         this.canvas_state = {
             "front_context": null,
@@ -1011,6 +1050,8 @@ class ULabel {
             "demo_context": null
         };
         
+        // TODO
+        // Deprecate this as well -- each subtask gets an annotation state
         // State data for annotation interactions
         this.annotation_state = {
             "mode": this.config["allowed_modes"][0],
@@ -1022,19 +1063,9 @@ class ULabel {
             "line_size": 4.0,
             "size_mode": "fixed"
         };
-        
-        // Create holder for annotations
-        this.annotations = {
-            "ordering": [],
-            "access": {}
-        };
 
-        // Create holder for actions
-        this.actions = {
-            "stream": [],
-            "undone_stack": []
-        }
-
+        // TODO
+        // Deprecate this as well -- this happens for each subtask in the process function
         // If resuming from not null, then set and draw prior annotations        
         if (this.config["resume_from"] != null) {
             for (var i = 0; i < this.config["resume_from"].length; i++) {
@@ -1296,7 +1327,7 @@ class ULabel {
     }
 
     get_annotation_color(clf_payload, demo=false) {
-        if (this.config["soft-id"]) {
+        if (this.config["allow_soft_id"]) {
             // not currently supported;
             return this.config["default_annotation_color"];
         }
@@ -3056,7 +3087,7 @@ class ULabel {
                 }
             }
             // TODO currently assumes soft
-            if (!this.config["soft-id"]) {
+            if (!this.config["allow_soft_id"]) {
                 let dist_prop = 1.0;
                 let class_ids = this.config["class_ids"];
                 let idarr = $("a.tbid-opt.sel").attr("id").split("_");
@@ -3112,7 +3143,7 @@ class ULabel {
         this.redraw_demo();
     }
     update_id_toolbox_display() {
-        if (this.config["soft-id"]) {
+        if (this.config["allow_soft_id"]) {
             // Not supported yet
         }
         else {
@@ -3134,7 +3165,7 @@ class ULabel {
     handle_id_dialog_hover(mouse_event) {
         let pos_evt = this.lookup_id_dialog_mouse_pos(mouse_event);
         if (pos_evt != null) {
-            if (!this.config["soft-id"]) {
+            if (!this.config["allow_soft_id"]) {
                 pos_evt.dist_prop = 1.0;
             }
             // TODO This assumes no pins
