@@ -69,6 +69,9 @@ node demo/server.js
 
 ## TODO
 
+Standalone tool
+- Allow for arbitrary ULabel job given URL with config data
+
 Maintenance & "Bug" fixes
 - Allow for non-absolute position of parent div (test this out) (5)
 - Flexible handling of classes -- get this from manifest file (3)
@@ -83,3 +86,5 @@ New features
 Shortly after
 - Center image in window when small (5)
 - Handle 3D image data (5)
+
+Multi select with a polygon
