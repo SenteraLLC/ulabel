@@ -12,6 +12,7 @@ config = {
     "image_data": str(input_dir / "image.jpg"),
     "subtasks": {
         "main": {
+            "display_name": "MF Stand",
             "classes": [
                 {
                     "name": "Male Stand",
@@ -20,7 +21,7 @@ config = {
                 },
                 {
                     "name": "Female Stand",
-                    "color": "blue",
+                    "color": "pink",
                     "id": 11
                 },
             ],
@@ -29,7 +30,8 @@ config = {
             "task_meta": None,
             "annotation_meta": None
         },
-        "reject-revise": {
+        "review": {
+            "display_name": "Review",
             "classes": [
                 {
                     "name": "Reason 1",
