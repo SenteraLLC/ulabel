@@ -1,0 +1,205 @@
+{
+    "task_meta": {},
+    "annotations": [
+        {
+            "id": "952e235c-9a66-4f6e-b27f-e4c20c7817ad",
+            "new": true,
+            "parent_id": null,
+            "created_by": "TestUser",
+            "created_at": "2021-02-11T16:57:08.344Z",
+            "deprecated": false,
+            "spatial_type": "polygon",
+            "spatial_payload": [
+                [
+                    455,
+                    55
+                ],
+                [
+                    498,
+                    2985
+                ],
+                [
+                    455,
+                    55
+                ]
+            ],
+            "classification_payloads": [
+                {
+                    "class_id": 3,
+                    "confidence": 1
+                },
+                {
+                    "class_id": 4,
+                    "confidence": 0
+                }
+            ],
+            "line_size": 13.005348618814132,
+            "containing_box": {
+                "tlx": 455,
+                "tly": 55,
+                "brx": 498,
+                "bry": 2985
+            }
+        },
+        {
+            "id": "8605360e-f199-4ef7-b5ba-c8bd737d38d7",
+            "new": true,
+            "parent_id": null,
+            "created_by": "TestUser",
+            "created_at": "2021-02-11T16:57:15.758Z",
+            "deprecated": false,
+            "spatial_type": "polygon",
+            "spatial_payload": [
+                [
+                    709,
+                    59
+                ],
+                [
+                    771,
+                    2976
+                ],
+                [
+                    709,
+                    59
+                ]
+            ],
+            "classification_payloads": [
+                {
+                    "class_id": 3,
+                    "confidence": 0
+                },
+                {
+                    "class_id": 4,
+                    "confidence": 1
+                }
+            ],
+            "line_size": 13.005348618814132,
+            "containing_box": {
+                "tlx": 709,
+                "tly": 59,
+                "brx": 771,
+                "bry": 2976
+            }
+        },
+        {
+            "id": "c301a6c4-7433-46c3-a4c9-bedb7977049b",
+            "new": true,
+            "parent_id": null,
+            "created_by": "TestUser",
+            "created_at": "2021-02-11T16:57:21.966Z",
+            "deprecated": false,
+            "spatial_type": "polygon",
+            "spatial_payload": [
+                [
+                    976,
+                    81
+                ],
+                [
+                    1028,
+                    2956
+                ],
+                [
+                    976,
+                    81
+                ]
+            ],
+            "classification_payloads": [
+                {
+                    "class_id": 3,
+                    "confidence": 1
+                },
+                {
+                    "class_id": 4,
+                    "confidence": 0
+                }
+            ],
+            "line_size": 13.005348618814132,
+            "containing_box": {
+                "tlx": 976,
+                "tly": 81,
+                "brx": 1028,
+                "bry": 2956
+            }
+        },
+        {
+            "id": "8eb3b968-a24e-4c41-a66e-d2a7de83df1c",
+            "new": true,
+            "parent_id": null,
+            "created_by": "TestUser",
+            "created_at": "2021-02-11T16:57:26.445Z",
+            "deprecated": false,
+            "spatial_type": "polygon",
+            "spatial_payload": [
+                [
+                    189,
+                    81
+                ],
+                [
+                    244,
+                    2943
+                ],
+                [
+                    189,
+                    81
+                ]
+            ],
+            "classification_payloads": [
+                {
+                    "class_id": 3,
+                    "confidence": 1
+                },
+                {
+                    "class_id": 4,
+                    "confidence": 0
+                }
+            ],
+            "line_size": 13.005348618814132,
+            "containing_box": {
+                "tlx": 189,
+                "tly": 81,
+                "brx": 244,
+                "bry": 2943
+            }
+        },
+        {
+            "id": "4aac604d-6a25-4ab9-af6c-67be6af37493",
+            "new": true,
+            "parent_id": null,
+            "created_by": "TestUser",
+            "created_at": "2021-02-11T16:57:30.294Z",
+            "deprecated": false,
+            "spatial_type": "polygon",
+            "spatial_payload": [
+                [
+                    1239,
+                    75
+                ],
+                [
+                    1298,
+                    2959
+                ],
+                [
+                    1239,
+                    75
+                ]
+            ],
+            "classification_payloads": [
+                {
+                    "class_id": 3,
+                    "confidence": 1
+                },
+                {
+                    "class_id": 4,
+                    "confidence": 0
+                }
+            ],
+            "line_size": 13.005348618814132,
+            "containing_box": {
+                "tlx": 1239,
+                "tly": 75,
+                "brx": 1298,
+                "bry": 2959
+            }
+        }
+    ]
+}

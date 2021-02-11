@@ -10,7 +10,45 @@ output_dir = expl_data / "output"
 url = 'http://localhost:8081/new'
 config = {
     "image_data": str(input_dir / "image.jpg"),
-    "resume_from": str(input_dir / "annotations.json"),
-    "output_file": str(output_dir / "new_annotations.json")
+    "subtasks": {
+        "main": {
+            "classes": [
+                {
+                    "name": "Male Stand",
+                    "color": "blue",
+                    "id": 10
+                },
+                {
+                    "name": "Female Stand",
+                    "color": "blue",
+                    "id": 11
+                },
+            ],
+            "allowed_modes": ["polygon"],
+            "resume_from": str(input_dir / "annotations.json"),
+            "task_meta": None,
+            "annotation_meta": None
+        },
+        "reject-revise": {
+            "classes": [
+                {
+                    "name": "Reason 1",
+                    "color": "blue",
+                    "id": 10
+                },
+                {
+                    "name": "Reason 2",
+                    "color": "blue",
+                    "id": 11
+                },
+            ],
+            "allowed_modes": ["whole-image+"],
+            "resume_from": str(input_dir / "annotations.json"),
+            "task_meta": None,
+            "annotation_meta": None
+        }
+    },
+    "output_file": str(output_dir / "new_annotations.json"),
+    "open": True
 }
-print(requests.post(url, data=json.dumps(config)).text)
+requests.post(url, data=json.dumps(config))
