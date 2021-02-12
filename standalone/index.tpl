@@ -38,11 +38,13 @@
                     document.body.removeChild(element);
                 }
 
+                console.log({{ subtasks }});
+
                 // Initial ULabel configuration
                 let ulabel = new ULabel(
                     "container", 
                     "{{ image_data }}", 
-                    "TestUser", 
+                    "{{ username }}", 
                     [
                         {
                             "name": "Male",

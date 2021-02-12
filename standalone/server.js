@@ -11,11 +11,35 @@ const port = 8081;
 const index_tpl = swig.compileFile(path.resolve(__dirname, 'index.tpl'));
 const ulabel_path = path.resolve(path.resolve(path.resolve(__dirname, ".."), "dist"), "ulabel.js");
 
-let error_check_session_data = (req_body, callback) => {
-    // TODO
-    callback(null, null);
+let check_session_data = (req_body, callback) => {
+    // Ensure image file exists
+    let img_path = path.resolve(req_body["image_data"]);
+    console.log(img_path);
+    // let dst_parent = dst_path.substring(0, dst_path.length - path.basename(dst_parent).length);
+    fs.access(img_path, fs.F_OK, (err) => {
+        if (err) {
+            callback(2, `Input image ${req_body["image_data"]} could not be found.`);
+            return;
+        }
+        // Ensure output file can be written to, and overwriting is okay if applicable
+        let dst_path = path.resolve(req_body["output_file"]);
+        let dst_parent = dst_path.substring(0, dst_path.length - path.basename(dst_parent).length);
+        console.log(dst_parent);
+
+
+        // Callback so response can be sent
+        callback(null, null);
+    });
+
 };
 
+let process_session_data = (req_body, callback) => {
+    // For each subtask
+    // If resume_from is a string, interpret it as a file and load its contents
+
+    // Callback so response can be sent
+    callback(null, null, req_body);
+};
 
 let serve_single_static_file = (file_path, mime_type, res) => {
     fs.readFile(file_path, (err, data) => {
@@ -37,15 +61,19 @@ const server = http.createServer(function(req, res) {
     if (this_url.pathname == "/" && req.method == 'GET') {
         // Get raw original request data
         let orig_body = JSON.parse(query.req);
+        process_session_data(orig_body, (err, new_body) => {
+            // Produce a render object
+            let render_obj = {
+                msg: "Hello, world!",
+                image_data: "http://localhost:" + port + "/image?path=" + new_body["image_data"],
+                username: new_body["username"],
+                subtasks: new_body["subtasks"],
+                output_file: new_body["output_file"]
+            };
 
-        // Produce a render object
-        let render_obj = {
-            msg: "Hello, world!",
-            image_data: "http://localhost:" + port + "/image?path=" + orig_body["image_data"]
-        };
-
-        // Render an HTML doc that contains the desired session
-        res.end(index_tpl(render_obj));
+            // Render an HTML doc that contains the desired session
+            res.end(index_tpl(render_obj));
+        });
     }
     else if (this_url.pathname == "/save" && req.method == "POST") {
         // Save this data in desired location
@@ -74,7 +102,7 @@ const server = http.createServer(function(req, res) {
             }
 
             // Ensure that files exist and output can be written to
-            error_check_session_data(body_obj, (err, err_msg) => {
+            check_session_data(body_obj, (err, err_msg) => {
                 if (err != null) {
                     res.setHeader('Content-Type', 'application/json');
                     res.end(JSON.stringify({
