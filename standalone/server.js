@@ -54,9 +54,42 @@ let check_session_data = (req_body, callback) => {
 
 };
 
+
+let process_task_queue = (rq, tq, cb) => {
+    if (tq.length == 0) {
+        cb(rq);
+        return;
+    }
+    let task = tq.pop();
+    fs.readFile(rq["subtasks"][task]["resume_from"], (err, data) => {
+        if (err) {
+            rq["subtasks"][task]["resume_from"] = null;
+        }
+        else {
+            try {
+                rq["subtasks"][task]["resume_from"] = JSON.parse(data);
+            }
+            catch (err) {
+                rq["subtasks"][task]["resume_from"] = null;
+            }
+        }
+        process_task_queue(rq, tq, cb);
+    });
+    return;
+};
+
+
 let expand_resume_from_files = (rq, cb) => {
-    // TODO
-    cb(rq);
+    // Detect which subtasks need resume_from expansion
+    let task_queue = [];
+    for (const st in rq["subtasks"]) {
+        if (typeof rq["subtasks"][st]["resume_from"] == "string") {
+            task_queue.push(st);
+        }
+    }
+    process_task_queue(rq, task_queue, (new_rq) => {
+        cb(new_rq);
+    });
 };
 
 let process_session_data = (req_body, callback) => {
