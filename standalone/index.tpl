@@ -38,7 +38,9 @@
                     document.body.removeChild(element);
                 }
 
-                console.log({{ subtasks }});
+                {% autoescape false %}
+                console.log({{ subtasks | json }});
+                {% autoescape true %}
 
                 // Initial ULabel configuration
                 let ulabel = new ULabel(

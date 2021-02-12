@@ -12,33 +12,60 @@ const index_tpl = swig.compileFile(path.resolve(__dirname, 'index.tpl'));
 const ulabel_path = path.resolve(path.resolve(path.resolve(__dirname, ".."), "dist"), "ulabel.js");
 
 let check_session_data = (req_body, callback) => {
+    // Make a new obj to return with modified vals
+    let new_body = JSON.parse(JSON.stringify(req_body));
+
     // Ensure image file exists
     let img_path = path.resolve(req_body["image_data"]);
-    console.log(img_path);
-    // let dst_parent = dst_path.substring(0, dst_path.length - path.basename(dst_parent).length);
     fs.access(img_path, fs.F_OK, (err) => {
         if (err) {
-            callback(2, `Input image ${req_body["image_data"]} could not be found.`);
+            callback(2, `Input image ${req_body["image_data"]} could not be found.`, req_body);
             return;
         }
         // Ensure output file can be written to, and overwriting is okay if applicable
         let dst_path = path.resolve(req_body["output_file"]);
-        let dst_parent = dst_path.substring(0, dst_path.length - path.basename(dst_parent).length);
-        console.log(dst_parent);
+        // Fully qualified path names
+        new_body["image_data"] = img_path;
+        new_body["output_file"] = dst_path;
+        fs.access(img_path, fs.F_OK, (err) => {
+            if (err) {
+                let dst_parent = dst_path.substring(0, dst_path.length - path.basename(dst_path).length);
+                fs.access(dst_parent, (err) => {
+                    if (err) {
+                        // Callback so response can be sent
+                        callback(4, `Parent of output file ${dst_path} doesn't exist.`, new_body);
+                        return;
+                    }
+                    // Callback so response can be sent
+                    callback(null, null, new_body);
+                });
+            }
+            else {
+                if (!("allow_overwrite" in req_body) || !(req_body["allow_overwrite"])) {
+                    callback(3, `Output file ${dst_path} exists and allow_overwrite not set to true.`, new_body);
+                    return;
+                }
 
-
-        // Callback so response can be sent
-        callback(null, null);
+                // Callback so response can be sent
+                callback(null, null, new_body);
+            }
+        });
     });
 
+};
+
+let expand_resume_from_files = (rq, cb) => {
+    // TODO
+    cb(rq);
 };
 
 let process_session_data = (req_body, callback) => {
     // For each subtask
     // If resume_from is a string, interpret it as a file and load its contents
-
-    // Callback so response can be sent
-    callback(null, null, req_body);
+    expand_resume_from_files(req_body, (expanded_req) => {
+        // Callback so response can be sent
+        callback(null, expanded_req);
+    });
 };
 
 let serve_single_static_file = (file_path, mime_type, res) => {
@@ -102,7 +129,7 @@ const server = http.createServer(function(req, res) {
             }
 
             // Ensure that files exist and output can be written to
-            check_session_data(body_obj, (err, err_msg) => {
+            check_session_data(body_obj, (err, err_msg, new_body) => {
                 if (err != null) {
                     res.setHeader('Content-Type', 'application/json');
                     res.end(JSON.stringify({
@@ -115,7 +142,7 @@ const server = http.createServer(function(req, res) {
                 else {
                     // Create a URL that will work for accessing this session
                     let url_data = {
-                        req: JSON.stringify(body_obj)
+                        req: JSON.stringify(new_body)
                     };
                     let sess_url = "http://localhost:" + port + "/?" + querystring.stringify(url_data);
 
@@ -128,7 +155,7 @@ const server = http.createServer(function(req, res) {
                     }));
 
                     // If asked to open it, then open it
-                    if ("open" in body_obj && body_obj["open"]) {
+                    if ("open" in new_body && new_body["open"]) {
                         open(sess_url);
                     }
                 }
