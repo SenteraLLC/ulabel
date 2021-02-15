@@ -19,6 +19,7 @@ const server = http.createServer(function(req, res) {
         case "/single_class.html":
         case "/resume_from.html":
         case "/three_dims.html":
+        case "/subtasks.html":
         case "/demo_image.jpg":
             static_demo_server(req, res, finalhandler(req, res));
             break;
@@ -46,5 +47,5 @@ server.listen(port, function() {
     console.log("Demo running at");
     console.log(" http://localhost:" + port + "/multi_class.html");
     console.log(" http://localhost:" + port + "/single_class.html");
-    // open("http://localhost:" + port + "/multi_class.html");
+    // open("http://localhost:" + port + "/subtasks.html");
 });

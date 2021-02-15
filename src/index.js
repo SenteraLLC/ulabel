@@ -877,18 +877,35 @@ class ULabel {
         return ret;
     }
 
-    static initialize_subtasks(stcs) {
-        // TODO 
-        //  Handle case of single subtask
+
+    static compile_subtask(key, subtask) {
         //  Recognize and store single class mode
         //  Error check classes and allowed modes
+        return subtask
+    };
+
+
+    static initialize_subtasks(ul, stcs) {
+        for (const subtask_key in stcs) {
+            ul.annotations[subtask_key] = {
+                "ordering": [],
+                "access": {}
+            };
+            ul.actions[subtask_key] = {
+                "stream": [],
+                "undone_stack": []
+            };
+            ul.subtasks[subtask_key] = ULabel.compile_subtask(subtask_key, stcs[subtask_key]);
+        }
+        // TODO 
+        //  Handle case of single subtask
         //  Generate easy-access array of class_ids
         //  Load "resume_from" data into annotations objs and error check
         //  Initialize an empty action stream for each subtask
         //  Each subtask gets a canvas
         //  Each subtask gets an id_dialog
         //  Each subtask gets a struct of visible dialogs
-        return stcs;
+        // return stcs;
     }
 
     // ================= Construction/Initialization =================
@@ -898,7 +915,9 @@ class ULabel {
         image_data, 
         username, 
         on_submit,
-        subtasks
+        subtasks,
+        task_meta=null,
+        annotation_meta=null
     ) {
         if (task_meta == null) {
             task_meta = {};
@@ -917,7 +936,7 @@ class ULabel {
             "annbox_id": "annbox", // TODO noconfict
             "imwrap_id": "imwrap", // TODO noconfict
             
-            // At best these will remain prefixes
+            // At most these will remain prefixes
             "canvas_fid": "front-canvas", // TODO noconflict
             "canvas_bid": "back-canvas", // TODO noconflict
             "canvas_did": "demo-canvas", // TODO noconflict
@@ -936,29 +955,15 @@ class ULabel {
             "done_callback": on_submit,
             "default_annotation_color": "#fa9d2a",
             "polygon_ender_size": 30,
-            "edit_handle_size": 30
+            "edit_handle_size": 30,
+            "task_meta": task_meta
         };
 
-        // Store provided config for subtasks, but this will be compiled
-        this.subtasks = ULabel.initialize_subtasks(subtasks);
-
-        // TODO
-        // Set current subtask in config
-
-        // Create holder for annotations
-        // TODO one for each subtask
-        this.annotations = {
-            "ordering": [],
-            "access": {}
-        };
-
-        // Create holder for actions
-        // TODO one for each subtask
-        this.actions = {
-            "stream": [],
-            "undone_stack": []
-        }
-
+        // Populate these in an external "static" function
+        this.subtasks = {};
+        this.annotations = {};
+        this.actions = {}
+        ULabel.initialize_subtasks(this, subtasks);
 
         // Finished storing configuration. Make sure it's valid
         // Store frequently checked values for performance
@@ -1061,7 +1066,8 @@ class ULabel {
             "edit_candidate": null,
             "move_candidate": null,
             "line_size": 4.0,
-            "size_mode": "fixed"
+            "size_mode": "fixed",
+            "subtask": Object.keys(this.subtasks)[0]
         };
 
         // TODO
