@@ -71,6 +71,10 @@ node demo/server.js
 
 Standalone tool
 - Allow for arbitrary ULabel job given URL with config data
+- Allow S3 paths for image data
+    - And resume_from/write_to
+- Browse/next/prev/go through
+- Multi-select with polygon
 
 Major Items
 - Handle 3D image data

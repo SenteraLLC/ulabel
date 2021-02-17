@@ -45,9 +45,10 @@ let check_session_data = (req_body, callback) => {
                     callback(3, `Output file ${dst_path} exists and allow_overwrite not set to true.`, new_body);
                     return;
                 }
-
-                // Callback so response can be sent
-                callback(null, null, new_body);
+                else {
+                    // Callback so response can be sent
+                    callback(null, null, new_body);
+                }
             }
         });
     });
@@ -156,24 +157,59 @@ const server = http.createServer(function(req, res) {
                 }));
                 return;
             }
-            fs.writeFile(body_obj.destination, JSON.stringify(body_obj.annotations, null, 2), (err) => {
-                res.setHeader('Content-Type', 'application/json');
-                if (err) {
-                    res.end(JSON.stringify({
-                        err: 1,
-                        err_msg: `Could not write data to ${body_obj.destination}`,
-                        url: null
-                    }));
-                }
-                else {
-                    res.end(JSON.stringify({
-                        err: null,
-                        err_msg: `Wrote data to ${body_obj.destination}`,
-                        url: null
-                    }));
-                }
-                return;
-            });
+            if (body_obj.allow_overwrite == false) {
+                // Check to make sure file doesn't exist
+                fs.access(body_obj.destination, fs.constants.F_OK, (err) => {
+                    if (!err) {
+                        res.end(JSON.stringify({
+                            err: err,
+                            err_msg: `File "${body_obj.destination}" exists and overwrite set to not allowed.`,
+                            url: null
+                        }));
+                        return;
+                    }
+                    else {
+                        fs.writeFile(body_obj.destination, JSON.stringify(body_obj.annotations, null, 2), (err) => {
+                            res.setHeader('Content-Type', 'application/json');
+                            if (err) {
+                                res.end(JSON.stringify({
+                                    err: 1,
+                                    err_msg: `Could not write data to ${body_obj.destination}`,
+                                    url: null
+                                }));
+                            }
+                            else {
+                                res.end(JSON.stringify({
+                                    err: null,
+                                    err_msg: `Wrote data to ${body_obj.destination}`,
+                                    url: null
+                                }));
+                            }
+                            return;
+                        });            
+                    }
+                });
+            }
+            else {
+                fs.writeFile(body_obj.destination, JSON.stringify(body_obj.annotations, null, 2), (err) => {
+                    res.setHeader('Content-Type', 'application/json');
+                    if (err) {
+                        res.end(JSON.stringify({
+                            err: 1,
+                            err_msg: `Could not write data to ${body_obj.destination}`,
+                            url: null
+                        }));
+                    }
+                    else {
+                        res.end(JSON.stringify({
+                            err: null,
+                            err_msg: `Wrote data to ${body_obj.destination}`,
+                            url: null
+                        }));
+                    }
+                    return;
+                });
+            }
         });
     }
     else if (this_url.pathname == "/new" && req.method == 'POST') {

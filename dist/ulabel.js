@@ -13596,6 +13596,9 @@ class ULabel {
             }
             // Given as list
             for (var i = 0; i < this.config["resume_from"].length; i++) {
+                // If 
+                this.config["resume_from"][i]["deprecated"] = (this.config["resume_from"][i]["deprecated"] == true || this.config["resume_from"][i]["deprecated"] == "true");
+
                 // Push to ordering and add to access
                 this.annotations["ordering"].push(this.config["resume_from"][i]["id"]);
                 this.annotations["access"][this.config["resume_from"][i]["id"]] = this.config["resume_from"][i];
@@ -13886,12 +13889,16 @@ class ULabel {
             }
         }
 
+        let cnfmax = 0;
+        let cnfi = 0;
         for (var i = 0; i < col_payload.length; i++) {
-            if (col_payload[i]["confidence"] > 0.5) {
-                return this.config["class_defs"][i]["color"];
+            if (col_payload[i]["confidence"] > cnfmax) {
+                cnfi = i;
+                cnfmax = col_payload[i]["confidence"];
             }
         }
-        return this.config["default_annotation_color"];
+        return this.config["class_defs"][cnfi]["color"];
+        // return this.config["default_annotation_color"];
     }
 
     // ================= Drawing Functions =================
@@ -14081,7 +14088,7 @@ class ULabel {
         // DEBUG left here for refactor reference, but I don't think it's needed moving forward
         //    there may be a use case for drawing depreacted annotations 
         // Don't draw if deprecated
-        if (annotation_object["deprecated"]) return;
+        if (annotation_object["deprecated"] && annotation_object["deprecated"] != "false") return;
     
         // Dispatch to annotation type's drawing function
         switch (annotation_object["spatial_type"]) {

@@ -21,7 +21,8 @@
                     {% autoescape false %}
                     let payload = {
                         destination: "{{ output_file }}",
-                        annotations: annotations
+                        annotations: annotations,
+                        // allow_overwrite: {{ allow_overwrite }}
                     };
                     {% autoescape true %}
 
