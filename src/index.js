@@ -581,58 +581,67 @@ class ULabel {
     
     static build_edit_suggestion(ul) {
         // TODO noconflict
+        // DONE Migrated to subtasks
 
-        // Local
-        $("#" + ul.config["imwrap_id"]).append(`
-            <a href="#" id="edit_suggestion" class="editable"></a>
-        `);
-        $("#edit_suggestion").css({
-            "height": ul.config["edit_handle_size"]+"px",
-            "width": ul.config["edit_handle_size"]+"px",
-            "border-radius": ul.config["edit_handle_size"]/2+"px"
-        });
+        for (const stkey in ul.subtasks) {
+            let local_id = `edit_suggestion__${stkey}`;
+            let global_id = `global_edit_suggestion__${stkey}`;
 
-        ul.viewer_state["visible_dialogs"]["edit_suggestion"] = {
-            "left": 0.0,
-            "top": 0.0,
-            "pin": "center"
-        };
+            // Local edit suggestion
+            $("#" + ul.config["imwrap_id"]).append(`
+                <a href="#" id="${local_id}" class="edit_suggestion editable"></a>
+            `);
+            $("#"+local_id).css({
+                "height": ul.config["edit_handle_size"]+"px",
+                "width": ul.config["edit_handle_size"]+"px",
+                "border-radius": ul.config["edit_handle_size"]/2+"px"
+            });
 
-        // Global
-        let id_edit = "";
-        let mcm_ind = "";
-        if (!ul.compiled_config["single_class_mode"]) {
-            id_edit = `--><a href="#" class="reid_suggestion global_sub_suggestion gedit-target"></a><!--`;
-            mcm_ind= " mcm";
+            // Global edit suggestion
+            let id_edit = "";
+            let mcm_ind = "";
+            if (!ul.subtasks[stkey]["single_class_mode"]) {
+                id_edit = `--><a href="#" class="reid_suggestion global_sub_suggestion gedit-target"></a><!--`;
+                mcm_ind= " mcm";
+            }
+            $("#" + ul.config["imwrap_id"]).append(`
+                <div id="${global_id}" class="global_edit_suggestion glob_editable gedit-target${mcm_ind}">
+                    <a href="#" class="move_suggestion global_sub_suggestion movable gedit-target">
+                        <img class="movable gedit-target" src="data:image/png;base64,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">
+                    </a><!--
+                    ${id_edit}
+                    --><a href="#" class="delete_suggestion global_sub_suggestion gedit-target">
+                        <span class="bigx gedit-target">&#215;</span>
+                    </a>
+                </div>
+            `);
+
+            // Register these dialogs with each subtask
+            ul.subtasks[stkey]["state"]["visible_dialogs"][local_id] = {
+                "left": 0.0,
+                "top": 0.0,
+                "pin": "center"
+            };
+            ul.subtasks[stkey]["state"]["visible_dialogs"][global_id] = {
+                "left": 0.0,
+                "top": 0.0,
+                "pin": "center"
+            };
         }
-        $("#" + ul.config["imwrap_id"]).append(`
-            <div id="global_edit_suggestion" class="glob_editable gedit-target${mcm_ind}">
-                <a href="#" class="move_suggestion global_sub_suggestion movable gedit-target">
-                    <img class="movable gedit-target" src="data:image/png;base64,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">
-                </a><!--
-                ${id_edit}
-                --><a href="#" class="delete_suggestion global_sub_suggestion gedit-target">
-                    <span class="bigx gedit-target">&#215;</span>
-                </a>
-            </div>
-        `);
-        ul.viewer_state["visible_dialogs"]["global_edit_suggestion"] = {
-            "left": 0.0,
-            "top": 0.0,
-            "pin": "center"
-        };
+
     }
 
     static create_listeners(ul) {
 
         // ================= Mouse Events in the ID Dialog ================= 
         
-        var iddg = $("#" + ul.id_dialog_config["id"]);
+        var iddg = $(".id_dialog");
 
         // Hover interactions
 
         iddg.on("mousemove", function(mouse_event) {
-            if (!ul.id_dialog_state["thumbnail"]) {
+            let crst = ul.state["current_subtask"];
+            if (!ul.subtasks[crst]["state"]["idd_thumbnail"]) {
                 ul.handle_id_dialog_hover(mouse_event);
             }
         });
@@ -669,7 +678,7 @@ class ULabel {
                 const dlta = Math.sign(wheel_event.deltaY);
 
                 // Apply new zoom
-                ul.viewer_state["zoom_val"] *= (1 - dlta/10);
+                ul.state["zoom_val"] *= (1 - dlta/10);
                 ul.rezoom(wheel_event.clientX, wheel_event.clientY);
             } 
         };
@@ -681,9 +690,10 @@ class ULabel {
 
         // Buttons to change annotation mode
         $("a.md-btn").click(function(mouse_event) {
-            if ($(this).hasClass("sel") || ul.annotation_state["is_in_progress"]) return;
+            let crst = ul.state["current_subtask"];
+            if ($(this).hasClass("sel") || ul.subtasks[crst]["state"]["is_in_progress"]) return;
             var new_mode = $(this).attr("id").split("--")[1];
-            ul.annotation_state["mode"] = new_mode;
+            ul.subtasks[crst]["state"]["annotation_mode"] = new_mode;
             $("a.md-btn.sel").attr("href", "#");
             $("a.md-btn.sel").removeClass("sel");
             $(this).addClass("sel");
@@ -693,10 +703,10 @@ class ULabel {
 
         $("#" + ul.config["toolbox_id"] + " .zbutt").click(function(mouse_event) {
             if ($(this).hasClass("zin")) {
-                ul.viewer_state["zoom_val"] *= 1.1;
+                ul.state["zoom_val"] *= 1.1;
             }
             else if ($(this).hasClass("zout")) {
-                ul.viewer_state["zoom_val"] /= 1.1;
+                ul.state["zoom_val"] /= 1.1;
             }
             ul.rezoom();
         });
@@ -717,10 +727,10 @@ class ULabel {
         });
         $("#" + ul.config["toolbox_id"] + " .wbutt").click(function(mouse_event) {
             if ($(this).hasClass("win")) {
-                ul.annotation_state["line_size"] *= 1.1;
+                ul.state["line_size"] *= 1.1;
             }
             else if ($(this).hasClass("wout")) {
-                ul.annotation_state["line_size"] /= 1.1;
+                ul.state["line_size"] /= 1.1;
             }
             ul.redraw_demo();
         });
@@ -729,20 +739,21 @@ class ULabel {
             if ($(this).hasClass("fixed-setting")){
                 $("#" + ul.config["toolbox_id"] + " .setting a.fixed-setting").removeAttr("href");
                 $("#" + ul.config["toolbox_id"] + " .setting a.dyn-setting").attr("href", "#");
-                ul.annotation_state["line_size"] = ul.annotation_state["line_size"]*ul.viewer_state["zoom_val"];
-                ul.annotation_state["size_mode"] = "fixed";
+                ul.state["line_size"] = ul.state["line_size"]*ul.state["zoom_val"];
+                ul.state["size_mode"] = "fixed";
             }
             else if ($(this).hasClass("dyn-setting")) {
                 $("#" + ul.config["toolbox_id"] + " .setting a.dyn-setting").removeAttr("href");
                 $("#" + ul.config["toolbox_id"] + " .setting a.fixed-setting").attr("href", "#");
-                ul.annotation_state["line_size"] = ul.get_line_size();
-                ul.annotation_state["size_mode"] = "dynamic";
+                ul.state["line_size"] = ul.get_line_size();
+                ul.state["size_mode"] = "dynamic";
             }
             ul.redraw_demo();
         });
 
         // Listener for soft id toolbox buttons
         $("#" + ul.config["toolbox_id"] + ' a.tbid-opt').click(function() {
+            let crst = ul.state["current_subtask"];
             if ($(this).attr("href") == "#") {
                 $("a.tbid-opt.sel").attr("href", "#");
                 $("a.tbid-opt.sel").removeClass("sel");
@@ -750,22 +761,24 @@ class ULabel {
                 $(this).removeAttr("href");
                 let idarr = $(this).attr("id").split("_");
                 let rawid = parseInt(idarr[idarr.length - 1]);
-                ul.set_id_dialog_payload_nopin(ul.config["class_ids"].indexOf(rawid), 1.0);
+                ul.set_id_dialog_payload_nopin(ul.subtasks[crst]["class_ids"].indexOf(rawid), 1.0);
                 ul.update_id_dialog_display();
             }
         });
 
         // Listener for id_dialog click interactions
         $("#" + ul.config["annbox_id"] + " a.id-dialog-clickable-indicator").click(function(e) {
-            if (!ul.id_dialog_state["thumbnail"]) {
+            let crst = ul.state["current_subtask"];
+            if (!ul.subtasks[crst]["state"]["idd_thumbnail"]) {
                 ul.handle_id_dialog_click(e);
             }
             else {
                 // It's always covered up as a thumbnail. See below
             }
         });
-        $("#global_edit_suggestion a.reid_suggestion").click(function(e) {
-            let annid = ul.id_dialog_state["associated_annotation"];
+        $(".global_edit_suggestion a.reid_suggestion").click(function(e) {
+            let crst = ul.state["current_subtask"];
+            let annid = ul.subtasks[crst]["state"]["idd_associated_annotation"];
             ul.hide_global_edit_suggestion();
             ul.show_id_dialog(
                 ul.get_global_mouse_x(e),
@@ -776,17 +789,25 @@ class ULabel {
         });
 
         $("#" + ul.config["annbox_id"] + " .delete_suggestion").click(function() {
-            ul.delete_annotation(ul.annotation_state["move_candidate"]["annid"]);
+            let crst = ul.state["current_subtask"];
+            ul.delete_annotation(ul.subtasks[crst]["state"]["move_candidate"]["annid"]);
         })
 
         // Button to save annotations
         $("a#submit-button").on("click", function() {
             var submit_payload = {
                 "task_meta": ul.config["task_meta"],
-                "annotations": []
+                "annotations": {}
             };
-            for (var i = 0; i < ul.annotations["ordering"].length; i++) {
-                submit_payload["annotations"].push(ul.annotations["access"][ul.annotations["ordering"][i]]);
+            for (const stkey in ul.subtasks) {
+                submit_payload["annotations"][stkey] = [];
+                for (var i = 0; i < ul.subtasks[stkey]["annotations"]["ordering"].length; i++) {
+                    submit_payload["annotations"][stkey].push(
+                        ul.subtasks[stkey]["annotations"]["access"][
+                            ul.subtasks[stkey]["annotations"]["ordering"][i]
+                        ]
+                    );
+                }
             }
             ul.config["done_callback"](submit_payload);
         });
@@ -970,8 +991,9 @@ class ULabel {
                 // Id dialog state
                 "id_dialog_id": "id_dialog__" + subtask_key,
                 "id_dialog_visible": false,
-                "id_dialog_associated_annotation": null,
+                "idd_associated_annotation": null,
                 "id_payload": id_payload,
+                "idd_thumbnail": false,
                 "first_explicit_assignment": false,
 
                 // Annotation state
@@ -1160,7 +1182,7 @@ class ULabel {
                 ).getContext("2d");
             }
             // Get rendering context for demo canvas
-            that.state["demo_context"] = document.getElementById(
+            that.state["demo_canvas_context"] = document.getElementById(
                 that.config["canvas_did"]
             ).getContext("2d");
 
@@ -1181,7 +1203,7 @@ class ULabel {
             that.is_init = true;
     
             // TODO why is this necessary?
-            that.viewer_state["zoom_val"] = that.get_empirical_scale();
+            that.state["zoom_val"] = that.get_empirical_scale();
             that.rezoom(0, 0);
 
             // Draw demo annotation
@@ -1209,8 +1231,8 @@ class ULabel {
 
     // Draw demo annotation in demo canvas
     redraw_demo() {
-        this.canvas_state["demo_context"].clearRect(0, 0, this.config["demo_width"], this.config["demo_height"]);
-        this.draw_annotation(DEMO_ANNOTATION, "demo_context", true);
+        this.state["demo_canvas_context"].clearRect(0, 0, this.config["demo_width"], this.config["demo_height"]);
+        this.draw_annotation(DEMO_ANNOTATION, "demo_canvas_context", true, null, "demo");
     }
 
     // ================= Instance Utilities =================
@@ -1356,10 +1378,11 @@ class ULabel {
             // not currently supported;
             return this.config["default_annotation_color"];
         }
-        let col_payload = JSON.parse(JSON.stringify(this.id_dialog_state["id_payload"]));
+        let crst = this.state["current_subtask"];
+        let col_payload = JSON.parse(JSON.stringify(this.subtasks[crst]["state"]["id_payload"])); // BOOG
         if (demo) {
             let dist_prop = 1.0;
-            let class_ids = this.config["class_ids"];
+            let class_ids = this.subtasks[crst]["class_ids"];
             let idarr = $("a.tbid-opt.sel").attr("id").split("_");
             let class_ind = class_ids.indexOf(parseInt(idarr[idarr.length - 1]));
             // Recompute and render opaque pie slices
@@ -1386,7 +1409,7 @@ class ULabel {
 
         for (var i = 0; i < col_payload.length; i++) {
             if (col_payload[i]["confidence"] > 0.5) {
-                return this.config["class_defs"][i]["color"];
+                return this.subtasks[crst]["class_defs"][i]["color"];
             }
         }
         return this.config["default_annotation_color"];
@@ -1394,10 +1417,7 @@ class ULabel {
 
     // ================= Drawing Functions =================
 
-    draw_bounding_box(annotation_object, cvs_ctx="front_context", demo=false, offset=null) {
-        // TODO buffered contexts
-        let ctx = this.canvas_state[cvs_ctx];
-
+    draw_bounding_box(annotation_object, ctx, demo=false, offset=null) {
         let diffX = 0;
         let diffY = 0;
         if (offset != null) {
@@ -1435,10 +1455,7 @@ class ULabel {
         ctx.stroke();
     }
     
-    draw_polygon(annotation_object, cvs_ctx="front_context", demo=false, offset=null) {
-        // TODO buffered contexts
-        let ctx = this.canvas_state[cvs_ctx];
-
+    draw_polygon(annotation_object, ctx, demo=false, offset=null) {
         let diffX = 0;
         let diffY = 0;
         if (offset != null) {
@@ -1476,10 +1493,7 @@ class ULabel {
         ctx.stroke();
     }
     
-    draw_contour(annotation_object, cvs_ctx="front_context", demo=false, offset=null) {
-        // TODO buffered contexts
-        let ctx = this.canvas_state[cvs_ctx];
-
+    draw_contour(annotation_object, ctx, demo=false, offset=null) {
         let diffX = 0;
         let diffY = 0;
         if (offset != null) {
@@ -1516,10 +1530,7 @@ class ULabel {
         ctx.stroke();
     }
 
-    draw_tbar(annotation_object, cvs_ctx="front_context", demo=false, offset=null) {
-        // TODO buffered contexts
-        let ctx = this.canvas_state[cvs_ctx];
-
+    draw_tbar(annotation_object, ctx, demo=false, offset=null) {
         let diffX = 0;
         let diffY = 0;
         if (offset != null) {
@@ -1575,25 +1586,38 @@ class ULabel {
 
     }
     
-    draw_annotation(annotation_object, cvs_ctx="front_context", demo=false, offset=null) {
+    draw_annotation(annotation_object, cvs_ctx="front_context", demo=false, offset=null, subtask=null) {
         // DEBUG left here for refactor reference, but I don't think it's needed moving forward
         //    there may be a use case for drawing depreacted annotations 
         // Don't draw if deprecated
         if (annotation_object["deprecated"]) return;
+
+        // Get actual context from context key and subtask
+        let ctx = null;
+        if (subtask == "demo") {
+            // Must be demo
+            if (cvs_ctx != "demo_canvas_context") {
+                throw new Error("Error drawing demo annotation.")
+            }
+            ctx = this.state["demo_canvas_context"];
+        }
+        else {
+            ctx = this.subtasks[subtask]["state"][cvs_ctx];
+        }
     
         // Dispatch to annotation type's drawing function
         switch (annotation_object["spatial_type"]) {
             case "bbox":
-                this.draw_bounding_box(annotation_object, cvs_ctx, demo, offset);
+                this.draw_bounding_box(annotation_object, ctx, demo, offset);
                 break;
             case "polygon":
-                this.draw_polygon(annotation_object, cvs_ctx, demo, offset);
+                this.draw_polygon(annotation_object, ctx, demo, offset);
                 break;
             case "contour":
-                this.draw_contour(annotation_object, cvs_ctx, demo, offset);
+                this.draw_contour(annotation_object, ctx, demo, offset);
                 break;
             case "tbar":
-                this.draw_tbar(annotation_object, cvs_ctx, demo, offset);
+                this.draw_tbar(annotation_object, ctx, demo, offset);
                 break;
             default:
                 this.raise_error("Warning: Annotation " + annotation_object["id"] + " not understood", ULabel.elvl_info);
@@ -1635,9 +1659,12 @@ class ULabel {
         const new_dimx = imwrap.width();
         const new_dimy = imwrap.height();
 
+        // Get current subtask for convenience
+        let crst = this.state["current_subtask"];
+
         // Iterate over all visible dialogs and apply new positions
-        for (var id in this.viewer_state["visible_dialogs"]) {
-            let el = this.viewer_state["visible_dialogs"][id];
+        for (var id in this.subtasks[crst]["state"]["visible_dialogs"]) {
+            let el = this.subtasks[crst]["state"]["visible_dialogs"][id];
             let jqel = $("#" + id);
             let new_left = el["left"]*new_dimx;
             let new_top = el["top"]*new_dimy;
@@ -2027,16 +2054,16 @@ class ULabel {
     }
     
     get_line_size(demo=false) {
-        let line_size = this.annotation_state["line_size"];
+        let line_size = this.state["line_size"];
         if (demo) {
-            if (this.annotation_state["size_mode"] == "dynamic") {
-                line_size *= this.viewer_state["zoom_val"];
+            if (this.state["size_mode"] == "dynamic") {
+                line_size *= this.state["zoom_val"];
             }
             return line_size;
         }
         else {
-            if (this.annotation_state["size_mode"] == "fixed") {
-                line_size /= this.viewer_state["zoom_val"];
+            if (this.state["size_mode"] == "fixed") {
+                line_size /= this.state["zoom_val"];
             }
             return line_size;
         }
@@ -3098,6 +3125,7 @@ class ULabel {
     }
 
     set_id_dialog_payload_to_init(annid, pyld=null) {
+        let crst = this.state["current_subtask"];
         if (pyld != null) {
             this.id_dialog_state["id_payload"] = JSON.parse(JSON.stringify(pyld));
             this.update_id_toolbox_display();
@@ -3113,7 +3141,7 @@ class ULabel {
             // TODO currently assumes soft
             if (!this.config["allow_soft_id"]) {
                 let dist_prop = 1.0;
-                let class_ids = this.config["class_ids"];
+                let class_ids = this.subtasks[crst]["class_ids"];
                 let idarr = $("a.tbid-opt.sel").attr("id").split("_");
                 let class_ind = class_ids.indexOf(parseInt(idarr[idarr.length - 1]));
                 // Recompute and render opaque pie slices
@@ -3469,8 +3497,8 @@ class ULabel {
         const old_top = annbox.scrollTop();
 
         // Compute new size
-        const new_width = Math.round(this.config["image_width"]*this.viewer_state["zoom_val"]);
-        const new_height = Math.round(this.config["image_height"]*this.viewer_state["zoom_val"]);
+        const new_width = Math.round(this.config["image_width"]*this.state["zoom_val"]);
+        const new_height = Math.round(this.config["image_height"]*this.state["zoom_val"]);
 
         // Apply new size
         var toresize = $("." + this.config["imgsz_class"]);
