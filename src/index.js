@@ -20,8 +20,6 @@ jQuery.fn.outer_html = function() {
     return jQuery('<div />').append(this.eq(0).clone()).html();
 };
 
-const DEFAULT_LINE_SIZE = 4.0;
-
 class ULabel {
 
     // ================= Internal constants =================
@@ -372,18 +370,16 @@ class ULabel {
         </div>`;
         $("#" + ul.config["container_id"]).html(tool_html);
 
-        // Build toolbox for the current subtask only
-        const crst = ul.state["current_subtask"];
-
         // Initialize toolbox based on configuration
         const sp_id = ul.config["toolbox_id"];
         let md_buttons = [];
-        for (var ami = 0; ami < ul.subtasks[crst]["allowed_modes"].length; ami++) {
+        for (var ami = 0; ami < ul.config["allowed_modes"].length; ami++) {
             let href=` href="#"`;
             let sel = "";
-            switch (ul.subtasks[crst]["allowed_modes"][ami]) {
+            let ap_html = "";
+            switch (ul.config["allowed_modes"][ami]) {
                 case "bbox":
-                    if (ul.subtasks[crst]["state"]["annotation_mode"] == "bbox") {
+                    if (ul.annotation_state["mode"] == "bbox") {
                         sel = " sel";
                         href = "";
                     }
@@ -394,7 +390,7 @@ class ULabel {
                     </div>`);
                     break;
                 case "polygon":
-                    if (ul.subtasks[crst]["state"]["annotation_mode"] == "polygon") {
+                    if (ul.annotation_state["mode"] == "polygon") {
                         sel = " sel";
                         href = "";
                     }
@@ -405,7 +401,7 @@ class ULabel {
                     </div>`);
                     break;
                 case "contour":
-                    if (ul.subtasks[crst]["state"]["annotation_mode"] == "contour") {
+                    if (ul.annotation_state["mode"] == "contour") {
                         sel = " sel";
                         href = "";
                     }
@@ -416,7 +412,7 @@ class ULabel {
                     </div>`);
                     break;
                 case "tbar":
-                    if (ul.subtasks[crst]["state"]["annotation_mode"] == "tbar") {
+                    if (ul.annotation_state["mode"] == "tbar") {
                         sel = " sel";
                         href = "";
                     }
@@ -427,7 +423,7 @@ class ULabel {
                     </div>`);
                     break;
                 default:
-                    console.log("Allowed mode \"" + ul.subtasks[crst]["allowed_modes"][ami] + "\" not understood. Ignoring.");
+                    console.log("Allowed mode \"" + ul.config["allowed_modes"][ami] + "\" not understood. Ignoring.");
                     break;
             }
         }
@@ -446,11 +442,28 @@ class ULabel {
     }
     
     static build_id_dialogs(ul) {
-        var full_toolbox_html = `<div class="toolbox-id-app-payload">`;
+        const id = ul.id_dialog_config["id"];
+        const wdt = ul.id_dialog_config["outer_diameter"];
+        // TODO noconflict
+        var dialog_html = `
+        <div id="${id}" class="id_dialog" style="width: ${wdt}px; height: ${wdt}px;">
+            <a class="id-dialog-clickable-indicator" href="#"></a>
+            <svg width="${wdt}" height="${wdt}">
+        `;
+        var toolbox_html = `<div class="toolbox-id-app-payload">`;
+        const center_coord = wdt/2;
+        var class_ids = [];
+        if (ul.config["class_defs"] != null) {
+            for (var txi = 0; txi < ul.config["class_defs"].length; txi++) {
+                class_ids.push(ul.config["class_defs"][txi]["id"]);
+            }
+        }
+        else {
+            throw new Error("No taxonomy was provided.");
+        }
 
-        const wdt = ul.config["outer_diameter"];
         // TODO real names here!
-        const inner_rad = ul.config["inner_prop"]*wdt/2;
+        const inner_rad = ul.id_dialog_config["inner_prop"]*wdt/2;
         const inner_diam = inner_rad*2;
         const outer_rad = 0.5*wdt;
         const inner_top = outer_rad - inner_rad;
@@ -459,105 +472,78 @@ class ULabel {
         const cl_opacity = 0.4;
         let tbid = ul.config["toolbox_id"];
 
-        const center_coord = wdt/2;
+        for (var i = 0; i < class_ids.length; i++) {
 
-        for (const st in ul.subtasks) {
-            const idd_id = ul.subtasks[st]["state"]["id_dialog_id"];
-            // TODO noconflict
-            var dialog_html = `
-            <div id="${idd_id}" class="id_dialog" style="width: ${wdt}px; height: ${wdt}px;">
-                <a class="id-dialog-clickable-indicator" href="#"></a>
-                <svg width="${wdt}" height="${wdt}">
-            `;
-            var toolbox_html = `<div id="tb-id-app--${st}">`;
-            const class_ids = ul.subtasks[st]["class_ids"];
-        
-    
-            for (var i = 0; i < class_ids.length; i++) {
-    
-                let srt_prop = 1/class_ids.length;
-    
-                let cum_prop = i/class_ids.length;
-                let srk_prop = 1/class_ids.length;
-                let gap_prop = 1.0 - srk_prop;
-    
-                let rad_back = inner_rad + 1.0*(outer_rad - inner_rad)/2;
-                let rad_frnt = inner_rad + srt_prop*(outer_rad - inner_rad)/2;
-    
-                let wdt_back = 1.0*(outer_rad - inner_rad);
-                let wdt_frnt = srt_prop*(outer_rad - inner_rad);
-    
-                let srk_back = 2*Math.PI*rad_back*srk_prop;
-                let gap_back = 2*Math.PI*rad_back*gap_prop;
-                let off_back = 2*Math.PI*rad_back*cum_prop;
-    
-                let srk_frnt = 2*Math.PI*rad_frnt*srk_prop;
-                let gap_frnt = 2*Math.PI*rad_frnt*gap_prop;
-                let off_frnt = 2*Math.PI*rad_frnt*cum_prop;
-    
-                let ths_id = class_ids[i];
-                let ths_col = ul.subtasks[st]["class_defs"][i]["color"];
-                let ths_nam = ul.subtasks[st]["class_defs"][i]["name"];
-                dialog_html += `
-                <circle
-                    r="${rad_back}" cx="${center_coord}" cy="${center_coord}" 
-                    stroke="${ths_col}" 
-                    fill-opacity="0"
-                    stroke-opacity="${cl_opacity}"
-                    stroke-width="${wdt_back}"; 
-                    stroke-dasharray="${srk_back} ${gap_back}" 
-                    stroke-dashoffset="${off_back}" />
-                <circle
-                    id="circ_${ths_id}"
-                    r="${rad_frnt}" cx="${center_coord}" cy="${center_coord}"
-                    fill-opacity="0"
-                    stroke="${ths_col}" 
-                    stroke-opacity="1.0"
-                    stroke-width="${wdt_frnt}" 
-                    stroke-dasharray="${srk_frnt} ${gap_frnt}" 
-                    stroke-dashoffset="${off_frnt}" />
-                `;
-    
-                let sel = "";
-                let href = ' href="#"';
-                if (i == 0) {
-                    sel = " sel";
-                    href = "";
-                }
-                if (ul.config["allow_soft_id"]) {
-                    let msg = "Only hard id is currently supported";
-                    throw new Error(msg);
-                }
-                else {
-                    toolbox_html += `
-                        <a${href} id="${tbid}_sel_${ths_id}" class="tbid-opt${sel}">
-                            <div class="colprev ${tbid}_colprev_${ths_id}" style="background-color: ${ths_col}"></div> <span class="tb-cls-nam">${ths_nam}</span>
-                        </a>
-                    `;
-                }
-            }
+            let srt_prop = 1/class_ids.length;
+
+            let cum_prop = i/class_ids.length;
+            let srk_prop = 1/class_ids.length;
+            let gap_prop = 1.0 - srk_prop;
+
+            let rad_back = inner_rad + 1.0*(outer_rad - inner_rad)/2;
+            let rad_frnt = inner_rad + srt_prop*(outer_rad - inner_rad)/2;
+
+            let wdt_back = 1.0*(outer_rad - inner_rad);
+            let wdt_frnt = srt_prop*(outer_rad - inner_rad);
+
+            let srk_back = 2*Math.PI*rad_back*srk_prop;
+            let gap_back = 2*Math.PI*rad_back*gap_prop;
+            let off_back = 2*Math.PI*rad_back*cum_prop;
+
+            let srk_frnt = 2*Math.PI*rad_frnt*srk_prop;
+            let gap_frnt = 2*Math.PI*rad_frnt*gap_prop;
+            let off_frnt = 2*Math.PI*rad_frnt*cum_prop;
+
+            let ths_id = class_ids[i];
+            let ths_col = ul.config["class_defs"][i]["color"];
+            let ths_nam = ul.config["class_defs"][i]["name"];
             dialog_html += `
-                </svg>
-                <div class="centcirc"></div>
-            </div>`;
-            toolbox_html += `
-            </div>`;
+            <circle
+                r="${rad_back}" cx="${center_coord}" cy="${center_coord}" 
+                stroke="${ths_col}" 
+                fill-opacity="0"
+                stroke-opacity="${cl_opacity}"
+                stroke-width="${wdt_back}"; 
+                stroke-dasharray="${srk_back} ${gap_back}" 
+                stroke-dashoffset="${off_back}" />
+            <circle
+                id="circ_${ths_id}"
+                r="${rad_frnt}" cx="${center_coord}" cy="${center_coord}"
+                fill-opacity="0"
+                stroke="${ths_col}" 
+                stroke-opacity="1.0"
+                stroke-width="${wdt_frnt}" 
+                stroke-dasharray="${srk_frnt} ${gap_frnt}" 
+                stroke-dashoffset="${off_frnt}" />
+            `;
 
-            // Add dialog to the document
-            $("#" + ul.config["imwrap_id"]).append(dialog_html);
- 
-            // Wait to add full toolbox
-            full_toolbox_html += toolbox_html;
-
-            ul.subtasks[st]["state"]["visible_dialogs"][idd_id] = {
-                "left": 0.0,
-                "top": 0.0,
-                "pin": "center"
-            };
+            let sel = "";
+            let href = ' href="#"';
+            if (i == 0) {
+                sel = " sel";
+                href = "";
+            }
+            if (ul.config["soft-id"]) {
+                let msg = "Only hard id is currently supported";
+                throw new Error(msg);
+            }
+            else {
+                toolbox_html += `
+                    <a${href} id="${tbid}_sel_${ths_id}" class="tbid-opt${sel}">
+                        <div class="colprev ${tbid}_colprev_${ths_id}" style="background-color: ${ths_col}"></div> <span class="tb-cls-nam">${ths_nam}</span>
+                    </a>
+                `;
+            }
         }
-
-        // Add all toolbox html at once
-        $("#" + ul.config["toolbox_id"] + " div.id-toolbox-app").html(full_toolbox_html);
+        dialog_html += `
+            </svg>
+            <div class="centcirc"></div>
+        </div>`;
+        toolbox_html += `
+        </div>
+        `;
+        $("#" + ul.config["imwrap_id"]).append(dialog_html);
+        $("#" + ul.config["toolbox_id"] + " div.id-toolbox-app").html(toolbox_html);
 
         // Style revisions based on the size
         let idci = $("#" + ul.config["imwrap_id"] + " a.id-dialog-clickable-indicator");
@@ -577,71 +563,68 @@ class ULabel {
             "border-radius": `${inner_rad}px`
         });
 
+
+        ul.viewer_state["visible_dialogs"]["id_dialog"] = {
+            "left": 0.0,
+            "top": 0.0,
+            "pin": "center"
+        };
     }
     
     static build_edit_suggestion(ul) {
         // TODO noconflict
-        // DONE Migrated to subtasks
 
-        for (const stkey in ul.subtasks) {
-            let local_id = `edit_suggestion__${stkey}`;
-            let global_id = `global_edit_suggestion__${stkey}`;
+        // Local
+        $("#" + ul.config["imwrap_id"]).append(`
+            <a href="#" id="edit_suggestion" class="editable"></a>
+        `);
+        $("#edit_suggestion").css({
+            "height": ul.config["edit_handle_size"]+"px",
+            "width": ul.config["edit_handle_size"]+"px",
+            "border-radius": ul.config["edit_handle_size"]/2+"px"
+        });
 
-            // Local edit suggestion
-            $("#" + ul.config["imwrap_id"]).append(`
-                <a href="#" id="${local_id}" class="edit_suggestion editable"></a>
-            `);
-            $("#"+local_id).css({
-                "height": ul.config["edit_handle_size"]+"px",
-                "width": ul.config["edit_handle_size"]+"px",
-                "border-radius": ul.config["edit_handle_size"]/2+"px"
-            });
+        ul.viewer_state["visible_dialogs"]["edit_suggestion"] = {
+            "left": 0.0,
+            "top": 0.0,
+            "pin": "center"
+        };
 
-            // Global edit suggestion
-            let id_edit = "";
-            let mcm_ind = "";
-            if (!ul.subtasks[stkey]["single_class_mode"]) {
-                id_edit = `--><a href="#" class="reid_suggestion global_sub_suggestion gedit-target"></a><!--`;
-                mcm_ind= " mcm";
-            }
-            $("#" + ul.config["imwrap_id"]).append(`
-                <div id="${global_id}" class="global_edit_suggestion glob_editable gedit-target${mcm_ind}">
-                    <a href="#" class="move_suggestion global_sub_suggestion movable gedit-target">
-                        <img class="movable gedit-target" src="data:image/png;base64,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">
-                    </a><!--
-                    ${id_edit}
-                    --><a href="#" class="delete_suggestion global_sub_suggestion gedit-target">
-                        <span class="bigx gedit-target">&#215;</span>
-                    </a>
-                </div>
-            `);
-
-            // Register these dialogs with each subtask
-            ul.subtasks[stkey]["state"]["visible_dialogs"][local_id] = {
-                "left": 0.0,
-                "top": 0.0,
-                "pin": "center"
-            };
-            ul.subtasks[stkey]["state"]["visible_dialogs"][global_id] = {
-                "left": 0.0,
-                "top": 0.0,
-                "pin": "center"
-            };
+        // Global
+        let id_edit = "";
+        let mcm_ind = "";
+        if (!ul.compiled_config["single_class_mode"]) {
+            id_edit = `--><a href="#" class="reid_suggestion global_sub_suggestion gedit-target"></a><!--`;
+            mcm_ind= " mcm";
         }
-
+        $("#" + ul.config["imwrap_id"]).append(`
+            <div id="global_edit_suggestion" class="glob_editable gedit-target${mcm_ind}">
+                <a href="#" class="move_suggestion global_sub_suggestion movable gedit-target">
+                    <img class="movable gedit-target" src="data:image/png;base64,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">
+                </a><!--
+                ${id_edit}
+                --><a href="#" class="delete_suggestion global_sub_suggestion gedit-target">
+                    <span class="bigx gedit-target">&#215;</span>
+                </a>
+            </div>
+        `);
+        ul.viewer_state["visible_dialogs"]["global_edit_suggestion"] = {
+            "left": 0.0,
+            "top": 0.0,
+            "pin": "center"
+        };
     }
 
     static create_listeners(ul) {
 
         // ================= Mouse Events in the ID Dialog ================= 
         
-        var iddg = $(".id_dialog");
+        var iddg = $("#" + ul.id_dialog_config["id"]);
 
         // Hover interactions
 
         iddg.on("mousemove", function(mouse_event) {
-            let crst = ul.state["current_subtask"];
-            if (!ul.subtasks[crst]["state"]["idd_thumbnail"]) {
+            if (!ul.id_dialog_state["thumbnail"]) {
                 ul.handle_id_dialog_hover(mouse_event);
             }
         });
@@ -678,7 +661,7 @@ class ULabel {
                 const dlta = Math.sign(wheel_event.deltaY);
 
                 // Apply new zoom
-                ul.state["zoom_val"] *= (1 - dlta/10);
+                ul.viewer_state["zoom_val"] *= (1 - dlta/10);
                 ul.rezoom(wheel_event.clientX, wheel_event.clientY);
             } 
         };
@@ -690,10 +673,9 @@ class ULabel {
 
         // Buttons to change annotation mode
         $("a.md-btn").click(function(mouse_event) {
-            let crst = ul.state["current_subtask"];
-            if ($(this).hasClass("sel") || ul.subtasks[crst]["state"]["is_in_progress"]) return;
+            if ($(this).hasClass("sel") || ul.annotation_state["is_in_progress"]) return;
             var new_mode = $(this).attr("id").split("--")[1];
-            ul.subtasks[crst]["state"]["annotation_mode"] = new_mode;
+            ul.annotation_state["mode"] = new_mode;
             $("a.md-btn.sel").attr("href", "#");
             $("a.md-btn.sel").removeClass("sel");
             $(this).addClass("sel");
@@ -703,10 +685,10 @@ class ULabel {
 
         $("#" + ul.config["toolbox_id"] + " .zbutt").click(function(mouse_event) {
             if ($(this).hasClass("zin")) {
-                ul.state["zoom_val"] *= 1.1;
+                ul.viewer_state["zoom_val"] *= 1.1;
             }
             else if ($(this).hasClass("zout")) {
-                ul.state["zoom_val"] /= 1.1;
+                ul.viewer_state["zoom_val"] /= 1.1;
             }
             ul.rezoom();
         });
@@ -727,10 +709,10 @@ class ULabel {
         });
         $("#" + ul.config["toolbox_id"] + " .wbutt").click(function(mouse_event) {
             if ($(this).hasClass("win")) {
-                ul.state["line_size"] *= 1.1;
+                ul.annotation_state["line_size"] *= 1.1;
             }
             else if ($(this).hasClass("wout")) {
-                ul.state["line_size"] /= 1.1;
+                ul.annotation_state["line_size"] /= 1.1;
             }
             ul.redraw_demo();
         });
@@ -739,21 +721,20 @@ class ULabel {
             if ($(this).hasClass("fixed-setting")){
                 $("#" + ul.config["toolbox_id"] + " .setting a.fixed-setting").removeAttr("href");
                 $("#" + ul.config["toolbox_id"] + " .setting a.dyn-setting").attr("href", "#");
-                ul.state["line_size"] = ul.state["line_size"]*ul.state["zoom_val"];
-                ul.state["size_mode"] = "fixed";
+                ul.annotation_state["line_size"] = ul.annotation_state["line_size"]*ul.viewer_state["zoom_val"];
+                ul.annotation_state["size_mode"] = "fixed";
             }
             else if ($(this).hasClass("dyn-setting")) {
                 $("#" + ul.config["toolbox_id"] + " .setting a.dyn-setting").removeAttr("href");
                 $("#" + ul.config["toolbox_id"] + " .setting a.fixed-setting").attr("href", "#");
-                ul.state["line_size"] = ul.get_line_size();
-                ul.state["size_mode"] = "dynamic";
+                ul.annotation_state["line_size"] = ul.get_line_size();
+                ul.annotation_state["size_mode"] = "dynamic";
             }
             ul.redraw_demo();
         });
 
         // Listener for soft id toolbox buttons
         $("#" + ul.config["toolbox_id"] + ' a.tbid-opt').click(function() {
-            let crst = ul.state["current_subtask"];
             if ($(this).attr("href") == "#") {
                 $("a.tbid-opt.sel").attr("href", "#");
                 $("a.tbid-opt.sel").removeClass("sel");
@@ -761,24 +742,22 @@ class ULabel {
                 $(this).removeAttr("href");
                 let idarr = $(this).attr("id").split("_");
                 let rawid = parseInt(idarr[idarr.length - 1]);
-                ul.set_id_dialog_payload_nopin(ul.subtasks[crst]["class_ids"].indexOf(rawid), 1.0);
+                ul.set_id_dialog_payload_nopin(ul.config["class_ids"].indexOf(rawid), 1.0);
                 ul.update_id_dialog_display();
             }
         });
 
         // Listener for id_dialog click interactions
         $("#" + ul.config["annbox_id"] + " a.id-dialog-clickable-indicator").click(function(e) {
-            let crst = ul.state["current_subtask"];
-            if (!ul.subtasks[crst]["state"]["idd_thumbnail"]) {
+            if (!ul.id_dialog_state["thumbnail"]) {
                 ul.handle_id_dialog_click(e);
             }
             else {
                 // It's always covered up as a thumbnail. See below
             }
         });
-        $(".global_edit_suggestion a.reid_suggestion").click(function(e) {
-            let crst = ul.state["current_subtask"];
-            let annid = ul.subtasks[crst]["state"]["idd_associated_annotation"];
+        $("#global_edit_suggestion a.reid_suggestion").click(function(e) {
+            let annid = ul.id_dialog_state["associated_annotation"];
             ul.hide_global_edit_suggestion();
             ul.show_id_dialog(
                 ul.get_global_mouse_x(e),
@@ -789,25 +768,17 @@ class ULabel {
         });
 
         $("#" + ul.config["annbox_id"] + " .delete_suggestion").click(function() {
-            let crst = ul.state["current_subtask"];
-            ul.delete_annotation(ul.subtasks[crst]["state"]["move_candidate"]["annid"]);
+            ul.delete_annotation(ul.annotation_state["move_candidate"]["annid"]);
         })
 
         // Button to save annotations
         $("a#submit-button").on("click", function() {
             var submit_payload = {
                 "task_meta": ul.config["task_meta"],
-                "annotations": {}
+                "annotations": []
             };
-            for (const stkey in ul.subtasks) {
-                submit_payload["annotations"][stkey] = [];
-                for (var i = 0; i < ul.subtasks[stkey]["annotations"]["ordering"].length; i++) {
-                    submit_payload["annotations"][stkey].push(
-                        ul.subtasks[stkey]["annotations"]["access"][
-                            ul.subtasks[stkey]["annotations"]["ordering"][i]
-                        ]
-                    );
-                }
+            for (var i = 0; i < ul.annotations["ordering"].length; i++) {
+                submit_payload["annotations"].push(ul.annotations["access"][ul.annotations["ordering"][i]]);
             }
             ul.config["done_callback"](submit_payload);
         });
@@ -852,167 +823,58 @@ class ULabel {
         };
     }
 
+    static compile_configuration(ul) {
+        // Make sure taxonomy exists, and 
+        // determine whether we're in single class mode
+        let ret = {};
 
-    static process_allowed_modes(ul, subtask_key, subtask) {
-        // TODO(v1) check to make sure these are known modes
-        ul.subtasks[subtask_key]["allowed_modes"] = subtask["allowed_modes"];
-    }
+        // Handle class-id situation
+        if (ul.config["class_defs"] == null || (ul.config["class_defs"].length == 0)) {
+            // TODO should probably throw an error in this case
 
-
-    static process_classes(ul, subtask_key, subtask) {
-        // Check to make sure allowed classes were provided
-        if (!("classes" in subtask)) {
-            throw new Error(`classes not specified for subtask "${subtask_key}"`);
-        }
-        if (typeof subtask["classes"] != 'object' || subtask["classes"].length == undefined || subtask["classes"].length == 0) {
-            throw new Error(`classes has an invalid value for subtask "${subtask_key}"`);
-        }
-
-        // Set to single class mode if applicable
-        ul.subtasks[subtask_key]["single_class_mode"] = (subtask["classes"].length == 1);
-
-        // Populate allowed classes vars
-        // TODO might be nice to recognize duplicate classes and assign same color... idk
-        // TODO better handling of default class ids would definitely be a good idea
-        ul.subtasks[subtask_key]["class_defs"] = [];
-        ul.subtasks[subtask_key]["class_ids"] = [];
-        for (let i = 0; i < subtask["classes"].length; i++) {
-            if (typeof subtask["classes"][i] == "string") {
-                let name = subtask["classes"][i];
-                ul.subtasks[subtask_key]["class_defs"].push({
-                    "name": name,
-                    "color": COLORS[ul.tot_num_classes],
-                    "id": ul.tot_num_classes
-                });
-                ul.subtasks[subtask_key]["class_ids"].push(ul.tot_num_classes);
-            }
-            else if (typeof subtask["classes"][i] == 'object') {
-                // Start with default object
-                let repl = {
-                    "name": `Class ${ul.tot_num_classes}`,
-                    "color": COLORS[ul.tot_num_classes],
-                    "id": ul.tot_num_classes
-                };
-
-                // Populate with what we have
-                if ("name" in subtask["classes"][i]) {
-                    repl["name"] = subtask["classes"][i]["name"];
+            // For now, default to weed detection
+            ret["single_class_mode"] = true;
+            ul.config["class_defs"] = [
+                {
+                    "name": "Weed",
+                    "color": "Orange",
+                    "id": 2,
                 }
-                if ("color" in subtask["classes"][i]) {
-                    repl["color"] = subtask["classes"][i]["color"];
-                }
-                if ("id" in subtask["classes"][i]) {
-                    repl["id"] = subtask["classes"][i]["id"];
-                }
-
-                // Push finished product to list
-                ul.subtasks[subtask_key]["class_defs"].push(repl);
-                ul.subtasks[subtask_key]["class_ids"].push(repl["id"]);
-            }
-            else {
-                throw new Error(`Entry in classes not understood: ${subtask["classes"][i]}`);
-            }
-            ul.tot_num_classes++;
+            ];
         }
-    }
-
-
-    static process_resume_from(ul, subtask_key, subtask) {
-        // Initialize to no annotations
-        ul.subtasks[subtask_key]["annotations"] = {
-            "ordering": [],
-            "access": {}
-        };
-        if (subtask["resume_from"] != null) {
-            for (var i = 0; i < subtask["resume_from"].length; i++) {
-                // Push to ordering and add to access
-                ul.subtasks[subtask_key]["annotations"]["ordering"].push(subtask["resume_from"][i]["id"]);
-                ul.subtasks[subtask_key]["annotations"]["access"][subtask["resume_from"][i]["id"]] = subtask["resume_from"][i];
-
-                // Set new to false
-                ul.subtasks[subtask_key]["annotations"]["access"][subtask["resume_from"][i]["id"]]["new"] = false;
-
-                // Test for line_size
-                if (ul.subtasks[subtask_key]["annotations"]["access"][subtask["resume_from"][i]["id"]]["line_size"] == null) {
-                    ul.subtasks[subtask_key]["annotations"]["access"][subtask["resume_from"][i]["id"]]["line_size"] = DEFAULT_LINE_SIZE;
+        else {
+            ret["single_class_mode"] = (ul.config["class_defs"].length == 1);
+            // TODO, what about a mix?
+            for (var i = 0; i < ul.config["class_defs"].length; i++) {
+                if (typeof ul.config["class_defs"][i] == "string") {
+                    let name = ul.config["class_defs"][i];
+                    ul.config["class_defs"][i] = {
+                        "name": name,
+                        "color": COLORS[i],
+                        "id": i
+                    }
                 }
-
-                // Make sure it has a containing box
-                ul.rebuild_containing_box(subtask["resume_from"][i]["id"]);
-
-                // Ensure that spatial type is allowed
-                // TODO do I really want to do this?
-
-                // Ensure that classification payloads are compatible with config
-                // TODO
-
-                // Same for regression payloads
-                // TODO
+                else if (typeof ul.config["class_defs"][i] == 'object') {
+                    let repl = {
+                        "name": `Class ${i}`,
+                        "color": COLORS[i],
+                        "id": i
+                    }
+                    if ("name" in ul.config["class_defs"][i]) {
+                        repl["name"] = ul.config["class_defs"][i]["name"];
+                    }
+                    if ("color" in ul.config["class_defs"][i]) {
+                        repl["color"] = ul.config["class_defs"][i]["color"];
+                    }
+                    if ("id" in ul.config["class_defs"][i]) {
+                        repl["id"] = ul.config["class_defs"][i]["id"];
+                    }
+                    ul.config["class_defs"][i] = repl;
+                }
             }
         }
-    }
 
-
-    static initialize_subtasks(ul, stcs) {
-        for (const subtask_key in stcs) {
-            // For convenience, make a raw subtask var
-            let raw_subtask = stcs[subtask_key];
-
-            // Initialize subtask config to null
-            ul.subtasks[subtask_key] = {};
-
-            //  Initialize an empty action stream for each subtask
-            ul.subtasks[subtask_key]["actions"] = {
-                "stream": [],
-                "undone_stack": []
-            };
-
-            // Process allowed_modes
-            // They are placed in ul.subtasks[subtask_key]["allowed_modes"]
-            ULabel.process_allowed_modes(ul, subtask_key, raw_subtask);
-            // Process allowed classes
-            // They are placed in ul.subtasks[subtask_key]["class_defs"]
-            ULabel.process_classes(ul, subtask_key, raw_subtask);
-            // Process imported annoations
-            // They are placed in ul.subtasks[subtask_key]["annotations"]
-            ULabel.process_resume_from(ul, subtask_key, raw_subtask);
-            
-            // Label canvasses and initialize context with null
-            ul.subtasks[subtask_key]["canvas_fid"] = ul.config["canvas_fid_pfx"] + "__" + subtask_key;
-            ul.subtasks[subtask_key]["canvas_bid"] = ul.config["canvas_bid_pfx"] + "__" + subtask_key;
-
-            // Store state of ID dialog element
-            // TODO much more here when full interaction is built
-            let id_payload = [];
-            for (var i = 0; i < ul.subtasks[subtask_key]["class_ids"].length; i++) {
-                id_payload.push(1/ul.subtasks[subtask_key]["class_ids"].length);
-            }
-            ul.subtasks[subtask_key]["state"] = {
-                // Id dialog state
-                "id_dialog_id": "id_dialog__" + subtask_key,
-                "id_dialog_visible": false,
-                "idd_associated_annotation": null,
-                "id_payload": id_payload,
-                "idd_thumbnail": false,
-                "first_explicit_assignment": false,
-
-                // Annotation state
-                "annotation_mode": ul.subtasks[subtask_key]["allowed_modes"][0],
-                "active_id": null,
-                "is_in_progress": false,
-                "is_in_edit": false,
-                "edit_candidate": null,
-                "move_candidate": null,
-
-                // Rendering context
-                "front_context": null,
-                "back_context": null,
-
-                // Generic dialogs
-                "visible_dialogs": {}
-            };
-
-        }
+        return ret;
     }
 
     // ================= Construction/Initialization =================
@@ -1021,86 +883,97 @@ class ULabel {
         container_id, 
         image_data, 
         username, 
+        classes, 
+        allowed_modes, 
         on_submit,
-        subtasks,
+        resume_from=null,
+        instructions_url=null,
+        on_save=null,
+        class_hierarchy=null,
         task_meta=null,
         annotation_meta=null
     ) {
-        // Unroll safe default arguments
-        if (task_meta == null) {task_meta = {};}
-        if (annotation_meta == null) {annotation_meta = {};}
+        if (task_meta == null) {
+            task_meta = {};
+        }
+        if (annotation_meta == null) {
+            annotation_meta = {};
+        }
 
-        // TODO 
-        // Allow for importing spacing data -- a measure tool would be nice too
-        // Much of this is hardcoded defaults, 
-        //   some might be offloaded to the constructor eventually...
+        // Store tool configuration
         this.config = {
-            // Values useful for generating HTML for tool
-            // TODO(v1) Make sure these don't conflict with other page elements
             "container_id": container_id,
-            "annbox_id": "annbox",
-            "imwrap_id": "imwrap",
-            "canvas_fid_pfx": "front-canvas",
-            "canvas_bid_pfx": "back-canvas",
-            "canvas_did": "demo-canvas",
-            "canvas_class": "easel",
-            "image_id": "ann_image",
-            "imgsz_class": "imgsz",
-            "toolbox_id": "toolbox",
-
-            // Configuration for the annotation task itself
+            "annbox_id": "annbox", // TODO noconfict
+            "imwrap_id": "imwrap", // TODO noconfict
+            "canvas_fid": "front-canvas", // TODO noconflict
+            "canvas_bid": "back-canvas", // TODO noconflict
+            "canvas_did": "demo-canvas", // TODO noconflict
+            "canvas_class": "easel", // TODO noconflict
+            "image_id": "ann_image", // TODO noconflict
+            "imgsz_class": "imgsz", // TODO noconflict
+            "toolbox_id": "toolbox", // TODO noconflict
+            "instructions_url": instructions_url,
             "image_data": image_data,
-            "annotator": username,
-            "allow_soft_id": false, // TODO allow soft eventually
-            "default_annotation_color": "#fa9d2a",
-
-            // Dimensions of various components of the tool
             "image_width": null,
             "image_height": null,
             "demo_width": 120,
             "demo_height": 40,
-            "polygon_ender_size": 30,
-            "edit_handle_size": 30,
-
-            // Behavior on special interactions
+            "annotator": username,
+            "class_defs": classes,
+            "class_hierarchy": class_hierarchy,
+            "class_ids": [],
+            "soft-id": false, // TODO allow soft eventually
             "done_callback": on_submit,
-
-            // ID Dialog config
-            "cl_opacity": 0.4,
-            "outer_diameter": 200,
-            "inner_prop": 0.3,
-
-            // Passthrough
+            "save_callback": on_save,
+            "resume_from": resume_from,
+            "allowed_modes": allowed_modes,
+            "default_annotation_color": "#fa9d2a",
+            "annotation_meta": annotation_meta,
             "task_meta": task_meta,
-            "annotation_meta": annotation_meta
+            "polygon_ender_size": 30,
+            "edit_handle_size": 30
         };
 
-        // Populate these in an external "static" function
-        this.subtasks = {};
-        this.tot_num_classes = 0;
-        ULabel.initialize_subtasks(this, subtasks);
+        // Finished storing configuration. Make sure it's valid
+        // Store frequent check values for performance
+        this.compiled_config = ULabel.compile_configuration(this);
+
+        var class_ids = [];
+        for (var txi = 0; txi < this.config["class_defs"].length; txi++) {
+            class_ids.push(this.config["class_defs"][txi]["id"]);
+        }
+        this.config["class_ids"] = class_ids;
+
+
+        // Store ID dialog configuration
+        this.id_dialog_config = {
+            "id": "id_dialog", // TODO noconflict
+            "cl_opacity": 0.4,
+            "outer_diameter": 200,
+            "inner_prop": 0.3
+        };
+        
+        // Store state of ID dialog element
+        // TODO much more here when full interaction is built
+        let id_payload = [];
+        for (var i = 0; i < class_ids.length; i++) {
+            id_payload.push(1/class_ids.length);
+        }
+        this.id_dialog_state = {
+            "visible": false,
+            "associated_annotation": null,
+            "id_payload": id_payload,
+            "first_explicit_assignment": false
+        };
 
         // Create object for current ulabel state
-        this.state = {
-            // Viewer state
-            // TODO(3d)
-            // Add and handle a value for current image
+        this.viewer_state = {
             "zoom_val": 1.0,
-            "last_move": null,
-
-            // Global annotation state (subtasks also maintain an annotation state)
-            "current_subtask": Object.keys(this.subtasks)[0],
-            "line_size": DEFAULT_LINE_SIZE,
-            "size_mode": "fixed",
-
-            // Renderings state
-            "demo_canvas_context": null
+            "visible_dialogs": {},
+            "last_move": null
         };
 
         // Create object for dragging interaction state
-        // TODO(v1)
-        // There can only be one drag, yes? Maybe pare this down...
-        // Would be nice to consolidate this with global state also
         this.drag_state = {
             "active_key": null,
             "release_button": null,
@@ -1130,7 +1003,71 @@ class ULabel {
                 "zoom_val_start": null // zoom_val when the dragging interaction started
             }
         };
-                
+        
+        // Canvasses' display/drawing states
+        this.canvas_state = {
+            "front_context": null,
+            "back_context": null,
+            "demo_context": null
+        };
+        
+        // State data for annotation interactions
+        this.annotation_state = {
+            "mode": this.config["allowed_modes"][0],
+            "active_id": null,
+            "is_in_progress": false,
+            "is_in_edit": false,
+            "edit_candidate": null,
+            "move_candidate": null,
+            "line_size": 4.0,
+            "size_mode": "fixed"
+        };
+        
+        // Create holder for annotations
+        this.annotations = {
+            "ordering": [],
+            "access": {}
+        };
+
+        // Create holder for actions
+        this.actions = {
+            "stream": [],
+            "undone_stack": []
+        }
+
+        // If resuming from not null, then set and draw prior annotations        
+        if (this.config["resume_from"] != null) {
+            if ("annotations" in this.config["resume_from"]) {
+                this.config["resume_from"] = this.config["resume_from"]["annotations"];
+            }
+            // Given as list
+            for (var i = 0; i < this.config["resume_from"].length; i++) {
+                // Push to ordering and add to access
+                this.annotations["ordering"].push(this.config["resume_from"][i]["id"]);
+                this.annotations["access"][this.config["resume_from"][i]["id"]] = this.config["resume_from"][i];
+
+                // Set new to false
+                this.annotations["access"][this.config["resume_from"][i]["id"]]["new"] = false;
+
+                // Test for line_size
+                if (this.annotations["access"][this.config["resume_from"][i]["id"]]["line_size"] == null) {
+                    this.annotations["access"][this.config["resume_from"][i]["id"]]["line_size"] = this.annotation_state["line_size"];
+                }
+
+                // Make sure it has a containing box
+                this.rebuild_containing_box(this.config["resume_from"][i]["id"]);
+
+                // Ensure that spatial type is allowed
+                // TODO do I really want to do this?
+
+                // Ensure that classification payloads are compatible with config
+                // TODO
+
+                // Same for regression payloads
+                // TODO
+            }    
+        }
+
         // Indicate that object must be "init" before use!
         this.is_init = false;
     }
@@ -1151,47 +1088,36 @@ class ULabel {
 
         var that = this;
         image.onload = function() {
-            // Store image dimensions
             that.config["image_height"] = image.naturalHeight;
             that.config["image_width"] = image.naturalWidth;
     
-            // Add canvasses for each subtask and get their rendering contexts
-            for (const st in that.subtasks) {
-                $("#" + that.config["imwrap_id"]).append(`
-                <div id="canvasses__${st}">
-                    <canvas 
-                        id="${that.subtasks[st]["canvas_bid"]}" 
-                        class="${that.config["canvas_class"]} ${that.config["imgsz_class"]} canvas_cls" 
-                        height=${that.config["image_height"]} 
-                        width=${that.config["image_width"]}></canvas>
-                    <canvas 
-                        id="${that.subtasks[st]["canvas_fid"]}" 
-                        class="${that.config["canvas_class"]} ${that.config["imgsz_class"]} canvas_cls" 
-                        height=${that.config["image_height"]} 
-                        width=${that.config["image_width"]} 
-                        oncontextmenu="return false"></canvas>
-                </div>
-                `);
-        
-                // Get canvas contexts
-                that.subtasks[st]["state"]["back_context"] = document.getElementById(
-                    that.subtasks[st]["canvas_bid"]
-                ).getContext("2d");
-                that.subtasks[st]["state"]["front_context"] = document.getElementById(
-                    that.subtasks[st]["canvas_fid"]
-                ).getContext("2d");
-            }
-            // Get rendering context for demo canvas
-            that.state["demo_canvas_context"] = document.getElementById(
+            $("#" + that.config["imwrap_id"]).append(`
+                <canvas 
+                    id="${that.config["canvas_bid"]}" 
+                    class="${that.config["canvas_class"]} ${that.config["imgsz_class"]} canvas_cls" 
+                    height=${that.config["image_height"]} 
+                    width=${that.config["image_width"]}></canvas>
+                <canvas 
+                    id="${that.config["canvas_fid"]}" 
+                    class="${that.config["canvas_class"]} ${that.config["imgsz_class"]} canvas_cls" 
+                    height=${that.config["image_height"]} 
+                    width=${that.config["image_width"]} 
+                    oncontextmenu="return false"></canvas>
+            `);
+    
+            // Get canvas contexts
+            that.canvas_state["front_context"] = document.getElementById(
+                that.config["canvas_fid"]
+            ).getContext("2d");
+            that.canvas_state["back_context"] = document.getElementById(
+                that.config["canvas_bid"]
+            ).getContext("2d");
+            that.canvas_state["demo_context"] = document.getElementById(
                 that.config["canvas_did"]
             ).getContext("2d");
-
-            // Add the ID dialogs' HTML to the document
+    
+            // Add the HTML for the ID dialog to the window
             ULabel.build_id_dialogs(that);
-
-            // ----------------------------------------------------------------------------- //
-            // DEV MSG -- I think I've debugged/refactored through this point -- END DEV MSG //
-            // ----------------------------------------------------------------------------- //
             
             // Add the HTML for the edit suggestion to the window
             ULabel.build_edit_suggestion(that);
@@ -1203,7 +1129,7 @@ class ULabel {
             that.is_init = true;
     
             // TODO why is this necessary?
-            that.state["zoom_val"] = that.get_empirical_scale();
+            that.viewer_state["zoom_val"] = that.get_empirical_scale();
             that.rezoom(0, 0);
 
             // Draw demo annotation
@@ -1231,8 +1157,8 @@ class ULabel {
 
     // Draw demo annotation in demo canvas
     redraw_demo() {
-        this.state["demo_canvas_context"].clearRect(0, 0, this.config["demo_width"], this.config["demo_height"]);
-        this.draw_annotation(DEMO_ANNOTATION, "demo_canvas_context", true, null, "demo");
+        this.canvas_state["demo_context"].clearRect(0, 0, this.config["demo_width"], this.config["demo_height"]);
+        this.draw_annotation(DEMO_ANNOTATION, "demo_context", true);
     }
 
     // ================= Instance Utilities =================
@@ -1374,15 +1300,14 @@ class ULabel {
     }
 
     get_annotation_color(clf_payload, demo=false) {
-        if (this.config["allow_soft_id"]) {
+        if (this.config["soft-id"]) {
             // not currently supported;
             return this.config["default_annotation_color"];
         }
-        let crst = this.state["current_subtask"];
-        let col_payload = JSON.parse(JSON.stringify(this.subtasks[crst]["state"]["id_payload"])); // BOOG
+        let col_payload = JSON.parse(JSON.stringify(this.id_dialog_state["id_payload"]));
         if (demo) {
             let dist_prop = 1.0;
-            let class_ids = this.subtasks[crst]["class_ids"];
+            let class_ids = this.config["class_ids"];
             let idarr = $("a.tbid-opt.sel").attr("id").split("_");
             let class_ind = class_ids.indexOf(parseInt(idarr[idarr.length - 1]));
             // Recompute and render opaque pie slices
@@ -1409,7 +1334,7 @@ class ULabel {
 
         for (var i = 0; i < col_payload.length; i++) {
             if (col_payload[i]["confidence"] > 0.5) {
-                return this.subtasks[crst]["class_defs"][i]["color"];
+                return this.config["class_defs"][i]["color"];
             }
         }
         return this.config["default_annotation_color"];
@@ -1417,7 +1342,10 @@ class ULabel {
 
     // ================= Drawing Functions =================
 
-    draw_bounding_box(annotation_object, ctx, demo=false, offset=null) {
+    draw_bounding_box(annotation_object, cvs_ctx="front_context", demo=false, offset=null) {
+        // TODO buffered contexts
+        let ctx = this.canvas_state[cvs_ctx];
+
         let diffX = 0;
         let diffY = 0;
         if (offset != null) {
@@ -1455,7 +1383,10 @@ class ULabel {
         ctx.stroke();
     }
     
-    draw_polygon(annotation_object, ctx, demo=false, offset=null) {
+    draw_polygon(annotation_object, cvs_ctx="front_context", demo=false, offset=null) {
+        // TODO buffered contexts
+        let ctx = this.canvas_state[cvs_ctx];
+
         let diffX = 0;
         let diffY = 0;
         if (offset != null) {
@@ -1493,7 +1424,10 @@ class ULabel {
         ctx.stroke();
     }
     
-    draw_contour(annotation_object, ctx, demo=false, offset=null) {
+    draw_contour(annotation_object, cvs_ctx="front_context", demo=false, offset=null) {
+        // TODO buffered contexts
+        let ctx = this.canvas_state[cvs_ctx];
+
         let diffX = 0;
         let diffY = 0;
         if (offset != null) {
@@ -1530,7 +1464,10 @@ class ULabel {
         ctx.stroke();
     }
 
-    draw_tbar(annotation_object, ctx, demo=false, offset=null) {
+    draw_tbar(annotation_object, cvs_ctx="front_context", demo=false, offset=null) {
+        // TODO buffered contexts
+        let ctx = this.canvas_state[cvs_ctx];
+
         let diffX = 0;
         let diffY = 0;
         if (offset != null) {
@@ -1586,38 +1523,25 @@ class ULabel {
 
     }
     
-    draw_annotation(annotation_object, cvs_ctx="front_context", demo=false, offset=null, subtask=null) {
+    draw_annotation(annotation_object, cvs_ctx="front_context", demo=false, offset=null) {
         // DEBUG left here for refactor reference, but I don't think it's needed moving forward
         //    there may be a use case for drawing depreacted annotations 
         // Don't draw if deprecated
         if (annotation_object["deprecated"]) return;
-
-        // Get actual context from context key and subtask
-        let ctx = null;
-        if (subtask == "demo") {
-            // Must be demo
-            if (cvs_ctx != "demo_canvas_context") {
-                throw new Error("Error drawing demo annotation.")
-            }
-            ctx = this.state["demo_canvas_context"];
-        }
-        else {
-            ctx = this.subtasks[subtask]["state"][cvs_ctx];
-        }
     
         // Dispatch to annotation type's drawing function
         switch (annotation_object["spatial_type"]) {
             case "bbox":
-                this.draw_bounding_box(annotation_object, ctx, demo, offset);
+                this.draw_bounding_box(annotation_object, cvs_ctx, demo, offset);
                 break;
             case "polygon":
-                this.draw_polygon(annotation_object, ctx, demo, offset);
+                this.draw_polygon(annotation_object, cvs_ctx, demo, offset);
                 break;
             case "contour":
-                this.draw_contour(annotation_object, ctx, demo, offset);
+                this.draw_contour(annotation_object, cvs_ctx, demo, offset);
                 break;
             case "tbar":
-                this.draw_tbar(annotation_object, ctx, demo, offset);
+                this.draw_tbar(annotation_object, cvs_ctx, demo, offset);
                 break;
             default:
                 this.raise_error("Warning: Annotation " + annotation_object["id"] + " not understood", ULabel.elvl_info);
@@ -1659,12 +1583,9 @@ class ULabel {
         const new_dimx = imwrap.width();
         const new_dimy = imwrap.height();
 
-        // Get current subtask for convenience
-        let crst = this.state["current_subtask"];
-
         // Iterate over all visible dialogs and apply new positions
-        for (var id in this.subtasks[crst]["state"]["visible_dialogs"]) {
-            let el = this.subtasks[crst]["state"]["visible_dialogs"][id];
+        for (var id in this.viewer_state["visible_dialogs"]) {
+            let el = this.viewer_state["visible_dialogs"][id];
             let jqel = $("#" + id);
             let new_left = el["left"]*new_dimx;
             let new_top = el["top"]*new_dimy;
@@ -2054,16 +1975,16 @@ class ULabel {
     }
     
     get_line_size(demo=false) {
-        let line_size = this.state["line_size"];
+        let line_size = this.annotation_state["line_size"];
         if (demo) {
-            if (this.state["size_mode"] == "dynamic") {
-                line_size *= this.state["zoom_val"];
+            if (this.annotation_state["size_mode"] == "dynamic") {
+                line_size *= this.viewer_state["zoom_val"];
             }
             return line_size;
         }
         else {
-            if (this.state["size_mode"] == "fixed") {
-                line_size /= this.state["zoom_val"];
+            if (this.annotation_state["size_mode"] == "fixed") {
+                line_size /= this.viewer_state["zoom_val"];
             }
             return line_size;
         }
@@ -2235,8 +2156,9 @@ class ULabel {
             this.set_id_dialog_payload_to_init(unq_id, init_idpyld);
         }
 
-        // Load annotation_meta into annotation
-        this.annotations["access"][unq_id]["annotation_meta"] = this.config["annotation_meta"];
+        for (const [key, value] of Object.entries(this.config["annotation_meta"])) {
+            this.annotations["access"][unq_id][key] = value;
+        }
         this.annotations["ordering"].push(unq_id);
     
         // If a polygon was just started, we need to add a clickable to end the shape
@@ -3125,7 +3047,6 @@ class ULabel {
     }
 
     set_id_dialog_payload_to_init(annid, pyld=null) {
-        let crst = this.state["current_subtask"];
         if (pyld != null) {
             this.id_dialog_state["id_payload"] = JSON.parse(JSON.stringify(pyld));
             this.update_id_toolbox_display();
@@ -3139,9 +3060,9 @@ class ULabel {
                 }
             }
             // TODO currently assumes soft
-            if (!this.config["allow_soft_id"]) {
+            if (!this.config["soft-id"]) {
                 let dist_prop = 1.0;
-                let class_ids = this.subtasks[crst]["class_ids"];
+                let class_ids = this.config["class_ids"];
                 let idarr = $("a.tbid-opt.sel").attr("id").split("_");
                 let class_ind = class_ids.indexOf(parseInt(idarr[idarr.length - 1]));
                 // Recompute and render opaque pie slices
@@ -3195,7 +3116,7 @@ class ULabel {
         this.redraw_demo();
     }
     update_id_toolbox_display() {
-        if (this.config["allow_soft_id"]) {
+        if (this.config["soft-id"]) {
             // Not supported yet
         }
         else {
@@ -3217,7 +3138,7 @@ class ULabel {
     handle_id_dialog_hover(mouse_event) {
         let pos_evt = this.lookup_id_dialog_mouse_pos(mouse_event);
         if (pos_evt != null) {
-            if (!this.config["allow_soft_id"]) {
+            if (!this.config["soft-id"]) {
                 pos_evt.dist_prop = 1.0;
             }
             // TODO This assumes no pins
@@ -3497,8 +3418,8 @@ class ULabel {
         const old_top = annbox.scrollTop();
 
         // Compute new size
-        const new_width = Math.round(this.config["image_width"]*this.state["zoom_val"]);
-        const new_height = Math.round(this.config["image_height"]*this.state["zoom_val"]);
+        const new_width = Math.round(this.config["image_width"]*this.viewer_state["zoom_val"]);
+        const new_height = Math.round(this.config["image_height"]*this.viewer_state["zoom_val"]);
 
         // Apply new size
         var toresize = $("." + this.config["imgsz_class"]);

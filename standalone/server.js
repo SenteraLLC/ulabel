@@ -136,8 +136,45 @@ const server = http.createServer(function(req, res) {
         });
     }
     else if (this_url.pathname == "/save" && req.method == "POST") {
-        // Save this data in desired location
-        // TODO
+        // Get contents of the request
+        var body = '';
+        req.on('data', (data) => {
+            // TODO maybe limit the size of this for security...
+            // I mean it is an internal tool -- *shrug*
+            body += data;
+        });
+        req.on('end', () => {
+            let body_obj = {};
+            try {
+                body_obj = JSON.parse(body)
+            } catch(err) {
+                res.setHeader('Content-Type', 'application/json');
+                res.end(JSON.stringify({
+                    err: 1,
+                    err_msg: "Request body could not be parsed as JSON.",
+                    url: null
+                }));
+                return;
+            }
+            fs.writeFile(body_obj.destination, JSON.stringify(body_obj.annotations, null, 2), (err) => {
+                res.setHeader('Content-Type', 'application/json');
+                if (err) {
+                    res.end(JSON.stringify({
+                        err: 1,
+                        err_msg: `Could not write data to ${body_obj.destination}`,
+                        url: null
+                    }));
+                }
+                else {
+                    res.end(JSON.stringify({
+                        err: null,
+                        err_msg: `Wrote data to ${body_obj.destination}`,
+                        url: null
+                    }));
+                }
+                return;
+            });
+        });
     }
     else if (this_url.pathname == "/new" && req.method == 'POST') {
         // Get contents of the request

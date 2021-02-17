@@ -9,7 +9,7 @@ output_dir = expl_data / "output"
 
 url = 'http://localhost:8081/new'
 config = {
-    "image_data": str(input_dir / "image.jpg"),
+    "image_data": str(input_dir / "demo_image.jpg"),
     "subtasks": {
         "main": {
             "display_name": "MF Stand",
@@ -26,25 +26,6 @@ config = {
                 },
             ],
             "allowed_modes": ["polygon"],
-            "resume_from": str(input_dir / "annotations.json"),
-            "task_meta": None,
-            "annotation_meta": None
-        },
-        "review": {
-            "display_name": "Review",
-            "classes": [
-                {
-                    "name": "Reason 1",
-                    "color": "blue",
-                    "id": 10
-                },
-                {
-                    "name": "Reason 2",
-                    "color": "blue",
-                    "id": 11
-                },
-            ],
-            "allowed_modes": ["whole-image+"],
             "resume_from": str(input_dir / "annotations.json"),
             "task_meta": None,
             "annotation_meta": None

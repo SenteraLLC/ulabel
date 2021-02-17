@@ -18,24 +18,36 @@
             $(window).on("load", function() {
 
                 let on_submit = (annotations) => {
+                    {% autoescape false %}
+                    let payload = {
+                        destination: "{{ output_file }}",
+                        annotations: annotations
+                    };
+                    {% autoescape true %}
+
 
                     // Post to save
                     // TODO
-
-                    // Show message
-                    // If success, give button to quit
-                    // If fail, give button to download
-                    console.log(annotations);
-
+                    $.post("/save", JSON.stringify(payload), function(response) {
+                        // Show message
+                        // If success, give button to quit
+                        // If fail, give button to download
+                        if (response.err == null) {
+                            alert("Saved successfully. You may now close this window.")
+                        }
+                        else {
+                            alert(JSON.stringify(response, null, 2));
+                        }
+                    });
                     return;
-                    console.log("Done");
-                    var element = document.createElement('a');
-                    element.setAttribute("href", 'data:text/plain;charset=utf-8,' + encodeURIComponent(JSON.stringify(annotations)));//, null, 2)));
-                    element.setAttribute("download", "annotations.json");
-                    element.style.display = 'none';
-                    document.body.appendChild(element);
-                    element.click();
-                    document.body.removeChild(element);
+                    // console.log("Done");
+                    // var element = document.createElement('a');
+                    // element.setAttribute("href", 'data:text/plain;charset=utf-8,' + encodeURIComponent(JSON.stringify(annotations)));//, null, 2)));
+                    // element.setAttribute("download", "annotations.json");
+                    // element.style.display = 'none';
+                    // document.body.appendChild(element);
+                    // element.click();
+                    // document.body.removeChild(element);
                 }
 
                 {% autoescape false %}
@@ -59,8 +71,13 @@
                             "id": 4
                         }
                     ], 
-                    ["polygon", "bbox", "contour", "tbar"], 
-                    on_submit
+                    {% autoescape false %}
+                    {{ subtasks.main.allowed_modes | json }}, 
+                    {% autoescape true %}
+                    on_submit,
+                    {% autoescape false %}
+                    {{ subtasks.main.resume_from | json }}, 
+                    {% autoescape true %}
                 );
                 // Wait for ULabel instance to finish initialization
                 ulabel.init(function() {
