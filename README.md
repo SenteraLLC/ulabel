@@ -69,13 +69,6 @@ node demo/server.js
 
 ## TODO
 
-Standalone tool
-- Allow for arbitrary ULabel job given URL with config data
-- Allow S3 paths for image data
-    - And resume_from/write_to
-- Browse/next/prev/go through
-- Multi-select with polygon
-
 Major Items
 - Handle 3D image data
 - Handle subtask configs
@@ -93,6 +86,7 @@ Maintenance & "Bug" fixes
 
 New features
 - Polylines (only two points for row detection) (1)
+- Multi-select with polygon
 - Allow for multiple-task viewing, toggling each user (5)
 - Regression payloads (5)
 - Superpixels (5)
