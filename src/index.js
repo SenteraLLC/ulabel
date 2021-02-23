@@ -1658,28 +1658,48 @@ class ULabel {
         }
     }
 
-    draw_annotation_from_id(id, cvs_ctx="front_context", offset=null) {
-        this.draw_annotation(this.subtasks[this.state["current_subtask"]]["annotations"]["access"][id], cvs_ctx, false, offset);
+    draw_annotation_from_id(id, cvs_ctx="front_context", offset=null, subtask=null) {
+        if (subtask == null) {
+            // Should never be here tbh
+            subtask = this.state["current_subtask"];
+        }
+        this.draw_annotation(this.subtasks[subtask]["annotations"]["access"][id], cvs_ctx, false, offset, subtask);
     }
     
     // Draws the first n annotations on record
-    draw_n_annotations(n, cvs_ctx="front_context", offset=null) {
+    draw_n_annotations(n, cvs_ctx="front_context", offset=null, subtask=null) {
+        if (subtask == null) {
+            // Should never be here tbh
+            subtask = this.state["current_subtask"];
+        }
         for (var i = 0; i < n; i++) {
             if (offset != null && offset["id"] == this.subtasks[this.state["current_subtask"]]["annotations"]["ordering"][i]) {
-                this.draw_annotation_from_id(this.subtasks[this.state["current_subtask"]]["annotations"]["ordering"][i], cvs_ctx, offset);
+                this.draw_annotation_from_id(this.subtasks[subtask]["annotations"]["ordering"][i], cvs_ctx, offset, subtask);
             }
             else {
-                this.draw_annotation_from_id(this.subtasks[this.state["current_subtask"]]["annotations"]["ordering"][i]);
+                this.draw_annotation_from_id(this.subtasks[subtask]["annotations"]["ordering"][i], cvs_ctx, null, subtask);
             }
         }
     }
     
-    redraw_all_annotations(offset=null) {
+
+    redraw_all_annotations_in_subtask(subtask, offset=null) {
         // Clear the canvas
         this.canvas_state["front_context"].clearRect(0, 0, this.config["image_width"], this.config["image_height"]);
     
         // Draw them all again
-        this.draw_n_annotations(this.subtasks[this.state["current_subtask"]]["annotations"]["ordering"].length, "front_context", offset);
+        this.draw_n_annotations(this.subtasks[this.state["current_subtask"]]["annotations"]["ordering"].length, "front_context", offset, subtask);
+    }
+
+    redraw_all_annotations(subtask=null, offset=null) {
+        if (subtask == null) {
+            for (st in this.subtasks) {
+                this.redraw_all_annotations_in_subtask(st, offset);
+            }
+        }
+        else {
+            this.redraw_all_annotations_in_subtask(subtask, offset);
+        }
     }
 
     // ================= On-Canvas HTML Dialog Utilities =================
@@ -1937,7 +1957,7 @@ class ULabel {
             this.subtasks[this.state["current_subtask"]]["state"]["is_in_progress"] = false;
         }
         this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid]["deprecated"] = true;
-        this.redraw_all_annotations();
+        this.redraw_all_annotations(this.state["current_subtask"]);
         this.hide_global_edit_suggestion();
         // TODO add this action to the undo stack
         this.record_action({
@@ -1969,7 +1989,7 @@ class ULabel {
         else {
             this.subtasks[this.state["current_subtask"]]["annotations"]["access"][undo_payload.annid]["deprecated"] = false;
         }
-        this.redraw_all_annotations();
+        this.redraw_all_annotations(this.state["current_subtask"]);
         this.suggest_edits(this.state["last_move"]);
     }
     delete_annotation__redo(redo_payload) {
@@ -2342,7 +2362,7 @@ class ULabel {
         }
 
         // Delete from view
-        this.redraw_all_annotations();
+        this.redraw_all_annotations(this.state["current_subtask"]);
         this.suggest_edits(this.state["last_move"]);
     }
 
@@ -2411,7 +2431,7 @@ class ULabel {
                 case "bbox":
                     this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"][1] = ms_loc;
                     this.rebuild_containing_box(actid);
-                    this.redraw_all_annotations(); // tobuffer
+                    this.redraw_all_annotations(this.state["current_subtask"]); // tobuffer
                     break;
                 case "polygon":
                     // Store number of keypoints for easy access
@@ -2454,19 +2474,19 @@ class ULabel {
                             this.continue_annotation(this.state["last_move"]);
                         }
                     }
-                    this.redraw_all_annotations(); // tobuffer
+                    this.redraw_all_annotations(this.state["current_subtask"]); // tobuffer
                     break;
                 case "contour":
                     if (ULabel.l2_norm(ms_loc, this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"][this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"].length-1]) > 3) {
                         this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"].push(ms_loc);
                         this.update_containing_box(ms_loc, actid);
-                        this.redraw_all_annotations(); // TODO tobuffer, no need to redraw here, can just draw over
+                        this.redraw_all_annotations(this.state["current_subtask"]); // TODO tobuffer, no need to redraw here, can just draw over
                     }
                     break;
                 case "tbar":
                     this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"][1] = ms_loc;
                     this.rebuild_containing_box(actid);
-                    this.redraw_all_annotations(); // tobuffer
+                    this.redraw_all_annotations(this.state["current_subtask"]); // tobuffer
                     break;
                 default:
                     this.raise_error("Annotation mode is not understood", ULabel.elvl_info);
@@ -2551,7 +2571,7 @@ class ULabel {
                 case "bbox":
                     this.set_with_access_string(actid, this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"]["access"], ms_loc);
                     this.rebuild_containing_box(actid);
-                    this.redraw_all_annotations(); // tobuffer
+                    this.redraw_all_annotations(this.state["current_subtask"]); // tobuffer
                     this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"]["point"] = ms_loc;
                     this.show_edit_suggestion(this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"], true);
                     this.show_global_edit_suggestion(this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"]["annid"]);
@@ -2559,7 +2579,7 @@ class ULabel {
                 case "polygon":
                     this.set_with_access_string(actid, this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"]["access"], ms_loc);
                     this.rebuild_containing_box(actid);
-                    this.redraw_all_annotations(); // tobuffer
+                    this.redraw_all_annotations(this.state["current_subtask"]); // tobuffer
                     this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"]["point"] = ms_loc;
                     this.show_edit_suggestion(this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"], true);
                     this.show_global_edit_suggestion(this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"]["annid"]);
@@ -2572,7 +2592,7 @@ class ULabel {
                 case "tbar":
                     this.set_with_access_string(actid, this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"]["access"], ms_loc);
                     this.rebuild_containing_box(actid);
-                    this.redraw_all_annotations(); // tobuffer
+                    this.redraw_all_annotations(this.state["current_subtask"]); // tobuffer
                     this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"]["point"] = ms_loc;
                     this.show_edit_suggestion(this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"], true);
                     this.show_global_edit_suggestion(this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"]["annid"]);
@@ -2601,19 +2621,19 @@ class ULabel {
             case "bbox":
                 this.set_with_access_string(actid, undo_payload.edit_candidate["access"], ms_loc, true);
                 this.rebuild_containing_box(actid);
-                this.redraw_all_annotations(); // tobuffer
+                this.redraw_all_annotations(this.state["current_subtask"]); // tobuffer
                 this.suggest_edits(this.state["last_move"]);
                 break;
             case "polygon":
                 this.set_with_access_string(actid, undo_payload.edit_candidate["access"], ms_loc, true);
                 this.rebuild_containing_box(actid);
-                this.redraw_all_annotations(); // tobuffer
+                this.redraw_all_annotations(this.state["current_subtask"]); // tobuffer
                 this.suggest_edits(this.state["last_move"]);
                 break;
             case "tbar":
                 this.set_with_access_string(actid, undo_payload.edit_candidate["access"], ms_loc, true);
                 this.rebuild_containing_box(actid);
-                this.redraw_all_annotations(); // tobuffer
+                this.redraw_all_annotations(this.state["current_subtask"]); // tobuffer
                 this.suggest_edits(this.state["last_move"]);
                 break;
         }
@@ -2639,19 +2659,19 @@ class ULabel {
             case "bbox":
                 this.set_with_access_string(actid, redo_payload.edit_candidate["access"], ms_loc);
                 this.rebuild_containing_box(actid);
-                this.redraw_all_annotations(); // tobuffer
+                this.redraw_all_annotations(this.state["current_subtask"]); // tobuffer
                 this.suggest_edits(this.state["last_move"]);
                 break;
             case "polygon":
                 this.set_with_access_string(actid, redo_payload.edit_candidate["access"], ms_loc, false);
                 this.rebuild_containing_box(actid);
-                this.redraw_all_annotations(); // tobuffer
+                this.redraw_all_annotations(this.state["current_subtask"]); // tobuffer
                 this.suggest_edits(this.state["last_move"]);
                 break;
             case "tbar":
                 this.set_with_access_string(actid, redo_payload.edit_candidate["access"], ms_loc, false);
                 this.rebuild_containing_box(actid);
-                this.redraw_all_annotations(); // tobuffer
+                this.redraw_all_annotations(this.state["current_subtask"]); // tobuffer
                 this.suggest_edits(this.state["last_move"]);
                 break;
     
@@ -2749,10 +2769,10 @@ class ULabel {
         if (actid && (actid !== null)) {
             let offset = {
                 "id": this.subtasks[this.state["current_subtask"]]["state"]["move_candidate"]["annid"],
-                "diffX": (mouse_event.clientX - this.drag_state["move"]["mouse_start"][0])/this.viewer_state["zoom_val"],
-                "diffY": (mouse_event.clientY - this.drag_state["move"]["mouse_start"][1])/this.viewer_state["zoom_val"]
+                "diffX": (mouse_event.clientX - this.drag_state["move"]["mouse_start"][0])/this.state["zoom_val"],
+                "diffY": (mouse_event.clientY - this.drag_state["move"]["mouse_start"][1])/this.state["zoom_val"]
             };
-            this.redraw_all_annotations(offset); // tobuffer
+            this.redraw_all_annotations(this.state["current_subtask"], offset); // tobuffer
             this.show_global_edit_suggestion(this.subtasks[this.state["current_subtask"]]["state"]["move_candidate"]["annid"], offset); // TODO handle offset
             this.reposition_dialogs();
             return;
@@ -2780,7 +2800,7 @@ class ULabel {
                     this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"][0][1]
                 ];
                 this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"][n_kpts-1] = start_pt;
-                this.redraw_all_annotations(); // tobuffer
+                this.redraw_all_annotations(this.state["current_subtask"]); // tobuffer
                 this.record_action({
                     act_type: "finish_annotation",
                     undo_payload: {
@@ -2843,7 +2863,7 @@ class ULabel {
             this.get_global_mouse_x(this.state["last_move"]),
             this.get_global_mouse_y(this.state["last_move"]),
         ];
-        this.redraw_all_annotations();
+        this.redraw_all_annotations(this.state["current_subtask"]);
     }
     
     finish_edit(mouse_event) {
@@ -2867,8 +2887,8 @@ class ULabel {
 
     finish_move(mouse_event) {
         // Actually edit spatial payload this time
-        const diffX = (mouse_event.clientX - this.drag_state["move"]["mouse_start"][0])/this.viewer_state["zoom_val"];
-        const diffY = (mouse_event.clientY - this.drag_state["move"]["mouse_start"][1])/this.viewer_state["zoom_val"];
+        const diffX = (mouse_event.clientX - this.drag_state["move"]["mouse_start"][0])/this.state["zoom_val"];
+        const diffY = (mouse_event.clientY - this.drag_state["move"]["mouse_start"][1])/this.state["zoom_val"];
 
         for (var spi = 0; spi < this.subtasks[this.state["current_subtask"]]["annotations"]["access"][this.subtasks[this.state["current_subtask"]]["state"]["active_id"]]["spatial_payload"].length; spi++) {
             this.subtasks[this.state["current_subtask"]]["annotations"]["access"][this.subtasks[this.state["current_subtask"]]["state"]["active_id"]]["spatial_payload"][spi][0] += diffX;
@@ -2890,7 +2910,7 @@ class ULabel {
         }
         this.subtasks[this.state["current_subtask"]]["state"]["active_id"] = null;
 
-        this.redraw_all_annotations();
+        this.redraw_all_annotations(this.state["current_subtask"]);
 
         this.record_finish_move(diffX, diffY);
     }
@@ -2917,7 +2937,7 @@ class ULabel {
             this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["containing_box"]["bry"] += diffY;
         }
 
-        this.redraw_all_annotations();
+        this.redraw_all_annotations(this.state["current_subtask"]);
         this.hide_edit_suggestion();
         this.hide_global_edit_suggestion();
         this.reposition_dialogs();
@@ -2948,7 +2968,7 @@ class ULabel {
         this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["containing_box"]["tly"] += diffY;
         this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["containing_box"]["bry"] += diffY;
 
-        this.redraw_all_annotations();
+        this.redraw_all_annotations(this.state["current_subtask"]);
         this.hide_edit_suggestion();
         this.hide_global_edit_suggestion();
         this.reposition_dialogs();
@@ -3292,7 +3312,7 @@ class ULabel {
         else {
             this.suggest_edits();
         }
-        this.redraw_all_annotations();
+        this.redraw_all_annotations(this.state["current_subtask"]);
 
         // Explicit changes are undoable
         // First assignments are treated as though they were done all along
@@ -3326,7 +3346,7 @@ class ULabel {
         let actid = undo_payload.actid;
         let new_payload = JSON.parse(JSON.stringify(undo_payload.old_id_payload));
         this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["classification_payloads"] = JSON.parse(JSON.stringify(new_payload));
-        this.redraw_all_annotations();
+        this.redraw_all_annotations(this.state["current_subtask"]);
         this.suggest_edits();
     }
 
@@ -3416,7 +3436,7 @@ class ULabel {
             mouse_event.clientX,
             mouse_event.clientY
         ];
-        this.drag_state[drag_key]["zoom_val_start"] = this.viewer_state["zoom_val"];
+        this.drag_state[drag_key]["zoom_val_start"] = this.state["zoom_val"];
         this.drag_state[drag_key]["offset_start"] = [
             annbox.scrollLeft(), 
             annbox.scrollTop()
@@ -3502,7 +3522,7 @@ class ULabel {
     // Handle zooming by click-drag
     drag_rezoom(mouse_event) {
         const aY = mouse_event.clientY;
-        this.viewer_state["zoom_val"] = (
+        this.state["zoom_val"] = (
             this.drag_state["zoom"]["zoom_val_start"]*Math.pow(
                 1.1, -(aY - this.drag_state["zoom"]["mouse_start"][1])/10
             )
