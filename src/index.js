@@ -479,7 +479,7 @@ class ULabel {
                 <a class="id-dialog-clickable-indicator" href="#"></a>
                 <svg width="${wdt}" height="${wdt}">
             `;
-            var toolbox_html = `<div id="tb-id-app--${st}">`;
+            var toolbox_html = `<div id="tb-id-app--${st}" class="tb-id-app">`;
             const class_ids = ul.subtasks[st]["class_ids"];
         
     
@@ -1150,11 +1150,9 @@ class ULabel {
         // Add stylesheet
         ULabel.add_style_to_document();
 
-        // Set current subtask
-        // this.set_subtask(Object.keys(this.subtasks)[0]);
-
         var that = this;
         that.state["current_subtask"] = Object.keys(that.subtasks)[0];
+
         // Place image element
         ULabel.prep_window_html(this);
 
@@ -1204,15 +1202,8 @@ class ULabel {
                 that.config["canvas_did"]
             ).getContext("2d");
 
-            // Set the canvas elements in the correct stacking order given current subtask
-            that.set_subtask(that.state["current_subtask"]);
-
             // Add the ID dialogs' HTML to the document
             ULabel.build_id_dialogs(that);
-
-            // ----------------------------------------------------------------------------- //
-            // DEV MSG -- I think I've debugged/refactored through this point -- END DEV MSG //
-            // ----------------------------------------------------------------------------- //
             
             // Add the HTML for the edit suggestion to the window
             ULabel.build_edit_suggestion(that);
@@ -1220,6 +1211,9 @@ class ULabel {
             // Create listers to manipulate and export this object
             ULabel.create_listeners(that);
             
+            // Set the canvas elements in the correct stacking order given current subtask
+            that.set_subtask(that.state["current_subtask"]);
+
             // Indicate that the object is now init!
             that.is_init = true;
     
@@ -1246,16 +1240,23 @@ class ULabel {
         // Ensure that st_key is available
         // TODO
 
-        // Set old back to where it was
-        if (this.state["current_subtask"]) {
-            $("div#canvasses__" + this.state["current_subtask"]).css("z-index", -1);
-        }
-
         // Change object state
         this.state["current_subtask"] = st_key;
 
-        // Bring this subtask's canvas out front
+        // Bring new set of canvasses out to front
+        $("div.canvasses").css("z-index", -1);
         $("div#canvasses__" + this.state["current_subtask"]).css("z-index", 100);
+
+        // Show appropriate set of dialogs
+        $("div.dialogs_container").css("display", "none");
+        $("div#dialogs__" + this.state["current_subtask"]).css("display", "block");
+
+        // Show appropriate set of annotation modes
+        // TODO
+
+        // Show appropriate set of class options
+        $("div.tb-id-app").css("display", "none");
+        $("div#tb-id-app--" + this.state["current_subtask"]).css("display", "block");
     }
 
     // ================= Toolbox Functions ==================
