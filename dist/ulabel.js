@@ -12833,7 +12833,7 @@ class ULabel {
 
     // ================= Init helpers =================
     
-    static prep_window_html(ul, callback) {
+    static prep_window_html(ul) {
         // Bring image and annotation scaffolding in
         // TODO multi-image with spacing etc.
 
@@ -12929,6 +12929,8 @@ class ULabel {
                 </div>
             </div>
         </div>`;
+        jquery_default()("#" + ul.config["container_id"]).html(tool_html)
+
 
         // Build toolbox for the current subtask only
         // const crst = ul.state["current_subtask"];
@@ -12990,27 +12992,22 @@ class ULabel {
                     break;
             }
         }
-        jquery_default()("#" + ul.config["container_id"]).html(tool_html).promise().done(() => {
 
+        // Append but don't wait
+        jquery_default()("#" + sp_id + " .toolbox_inner_cls .mode-selection").append(md_buttons.join("<!-- -->"));
+        // TODO noconflict
+        jquery_default()("#" + sp_id + " .toolbox_inner_cls").append(`
+            <a href="#" id="submit-button">Submit</a>
+        `);
 
-            // Append but don't wait
-            jquery_default()("#" + sp_id + " .toolbox_inner_cls .mode-selection").append(md_buttons.join("<!-- -->"));
-            // TODO noconflict
-            jquery_default()("#" + sp_id + " .toolbox_inner_cls").append(`
-                <a href="#" id="submit-button">Submit</a>
-            `);
-    
-            // Show current mode label
-            ul.show_annotation_mode();
+        // Show current mode label
+        ul.show_annotation_mode();
 
-            // Make sure that entire toolbox is shown
-            if (jquery_default()("#" + ul.config["toolbox_id"] + " .toolbox_inner_cls").height() > jquery_default()("#" + ul.config["container_id"]).height()) {
-                jquery_default()("#" + ul.config["toolbox_id"]).css("overflow-y", "scroll");
-            }
+        // Make sure that entire toolbox is shown
+        if (jquery_default()("#" + ul.config["toolbox_id"] + " .toolbox_inner_cls").height() > jquery_default()("#" + ul.config["container_id"]).height()) {
+            jquery_default()("#" + ul.config["toolbox_id"]).css("overflow-y", "scroll");
+        }
 
-            callback();
-
-        });
     }
     
     static build_id_dialogs(ul) {
@@ -13712,17 +13709,7 @@ class ULabel {
         var that = this;
         that.state["current_subtask"] = Object.keys(that.subtasks)[0];
         // Place image element
-        ULabel.prep_window_html(this, () => {
-            // Set current subtask
-            // TODO get rid of this delay, and figure out why the heck it's needed
-            setTimeout(() => {
-                console.log("Css not being applied?");
-                console.log("div#canvasses__" + this.state["current_subtask"]);
-                console.log(jquery_default()("div#canvasses__" + this.state["current_subtask"]));
-                console.log(document.getElementById("canvasses__" + this.state["current_subtask"]));
-                that.set_subtask(Object.keys(that.subtasks)[0]);
-            }, 1000);
-        });
+        ULabel.prep_window_html(this);
 
         // Detect night cookie
         if (ULabel.has_night_mode_cookie()) {
@@ -13768,6 +13755,9 @@ class ULabel {
             that.state["demo_canvas_context"] = document.getElementById(
                 that.config["canvas_did"]
             ).getContext("2d");
+
+            // Set the canvas elements in the correct stacking order given current subtask
+            that.set_subtask(that.state["current_subtask"]);
 
             // Add the ID dialogs' HTML to the document
             ULabel.build_id_dialogs(that);
