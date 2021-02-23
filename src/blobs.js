@@ -410,7 +410,11 @@ div.ulabel-night a.md-btn svg {
    filter: invert(80%);
 }
 
-
+div.canvasses {
+   position: absolute;
+   top: 0; 
+   left: 0;
+}
 canvas.canvas_cls {
    position: absolute;
    top: 0;
