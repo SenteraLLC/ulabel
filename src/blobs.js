@@ -700,7 +700,13 @@ div.lstyl-row div.setting a[href="#"]:hover {
    background-color: rgba(255, 181, 44, 0.397);
 }
 
-div#global_edit_suggestion {
+div.dialogs_container {
+   position: absolute;
+   top: 0;
+   left: 0;
+}
+
+div.global_edit_suggestion {
    display: none;
    position: absolute;
    width: 150px;
@@ -710,7 +716,7 @@ div#global_edit_suggestion {
    /* background-color: white; */
    transform: scale(0.66666);
 }
-div#global_edit_suggestion.mcm {
+div.global_edit_suggestion.mcm {
    width: 225px;
    transform: scale(0.5);
 }
