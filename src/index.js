@@ -213,7 +213,8 @@ class ULabel {
     // =========================== NIGHT MODE COOKIES =======================================
 
     static has_night_mode_cookie() {
-        if (document.cookie.split(";").find(row => row.startsWith("nightmode=true"))) {
+        console.log(document.cookie);
+        if (document.cookie.split(";").find(row => row.trim().startsWith("nightmode=true"))) {
             return true;
         }
         return false;
@@ -794,6 +795,10 @@ class ULabel {
             ul.set_subtask(switch_to);
         });
 
+        $(document).on("input", "span.tb-st-range input", (e) => {
+            ul.readjust_subtask_opacities();
+        });
+
         // Listener for id_dialog click interactions
         $("#" + ul.config["annbox_id"] + " a.id-dialog-clickable-indicator").click(function(e) {
             let crst = ul.state["current_subtask"];
@@ -840,7 +845,7 @@ class ULabel {
             ul.config["done_callback"](submit_payload);
         });
 
-        $("#" + ul.config["toolbox_id"] + " a.night-button").click(function() {
+        $(document).on("click", "#" + ul.config["toolbox_id"] + " a.night-button", function() {
             if ($("#" + ul.config["container_id"]).hasClass("ulabel-night")) {
                 $("#" + ul.config["container_id"]).removeClass("ulabel-night");
                 // Destroy any night cookie
@@ -1258,6 +1263,13 @@ class ULabel {
 
     // ================== Subtask Helpers ===================
 
+    readjust_subtask_opacities() {
+        for (const st_key in this.subtasks) {
+            let sliderval = $("#tb-st-range--" + st_key).val();
+            $("div#canvasses__" + st_key).css("opacity", sliderval/100);
+        }
+    }
+
     set_subtask(st_key) {
         let old_st = this.state["current_subtask"];
 
@@ -1283,7 +1295,7 @@ class ULabel {
         // Adjust tab buttons in toolbox
         $("a#tb-st-switch--" + old_st).attr("href", "#");
         $("a#tb-st-switch--" + old_st).parent().removeClass("sel");
-        $("input#tb-st-range--" + old_st).val(50);
+        $("input#tb-st-range--" + old_st).val(40);
         $("a#tb-st-switch--" + st_key).removeAttr("href");
         $("a#tb-st-switch--" + st_key).parent().addClass("sel");
         $("input#tb-st-range--" + st_key).val(100);
@@ -1291,6 +1303,9 @@ class ULabel {
         // Update toolbox opts
         this.update_annotation_mode();
         this.update_current_class();
+
+        // Set transparancy for inactive layers
+        this.readjust_subtask_opacities();
 
         // Redraw demo
         this.redraw_demo();
