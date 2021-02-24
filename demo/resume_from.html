@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>ULabel</title>
+        <link rel="icon" href="https://sentera.com/wp-content/uploads/2018/03/Favicon.png" sizes="192x192" />
+
+        <!-- ULabel Library -->
+        <script src="/ulabel.js"></script>
+
+        <!-- ULabel Usage -->
+        <script>
+            /* global ULabel */
+
+            document.addEventListener("DOMContentLoaded", function() { 
+
+                let on_submit = (annotations) => {
+                    console.log("Done");
+                    var element = document.createElement('a');
+                    element.setAttribute("href", 'data:text/plain;charset=utf-8,' + encodeURIComponent(JSON.stringify(annotations)));//, null, 2)));
+                    element.setAttribute("download", "annotations.json");
+                    element.style.display = 'none';
+                    document.body.appendChild(element);
+                    element.click();
+                    document.body.removeChild(element);
+                }
+
+                // Initial ULabel configuration
+                let ulabel = new ULabel(
+                    "container", 
+                    "/demo_image.jpg", 
+                    "TestUser", 
+                    [
+                        {
+                            "name": "Weed",
+                            "color": "orange",
+                            "id": 2
+                        }
+                    ], 
+                    ["polygon", "bbox", "contour", "tbar"], 
+                    on_submit,
+                    [
+                        {
+                        "id": "ff85fcf9-c725-4981-9978-124c8ecc6618",
+                        "parent_id": "None",
+                        "created_by": "private.us-east-1.0de2a91f5b376e78",
+                        "task_id": "3bffed31-ba88-4b60-aee9-c02aeaf5c5db",
+                        "spatial_type": "polygon",
+                        "spatial_payload": [
+                            [
+                            610,
+                            201
+                            ],
+                            [
+                            208,
+                            559
+                            ],
+                            [
+                            1082,
+                            390
+                            ],
+                            [
+                            920,
+                            188
+                            ],
+                            [
+                            610,
+                            201
+                            ]
+                        ],
+                        "deprecated": false,
+                        "classification_payloads": [
+                            {
+                            "class_id": 2,
+                            "confidence": 1
+                            }
+                        ],
+                        "regression_payloads": [],
+                        "line_size": 4,
+                        "containing_box": {
+                            "tlx": 208,
+                            "tly": 188,
+                            "brx": 1082,
+                            "bry": 559
+                        },
+                        "new": false
+                        }
+                    ]
+                );
+                // Wait for ULabel instance to finish initialization
+                ulabel.init(function() {
+                    // ULabel is now ready for use
+                });
+
+            });
+        </script>
+    </head>
+    <body>
+        <div id="container" style="width: 100%; height: 100vh; position: absolute; top: 0; left: 0;"></div>
+    </body>
+</html>
