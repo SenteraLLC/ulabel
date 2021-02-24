@@ -11624,7 +11624,8 @@ const BBOX_SVG = `
    version="1.1"
    id="svg7244"
    inkscape:version="0.92.5 (2060ec1f9f, 2020-04-08)"
-   sodipodi:docname="bbox.svg">
+   sodipodi:docname="bbox.svg"
+   aria-labelledby="unique-title-id-bbox unique-desc-id-bbox">
   <defs
      id="defs7238">
     <marker
@@ -11717,20 +11718,21 @@ const POLYGON_SVG = `
    version="1.1"
    id="svg7244"
    inkscape:version="0.92.5 (2060ec1f9f, 2020-04-08)"
-   sodipodi:docname="polygon.svg">
+   sodipodi:docname="polygon.svg"
+   aria-labelledby="unique-title-id-polygon unique-desc-id-polygon">
   <defs
-     id="defs7238">
+     id="defs7239">
     <marker
        inkscape:stockid="DotL"
        orient="auto"
        refY="0"
        refX="0"
-       id="DotL"
+       id="DotL2"
        style="overflow:visible"
        inkscape:isstock="true">
       <path
          inkscape:connector-curvature="0"
-         id="path4587"
+         id="path4588"
          d="m -2.5,-1 c 0,2.76 -2.24,5 -5,5 -2.76,0 -5,-2.24 -5,-5 0,-2.76 2.24,-5 5,-5 2.76,0 5,2.24 5,5 z"
          style="fill:#000000;fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:1.00000003pt;stroke-opacity:1"
          transform="matrix(0.8,0,0,0.8,5.92,0.8)" />
@@ -11787,7 +11789,7 @@ const POLYGON_SVG = `
      id="layer1"
      transform="translate(0,-197)">
     <path
-       style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:1.48994207;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;marker-start:url(#DotL);marker-mid:url(#DotL);paint-order:stroke fill markers"
+       style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:1.48994207;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;marker-start:url(#DotL2);marker-mid:url(#DotL2);paint-order:stroke fill markers"
        d="m 41.284493,204.35565 -33.5734849,28.74943 7.6220859,56.71655 76.946838,-12.1256 -41.921509,-38.137 z"
        id="path3715"
        inkscape:connector-curvature="0" />
@@ -11811,7 +11813,7 @@ const CONTOUR_SVG = `
    inkscape:version="0.92.5 (2060ec1f9f, 2020-04-08)"
    sodipodi:docname="contour.svg">
   <defs
-     id="defs7238">
+     id="defs7240">
     <marker
        inkscape:stockid="DotL"
        orient="auto"
@@ -11822,7 +11824,7 @@ const CONTOUR_SVG = `
        inkscape:isstock="true">
       <path
          inkscape:connector-curvature="0"
-         id="path4587"
+         id="path4589"
          d="m -2.5,-1 c 0,2.76 -2.24,5 -5,5 -2.76,0 -5,-2.24 -5,-5 0,-2.76 2.24,-5 5,-5 2.76,0 5,2.24 5,5 z"
          style="fill:#000000;fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:1.00000003pt;stroke-opacity:1"
          transform="matrix(0.8,0,0,0.8,5.92,0.8)" />
@@ -11903,7 +11905,7 @@ const TBAR_SVG = `
    inkscape:version="0.92.5 (2060ec1f9f, 2020-04-08)"
    sodipodi:docname="tbar.svg">
   <defs
-     id="defs7238">
+     id="defs7241">
     <marker
        inkscape:stockid="DotL"
        orient="auto"
@@ -11914,7 +11916,7 @@ const TBAR_SVG = `
        inkscape:isstock="true">
       <path
          inkscape:connector-curvature="0"
-         id="path4587"
+         id="path4590"
          d="m -2.5,-1 c 0,2.76 -2.24,5 -5,5 -2.76,0 -5,-2.24 -5,-5 0,-2.76 2.24,-5 5,-5 2.76,0 5,2.24 5,5 z"
          style="fill:#000000;fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:1.00000003pt;stroke-opacity:1"
          transform="matrix(0.8,0,0,0.8,5.92,0.8)" />
@@ -13387,10 +13389,11 @@ class ULabel {
 
         // Listener for soft id toolbox buttons
         jquery_default()("#" + ul.config["toolbox_id"] + ' a.tbid-opt').click(function() {
+            let pfx = "div#tb-id-app--" + ul.state["current_subtask"];
             let crst = ul.state["current_subtask"];
             if (jquery_default()(this).attr("href") == "#") {
-                jquery_default()("a.tbid-opt.sel").attr("href", "#");
-                jquery_default()("a.tbid-opt.sel").removeClass("sel");
+                jquery_default()(pfx + " a.tbid-opt.sel").attr("href", "#");
+                jquery_default()(pfx + " a.tbid-opt.sel").removeClass("sel");
                 jquery_default()(this).addClass("sel");
                 jquery_default()(this).removeAttr("href");
                 let idarr = jquery_default()(this).attr("id").split("_");
@@ -13401,7 +13404,6 @@ class ULabel {
         });
 
         jquery_default()(document).on("click", "a.tb-st-switch[href]", (e) => {
-            console.log("here");
             let switch_to = jquery_default()(e.target).attr("id").split("--")[1];
 
             // Ignore if in the middle of annotation
@@ -13902,11 +13904,32 @@ class ULabel {
         jquery_default()("a#tb-st-switch--" + st_key).parent().addClass("sel");
         jquery_default()("input#tb-st-range--" + st_key).val(100);
 
+        // Update toolbox opts
+        this.update_annotation_mode();
+        this.update_current_class();
+
         // Redraw demo
         this.redraw_demo();
     }
 
     // ================= Toolbox Functions ==================
+
+    update_annotation_mode() {
+        jquery_default()("a.md-btn.sel").attr("href", "#");
+        jquery_default()("a.md-btn.sel").removeClass("sel");
+        jquery_default()("a#md-btn--" + this.subtasks[this.state["current_subtask"]]["state"]["annotation_mode"]).addClass("sel");
+        jquery_default()("a#md-btn--" + this.subtasks[this.state["current_subtask"]]["state"]["annotation_mode"]).removeAttr("href");
+        this.show_annotation_mode();
+    }
+
+    update_current_class() {
+        this.update_id_toolbox_display();
+        // $("a.tbid-opt.sel").attr("href", "#");
+        // $("a.tbid-opt.sel").removeClass("sel");
+        // $("a#toolbox_sel_" + this.subtasks[this.state["current_subtask"]]["state"]["annotation_mode"]).addClass("sel");
+        // $("a#toolbox_sel_" + this.subtasks[this.state["current_subtask"]]["state"]["annotation_mode"]).removeAttr("href");
+    }
+
     // Show annotation mode
     show_annotation_mode(el=null) {
         if (el == null) {
@@ -14070,7 +14093,8 @@ class ULabel {
         if (demo) {
             let dist_prop = 1.0;
             let class_ids = this.subtasks[crst]["class_ids"];
-            let idarr = jquery_default()("a.tbid-opt.sel").attr("id").split("_");
+            let pfx = "div#tb-id-app--" + this.state["current_subtask"];
+            let idarr = jquery_default()(pfx + " a.tbid-opt.sel").attr("id").split("_");
             let class_ind = class_ids.indexOf(parseInt(idarr[idarr.length - 1]));
             // Recompute and render opaque pie slices
             for (var i = 0; i < class_ids.length; i++) {
@@ -15855,7 +15879,8 @@ class ULabel {
             if (!this.config["allow_soft_id"]) {
                 let dist_prop = 1.0;
                 let class_ids = this.subtasks[crst]["class_ids"];
-                let idarr = jquery_default()("a.tbid-opt.sel").attr("id").split("_");
+                let pfx = "div#tb-id-app--" + this.state["current_subtask"];
+                let idarr = jquery_default()(pfx + " a.tbid-opt.sel").attr("id").split("_");
                 let class_ind = class_ids.indexOf(parseInt(idarr[idarr.length - 1]));
                 // Recompute and render opaque pie slices
                 for (var i = 0; i < class_ids.length; i++) {
@@ -15912,15 +15937,16 @@ class ULabel {
             // Not supported yet
         }
         else {
+            let pfx = "div#tb-id-app--" + this.state["current_subtask"];
             let class_ids = this.subtasks[this.state["current_subtask"]]["class_ids"];
             for (var i = 0; i < class_ids.length; i++) {
                 let cls = class_ids[i];
                 if (this.subtasks[this.state["current_subtask"]]["state"]["id_payload"][i]["confidence"] > 0.5) {
-                    if (!(jquery_default()("#" + this.config["toolbox_id"] + " a#toolbox_sel_" + cls).hasClass("sel"))) {
-                        jquery_default()("#" + this.config["toolbox_id"] + " a.tbid-opt.sel").attr("href", "#");
-                        jquery_default()("#" + this.config["toolbox_id"] + " a.tbid-opt.sel").removeClass("sel");
-                        jquery_default()("#" + this.config["toolbox_id"] + " a#toolbox_sel_" + cls).addClass("sel");
-                        jquery_default()("#" + this.config["toolbox_id"] + " a#toolbox_sel_" + cls).removeAttr("href");
+                    if (!(jquery_default()(pfx + " #" + this.config["toolbox_id"] + " a#toolbox_sel_" + cls).hasClass("sel"))) {
+                        jquery_default()(pfx + " #" + this.config["toolbox_id"] + " a.tbid-opt.sel").attr("href", "#");
+                        jquery_default()(pfx + " #" + this.config["toolbox_id"] + " a.tbid-opt.sel").removeClass("sel");
+                        jquery_default()(pfx + " #" + this.config["toolbox_id"] + " a#toolbox_sel_" + cls).addClass("sel");
+                        jquery_default()(pfx + " #" + this.config["toolbox_id"] + " a#toolbox_sel_" + cls).removeAttr("href");
                     }
                 }
             }

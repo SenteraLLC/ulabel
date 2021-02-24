@@ -14,7 +14,8 @@ const BBOX_SVG = `
    version="1.1"
    id="svg7244"
    inkscape:version="0.92.5 (2060ec1f9f, 2020-04-08)"
-   sodipodi:docname="bbox.svg">
+   sodipodi:docname="bbox.svg"
+   aria-labelledby="unique-title-id-bbox unique-desc-id-bbox">
   <defs
      id="defs7238">
     <marker
@@ -107,20 +108,21 @@ const POLYGON_SVG = `
    version="1.1"
    id="svg7244"
    inkscape:version="0.92.5 (2060ec1f9f, 2020-04-08)"
-   sodipodi:docname="polygon.svg">
+   sodipodi:docname="polygon.svg"
+   aria-labelledby="unique-title-id-polygon unique-desc-id-polygon">
   <defs
-     id="defs7238">
+     id="defs7239">
     <marker
        inkscape:stockid="DotL"
        orient="auto"
        refY="0"
        refX="0"
-       id="DotL"
+       id="DotL2"
        style="overflow:visible"
        inkscape:isstock="true">
       <path
          inkscape:connector-curvature="0"
-         id="path4587"
+         id="path4588"
          d="m -2.5,-1 c 0,2.76 -2.24,5 -5,5 -2.76,0 -5,-2.24 -5,-5 0,-2.76 2.24,-5 5,-5 2.76,0 5,2.24 5,5 z"
          style="fill:#000000;fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:1.00000003pt;stroke-opacity:1"
          transform="matrix(0.8,0,0,0.8,5.92,0.8)" />
@@ -177,7 +179,7 @@ const POLYGON_SVG = `
      id="layer1"
      transform="translate(0,-197)">
     <path
-       style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:1.48994207;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;marker-start:url(#DotL);marker-mid:url(#DotL);paint-order:stroke fill markers"
+       style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:1.48994207;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;marker-start:url(#DotL2);marker-mid:url(#DotL2);paint-order:stroke fill markers"
        d="m 41.284493,204.35565 -33.5734849,28.74943 7.6220859,56.71655 76.946838,-12.1256 -41.921509,-38.137 z"
        id="path3715"
        inkscape:connector-curvature="0" />
@@ -201,7 +203,7 @@ const CONTOUR_SVG = `
    inkscape:version="0.92.5 (2060ec1f9f, 2020-04-08)"
    sodipodi:docname="contour.svg">
   <defs
-     id="defs7238">
+     id="defs7240">
     <marker
        inkscape:stockid="DotL"
        orient="auto"
@@ -212,7 +214,7 @@ const CONTOUR_SVG = `
        inkscape:isstock="true">
       <path
          inkscape:connector-curvature="0"
-         id="path4587"
+         id="path4589"
          d="m -2.5,-1 c 0,2.76 -2.24,5 -5,5 -2.76,0 -5,-2.24 -5,-5 0,-2.76 2.24,-5 5,-5 2.76,0 5,2.24 5,5 z"
          style="fill:#000000;fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:1.00000003pt;stroke-opacity:1"
          transform="matrix(0.8,0,0,0.8,5.92,0.8)" />
@@ -293,7 +295,7 @@ const TBAR_SVG = `
    inkscape:version="0.92.5 (2060ec1f9f, 2020-04-08)"
    sodipodi:docname="tbar.svg">
   <defs
-     id="defs7238">
+     id="defs7241">
     <marker
        inkscape:stockid="DotL"
        orient="auto"
@@ -304,7 +306,7 @@ const TBAR_SVG = `
        inkscape:isstock="true">
       <path
          inkscape:connector-curvature="0"
-         id="path4587"
+         id="path4590"
          d="m -2.5,-1 c 0,2.76 -2.24,5 -5,5 -2.76,0 -5,-2.24 -5,-5 0,-2.76 2.24,-5 5,-5 2.76,0 5,2.24 5,5 z"
          style="fill:#000000;fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:1.00000003pt;stroke-opacity:1"
          transform="matrix(0.8,0,0,0.8,5.92,0.8)" />

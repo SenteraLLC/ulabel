@@ -767,10 +767,11 @@ class ULabel {
 
         // Listener for soft id toolbox buttons
         $("#" + ul.config["toolbox_id"] + ' a.tbid-opt').click(function() {
+            let pfx = "div#tb-id-app--" + ul.state["current_subtask"];
             let crst = ul.state["current_subtask"];
             if ($(this).attr("href") == "#") {
-                $("a.tbid-opt.sel").attr("href", "#");
-                $("a.tbid-opt.sel").removeClass("sel");
+                $(pfx + " a.tbid-opt.sel").attr("href", "#");
+                $(pfx + " a.tbid-opt.sel").removeClass("sel");
                 $(this).addClass("sel");
                 $(this).removeAttr("href");
                 let idarr = $(this).attr("id").split("_");
@@ -1281,11 +1282,32 @@ class ULabel {
         $("a#tb-st-switch--" + st_key).parent().addClass("sel");
         $("input#tb-st-range--" + st_key).val(100);
 
+        // Update toolbox opts
+        this.update_annotation_mode();
+        this.update_current_class();
+
         // Redraw demo
         this.redraw_demo();
     }
 
     // ================= Toolbox Functions ==================
+
+    update_annotation_mode() {
+        $("a.md-btn.sel").attr("href", "#");
+        $("a.md-btn.sel").removeClass("sel");
+        $("a#md-btn--" + this.subtasks[this.state["current_subtask"]]["state"]["annotation_mode"]).addClass("sel");
+        $("a#md-btn--" + this.subtasks[this.state["current_subtask"]]["state"]["annotation_mode"]).removeAttr("href");
+        this.show_annotation_mode();
+    }
+
+    update_current_class() {
+        this.update_id_toolbox_display();
+        // $("a.tbid-opt.sel").attr("href", "#");
+        // $("a.tbid-opt.sel").removeClass("sel");
+        // $("a#toolbox_sel_" + this.subtasks[this.state["current_subtask"]]["state"]["annotation_mode"]).addClass("sel");
+        // $("a#toolbox_sel_" + this.subtasks[this.state["current_subtask"]]["state"]["annotation_mode"]).removeAttr("href");
+    }
+
     // Show annotation mode
     show_annotation_mode(el=null) {
         if (el == null) {
@@ -1449,7 +1471,8 @@ class ULabel {
         if (demo) {
             let dist_prop = 1.0;
             let class_ids = this.subtasks[crst]["class_ids"];
-            let idarr = $("a.tbid-opt.sel").attr("id").split("_");
+            let pfx = "div#tb-id-app--" + this.state["current_subtask"];
+            let idarr = $(pfx + " a.tbid-opt.sel").attr("id").split("_");
             let class_ind = class_ids.indexOf(parseInt(idarr[idarr.length - 1]));
             // Recompute and render opaque pie slices
             for (var i = 0; i < class_ids.length; i++) {
@@ -3234,7 +3257,8 @@ class ULabel {
             if (!this.config["allow_soft_id"]) {
                 let dist_prop = 1.0;
                 let class_ids = this.subtasks[crst]["class_ids"];
-                let idarr = $("a.tbid-opt.sel").attr("id").split("_");
+                let pfx = "div#tb-id-app--" + this.state["current_subtask"];
+                let idarr = $(pfx + " a.tbid-opt.sel").attr("id").split("_");
                 let class_ind = class_ids.indexOf(parseInt(idarr[idarr.length - 1]));
                 // Recompute and render opaque pie slices
                 for (var i = 0; i < class_ids.length; i++) {
@@ -3291,15 +3315,16 @@ class ULabel {
             // Not supported yet
         }
         else {
+            let pfx = "div#tb-id-app--" + this.state["current_subtask"];
             let class_ids = this.subtasks[this.state["current_subtask"]]["class_ids"];
             for (var i = 0; i < class_ids.length; i++) {
                 let cls = class_ids[i];
                 if (this.subtasks[this.state["current_subtask"]]["state"]["id_payload"][i]["confidence"] > 0.5) {
-                    if (!($("#" + this.config["toolbox_id"] + " a#toolbox_sel_" + cls).hasClass("sel"))) {
-                        $("#" + this.config["toolbox_id"] + " a.tbid-opt.sel").attr("href", "#");
-                        $("#" + this.config["toolbox_id"] + " a.tbid-opt.sel").removeClass("sel");
-                        $("#" + this.config["toolbox_id"] + " a#toolbox_sel_" + cls).addClass("sel");
-                        $("#" + this.config["toolbox_id"] + " a#toolbox_sel_" + cls).removeAttr("href");
+                    if (!($(pfx + " #" + this.config["toolbox_id"] + " a#toolbox_sel_" + cls).hasClass("sel"))) {
+                        $(pfx + " #" + this.config["toolbox_id"] + " a.tbid-opt.sel").attr("href", "#");
+                        $(pfx + " #" + this.config["toolbox_id"] + " a.tbid-opt.sel").removeClass("sel");
+                        $(pfx + " #" + this.config["toolbox_id"] + " a#toolbox_sel_" + cls).addClass("sel");
+                        $(pfx + " #" + this.config["toolbox_id"] + " a#toolbox_sel_" + cls).removeAttr("href");
                     }
                 }
             }
