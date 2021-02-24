@@ -15,6 +15,7 @@ const jQuery = $;
 const { v4: uuidv4 } = require('uuid');
 
 import { DEMO_ANNOTATION, BBOX_SVG, POLYGON_SVG, CONTOUR_SVG, INIT_STYLE, COLORS, TBAR_SVG } from './blobs';
+import { ULABEL_VERSION } from './version';
 
 jQuery.fn.outer_html = function() {
     return jQuery('<div />').append(this.eq(0).clone()).html();
@@ -29,6 +30,7 @@ class ULabel {
     static get elvl_info() {return 0;}
     static get elvl_standard() {return 1;}
     static get elvl_fatal() {return 2;}
+    static version() {return ULABEL_VERSION;}
 
     // ================= Static Utilities =================
 
@@ -1248,6 +1250,10 @@ class ULabel {
             // Call the user-provided callback
             callback.bind(that);
         }
+    }
+
+    version() {
+        return ULabel.version();
     }
 
     // ================== Subtask Helpers ===================

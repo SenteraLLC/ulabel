@@ -11532,6 +11532,13 @@ function version(uuid) {
 
 
 
+/***/ }),
+
+/***/ 345:
+/***/ ((__unused_webpack_module, exports) => {
+
+exports.I = "0.2.0";
+
 /***/ })
 
 /******/ 	});
@@ -12619,6 +12626,8 @@ const COLORS = [
 ];
 
 
+// EXTERNAL MODULE: ./src/version.js
+var version = __webpack_require__(345);
 ;// CONCATENATED MODULE: ./src/index.js
 /*
 Uncertain Labeling Tool
@@ -12638,6 +12647,7 @@ const { v4: uuidv4 } = __webpack_require__(614);
 
 
 
+
 jQuery.fn.outer_html = function() {
     return jQuery('<div />').append(this.eq(0).clone()).html();
 };
@@ -12651,6 +12661,7 @@ class ULabel {
     static get elvl_info() {return 0;}
     static get elvl_standard() {return 1;}
     static get elvl_fatal() {return 2;}
+    static version() {return version/* ULABEL_VERSION */.I;}
 
     // ================= Static Utilities =================
 
@@ -13870,6 +13881,10 @@ class ULabel {
             // Call the user-provided callback
             callback.bind(that);
         }
+    }
+
+    version() {
+        return ULabel.version();
     }
 
     // ================== Subtask Helpers ===================
