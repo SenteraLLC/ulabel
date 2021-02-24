@@ -12316,6 +12316,62 @@ div.dialogs_container {
    left: 0;
 }
 
+/* ========== Tab Buttons ========== */
+
+div.toolbox-tabs {
+   position: absolute;
+   bottom: 0;
+   width: 100%;
+   opacity: 0.8;
+}
+div.toolbox-tabs div.tb-st-tab {
+   display: block;
+   width: 100%;
+   padding: 5px 0;
+   background-color: rgba(0, 3, 161, 0.144);
+}
+div.toolbox-tabs div.tb-st-tab.sel {
+   display: block;
+   width: 100%;
+   background-color: rgba(0, 3, 161, 0.561);
+}
+div.toolbox-tabs div.tb-st-tab * {
+   vertical-align: middle;
+}
+div.toolbox-tabs div.tb-st-tab a.tb-st-switch {
+   display: inline-block;
+   width: 70px;
+   padding: 0 15px;
+   text-decoration: none;
+   color: rgb(37, 37, 37);
+}
+div.ulabel-night div.toolbox-tabs div.tb-st-tab a.tb-st-switch {
+   color: rgb(150, 150, 150);
+}
+div.toolbox-tabs div.tb-st-tab.sel a.tb-st-switch {
+   color: rgb(238, 238, 238);
+}
+div.ulabel-night div.toolbox-tabs div.tb-st-tab.sel a.tb-st-switch {
+   color: rgb(238, 238, 238);
+}
+div.toolbox-tabs div.tb-st-tab a.tb-st-switch[href]:hover {
+   color: cornflowerblue;
+}
+div.ulabel-night div.toolbox-tabs div.tb-st-tab a.tb-st-switch[href]:hover {
+   color: rgb(238, 238, 238);
+}
+div.toolbox-tabs div.tb-st-tab span.tb-st-range {
+   display: inline-block;
+   width: calc(100% - 100px);
+   text-align: center;
+}
+div.toolbox-tabs div.tb-st-tab span.tb-st-range input {
+   width: 80%;
+   transform: rotate(180deg);
+}
+
+/* ========== Annotation Box Dialogs ========== */
+
 div.global_edit_suggestion {
    display: none;
    position: absolute;
@@ -12838,6 +12894,50 @@ class ULabel {
     }
 
     // ================= Init helpers =================
+
+    static get_md_button(md_key, md_name, svg_blob, cur_md, subtasks) {
+        let sel = "";
+        let href = ` href="#"`;
+        if (cur_md == md_key) {
+            sel = " sel";
+            href = "";
+        }
+        let st_classes = "";
+        for (const st_key in subtasks) {
+            if (subtasks[st_key]["allowed_modes"].includes(md_key)) {
+                st_classes += " md-en4--" + st_key;
+            }
+        }
+
+        return `<div class="mode-opt">
+            <a${href} id="md-btn--${md_key}" class="md-btn${sel}${st_classes}" amdname="${md_name}">
+                ${svg_blob}
+            </a>
+        </div>`;
+    }
+
+    static get_toolbox_tabs(ul) {
+        let ret = "";
+        for (const st_key in ul.subtasks) {
+            let sel = "";
+            let href = ` href="#"`;
+            let val = 50;
+            if (st_key == ul.state["current_subtask"]) {
+                sel = " sel";
+                href = "";
+                val = 100;
+            }
+            ret += `
+            <div class="tb-st-tab${sel}">
+                <a${href} id="tb-st-switch--${st_key}" class="tb-st-switch">${ul.subtasks[st_key]["display_name"]}</a><!--
+                --><span class="tb-st-range">
+                    <input id="tb-st-range--${st_key}" type="range" min=0 max=100 value=${val} />
+                </span>
+            </div>
+            `;
+        }
+        return ret;
+    }
     
     static prep_window_html(ul) {
         // Bring image and annotation scaffolding in
@@ -12849,6 +12949,8 @@ class ULabel {
                 <a href="${ul.config["instructions_url"]}" target="_blank" rel="noopener noreferrer">Instructions</a>
             `;
         }
+
+        const tabs = ULabel.get_toolbox_tabs(ul);
 
         const tool_html = `
         <div class="full_ulabel_container_">
@@ -12933,6 +13035,9 @@ class ULabel {
                         ${instructions}
                     </div>
                 </div>
+                <div class="toolbox-tabs">
+                    ${tabs}
+                </div>
             </div>
         </div>`;
         jquery_default()("#" + ul.config["container_id"]).html(tool_html)
@@ -12944,60 +13049,13 @@ class ULabel {
 
         // Initialize toolbox based on configuration
         const sp_id = ul.config["toolbox_id"];
-        let md_buttons = [];
-        for (var ami = 0; ami < ul.subtasks[crst]["allowed_modes"].length; ami++) {
-            let href=` href="#"`;
-            let sel = "";
-            switch (ul.subtasks[crst]["allowed_modes"][ami]) {
-                case "bbox":
-                    if (ul.subtasks[crst]["state"]["annotation_mode"] == "bbox") {
-                        sel = " sel";
-                        href = "";
-                    }
-                    md_buttons.push(`<div class="mode-opt">
-                        <a${href} id="md-btn--bbox" class="md-btn${sel}" amdname="Bounding Box">
-                            ${BBOX_SVG}
-                        </a>
-                    </div>`);
-                    break;
-                case "polygon":
-                    if (ul.subtasks[crst]["state"]["annotation_mode"] == "polygon") {
-                        sel = " sel";
-                        href = "";
-                    }
-                    md_buttons.push(`<div class="mode-opt">
-                        <a${href} id="md-btn--polygon" class="md-btn${sel}" amdname="Polygon">
-                            ${POLYGON_SVG}
-                        </a>
-                    </div>`);
-                    break;
-                case "contour":
-                    if (ul.subtasks[crst]["state"]["annotation_mode"] == "contour") {
-                        sel = " sel";
-                        href = "";
-                    }
-                    md_buttons.push(`<div class="mode-opt">
-                        <a${href} id="md-btn--contour" class="md-btn${sel}" amdname="Contour">
-                            ${CONTOUR_SVG}
-                        </a>
-                    </div>`);
-                    break;
-                case "tbar":
-                    if (ul.subtasks[crst]["state"]["annotation_mode"] == "tbar") {
-                        sel = " sel";
-                        href = "";
-                    }
-                    md_buttons.push(`<div class="mode-opt">
-                        <a${href} id="md-btn--tbar" class="md-btn${sel}" amdname="T-Bar">
-                            ${TBAR_SVG}
-                        </a>
-                    </div>`);
-                    break;
-                default:
-                    console.log("Allowed mode \"" + ul.subtasks[crst]["allowed_modes"][ami] + "\" not understood. Ignoring.");
-                    break;
-            }
-        }
+        let curmd = ul.subtasks[crst]["state"]["annotation_mode"];
+        let md_buttons = [
+            ULabel.get_md_button("bbox", "Bounding Box", BBOX_SVG, curmd, ul.subtasks),
+            ULabel.get_md_button("polygon", "Polygon", POLYGON_SVG, curmd, ul.subtasks),
+            ULabel.get_md_button("contour", "Contour", CONTOUR_SVG, curmd, ul.subtasks),
+            ULabel.get_md_button("tbar", "T-Bar", TBAR_SVG, curmd, ul.subtasks)
+        ];
 
         // Append but don't wait
         jquery_default()("#" + sp_id + " .toolbox_inner_cls .mode-selection").append(md_buttons.join("<!-- -->"));
@@ -13342,6 +13400,18 @@ class ULabel {
             }
         });
 
+        jquery_default()(document).on("click", "a.tb-st-switch[href]", (e) => {
+            console.log("here");
+            let switch_to = jquery_default()(e.target).attr("id").split("--")[1];
+
+            // Ignore if in the middle of annotation
+            if (ul.subtasks[ul.state["current_subtask"]]["state"]["is_in_progress"]) {
+                return;
+            }
+
+            ul.set_subtask(switch_to);
+        });
+
         // Listener for id_dialog click interactions
         jquery_default()("#" + ul.config["annbox_id"] + " a.id-dialog-clickable-indicator").click(function(e) {
             let crst = ul.state["current_subtask"];
@@ -13534,7 +13604,9 @@ class ULabel {
             let raw_subtask = stcs[subtask_key];
 
             // Initialize subtask config to null
-            ul.subtasks[subtask_key] = {};
+            ul.subtasks[subtask_key] = {
+                "display_name": raw_subtask["display_name"] || subtask_key
+            };
 
             //  Initialize an empty action stream for each subtask
             ul.subtasks[subtask_key]["actions"] = {
@@ -13801,8 +13873,7 @@ class ULabel {
     // ================== Subtask Helpers ===================
 
     set_subtask(st_key) {
-        // Ensure that st_key is available
-        // TODO
+        let old_st = this.state["current_subtask"];
 
         // Change object state
         this.state["current_subtask"] = st_key;
@@ -13816,11 +13887,23 @@ class ULabel {
         jquery_default()("div#dialogs__" + this.state["current_subtask"]).css("display", "block");
 
         // Show appropriate set of annotation modes
-        // TODO
+        jquery_default()("a.md-btn").css("display", "none");
+        jquery_default()("a.md-btn.md-en4--" + st_key).css("display", "inline-block");
 
         // Show appropriate set of class options
         jquery_default()("div.tb-id-app").css("display", "none");
         jquery_default()("div#tb-id-app--" + this.state["current_subtask"]).css("display", "block");
+
+        // Adjust tab buttons in toolbox
+        jquery_default()("a#tb-st-switch--" + old_st).attr("href", "#");
+        jquery_default()("a#tb-st-switch--" + old_st).parent().removeClass("sel");
+        jquery_default()("input#tb-st-range--" + old_st).val(50);
+        jquery_default()("a#tb-st-switch--" + st_key).removeAttr("href");
+        jquery_default()("a#tb-st-switch--" + st_key).parent().addClass("sel");
+        jquery_default()("input#tb-st-range--" + st_key).val(100);
+
+        // Redraw demo
+        this.redraw_demo();
     }
 
     // ================= Toolbox Functions ==================

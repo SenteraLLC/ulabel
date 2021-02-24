@@ -274,6 +274,50 @@ class ULabel {
     }
 
     // ================= Init helpers =================
+
+    static get_md_button(md_key, md_name, svg_blob, cur_md, subtasks) {
+        let sel = "";
+        let href = ` href="#"`;
+        if (cur_md == md_key) {
+            sel = " sel";
+            href = "";
+        }
+        let st_classes = "";
+        for (const st_key in subtasks) {
+            if (subtasks[st_key]["allowed_modes"].includes(md_key)) {
+                st_classes += " md-en4--" + st_key;
+            }
+        }
+
+        return `<div class="mode-opt">
+            <a${href} id="md-btn--${md_key}" class="md-btn${sel}${st_classes}" amdname="${md_name}">
+                ${svg_blob}
+            </a>
+        </div>`;
+    }
+
+    static get_toolbox_tabs(ul) {
+        let ret = "";
+        for (const st_key in ul.subtasks) {
+            let sel = "";
+            let href = ` href="#"`;
+            let val = 50;
+            if (st_key == ul.state["current_subtask"]) {
+                sel = " sel";
+                href = "";
+                val = 100;
+            }
+            ret += `
+            <div class="tb-st-tab${sel}">
+                <a${href} id="tb-st-switch--${st_key}" class="tb-st-switch">${ul.subtasks[st_key]["display_name"]}</a><!--
+                --><span class="tb-st-range">
+                    <input id="tb-st-range--${st_key}" type="range" min=0 max=100 value=${val} />
+                </span>
+            </div>
+            `;
+        }
+        return ret;
+    }
     
     static prep_window_html(ul) {
         // Bring image and annotation scaffolding in
@@ -285,6 +329,8 @@ class ULabel {
                 <a href="${ul.config["instructions_url"]}" target="_blank" rel="noopener noreferrer">Instructions</a>
             `;
         }
+
+        const tabs = ULabel.get_toolbox_tabs(ul);
 
         const tool_html = `
         <div class="full_ulabel_container_">
@@ -369,6 +415,9 @@ class ULabel {
                         ${instructions}
                     </div>
                 </div>
+                <div class="toolbox-tabs">
+                    ${tabs}
+                </div>
             </div>
         </div>`;
         $("#" + ul.config["container_id"]).html(tool_html)
@@ -380,60 +429,13 @@ class ULabel {
 
         // Initialize toolbox based on configuration
         const sp_id = ul.config["toolbox_id"];
-        let md_buttons = [];
-        for (var ami = 0; ami < ul.subtasks[crst]["allowed_modes"].length; ami++) {
-            let href=` href="#"`;
-            let sel = "";
-            switch (ul.subtasks[crst]["allowed_modes"][ami]) {
-                case "bbox":
-                    if (ul.subtasks[crst]["state"]["annotation_mode"] == "bbox") {
-                        sel = " sel";
-                        href = "";
-                    }
-                    md_buttons.push(`<div class="mode-opt">
-                        <a${href} id="md-btn--bbox" class="md-btn${sel}" amdname="Bounding Box">
-                            ${BBOX_SVG}
-                        </a>
-                    </div>`);
-                    break;
-                case "polygon":
-                    if (ul.subtasks[crst]["state"]["annotation_mode"] == "polygon") {
-                        sel = " sel";
-                        href = "";
-                    }
-                    md_buttons.push(`<div class="mode-opt">
-                        <a${href} id="md-btn--polygon" class="md-btn${sel}" amdname="Polygon">
-                            ${POLYGON_SVG}
-                        </a>
-                    </div>`);
-                    break;
-                case "contour":
-                    if (ul.subtasks[crst]["state"]["annotation_mode"] == "contour") {
-                        sel = " sel";
-                        href = "";
-                    }
-                    md_buttons.push(`<div class="mode-opt">
-                        <a${href} id="md-btn--contour" class="md-btn${sel}" amdname="Contour">
-                            ${CONTOUR_SVG}
-                        </a>
-                    </div>`);
-                    break;
-                case "tbar":
-                    if (ul.subtasks[crst]["state"]["annotation_mode"] == "tbar") {
-                        sel = " sel";
-                        href = "";
-                    }
-                    md_buttons.push(`<div class="mode-opt">
-                        <a${href} id="md-btn--tbar" class="md-btn${sel}" amdname="T-Bar">
-                            ${TBAR_SVG}
-                        </a>
-                    </div>`);
-                    break;
-                default:
-                    console.log("Allowed mode \"" + ul.subtasks[crst]["allowed_modes"][ami] + "\" not understood. Ignoring.");
-                    break;
-            }
-        }
+        let curmd = ul.subtasks[crst]["state"]["annotation_mode"];
+        let md_buttons = [
+            ULabel.get_md_button("bbox", "Bounding Box", BBOX_SVG, curmd, ul.subtasks),
+            ULabel.get_md_button("polygon", "Polygon", POLYGON_SVG, curmd, ul.subtasks),
+            ULabel.get_md_button("contour", "Contour", CONTOUR_SVG, curmd, ul.subtasks),
+            ULabel.get_md_button("tbar", "T-Bar", TBAR_SVG, curmd, ul.subtasks)
+        ];
 
         // Append but don't wait
         $("#" + sp_id + " .toolbox_inner_cls .mode-selection").append(md_buttons.join("<!-- -->"));
@@ -778,6 +780,17 @@ class ULabel {
             }
         });
 
+        $(document).on("click", "a.tb-st-switch[href]", (e) => {
+            let switch_to = $(e.target).attr("id").split("--")[1];
+
+            // Ignore if in the middle of annotation
+            if (ul.subtasks[ul.state["current_subtask"]]["state"]["is_in_progress"]) {
+                return;
+            }
+
+            ul.set_subtask(switch_to);
+        });
+
         // Listener for id_dialog click interactions
         $("#" + ul.config["annbox_id"] + " a.id-dialog-clickable-indicator").click(function(e) {
             let crst = ul.state["current_subtask"];
@@ -970,7 +983,9 @@ class ULabel {
             let raw_subtask = stcs[subtask_key];
 
             // Initialize subtask config to null
-            ul.subtasks[subtask_key] = {};
+            ul.subtasks[subtask_key] = {
+                "display_name": raw_subtask["display_name"] || subtask_key
+            };
 
             //  Initialize an empty action stream for each subtask
             ul.subtasks[subtask_key]["actions"] = {
@@ -1237,8 +1252,7 @@ class ULabel {
     // ================== Subtask Helpers ===================
 
     set_subtask(st_key) {
-        // Ensure that st_key is available
-        // TODO
+        let old_st = this.state["current_subtask"];
 
         // Change object state
         this.state["current_subtask"] = st_key;
@@ -1252,11 +1266,23 @@ class ULabel {
         $("div#dialogs__" + this.state["current_subtask"]).css("display", "block");
 
         // Show appropriate set of annotation modes
-        // TODO
+        $("a.md-btn").css("display", "none");
+        $("a.md-btn.md-en4--" + st_key).css("display", "inline-block");
 
         // Show appropriate set of class options
         $("div.tb-id-app").css("display", "none");
         $("div#tb-id-app--" + this.state["current_subtask"]).css("display", "block");
+
+        // Adjust tab buttons in toolbox
+        $("a#tb-st-switch--" + old_st).attr("href", "#");
+        $("a#tb-st-switch--" + old_st).parent().removeClass("sel");
+        $("input#tb-st-range--" + old_st).val(50);
+        $("a#tb-st-switch--" + st_key).removeAttr("href");
+        $("a#tb-st-switch--" + st_key).parent().addClass("sel");
+        $("input#tb-st-range--" + st_key).val(100);
+
+        // Redraw demo
+        this.redraw_demo();
     }
 
     // ================= Toolbox Functions ==================

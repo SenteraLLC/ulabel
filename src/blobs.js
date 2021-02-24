@@ -706,6 +706,62 @@ div.dialogs_container {
    left: 0;
 }
 
+/* ========== Tab Buttons ========== */
+
+div.toolbox-tabs {
+   position: absolute;
+   bottom: 0;
+   width: 100%;
+   opacity: 0.8;
+}
+div.toolbox-tabs div.tb-st-tab {
+   display: block;
+   width: 100%;
+   padding: 5px 0;
+   background-color: rgba(0, 3, 161, 0.144);
+}
+div.toolbox-tabs div.tb-st-tab.sel {
+   display: block;
+   width: 100%;
+   background-color: rgba(0, 3, 161, 0.561);
+}
+div.toolbox-tabs div.tb-st-tab * {
+   vertical-align: middle;
+}
+div.toolbox-tabs div.tb-st-tab a.tb-st-switch {
+   display: inline-block;
+   width: 70px;
+   padding: 0 15px;
+   text-decoration: none;
+   color: rgb(37, 37, 37);
+}
+div.ulabel-night div.toolbox-tabs div.tb-st-tab a.tb-st-switch {
+   color: rgb(150, 150, 150);
+}
+div.toolbox-tabs div.tb-st-tab.sel a.tb-st-switch {
+   color: rgb(238, 238, 238);
+}
+div.ulabel-night div.toolbox-tabs div.tb-st-tab.sel a.tb-st-switch {
+   color: rgb(238, 238, 238);
+}
+div.toolbox-tabs div.tb-st-tab a.tb-st-switch[href]:hover {
+   color: cornflowerblue;
+}
+div.ulabel-night div.toolbox-tabs div.tb-st-tab a.tb-st-switch[href]:hover {
+   color: rgb(238, 238, 238);
+}
+div.toolbox-tabs div.tb-st-tab span.tb-st-range {
+   display: inline-block;
+   width: calc(100% - 100px);
+   text-align: center;
+}
+div.toolbox-tabs div.tb-st-tab span.tb-st-range input {
+   width: 80%;
+   transform: rotate(180deg);
+}
+
+/* ========== Annotation Box Dialogs ========== */
+
 div.global_edit_suggestion {
    display: none;
    position: absolute;
