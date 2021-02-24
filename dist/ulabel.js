@@ -13896,7 +13896,7 @@ class ULabel {
         this.state["current_subtask"] = st_key;
 
         // Bring new set of canvasses out to front
-        jquery_default()("div.canvasses").css("z-index", -1);
+        jquery_default()("div.canvasses").css("z-index", "initial");
         jquery_default()("div#canvasses__" + this.state["current_subtask"]).css("z-index", 100);
 
         // Show appropriate set of dialogs
