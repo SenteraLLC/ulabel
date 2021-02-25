@@ -213,7 +213,6 @@ class ULabel {
     // =========================== NIGHT MODE COOKIES =======================================
 
     static has_night_mode_cookie() {
-        console.log(document.cookie);
         if (document.cookie.split(";").find(row => row.trim().startsWith("nightmode=true"))) {
             return true;
         }
@@ -2913,7 +2912,7 @@ class ULabel {
         if (this.subtasks[this.state["current_subtask"]]["single_class_mode"]) {
             this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["classification_payloads"] = [
                 {
-                    "class_id": this.config["class_defs"][0]["id"],
+                    "class_id": this.subtasks[this.state["current_subtask"]]["class_defs"][0]["id"],
                     "confidence": 1.0
                 }
             ]
