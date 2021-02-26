@@ -11537,7 +11537,7 @@ function version(uuid) {
 /***/ 345:
 /***/ ((__unused_webpack_module, exports) => {
 
-exports.I = "0.2.0";
+exports.I = "0.3.0";
 
 /***/ })
 
