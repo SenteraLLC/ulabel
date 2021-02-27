@@ -394,10 +394,10 @@ div.annbox_cls {
    top: 0;
    left: 0;
 }
-div.annbox_cls img {
+div.annbox_cls img.image_frame {
    position: absolute;
    top: 0;
-   left: 0;   
+   left: 0;
 }
 
 div.toolbox_cls {

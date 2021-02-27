@@ -16,6 +16,7 @@ const server = http.createServer(function(req, res) {
     var url = new URL("https://ulabel.pl:" + port + req.url);
     switch (url.pathname) {
         case "/demo_image.jpg":
+        case "/demo_image_1.jpg":
         case "/single_class.html":
         case "/multi_class.html":
         case "/subtasks.html":
