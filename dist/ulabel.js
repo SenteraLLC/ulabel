@@ -12952,6 +12952,18 @@ class ULabel {
         return ret;
     }
     
+
+    static get_images_html(ul) {
+        let ret = "";
+        for (let i = 0; i < ul.config["image_data"].frames.length; i++) {
+            ret += `
+                <img id="${ul.config["image_id_pfx"]}__${i}" src="${ul.config["image_data"].frames[i]}" class="imwrap_cls ${ul.config["imgsz_class"]} image_frame" />
+            `;
+        }
+        return ret;
+    }
+
+
     static prep_window_html(ul) {
         // Bring image and annotation scaffolding in
         // TODO multi-image with spacing etc.
@@ -12965,11 +12977,13 @@ class ULabel {
 
         const tabs = ULabel.get_toolbox_tabs(ul);
 
+        const images = ULabel.get_images_html(ul);
+
         const tool_html = `
         <div class="full_ulabel_container_">
             <div id="${ul.config["annbox_id"]}" class="annbox_cls">
                 <div id="${ul.config["imwrap_id"]}" class="imwrap_cls ${ul.config["imgsz_class"]}">
-                    <img id="${ul.config["image_id"]}" src="${ul.config["image_data"]}" class="imwrap_cls ${ul.config["imgsz_class"]}" />
+                    ${images}
                 </div>
             </div>
             <div id="${ul.config["toolbox_id"]}" class="toolbox_cls">
@@ -13679,6 +13693,53 @@ class ULabel {
         }
     }
 
+    static expand_image_data(raw_img_dat) {
+        if (typeof raw_img_dat == "string") {
+            return {
+                spacing: {
+                    x: 1,
+                    y: 1,
+                    z: 1,
+                    units: "pixels"
+                },
+                frames: [
+                    raw_img_dat
+                ]
+            }
+        }
+        else if (Array.isArray(raw_img_dat)) {
+            return {
+                spacing: {
+                    x: 1,
+                    y: 1,
+                    z: 1,
+                    units: "pixels"
+                },
+                frames: raw_img_dat
+            }
+        }
+        else if ("spacing" in raw_img_dat && "frames" in raw_img_dat) {
+            return raw_img_dat;
+        }
+        else {
+            ULabel.raise_error(`Image data object not understood. Must be of form "http://url.to/img" OR ["img1", "img2", ...] OR {spacing: {x: <num>, y: <num>, z: <num>, units: <str>}, frames: ["img1", "img2", ...]}. Provided: ${JSON.stringify(raw_img_dat)}`, ULabel.elvl_fatal);
+            return null;
+        }
+    }
+
+    static load_image_promise(img_el) {
+        return new Promise((resolve, reject) => {
+            try {
+                img_el.onload = (e) => {
+                    resolve(img_el);
+                };
+            }
+            catch (err) {
+                reject(err);
+            }
+        });
+    }
+
     // ================= Construction/Initialization =================
         
     constructor(
@@ -13708,12 +13769,12 @@ class ULabel {
             "canvas_bid_pfx": "back-canvas",
             "canvas_did": "demo-canvas",
             "canvas_class": "easel",
-            "image_id": "ann_image",
+            "image_id_pfx": "ann_image",
             "imgsz_class": "imgsz",
             "toolbox_id": "toolbox",
 
             // Configuration for the annotation task itself
-            "image_data": image_data,
+            "image_data": ULabel.expand_image_data(image_data),
             "annotator": username,
             "allow_soft_id": false, // TODO allow soft eventually
             "default_annotation_color": "#fa9d2a",
@@ -13751,6 +13812,7 @@ class ULabel {
             // Add and handle a value for current image
             "zoom_val": 1.0,
             "last_move": null,
+            "current_frame": 0,
 
             // Global annotation state (subtasks also maintain an annotation state)
             "current_subtask": null,
@@ -13814,14 +13876,16 @@ class ULabel {
             jquery_default()("#" + this.config["container_id"]).addClass("ulabel-night");
         }
         
-        // Get image details
-        var image = document.getElementById(this.config["image_id"]);
-
-        image.onload = function() {
-
+        var images = document.getElementsByClassName("image_frame");
+        let mappable_images = [];
+        for (let i = 0; i < images.length; i++) {
+            mappable_images.push(images[i]);
+        }
+        let image_promises = mappable_images.map(ULabel.load_image_promise);
+        Promise.all(image_promises).then((loaded_imgs) => {
             // Store image dimensions
-            that.config["image_height"] = image.naturalHeight;
-            that.config["image_width"] = image.naturalWidth;
+            that.config["image_height"] = loaded_imgs[0].naturalHeight;
+            that.config["image_width"] = loaded_imgs[0].naturalWidth;
     
             // Add canvasses for each subtask and get their rendering contexts
             for (const st in that.subtasks) {
@@ -13884,7 +13948,10 @@ class ULabel {
     
             // Call the user-provided callback
             callback.bind(that);
-        }
+        }).catch((err) => {
+            console.log(err);
+            ULabel.raise_error("Unable to load images: " + JSON.stringify(err), ULabel.elvl_fatal);
+        });
     }
 
     version() {
