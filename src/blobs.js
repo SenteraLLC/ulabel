@@ -394,6 +394,12 @@ div.annbox_cls {
    top: 0;
    left: 0;
 }
+div.annbox_cls img {
+   position: absolute;
+   top: 0;
+   left: 0;   
+}
+
 div.toolbox_cls {
    width: 320px;
    background-color: white;
