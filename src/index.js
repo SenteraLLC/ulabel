@@ -1374,7 +1374,7 @@ class ULabel {
         this.state["current_subtask"] = st_key;
 
         // Bring new set of canvasses out to front
-        $("div.canvasses").css("z-index", "initial");
+        $("div.canvasses").css("z-index", 75);
         $("div#canvasses__" + this.state["current_subtask"]).css("z-index", 100);
 
         // Show appropriate set of dialogs
@@ -1579,12 +1579,15 @@ class ULabel {
         }
     }
 
-    get_annotation_color(clf_payload, demo=false) {
+    get_annotation_color(clf_payload, demo=false, subtask=null) {
         if (this.config["allow_soft_id"]) {
             // not currently supported;
             return this.config["default_annotation_color"];
         }
         let crst = this.state["current_subtask"];
+        if (subtask != null && !demo) {
+            crst = subtask;
+        }
         let col_payload = JSON.parse(JSON.stringify(this.subtasks[crst]["state"]["id_payload"])); // BOOG
         if (demo) {
             let dist_prop = 1.0;
@@ -1624,7 +1627,7 @@ class ULabel {
 
     // ================= Drawing Functions =================
 
-    draw_bounding_box(annotation_object, ctx, demo=false, offset=null) {
+    draw_bounding_box(annotation_object, ctx, demo=false, offset=null, subtask=null) {
         let diffX = 0;
         let diffY = 0;
         if (offset != null) {
@@ -1641,7 +1644,7 @@ class ULabel {
         }
     
         // Prep for bbox drawing
-        let color = this.get_annotation_color(annotation_object["classification_payloads"]);
+        let color = this.get_annotation_color(annotation_object["classification_payloads"], false, subtask);
         ctx.fillStyle = color;
         ctx.strokeStyle = color;
         ctx.lineJoin = "round";
@@ -1662,7 +1665,7 @@ class ULabel {
         ctx.stroke();
     }
     
-    draw_polygon(annotation_object, ctx, demo=false, offset=null) {
+    draw_polygon(annotation_object, ctx, demo=false, offset=null, subtask=null) {
         let diffX = 0;
         let diffY = 0;
         if (offset != null) {
@@ -1681,7 +1684,7 @@ class ULabel {
 
         
         // Prep for bbox drawing
-        let color = this.get_annotation_color(annotation_object["classification_payloads"], demo);
+        let color = this.get_annotation_color(annotation_object["classification_payloads"], demo, subtask);
         ctx.fillStyle = color;
         ctx.strokeStyle = color;
         ctx.lineJoin = "round";
@@ -1700,7 +1703,7 @@ class ULabel {
         ctx.stroke();
     }
     
-    draw_contour(annotation_object, ctx, demo=false, offset=null) {
+    draw_contour(annotation_object, ctx, demo=false, offset=null, subtask=null) {
         let diffX = 0;
         let diffY = 0;
         if (offset != null) {
@@ -1718,7 +1721,7 @@ class ULabel {
 
     
         // Prep for bbox drawing
-        let color = this.get_annotation_color(annotation_object["classification_payloads"], demo);
+        let color = this.get_annotation_color(annotation_object["classification_payloads"], demo, subtask);
         ctx.fillStyle = color;
         ctx.strokeStyle = color;
         ctx.lineJoin = "round";
@@ -1737,7 +1740,7 @@ class ULabel {
         ctx.stroke();
     }
 
-    draw_tbar(annotation_object, ctx, demo=false, offset=null) {
+    draw_tbar(annotation_object, ctx, demo=false, offset=null, subtask=null) {
         let diffX = 0;
         let diffY = 0;
         if (offset != null) {
@@ -1754,7 +1757,7 @@ class ULabel {
         }
     
         // Prep for tbar drawing
-        let color = this.get_annotation_color(annotation_object["classification_payloads"], demo);
+        let color = this.get_annotation_color(annotation_object["classification_payloads"], demo, subtask);
         ctx.fillStyle = color;
         ctx.strokeStyle = color;
         ctx.lineJoin = "round";
@@ -1815,16 +1818,16 @@ class ULabel {
         // Dispatch to annotation type's drawing function
         switch (annotation_object["spatial_type"]) {
             case "bbox":
-                this.draw_bounding_box(annotation_object, ctx, demo, offset);
+                this.draw_bounding_box(annotation_object, ctx, demo, offset, subtask);
                 break;
             case "polygon":
-                this.draw_polygon(annotation_object, ctx, demo, offset);
+                this.draw_polygon(annotation_object, ctx, demo, offset, subtask);
                 break;
             case "contour":
-                this.draw_contour(annotation_object, ctx, demo, offset);
+                this.draw_contour(annotation_object, ctx, demo, offset, subtask);
                 break;
             case "tbar":
-                this.draw_tbar(annotation_object, ctx, demo, offset);
+                this.draw_tbar(annotation_object, ctx, demo, offset, subtask);
                 break;
             default:
                 this.raise_error("Warning: Annotation " + annotation_object["id"] + " not understood", ULabel.elvl_info);
@@ -1847,7 +1850,7 @@ class ULabel {
             subtask = this.state["current_subtask"];
         }
         for (var i = 0; i < n; i++) {
-            if (offset != null && offset["id"] == this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["ordering"][i]) {
+            if (offset != null && offset["id"] == this.subtasks[subtask]["annotations"][this.state["current_frame"]]["ordering"][i]) {
                 this.draw_annotation_from_id(this.subtasks[subtask]["annotations"][this.state["current_frame"]]["ordering"][i], cvs_ctx, offset, subtask);
             }
             else {
@@ -1862,7 +1865,7 @@ class ULabel {
         this.subtasks[subtask]["state"]["front_context"].clearRect(0, 0, this.config["image_width"], this.config["image_height"]);
     
         // Draw them all again
-        this.draw_n_annotations(this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["ordering"].length, "front_context", offset, subtask);
+        this.draw_n_annotations(this.subtasks[subtask]["annotations"][this.state["current_frame"]]["ordering"].length, "front_context", offset, subtask);
     }
 
     redraw_all_annotations(subtask=null, offset=null) {
@@ -3763,9 +3766,9 @@ class ULabel {
         }
         let old_frame = this.state["current_frame"];
         this.state["current_frame"] = new_frame;
-        $(`img#${this.config["image_id_pfx"]}__${new_frame}`).css("z-index", "100");
+        $(`img#${this.config["image_id_pfx"]}__${new_frame}`).css("z-index", 50);
         $(`img#${this.config["image_id_pfx"]}__${old_frame}`).css("z-index", "initial");
-        this.redraw_all_annotations(this.state["current_subtask"]);
+        this.redraw_all_annotations();
     }
 };
 
