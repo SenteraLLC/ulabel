@@ -862,7 +862,7 @@ div.toolbox-name-header h1 {
    font-size: 15px;
    display: inline-block;
    padding: 10px 15px;
-   width: calc(50% - 30px);
+   width: calc(70% - 30px);
    vertical-align: middle;
 }
 div.toolbox-name-header h1 a {
@@ -870,13 +870,21 @@ div.toolbox-name-header h1 a {
    font-weight: 100;
    text-decoration: none;
 }
+div.toolbox-name-header h1 {
+   color: rgb(212, 212, 212);
+   font-size: 12px;
+   font-weight: 100;
+}
+div.ulabel-night div.toolbox-name-header h1 span.version-number {
+   color: rgb(190, 190, 190);
+}
 div.night-button-cont {
    text-align: right;
    display: inline-block;
    vertical-align: middle;
    position: relative;
    padding-right: 10px;
-   width: calc(50% - 10px);
+   width: calc(30% - 10px);
 }
 a.night-button {
    display: inline-block;
@@ -927,6 +935,10 @@ div.ulabel-night div.annbox_cls::-webkit-scrollbar-thumb:hover {
 } 
 div.ulabel-night div.annbox_cls::-webkit-scrollbar-corner {
    background-color:rgb(0, 60, 95);
+}
+
+a.repo-anchor {
+   text-transform: uppercase;
 }
 
 

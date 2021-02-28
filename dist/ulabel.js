@@ -12479,7 +12479,7 @@ div.toolbox-name-header h1 {
    font-size: 15px;
    display: inline-block;
    padding: 10px 15px;
-   width: calc(50% - 30px);
+   width: calc(70% - 30px);
    vertical-align: middle;
 }
 div.toolbox-name-header h1 a {
@@ -12487,13 +12487,21 @@ div.toolbox-name-header h1 a {
    font-weight: 100;
    text-decoration: none;
 }
+div.toolbox-name-header h1 {
+   color: rgb(212, 212, 212);
+   font-size: 12px;
+   font-weight: 100;
+}
+div.ulabel-night div.toolbox-name-header h1 span.version-number {
+   color: rgb(190, 190, 190);
+}
 div.night-button-cont {
    text-align: right;
    display: inline-block;
    vertical-align: middle;
    position: relative;
    padding-right: 10px;
-   width: calc(50% - 10px);
+   width: calc(30% - 10px);
 }
 a.night-button {
    display: inline-block;
@@ -12544,6 +12552,10 @@ div.ulabel-night div.annbox_cls::-webkit-scrollbar-thumb:hover {
 } 
 div.ulabel-night div.annbox_cls::-webkit-scrollbar-corner {
    background-color:rgb(0, 60, 95);
+}
+
+a.repo-anchor {
+   text-transform: uppercase;
 }
 
 
@@ -12994,7 +13006,7 @@ class ULabel {
             </div>
             <div id="${ul.config["toolbox_id"]}" class="toolbox_cls">
                 <div class="toolbox-name-header">
-                    <h1 class="toolname"><a href="https://github.com/SenteraLLC/ULabel">ULABEL</a></h1><!--
+                    <h1 class="toolname"><a class="repo-anchor" href="https://github.com/SenteraLLC/ULabel">ULabel</a> <span class="version-number">v${version/* ULABEL_VERSION */.I}</span></h1><!--
                     --><div class="night-button-cont">
                         <a href="#" class="night-button">
                             <div class="night-button-track">

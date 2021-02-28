@@ -357,7 +357,7 @@ class ULabel {
             </div>
             <div id="${ul.config["toolbox_id"]}" class="toolbox_cls">
                 <div class="toolbox-name-header">
-                    <h1 class="toolname"><a href="https://github.com/SenteraLLC/ULabel">ULABEL</a></h1><!--
+                    <h1 class="toolname"><a class="repo-anchor" href="https://github.com/SenteraLLC/ULabel">ULabel</a> <span class="version-number">v${ULABEL_VERSION}</span></h1><!--
                     --><div class="night-button-cont">
                         <a href="#" class="night-button">
                             <div class="night-button-track">
