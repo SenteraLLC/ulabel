@@ -14,7 +14,18 @@ const jQuery = $;
 
 const { v4: uuidv4 } = require('uuid');
 
-import { DEMO_ANNOTATION, BBOX_SVG, POLYGON_SVG, CONTOUR_SVG, INIT_STYLE, COLORS, TBAR_SVG } from './blobs';
+import { 
+    DEMO_ANNOTATION, 
+    BBOX_SVG, 
+    POLYGON_SVG, 
+    CONTOUR_SVG, 
+    INIT_STYLE, 
+    COLORS, 
+    TBAR_SVG, 
+    POLYLINE_SVG, 
+    WHOLE_IMAGE_SVG, 
+    GLOBAL_SVG 
+} from './blobs';
 import { ULABEL_VERSION } from './version';
 
 jQuery.fn.outer_html = function() {
@@ -459,7 +470,10 @@ class ULabel {
             ULabel.get_md_button("bbox", "Bounding Box", BBOX_SVG, curmd, ul.subtasks),
             ULabel.get_md_button("polygon", "Polygon", POLYGON_SVG, curmd, ul.subtasks),
             ULabel.get_md_button("contour", "Contour", CONTOUR_SVG, curmd, ul.subtasks),
-            ULabel.get_md_button("tbar", "T-Bar", TBAR_SVG, curmd, ul.subtasks)
+            ULabel.get_md_button("tbar", "T-Bar", TBAR_SVG, curmd, ul.subtasks),
+            ULabel.get_md_button("polyline", "Polyline", POLYLINE_SVG, curmd, ul.subtasks),
+            ULabel.get_md_button("whole-image", "Whole Frame", WHOLE_IMAGE_SVG, curmd, ul.subtasks),
+            ULabel.get_md_button("global", "Global", GLOBAL_SVG, curmd, ul.subtasks)
         ];
 
         // Append but don't wait
