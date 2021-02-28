@@ -303,7 +303,7 @@ class ULabel {
         }
 
         return `<div class="mode-opt">
-            <a${href} id="md-btn--${md_key}" class="md-btn${sel}${st_classes}" amdname="${md_name}">
+            <a${href} id="md-btn--${md_key}" class="md-btn${sel}${st_classes} invert-this-svg" amdname="${md_name}">
                 ${svg_blob}
             </a>
         </div>`;
@@ -364,6 +364,35 @@ class ULabel {
             <div id="${ul.config["annbox_id"]}" class="annbox_cls">
                 <div id="${ul.config["imwrap_id"]}" class="imwrap_cls ${ul.config["imgsz_class"]}">
                     ${images}
+                </div>
+                <div class="frame_annotation_dialog">
+                    <div class="fad_row add">
+                        <a class="add-glob-button" href="#"><span class="plus">+</span></a>
+                    </div>
+                    <div class="fad_row">
+                        <div class="fad_buttons">
+
+                        </div><!--
+                        --><div class="fad_type_icon invert-this-svg">
+                            ${GLOBAL_SVG}
+                        </div>
+                    </div>
+                    <div class="fad_row">
+                        <div class="fad_buttons">
+
+                        </div><!--
+                        --><div class="fad_type_icon invert-this-svg">
+                            ${WHOLE_IMAGE_SVG}
+                        </div>
+                    </div>
+                    <div class="fad_row">
+                        <div class="fad_buttons">
+
+                        </div><!--
+                        --><div class="fad_type_icon invert-this-svg">
+                            ${WHOLE_IMAGE_SVG}
+                        </div>
+                    </div>
                 </div>
             </div>
             <div id="${ul.config["toolbox_id"]}" class="toolbox_cls">
@@ -460,7 +489,6 @@ class ULabel {
 
 
         // Build toolbox for the current subtask only
-        // const crst = ul.state["current_subtask"];
         const crst = Object.keys(ul.subtasks)[0];
 
         // Initialize toolbox based on configuration
@@ -850,6 +878,7 @@ class ULabel {
 
         // Listener for id_dialog click interactions
         $("#" + ul.config["annbox_id"] + " a.id-dialog-clickable-indicator").click(function(e) {
+            console.log("here...")
             let crst = ul.state["current_subtask"];
             if (!ul.subtasks[crst]["state"]["idd_thumbnail"]) {
                 ul.handle_id_dialog_click(e);
@@ -1447,6 +1476,12 @@ class ULabel {
         }
         let new_name = el.attr("amdname");
         $("#" + this.config["toolbox_id"] + " .current_mode").html(new_name);
+        if (["whole-image", "global"].includes(this.subtasks[this.state["current_subtask"]]["state"]["annotation_mode"])) {
+            $("div.frame_annotation_dialog").addClass("active");
+        }
+        else {
+            $("div.frame_annotation_dialog").removeClass("active");
+        }
     }
 
     // Draw demo annotation in demo canvas

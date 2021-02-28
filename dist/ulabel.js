@@ -12493,6 +12493,102 @@ div.annbox_cls img.image_frame {
    top: 0;
    left: 0;
 }
+div.annbox_cls div.frame_annotation_dialog {
+   width: 50px;
+   min-height: 20px;
+   overflow: hidden;
+   position: fixed;
+   top: 40px;
+   right: 375px;
+   z-index: 80;
+   background-color: rgb(255, 255, 255);
+   border: 1px solid rgb(143, 143, 143);
+   transition: opacity 0.1s, width 0.3s, height 0.3s, min-height 0.3s;
+   opacity: 0.5;
+}
+div.annbox_cls div.frame_annotation_dialog:hover {
+   max-width: none;
+   width: 200px;
+}
+div.annbox_cls div.frame_annotation_dialog.active {
+   z-index: 125;
+   opacity: 1.0;
+   min-height: 50px;
+}
+div.ulabel-night div.annbox_cls div.frame_annotation_dialog {
+   background-color: rgb(37, 37, 37);
+   border: 1px solid rgb(102, 102, 102);
+}
+div.annbox_cls div.frame_annotation_dialog div.fad_row {
+   min-height: 50px;
+   width: 200px;
+   float: right;
+}
+div.annbox_cls div.frame_annotation_dialog div.fad_row div.fad_buttons {
+   display: inline-block;
+   vertical-align: top;
+   min-height: 50px;
+   width: 150px;
+}
+div.annbox_cls div.frame_annotation_dialog div.fad_row div.fad_type_icon {
+   display: inline-block;
+   vertical-align: top;
+   height: 50px;
+   width: 50px;
+   position: relative;
+}
+div.annbox_cls div.frame_annotation_dialog div.fad_row div.fad_type_icon svg {
+   height: 40px;
+   width: 40px;
+   position: absolute;
+   top: 5px;
+   left: 5px;
+}
+div.annbox_cls div.frame_annotation_dialog div.fad_row.add {
+   display: none;
+   position: relative;
+}
+div.annbox_cls div.frame_annotation_dialog div.fad_row.add a.add-glob-button {
+   position: absolute;
+   display: block;
+   top: 25px;
+   right: 25px;
+   transform: translateX(50%) translateY(-50%);
+   font-size: 20px;
+   width: 25px;
+   height: 25px;
+   border-radius: 12.5px;
+   text-decoration: none;
+   border: 1px solid black;
+}
+div.annbox_cls div.frame_annotation_dialog div.fad_row.add a.add-glob-button span.plus {
+   display: block;
+   text-align: center;
+   width: 25px;
+   height: 25px;
+   position: absolute;
+   top: 12.5px;
+   left: 12.5px;
+   transform: translateX(-50%) translateY(-50%);
+   color: black;
+}
+div.annbox_cls div.frame_annotation_dialog div.fad_row.add a.add-glob-button:hover {
+   background-color: rgb(185, 185, 185);
+}
+div.ulabel-night div.annbox_cls div.frame_annotation_dialog div.fad_row.add a.add-glob-button {
+   border: 1px solid white;
+}
+div.ulabel-night div.annbox_cls div.frame_annotation_dialog div.fad_row.add a.add-glob-button:hover {
+   background-color: rgb(82, 82, 82);
+}
+div.ulabel-night div.annbox_cls div.frame_annotation_dialog div.fad_row.add a.add-glob-button span.plus {
+   color: white;
+}
+div.annbox_cls div.frame_annotation_dialog.active div.fad_row.add {
+   display: block;
+}
+
+
 
 div.toolbox_cls {
    width: 320px;
@@ -12508,7 +12604,7 @@ div.ulabel-night div.toolbox_cls {
 div.ulabel-night div.toolbox_cls p, div.ulabel-night div.toolbox_cls a {
    color: white;
 }
-div.ulabel-night a.md-btn svg {
+div.ulabel-night .invert-this-svg svg {
    filter: invert(90%);
 }
 
@@ -13418,7 +13514,7 @@ class ULabel {
         }
 
         return `<div class="mode-opt">
-            <a${href} id="md-btn--${md_key}" class="md-btn${sel}${st_classes}" amdname="${md_name}">
+            <a${href} id="md-btn--${md_key}" class="md-btn${sel}${st_classes} invert-this-svg" amdname="${md_name}">
                 ${svg_blob}
             </a>
         </div>`;
@@ -13479,6 +13575,35 @@ class ULabel {
             <div id="${ul.config["annbox_id"]}" class="annbox_cls">
                 <div id="${ul.config["imwrap_id"]}" class="imwrap_cls ${ul.config["imgsz_class"]}">
                     ${images}
+                </div>
+                <div class="frame_annotation_dialog">
+                    <div class="fad_row add">
+                        <a class="add-glob-button" href="#"><span class="plus">+</span></a>
+                    </div>
+                    <div class="fad_row">
+                        <div class="fad_buttons">
+
+                        </div><!--
+                        --><div class="fad_type_icon invert-this-svg">
+                            ${GLOBAL_SVG}
+                        </div>
+                    </div>
+                    <div class="fad_row">
+                        <div class="fad_buttons">
+
+                        </div><!--
+                        --><div class="fad_type_icon invert-this-svg">
+                            ${WHOLE_IMAGE_SVG}
+                        </div>
+                    </div>
+                    <div class="fad_row">
+                        <div class="fad_buttons">
+
+                        </div><!--
+                        --><div class="fad_type_icon invert-this-svg">
+                            ${WHOLE_IMAGE_SVG}
+                        </div>
+                    </div>
                 </div>
             </div>
             <div id="${ul.config["toolbox_id"]}" class="toolbox_cls">
@@ -13575,7 +13700,6 @@ class ULabel {
 
 
         // Build toolbox for the current subtask only
-        // const crst = ul.state["current_subtask"];
         const crst = Object.keys(ul.subtasks)[0];
 
         // Initialize toolbox based on configuration
@@ -13965,6 +14089,7 @@ class ULabel {
 
         // Listener for id_dialog click interactions
         jquery_default()("#" + ul.config["annbox_id"] + " a.id-dialog-clickable-indicator").click(function(e) {
+            console.log("here...")
             let crst = ul.state["current_subtask"];
             if (!ul.subtasks[crst]["state"]["idd_thumbnail"]) {
                 ul.handle_id_dialog_click(e);
@@ -14562,6 +14687,12 @@ class ULabel {
         }
         let new_name = el.attr("amdname");
         jquery_default()("#" + this.config["toolbox_id"] + " .current_mode").html(new_name);
+        if (["whole-image", "global"].includes(this.subtasks[this.state["current_subtask"]]["state"]["annotation_mode"])) {
+            jquery_default()("div.frame_annotation_dialog").addClass("active");
+        }
+        else {
+            jquery_default()("div.frame_annotation_dialog").removeClass("active");
+        }
     }
 
     // Draw demo annotation in demo canvas
