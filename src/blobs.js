@@ -882,13 +882,36 @@ div.annbox_cls div.frame_annotation_dialog {
    overflow: hidden;
    position: fixed;
    top: 40px;
-   right: 375px;
    z-index: 80;
    background-color: rgb(255, 255, 255);
    border: 1px solid rgb(143, 143, 143);
    transition: opacity 0.1s, width 0.3s, height 0.3s, min-height 0.3s;
    opacity: 0.5;
 }
+div.annbox_cls div.frame_annotation_dialog.fad_ind__0 {
+   right: 375px;
+}
+div.annbox_cls div.frame_annotation_dialog.fad_ind__1 {
+   right: 450px;
+}
+div.annbox_cls div.frame_annotation_dialog.fad_ind__2 {
+   right: 525px;
+}
+div.annbox_cls div.frame_annotation_dialog.fad_ind__3 {
+   right: 600px;
+}
+div.fad_st_name {
+   font-size: 8px;
+   width: 40px;
+   height: 12px;
+   padding-top: 4px;
+   float: right;
+   overflow: hidden;
+}
+div.ulabel-night div.fad_st_name {
+   color: white;
+}
+
 div.annbox_cls div.frame_annotation_dialog:hover {
    max-width: none;
    width: 200px;

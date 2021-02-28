@@ -12499,13 +12499,36 @@ div.annbox_cls div.frame_annotation_dialog {
    overflow: hidden;
    position: fixed;
    top: 40px;
-   right: 375px;
    z-index: 80;
    background-color: rgb(255, 255, 255);
    border: 1px solid rgb(143, 143, 143);
    transition: opacity 0.1s, width 0.3s, height 0.3s, min-height 0.3s;
    opacity: 0.5;
 }
+div.annbox_cls div.frame_annotation_dialog.fad_ind__0 {
+   right: 375px;
+}
+div.annbox_cls div.frame_annotation_dialog.fad_ind__1 {
+   right: 450px;
+}
+div.annbox_cls div.frame_annotation_dialog.fad_ind__2 {
+   right: 525px;
+}
+div.annbox_cls div.frame_annotation_dialog.fad_ind__3 {
+   right: 600px;
+}
+div.fad_st_name {
+   font-size: 8px;
+   width: 40px;
+   height: 12px;
+   padding-top: 4px;
+   float: right;
+   overflow: hidden;
+}
+div.ulabel-night div.fad_st_name {
+   color: white;
+}
+
 div.annbox_cls div.frame_annotation_dialog:hover {
    max-width: none;
    width: 200px;
@@ -13554,6 +13577,68 @@ class ULabel {
         return ret;
     }
 
+    static get_frame_annotation_dialogs(ul) {
+        let ret = "";
+        let tot = 0;
+        for (const st_key in ul.subtasks) {
+            if (
+                !ul.subtasks[st_key].allowed_modes.includes('whole-image') && 
+                !ul.subtasks[st_key].allowed_modes.includes('global') 
+            ) {
+                continue;
+            }
+            tot += 1;
+        }
+        let ind = 0;
+        for (const st_key in ul.subtasks) {
+            if (
+                !ul.subtasks[st_key].allowed_modes.includes('whole-image') && 
+                !ul.subtasks[st_key].allowed_modes.includes('global') 
+            ) {
+                continue;
+            }
+            ret += `
+                <div class="frame_annotation_dialog fad_st__${st_key} fad_ind__${tot-ind-1}">
+                    <div class="fad_st_name">${ul.subtasks[st_key].display_name}</div>
+                    <div class="fad_row add">
+                        <a class="add-glob-button" href="#"><span class="plus">+</span></a>
+                    </div>
+                </div>
+            `;
+            let devnull = `
+                <div class="fad_row">
+                    <div class="fad_buttons">
+
+                    </div><!--
+                    --><div class="fad_type_icon invert-this-svg">
+                        ${GLOBAL_SVG}
+                    </div>
+                </div>
+                <div class="fad_row">
+                    <div class="fad_buttons">
+
+                    </div><!--
+                    --><div class="fad_type_icon invert-this-svg">
+                        ${WHOLE_IMAGE_SVG}
+                    </div>
+                </div>
+                <div class="fad_row">
+                    <div class="fad_buttons">
+
+                    </div><!--
+                    --><div class="fad_type_icon invert-this-svg">
+                        ${WHOLE_IMAGE_SVG}
+                    </div>
+                </div>
+            `;
+            ind += 1;
+            if (ind > 4) {
+                throw new Error("At most 4 subtasks can have allow 'whole-image' or 'global' annotations.");
+            }
+        }
+        return ret;
+    }
+
 
     static prep_window_html(ul) {
         // Bring image and annotation scaffolding in
@@ -13570,41 +13655,15 @@ class ULabel {
 
         const images = ULabel.get_images_html(ul);
 
+        const frame_annotation_dialogs = ULabel.get_frame_annotation_dialogs(ul);
+
         const tool_html = `
         <div class="full_ulabel_container_">
             <div id="${ul.config["annbox_id"]}" class="annbox_cls">
                 <div id="${ul.config["imwrap_id"]}" class="imwrap_cls ${ul.config["imgsz_class"]}">
                     ${images}
                 </div>
-                <div class="frame_annotation_dialog">
-                    <div class="fad_row add">
-                        <a class="add-glob-button" href="#"><span class="plus">+</span></a>
-                    </div>
-                    <div class="fad_row">
-                        <div class="fad_buttons">
-
-                        </div><!--
-                        --><div class="fad_type_icon invert-this-svg">
-                            ${GLOBAL_SVG}
-                        </div>
-                    </div>
-                    <div class="fad_row">
-                        <div class="fad_buttons">
-
-                        </div><!--
-                        --><div class="fad_type_icon invert-this-svg">
-                            ${WHOLE_IMAGE_SVG}
-                        </div>
-                    </div>
-                    <div class="fad_row">
-                        <div class="fad_buttons">
-
-                        </div><!--
-                        --><div class="fad_type_icon invert-this-svg">
-                            ${WHOLE_IMAGE_SVG}
-                        </div>
-                    </div>
-                </div>
+                ${frame_annotation_dialogs}
             </div>
             <div id="${ul.config["toolbox_id"]}" class="toolbox_cls">
                 <div class="toolbox-name-header">
@@ -13876,6 +13935,7 @@ class ULabel {
         for (const stkey in ul.subtasks) {
             let local_id = `edit_suggestion__${stkey}`;
             let global_id = `global_edit_suggestion__${stkey}`;
+            let global_id_fxd = `global_edit_suggestion__${stkey}_fxd`;
 
             let subtask_dialog_container_jq = jquery_default()("#dialogs__" + stkey);
 
@@ -14687,8 +14747,9 @@ class ULabel {
         }
         let new_name = el.attr("amdname");
         jquery_default()("#" + this.config["toolbox_id"] + " .current_mode").html(new_name);
+        jquery_default()(`div.frame_annotation_dialog:not(.fad_st__${this.state["current_subtask"]})`).removeClass("active");
         if (["whole-image", "global"].includes(this.subtasks[this.state["current_subtask"]]["state"]["annotation_mode"])) {
-            jquery_default()("div.frame_annotation_dialog").addClass("active");
+            jquery_default()(`div.frame_annotation_dialog.fad_st__${this.state["current_subtask"]}`).addClass("active");
         }
         else {
             jquery_default()("div.frame_annotation_dialog").removeClass("active");
