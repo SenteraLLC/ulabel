@@ -91,35 +91,3 @@ You should now be able to run the launcher from the repository root.
 pwd # Should be /path/to/ULabel
 node demo/server.js
 ```
-
-## TODO
-
-Standalone tool
-- Allow for arbitrary ULabel job given URL with config data
-
-Major Items
-- Handle 3D image data
-- Handle subtask configs
-    - Flexible construction and backwards compatible exports
-    - Read-Only/Inactive subtasks don't prompt for edits
-    - Multiple instructions links
-- Add support for whole-image annotations
-- Add support for initial crop
-
-Maintenance & "Bug" fixes
-- Allow for non-absolute position of parent div (test this out) (5)
-- Flexible handling of classes -- get this from manifest file (3)
-- Better discipline on logging (5)
-    - User-facing messages
-
-New features
-- Polylines (only two points for row detection) (1)
-- Allow for multiple-task viewing, toggling each user (5)
-- Regression payloads (5)
-- Superpixels (5)
-
-Shortly after
-- Center image in window when small (5)
-- Handle 3D image data (5)
-
-Multi select with a polygon
