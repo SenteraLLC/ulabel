@@ -13577,9 +13577,20 @@ class ULabel {
 
     static get_images_html(ul) {
         let ret = "";
+
+        let zidx;
+        let dsply;
         for (let i = 0; i < ul.config["image_data"].frames.length; i++) {
+            if (i != 0) {
+                zidx = -1;
+                dsply = "block";
+            }
+            else {
+                zidx = 1;
+                dsply = "none";
+            }
             ret += `
-                <img id="${ul.config["image_id_pfx"]}__${i}" src="${ul.config["image_data"].frames[i]}" class="imwrap_cls ${ul.config["imgsz_class"]} image_frame" />
+                <img id="${ul.config["image_id_pfx"]}__${i}" src="${ul.config["image_data"].frames[i]}" class="imwrap_cls ${ul.config["imgsz_class"]} image_frame" style="z-index: ${zidx}; display: ${dsply};" />
             `;
         }
         return ret;
@@ -14603,10 +14614,11 @@ class ULabel {
             jquery_default()("#" + this.config["container_id"]).addClass("ulabel-night");
         }
         
-        var images = document.getElementsByClassName("image_frame");
+        var images = [document.getElementById(`${this.config["image_id_pfx"]}__0`)];
         let mappable_images = [];
         for (let i = 0; i < images.length; i++) {
             mappable_images.push(images[i]);
+            break;
         }
         let image_promises = mappable_images.map(ULabel.load_image_promise);
         Promise.all(image_promises).then((loaded_imgs) => {
@@ -14664,6 +14676,7 @@ class ULabel {
             // TODO why is this necessary?
             that.state["zoom_val"] = 1.0;
             that.rezoom(0, 0);
+            this.update_frame();
 
             // Draw demo annotation
             that.redraw_demo();
@@ -17345,7 +17358,9 @@ class ULabel {
         let old_frame = this.state["current_frame"];
         this.state["current_frame"] = new_frame;
         jquery_default()(`img#${this.config["image_id_pfx"]}__${old_frame}`).css("z-index", "initial");
+        jquery_default()(`img#${this.config["image_id_pfx"]}__${old_frame}`).css("display", "none");
         jquery_default()(`img#${this.config["image_id_pfx"]}__${new_frame}`).css("z-index", 50);
+        jquery_default()(`img#${this.config["image_id_pfx"]}__${new_frame}`).css("display", "block");
         this.redraw_all_annotations();
     }
 };
