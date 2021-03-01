@@ -13598,11 +13598,12 @@ class ULabel {
                 continue;
             }
             ret += `
-                <div class="frame_annotation_dialog fad_st__${st_key} fad_ind__${tot-ind-1}">
+                <div id="fad_st__${st_key}" class="frame_annotation_dialog fad_st__${st_key} fad_ind__${tot-ind-1}">
                     <div class="fad_st_name">${ul.subtasks[st_key].display_name}</div>
                     <div class="fad_row add">
                         <a class="add-glob-button" href="#"><span class="plus">+</span></a>
                     </div>
+                    <div class="fad_annotation_rows"></div>
                 </div>
             `;
             let devnull = `
@@ -14147,6 +14148,10 @@ class ULabel {
             ul.readjust_subtask_opacities();
         });
 
+        jquery_default()(document).on("click", "div.fad_row.add a.add-glob-button", (e) => {
+            ul.create_nonspatial_annotation();
+        });
+
         // Listener for id_dialog click interactions
         jquery_default()("#" + ul.config["annbox_id"] + " a.id-dialog-clickable-indicator").click(function(e) {
             console.log("here...")
@@ -14303,6 +14308,10 @@ class ULabel {
     static process_resume_from(ul, subtask_key, subtask) {
         // Initialize to no annotations
         ul.subtasks[subtask_key]["annotations"] = [];
+        ul.subtasks[subtask_key]["annotations_3d"] = {
+            "ordering": [],
+            "access": {}
+        };
         for (let i = 0; i < ul.config["image_data"].frames.length; i++) {
             ul.subtasks[subtask_key]["annotations"].push({
                 "ordering": [],
@@ -14522,7 +14531,6 @@ class ULabel {
         // Create object for current ulabel state
         this.state = {
             // Viewer state
-            // TODO(3d)
             // Add and handle a value for current image
             "zoom_val": 1.0,
             "last_move": null,
@@ -15150,32 +15158,54 @@ class ULabel {
             case "tbar":
                 this.draw_tbar(annotation_object, ctx, demo, offset, subtask);
                 break;
+            case "whole-image":
+            case "global":
+                // TODO(3d)
+                console.log("Drawing nonspatial annotations not yet implemented");
+                break;
             default:
                 this.raise_error("Warning: Annotation " + annotation_object["id"] + " not understood", ULabel.elvl_info);
                 break;
         }
     }
 
-    draw_annotation_from_id(id, cvs_ctx="front_context", offset=null, subtask=null) {
+    draw_annotation_from_id(id, cvs_ctx="front_context", offset=null, subtask=null, is_3d=false) {
         if (subtask == null) {
             // Should never be here tbh
             subtask = this.state["current_subtask"];
         }
-        this.draw_annotation(this.subtasks[subtask]["annotations"][this.state["current_frame"]]["access"][id], cvs_ctx, false, offset, subtask);
+        if (is_3d) {
+            this.draw_annotation(this.subtasks[subtask]["annotations_3d"]["access"][id], cvs_ctx, false, offset, subtask);
+        }
+        else {
+            this.draw_annotation(this.subtasks[subtask]["annotations"][this.state["current_frame"]]["access"][id], cvs_ctx, false, offset, subtask);
+        }
     }
     
     // Draws the first n annotations on record
-    draw_n_annotations(n, cvs_ctx="front_context", offset=null, subtask=null) {
+    draw_n_annotations(n, cvs_ctx="front_context", offset=null, subtask=null, is_3d=false) {
         if (subtask == null) {
             // Should never be here tbh
             subtask = this.state["current_subtask"];
         }
-        for (var i = 0; i < n; i++) {
-            if (offset != null && offset["id"] == this.subtasks[subtask]["annotations"][this.state["current_frame"]]["ordering"][i]) {
-                this.draw_annotation_from_id(this.subtasks[subtask]["annotations"][this.state["current_frame"]]["ordering"][i], cvs_ctx, offset, subtask);
+        if (is_3d) {
+            for (var i = 0; i < n; i++) {
+                if (offset != null && offset["id"] == this.subtasks[subtask]["annotations_3d"]["ordering"][i]) {
+                    this.draw_annotation_from_id(this.subtasks[subtask]["annotations_3d"]["ordering"][i], cvs_ctx, offset, subtask, is_3d);
+                }
+                else {
+                    this.draw_annotation_from_id(this.subtasks[subtask]["annotations_3d"]["ordering"][i], cvs_ctx, null, subtask, is_3d);
+                }
             }
-            else {
-                this.draw_annotation_from_id(this.subtasks[subtask]["annotations"][this.state["current_frame"]]["ordering"][i], cvs_ctx, null, subtask);
+        }
+        else {
+            for (var i = 0; i < n; i++) {
+                if (offset != null && offset["id"] == this.subtasks[subtask]["annotations"][this.state["current_frame"]]["ordering"][i]) {
+                    this.draw_annotation_from_id(this.subtasks[subtask]["annotations"][this.state["current_frame"]]["ordering"][i], cvs_ctx, offset, subtask, is_3d);
+                }
+                else {
+                    this.draw_annotation_from_id(this.subtasks[subtask]["annotations"][this.state["current_frame"]]["ordering"][i], cvs_ctx, null, subtask, is_3d);
+                }
             }
         }
     }
@@ -15187,9 +15217,12 @@ class ULabel {
     
         // Draw them all again
         this.draw_n_annotations(this.subtasks[subtask]["annotations"][this.state["current_frame"]]["ordering"].length, "front_context", offset, subtask);
+        this.draw_n_annotations(this.subtasks[subtask]["annotations_3d"]["ordering"].length, "front_context", offset, subtask, true);
+
     }
 
     redraw_all_annotations(subtask=null, offset=null) {
+        // TODO(3d)
         if (subtask == null) {
             for (const st in this.subtasks) {
                 this.redraw_all_annotations_in_subtask(st, offset);
@@ -15687,6 +15720,9 @@ class ULabel {
             case "assign_annotation_id":
                 this.assign_annotation_id__undo(action.undo_payload);
                 break;
+            case "create_nonspatial_annotation":
+                this.create_nonspatial_annotation__undo(action.undo_payload);
+                break;
             default:
                 console.log("Undo error :(");
                 break;
@@ -15716,6 +15752,9 @@ class ULabel {
             case "assign_annotation_id":
                 this.assign_annotation_id(null, action.redo_payload);
                 break;
+            case "create_nonspatial_annotation":
+                this.create_nonspatial_annotation(action.redo_payload);
+                break;    
             default:
                 console.log("Redo error :(");
                 break;
@@ -15733,6 +15772,130 @@ class ULabel {
                 console.log("Finish error :(");
                 break;
         }
+    }
+
+    create_nonspatial_annotation(redo_payload=null) {
+        let redoing = false;
+        let unq_id = null;
+        let annotation_mode = null;
+        let init_idpyld = null;
+        if (redo_payload == null) {
+            unq_id = this.make_new_annotation_id();
+            annotation_mode = this.subtasks[this.state["current_subtask"]]["state"]["annotation_mode"];
+            init_idpyld = this.get_init_id_payload();
+        }
+        else {
+            redoing = true;
+            unq_id = redo_payload.unq_id;
+            annotation_mode = redo_payload.annotation_mode;
+            init_idpyld = redo_payload.init_payload;
+        }
+
+        // Add this annotation to annotations object
+        
+        let new_annotation = {
+            "id": unq_id,
+            "new": true,
+            "parent_id": null,
+            "created_by": this.config["annotator"],
+            "created_at": ULabel.get_time(),
+            "deprecated": false,
+            "spatial_type": annotation_mode,
+            "spatial_payload": null,
+            "classification_payloads": JSON.parse(JSON.stringify(init_idpyld)),
+            "line_size": null,
+            "containing_box": null
+        };
+
+        let undo_frame = this.state["current_frame"];
+        let ann_str;
+        let is_3d = false;
+        if (["whole-image"].includes(new_annotation["spatial_type"])) {
+            this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][unq_id] = new_annotation;
+            if (redoing) {
+                this.set_id_dialog_payload_to_init(unq_id, init_idpyld);
+            }
+            this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][unq_id]["annotation_meta"] = this.config["annotation_meta"];
+            this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["ordering"].push(unq_id);
+            ann_str = JSON.stringify(this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][unq_id]);
+        }
+        else if (["global"].includes(new_annotation["spatial_type"])) {
+            undo_frame = null;
+            is_3d = true;
+            this.subtasks[this.state["current_subtask"]]["annotations_3d"]["access"][unq_id] = new_annotation;
+            if (redoing) {
+                this.set_id_dialog_payload_to_init(unq_id, init_idpyld, true);
+            }
+            this.subtasks[this.state["current_subtask"]]["annotations_3d"]["access"][unq_id]["annotation_meta"] = this.config["annotation_meta"];
+            this.subtasks[this.state["current_subtask"]]["annotations_3d"]["ordering"].push(unq_id);
+            ann_str = JSON.stringify(this.subtasks[this.state["current_subtask"]]["annotations_3d"]["access"][unq_id]);
+        }
+        else {
+            console.log("Nonspatial annotation was initiated for unrecognized annotation mode:", new_annotation["spatial_type"]);
+            return;
+        }
+
+        // Draw new annotation
+        this.draw_annotation_from_id(unq_id, "front_context", null, null, is_3d);
+
+        // Record for potential undo/redo
+        this.record_action({
+            act_type: "create_nonspatial_annotation",
+            redo_payload: {
+                unq_id: unq_id,
+                annotation_mode: annotation_mode,
+                init_spatial: null,
+                finished: true,
+                init_payload: JSON.parse(JSON.stringify(this.subtasks[this.state["current_subtask"]]["state"]["id_payload"]))
+            },
+            undo_payload: {
+                ann_str: ann_str,
+                frame: undo_frame
+            },
+        }, redoing);
+        this.suggest_edits(this.state["last_move"]);
+    }
+    create_nonspatial_annotation__undo(undo_payload) {
+        let ann = JSON.parse(undo_payload.ann_str);
+        let unq_id = ann["id"];
+
+        let end_ann;
+        if (undo_payload.frame != null) {
+            end_ann = this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["ordering"].pop();
+
+            if (end_ann != unq_id) {
+                console.log("We may have a problem... undo replication");
+                console.log(end_ann, unq_id);
+            }
+
+            // Remove from access
+            if (this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"].hasOwnProperty(unq_id)) {
+                delete this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][unq_id];
+            }
+            else {
+                console.log("We may have a problem... undo replication");
+            }
+        }
+        else {
+            end_ann = this.subtasks[this.state["current_subtask"]]["annotations_3d"]["ordering"].pop();
+
+            if (end_ann != unq_id) {
+                console.log("We may have a problem... undo replication");
+                console.log(end_ann, unq_id);
+            }
+
+            // Remove from access
+            if (this.subtasks[this.state["current_subtask"]]["annotations_3d"]["access"].hasOwnProperty(unq_id)) {
+                delete this.subtasks[this.state["current_subtask"]]["annotations_3d"]["access"][unq_id];
+            }
+            else {
+                console.log("We may have a problem... undo replication");
+            }
+        }
+
+        // Delete from view
+        this.redraw_all_annotations(this.state["current_subtask"]);
+        this.suggest_edits(this.state["last_move"]);
     }
 
     begin_annotation(mouse_event, redo_payload=null) {
@@ -16516,6 +16679,7 @@ class ULabel {
             if (this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][id]["deprecated"]) continue;
             let cbox = this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][id]["containing_box"];
             if (
+                cbox &&
                 (gblx >= cbox["tlx"] - dst_thresh) && 
                 (gblx <= cbox["brx"] + dst_thresh) &&
                 (gbly >= cbox["tly"] - dst_thresh) && 
@@ -16684,7 +16848,8 @@ class ULabel {
         }
     }
 
-    set_id_dialog_payload_to_init(annid, pyld=null) {
+    set_id_dialog_payload_to_init(annid, pyld=null, is_3d=false) {
+        // TODO(3D)
         let crst = this.state["current_subtask"];
         if (pyld != null) {
             this.subtasks[this.state["current_subtask"]]["state"]["id_payload"] = JSON.parse(JSON.stringify(pyld));
