@@ -13686,7 +13686,7 @@ class ULabel {
             that.is_init = true;
     
             // TODO why is this necessary?
-            that.viewer_state["zoom_val"] = that.get_empirical_scale();
+            that.viewer_state["zoom_val"] = that.get_exact_fit_zoom_val();
             that.rezoom(0, 0);
 
             // Draw demo annotation
@@ -13725,6 +13725,21 @@ class ULabel {
         // Simple ratio of canvas width to image x-dimension
         return jquery_default()("#" + this.config["canvas_fid"]).width()/this.config["image_width"];
     }
+
+	// A ratio of viewport height to image height
+	get_viewport_height_ratio() {
+		return jquery_default()("#" + this.config["annbox_id"]).height() / this.config["image_height"];
+	}
+
+	// A ratio of viewport width to image width
+	get_viewport_width_ratio() {
+		return jquery_default()("#" + this.config["annbox_id"]).width() / this.config["image_width"];
+	}
+
+	// The zoom ratio which fixes the entire image exactly in the viewport
+	get_exact_fit_zoom_val() {
+		return Math.min(this.get_viewport_height_ratio(), this.get_viewport_width_ratio());
+	}
 
     // Get a unique ID for new annotations
     make_new_annotation_id() {
