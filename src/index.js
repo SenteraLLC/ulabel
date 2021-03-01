@@ -443,11 +443,11 @@ class ULabel {
 
         const tool_html = `
         <div class="full_ulabel_container_">
+            ${frame_annotation_dialogs}
             <div id="${ul.config["annbox_id"]}" class="annbox_cls">
                 <div id="${ul.config["imwrap_id"]}" class="imwrap_cls ${ul.config["imgsz_class"]}">
                     ${images}
                 </div>
-                ${frame_annotation_dialogs}
             </div>
             <div id="${ul.config["toolbox_id"]}" class="toolbox_cls">
                 <div class="toolbox-name-header">
@@ -4104,8 +4104,8 @@ class ULabel {
         $(`div#${this.config["toolbox_id"]} input.frame_input`).val(new_frame);
         let old_frame = this.state["current_frame"];
         this.state["current_frame"] = new_frame;
-        $(`img#${this.config["image_id_pfx"]}__${new_frame}`).css("z-index", 50);
         $(`img#${this.config["image_id_pfx"]}__${old_frame}`).css("z-index", "initial");
+        $(`img#${this.config["image_id_pfx"]}__${new_frame}`).css("z-index", 50);
         this.redraw_all_annotations();
     }
 };

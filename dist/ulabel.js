@@ -12496,28 +12496,28 @@ div#${prntid} div.annbox_cls img.image_frame {
    max-width: none;
    max-height: none;
 }
-div#${prntid} div.annbox_cls div.frame_annotation_dialog {
+div#${prntid} div.frame_annotation_dialog {
    width: 50px;
    min-height: 20px;
    overflow: hidden;
-   position: fixed;
-   top: 40px;
+   position: absolute;
    z-index: 80;
    background-color: rgb(255, 255, 255);
    border: 1px solid rgb(143, 143, 143);
    transition: opacity 0.1s, width 0.3s, height 0.3s, min-height 0.3s;
    opacity: 0.5;
+   top: 40px;
 }
-div#${prntid} div.annbox_cls div.frame_annotation_dialog.fad_ind__0 {
+div#${prntid} div.frame_annotation_dialog.fad_ind__0 {
    right: 375px;
 }
-div#${prntid} div.annbox_cls div.frame_annotation_dialog.fad_ind__1 {
+div#${prntid} div.frame_annotation_dialog.fad_ind__1 {
    right: 450px;
 }
-div#${prntid} div.annbox_cls div.frame_annotation_dialog.fad_ind__2 {
+div#${prntid} div.frame_annotation_dialog.fad_ind__2 {
    right: 525px;
 }
-div#${prntid} div.annbox_cls div.frame_annotation_dialog.fad_ind__3 {
+div#${prntid} div.frame_annotation_dialog.fad_ind__3 {
    right: 600px;
 }
 div#${prntid} div.fad_st_name {
@@ -12532,49 +12532,49 @@ div#${prntid}.ulabel-night div.fad_st_name {
    color: white;
 }
 
-div#${prntid} div.annbox_cls div.frame_annotation_dialog:hover {
+div#${prntid} div.frame_annotation_dialog:hover {
    max-width: none;
    width: 200px;
 }
-div#${prntid} div.annbox_cls div.frame_annotation_dialog.active {
+div#${prntid} div.frame_annotation_dialog.active {
    z-index: 125;
    opacity: 1.0;
    min-height: 50px;
 }
-div#${prntid}.ulabel-night div.annbox_cls div.frame_annotation_dialog {
+div#${prntid}.ulabel-night div.frame_annotation_dialog {
    background-color: rgb(37, 37, 37);
    border: 1px solid rgb(102, 102, 102);
 }
-div#${prntid} div.annbox_cls div.frame_annotation_dialog div.fad_row {
+div#${prntid} div.frame_annotation_dialog div.fad_row {
    min-height: 50px;
    width: 200px;
    float: right;
 }
-div#${prntid} div.annbox_cls div.frame_annotation_dialog div.fad_row div.fad_buttons {
+div#${prntid} div.frame_annotation_dialog div.fad_row div.fad_buttons {
    display: inline-block;
    vertical-align: top;
    min-height: 50px;
    width: 150px;
 }
-div#${prntid} div.annbox_cls div.frame_annotation_dialog div.fad_row div.fad_type_icon {
+div#${prntid} div.frame_annotation_dialog div.fad_row div.fad_type_icon {
    display: inline-block;
    vertical-align: top;
    height: 50px;
    width: 50px;
    position: relative;
 }
-div#${prntid} div.annbox_cls div.frame_annotation_dialog div.fad_row div.fad_type_icon svg {
+div#${prntid} div.frame_annotation_dialog div.fad_row div.fad_type_icon svg {
    height: 40px;
    width: 40px;
    position: absolute;
    top: 5px;
    left: 5px;
 }
-div#${prntid} div.annbox_cls div.frame_annotation_dialog div.fad_row.add {
+div#${prntid} div.frame_annotation_dialog div.fad_row.add {
    display: none;
    position: relative;
 }
-div#${prntid} div.annbox_cls div.frame_annotation_dialog div.fad_row.add a.add-glob-button {
+div#${prntid} div.frame_annotation_dialog div.fad_row.add a.add-glob-button {
    position: absolute;
    display: block;
    top: 25px;
@@ -12587,7 +12587,7 @@ div#${prntid} div.annbox_cls div.frame_annotation_dialog div.fad_row.add a.add-g
    text-decoration: none;
    border: 1px solid black;
 }
-div#${prntid} div.annbox_cls div.frame_annotation_dialog div.fad_row.add a.add-glob-button span.plus {
+div#${prntid} div.frame_annotation_dialog div.fad_row.add a.add-glob-button span.plus {
    display: block;
    text-align: center;
    width: 25px;
@@ -12598,19 +12598,19 @@ div#${prntid} div.annbox_cls div.frame_annotation_dialog div.fad_row.add a.add-g
    transform: translateX(-50%) translateY(-50%);
    color: black;
 }
-div#${prntid} div.annbox_cls div.frame_annotation_dialog div.fad_row.add a.add-glob-button:hover {
+div#${prntid} div.frame_annotation_dialog div.fad_row.add a.add-glob-button:hover {
    background-color: rgb(185, 185, 185);
 }
-div#${prntid}.ulabel-night div.annbox_cls div.frame_annotation_dialog div.fad_row.add a.add-glob-button {
+div#${prntid}.ulabel-night div.frame_annotation_dialog div.fad_row.add a.add-glob-button {
    border: 1px solid white;
 }
-div#${prntid}.ulabel-night div.annbox_cls div.frame_annotation_dialog div.fad_row.add a.add-glob-button:hover {
+div#${prntid}.ulabel-night div.frame_annotation_dialog div.fad_row.add a.add-glob-button:hover {
    background-color: rgb(82, 82, 82);
 }
-div#${prntid}.ulabel-night div.annbox_cls div.frame_annotation_dialog div.fad_row.add a.add-glob-button span.plus {
+div#${prntid}.ulabel-night div.frame_annotation_dialog div.fad_row.add a.add-glob-button span.plus {
    color: white;
 }
-div#${prntid} div.annbox_cls div.frame_annotation_dialog.active div.fad_row.add {
+div#${prntid} div.frame_annotation_dialog.active div.fad_row.add {
    display: block;
 }
 
@@ -13683,11 +13683,11 @@ class ULabel {
 
         const tool_html = `
         <div class="full_ulabel_container_">
+            ${frame_annotation_dialogs}
             <div id="${ul.config["annbox_id"]}" class="annbox_cls">
                 <div id="${ul.config["imwrap_id"]}" class="imwrap_cls ${ul.config["imgsz_class"]}">
                     ${images}
                 </div>
-                ${frame_annotation_dialogs}
             </div>
             <div id="${ul.config["toolbox_id"]}" class="toolbox_cls">
                 <div class="toolbox-name-header">
@@ -17344,8 +17344,8 @@ class ULabel {
         jquery_default()(`div#${this.config["toolbox_id"]} input.frame_input`).val(new_frame);
         let old_frame = this.state["current_frame"];
         this.state["current_frame"] = new_frame;
-        jquery_default()(`img#${this.config["image_id_pfx"]}__${new_frame}`).css("z-index", 50);
         jquery_default()(`img#${this.config["image_id_pfx"]}__${old_frame}`).css("z-index", "initial");
+        jquery_default()(`img#${this.config["image_id_pfx"]}__${new_frame}`).css("z-index", 50);
         this.redraw_all_annotations();
     }
 };
