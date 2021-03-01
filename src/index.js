@@ -19,7 +19,7 @@ import {
     BBOX_SVG, 
     POLYGON_SVG, 
     CONTOUR_SVG, 
-    INIT_STYLE, 
+    get_init_style, 
     COLORS, 
     TBAR_SVG, 
     POLYLINE_SVG, 
@@ -47,15 +47,15 @@ class ULabel {
 
     // ================= Static Utilities =================
 
-    static add_style_to_document() {
+    static add_style_to_document(ul) {
         let head = document.head || document.getElementsByTagName('head')[0];
         let style = document.createElement('style');
         head.appendChild(style);
         if (style.styleSheet) {
-            style.styleSheet.cssText = INIT_STYLE;
+            style.styleSheet.cssText = get_init_style(ul.config["container_id"]);
         }
         else {
-            style.appendChild(document.createTextNode(INIT_STYLE));
+            style.appendChild(document.createTextNode(get_init_style(ul.config["container_id"])));
         }
     }
 
@@ -1210,7 +1210,7 @@ class ULabel {
             return raw_img_dat;
         }
         else {
-            ULabel.raise_error(`Image data object not understood. Must be of form "http://url.to/img" OR ["img1", "img2", ...] OR {spacing: {x: <num>, y: <num>, z: <num>, units: <str>}, frames: ["img1", "img2", ...]}. Provided: ${JSON.stringify(raw_img_dat)}`, ULabel.elvl_fatal);
+            ul.raise_error(`Image data object not understood. Must be of form "http://url.to/img" OR ["img1", "img2", ...] OR {spacing: {x: <num>, y: <num>, z: <num>, units: <str>}, frames: ["img1", "img2", ...]}. Provided: ${JSON.stringify(raw_img_dat)}`, ULabel.elvl_fatal);
             return null;
         }
     }
@@ -1350,7 +1350,7 @@ class ULabel {
 
     init(callback) {
         // Add stylesheet
-        ULabel.add_style_to_document();
+        ULabel.add_style_to_document(this);
 
         var that = this;
         that.state["current_subtask"] = Object.keys(that.subtasks)[0];
@@ -1437,7 +1437,7 @@ class ULabel {
             callback.bind(that);
         }).catch((err) => {
             console.log(err);
-            ULabel.raise_error("Unable to load images: " + JSON.stringify(err), ULabel.elvl_fatal);
+            this.raise_error("Unable to load images: " + JSON.stringify(err), ULabel.elvl_fatal);
         });
     }
 

@@ -12469,18 +12469,19 @@ const POLYLINE_SVG = `
   </g>
 </svg>
 `;
-const INIT_STYLE = `
-div.ulabel-night {
+let get_init_style = (prntid) => {
+   return `
+div#${prntid}.ulabel-night {
    background-color: black;
 }
-div.full_ulabel_container_ {
+div#${prntid} div.full_ulabel_container_ {
    font-family: sans-serif;
 }
 
-div.annbox_cls, div.toolbox_cls {
+div#${prntid} div.annbox_cls, div#${prntid} div.toolbox_cls {
    height: 100%;
 }
-div.annbox_cls {
+div#${prntid} div.annbox_cls {
    width: calc(100% - 320px);
    background-color: black;
    overflow: scroll;
@@ -12488,12 +12489,14 @@ div.annbox_cls {
    top: 0;
    left: 0;
 }
-div.annbox_cls img.image_frame {
+div#${prntid} div.annbox_cls img.image_frame {
    position: absolute;
    top: 0;
    left: 0;
+   max-width: none;
+   max-height: none;
 }
-div.annbox_cls div.frame_annotation_dialog {
+div#${prntid} div.annbox_cls div.frame_annotation_dialog {
    width: 50px;
    min-height: 20px;
    overflow: hidden;
@@ -12505,19 +12508,19 @@ div.annbox_cls div.frame_annotation_dialog {
    transition: opacity 0.1s, width 0.3s, height 0.3s, min-height 0.3s;
    opacity: 0.5;
 }
-div.annbox_cls div.frame_annotation_dialog.fad_ind__0 {
+div#${prntid} div.annbox_cls div.frame_annotation_dialog.fad_ind__0 {
    right: 375px;
 }
-div.annbox_cls div.frame_annotation_dialog.fad_ind__1 {
+div#${prntid} div.annbox_cls div.frame_annotation_dialog.fad_ind__1 {
    right: 450px;
 }
-div.annbox_cls div.frame_annotation_dialog.fad_ind__2 {
+div#${prntid} div.annbox_cls div.frame_annotation_dialog.fad_ind__2 {
    right: 525px;
 }
-div.annbox_cls div.frame_annotation_dialog.fad_ind__3 {
+div#${prntid} div.annbox_cls div.frame_annotation_dialog.fad_ind__3 {
    right: 600px;
 }
-div.fad_st_name {
+div#${prntid} div.fad_st_name {
    font-size: 8px;
    width: 40px;
    height: 12px;
@@ -12525,53 +12528,53 @@ div.fad_st_name {
    float: right;
    overflow: hidden;
 }
-div.ulabel-night div.fad_st_name {
+div#${prntid}.ulabel-night div.fad_st_name {
    color: white;
 }
 
-div.annbox_cls div.frame_annotation_dialog:hover {
+div#${prntid} div.annbox_cls div.frame_annotation_dialog:hover {
    max-width: none;
    width: 200px;
 }
-div.annbox_cls div.frame_annotation_dialog.active {
+div#${prntid} div.annbox_cls div.frame_annotation_dialog.active {
    z-index: 125;
    opacity: 1.0;
    min-height: 50px;
 }
-div.ulabel-night div.annbox_cls div.frame_annotation_dialog {
+div#${prntid}.ulabel-night div.annbox_cls div.frame_annotation_dialog {
    background-color: rgb(37, 37, 37);
    border: 1px solid rgb(102, 102, 102);
 }
-div.annbox_cls div.frame_annotation_dialog div.fad_row {
+div#${prntid} div.annbox_cls div.frame_annotation_dialog div.fad_row {
    min-height: 50px;
    width: 200px;
    float: right;
 }
-div.annbox_cls div.frame_annotation_dialog div.fad_row div.fad_buttons {
+div#${prntid} div.annbox_cls div.frame_annotation_dialog div.fad_row div.fad_buttons {
    display: inline-block;
    vertical-align: top;
    min-height: 50px;
    width: 150px;
 }
-div.annbox_cls div.frame_annotation_dialog div.fad_row div.fad_type_icon {
+div#${prntid} div.annbox_cls div.frame_annotation_dialog div.fad_row div.fad_type_icon {
    display: inline-block;
    vertical-align: top;
    height: 50px;
    width: 50px;
    position: relative;
 }
-div.annbox_cls div.frame_annotation_dialog div.fad_row div.fad_type_icon svg {
+div#${prntid} div.annbox_cls div.frame_annotation_dialog div.fad_row div.fad_type_icon svg {
    height: 40px;
    width: 40px;
    position: absolute;
    top: 5px;
    left: 5px;
 }
-div.annbox_cls div.frame_annotation_dialog div.fad_row.add {
+div#${prntid} div.annbox_cls div.frame_annotation_dialog div.fad_row.add {
    display: none;
    position: relative;
 }
-div.annbox_cls div.frame_annotation_dialog div.fad_row.add a.add-glob-button {
+div#${prntid} div.annbox_cls div.frame_annotation_dialog div.fad_row.add a.add-glob-button {
    position: absolute;
    display: block;
    top: 25px;
@@ -12584,7 +12587,7 @@ div.annbox_cls div.frame_annotation_dialog div.fad_row.add a.add-glob-button {
    text-decoration: none;
    border: 1px solid black;
 }
-div.annbox_cls div.frame_annotation_dialog div.fad_row.add a.add-glob-button span.plus {
+div#${prntid} div.annbox_cls div.frame_annotation_dialog div.fad_row.add a.add-glob-button span.plus {
    display: block;
    text-align: center;
    width: 25px;
@@ -12595,25 +12598,25 @@ div.annbox_cls div.frame_annotation_dialog div.fad_row.add a.add-glob-button spa
    transform: translateX(-50%) translateY(-50%);
    color: black;
 }
-div.annbox_cls div.frame_annotation_dialog div.fad_row.add a.add-glob-button:hover {
+div#${prntid} div.annbox_cls div.frame_annotation_dialog div.fad_row.add a.add-glob-button:hover {
    background-color: rgb(185, 185, 185);
 }
-div.ulabel-night div.annbox_cls div.frame_annotation_dialog div.fad_row.add a.add-glob-button {
+div#${prntid}.ulabel-night div.annbox_cls div.frame_annotation_dialog div.fad_row.add a.add-glob-button {
    border: 1px solid white;
 }
-div.ulabel-night div.annbox_cls div.frame_annotation_dialog div.fad_row.add a.add-glob-button:hover {
+div#${prntid}.ulabel-night div.annbox_cls div.frame_annotation_dialog div.fad_row.add a.add-glob-button:hover {
    background-color: rgb(82, 82, 82);
 }
-div.ulabel-night div.annbox_cls div.frame_annotation_dialog div.fad_row.add a.add-glob-button span.plus {
+div#${prntid}.ulabel-night div.annbox_cls div.frame_annotation_dialog div.fad_row.add a.add-glob-button span.plus {
    color: white;
 }
-div.annbox_cls div.frame_annotation_dialog.active div.fad_row.add {
+div#${prntid} div.annbox_cls div.frame_annotation_dialog.active div.fad_row.add {
    display: block;
 }
 
 
 
-div.toolbox_cls {
+div#${prntid} div.toolbox_cls {
    width: 320px;
    background-color: white;
    overflow-y: hidden;
@@ -12621,28 +12624,28 @@ div.toolbox_cls {
    top: 0;
    right: 0;
 }
-div.ulabel-night div.toolbox_cls {
+div#${prntid}.ulabel-night div.toolbox_cls {
    background-color: rgb(24, 24, 24);
 }
-div.ulabel-night div.toolbox_cls p, div.ulabel-night div.toolbox_cls a {
+div#${prntid}.ulabel-night div.toolbox_cls p, div#${prntid}.ulabel-night div.toolbox_cls a {
    color: white;
 }
-div.ulabel-night .invert-this-svg svg {
+div#${prntid}.ulabel-night .invert-this-svg svg {
    filter: invert(90%);
 }
 
-div.canvasses {
+div#${prntid} div.canvasses {
    position: absolute;
    top: 0; 
    left: 0;
 }
-canvas.canvas_cls {
+div#${prntid} canvas.canvas_cls {
    position: absolute;
    top: 0;
    left: 0;
 }
 
-.id_dialog {
+div#${prntid} .id_dialog {
    width: 400px;
    height: 400px;
    background-color: rgba(0, 0, 0, 0.0);
@@ -12656,7 +12659,7 @@ canvas.canvas_cls {
 .id_dialog.thumb:hover {
    opacity: 1.0;
 } */
-.ender_outer {
+div#${prntid} .ender_outer {
    display: block;
    position: absolute;
    width: 50px;
@@ -12665,7 +12668,7 @@ canvas.canvas_cls {
    border-radius: 25px;
    z-index: 0;
 }
-.ender_inner {
+div#${prntid} .ender_inner {
    display: block;
    position: absolute;
    left: 20px;
@@ -12678,33 +12681,29 @@ canvas.canvas_cls {
 
 /* ================== TOOLBOX ================== */
 
-div.toolbox-divider {
+div#${prntid} div.toolbox-divider {
    width: 90%;
    margin: 0 auto;
    height: 1px;
    background-color: lightgray;
 }
-div.ulabel-night div.toolbox-divider {
+div#${prntid}.ulabel-night div.toolbox-divider {
    background-color: gray;
 }
 
 
-div.mode-selection, div.zoom-pan {
-   padding: 10px 30px;
-}
-
 /* === Annotation Mode === */
-p.current_mode_container {
+div#${prntid} p.current_mode_container {
    margin-top: 0px;
    margin-bottom: 5px;
 }
-span.current_mode {
+div#${prntid} span.current_mode {
    color: cornflowerblue;
 }
-div.mode-opt {
+div#${prntid} div.mode-opt {
    display: inline-block;
 }
-a.md-btn {
+div#${prntid} a.md-btn {
    display: block;
    text-align: center;
    height: 30px;
@@ -12718,41 +12717,44 @@ a.md-btn {
    font-family: sans-serif;
 }
 
-a.md-btn svg {
+div#${prntid} a.md-btn svg {
    height: 30px;
    width: 30px;
 }
 
-a.md-btn:hover {
+div#${prntid} a.md-btn:hover {
    background-color: rgba(255, 181, 44, 0.397);
 }
 
-a.md-btn.sel {
+div#${prntid} a.md-btn.sel {
    background-color: rgba(100, 148, 237, 0.459);
 }
 
 /* === Pan & Zoom === */
 
-div.zoom-pan {
+div#${prntid} div.mode-selection, div#${prntid} div.zoom-pan {
+   padding: 10px 30px;
+}
+/* div#${prntid} div.zoom-pan {
    padding-bottom: 0;
    padding-top: 0;
-}
-div.half-tb {
+} */
+div#${prntid} div.half-tb {
    display: inline-block;    
    width: 50%;
    vertical-align: middle;
 }
-span.htblbl {
+div#${prntid} span.htblbl {
    display: inline-block;
    /* font-weight: bold; */
    vertical-align: middle;
 }
-span.htbpyld {
+div#${prntid} span.htbpyld {
    display: inline-block;
    vertical-align: middle;
 }
 
-span.panudlr {
+div#${prntid} span.panudlr {
    display: inline-block;
    position: relative;
    width: 60px;
@@ -12760,7 +12762,7 @@ span.panudlr {
    border-radius: 30px;
 }
 
-a.zbutt, a.wbutt {
+div#${prntid} a.zbutt, div#${prntid} a.wbutt {
    display: inline-block;
    height: 20px;
    width: 20px;
@@ -12773,10 +12775,10 @@ a.zbutt, a.wbutt {
    line-height: 20px;
    border: 1px solid rgb(168, 168, 168);
 }
-span.panudlr {
+div#${prntid} span.panudlr {
    transform: rotate(-45deg);
 }
-a.pbutt {
+div#${prntid} a.pbutt {
    display: block;
    position: absolute;
    width: 28px;
@@ -12785,33 +12787,33 @@ a.pbutt {
    border: 1px solid rgb(168, 168, 168);
    background-color: lightgray;
 }
-a.pbutt.up {
+div#${prntid} a.pbutt.up {
    right: 0;
    top: 0;
    border-top-right-radius: 30px;
 }
-a.pbutt.down {
+div#${prntid} a.pbutt.down {
    left: 0;
    bottom: 0;
    border-bottom-left-radius: 30px;
 }
-a.pbutt.left {
+div#${prntid} a.pbutt.left {
    left: 0;
    top: 0;
    border-top-left-radius: 30px;
 }
-a.pbutt.right {
+div#${prntid} a.pbutt.right {
    right: 0;
    bottom: 0;
    border-bottom-right-radius: 30px;
 }
-a.pbutt:hover, a.zbutt:hover, a.wbutt:hover {
+div#${prntid} a.pbutt:hover, a.zbutt:hover, div#${prntid} a.wbutt:hover {
    background-color: rgba(100, 148, 237, 0.486);
 }
-a.pbutt:active, a.zbutt:active, a.wbutt:active {
+div#${prntid} a.pbutt:active, div#${prntid} a.zbutt:active, div#${prntid} a.wbutt:active {
    background-color:cornflowerblue;
 }
-span.spokes {
+div#${prntid} span.spokes {
    position: absolute;
    left: 19px;
    top: 19px;
@@ -12821,41 +12823,41 @@ span.spokes {
    border-radius: 10px;
    border: 1px solid gray;
 }
-div.ulabel-night span.spokes {
+div#${prntid}.ulabel-night span.spokes {
    background-color:rgb(24, 24, 24);
    /* border: 1px solid black; */
 }
 
-div.zpcont {
+div#${prntid} div.zpcont {
    height: 90px;
    position: relative;
    background-color: white;
 }
-div.ulabel-night div.zpcont {
+div#${prntid}.ulabel-night div.zpcont {
    background-color: rgb(24, 24, 24);
 }
-div.zpcont:hover, div.ulabel-night div.zpcont:hover {
+div#${prntid} div.zpcont:hover, div#${prntid}.ulabel-night div.zpcont:hover {
    background-color: rgba(0,0,0,0);
 }
-div.zpcont div.lblpyldcont {
+div#${prntid} div.zpcont div.lblpyldcont {
    position: absolute;
    top: 50%;
    -ms-transform: translateY(-50%);
    transform: translateY(-50%);
 }
-div.ulabel-night div.zpcont div.lblpyldcont {
+div#${prntid}.ulabel-night div.zpcont div.lblpyldcont {
    color: white;
 }
-div.ulabel-night a.zbutt, div.ulabel-night a.wbutt {
+div#${prntid}.ulabel-night a.zbutt, div#${prntid}.ulabel-night a.wbutt {
    border: 1px solid black;
    color: black !important;
 }
 
 
-div.htbmain {
+div#${prntid} div.htbmain {
    position: relative;
 }
-p.shortcut-tip {
+div#${prntid} p.shortcut-tip {
    font-size: 10px;
    text-align: left;
    color: gray;
@@ -12863,41 +12865,41 @@ p.shortcut-tip {
    bottom: 3px;
    margin: 0;
 }
-div.linestyle {
+div#${prntid} div.linestyle {
    padding: 10px 30px;
 }
-div.linestyle p.tb-header {
+div#${prntid} div.linestyle p.tb-header {
    margin: 0;
    margin-bottom: 5px;
 }
-canvas.demo-canvas {
+div#${prntid} canvas.demo-canvas {
    width: 120px;
    height: 40px;
    border: 1px solid lightgray;
 }
-div.ulabel-night canvas.demo-canvas {
+div#${prntid}.ulabel-night canvas.demo-canvas {
    border: 1px solid rgb(87, 87, 87);
 }
-div.line-expl {
-   width: 175px;
+div#${prntid} div.line-expl {
+   width: 185px;
 }
-div.line-expl a {
+div#${prntid} div.line-expl a {
    display: inline-block;
    vertical-align: middle;
 }
-div.line-expl canvas {
+div#${prntid} div.line-expl canvas {
    display: inline-block;
    vertical-align: middle;
 }
-div.lstyl-row div.line-expl, div.lstyl-row div.setting {
+div#${prntid} div.lstyl-row div.line-expl, div#${prntid} div.lstyl-row div.setting {
    display: inline-block;
    vertical-align: middle;
 }
-div.setting {
-   width: calc(100% - 175px);
+div#${prntid} div.setting {
+   width: calc(100% - 185px);
    text-align: right;
 }
-div.lstyl-row div.setting a {
+div#${prntid} div.lstyl-row div.setting a {
    display: inline-block;
    border-radius: 5px;
    padding: 3px 6px;
@@ -12906,22 +12908,25 @@ div.lstyl-row div.setting a {
    color: black;
    font-size: 14px;
 }
-div.ulabel-night div.lstyl-row div.setting a {
+div#${prntid}.ulabel-night div.lstyl-row div.setting a {
    color: white;
 }
-div.lstyl-row div.setting a {
+div#${prntid} div.lstyl-row div.setting a {
    background-color: rgba(100, 148, 237, 0.479);
    color: black;
 }
-div.lstyl-row div.setting a[href="#"] {
+div#${prntid} div.lstyl-row div.setting a[href="#"] {
    background-color: rgba(0,0,0,0);
    color: black;
 }
-div.lstyl-row div.setting a[href="#"]:hover {
+div#${prntid}.ulabel-night div.lstyl-row div.setting a[href="#"] {
+   color: white;
+}
+div#${prntid} div.lstyl-row div.setting a[href="#"]:hover {
    background-color: rgba(255, 181, 44, 0.397);
 }
 
-div.dialogs_container {
+div#${prntid} div.dialogs_container {
    position: absolute;
    top: 0;
    left: 0;
@@ -12929,61 +12934,61 @@ div.dialogs_container {
 
 /* ========== Tab Buttons ========== */
 
-div.toolbox-tabs {
+div#${prntid} div.toolbox-tabs {
    position: absolute;
    bottom: 0;
    width: 100%;
    opacity: 0.8;
 }
-div.toolbox-tabs div.tb-st-tab {
+div#${prntid} div.toolbox-tabs div.tb-st-tab {
    display: block;
    width: 100%;
    padding: 5px 0;
    background-color: rgba(0, 3, 161, 0.144);
 }
-div.toolbox-tabs div.tb-st-tab.sel {
+div#${prntid} div.toolbox-tabs div.tb-st-tab.sel {
    display: block;
    width: 100%;
    background-color: rgba(0, 3, 161, 0.561);
 }
-div.toolbox-tabs div.tb-st-tab * {
+div#${prntid} div.toolbox-tabs div.tb-st-tab * {
    vertical-align: middle;
 }
-div.toolbox-tabs div.tb-st-tab a.tb-st-switch {
+div#${prntid} div.toolbox-tabs div.tb-st-tab a.tb-st-switch {
    display: inline-block;
    width: 70px;
    padding: 0 15px;
    text-decoration: none;
    color: rgb(37, 37, 37);
 }
-div.ulabel-night div.toolbox-tabs div.tb-st-tab a.tb-st-switch {
+div#${prntid}.ulabel-night div.toolbox-tabs div.tb-st-tab a.tb-st-switch {
    color: rgb(150, 150, 150);
 }
-div.toolbox-tabs div.tb-st-tab.sel a.tb-st-switch {
+div#${prntid} div.toolbox-tabs div.tb-st-tab.sel a.tb-st-switch {
    color: rgb(238, 238, 238);
 }
-div.ulabel-night div.toolbox-tabs div.tb-st-tab.sel a.tb-st-switch {
+div#${prntid}.ulabel-night div.toolbox-tabs div.tb-st-tab.sel a.tb-st-switch {
    color: rgb(238, 238, 238);
 }
-div.toolbox-tabs div.tb-st-tab a.tb-st-switch[href]:hover {
+div#${prntid} div.toolbox-tabs div.tb-st-tab a.tb-st-switch[href]:hover {
    color: cornflowerblue;
 }
-div.ulabel-night div.toolbox-tabs div.tb-st-tab a.tb-st-switch[href]:hover {
+div#${prntid}.ulabel-night div.toolbox-tabs div.tb-st-tab a.tb-st-switch[href]:hover {
    color: rgb(238, 238, 238);
 }
-div.toolbox-tabs div.tb-st-tab span.tb-st-range {
+div#${prntid} div.toolbox-tabs div.tb-st-tab span.tb-st-range {
    display: inline-block;
    width: calc(100% - 100px);
    text-align: center;
 }
-div.toolbox-tabs div.tb-st-tab span.tb-st-range input {
+div#${prntid} div.toolbox-tabs div.tb-st-tab span.tb-st-range input {
    width: 80%;
    transform: rotate(180deg);
 }
 
 /* ========== Annotation Box Dialogs ========== */
 
-div.global_edit_suggestion {
+div#${prntid} div.global_edit_suggestion {
    display: none;
    position: absolute;
    width: 150px;
@@ -12993,11 +12998,11 @@ div.global_edit_suggestion {
    /* background-color: white; */
    transform: scale(0.66666);
 }
-div.global_edit_suggestion.mcm {
+div#${prntid} div.global_edit_suggestion.mcm {
    width: 225px;
    transform: scale(0.5);
 }
-a.global_sub_suggestion {
+div#${prntid} a.global_sub_suggestion {
    width: 60px;
    height: 60px;
    margin: 7.5px;
@@ -13006,13 +13011,13 @@ a.global_sub_suggestion {
    background-color: white;
    overflow: hidden;
 }
-a.global_sub_suggestion img {
+div#${prntid} a.global_sub_suggestion img {
    display: block;
    width: 40px;
    height: 40px;
    padding: 10px;
 }
-a.global_sub_suggestion span.bigx {
+div#${prntid} a.global_sub_suggestion span.bigx {
    position: absolute;
    display: block;
    font-size: 4em;
@@ -13024,52 +13029,52 @@ a.global_sub_suggestion span.bigx {
    color: black;
    text-decoration: none;
 }
-a.global_sub_suggestion.reid_suggestion {
+div#${prntid} a.global_sub_suggestion.reid_suggestion {
    opacity: 0.3;
    background-color: black;
 }
-a.global_sub_suggestion.reid_suggestion:hover {
+div#${prntid} a.global_sub_suggestion.reid_suggestion:hover {
    opacity: 0; 
 }
-div.classification {
+div#${prntid} div.classification {
    padding: 10px 30px;
 }
-div.classification p.tb-header {
+div#${prntid} div.classification p.tb-header {
    margin: 0;
    margin-bottom: 5px;
 }
 
-a.tbid-opt {
+div#${prntid} a.tbid-opt {
    display: inline-block;
    text-decoration: none;
    padding: 5px 8px;
    border-radius: 5px;
    color: black;
 }
-div.colprev {
+div#${prntid} div.colprev {
    display: inline-block;
    vertical-align: middle;
    height: 15px;
    width: 15px;
 }
-span.tb-cls-nam {
+div#${prntid} span.tb-cls-nam {
    display: inline-block;
    vertical-align: middle;
 }
-a.tbid-opt:hover {
+div#${prntid} a.tbid-opt:hover {
    background-color: rgba(255, 181, 44, 0.397);
 }
-a.tbid-opt.sel {
+div#${prntid} a.tbid-opt.sel {
    background-color: rgba(100, 148, 237, 0.459);
 }
-div.toolbox-name-header {
+div#${prntid} div.toolbox-name-header {
    background-color: rgb(0, 128, 202);
    margin: 0;
 }
-div.ulabel-night div.toolbox-name-header {
+div#${prntid}.ulabel-night div.toolbox-name-header {
    background-color: rgb(0, 60, 95);
 }
-div.toolbox-name-header h1 {
+div#${prntid} div.toolbox-name-header h1 {
    margin: 0;
    padding: 0;
    font-size: 15px;
@@ -13078,20 +13083,20 @@ div.toolbox-name-header h1 {
    width: calc(70% - 30px);
    vertical-align: middle;
 }
-div.toolbox-name-header h1 a {
+div#${prntid} div.toolbox-name-header h1 a {
    color: white;
    font-weight: 100;
    text-decoration: none;
 }
-div.toolbox-name-header h1 {
+div#${prntid} div.toolbox-name-header h1 {
    color: rgb(212, 212, 212);
    font-size: 12px;
    font-weight: 100;
 }
-div.ulabel-night div.toolbox-name-header h1 span.version-number {
+div#${prntid}.ulabel-night div.toolbox-name-header h1 span.version-number {
    color: rgb(190, 190, 190);
 }
-div.night-button-cont {
+div#${prntid} div.night-button-cont {
    text-align: right;
    display: inline-block;
    vertical-align: middle;
@@ -13099,12 +13104,12 @@ div.night-button-cont {
    padding-right: 10px;
    width: calc(30% - 10px);
 }
-a.night-button {
+div#${prntid} a.night-button {
    display: inline-block;
    padding: 10px;
    opacity: 0.7;
 }
-div.night-button-track {
+div#${prntid} div.night-button-track {
    width: 35px;
    height: 12px;
    border-radius: 6px;
@@ -13112,7 +13117,7 @@ div.night-button-track {
    display: inline-block;
    background-color: rgba(0, 0, 0, 0.52);
 }
-div.night-status {
+div#${prntid} div.night-status {
    width: 20px;
    height: 20px;
    border-radius: 10px;
@@ -13122,40 +13127,40 @@ div.night-status {
    top: -4px;
    transition: left 0.2s;
 }
-a.night-button:hover {
+div#${prntid} a.night-button:hover {
    opacity: 1;
 }
-div.ulabel-night div.night-button-track {
+div#${prntid}.ulabel-night div.night-button-track {
    background-color: rgba(255, 255, 255, 0.52);
 }
-div.ulabel-night div.night-status {
+div#${prntid}.ulabel-night div.night-status {
    left: 19px;
 }
 
 
-div.ulabel-night div.annbox_cls::-webkit-scrollbar {
+div#${prntid}.ulabel-night div.annbox_cls::-webkit-scrollbar {
    background-color: black;
 }
-div.ulabel-night div.annbox_cls::-webkit-scrollbar-track {
+div#${prntid}.ulabel-night div.annbox_cls::-webkit-scrollbar-track {
    background-color: black;
 }
-div.ulabel-night div.annbox_cls::-webkit-scrollbar-thumb {
+div#${prntid}.ulabel-night div.annbox_cls::-webkit-scrollbar-thumb {
    border: 1px solid rgb(110, 110, 110);
    background-color: rgb(51, 51, 51);
 }
-div.ulabel-night div.annbox_cls::-webkit-scrollbar-thumb:hover {
+div#${prntid}.ulabel-night div.annbox_cls::-webkit-scrollbar-thumb:hover {
    background-color: rgb(90, 90, 90);
 } 
-div.ulabel-night div.annbox_cls::-webkit-scrollbar-corner {
+div#${prntid}.ulabel-night div.annbox_cls::-webkit-scrollbar-corner {
    background-color:rgb(0, 60, 95);
 }
 
-a.repo-anchor {
+div#${prntid} a.repo-anchor {
    text-transform: uppercase;
 }
 
 
-a.id-dialog-clickable-indicator {
+div#${prntid} a.id-dialog-clickable-indicator {
    position: absolute; 
    top: 0;
    left: 0;
@@ -13165,13 +13170,13 @@ a.id-dialog-clickable-indicator {
    width: 400px;
    overflow: hidden;
 }
-a.id-dialog-clickable-indicator svg {
+div#${prntid} a.id-dialog-clickable-indicator svg {
    position: absolute;
    top: 0;
    left: 0;
 }
 
-.editable {
+div#${prntid} .editable {
    display: none;
    position: absolute;
    width: 50px;
@@ -13181,36 +13186,36 @@ a.id-dialog-clickable-indicator svg {
    border-radius: 25px;
    z-index: 0;
 }
-.editable.soft {
+div#${prntid} .editable.soft {
    opacity: 0.4;
 }
-.editable:hover {
+div#${prntid} .editable:hover {
    background-color: white;
    opacity: 1.0;
 }
-.editable.soft:hover {
+div#${prntid} .editable.soft:hover {
    opacity: 0.7;
 }
 
-div.toolbox-refs {
+div#${prntid} div.toolbox-refs {
    text-align: center;
 }
-div.toolbox-refs a {
+div#${prntid} div.toolbox-refs a {
    color: rgb(5, 50, 133);
    display: inline-block;
    margin-top: 10px;
 }
-div.toolbox-refs a:hover {
+div#${prntid} div.toolbox-refs a:hover {
    color: rgb(44, 77, 139);
 }
-div.ulabel-night div.toolbox-refs a {
+div#${prntid}.ulabel-night div.toolbox-refs a {
    color: rgb(176, 202, 250);
 }
-div.ulabel-night div.toolbox-refs a:hover {
+div#${prntid}.ulabel-night div.toolbox-refs a:hover {
    color: rgb(123, 160, 228);
 }
 
-#submit-button {
+div#${prntid} #submit-button {
    display: block;
    padding: 20px;
    border-radius: 10px;
@@ -13222,16 +13227,17 @@ div.ulabel-night div.toolbox-refs a:hover {
    width: 150px;
    margin: 30px auto;
 }
-#submit-button:hover {
+div#${prntid} #submit-button:hover {
    background-color: rgba(255, 166, 0, 1.0);
 }
-#submit-button:active {
+div#${prntid} #submit-button:active {
    box-shadow: 0 0 3px black;
 }
-div.ulabel-night #submit-button:active {
+div#${prntid}.ulabel-night #submit-button:active {
    box-shadow: 0 0 8px white;
 }
 `;
+}
 
 // TODO more of these
 const COLORS = [
@@ -13281,15 +13287,15 @@ class ULabel {
 
     // ================= Static Utilities =================
 
-    static add_style_to_document() {
+    static add_style_to_document(ul) {
         let head = document.head || document.getElementsByTagName('head')[0];
         let style = document.createElement('style');
         head.appendChild(style);
         if (style.styleSheet) {
-            style.styleSheet.cssText = INIT_STYLE;
+            style.styleSheet.cssText = get_init_style(ul.config["container_id"]);
         }
         else {
-            style.appendChild(document.createTextNode(INIT_STYLE));
+            style.appendChild(document.createTextNode(get_init_style(ul.config["container_id"])));
         }
     }
 
@@ -14163,7 +14169,6 @@ class ULabel {
 
         // Listener for id_dialog click interactions
         jquery_default()("#" + ul.config["annbox_id"] + " a.id-dialog-clickable-indicator").click(function(e) {
-            console.log("here...")
             let crst = ul.state["current_subtask"];
             if (!ul.subtasks[crst]["state"]["idd_thumbnail"]) {
                 ul.handle_id_dialog_click(e);
@@ -14445,7 +14450,7 @@ class ULabel {
             return raw_img_dat;
         }
         else {
-            ULabel.raise_error(`Image data object not understood. Must be of form "http://url.to/img" OR ["img1", "img2", ...] OR {spacing: {x: <num>, y: <num>, z: <num>, units: <str>}, frames: ["img1", "img2", ...]}. Provided: ${JSON.stringify(raw_img_dat)}`, ULabel.elvl_fatal);
+            ul.raise_error(`Image data object not understood. Must be of form "http://url.to/img" OR ["img1", "img2", ...] OR {spacing: {x: <num>, y: <num>, z: <num>, units: <str>}, frames: ["img1", "img2", ...]}. Provided: ${JSON.stringify(raw_img_dat)}`, ULabel.elvl_fatal);
             return null;
         }
     }
@@ -14585,7 +14590,7 @@ class ULabel {
 
     init(callback) {
         // Add stylesheet
-        ULabel.add_style_to_document();
+        ULabel.add_style_to_document(this);
 
         var that = this;
         that.state["current_subtask"] = Object.keys(that.subtasks)[0];
@@ -14672,7 +14677,7 @@ class ULabel {
             callback.bind(that);
         }).catch((err) => {
             console.log(err);
-            ULabel.raise_error("Unable to load images: " + JSON.stringify(err), ULabel.elvl_fatal);
+            this.raise_error("Unable to load images: " + JSON.stringify(err), ULabel.elvl_fatal);
         });
     }
 
