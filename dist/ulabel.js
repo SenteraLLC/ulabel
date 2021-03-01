@@ -13660,6 +13660,21 @@ class ULabel {
 
         const frame_annotation_dialogs = ULabel.get_frame_annotation_dialogs(ul);
 
+        let frame_range = `
+        <div class="full-tb htbmain set-frame">
+            <p class="shortcut-tip">alt+scroll to switch frames</p>
+            <div class="zpcont">
+                <div class="lblpyldcont">
+                    <span class="pzlbl htblbl">Frame</span> &nbsp;
+                    <input class="frame_input" type="range" min=0 max=${ul.config["image_data"].frames.length-1} value=0 />
+                </div>
+            </div>
+        </div>
+        `;
+        if (ul.config["image_data"]["frames"].length == 1) {
+            frame_range = ``;
+        }
+
         const tool_html = `
         <div class="full_ulabel_container_">
             <div id="${ul.config["annbox_id"]}" class="annbox_cls">
@@ -13715,15 +13730,7 @@ class ULabel {
                                 </div>
                             </div>
                         </div>
-                        <div class="full-tb htbmain set-frame">
-                            <p class="shortcut-tip">alt+scroll to switch frames</p>
-                            <div class="zpcont">
-                                <div class="lblpyldcont">
-                                    <span class="pzlbl htblbl">Frame</span> &nbsp;
-                                    <input class="frame_input" type="range" min=0 max=${ul.config["image_data"].frames.length-1} value=0 />
-                                </div>
-                            </div>
-                        </div>
+                        ${frame_range}
                     </div>
                     <div class="toolbox-divider"></div>
                     <div class="linestyle">
@@ -17316,6 +17323,9 @@ class ULabel {
     // Change frame
 
     update_frame(delta=null, new_frame=null) {
+        if (this.config["image_data"]["frames"].length == 1) {
+            return;
+        }
         if (new_frame == null) {
             new_frame = parseInt(jquery_default()(`div#${this.config["toolbox_id"]} input.frame_input`).val());
             if (delta != null) {
