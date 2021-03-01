@@ -32,6 +32,8 @@ jQuery.fn.outer_html = function() {
     return jQuery('<div />').append(this.eq(0).clone()).html();
 };
 
+const MODES_3D = ["global", "bbox3"];
+
 const DEFAULT_LINE_SIZE = 4.0;
 
 class ULabel {
@@ -806,7 +808,7 @@ class ULabel {
 
                 // Get direction of wheel
                 const dlta = Math.sign(wheel_event.deltaY);
-                ul.change_frame(dlta);
+                ul.update_frame(dlta);
             }
         };
         
@@ -906,7 +908,7 @@ class ULabel {
         });
 
         $(document).on("input", "input.frame_input", (e) => {
-            ul.change_frame();
+            ul.update_frame();
         });
 
 
@@ -1073,30 +1075,24 @@ class ULabel {
 
     static process_resume_from(ul, subtask_key, subtask) {
         // Initialize to no annotations
-        ul.subtasks[subtask_key]["annotations"] = [];
-        ul.subtasks[subtask_key]["annotations_3d"] = {
+        ul.subtasks[subtask_key]["annotations"] = {
             "ordering": [],
             "access": {}
         };
-        for (let i = 0; i < ul.config["image_data"].frames.length; i++) {
-            ul.subtasks[subtask_key]["annotations"].push({
-                "ordering": [],
-                "access": {}
-            });
-        } 
         if (subtask["resume_from"] != null) {
             for (let frame = 0; frame < subtask["resume_from"].length; frame++) {
                 for (var i = 0; i < subtask["resume_from"][frame].length; i++) {
                     // Push to ordering and add to access
-                    ul.subtasks[subtask_key]["annotations"][frame]["ordering"].push(subtask["resume_from"][i]["id"]);
-                    ul.subtasks[subtask_key]["annotations"][frame]["access"][subtask["resume_from"][i]["id"]] = subtask["resume_from"][i];
+                    ul.subtasks[subtask_key]["annotations"]["ordering"].push(subtask["resume_from"][i]["id"]);
+                    ul.subtasks[subtask_key]["annotations"]["access"][subtask["resume_from"][i]["id"]] = subtask["resume_from"][i];
+                    ul.subtasks[subtask_key]["annotations"]["access"][subtask["resume_from"][i]["id"]]["frame"] = frame;
     
                     // Set new to false
-                    ul.subtasks[subtask_key]["annotations"][frame]["access"][subtask["resume_from"][i]["id"]]["new"] = false;
+                    ul.subtasks[subtask_key]["annotations"]["access"][subtask["resume_from"][i]["id"]]["new"] = false;
     
                     // Test for line_size
-                    if (ul.subtasks[subtask_key]["annotations"][frame]["access"][subtask["resume_from"][i]["id"]]["line_size"] == null) {
-                        ul.subtasks[subtask_key]["annotations"][frame]["access"][subtask["resume_from"][i]["id"]]["line_size"] = DEFAULT_LINE_SIZE;
+                    if (ul.subtasks[subtask_key]["annotations"]["access"][subtask["resume_from"][i]["id"]]["line_size"] == null) {
+                        ul.subtasks[subtask_key]["annotations"]["access"][subtask["resume_from"][i]["id"]]["line_size"] = DEFAULT_LINE_SIZE;
                     }
     
                     // Make sure it has a containing box
@@ -1126,13 +1122,10 @@ class ULabel {
             };
 
             //  Initialize an empty action stream for each subtask
-            ul.subtasks[subtask_key]["actions"] = [];
-            for (let i = 0; i < ul.config["image_data"].frames.length; i++){
-                ul.subtasks[subtask_key]["actions"].push({
-                    "stream": [],
-                    "undone_stack": []
-                });
-            }
+            ul.subtasks[subtask_key]["actions"] = {
+                "stream": [],
+                "undone_stack": []
+            };
 
             // Process allowed_modes
             // They are placed in ul.subtasks[subtask_key]["allowed_modes"]
@@ -1579,27 +1572,27 @@ class ULabel {
     // Optional arg at the end is for finding position of a moved splice point through its original access string
     get_with_access_string(annid, access_str, as_though_pre_splice=false) {
         // TODO(3d)
-        switch (this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][annid]["spatial_type"]) {
+        switch (this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid]["spatial_type"]) {
             case "bbox":
                 const bbi = parseInt(access_str[0], 10);
                 const bbj = parseInt(access_str[1], 10);
-                let bbox_pts = this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][annid]["spatial_payload"];
+                let bbox_pts = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid]["spatial_payload"];
                 return [bbox_pts[bbi][0], bbox_pts[bbj][1]];
             case "polygon":
                 let bas = parseInt(access_str, 10);
                 let dif = parseFloat(access_str) - bas;
                 if (dif < 0.005) {
-                    return this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][annid]["spatial_payload"][bas];
+                    return this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid]["spatial_payload"][bas];
                 }
                 else {
                     if (as_though_pre_splice) {
                         dif = 0;
                         bas += 1;
-                        return this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][annid]["spatial_payload"][bas];
+                        return this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid]["spatial_payload"][bas];
                     }
                     else {
                         return ULabel.interpolate_poly_segment(
-                            this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][annid]["spatial_payload"], 
+                            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid]["spatial_payload"], 
                             bas, dif
                         );
                     }
@@ -1608,11 +1601,11 @@ class ULabel {
                 // TODO 3 point method
                 const tbi = parseInt(access_str[0], 10);
                 const tbj = parseInt(access_str[1], 10);
-                let tbar_pts = this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][annid]["spatial_payload"];
+                let tbar_pts = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid]["spatial_payload"];
                 return [tbar_pts[tbi][0], tbar_pts[tbj][1]];
             default:
                 this.raise_error(
-                    "Unable to apply access string to annotation of type " + this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][annid]["spatial_type"],
+                    "Unable to apply access string to annotation of type " + this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid]["spatial_type"],
                     ULabel.elvl_standard
                 );
         }
@@ -1624,53 +1617,53 @@ class ULabel {
         val[0] = Math.round(val[0]);
         val[1] = Math.round(val[1]);
         // TODO(3d)
-        switch (this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][annid]["spatial_type"]) {
+        switch (this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid]["spatial_type"]) {
             case "bbox":
                 var bbi = parseInt(access_str[0], 10);
                 var bbj = parseInt(access_str[1], 10);
-                this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][annid]["spatial_payload"][bbi][0] = val[0];
-                this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][annid]["spatial_payload"][bbj][1] = val[1];
+                this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid]["spatial_payload"][bbi][0] = val[0];
+                this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid]["spatial_payload"][bbj][1] = val[1];
                 break;
             case "tbar":
                 // TODO 3 points
                 var bbi = parseInt(access_str[0], 10);
                 var bbj = parseInt(access_str[1], 10);
-                this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][annid]["spatial_payload"][bbi][0] = val[0];
-                this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][annid]["spatial_payload"][bbj][1] = val[1];
+                this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid]["spatial_payload"][bbi][0] = val[0];
+                this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid]["spatial_payload"][bbj][1] = val[1];
                 break;
             case "polygon":
                 var bas = parseInt(access_str, 10);
                 var dif = parseFloat(access_str) - bas;
                 if (dif < 0.005) {
                     var acint = parseInt(access_str, 10);
-                    var npts = this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][annid]["spatial_payload"].length;
+                    var npts = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid]["spatial_payload"].length;
                     if ((acint == 0) || (acint == (npts - 1))) {
-                        this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][annid]["spatial_payload"][0] = [val[0], val[1]];
-                        this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][annid]["spatial_payload"][npts - 1] = [val[0], val[1]];
+                        this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid]["spatial_payload"][0] = [val[0], val[1]];
+                        this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid]["spatial_payload"][npts - 1] = [val[0], val[1]];
                     }
                     else {
-                        this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][annid]["spatial_payload"][acint] = val;
+                        this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid]["spatial_payload"][acint] = val;
                     }
                 }
                 else {
                     if (undoing === true) {
-                        this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][annid]["spatial_payload"].splice(bas+1, 1);
+                        this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid]["spatial_payload"].splice(bas+1, 1);
                     }
                     else if (undoing === false) {
-                        this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][annid]["spatial_payload"].splice(bas+1, 0, [val[0], val[1]]);
+                        this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid]["spatial_payload"].splice(bas+1, 0, [val[0], val[1]]);
                     }
                     else {
                         var newpt = ULabel.interpolate_poly_segment(
-                            this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][annid]["spatial_payload"], 
+                            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid]["spatial_payload"], 
                             bas, dif
                         );
-                        this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][annid]["spatial_payload"].splice(bas+1, 0, newpt);
+                        this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid]["spatial_payload"].splice(bas+1, 0, newpt);
                     }
                 }
                 break;
             default:
                 this.raise_error(
-                    "Unable to apply access string to annotation of type " + this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][annid]["spatial_type"],
+                    "Unable to apply access string to annotation of type " + this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid]["spatial_type"],
                     ULabel.elvl_standard
                 );
         }
@@ -1957,43 +1950,29 @@ class ULabel {
         }
     }
 
-    draw_annotation_from_id(id, cvs_ctx="front_context", offset=null, subtask=null, is_3d=false) {
+    draw_annotation_from_id(id, cvs_ctx="front_context", offset=null, subtask=null) {
         if (subtask == null) {
             // Should never be here tbh
             subtask = this.state["current_subtask"];
         }
-        if (is_3d) {
-            this.draw_annotation(this.subtasks[subtask]["annotations_3d"]["access"][id], cvs_ctx, false, offset, subtask);
-        }
-        else {
-            this.draw_annotation(this.subtasks[subtask]["annotations"][this.state["current_frame"]]["access"][id], cvs_ctx, false, offset, subtask);
+        let frame = this.subtasks[subtask]["annotations"]["access"][id]["frame"];
+        if (frame == null || frame == "undefined" || frame == this.state["current_frame"]) {
+            this.draw_annotation(this.subtasks[subtask]["annotations"]["access"][id], cvs_ctx, false, offset, subtask);
         }
     }
     
     // Draws the first n annotations on record
-    draw_n_annotations(n, cvs_ctx="front_context", offset=null, subtask=null, is_3d=false) {
+    draw_n_annotations(n, cvs_ctx="front_context", offset=null, subtask=null) {
         if (subtask == null) {
             // Should never be here tbh
             subtask = this.state["current_subtask"];
         }
-        if (is_3d) {
-            for (var i = 0; i < n; i++) {
-                if (offset != null && offset["id"] == this.subtasks[subtask]["annotations_3d"]["ordering"][i]) {
-                    this.draw_annotation_from_id(this.subtasks[subtask]["annotations_3d"]["ordering"][i], cvs_ctx, offset, subtask, is_3d);
-                }
-                else {
-                    this.draw_annotation_from_id(this.subtasks[subtask]["annotations_3d"]["ordering"][i], cvs_ctx, null, subtask, is_3d);
-                }
+        for (var i = 0; i < n; i++) {
+            if (offset != null && offset["id"] == this.subtasks[subtask]["annotations"]["ordering"][i]) {
+                this.draw_annotation_from_id(this.subtasks[subtask]["annotations"]["ordering"][i], cvs_ctx, offset, subtask);
             }
-        }
-        else {
-            for (var i = 0; i < n; i++) {
-                if (offset != null && offset["id"] == this.subtasks[subtask]["annotations"][this.state["current_frame"]]["ordering"][i]) {
-                    this.draw_annotation_from_id(this.subtasks[subtask]["annotations"][this.state["current_frame"]]["ordering"][i], cvs_ctx, offset, subtask, is_3d);
-                }
-                else {
-                    this.draw_annotation_from_id(this.subtasks[subtask]["annotations"][this.state["current_frame"]]["ordering"][i], cvs_ctx, null, subtask, is_3d);
-                }
+            else {
+                this.draw_annotation_from_id(this.subtasks[subtask]["annotations"]["ordering"][i], cvs_ctx, null, subtask);
             }
         }
     }
@@ -2008,8 +1987,7 @@ class ULabel {
         }
 
         // Draw them all again
-        this.draw_n_annotations(this.subtasks[subtask]["annotations"][this.state["current_frame"]]["ordering"].length, "front_context", offset, subtask);
-        this.draw_n_annotations(this.subtasks[subtask]["annotations_3d"]["ordering"].length, "front_context", offset, subtask, true);
+        this.draw_n_annotations(this.subtasks[subtask]["annotations"]["ordering"].length, "front_context", offset, subtask);
 
         if (nonspatial_mod) {
             this.handle_redraw_end();
@@ -2139,7 +2117,7 @@ class ULabel {
             diffY = offset["diffY"];
         }
 
-        let cbox = this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][annid]["containing_box"];
+        let cbox = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid]["containing_box"];
         let new_lft = (cbox["tlx"] + cbox["brx"] + 2*diffX)/(2*this.config["image_width"]);
         let new_top = (cbox["tly"] + cbox["bry"] + 2*diffY)/(2*this.config["image_height"]);
         this.subtasks[this.state["current_subtask"]]["state"]["visible_dialogs"][esid]["left"] = new_lft;
@@ -2226,24 +2204,24 @@ class ULabel {
         if (!this.subtasks[this.state["current_subtask"]]["state"]["idd_thumbnail"]) {
             this.hide_id_dialog();
         }
-        if (this.subtasks[this.state["current_subtask"]]["actions"][this.state["current_frame"]]["stream"].length > 0) {
-            if (this.subtasks[this.state["current_subtask"]]["actions"][this.state["current_frame"]]["stream"][this.subtasks[this.state["current_subtask"]]["actions"][this.state["current_frame"]]["stream"].length-1].redo_payload.finished === false) {
-                this.finish_action(this.subtasks[this.state["current_subtask"]]["actions"][this.state["current_frame"]]["stream"][this.subtasks[this.state["current_subtask"]]["actions"][this.state["current_frame"]]["stream"].length-1]);
+        if (this.subtasks[this.state["current_subtask"]]["actions"]["stream"].length > 0) {
+            if (this.subtasks[this.state["current_subtask"]]["actions"]["stream"][this.subtasks[this.state["current_subtask"]]["actions"]["stream"].length-1].redo_payload.finished === false) {
+                this.finish_action(this.subtasks[this.state["current_subtask"]]["actions"]["stream"][this.subtasks[this.state["current_subtask"]]["actions"]["stream"].length-1]);
             }
-            this.subtasks[this.state["current_subtask"]]["actions"][this.state["current_frame"]]["undone_stack"].push(this.subtasks[this.state["current_subtask"]]["actions"][this.state["current_frame"]]["stream"].pop());
-            let newact = this.undo_action(this.subtasks[this.state["current_subtask"]]["actions"][this.state["current_frame"]]["undone_stack"][this.subtasks[this.state["current_subtask"]]["actions"][this.state["current_frame"]]["undone_stack"].length - 1]);
+            this.subtasks[this.state["current_subtask"]]["actions"]["undone_stack"].push(this.subtasks[this.state["current_subtask"]]["actions"]["stream"].pop());
+            let newact = this.undo_action(this.subtasks[this.state["current_subtask"]]["actions"]["undone_stack"][this.subtasks[this.state["current_subtask"]]["actions"]["undone_stack"].length - 1]);
             if (newact != null) {
-                this.subtasks[this.state["current_subtask"]]["actions"][this.state["current_frame"]]["undone_stack"][this.subtasks[this.state["current_subtask"]]["actions"][this.state["current_frame"]]["undone_stack"].length - 1] = newact
+                this.subtasks[this.state["current_subtask"]]["actions"]["undone_stack"][this.subtasks[this.state["current_subtask"]]["actions"]["undone_stack"].length - 1] = newact
             }
         }
-        // console.log("AFTER UNDO", this.subtasks[this.state["current_subtask"]]["actions"][this.state["current_frame"]]["stream"], this.subtasks[this.state["current_subtask"]]["actions"][this.state["current_frame"]]["undone_stack"]);
+        // console.log("AFTER UNDO", this.subtasks[this.state["current_subtask"]]["actions"]["stream"], this.subtasks[this.state["current_subtask"]]["actions"]["undone_stack"]);
     }
 
     redo() {
-        if (this.subtasks[this.state["current_subtask"]]["actions"][this.state["current_frame"]]["undone_stack"].length > 0) {
-            this.redo_action(this.subtasks[this.state["current_subtask"]]["actions"][this.state["current_frame"]]["undone_stack"].pop());
+        if (this.subtasks[this.state["current_subtask"]]["actions"]["undone_stack"].length > 0) {
+            this.redo_action(this.subtasks[this.state["current_subtask"]]["actions"]["undone_stack"].pop());
         }
-        // console.log("AFTER REDO", this.subtasks[this.state["current_subtask"]]["actions"][this.state["current_frame"]]["stream"], this.subtasks[this.state["current_subtask"]]["actions"][this.state["current_frame"]]["undone_stack"]);
+        // console.log("AFTER REDO", this.subtasks[this.state["current_subtask"]]["actions"]["stream"], this.subtasks[this.state["current_subtask"]]["actions"]["undone_stack"]);
     }
 
     delete_annotation(aid, redo_payload=null) {
@@ -2256,9 +2234,11 @@ class ULabel {
             annid = redo_payload.annid;
             old_id = redo_payload.old_id;
         }
+
+        let annotation_mode = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][old_id]["spatial_type"];
         
         let deprecate_old = false;
-        if (!this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][old_id]["new"]) {
+        if (!this.subtasks[this.state["current_subtask"]]["annotations"]["access"][old_id]["new"]) {
             // Make new id and record that you did
             deprecate_old = true;
             if (!redoing) {
@@ -2269,15 +2249,15 @@ class ULabel {
             }
 
             // Make new annotation (copy of old)
-            this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][new_id] = JSON.parse(JSON.stringify(this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][old_id]));
-            this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][new_id]["id"] = new_id;
-            this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][new_id]["created_by"] = this.config["annotator"];
-            this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][new_id]["new"] = true;
-            this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][new_id]["parent_id"] = old_id;
-            this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["ordering"].push(new_id);
+            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][new_id] = JSON.parse(JSON.stringify(this.subtasks[this.state["current_subtask"]]["annotations"]["access"][old_id]));
+            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][new_id]["id"] = new_id;
+            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][new_id]["created_by"] = this.config["annotator"];
+            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][new_id]["new"] = true;
+            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][new_id]["parent_id"] = old_id;
+            this.subtasks[this.state["current_subtask"]]["annotations"]["ordering"].push(new_id);
 
             // Set parent_id and deprecated = true
-            this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][old_id]["deprecated"] = true;
+            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][old_id]["deprecated"] = true;
 
             // Work with new annotation from now on
             annid = new_id;
@@ -2288,12 +2268,19 @@ class ULabel {
             this.subtasks[this.state["current_subtask"]]["state"]["is_in_edit"] = false;
             this.subtasks[this.state["current_subtask"]]["state"]["is_in_progress"] = false;
         }
-        this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][annid]["deprecated"] = true;
+        this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid]["deprecated"] = true;
         this.redraw_all_annotations(this.state["current_subtask"]);
         this.hide_global_edit_suggestion();
+
+        let frame = this.state["current_frame"];
+        if (MODES_3D.includes(annotation_mode)) {
+            frame = null;
+        }
+
         // TODO add this action to the undo stack
         this.record_action({
             act_type: "delete_annotation",
+            frame: frame,
             undo_payload: {
                 annid: annid,
                 deprecate_old: deprecate_old,
@@ -2312,14 +2299,14 @@ class ULabel {
         let actid = undo_payload.annid;
         if (undo_payload.deprecate_old) {
             actid = undo_payload.old_id;
-            this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][actid]["deprecated"] = false;
-            delete this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][undo_payload.new_id];
+            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["deprecated"] = false;
+            delete this.subtasks[this.state["current_subtask"]]["annotations"]["access"][undo_payload.new_id];
             // remove from ordering
-            let ind = this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["ordering"].indexOf(undo_payload.new_id)
-            this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["ordering"].splice(ind, 1);
+            let ind = this.subtasks[this.state["current_subtask"]]["annotations"]["ordering"].indexOf(undo_payload.new_id)
+            this.subtasks[this.state["current_subtask"]]["annotations"]["ordering"].splice(ind, 1);
         }
         else {
-            this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][undo_payload.annid]["deprecated"] = false;
+            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][undo_payload.annid]["deprecated"] = false;
         }
         this.redraw_all_annotations(this.state["current_subtask"]);
         this.suggest_edits(this.state["last_move"]);
@@ -2337,18 +2324,18 @@ class ULabel {
             "point": null
         };
         if (candidates == null) {
-            candidates = this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["ordering"];
+            candidates = this.subtasks[this.state["current_subtask"]]["annotations"]["ordering"];
         }
         // Iterate through and find any close enough defined points
         var edid = null;
         for (var edi = 0; edi < candidates.length; edi++) {
             edid = candidates[edi];
             let npi = null;
-            switch (this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][edid]["spatial_type"]) {
+            switch (this.subtasks[this.state["current_subtask"]]["annotations"]["access"][edid]["spatial_type"]) {
                 case "bbox":
                     npi = ULabel.get_nearest_point_on_bounding_box(
                         global_x, global_y, 
-                        this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][edid]["spatial_payload"],
+                        this.subtasks[this.state["current_subtask"]]["annotations"]["access"][edid]["spatial_payload"],
                         max_dist
                     );
                     if (npi["distance"] < ret["distance"]) {
@@ -2361,7 +2348,7 @@ class ULabel {
                 case "polygon":
                     npi = ULabel.get_nearest_point_on_polygon(
                         global_x, global_y, 
-                        this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][edid]["spatial_payload"],
+                        this.subtasks[this.state["current_subtask"]]["annotations"]["access"][edid]["spatial_payload"],
                         max_dist, false
                     );
                     if (npi["distance"] < ret["distance"]) {
@@ -2374,7 +2361,7 @@ class ULabel {
                 case "tbar":
                     npi = ULabel.get_nearest_point_on_tbar(
                         global_x, global_y,
-                        this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][edid]["spatial_payload"],
+                        this.subtasks[this.state["current_subtask"]]["annotations"]["access"][edid]["spatial_payload"],
                         max_dist
                     );
                     if (npi["distance"] < ret["distance"]) {
@@ -2405,18 +2392,18 @@ class ULabel {
             "point": null
         };
         if (candidates == null) {
-            candidates = this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["ordering"];
+            candidates = this.subtasks[this.state["current_subtask"]]["annotations"]["ordering"];
         }
         for (var edi = 0; edi < candidates.length; edi++) {
             var edid = candidates[edi];
-            switch (this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][edid]["spatial_type"]) {
+            switch (this.subtasks[this.state["current_subtask"]]["annotations"]["access"][edid]["spatial_type"]) {
                 case "bbox":
                     // Can't propose new bounding box points
                     break;
                 case "polygon":
                     var npi = ULabel.get_nearest_point_on_polygon(
                         global_x, global_y, 
-                        this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][edid]["spatial_payload"],
+                        this.subtasks[this.state["current_subtask"]]["annotations"]["access"][edid]["spatial_payload"],
                         max_dist, true
                     );
                     if (npi["distance"] != null && npi["distance"] < ret["distance"]) {
@@ -2465,44 +2452,46 @@ class ULabel {
 
         // After a new action, you can no longer redo old actions
         if (!is_redo) {
-            this.subtasks[this.state["current_subtask"]]["actions"][this.state["current_frame"]]["undone_stack"] = [];
+            this.subtasks[this.state["current_subtask"]]["actions"]["undone_stack"] = [];
         }
 
         // Add to stream
-        this.subtasks[this.state["current_subtask"]]["actions"][this.state["current_frame"]]["stream"].push(action);
+        this.subtasks[this.state["current_subtask"]]["actions"]["stream"].push(action);
     }
 
     record_finish(actid) {
         // TODO(3d) 
-        let i = this.subtasks[this.state["current_subtask"]]["actions"][this.state["current_frame"]]["stream"].length - 1;
-        this.subtasks[this.state["current_subtask"]]["actions"][this.state["current_frame"]]["stream"][i].redo_payload.init_spatial = this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][actid]["spatial_payload"];
-        this.subtasks[this.state["current_subtask"]]["actions"][this.state["current_frame"]]["stream"][i].redo_payload.finished = true;
+        let i = this.subtasks[this.state["current_subtask"]]["actions"]["stream"].length - 1;
+        this.subtasks[this.state["current_subtask"]]["actions"]["stream"][i].redo_payload.init_spatial = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"];
+        this.subtasks[this.state["current_subtask"]]["actions"]["stream"][i].redo_payload.finished = true;
     }
 
     record_finish_edit(actid) {
         // TODO(3d) 
-        let i = this.subtasks[this.state["current_subtask"]]["actions"][this.state["current_frame"]]["stream"].length - 1;
+        let i = this.subtasks[this.state["current_subtask"]]["actions"]["stream"].length - 1;
         let fin_pt = this.get_with_access_string(
             actid, 
-            this.subtasks[this.state["current_subtask"]]["actions"][this.state["current_frame"]]["stream"][i].redo_payload.edit_candidate["access"],
+            this.subtasks[this.state["current_subtask"]]["actions"]["stream"][i].redo_payload.edit_candidate["access"],
             true
         );
-        this.subtasks[this.state["current_subtask"]]["actions"][this.state["current_frame"]]["stream"][i].redo_payload.ending_x = fin_pt[0];
-        this.subtasks[this.state["current_subtask"]]["actions"][this.state["current_frame"]]["stream"][i].redo_payload.ending_y = fin_pt[1];
-        this.subtasks[this.state["current_subtask"]]["actions"][this.state["current_frame"]]["stream"][i].redo_payload.finished = true;
+        this.subtasks[this.state["current_subtask"]]["actions"]["stream"][i].redo_payload.ending_x = fin_pt[0];
+        this.subtasks[this.state["current_subtask"]]["actions"]["stream"][i].redo_payload.ending_y = fin_pt[1];
+        this.subtasks[this.state["current_subtask"]]["actions"]["stream"][i].redo_payload.finished = true;
     }
 
     record_finish_move(diffX, diffY) {
         // TODO(3d) 
-        let i = this.subtasks[this.state["current_subtask"]]["actions"][this.state["current_frame"]]["stream"].length - 1;
-        this.subtasks[this.state["current_subtask"]]["actions"][this.state["current_frame"]]["stream"][i].redo_payload.diffX = diffX;
-        this.subtasks[this.state["current_subtask"]]["actions"][this.state["current_frame"]]["stream"][i].redo_payload.diffY = diffY;
-        this.subtasks[this.state["current_subtask"]]["actions"][this.state["current_frame"]]["stream"][i].undo_payload.diffX = -diffX;
-        this.subtasks[this.state["current_subtask"]]["actions"][this.state["current_frame"]]["stream"][i].undo_payload.diffY = -diffY;
-        this.subtasks[this.state["current_subtask"]]["actions"][this.state["current_frame"]]["stream"][i].redo_payload.finished = true;
+        let i = this.subtasks[this.state["current_subtask"]]["actions"]["stream"].length - 1;
+        this.subtasks[this.state["current_subtask"]]["actions"]["stream"][i].redo_payload.diffX = diffX;
+        this.subtasks[this.state["current_subtask"]]["actions"]["stream"][i].redo_payload.diffY = diffY;
+        this.subtasks[this.state["current_subtask"]]["actions"]["stream"][i].undo_payload.diffX = -diffX;
+        this.subtasks[this.state["current_subtask"]]["actions"]["stream"][i].undo_payload.diffY = -diffY;
+        this.subtasks[this.state["current_subtask"]]["actions"]["stream"][i].redo_payload.finished = true;
     }
 
     undo_action(action) {
+        // TODO(new3d) Switch to frame where this action occurred 
+        this.update_frame(null, action.frame);
         switch(action.act_type) {
             case "begin_annotation":
                 this.begin_annotation__undo(action.undo_payload);
@@ -2535,6 +2524,8 @@ class ULabel {
     }
 
     redo_action(action) {
+        // TODO(new3d) Switch to frame where this action occurred 
+        this.update_frame(null, action.frame);
         switch(action.act_type) {
             case "begin_annotation":
                 this.begin_annotation(null, action.redo_payload);
@@ -2615,38 +2606,27 @@ class ULabel {
 
         let undo_frame = this.state["current_frame"];
         let ann_str;
-        let is_3d = false;
-        if (["whole-image"].includes(new_annotation["spatial_type"])) {
-            this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][unq_id] = new_annotation;
-            if (redoing) {
-                this.set_id_dialog_payload_to_init(unq_id, init_idpyld);
-            }
-            this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][unq_id]["annotation_meta"] = this.config["annotation_meta"];
-            this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["ordering"].push(unq_id);
-            ann_str = JSON.stringify(this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][unq_id]);
+
+        this.subtasks[this.state["current_subtask"]]["annotations"]["access"][unq_id] = new_annotation;
+        if (redoing) {
+            this.set_id_dialog_payload_to_init(unq_id, init_idpyld);
         }
-        else if (["global"].includes(new_annotation["spatial_type"])) {
-            undo_frame = null;
-            is_3d = true;
-            this.subtasks[this.state["current_subtask"]]["annotations_3d"]["access"][unq_id] = new_annotation;
-            if (redoing) {
-                this.set_id_dialog_payload_to_init(unq_id, init_idpyld, true);
-            }
-            this.subtasks[this.state["current_subtask"]]["annotations_3d"]["access"][unq_id]["annotation_meta"] = this.config["annotation_meta"];
-            this.subtasks[this.state["current_subtask"]]["annotations_3d"]["ordering"].push(unq_id);
-            ann_str = JSON.stringify(this.subtasks[this.state["current_subtask"]]["annotations_3d"]["access"][unq_id]);
-        }
-        else {
-            console.log("Nonspatial annotation was initiated for unrecognized annotation mode:", new_annotation["spatial_type"]);
-            return;
-        }
+        this.subtasks[this.state["current_subtask"]]["annotations"]["access"][unq_id]["annotation_meta"] = this.config["annotation_meta"];
+        this.subtasks[this.state["current_subtask"]]["annotations"]["ordering"].push(unq_id);
+        ann_str = JSON.stringify(this.subtasks[this.state["current_subtask"]]["annotations"]["access"][unq_id]);
 
         // Draw new annotation
         this.redraw_all_annotations(this.state["current_subtask"], null, true);
 
+        let frame = this.state["current_frame"];
+        if (MODES_3D.includes(annotation_mode)) {
+            frame = null;
+        }
+
         // Record for potential undo/redo
         this.record_action({
             act_type: "create_nonspatial_annotation",
+            frame: frame,
             redo_payload: {
                 unq_id: unq_id,
                 annotation_mode: annotation_mode,
@@ -2666,37 +2646,19 @@ class ULabel {
         let unq_id = ann["id"];
 
         let end_ann;
-        if (undo_payload.frame != null) {
-            end_ann = this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["ordering"].pop();
+        end_ann = this.subtasks[this.state["current_subtask"]]["annotations"]["ordering"].pop();
 
-            if (end_ann != unq_id) {
-                console.log("We may have a problem... undo replication");
-                console.log(end_ann, unq_id);
-            }
+        if (end_ann != unq_id) {
+            console.log("We may have a problem... undo replication");
+            console.log(end_ann, unq_id);
+        }
 
-            // Remove from access
-            if (this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"].hasOwnProperty(unq_id)) {
-                delete this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][unq_id];
-            }
-            else {
-                console.log("We may have a problem... undo replication");
-            }
+        // Remove from access
+        if (this.subtasks[this.state["current_subtask"]]["annotations"]["access"].hasOwnProperty(unq_id)) {
+            delete this.subtasks[this.state["current_subtask"]]["annotations"]["access"][unq_id];
         }
         else {
-            end_ann = this.subtasks[this.state["current_subtask"]]["annotations_3d"]["ordering"].pop();
-
-            if (end_ann != unq_id) {
-                console.log("We may have a problem... undo replication");
-                console.log(end_ann, unq_id);
-            }
-
-            // Remove from access
-            if (this.subtasks[this.state["current_subtask"]]["annotations_3d"]["access"].hasOwnProperty(unq_id)) {
-                delete this.subtasks[this.state["current_subtask"]]["annotations_3d"]["access"][unq_id];
-            }
-            else {
-                console.log("We may have a problem... undo replication");
-            }
+            console.log("We may have a problem... undo replication");
         }
 
         // Delete from view
@@ -2740,7 +2702,7 @@ class ULabel {
         // TODO(3d) 
 
         // Add this annotation to annotations object
-        this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][unq_id] = {
+        this.subtasks[this.state["current_subtask"]]["annotations"]["access"][unq_id] = {
             "id": unq_id,
             "new": true,
             "parent_id": null,
@@ -2756,7 +2718,8 @@ class ULabel {
                 "tly": gmy,
                 "brx": gmx,
                 "bry": gmy
-            }
+            },
+            "frame": this.state["current_frame"]
         };
         if (redoing) {
             this.set_id_dialog_payload_to_init(unq_id, init_idpyld);
@@ -2764,8 +2727,8 @@ class ULabel {
 
         // TODO(3d)
         // Load annotation_meta into annotation
-        this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][unq_id]["annotation_meta"] = this.config["annotation_meta"];
-        this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["ordering"].push(unq_id);
+        this.subtasks[this.state["current_subtask"]]["annotations"]["access"][unq_id]["annotation_meta"] = this.config["annotation_meta"];
+        this.subtasks[this.state["current_subtask"]]["annotations"]["ordering"].push(unq_id);
     
         // If a polygon was just started, we need to add a clickable to end the shape
         if (annotation_mode == "polygon") {
@@ -2777,9 +2740,16 @@ class ULabel {
         this.subtasks[this.state["current_subtask"]]["state"]["active_id"] = unq_id;
         this.subtasks[this.state["current_subtask"]]["state"]["is_in_progress"] = true;
 
+
+        let frame = this.state["current_frame"];
+        if (MODES_3D.includes(annotation_mode)) {
+            frame = null;
+        }
+
         // Record for potential undo/redo
         this.record_action({
             act_type: "begin_annotation",
+            frame: frame,
             redo_payload: {
                 mouse_event: mouse_event,
                 unq_id: unq_id,
@@ -2793,7 +2763,7 @@ class ULabel {
             },
             undo_payload: {
                 // TODO(3d)
-                ann_str: JSON.stringify(this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][unq_id])
+                ann_str: JSON.stringify(this.subtasks[this.state["current_subtask"]]["annotations"]["access"][unq_id])
             },
         }, redoing);
         if (redoing) {
@@ -2819,13 +2789,13 @@ class ULabel {
 
         // Destroy ender
         // TODO(3d)
-        if (this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][unq_id]["spatial_type"] == "polygon") {
+        if (this.subtasks[this.state["current_subtask"]]["annotations"]["access"][unq_id]["spatial_type"] == "polygon") {
             this.destroy_polygon_ender(unq_id);
         }
 
         // Remove from ordering
         // TODO(3d)
-        let end_ann = this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["ordering"].pop();
+        let end_ann = this.subtasks[this.state["current_subtask"]]["annotations"]["ordering"].pop();
         if (end_ann != unq_id) {
             console.log("We may have a problem... undo replication");
             console.log(end_ann, unq_id);
@@ -2833,8 +2803,8 @@ class ULabel {
 
         // Remove from access
         // TODO(3d)
-        if (this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"].hasOwnProperty(unq_id)) {
-            delete this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][unq_id];
+        if (this.subtasks[this.state["current_subtask"]]["annotations"]["access"].hasOwnProperty(unq_id)) {
+            delete this.subtasks[this.state["current_subtask"]]["annotations"]["access"][unq_id];
         }
         else {
             console.log("We may have a problem... undo replication");
@@ -2847,38 +2817,35 @@ class ULabel {
 
     update_containing_box(ms_loc, actid) {
         // TODO(3d)
-        if (ms_loc[0] < this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][actid]["containing_box"]["tlx"]) {
-            this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][actid]["containing_box"]["tlx"] = ms_loc[0];
+        if (ms_loc[0] < this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["containing_box"]["tlx"]) {
+            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["containing_box"]["tlx"] = ms_loc[0];
         }
-        else if (ms_loc[0] > this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][actid]["containing_box"]["brx"]) {
-            this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][actid]["containing_box"]["brx"] = ms_loc[0];
+        else if (ms_loc[0] > this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["containing_box"]["brx"]) {
+            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["containing_box"]["brx"] = ms_loc[0];
         }
-        if (ms_loc[1] < this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][actid]["containing_box"]["tly"]) {
-            this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][actid]["containing_box"]["tly"] = ms_loc[1];
+        if (ms_loc[1] < this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["containing_box"]["tly"]) {
+            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["containing_box"]["tly"] = ms_loc[1];
         }
-        else if (ms_loc[1] > this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][actid]["containing_box"]["bry"]) {
-            this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][actid]["containing_box"]["bry"] = ms_loc[1];
+        else if (ms_loc[1] > this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["containing_box"]["bry"]) {
+            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["containing_box"]["bry"] = ms_loc[1];
         }
-        // console.log(ms_loc, this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][actid]["containing_box"]);
+        // console.log(ms_loc, this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["containing_box"]);
     }
 
-    rebuild_containing_box(actid, ignore_final=false, frame=null) {
-        if (frame == null) {
-            frame = this.state["current_frame"];
-        }
-        let init_pt = this.subtasks[this.state["current_subtask"]]["annotations"][frame]["access"][actid]["spatial_payload"][0];
-        this.subtasks[this.state["current_subtask"]]["annotations"][frame]["access"][actid]["containing_box"] = {
+    rebuild_containing_box(actid, ignore_final=false) {
+        let init_pt = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"][0];
+        this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["containing_box"] = {
             "tlx": init_pt[0],
             "tly": init_pt[1],
             "brx": init_pt[0],
             "bry": init_pt[1]
         }
-        let npts = this.subtasks[this.state["current_subtask"]]["annotations"][frame]["access"][actid]["spatial_payload"].length;
+        let npts = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"].length;
         if (ignore_final) {
             npts -= 1;
         }
         for (var pti = 1; pti < npts; pti++) {
-            this.update_containing_box(this.subtasks[this.state["current_subtask"]]["annotations"][frame]["access"][actid]["spatial_payload"][pti], actid);
+            this.update_containing_box(this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"][pti], actid);
         }
     }
 
@@ -2911,38 +2878,42 @@ class ULabel {
             // Handle annotation continuation based on the annotation mode
             // TODO(3d)
             // TODO(3d--META) -- This is the farthest I got tagging places that will need to be fixed.
-            switch (this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][actid]["spatial_type"]) {
+            switch (this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_type"]) {
                 case "bbox":
-                    this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][actid]["spatial_payload"][1] = ms_loc;
+                    this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"][1] = ms_loc;
                     this.rebuild_containing_box(actid);
                     this.redraw_all_annotations(this.state["current_subtask"]); // tobuffer
                     break;
                 case "polygon":
                     // Store number of keypoints for easy access
-                    const n_kpts = this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][actid]["spatial_payload"].length;
+                    const n_kpts = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"].length;
 
                     // If hovering over the ender, snap to its center
                     const ender_pt = [
-                        this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][actid]["spatial_payload"][0][0],
-                        this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][actid]["spatial_payload"][0][1]
+                        this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"][0][0],
+                        this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"][0][1]
                     ];
                     const ender_dist = Math.pow(Math.pow(ms_loc[0] - ender_pt[0], 2) + Math.pow(ms_loc[1] - ender_pt[1], 2), 0.5);
                     const ender_thresh = $("#ender_" + actid).width()/(2*this.get_empirical_scale());
                     if (ender_dist < ender_thresh) {
-                        this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][actid]["spatial_payload"][n_kpts-1] = ender_pt;
+                        this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"][n_kpts-1] = ender_pt;
                     }
                     else { // Else, just redirect line to mouse position
-                        this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][actid]["spatial_payload"][n_kpts-1] = ms_loc;
+                        this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"][n_kpts-1] = ms_loc;
                     }
 
                     // If this mouse event is a click, add a new member to the list of keypoints 
                     //    ender clicks are filtered before they get here
                     if (isclick) {
-                        this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][actid]["spatial_payload"].push(ms_loc);
+                        this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"].push(ms_loc);
                         this.update_containing_box(ms_loc, actid);
+
+                        let frame = this.state["current_frame"];
+
                         // Only an undoable action if placing a polygon keypoint
                         this.record_action({
                             act_type: "continue_annotation",
+                            frame: frame,
                             redo_payload: {
                                 mouse_event: mouse_event,
                                 isclick: isclick,
@@ -2961,19 +2932,19 @@ class ULabel {
                     this.redraw_all_annotations(this.state["current_subtask"]); // tobuffer
                     break;
                 case "contour":
-                    if (ULabel.l2_norm(ms_loc, this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][actid]["spatial_payload"][this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][actid]["spatial_payload"].length-1]) > 3) {
-                        this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][actid]["spatial_payload"].push(ms_loc);
+                    if (ULabel.l2_norm(ms_loc, this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"][this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"].length-1]) > 3) {
+                        this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"].push(ms_loc);
                         this.update_containing_box(ms_loc, actid);
                         this.redraw_all_annotations(this.state["current_subtask"]); // TODO tobuffer, no need to redraw here, can just draw over
                     }
                     break;
                 case "tbar":
-                    this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][actid]["spatial_payload"][1] = ms_loc;
+                    this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"][1] = ms_loc;
                     this.rebuild_containing_box(actid);
                     this.redraw_all_annotations(this.state["current_subtask"]); // tobuffer
                     break;
                 default:
-                    let inp = this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][actid]["spatial_type"];
+                    let inp = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_type"];
                     this.raise_error(`Annotation mode is not understood: ${inp}`, ULabel.elvl_info);
                     break;
             }
@@ -2981,7 +2952,7 @@ class ULabel {
     }
     continue_annotation__undo(undo_payload) {
         // TODO(3d)
-        this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][undo_payload.actid]["spatial_payload"].pop();
+        this.subtasks[this.state["current_subtask"]]["annotations"]["access"][undo_payload.actid]["spatial_payload"].pop();
         this.rebuild_containing_box(undo_payload.actid, true);
         this.continue_annotation(this.state["last_move"]);
     }
@@ -2992,21 +2963,21 @@ class ULabel {
         let old_id = this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"]["annid"];
         let new_id = old_id;
         // TODO(3d)
-        if (!this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][old_id]["new"]) {
+        if (!this.subtasks[this.state["current_subtask"]]["annotations"]["access"][old_id]["new"]) {
             // Make new id and record that you did
             deprecate_old = true;
             new_id = this.make_new_annotation_id();
 
             // Make new annotation (copy of old)
-            this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][new_id] = JSON.parse(JSON.stringify(this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][old_id]));
-            this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][new_id]["id"] = new_id;
-            this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][new_id]["created_by"] = this.config["annotator"];
-            this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][new_id]["new"] = true;
-            this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][new_id]["parent_id"] = old_id;
-            this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["ordering"].push(new_id);
+            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][new_id] = JSON.parse(JSON.stringify(this.subtasks[this.state["current_subtask"]]["annotations"]["access"][old_id]));
+            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][new_id]["id"] = new_id;
+            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][new_id]["created_by"] = this.config["annotator"];
+            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][new_id]["new"] = true;
+            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][new_id]["parent_id"] = old_id;
+            this.subtasks[this.state["current_subtask"]]["annotations"]["ordering"].push(new_id);
 
             // Set parent_id and deprecated = true
-            this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][old_id]["deprecated"] = true;
+            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][old_id]["deprecated"] = true;
 
             // Change edit candidate to new id
             this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"]["annid"] = new_id;
@@ -3020,8 +2991,16 @@ class ULabel {
         this.suggest_edits(mouse_event);
         let gmx = this.get_global_mouse_x(mouse_event);
         let gmy = this.get_global_mouse_y(mouse_event);
+
+        let annotation_mode = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][new_id]["spatial_type"];
+        let frame = this.state["current_frame"];
+        if (MODES_3D.includes(annotation_mode)) {
+            frame = null;
+        }
+
         this.record_action({
             act_type: "edit_annotation",
+            frame: frame,
             undo_payload: {
                 actid: this.subtasks[this.state["current_subtask"]]["state"]["active_id"],
                 edit_candidate: ec,
@@ -3055,7 +3034,7 @@ class ULabel {
             ];
             // Clicks are handled elsewhere
             // TODO(3d)
-            switch (this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][actid]["spatial_type"]) {
+            switch (this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_type"]) {
                 case "bbox":
                     this.set_with_access_string(actid, this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"]["access"], ms_loc);
                     this.rebuild_containing_box(actid);
@@ -3096,17 +3075,17 @@ class ULabel {
         if (undo_payload.deprecate_old) {
             actid = undo_payload.old_id;
             // TODO(3d)
-            this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][actid]["deprecated"] = false;
-            delete this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][undo_payload.new_id];
+            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["deprecated"] = false;
+            delete this.subtasks[this.state["current_subtask"]]["annotations"]["access"][undo_payload.new_id];
             // remove from ordering
-            let ind = this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["ordering"].indexOf(undo_payload.new_id)
-            this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["ordering"].splice(ind, 1);
+            let ind = this.subtasks[this.state["current_subtask"]]["annotations"]["ordering"].indexOf(undo_payload.new_id)
+            this.subtasks[this.state["current_subtask"]]["annotations"]["ordering"].splice(ind, 1);
         }
         const ms_loc = [
             undo_payload.starting_x,
             undo_payload.starting_y
         ];
-        switch (this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][actid]["spatial_type"]) {
+        switch (this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_type"]) {
             case "bbox":
                 this.set_with_access_string(actid, undo_payload.edit_candidate["access"], ms_loc, true);
                 this.rebuild_containing_box(actid);
@@ -3132,13 +3111,13 @@ class ULabel {
         if (redo_payload.deprecate_old) {
             actid = redo_payload.new_id;
             // TODO(3d)
-            this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][actid] = JSON.parse(JSON.stringify(this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][redo_payload.old_id]));
-            this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][redo_payload.new_id]["id"] = redo_payload.new_id;
-            this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][redo_payload.new_id]["created_by"] = this.config["annotator"];
-            this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][redo_payload.new_id]["new"] = true;
-            this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][redo_payload.new_id]["parent_id"] = redo_payload.old_id;
-            this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][redo_payload.old_id]["deprecated"] = true;
-            this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["ordering"].push(redo_payload.new_id);
+            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid] = JSON.parse(JSON.stringify(this.subtasks[this.state["current_subtask"]]["annotations"]["access"][redo_payload.old_id]));
+            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][redo_payload.new_id]["id"] = redo_payload.new_id;
+            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][redo_payload.new_id]["created_by"] = this.config["annotator"];
+            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][redo_payload.new_id]["new"] = true;
+            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][redo_payload.new_id]["parent_id"] = redo_payload.old_id;
+            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][redo_payload.old_id]["deprecated"] = true;
+            this.subtasks[this.state["current_subtask"]]["annotations"]["ordering"].push(redo_payload.new_id);
         }
         const ms_loc = [
             redo_payload.ending_x,
@@ -3146,7 +3125,7 @@ class ULabel {
         ];
         const cur_loc = this.get_with_access_string(redo_payload.actid, redo_payload.edit_candidate["access"]);
         // TODO(3d)
-        switch (this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][actid]["spatial_type"]) {
+        switch (this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_type"]) {
             case "bbox":
                 this.set_with_access_string(actid, redo_payload.edit_candidate["access"], ms_loc);
                 this.rebuild_containing_box(actid);
@@ -3167,8 +3146,14 @@ class ULabel {
                 break;
     
         }
+        let annotation_mode = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_type"];
+        let frame = this.state["current_frame"];
+        if (MODES_3D.includes(annotation_mode)) {
+            frame = null;
+        }
         this.record_action({
             act_type: "edit_annotation",
+            frame: frame,
             undo_payload: {
                 actid: redo_payload.actid,
                 edit_candidate: JSON.parse(JSON.stringify(redo_payload.edit_candidate)),
@@ -3197,21 +3182,21 @@ class ULabel {
         let old_id = this.subtasks[this.state["current_subtask"]]["state"]["move_candidate"]["annid"];
         let new_id = old_id;
         // TODO(3d)
-        if (!this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][old_id]["new"]) {
+        if (!this.subtasks[this.state["current_subtask"]]["annotations"]["access"][old_id]["new"]) {
             // Make new id and record that you did
             deprecate_old = true;
             new_id = this.make_new_annotation_id();
 
             // Make new annotation (copy of old)
-            this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][new_id] = JSON.parse(JSON.stringify(this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][old_id]));
-            this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][new_id]["id"] = new_id;
-            this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][new_id]["created_by"] = this.config["annotator"];
-            this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][new_id]["new"] = true;
-            this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][new_id]["parent_id"] = old_id;
-            this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["ordering"].push(new_id);
+            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][new_id] = JSON.parse(JSON.stringify(this.subtasks[this.state["current_subtask"]]["annotations"]["access"][old_id]));
+            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][new_id]["id"] = new_id;
+            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][new_id]["created_by"] = this.config["annotator"];
+            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][new_id]["new"] = true;
+            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][new_id]["parent_id"] = old_id;
+            this.subtasks[this.state["current_subtask"]]["annotations"]["ordering"].push(new_id);
 
             // Set parent_id and deprecated = true
-            this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][old_id]["deprecated"] = true;
+            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][old_id]["deprecated"] = true;
 
             // Change edit candidate to new id
             this.subtasks[this.state["current_subtask"]]["state"]["move_candidate"]["annid"] = new_id;
@@ -3226,8 +3211,15 @@ class ULabel {
         this.drag_state["move"]["mouse_start"][1] +=
         */
         let mc = JSON.parse(JSON.stringify(this.subtasks[this.state["current_subtask"]]["state"]["move_candidate"]));
+        let annotation_mode = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][new_id]["spatial_type"];
+        let frame = this.state["current_frame"];
+        if (MODES_3D.includes(annotation_mode)) {
+            frame = null;
+        }
+
         this.record_action({
             act_type: "move_annotation",
+            frame: frame,
             undo_payload: {
                 actid: this.subtasks[this.state["current_subtask"]]["state"]["active_id"],
                 move_candidate: mc,
@@ -3285,17 +3277,18 @@ class ULabel {
 
         // Record last point and redraw if necessary
         // TODO(3d)
-        switch (this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][actid]["spatial_type"]) {
+        switch (this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_type"]) {
             case "polygon":
-                const n_kpts = this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][actid]["spatial_payload"].length;
+                const n_kpts = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"].length;
                 const start_pt = [
-                    this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][actid]["spatial_payload"][0][0],
-                    this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][actid]["spatial_payload"][0][1]
+                    this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"][0][0],
+                    this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"][0][1]
                 ];
-                this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][actid]["spatial_payload"][n_kpts-1] = start_pt;
+                this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"][n_kpts-1] = start_pt;
                 this.redraw_all_annotations(this.state["current_subtask"]); // tobuffer
                 this.record_action({
                     act_type: "finish_annotation",
+                    frame: this.state["current_frame"],
                     undo_payload: {
                         actid: actid,
                         ender_html: $("#ender_" + actid).outer_html()
@@ -3316,13 +3309,13 @@ class ULabel {
         }
     
         // If ID has not been assigned to this annotation, build a dialog for it
-        // if (this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][actid]["classification_payloads"] == null) {
+        // if (this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["classification_payloads"] == null) {
         //     this.show_id_dialog(mouse_event, actid);
         // }
         // TODO build a dialog here when necessary -- will also need to integrate with undo
         // TODO(3d)
         if (this.subtasks[this.state["current_subtask"]]["single_class_mode"]) {
-            this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][actid]["classification_payloads"] = [
+            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["classification_payloads"] = [
                 {
                     "class_id": this.subtasks[this.state["current_subtask"]]["class_defs"][0]["id"],
                     "confidence": 1.0
@@ -3353,8 +3346,8 @@ class ULabel {
         this.reposition_dialogs();
 
         // TODO(3d)
-        const n_kpts = this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][undo_payload.actid]["spatial_payload"].length;
-        this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][undo_payload.actid]["spatial_payload"][n_kpts-1] = [
+        const n_kpts = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][undo_payload.actid]["spatial_payload"].length;
+        this.subtasks[this.state["current_subtask"]]["annotations"]["access"][undo_payload.actid]["spatial_payload"][n_kpts-1] = [
             this.get_global_mouse_x(this.state["last_move"]),
             this.get_global_mouse_y(this.state["last_move"]),
         ];
@@ -3364,7 +3357,7 @@ class ULabel {
     finish_edit(mouse_event) {
         // Record last point and redraw if necessary
         let actid = this.subtasks[this.state["current_subtask"]]["state"]["active_id"];
-        switch (this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][actid]["spatial_type"]) {
+        switch (this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_type"]) {
             case "polygon":
             case "bbox":
             case "tbar":
@@ -3386,16 +3379,16 @@ class ULabel {
         const diffY = (mouse_event.clientY - this.drag_state["move"]["mouse_start"][1])/this.state["zoom_val"];
 
         // TODO(3d)
-        for (var spi = 0; spi < this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][this.subtasks[this.state["current_subtask"]]["state"]["active_id"]]["spatial_payload"].length; spi++) {
-            this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][this.subtasks[this.state["current_subtask"]]["state"]["active_id"]]["spatial_payload"][spi][0] += diffX;
-            this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][this.subtasks[this.state["current_subtask"]]["state"]["active_id"]]["spatial_payload"][spi][1] += diffY;
+        for (var spi = 0; spi < this.subtasks[this.state["current_subtask"]]["annotations"]["access"][this.subtasks[this.state["current_subtask"]]["state"]["active_id"]]["spatial_payload"].length; spi++) {
+            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][this.subtasks[this.state["current_subtask"]]["state"]["active_id"]]["spatial_payload"][spi][0] += diffX;
+            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][this.subtasks[this.state["current_subtask"]]["state"]["active_id"]]["spatial_payload"][spi][1] += diffY;
         }
-        this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][this.subtasks[this.state["current_subtask"]]["state"]["active_id"]]["containing_box"]["tlx"] += diffX;
-        this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][this.subtasks[this.state["current_subtask"]]["state"]["active_id"]]["containing_box"]["brx"] += diffX;
-        this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][this.subtasks[this.state["current_subtask"]]["state"]["active_id"]]["containing_box"]["tly"] += diffY;
-        this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][this.subtasks[this.state["current_subtask"]]["state"]["active_id"]]["containing_box"]["bry"] += diffY;
+        this.subtasks[this.state["current_subtask"]]["annotations"]["access"][this.subtasks[this.state["current_subtask"]]["state"]["active_id"]]["containing_box"]["tlx"] += diffX;
+        this.subtasks[this.state["current_subtask"]]["annotations"]["access"][this.subtasks[this.state["current_subtask"]]["state"]["active_id"]]["containing_box"]["brx"] += diffX;
+        this.subtasks[this.state["current_subtask"]]["annotations"]["access"][this.subtasks[this.state["current_subtask"]]["state"]["active_id"]]["containing_box"]["tly"] += diffY;
+        this.subtasks[this.state["current_subtask"]]["annotations"]["access"][this.subtasks[this.state["current_subtask"]]["state"]["active_id"]]["containing_box"]["bry"] += diffY;
 
-        switch (this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][this.subtasks[this.state["current_subtask"]]["state"]["active_id"]]["spatial_type"]) {
+        switch (this.subtasks[this.state["current_subtask"]]["annotations"]["access"][this.subtasks[this.state["current_subtask"]]["state"]["active_id"]]["spatial_type"]) {
             case "polygon":
             case "bbox":
             case "contour":
@@ -3418,20 +3411,20 @@ class ULabel {
         // TODO(3d)
         if (undo_payload.deprecate_old) {
             actid = undo_payload.old_id;
-            this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][actid]["deprecated"] = false;
-            delete this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][undo_payload.new_id];
-            let ind = this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["ordering"].indexOf(undo_payload.new_id);
-            this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["ordering"].splice(ind, 1);
+            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["deprecated"] = false;
+            delete this.subtasks[this.state["current_subtask"]]["annotations"]["access"][undo_payload.new_id];
+            let ind = this.subtasks[this.state["current_subtask"]]["annotations"]["ordering"].indexOf(undo_payload.new_id);
+            this.subtasks[this.state["current_subtask"]]["annotations"]["ordering"].splice(ind, 1);
         }
         else {
-            for (var spi = 0; spi < this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][actid]["spatial_payload"].length; spi++) {
-                this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][actid]["spatial_payload"][spi][0] += diffX;
-                this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][actid]["spatial_payload"][spi][1] += diffY;
+            for (var spi = 0; spi < this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"].length; spi++) {
+                this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"][spi][0] += diffX;
+                this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"][spi][1] += diffY;
             }
-            this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][actid]["containing_box"]["tlx"] += diffX;
-            this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][actid]["containing_box"]["brx"] += diffX;
-            this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][actid]["containing_box"]["tly"] += diffY;
-            this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][actid]["containing_box"]["bry"] += diffY;
+            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["containing_box"]["tlx"] += diffX;
+            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["containing_box"]["brx"] += diffX;
+            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["containing_box"]["tly"] += diffY;
+            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["containing_box"]["bry"] += diffY;
         }
 
         this.redraw_all_annotations(this.state["current_subtask"]);
@@ -3448,24 +3441,24 @@ class ULabel {
         // TODO(3d)
         if (redo_payload.deprecate_old) {
             actid = redo_payload.new_id;
-            this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][actid] = JSON.parse(JSON.stringify(this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][redo_payload.old_id]));
-            this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][redo_payload.new_id]["id"] = redo_payload.new_id;
-            this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][redo_payload.new_id]["created_by"] = this.config["annotator"];
-            this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][redo_payload.new_id]["new"] = true;
-            this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][redo_payload.new_id]["parent_id"] = redo_payload.old_id;
-            this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][redo_payload.old_id]["deprecated"] = true;
-            this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["ordering"].push(redo_payload.new_id);
+            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid] = JSON.parse(JSON.stringify(this.subtasks[this.state["current_subtask"]]["annotations"]["access"][redo_payload.old_id]));
+            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][redo_payload.new_id]["id"] = redo_payload.new_id;
+            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][redo_payload.new_id]["created_by"] = this.config["annotator"];
+            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][redo_payload.new_id]["new"] = true;
+            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][redo_payload.new_id]["parent_id"] = redo_payload.old_id;
+            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][redo_payload.old_id]["deprecated"] = true;
+            this.subtasks[this.state["current_subtask"]]["annotations"]["ordering"].push(redo_payload.new_id);
         }
 
         // TODO(3d)
-        for (var spi = 0; spi < this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][actid]["spatial_payload"].length; spi++) {
-            this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][actid]["spatial_payload"][spi][0] += diffX;
-            this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][actid]["spatial_payload"][spi][1] += diffY;
+        for (var spi = 0; spi < this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"].length; spi++) {
+            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"][spi][0] += diffX;
+            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"][spi][1] += diffY;
         }
-        this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][actid]["containing_box"]["tlx"] += diffX;
-        this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][actid]["containing_box"]["brx"] += diffX;
-        this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][actid]["containing_box"]["tly"] += diffY;
-        this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][actid]["containing_box"]["bry"] += diffY;
+        this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["containing_box"]["tlx"] += diffX;
+        this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["containing_box"]["brx"] += diffX;
+        this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["containing_box"]["tly"] += diffY;
+        this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["containing_box"]["bry"] += diffY;
 
         this.redraw_all_annotations(this.state["current_subtask"]);
         this.hide_edit_suggestion();
@@ -3473,8 +3466,15 @@ class ULabel {
         this.reposition_dialogs();
         this.suggest_edits(this.state["last_move"]);
 
+        let annotation_mode = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_type"];
+        let frame = this.state["current_frame"];
+        if (MODES_3D.includes(annotation_mode)) {
+            frame = null;
+        }
+
         this.record_action({
             act_type: "move_annotation",
+            frame: frame,
             undo_payload: {
                 actid: this.subtasks[this.state["current_subtask"]]["state"]["active_id"],
                 move_candidate: redo_payload.move_candidate,
@@ -3504,11 +3504,14 @@ class ULabel {
         };
         let minsize = Infinity;
         // TODO(3d)
-        for (var edi = 0; edi < this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["ordering"].length; edi++) {
-            let id = this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["ordering"][edi];
-            if (this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][id]["deprecated"]) continue;
-            let cbox = this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][id]["containing_box"];
+        for (var edi = 0; edi < this.subtasks[this.state["current_subtask"]]["annotations"]["ordering"].length; edi++) {
+            let id = this.subtasks[this.state["current_subtask"]]["annotations"]["ordering"][edi];
+            if (this.subtasks[this.state["current_subtask"]]["annotations"]["access"][id]["deprecated"]) continue;
+            let cbox = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][id]["containing_box"];
+            let frame = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][id]["frame"];
+            // TODO(new3d) bbox3 will have different rules here 
             if (
+                (frame == null || frame == undefined || frame == this.state["current_frame"]) &&
                 cbox &&
                 (gblx >= cbox["tlx"] - dst_thresh) && 
                 (gblx <= cbox["brx"] + dst_thresh) &&
@@ -3678,7 +3681,7 @@ class ULabel {
         }
     }
 
-    set_id_dialog_payload_to_init(annid, pyld=null, is_3d=false) {
+    set_id_dialog_payload_to_init(annid, pyld=null) {
         // TODO(3D)
         let crst = this.state["current_subtask"];
         if (pyld != null) {
@@ -3687,7 +3690,7 @@ class ULabel {
         }
         else {
             if (annid != null) {
-                let anpyld = this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][annid]["classification_payloads"];
+                let anpyld = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid]["classification_payloads"];
                 if (anpyld != null) {
                     this.subtasks[this.state["current_subtask"]]["state"]["id_payload"] = JSON.parse(JSON.stringify(anpyld));
                     return;
@@ -3794,7 +3797,7 @@ class ULabel {
                 actid = this.subtasks[this.state["current_subtask"]]["state"]["idd_associated_annotation"];
             }
             old_payload = JSON.parse(JSON.stringify(
-                this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][actid]["classification_payloads"]
+                this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["classification_payloads"]
             ));
             new_payload = JSON.parse(JSON.stringify(
                 this.subtasks[this.state["current_subtask"]]["state"]["id_payload"]
@@ -3809,7 +3812,7 @@ class ULabel {
 
         // Perform assignment
         // TODO(3d)
-        this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][actid]["classification_payloads"] = JSON.parse(JSON.stringify(new_payload));
+        this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["classification_payloads"] = JSON.parse(JSON.stringify(new_payload));
 
         // Redraw with correct color and hide id_dialog if applicable
         if (!redoing) {
@@ -3824,10 +3827,10 @@ class ULabel {
         // First assignments are treated as though they were done all along
         // TODO(3d)
         if (this.subtasks[this.state["current_subtask"]]["state"]["first_explicit_assignment"]) {
-            let n = this.subtasks[this.state["current_subtask"]]["actions"][this.state["current_frame"]]["stream"].length;
+            let n = this.subtasks[this.state["current_subtask"]]["actions"]["stream"].length;
             for (var i = 0; i < n; i++) {
-                if (this.subtasks[this.state["current_subtask"]]["actions"][this.state["current_frame"]]["stream"][n-i-1].act_type == "begin_annotation") {
-                    this.subtasks[this.state["current_subtask"]]["actions"][this.state["current_frame"]]["stream"][n-i-1].redo_payload.init_payload = JSON.parse(JSON.stringify(
+                if (this.subtasks[this.state["current_subtask"]]["actions"]["stream"][n-i-1].act_type == "begin_annotation") {
+                    this.subtasks[this.state["current_subtask"]]["actions"]["stream"][n-i-1].redo_payload.init_payload = JSON.parse(JSON.stringify(
                         new_payload
                     ));
                     break;
@@ -3853,7 +3856,7 @@ class ULabel {
         let actid = undo_payload.actid;
         let new_payload = JSON.parse(JSON.stringify(undo_payload.old_id_payload));
         // TODO(3d)
-        this.subtasks[this.state["current_subtask"]]["annotations"][this.state["current_frame"]]["access"][actid]["classification_payloads"] = JSON.parse(JSON.stringify(new_payload));
+        this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["classification_payloads"] = JSON.parse(JSON.stringify(new_payload));
         this.redraw_all_annotations(this.state["current_subtask"]);
         this.suggest_edits();
     }
@@ -4077,13 +4080,19 @@ class ULabel {
     }
 
     // Change frame
-    change_frame(delta=null) {
-        let new_frame = parseInt($(`div#${this.config["toolbox_id"]} input.frame_input`).val());
-        if (delta != null) {
-            // Change the val above
-            new_frame = Math.min(Math.max(new_frame+delta, 0), this.config["image_data"].frames.length-1);
-            $(`div#${this.config["toolbox_id"]} input.frame_input`).val(new_frame);
+
+    update_frame(delta=null, new_frame=null) {
+        if (new_frame == null) {
+            new_frame = parseInt($(`div#${this.config["toolbox_id"]} input.frame_input`).val());
+            if (delta != null) {
+                new_frame = Math.min(Math.max(new_frame+delta, 0), this.config["image_data"].frames.length-1);
+            }
         }
+        else {
+            new_frame = Math.min(Math.max(new_frame, 0), this.config["image_data"].frames.length-1);
+        }
+        // Change the val above
+        $(`div#${this.config["toolbox_id"]} input.frame_input`).val(new_frame);
         let old_frame = this.state["current_frame"];
         this.state["current_frame"] = new_frame;
         $(`img#${this.config["image_id_pfx"]}__${new_frame}`).css("z-index", 50);
