@@ -338,19 +338,16 @@ class ULabel {
     static get_images_html(ul) {
         let ret = "";
 
-        let zidx;
         let dsply;
         for (let i = 0; i < ul.config["image_data"].frames.length; i++) {
             if (i != 0) {
-                zidx = -1;
-                dsply = "block";
-            }
-            else {
-                zidx = 1;
                 dsply = "none";
             }
+            else {
+                dsply = "block";
+            }
             ret += `
-                <img id="${ul.config["image_id_pfx"]}__${i}" src="${ul.config["image_data"].frames[i]}" class="imwrap_cls ${ul.config["imgsz_class"]} image_frame" style="z-index: ${zidx}; display: ${dsply};" />
+                <img id="${ul.config["image_id_pfx"]}__${i}" src="${ul.config["image_data"].frames[i]}" class="imwrap_cls ${ul.config["imgsz_class"]} image_frame" style="z-index: 50; display: ${dsply};" />
             `;
         }
         return ret;
@@ -1445,7 +1442,7 @@ class ULabel {
             if (that.config["resume_from"] != null) {
                 that.redraw_all_annotations();
             }
-    
+
             // Call the user-provided callback
             callback.bind(that);
         }).catch((err) => {
@@ -4117,9 +4114,9 @@ class ULabel {
         $(`div#${this.config["toolbox_id"]} input.frame_input`).val(new_frame);
         let old_frame = this.state["current_frame"];
         this.state["current_frame"] = new_frame;
-        $(`img#${this.config["image_id_pfx"]}__${old_frame}`).css("z-index", "initial");
+        // $(`img#${this.config["image_id_pfx"]}__${old_frame}`).css("z-index", "initial");
         $(`img#${this.config["image_id_pfx"]}__${old_frame}`).css("display", "none");
-        $(`img#${this.config["image_id_pfx"]}__${new_frame}`).css("z-index", 50);
+        // $(`img#${this.config["image_id_pfx"]}__${new_frame}`).css("z-index", 50);
         $(`img#${this.config["image_id_pfx"]}__${new_frame}`).css("display", "block");
         this.redraw_all_annotations();
     }
