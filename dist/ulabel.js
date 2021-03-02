@@ -12560,9 +12560,8 @@ div#${prntid} div.frame_annotation_dialog div.fad_row div.fad_row_inner {
 /* NAME */
 div#${prntid} div.fad_st_name {
    font-size: 8px;
-   width: 60px;
-   height: 12px;
-   padding-top: 4px;
+   padding: 4px;
+   width: 52px;
    overflow: hidden;
    text-align: center;
    display: inline-block;
@@ -12620,36 +12619,33 @@ div#${prntid} div.frame_annotation_dialog.active div.fad_row.add {
    display: inline-block;
 }
 
+div#${prntid} div.frame_annotation_dialog div.fad_annotation_rows {
+   width: 200px;
+   display: inline-block;
+}
 
-/* div#${prntid} div.frame_annotation_dialog div.fad_row div.fad_buttons {
+div#${prntid} div.frame_annotation_dialog div.fad_row div.fad_buttons {
    display: inline-block;
    vertical-align: top;
-   min-height: 50px;
-   width: 150px;
+   min-height: 60px;
+   width: 140px;
 }
 div#${prntid} div.frame_annotation_dialog div.fad_row div.fad_type_icon {
    display: inline-block;
    vertical-align: top;
-   height: 50px;
-   width: 50px;
-   position: relative;
-}
-div#${prntid} div.frame_annotation_dialog div.fad_row div.fad_type_icon svg {
-   height: 40px;
-   width: 40px;
-   position: absolute;
-   top: 5px;
-   left: 5px;
-}
-div#${prntid} div.frame_annotation_dialog div.fad_row {
+   height: 60px;
    width: 60px;
-   display: none;
    position: relative;
    text-align: center;
-} */
+}
+div#${prntid} div.frame_annotation_dialog div.fad_row div.fad_type_icon svg {
+   height: 50px;
+   width: 50px;
+   padding: 5px;
+}
 
 
-
+/* TOOLBOX */
 div#${prntid} div.toolbox_cls {
    width: 320px;
    background-color: white;
@@ -13662,7 +13658,29 @@ class ULabel {
                                 </div>
                             </div>
                         </div>
-                        <div class="fad_annotation_rows"></div>
+                        <div class="fad_annotation_rows">
+                            <div class="fad_row">
+                                <div class="fad_buttons">
+            
+                                </div><div class="fad_type_icon invert-this-svg">
+                                    ${GLOBAL_SVG}
+                                </div>
+                            </div>
+                            <div class="fad_row">
+                                <div class="fad_buttons">
+            
+                                </div><div class="fad_type_icon invert-this-svg">
+                                    ${WHOLE_IMAGE_SVG}
+                                </div>
+                            </div>
+                            <div class="fad_row">
+                                <div class="fad_buttons">
+            
+                                </div><div class="fad_type_icon invert-this-svg">
+                                    ${WHOLE_IMAGE_SVG}
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             `;

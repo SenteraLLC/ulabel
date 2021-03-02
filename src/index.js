@@ -388,7 +388,29 @@ class ULabel {
                                 </div>
                             </div>
                         </div>
-                        <div class="fad_annotation_rows"></div>
+                        <div class="fad_annotation_rows">
+                            <div class="fad_row">
+                                <div class="fad_buttons">
+            
+                                </div><div class="fad_type_icon invert-this-svg">
+                                    ${GLOBAL_SVG}
+                                </div>
+                            </div>
+                            <div class="fad_row">
+                                <div class="fad_buttons">
+            
+                                </div><div class="fad_type_icon invert-this-svg">
+                                    ${WHOLE_IMAGE_SVG}
+                                </div>
+                            </div>
+                            <div class="fad_row">
+                                <div class="fad_buttons">
+            
+                                </div><div class="fad_type_icon invert-this-svg">
+                                    ${WHOLE_IMAGE_SVG}
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             `;
