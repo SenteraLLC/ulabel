@@ -882,9 +882,11 @@ div#${prntid} div.annbox_cls img.image_frame {
    max-width: none;
    max-height: none;
 }
+
+
+/* Frame annotation dialog */
 div#${prntid} div.frame_annotation_dialog {
-   width: 50px;
-   min-height: 20px;
+   width: 60px;
    overflow: hidden;
    position: absolute;
    z-index: 80;
@@ -895,83 +897,84 @@ div#${prntid} div.frame_annotation_dialog {
    top: 40px;
 }
 div#${prntid} div.frame_annotation_dialog.fad_ind__0 {
-   right: 375px;
+   right: 360px;
 }
 div#${prntid} div.frame_annotation_dialog.fad_ind__1 {
-   right: 450px;
+   right: 445px;
 }
 div#${prntid} div.frame_annotation_dialog.fad_ind__2 {
-   right: 525px;
+   right: 530px;
 }
 div#${prntid} div.frame_annotation_dialog.fad_ind__3 {
-   right: 600px;
+   right: 615px;
 }
-div#${prntid} div.fad_st_name {
-   font-size: 8px;
-   width: 40px;
-   height: 12px;
-   padding-top: 4px;
-   float: right;
-   overflow: hidden;
-}
-div#${prntid}.ulabel-night div.fad_st_name {
-   color: white;
-}
-
-div#${prntid} div.frame_annotation_dialog:hover {
+div#${prntid} div.frame_annotation_dialog.active:hover {
    max-width: none;
    width: 200px;
 }
 div#${prntid} div.frame_annotation_dialog.active {
    z-index: 125;
    opacity: 1.0;
-   min-height: 50px;
 }
 div#${prntid}.ulabel-night div.frame_annotation_dialog {
    background-color: rgb(37, 37, 37);
    border: 1px solid rgb(102, 102, 102);
+   text-align: right;
 }
-div#${prntid} div.frame_annotation_dialog div.fad_row {
-   min-height: 50px;
-   width: 200px;
-   float: right;
-}
-div#${prntid} div.frame_annotation_dialog div.fad_row div.fad_buttons {
-   display: inline-block;
-   vertical-align: top;
-   min-height: 50px;
-   width: 150px;
-}
-div#${prntid} div.frame_annotation_dialog div.fad_row div.fad_type_icon {
-   display: inline-block;
-   vertical-align: top;
-   height: 50px;
-   width: 50px;
+div#${prntid} div.frame_annotation_dialog div.row_container {
    position: relative;
+   width: 200px;
+   left: -140px;
+   overflow: visible;
+   transition: left 0.3s;
 }
-div#${prntid} div.frame_annotation_dialog div.fad_row div.fad_type_icon svg {
-   height: 40px;
-   width: 40px;
-   position: absolute;
-   top: 5px;
-   left: 5px;
+div#${prntid} div.frame_annotation_dialog:hover div.row_container {
+   left: 0;
 }
-div#${prntid} div.frame_annotation_dialog div.fad_row.add {
+/* ROWS */
+div#${prntid} div.frame_annotation_dialog div.fad_row {
+   width: 200px;
+}
+div#${prntid} div.frame_annotation_dialog div.fad_row div.fad_row_inner {
+   width: 200px;
+   text-align: right;
+}
+
+/* NAME */
+div#${prntid} div.fad_st_name {
+   font-size: 8px;
+   width: 60px;
+   height: 12px;
+   padding-top: 4px;
+   overflow: hidden;
+   text-align: center;
+   display: inline-block;
+}
+div#${prntid}.ulabel-night div.fad_st_name {
+   color: white;
+}
+
+/* ADD BUTTON */
+div#${prntid} div.fad_st_add {
+   width: 60px;
+   height: 50px;
    display: none;
    position: relative;
 }
+div#${prntid} div.frame_annotation_dialog.active div.fad_st_add {
+   display: inline-block;
+}
 div#${prntid} div.frame_annotation_dialog div.fad_row.add a.add-glob-button {
    position: absolute;
-   display: block;
-   top: 25px;
-   right: 25px;
-   transform: translateX(50%) translateY(-50%);
    font-size: 20px;
    width: 25px;
    height: 25px;
    border-radius: 12.5px;
    text-decoration: none;
    border: 1px solid black;
+   top: 25px;
+   left: 30px;
+   transform: translateX(-50%) translateY(-50%);
 }
 div#${prntid} div.frame_annotation_dialog div.fad_row.add a.add-glob-button span.plus {
    display: block;
@@ -997,8 +1000,36 @@ div#${prntid}.ulabel-night div.frame_annotation_dialog div.fad_row.add a.add-glo
    color: white;
 }
 div#${prntid} div.frame_annotation_dialog.active div.fad_row.add {
-   display: block;
+   display: inline-block;
 }
+
+
+/* div#${prntid} div.frame_annotation_dialog div.fad_row div.fad_buttons {
+   display: inline-block;
+   vertical-align: top;
+   min-height: 50px;
+   width: 150px;
+}
+div#${prntid} div.frame_annotation_dialog div.fad_row div.fad_type_icon {
+   display: inline-block;
+   vertical-align: top;
+   height: 50px;
+   width: 50px;
+   position: relative;
+}
+div#${prntid} div.frame_annotation_dialog div.fad_row div.fad_type_icon svg {
+   height: 40px;
+   width: 40px;
+   position: absolute;
+   top: 5px;
+   left: 5px;
+}
+div#${prntid} div.frame_annotation_dialog div.fad_row {
+   width: 60px;
+   display: none;
+   position: relative;
+   text-align: center;
+} */
 
 
 

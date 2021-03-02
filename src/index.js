@@ -375,11 +375,21 @@ class ULabel {
             }
             ret += `
                 <div id="fad_st__${st_key}" class="frame_annotation_dialog fad_st__${st_key} fad_ind__${tot-ind-1}">
-                    <div class="fad_st_name">${ul.subtasks[st_key].display_name}</div>
-                    <div class="fad_row add">
-                        <a class="add-glob-button" href="#"><span class="plus">+</span></a>
+                    <div class="row_container">
+                        <div class="fad_row name">
+                            <div class="fad_row_inner">
+                                <div class="fad_st_name">${ul.subtasks[st_key].display_name}</div>
+                            </div>
+                        </div>
+                        <div class="fad_row add">
+                            <div class="fad_row_inner">
+                                <div class="fad_st_add">
+                                    <a class="add-glob-button" href="#"><span class="plus">+</span></a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="fad_annotation_rows"></div>
                     </div>
-                    <div class="fad_annotation_rows"></div>
                 </div>
             `;
             let devnull = `
