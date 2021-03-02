@@ -854,6 +854,9 @@ const POLYLINE_SVG = `
 `;
 let get_init_style = (prntid) => {
    return `
+div#${prntid} * {
+   box-sizing: content-box;
+}
 div#${prntid}.ulabel-night {
    background-color: black;
 }
