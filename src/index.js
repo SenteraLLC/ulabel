@@ -4095,6 +4095,12 @@ class ULabel {
         this.redraw_demo();
     }
 
+    swap_frame_image(new_src, frame=0) {
+        let ret = $(`img#${this.config["image_id_pfx"]}__${i}`).attr("src");
+        $(`img#${this.config["image_id_pfx"]}__${i}`).attr("src", new_src);
+        return ret;
+    }
+
     // Change frame
 
     update_frame(delta=null, new_frame=null) {
