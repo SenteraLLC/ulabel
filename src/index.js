@@ -793,6 +793,11 @@ class ULabel {
                 // Prevent scroll-zoom
                 wheel_event.preventDefault();
 
+                // Don't rezoom if id dialog is visible
+                if (ul.subtasks[ul.state["current_subtask"]]["state"]["idd_visible"] && !ul.subtasks[ul.state["current_subtask"]]["state"]["idd_thumbnail"]) {
+                    return;
+                }
+    
                 // Get direction of wheel
                 const dlta = Math.sign(wheel_event.deltaY);
 
@@ -807,6 +812,13 @@ class ULabel {
                 // Get direction of wheel
                 const dlta = Math.sign(wheel_event.deltaY);
                 ul.update_frame(dlta);
+            }
+            else {
+                // Don't scroll if id dialog is visible
+                if (ul.subtasks[ul.state["current_subtask"]]["state"]["idd_visible"] && !ul.subtasks[ul.state["current_subtask"]]["state"]["idd_thumbnail"]) {
+                    wheel_event.preventDefault();
+                    return;
+                }
             }
         };
         
@@ -3943,7 +3955,8 @@ class ULabel {
     handle_mouse_down(mouse_event) {
         const drag_key = ULabel.get_drag_key_start(mouse_event, this);
         if (drag_key != null) {
-            if (drag_key != "pan" && drag_key != "zoom" && this.subtasks[this.state["current_subtask"]]["state"]["idd_visible"] && !this.subtasks[this.state["current_subtask"]]["state"]["idd_thumbnail"]) {
+            // Don't start new drag while id_dialog is visible
+            if (this.subtasks[this.state["current_subtask"]]["state"]["idd_visible"] && !this.subtasks[this.state["current_subtask"]]["state"]["idd_thumbnail"]) {
                 return;
             }
             mouse_event.preventDefault();
