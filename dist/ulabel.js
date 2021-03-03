@@ -16673,7 +16673,7 @@ class ULabel {
         this.subtasks[this.state["current_subtask"]]["state"]["is_in_progress"] = true;
         this.subtasks[this.state["current_subtask"]]["state"]["active_id"] = undo_payload.actid;
 
-        jquery_default()("#" + this.config["imwrap_id"]).append(undo_payload.ender_html);
+        jquery_default()("#dialogs__" + this.state["current_subtask"]).append(undo_payload.ender_html);
         this.hide_edit_suggestion();
         this.hide_global_edit_suggestion();
         this.reposition_dialogs();
