@@ -8,7 +8,6 @@ Sentera Inc.
 /* global ResizeObserver */
 /* global uuidv4 */
 
-// const { $, jQuery } = require('jquery');
 import $ from 'jquery';
 const jQuery = $;
 
@@ -33,6 +32,7 @@ jQuery.fn.outer_html = function() {
 };
 
 const MODES_3D = ["global", "bbox3"];
+const NONSPATIAL_MODES = ["whole-image", "global"];
 
 const DEFAULT_LINE_SIZE = 4.0;
 
@@ -387,56 +387,7 @@ class ULabel {
                                     <a class="add-glob-button" href="#"><span class="plus">+</span></a>
                                 </div>
                             </div>
-                        </div>
-                        <div class="fad_annotation_rows">
-                            <div class="fad_row">
-                                <div class="fad_buttons">
-            
-                                </div><div class="fad_type_icon invert-this-svg">
-                                    ${GLOBAL_SVG}
-                                </div>
-                            </div>
-                            <div class="fad_row">
-                                <div class="fad_buttons">
-            
-                                </div><div class="fad_type_icon invert-this-svg">
-                                    ${WHOLE_IMAGE_SVG}
-                                </div>
-                            </div>
-                            <div class="fad_row">
-                                <div class="fad_buttons">
-            
-                                </div><div class="fad_type_icon invert-this-svg">
-                                    ${WHOLE_IMAGE_SVG}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-            let devnull = `
-                <div class="fad_row">
-                    <div class="fad_buttons">
-
-                    </div><!--
-                    --><div class="fad_type_icon invert-this-svg">
-                        ${GLOBAL_SVG}
-                    </div>
-                </div>
-                <div class="fad_row">
-                    <div class="fad_buttons">
-
-                    </div><!--
-                    --><div class="fad_type_icon invert-this-svg">
-                        ${WHOLE_IMAGE_SVG}
-                    </div>
-                </div>
-                <div class="fad_row">
-                    <div class="fad_buttons">
-
-                    </div><!--
-                    --><div class="fad_type_icon invert-this-svg">
-                        ${WHOLE_IMAGE_SVG}
+                        </div><div class="fad_annotation_rows"></div>
                     </div>
                 </div>
             `;
@@ -1328,6 +1279,9 @@ class ULabel {
             "annotation_meta": annotation_meta
         };
 
+        // Useful for the efficient redraw of nonspatial annotations
+        this.tmp_nonspatial_element_ids = {};
+
         // Populate these in an external "static" function
         this.subtasks = {};
         this.tot_num_classes = 0;
@@ -1934,22 +1888,75 @@ class ULabel {
 
     }
 
-    register_redraw_start() {
+    register_nonspatial_redraw_start(subtask) {
         // TODO(3d)
+        this.tmp_nonspatial_element_ids[subtask] = [];
+        let nonsp_window  = $(`div#fad_st__${subtask}`);
+        if (nonsp_window.length) {
+            $(`div#fad_st__${subtask} div.fad_annotation_rows div.fad_row`).each((idx, val) => {
+                this.tmp_nonspatial_element_ids[subtask].push($(val).attr("id"));
+            });
+        }
+        console.log(this.tmp_nonspatial_element_ids);
     }
 
+
     draw_whole_image_annotation(annotation_object, subtask=null) {
-        // TODO(3d)
-        console.log("Whole image annotation drawing not yet implemented.");
+        if (subtask == null) {
+            subtask = this.state["current_subtask"];
+        }
+        let found = false;
+        for (let i = 0; i < this.tmp_nonspatial_element_ids[subtask].length; i++) {
+            if ("row__"+annotation_object["id"] == this.tmp_nonspatial_element_ids[subtask][i]) {
+                this.tmp_nonspatial_element_ids[subtask][i] = null;
+                found = true;
+            }
+        }
+        if (!found) {
+            $(`div#fad_st__${this.state["current_subtask"]} div.fad_annotation_rows`).append(`
+            <div id="row__${annotation_object["id"]}" class="fad_row">
+                <div class="fad_buttons">
+
+                </div><!--
+                --><div class="fad_type_icon invert-this-svg" style="background-color: ${this.get_annotation_color(annotation_object["classification_payloads"])};">
+                    ${WHOLE_IMAGE_SVG}
+                </div>
+            </div>
+            `);
+        }
     }
 
     draw_global_annotation(annotation_object, subtask=null) {
-        // TODO(3d)
-        console.log("Global annotation drawing not yet implemented.");
+        if (subtask == null) {
+            subtask = this.state["current_subtask"];
+        }
+        let found = false;
+        for (let i = 0; i < this.tmp_nonspatial_element_ids[subtask].length; i++) {
+            if ("row__"+annotation_object["id"] == this.tmp_nonspatial_element_ids[subtask][i]) {
+                this.tmp_nonspatial_element_ids[subtask][i] = null;
+                found = true;
+            }
+        }
+        if (!found) {
+            $(`div#fad_st__${this.state["current_subtask"]} div.fad_annotation_rows`).append(`
+            <div id="row__${annotation_object["id"]}" class="fad_row">
+                <div class="fad_buttons">
+
+                </div><!--
+                --><div class="fad_type_icon invert-this-svg" style="background-color: ${this.get_annotation_color(annotation_object["classification_payloads"])};">
+                    ${GLOBAL_SVG}
+                </div>
+            </div>
+            `);
+        }
     }
 
-    handle_redraw_end() {
+    handle_nonspatial_redraw_end(subtask) {
         // TODO(3d)
+        for (let i = 0; i < this.tmp_nonspatial_element_ids[subtask].length; i++) {
+            $(`#${this.tmp_nonspatial_element_ids[subtask][i]}`).remove();
+        }
+        this.tmp_nonspatial_element_ids[subtask] = [];
     }
 
     
@@ -2010,48 +2017,52 @@ class ULabel {
     }
     
     // Draws the first n annotations on record
-    draw_n_annotations(n, cvs_ctx="front_context", offset=null, subtask=null) {
+    draw_n_annotations(n, cvs_ctx="front_context", offset=null, subtask=null, spatial_only=false) {
         if (subtask == null) {
             // Should never be here tbh
             subtask = this.state["current_subtask"];
         }
         for (var i = 0; i < n; i++) {
-            if (offset != null && offset["id"] == this.subtasks[subtask]["annotations"]["ordering"][i]) {
-                this.draw_annotation_from_id(this.subtasks[subtask]["annotations"]["ordering"][i], cvs_ctx, offset, subtask);
+            let annid = this.subtasks[subtask]["annotations"]["ordering"][i];
+            if (spatial_only && NONSPATIAL_MODES.includes(this.subtasks[subtask]["annotations"]["access"][annid]["spatial_type"])) {
+                continue;
+            }
+            if (offset != null && offset["id"] == annid) {
+                this.draw_annotation_from_id(annid, cvs_ctx, offset, subtask);
             }
             else {
-                this.draw_annotation_from_id(this.subtasks[subtask]["annotations"]["ordering"][i], cvs_ctx, null, subtask);
+                this.draw_annotation_from_id(annid, cvs_ctx, null, subtask);
             }
         }
     }
     
 
-    redraw_all_annotations_in_subtask(subtask, offset=null, nonspatial_mod=false) {
+    redraw_all_annotations_in_subtask(subtask, offset=null, spatial_only=false) {
         // Clear the canvas
         this.subtasks[subtask]["state"]["front_context"].clearRect(0, 0, this.config["image_width"], this.config["image_height"]);
     
-        if (nonspatial_mod) {
-            this.register_redraw_start();
+        if (!spatial_only) {
+            this.register_nonspatial_redraw_start(subtask);
         }
 
         // Draw them all again
-        this.draw_n_annotations(this.subtasks[subtask]["annotations"]["ordering"].length, "front_context", offset, subtask);
+        this.draw_n_annotations(this.subtasks[subtask]["annotations"]["ordering"].length, "front_context", offset, subtask, spatial_only);
 
-        if (nonspatial_mod) {
-            this.handle_redraw_end();
+        if (!spatial_only) {
+            this.handle_nonspatial_redraw_end(subtask);
         }
 
     }
 
-    redraw_all_annotations(subtask=null, offset=null, nonspatial_mod=false) {
+    redraw_all_annotations(subtask=null, offset=null, spatial_only=false) {
         // TODO(3d)
         if (subtask == null) {
             for (const st in this.subtasks) {
-                this.redraw_all_annotations_in_subtask(st, offset, nonspatial_mod);
+                this.redraw_all_annotations_in_subtask(st, offset, spatial_only);
             }
         }
         else {
-            this.redraw_all_annotations_in_subtask(subtask, offset, nonspatial_mod);
+            this.redraw_all_annotations_in_subtask(subtask, offset, spatial_only);
         }
     }
 
@@ -2636,6 +2647,10 @@ class ULabel {
         }
 
         // Add this annotation to annotations object
+        let annframe = this.state["current_frame"];
+        if (MODES_3D.includes(annotation_mode)) {
+            annframe = null;
+        }
         
         let new_annotation = {
             "id": unq_id,
@@ -2649,7 +2664,7 @@ class ULabel {
             "classification_payloads": JSON.parse(JSON.stringify(init_idpyld)),
             "line_size": null,
             "containing_box": null,
-            "frame": this.state["current_frame"]
+            "frame": annframe
         };
 
         let undo_frame = this.state["current_frame"];
@@ -2664,7 +2679,7 @@ class ULabel {
         ann_str = JSON.stringify(this.subtasks[this.state["current_subtask"]]["annotations"]["access"][unq_id]);
 
         // Draw new annotation
-        this.redraw_all_annotations(this.state["current_subtask"], null, true);
+        this.redraw_all_annotations(this.state["current_subtask"], null);
 
         let frame = this.state["current_frame"];
         if (MODES_3D.includes(annotation_mode)) {
@@ -2710,7 +2725,7 @@ class ULabel {
         }
 
         // Delete from view
-        this.redraw_all_annotations(this.state["current_subtask"], null, true);
+        this.redraw_all_annotations(this.state["current_subtask"], null);
         this.suggest_edits(this.state["last_move"]);
     }
 
@@ -2930,7 +2945,7 @@ class ULabel {
                 case "bbox":
                     this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"][1] = ms_loc;
                     this.rebuild_containing_box(actid);
-                    this.redraw_all_annotations(this.state["current_subtask"]); // tobuffer
+                    this.redraw_all_annotations(this.state["current_subtask"], null, true); // tobuffer
                     break;
                 case "polygon":
                     // Store number of keypoints for easy access
@@ -2977,19 +2992,19 @@ class ULabel {
                             this.continue_annotation(this.state["last_move"]);
                         }
                     }
-                    this.redraw_all_annotations(this.state["current_subtask"]); // tobuffer
+                    this.redraw_all_annotations(this.state["current_subtask"], null, true); // tobuffer
                     break;
                 case "contour":
                     if (ULabel.l2_norm(ms_loc, this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"][this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"].length-1]) > 3) {
                         this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"].push(ms_loc);
                         this.update_containing_box(ms_loc, actid);
-                        this.redraw_all_annotations(this.state["current_subtask"]); // TODO tobuffer, no need to redraw here, can just draw over
+                        this.redraw_all_annotations(this.state["current_subtask"], null, true); // TODO tobuffer, no need to redraw here, can just draw over
                     }
                     break;
                 case "tbar":
                     this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"][1] = ms_loc;
                     this.rebuild_containing_box(actid);
-                    this.redraw_all_annotations(this.state["current_subtask"]); // tobuffer
+                    this.redraw_all_annotations(this.state["current_subtask"], null, true); // tobuffer
                     break;
                 default:
                     let inp = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_type"];
@@ -3086,7 +3101,7 @@ class ULabel {
                 case "bbox":
                     this.set_with_access_string(actid, this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"]["access"], ms_loc);
                     this.rebuild_containing_box(actid);
-                    this.redraw_all_annotations(this.state["current_subtask"]); // tobuffer
+                    this.redraw_all_annotations(this.state["current_subtask"], null, true); // tobuffer
                     this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"]["point"] = ms_loc;
                     this.show_edit_suggestion(this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"], true);
                     this.show_global_edit_suggestion(this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"]["annid"]);
@@ -3094,7 +3109,7 @@ class ULabel {
                 case "polygon":
                     this.set_with_access_string(actid, this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"]["access"], ms_loc);
                     this.rebuild_containing_box(actid);
-                    this.redraw_all_annotations(this.state["current_subtask"]); // tobuffer
+                    this.redraw_all_annotations(this.state["current_subtask"], null, true); // tobuffer
                     this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"]["point"] = ms_loc;
                     this.show_edit_suggestion(this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"], true);
                     this.show_global_edit_suggestion(this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"]["annid"]);
@@ -3107,7 +3122,7 @@ class ULabel {
                 case "tbar":
                     this.set_with_access_string(actid, this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"]["access"], ms_loc);
                     this.rebuild_containing_box(actid);
-                    this.redraw_all_annotations(this.state["current_subtask"]); // tobuffer
+                    this.redraw_all_annotations(this.state["current_subtask"], null, true); // tobuffer
                     this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"]["point"] = ms_loc;
                     this.show_edit_suggestion(this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"], true);
                     this.show_global_edit_suggestion(this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"]["annid"]);
@@ -3137,19 +3152,19 @@ class ULabel {
             case "bbox":
                 this.set_with_access_string(actid, undo_payload.edit_candidate["access"], ms_loc, true);
                 this.rebuild_containing_box(actid);
-                this.redraw_all_annotations(this.state["current_subtask"]); // tobuffer
+                this.redraw_all_annotations(this.state["current_subtask"], null, true); // tobuffer
                 this.suggest_edits(this.state["last_move"]);
                 break;
             case "polygon":
                 this.set_with_access_string(actid, undo_payload.edit_candidate["access"], ms_loc, true);
                 this.rebuild_containing_box(actid);
-                this.redraw_all_annotations(this.state["current_subtask"]); // tobuffer
+                this.redraw_all_annotations(this.state["current_subtask"], null, true); // tobuffer
                 this.suggest_edits(this.state["last_move"]);
                 break;
             case "tbar":
                 this.set_with_access_string(actid, undo_payload.edit_candidate["access"], ms_loc, true);
                 this.rebuild_containing_box(actid);
-                this.redraw_all_annotations(this.state["current_subtask"]); // tobuffer
+                this.redraw_all_annotations(this.state["current_subtask"], null, true); // tobuffer
                 this.suggest_edits(this.state["last_move"]);
                 break;
         }
@@ -3177,19 +3192,19 @@ class ULabel {
             case "bbox":
                 this.set_with_access_string(actid, redo_payload.edit_candidate["access"], ms_loc);
                 this.rebuild_containing_box(actid);
-                this.redraw_all_annotations(this.state["current_subtask"]); // tobuffer
+                this.redraw_all_annotations(this.state["current_subtask"], null, true); // tobuffer
                 this.suggest_edits(this.state["last_move"]);
                 break;
             case "polygon":
                 this.set_with_access_string(actid, redo_payload.edit_candidate["access"], ms_loc, false);
                 this.rebuild_containing_box(actid);
-                this.redraw_all_annotations(this.state["current_subtask"]); // tobuffer
+                this.redraw_all_annotations(this.state["current_subtask"], null, true); // tobuffer
                 this.suggest_edits(this.state["last_move"]);
                 break;
             case "tbar":
                 this.set_with_access_string(actid, redo_payload.edit_candidate["access"], ms_loc, false);
                 this.rebuild_containing_box(actid);
-                this.redraw_all_annotations(this.state["current_subtask"]); // tobuffer
+                this.redraw_all_annotations(this.state["current_subtask"], null, true); // tobuffer
                 this.suggest_edits(this.state["last_move"]);
                 break;
     
@@ -3304,7 +3319,7 @@ class ULabel {
                 "diffX": (mouse_event.clientX - this.drag_state["move"]["mouse_start"][0])/this.state["zoom_val"],
                 "diffY": (mouse_event.clientY - this.drag_state["move"]["mouse_start"][1])/this.state["zoom_val"]
             };
-            this.redraw_all_annotations(this.state["current_subtask"], offset); // tobuffer
+            this.redraw_all_annotations(this.state["current_subtask"], offset, true); // tobuffer
             this.show_global_edit_suggestion(this.subtasks[this.state["current_subtask"]]["state"]["move_candidate"]["annid"], offset); // TODO handle offset
             this.reposition_dialogs();
             return;
