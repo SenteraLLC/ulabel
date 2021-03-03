@@ -16033,6 +16033,17 @@ class ULabel {
         }
 
         // TODO(3d) 
+        let containing_box = {
+            "tlx": gmx,
+            "tly": gmy,
+            "brx": gmx,
+            "bry": gmy
+        };
+        if (NONSPATIAL_MODES.includes(annotation_mode)) {
+            containing_box = null;
+            line_size = null;
+            init_spatial = null;
+        }
 
         // Add this annotation to annotations object
         this.subtasks[this.state["current_subtask"]]["annotations"]["access"][unq_id] = {
@@ -16046,12 +16057,7 @@ class ULabel {
             "spatial_payload": init_spatial,
             "classification_payloads": JSON.parse(JSON.stringify(init_idpyld)),
             "line_size": line_size,
-            "containing_box": {
-                "tlx": gmx,
-                "tly": gmy,
-                "brx": gmx,
-                "bry": gmy
-            },
+            "containing_box": containing_box,
             "frame": this.state["current_frame"]
         };
         if (redoing) {
