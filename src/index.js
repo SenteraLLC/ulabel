@@ -557,7 +557,68 @@ class ULabel {
         }
 
     }
-    
+   
+    static get_idd_string(idd_id, wdt, center_coord, cl_opacity, class_ids, inner_rad, outer_rad, class_defs) {
+        // TODO noconflict
+        let dialog_html = `
+        <div id="${idd_id}" class="id_dialog" style="width: ${wdt}px; height: ${wdt}px;">
+            <a class="id-dialog-clickable-indicator" href="#"></a>
+            <svg width="${wdt}" height="${wdt}">
+        `;
+
+        for (var i = 0; i < class_ids.length; i++) {
+
+            let srt_prop = 1/class_ids.length;
+
+            let cum_prop = i/class_ids.length;
+            let srk_prop = 1/class_ids.length;
+            let gap_prop = 1.0 - srk_prop;
+
+            let rad_back = inner_rad + 1.0*(outer_rad - inner_rad)/2;
+            let rad_frnt = inner_rad + srt_prop*(outer_rad - inner_rad)/2;
+
+            let wdt_back = 1.0*(outer_rad - inner_rad);
+            let wdt_frnt = srt_prop*(outer_rad - inner_rad);
+
+            let srk_back = 2*Math.PI*rad_back*srk_prop;
+            let gap_back = 2*Math.PI*rad_back*gap_prop;
+            let off_back = 2*Math.PI*rad_back*cum_prop;
+
+            let srk_frnt = 2*Math.PI*rad_frnt*srk_prop;
+            let gap_frnt = 2*Math.PI*rad_frnt*gap_prop;
+            let off_frnt = 2*Math.PI*rad_frnt*cum_prop;
+
+            let ths_id = class_ids[i];
+            let ths_col = class_defs[i]["color"];
+            let ths_nam = class_defs[i]["name"];
+            dialog_html += `
+            <circle
+                r="${rad_back}" cx="${center_coord}" cy="${center_coord}" 
+                stroke="${ths_col}" 
+                fill-opacity="0"
+                stroke-opacity="${cl_opacity}"
+                stroke-width="${wdt_back}"; 
+                stroke-dasharray="${srk_back} ${gap_back}" 
+                stroke-dashoffset="${off_back}" />
+            <circle
+                id="${idd_id}__circ_${ths_id}"
+                r="${rad_frnt}" cx="${center_coord}" cy="${center_coord}"
+                fill-opacity="0"
+                stroke="${ths_col}" 
+                stroke-opacity="1.0"
+                stroke-width="${wdt_frnt}" 
+                stroke-dasharray="${srk_frnt} ${gap_frnt}" 
+                stroke-dashoffset="${off_frnt}" />
+            `;
+        }
+        dialog_html += `
+            </svg>
+            <div class="centcirc"></div>
+        </div>`;
+
+        return dialog_html;
+    }
+
     static build_id_dialogs(ul) {
         var full_toolbox_html = `<div class="toolbox-id-app-payload">`;
 
@@ -576,64 +637,31 @@ class ULabel {
 
         for (const st in ul.subtasks) {
             const idd_id = ul.subtasks[st]["state"]["idd_id"];
+            const idd_id_front = ul.subtasks[st]["state"]["idd_id_front"];
 
             let subtask_dialog_container_jq = $("#dialogs__" + st);
+            let front_subtask_dialog_container_jq = $("#front_dialogs__" + st);
+
+            let dialog_html_v2 = ULabel.get_idd_string(
+                idd_id, wdt, center_coord, cl_opacity, ul.subtasks[st]["class_ids"], 
+                inner_rad, outer_rad, ul.subtasks[st]["class_defs"]
+            );
+            let front_dialog_html_v2 = ULabel.get_idd_string(
+                idd_id_front, wdt, center_coord, cl_opacity, ul.subtasks[st]["class_ids"], 
+                inner_rad, outer_rad, ul.subtasks[st]["class_defs"]
+            );
 
             // TODO noconflict
-            var dialog_html = `
-            <div id="${idd_id}" class="id_dialog" style="width: ${wdt}px; height: ${wdt}px;">
-                <a class="id-dialog-clickable-indicator" href="#"></a>
-                <svg width="${wdt}" height="${wdt}">
-            `;
             var toolbox_html = `<div id="tb-id-app--${st}" class="tb-id-app">`;
             const class_ids = ul.subtasks[st]["class_ids"];
         
     
             for (var i = 0; i < class_ids.length; i++) {
     
-                let srt_prop = 1/class_ids.length;
-    
-                let cum_prop = i/class_ids.length;
-                let srk_prop = 1/class_ids.length;
-                let gap_prop = 1.0 - srk_prop;
-    
-                let rad_back = inner_rad + 1.0*(outer_rad - inner_rad)/2;
-                let rad_frnt = inner_rad + srt_prop*(outer_rad - inner_rad)/2;
-    
-                let wdt_back = 1.0*(outer_rad - inner_rad);
-                let wdt_frnt = srt_prop*(outer_rad - inner_rad);
-    
-                let srk_back = 2*Math.PI*rad_back*srk_prop;
-                let gap_back = 2*Math.PI*rad_back*gap_prop;
-                let off_back = 2*Math.PI*rad_back*cum_prop;
-    
-                let srk_frnt = 2*Math.PI*rad_frnt*srk_prop;
-                let gap_frnt = 2*Math.PI*rad_frnt*gap_prop;
-                let off_frnt = 2*Math.PI*rad_frnt*cum_prop;
-    
                 let ths_id = class_ids[i];
                 let ths_col = ul.subtasks[st]["class_defs"][i]["color"];
                 let ths_nam = ul.subtasks[st]["class_defs"][i]["name"];
-                dialog_html += `
-                <circle
-                    r="${rad_back}" cx="${center_coord}" cy="${center_coord}" 
-                    stroke="${ths_col}" 
-                    fill-opacity="0"
-                    stroke-opacity="${cl_opacity}"
-                    stroke-width="${wdt_back}"; 
-                    stroke-dasharray="${srk_back} ${gap_back}" 
-                    stroke-dashoffset="${off_back}" />
-                <circle
-                    id="circ_${ths_id}"
-                    r="${rad_frnt}" cx="${center_coord}" cy="${center_coord}"
-                    fill-opacity="0"
-                    stroke="${ths_col}" 
-                    stroke-opacity="1.0"
-                    stroke-width="${wdt_frnt}" 
-                    stroke-dasharray="${srk_frnt} ${gap_frnt}" 
-                    stroke-dashoffset="${off_frnt}" />
-                `;
-    
+                
                 let sel = "";
                 let href = ' href="#"';
                 if (i == 0) {
@@ -652,15 +680,16 @@ class ULabel {
                     `;
                 }
             }
-            dialog_html += `
-                </svg>
-                <div class="centcirc"></div>
-            </div>`;
             toolbox_html += `
             </div>`;
 
             // Add dialog to the document
-            subtask_dialog_container_jq.append(dialog_html);
+            // front_subtask_dialog_container_jq.append(dialog_html);
+            // $("#" + ul.subtasks[st]["idd_id"]).attr("id", ul.subtasks[st]["idd_id_front"]);
+            front_subtask_dialog_container_jq.append(front_dialog_html_v2); // TODO(new3d) MOVE THIS TO GLOB BOX -- superimpose atop thee anchor already there when needed, no remove and add back
+            subtask_dialog_container_jq.append(dialog_html_v2);
+            // console.log(dialog_html);
+            // console.log(dialog_html_v2);
  
             // Wait to add full toolbox
             full_toolbox_html += toolbox_html;
@@ -676,13 +705,13 @@ class ULabel {
         $("#" + ul.config["toolbox_id"] + " div.id-toolbox-app").html(full_toolbox_html);
 
         // Style revisions based on the size
-        let idci = $("#" + ul.config["imwrap_id"] + " a.id-dialog-clickable-indicator");
+        let idci = $("#" + ul.config["container_id"] + " a.id-dialog-clickable-indicator");
         idci.css({
             "height": `${wdt}px`,
             "width": `${wdt}px`,
             "border-radius": `${outer_rad}px`,
         });
-        let ccirc = $("#" + ul.config["imwrap_id"] + " div.centcirc");
+        let ccirc = $("#" + ul.config["container_id"] + " div.centcirc");
         ccirc.css({
             "position": "absolute",
             "top": `${inner_top}px`,
@@ -935,7 +964,27 @@ class ULabel {
         $(document).on("focusout", "textarea.nonspatial_note", (e) => {
             $("div.frame_annotation_dialog.permopen").removeClass("permopen");
         });
-        
+        $(document).on("input", "textarea.nonspatial_note", (e) => {
+            // Update annotation's text field
+            ul.subtasks[ul.state["current_subtask"]]["annotations"]["access"][e.target.id.substring("note__".length)]["text_payload"] = e.target.value;
+        });
+        $(document).on("click", "a.fad_button.delete", (e) => {
+            ul.delete_annotation(e.target.id.substring("delete__".length));
+        });
+        $(document).on("click", "a.fad_button.reclf", (e) => {
+            // TODO(new3d)
+            // Show idd
+            console.log("showing spatial payload...");
+            console.log(e.target.id.substring("reclf__".length));
+        });
+        $(document).on("mouseenter", "div.fad_annotation_rows div.fad_row", (e) => {
+            // Show thumbnail for idd
+            ul.suggest_edits(null, $(e.currentTarget).attr("id").substring("row__".length));
+        });
+        $(document).on("mouseleave", "div.fad_annotation_rows div.fad_row", (e) => {
+            // Show thumbnail for idd
+            ul.suggest_edits(null);
+        });
 
         // Listener for id_dialog click interactions
         $("#" + ul.config["annbox_id"] + " a.id-dialog-clickable-indicator").click(function(e) {
@@ -997,7 +1046,7 @@ class ULabel {
         })
 
         // Keyboard only events
-        document.onkeypress = function(keypress_event) {
+        document.body.onkeydown = function(keypress_event) {
             const shift = keypress_event.shiftKey;
             const ctrl = keypress_event.ctrlKey;
             if (ctrl &&
@@ -1007,12 +1056,15 @@ class ULabel {
                     keypress_event.code == "KeyZ"
                 )
             ) {
+                console.log("preventing default");
+                keypress_event.preventDefault();
                 if (shift) {
                     ul.redo();
                 }
                 else {
                     ul.undo();
                 }
+                return false;
             }
             else if (keypress_event.key == "l") {
                 // console.log("Listing annotations using the \"l\" key has been deprecated.");
@@ -1166,6 +1218,7 @@ class ULabel {
             ul.subtasks[subtask_key]["state"] = {
                 // Id dialog state
                 "idd_id": "id_dialog__" + subtask_key,
+                "idd_id_front": "id_dialog_front__" + subtask_key,
                 "idd_visible": false,
                 "idd_associated_annotation": null,
                 "idd_thumbnail": false,
@@ -1405,6 +1458,9 @@ class ULabel {
                         oncontextmenu="return false"></canvas>
                     <div id="dialogs__${st}" class="dialogs_container"></div>
                 </div>
+                `);
+                $("#" + that.config["container_id"]).append(`
+                    <div id="front_dialogs__${st}"></div>
                 `);
         
                 // Get canvas contexts
@@ -1919,7 +1975,7 @@ class ULabel {
     }
 
 
-    draw_whole_image_annotation(annotation_object, subtask=null) {
+    draw_nonspatial_annotation(annotation_object, svg_obj, subtask=null) {
         if (subtask == null) {
             subtask = this.state["current_subtask"];
         }
@@ -1931,50 +1987,35 @@ class ULabel {
             }
         }
         if (!found) {
-            $(`div#fad_st__${this.state["current_subtask"]} div.fad_annotation_rows`).append(`
+            $(`div#fad_st__${subtask} div.fad_annotation_rows`).append(`
             <div id="row__${annotation_object["id"]}" class="fad_row">
                 <div class="fad_buttons">
                     <div class="fad_inp_container text">
-                        <textarea class="nonspatial_note" placeholder="Notes..."></textarea>
+                        <textarea id="note__${annotation_object["id"]}" class="nonspatial_note" placeholder="Notes...">${annotation_object["text_payload"]}</textarea>
                     </div><!--
                     --><div class="fad_inp_container button frst">
-                        <a href="#" class="fad_button reclf"></a>
+                        <a href="#" id="reclf__${annotation_object["id"]}" class="fad_button reclf"></a>
                     </div><!--
                     --><div class="fad_inp_container button">
-                        <a href="#" class="fad_button delete">&#215;</a>
+                        <a href="#" id="delete__${annotation_object["id"]}" class="fad_button delete">&#215;</a>
                     </div>
                 </div><!--
                 --><div class="fad_type_icon invert-this-svg" style="background-color: ${this.get_annotation_color(annotation_object["classification_payloads"])};">
-                    ${WHOLE_IMAGE_SVG}
+                    ${svg_obj}
                 </div>
             </div>
             `);
         }
     }
 
-    draw_global_annotation(annotation_object, subtask=null) {
-        if (subtask == null) {
-            subtask = this.state["current_subtask"];
-        }
-        let found = false;
-        for (let i = 0; i < this.tmp_nonspatial_element_ids[subtask].length; i++) {
-            if ("row__"+annotation_object["id"] == this.tmp_nonspatial_element_ids[subtask][i]) {
-                this.tmp_nonspatial_element_ids[subtask][i] = null;
-                found = true;
-            }
-        }
-        if (!found) {
-            $(`div#fad_st__${this.state["current_subtask"]} div.fad_annotation_rows`).append(`
-            <div id="row__${annotation_object["id"]}" class="fad_row">
-                <div class="fad_buttons">
 
-                </div><!--
-                --><div class="fad_type_icon invert-this-svg" style="background-color: ${this.get_annotation_color(annotation_object["classification_payloads"])};">
-                    ${GLOBAL_SVG}
-                </div>
-            </div>
-            `);
-        }
+    draw_whole_image_annotation(annotation_object, subtask=null) {
+        this.draw_nonspatial_annotation(annotation_object, WHOLE_IMAGE_SVG, subtask);
+
+    }
+
+    draw_global_annotation(annotation_object, subtask=null) {
+        this.draw_nonspatial_annotation(annotation_object, GLOBAL_SVG, subtask);
     }
 
     handle_nonspatial_redraw_end(subtask) {
@@ -2190,11 +2231,7 @@ class ULabel {
         $(".edit_suggestion").css("display", "none");
     }
 
-    show_global_edit_suggestion(annid, offset=null) {
-        let esid = "global_edit_suggestion__" + this.state["current_subtask"];
-        var esjq = $("#" + esid);
-        esjq.css("display", "block");
-
+    show_global_edit_suggestion(annid, offset=null, nonspatial_id=null) {
         let diffX = 0;
         let diffY = 0;
         if (offset != null) {
@@ -2202,20 +2239,32 @@ class ULabel {
             diffY = offset["diffY"];
         }
 
-        let cbox = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid]["containing_box"];
-        let new_lft = (cbox["tlx"] + cbox["brx"] + 2*diffX)/(2*this.config["image_width"]);
-        let new_top = (cbox["tly"] + cbox["bry"] + 2*diffY)/(2*this.config["image_height"]);
-        this.subtasks[this.state["current_subtask"]]["state"]["visible_dialogs"][esid]["left"] = new_lft;
-        this.subtasks[this.state["current_subtask"]]["state"]["visible_dialogs"][esid]["top"] = new_top;
-        this.reposition_dialogs();
+        let idd_x;
+        let idd_y;
+        if (nonspatial_id == null) {
+            let esid = "global_edit_suggestion__" + this.state["current_subtask"];
+            var esjq = $("#" + esid);
+            esjq.css("display", "block");
+            let cbox = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid]["containing_box"];
+            let new_lft = (cbox["tlx"] + cbox["brx"] + 2*diffX)/(2*this.config["image_width"]);
+            let new_top = (cbox["tly"] + cbox["bry"] + 2*diffY)/(2*this.config["image_height"]);
+            this.subtasks[this.state["current_subtask"]]["state"]["visible_dialogs"][esid]["left"] = new_lft;
+            this.subtasks[this.state["current_subtask"]]["state"]["visible_dialogs"][esid]["top"] = new_top;
+            this.reposition_dialogs();
+            idd_x = (cbox["tlx"] + cbox["brx"] + 2*diffX)/2;
+            idd_y = (cbox["tly"] + cbox["bry"] + 2*diffY)/2;
+        }
+        else {
+            // TODO(new3d)
+            idd_x = $("#reclf__" + nonspatial_id).offset().left-85;//this.get_global_element_center_x($("#reclf__" + nonspatial_id));
+            idd_y = $("#reclf__" + nonspatial_id).offset().top-85;//this.get_global_element_center_y($("#reclf__" + nonspatial_id));
+            console.log(idd_x, idd_y);
+        }
+
 
         // let placeholder = $("#global_edit_suggestion a.reid_suggestion");
         if (!this.subtasks[this.state["current_subtask"]]["single_class_mode"]) {
-            this.show_id_dialog(
-                (cbox["tlx"] + cbox["brx"] + 2*diffX)/2, 
-                (cbox["tly"] + cbox["bry"] + 2*diffY)/2,
-                annid, true
-            );
+            this.show_id_dialog(idd_x, idd_y, annid, true, nonspatial_id != null);
         }
     }
 
@@ -2224,19 +2273,62 @@ class ULabel {
         this.hide_id_dialog();
     }
 
-    show_id_dialog(gbx, gby, active_ann, thumbnail=false) {
+    show_id_dialog(gbx, gby, active_ann, thumbnail=false, nonspatial=false) {
+        let stkey = this.state["current_subtask"];
+
         // Record which annotation this dialog is associated with
         // TODO
         // am_dialog_associated_ann = active_ann;
         this.subtasks[this.state["current_subtask"]]["state"]["idd_visible"] = true;
         this.subtasks[this.state["current_subtask"]]["state"]["idd_thumbnail"] = thumbnail;
         this.subtasks[this.state["current_subtask"]]["state"]["idd_associated_annotation"] = active_ann;
+        this.subtasks[this.state["current_subtask"]]["state"]["idd_which"] = "back";
+
+        let idd_id = this.subtasks[this.state["current_subtask"]]["state"]["idd_id"];
+        let idd_niu_id = this.subtasks[this.state["current_subtask"]]["state"]["idd_id_front"];
+        let new_height = $(`#global_edit_suggestion__${stkey} a.reid_suggestion`)[0].getBoundingClientRect().height;
+
+        if (nonspatial) {
+            this.subtasks[this.state["current_subtask"]]["state"]["idd_which"] = "front";
+            idd_id = this.subtasks[this.state["current_subtask"]]["state"]["idd_id_front"];
+            idd_niu_id = this.subtasks[this.state["current_subtask"]]["state"]["idd_id"];
+            new_height = 28;
+        }
+        else {
+            // Add this id to the list of dialogs with managed positions
+            // TODO actually only do this when calling append()
+            this.subtasks[this.state["current_subtask"]]["state"]["visible_dialogs"][idd_id] = {
+                "left": gbx/this.config["image_width"],
+                "top": gby/this.config["image_height"],
+                "pin": "center"
+            };
+        }
+        let idd = $("#" + idd_id);
+        let idd_niu = $("#" + idd_niu_id);
+        if (nonspatial) {
+            // idd.css({
+            //     position: "absolute",
+            //     left: gbx+"px",
+            //     top: gby+"px",
+            //     transform: "translateX(-50%) translateY(-50%)"
+            // });
+            let idd_html = idd.outer_html();
+            let new_home = `reclf__${active_ann}`;
+            console.log(idd.parent().attr("id"));
+            if (idd.parent().attr("id") != new_home) {
+                idd.remove();
+                $("#"+new_home).append(idd_html);
+                idd = $("#"+idd_id)
+            }
+            idd.css({
+                "display": "block",
+                "position": "absolute",
+                "top": (-100+28/2)+"px",
+                "left": (-100+28/2)+"px"
+            });
+        }
 
         // Add or remove thumbnail class if necessary
-        let idd_id = this.subtasks[this.state["current_subtask"]]["state"]["idd_id"];
-        let idd = $("#" + idd_id);
-        let stkey = this.state["current_subtask"];
-        let new_height = $(`#global_edit_suggestion__${stkey} a.reid_suggestion`)[0].getBoundingClientRect().height;
         let scale_ratio = new_height/this.config["outer_diameter"];
         if (thumbnail) {
             if (!idd.hasClass("thumb")) {
@@ -2255,13 +2347,6 @@ class ULabel {
             }
         }
 
-        // Add this id to the list of dialogs with managed positions
-        // TODO actually only do this when calling append()
-        this.subtasks[this.state["current_subtask"]]["state"]["visible_dialogs"][idd_id] = {
-            "left": gbx/this.config["image_width"],
-            "top": gby/this.config["image_height"],
-            "pin": "center"
-        };
         this.reposition_dialogs();
 
         // Configure the dialog to show the current information for this ann
@@ -2273,13 +2358,20 @@ class ULabel {
 
         // Show the dialog
         idd.css("display", "block");
+        idd_niu.css("display", "none");
+        // TODO(new3d)
+        // if (nonspatial) {
+        //     idd.css("z-index", 2000);
+        // }
     }
 
     hide_id_dialog() {
         let idd_id = this.subtasks[this.state["current_subtask"]]["state"]["idd_id"];
+        let idd_id_front = this.subtasks[this.state["current_subtask"]]["state"]["idd_id_front"];
         this.subtasks[this.state["current_subtask"]]["state"]["idd_visible"] = false;
         this.subtasks[this.state["current_subtask"]]["state"]["idd_associated_annotation"] = null;
         $("#" + idd_id).css("display", "none");
+        $("#" + idd_id_front).css("display", "none");
     }
 
 
@@ -2575,7 +2667,6 @@ class ULabel {
     }
 
     undo_action(action) {
-        // TODO(new3d) Switch to frame where this action occurred 
         this.update_frame(null, action.frame);
         switch(action.act_type) {
             case "begin_annotation":
@@ -2609,7 +2700,6 @@ class ULabel {
     }
 
     redo_action(action) {
-        // TODO(new3d) Switch to frame where this action occurred 
         this.update_frame(null, action.frame);
         switch(action.act_type) {
             case "begin_annotation":
@@ -2690,7 +2780,8 @@ class ULabel {
             "classification_payloads": JSON.parse(JSON.stringify(init_idpyld)),
             "line_size": null,
             "containing_box": null,
-            "frame": annframe
+            "frame": annframe,
+            "text_payload": ""
         };
 
         let undo_frame = this.state["current_frame"];
@@ -2814,7 +2905,8 @@ class ULabel {
             "classification_payloads": JSON.parse(JSON.stringify(init_idpyld)),
             "line_size": line_size,
             "containing_box": containing_box,
-            "frame": this.state["current_frame"]
+            "frame": this.state["current_frame"],
+            "text_payload": ""
         };
         if (redoing) {
             this.set_id_dialog_payload_to_init(unq_id, init_idpyld);
@@ -3626,53 +3718,62 @@ class ULabel {
         return ret;
     }
     
-    suggest_edits(mouse_event=null) {
-        if (mouse_event == null) {
-            mouse_event = this.state["last_move"];
+    suggest_edits(mouse_event=null, nonspatial_id=null) {
+        let best_candidate;
+        if (nonspatial_id == null) {
+            if (mouse_event == null) {
+                mouse_event = this.state["last_move"];
+            }
+
+            // TODO better dynamic handling of the size of the suggestion queue
+            const dst_thresh = this.config["edit_handle_size"]/2;
+            const global_x = this.get_global_mouse_x(mouse_event);
+            const global_y = this.get_global_mouse_y(mouse_event);
+
+            if ($(mouse_event.target).hasClass("gedit-target")) return;
+
+            const edit_candidates = this.get_edit_candidates(
+                global_x,
+                global_y,
+                dst_thresh
+            );
+
+            if (edit_candidates["best"] == null) {
+                this.hide_global_edit_suggestion();
+                this.hide_edit_suggestion();
+                this.subtasks[this.state["current_subtask"]]["state"]["move_candidate"] = null;
+                return;
+            }
+            
+            // Look for an existing point that's close enough to suggest editing it
+            const nearest_active_keypoint = this.get_nearest_active_keypoint(global_x, global_y, dst_thresh, edit_candidates["candidate_ids"]);
+            if (nearest_active_keypoint != null) {
+                this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"] = nearest_active_keypoint;
+                this.show_edit_suggestion(nearest_active_keypoint, true);
+                edit_candidates["best"] = nearest_active_keypoint;
+            }
+            else { // If none are found, look for a point along a segment that's close enough
+                const nearest_segment_point = this.get_nearest_segment_point(global_x, global_y, dst_thresh, edit_candidates["candidate_ids"]);
+                if (nearest_segment_point != null) {
+                    this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"] = nearest_segment_point;
+                    this.show_edit_suggestion(nearest_segment_point, false);
+                    edit_candidates["best"] = nearest_segment_point;
+                }
+                else {
+                    this.hide_edit_suggestion();
+                }
+            }
+
+            // Show global edit dialogs for "best" candidate
+            this.subtasks[this.state["current_subtask"]]["state"]["move_candidate"] = edit_candidates["best"];
+            best_candidate = edit_candidates["best"]["annid"];
         }
-
-        // TODO better dynamic handling of the size of the suggestion queue
-        const dst_thresh = this.config["edit_handle_size"]/2;
-        const global_x = this.get_global_mouse_x(mouse_event);
-        const global_y = this.get_global_mouse_y(mouse_event);
-
-        if ($(mouse_event.target).hasClass("gedit-target")) return;
-
-        const edit_candidates = this.get_edit_candidates(
-            global_x,
-            global_y,
-            dst_thresh
-        );
-
-        if (edit_candidates["best"] == null) {
+        else {
             this.hide_global_edit_suggestion();
             this.hide_edit_suggestion();
-            this.subtasks[this.state["current_subtask"]]["state"]["move_candidate"] = null;
-            return;
+            best_candidate = nonspatial_id;
         }
-        
-        // Look for an existing point that's close enough to suggest editing it
-        const nearest_active_keypoint = this.get_nearest_active_keypoint(global_x, global_y, dst_thresh, edit_candidates["candidate_ids"]);
-        if (nearest_active_keypoint != null) {
-            this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"] = nearest_active_keypoint;
-            this.show_edit_suggestion(nearest_active_keypoint, true);
-            edit_candidates["best"] = nearest_active_keypoint;
-        }
-        else { // If none are found, look for a point along a segment that's close enough
-            const nearest_segment_point = this.get_nearest_segment_point(global_x, global_y, dst_thresh, edit_candidates["candidate_ids"]);
-            if (nearest_segment_point != null) {
-                this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"] = nearest_segment_point;
-                this.show_edit_suggestion(nearest_segment_point, false);
-                edit_candidates["best"] = nearest_segment_point;
-            }
-            else {
-                this.hide_edit_suggestion();
-            }
-        }
-
-        // Show global edit dialogs for "best" candidate
-        this.subtasks[this.state["current_subtask"]]["state"]["move_candidate"] = edit_candidates["best"];
-        this.show_global_edit_suggestion(edit_candidates["best"]["annid"]);
+        this.show_global_edit_suggestion(best_candidate, null, nonspatial_id);
     }
 
 
@@ -3706,6 +3807,16 @@ class ULabel {
         const scale = this.get_empirical_scale();
         const annbox = $("#" + this.config["annbox_id"]);
         return Math.round((mouse_event.pageY - annbox.offset().top + annbox.scrollTop())/scale);
+    }
+    get_global_element_center_x(jqel) {
+        const scale = this.get_empirical_scale();
+        const annbox = $("#" + this.config["annbox_id"]);
+        return Math.round((jqel.offset().left + jqel.width()/2 - annbox.offset().left + annbox.scrollLeft())/scale);
+    }
+    get_global_element_center_y(jqel) {
+        const scale = this.get_empirical_scale();
+        const annbox = $("#" + this.config["annbox_id"]);
+        return Math.round((jqel.offset().top + jqel.height()/2 - annbox.offset().top + annbox.scrollTop())/scale);
     }
 
     // ================= Dialog Interaction Handlers =================
@@ -3840,11 +3951,23 @@ class ULabel {
             let gap_frnt = 2*Math.PI*rad_frnt*gap_prop;
             let off_frnt = 2*Math.PI*rad_frnt*cum_prop;
 
-            var circ = document.getElementById("circ_" + class_ids[i]);
-            circ.setAttribute("r", rad_frnt);
-            circ.setAttribute("stroke-dasharray", `${srk_frnt} ${gap_frnt}`);
-            circ.setAttribute("stroke-dashoffset", off_frnt);
-            circ.setAttribute("stroke-width", wdt_frnt);
+            // var circ = document.getElementById("circ_" + class_ids[i]);
+            // circ.setAttribute("r", rad_frnt);
+            // circ.setAttribute("stroke-dasharray", `${srk_frnt} ${gap_frnt}`);
+            // circ.setAttribute("stroke-dashoffset", off_frnt);
+            // circ.setAttribute("stroke-width", wdt_frnt);
+            let idd_id = this.subtasks[this.state["current_subtask"]]["state"]["idd_id"];
+            var circ = $(`#${idd_id}__circ_` + class_ids[i])
+            circ.attr("r", rad_frnt);
+            circ.attr("stroke-dasharray", `${srk_frnt} ${gap_frnt}`)
+            circ.attr("stroke-dashoffset", off_frnt)
+            circ.attr("stroke-width", wdt_frnt)
+            idd_id = this.subtasks[this.state["current_subtask"]]["state"]["idd_id_front"];
+            circ = $(`#${idd_id}__circ_` + class_ids[i])
+            circ.attr("r", rad_frnt);
+            circ.attr("stroke-dasharray", `${srk_frnt} ${gap_frnt}`)
+            circ.attr("stroke-dashoffset", off_frnt)
+            circ.attr("stroke-width", wdt_frnt)
         }
         this.redraw_demo();
     }
@@ -4048,7 +4171,7 @@ class ULabel {
             annbox.scrollLeft(), 
             annbox.scrollTop()
         ];
-        $("textarea").blur();
+        $(`textarea`).trigger("blur");
         $("div.permopen").removeClass("permopen");
         // TODO handle this drag start
         switch (drag_key) {

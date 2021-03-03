@@ -931,6 +931,7 @@ div#${prntid} div.frame_annotation_dialog div.row_container {
 }
 div#${prntid} div.frame_annotation_dialog:hover div.row_container, div#${prntid} div.frame_annotation_dialog.active.permopen div.row_container {
    left: 0;
+   overflow: visible;
 }
 /* ROWS */
 div#${prntid} div.frame_annotation_dialog div.fad_row {
@@ -1036,6 +1037,9 @@ div#${prntid} div.frame_annotation_dialog div.fad_row div.fad_buttons div.fad_in
 }
 div#${prntid} div.frame_annotation_dialog div.fad_row div.fad_buttons div.fad_inp_container.text {
    width: ${NONSP_SZ-180}px;
+   margin: 0;
+   border: none;
+   padding: none;
 }
 div#${prntid} div.frame_annotation_dialog div.fad_row div.fad_buttons div.fad_inp_container.text textarea {
    box-sizing: border-box;
@@ -1076,7 +1080,7 @@ div#${prntid}.ulabel-night div.frame_annotation_dialog div.fad_row div.fad_butto
    color: white;
 }
 div#${prntid} div.frame_annotation_dialog div.fad_row div.fad_buttons a.fad_button.reclf {
-
+   position: relative;
 }
 div#${prntid} div.frame_annotation_dialog div.fad_row div.fad_buttons a.fad_button.delete {
    text-decoration: none;
