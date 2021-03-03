@@ -12470,6 +12470,7 @@ const POLYLINE_SVG = `
 </svg>
 `;
 let get_init_style = (prntid) => {
+   const NONSP_SZ = 400;
    return `
 div#${prntid} * {
    box-sizing: content-box;
@@ -12525,9 +12526,9 @@ div#${prntid} div.frame_annotation_dialog.fad_ind__2 {
 div#${prntid} div.frame_annotation_dialog.fad_ind__3 {
    right: 615px;
 }
-div#${prntid} div.frame_annotation_dialog.active:hover {
+div#${prntid} div.frame_annotation_dialog.active:hover, div#${prntid} div.frame_annotation_dialog.active.permopen {
    max-width: none;
-   width: 200px;
+   width: ${NONSP_SZ}px;
 }
 div#${prntid} div.frame_annotation_dialog.active {
    z-index: 125;
@@ -12540,20 +12541,20 @@ div#${prntid}.ulabel-night div.frame_annotation_dialog {
 }
 div#${prntid} div.frame_annotation_dialog div.row_container {
    position: relative;
-   width: 200px;
-   left: -140px;
+   width: ${NONSP_SZ}px;
+   left: ${60-NONSP_SZ}px;
    overflow: visible;
    transition: left 0.3s;
 }
-div#${prntid} div.frame_annotation_dialog:hover div.row_container {
+div#${prntid} div.frame_annotation_dialog:hover div.row_container, div#${prntid} div.frame_annotation_dialog.active.permopen div.row_container {
    left: 0;
 }
 /* ROWS */
 div#${prntid} div.frame_annotation_dialog div.fad_row {
-   width: 200px;
+   width: ${NONSP_SZ}px;
 }
 div#${prntid} div.frame_annotation_dialog div.fad_row div.fad_row_inner {
-   width: 200px;
+   width: ${NONSP_SZ}px;
    text-align: right;
 }
 
@@ -12620,7 +12621,7 @@ div#${prntid} div.frame_annotation_dialog.active div.fad_row.add {
 }
 
 div#${prntid} div.frame_annotation_dialog div.fad_annotation_rows {
-   width: 200px;
+   width: ${NONSP_SZ}px;
    display: inline-block;
 }
 
@@ -12628,7 +12629,7 @@ div#${prntid} div.frame_annotation_dialog div.fad_row div.fad_buttons {
    display: inline-block;
    vertical-align: top;
    min-height: 60px;
-   width: 140px;
+   width: ${NONSP_SZ-60}px;
 }
 div#${prntid} div.frame_annotation_dialog div.fad_row div.fad_type_icon {
    display: inline-block;
@@ -12643,8 +12644,26 @@ div#${prntid} div.frame_annotation_dialog div.fad_row div.fad_type_icon svg {
    width: 50px;
    padding: 5px;
 }
-
-
+div#${prntid} div.frame_annotation_dialog div.fad_row div.fad_buttons div.fad_inp_container {
+   display: inline-block;
+}
+div#${prntid} div.frame_annotation_dialog div.fad_row div.fad_buttons div.fad_inp_container.text {
+   width: ${NONSP_SZ-180}px;
+}
+div#${prntid} div.frame_annotation_dialog div.fad_row div.fad_buttons div.fad_inp_container.button {
+   width: 60px;
+}
+div#${prntid} div.frame_annotation_dialog div.fad_row div.fad_buttons div.fad_inp_container.text textarea {
+   box-sizing: border-box;
+   width: calc(100% - 2px);
+   height: 58px;
+   min-height: 58px;
+   resize: vertical;
+   background-color: rgba(0,0,0,0);
+}
+div#${prntid}.ulabel-night div.frame_annotation_dialog div.fad_row div.fad_buttons div.fad_inp_container.text textarea {
+   color: white;
+}
 /* TOOLBOX */
 div#${prntid} div.toolbox_cls {
    width: 320px;
@@ -14199,6 +14218,13 @@ class ULabel {
         jquery_default()(document).on("click", "div.fad_row.add a.add-glob-button", (e) => {
             ul.create_nonspatial_annotation();
         });
+        jquery_default()(document).on("focus", "textarea.nonspatial_note", (e) => {
+            jquery_default()("div.frame_annotation_dialog.active").addClass("permopen");
+        });
+        jquery_default()(document).on("focusout", "textarea.nonspatial_note", (e) => {
+            jquery_default()("div.frame_annotation_dialog.permopen").removeClass("permopen");
+        });
+        
 
         // Listener for id_dialog click interactions
         jquery_default()("#" + ul.config["annbox_id"] + " a.id-dialog-clickable-indicator").click(function(e) {
@@ -15198,7 +15224,15 @@ class ULabel {
             jquery_default()(`div#fad_st__${this.state["current_subtask"]} div.fad_annotation_rows`).append(`
             <div id="row__${annotation_object["id"]}" class="fad_row">
                 <div class="fad_buttons">
-
+                    <div class="fad_inp_container text">
+                        <textarea class="nonspatial_note" placeholder="Notes..."></textarea>
+                    </div><!--
+                    --><div class="fad_inp_container button">
+                        <a href="#" class="fad_button reclf"></a>
+                    </div><!--
+                    --><div class="fad_inp_container button">
+                        <a href="#" class="fad_button delete">&#215;</a>
+                    </div>
                 </div><!--
                 --><div class="fad_type_icon invert-this-svg" style="background-color: ${this.get_annotation_color(annotation_object["classification_payloads"])};">
                     ${WHOLE_IMAGE_SVG}
@@ -17304,11 +17338,13 @@ class ULabel {
             annbox.scrollLeft(), 
             annbox.scrollTop()
         ];
-        
+        jquery_default()("textarea").blur();
+        jquery_default()("div.permopen").removeClass("permopen");
         // TODO handle this drag start
         switch (drag_key) {
             case "annotation":
-                if (this.subtasks[this.state["current_subtask"]]["state"]["annotation_mode"] != "polygon") {
+                let annmd = this.subtasks[this.state["current_subtask"]]["state"]["annotation_mode"];
+                if (annmd != "polygon" && !NONSPATIAL_MODES.includes(annmd)) {
                     this.begin_annotation(mouse_event);
                 }
                 break;

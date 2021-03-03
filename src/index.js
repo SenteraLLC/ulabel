@@ -929,6 +929,13 @@ class ULabel {
         $(document).on("click", "div.fad_row.add a.add-glob-button", (e) => {
             ul.create_nonspatial_annotation();
         });
+        $(document).on("focus", "textarea.nonspatial_note", (e) => {
+            $("div.frame_annotation_dialog.active").addClass("permopen");
+        });
+        $(document).on("focusout", "textarea.nonspatial_note", (e) => {
+            $("div.frame_annotation_dialog.permopen").removeClass("permopen");
+        });
+        
 
         // Listener for id_dialog click interactions
         $("#" + ul.config["annbox_id"] + " a.id-dialog-clickable-indicator").click(function(e) {
@@ -1928,7 +1935,15 @@ class ULabel {
             $(`div#fad_st__${this.state["current_subtask"]} div.fad_annotation_rows`).append(`
             <div id="row__${annotation_object["id"]}" class="fad_row">
                 <div class="fad_buttons">
-
+                    <div class="fad_inp_container text">
+                        <textarea class="nonspatial_note" placeholder="Notes..."></textarea>
+                    </div><!--
+                    --><div class="fad_inp_container button">
+                        <a href="#" class="fad_button reclf"></a>
+                    </div><!--
+                    --><div class="fad_inp_container button">
+                        <a href="#" class="fad_button delete">&#215;</a>
+                    </div>
                 </div><!--
                 --><div class="fad_type_icon invert-this-svg" style="background-color: ${this.get_annotation_color(annotation_object["classification_payloads"])};">
                     ${WHOLE_IMAGE_SVG}
@@ -4034,11 +4049,13 @@ class ULabel {
             annbox.scrollLeft(), 
             annbox.scrollTop()
         ];
-        
+        $("textarea").blur();
+        $("div.permopen").removeClass("permopen");
         // TODO handle this drag start
         switch (drag_key) {
             case "annotation":
-                if (this.subtasks[this.state["current_subtask"]]["state"]["annotation_mode"] != "polygon") {
+                let annmd = this.subtasks[this.state["current_subtask"]]["state"]["annotation_mode"];
+                if (annmd != "polygon" && !NONSPATIAL_MODES.includes(annmd)) {
                     this.begin_annotation(mouse_event);
                 }
                 break;
