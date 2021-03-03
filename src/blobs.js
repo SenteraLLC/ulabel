@@ -971,12 +971,16 @@ div#${prntid} div.frame_annotation_dialog div.fad_row.add a.add-glob-button {
    height: 25px;
    border-radius: 12.5px;
    text-decoration: none;
-   border: 1px solid black;
+   background-color: rgba(128, 128, 128, 0.198);
+   color: gray;
+   border: 1px solid gray;
    top: 25px;
    left: 30px;
    transform: translateX(-50%) translateY(-50%);
+   line-height: 25px;
+   text-align: center;
 }
-div#${prntid} div.frame_annotation_dialog div.fad_row.add a.add-glob-button span.plus {
+/* div#${prntid} div.frame_annotation_dialog div.fad_row.add a.add-glob-button span.plus {
    display: block;
    text-align: center;
    width: 25px;
@@ -986,15 +990,14 @@ div#${prntid} div.frame_annotation_dialog div.fad_row.add a.add-glob-button span
    left: 12.5px;
    transform: translateX(-50%) translateY(-50%);
    color: black;
-}
+} */
 div#${prntid} div.frame_annotation_dialog div.fad_row.add a.add-glob-button:hover {
-   background-color: rgb(185, 185, 185);
-}
-div#${prntid}.ulabel-night div.frame_annotation_dialog div.fad_row.add a.add-glob-button {
-   border: 1px solid white;
+   border-color: black;
+   color: black;
 }
 div#${prntid}.ulabel-night div.frame_annotation_dialog div.fad_row.add a.add-glob-button:hover {
-   background-color: rgb(82, 82, 82);
+   border-color: white;
+   color: white;
 }
 div#${prntid}.ulabel-night div.frame_annotation_dialog div.fad_row.add a.add-glob-button span.plus {
    color: white;
@@ -1046,18 +1049,40 @@ div#${prntid}.ulabel-night div.frame_annotation_dialog div.fad_row div.fad_butto
    color: white;
 }
 div#${prntid} div.frame_annotation_dialog div.fad_row div.fad_buttons div.fad_inp_container.button {
-   width: 60px;
-   height: 60px;
-
+   width: 30px;
+   height: 30px;
+   padding: 15px;
+   padding-right: 20px;
+   padding-left: 0;
+}
+div#${prntid} div.frame_annotation_dialog div.fad_row div.fad_buttons div.fad_inp_container.button.frst {
+   padding-left: 20px;
 }
 div#${prntid} div.frame_annotation_dialog div.fad_row div.fad_buttons a.fad_button {
-
+   display: block;
+   width: 28px;
+   height: 28px;
+   background-color: rgba(128, 128, 128, 0.198);
+   border-radius: 14px;
+   border: 1px solid gray;
+   color: gray;
+}
+div#${prntid} div.frame_annotation_dialog div.fad_row div.fad_buttons a.fad_button:hover {
+   border-color: black;
+   color: black;
+}
+div#${prntid}.ulabel-night div.frame_annotation_dialog div.fad_row div.fad_buttons a.fad_button:hover {
+   border-color: white;
+   color: white;
 }
 div#${prntid} div.frame_annotation_dialog div.fad_row div.fad_buttons a.fad_button.reclf {
 
 }
 div#${prntid} div.frame_annotation_dialog div.fad_row div.fad_buttons a.fad_button.delete {
-   
+   text-decoration: none;
+   text-align: center;
+   line-height: 28px;
+   font-size: 22px;
 }
 
 

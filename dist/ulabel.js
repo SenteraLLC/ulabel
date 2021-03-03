@@ -12588,12 +12588,16 @@ div#${prntid} div.frame_annotation_dialog div.fad_row.add a.add-glob-button {
    height: 25px;
    border-radius: 12.5px;
    text-decoration: none;
-   border: 1px solid black;
+   background-color: rgba(128, 128, 128, 0.198);
+   color: gray;
+   border: 1px solid gray;
    top: 25px;
    left: 30px;
    transform: translateX(-50%) translateY(-50%);
+   line-height: 25px;
+   text-align: center;
 }
-div#${prntid} div.frame_annotation_dialog div.fad_row.add a.add-glob-button span.plus {
+/* div#${prntid} div.frame_annotation_dialog div.fad_row.add a.add-glob-button span.plus {
    display: block;
    text-align: center;
    width: 25px;
@@ -12603,15 +12607,14 @@ div#${prntid} div.frame_annotation_dialog div.fad_row.add a.add-glob-button span
    left: 12.5px;
    transform: translateX(-50%) translateY(-50%);
    color: black;
-}
+} */
 div#${prntid} div.frame_annotation_dialog div.fad_row.add a.add-glob-button:hover {
-   background-color: rgb(185, 185, 185);
-}
-div#${prntid}.ulabel-night div.frame_annotation_dialog div.fad_row.add a.add-glob-button {
-   border: 1px solid white;
+   border-color: black;
+   color: black;
 }
 div#${prntid}.ulabel-night div.frame_annotation_dialog div.fad_row.add a.add-glob-button:hover {
-   background-color: rgb(82, 82, 82);
+   border-color: white;
+   color: white;
 }
 div#${prntid}.ulabel-night div.frame_annotation_dialog div.fad_row.add a.add-glob-button span.plus {
    color: white;
@@ -12646,12 +12649,10 @@ div#${prntid} div.frame_annotation_dialog div.fad_row div.fad_type_icon svg {
 }
 div#${prntid} div.frame_annotation_dialog div.fad_row div.fad_buttons div.fad_inp_container {
    display: inline-block;
+   vertical-align: top;
 }
 div#${prntid} div.frame_annotation_dialog div.fad_row div.fad_buttons div.fad_inp_container.text {
    width: ${NONSP_SZ-180}px;
-}
-div#${prntid} div.frame_annotation_dialog div.fad_row div.fad_buttons div.fad_inp_container.button {
-   width: 60px;
 }
 div#${prntid} div.frame_annotation_dialog div.fad_row div.fad_buttons div.fad_inp_container.text textarea {
    box-sizing: border-box;
@@ -12664,6 +12665,44 @@ div#${prntid} div.frame_annotation_dialog div.fad_row div.fad_buttons div.fad_in
 div#${prntid}.ulabel-night div.frame_annotation_dialog div.fad_row div.fad_buttons div.fad_inp_container.text textarea {
    color: white;
 }
+div#${prntid} div.frame_annotation_dialog div.fad_row div.fad_buttons div.fad_inp_container.button {
+   width: 30px;
+   height: 30px;
+   padding: 15px;
+   padding-right: 20px;
+   padding-left: 0;
+}
+div#${prntid} div.frame_annotation_dialog div.fad_row div.fad_buttons div.fad_inp_container.button.frst {
+   padding-left: 20px;
+}
+div#${prntid} div.frame_annotation_dialog div.fad_row div.fad_buttons a.fad_button {
+   display: block;
+   width: 28px;
+   height: 28px;
+   background-color: rgba(128, 128, 128, 0.198);
+   border-radius: 14px;
+   border: 1px solid gray;
+   color: gray;
+}
+div#${prntid} div.frame_annotation_dialog div.fad_row div.fad_buttons a.fad_button:hover {
+   border-color: black;
+   color: black;
+}
+div#${prntid}.ulabel-night div.frame_annotation_dialog div.fad_row div.fad_buttons a.fad_button:hover {
+   border-color: white;
+   color: white;
+}
+div#${prntid} div.frame_annotation_dialog div.fad_row div.fad_buttons a.fad_button.reclf {
+
+}
+div#${prntid} div.frame_annotation_dialog div.fad_row div.fad_buttons a.fad_button.delete {
+   text-decoration: none;
+   text-align: center;
+   line-height: 28px;
+   font-size: 22px;
+}
+
+
 /* TOOLBOX */
 div#${prntid} div.toolbox_cls {
    width: 320px;
@@ -13673,7 +13712,7 @@ class ULabel {
                         <div class="fad_row add">
                             <div class="fad_row_inner">
                                 <div class="fad_st_add">
-                                    <a class="add-glob-button" href="#"><span class="plus">+</span></a>
+                                    <a class="add-glob-button" href="#">+</a>
                                 </div>
                             </div>
                         </div><div class="fad_annotation_rows"></div>
@@ -14304,11 +14343,11 @@ class ULabel {
                 }
             }
             else if (keypress_event.key == "l") {
-                console.log("Listing annotations using the \"l\" key has been deprecated.");
+                // console.log("Listing annotations using the \"l\" key has been deprecated.");
                 // console.log(ul.annotations);
             }
             else {
-                console.log(keypress_event);
+                // console.log(keypress_event);
             }
         };
     }
@@ -15227,7 +15266,7 @@ class ULabel {
                     <div class="fad_inp_container text">
                         <textarea class="nonspatial_note" placeholder="Notes..."></textarea>
                     </div><!--
-                    --><div class="fad_inp_container button">
+                    --><div class="fad_inp_container button frst">
                         <a href="#" class="fad_button reclf"></a>
                     </div><!--
                     --><div class="fad_inp_container button">

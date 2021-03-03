@@ -384,7 +384,7 @@ class ULabel {
                         <div class="fad_row add">
                             <div class="fad_row_inner">
                                 <div class="fad_st_add">
-                                    <a class="add-glob-button" href="#"><span class="plus">+</span></a>
+                                    <a class="add-glob-button" href="#">+</a>
                                 </div>
                             </div>
                         </div><div class="fad_annotation_rows"></div>
@@ -1916,7 +1916,6 @@ class ULabel {
                 this.tmp_nonspatial_element_ids[subtask].push($(val).attr("id"));
             });
         }
-        console.log(this.tmp_nonspatial_element_ids);
     }
 
 
@@ -1938,7 +1937,7 @@ class ULabel {
                     <div class="fad_inp_container text">
                         <textarea class="nonspatial_note" placeholder="Notes..."></textarea>
                     </div><!--
-                    --><div class="fad_inp_container button">
+                    --><div class="fad_inp_container button frst">
                         <a href="#" class="fad_button reclf"></a>
                     </div><!--
                     --><div class="fad_inp_container button">
