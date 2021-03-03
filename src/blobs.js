@@ -1029,12 +1029,10 @@ div#${prntid} div.frame_annotation_dialog div.fad_row div.fad_type_icon svg {
 }
 div#${prntid} div.frame_annotation_dialog div.fad_row div.fad_buttons div.fad_inp_container {
    display: inline-block;
+   vertical-align: top;
 }
 div#${prntid} div.frame_annotation_dialog div.fad_row div.fad_buttons div.fad_inp_container.text {
    width: ${NONSP_SZ-180}px;
-}
-div#${prntid} div.frame_annotation_dialog div.fad_row div.fad_buttons div.fad_inp_container.button {
-   width: 60px;
 }
 div#${prntid} div.frame_annotation_dialog div.fad_row div.fad_buttons div.fad_inp_container.text textarea {
    box-sizing: border-box;
@@ -1047,6 +1045,22 @@ div#${prntid} div.frame_annotation_dialog div.fad_row div.fad_buttons div.fad_in
 div#${prntid}.ulabel-night div.frame_annotation_dialog div.fad_row div.fad_buttons div.fad_inp_container.text textarea {
    color: white;
 }
+div#${prntid} div.frame_annotation_dialog div.fad_row div.fad_buttons div.fad_inp_container.button {
+   width: 60px;
+   height: 60px;
+
+}
+div#${prntid} div.frame_annotation_dialog div.fad_row div.fad_buttons a.fad_button {
+
+}
+div#${prntid} div.frame_annotation_dialog div.fad_row div.fad_buttons a.fad_button.reclf {
+
+}
+div#${prntid} div.frame_annotation_dialog div.fad_row div.fad_buttons a.fad_button.delete {
+   
+}
+
+
 /* TOOLBOX */
 div#${prntid} div.toolbox_cls {
    width: 320px;

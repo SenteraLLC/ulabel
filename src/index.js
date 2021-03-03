@@ -1015,11 +1015,11 @@ class ULabel {
                 }
             }
             else if (keypress_event.key == "l") {
-                console.log("Listing annotations using the \"l\" key has been deprecated.");
+                // console.log("Listing annotations using the \"l\" key has been deprecated.");
                 // console.log(ul.annotations);
             }
             else {
-                console.log(keypress_event);
+                // console.log(keypress_event);
             }
         };
     }
