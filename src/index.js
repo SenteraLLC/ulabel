@@ -574,12 +574,12 @@ class ULabel {
         let md_buttons = [
             ULabel.get_md_button("bbox", "Bounding Box", BBOX_SVG, curmd, ul.subtasks),
             ULabel.get_md_button("polygon", "Polygon", POLYGON_SVG, curmd, ul.subtasks),
-            ULabel.get_md_button("contour", "Contour", CONTOUR_SVG, curmd, ul.subtasks),
             ULabel.get_md_button("tbar", "T-Bar", TBAR_SVG, curmd, ul.subtasks),
             ULabel.get_md_button("polyline", "Polyline", POLYLINE_SVG, curmd, ul.subtasks),
+            ULabel.get_md_button("contour", "Contour", CONTOUR_SVG, curmd, ul.subtasks),
+            ULabel.get_md_button("bbox3", "Bounding Cube", BBOX3_SVG, curmd, ul.subtasks),
             ULabel.get_md_button("whole-image", "Whole Frame", WHOLE_IMAGE_SVG, curmd, ul.subtasks),
             ULabel.get_md_button("global", "Global", GLOBAL_SVG, curmd, ul.subtasks),
-            ULabel.get_md_button("bbox3", "Bounding Cube", BBOX3_SVG, curmd, ul.subtasks)
         ];
 
         // Append but don't wait
@@ -3610,6 +3610,7 @@ class ULabel {
                 move_candidate: mc,
                 diffX: 0,
                 diffY: 0,
+                diffZ: 0,
                 deprecate_old: deprecate_old,
                 old_id: old_id,
                 new_id: new_id
@@ -3619,6 +3620,7 @@ class ULabel {
                 move_candidate: mc,
                 diffX: 0,
                 diffY: 0,
+                diffZ: 0,
                 finished: false,
                 deprecate_old: deprecate_old,
                 old_id: old_id,
@@ -3804,11 +3806,12 @@ class ULabel {
 
         this.redraw_all_annotations(this.state["current_subtask"]);
 
-        this.record_finish_move(diffX, diffY);
+        this.record_finish_move(diffX, diffY, diffZ);
     }
     move_annotation__undo(undo_payload) {
         const diffX = undo_payload.diffX;
         const diffY = undo_payload.diffY;
+        const diffZ = undo_payload.diffZ;
 
         let actid = undo_payload.move_candidate["annid"];
         // TODO(3d)
@@ -3823,6 +3826,9 @@ class ULabel {
             for (var spi = 0; spi < this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"].length; spi++) {
                 this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"][spi][0] += diffX;
                 this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"][spi][1] += diffY;
+                if (this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"][spi].length > 2) {
+                    this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"][spi][2] += diffZ;
+                }
             }
             this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["containing_box"]["tlx"] += diffX;
             this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["containing_box"]["brx"] += diffX;
@@ -3835,10 +3841,12 @@ class ULabel {
         this.hide_global_edit_suggestion();
         this.reposition_dialogs();
         this.suggest_edits(this.state["last_move"]);
+        this.update_frame(diffZ);
     }
     move_annotation__redo(redo_payload) {
         const diffX = redo_payload.diffX;
         const diffY = redo_payload.diffY;
+        const diffZ = redo_payload.diffZ;
 
         let actid = redo_payload.move_candidate["annid"];
         // TODO(3d)
@@ -3857,6 +3865,9 @@ class ULabel {
         for (var spi = 0; spi < this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"].length; spi++) {
             this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"][spi][0] += diffX;
             this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"][spi][1] += diffY;
+            if (this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"][spi].length > 2) {
+                this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"][spi][2] += diffZ;
+            }
         }
         this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["containing_box"]["tlx"] += diffX;
         this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["containing_box"]["brx"] += diffX;
@@ -3883,6 +3894,7 @@ class ULabel {
                 move_candidate: redo_payload.move_candidate,
                 diffX: -diffX,
                 diffY: -diffY,
+                diffZ: -diffZ,
                 deprecate_old: redo_payload.deprecate_old,
                 old_id: redo_payload.old_id,
                 new_id: redo_payload.new_id
@@ -3892,12 +3904,14 @@ class ULabel {
                 move_candidate: redo_payload.move_candidate,
                 diffX: diffX,
                 diffY: diffY,
+                diffZ: diffZ,
                 finished: true,
                 deprecate_old: redo_payload.deprecate_old,
                 old_id: redo_payload.old_id,
                 new_id: redo_payload.new_id
             }
         }, true);
+        this.update_frame(diffZ);
     }
 
     get_edit_candidates(gblx, gbly, dst_thresh) {
@@ -4550,6 +4564,12 @@ class ULabel {
     update_frame(delta=null, new_frame=null) {
         if (this.config["image_data"]["frames"].length == 1) {
             return;
+        }
+        let actid = this.subtasks[this.state["current_subtask"]]["state"]["active_id"]
+        if (actid != null) {
+            if (!MODES_3D.includes(this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_type"])) {
+                return;
+            }
         }
         if (new_frame == null) {
             new_frame = parseInt($(`div#${this.config["toolbox_id"]} input.frame_input`).val());
