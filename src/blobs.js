@@ -852,6 +852,263 @@ const POLYLINE_SVG = `
   </g>
 </svg>
 `;
+const BBOX3_SVG = `
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="100mm"
+   height="100mm"
+   viewBox="0 0 100 100"
+   version="1.1"
+   id="svg7244"
+   inkscape:version="0.92.5 (2060ec1f9f, 2020-04-08)"
+   sodipodi:docname="bbox3.svg">
+<defs
+  id="defs7338">
+ <marker
+    inkscape:isstock="true"
+    style="overflow:visible"
+    id="marker3387"
+    refX="0"
+    refY="0"
+    orient="auto"
+    inkscape:stockid="DotL">
+   <path
+      transform="matrix(0.8,0,0,0.8,5.92,0.8)"
+      style="fill:#757575;fill-opacity:0.98039216;fill-rule:evenodd;stroke:#757575;stroke-width:1.00000003pt;stroke-opacity:0.98039216"
+      d="m -2.5,-1 c 0,2.76 -2.24,5 -5,5 -2.76,0 -5,-2.24 -5,-5 0,-2.76 2.24,-5 5,-5 2.76,0 5,2.24 5,5 z"
+      id="path3385"
+      inkscape:connector-curvature="0" />
+ </marker>
+ <marker
+    inkscape:isstock="true"
+    style="overflow:visible"
+    id="marker2383"
+    refX="0"
+    refY="0"
+    orient="auto"
+    inkscape:stockid="DotL">
+   <path
+      transform="matrix(0.8,0,0,0.8,5.92,0.8)"
+      style="fill:#000000;fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:1.00000003pt;stroke-opacity:1"
+      d="m -2.5,-1 c 0,2.76 -2.24,5 -5,5 -2.76,0 -5,-2.24 -5,-5 0,-2.76 2.24,-5 5,-5 2.76,0 5,2.24 5,5 z"
+      id="path2381"
+      inkscape:connector-curvature="0" />
+ </marker>
+ <marker
+    inkscape:isstock="true"
+    style="overflow:visible"
+    id="marker2313"
+    refX="0"
+    refY="0"
+    orient="auto"
+    inkscape:stockid="DotL">
+   <path
+      transform="matrix(0.8,0,0,0.8,5.92,0.8)"
+      style="fill:#000000;fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:1.00000003pt;stroke-opacity:1"
+      d="m -2.5,-1 c 0,2.76 -2.24,5 -5,5 -2.76,0 -5,-2.24 -5,-5 0,-2.76 2.24,-5 5,-5 2.76,0 5,2.24 5,5 z"
+      id="path2211"
+      inkscape:connector-curvature="0" />
+ </marker>
+ <marker
+    inkscape:stockid="DotL"
+    orient="auto"
+    refY="0.0"
+    refX="0.0"
+    id="marker1651"
+    style="overflow:visible"
+    inkscape:isstock="true">
+   <path
+      id="path1649"
+      d="M -2.5,-1.0 C -2.5,1.7600000 -4.7400000,4.0 -7.5,4.0 C -10.260000,4.0 -12.5,1.7600000 -12.5,-1.0 C -12.5,-3.7600000 -10.260000,-6.0 -7.5,-6.0 C -4.7400000,-6.0 -2.5,-3.7600000 -2.5,-1.0 z "
+      style="fill-rule:evenodd;stroke:#000000;stroke-width:1pt;stroke-opacity:1;fill:#000000;fill-opacity:1"
+      transform="scale(0.8) translate(7.4, 1)" />
+ </marker>
+ <marker
+    inkscape:stockid="DotL"
+    orient="auto"
+    refY="0.0"
+    refX="0.0"
+    id="marker1315"
+    style="overflow:visible"
+    inkscape:isstock="true">
+   <path
+      id="path1313"
+      d="M -2.5,-1.0 C -2.5,1.7600000 -4.7400000,4.0 -7.5,4.0 C -10.260000,4.0 -12.5,1.7600000 -12.5,-1.0 C -12.5,-3.7600000 -10.260000,-6.0 -7.5,-6.0 C -4.7400000,-6.0 -2.5,-3.7600000 -2.5,-1.0 z "
+      style="fill-rule:evenodd;stroke:#000000;stroke-width:1pt;stroke-opacity:1;fill:#000000;fill-opacity:1"
+      transform="scale(0.8) translate(7.4, 1)" />
+ </marker>
+ <marker
+    inkscape:stockid="DotL"
+    orient="auto"
+    refY="0.0"
+    refX="0.0"
+    id="marker1145"
+    style="overflow:visible"
+    inkscape:isstock="true">
+   <path
+      id="path943"
+      d="M -2.5,-1.0 C -2.5,1.7600000 -4.7400000,4.0 -7.5,4.0 C -10.260000,4.0 -12.5,1.7600000 -12.5,-1.0 C -12.5,-3.7600000 -10.260000,-6.0 -7.5,-6.0 C -4.7400000,-6.0 -2.5,-3.7600000 -2.5,-1.0 z "
+      style="fill-rule:evenodd;stroke:#000000;stroke-width:1pt;stroke-opacity:1;fill:#000000;fill-opacity:1"
+      transform="scale(0.8) translate(7.4, 1)" />
+ </marker>
+ <marker
+    inkscape:stockid="DotL"
+    orient="auto"
+    refY="0.0"
+    refX="0.0"
+    id="marker1156"
+    style="overflow:visible"
+    inkscape:isstock="true">
+   <path
+      id="path1254"
+      d="M -2.5,-1.0 C -2.5,1.7600000 -4.7400000,4.0 -7.5,4.0 C -10.260000,4.0 -12.5,1.7600000 -12.5,-1.0 C -12.5,-3.7600000 -10.260000,-6.0 -7.5,-6.0 C -4.7400000,-6.0 -2.5,-3.7600000 -2.5,-1.0 z "
+      style="fill-rule:evenodd;stroke:#000000;stroke-width:1pt;stroke-opacity:1;fill:#000000;fill-opacity:1"
+      transform="scale(0.8) translate(7.4, 1)" />
+ </marker>
+ <marker
+    inkscape:stockid="DotL"
+    orient="auto"
+    refY="0.0"
+    refX="0.0"
+    id="marker1152"
+    style="overflow:visible"
+    inkscape:isstock="true">
+   <path
+      id="path1160"
+      d="M -2.5,-1.0 C -2.5,1.7600000 -4.7400000,4.0 -7.5,4.0 C -10.260000,4.0 -12.5,1.7600000 -12.5,-1.0 C -12.5,-3.7600000 -10.260000,-6.0 -7.5,-6.0 C -4.7400000,-6.0 -2.5,-3.7600000 -2.5,-1.0 z "
+      style="fill-rule:evenodd;stroke:#000000;stroke-width:1pt;stroke-opacity:1;fill:#000000;fill-opacity:1"
+      transform="scale(0.8) translate(7.4, 1)" />
+ </marker>
+ <marker
+    inkscape:stockid="DotL"
+    orient="auto"
+    refY="0.0"
+    refX="0.0"
+    id="marker1148"
+    style="overflow:visible"
+    inkscape:isstock="true">
+   <path
+      id="path951"
+      d="M -2.5,-1.0 C -2.5,1.7600000 -4.7400000,4.0 -7.5,4.0 C -10.260000,4.0 -12.5,1.7600000 -12.5,-1.0 C -12.5,-3.7600000 -10.260000,-6.0 -7.5,-6.0 C -4.7400000,-6.0 -2.5,-3.7600000 -2.5,-1.0 z "
+      style="fill-rule:evenodd;stroke:#000000;stroke-width:1pt;stroke-opacity:1;fill:#000000;fill-opacity:1"
+      transform="scale(0.8) translate(7.4, 1)" />
+ </marker>
+ <marker
+    inkscape:stockid="DotL"
+    orient="auto"
+    refY="0"
+    refX="0"
+    id="DotL"
+    style="overflow:visible"
+    inkscape:isstock="true"
+    inkscape:collect="always">
+   <path
+      inkscape:connector-curvature="0"
+      id="path4591"
+      d="m -2.5,-1 c 0,2.76 -2.24,5 -5,5 -2.76,0 -5,-2.24 -5,-5 0,-2.76 2.24,-5 5,-5 2.76,0 5,2.24 5,5 z"
+      style="fill:#000000;fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:1.00000003pt;stroke-opacity:1"
+      transform="matrix(0.8,0,0,0.8,5.92,0.8)" />
+ </marker>
+ <marker
+    inkscape:stockid="DotL"
+    orient="auto"
+    refY="0"
+    refX="0"
+    id="marker7235"
+    style="overflow:visible"
+    inkscape:isstock="true">
+   <path
+      inkscape:connector-curvature="0"
+      id="path7234"
+      d="m -2.5,-1 c 0,2.76 -2.24,5 -5,5 -2.76,0 -5,-2.24 -5,-5 0,-2.76 2.24,-5 5,-5 2.76,0 5,2.24 5,5 z"
+      style="fill:#000000;fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:1.00000003pt;stroke-opacity:1"
+      transform="matrix(0.8,0,0,0.8,5.92,0.8)" />
+ </marker>
+</defs>
+<sodipodi:namedview
+  id="base"
+  pagecolor="#ffffff"
+  bordercolor="#666666"
+  borderopacity="1.0"
+  inkscape:pageopacity="0.0"
+  inkscape:pageshadow="2"
+  inkscape:zoom="1.4"
+  inkscape:cx="-23.528679"
+  inkscape:cy="177.26523"
+  inkscape:document-units="mm"
+  inkscape:current-layer="layer2"
+  showgrid="false"
+  inkscape:window-width="1920"
+  inkscape:window-height="1043"
+  inkscape:window-x="0"
+  inkscape:window-y="0"
+  inkscape:window-maximized="1" />
+<metadata
+  id="metadata7241">
+ <rdf:RDF>
+   <cc:Work
+      rdf:about="">
+     <dc:format>image/svg+xml</dc:format>
+     <dc:type
+        rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+     <dc:title />
+   </cc:Work>
+ </rdf:RDF>
+</metadata>
+<g
+  inkscape:label="Layer 1"
+  inkscape:groupmode="layer"
+  id="layer1"
+  transform="translate(0,-197)">
+ <path
+    style="fill:none;stroke:#454545;stroke-width:1.55600691;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+    d="M 10.756538,266.99254 H 70.756863"
+    id="path2551"
+    inkscape:connector-curvature="0"
+    sodipodi:nodetypes="cc" />
+ <path
+    style="fill:none;stroke:#454545;stroke-width:1.55600691;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:0.98039216;marker-mid:url(#marker3387)"
+    d="m 70.756864,206.99233 -10e-7,60.16215 18.4441,19.83814"
+    id="path2553"
+    inkscape:connector-curvature="0"
+    sodipodi:nodetypes="ccc" />
+</g>
+<g
+  inkscape:groupmode="layer"
+  id="layer2"
+  inkscape:label="Layer 2">
+ <path
+    style="fill:none;stroke:#000000;stroke-width:1.55600691;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;marker-mid:url(#marker2383)"
+    d="M 30.756486,89.992787 10.756538,69.992546 V 9.9923299 h 60.000325 l 18.44426,21.5559081"
+    id="path973-1"
+    inkscape:connector-curvature="0"
+    sodipodi:nodetypes="ccccc" />
+ <path
+    style="fill:none;stroke:#000000;stroke-width:1.55600691;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;marker-start:url(#marker1145);marker-mid:url(#marker1315);marker-end:url(#marker1651)"
+    d="M 10.756538,9.9923299 30.756484,31.548238"
+    id="path880"
+    inkscape:connector-curvature="0" />
+ <path
+    style="fill:none;stroke:#000000;stroke-width:1.56000698;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;marker-mid:url(#marker1145)"
+    d="M 30.756646,89.992617 H 89.200963 V 31.548238"
+    id="path2155"
+    inkscape:connector-curvature="0"
+    sodipodi:nodetypes="ccc" />
+ <path
+    style="fill:none;stroke:#000000;stroke-width:1.55600691;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;marker-start:url(#marker1145);marker-mid:url(#marker1145);marker-end:url(#marker1145)"
+    d="M 89.201121,31.548238 H 30.756484 l 2e-6,58.444549"
+    id="path2153"
+    inkscape:connector-curvature="0" />
+</g>
+</svg>
+`;
+
 let get_init_style = (prntid) => {
    const NONSP_SZ = 400;
    return `
@@ -1727,4 +1984,9 @@ const COLORS = [
    "darksalmon", "deeppink", "fuchsia"
 ];
 
-export { BBOX_SVG, POLYGON_SVG, CONTOUR_SVG, TBAR_SVG, DEMO_ANNOTATION, get_init_style, COLORS, POLYLINE_SVG, WHOLE_IMAGE_SVG, GLOBAL_SVG };
+export { 
+   BBOX_SVG, BBOX3_SVG, POLYGON_SVG, CONTOUR_SVG, TBAR_SVG, POLYLINE_SVG, WHOLE_IMAGE_SVG, GLOBAL_SVG, 
+   DEMO_ANNOTATION, 
+   get_init_style, 
+   COLORS 
+};

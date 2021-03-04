@@ -16,6 +16,7 @@ const { v4: uuidv4 } = require('uuid');
 import { 
     DEMO_ANNOTATION, 
     BBOX_SVG, 
+    BBOX3_SVG,
     POLYGON_SVG, 
     CONTOUR_SVG, 
     get_init_style, 
@@ -538,7 +539,8 @@ class ULabel {
             ULabel.get_md_button("tbar", "T-Bar", TBAR_SVG, curmd, ul.subtasks),
             ULabel.get_md_button("polyline", "Polyline", POLYLINE_SVG, curmd, ul.subtasks),
             ULabel.get_md_button("whole-image", "Whole Frame", WHOLE_IMAGE_SVG, curmd, ul.subtasks),
-            ULabel.get_md_button("global", "Global", GLOBAL_SVG, curmd, ul.subtasks)
+            ULabel.get_md_button("global", "Global", GLOBAL_SVG, curmd, ul.subtasks),
+            ULabel.get_md_button("bbox3", "Bounding Cube", BBOX3_SVG, curmd, ul.subtasks)
         ];
 
         // Append but don't wait
@@ -1632,6 +1634,11 @@ class ULabel {
                     [gmx, gmy],
                     [gmx, gmy]
                 ];
+            case "bbox3":
+                return [
+                    [gmx, gmy, this.state["current_frame"]],
+                    [gmx, gmy, this.state["current_frame"]]
+                ];
             default:
                 // TODO broader refactor of error handling and detecting/preventing corruption
                 this.raise_error("Annotation mode is not understood", ULabel.elvl_info);
@@ -1650,12 +1657,20 @@ class ULabel {
     // Optional arg at the end is for finding position of a moved splice point through its original access string
     get_with_access_string(annid, access_str, as_though_pre_splice=false) {
         // TODO(3d)
+        let bbi, bbj, bbk, bbox_pts;
         switch (this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid]["spatial_type"]) {
             case "bbox":
-                const bbi = parseInt(access_str[0], 10);
-                const bbj = parseInt(access_str[1], 10);
-                let bbox_pts = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid]["spatial_payload"];
+                bbi = parseInt(access_str[0], 10);
+                bbj = parseInt(access_str[1], 10);
+                bbox_pts = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid]["spatial_payload"];
                 return [bbox_pts[bbi][0], bbox_pts[bbj][1]];
+            case "bbox3":
+                // TODO(3d)
+                bbi = parseInt(access_str[0], 10);
+                bbj = parseInt(access_str[1], 10);
+                bbk = parseInt(access_str[2], 10);
+                bbox_pts = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid]["spatial_payload"];
+                return [bbox_pts[bbi][0], bbox_pts[bbj][1], bbox_pts[bbk][2]];
             case "polygon":
                 let bas = parseInt(access_str, 10);
                 let dif = parseFloat(access_str) - bas;
@@ -1701,6 +1716,14 @@ class ULabel {
                 var bbj = parseInt(access_str[1], 10);
                 this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid]["spatial_payload"][bbi][0] = val[0];
                 this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid]["spatial_payload"][bbj][1] = val[1];
+                break;
+            case "bbox3":
+                var bbi = parseInt(access_str[0], 10);
+                var bbj = parseInt(access_str[1], 10);
+                var bbk = parseInt(access_str[2], 10);
+                this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid]["spatial_payload"][bbi][0] = val[0];
+                this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid]["spatial_payload"][bbj][1] = val[1];
+                this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid]["spatial_payload"][bbk][2] = val[2];
                 break;
             case "tbar":
                 // TODO 3 points
@@ -1823,6 +1846,53 @@ class ULabel {
         // Draw the box
         const sp = annotation_object["spatial_payload"][0];
         const ep = annotation_object["spatial_payload"][1];
+        ctx.beginPath();
+        ctx.moveTo(sp[0] + diffX, sp[1] + diffY);
+        ctx.lineTo(sp[0] + diffX, ep[1] + diffY);
+        ctx.lineTo(ep[0] + diffX, ep[1] + diffY);
+        ctx.lineTo(ep[0] + diffX, sp[1] + diffY);
+        ctx.lineTo(sp[0] + diffX, sp[1] + diffY);
+        ctx.closePath();
+        ctx.stroke();
+    }
+
+    draw_bbox3(annotation_object, ctx, demo=false, offset=null, subtask=null) {
+        let diffX = 0;
+        let diffY = 0;
+        let diffZ = 0;
+        if (offset != null) {
+            diffX = offset["diffX"];
+            diffY = offset["diffY"];
+            if ("diffZ" in offset) {
+                diffZ = offset["diffZ"];
+            }
+        }
+
+        let curfrm = this.state["current_frame"];
+        const sp = annotation_object["spatial_payload"][0];
+        const ep = annotation_object["spatial_payload"][1];
+        if (curfrm < (Math.min(sp[2], ep[2]) + diffZ) || curfrm > (Math.max(sp[2], ep[2]) + diffZ)) {
+            return;
+        }
+
+        let line_size = null;
+        if ("line_size" in annotation_object) {
+            line_size = annotation_object["line_size"];
+        }
+        else {
+            line_size = this.get_line_size(demo);
+        }
+    
+        // Prep for bbox drawing
+        let color = this.get_annotation_color(annotation_object["classification_payloads"], false, subtask);
+        ctx.fillStyle = color;
+        ctx.strokeStyle = color;
+        ctx.lineJoin = "round";
+        ctx.lineWidth = line_size;
+        ctx.imageSmoothingEnabled = false;
+        ctx.globalCompositeOperation = "source-over";
+    
+        // Draw the box
         ctx.beginPath();
         ctx.moveTo(sp[0] + diffX, sp[1] + diffY);
         ctx.lineTo(sp[0] + diffX, ep[1] + diffY);
@@ -2056,6 +2126,10 @@ class ULabel {
             case "bbox":
                 this.draw_bounding_box(annotation_object, ctx, demo, offset, subtask);
                 break;
+            case "bbox3":
+                // TODO(new3d)
+                this.draw_bbox3(annotation_object, ctx, demo, offset, subtask);
+                break;
             case "polygon":
                 this.draw_polygon(annotation_object, ctx, demo, offset, subtask);
                 break;
@@ -2127,7 +2201,6 @@ class ULabel {
     }
 
     redraw_all_annotations(subtask=null, offset=null, spatial_only=false) {
-        console.log(subtask);
         // TODO(3d)
         if (subtask == null) {
             for (const st in this.subtasks) {
@@ -2264,7 +2337,6 @@ class ULabel {
             // TODO(new3d)
             idd_x = $("#reclf__" + nonspatial_id).offset().left-85;//this.get_global_element_center_x($("#reclf__" + nonspatial_id));
             idd_y = $("#reclf__" + nonspatial_id).offset().top-85;//this.get_global_element_center_y($("#reclf__" + nonspatial_id));
-            console.log(idd_x, idd_y);
         }
 
 
@@ -2531,6 +2603,24 @@ class ULabel {
                         ret["point"] = npi["point"];
                     }
                     break;
+                case "bbox3":
+                    let curfrm = this.state["current_frame"];
+                    let pts = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][edid]["spatial_payload"];
+                    if ((curfrm >= Math.min(pts[0][2], pts[1][2])) && (curfrm <= Math.max(pts[0][2], pts[1][2]))) {
+                        // TODO(new3d) Make sure this function works for bbox3 too
+                        npi = ULabel.get_nearest_point_on_bounding_box(
+                            global_x, global_y, 
+                            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][edid]["spatial_payload"],
+                            max_dist
+                        );
+                        if (npi["distance"] < ret["distance"]) {
+                            ret["annid"] = edid;
+                            ret["access"] = npi["access"];
+                            ret["distance"] = npi["distance"];
+                            ret["point"] = npi["point"];
+                        }
+                    }
+                    break;
                 case "polygon":
                     npi = ULabel.get_nearest_point_on_polygon(
                         global_x, global_y, 
@@ -2584,6 +2674,7 @@ class ULabel {
             var edid = candidates[edi];
             switch (this.subtasks[this.state["current_subtask"]]["annotations"]["access"][edid]["spatial_type"]) {
                 case "bbox":
+                case "bbox3":
                     // Can't propose new bounding box points
                     break;
                 case "polygon":
@@ -2662,16 +2753,19 @@ class ULabel {
         );
         this.subtasks[this.state["current_subtask"]]["actions"]["stream"][i].redo_payload.ending_x = fin_pt[0];
         this.subtasks[this.state["current_subtask"]]["actions"]["stream"][i].redo_payload.ending_y = fin_pt[1];
+        this.subtasks[this.state["current_subtask"]]["actions"]["stream"][i].redo_payload.ending_frame = this.state["current_frame"];
         this.subtasks[this.state["current_subtask"]]["actions"]["stream"][i].redo_payload.finished = true;
     }
 
-    record_finish_move(diffX, diffY) {
+    record_finish_move(diffX, diffY, diffZ=0) {
         // TODO(3d) 
         let i = this.subtasks[this.state["current_subtask"]]["actions"]["stream"].length - 1;
         this.subtasks[this.state["current_subtask"]]["actions"]["stream"][i].redo_payload.diffX = diffX;
         this.subtasks[this.state["current_subtask"]]["actions"]["stream"][i].redo_payload.diffY = diffY;
+        this.subtasks[this.state["current_subtask"]]["actions"]["stream"][i].redo_payload.diffZ = diffZ;
         this.subtasks[this.state["current_subtask"]]["actions"]["stream"][i].undo_payload.diffX = -diffX;
         this.subtasks[this.state["current_subtask"]]["actions"]["stream"][i].undo_payload.diffY = -diffY;
+        this.subtasks[this.state["current_subtask"]]["actions"]["stream"][i].undo_payload.diffZ = -diffZ;
         this.subtasks[this.state["current_subtask"]]["actions"]["stream"][i].redo_payload.finished = true;
     }
 
@@ -3080,6 +3174,15 @@ class ULabel {
                     this.rebuild_containing_box(actid);
                     this.redraw_all_annotations(this.state["current_subtask"], null, true); // tobuffer
                     break;
+                case "bbox3":
+                    this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"][1] = [
+                        ms_loc[0],
+                        ms_loc[1],
+                        this.state["curent_frame"]
+                    ];
+                    this.rebuild_containing_box(actid);
+                    this.redraw_all_annotations(this.state["current_subtask"], null, true); // tobuffer
+                    break;
                 case "polygon":
                     // Store number of keypoints for easy access
                     const n_kpts = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"].length;
@@ -3239,6 +3342,15 @@ class ULabel {
                     this.show_edit_suggestion(this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"], true);
                     this.show_global_edit_suggestion(this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"]["annid"]);
                     break;
+                case "bbox3":
+                    // TODO(new3d) Will not always want to set 3rd val -- editing is possible within an intermediate frame or frames
+                    this.set_with_access_string(actid, this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"]["access"], [ms_loc[0], ms_loc[1], this.state["current_frame"]]);
+                    this.rebuild_containing_box(actid);
+                    this.redraw_all_annotations(this.state["current_subtask"], null, true); // tobuffer
+                    this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"]["point"] = ms_loc;
+                    this.show_edit_suggestion(this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"], true);
+                    this.show_global_edit_suggestion(this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"]["annid"]);
+                    break;
                 case "polygon":
                     this.set_with_access_string(actid, this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"]["access"], ms_loc);
                     this.rebuild_containing_box(actid);
@@ -3288,6 +3400,13 @@ class ULabel {
                 this.redraw_all_annotations(this.state["current_subtask"], null, true); // tobuffer
                 this.suggest_edits(this.state["last_move"]);
                 break;
+            case "bbox3":
+                ms_loc.push(undo_payload.starting_frame);
+                this.set_with_access_string(actid, undo_payload.edit_candidate["access"], ms_loc, true);
+                this.rebuild_containing_box(actid);
+                this.redraw_all_annotations(this.state["current_subtask"], null, true); // tobuffer
+                this.suggest_edits(this.state["last_move"]);
+                break;
             case "polygon":
                 this.set_with_access_string(actid, undo_payload.edit_candidate["access"], ms_loc, true);
                 this.rebuild_containing_box(actid);
@@ -3323,6 +3442,13 @@ class ULabel {
         // TODO(3d)
         switch (this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_type"]) {
             case "bbox":
+                this.set_with_access_string(actid, redo_payload.edit_candidate["access"], ms_loc);
+                this.rebuild_containing_box(actid);
+                this.redraw_all_annotations(this.state["current_subtask"], null, true); // tobuffer
+                this.suggest_edits(this.state["last_move"]);
+                break;
+            case "bbox3":
+                ms_loc.push(redo_payload.ending_frame);
                 this.set_with_access_string(actid, redo_payload.edit_candidate["access"], ms_loc);
                 this.rebuild_containing_box(actid);
                 this.redraw_all_annotations(this.state["current_subtask"], null, true); // tobuffer
@@ -3496,6 +3622,7 @@ class ULabel {
                 $("#ender_" + actid).remove(); // TODO remove from visible dialogs
                 break;
             case "bbox":
+            case "bbox3":
             case "contour":
             case "tbar":
                 this.record_finish(actid);
@@ -3556,6 +3683,7 @@ class ULabel {
         switch (this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_type"]) {
             case "polygon":
             case "bbox":
+            case "bbox3":
             case "tbar":
                 this.record_finish_edit(actid);
             case "contour":
@@ -3587,6 +3715,7 @@ class ULabel {
         switch (this.subtasks[this.state["current_subtask"]]["annotations"]["access"][this.subtasks[this.state["current_subtask"]]["state"]["active_id"]]["spatial_type"]) {
             case "polygon":
             case "bbox":
+            case "bbox3":
             case "contour":
             case "tbar":
                  // tobuffer this is where the annotation moves to back canvas
