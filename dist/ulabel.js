@@ -12529,6 +12529,7 @@ div#${prntid} div.frame_annotation_dialog.fad_ind__3 {
 div#${prntid} div.frame_annotation_dialog.active:hover, div#${prntid} div.frame_annotation_dialog.active.permopen {
    max-width: none;
    width: ${NONSP_SZ}px;
+   overflow: visible;
 }
 div#${prntid} div.frame_annotation_dialog.active {
    z-index: 125;
@@ -12538,6 +12539,12 @@ div#${prntid}.ulabel-night div.frame_annotation_dialog {
    background-color: rgb(37, 37, 37);
    border: 1px solid rgb(102, 102, 102);
    text-align: right;
+}
+div.front_dialogs {
+   position: absolute;
+   top: 0;
+   right: 0;
+   z-index: -1;
 }
 div#${prntid} div.frame_annotation_dialog div.row_container {
    position: relative;
@@ -14018,7 +14025,7 @@ class ULabel {
             // Add dialog to the document
             // front_subtask_dialog_container_jq.append(dialog_html);
             // $("#" + ul.subtasks[st]["idd_id"]).attr("id", ul.subtasks[st]["idd_id_front"]);
-            front_subtask_dialog_container_jq.append(front_dialog_html_v2);
+            front_subtask_dialog_container_jq.append(front_dialog_html_v2); // TODO(new3d) MOVE THIS TO GLOB BOX -- superimpose atop thee anchor already there when needed, no remove and add back
             subtask_dialog_container_jq.append(dialog_html_v2);
             // console.log(dialog_html);
             // console.log(dialog_html_v2);
@@ -14304,10 +14311,8 @@ class ULabel {
             ul.delete_annotation(e.target.id.substring("delete__".length));
         });
         jquery_default()(document).on("click", "a.fad_button.reclf", (e) => {
-            // TODO(new3d)
             // Show idd
-            console.log("showing spatial payload...");
-            console.log(e.target.id.substring("reclf__".length));
+            ul.show_id_dialog(e.pageX, e.pageY, e.target.id.substring("reclf__".length), false, true);
         });
         jquery_default()(document).on("mouseenter", "div.fad_annotation_rows div.fad_row", (e) => {
             // Show thumbnail for idd
@@ -14315,11 +14320,14 @@ class ULabel {
         });
         jquery_default()(document).on("mouseleave", "div.fad_annotation_rows div.fad_row", (e) => {
             // Show thumbnail for idd
+            if (ul.subtasks[ul.state["current_subtask"]]["state"]["idd_visible"] && !ul.subtasks[ul.state["current_subtask"]]["state"]["idd_thumbnail"]) {
+                return;
+            }
             ul.suggest_edits(null);
         });
 
         // Listener for id_dialog click interactions
-        jquery_default()("#" + ul.config["annbox_id"] + " a.id-dialog-clickable-indicator").click(function(e) {
+        jquery_default()("#" + ul.config["container_id"] + " a.id-dialog-clickable-indicator").click(function(e) {
             let crst = ul.state["current_subtask"];
             if (!ul.subtasks[crst]["state"]["idd_thumbnail"]) {
                 ul.handle_id_dialog_click(e);
@@ -14791,8 +14799,8 @@ class ULabel {
                     <div id="dialogs__${st}" class="dialogs_container"></div>
                 </div>
                 `);
-                jquery_default()("#" + that.config["container_id"]).append(`
-                    <div id="front_dialogs__${st}"></div>
+                jquery_default()("#" + that.config["container_id"] + ` div#fad_st__${st}`).append(`
+                    <div id="front_dialogs__${st}" class="front_dialogs"></div>
                 `);
         
                 // Get canvas contexts
@@ -15332,11 +15340,15 @@ class ULabel {
                         <a href="#" id="delete__${annotation_object["id"]}" class="fad_button delete">&#215;</a>
                     </div>
                 </div><!--
-                --><div class="fad_type_icon invert-this-svg" style="background-color: ${this.get_annotation_color(annotation_object["classification_payloads"])};">
+                --><div id="icon__${annotation_object["id"]}" class="fad_type_icon invert-this-svg" style="background-color: ${this.get_annotation_color(annotation_object["classification_payloads"])};">
                     ${svg_obj}
                 </div>
             </div>
             `);
+        }
+        else {
+            jquery_default()(`textarea#note__${annotation_object["id"]}`).val(annotation_object["text_payload"]);
+            jquery_default()(`div#icon__${annotation_object["id"]}`).css("background-color", this.get_annotation_color(annotation_object["classification_payloads"]));
         }
     }
 
@@ -15638,26 +15650,29 @@ class ULabel {
         let idd = jquery_default()("#" + idd_id);
         let idd_niu = jquery_default()("#" + idd_niu_id);
         if (nonspatial) {
-            // idd.css({
-            //     position: "absolute",
-            //     left: gbx+"px",
-            //     top: gby+"px",
-            //     transform: "translateX(-50%) translateY(-50%)"
-            // });
-            let idd_html = idd.outer_html();
-            let new_home = `reclf__${active_ann}`;
-            console.log(idd.parent().attr("id"));
-            if (idd.parent().attr("id") != new_home) {
-                idd.remove();
-                jquery_default()("#"+new_home).append(idd_html);
-                idd = jquery_default()("#"+idd_id)
+            let new_home = jquery_default()(`#reclf__${active_ann}`);
+            let fad_st = jquery_default()(`#fad_st__${stkey} div.front_dialogs`);
+            let height = 200;
+            let ofst = -100;
+            let zidx = 2000;
+            if (thumbnail) {
+                height = new_height;
+                zidx = -1;
+                // ofst = -100;
             }
+            let top_c = new_home.offset().top - fad_st.offset().top + ofst + new_height/2;
+            let left_c = new_home.offset().left - fad_st.offset().left + ofst + 1 + new_height/2;
             idd.css({
                 "display": "block",
                 "position": "absolute",
-                "top": (-100+28/2)+"px",
-                "left": (-100+28/2)+"px"
+                "top": (top_c)+"px",
+                "left": (left_c)+"px",
+                "z-index": zidx
             });
+            idd.parent().css({
+                "z-index": zidx
+            });
+
         }
 
         // Add or remove thumbnail class if necessary
@@ -17155,8 +17170,11 @@ class ULabel {
 
     // ----------------- ID Dialog -----------------
 
-    lookup_id_dialog_mouse_pos(mouse_event) {
+    lookup_id_dialog_mouse_pos(mouse_event, front) {
         let idd = jquery_default()("#" + this.subtasks[this.state["current_subtask"]]["state"]["idd_id"]);
+        if (front) {
+            idd = jquery_default()("#" + this.subtasks[this.state["current_subtask"]]["state"]["idd_id_front"]);
+        }
 
         // Get mouse position relative to center of div
         const idd_x = mouse_event.pageX - idd.offset().left - idd.width()/2;
@@ -17263,7 +17281,7 @@ class ULabel {
         }
     }
 
-    update_id_dialog_display() {
+    update_id_dialog_display(front=false) {
         const inner_rad = this.config["inner_prop"]*this.config["outer_diameter"]/2;
         const outer_rad = 0.5*this.config["outer_diameter"];
         let class_ids = this.subtasks[this.state["current_subtask"]]["class_ids"];
@@ -17325,14 +17343,19 @@ class ULabel {
     }
 
     handle_id_dialog_hover(mouse_event) {
-        let pos_evt = this.lookup_id_dialog_mouse_pos(mouse_event);
+        // Determine which dialog
+        let front = false;
+        if (this.subtasks[this.state["current_subtask"]]["state"]["idd_which"] == "front") {
+            front = true;
+        }
+        let pos_evt = this.lookup_id_dialog_mouse_pos(mouse_event, front);
         if (pos_evt != null) {
             if (!this.config["allow_soft_id"]) {
                 pos_evt.dist_prop = 1.0;
             }
             // TODO This assumes no pins
             this.set_id_dialog_payload_nopin(pos_evt.class_ind, pos_evt.dist_prop);
-            this.update_id_dialog_display();
+            this.update_id_dialog_display(front);
             this.update_id_toolbox_display()
         }
     }

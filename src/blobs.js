@@ -912,6 +912,7 @@ div#${prntid} div.frame_annotation_dialog.fad_ind__3 {
 div#${prntid} div.frame_annotation_dialog.active:hover, div#${prntid} div.frame_annotation_dialog.active.permopen {
    max-width: none;
    width: ${NONSP_SZ}px;
+   overflow: visible;
 }
 div#${prntid} div.frame_annotation_dialog.active {
    z-index: 125;
@@ -921,6 +922,12 @@ div#${prntid}.ulabel-night div.frame_annotation_dialog {
    background-color: rgb(37, 37, 37);
    border: 1px solid rgb(102, 102, 102);
    text-align: right;
+}
+div.front_dialogs {
+   position: absolute;
+   top: 0;
+   right: 0;
+   z-index: -1;
 }
 div#${prntid} div.frame_annotation_dialog div.row_container {
    position: relative;
