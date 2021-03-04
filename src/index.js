@@ -3926,17 +3926,19 @@ class ULabel {
             if (this.subtasks[this.state["current_subtask"]]["annotations"]["access"][id]["deprecated"]) continue;
             let cbox = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][id]["containing_box"];
             let frame = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][id]["frame"];
-            cbox["tlz"] = this.state["current_frame"];
-            cbox["brz"] = this.state["current_frame"];
-            if (frame != null) {
-                cbox["tlz"] = frame;
-                cbox["brz"] = frame;
-            }
-            else {
-                if (this.subtasks[this.state["current_subtask"]]["annotations"]["access"][id]["spatial_type"] == "bbox3") {
-                    let pts = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][id]["spatial_payload"];
-                    cbox["tlz"] = Math.min(pts[0][2], pts[1][2]);
-                    cbox["brz"] = Math.max(pts[0][2], pts[1][2]);
+            if (cbox) {
+                cbox["tlz"] = this.state["current_frame"];
+                cbox["brz"] = this.state["current_frame"];
+                if (frame != null) {
+                    cbox["tlz"] = frame;
+                    cbox["brz"] = frame;
+                }
+                else {
+                    if (this.subtasks[this.state["current_subtask"]]["annotations"]["access"][id]["spatial_type"] == "bbox3") {
+                        let pts = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][id]["spatial_payload"];
+                        cbox["tlz"] = Math.min(pts[0][2], pts[1][2]);
+                        cbox["brz"] = Math.max(pts[0][2], pts[1][2]);
+                    }
                 }
             }
             // TODO(new3d) bbox3 will have different rules here 
