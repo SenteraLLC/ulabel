@@ -1069,10 +1069,10 @@ class ULabel {
             };
             for (const stkey in ul.subtasks) {
                 submit_payload["annotations"][stkey] = [];
-                for (var i = 0; i < ul.subtasks[stkey]["annotations"][ul.state["current_frame"]]["ordering"].length; i++) {
+                for (var i = 0; i < ul.subtasks[stkey]["annotations"]["ordering"].length; i++) {
                     submit_payload["annotations"][stkey].push(
-                        ul.subtasks[stkey]["annotations"][ul.state["current_frame"]]["access"][
-                            ul.subtasks[stkey]["annotations"][ul.state["current_frame"]]["ordering"][i]
+                        ul.subtasks[stkey]["annotations"]["access"][
+                            ul.subtasks[stkey]["annotations"]["ordering"][i]
                         ]
                     );
                 }
