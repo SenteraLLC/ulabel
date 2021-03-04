@@ -4591,7 +4591,10 @@ class ULabel {
         // $(`img#${this.config["image_id_pfx"]}__${new_frame}`).css("z-index", 50);
         $(`img#${this.config["image_id_pfx"]}__${new_frame}`).css("display", "block");
         if (
-            MODES_3D.includes(this.subtasks[this.state["current_subtask"]]["state"]["annotation_mode"])
+            actid && 
+            MODES_3D.includes(
+                this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_type"]
+            )
         ) {
             if (this.subtasks[this.state["current_subtask"]]["state"]["is_in_edit"]) {
                 this.edit_annotation(this.state["last_move"]);
