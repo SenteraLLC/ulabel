@@ -459,7 +459,7 @@ class ULabel {
 
         let frame_range = `
         <div class="full-tb htbmain set-frame">
-            <p class="shortcut-tip">alt+scroll to switch frames</p>
+            <p class="shortcut-tip">shift+scroll to switch frames</p>
             <div class="zpcont">
                 <div class="lblpyldcont">
                     <span class="pzlbl htblbl">Frame</span> &nbsp;
@@ -882,7 +882,7 @@ class ULabel {
                 ul.rezoom(wheel_event.clientX, wheel_event.clientY);
             }
             else if (wheel_event.shiftKey) {
-                // Prevent default (idk what alt+scroll does but I don't want to find out)
+                // Prevent default (idk what shift+scroll does but I don't want to find out)
                 wheel_event.preventDefault();
 
                 // Get direction of wheel
@@ -1195,34 +1195,28 @@ class ULabel {
             "access": {}
         };
         if (subtask["resume_from"] != null) {
-            for (let frame = 0; frame < subtask["resume_from"].length; frame++) {
-                for (var i = 0; i < subtask["resume_from"][frame].length; i++) {
-                    // Push to ordering and add to access
-                    ul.subtasks[subtask_key]["annotations"]["ordering"].push(subtask["resume_from"][i]["id"]);
-                    ul.subtasks[subtask_key]["annotations"]["access"][subtask["resume_from"][i]["id"]] = subtask["resume_from"][i];
-                    ul.subtasks[subtask_key]["annotations"]["access"][subtask["resume_from"][i]["id"]]["frame"] = frame;
-    
-                    // Set new to false
-                    ul.subtasks[subtask_key]["annotations"]["access"][subtask["resume_from"][i]["id"]]["new"] = false;
-    
-                    // Test for line_size
-                    if (ul.subtasks[subtask_key]["annotations"]["access"][subtask["resume_from"][i]["id"]]["line_size"] == null) {
-                        ul.subtasks[subtask_key]["annotations"]["access"][subtask["resume_from"][i]["id"]]["line_size"] = DEFAULT_LINE_SIZE;
-                    }
-    
-                    // Make sure it has a containing box
-                    ul.rebuild_containing_box(subtask["resume_from"][i]["id"], false, frame);
-    
-                    // Ensure that spatial type is allowed
-                    // TODO do I really want to do this?
-    
-                    // Ensure that classification payloads are compatible with config
-                    // TODO
-    
-                    // Same for regression payloads
-                    // TODO
-                }    
-            }
+            for (var i = 0; i < subtask["resume_from"].length; i++) {
+                // Push to ordering and add to access
+                ul.subtasks[subtask_key]["annotations"]["ordering"].push(subtask["resume_from"][i]["id"]);
+                ul.subtasks[subtask_key]["annotations"]["access"][subtask["resume_from"][i]["id"]] = subtask["resume_from"][i];
+
+                // Set new to false
+                ul.subtasks[subtask_key]["annotations"]["access"][subtask["resume_from"][i]["id"]]["new"] = false;
+
+                // Test for line_size
+                if (ul.subtasks[subtask_key]["annotations"]["access"][subtask["resume_from"][i]["id"]]["line_size"] == null) {
+                    ul.subtasks[subtask_key]["annotations"]["access"][subtask["resume_from"][i]["id"]]["line_size"] = DEFAULT_LINE_SIZE;
+                }
+
+                // Ensure that spatial type is allowed
+                // TODO do I really want to do this?
+
+                // Ensure that classification payloads are compatible with config
+                // TODO
+
+                // Same for regression payloads
+                // TODO
+            }    
         }
     }
 
@@ -1457,6 +1451,17 @@ class ULabel {
                 "zoom_val_start": null // zoom_val when the dragging interaction started
             }
         };
+
+        for (const st in this.subtasks) {
+            for (let i = 0; i < this.subtasks[st]["annotations"]["ordering"].length; i++) {
+                let aid = this.subtasks[st]["annotations"]["ordering"][i];
+                let amd = this.subtasks[st]["annotations"]["access"][aid]["spatial_type"];
+                if (!NONSPATIAL_MODES.includes(amd)) {
+                    this.rebuild_containing_box(this.subtasks[st]["annotations"]["ordering"][i], false, st);
+                }
+            }
+        }
+                // Make sure it has a containing box
                 
         // Indicate that object must be "init" before use!
         this.is_init = false;
@@ -1539,8 +1544,7 @@ class ULabel {
             // Indicate that the object is now init!
             that.is_init = true;
     
-            // TODO why is this necessary?
-            that.state["zoom_val"] = 1.0;
+            that.state["zoom_val"] = that.get_exact_fit_zoom_val();
             that.rezoom(0, 0);
             this.update_frame();
 
@@ -1563,6 +1567,21 @@ class ULabel {
     version() {
         return ULabel.version();
     }
+
+    // A ratio of viewport height to image height
+	get_viewport_height_ratio() {
+		return $("#" + this.config["annbox_id"]).height() / this.config["image_height"];
+	}
+
+	// A ratio of viewport width to image width
+	get_viewport_width_ratio() {
+		return $("#" + this.config["annbox_id"]).width() / this.config["image_width"];
+	}
+
+	// The zoom ratio which fixes the entire image exactly in the viewport
+	get_exact_fit_zoom_val() {
+		return Math.min(this.get_viewport_height_ratio(), this.get_viewport_width_ratio());
+	}
 
     // ================== Subtask Helpers ===================
 
@@ -3165,37 +3184,43 @@ class ULabel {
         this.suggest_edits(this.state["last_move"]);
     }
 
-    update_containing_box(ms_loc, actid) {
+    update_containing_box(ms_loc, actid, subtask=null) {
+        if (subtask == null) {
+            subtask = this.state["current_subtask"];
+        }
         // TODO(3d)
-        if (ms_loc[0] < this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["containing_box"]["tlx"]) {
-            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["containing_box"]["tlx"] = ms_loc[0];
+        if (ms_loc[0] < this.subtasks[subtask]["annotations"]["access"][actid]["containing_box"]["tlx"]) {
+            this.subtasks[subtask]["annotations"]["access"][actid]["containing_box"]["tlx"] = ms_loc[0];
         }
-        else if (ms_loc[0] > this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["containing_box"]["brx"]) {
-            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["containing_box"]["brx"] = ms_loc[0];
+        else if (ms_loc[0] > this.subtasks[subtask]["annotations"]["access"][actid]["containing_box"]["brx"]) {
+            this.subtasks[subtask]["annotations"]["access"][actid]["containing_box"]["brx"] = ms_loc[0];
         }
-        if (ms_loc[1] < this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["containing_box"]["tly"]) {
-            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["containing_box"]["tly"] = ms_loc[1];
+        if (ms_loc[1] < this.subtasks[subtask]["annotations"]["access"][actid]["containing_box"]["tly"]) {
+            this.subtasks[subtask]["annotations"]["access"][actid]["containing_box"]["tly"] = ms_loc[1];
         }
-        else if (ms_loc[1] > this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["containing_box"]["bry"]) {
-            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["containing_box"]["bry"] = ms_loc[1];
+        else if (ms_loc[1] > this.subtasks[subtask]["annotations"]["access"][actid]["containing_box"]["bry"]) {
+            this.subtasks[subtask]["annotations"]["access"][actid]["containing_box"]["bry"] = ms_loc[1];
         }
         // console.log(ms_loc, this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["containing_box"]);
     }
 
-    rebuild_containing_box(actid, ignore_final=false) {
-        let init_pt = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"][0];
-        this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["containing_box"] = {
+    rebuild_containing_box(actid, ignore_final=false, subtask=null) {
+        if (subtask == null) {
+            subtask = this.state["current_subtask"];
+        }
+        let init_pt = this.subtasks[subtask]["annotations"]["access"][actid]["spatial_payload"][0];
+        this.subtasks[subtask]["annotations"]["access"][actid]["containing_box"] = {
             "tlx": init_pt[0],
             "tly": init_pt[1],
             "brx": init_pt[0],
             "bry": init_pt[1]
         }
-        let npts = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"].length;
+        let npts = this.subtasks[subtask]["annotations"]["access"][actid]["spatial_payload"].length;
         if (ignore_final) {
             npts -= 1;
         }
         for (var pti = 1; pti < npts; pti++) {
-            this.update_containing_box(this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"][pti], actid);
+            this.update_containing_box(this.subtasks[subtask]["annotations"]["access"][actid]["spatial_payload"][pti], actid, subtask);
         }
     }
 

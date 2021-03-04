@@ -1377,6 +1377,8 @@ div#${prntid} div.canvasses {
    position: absolute;
    top: 0; 
    left: 0;
+   padding-right: 100%;
+   padding-bottom: 100%;
 }
 div#${prntid} canvas.canvas_cls {
    position: absolute;
