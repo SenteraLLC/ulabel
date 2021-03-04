@@ -17072,7 +17072,7 @@ class ULabel {
                     // TODO(new3d) Will not always want to set 3rd val -- editing is possible within an intermediate frame or frames
                     this.set_with_access_string(actid, this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"]["access"], [ms_loc[0], ms_loc[1], this.state["current_frame"]]);
                     this.rebuild_containing_box(actid);
-                    this.redraw_all_annotations(this.state["current_subtask"], null, true); // tobuffer
+                    this.redraw_all_annotations(null, null, true); // tobuffer
                     this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"]["point"] = ms_loc;
                     this.show_edit_suggestion(this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"], true);
                     this.show_global_edit_suggestion(this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"]["annid"]);
@@ -17297,7 +17297,7 @@ class ULabel {
         this.move_annotation(mouse_event);
     }
 
-    move_annotation(mouse_event, isclick=false) {
+    move_annotation(mouse_event, isclick=false, isframe=false) {
         // Convenience
         const actid = this.subtasks[this.state["current_subtask"]]["state"]["active_id"];
         // TODO big performance gains with buffered canvasses
@@ -18264,7 +18264,7 @@ class ULabel {
                 this.edit_annotation(this.state["last_move"]);
             }
             else if (this.subtasks[this.state["current_subtask"]]["state"]["is_in_move"]) {
-                this.move_annotation(this.state["last_move"]);
+                this.move_annotation(this.state["last_move"], false, true);
             }
             else if (this.subtasks[this.state["current_subtask"]]["state"]["is_in_progress"]) {
                 this.continue_annotation(this.state["last_move"]);
