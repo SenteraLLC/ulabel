@@ -15340,7 +15340,7 @@ class ULabel {
                         <a href="#" id="delete__${annotation_object["id"]}" class="fad_button delete">&#215;</a>
                     </div>
                 </div><!--
-                --><div id="icon__${annotation_object["id"]}" class="fad_type_icon invert-this-svg" style="background-color: ${this.get_annotation_color(annotation_object["classification_payloads"])};">
+                --><div id="icon__${annotation_object["id"]}" class="fad_type_icon invert-this-svg" style="background-color: ${this.get_annotation_color(annotation_object["classification_payloads"], false, subtask)};">
                     ${svg_obj}
                 </div>
             </div>
@@ -15348,7 +15348,7 @@ class ULabel {
         }
         else {
             jquery_default()(`textarea#note__${annotation_object["id"]}`).val(annotation_object["text_payload"]);
-            jquery_default()(`div#icon__${annotation_object["id"]}`).css("background-color", this.get_annotation_color(annotation_object["classification_payloads"]));
+            jquery_default()(`div#icon__${annotation_object["id"]}`).css("background-color", this.get_annotation_color(annotation_object["classification_payloads"], false, subtask));
         }
     }
 
@@ -15466,6 +15466,7 @@ class ULabel {
     }
 
     redraw_all_annotations(subtask=null, offset=null, spatial_only=false) {
+        console.log(subtask);
         // TODO(3d)
         if (subtask == null) {
             for (const st in this.subtasks) {
