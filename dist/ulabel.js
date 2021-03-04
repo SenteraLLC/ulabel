@@ -12783,6 +12783,12 @@ div#${prntid} div.frame_annotation_dialog.fad_ind__2 {
 div#${prntid} div.frame_annotation_dialog.fad_ind__3 {
    right: 615px;
 }
+div#${prntid} div.frame_annotation_dialog div.hide_overflow_container {
+   width: 100%;
+   /* position: absolute;
+   right: 0; */
+   overflow: hidden;
+}
 div#${prntid} div.frame_annotation_dialog.active:hover, div#${prntid} div.frame_annotation_dialog.active.permopen {
    max-width: none;
    width: ${NONSP_SZ}px;
@@ -14012,19 +14018,21 @@ class ULabel {
             }
             ret += `
                 <div id="fad_st__${st_key}" class="frame_annotation_dialog fad_st__${st_key} fad_ind__${tot-ind-1}">
-                    <div class="row_container">
-                        <div class="fad_row name">
-                            <div class="fad_row_inner">
-                                <div class="fad_st_name">${ul.subtasks[st_key].display_name}</div>
-                            </div>
-                        </div>
-                        <div class="fad_row add">
-                            <div class="fad_row_inner">
-                                <div class="fad_st_add">
-                                    <a class="add-glob-button" href="#">+</a>
+                    <div class="hide_overflow_container">
+                        <div class="row_container">
+                            <div class="fad_row name">
+                                <div class="fad_row_inner">
+                                    <div class="fad_st_name">${ul.subtasks[st_key].display_name}</div>
                                 </div>
                             </div>
-                        </div><div class="fad_annotation_rows"></div>
+                            <div class="fad_row add">
+                                <div class="fad_row_inner">
+                                    <div class="fad_st_add">
+                                        <a class="add-glob-button" href="#">+</a>
+                                    </div>
+                                </div>
+                            </div><div class="fad_annotation_rows"></div>
+                        </div>
                     </div>
                 </div>
             `;
@@ -14462,6 +14470,7 @@ class ULabel {
         
         // Detection ctrl+scroll
         document.getElementById(ul.config["annbox_id"]).onwheel = function (wheel_event) {
+            let fms = ul.config["image_data"].frames.length > 1;
             if (wheel_event.ctrlKey) {
                 // Prevent scroll-zoom
                 wheel_event.preventDefault();
@@ -14478,8 +14487,7 @@ class ULabel {
                 ul.state["zoom_val"] *= (1 - dlta/10);
                 ul.rezoom(wheel_event.clientX, wheel_event.clientY);
             }
-            else if (wheel_event.shiftKey) {
-                // Prevent default (idk what shift+scroll does but I don't want to find out)
+            else if (fms) {
                 wheel_event.preventDefault();
 
                 // Get direction of wheel
@@ -14694,6 +14702,8 @@ class ULabel {
         document.body.onkeydown = function(keypress_event) {
             const shift = keypress_event.shiftKey;
             const ctrl = keypress_event.ctrlKey;
+            let fms = ul.config["image_data"].frames.length > 1;
+            let annbox = jquery_default()("#"+ul.config["annbox_id"]);
             if (ctrl &&
                 (
                     keypress_event.key == "z" || 
@@ -14713,6 +14723,38 @@ class ULabel {
             else if (keypress_event.key == "l") {
                 // console.log("Listing annotations using the \"l\" key has been deprecated.");
                 // console.log(ul.annotations);
+            }
+            else if (keypress_event.key == "ArrowRight") {
+                if (fms) {
+                    ul.update_frame(1);
+                }
+                else {
+                    annbox.scrollLeft(annbox.scrollLeft() + 20);
+                }
+            }
+            else if (keypress_event.key == "ArrowDown") {
+                if (fms) {
+                    ul.update_frame(1);
+                }
+                else {
+                    annbox.scrollTop(annbox.scrollTop() + 20);
+                }
+            }
+            else if (keypress_event.key == "ArrowLeft") {
+                if (fms) {
+                    ul.update_frame(-1);
+                }
+                else {
+                    annbox.scrollLeft(annbox.scrollLeft() - 20);
+                }
+            }
+            else if (keypress_event.key == "ArrowUp") {
+                if (fms) {
+                    ul.update_frame(-1);
+                }
+                else {
+                    annbox.scrollTop(annbox.scrollTop() - 20);
+                }
             }
             else {
                 // console.log(keypress_event);

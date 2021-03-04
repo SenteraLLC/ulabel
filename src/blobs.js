@@ -1166,6 +1166,12 @@ div#${prntid} div.frame_annotation_dialog.fad_ind__2 {
 div#${prntid} div.frame_annotation_dialog.fad_ind__3 {
    right: 615px;
 }
+div#${prntid} div.frame_annotation_dialog div.hide_overflow_container {
+   width: 100%;
+   /* position: absolute;
+   right: 0; */
+   overflow: hidden;
+}
 div#${prntid} div.frame_annotation_dialog.active:hover, div#${prntid} div.frame_annotation_dialog.active.permopen {
    max-width: none;
    width: ${NONSP_SZ}px;

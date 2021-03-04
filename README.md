@@ -91,9 +91,3 @@ You should now be able to run the launcher from the repository root.
 pwd # Should be /path/to/ULabel
 node demo/server.js
 ```
-
-## TODO
-
-- Default scroll behavior when there are multiple frames
-- Arrows mimic above
-- Container to hide overflow for nonspatial window
