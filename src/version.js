@@ -1,1 +1,1 @@
-exports.ULABEL_VERSION = "0.3.0";
+exports.ULABEL_VERSION = "0.3.1";

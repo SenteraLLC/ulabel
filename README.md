@@ -1,8 +1,10 @@
 # ULabel
 
-A browser-based tool for creating image annotations.
+A browser-based tool for annotating images.
 
 ## Usage
+
+ULabel is an entirely "frontend" tool. It can be incorporated into any HTML page as follows:
 
 ```html
 <!DOCTYPE html>
@@ -71,11 +73,13 @@ A browser-based tool for creating image annotations.
 </html>
 ```
 
-## Demo
+## Demo/Development
+
+The recommended way to develop new features is to use the tool as if you were running the demo. For testing new API features, you can create a new HTML file in `demo/`. The server in `demo.js` runs a static server from `demo/` so it will be served at `localhost:8080/<new-file>.html` automatically.
 
 ### Requirements
-- npm (`sudo apt install npm`)
-- nodejs (`sudo apt install nodejs`)
+- [npm](https://www.npmjs.com/get-npm) 
+- [nodejs](https://nodejs.org/en/download/)
 
 ### Install Dependencies
 
@@ -88,10 +92,10 @@ npm install
 You should now be able to run the launcher from the repository root.
 
 ```bash
-pwd # Should be /path/to/ULabel
-node demo/server.js
+pwd # Should be /path/to/ulabel
+node demo.js
 ```
 
-## TODO
+## Attribution
 
-- I should really start writing a spec
+The three demo images were downloaded from the [CityScapes dataset](https://www.cityscapes-dataset.com/). In particular, they are sampled from the first few frames of the `leftImg8bit_demoVideo`.
