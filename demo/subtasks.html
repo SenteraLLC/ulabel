@@ -18,19 +18,11 @@
             $(window).on("load", function() {
 
                 let on_submit = (annotations) => {
-
-                    // Post to save
-                    // TODO
-
-                    // Show message
-                    // If success, give button to quit
-                    // If fail, give button to download
-                    console.log(annotations);
-
-                    return;
-                    console.log("Done");
                     var element = document.createElement('a');
-                    element.setAttribute("href", 'data:text/plain;charset=utf-8,' + encodeURIComponent(JSON.stringify(annotations)));//, null, 2)));
+                    element.setAttribute(
+                        "href", ('data:text/plain;charset=utf-8,' + 
+                        encodeURIComponent(JSON.stringify(annotations, null, 2)))
+                    );
                     element.setAttribute("download", "annotations.json");
                     element.style.display = 'none';
                     document.body.appendChild(element);
@@ -53,7 +45,7 @@
                                 "id": 11
                             },
                         ],
-                        "allowed_modes": ["polygon"],
+                        "allowed_modes": ["contour", "polygon"],
                         "resume_from": null,
                         "task_meta": null,
                         "annotation_meta": null
@@ -63,16 +55,16 @@
                         "classes": [
                             {
                                 "name": "Reason 1",
-                                "color": "blue",
-                                "id": 10
+                                "color": "orange",
+                                "id": 12
                             },
                             {
                                 "name": "Reason 2",
-                                "color": "blue",
-                                "id": 11
+                                "color": "red",
+                                "id": 13
                             },
                         ],
-                        "allowed_modes": ["whole-image+"],
+                        "allowed_modes": ["bbox", "polygon", "tbar"],
                         "resume_from": null,
                         "task_meta": null,
                         "annotation_meta": null

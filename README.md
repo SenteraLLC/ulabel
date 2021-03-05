@@ -35,8 +35,33 @@ A browser-based tool for creating image annotations.
             document.body.removeChild(el);
         };
 
-        // Build and initialize the tool
-        let ulabel = new ULabel(container_id, image_url, username, classes, allowed_modes, on_submit);
+        let subtasks = {
+            "first_task": {
+                "display_name": "Task 1",
+                "classes": [
+                    {"name": "Class 1", "color": "blue", "id": 10},
+                    {"name": "Class 2", "color": "pink", "id": 11},
+                ],
+                "allowed_modes": ["contour", "polygon"],
+                "resume_from": null,
+                "task_meta": null,
+                "annotation_meta": null
+            },
+            "second_task": {
+                "display_name": "Task 2",
+                "classes": [
+                    {"name": "Class 2", "color": "pink", "id": 11},
+                    {"name": "Class 3", "color": "green", "id": 12},
+                ],
+                "allowed_modes": ["bbox", "polygon", "tbar"],
+                "resume_from": null,
+                "task_meta": null,
+                "annotation_meta": null
+            }
+        };
+
+        // Build and initialize the toollet ulabel = new ULabel(
+        let ulabel = new ULabel(container_id, image_url, username, on_submit, subtasks);
         ulabel.init(function() {
             console.log("ULabel is now ready");
         });
