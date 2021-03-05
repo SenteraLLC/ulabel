@@ -10,7 +10,7 @@ ULabel is an entirely "frontend" tool. It can be incorporated into any HTML page
 <!DOCTYPE html>
 <html>
 <head>
-    <script src="/ulabel.js"></script>
+    <script src="https://unpkg.com/ulabel/dist/ulabel.js"></script>
 </head>
 <body>
     <div id="ulabel-container" style="height: 800px; width: 1200px; position: absolute; top: 0; left: 0;"></div>
