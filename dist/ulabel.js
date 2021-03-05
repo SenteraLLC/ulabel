@@ -11537,7 +11537,7 @@ function version(uuid) {
 /***/ 345:
 /***/ ((__unused_webpack_module, exports) => {
 
-exports.I = "0.3.2";
+exports.I = "0.3.3";
 
 /***/ })
 
@@ -14194,7 +14194,7 @@ class ULabel {
         jquery_default()("#" + sp_id + " .toolbox_inner_cls .mode-selection").append(md_buttons.join("<!-- -->"));
         // TODO noconflict
         jquery_default()("#" + sp_id + " .toolbox_inner_cls").append(`
-            <a href="#" id="submit-button">Submit</a>
+            <a href="#" id="submit-button">${ul.config["done_button"]}</a>
         `);
 
         // Show current mode label
@@ -14991,6 +14991,18 @@ class ULabel {
         if (task_meta == null) {task_meta = {};}
         if (annotation_meta == null) {annotation_meta = {};}
 
+        // Unroll submit button
+        let on_submit_unrolled;
+        if (typeof on_submit == "function") {
+            on_submit_unrolled = {
+                name: "Submit",
+                hook: on_submit
+            };
+        }
+        else {
+            on_submit_unrolled = on_submit;
+        }
+
         // TODO 
         // Allow for importing spacing data -- a measure tool would be nice too
         // Much of this is hardcoded defaults, 
@@ -15025,7 +15037,8 @@ class ULabel {
             "edit_handle_size": 30,
 
             // Behavior on special interactions
-            "done_callback": on_submit,
+            "done_callback": on_submit_unrolled.hook,
+            "done_button": on_submit_unrolled.name,
 
             // ID Dialog config
             "cl_opacity": 0.4,
@@ -16967,7 +16980,7 @@ class ULabel {
                     this.redraw_all_annotations(this.state["current_subtask"], null, true); // tobuffer
                     break;
                 case "contour":
-                    if (ULabel.l2_norm(ms_loc, this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"][this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"].length-1]) > 3) {
+                    if (ULabel.l2_norm(ms_loc, this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"][this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"].length-1])*this.config["px_per_px"] > 3) {
                         this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"].push(ms_loc);
                         this.update_containing_box(ms_loc, actid);
                         this.redraw_all_annotations(this.state["current_subtask"], null, true); // TODO tobuffer, no need to redraw here, can just draw over
