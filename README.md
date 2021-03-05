@@ -96,6 +96,14 @@ pwd # Should be /path/to/ulabel
 node demo.js
 ```
 
+### Develop & Build
+
+The repository ships with the built `dist/ulabel.js` file. This file is not to be edited directly. Edits should be made in the `src/` dir and the package is built with 
+
+```bash
+npm run build
+```
+
 ## Attribution
 
 The three demo images were downloaded from the [CityScapes dataset](https://www.cityscapes-dataset.com/). In particular, they are sampled from the first few frames of the `leftImg8bit_demoVideo`.
