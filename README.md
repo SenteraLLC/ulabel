@@ -123,9 +123,3 @@ npm run build
 ## Attribution
 
 The three demo images were downloaded from the [CityScapes dataset](https://www.cityscapes-dataset.com/). In particular, they are sampled from the first few frames of the `leftImg8bit_demoVideo`.
-
-## v0.4.0 TODO List
-
-- ~~Adjust threshold for depositing new contour point using px_per_px~~
-- ~~Allow for custom done_button display~~
-- Allow for subtasks to be "Read Only"

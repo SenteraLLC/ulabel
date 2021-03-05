@@ -357,9 +357,11 @@ class ULabel {
             let sel = "";
             let href = ` href="#"`;
             let val = 50;
+            if (st_key == ul.state["current_subtask"] || ul.subtasks[st_key]["read_only"]) {
+                href = "";
+            }
             if (st_key == ul.state["current_subtask"]) {
                 sel = " sel";
-                href = "";
                 val = 100;
             }
             ret += `
@@ -1257,14 +1259,20 @@ class ULabel {
     }
 
     static initialize_subtasks(ul, stcs) {
+        let first_non_ro = null;
         for (const subtask_key in stcs) {
             // For convenience, make a raw subtask var
             let raw_subtask = stcs[subtask_key];
 
             // Initialize subtask config to null
             ul.subtasks[subtask_key] = {
-                "display_name": raw_subtask["display_name"] || subtask_key
+                "display_name": raw_subtask["display_name"] || subtask_key,
+                "read_only": ("read_only" in raw_subtask) && (raw_subtask["read_only"] === true)
             };
+
+            if (first_non_ro == null && !ul.subtasks[subtask_key]["read_only"]) {
+                first_non_ro = subtask_key;
+            }
 
             //  Initialize an empty action stream for each subtask
             ul.subtasks[subtask_key]["actions"] = {
@@ -1318,7 +1326,9 @@ class ULabel {
                 // Generic dialogs
                 "visible_dialogs": {}
             };
-
+        }
+        if (first_non_ro == null) {
+            ul.raise_error("You must have at least one subtask without 'read_only' set to true.", ULabel.elvl_fatal);
         }
     }
 
@@ -4118,6 +4128,7 @@ class ULabel {
                 break;
             case ULabel.elvl_fatal:
                 alert("[fatal] " + message);
+                throw new Error(message);
                 break;
         }
     }
