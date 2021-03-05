@@ -11537,7 +11537,7 @@ function version(uuid) {
 /***/ 345:
 /***/ ((__unused_webpack_module, exports) => {
 
-exports.I = "0.2.0";
+exports.I = "0.3.0";
 
 /***/ })
 
@@ -11992,18 +11992,757 @@ const TBAR_SVG = `
   </g>
 </svg>
 `;
-const INIT_STYLE = `
-div.ulabel-night {
+const GLOBAL_SVG = `
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="100mm"
+   height="100mm"
+   viewBox="0 0 100 100"
+   version="1.1"
+   id="svg7244"
+   inkscape:version="0.92.5 (2060ec1f9f, 2020-04-08)"
+   sodipodi:docname="global_v2.svg">
+  <defs
+     id="defs7238">
+    <marker
+       inkscape:stockid="DotL"
+       orient="auto"
+       refY="0.0"
+       refX="0.0"
+       id="marker1156"
+       style="overflow:visible"
+       inkscape:isstock="true">
+      <path
+         id="path1154"
+         d="M -2.5,-1.0 C -2.5,1.7600000 -4.7400000,4.0 -7.5,4.0 C -10.260000,4.0 -12.5,1.7600000 -12.5,-1.0 C -12.5,-3.7600000 -10.260000,-6.0 -7.5,-6.0 C -4.7400000,-6.0 -2.5,-3.7600000 -2.5,-1.0 z "
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1pt;stroke-opacity:1;fill:#000000;fill-opacity:1"
+         transform="scale(0.8) translate(7.4, 1)" />
+    </marker>
+    <marker
+       inkscape:stockid="DotL"
+       orient="auto"
+       refY="0.0"
+       refX="0.0"
+       id="marker1152"
+       style="overflow:visible"
+       inkscape:isstock="true">
+      <path
+         id="path1150"
+         d="M -2.5,-1.0 C -2.5,1.7600000 -4.7400000,4.0 -7.5,4.0 C -10.260000,4.0 -12.5,1.7600000 -12.5,-1.0 C -12.5,-3.7600000 -10.260000,-6.0 -7.5,-6.0 C -4.7400000,-6.0 -2.5,-3.7600000 -2.5,-1.0 z "
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1pt;stroke-opacity:1;fill:#000000;fill-opacity:1"
+         transform="scale(0.8) translate(7.4, 1)" />
+    </marker>
+    <marker
+       inkscape:stockid="DotL"
+       orient="auto"
+       refY="0.0"
+       refX="0.0"
+       id="marker1148"
+       style="overflow:visible"
+       inkscape:isstock="true">
+      <path
+         id="path946"
+         d="M -2.5,-1.0 C -2.5,1.7600000 -4.7400000,4.0 -7.5,4.0 C -10.260000,4.0 -12.5,1.7600000 -12.5,-1.0 C -12.5,-3.7600000 -10.260000,-6.0 -7.5,-6.0 C -4.7400000,-6.0 -2.5,-3.7600000 -2.5,-1.0 z "
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1pt;stroke-opacity:1;fill:#000000;fill-opacity:1"
+         transform="scale(0.8) translate(7.4, 1)" />
+    </marker>
+    <marker
+       inkscape:stockid="DotL"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="DotL"
+       style="overflow:visible"
+       inkscape:isstock="true">
+      <path
+         inkscape:connector-curvature="0"
+         id="path4587"
+         d="m -2.5,-1 c 0,2.76 -2.24,5 -5,5 -2.76,0 -5,-2.24 -5,-5 0,-2.76 2.24,-5 5,-5 2.76,0 5,2.24 5,5 z"
+         style="fill:#000000;fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:1.00000003pt;stroke-opacity:1"
+         transform="matrix(0.8,0,0,0.8,5.92,0.8)" />
+    </marker>
+    <marker
+       inkscape:stockid="DotL"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="marker7235"
+       style="overflow:visible"
+       inkscape:isstock="true">
+      <path
+         inkscape:connector-curvature="0"
+         id="path7233"
+         d="m -2.5,-1 c 0,2.76 -2.24,5 -5,5 -2.76,0 -5,-2.24 -5,-5 0,-2.76 2.24,-5 5,-5 2.76,0 5,2.24 5,5 z"
+         style="fill:#000000;fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:1.00000003pt;stroke-opacity:1"
+         transform="matrix(0.8,0,0,0.8,5.92,0.8)" />
+    </marker>
+  </defs>
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="1.4"
+     inkscape:cx="5.310344"
+     inkscape:cy="177.26523"
+     inkscape:document-units="mm"
+     inkscape:current-layer="layer1"
+     showgrid="false"
+     inkscape:window-width="1920"
+     inkscape:window-height="1043"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1" />
+  <metadata
+     id="metadata7241">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title />
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(0,-197)">
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1.27714288;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="M 30.000035,244.14279 V 226.99993 H 47.142863"
+       id="path883"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="ccc" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1.27714288;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="M 47.142863,286.99993 H 30.000035 v -17.14286"
+       id="path883-3"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="ccc" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1.27714288;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="m 89.999929,269.85707 v 17.14286 H 72.857102"
+       id="path883-3-6"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="ccc" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1.27714288;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="m 72.857102,226.99993 h 17.142827 v 17.14286"
+       id="path883-3-7"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="ccc" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1.27714133;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:0.66666669"
+       d="M 20.000052,234.14279 V 216.99993 H 37.14284"
+       id="path883-2"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="ccc" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1.27714133;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:0.66666669"
+       d="M 30,276.99993 H 20.000052 V 259.85707"
+       id="path883-3-70"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="ccc" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1.27714133;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:0.66666669"
+       d="M 62.857016,216.99993 H 79.999804 V 227"
+       id="path883-3-7-3"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="ccc" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1.27714133;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:0.53431374"
+       d="M 10.00007,224.14279 V 206.99993 H 27.142858"
+       id="path883-2-6"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="ccc" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1.27714133;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:0.53431374"
+       d="M 19.5,266.99993 H 10.00007 V 249.85707"
+       id="path883-3-70-0"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="ccc" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1.27714133;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:0.53431374"
+       d="M 52.857035,206.99993 H 69.999821 V 216.5"
+       id="path883-3-7-3-2"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="ccc" />
+  </g>
+</svg>
+`;
+const WHOLE_IMAGE_SVG = `
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="100mm"
+   height="100mm"
+   viewBox="0 0 100 100"
+   version="1.1"
+   id="svg7244"
+   inkscape:version="0.92.5 (2060ec1f9f, 2020-04-08)"
+   sodipodi:docname="whole_image.svg">
+  <defs
+     id="defs7238">
+    <marker
+       inkscape:stockid="DotL"
+       orient="auto"
+       refY="0.0"
+       refX="0.0"
+       id="marker1156"
+       style="overflow:visible"
+       inkscape:isstock="true">
+      <path
+         id="path1154"
+         d="M -2.5,-1.0 C -2.5,1.7600000 -4.7400000,4.0 -7.5,4.0 C -10.260000,4.0 -12.5,1.7600000 -12.5,-1.0 C -12.5,-3.7600000 -10.260000,-6.0 -7.5,-6.0 C -4.7400000,-6.0 -2.5,-3.7600000 -2.5,-1.0 z "
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1pt;stroke-opacity:1;fill:#000000;fill-opacity:1"
+         transform="scale(0.8) translate(7.4, 1)" />
+    </marker>
+    <marker
+       inkscape:stockid="DotL"
+       orient="auto"
+       refY="0.0"
+       refX="0.0"
+       id="marker1152"
+       style="overflow:visible"
+       inkscape:isstock="true">
+      <path
+         id="path1150"
+         d="M -2.5,-1.0 C -2.5,1.7600000 -4.7400000,4.0 -7.5,4.0 C -10.260000,4.0 -12.5,1.7600000 -12.5,-1.0 C -12.5,-3.7600000 -10.260000,-6.0 -7.5,-6.0 C -4.7400000,-6.0 -2.5,-3.7600000 -2.5,-1.0 z "
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1pt;stroke-opacity:1;fill:#000000;fill-opacity:1"
+         transform="scale(0.8) translate(7.4, 1)" />
+    </marker>
+    <marker
+       inkscape:stockid="DotL"
+       orient="auto"
+       refY="0.0"
+       refX="0.0"
+       id="marker1148"
+       style="overflow:visible"
+       inkscape:isstock="true">
+      <path
+         id="path946"
+         d="M -2.5,-1.0 C -2.5,1.7600000 -4.7400000,4.0 -7.5,4.0 C -10.260000,4.0 -12.5,1.7600000 -12.5,-1.0 C -12.5,-3.7600000 -10.260000,-6.0 -7.5,-6.0 C -4.7400000,-6.0 -2.5,-3.7600000 -2.5,-1.0 z "
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1pt;stroke-opacity:1;fill:#000000;fill-opacity:1"
+         transform="scale(0.8) translate(7.4, 1)" />
+    </marker>
+    <marker
+       inkscape:stockid="DotL"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="DotL"
+       style="overflow:visible"
+       inkscape:isstock="true">
+      <path
+         inkscape:connector-curvature="0"
+         id="path4587"
+         d="m -2.5,-1 c 0,2.76 -2.24,5 -5,5 -2.76,0 -5,-2.24 -5,-5 0,-2.76 2.24,-5 5,-5 2.76,0 5,2.24 5,5 z"
+         style="fill:#000000;fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:1.00000003pt;stroke-opacity:1"
+         transform="matrix(0.8,0,0,0.8,5.92,0.8)" />
+    </marker>
+    <marker
+       inkscape:stockid="DotL"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="marker7235"
+       style="overflow:visible"
+       inkscape:isstock="true">
+      <path
+         inkscape:connector-curvature="0"
+         id="path7233"
+         d="m -2.5,-1 c 0,2.76 -2.24,5 -5,5 -2.76,0 -5,-2.24 -5,-5 0,-2.76 2.24,-5 5,-5 2.76,0 5,2.24 5,5 z"
+         style="fill:#000000;fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:1.00000003pt;stroke-opacity:1"
+         transform="matrix(0.8,0,0,0.8,5.92,0.8)" />
+    </marker>
+  </defs>
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="1.4"
+     inkscape:cx="102.54275"
+     inkscape:cy="180.12237"
+     inkscape:document-units="mm"
+     inkscape:current-layer="layer1"
+     showgrid="false"
+     inkscape:window-width="1920"
+     inkscape:window-height="1043"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1" />
+  <metadata
+     id="metadata7241">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title />
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(0,-197)">
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1.49000001;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="M 15,232 V 212 H 35"
+       id="path883"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="ccc" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1.49000001;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="M 35,282 H 15 v -20"
+       id="path883-3"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="ccc" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1.49000001;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="m 85,262 v 20 H 65"
+       id="path883-3-6"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="ccc" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1.49000001;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="m 65,212 h 20 v 20"
+       id="path883-3-7"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="ccc" />
+  </g>
+</svg>
+`;
+const POLYLINE_SVG = `
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="100mm"
+   height="100mm"
+   viewBox="0 0 100 100"
+   version="1.1"
+   id="svg7244"
+   inkscape:version="0.92.5 (2060ec1f9f, 2020-04-08)"
+   sodipodi:docname="polygon.svg">
+  <defs
+     id="defs7238">
+    <marker
+       inkscape:stockid="DotL"
+       orient="auto"
+       refY="0.0"
+       refX="0.0"
+       id="marker1156"
+       style="overflow:visible"
+       inkscape:isstock="true">
+      <path
+         id="path1154"
+         d="M -2.5,-1.0 C -2.5,1.7600000 -4.7400000,4.0 -7.5,4.0 C -10.260000,4.0 -12.5,1.7600000 -12.5,-1.0 C -12.5,-3.7600000 -10.260000,-6.0 -7.5,-6.0 C -4.7400000,-6.0 -2.5,-3.7600000 -2.5,-1.0 z "
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1pt;stroke-opacity:1;fill:#000000;fill-opacity:1"
+         transform="scale(0.8) translate(7.4, 1)" />
+    </marker>
+    <marker
+       inkscape:stockid="DotL"
+       orient="auto"
+       refY="0.0"
+       refX="0.0"
+       id="marker1152"
+       style="overflow:visible"
+       inkscape:isstock="true">
+      <path
+         id="path1150"
+         d="M -2.5,-1.0 C -2.5,1.7600000 -4.7400000,4.0 -7.5,4.0 C -10.260000,4.0 -12.5,1.7600000 -12.5,-1.0 C -12.5,-3.7600000 -10.260000,-6.0 -7.5,-6.0 C -4.7400000,-6.0 -2.5,-3.7600000 -2.5,-1.0 z "
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1pt;stroke-opacity:1;fill:#000000;fill-opacity:1"
+         transform="scale(0.8) translate(7.4, 1)" />
+    </marker>
+    <marker
+       inkscape:stockid="DotL"
+       orient="auto"
+       refY="0.0"
+       refX="0.0"
+       id="marker1148"
+       style="overflow:visible"
+       inkscape:isstock="true">
+      <path
+         id="path946"
+         d="M -2.5,-1.0 C -2.5,1.7600000 -4.7400000,4.0 -7.5,4.0 C -10.260000,4.0 -12.5,1.7600000 -12.5,-1.0 C -12.5,-3.7600000 -10.260000,-6.0 -7.5,-6.0 C -4.7400000,-6.0 -2.5,-3.7600000 -2.5,-1.0 z "
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1pt;stroke-opacity:1;fill:#000000;fill-opacity:1"
+         transform="scale(0.8) translate(7.4, 1)" />
+    </marker>
+    <marker
+       inkscape:stockid="DotL"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="DotL"
+       style="overflow:visible"
+       inkscape:isstock="true">
+      <path
+         inkscape:connector-curvature="0"
+         id="path4587"
+         d="m -2.5,-1 c 0,2.76 -2.24,5 -5,5 -2.76,0 -5,-2.24 -5,-5 0,-2.76 2.24,-5 5,-5 2.76,0 5,2.24 5,5 z"
+         style="fill:#000000;fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:1.00000003pt;stroke-opacity:1"
+         transform="matrix(0.8,0,0,0.8,5.92,0.8)" />
+    </marker>
+    <marker
+       inkscape:stockid="DotL"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="marker7235"
+       style="overflow:visible"
+       inkscape:isstock="true">
+      <path
+         inkscape:connector-curvature="0"
+         id="path7233"
+         d="m -2.5,-1 c 0,2.76 -2.24,5 -5,5 -2.76,0 -5,-2.24 -5,-5 0,-2.76 2.24,-5 5,-5 2.76,0 5,2.24 5,5 z"
+         style="fill:#000000;fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:1.00000003pt;stroke-opacity:1"
+         transform="matrix(0.8,0,0,0.8,5.92,0.8)" />
+    </marker>
+  </defs>
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="1.4"
+     inkscape:cx="227.89989"
+     inkscape:cy="182.97951"
+     inkscape:document-units="mm"
+     inkscape:current-layer="layer1"
+     showgrid="false"
+     inkscape:window-width="1920"
+     inkscape:window-height="1043"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1" />
+  <metadata
+     id="metadata7241">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title />
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(0,-197)">
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1.49000001;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;marker-start:url(#marker1148);marker-mid:url(#marker1152);marker-end:url(#marker1156)"
+       d="M 15.497022,283.01488 28.915179,250.31994 67.657737,240.11458 87.879463,210.06547"
+       id="path883"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="cccc" />
+  </g>
+</svg>
+`;
+const BBOX3_SVG = `
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="100mm"
+   height="100mm"
+   viewBox="0 0 100 100"
+   version="1.1"
+   id="svg7244"
+   inkscape:version="0.92.5 (2060ec1f9f, 2020-04-08)"
+   sodipodi:docname="bbox3.svg">
+<defs
+  id="defs7338">
+ <marker
+    inkscape:isstock="true"
+    style="overflow:visible"
+    id="marker3387"
+    refX="0"
+    refY="0"
+    orient="auto"
+    inkscape:stockid="DotL">
+   <path
+      transform="matrix(0.8,0,0,0.8,5.92,0.8)"
+      style="fill:#757575;fill-opacity:0.98039216;fill-rule:evenodd;stroke:#757575;stroke-width:1.00000003pt;stroke-opacity:0.98039216"
+      d="m -2.5,-1 c 0,2.76 -2.24,5 -5,5 -2.76,0 -5,-2.24 -5,-5 0,-2.76 2.24,-5 5,-5 2.76,0 5,2.24 5,5 z"
+      id="path3385"
+      inkscape:connector-curvature="0" />
+ </marker>
+ <marker
+    inkscape:isstock="true"
+    style="overflow:visible"
+    id="marker2383"
+    refX="0"
+    refY="0"
+    orient="auto"
+    inkscape:stockid="DotL">
+   <path
+      transform="matrix(0.8,0,0,0.8,5.92,0.8)"
+      style="fill:#000000;fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:1.00000003pt;stroke-opacity:1"
+      d="m -2.5,-1 c 0,2.76 -2.24,5 -5,5 -2.76,0 -5,-2.24 -5,-5 0,-2.76 2.24,-5 5,-5 2.76,0 5,2.24 5,5 z"
+      id="path2381"
+      inkscape:connector-curvature="0" />
+ </marker>
+ <marker
+    inkscape:isstock="true"
+    style="overflow:visible"
+    id="marker2313"
+    refX="0"
+    refY="0"
+    orient="auto"
+    inkscape:stockid="DotL">
+   <path
+      transform="matrix(0.8,0,0,0.8,5.92,0.8)"
+      style="fill:#000000;fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:1.00000003pt;stroke-opacity:1"
+      d="m -2.5,-1 c 0,2.76 -2.24,5 -5,5 -2.76,0 -5,-2.24 -5,-5 0,-2.76 2.24,-5 5,-5 2.76,0 5,2.24 5,5 z"
+      id="path2211"
+      inkscape:connector-curvature="0" />
+ </marker>
+ <marker
+    inkscape:stockid="DotL"
+    orient="auto"
+    refY="0.0"
+    refX="0.0"
+    id="marker1651"
+    style="overflow:visible"
+    inkscape:isstock="true">
+   <path
+      id="path1649"
+      d="M -2.5,-1.0 C -2.5,1.7600000 -4.7400000,4.0 -7.5,4.0 C -10.260000,4.0 -12.5,1.7600000 -12.5,-1.0 C -12.5,-3.7600000 -10.260000,-6.0 -7.5,-6.0 C -4.7400000,-6.0 -2.5,-3.7600000 -2.5,-1.0 z "
+      style="fill-rule:evenodd;stroke:#000000;stroke-width:1pt;stroke-opacity:1;fill:#000000;fill-opacity:1"
+      transform="scale(0.8) translate(7.4, 1)" />
+ </marker>
+ <marker
+    inkscape:stockid="DotL"
+    orient="auto"
+    refY="0.0"
+    refX="0.0"
+    id="marker1315"
+    style="overflow:visible"
+    inkscape:isstock="true">
+   <path
+      id="path1313"
+      d="M -2.5,-1.0 C -2.5,1.7600000 -4.7400000,4.0 -7.5,4.0 C -10.260000,4.0 -12.5,1.7600000 -12.5,-1.0 C -12.5,-3.7600000 -10.260000,-6.0 -7.5,-6.0 C -4.7400000,-6.0 -2.5,-3.7600000 -2.5,-1.0 z "
+      style="fill-rule:evenodd;stroke:#000000;stroke-width:1pt;stroke-opacity:1;fill:#000000;fill-opacity:1"
+      transform="scale(0.8) translate(7.4, 1)" />
+ </marker>
+ <marker
+    inkscape:stockid="DotL"
+    orient="auto"
+    refY="0.0"
+    refX="0.0"
+    id="marker1145"
+    style="overflow:visible"
+    inkscape:isstock="true">
+   <path
+      id="path943"
+      d="M -2.5,-1.0 C -2.5,1.7600000 -4.7400000,4.0 -7.5,4.0 C -10.260000,4.0 -12.5,1.7600000 -12.5,-1.0 C -12.5,-3.7600000 -10.260000,-6.0 -7.5,-6.0 C -4.7400000,-6.0 -2.5,-3.7600000 -2.5,-1.0 z "
+      style="fill-rule:evenodd;stroke:#000000;stroke-width:1pt;stroke-opacity:1;fill:#000000;fill-opacity:1"
+      transform="scale(0.8) translate(7.4, 1)" />
+ </marker>
+ <marker
+    inkscape:stockid="DotL"
+    orient="auto"
+    refY="0.0"
+    refX="0.0"
+    id="marker1156"
+    style="overflow:visible"
+    inkscape:isstock="true">
+   <path
+      id="path1254"
+      d="M -2.5,-1.0 C -2.5,1.7600000 -4.7400000,4.0 -7.5,4.0 C -10.260000,4.0 -12.5,1.7600000 -12.5,-1.0 C -12.5,-3.7600000 -10.260000,-6.0 -7.5,-6.0 C -4.7400000,-6.0 -2.5,-3.7600000 -2.5,-1.0 z "
+      style="fill-rule:evenodd;stroke:#000000;stroke-width:1pt;stroke-opacity:1;fill:#000000;fill-opacity:1"
+      transform="scale(0.8) translate(7.4, 1)" />
+ </marker>
+ <marker
+    inkscape:stockid="DotL"
+    orient="auto"
+    refY="0.0"
+    refX="0.0"
+    id="marker1152"
+    style="overflow:visible"
+    inkscape:isstock="true">
+   <path
+      id="path1160"
+      d="M -2.5,-1.0 C -2.5,1.7600000 -4.7400000,4.0 -7.5,4.0 C -10.260000,4.0 -12.5,1.7600000 -12.5,-1.0 C -12.5,-3.7600000 -10.260000,-6.0 -7.5,-6.0 C -4.7400000,-6.0 -2.5,-3.7600000 -2.5,-1.0 z "
+      style="fill-rule:evenodd;stroke:#000000;stroke-width:1pt;stroke-opacity:1;fill:#000000;fill-opacity:1"
+      transform="scale(0.8) translate(7.4, 1)" />
+ </marker>
+ <marker
+    inkscape:stockid="DotL"
+    orient="auto"
+    refY="0.0"
+    refX="0.0"
+    id="marker1148"
+    style="overflow:visible"
+    inkscape:isstock="true">
+   <path
+      id="path951"
+      d="M -2.5,-1.0 C -2.5,1.7600000 -4.7400000,4.0 -7.5,4.0 C -10.260000,4.0 -12.5,1.7600000 -12.5,-1.0 C -12.5,-3.7600000 -10.260000,-6.0 -7.5,-6.0 C -4.7400000,-6.0 -2.5,-3.7600000 -2.5,-1.0 z "
+      style="fill-rule:evenodd;stroke:#000000;stroke-width:1pt;stroke-opacity:1;fill:#000000;fill-opacity:1"
+      transform="scale(0.8) translate(7.4, 1)" />
+ </marker>
+ <marker
+    inkscape:stockid="DotL"
+    orient="auto"
+    refY="0"
+    refX="0"
+    id="DotL"
+    style="overflow:visible"
+    inkscape:isstock="true"
+    inkscape:collect="always">
+   <path
+      inkscape:connector-curvature="0"
+      id="path4591"
+      d="m -2.5,-1 c 0,2.76 -2.24,5 -5,5 -2.76,0 -5,-2.24 -5,-5 0,-2.76 2.24,-5 5,-5 2.76,0 5,2.24 5,5 z"
+      style="fill:#000000;fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:1.00000003pt;stroke-opacity:1"
+      transform="matrix(0.8,0,0,0.8,5.92,0.8)" />
+ </marker>
+ <marker
+    inkscape:stockid="DotL"
+    orient="auto"
+    refY="0"
+    refX="0"
+    id="marker7235"
+    style="overflow:visible"
+    inkscape:isstock="true">
+   <path
+      inkscape:connector-curvature="0"
+      id="path7234"
+      d="m -2.5,-1 c 0,2.76 -2.24,5 -5,5 -2.76,0 -5,-2.24 -5,-5 0,-2.76 2.24,-5 5,-5 2.76,0 5,2.24 5,5 z"
+      style="fill:#000000;fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:1.00000003pt;stroke-opacity:1"
+      transform="matrix(0.8,0,0,0.8,5.92,0.8)" />
+ </marker>
+</defs>
+<sodipodi:namedview
+  id="base"
+  pagecolor="#ffffff"
+  bordercolor="#666666"
+  borderopacity="1.0"
+  inkscape:pageopacity="0.0"
+  inkscape:pageshadow="2"
+  inkscape:zoom="1.4"
+  inkscape:cx="-23.528679"
+  inkscape:cy="177.26523"
+  inkscape:document-units="mm"
+  inkscape:current-layer="layer2"
+  showgrid="false"
+  inkscape:window-width="1920"
+  inkscape:window-height="1043"
+  inkscape:window-x="0"
+  inkscape:window-y="0"
+  inkscape:window-maximized="1" />
+<metadata
+  id="metadata7241">
+ <rdf:RDF>
+   <cc:Work
+      rdf:about="">
+     <dc:format>image/svg+xml</dc:format>
+     <dc:type
+        rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+     <dc:title />
+   </cc:Work>
+ </rdf:RDF>
+</metadata>
+<g
+  inkscape:label="Layer 1"
+  inkscape:groupmode="layer"
+  id="layer1"
+  transform="translate(0,-197)">
+ <path
+    style="fill:none;stroke:#454545;stroke-width:1.55600691;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+    d="M 10.756538,266.99254 H 70.756863"
+    id="path2551"
+    inkscape:connector-curvature="0"
+    sodipodi:nodetypes="cc" />
+ <path
+    style="fill:none;stroke:#454545;stroke-width:1.55600691;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:0.98039216;marker-mid:url(#marker3387)"
+    d="m 70.756864,206.99233 -10e-7,60.16215 18.4441,19.83814"
+    id="path2553"
+    inkscape:connector-curvature="0"
+    sodipodi:nodetypes="ccc" />
+</g>
+<g
+  inkscape:groupmode="layer"
+  id="layer2"
+  inkscape:label="Layer 2">
+ <path
+    style="fill:none;stroke:#000000;stroke-width:1.55600691;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;marker-mid:url(#marker2383)"
+    d="M 30.756486,89.992787 10.756538,69.992546 V 9.9923299 h 60.000325 l 18.44426,21.5559081"
+    id="path973-1"
+    inkscape:connector-curvature="0"
+    sodipodi:nodetypes="ccccc" />
+ <path
+    style="fill:none;stroke:#000000;stroke-width:1.55600691;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;marker-start:url(#marker1145);marker-mid:url(#marker1315);marker-end:url(#marker1651)"
+    d="M 10.756538,9.9923299 30.756484,31.548238"
+    id="path880"
+    inkscape:connector-curvature="0" />
+ <path
+    style="fill:none;stroke:#000000;stroke-width:1.56000698;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;marker-mid:url(#marker1145)"
+    d="M 30.756646,89.992617 H 89.200963 V 31.548238"
+    id="path2155"
+    inkscape:connector-curvature="0"
+    sodipodi:nodetypes="ccc" />
+ <path
+    style="fill:none;stroke:#000000;stroke-width:1.55600691;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;marker-start:url(#marker1145);marker-mid:url(#marker1145);marker-end:url(#marker1145)"
+    d="M 89.201121,31.548238 H 30.756484 l 2e-6,58.444549"
+    id="path2153"
+    inkscape:connector-curvature="0" />
+</g>
+</svg>
+`;
+
+let get_init_style = (prntid) => {
+   const NONSP_SZ = 400;
+   return `
+div#${prntid} * {
+   box-sizing: content-box;
+}
+div#${prntid}.ulabel-night {
    background-color: black;
 }
-div.full_ulabel_container_ {
+div#${prntid} div.full_ulabel_container_ {
    font-family: sans-serif;
 }
 
-div.annbox_cls, div.toolbox_cls {
+div#${prntid} div.annbox_cls, div#${prntid} div.toolbox_cls {
    height: 100%;
 }
-div.annbox_cls {
+div#${prntid} div.annbox_cls {
    width: calc(100% - 320px);
    background-color: black;
    overflow: scroll;
@@ -12011,7 +12750,235 @@ div.annbox_cls {
    top: 0;
    left: 0;
 }
-div.toolbox_cls {
+div#${prntid} div.annbox_cls img.image_frame {
+   position: absolute;
+   top: 0;
+   left: 0;
+   max-width: none;
+   max-height: none;
+}
+
+
+/* Frame annotation dialog */
+div#${prntid} div.frame_annotation_dialog {
+   width: 60px;
+   overflow: hidden;
+   position: absolute;
+   z-index: 80;
+   background-color: rgb(255, 255, 255);
+   border: 1px solid rgb(143, 143, 143);
+   transition: opacity 0.1s, width 0.3s, height 0.3s, min-height 0.3s;
+   opacity: 0.5;
+   top: 40px;
+}
+div#${prntid} div.frame_annotation_dialog.fad_ind__0 {
+   right: 360px;
+}
+div#${prntid} div.frame_annotation_dialog.fad_ind__1 {
+   right: 445px;
+}
+div#${prntid} div.frame_annotation_dialog.fad_ind__2 {
+   right: 530px;
+}
+div#${prntid} div.frame_annotation_dialog.fad_ind__3 {
+   right: 615px;
+}
+div#${prntid} div.frame_annotation_dialog div.hide_overflow_container {
+   width: 100%;
+   /* position: absolute;
+   right: 0; */
+   overflow: hidden;
+}
+div#${prntid} div.frame_annotation_dialog.active:hover, div#${prntid} div.frame_annotation_dialog.active.permopen {
+   max-width: none;
+   width: ${NONSP_SZ}px;
+   overflow: visible;
+}
+div#${prntid} div.frame_annotation_dialog.active {
+   z-index: 125;
+   opacity: 1.0;
+}
+div#${prntid}.ulabel-night div.frame_annotation_dialog {
+   background-color: rgb(37, 37, 37);
+   border: 1px solid rgb(102, 102, 102);
+   text-align: right;
+}
+div.front_dialogs {
+   position: absolute;
+   top: 0;
+   right: 0;
+   z-index: -1;
+}
+div#${prntid} div.frame_annotation_dialog div.row_container {
+   position: relative;
+   width: ${NONSP_SZ}px;
+   left: ${60-NONSP_SZ}px;
+   overflow: visible;
+   transition: left 0.3s;
+}
+div#${prntid} div.frame_annotation_dialog:hover div.row_container, div#${prntid} div.frame_annotation_dialog.active.permopen div.row_container {
+   left: 0;
+   overflow: visible;
+}
+/* ROWS */
+div#${prntid} div.frame_annotation_dialog div.fad_row {
+   width: ${NONSP_SZ}px;
+}
+div#${prntid} div.frame_annotation_dialog div.fad_row div.fad_row_inner {
+   width: ${NONSP_SZ}px;
+   text-align: right;
+}
+
+/* NAME */
+div#${prntid} div.fad_st_name {
+   font-size: 8px;
+   padding: 4px;
+   width: 52px;
+   overflow: hidden;
+   text-align: center;
+   display: inline-block;
+}
+div#${prntid}.ulabel-night div.fad_st_name {
+   color: white;
+}
+
+/* ADD BUTTON */
+div#${prntid} div.fad_st_add {
+   width: 60px;
+   height: 50px;
+   display: none;
+   position: relative;
+}
+div#${prntid} div.frame_annotation_dialog.active div.fad_st_add {
+   display: inline-block;
+}
+div#${prntid} div.frame_annotation_dialog div.fad_row.add a.add-glob-button {
+   position: absolute;
+   font-size: 20px;
+   width: 25px;
+   height: 25px;
+   border-radius: 12.5px;
+   text-decoration: none;
+   background-color: rgba(128, 128, 128, 0.198);
+   color: gray;
+   border: 1px solid gray;
+   top: 25px;
+   left: 30px;
+   transform: translateX(-50%) translateY(-50%);
+   line-height: 25px;
+   text-align: center;
+}
+/* div#${prntid} div.frame_annotation_dialog div.fad_row.add a.add-glob-button span.plus {
+   display: block;
+   text-align: center;
+   width: 25px;
+   height: 25px;
+   position: absolute;
+   top: 12.5px;
+   left: 12.5px;
+   transform: translateX(-50%) translateY(-50%);
+   color: black;
+} */
+div#${prntid} div.frame_annotation_dialog div.fad_row.add a.add-glob-button:hover {
+   border-color: black;
+   color: black;
+}
+div#${prntid}.ulabel-night div.frame_annotation_dialog div.fad_row.add a.add-glob-button:hover {
+   border-color: white;
+   color: white;
+}
+div#${prntid}.ulabel-night div.frame_annotation_dialog div.fad_row.add a.add-glob-button span.plus {
+   color: white;
+}
+div#${prntid} div.frame_annotation_dialog.active div.fad_row.add {
+   display: inline-block;
+}
+
+div#${prntid} div.frame_annotation_dialog div.fad_annotation_rows {
+   width: ${NONSP_SZ}px;
+   display: inline-block;
+}
+
+div#${prntid} div.frame_annotation_dialog div.fad_row div.fad_buttons {
+   display: inline-block;
+   vertical-align: top;
+   min-height: 60px;
+   width: ${NONSP_SZ-60}px;
+}
+div#${prntid} div.frame_annotation_dialog div.fad_row div.fad_type_icon {
+   display: inline-block;
+   vertical-align: top;
+   height: 60px;
+   width: 60px;
+   position: relative;
+   text-align: center;
+}
+div#${prntid} div.frame_annotation_dialog div.fad_row div.fad_type_icon svg {
+   height: 50px;
+   width: 50px;
+   padding: 5px;
+}
+div#${prntid} div.frame_annotation_dialog div.fad_row div.fad_buttons div.fad_inp_container {
+   display: inline-block;
+   vertical-align: top;
+}
+div#${prntid} div.frame_annotation_dialog div.fad_row div.fad_buttons div.fad_inp_container.text {
+   width: ${NONSP_SZ-180}px;
+   margin: 0;
+   border: none;
+   padding: none;
+}
+div#${prntid} div.frame_annotation_dialog div.fad_row div.fad_buttons div.fad_inp_container.text textarea {
+   box-sizing: border-box;
+   width: calc(100% - 2px);
+   height: 58px;
+   min-height: 58px;
+   resize: vertical;
+   background-color: rgba(0,0,0,0);
+}
+div#${prntid}.ulabel-night div.frame_annotation_dialog div.fad_row div.fad_buttons div.fad_inp_container.text textarea {
+   color: white;
+}
+div#${prntid} div.frame_annotation_dialog div.fad_row div.fad_buttons div.fad_inp_container.button {
+   width: 30px;
+   height: 30px;
+   padding: 15px;
+   padding-right: 20px;
+   padding-left: 0;
+}
+div#${prntid} div.frame_annotation_dialog div.fad_row div.fad_buttons div.fad_inp_container.button.frst {
+   padding-left: 20px;
+}
+div#${prntid} div.frame_annotation_dialog div.fad_row div.fad_buttons a.fad_button {
+   display: block;
+   width: 28px;
+   height: 28px;
+   background-color: rgba(128, 128, 128, 0.198);
+   border-radius: 14px;
+   border: 1px solid gray;
+   color: gray;
+}
+div#${prntid} div.frame_annotation_dialog div.fad_row div.fad_buttons a.fad_button:hover {
+   border-color: black;
+   color: black;
+}
+div#${prntid}.ulabel-night div.frame_annotation_dialog div.fad_row div.fad_buttons a.fad_button:hover {
+   border-color: white;
+   color: white;
+}
+div#${prntid} div.frame_annotation_dialog div.fad_row div.fad_buttons a.fad_button.reclf {
+   position: relative;
+}
+div#${prntid} div.frame_annotation_dialog div.fad_row div.fad_buttons a.fad_button.delete {
+   text-decoration: none;
+   text-align: center;
+   line-height: 28px;
+   font-size: 22px;
+}
+
+
+/* TOOLBOX */
+div#${prntid} div.toolbox_cls {
    width: 320px;
    background-color: white;
    overflow-y: hidden;
@@ -12019,28 +12986,30 @@ div.toolbox_cls {
    top: 0;
    right: 0;
 }
-div.ulabel-night div.toolbox_cls {
+div#${prntid}.ulabel-night div.toolbox_cls {
    background-color: rgb(24, 24, 24);
 }
-div.ulabel-night div.toolbox_cls p, div.ulabel-night div.toolbox_cls a {
+div#${prntid}.ulabel-night div.toolbox_cls p, div#${prntid}.ulabel-night div.toolbox_cls a {
    color: white;
 }
-div.ulabel-night a.md-btn svg {
-   filter: invert(80%);
+div#${prntid}.ulabel-night .invert-this-svg svg {
+   filter: invert(90%);
 }
 
-div.canvasses {
+div#${prntid} div.canvasses {
    position: absolute;
    top: 0; 
    left: 0;
+   padding-right: 100%;
+   padding-bottom: 100%;
 }
-canvas.canvas_cls {
+div#${prntid} canvas.canvas_cls {
    position: absolute;
    top: 0;
    left: 0;
 }
 
-.id_dialog {
+div#${prntid} .id_dialog {
    width: 400px;
    height: 400px;
    background-color: rgba(0, 0, 0, 0.0);
@@ -12054,7 +13023,7 @@ canvas.canvas_cls {
 .id_dialog.thumb:hover {
    opacity: 1.0;
 } */
-.ender_outer {
+div#${prntid} .ender_outer {
    display: block;
    position: absolute;
    width: 50px;
@@ -12063,7 +13032,7 @@ canvas.canvas_cls {
    border-radius: 25px;
    z-index: 0;
 }
-.ender_inner {
+div#${prntid} .ender_inner {
    display: block;
    position: absolute;
    left: 20px;
@@ -12076,33 +13045,29 @@ canvas.canvas_cls {
 
 /* ================== TOOLBOX ================== */
 
-div.toolbox-divider {
+div#${prntid} div.toolbox-divider {
    width: 90%;
    margin: 0 auto;
    height: 1px;
    background-color: lightgray;
 }
-div.ulabel-night div.toolbox-divider {
+div#${prntid}.ulabel-night div.toolbox-divider {
    background-color: gray;
 }
 
 
-div.mode-selection, div.zoom-pan {
-   padding: 10px 30px;
-}
-
 /* === Annotation Mode === */
-p.current_mode_container {
+div#${prntid} p.current_mode_container {
    margin-top: 0px;
    margin-bottom: 5px;
 }
-span.current_mode {
+div#${prntid} span.current_mode {
    color: cornflowerblue;
 }
-div.mode-opt {
+div#${prntid} div.mode-opt {
    display: inline-block;
 }
-a.md-btn {
+div#${prntid} a.md-btn {
    display: block;
    text-align: center;
    height: 30px;
@@ -12116,41 +13081,44 @@ a.md-btn {
    font-family: sans-serif;
 }
 
-a.md-btn svg {
+div#${prntid} a.md-btn svg {
    height: 30px;
    width: 30px;
 }
 
-a.md-btn:hover {
+div#${prntid} a.md-btn:hover {
    background-color: rgba(255, 181, 44, 0.397);
 }
 
-a.md-btn.sel {
+div#${prntid} a.md-btn.sel {
    background-color: rgba(100, 148, 237, 0.459);
 }
 
 /* === Pan & Zoom === */
 
-div.zoom-pan {
+div#${prntid} div.mode-selection, div#${prntid} div.zoom-pan {
+   padding: 10px 30px;
+}
+/* div#${prntid} div.zoom-pan {
    padding-bottom: 0;
    padding-top: 0;
-}
-div.half-tb {
+} */
+div#${prntid} div.half-tb {
    display: inline-block;    
    width: 50%;
    vertical-align: middle;
 }
-span.htblbl {
+div#${prntid} span.htblbl {
    display: inline-block;
    /* font-weight: bold; */
    vertical-align: middle;
 }
-span.htbpyld {
+div#${prntid} span.htbpyld {
    display: inline-block;
    vertical-align: middle;
 }
 
-span.panudlr {
+div#${prntid} span.panudlr {
    display: inline-block;
    position: relative;
    width: 60px;
@@ -12158,7 +13126,7 @@ span.panudlr {
    border-radius: 30px;
 }
 
-a.zbutt, a.wbutt {
+div#${prntid} a.zbutt, div#${prntid} a.wbutt {
    display: inline-block;
    height: 20px;
    width: 20px;
@@ -12171,10 +13139,10 @@ a.zbutt, a.wbutt {
    line-height: 20px;
    border: 1px solid rgb(168, 168, 168);
 }
-span.panudlr {
+div#${prntid} span.panudlr {
    transform: rotate(-45deg);
 }
-a.pbutt {
+div#${prntid} a.pbutt {
    display: block;
    position: absolute;
    width: 28px;
@@ -12183,33 +13151,33 @@ a.pbutt {
    border: 1px solid rgb(168, 168, 168);
    background-color: lightgray;
 }
-a.pbutt.up {
+div#${prntid} a.pbutt.up {
    right: 0;
    top: 0;
    border-top-right-radius: 30px;
 }
-a.pbutt.down {
+div#${prntid} a.pbutt.down {
    left: 0;
    bottom: 0;
    border-bottom-left-radius: 30px;
 }
-a.pbutt.left {
+div#${prntid} a.pbutt.left {
    left: 0;
    top: 0;
    border-top-left-radius: 30px;
 }
-a.pbutt.right {
+div#${prntid} a.pbutt.right {
    right: 0;
    bottom: 0;
    border-bottom-right-radius: 30px;
 }
-a.pbutt:hover, a.zbutt:hover, a.wbutt:hover {
+div#${prntid} a.pbutt:hover, a.zbutt:hover, div#${prntid} a.wbutt:hover {
    background-color: rgba(100, 148, 237, 0.486);
 }
-a.pbutt:active, a.zbutt:active, a.wbutt:active {
+div#${prntid} a.pbutt:active, div#${prntid} a.zbutt:active, div#${prntid} a.wbutt:active {
    background-color:cornflowerblue;
 }
-span.spokes {
+div#${prntid} span.spokes {
    position: absolute;
    left: 19px;
    top: 19px;
@@ -12219,41 +13187,41 @@ span.spokes {
    border-radius: 10px;
    border: 1px solid gray;
 }
-div.ulabel-night span.spokes {
+div#${prntid}.ulabel-night span.spokes {
    background-color:rgb(24, 24, 24);
    /* border: 1px solid black; */
 }
 
-div.zpcont {
+div#${prntid} div.zpcont {
    height: 90px;
    position: relative;
    background-color: white;
 }
-div.ulabel-night div.zpcont {
+div#${prntid}.ulabel-night div.zpcont {
    background-color: rgb(24, 24, 24);
 }
-div.zpcont:hover, div.ulabel-night div.zpcont:hover {
+div#${prntid} div.zpcont:hover, div#${prntid}.ulabel-night div.zpcont:hover {
    background-color: rgba(0,0,0,0);
 }
-div.zpcont div.lblpyldcont {
+div#${prntid} div.zpcont div.lblpyldcont {
    position: absolute;
    top: 50%;
    -ms-transform: translateY(-50%);
    transform: translateY(-50%);
 }
-div.ulabel-night div.zpcont div.lblpyldcont {
+div#${prntid}.ulabel-night div.zpcont div.lblpyldcont {
    color: white;
 }
-div.ulabel-night a.zbutt, div.ulabel-night a.wbutt {
+div#${prntid}.ulabel-night a.zbutt, div#${prntid}.ulabel-night a.wbutt {
    border: 1px solid black;
    color: black !important;
 }
 
 
-div.htbmain {
+div#${prntid} div.htbmain {
    position: relative;
 }
-p.shortcut-tip {
+div#${prntid} p.shortcut-tip {
    font-size: 10px;
    text-align: left;
    color: gray;
@@ -12261,41 +13229,44 @@ p.shortcut-tip {
    bottom: 3px;
    margin: 0;
 }
-div.linestyle {
+div#${prntid} div.linestyle {
    padding: 10px 30px;
 }
-div.linestyle p.tb-header {
+div#${prntid} div.linestyle p.tb-header {
    margin: 0;
    margin-bottom: 5px;
 }
-canvas.demo-canvas {
+div#${prntid} canvas.demo-canvas {
    width: 120px;
    height: 40px;
    border: 1px solid lightgray;
 }
-div.ulabel-night canvas.demo-canvas {
+div#${prntid}.ulabel-night canvas.demo-canvas {
    border: 1px solid rgb(87, 87, 87);
 }
-div.line-expl {
-   width: 175px;
+div#${prntid} div.line-expl {
+   width: 185px;
 }
-div.line-expl a {
+
+div#${prntid} div.line-expl a {
    display: inline-block;
    vertical-align: middle;
 }
-div.line-expl canvas {
+div#${prntid} div.line-expl canvas {
+   display: inline-block;
+   vertical-align: middle;
+   width: 120px;
+   height: 40px;
+}
+div#${prntid} div.lstyl-row div.line-expl, div#${prntid} div.lstyl-row div.setting {
    display: inline-block;
    vertical-align: middle;
 }
-div.lstyl-row div.line-expl, div.lstyl-row div.setting {
-   display: inline-block;
-   vertical-align: middle;
-}
-div.setting {
-   width: calc(100% - 175px);
+div#${prntid} div.setting {
+   width: calc(100% - 185px);
    text-align: right;
 }
-div.lstyl-row div.setting a {
+div#${prntid} div.lstyl-row div.setting a {
    display: inline-block;
    border-radius: 5px;
    padding: 3px 6px;
@@ -12304,22 +13275,25 @@ div.lstyl-row div.setting a {
    color: black;
    font-size: 14px;
 }
-div.ulabel-night div.lstyl-row div.setting a {
+div#${prntid}.ulabel-night div.lstyl-row div.setting a {
    color: white;
 }
-div.lstyl-row div.setting a {
+div#${prntid} div.lstyl-row div.setting a {
    background-color: rgba(100, 148, 237, 0.479);
    color: black;
 }
-div.lstyl-row div.setting a[href="#"] {
+div#${prntid} div.lstyl-row div.setting a[href="#"] {
    background-color: rgba(0,0,0,0);
    color: black;
 }
-div.lstyl-row div.setting a[href="#"]:hover {
+div#${prntid}.ulabel-night div.lstyl-row div.setting a[href="#"] {
+   color: white;
+}
+div#${prntid} div.lstyl-row div.setting a[href="#"]:hover {
    background-color: rgba(255, 181, 44, 0.397);
 }
 
-div.dialogs_container {
+div#${prntid} div.dialogs_container {
    position: absolute;
    top: 0;
    left: 0;
@@ -12327,61 +13301,61 @@ div.dialogs_container {
 
 /* ========== Tab Buttons ========== */
 
-div.toolbox-tabs {
+div#${prntid} div.toolbox-tabs {
    position: absolute;
    bottom: 0;
    width: 100%;
    opacity: 0.8;
 }
-div.toolbox-tabs div.tb-st-tab {
+div#${prntid} div.toolbox-tabs div.tb-st-tab {
    display: block;
    width: 100%;
    padding: 5px 0;
    background-color: rgba(0, 3, 161, 0.144);
 }
-div.toolbox-tabs div.tb-st-tab.sel {
+div#${prntid} div.toolbox-tabs div.tb-st-tab.sel {
    display: block;
    width: 100%;
    background-color: rgba(0, 3, 161, 0.561);
 }
-div.toolbox-tabs div.tb-st-tab * {
+div#${prntid} div.toolbox-tabs div.tb-st-tab * {
    vertical-align: middle;
 }
-div.toolbox-tabs div.tb-st-tab a.tb-st-switch {
+div#${prntid} div.toolbox-tabs div.tb-st-tab a.tb-st-switch {
    display: inline-block;
    width: 70px;
    padding: 0 15px;
    text-decoration: none;
    color: rgb(37, 37, 37);
 }
-div.ulabel-night div.toolbox-tabs div.tb-st-tab a.tb-st-switch {
+div#${prntid}.ulabel-night div.toolbox-tabs div.tb-st-tab a.tb-st-switch {
    color: rgb(150, 150, 150);
 }
-div.toolbox-tabs div.tb-st-tab.sel a.tb-st-switch {
+div#${prntid} div.toolbox-tabs div.tb-st-tab.sel a.tb-st-switch {
    color: rgb(238, 238, 238);
 }
-div.ulabel-night div.toolbox-tabs div.tb-st-tab.sel a.tb-st-switch {
+div#${prntid}.ulabel-night div.toolbox-tabs div.tb-st-tab.sel a.tb-st-switch {
    color: rgb(238, 238, 238);
 }
-div.toolbox-tabs div.tb-st-tab a.tb-st-switch[href]:hover {
+div#${prntid} div.toolbox-tabs div.tb-st-tab a.tb-st-switch[href]:hover {
    color: cornflowerblue;
 }
-div.ulabel-night div.toolbox-tabs div.tb-st-tab a.tb-st-switch[href]:hover {
+div#${prntid}.ulabel-night div.toolbox-tabs div.tb-st-tab a.tb-st-switch[href]:hover {
    color: rgb(238, 238, 238);
 }
-div.toolbox-tabs div.tb-st-tab span.tb-st-range {
+div#${prntid} div.toolbox-tabs div.tb-st-tab span.tb-st-range {
    display: inline-block;
    width: calc(100% - 100px);
    text-align: center;
 }
-div.toolbox-tabs div.tb-st-tab span.tb-st-range input {
+div#${prntid} div.toolbox-tabs div.tb-st-tab span.tb-st-range input {
    width: 80%;
    transform: rotate(180deg);
 }
 
 /* ========== Annotation Box Dialogs ========== */
 
-div.global_edit_suggestion {
+div#${prntid} div.global_edit_suggestion {
    display: none;
    position: absolute;
    width: 150px;
@@ -12391,11 +13365,11 @@ div.global_edit_suggestion {
    /* background-color: white; */
    transform: scale(0.66666);
 }
-div.global_edit_suggestion.mcm {
+div#${prntid} div.global_edit_suggestion.mcm {
    width: 225px;
    transform: scale(0.5);
 }
-a.global_sub_suggestion {
+div#${prntid} a.global_sub_suggestion {
    width: 60px;
    height: 60px;
    margin: 7.5px;
@@ -12404,13 +13378,13 @@ a.global_sub_suggestion {
    background-color: white;
    overflow: hidden;
 }
-a.global_sub_suggestion img {
+div#${prntid} a.global_sub_suggestion img {
    display: block;
    width: 40px;
    height: 40px;
    padding: 10px;
 }
-a.global_sub_suggestion span.bigx {
+div#${prntid} a.global_sub_suggestion span.bigx {
    position: absolute;
    display: block;
    font-size: 4em;
@@ -12422,79 +13396,87 @@ a.global_sub_suggestion span.bigx {
    color: black;
    text-decoration: none;
 }
-a.global_sub_suggestion.reid_suggestion {
+div#${prntid} a.global_sub_suggestion.reid_suggestion {
    opacity: 0.3;
    background-color: black;
 }
-a.global_sub_suggestion.reid_suggestion:hover {
+div#${prntid} a.global_sub_suggestion.reid_suggestion:hover {
    opacity: 0; 
 }
-div.classification {
+div#${prntid} div.classification {
    padding: 10px 30px;
 }
-div.classification p.tb-header {
+div#${prntid} div.classification p.tb-header {
    margin: 0;
    margin-bottom: 5px;
 }
 
-a.tbid-opt {
+div#${prntid} a.tbid-opt {
    display: inline-block;
    text-decoration: none;
    padding: 5px 8px;
    border-radius: 5px;
    color: black;
 }
-div.colprev {
+div#${prntid} div.colprev {
    display: inline-block;
    vertical-align: middle;
    height: 15px;
    width: 15px;
 }
-span.tb-cls-nam {
+div#${prntid} span.tb-cls-nam {
    display: inline-block;
    vertical-align: middle;
 }
-a.tbid-opt:hover {
+div#${prntid} a.tbid-opt:hover {
    background-color: rgba(255, 181, 44, 0.397);
 }
-a.tbid-opt.sel {
+div#${prntid} a.tbid-opt.sel {
    background-color: rgba(100, 148, 237, 0.459);
 }
-div.toolbox-name-header {
+div#${prntid} div.toolbox-name-header {
    background-color: rgb(0, 128, 202);
    margin: 0;
 }
-div.ulabel-night div.toolbox-name-header {
+div#${prntid}.ulabel-night div.toolbox-name-header {
    background-color: rgb(0, 60, 95);
 }
-div.toolbox-name-header h1 {
+div#${prntid} div.toolbox-name-header h1 {
    margin: 0;
    padding: 0;
    font-size: 15px;
    display: inline-block;
    padding: 10px 15px;
-   width: calc(50% - 30px);
+   width: calc(70% - 30px);
    vertical-align: middle;
 }
-div.toolbox-name-header h1 a {
+div#${prntid} div.toolbox-name-header h1 a {
    color: white;
    font-weight: 100;
    text-decoration: none;
 }
-div.night-button-cont {
+div#${prntid} div.toolbox-name-header h1 {
+   color: rgb(212, 212, 212);
+   font-size: 12px;
+   font-weight: 100;
+}
+div#${prntid}.ulabel-night div.toolbox-name-header h1 span.version-number {
+   color: rgb(190, 190, 190);
+}
+div#${prntid} div.night-button-cont {
    text-align: right;
    display: inline-block;
    vertical-align: middle;
    position: relative;
    padding-right: 10px;
-   width: calc(50% - 10px);
+   width: calc(30% - 10px);
 }
-a.night-button {
+div#${prntid} a.night-button {
    display: inline-block;
    padding: 10px;
    opacity: 0.7;
 }
-div.night-button-track {
+div#${prntid} div.night-button-track {
    width: 35px;
    height: 12px;
    border-radius: 6px;
@@ -12502,7 +13484,7 @@ div.night-button-track {
    display: inline-block;
    background-color: rgba(0, 0, 0, 0.52);
 }
-div.night-status {
+div#${prntid} div.night-status {
    width: 20px;
    height: 20px;
    border-radius: 10px;
@@ -12512,36 +13494,40 @@ div.night-status {
    top: -4px;
    transition: left 0.2s;
 }
-a.night-button:hover {
+div#${prntid} a.night-button:hover {
    opacity: 1;
 }
-div.ulabel-night div.night-button-track {
+div#${prntid}.ulabel-night div.night-button-track {
    background-color: rgba(255, 255, 255, 0.52);
 }
-div.ulabel-night div.night-status {
+div#${prntid}.ulabel-night div.night-status {
    left: 19px;
 }
 
 
-div.ulabel-night div.annbox_cls::-webkit-scrollbar {
+div#${prntid}.ulabel-night div.annbox_cls::-webkit-scrollbar {
    background-color: black;
 }
-div.ulabel-night div.annbox_cls::-webkit-scrollbar-track {
+div#${prntid}.ulabel-night div.annbox_cls::-webkit-scrollbar-track {
    background-color: black;
 }
-div.ulabel-night div.annbox_cls::-webkit-scrollbar-thumb {
+div#${prntid}.ulabel-night div.annbox_cls::-webkit-scrollbar-thumb {
    border: 1px solid rgb(110, 110, 110);
    background-color: rgb(51, 51, 51);
 }
-div.ulabel-night div.annbox_cls::-webkit-scrollbar-thumb:hover {
+div#${prntid}.ulabel-night div.annbox_cls::-webkit-scrollbar-thumb:hover {
    background-color: rgb(90, 90, 90);
 } 
-div.ulabel-night div.annbox_cls::-webkit-scrollbar-corner {
+div#${prntid}.ulabel-night div.annbox_cls::-webkit-scrollbar-corner {
    background-color:rgb(0, 60, 95);
 }
 
+div#${prntid} a.repo-anchor {
+   text-transform: uppercase;
+}
 
-a.id-dialog-clickable-indicator {
+
+div#${prntid} a.id-dialog-clickable-indicator {
    position: absolute; 
    top: 0;
    left: 0;
@@ -12551,13 +13537,13 @@ a.id-dialog-clickable-indicator {
    width: 400px;
    overflow: hidden;
 }
-a.id-dialog-clickable-indicator svg {
+div#${prntid} a.id-dialog-clickable-indicator svg {
    position: absolute;
    top: 0;
    left: 0;
 }
 
-.editable {
+div#${prntid} .editable {
    display: none;
    position: absolute;
    width: 50px;
@@ -12567,36 +13553,36 @@ a.id-dialog-clickable-indicator svg {
    border-radius: 25px;
    z-index: 0;
 }
-.editable.soft {
+div#${prntid} .editable.soft {
    opacity: 0.4;
 }
-.editable:hover {
+div#${prntid} .editable:hover {
    background-color: white;
    opacity: 1.0;
 }
-.editable.soft:hover {
+div#${prntid} .editable.soft:hover {
    opacity: 0.7;
 }
 
-div.toolbox-refs {
+div#${prntid} div.toolbox-refs {
    text-align: center;
 }
-div.toolbox-refs a {
+div#${prntid} div.toolbox-refs a {
    color: rgb(5, 50, 133);
    display: inline-block;
    margin-top: 10px;
 }
-div.toolbox-refs a:hover {
+div#${prntid} div.toolbox-refs a:hover {
    color: rgb(44, 77, 139);
 }
-div.ulabel-night div.toolbox-refs a {
+div#${prntid}.ulabel-night div.toolbox-refs a {
    color: rgb(176, 202, 250);
 }
-div.ulabel-night div.toolbox-refs a:hover {
+div#${prntid}.ulabel-night div.toolbox-refs a:hover {
    color: rgb(123, 160, 228);
 }
 
-#submit-button {
+div#${prntid} #submit-button {
    display: block;
    padding: 20px;
    border-radius: 10px;
@@ -12608,16 +13594,17 @@ div.ulabel-night div.toolbox-refs a:hover {
    width: 150px;
    margin: 30px auto;
 }
-#submit-button:hover {
+div#${prntid} #submit-button:hover {
    background-color: rgba(255, 166, 0, 1.0);
 }
-#submit-button:active {
+div#${prntid} #submit-button:active {
    box-shadow: 0 0 3px black;
 }
-div.ulabel-night #submit-button:active {
+div#${prntid}.ulabel-night #submit-button:active {
    box-shadow: 0 0 8px white;
 }
 `;
+}
 
 // TODO more of these
 const COLORS = [
@@ -12639,7 +13626,6 @@ Sentera Inc.
 /* global ResizeObserver */
 /* global uuidv4 */
 
-// const { $, jQuery } = require('jquery');
 
 const jQuery = (jquery_default());
 
@@ -12651,6 +13637,9 @@ const { v4: uuidv4 } = __webpack_require__(614);
 jQuery.fn.outer_html = function() {
     return jQuery('<div />').append(this.eq(0).clone()).html();
 };
+
+const MODES_3D = ["global", "bbox3"];
+const NONSPATIAL_MODES = ["whole-image", "global"];
 
 const DEFAULT_LINE_SIZE = 4.0;
 
@@ -12665,15 +13654,15 @@ class ULabel {
 
     // ================= Static Utilities =================
 
-    static add_style_to_document() {
+    static add_style_to_document(ul) {
         let head = document.head || document.getElementsByTagName('head')[0];
         let style = document.createElement('style');
         head.appendChild(style);
         if (style.styleSheet) {
-            style.styleSheet.cssText = INIT_STYLE;
+            style.styleSheet.cssText = get_init_style(ul.config["container_id"]);
         }
         else {
-            style.appendChild(document.createTextNode(INIT_STYLE));
+            style.appendChild(document.createTextNode(get_init_style(ul.config["container_id"])));
         }
     }
 
@@ -12822,6 +13811,45 @@ class ULabel {
         return ret;
     }
 
+    static get_nearest_point_on_bbox3(ref_x, ref_y, frame, spatial_payload, dstmax=Infinity) {
+        var ret = {
+            "access": null,
+            "distance": null,
+            "point": null
+        };
+        for (var bbi = 0; bbi < 2; bbi++) {
+            for (var bbj = 0; bbj < 2; bbj++) {
+                var kp = [spatial_payload[bbi][0], spatial_payload[bbj][1]];
+                var kpdst = Math.sqrt(Math.pow(kp[0] - ref_x, 2) + Math.pow(kp[1] - ref_y, 2));
+                if (ret["distance"] == null || kpdst < ret["distance"]) {
+                    ret["access"] = `${bbi}${bbj}`;
+                    ret["distance"] = kpdst;
+                    ret["point"] = kp;
+                }
+            }
+        }
+        let min_k = 0;
+        let min = spatial_payload[0][2];
+        let max_k = 1;
+        let max = spatial_payload[1][2];
+        if (max < min) {
+            let tmp = min_k;
+            min_k = max_k;
+            max_k = tmp;
+            tmp = min;
+            min = max;
+            max = tmp;
+        }
+
+        if (frame == min) {
+            ret["access"] += "" + min_k;
+        }
+        else if (frame == max) {
+            ret["access"] += "" + max_k;
+        }
+        return ret;
+    }
+
     static get_nearest_point_on_tbar(ref_x, ref_y, spatial_payload, dstmax=Infinity) {
         // TODO intelligently test against three grabbable points
         var ret = {
@@ -12923,7 +13951,7 @@ class ULabel {
         }
 
         return `<div class="mode-opt">
-            <a${href} id="md-btn--${md_key}" class="md-btn${sel}${st_classes}" amdname="${md_name}">
+            <a${href} id="md-btn--${md_key}" class="md-btn${sel}${st_classes} invert-this-svg" amdname="${md_name}">
                 ${svg_blob}
             </a>
         </div>`;
@@ -12952,6 +13980,74 @@ class ULabel {
         return ret;
     }
     
+
+    static get_images_html(ul) {
+        let ret = "";
+
+        let dsply;
+        for (let i = 0; i < ul.config["image_data"].frames.length; i++) {
+            if (i != 0) {
+                dsply = "none";
+            }
+            else {
+                dsply = "block";
+            }
+            ret += `
+                <img id="${ul.config["image_id_pfx"]}__${i}" src="${ul.config["image_data"].frames[i]}" class="imwrap_cls ${ul.config["imgsz_class"]} image_frame" style="z-index: 50; display: ${dsply};" />
+            `;
+        }
+        return ret;
+    }
+
+    static get_frame_annotation_dialogs(ul) {
+        let ret = "";
+        let tot = 0;
+        for (const st_key in ul.subtasks) {
+            if (
+                !ul.subtasks[st_key].allowed_modes.includes('whole-image') && 
+                !ul.subtasks[st_key].allowed_modes.includes('global') 
+            ) {
+                continue;
+            }
+            tot += 1;
+        }
+        let ind = 0;
+        for (const st_key in ul.subtasks) {
+            if (
+                !ul.subtasks[st_key].allowed_modes.includes('whole-image') && 
+                !ul.subtasks[st_key].allowed_modes.includes('global') 
+            ) {
+                continue;
+            }
+            ret += `
+                <div id="fad_st__${st_key}" class="frame_annotation_dialog fad_st__${st_key} fad_ind__${tot-ind-1}">
+                    <div class="hide_overflow_container">
+                        <div class="row_container">
+                            <div class="fad_row name">
+                                <div class="fad_row_inner">
+                                    <div class="fad_st_name">${ul.subtasks[st_key].display_name}</div>
+                                </div>
+                            </div>
+                            <div class="fad_row add">
+                                <div class="fad_row_inner">
+                                    <div class="fad_st_add">
+                                        <a class="add-glob-button" href="#">+</a>
+                                    </div>
+                                </div>
+                            </div><div class="fad_annotation_rows"></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            ind += 1;
+            if (ind > 4) {
+                throw new Error("At most 4 subtasks can have allow 'whole-image' or 'global' annotations.");
+            }
+        }
+        return ret;
+    }
+
+
     static prep_window_html(ul) {
         // Bring image and annotation scaffolding in
         // TODO multi-image with spacing etc.
@@ -12965,16 +14061,36 @@ class ULabel {
 
         const tabs = ULabel.get_toolbox_tabs(ul);
 
+        const images = ULabel.get_images_html(ul);
+
+        const frame_annotation_dialogs = ULabel.get_frame_annotation_dialogs(ul);
+
+        let frame_range = `
+        <div class="full-tb htbmain set-frame">
+            <p class="shortcut-tip">shift+scroll to switch frames</p>
+            <div class="zpcont">
+                <div class="lblpyldcont">
+                    <span class="pzlbl htblbl">Frame</span> &nbsp;
+                    <input class="frame_input" type="range" min=0 max=${ul.config["image_data"].frames.length-1} value=0 />
+                </div>
+            </div>
+        </div>
+        `;
+        if (ul.config["image_data"]["frames"].length == 1) {
+            frame_range = ``;
+        }
+
         const tool_html = `
         <div class="full_ulabel_container_">
+            ${frame_annotation_dialogs}
             <div id="${ul.config["annbox_id"]}" class="annbox_cls">
                 <div id="${ul.config["imwrap_id"]}" class="imwrap_cls ${ul.config["imgsz_class"]}">
-                    <img id="${ul.config["image_id"]}" src="${ul.config["image_data"]}" class="imwrap_cls ${ul.config["imgsz_class"]}" />
+                    ${images}
                 </div>
             </div>
             <div id="${ul.config["toolbox_id"]}" class="toolbox_cls">
                 <div class="toolbox-name-header">
-                    <h1 class="toolname"><a href="https://github.com/SenteraLLC/ULabel">ULABEL</a></h1><!--
+                    <h1 class="toolname"><a class="repo-anchor" href="https://github.com/SenteraLLC/ULabel">ULabel</a> <span class="version-number">v${version/* ULABEL_VERSION */.I}</span></h1><!--
                     --><div class="night-button-cont">
                         <a href="#" class="night-button">
                             <div class="night-button-track">
@@ -13019,6 +14135,7 @@ class ULabel {
                                 </div>
                             </div>
                         </div>
+                        ${frame_range}
                     </div>
                     <div class="toolbox-divider"></div>
                     <div class="linestyle">
@@ -13029,8 +14146,8 @@ class ULabel {
                                 <canvas 
                                     id="${ul.config["canvas_did"]}" 
                                     class="demo-canvas" 
-                                    width=${ul.config["demo_width"]} 
-                                    height=${ul.config["demo_height"]}></canvas>
+                                    width=${ul.config["demo_width"]*ul.config["px_per_px"]} 
+                                    height=${ul.config["demo_height"]*ul.config["px_per_px"]}></canvas>
                                 <a href="#" class="wbutt win">+</a>
                             </div><!--
                             --><div class="setting">
@@ -13057,7 +14174,6 @@ class ULabel {
 
 
         // Build toolbox for the current subtask only
-        // const crst = ul.state["current_subtask"];
         const crst = Object.keys(ul.subtasks)[0];
 
         // Initialize toolbox based on configuration
@@ -13066,8 +14182,12 @@ class ULabel {
         let md_buttons = [
             ULabel.get_md_button("bbox", "Bounding Box", BBOX_SVG, curmd, ul.subtasks),
             ULabel.get_md_button("polygon", "Polygon", POLYGON_SVG, curmd, ul.subtasks),
+            ULabel.get_md_button("tbar", "T-Bar", TBAR_SVG, curmd, ul.subtasks),
+            ULabel.get_md_button("polyline", "Polyline", POLYLINE_SVG, curmd, ul.subtasks),
             ULabel.get_md_button("contour", "Contour", CONTOUR_SVG, curmd, ul.subtasks),
-            ULabel.get_md_button("tbar", "T-Bar", TBAR_SVG, curmd, ul.subtasks)
+            ULabel.get_md_button("bbox3", "Bounding Cube", BBOX3_SVG, curmd, ul.subtasks),
+            ULabel.get_md_button("whole-image", "Whole Frame", WHOLE_IMAGE_SVG, curmd, ul.subtasks),
+            ULabel.get_md_button("global", "Global", GLOBAL_SVG, curmd, ul.subtasks),
         ];
 
         // Append but don't wait
@@ -13086,7 +14206,68 @@ class ULabel {
         }
 
     }
-    
+   
+    static get_idd_string(idd_id, wdt, center_coord, cl_opacity, class_ids, inner_rad, outer_rad, class_defs) {
+        // TODO noconflict
+        let dialog_html = `
+        <div id="${idd_id}" class="id_dialog" style="width: ${wdt}px; height: ${wdt}px;">
+            <a class="id-dialog-clickable-indicator" href="#"></a>
+            <svg width="${wdt}" height="${wdt}">
+        `;
+
+        for (var i = 0; i < class_ids.length; i++) {
+
+            let srt_prop = 1/class_ids.length;
+
+            let cum_prop = i/class_ids.length;
+            let srk_prop = 1/class_ids.length;
+            let gap_prop = 1.0 - srk_prop;
+
+            let rad_back = inner_rad + 1.0*(outer_rad - inner_rad)/2;
+            let rad_frnt = inner_rad + srt_prop*(outer_rad - inner_rad)/2;
+
+            let wdt_back = 1.0*(outer_rad - inner_rad);
+            let wdt_frnt = srt_prop*(outer_rad - inner_rad);
+
+            let srk_back = 2*Math.PI*rad_back*srk_prop;
+            let gap_back = 2*Math.PI*rad_back*gap_prop;
+            let off_back = 2*Math.PI*rad_back*cum_prop;
+
+            let srk_frnt = 2*Math.PI*rad_frnt*srk_prop;
+            let gap_frnt = 2*Math.PI*rad_frnt*gap_prop;
+            let off_frnt = 2*Math.PI*rad_frnt*cum_prop;
+
+            let ths_id = class_ids[i];
+            let ths_col = class_defs[i]["color"];
+            let ths_nam = class_defs[i]["name"];
+            dialog_html += `
+            <circle
+                r="${rad_back}" cx="${center_coord}" cy="${center_coord}" 
+                stroke="${ths_col}" 
+                fill-opacity="0"
+                stroke-opacity="${cl_opacity}"
+                stroke-width="${wdt_back}"; 
+                stroke-dasharray="${srk_back} ${gap_back}" 
+                stroke-dashoffset="${off_back}" />
+            <circle
+                id="${idd_id}__circ_${ths_id}"
+                r="${rad_frnt}" cx="${center_coord}" cy="${center_coord}"
+                fill-opacity="0"
+                stroke="${ths_col}" 
+                stroke-opacity="1.0"
+                stroke-width="${wdt_frnt}" 
+                stroke-dasharray="${srk_frnt} ${gap_frnt}" 
+                stroke-dashoffset="${off_frnt}" />
+            `;
+        }
+        dialog_html += `
+            </svg>
+            <div class="centcirc"></div>
+        </div>`;
+
+        return dialog_html;
+    }
+
     static build_id_dialogs(ul) {
         var full_toolbox_html = `<div class="toolbox-id-app-payload">`;
 
@@ -13105,64 +14286,31 @@ class ULabel {
 
         for (const st in ul.subtasks) {
             const idd_id = ul.subtasks[st]["state"]["idd_id"];
+            const idd_id_front = ul.subtasks[st]["state"]["idd_id_front"];
 
             let subtask_dialog_container_jq = jquery_default()("#dialogs__" + st);
+            let front_subtask_dialog_container_jq = jquery_default()("#front_dialogs__" + st);
+
+            let dialog_html_v2 = ULabel.get_idd_string(
+                idd_id, wdt, center_coord, cl_opacity, ul.subtasks[st]["class_ids"], 
+                inner_rad, outer_rad, ul.subtasks[st]["class_defs"]
+            );
+            let front_dialog_html_v2 = ULabel.get_idd_string(
+                idd_id_front, wdt, center_coord, cl_opacity, ul.subtasks[st]["class_ids"], 
+                inner_rad, outer_rad, ul.subtasks[st]["class_defs"]
+            );
 
             // TODO noconflict
-            var dialog_html = `
-            <div id="${idd_id}" class="id_dialog" style="width: ${wdt}px; height: ${wdt}px;">
-                <a class="id-dialog-clickable-indicator" href="#"></a>
-                <svg width="${wdt}" height="${wdt}">
-            `;
             var toolbox_html = `<div id="tb-id-app--${st}" class="tb-id-app">`;
             const class_ids = ul.subtasks[st]["class_ids"];
         
     
             for (var i = 0; i < class_ids.length; i++) {
     
-                let srt_prop = 1/class_ids.length;
-    
-                let cum_prop = i/class_ids.length;
-                let srk_prop = 1/class_ids.length;
-                let gap_prop = 1.0 - srk_prop;
-    
-                let rad_back = inner_rad + 1.0*(outer_rad - inner_rad)/2;
-                let rad_frnt = inner_rad + srt_prop*(outer_rad - inner_rad)/2;
-    
-                let wdt_back = 1.0*(outer_rad - inner_rad);
-                let wdt_frnt = srt_prop*(outer_rad - inner_rad);
-    
-                let srk_back = 2*Math.PI*rad_back*srk_prop;
-                let gap_back = 2*Math.PI*rad_back*gap_prop;
-                let off_back = 2*Math.PI*rad_back*cum_prop;
-    
-                let srk_frnt = 2*Math.PI*rad_frnt*srk_prop;
-                let gap_frnt = 2*Math.PI*rad_frnt*gap_prop;
-                let off_frnt = 2*Math.PI*rad_frnt*cum_prop;
-    
                 let ths_id = class_ids[i];
                 let ths_col = ul.subtasks[st]["class_defs"][i]["color"];
                 let ths_nam = ul.subtasks[st]["class_defs"][i]["name"];
-                dialog_html += `
-                <circle
-                    r="${rad_back}" cx="${center_coord}" cy="${center_coord}" 
-                    stroke="${ths_col}" 
-                    fill-opacity="0"
-                    stroke-opacity="${cl_opacity}"
-                    stroke-width="${wdt_back}"; 
-                    stroke-dasharray="${srk_back} ${gap_back}" 
-                    stroke-dashoffset="${off_back}" />
-                <circle
-                    id="circ_${ths_id}"
-                    r="${rad_frnt}" cx="${center_coord}" cy="${center_coord}"
-                    fill-opacity="0"
-                    stroke="${ths_col}" 
-                    stroke-opacity="1.0"
-                    stroke-width="${wdt_frnt}" 
-                    stroke-dasharray="${srk_frnt} ${gap_frnt}" 
-                    stroke-dashoffset="${off_frnt}" />
-                `;
-    
+                
                 let sel = "";
                 let href = ' href="#"';
                 if (i == 0) {
@@ -13181,15 +14329,16 @@ class ULabel {
                     `;
                 }
             }
-            dialog_html += `
-                </svg>
-                <div class="centcirc"></div>
-            </div>`;
             toolbox_html += `
             </div>`;
 
             // Add dialog to the document
-            subtask_dialog_container_jq.append(dialog_html);
+            // front_subtask_dialog_container_jq.append(dialog_html);
+            // $("#" + ul.subtasks[st]["idd_id"]).attr("id", ul.subtasks[st]["idd_id_front"]);
+            front_subtask_dialog_container_jq.append(front_dialog_html_v2); // TODO(new3d) MOVE THIS TO GLOB BOX -- superimpose atop thee anchor already there when needed, no remove and add back
+            subtask_dialog_container_jq.append(dialog_html_v2);
+            // console.log(dialog_html);
+            // console.log(dialog_html_v2);
  
             // Wait to add full toolbox
             full_toolbox_html += toolbox_html;
@@ -13205,13 +14354,13 @@ class ULabel {
         jquery_default()("#" + ul.config["toolbox_id"] + " div.id-toolbox-app").html(full_toolbox_html);
 
         // Style revisions based on the size
-        let idci = jquery_default()("#" + ul.config["imwrap_id"] + " a.id-dialog-clickable-indicator");
+        let idci = jquery_default()("#" + ul.config["container_id"] + " a.id-dialog-clickable-indicator");
         idci.css({
             "height": `${wdt}px`,
             "width": `${wdt}px`,
             "border-radius": `${outer_rad}px`,
         });
-        let ccirc = jquery_default()("#" + ul.config["imwrap_id"] + " div.centcirc");
+        let ccirc = jquery_default()("#" + ul.config["container_id"] + " div.centcirc");
         ccirc.css({
             "position": "absolute",
             "top": `${inner_top}px`,
@@ -13231,6 +14380,7 @@ class ULabel {
         for (const stkey in ul.subtasks) {
             let local_id = `edit_suggestion__${stkey}`;
             let global_id = `global_edit_suggestion__${stkey}`;
+            let global_id_fxd = `global_edit_suggestion__${stkey}_fxd`;
 
             let subtask_dialog_container_jq = jquery_default()("#dialogs__" + stkey);
 
@@ -13309,6 +14459,12 @@ class ULabel {
         jquery_default()(window).mouseup(function(mouse_event) {
             ul.handle_mouse_up(mouse_event);
         });
+
+        jquery_default()(window).on("click", (e) => {
+            if (e.shiftKey) {
+                e.preventDefault();
+            }
+        })
         
         // Mouse movement has meaning in certain cases
         annbox.mousemove(function(mouse_event) {
@@ -13317,17 +14473,37 @@ class ULabel {
         
         // Detection ctrl+scroll
         document.getElementById(ul.config["annbox_id"]).onwheel = function (wheel_event) {
+            let fms = ul.config["image_data"].frames.length > 1;
             if (wheel_event.ctrlKey) {
                 // Prevent scroll-zoom
                 wheel_event.preventDefault();
 
+                // Don't rezoom if id dialog is visible
+                if (ul.subtasks[ul.state["current_subtask"]]["state"]["idd_visible"] && !ul.subtasks[ul.state["current_subtask"]]["state"]["idd_thumbnail"]) {
+                    return;
+                }
+    
                 // Get direction of wheel
                 const dlta = Math.sign(wheel_event.deltaY);
 
                 // Apply new zoom
                 ul.state["zoom_val"] *= (1 - dlta/10);
                 ul.rezoom(wheel_event.clientX, wheel_event.clientY);
-            } 
+            }
+            else if (fms) {
+                wheel_event.preventDefault();
+
+                // Get direction of wheel
+                const dlta = Math.sign(wheel_event.deltaY);
+                ul.update_frame(dlta);
+            }
+            else {
+                // Don't scroll if id dialog is visible
+                if (ul.subtasks[ul.state["current_subtask"]]["state"]["idd_visible"] && !ul.subtasks[ul.state["current_subtask"]]["state"]["idd_thumbnail"]) {
+                    wheel_event.preventDefault();
+                    return;
+                }
+            }
         };
         
         // TODO better understand which browsers support this (new Chrome does)
@@ -13425,12 +14601,49 @@ class ULabel {
             ul.set_subtask(switch_to);
         });
 
+        jquery_default()(document).on("input", "input.frame_input", (e) => {
+            ul.update_frame();
+        });
+
+
         jquery_default()(document).on("input", "span.tb-st-range input", (e) => {
             ul.readjust_subtask_opacities();
         });
 
+        jquery_default()(document).on("click", "div.fad_row.add a.add-glob-button", (e) => {
+            ul.create_nonspatial_annotation();
+        });
+        jquery_default()(document).on("focus", "textarea.nonspatial_note", (e) => {
+            jquery_default()("div.frame_annotation_dialog.active").addClass("permopen");
+        });
+        jquery_default()(document).on("focusout", "textarea.nonspatial_note", (e) => {
+            jquery_default()("div.frame_annotation_dialog.permopen").removeClass("permopen");
+        });
+        jquery_default()(document).on("input", "textarea.nonspatial_note", (e) => {
+            // Update annotation's text field
+            ul.subtasks[ul.state["current_subtask"]]["annotations"]["access"][e.target.id.substring("note__".length)]["text_payload"] = e.target.value;
+        });
+        jquery_default()(document).on("click", "a.fad_button.delete", (e) => {
+            ul.delete_annotation(e.target.id.substring("delete__".length));
+        });
+        jquery_default()(document).on("click", "a.fad_button.reclf", (e) => {
+            // Show idd
+            ul.show_id_dialog(e.pageX, e.pageY, e.target.id.substring("reclf__".length), false, true);
+        });
+        jquery_default()(document).on("mouseenter", "div.fad_annotation_rows div.fad_row", (e) => {
+            // Show thumbnail for idd
+            ul.suggest_edits(null, jquery_default()(e.currentTarget).attr("id").substring("row__".length));
+        });
+        jquery_default()(document).on("mouseleave", "div.fad_annotation_rows div.fad_row", (e) => {
+            // Show thumbnail for idd
+            if (ul.subtasks[ul.state["current_subtask"]]["state"]["idd_visible"] && !ul.subtasks[ul.state["current_subtask"]]["state"]["idd_thumbnail"]) {
+                return;
+            }
+            ul.suggest_edits(null);
+        });
+
         // Listener for id_dialog click interactions
-        jquery_default()("#" + ul.config["annbox_id"] + " a.id-dialog-clickable-indicator").click(function(e) {
+        jquery_default()("#" + ul.config["container_id"] + " a.id-dialog-clickable-indicator").click(function(e) {
             let crst = ul.state["current_subtask"];
             if (!ul.subtasks[crst]["state"]["idd_thumbnail"]) {
                 ul.handle_id_dialog_click(e);
@@ -13489,9 +14702,11 @@ class ULabel {
         })
 
         // Keyboard only events
-        document.onkeypress = function(keypress_event) {
+        document.body.onkeydown = function(keypress_event) {
             const shift = keypress_event.shiftKey;
             const ctrl = keypress_event.ctrlKey;
+            let fms = ul.config["image_data"].frames.length > 1;
+            let annbox = jquery_default()("#"+ul.config["annbox_id"]);
             if (ctrl &&
                 (
                     keypress_event.key == "z" || 
@@ -13499,18 +14714,53 @@ class ULabel {
                     keypress_event.code == "KeyZ"
                 )
             ) {
+                keypress_event.preventDefault();
                 if (shift) {
                     ul.redo();
                 }
                 else {
                     ul.undo();
                 }
+                return false;
             }
             else if (keypress_event.key == "l") {
-                console.log(ul.annotations);
+                // console.log("Listing annotations using the \"l\" key has been deprecated.");
+                // console.log(ul.annotations);
+            }
+            else if (keypress_event.key == "ArrowRight") {
+                if (fms) {
+                    ul.update_frame(1);
+                }
+                else {
+                    annbox.scrollLeft(annbox.scrollLeft() + 20);
+                }
+            }
+            else if (keypress_event.key == "ArrowDown") {
+                if (fms) {
+                    ul.update_frame(1);
+                }
+                else {
+                    annbox.scrollTop(annbox.scrollTop() + 20);
+                }
+            }
+            else if (keypress_event.key == "ArrowLeft") {
+                if (fms) {
+                    ul.update_frame(-1);
+                }
+                else {
+                    annbox.scrollLeft(annbox.scrollLeft() - 20);
+                }
+            }
+            else if (keypress_event.key == "ArrowUp") {
+                if (fms) {
+                    ul.update_frame(-1);
+                }
+                else {
+                    annbox.scrollTop(annbox.scrollTop() - 20);
+                }
             }
             else {
-                console.log(keypress_event);
+                // console.log(keypress_event);
             }
         };
     }
@@ -13600,9 +14850,6 @@ class ULabel {
                     ul.subtasks[subtask_key]["annotations"]["access"][subtask["resume_from"][i]["id"]]["line_size"] = DEFAULT_LINE_SIZE;
                 }
 
-                // Make sure it has a containing box
-                ul.rebuild_containing_box(subtask["resume_from"][i]["id"]);
-
                 // Ensure that spatial type is allowed
                 // TODO do I really want to do this?
 
@@ -13611,7 +14858,7 @@ class ULabel {
 
                 // Same for regression payloads
                 // TODO
-            }
+            }    
         }
     }
 
@@ -13654,6 +14901,7 @@ class ULabel {
             ul.subtasks[subtask_key]["state"] = {
                 // Id dialog state
                 "idd_id": "id_dialog__" + subtask_key,
+                "idd_id_front": "id_dialog_front__" + subtask_key,
                 "idd_visible": false,
                 "idd_associated_annotation": null,
                 "idd_thumbnail": false,
@@ -13665,6 +14913,7 @@ class ULabel {
                 "active_id": null,
                 "is_in_progress": false,
                 "is_in_edit": false,
+                "is_in_move": false,
                 "edit_candidate": null,
                 "move_candidate": null,
 
@@ -13679,6 +14928,53 @@ class ULabel {
         }
     }
 
+    static expand_image_data(raw_img_dat) {
+        if (typeof raw_img_dat == "string") {
+            return {
+                spacing: {
+                    x: 1,
+                    y: 1,
+                    z: 1,
+                    units: "pixels"
+                },
+                frames: [
+                    raw_img_dat
+                ]
+            }
+        }
+        else if (Array.isArray(raw_img_dat)) {
+            return {
+                spacing: {
+                    x: 1,
+                    y: 1,
+                    z: 1,
+                    units: "pixels"
+                },
+                frames: raw_img_dat
+            }
+        }
+        else if ("spacing" in raw_img_dat && "frames" in raw_img_dat) {
+            return raw_img_dat;
+        }
+        else {
+            ul.raise_error(`Image data object not understood. Must be of form "http://url.to/img" OR ["img1", "img2", ...] OR {spacing: {x: <num>, y: <num>, z: <num>, units: <str>}, frames: ["img1", "img2", ...]}. Provided: ${JSON.stringify(raw_img_dat)}`, ULabel.elvl_fatal);
+            return null;
+        }
+    }
+
+    static load_image_promise(img_el) {
+        return new Promise((resolve, reject) => {
+            try {
+                img_el.onload = (e) => {
+                    resolve(img_el);
+                };
+            }
+            catch (err) {
+                reject(err);
+            }
+        });
+    }
+
     // ================= Construction/Initialization =================
         
     constructor(
@@ -13688,7 +14984,8 @@ class ULabel {
         on_submit,
         subtasks,
         task_meta=null,
-        annotation_meta=null
+        annotation_meta=null,
+        px_per_px=1
     ) {
         // Unroll safe default arguments
         if (task_meta == null) {task_meta = {};}
@@ -13708,12 +15005,13 @@ class ULabel {
             "canvas_bid_pfx": "back-canvas",
             "canvas_did": "demo-canvas",
             "canvas_class": "easel",
-            "image_id": "ann_image",
+            "image_id_pfx": "ann_image",
             "imgsz_class": "imgsz",
             "toolbox_id": "toolbox",
+            "px_per_px": px_per_px,
 
             // Configuration for the annotation task itself
-            "image_data": image_data,
+            "image_data": ULabel.expand_image_data(image_data),
             "annotator": username,
             "allow_soft_id": false, // TODO allow soft eventually
             "default_annotation_color": "#fa9d2a",
@@ -13739,6 +15037,9 @@ class ULabel {
             "annotation_meta": annotation_meta
         };
 
+        // Useful for the efficient redraw of nonspatial annotations
+        this.tmp_nonspatial_element_ids = {};
+
         // Populate these in an external "static" function
         this.subtasks = {};
         this.tot_num_classes = 0;
@@ -13747,10 +15048,10 @@ class ULabel {
         // Create object for current ulabel state
         this.state = {
             // Viewer state
-            // TODO(3d)
             // Add and handle a value for current image
             "zoom_val": 1.0,
             "last_move": null,
+            "current_frame": 0,
 
             // Global annotation state (subtasks also maintain an annotation state)
             "current_subtask": null,
@@ -13794,6 +15095,17 @@ class ULabel {
                 "zoom_val_start": null // zoom_val when the dragging interaction started
             }
         };
+
+        for (const st in this.subtasks) {
+            for (let i = 0; i < this.subtasks[st]["annotations"]["ordering"].length; i++) {
+                let aid = this.subtasks[st]["annotations"]["ordering"][i];
+                let amd = this.subtasks[st]["annotations"]["access"][aid]["spatial_type"];
+                if (!NONSPATIAL_MODES.includes(amd)) {
+                    this.rebuild_containing_box(this.subtasks[st]["annotations"]["ordering"][i], false, st);
+                }
+            }
+        }
+                // Make sure it has a containing box
                 
         // Indicate that object must be "init" before use!
         this.is_init = false;
@@ -13801,7 +15113,7 @@ class ULabel {
 
     init(callback) {
         // Add stylesheet
-        ULabel.add_style_to_document();
+        ULabel.add_style_to_document(this);
 
         var that = this;
         that.state["current_subtask"] = Object.keys(that.subtasks)[0];
@@ -13814,14 +15126,17 @@ class ULabel {
             jquery_default()("#" + this.config["container_id"]).addClass("ulabel-night");
         }
         
-        // Get image details
-        var image = document.getElementById(this.config["image_id"]);
-
-        image.onload = function() {
-
+        var images = [document.getElementById(`${this.config["image_id_pfx"]}__0`)];
+        let mappable_images = [];
+        for (let i = 0; i < images.length; i++) {
+            mappable_images.push(images[i]);
+            break;
+        }
+        let image_promises = mappable_images.map(ULabel.load_image_promise);
+        Promise.all(image_promises).then((loaded_imgs) => {
             // Store image dimensions
-            that.config["image_height"] = image.naturalHeight;
-            that.config["image_width"] = image.naturalWidth;
+            that.config["image_height"] = loaded_imgs[0].naturalHeight;
+            that.config["image_width"] = loaded_imgs[0].naturalWidth;
     
             // Add canvasses for each subtask and get their rendering contexts
             for (const st in that.subtasks) {
@@ -13830,16 +15145,19 @@ class ULabel {
                     <canvas 
                         id="${that.subtasks[st]["canvas_bid"]}" 
                         class="${that.config["canvas_class"]} ${that.config["imgsz_class"]} canvas_cls" 
-                        height=${that.config["image_height"]} 
-                        width=${that.config["image_width"]}></canvas>
+                        height=${that.config["image_height"]*this.config["px_per_px"]} 
+                        width=${that.config["image_width"]*this.config["px_per_px"]}></canvas>
                     <canvas 
                         id="${that.subtasks[st]["canvas_fid"]}" 
                         class="${that.config["canvas_class"]} ${that.config["imgsz_class"]} canvas_cls" 
-                        height=${that.config["image_height"]} 
-                        width=${that.config["image_width"]} 
+                        height=${that.config["image_height"]*this.config["px_per_px"]} 
+                        width=${that.config["image_width"]*this.config["px_per_px"]} 
                         oncontextmenu="return false"></canvas>
                     <div id="dialogs__${st}" class="dialogs_container"></div>
                 </div>
+                `);
+                jquery_default()("#" + that.config["container_id"] + ` div#fad_st__${st}`).append(`
+                    <div id="front_dialogs__${st}" class="front_dialogs"></div>
                 `);
         
                 // Get canvas contexts
@@ -13870,9 +15188,9 @@ class ULabel {
             // Indicate that the object is now init!
             that.is_init = true;
     
-            // TODO why is this necessary?
-            that.state["zoom_val"] = 1.0;
+            that.state["zoom_val"] = that.get_exact_fit_zoom_val();
             that.rezoom(0, 0);
+            this.update_frame();
 
             // Draw demo annotation
             that.redraw_demo();
@@ -13881,15 +15199,33 @@ class ULabel {
             if (that.config["resume_from"] != null) {
                 that.redraw_all_annotations();
             }
-    
+
             // Call the user-provided callback
             callback.bind(that);
-        }
+        }).catch((err) => {
+            console.log(err);
+            this.raise_error("Unable to load images: " + JSON.stringify(err), ULabel.elvl_fatal);
+        });
     }
 
     version() {
         return ULabel.version();
     }
+
+    // A ratio of viewport height to image height
+	get_viewport_height_ratio() {
+		return jquery_default()("#" + this.config["annbox_id"]).height() / this.config["image_height"];
+	}
+
+	// A ratio of viewport width to image width
+	get_viewport_width_ratio() {
+		return jquery_default()("#" + this.config["annbox_id"]).width() / this.config["image_width"];
+	}
+
+	// The zoom ratio which fixes the entire image exactly in the viewport
+	get_exact_fit_zoom_val() {
+		return Math.min(this.get_viewport_height_ratio(), this.get_viewport_width_ratio());
+	}
 
     // ================== Subtask Helpers ===================
 
@@ -13907,7 +15243,7 @@ class ULabel {
         this.state["current_subtask"] = st_key;
 
         // Bring new set of canvasses out to front
-        jquery_default()("div.canvasses").css("z-index", "initial");
+        jquery_default()("div.canvasses").css("z-index", 75);
         jquery_default()("div#canvasses__" + this.state["current_subtask"]).css("z-index", 100);
 
         // Show appropriate set of dialogs
@@ -13966,11 +15302,18 @@ class ULabel {
         }
         let new_name = el.attr("amdname");
         jquery_default()("#" + this.config["toolbox_id"] + " .current_mode").html(new_name);
+        jquery_default()(`div.frame_annotation_dialog:not(.fad_st__${this.state["current_subtask"]})`).removeClass("active");
+        if (["whole-image", "global"].includes(this.subtasks[this.state["current_subtask"]]["state"]["annotation_mode"])) {
+            jquery_default()(`div.frame_annotation_dialog.fad_st__${this.state["current_subtask"]}`).addClass("active");
+        }
+        else {
+            jquery_default()("div.frame_annotation_dialog").removeClass("active");
+        }
     }
 
     // Draw demo annotation in demo canvas
     redraw_demo() {
-        this.state["demo_canvas_context"].clearRect(0, 0, this.config["demo_width"], this.config["demo_height"]);
+        this.state["demo_canvas_context"].clearRect(0, 0, this.config["demo_width"]*this.config["px_per_px"], this.config["demo_height"]*this.config["px_per_px"]);
         this.draw_annotation(DEMO_ANNOTATION, "demo_canvas_context", true, null, "demo");
     }
 
@@ -13999,6 +15342,11 @@ class ULabel {
                     [gmx, gmy],
                     [gmx, gmy]
                 ];
+            case "bbox3":
+                return [
+                    [gmx, gmy, this.state["current_frame"]],
+                    [gmx, gmy, this.state["current_frame"]]
+                ];
             default:
                 // TODO broader refactor of error handling and detecting/preventing corruption
                 this.raise_error("Annotation mode is not understood", ULabel.elvl_info);
@@ -14016,12 +15364,25 @@ class ULabel {
     // Access a point in a spatial payload using access string
     // Optional arg at the end is for finding position of a moved splice point through its original access string
     get_with_access_string(annid, access_str, as_though_pre_splice=false) {
+        // TODO(3d)
+        let bbi, bbj, bbk, bbox_pts;
         switch (this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid]["spatial_type"]) {
             case "bbox":
-                const bbi = parseInt(access_str[0], 10);
-                const bbj = parseInt(access_str[1], 10);
-                let bbox_pts = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid]["spatial_payload"];
+                bbi = parseInt(access_str[0], 10);
+                bbj = parseInt(access_str[1], 10);
+                bbox_pts = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid]["spatial_payload"];
                 return [bbox_pts[bbi][0], bbox_pts[bbj][1]];
+            case "bbox3":
+                // TODO(3d)
+                bbi = parseInt(access_str[0], 10);
+                bbj = parseInt(access_str[1], 10);
+                bbox_pts = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid]["spatial_payload"];
+                let ret = [bbox_pts[bbi][0], bbox_pts[bbj][1]]
+                if (access_str.length > 2) {
+                    bbk = parseInt(access_str[2], 10);
+                    ret.push(bbox_pts[bbk][2]);
+                }
+                return ret;
             case "polygon":
                 let bas = parseInt(access_str, 10);
                 let dif = parseFloat(access_str) - bas;
@@ -14058,19 +15419,31 @@ class ULabel {
     // Set a point in a spatial payload using access string
     set_with_access_string(annid, access_str, val, undoing=null) {
         // Ensure the values are ints
-        val[0] = Math.round(val[0]);
-        val[1] = Math.round(val[1]);
+        // val[0] = Math.round(val[0]);
+        // val[1] = Math.round(val[1]);
+        // TODO(3d)
+        let bbi, bbj, bbk;
         switch (this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid]["spatial_type"]) {
             case "bbox":
-                var bbi = parseInt(access_str[0], 10);
-                var bbj = parseInt(access_str[1], 10);
+                bbi = parseInt(access_str[0], 10);
+                bbj = parseInt(access_str[1], 10);
                 this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid]["spatial_payload"][bbi][0] = val[0];
                 this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid]["spatial_payload"][bbj][1] = val[1];
                 break;
+            case "bbox3":
+                bbi = parseInt(access_str[0], 10);
+                bbj = parseInt(access_str[1], 10);
+                this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid]["spatial_payload"][bbi][0] = val[0];
+                this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid]["spatial_payload"][bbj][1] = val[1];
+                if (access_str.length > 2 && val.length > 2) {
+                    bbk = parseInt(access_str[2], 10);
+                    this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid]["spatial_payload"][bbk][2] = val[2];
+                }
+                break;
             case "tbar":
                 // TODO 3 points
-                var bbi = parseInt(access_str[0], 10);
-                var bbj = parseInt(access_str[1], 10);
+                bbi = parseInt(access_str[0], 10);
+                bbj = parseInt(access_str[1], 10);
                 this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid]["spatial_payload"][bbi][0] = val[0];
                 this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid]["spatial_payload"][bbj][1] = val[1];
                 break;
@@ -14112,12 +15485,15 @@ class ULabel {
         }
     }
 
-    get_annotation_color(clf_payload, demo=false) {
+    get_annotation_color(clf_payload, demo=false, subtask=null) {
         if (this.config["allow_soft_id"]) {
             // not currently supported;
             return this.config["default_annotation_color"];
         }
         let crst = this.state["current_subtask"];
+        if (subtask != null && !demo) {
+            crst = subtask;
+        }
         let col_payload = JSON.parse(JSON.stringify(this.subtasks[crst]["state"]["id_payload"])); // BOOG
         if (demo) {
             let dist_prop = 1.0;
@@ -14157,7 +15533,8 @@ class ULabel {
 
     // ================= Drawing Functions =================
 
-    draw_bounding_box(annotation_object, ctx, demo=false, offset=null) {
+    draw_bounding_box(annotation_object, ctx, demo=false, offset=null, subtask=null) {
+        const px_per_px = this.config["px_per_px"];
         let diffX = 0;
         let diffY = 0;
         if (offset != null) {
@@ -14174,11 +15551,11 @@ class ULabel {
         }
     
         // Prep for bbox drawing
-        let color = this.get_annotation_color(annotation_object["classification_payloads"]);
+        let color = this.get_annotation_color(annotation_object["classification_payloads"], false, subtask);
         ctx.fillStyle = color;
         ctx.strokeStyle = color;
         ctx.lineJoin = "round";
-        ctx.lineWidth = line_size;
+        ctx.lineWidth = line_size*px_per_px;
         ctx.imageSmoothingEnabled = false;
         ctx.globalCompositeOperation = "source-over";
     
@@ -14186,16 +15563,74 @@ class ULabel {
         const sp = annotation_object["spatial_payload"][0];
         const ep = annotation_object["spatial_payload"][1];
         ctx.beginPath();
-        ctx.moveTo(sp[0] + diffX, sp[1] + diffY);
-        ctx.lineTo(sp[0] + diffX, ep[1] + diffY);
-        ctx.lineTo(ep[0] + diffX, ep[1] + diffY);
-        ctx.lineTo(ep[0] + diffX, sp[1] + diffY);
-        ctx.lineTo(sp[0] + diffX, sp[1] + diffY);
+        ctx.moveTo((sp[0] + diffX)*px_per_px, (sp[1] + diffY)*px_per_px);
+        ctx.lineTo((sp[0] + diffX)*px_per_px, (ep[1] + diffY)*px_per_px);
+        ctx.lineTo((ep[0] + diffX)*px_per_px, (ep[1] + diffY)*px_per_px);
+        ctx.lineTo((ep[0] + diffX)*px_per_px, (sp[1] + diffY)*px_per_px);
+        ctx.lineTo((sp[0] + diffX)*px_per_px, (sp[1] + diffY)*px_per_px);
         ctx.closePath();
         ctx.stroke();
     }
+
+    draw_bbox3(annotation_object, ctx, demo=false, offset=null, subtask=null) {
+        const px_per_px = this.config["px_per_px"];
+        let diffX = 0;
+        let diffY = 0;
+        let diffZ = 0;
+        if (offset != null) {
+            diffX = offset["diffX"];
+            diffY = offset["diffY"];
+            if ("diffZ" in offset) {
+                diffZ = offset["diffZ"];
+            }
+        }
+
+        let curfrm = this.state["current_frame"];
+        const sp = annotation_object["spatial_payload"][0];
+        const ep = annotation_object["spatial_payload"][1];
+        if (curfrm < (Math.min(sp[2], ep[2]) + diffZ) || curfrm > (Math.max(sp[2], ep[2]) + diffZ)) {
+            return;
+        }
+        let fill = false;
+        if (curfrm == (Math.min(sp[2], ep[2]) + diffZ) || curfrm == (Math.max(sp[2], ep[2]) + diffZ)) {
+            fill = true;
+        }
+
+        let line_size = null;
+        if ("line_size" in annotation_object) {
+            line_size = annotation_object["line_size"];
+        }
+        else {
+            line_size = this.get_line_size(demo);
+        }
     
-    draw_polygon(annotation_object, ctx, demo=false, offset=null) {
+        // Prep for bbox drawing
+        let color = this.get_annotation_color(annotation_object["classification_payloads"], false, subtask);
+        ctx.fillStyle = color;
+        ctx.strokeStyle = color;
+        ctx.lineJoin = "round";
+        ctx.lineWidth = line_size*px_per_px;
+        ctx.imageSmoothingEnabled = false;
+        ctx.globalCompositeOperation = "source-over";
+    
+        // Draw the box
+        ctx.beginPath();
+        ctx.moveTo((sp[0] + diffX)*px_per_px, (sp[1] + diffY)*px_per_px);
+        ctx.lineTo((sp[0] + diffX)*px_per_px, (ep[1] + diffY)*px_per_px);
+        ctx.lineTo((ep[0] + diffX)*px_per_px, (ep[1] + diffY)*px_per_px);
+        ctx.lineTo((ep[0] + diffX)*px_per_px, (sp[1] + diffY)*px_per_px);
+        ctx.lineTo((sp[0] + diffX)*px_per_px, (sp[1] + diffY)*px_per_px);
+        ctx.closePath();
+        ctx.stroke();
+        if (fill) {
+            ctx.globalAlpha = 0.2;
+            ctx.fill();
+            ctx.globalAlpha = 1.0;
+        }
+    }
+    
+    draw_polygon(annotation_object, ctx, demo=false, offset=null, subtask=null) {
+        const px_per_px = this.config["px_per_px"];
         let diffX = 0;
         let diffY = 0;
         if (offset != null) {
@@ -14214,11 +15649,11 @@ class ULabel {
 
         
         // Prep for bbox drawing
-        let color = this.get_annotation_color(annotation_object["classification_payloads"], demo);
+        let color = this.get_annotation_color(annotation_object["classification_payloads"], demo, subtask);
         ctx.fillStyle = color;
         ctx.strokeStyle = color;
         ctx.lineJoin = "round";
-        ctx.lineWidth = line_size;
+        ctx.lineWidth = line_size*px_per_px;
         ctx.lineCap = "round";
         ctx.imageSmoothingEnabled = false;
         ctx.globalCompositeOperation = "source-over";
@@ -14226,14 +15661,15 @@ class ULabel {
         // Draw the box
         const pts = annotation_object["spatial_payload"];
         ctx.beginPath();
-        ctx.moveTo(pts[0][0] + diffX, pts[0][1] + diffY);
+        ctx.moveTo((pts[0][0] + diffX)*px_per_px, (pts[0][1] + diffY)*px_per_px);
         for (var pti = 1; pti < pts.length; pti++) {
-            ctx.lineTo(pts[pti][0] + diffX, pts[pti][1] + diffY);
+            ctx.lineTo((pts[pti][0] + diffX)*px_per_px, (pts[pti][1] + diffY)*px_per_px);
         }
         ctx.stroke();
     }
     
-    draw_contour(annotation_object, ctx, demo=false, offset=null) {
+    draw_contour(annotation_object, ctx, demo=false, offset=null, subtask=null) {
+        const px_per_px = this.config["px_per_px"];
         let diffX = 0;
         let diffY = 0;
         if (offset != null) {
@@ -14251,11 +15687,11 @@ class ULabel {
 
     
         // Prep for bbox drawing
-        let color = this.get_annotation_color(annotation_object["classification_payloads"], demo);
+        let color = this.get_annotation_color(annotation_object["classification_payloads"], demo, subtask);
         ctx.fillStyle = color;
         ctx.strokeStyle = color;
         ctx.lineJoin = "round";
-        ctx.lineWidth = line_size;
+        ctx.lineWidth = line_size*px_per_px;
         ctx.lineCap = "round";
         ctx.imageSmoothingEnabled = false;
         ctx.globalCompositeOperation = "source-over";
@@ -14263,14 +15699,15 @@ class ULabel {
         // Draw the box
         const pts = annotation_object["spatial_payload"];
         ctx.beginPath();
-        ctx.moveTo(pts[0][0] + diffX, pts[0][1] + diffY);
+        ctx.moveTo((pts[0][0] + diffX)*px_per_px, (pts[0][1] + diffY)*px_per_px);
         for (var pti = 1; pti < pts.length; pti++) {
-            ctx.lineTo(pts[pti][0] + diffX, pts[pti][1] + diffY);
+            ctx.lineTo((pts[pti][0] + diffX)*px_per_px, (pts[pti][1] + diffY)*px_per_px);
         }
         ctx.stroke();
     }
 
-    draw_tbar(annotation_object, ctx, demo=false, offset=null) {
+    draw_tbar(annotation_object, ctx, demo=false, offset=null, subtask=null) {
+        const px_per_px = this.config["px_per_px"];
         let diffX = 0;
         let diffY = 0;
         if (offset != null) {
@@ -14287,11 +15724,11 @@ class ULabel {
         }
     
         // Prep for tbar drawing
-        let color = this.get_annotation_color(annotation_object["classification_payloads"], demo);
+        let color = this.get_annotation_color(annotation_object["classification_payloads"], demo, subtask);
         ctx.fillStyle = color;
         ctx.strokeStyle = color;
         ctx.lineJoin = "round";
-        ctx.lineWidth = line_size;
+        ctx.lineWidth = line_size*px_per_px;
         ctx.imageSmoothingEnabled = false;
         ctx.globalCompositeOperation = "source-over";
     
@@ -14299,8 +15736,8 @@ class ULabel {
         const sp = annotation_object["spatial_payload"][0];
         const ep = annotation_object["spatial_payload"][1];
         ctx.beginPath();
-        ctx.moveTo(sp[0] + diffX, sp[1] + diffY);
-        ctx.lineTo(ep[0] + diffX, ep[1] + diffY);
+        ctx.moveTo((sp[0] + diffX)*px_per_px, (sp[1] + diffY)*px_per_px);
+        ctx.lineTo((ep[0] + diffX)*px_per_px, (ep[1] + diffY)*px_per_px);
         ctx.stroke();
 
         // Draw the cross of the tbar
@@ -14319,12 +15756,80 @@ class ULabel {
 
         ctx.lineCap = "square";
         ctx.beginPath();
-        ctx.moveTo(sb[0] + diffX, sb[1] + diffY);
-        ctx.lineTo(eb[0] + diffX, eb[1] + diffY);
+        ctx.moveTo((sb[0] + diffX)*px_per_px, (sb[1] + diffY)*px_per_px);
+        ctx.lineTo((eb[0] + diffX)*px_per_px, (eb[1] + diffY)*px_per_px);
         ctx.stroke();
         ctx.lineCap = "round";
 
     }
+
+    register_nonspatial_redraw_start(subtask) {
+        // TODO(3d)
+        this.tmp_nonspatial_element_ids[subtask] = [];
+        let nonsp_window  = jquery_default()(`div#fad_st__${subtask}`);
+        if (nonsp_window.length) {
+            jquery_default()(`div#fad_st__${subtask} div.fad_annotation_rows div.fad_row`).each((idx, val) => {
+                this.tmp_nonspatial_element_ids[subtask].push(jquery_default()(val).attr("id"));
+            });
+        }
+    }
+
+
+    draw_nonspatial_annotation(annotation_object, svg_obj, subtask=null) {
+        if (subtask == null) {
+            subtask = this.state["current_subtask"];
+        }
+        let found = false;
+        for (let i = 0; i < this.tmp_nonspatial_element_ids[subtask].length; i++) {
+            if ("row__"+annotation_object["id"] == this.tmp_nonspatial_element_ids[subtask][i]) {
+                this.tmp_nonspatial_element_ids[subtask][i] = null;
+                found = true;
+            }
+        }
+        if (!found) {
+            jquery_default()(`div#fad_st__${subtask} div.fad_annotation_rows`).append(`
+            <div id="row__${annotation_object["id"]}" class="fad_row">
+                <div class="fad_buttons">
+                    <div class="fad_inp_container text">
+                        <textarea id="note__${annotation_object["id"]}" class="nonspatial_note" placeholder="Notes...">${annotation_object["text_payload"]}</textarea>
+                    </div><!--
+                    --><div class="fad_inp_container button frst">
+                        <a href="#" id="reclf__${annotation_object["id"]}" class="fad_button reclf"></a>
+                    </div><!--
+                    --><div class="fad_inp_container button">
+                        <a href="#" id="delete__${annotation_object["id"]}" class="fad_button delete">&#215;</a>
+                    </div>
+                </div><!--
+                --><div id="icon__${annotation_object["id"]}" class="fad_type_icon invert-this-svg" style="background-color: ${this.get_annotation_color(annotation_object["classification_payloads"], false, subtask)};">
+                    ${svg_obj}
+                </div>
+            </div>
+            `);
+        }
+        else {
+            jquery_default()(`textarea#note__${annotation_object["id"]}`).val(annotation_object["text_payload"]);
+            jquery_default()(`div#icon__${annotation_object["id"]}`).css("background-color", this.get_annotation_color(annotation_object["classification_payloads"], false, subtask));
+        }
+    }
+
+
+    draw_whole_image_annotation(annotation_object, subtask=null) {
+        this.draw_nonspatial_annotation(annotation_object, WHOLE_IMAGE_SVG, subtask);
+
+    }
+
+    draw_global_annotation(annotation_object, subtask=null) {
+        this.draw_nonspatial_annotation(annotation_object, GLOBAL_SVG, subtask);
+    }
+
+    handle_nonspatial_redraw_end(subtask) {
+        // TODO(3d)
+        for (let i = 0; i < this.tmp_nonspatial_element_ids[subtask].length; i++) {
+            jquery_default()(`#${this.tmp_nonspatial_element_ids[subtask][i]}`).remove();
+        }
+        this.tmp_nonspatial_element_ids[subtask] = [];
+    }
+
     
     draw_annotation(annotation_object, cvs_ctx="front_context", demo=false, offset=null, subtask=null) {
         // DEBUG left here for refactor reference, but I don't think it's needed moving forward
@@ -14348,16 +15853,26 @@ class ULabel {
         // Dispatch to annotation type's drawing function
         switch (annotation_object["spatial_type"]) {
             case "bbox":
-                this.draw_bounding_box(annotation_object, ctx, demo, offset);
+                this.draw_bounding_box(annotation_object, ctx, demo, offset, subtask);
+                break;
+            case "bbox3":
+                // TODO(new3d)
+                this.draw_bbox3(annotation_object, ctx, demo, offset, subtask);
                 break;
             case "polygon":
-                this.draw_polygon(annotation_object, ctx, demo, offset);
+                this.draw_polygon(annotation_object, ctx, demo, offset, subtask);
                 break;
             case "contour":
-                this.draw_contour(annotation_object, ctx, demo, offset);
+                this.draw_contour(annotation_object, ctx, demo, offset, subtask);
                 break;
             case "tbar":
-                this.draw_tbar(annotation_object, ctx, demo, offset);
+                this.draw_tbar(annotation_object, ctx, demo, offset, subtask);
+                break;
+            case "whole-image":
+                this.draw_whole_image_annotation(annotation_object, subtask);
+                break;
+            case "global":
+                this.draw_global_annotation(annotation_object, subtask);
                 break;
             default:
                 this.raise_error("Warning: Annotation " + annotation_object["id"] + " not understood", ULabel.elvl_info);
@@ -14370,42 +15885,59 @@ class ULabel {
             // Should never be here tbh
             subtask = this.state["current_subtask"];
         }
-        this.draw_annotation(this.subtasks[subtask]["annotations"]["access"][id], cvs_ctx, false, offset, subtask);
+        let frame = this.subtasks[subtask]["annotations"]["access"][id]["frame"];
+        if (frame == null || frame == "undefined" || frame == this.state["current_frame"]) {
+            this.draw_annotation(this.subtasks[subtask]["annotations"]["access"][id], cvs_ctx, false, offset, subtask);
+        }
     }
     
     // Draws the first n annotations on record
-    draw_n_annotations(n, cvs_ctx="front_context", offset=null, subtask=null) {
+    draw_n_annotations(n, cvs_ctx="front_context", offset=null, subtask=null, spatial_only=false) {
         if (subtask == null) {
             // Should never be here tbh
             subtask = this.state["current_subtask"];
         }
         for (var i = 0; i < n; i++) {
-            if (offset != null && offset["id"] == this.subtasks[this.state["current_subtask"]]["annotations"]["ordering"][i]) {
-                this.draw_annotation_from_id(this.subtasks[subtask]["annotations"]["ordering"][i], cvs_ctx, offset, subtask);
+            let annid = this.subtasks[subtask]["annotations"]["ordering"][i];
+            if (spatial_only && NONSPATIAL_MODES.includes(this.subtasks[subtask]["annotations"]["access"][annid]["spatial_type"])) {
+                continue;
+            }
+            if (offset != null && offset["id"] == annid) {
+                this.draw_annotation_from_id(annid, cvs_ctx, offset, subtask);
             }
             else {
-                this.draw_annotation_from_id(this.subtasks[subtask]["annotations"]["ordering"][i], cvs_ctx, null, subtask);
+                this.draw_annotation_from_id(annid, cvs_ctx, null, subtask);
             }
         }
     }
     
 
-    redraw_all_annotations_in_subtask(subtask, offset=null) {
+    redraw_all_annotations_in_subtask(subtask, offset=null, spatial_only=false) {
         // Clear the canvas
-        this.subtasks[subtask]["state"]["front_context"].clearRect(0, 0, this.config["image_width"], this.config["image_height"]);
+        this.subtasks[subtask]["state"]["front_context"].clearRect(0, 0, this.config["image_width"]*this.config["px_per_px"], this.config["image_height"]*this.config["px_per_px"]);
     
+        if (!spatial_only) {
+            this.register_nonspatial_redraw_start(subtask);
+        }
+
         // Draw them all again
-        this.draw_n_annotations(this.subtasks[this.state["current_subtask"]]["annotations"]["ordering"].length, "front_context", offset, subtask);
+        this.draw_n_annotations(this.subtasks[subtask]["annotations"]["ordering"].length, "front_context", offset, subtask, spatial_only);
+
+        if (!spatial_only) {
+            this.handle_nonspatial_redraw_end(subtask);
+        }
+
     }
 
-    redraw_all_annotations(subtask=null, offset=null) {
+    redraw_all_annotations(subtask=null, offset=null, spatial_only=false) {
+        // TODO(3d)
         if (subtask == null) {
-            for (st in this.subtasks) {
-                this.redraw_all_annotations_in_subtask(st, offset);
+            for (const st in this.subtasks) {
+                this.redraw_all_annotations_in_subtask(st, offset, spatial_only);
             }
         }
         else {
-            this.redraw_all_annotations_in_subtask(subtask, offset);
+            this.redraw_all_annotations_in_subtask(subtask, offset, spatial_only);
         }
     }
 
@@ -14507,11 +16039,7 @@ class ULabel {
         jquery_default()(".edit_suggestion").css("display", "none");
     }
 
-    show_global_edit_suggestion(annid, offset=null) {
-        let esid = "global_edit_suggestion__" + this.state["current_subtask"];
-        var esjq = jquery_default()("#" + esid);
-        esjq.css("display", "block");
-
+    show_global_edit_suggestion(annid, offset=null, nonspatial_id=null) {
         let diffX = 0;
         let diffY = 0;
         if (offset != null) {
@@ -14519,20 +16047,31 @@ class ULabel {
             diffY = offset["diffY"];
         }
 
-        let cbox = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid]["containing_box"];
-        let new_lft = (cbox["tlx"] + cbox["brx"] + 2*diffX)/(2*this.config["image_width"]);
-        let new_top = (cbox["tly"] + cbox["bry"] + 2*diffY)/(2*this.config["image_height"]);
-        this.subtasks[this.state["current_subtask"]]["state"]["visible_dialogs"][esid]["left"] = new_lft;
-        this.subtasks[this.state["current_subtask"]]["state"]["visible_dialogs"][esid]["top"] = new_top;
-        this.reposition_dialogs();
+        let idd_x;
+        let idd_y;
+        if (nonspatial_id == null) {
+            let esid = "global_edit_suggestion__" + this.state["current_subtask"];
+            var esjq = jquery_default()("#" + esid);
+            esjq.css("display", "block");
+            let cbox = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid]["containing_box"];
+            let new_lft = (cbox["tlx"] + cbox["brx"] + 2*diffX)/(2*this.config["image_width"]);
+            let new_top = (cbox["tly"] + cbox["bry"] + 2*diffY)/(2*this.config["image_height"]);
+            this.subtasks[this.state["current_subtask"]]["state"]["visible_dialogs"][esid]["left"] = new_lft;
+            this.subtasks[this.state["current_subtask"]]["state"]["visible_dialogs"][esid]["top"] = new_top;
+            this.reposition_dialogs();
+            idd_x = (cbox["tlx"] + cbox["brx"] + 2*diffX)/2;
+            idd_y = (cbox["tly"] + cbox["bry"] + 2*diffY)/2;
+        }
+        else {
+            // TODO(new3d)
+            idd_x = jquery_default()("#reclf__" + nonspatial_id).offset().left-85;//this.get_global_element_center_x($("#reclf__" + nonspatial_id));
+            idd_y = jquery_default()("#reclf__" + nonspatial_id).offset().top-85;//this.get_global_element_center_y($("#reclf__" + nonspatial_id));
+        }
+
 
         // let placeholder = $("#global_edit_suggestion a.reid_suggestion");
         if (!this.subtasks[this.state["current_subtask"]]["single_class_mode"]) {
-            this.show_id_dialog(
-                (cbox["tlx"] + cbox["brx"] + 2*diffX)/2, 
-                (cbox["tly"] + cbox["bry"] + 2*diffY)/2,
-                annid, true
-            );
+            this.show_id_dialog(idd_x, idd_y, annid, true, nonspatial_id != null);
         }
     }
 
@@ -14541,19 +16080,65 @@ class ULabel {
         this.hide_id_dialog();
     }
 
-    show_id_dialog(gbx, gby, active_ann, thumbnail=false) {
+    show_id_dialog(gbx, gby, active_ann, thumbnail=false, nonspatial=false) {
+        let stkey = this.state["current_subtask"];
+
         // Record which annotation this dialog is associated with
         // TODO
         // am_dialog_associated_ann = active_ann;
         this.subtasks[this.state["current_subtask"]]["state"]["idd_visible"] = true;
         this.subtasks[this.state["current_subtask"]]["state"]["idd_thumbnail"] = thumbnail;
         this.subtasks[this.state["current_subtask"]]["state"]["idd_associated_annotation"] = active_ann;
+        this.subtasks[this.state["current_subtask"]]["state"]["idd_which"] = "back";
+
+        let idd_id = this.subtasks[this.state["current_subtask"]]["state"]["idd_id"];
+        let idd_niu_id = this.subtasks[this.state["current_subtask"]]["state"]["idd_id_front"];
+        let new_height = jquery_default()(`#global_edit_suggestion__${stkey} a.reid_suggestion`)[0].getBoundingClientRect().height;
+
+        if (nonspatial) {
+            this.subtasks[this.state["current_subtask"]]["state"]["idd_which"] = "front";
+            idd_id = this.subtasks[this.state["current_subtask"]]["state"]["idd_id_front"];
+            idd_niu_id = this.subtasks[this.state["current_subtask"]]["state"]["idd_id"];
+            new_height = 28;
+        }
+        else {
+            // Add this id to the list of dialogs with managed positions
+            // TODO actually only do this when calling append()
+            this.subtasks[this.state["current_subtask"]]["state"]["visible_dialogs"][idd_id] = {
+                "left": gbx/this.config["image_width"],
+                "top": gby/this.config["image_height"],
+                "pin": "center"
+            };
+        }
+        let idd = jquery_default()("#" + idd_id);
+        let idd_niu = jquery_default()("#" + idd_niu_id);
+        if (nonspatial) {
+            let new_home = jquery_default()(`#reclf__${active_ann}`);
+            let fad_st = jquery_default()(`#fad_st__${stkey} div.front_dialogs`);
+            let height = 200;
+            let ofst = -100;
+            let zidx = 2000;
+            if (thumbnail) {
+                height = new_height;
+                zidx = -1;
+                // ofst = -100;
+            }
+            let top_c = new_home.offset().top - fad_st.offset().top + ofst + new_height/2;
+            let left_c = new_home.offset().left - fad_st.offset().left + ofst + 1 + new_height/2;
+            idd.css({
+                "display": "block",
+                "position": "absolute",
+                "top": (top_c)+"px",
+                "left": (left_c)+"px",
+                "z-index": zidx
+            });
+            idd.parent().css({
+                "z-index": zidx
+            });
+
+        }
 
         // Add or remove thumbnail class if necessary
-        let idd_id = this.subtasks[this.state["current_subtask"]]["state"]["idd_id"];
-        let idd = jquery_default()("#" + idd_id);
-        let stkey = this.state["current_subtask"];
-        let new_height = jquery_default()(`#global_edit_suggestion__${stkey} a.reid_suggestion`)[0].getBoundingClientRect().height;
         let scale_ratio = new_height/this.config["outer_diameter"];
         if (thumbnail) {
             if (!idd.hasClass("thumb")) {
@@ -14572,13 +16157,6 @@ class ULabel {
             }
         }
 
-        // Add this id to the list of dialogs with managed positions
-        // TODO actually only do this when calling append()
-        this.subtasks[this.state["current_subtask"]]["state"]["visible_dialogs"][idd_id] = {
-            "left": gbx/this.config["image_width"],
-            "top": gby/this.config["image_height"],
-            "pin": "center"
-        };
         this.reposition_dialogs();
 
         // Configure the dialog to show the current information for this ann
@@ -14590,13 +16168,20 @@ class ULabel {
 
         // Show the dialog
         idd.css("display", "block");
+        idd_niu.css("display", "none");
+        // TODO(new3d)
+        // if (nonspatial) {
+        //     idd.css("z-index", 2000);
+        // }
     }
 
     hide_id_dialog() {
         let idd_id = this.subtasks[this.state["current_subtask"]]["state"]["idd_id"];
+        let idd_id_front = this.subtasks[this.state["current_subtask"]]["state"]["idd_id_front"];
         this.subtasks[this.state["current_subtask"]]["state"]["idd_visible"] = false;
         this.subtasks[this.state["current_subtask"]]["state"]["idd_associated_annotation"] = null;
         jquery_default()("#" + idd_id).css("display", "none");
+        jquery_default()("#" + idd_id_front).css("display", "none");
     }
 
 
@@ -14636,6 +16221,8 @@ class ULabel {
             annid = redo_payload.annid;
             old_id = redo_payload.old_id;
         }
+
+        let annotation_mode = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][old_id]["spatial_type"];
         
         let deprecate_old = false;
         if (!this.subtasks[this.state["current_subtask"]]["annotations"]["access"][old_id]["new"]) {
@@ -14666,14 +16253,22 @@ class ULabel {
         if (this.subtasks[this.state["current_subtask"]]["state"]["active_id"] != null) {
             this.subtasks[this.state["current_subtask"]]["state"]["active_id"] = null;
             this.subtasks[this.state["current_subtask"]]["state"]["is_in_edit"] = false;
+            this.subtasks[this.state["current_subtask"]]["state"]["is_in_move"] = false;
             this.subtasks[this.state["current_subtask"]]["state"]["is_in_progress"] = false;
         }
         this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid]["deprecated"] = true;
         this.redraw_all_annotations(this.state["current_subtask"]);
         this.hide_global_edit_suggestion();
+
+        let frame = this.state["current_frame"];
+        if (MODES_3D.includes(annotation_mode)) {
+            frame = null;
+        }
+
         // TODO add this action to the undo stack
         this.record_action({
             act_type: "delete_annotation",
+            frame: frame,
             undo_payload: {
                 annid: annid,
                 deprecate_old: deprecate_old,
@@ -14738,6 +16333,24 @@ class ULabel {
                         ret["point"] = npi["point"];
                     }
                     break;
+                case "bbox3":
+                    let curfrm = this.state["current_frame"];
+                    let pts = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][edid]["spatial_payload"];
+                    if ((curfrm >= Math.min(pts[0][2], pts[1][2])) && (curfrm <= Math.max(pts[0][2], pts[1][2]))) {
+                        // TODO(new3d) Make sure this function works for bbox3 too
+                        npi = ULabel.get_nearest_point_on_bbox3(
+                            global_x, global_y, curfrm,
+                            pts,
+                            max_dist
+                        );
+                        if (npi["distance"] < ret["distance"]) {
+                            ret["annid"] = edid;
+                            ret["access"] = npi["access"];
+                            ret["distance"] = npi["distance"];
+                            ret["point"] = npi["point"];
+                        }
+                    }
+                    break;
                 case "polygon":
                     npi = ULabel.get_nearest_point_on_polygon(
                         global_x, global_y, 
@@ -14769,6 +16382,8 @@ class ULabel {
                     break;
             }
         }
+        // TODO(3d)
+        // Iterate through 3d annotations here (e.g., bbox3)
         if (ret["annid"] == null) {
             return null;
         }
@@ -14789,6 +16404,7 @@ class ULabel {
             var edid = candidates[edi];
             switch (this.subtasks[this.state["current_subtask"]]["annotations"]["access"][edid]["spatial_type"]) {
                 case "bbox":
+                case "bbox3":
                     // Can't propose new bounding box points
                     break;
                 case "polygon":
@@ -14837,22 +16453,28 @@ class ULabel {
     // Action Stream Events
 
     record_action(action, is_redo=false) {
+        // TODO(3d) 
+        // What am I going to do about undo/redo for 3d annotations???
+        // This might need to be condensed into a single stream.
+
         // After a new action, you can no longer redo old actions
         if (!is_redo) {
             this.subtasks[this.state["current_subtask"]]["actions"]["undone_stack"] = [];
         }
 
-        // Add to strea
+        // Add to stream
         this.subtasks[this.state["current_subtask"]]["actions"]["stream"].push(action);
     }
 
     record_finish(actid) {
+        // TODO(3d) 
         let i = this.subtasks[this.state["current_subtask"]]["actions"]["stream"].length - 1;
         this.subtasks[this.state["current_subtask"]]["actions"]["stream"][i].redo_payload.init_spatial = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"];
         this.subtasks[this.state["current_subtask"]]["actions"]["stream"][i].redo_payload.finished = true;
     }
 
     record_finish_edit(actid) {
+        // TODO(3d) 
         let i = this.subtasks[this.state["current_subtask"]]["actions"]["stream"].length - 1;
         let fin_pt = this.get_with_access_string(
             actid, 
@@ -14861,19 +16483,24 @@ class ULabel {
         );
         this.subtasks[this.state["current_subtask"]]["actions"]["stream"][i].redo_payload.ending_x = fin_pt[0];
         this.subtasks[this.state["current_subtask"]]["actions"]["stream"][i].redo_payload.ending_y = fin_pt[1];
+        this.subtasks[this.state["current_subtask"]]["actions"]["stream"][i].redo_payload.ending_frame = this.state["current_frame"];
         this.subtasks[this.state["current_subtask"]]["actions"]["stream"][i].redo_payload.finished = true;
     }
 
-    record_finish_move(diffX, diffY) {
+    record_finish_move(diffX, diffY, diffZ=0) {
+        // TODO(3d) 
         let i = this.subtasks[this.state["current_subtask"]]["actions"]["stream"].length - 1;
         this.subtasks[this.state["current_subtask"]]["actions"]["stream"][i].redo_payload.diffX = diffX;
         this.subtasks[this.state["current_subtask"]]["actions"]["stream"][i].redo_payload.diffY = diffY;
+        this.subtasks[this.state["current_subtask"]]["actions"]["stream"][i].redo_payload.diffZ = diffZ;
         this.subtasks[this.state["current_subtask"]]["actions"]["stream"][i].undo_payload.diffX = -diffX;
         this.subtasks[this.state["current_subtask"]]["actions"]["stream"][i].undo_payload.diffY = -diffY;
+        this.subtasks[this.state["current_subtask"]]["actions"]["stream"][i].undo_payload.diffZ = -diffZ;
         this.subtasks[this.state["current_subtask"]]["actions"]["stream"][i].redo_payload.finished = true;
     }
 
     undo_action(action) {
+        this.update_frame(null, action.frame);
         switch(action.act_type) {
             case "begin_annotation":
                 this.begin_annotation__undo(action.undo_payload);
@@ -14896,6 +16523,9 @@ class ULabel {
             case "assign_annotation_id":
                 this.assign_annotation_id__undo(action.undo_payload);
                 break;
+            case "create_nonspatial_annotation":
+                this.create_nonspatial_annotation__undo(action.undo_payload);
+                break;
             default:
                 console.log("Undo error :(");
                 break;
@@ -14903,6 +16533,7 @@ class ULabel {
     }
 
     redo_action(action) {
+        this.update_frame(null, action.frame);
         switch(action.act_type) {
             case "begin_annotation":
                 this.begin_annotation(null, action.redo_payload);
@@ -14925,6 +16556,9 @@ class ULabel {
             case "assign_annotation_id":
                 this.assign_annotation_id(null, action.redo_payload);
                 break;
+            case "create_nonspatial_annotation":
+                this.create_nonspatial_annotation(action.redo_payload);
+                break;    
             default:
                 console.log("Redo error :(");
                 break;
@@ -14942,6 +16576,107 @@ class ULabel {
                 console.log("Finish error :(");
                 break;
         }
+    }
+
+    create_nonspatial_annotation(redo_payload=null) {
+        let redoing = false;
+        let unq_id = null;
+        let annotation_mode = null;
+        let init_idpyld = null;
+        if (redo_payload == null) {
+            unq_id = this.make_new_annotation_id();
+            annotation_mode = this.subtasks[this.state["current_subtask"]]["state"]["annotation_mode"];
+            init_idpyld = this.get_init_id_payload();
+        }
+        else {
+            redoing = true;
+            unq_id = redo_payload.unq_id;
+            annotation_mode = redo_payload.annotation_mode;
+            init_idpyld = redo_payload.init_payload;
+        }
+
+        // Add this annotation to annotations object
+        let annframe = this.state["current_frame"];
+        if (MODES_3D.includes(annotation_mode)) {
+            annframe = null;
+        }
+        
+        let new_annotation = {
+            "id": unq_id,
+            "new": true,
+            "parent_id": null,
+            "created_by": this.config["annotator"],
+            "created_at": ULabel.get_time(),
+            "deprecated": false,
+            "spatial_type": annotation_mode,
+            "spatial_payload": null,
+            "classification_payloads": JSON.parse(JSON.stringify(init_idpyld)),
+            "line_size": null,
+            "containing_box": null,
+            "frame": annframe,
+            "text_payload": ""
+        };
+
+        let undo_frame = this.state["current_frame"];
+        let ann_str;
+
+        this.subtasks[this.state["current_subtask"]]["annotations"]["access"][unq_id] = new_annotation;
+        if (redoing) {
+            this.set_id_dialog_payload_to_init(unq_id, init_idpyld);
+        }
+        this.subtasks[this.state["current_subtask"]]["annotations"]["access"][unq_id]["annotation_meta"] = this.config["annotation_meta"];
+        this.subtasks[this.state["current_subtask"]]["annotations"]["ordering"].push(unq_id);
+        ann_str = JSON.stringify(this.subtasks[this.state["current_subtask"]]["annotations"]["access"][unq_id]);
+
+        // Draw new annotation
+        this.redraw_all_annotations(this.state["current_subtask"], null);
+
+        let frame = this.state["current_frame"];
+        if (MODES_3D.includes(annotation_mode)) {
+            frame = null;
+        }
+
+        // Record for potential undo/redo
+        this.record_action({
+            act_type: "create_nonspatial_annotation",
+            frame: frame,
+            redo_payload: {
+                unq_id: unq_id,
+                annotation_mode: annotation_mode,
+                init_spatial: null,
+                finished: true,
+                init_payload: JSON.parse(JSON.stringify(this.subtasks[this.state["current_subtask"]]["state"]["id_payload"]))
+            },
+            undo_payload: {
+                ann_str: ann_str,
+                frame: undo_frame
+            },
+        }, redoing);
+        this.suggest_edits(this.state["last_move"]);
+    }
+    create_nonspatial_annotation__undo(undo_payload) {
+        let ann = JSON.parse(undo_payload.ann_str);
+        let unq_id = ann["id"];
+
+        let end_ann;
+        end_ann = this.subtasks[this.state["current_subtask"]]["annotations"]["ordering"].pop();
+
+        if (end_ann != unq_id) {
+            console.log("We may have a problem... undo replication");
+            console.log(end_ann, unq_id);
+        }
+
+        // Remove from access
+        if (this.subtasks[this.state["current_subtask"]]["annotations"]["access"].hasOwnProperty(unq_id)) {
+            delete this.subtasks[this.state["current_subtask"]]["annotations"]["access"][unq_id];
+        }
+        else {
+            console.log("We may have a problem... undo replication");
+        }
+
+        // Delete from view
+        this.redraw_all_annotations(this.state["current_subtask"], null);
+        this.suggest_edits(this.state["last_move"]);
     }
 
     begin_annotation(mouse_event, redo_payload=null) {
@@ -14977,6 +16712,23 @@ class ULabel {
             init_idpyld = redo_payload.init_payload;
         }
 
+        // TODO(3d) 
+        let containing_box = {
+            "tlx": gmx,
+            "tly": gmy,
+            "brx": gmx,
+            "bry": gmy
+        };
+        if (NONSPATIAL_MODES.includes(annotation_mode)) {
+            containing_box = null;
+            line_size = null;
+            init_spatial = null;
+        }
+        let frame = this.state["current_frame"];
+        if (MODES_3D.includes(annotation_mode)) {
+            frame = null;
+        }
+
         // Add this annotation to annotations object
         this.subtasks[this.state["current_subtask"]]["annotations"]["access"][unq_id] = {
             "id": unq_id,
@@ -14989,17 +16741,15 @@ class ULabel {
             "spatial_payload": init_spatial,
             "classification_payloads": JSON.parse(JSON.stringify(init_idpyld)),
             "line_size": line_size,
-            "containing_box": {
-                "tlx": gmx,
-                "tly": gmy,
-                "brx": gmx,
-                "bry": gmy
-            }
+            "containing_box": containing_box,
+            "frame": frame,
+            "text_payload": ""
         };
         if (redoing) {
             this.set_id_dialog_payload_to_init(unq_id, init_idpyld);
         }
 
+        // TODO(3d)
         // Load annotation_meta into annotation
         this.subtasks[this.state["current_subtask"]]["annotations"]["access"][unq_id]["annotation_meta"] = this.config["annotation_meta"];
         this.subtasks[this.state["current_subtask"]]["annotations"]["ordering"].push(unq_id);
@@ -15017,6 +16767,7 @@ class ULabel {
         // Record for potential undo/redo
         this.record_action({
             act_type: "begin_annotation",
+            frame: frame,
             redo_payload: {
                 mouse_event: mouse_event,
                 unq_id: unq_id,
@@ -15029,6 +16780,7 @@ class ULabel {
                 init_payload: JSON.parse(JSON.stringify(this.subtasks[this.state["current_subtask"]]["state"]["id_payload"]))
             },
             undo_payload: {
+                // TODO(3d)
                 ann_str: JSON.stringify(this.subtasks[this.state["current_subtask"]]["annotations"]["access"][unq_id])
             },
         }, redoing);
@@ -15054,11 +16806,13 @@ class ULabel {
         this.subtasks[this.state["current_subtask"]]["state"]["active_id"] = null;
 
         // Destroy ender
+        // TODO(3d)
         if (this.subtasks[this.state["current_subtask"]]["annotations"]["access"][unq_id]["spatial_type"] == "polygon") {
             this.destroy_polygon_ender(unq_id);
         }
 
         // Remove from ordering
+        // TODO(3d)
         let end_ann = this.subtasks[this.state["current_subtask"]]["annotations"]["ordering"].pop();
         if (end_ann != unq_id) {
             console.log("We may have a problem... undo replication");
@@ -15066,6 +16820,7 @@ class ULabel {
         }
 
         // Remove from access
+        // TODO(3d)
         if (this.subtasks[this.state["current_subtask"]]["annotations"]["access"].hasOwnProperty(unq_id)) {
             delete this.subtasks[this.state["current_subtask"]]["annotations"]["access"][unq_id];
         }
@@ -15078,37 +16833,43 @@ class ULabel {
         this.suggest_edits(this.state["last_move"]);
     }
 
-    update_containing_box(ms_loc, actid) {
-        // console.log(ms_loc, this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["containing_box"]);
-        if (ms_loc[0] < this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["containing_box"]["tlx"]) {
-            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["containing_box"]["tlx"] = ms_loc[0];
+    update_containing_box(ms_loc, actid, subtask=null) {
+        if (subtask == null) {
+            subtask = this.state["current_subtask"];
         }
-        else if (ms_loc[0] > this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["containing_box"]["brx"]) {
-            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["containing_box"]["brx"] = ms_loc[0];
+        // TODO(3d)
+        if (ms_loc[0] < this.subtasks[subtask]["annotations"]["access"][actid]["containing_box"]["tlx"]) {
+            this.subtasks[subtask]["annotations"]["access"][actid]["containing_box"]["tlx"] = ms_loc[0];
         }
-        if (ms_loc[1] < this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["containing_box"]["tly"]) {
-            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["containing_box"]["tly"] = ms_loc[1];
+        else if (ms_loc[0] > this.subtasks[subtask]["annotations"]["access"][actid]["containing_box"]["brx"]) {
+            this.subtasks[subtask]["annotations"]["access"][actid]["containing_box"]["brx"] = ms_loc[0];
         }
-        else if (ms_loc[1] > this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["containing_box"]["bry"]) {
-            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["containing_box"]["bry"] = ms_loc[1];
+        if (ms_loc[1] < this.subtasks[subtask]["annotations"]["access"][actid]["containing_box"]["tly"]) {
+            this.subtasks[subtask]["annotations"]["access"][actid]["containing_box"]["tly"] = ms_loc[1];
+        }
+        else if (ms_loc[1] > this.subtasks[subtask]["annotations"]["access"][actid]["containing_box"]["bry"]) {
+            this.subtasks[subtask]["annotations"]["access"][actid]["containing_box"]["bry"] = ms_loc[1];
         }
         // console.log(ms_loc, this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["containing_box"]);
     }
 
-    rebuild_containing_box(actid, ignore_final=false) {
-        let init_pt = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"][0];
-        this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["containing_box"] = {
+    rebuild_containing_box(actid, ignore_final=false, subtask=null) {
+        if (subtask == null) {
+            subtask = this.state["current_subtask"];
+        }
+        let init_pt = this.subtasks[subtask]["annotations"]["access"][actid]["spatial_payload"][0];
+        this.subtasks[subtask]["annotations"]["access"][actid]["containing_box"] = {
             "tlx": init_pt[0],
             "tly": init_pt[1],
             "brx": init_pt[0],
             "bry": init_pt[1]
         }
-        let npts = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"].length;
+        let npts = this.subtasks[subtask]["annotations"]["access"][actid]["spatial_payload"].length;
         if (ignore_final) {
             npts -= 1;
         }
         for (var pti = 1; pti < npts; pti++) {
-            this.update_containing_box(this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"][pti], actid);
+            this.update_containing_box(this.subtasks[subtask]["annotations"]["access"][actid]["spatial_payload"][pti], actid, subtask);
         }
     }
 
@@ -15118,6 +16879,7 @@ class ULabel {
         let redoing = false;
         let gmx = null;
         let gmy = null;
+        let frm = this.state["current_frame"];
         if (redo_payload == null) {
             actid = this.subtasks[this.state["current_subtask"]]["state"]["active_id"];
             gmx = this.get_global_mouse_x(mouse_event);
@@ -15130,6 +16892,7 @@ class ULabel {
             redoing = true;
             gmx = redo_payload.gmx;
             gmy = redo_payload.gmy;
+            frm = redo_payload.frame;
         }
 
         // TODO big performance gains with buffered canvasses
@@ -15139,11 +16902,22 @@ class ULabel {
                 gmy
             ];
             // Handle annotation continuation based on the annotation mode
+            // TODO(3d)
+            // TODO(3d--META) -- This is the farthest I got tagging places that will need to be fixed.
             switch (this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_type"]) {
                 case "bbox":
                     this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"][1] = ms_loc;
                     this.rebuild_containing_box(actid);
-                    this.redraw_all_annotations(this.state["current_subtask"]); // tobuffer
+                    this.redraw_all_annotations(this.state["current_subtask"], null, true); // tobuffer
+                    break;
+                case "bbox3":
+                    this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"][1] = [
+                        ms_loc[0],
+                        ms_loc[1],
+                        frm
+                    ];
+                    this.rebuild_containing_box(actid);
+                    this.redraw_all_annotations(this.state["current_subtask"], null, true); // tobuffer
                     break;
                 case "polygon":
                     // Store number of keypoints for easy access
@@ -15168,9 +16942,13 @@ class ULabel {
                     if (isclick) {
                         this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"].push(ms_loc);
                         this.update_containing_box(ms_loc, actid);
+
+                        let frame = this.state["current_frame"];
+
                         // Only an undoable action if placing a polygon keypoint
                         this.record_action({
                             act_type: "continue_annotation",
+                            frame: frame,
                             redo_payload: {
                                 mouse_event: mouse_event,
                                 isclick: isclick,
@@ -15186,19 +16964,19 @@ class ULabel {
                             this.continue_annotation(this.state["last_move"]);
                         }
                     }
-                    this.redraw_all_annotations(this.state["current_subtask"]); // tobuffer
+                    this.redraw_all_annotations(this.state["current_subtask"], null, true); // tobuffer
                     break;
                 case "contour":
                     if (ULabel.l2_norm(ms_loc, this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"][this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"].length-1]) > 3) {
                         this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"].push(ms_loc);
                         this.update_containing_box(ms_loc, actid);
-                        this.redraw_all_annotations(this.state["current_subtask"]); // TODO tobuffer, no need to redraw here, can just draw over
+                        this.redraw_all_annotations(this.state["current_subtask"], null, true); // TODO tobuffer, no need to redraw here, can just draw over
                     }
                     break;
                 case "tbar":
                     this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"][1] = ms_loc;
                     this.rebuild_containing_box(actid);
-                    this.redraw_all_annotations(this.state["current_subtask"]); // tobuffer
+                    this.redraw_all_annotations(this.state["current_subtask"], null, true); // tobuffer
                     break;
                 default:
                     let inp = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_type"];
@@ -15208,6 +16986,7 @@ class ULabel {
         }
     }
     continue_annotation__undo(undo_payload) {
+        // TODO(3d)
         this.subtasks[this.state["current_subtask"]]["annotations"]["access"][undo_payload.actid]["spatial_payload"].pop();
         this.rebuild_containing_box(undo_payload.actid, true);
         this.continue_annotation(this.state["last_move"]);
@@ -15218,6 +16997,7 @@ class ULabel {
         let deprecate_old = false;
         let old_id = this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"]["annid"];
         let new_id = old_id;
+        // TODO(3d)
         if (!this.subtasks[this.state["current_subtask"]]["annotations"]["access"][old_id]["new"]) {
             // Make new id and record that you did
             deprecate_old = true;
@@ -15246,8 +17026,16 @@ class ULabel {
         this.suggest_edits(mouse_event);
         let gmx = this.get_global_mouse_x(mouse_event);
         let gmy = this.get_global_mouse_y(mouse_event);
+
+        let annotation_mode = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][new_id]["spatial_type"];
+        let frame = this.state["current_frame"];
+        if (MODES_3D.includes(annotation_mode)) {
+            frame = null;
+        }
+
         this.record_action({
             act_type: "edit_annotation",
+            frame: frame,
             undo_payload: {
                 actid: this.subtasks[this.state["current_subtask"]]["state"]["active_id"],
                 edit_candidate: ec,
@@ -15280,11 +17068,21 @@ class ULabel {
                 this.get_global_mouse_y(mouse_event)
             ];
             // Clicks are handled elsewhere
+            // TODO(3d)
             switch (this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_type"]) {
                 case "bbox":
                     this.set_with_access_string(actid, this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"]["access"], ms_loc);
                     this.rebuild_containing_box(actid);
-                    this.redraw_all_annotations(this.state["current_subtask"]); // tobuffer
+                    this.redraw_all_annotations(this.state["current_subtask"], null, true); // tobuffer
+                    this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"]["point"] = ms_loc;
+                    this.show_edit_suggestion(this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"], true);
+                    this.show_global_edit_suggestion(this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"]["annid"]);
+                    break;
+                case "bbox3":
+                    // TODO(new3d) Will not always want to set 3rd val -- editing is possible within an intermediate frame or frames
+                    this.set_with_access_string(actid, this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"]["access"], [ms_loc[0], ms_loc[1], this.state["current_frame"]]);
+                    this.rebuild_containing_box(actid);
+                    this.redraw_all_annotations(null, null, true); // tobuffer
                     this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"]["point"] = ms_loc;
                     this.show_edit_suggestion(this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"], true);
                     this.show_global_edit_suggestion(this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"]["annid"]);
@@ -15292,7 +17090,7 @@ class ULabel {
                 case "polygon":
                     this.set_with_access_string(actid, this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"]["access"], ms_loc);
                     this.rebuild_containing_box(actid);
-                    this.redraw_all_annotations(this.state["current_subtask"]); // tobuffer
+                    this.redraw_all_annotations(this.state["current_subtask"], null, true); // tobuffer
                     this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"]["point"] = ms_loc;
                     this.show_edit_suggestion(this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"], true);
                     this.show_global_edit_suggestion(this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"]["annid"]);
@@ -15305,7 +17103,7 @@ class ULabel {
                 case "tbar":
                     this.set_with_access_string(actid, this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"]["access"], ms_loc);
                     this.rebuild_containing_box(actid);
-                    this.redraw_all_annotations(this.state["current_subtask"]); // tobuffer
+                    this.redraw_all_annotations(this.state["current_subtask"], null, true); // tobuffer
                     this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"]["point"] = ms_loc;
                     this.show_edit_suggestion(this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"], true);
                     this.show_global_edit_suggestion(this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"]["annid"]);
@@ -15320,6 +17118,7 @@ class ULabel {
         let actid = undo_payload.actid;
         if (undo_payload.deprecate_old) {
             actid = undo_payload.old_id;
+            // TODO(3d)
             this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["deprecated"] = false;
             delete this.subtasks[this.state["current_subtask"]]["annotations"]["access"][undo_payload.new_id];
             // remove from ordering
@@ -15334,19 +17133,26 @@ class ULabel {
             case "bbox":
                 this.set_with_access_string(actid, undo_payload.edit_candidate["access"], ms_loc, true);
                 this.rebuild_containing_box(actid);
-                this.redraw_all_annotations(this.state["current_subtask"]); // tobuffer
+                this.redraw_all_annotations(this.state["current_subtask"], null, true); // tobuffer
+                this.suggest_edits(this.state["last_move"]);
+                break;
+            case "bbox3":
+                ms_loc.push(undo_payload.starting_frame);
+                this.set_with_access_string(actid, undo_payload.edit_candidate["access"], ms_loc, true);
+                this.rebuild_containing_box(actid);
+                this.redraw_all_annotations(this.state["current_subtask"], null, true); // tobuffer
                 this.suggest_edits(this.state["last_move"]);
                 break;
             case "polygon":
                 this.set_with_access_string(actid, undo_payload.edit_candidate["access"], ms_loc, true);
                 this.rebuild_containing_box(actid);
-                this.redraw_all_annotations(this.state["current_subtask"]); // tobuffer
+                this.redraw_all_annotations(this.state["current_subtask"], null, true); // tobuffer
                 this.suggest_edits(this.state["last_move"]);
                 break;
             case "tbar":
                 this.set_with_access_string(actid, undo_payload.edit_candidate["access"], ms_loc, true);
                 this.rebuild_containing_box(actid);
-                this.redraw_all_annotations(this.state["current_subtask"]); // tobuffer
+                this.redraw_all_annotations(this.state["current_subtask"], null, true); // tobuffer
                 this.suggest_edits(this.state["last_move"]);
                 break;
         }
@@ -15355,6 +17161,7 @@ class ULabel {
         let actid = redo_payload.actid;
         if (redo_payload.deprecate_old) {
             actid = redo_payload.new_id;
+            // TODO(3d)
             this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid] = JSON.parse(JSON.stringify(this.subtasks[this.state["current_subtask"]]["annotations"]["access"][redo_payload.old_id]));
             this.subtasks[this.state["current_subtask"]]["annotations"]["access"][redo_payload.new_id]["id"] = redo_payload.new_id;
             this.subtasks[this.state["current_subtask"]]["annotations"]["access"][redo_payload.new_id]["created_by"] = this.config["annotator"];
@@ -15368,29 +17175,43 @@ class ULabel {
             redo_payload.ending_y
         ];
         const cur_loc = this.get_with_access_string(redo_payload.actid, redo_payload.edit_candidate["access"]);
+        // TODO(3d)
         switch (this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_type"]) {
             case "bbox":
                 this.set_with_access_string(actid, redo_payload.edit_candidate["access"], ms_loc);
                 this.rebuild_containing_box(actid);
-                this.redraw_all_annotations(this.state["current_subtask"]); // tobuffer
+                this.redraw_all_annotations(this.state["current_subtask"], null, true); // tobuffer
+                this.suggest_edits(this.state["last_move"]);
+                break;
+            case "bbox3":
+                ms_loc.push(redo_payload.ending_frame);
+                this.set_with_access_string(actid, redo_payload.edit_candidate["access"], ms_loc);
+                this.rebuild_containing_box(actid);
+                this.redraw_all_annotations(this.state["current_subtask"], null, true); // tobuffer
                 this.suggest_edits(this.state["last_move"]);
                 break;
             case "polygon":
                 this.set_with_access_string(actid, redo_payload.edit_candidate["access"], ms_loc, false);
                 this.rebuild_containing_box(actid);
-                this.redraw_all_annotations(this.state["current_subtask"]); // tobuffer
+                this.redraw_all_annotations(this.state["current_subtask"], null, true); // tobuffer
                 this.suggest_edits(this.state["last_move"]);
                 break;
             case "tbar":
                 this.set_with_access_string(actid, redo_payload.edit_candidate["access"], ms_loc, false);
                 this.rebuild_containing_box(actid);
-                this.redraw_all_annotations(this.state["current_subtask"]); // tobuffer
+                this.redraw_all_annotations(this.state["current_subtask"], null, true); // tobuffer
                 this.suggest_edits(this.state["last_move"]);
                 break;
     
         }
+        let annotation_mode = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_type"];
+        let frame = this.state["current_frame"];
+        if (MODES_3D.includes(annotation_mode)) {
+            frame = null;
+        }
         this.record_action({
             act_type: "edit_annotation",
+            frame: frame,
             undo_payload: {
                 actid: redo_payload.actid,
                 edit_candidate: JSON.parse(JSON.stringify(redo_payload.edit_candidate)),
@@ -15418,6 +17239,7 @@ class ULabel {
         let deprecate_old = false;
         let old_id = this.subtasks[this.state["current_subtask"]]["state"]["move_candidate"]["annid"];
         let new_id = old_id;
+        // TODO(3d)
         if (!this.subtasks[this.state["current_subtask"]]["annotations"]["access"][old_id]["new"]) {
             // Make new id and record that you did
             deprecate_old = true;
@@ -15439,6 +17261,7 @@ class ULabel {
         }
 
         this.subtasks[this.state["current_subtask"]]["state"]["active_id"] = this.subtasks[this.state["current_subtask"]]["state"]["move_candidate"]["annid"];
+        this.subtasks[this.state["current_subtask"]]["state"]["is_in_move"] = true;
 
         // Revise start to current button center
         // TODO
@@ -15447,13 +17270,21 @@ class ULabel {
         this.drag_state["move"]["mouse_start"][1] +=
         */
         let mc = JSON.parse(JSON.stringify(this.subtasks[this.state["current_subtask"]]["state"]["move_candidate"]));
+        let annotation_mode = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][new_id]["spatial_type"];
+        let frame = this.state["current_frame"];
+        if (MODES_3D.includes(annotation_mode)) {
+            frame = null;
+        }
+
         this.record_action({
             act_type: "move_annotation",
+            frame: frame,
             undo_payload: {
                 actid: this.subtasks[this.state["current_subtask"]]["state"]["active_id"],
                 move_candidate: mc,
                 diffX: 0,
                 diffY: 0,
+                diffZ: 0,
                 deprecate_old: deprecate_old,
                 old_id: old_id,
                 new_id: new_id
@@ -15463,6 +17294,7 @@ class ULabel {
                 move_candidate: mc,
                 diffX: 0,
                 diffY: 0,
+                diffZ: 0,
                 finished: false,
                 deprecate_old: deprecate_old,
                 old_id: old_id,
@@ -15475,7 +17307,7 @@ class ULabel {
         this.move_annotation(mouse_event);
     }
 
-    move_annotation(mouse_event, isclick=false) {
+    move_annotation(mouse_event, isclick=false, isframe=false) {
         // Convenience
         const actid = this.subtasks[this.state["current_subtask"]]["state"]["active_id"];
         // TODO big performance gains with buffered canvasses
@@ -15483,9 +17315,10 @@ class ULabel {
             let offset = {
                 "id": this.subtasks[this.state["current_subtask"]]["state"]["move_candidate"]["annid"],
                 "diffX": (mouse_event.clientX - this.drag_state["move"]["mouse_start"][0])/this.state["zoom_val"],
-                "diffY": (mouse_event.clientY - this.drag_state["move"]["mouse_start"][1])/this.state["zoom_val"]
+                "diffY": (mouse_event.clientY - this.drag_state["move"]["mouse_start"][1])/this.state["zoom_val"],
+                "diffZ": this.state["current_frame"] - this.drag_state["move"]["mouse_start"][2]
             };
-            this.redraw_all_annotations(this.state["current_subtask"], offset); // tobuffer
+            this.redraw_all_annotations(null, offset, true); // tobuffer
             this.show_global_edit_suggestion(this.subtasks[this.state["current_subtask"]]["state"]["move_candidate"]["annid"], offset); // TODO handle offset
             this.reposition_dialogs();
             return;
@@ -15505,6 +17338,7 @@ class ULabel {
         }
 
         // Record last point and redraw if necessary
+        // TODO(3d)
         switch (this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_type"]) {
             case "polygon":
                 const n_kpts = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"].length;
@@ -15516,6 +17350,7 @@ class ULabel {
                 this.redraw_all_annotations(this.state["current_subtask"]); // tobuffer
                 this.record_action({
                     act_type: "finish_annotation",
+                    frame: this.state["current_frame"],
                     undo_payload: {
                         actid: actid,
                         ender_html: jquery_default()("#ender_" + actid).outer_html()
@@ -15527,6 +17362,7 @@ class ULabel {
                 jquery_default()("#ender_" + actid).remove(); // TODO remove from visible dialogs
                 break;
             case "bbox":
+            case "bbox3":
             case "contour":
             case "tbar":
                 this.record_finish(actid);
@@ -15540,6 +17376,7 @@ class ULabel {
         //     this.show_id_dialog(mouse_event, actid);
         // }
         // TODO build a dialog here when necessary -- will also need to integrate with undo
+        // TODO(3d)
         if (this.subtasks[this.state["current_subtask"]]["single_class_mode"]) {
             this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["classification_payloads"] = [
                 {
@@ -15566,16 +17403,24 @@ class ULabel {
         this.subtasks[this.state["current_subtask"]]["state"]["is_in_progress"] = true;
         this.subtasks[this.state["current_subtask"]]["state"]["active_id"] = undo_payload.actid;
 
-        jquery_default()("#" + this.config["imwrap_id"]).append(undo_payload.ender_html);
+        jquery_default()("#dialogs__" + this.state["current_subtask"]).append(undo_payload.ender_html);
         this.hide_edit_suggestion();
         this.hide_global_edit_suggestion();
         this.reposition_dialogs();
 
+        // TODO(3d)
         const n_kpts = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][undo_payload.actid]["spatial_payload"].length;
-        this.subtasks[this.state["current_subtask"]]["annotations"]["access"][undo_payload.actid]["spatial_payload"][n_kpts-1] = [
-            this.get_global_mouse_x(this.state["last_move"]),
-            this.get_global_mouse_y(this.state["last_move"]),
-        ];
+        let amd = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][undo_payload.actid]["spatial_type"];
+        if (!NONSPATIAL_MODES.includes(amd)) {
+            let pt = [
+                this.get_global_mouse_x(this.state["last_move"]),
+                this.get_global_mouse_y(this.state["last_move"]),
+            ];
+            if (MODES_3D.includes(amd)) {
+                pt.push(this.state["current_frame"])
+            }
+            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][undo_payload.actid]["spatial_payload"][n_kpts-1] = pt;
+        }
         this.redraw_all_annotations(this.state["current_subtask"]);
     }
     
@@ -15585,6 +17430,7 @@ class ULabel {
         switch (this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_type"]) {
             case "polygon":
             case "bbox":
+            case "bbox3":
             case "tbar":
                 this.record_finish_edit(actid);
             case "contour":
@@ -15602,10 +17448,17 @@ class ULabel {
         // Actually edit spatial payload this time
         const diffX = (mouse_event.clientX - this.drag_state["move"]["mouse_start"][0])/this.state["zoom_val"];
         const diffY = (mouse_event.clientY - this.drag_state["move"]["mouse_start"][1])/this.state["zoom_val"];
+        const diffZ = this.state["current_frame"] - this.drag_state["move"]["mouse_start"][2];
 
+        // TODO(3d)
         for (var spi = 0; spi < this.subtasks[this.state["current_subtask"]]["annotations"]["access"][this.subtasks[this.state["current_subtask"]]["state"]["active_id"]]["spatial_payload"].length; spi++) {
             this.subtasks[this.state["current_subtask"]]["annotations"]["access"][this.subtasks[this.state["current_subtask"]]["state"]["active_id"]]["spatial_payload"][spi][0] += diffX;
             this.subtasks[this.state["current_subtask"]]["annotations"]["access"][this.subtasks[this.state["current_subtask"]]["state"]["active_id"]]["spatial_payload"][spi][1] += diffY;
+        }
+        if (MODES_3D.includes(this.subtasks[this.state["current_subtask"]]["annotations"]["access"][this.subtasks[this.state["current_subtask"]]["state"]["active_id"]]["spatial_type"])) {
+            for (var spi = 0; spi < this.subtasks[this.state["current_subtask"]]["annotations"]["access"][this.subtasks[this.state["current_subtask"]]["state"]["active_id"]]["spatial_payload"].length; spi++) {
+                this.subtasks[this.state["current_subtask"]]["annotations"]["access"][this.subtasks[this.state["current_subtask"]]["state"]["active_id"]]["spatial_payload"][spi][2] += diffZ;
+            }
         }
         this.subtasks[this.state["current_subtask"]]["annotations"]["access"][this.subtasks[this.state["current_subtask"]]["state"]["active_id"]]["containing_box"]["tlx"] += diffX;
         this.subtasks[this.state["current_subtask"]]["annotations"]["access"][this.subtasks[this.state["current_subtask"]]["state"]["active_id"]]["containing_box"]["brx"] += diffX;
@@ -15615,6 +17468,7 @@ class ULabel {
         switch (this.subtasks[this.state["current_subtask"]]["annotations"]["access"][this.subtasks[this.state["current_subtask"]]["state"]["active_id"]]["spatial_type"]) {
             case "polygon":
             case "bbox":
+            case "bbox3":
             case "contour":
             case "tbar":
                  // tobuffer this is where the annotation moves to back canvas
@@ -15622,16 +17476,19 @@ class ULabel {
                 break;
         }
         this.subtasks[this.state["current_subtask"]]["state"]["active_id"] = null;
+        this.subtasks[this.state["current_subtask"]]["state"]["is_in_move"] = false;
 
         this.redraw_all_annotations(this.state["current_subtask"]);
 
-        this.record_finish_move(diffX, diffY);
+        this.record_finish_move(diffX, diffY, diffZ);
     }
     move_annotation__undo(undo_payload) {
         const diffX = undo_payload.diffX;
         const diffY = undo_payload.diffY;
+        const diffZ = undo_payload.diffZ;
 
         let actid = undo_payload.move_candidate["annid"];
+        // TODO(3d)
         if (undo_payload.deprecate_old) {
             actid = undo_payload.old_id;
             this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["deprecated"] = false;
@@ -15643,6 +17500,9 @@ class ULabel {
             for (var spi = 0; spi < this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"].length; spi++) {
                 this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"][spi][0] += diffX;
                 this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"][spi][1] += diffY;
+                if (this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"][spi].length > 2) {
+                    this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"][spi][2] += diffZ;
+                }
             }
             this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["containing_box"]["tlx"] += diffX;
             this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["containing_box"]["brx"] += diffX;
@@ -15655,12 +17515,15 @@ class ULabel {
         this.hide_global_edit_suggestion();
         this.reposition_dialogs();
         this.suggest_edits(this.state["last_move"]);
+        this.update_frame(diffZ);
     }
     move_annotation__redo(redo_payload) {
         const diffX = redo_payload.diffX;
         const diffY = redo_payload.diffY;
+        const diffZ = redo_payload.diffZ;
 
         let actid = redo_payload.move_candidate["annid"];
+        // TODO(3d)
         if (redo_payload.deprecate_old) {
             actid = redo_payload.new_id;
             this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid] = JSON.parse(JSON.stringify(this.subtasks[this.state["current_subtask"]]["annotations"]["access"][redo_payload.old_id]));
@@ -15672,9 +17535,13 @@ class ULabel {
             this.subtasks[this.state["current_subtask"]]["annotations"]["ordering"].push(redo_payload.new_id);
         }
 
+        // TODO(3d)
         for (var spi = 0; spi < this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"].length; spi++) {
             this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"][spi][0] += diffX;
             this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"][spi][1] += diffY;
+            if (this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"][spi].length > 2) {
+                this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"][spi][2] += diffZ;
+            }
         }
         this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["containing_box"]["tlx"] += diffX;
         this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["containing_box"]["brx"] += diffX;
@@ -15687,13 +17554,21 @@ class ULabel {
         this.reposition_dialogs();
         this.suggest_edits(this.state["last_move"]);
 
+        let annotation_mode = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_type"];
+        let frame = this.state["current_frame"];
+        if (MODES_3D.includes(annotation_mode)) {
+            frame = null;
+        }
+
         this.record_action({
             act_type: "move_annotation",
+            frame: frame,
             undo_payload: {
                 actid: this.subtasks[this.state["current_subtask"]]["state"]["active_id"],
                 move_candidate: redo_payload.move_candidate,
                 diffX: -diffX,
                 diffY: -diffY,
+                diffZ: -diffZ,
                 deprecate_old: redo_payload.deprecate_old,
                 old_id: redo_payload.old_id,
                 new_id: redo_payload.new_id
@@ -15703,12 +17578,14 @@ class ULabel {
                 move_candidate: redo_payload.move_candidate,
                 diffX: diffX,
                 diffY: diffY,
+                diffZ: diffZ,
                 finished: true,
                 deprecate_old: redo_payload.deprecate_old,
                 old_id: redo_payload.old_id,
                 new_id: redo_payload.new_id
             }
         }, true);
+        this.update_frame(diffZ);
     }
 
     get_edit_candidates(gblx, gbly, dst_thresh) {
@@ -15717,15 +17594,36 @@ class ULabel {
             "best": null
         };
         let minsize = Infinity;
+        // TODO(3d)
         for (var edi = 0; edi < this.subtasks[this.state["current_subtask"]]["annotations"]["ordering"].length; edi++) {
             let id = this.subtasks[this.state["current_subtask"]]["annotations"]["ordering"][edi];
             if (this.subtasks[this.state["current_subtask"]]["annotations"]["access"][id]["deprecated"]) continue;
             let cbox = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][id]["containing_box"];
+            let frame = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][id]["frame"];
+            if (cbox) {
+                cbox["tlz"] = this.state["current_frame"];
+                cbox["brz"] = this.state["current_frame"];
+                if (frame != null) {
+                    cbox["tlz"] = frame;
+                    cbox["brz"] = frame;
+                }
+                else {
+                    if (this.subtasks[this.state["current_subtask"]]["annotations"]["access"][id]["spatial_type"] == "bbox3") {
+                        let pts = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][id]["spatial_payload"];
+                        cbox["tlz"] = Math.min(pts[0][2], pts[1][2]);
+                        cbox["brz"] = Math.max(pts[0][2], pts[1][2]);
+                    }
+                }
+            }
+            // TODO(new3d) bbox3 will have different rules here 
             if (
+                cbox &&
                 (gblx >= cbox["tlx"] - dst_thresh) && 
                 (gblx <= cbox["brx"] + dst_thresh) &&
                 (gbly >= cbox["tly"] - dst_thresh) && 
-                (gbly <= cbox["bry"] + dst_thresh)
+                (gbly <= cbox["bry"] + dst_thresh) &&
+                (this.state["current_frame"] >= cbox["tlz"]) && 
+                (this.state["current_frame"] <= cbox["brz"])
             ) {
                 ret["candidate_ids"].push(id);
                 let boxsize = (cbox["brx"] - cbox["tlx"])*(cbox["bry"] - cbox["tly"]);
@@ -15740,53 +17638,62 @@ class ULabel {
         return ret;
     }
     
-    suggest_edits(mouse_event=null) {
-        if (mouse_event == null) {
-            mouse_event = this.state["last_move"];
+    suggest_edits(mouse_event=null, nonspatial_id=null) {
+        let best_candidate;
+        if (nonspatial_id == null) {
+            if (mouse_event == null) {
+                mouse_event = this.state["last_move"];
+            }
+
+            // TODO better dynamic handling of the size of the suggestion queue
+            const dst_thresh = this.config["edit_handle_size"]/2;
+            const global_x = this.get_global_mouse_x(mouse_event);
+            const global_y = this.get_global_mouse_y(mouse_event);
+
+            if (jquery_default()(mouse_event.target).hasClass("gedit-target")) return;
+
+            const edit_candidates = this.get_edit_candidates(
+                global_x,
+                global_y,
+                dst_thresh
+            );
+
+            if (edit_candidates["best"] == null) {
+                this.hide_global_edit_suggestion();
+                this.hide_edit_suggestion();
+                this.subtasks[this.state["current_subtask"]]["state"]["move_candidate"] = null;
+                return;
+            }
+            
+            // Look for an existing point that's close enough to suggest editing it
+            const nearest_active_keypoint = this.get_nearest_active_keypoint(global_x, global_y, dst_thresh, edit_candidates["candidate_ids"]);
+            if (nearest_active_keypoint != null) {
+                this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"] = nearest_active_keypoint;
+                this.show_edit_suggestion(nearest_active_keypoint, true);
+                edit_candidates["best"] = nearest_active_keypoint;
+            }
+            else { // If none are found, look for a point along a segment that's close enough
+                const nearest_segment_point = this.get_nearest_segment_point(global_x, global_y, dst_thresh, edit_candidates["candidate_ids"]);
+                if (nearest_segment_point != null) {
+                    this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"] = nearest_segment_point;
+                    this.show_edit_suggestion(nearest_segment_point, false);
+                    edit_candidates["best"] = nearest_segment_point;
+                }
+                else {
+                    this.hide_edit_suggestion();
+                }
+            }
+
+            // Show global edit dialogs for "best" candidate
+            this.subtasks[this.state["current_subtask"]]["state"]["move_candidate"] = edit_candidates["best"];
+            best_candidate = edit_candidates["best"]["annid"];
         }
-
-        // TODO better dynamic handling of the size of the suggestion queue
-        const dst_thresh = this.config["edit_handle_size"]/2;
-        const global_x = this.get_global_mouse_x(mouse_event);
-        const global_y = this.get_global_mouse_y(mouse_event);
-
-        if (jquery_default()(mouse_event.target).hasClass("gedit-target")) return;
-
-        const edit_candidates = this.get_edit_candidates(
-            global_x,
-            global_y,
-            dst_thresh
-        );
-
-        if (edit_candidates["best"] == null) {
+        else {
             this.hide_global_edit_suggestion();
             this.hide_edit_suggestion();
-            this.subtasks[this.state["current_subtask"]]["state"]["move_candidate"] = null;
-            return;
+            best_candidate = nonspatial_id;
         }
-        
-        // Look for an existing point that's close enough to suggest editing it
-        const nearest_active_keypoint = this.get_nearest_active_keypoint(global_x, global_y, dst_thresh, edit_candidates["candidate_ids"]);
-        if (nearest_active_keypoint != null) {
-            this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"] = nearest_active_keypoint;
-            this.show_edit_suggestion(nearest_active_keypoint, true);
-            edit_candidates["best"] = nearest_active_keypoint;
-        }
-        else { // If none are found, look for a point along a segment that's close enough
-            const nearest_segment_point = this.get_nearest_segment_point(global_x, global_y, dst_thresh, edit_candidates["candidate_ids"]);
-            if (nearest_segment_point != null) {
-                this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"] = nearest_segment_point;
-                this.show_edit_suggestion(nearest_segment_point, false);
-                edit_candidates["best"] = nearest_segment_point;
-            }
-            else {
-                this.hide_edit_suggestion();
-            }
-        }
-
-        // Show global edit dialogs for "best" candidate
-        this.subtasks[this.state["current_subtask"]]["state"]["move_candidate"] = edit_candidates["best"];
-        this.show_global_edit_suggestion(edit_candidates["best"]["annid"]);
+        this.show_global_edit_suggestion(best_candidate, null, nonspatial_id);
     }
 
 
@@ -15814,20 +17721,41 @@ class ULabel {
     get_global_mouse_x(mouse_event) {
         const scale = this.get_empirical_scale();
         const annbox = jquery_default()("#" + this.config["annbox_id"]);
-        return Math.round((mouse_event.pageX - annbox.offset().left + annbox.scrollLeft())/scale);
+        const raw = (mouse_event.pageX - annbox.offset().left + annbox.scrollLeft())/scale;
+        // return Math.round(raw);
+        return raw;
     }
     get_global_mouse_y(mouse_event) {
         const scale = this.get_empirical_scale();
         const annbox = jquery_default()("#" + this.config["annbox_id"]);
-        return Math.round((mouse_event.pageY - annbox.offset().top + annbox.scrollTop())/scale);
+        const raw = (mouse_event.pageY - annbox.offset().top + annbox.scrollTop())/scale;
+        // return Math.round(raw);
+        return raw;
+    }
+    get_global_element_center_x(jqel) {
+        const scale = this.get_empirical_scale();
+        const annbox = jquery_default()("#" + this.config["annbox_id"]);
+        const raw = (jqel.offset().left + jqel.width()/2 - annbox.offset().left + annbox.scrollLeft())/scale;
+        // return Math.round(raw);
+        return raw;
+    }
+    get_global_element_center_y(jqel) {
+        const scale = this.get_empirical_scale();
+        const annbox = jquery_default()("#" + this.config["annbox_id"]);
+        const raw = (jqel.offset().top + jqel.height()/2 - annbox.offset().top + annbox.scrollTop())/scale;
+        // return Math.round();
+        return raw;
     }
 
     // ================= Dialog Interaction Handlers =================
 
     // ----------------- ID Dialog -----------------
 
-    lookup_id_dialog_mouse_pos(mouse_event) {
+    lookup_id_dialog_mouse_pos(mouse_event, front) {
         let idd = jquery_default()("#" + this.subtasks[this.state["current_subtask"]]["state"]["idd_id"]);
+        if (front) {
+            idd = jquery_default()("#" + this.subtasks[this.state["current_subtask"]]["state"]["idd_id_front"]);
+        }
 
         // Get mouse position relative to center of div
         const idd_x = mouse_event.pageX - idd.offset().left - idd.width()/2;
@@ -15891,6 +17819,7 @@ class ULabel {
     }
 
     set_id_dialog_payload_to_init(annid, pyld=null) {
+        // TODO(3D)
         let crst = this.state["current_subtask"];
         if (pyld != null) {
             this.subtasks[this.state["current_subtask"]]["state"]["id_payload"] = JSON.parse(JSON.stringify(pyld));
@@ -15933,7 +17862,7 @@ class ULabel {
         }
     }
 
-    update_id_dialog_display() {
+    update_id_dialog_display(front=false) {
         const inner_rad = this.config["inner_prop"]*this.config["outer_diameter"]/2;
         const outer_rad = 0.5*this.config["outer_diameter"];
         let class_ids = this.subtasks[this.state["current_subtask"]]["class_ids"];
@@ -15953,11 +17882,23 @@ class ULabel {
             let gap_frnt = 2*Math.PI*rad_frnt*gap_prop;
             let off_frnt = 2*Math.PI*rad_frnt*cum_prop;
 
-            var circ = document.getElementById("circ_" + class_ids[i]);
-            circ.setAttribute("r", rad_frnt);
-            circ.setAttribute("stroke-dasharray", `${srk_frnt} ${gap_frnt}`);
-            circ.setAttribute("stroke-dashoffset", off_frnt);
-            circ.setAttribute("stroke-width", wdt_frnt);
+            // var circ = document.getElementById("circ_" + class_ids[i]);
+            // circ.setAttribute("r", rad_frnt);
+            // circ.setAttribute("stroke-dasharray", `${srk_frnt} ${gap_frnt}`);
+            // circ.setAttribute("stroke-dashoffset", off_frnt);
+            // circ.setAttribute("stroke-width", wdt_frnt);
+            let idd_id = this.subtasks[this.state["current_subtask"]]["state"]["idd_id"];
+            var circ = jquery_default()(`#${idd_id}__circ_` + class_ids[i])
+            circ.attr("r", rad_frnt);
+            circ.attr("stroke-dasharray", `${srk_frnt} ${gap_frnt}`)
+            circ.attr("stroke-dashoffset", off_frnt)
+            circ.attr("stroke-width", wdt_frnt)
+            idd_id = this.subtasks[this.state["current_subtask"]]["state"]["idd_id_front"];
+            circ = jquery_default()(`#${idd_id}__circ_` + class_ids[i])
+            circ.attr("r", rad_frnt);
+            circ.attr("stroke-dasharray", `${srk_frnt} ${gap_frnt}`)
+            circ.attr("stroke-dashoffset", off_frnt)
+            circ.attr("stroke-width", wdt_frnt)
         }
         this.redraw_demo();
     }
@@ -15983,14 +17924,19 @@ class ULabel {
     }
 
     handle_id_dialog_hover(mouse_event) {
-        let pos_evt = this.lookup_id_dialog_mouse_pos(mouse_event);
+        // Determine which dialog
+        let front = false;
+        if (this.subtasks[this.state["current_subtask"]]["state"]["idd_which"] == "front") {
+            front = true;
+        }
+        let pos_evt = this.lookup_id_dialog_mouse_pos(mouse_event, front);
         if (pos_evt != null) {
             if (!this.config["allow_soft_id"]) {
                 pos_evt.dist_prop = 1.0;
             }
             // TODO This assumes no pins
             this.set_id_dialog_payload_nopin(pos_evt.class_ind, pos_evt.dist_prop);
-            this.update_id_dialog_display();
+            this.update_id_dialog_display(front);
             this.update_id_toolbox_display()
         }
     }
@@ -15999,6 +17945,7 @@ class ULabel {
         let new_payload = null;
         let old_payload = null;
         let redoing = false;
+        // TODO(3d)
         if (redo_payload == null) {
             if (actid == null) {
                 actid = this.subtasks[this.state["current_subtask"]]["state"]["idd_associated_annotation"];
@@ -16018,6 +17965,7 @@ class ULabel {
         }
 
         // Perform assignment
+        // TODO(3d)
         this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["classification_payloads"] = JSON.parse(JSON.stringify(new_payload));
 
         // Redraw with correct color and hide id_dialog if applicable
@@ -16031,6 +17979,7 @@ class ULabel {
 
         // Explicit changes are undoable
         // First assignments are treated as though they were done all along
+        // TODO(3d)
         if (this.subtasks[this.state["current_subtask"]]["state"]["first_explicit_assignment"]) {
             let n = this.subtasks[this.state["current_subtask"]]["actions"]["stream"].length;
             for (var i = 0; i < n; i++) {
@@ -16060,6 +18009,7 @@ class ULabel {
     assign_annotation_id__undo(undo_payload) {
         let actid = undo_payload.actid;
         let new_payload = JSON.parse(JSON.stringify(undo_payload.old_id_payload));
+        // TODO(3d)
         this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["classification_payloads"] = JSON.parse(JSON.stringify(new_payload));
         this.redraw_all_annotations(this.state["current_subtask"]);
         this.suggest_edits();
@@ -16078,7 +18028,8 @@ class ULabel {
     handle_mouse_down(mouse_event) {
         const drag_key = ULabel.get_drag_key_start(mouse_event, this);
         if (drag_key != null) {
-            if (drag_key != "pan" && drag_key != "zoom" && this.subtasks[this.state["current_subtask"]]["state"]["idd_visible"] && !this.subtasks[this.state["current_subtask"]]["state"]["idd_thumbnail"]) {
+            // Don't start new drag while id_dialog is visible
+            if (this.subtasks[this.state["current_subtask"]]["state"]["idd_visible"] && !this.subtasks[this.state["current_subtask"]]["state"]["idd_thumbnail"]) {
                 return;
             }
             mouse_event.preventDefault();
@@ -16149,18 +18100,21 @@ class ULabel {
         this.drag_state["release_button"] = release_button;
         this.drag_state[drag_key]["mouse_start"] = [
             mouse_event.clientX,
-            mouse_event.clientY
+            mouse_event.clientY,
+            this.state["current_frame"]
         ];
         this.drag_state[drag_key]["zoom_val_start"] = this.state["zoom_val"];
         this.drag_state[drag_key]["offset_start"] = [
             annbox.scrollLeft(), 
             annbox.scrollTop()
         ];
-        
+        jquery_default()(`textarea`).trigger("blur");
+        jquery_default()("div.permopen").removeClass("permopen");
         // TODO handle this drag start
         switch (drag_key) {
             case "annotation":
-                if (this.subtasks[this.state["current_subtask"]]["state"]["annotation_mode"] != "polygon") {
+                let annmd = this.subtasks[this.state["current_subtask"]]["state"]["annotation_mode"];
+                if (annmd != "polygon" && !NONSPATIAL_MODES.includes(annmd)) {
                     this.begin_annotation(mouse_event);
                 }
                 break;
@@ -16281,6 +18235,68 @@ class ULabel {
 
         // Redraw demo annotation
         this.redraw_demo();
+    }
+
+    swap_frame_image(new_src, frame=0) {
+        let ret = jquery_default()(`img#${this.config["image_id_pfx"]}__${i}`).attr("src");
+        jquery_default()(`img#${this.config["image_id_pfx"]}__${i}`).attr("src", new_src);
+        return ret;
+    }
+
+    // Change frame
+
+    update_frame(delta=null, new_frame=null) {
+        if (this.config["image_data"]["frames"].length == 1) {
+            return;
+        }
+        let actid = this.subtasks[this.state["current_subtask"]]["state"]["active_id"]
+        if (actid != null) {
+            if (!MODES_3D.includes(this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_type"])) {
+                return;
+            }
+        }
+        if (new_frame == null) {
+            new_frame = parseInt(jquery_default()(`div#${this.config["toolbox_id"]} input.frame_input`).val());
+            if (delta != null) {
+                new_frame = Math.min(Math.max(new_frame+delta, 0), this.config["image_data"].frames.length-1);
+            }
+        }
+        else {
+            new_frame = Math.min(Math.max(new_frame, 0), this.config["image_data"].frames.length-1);
+        }
+        // Change the val above
+        jquery_default()(`div#${this.config["toolbox_id"]} input.frame_input`).val(new_frame);
+        let old_frame = this.state["current_frame"];
+        this.state["current_frame"] = new_frame;
+        // $(`img#${this.config["image_id_pfx"]}__${old_frame}`).css("z-index", "initial");
+        jquery_default()(`img#${this.config["image_id_pfx"]}__${old_frame}`).css("display", "none");
+        // $(`img#${this.config["image_id_pfx"]}__${new_frame}`).css("z-index", 50);
+        jquery_default()(`img#${this.config["image_id_pfx"]}__${new_frame}`).css("display", "block");
+        if (
+            actid && 
+            MODES_3D.includes(
+                this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_type"]
+            )
+        ) {
+            if (this.subtasks[this.state["current_subtask"]]["state"]["is_in_edit"]) {
+                this.edit_annotation(this.state["last_move"]);
+            }
+            else if (this.subtasks[this.state["current_subtask"]]["state"]["is_in_move"]) {
+                this.move_annotation(this.state["last_move"], false, true);
+            }
+            else if (this.subtasks[this.state["current_subtask"]]["state"]["is_in_progress"]) {
+                this.continue_annotation(this.state["last_move"]);
+            }
+            else {
+                this.redraw_all_annotations();
+            }
+        }
+        else {
+            this.redraw_all_annotations();
+        }
+        if (this.state["last_move"] != null) {
+            this.suggest_edits(this.state["last_move"]);
+        }
     }
 };
 

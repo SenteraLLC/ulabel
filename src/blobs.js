@@ -375,18 +375,757 @@ const TBAR_SVG = `
   </g>
 </svg>
 `;
-const INIT_STYLE = `
-div.ulabel-night {
+const GLOBAL_SVG = `
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="100mm"
+   height="100mm"
+   viewBox="0 0 100 100"
+   version="1.1"
+   id="svg7244"
+   inkscape:version="0.92.5 (2060ec1f9f, 2020-04-08)"
+   sodipodi:docname="global_v2.svg">
+  <defs
+     id="defs7238">
+    <marker
+       inkscape:stockid="DotL"
+       orient="auto"
+       refY="0.0"
+       refX="0.0"
+       id="marker1156"
+       style="overflow:visible"
+       inkscape:isstock="true">
+      <path
+         id="path1154"
+         d="M -2.5,-1.0 C -2.5,1.7600000 -4.7400000,4.0 -7.5,4.0 C -10.260000,4.0 -12.5,1.7600000 -12.5,-1.0 C -12.5,-3.7600000 -10.260000,-6.0 -7.5,-6.0 C -4.7400000,-6.0 -2.5,-3.7600000 -2.5,-1.0 z "
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1pt;stroke-opacity:1;fill:#000000;fill-opacity:1"
+         transform="scale(0.8) translate(7.4, 1)" />
+    </marker>
+    <marker
+       inkscape:stockid="DotL"
+       orient="auto"
+       refY="0.0"
+       refX="0.0"
+       id="marker1152"
+       style="overflow:visible"
+       inkscape:isstock="true">
+      <path
+         id="path1150"
+         d="M -2.5,-1.0 C -2.5,1.7600000 -4.7400000,4.0 -7.5,4.0 C -10.260000,4.0 -12.5,1.7600000 -12.5,-1.0 C -12.5,-3.7600000 -10.260000,-6.0 -7.5,-6.0 C -4.7400000,-6.0 -2.5,-3.7600000 -2.5,-1.0 z "
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1pt;stroke-opacity:1;fill:#000000;fill-opacity:1"
+         transform="scale(0.8) translate(7.4, 1)" />
+    </marker>
+    <marker
+       inkscape:stockid="DotL"
+       orient="auto"
+       refY="0.0"
+       refX="0.0"
+       id="marker1148"
+       style="overflow:visible"
+       inkscape:isstock="true">
+      <path
+         id="path946"
+         d="M -2.5,-1.0 C -2.5,1.7600000 -4.7400000,4.0 -7.5,4.0 C -10.260000,4.0 -12.5,1.7600000 -12.5,-1.0 C -12.5,-3.7600000 -10.260000,-6.0 -7.5,-6.0 C -4.7400000,-6.0 -2.5,-3.7600000 -2.5,-1.0 z "
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1pt;stroke-opacity:1;fill:#000000;fill-opacity:1"
+         transform="scale(0.8) translate(7.4, 1)" />
+    </marker>
+    <marker
+       inkscape:stockid="DotL"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="DotL"
+       style="overflow:visible"
+       inkscape:isstock="true">
+      <path
+         inkscape:connector-curvature="0"
+         id="path4587"
+         d="m -2.5,-1 c 0,2.76 -2.24,5 -5,5 -2.76,0 -5,-2.24 -5,-5 0,-2.76 2.24,-5 5,-5 2.76,0 5,2.24 5,5 z"
+         style="fill:#000000;fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:1.00000003pt;stroke-opacity:1"
+         transform="matrix(0.8,0,0,0.8,5.92,0.8)" />
+    </marker>
+    <marker
+       inkscape:stockid="DotL"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="marker7235"
+       style="overflow:visible"
+       inkscape:isstock="true">
+      <path
+         inkscape:connector-curvature="0"
+         id="path7233"
+         d="m -2.5,-1 c 0,2.76 -2.24,5 -5,5 -2.76,0 -5,-2.24 -5,-5 0,-2.76 2.24,-5 5,-5 2.76,0 5,2.24 5,5 z"
+         style="fill:#000000;fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:1.00000003pt;stroke-opacity:1"
+         transform="matrix(0.8,0,0,0.8,5.92,0.8)" />
+    </marker>
+  </defs>
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="1.4"
+     inkscape:cx="5.310344"
+     inkscape:cy="177.26523"
+     inkscape:document-units="mm"
+     inkscape:current-layer="layer1"
+     showgrid="false"
+     inkscape:window-width="1920"
+     inkscape:window-height="1043"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1" />
+  <metadata
+     id="metadata7241">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title />
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(0,-197)">
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1.27714288;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="M 30.000035,244.14279 V 226.99993 H 47.142863"
+       id="path883"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="ccc" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1.27714288;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="M 47.142863,286.99993 H 30.000035 v -17.14286"
+       id="path883-3"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="ccc" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1.27714288;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="m 89.999929,269.85707 v 17.14286 H 72.857102"
+       id="path883-3-6"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="ccc" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1.27714288;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="m 72.857102,226.99993 h 17.142827 v 17.14286"
+       id="path883-3-7"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="ccc" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1.27714133;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:0.66666669"
+       d="M 20.000052,234.14279 V 216.99993 H 37.14284"
+       id="path883-2"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="ccc" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1.27714133;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:0.66666669"
+       d="M 30,276.99993 H 20.000052 V 259.85707"
+       id="path883-3-70"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="ccc" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1.27714133;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:0.66666669"
+       d="M 62.857016,216.99993 H 79.999804 V 227"
+       id="path883-3-7-3"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="ccc" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1.27714133;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:0.53431374"
+       d="M 10.00007,224.14279 V 206.99993 H 27.142858"
+       id="path883-2-6"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="ccc" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1.27714133;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:0.53431374"
+       d="M 19.5,266.99993 H 10.00007 V 249.85707"
+       id="path883-3-70-0"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="ccc" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1.27714133;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:0.53431374"
+       d="M 52.857035,206.99993 H 69.999821 V 216.5"
+       id="path883-3-7-3-2"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="ccc" />
+  </g>
+</svg>
+`;
+const WHOLE_IMAGE_SVG = `
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="100mm"
+   height="100mm"
+   viewBox="0 0 100 100"
+   version="1.1"
+   id="svg7244"
+   inkscape:version="0.92.5 (2060ec1f9f, 2020-04-08)"
+   sodipodi:docname="whole_image.svg">
+  <defs
+     id="defs7238">
+    <marker
+       inkscape:stockid="DotL"
+       orient="auto"
+       refY="0.0"
+       refX="0.0"
+       id="marker1156"
+       style="overflow:visible"
+       inkscape:isstock="true">
+      <path
+         id="path1154"
+         d="M -2.5,-1.0 C -2.5,1.7600000 -4.7400000,4.0 -7.5,4.0 C -10.260000,4.0 -12.5,1.7600000 -12.5,-1.0 C -12.5,-3.7600000 -10.260000,-6.0 -7.5,-6.0 C -4.7400000,-6.0 -2.5,-3.7600000 -2.5,-1.0 z "
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1pt;stroke-opacity:1;fill:#000000;fill-opacity:1"
+         transform="scale(0.8) translate(7.4, 1)" />
+    </marker>
+    <marker
+       inkscape:stockid="DotL"
+       orient="auto"
+       refY="0.0"
+       refX="0.0"
+       id="marker1152"
+       style="overflow:visible"
+       inkscape:isstock="true">
+      <path
+         id="path1150"
+         d="M -2.5,-1.0 C -2.5,1.7600000 -4.7400000,4.0 -7.5,4.0 C -10.260000,4.0 -12.5,1.7600000 -12.5,-1.0 C -12.5,-3.7600000 -10.260000,-6.0 -7.5,-6.0 C -4.7400000,-6.0 -2.5,-3.7600000 -2.5,-1.0 z "
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1pt;stroke-opacity:1;fill:#000000;fill-opacity:1"
+         transform="scale(0.8) translate(7.4, 1)" />
+    </marker>
+    <marker
+       inkscape:stockid="DotL"
+       orient="auto"
+       refY="0.0"
+       refX="0.0"
+       id="marker1148"
+       style="overflow:visible"
+       inkscape:isstock="true">
+      <path
+         id="path946"
+         d="M -2.5,-1.0 C -2.5,1.7600000 -4.7400000,4.0 -7.5,4.0 C -10.260000,4.0 -12.5,1.7600000 -12.5,-1.0 C -12.5,-3.7600000 -10.260000,-6.0 -7.5,-6.0 C -4.7400000,-6.0 -2.5,-3.7600000 -2.5,-1.0 z "
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1pt;stroke-opacity:1;fill:#000000;fill-opacity:1"
+         transform="scale(0.8) translate(7.4, 1)" />
+    </marker>
+    <marker
+       inkscape:stockid="DotL"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="DotL"
+       style="overflow:visible"
+       inkscape:isstock="true">
+      <path
+         inkscape:connector-curvature="0"
+         id="path4587"
+         d="m -2.5,-1 c 0,2.76 -2.24,5 -5,5 -2.76,0 -5,-2.24 -5,-5 0,-2.76 2.24,-5 5,-5 2.76,0 5,2.24 5,5 z"
+         style="fill:#000000;fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:1.00000003pt;stroke-opacity:1"
+         transform="matrix(0.8,0,0,0.8,5.92,0.8)" />
+    </marker>
+    <marker
+       inkscape:stockid="DotL"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="marker7235"
+       style="overflow:visible"
+       inkscape:isstock="true">
+      <path
+         inkscape:connector-curvature="0"
+         id="path7233"
+         d="m -2.5,-1 c 0,2.76 -2.24,5 -5,5 -2.76,0 -5,-2.24 -5,-5 0,-2.76 2.24,-5 5,-5 2.76,0 5,2.24 5,5 z"
+         style="fill:#000000;fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:1.00000003pt;stroke-opacity:1"
+         transform="matrix(0.8,0,0,0.8,5.92,0.8)" />
+    </marker>
+  </defs>
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="1.4"
+     inkscape:cx="102.54275"
+     inkscape:cy="180.12237"
+     inkscape:document-units="mm"
+     inkscape:current-layer="layer1"
+     showgrid="false"
+     inkscape:window-width="1920"
+     inkscape:window-height="1043"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1" />
+  <metadata
+     id="metadata7241">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title />
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(0,-197)">
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1.49000001;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="M 15,232 V 212 H 35"
+       id="path883"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="ccc" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1.49000001;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="M 35,282 H 15 v -20"
+       id="path883-3"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="ccc" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1.49000001;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="m 85,262 v 20 H 65"
+       id="path883-3-6"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="ccc" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1.49000001;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="m 65,212 h 20 v 20"
+       id="path883-3-7"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="ccc" />
+  </g>
+</svg>
+`;
+const POLYLINE_SVG = `
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="100mm"
+   height="100mm"
+   viewBox="0 0 100 100"
+   version="1.1"
+   id="svg7244"
+   inkscape:version="0.92.5 (2060ec1f9f, 2020-04-08)"
+   sodipodi:docname="polygon.svg">
+  <defs
+     id="defs7238">
+    <marker
+       inkscape:stockid="DotL"
+       orient="auto"
+       refY="0.0"
+       refX="0.0"
+       id="marker1156"
+       style="overflow:visible"
+       inkscape:isstock="true">
+      <path
+         id="path1154"
+         d="M -2.5,-1.0 C -2.5,1.7600000 -4.7400000,4.0 -7.5,4.0 C -10.260000,4.0 -12.5,1.7600000 -12.5,-1.0 C -12.5,-3.7600000 -10.260000,-6.0 -7.5,-6.0 C -4.7400000,-6.0 -2.5,-3.7600000 -2.5,-1.0 z "
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1pt;stroke-opacity:1;fill:#000000;fill-opacity:1"
+         transform="scale(0.8) translate(7.4, 1)" />
+    </marker>
+    <marker
+       inkscape:stockid="DotL"
+       orient="auto"
+       refY="0.0"
+       refX="0.0"
+       id="marker1152"
+       style="overflow:visible"
+       inkscape:isstock="true">
+      <path
+         id="path1150"
+         d="M -2.5,-1.0 C -2.5,1.7600000 -4.7400000,4.0 -7.5,4.0 C -10.260000,4.0 -12.5,1.7600000 -12.5,-1.0 C -12.5,-3.7600000 -10.260000,-6.0 -7.5,-6.0 C -4.7400000,-6.0 -2.5,-3.7600000 -2.5,-1.0 z "
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1pt;stroke-opacity:1;fill:#000000;fill-opacity:1"
+         transform="scale(0.8) translate(7.4, 1)" />
+    </marker>
+    <marker
+       inkscape:stockid="DotL"
+       orient="auto"
+       refY="0.0"
+       refX="0.0"
+       id="marker1148"
+       style="overflow:visible"
+       inkscape:isstock="true">
+      <path
+         id="path946"
+         d="M -2.5,-1.0 C -2.5,1.7600000 -4.7400000,4.0 -7.5,4.0 C -10.260000,4.0 -12.5,1.7600000 -12.5,-1.0 C -12.5,-3.7600000 -10.260000,-6.0 -7.5,-6.0 C -4.7400000,-6.0 -2.5,-3.7600000 -2.5,-1.0 z "
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1pt;stroke-opacity:1;fill:#000000;fill-opacity:1"
+         transform="scale(0.8) translate(7.4, 1)" />
+    </marker>
+    <marker
+       inkscape:stockid="DotL"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="DotL"
+       style="overflow:visible"
+       inkscape:isstock="true">
+      <path
+         inkscape:connector-curvature="0"
+         id="path4587"
+         d="m -2.5,-1 c 0,2.76 -2.24,5 -5,5 -2.76,0 -5,-2.24 -5,-5 0,-2.76 2.24,-5 5,-5 2.76,0 5,2.24 5,5 z"
+         style="fill:#000000;fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:1.00000003pt;stroke-opacity:1"
+         transform="matrix(0.8,0,0,0.8,5.92,0.8)" />
+    </marker>
+    <marker
+       inkscape:stockid="DotL"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="marker7235"
+       style="overflow:visible"
+       inkscape:isstock="true">
+      <path
+         inkscape:connector-curvature="0"
+         id="path7233"
+         d="m -2.5,-1 c 0,2.76 -2.24,5 -5,5 -2.76,0 -5,-2.24 -5,-5 0,-2.76 2.24,-5 5,-5 2.76,0 5,2.24 5,5 z"
+         style="fill:#000000;fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:1.00000003pt;stroke-opacity:1"
+         transform="matrix(0.8,0,0,0.8,5.92,0.8)" />
+    </marker>
+  </defs>
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="1.4"
+     inkscape:cx="227.89989"
+     inkscape:cy="182.97951"
+     inkscape:document-units="mm"
+     inkscape:current-layer="layer1"
+     showgrid="false"
+     inkscape:window-width="1920"
+     inkscape:window-height="1043"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1" />
+  <metadata
+     id="metadata7241">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title />
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(0,-197)">
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1.49000001;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;marker-start:url(#marker1148);marker-mid:url(#marker1152);marker-end:url(#marker1156)"
+       d="M 15.497022,283.01488 28.915179,250.31994 67.657737,240.11458 87.879463,210.06547"
+       id="path883"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="cccc" />
+  </g>
+</svg>
+`;
+const BBOX3_SVG = `
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="100mm"
+   height="100mm"
+   viewBox="0 0 100 100"
+   version="1.1"
+   id="svg7244"
+   inkscape:version="0.92.5 (2060ec1f9f, 2020-04-08)"
+   sodipodi:docname="bbox3.svg">
+<defs
+  id="defs7338">
+ <marker
+    inkscape:isstock="true"
+    style="overflow:visible"
+    id="marker3387"
+    refX="0"
+    refY="0"
+    orient="auto"
+    inkscape:stockid="DotL">
+   <path
+      transform="matrix(0.8,0,0,0.8,5.92,0.8)"
+      style="fill:#757575;fill-opacity:0.98039216;fill-rule:evenodd;stroke:#757575;stroke-width:1.00000003pt;stroke-opacity:0.98039216"
+      d="m -2.5,-1 c 0,2.76 -2.24,5 -5,5 -2.76,0 -5,-2.24 -5,-5 0,-2.76 2.24,-5 5,-5 2.76,0 5,2.24 5,5 z"
+      id="path3385"
+      inkscape:connector-curvature="0" />
+ </marker>
+ <marker
+    inkscape:isstock="true"
+    style="overflow:visible"
+    id="marker2383"
+    refX="0"
+    refY="0"
+    orient="auto"
+    inkscape:stockid="DotL">
+   <path
+      transform="matrix(0.8,0,0,0.8,5.92,0.8)"
+      style="fill:#000000;fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:1.00000003pt;stroke-opacity:1"
+      d="m -2.5,-1 c 0,2.76 -2.24,5 -5,5 -2.76,0 -5,-2.24 -5,-5 0,-2.76 2.24,-5 5,-5 2.76,0 5,2.24 5,5 z"
+      id="path2381"
+      inkscape:connector-curvature="0" />
+ </marker>
+ <marker
+    inkscape:isstock="true"
+    style="overflow:visible"
+    id="marker2313"
+    refX="0"
+    refY="0"
+    orient="auto"
+    inkscape:stockid="DotL">
+   <path
+      transform="matrix(0.8,0,0,0.8,5.92,0.8)"
+      style="fill:#000000;fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:1.00000003pt;stroke-opacity:1"
+      d="m -2.5,-1 c 0,2.76 -2.24,5 -5,5 -2.76,0 -5,-2.24 -5,-5 0,-2.76 2.24,-5 5,-5 2.76,0 5,2.24 5,5 z"
+      id="path2211"
+      inkscape:connector-curvature="0" />
+ </marker>
+ <marker
+    inkscape:stockid="DotL"
+    orient="auto"
+    refY="0.0"
+    refX="0.0"
+    id="marker1651"
+    style="overflow:visible"
+    inkscape:isstock="true">
+   <path
+      id="path1649"
+      d="M -2.5,-1.0 C -2.5,1.7600000 -4.7400000,4.0 -7.5,4.0 C -10.260000,4.0 -12.5,1.7600000 -12.5,-1.0 C -12.5,-3.7600000 -10.260000,-6.0 -7.5,-6.0 C -4.7400000,-6.0 -2.5,-3.7600000 -2.5,-1.0 z "
+      style="fill-rule:evenodd;stroke:#000000;stroke-width:1pt;stroke-opacity:1;fill:#000000;fill-opacity:1"
+      transform="scale(0.8) translate(7.4, 1)" />
+ </marker>
+ <marker
+    inkscape:stockid="DotL"
+    orient="auto"
+    refY="0.0"
+    refX="0.0"
+    id="marker1315"
+    style="overflow:visible"
+    inkscape:isstock="true">
+   <path
+      id="path1313"
+      d="M -2.5,-1.0 C -2.5,1.7600000 -4.7400000,4.0 -7.5,4.0 C -10.260000,4.0 -12.5,1.7600000 -12.5,-1.0 C -12.5,-3.7600000 -10.260000,-6.0 -7.5,-6.0 C -4.7400000,-6.0 -2.5,-3.7600000 -2.5,-1.0 z "
+      style="fill-rule:evenodd;stroke:#000000;stroke-width:1pt;stroke-opacity:1;fill:#000000;fill-opacity:1"
+      transform="scale(0.8) translate(7.4, 1)" />
+ </marker>
+ <marker
+    inkscape:stockid="DotL"
+    orient="auto"
+    refY="0.0"
+    refX="0.0"
+    id="marker1145"
+    style="overflow:visible"
+    inkscape:isstock="true">
+   <path
+      id="path943"
+      d="M -2.5,-1.0 C -2.5,1.7600000 -4.7400000,4.0 -7.5,4.0 C -10.260000,4.0 -12.5,1.7600000 -12.5,-1.0 C -12.5,-3.7600000 -10.260000,-6.0 -7.5,-6.0 C -4.7400000,-6.0 -2.5,-3.7600000 -2.5,-1.0 z "
+      style="fill-rule:evenodd;stroke:#000000;stroke-width:1pt;stroke-opacity:1;fill:#000000;fill-opacity:1"
+      transform="scale(0.8) translate(7.4, 1)" />
+ </marker>
+ <marker
+    inkscape:stockid="DotL"
+    orient="auto"
+    refY="0.0"
+    refX="0.0"
+    id="marker1156"
+    style="overflow:visible"
+    inkscape:isstock="true">
+   <path
+      id="path1254"
+      d="M -2.5,-1.0 C -2.5,1.7600000 -4.7400000,4.0 -7.5,4.0 C -10.260000,4.0 -12.5,1.7600000 -12.5,-1.0 C -12.5,-3.7600000 -10.260000,-6.0 -7.5,-6.0 C -4.7400000,-6.0 -2.5,-3.7600000 -2.5,-1.0 z "
+      style="fill-rule:evenodd;stroke:#000000;stroke-width:1pt;stroke-opacity:1;fill:#000000;fill-opacity:1"
+      transform="scale(0.8) translate(7.4, 1)" />
+ </marker>
+ <marker
+    inkscape:stockid="DotL"
+    orient="auto"
+    refY="0.0"
+    refX="0.0"
+    id="marker1152"
+    style="overflow:visible"
+    inkscape:isstock="true">
+   <path
+      id="path1160"
+      d="M -2.5,-1.0 C -2.5,1.7600000 -4.7400000,4.0 -7.5,4.0 C -10.260000,4.0 -12.5,1.7600000 -12.5,-1.0 C -12.5,-3.7600000 -10.260000,-6.0 -7.5,-6.0 C -4.7400000,-6.0 -2.5,-3.7600000 -2.5,-1.0 z "
+      style="fill-rule:evenodd;stroke:#000000;stroke-width:1pt;stroke-opacity:1;fill:#000000;fill-opacity:1"
+      transform="scale(0.8) translate(7.4, 1)" />
+ </marker>
+ <marker
+    inkscape:stockid="DotL"
+    orient="auto"
+    refY="0.0"
+    refX="0.0"
+    id="marker1148"
+    style="overflow:visible"
+    inkscape:isstock="true">
+   <path
+      id="path951"
+      d="M -2.5,-1.0 C -2.5,1.7600000 -4.7400000,4.0 -7.5,4.0 C -10.260000,4.0 -12.5,1.7600000 -12.5,-1.0 C -12.5,-3.7600000 -10.260000,-6.0 -7.5,-6.0 C -4.7400000,-6.0 -2.5,-3.7600000 -2.5,-1.0 z "
+      style="fill-rule:evenodd;stroke:#000000;stroke-width:1pt;stroke-opacity:1;fill:#000000;fill-opacity:1"
+      transform="scale(0.8) translate(7.4, 1)" />
+ </marker>
+ <marker
+    inkscape:stockid="DotL"
+    orient="auto"
+    refY="0"
+    refX="0"
+    id="DotL"
+    style="overflow:visible"
+    inkscape:isstock="true"
+    inkscape:collect="always">
+   <path
+      inkscape:connector-curvature="0"
+      id="path4591"
+      d="m -2.5,-1 c 0,2.76 -2.24,5 -5,5 -2.76,0 -5,-2.24 -5,-5 0,-2.76 2.24,-5 5,-5 2.76,0 5,2.24 5,5 z"
+      style="fill:#000000;fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:1.00000003pt;stroke-opacity:1"
+      transform="matrix(0.8,0,0,0.8,5.92,0.8)" />
+ </marker>
+ <marker
+    inkscape:stockid="DotL"
+    orient="auto"
+    refY="0"
+    refX="0"
+    id="marker7235"
+    style="overflow:visible"
+    inkscape:isstock="true">
+   <path
+      inkscape:connector-curvature="0"
+      id="path7234"
+      d="m -2.5,-1 c 0,2.76 -2.24,5 -5,5 -2.76,0 -5,-2.24 -5,-5 0,-2.76 2.24,-5 5,-5 2.76,0 5,2.24 5,5 z"
+      style="fill:#000000;fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:1.00000003pt;stroke-opacity:1"
+      transform="matrix(0.8,0,0,0.8,5.92,0.8)" />
+ </marker>
+</defs>
+<sodipodi:namedview
+  id="base"
+  pagecolor="#ffffff"
+  bordercolor="#666666"
+  borderopacity="1.0"
+  inkscape:pageopacity="0.0"
+  inkscape:pageshadow="2"
+  inkscape:zoom="1.4"
+  inkscape:cx="-23.528679"
+  inkscape:cy="177.26523"
+  inkscape:document-units="mm"
+  inkscape:current-layer="layer2"
+  showgrid="false"
+  inkscape:window-width="1920"
+  inkscape:window-height="1043"
+  inkscape:window-x="0"
+  inkscape:window-y="0"
+  inkscape:window-maximized="1" />
+<metadata
+  id="metadata7241">
+ <rdf:RDF>
+   <cc:Work
+      rdf:about="">
+     <dc:format>image/svg+xml</dc:format>
+     <dc:type
+        rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+     <dc:title />
+   </cc:Work>
+ </rdf:RDF>
+</metadata>
+<g
+  inkscape:label="Layer 1"
+  inkscape:groupmode="layer"
+  id="layer1"
+  transform="translate(0,-197)">
+ <path
+    style="fill:none;stroke:#454545;stroke-width:1.55600691;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+    d="M 10.756538,266.99254 H 70.756863"
+    id="path2551"
+    inkscape:connector-curvature="0"
+    sodipodi:nodetypes="cc" />
+ <path
+    style="fill:none;stroke:#454545;stroke-width:1.55600691;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:0.98039216;marker-mid:url(#marker3387)"
+    d="m 70.756864,206.99233 -10e-7,60.16215 18.4441,19.83814"
+    id="path2553"
+    inkscape:connector-curvature="0"
+    sodipodi:nodetypes="ccc" />
+</g>
+<g
+  inkscape:groupmode="layer"
+  id="layer2"
+  inkscape:label="Layer 2">
+ <path
+    style="fill:none;stroke:#000000;stroke-width:1.55600691;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;marker-mid:url(#marker2383)"
+    d="M 30.756486,89.992787 10.756538,69.992546 V 9.9923299 h 60.000325 l 18.44426,21.5559081"
+    id="path973-1"
+    inkscape:connector-curvature="0"
+    sodipodi:nodetypes="ccccc" />
+ <path
+    style="fill:none;stroke:#000000;stroke-width:1.55600691;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;marker-start:url(#marker1145);marker-mid:url(#marker1315);marker-end:url(#marker1651)"
+    d="M 10.756538,9.9923299 30.756484,31.548238"
+    id="path880"
+    inkscape:connector-curvature="0" />
+ <path
+    style="fill:none;stroke:#000000;stroke-width:1.56000698;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;marker-mid:url(#marker1145)"
+    d="M 30.756646,89.992617 H 89.200963 V 31.548238"
+    id="path2155"
+    inkscape:connector-curvature="0"
+    sodipodi:nodetypes="ccc" />
+ <path
+    style="fill:none;stroke:#000000;stroke-width:1.55600691;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;marker-start:url(#marker1145);marker-mid:url(#marker1145);marker-end:url(#marker1145)"
+    d="M 89.201121,31.548238 H 30.756484 l 2e-6,58.444549"
+    id="path2153"
+    inkscape:connector-curvature="0" />
+</g>
+</svg>
+`;
+
+let get_init_style = (prntid) => {
+   const NONSP_SZ = 400;
+   return `
+div#${prntid} * {
+   box-sizing: content-box;
+}
+div#${prntid}.ulabel-night {
    background-color: black;
 }
-div.full_ulabel_container_ {
+div#${prntid} div.full_ulabel_container_ {
    font-family: sans-serif;
 }
 
-div.annbox_cls, div.toolbox_cls {
+div#${prntid} div.annbox_cls, div#${prntid} div.toolbox_cls {
    height: 100%;
 }
-div.annbox_cls {
+div#${prntid} div.annbox_cls {
    width: calc(100% - 320px);
    background-color: black;
    overflow: scroll;
@@ -394,7 +1133,235 @@ div.annbox_cls {
    top: 0;
    left: 0;
 }
-div.toolbox_cls {
+div#${prntid} div.annbox_cls img.image_frame {
+   position: absolute;
+   top: 0;
+   left: 0;
+   max-width: none;
+   max-height: none;
+}
+
+
+/* Frame annotation dialog */
+div#${prntid} div.frame_annotation_dialog {
+   width: 60px;
+   overflow: hidden;
+   position: absolute;
+   z-index: 80;
+   background-color: rgb(255, 255, 255);
+   border: 1px solid rgb(143, 143, 143);
+   transition: opacity 0.1s, width 0.3s, height 0.3s, min-height 0.3s;
+   opacity: 0.5;
+   top: 40px;
+}
+div#${prntid} div.frame_annotation_dialog.fad_ind__0 {
+   right: 360px;
+}
+div#${prntid} div.frame_annotation_dialog.fad_ind__1 {
+   right: 445px;
+}
+div#${prntid} div.frame_annotation_dialog.fad_ind__2 {
+   right: 530px;
+}
+div#${prntid} div.frame_annotation_dialog.fad_ind__3 {
+   right: 615px;
+}
+div#${prntid} div.frame_annotation_dialog div.hide_overflow_container {
+   width: 100%;
+   /* position: absolute;
+   right: 0; */
+   overflow: hidden;
+}
+div#${prntid} div.frame_annotation_dialog.active:hover, div#${prntid} div.frame_annotation_dialog.active.permopen {
+   max-width: none;
+   width: ${NONSP_SZ}px;
+   overflow: visible;
+}
+div#${prntid} div.frame_annotation_dialog.active {
+   z-index: 125;
+   opacity: 1.0;
+}
+div#${prntid}.ulabel-night div.frame_annotation_dialog {
+   background-color: rgb(37, 37, 37);
+   border: 1px solid rgb(102, 102, 102);
+   text-align: right;
+}
+div.front_dialogs {
+   position: absolute;
+   top: 0;
+   right: 0;
+   z-index: -1;
+}
+div#${prntid} div.frame_annotation_dialog div.row_container {
+   position: relative;
+   width: ${NONSP_SZ}px;
+   left: ${60-NONSP_SZ}px;
+   overflow: visible;
+   transition: left 0.3s;
+}
+div#${prntid} div.frame_annotation_dialog:hover div.row_container, div#${prntid} div.frame_annotation_dialog.active.permopen div.row_container {
+   left: 0;
+   overflow: visible;
+}
+/* ROWS */
+div#${prntid} div.frame_annotation_dialog div.fad_row {
+   width: ${NONSP_SZ}px;
+}
+div#${prntid} div.frame_annotation_dialog div.fad_row div.fad_row_inner {
+   width: ${NONSP_SZ}px;
+   text-align: right;
+}
+
+/* NAME */
+div#${prntid} div.fad_st_name {
+   font-size: 8px;
+   padding: 4px;
+   width: 52px;
+   overflow: hidden;
+   text-align: center;
+   display: inline-block;
+}
+div#${prntid}.ulabel-night div.fad_st_name {
+   color: white;
+}
+
+/* ADD BUTTON */
+div#${prntid} div.fad_st_add {
+   width: 60px;
+   height: 50px;
+   display: none;
+   position: relative;
+}
+div#${prntid} div.frame_annotation_dialog.active div.fad_st_add {
+   display: inline-block;
+}
+div#${prntid} div.frame_annotation_dialog div.fad_row.add a.add-glob-button {
+   position: absolute;
+   font-size: 20px;
+   width: 25px;
+   height: 25px;
+   border-radius: 12.5px;
+   text-decoration: none;
+   background-color: rgba(128, 128, 128, 0.198);
+   color: gray;
+   border: 1px solid gray;
+   top: 25px;
+   left: 30px;
+   transform: translateX(-50%) translateY(-50%);
+   line-height: 25px;
+   text-align: center;
+}
+/* div#${prntid} div.frame_annotation_dialog div.fad_row.add a.add-glob-button span.plus {
+   display: block;
+   text-align: center;
+   width: 25px;
+   height: 25px;
+   position: absolute;
+   top: 12.5px;
+   left: 12.5px;
+   transform: translateX(-50%) translateY(-50%);
+   color: black;
+} */
+div#${prntid} div.frame_annotation_dialog div.fad_row.add a.add-glob-button:hover {
+   border-color: black;
+   color: black;
+}
+div#${prntid}.ulabel-night div.frame_annotation_dialog div.fad_row.add a.add-glob-button:hover {
+   border-color: white;
+   color: white;
+}
+div#${prntid}.ulabel-night div.frame_annotation_dialog div.fad_row.add a.add-glob-button span.plus {
+   color: white;
+}
+div#${prntid} div.frame_annotation_dialog.active div.fad_row.add {
+   display: inline-block;
+}
+
+div#${prntid} div.frame_annotation_dialog div.fad_annotation_rows {
+   width: ${NONSP_SZ}px;
+   display: inline-block;
+}
+
+div#${prntid} div.frame_annotation_dialog div.fad_row div.fad_buttons {
+   display: inline-block;
+   vertical-align: top;
+   min-height: 60px;
+   width: ${NONSP_SZ-60}px;
+}
+div#${prntid} div.frame_annotation_dialog div.fad_row div.fad_type_icon {
+   display: inline-block;
+   vertical-align: top;
+   height: 60px;
+   width: 60px;
+   position: relative;
+   text-align: center;
+}
+div#${prntid} div.frame_annotation_dialog div.fad_row div.fad_type_icon svg {
+   height: 50px;
+   width: 50px;
+   padding: 5px;
+}
+div#${prntid} div.frame_annotation_dialog div.fad_row div.fad_buttons div.fad_inp_container {
+   display: inline-block;
+   vertical-align: top;
+}
+div#${prntid} div.frame_annotation_dialog div.fad_row div.fad_buttons div.fad_inp_container.text {
+   width: ${NONSP_SZ-180}px;
+   margin: 0;
+   border: none;
+   padding: none;
+}
+div#${prntid} div.frame_annotation_dialog div.fad_row div.fad_buttons div.fad_inp_container.text textarea {
+   box-sizing: border-box;
+   width: calc(100% - 2px);
+   height: 58px;
+   min-height: 58px;
+   resize: vertical;
+   background-color: rgba(0,0,0,0);
+}
+div#${prntid}.ulabel-night div.frame_annotation_dialog div.fad_row div.fad_buttons div.fad_inp_container.text textarea {
+   color: white;
+}
+div#${prntid} div.frame_annotation_dialog div.fad_row div.fad_buttons div.fad_inp_container.button {
+   width: 30px;
+   height: 30px;
+   padding: 15px;
+   padding-right: 20px;
+   padding-left: 0;
+}
+div#${prntid} div.frame_annotation_dialog div.fad_row div.fad_buttons div.fad_inp_container.button.frst {
+   padding-left: 20px;
+}
+div#${prntid} div.frame_annotation_dialog div.fad_row div.fad_buttons a.fad_button {
+   display: block;
+   width: 28px;
+   height: 28px;
+   background-color: rgba(128, 128, 128, 0.198);
+   border-radius: 14px;
+   border: 1px solid gray;
+   color: gray;
+}
+div#${prntid} div.frame_annotation_dialog div.fad_row div.fad_buttons a.fad_button:hover {
+   border-color: black;
+   color: black;
+}
+div#${prntid}.ulabel-night div.frame_annotation_dialog div.fad_row div.fad_buttons a.fad_button:hover {
+   border-color: white;
+   color: white;
+}
+div#${prntid} div.frame_annotation_dialog div.fad_row div.fad_buttons a.fad_button.reclf {
+   position: relative;
+}
+div#${prntid} div.frame_annotation_dialog div.fad_row div.fad_buttons a.fad_button.delete {
+   text-decoration: none;
+   text-align: center;
+   line-height: 28px;
+   font-size: 22px;
+}
+
+
+/* TOOLBOX */
+div#${prntid} div.toolbox_cls {
    width: 320px;
    background-color: white;
    overflow-y: hidden;
@@ -402,28 +1369,30 @@ div.toolbox_cls {
    top: 0;
    right: 0;
 }
-div.ulabel-night div.toolbox_cls {
+div#${prntid}.ulabel-night div.toolbox_cls {
    background-color: rgb(24, 24, 24);
 }
-div.ulabel-night div.toolbox_cls p, div.ulabel-night div.toolbox_cls a {
+div#${prntid}.ulabel-night div.toolbox_cls p, div#${prntid}.ulabel-night div.toolbox_cls a {
    color: white;
 }
-div.ulabel-night a.md-btn svg {
-   filter: invert(80%);
+div#${prntid}.ulabel-night .invert-this-svg svg {
+   filter: invert(90%);
 }
 
-div.canvasses {
+div#${prntid} div.canvasses {
    position: absolute;
    top: 0; 
    left: 0;
+   padding-right: 100%;
+   padding-bottom: 100%;
 }
-canvas.canvas_cls {
+div#${prntid} canvas.canvas_cls {
    position: absolute;
    top: 0;
    left: 0;
 }
 
-.id_dialog {
+div#${prntid} .id_dialog {
    width: 400px;
    height: 400px;
    background-color: rgba(0, 0, 0, 0.0);
@@ -437,7 +1406,7 @@ canvas.canvas_cls {
 .id_dialog.thumb:hover {
    opacity: 1.0;
 } */
-.ender_outer {
+div#${prntid} .ender_outer {
    display: block;
    position: absolute;
    width: 50px;
@@ -446,7 +1415,7 @@ canvas.canvas_cls {
    border-radius: 25px;
    z-index: 0;
 }
-.ender_inner {
+div#${prntid} .ender_inner {
    display: block;
    position: absolute;
    left: 20px;
@@ -459,33 +1428,29 @@ canvas.canvas_cls {
 
 /* ================== TOOLBOX ================== */
 
-div.toolbox-divider {
+div#${prntid} div.toolbox-divider {
    width: 90%;
    margin: 0 auto;
    height: 1px;
    background-color: lightgray;
 }
-div.ulabel-night div.toolbox-divider {
+div#${prntid}.ulabel-night div.toolbox-divider {
    background-color: gray;
 }
 
 
-div.mode-selection, div.zoom-pan {
-   padding: 10px 30px;
-}
-
 /* === Annotation Mode === */
-p.current_mode_container {
+div#${prntid} p.current_mode_container {
    margin-top: 0px;
    margin-bottom: 5px;
 }
-span.current_mode {
+div#${prntid} span.current_mode {
    color: cornflowerblue;
 }
-div.mode-opt {
+div#${prntid} div.mode-opt {
    display: inline-block;
 }
-a.md-btn {
+div#${prntid} a.md-btn {
    display: block;
    text-align: center;
    height: 30px;
@@ -499,41 +1464,44 @@ a.md-btn {
    font-family: sans-serif;
 }
 
-a.md-btn svg {
+div#${prntid} a.md-btn svg {
    height: 30px;
    width: 30px;
 }
 
-a.md-btn:hover {
+div#${prntid} a.md-btn:hover {
    background-color: rgba(255, 181, 44, 0.397);
 }
 
-a.md-btn.sel {
+div#${prntid} a.md-btn.sel {
    background-color: rgba(100, 148, 237, 0.459);
 }
 
 /* === Pan & Zoom === */
 
-div.zoom-pan {
+div#${prntid} div.mode-selection, div#${prntid} div.zoom-pan {
+   padding: 10px 30px;
+}
+/* div#${prntid} div.zoom-pan {
    padding-bottom: 0;
    padding-top: 0;
-}
-div.half-tb {
+} */
+div#${prntid} div.half-tb {
    display: inline-block;    
    width: 50%;
    vertical-align: middle;
 }
-span.htblbl {
+div#${prntid} span.htblbl {
    display: inline-block;
    /* font-weight: bold; */
    vertical-align: middle;
 }
-span.htbpyld {
+div#${prntid} span.htbpyld {
    display: inline-block;
    vertical-align: middle;
 }
 
-span.panudlr {
+div#${prntid} span.panudlr {
    display: inline-block;
    position: relative;
    width: 60px;
@@ -541,7 +1509,7 @@ span.panudlr {
    border-radius: 30px;
 }
 
-a.zbutt, a.wbutt {
+div#${prntid} a.zbutt, div#${prntid} a.wbutt {
    display: inline-block;
    height: 20px;
    width: 20px;
@@ -554,10 +1522,10 @@ a.zbutt, a.wbutt {
    line-height: 20px;
    border: 1px solid rgb(168, 168, 168);
 }
-span.panudlr {
+div#${prntid} span.panudlr {
    transform: rotate(-45deg);
 }
-a.pbutt {
+div#${prntid} a.pbutt {
    display: block;
    position: absolute;
    width: 28px;
@@ -566,33 +1534,33 @@ a.pbutt {
    border: 1px solid rgb(168, 168, 168);
    background-color: lightgray;
 }
-a.pbutt.up {
+div#${prntid} a.pbutt.up {
    right: 0;
    top: 0;
    border-top-right-radius: 30px;
 }
-a.pbutt.down {
+div#${prntid} a.pbutt.down {
    left: 0;
    bottom: 0;
    border-bottom-left-radius: 30px;
 }
-a.pbutt.left {
+div#${prntid} a.pbutt.left {
    left: 0;
    top: 0;
    border-top-left-radius: 30px;
 }
-a.pbutt.right {
+div#${prntid} a.pbutt.right {
    right: 0;
    bottom: 0;
    border-bottom-right-radius: 30px;
 }
-a.pbutt:hover, a.zbutt:hover, a.wbutt:hover {
+div#${prntid} a.pbutt:hover, a.zbutt:hover, div#${prntid} a.wbutt:hover {
    background-color: rgba(100, 148, 237, 0.486);
 }
-a.pbutt:active, a.zbutt:active, a.wbutt:active {
+div#${prntid} a.pbutt:active, div#${prntid} a.zbutt:active, div#${prntid} a.wbutt:active {
    background-color:cornflowerblue;
 }
-span.spokes {
+div#${prntid} span.spokes {
    position: absolute;
    left: 19px;
    top: 19px;
@@ -602,41 +1570,41 @@ span.spokes {
    border-radius: 10px;
    border: 1px solid gray;
 }
-div.ulabel-night span.spokes {
+div#${prntid}.ulabel-night span.spokes {
    background-color:rgb(24, 24, 24);
    /* border: 1px solid black; */
 }
 
-div.zpcont {
+div#${prntid} div.zpcont {
    height: 90px;
    position: relative;
    background-color: white;
 }
-div.ulabel-night div.zpcont {
+div#${prntid}.ulabel-night div.zpcont {
    background-color: rgb(24, 24, 24);
 }
-div.zpcont:hover, div.ulabel-night div.zpcont:hover {
+div#${prntid} div.zpcont:hover, div#${prntid}.ulabel-night div.zpcont:hover {
    background-color: rgba(0,0,0,0);
 }
-div.zpcont div.lblpyldcont {
+div#${prntid} div.zpcont div.lblpyldcont {
    position: absolute;
    top: 50%;
    -ms-transform: translateY(-50%);
    transform: translateY(-50%);
 }
-div.ulabel-night div.zpcont div.lblpyldcont {
+div#${prntid}.ulabel-night div.zpcont div.lblpyldcont {
    color: white;
 }
-div.ulabel-night a.zbutt, div.ulabel-night a.wbutt {
+div#${prntid}.ulabel-night a.zbutt, div#${prntid}.ulabel-night a.wbutt {
    border: 1px solid black;
    color: black !important;
 }
 
 
-div.htbmain {
+div#${prntid} div.htbmain {
    position: relative;
 }
-p.shortcut-tip {
+div#${prntid} p.shortcut-tip {
    font-size: 10px;
    text-align: left;
    color: gray;
@@ -644,41 +1612,44 @@ p.shortcut-tip {
    bottom: 3px;
    margin: 0;
 }
-div.linestyle {
+div#${prntid} div.linestyle {
    padding: 10px 30px;
 }
-div.linestyle p.tb-header {
+div#${prntid} div.linestyle p.tb-header {
    margin: 0;
    margin-bottom: 5px;
 }
-canvas.demo-canvas {
+div#${prntid} canvas.demo-canvas {
    width: 120px;
    height: 40px;
    border: 1px solid lightgray;
 }
-div.ulabel-night canvas.demo-canvas {
+div#${prntid}.ulabel-night canvas.demo-canvas {
    border: 1px solid rgb(87, 87, 87);
 }
-div.line-expl {
-   width: 175px;
+div#${prntid} div.line-expl {
+   width: 185px;
 }
-div.line-expl a {
+
+div#${prntid} div.line-expl a {
    display: inline-block;
    vertical-align: middle;
 }
-div.line-expl canvas {
+div#${prntid} div.line-expl canvas {
+   display: inline-block;
+   vertical-align: middle;
+   width: 120px;
+   height: 40px;
+}
+div#${prntid} div.lstyl-row div.line-expl, div#${prntid} div.lstyl-row div.setting {
    display: inline-block;
    vertical-align: middle;
 }
-div.lstyl-row div.line-expl, div.lstyl-row div.setting {
-   display: inline-block;
-   vertical-align: middle;
-}
-div.setting {
-   width: calc(100% - 175px);
+div#${prntid} div.setting {
+   width: calc(100% - 185px);
    text-align: right;
 }
-div.lstyl-row div.setting a {
+div#${prntid} div.lstyl-row div.setting a {
    display: inline-block;
    border-radius: 5px;
    padding: 3px 6px;
@@ -687,22 +1658,25 @@ div.lstyl-row div.setting a {
    color: black;
    font-size: 14px;
 }
-div.ulabel-night div.lstyl-row div.setting a {
+div#${prntid}.ulabel-night div.lstyl-row div.setting a {
    color: white;
 }
-div.lstyl-row div.setting a {
+div#${prntid} div.lstyl-row div.setting a {
    background-color: rgba(100, 148, 237, 0.479);
    color: black;
 }
-div.lstyl-row div.setting a[href="#"] {
+div#${prntid} div.lstyl-row div.setting a[href="#"] {
    background-color: rgba(0,0,0,0);
    color: black;
 }
-div.lstyl-row div.setting a[href="#"]:hover {
+div#${prntid}.ulabel-night div.lstyl-row div.setting a[href="#"] {
+   color: white;
+}
+div#${prntid} div.lstyl-row div.setting a[href="#"]:hover {
    background-color: rgba(255, 181, 44, 0.397);
 }
 
-div.dialogs_container {
+div#${prntid} div.dialogs_container {
    position: absolute;
    top: 0;
    left: 0;
@@ -710,61 +1684,61 @@ div.dialogs_container {
 
 /* ========== Tab Buttons ========== */
 
-div.toolbox-tabs {
+div#${prntid} div.toolbox-tabs {
    position: absolute;
    bottom: 0;
    width: 100%;
    opacity: 0.8;
 }
-div.toolbox-tabs div.tb-st-tab {
+div#${prntid} div.toolbox-tabs div.tb-st-tab {
    display: block;
    width: 100%;
    padding: 5px 0;
    background-color: rgba(0, 3, 161, 0.144);
 }
-div.toolbox-tabs div.tb-st-tab.sel {
+div#${prntid} div.toolbox-tabs div.tb-st-tab.sel {
    display: block;
    width: 100%;
    background-color: rgba(0, 3, 161, 0.561);
 }
-div.toolbox-tabs div.tb-st-tab * {
+div#${prntid} div.toolbox-tabs div.tb-st-tab * {
    vertical-align: middle;
 }
-div.toolbox-tabs div.tb-st-tab a.tb-st-switch {
+div#${prntid} div.toolbox-tabs div.tb-st-tab a.tb-st-switch {
    display: inline-block;
    width: 70px;
    padding: 0 15px;
    text-decoration: none;
    color: rgb(37, 37, 37);
 }
-div.ulabel-night div.toolbox-tabs div.tb-st-tab a.tb-st-switch {
+div#${prntid}.ulabel-night div.toolbox-tabs div.tb-st-tab a.tb-st-switch {
    color: rgb(150, 150, 150);
 }
-div.toolbox-tabs div.tb-st-tab.sel a.tb-st-switch {
+div#${prntid} div.toolbox-tabs div.tb-st-tab.sel a.tb-st-switch {
    color: rgb(238, 238, 238);
 }
-div.ulabel-night div.toolbox-tabs div.tb-st-tab.sel a.tb-st-switch {
+div#${prntid}.ulabel-night div.toolbox-tabs div.tb-st-tab.sel a.tb-st-switch {
    color: rgb(238, 238, 238);
 }
-div.toolbox-tabs div.tb-st-tab a.tb-st-switch[href]:hover {
+div#${prntid} div.toolbox-tabs div.tb-st-tab a.tb-st-switch[href]:hover {
    color: cornflowerblue;
 }
-div.ulabel-night div.toolbox-tabs div.tb-st-tab a.tb-st-switch[href]:hover {
+div#${prntid}.ulabel-night div.toolbox-tabs div.tb-st-tab a.tb-st-switch[href]:hover {
    color: rgb(238, 238, 238);
 }
-div.toolbox-tabs div.tb-st-tab span.tb-st-range {
+div#${prntid} div.toolbox-tabs div.tb-st-tab span.tb-st-range {
    display: inline-block;
    width: calc(100% - 100px);
    text-align: center;
 }
-div.toolbox-tabs div.tb-st-tab span.tb-st-range input {
+div#${prntid} div.toolbox-tabs div.tb-st-tab span.tb-st-range input {
    width: 80%;
    transform: rotate(180deg);
 }
 
 /* ========== Annotation Box Dialogs ========== */
 
-div.global_edit_suggestion {
+div#${prntid} div.global_edit_suggestion {
    display: none;
    position: absolute;
    width: 150px;
@@ -774,11 +1748,11 @@ div.global_edit_suggestion {
    /* background-color: white; */
    transform: scale(0.66666);
 }
-div.global_edit_suggestion.mcm {
+div#${prntid} div.global_edit_suggestion.mcm {
    width: 225px;
    transform: scale(0.5);
 }
-a.global_sub_suggestion {
+div#${prntid} a.global_sub_suggestion {
    width: 60px;
    height: 60px;
    margin: 7.5px;
@@ -787,13 +1761,13 @@ a.global_sub_suggestion {
    background-color: white;
    overflow: hidden;
 }
-a.global_sub_suggestion img {
+div#${prntid} a.global_sub_suggestion img {
    display: block;
    width: 40px;
    height: 40px;
    padding: 10px;
 }
-a.global_sub_suggestion span.bigx {
+div#${prntid} a.global_sub_suggestion span.bigx {
    position: absolute;
    display: block;
    font-size: 4em;
@@ -805,79 +1779,87 @@ a.global_sub_suggestion span.bigx {
    color: black;
    text-decoration: none;
 }
-a.global_sub_suggestion.reid_suggestion {
+div#${prntid} a.global_sub_suggestion.reid_suggestion {
    opacity: 0.3;
    background-color: black;
 }
-a.global_sub_suggestion.reid_suggestion:hover {
+div#${prntid} a.global_sub_suggestion.reid_suggestion:hover {
    opacity: 0; 
 }
-div.classification {
+div#${prntid} div.classification {
    padding: 10px 30px;
 }
-div.classification p.tb-header {
+div#${prntid} div.classification p.tb-header {
    margin: 0;
    margin-bottom: 5px;
 }
 
-a.tbid-opt {
+div#${prntid} a.tbid-opt {
    display: inline-block;
    text-decoration: none;
    padding: 5px 8px;
    border-radius: 5px;
    color: black;
 }
-div.colprev {
+div#${prntid} div.colprev {
    display: inline-block;
    vertical-align: middle;
    height: 15px;
    width: 15px;
 }
-span.tb-cls-nam {
+div#${prntid} span.tb-cls-nam {
    display: inline-block;
    vertical-align: middle;
 }
-a.tbid-opt:hover {
+div#${prntid} a.tbid-opt:hover {
    background-color: rgba(255, 181, 44, 0.397);
 }
-a.tbid-opt.sel {
+div#${prntid} a.tbid-opt.sel {
    background-color: rgba(100, 148, 237, 0.459);
 }
-div.toolbox-name-header {
+div#${prntid} div.toolbox-name-header {
    background-color: rgb(0, 128, 202);
    margin: 0;
 }
-div.ulabel-night div.toolbox-name-header {
+div#${prntid}.ulabel-night div.toolbox-name-header {
    background-color: rgb(0, 60, 95);
 }
-div.toolbox-name-header h1 {
+div#${prntid} div.toolbox-name-header h1 {
    margin: 0;
    padding: 0;
    font-size: 15px;
    display: inline-block;
    padding: 10px 15px;
-   width: calc(50% - 30px);
+   width: calc(70% - 30px);
    vertical-align: middle;
 }
-div.toolbox-name-header h1 a {
+div#${prntid} div.toolbox-name-header h1 a {
    color: white;
    font-weight: 100;
    text-decoration: none;
 }
-div.night-button-cont {
+div#${prntid} div.toolbox-name-header h1 {
+   color: rgb(212, 212, 212);
+   font-size: 12px;
+   font-weight: 100;
+}
+div#${prntid}.ulabel-night div.toolbox-name-header h1 span.version-number {
+   color: rgb(190, 190, 190);
+}
+div#${prntid} div.night-button-cont {
    text-align: right;
    display: inline-block;
    vertical-align: middle;
    position: relative;
    padding-right: 10px;
-   width: calc(50% - 10px);
+   width: calc(30% - 10px);
 }
-a.night-button {
+div#${prntid} a.night-button {
    display: inline-block;
    padding: 10px;
    opacity: 0.7;
 }
-div.night-button-track {
+div#${prntid} div.night-button-track {
    width: 35px;
    height: 12px;
    border-radius: 6px;
@@ -885,7 +1867,7 @@ div.night-button-track {
    display: inline-block;
    background-color: rgba(0, 0, 0, 0.52);
 }
-div.night-status {
+div#${prntid} div.night-status {
    width: 20px;
    height: 20px;
    border-radius: 10px;
@@ -895,36 +1877,40 @@ div.night-status {
    top: -4px;
    transition: left 0.2s;
 }
-a.night-button:hover {
+div#${prntid} a.night-button:hover {
    opacity: 1;
 }
-div.ulabel-night div.night-button-track {
+div#${prntid}.ulabel-night div.night-button-track {
    background-color: rgba(255, 255, 255, 0.52);
 }
-div.ulabel-night div.night-status {
+div#${prntid}.ulabel-night div.night-status {
    left: 19px;
 }
 
 
-div.ulabel-night div.annbox_cls::-webkit-scrollbar {
+div#${prntid}.ulabel-night div.annbox_cls::-webkit-scrollbar {
    background-color: black;
 }
-div.ulabel-night div.annbox_cls::-webkit-scrollbar-track {
+div#${prntid}.ulabel-night div.annbox_cls::-webkit-scrollbar-track {
    background-color: black;
 }
-div.ulabel-night div.annbox_cls::-webkit-scrollbar-thumb {
+div#${prntid}.ulabel-night div.annbox_cls::-webkit-scrollbar-thumb {
    border: 1px solid rgb(110, 110, 110);
    background-color: rgb(51, 51, 51);
 }
-div.ulabel-night div.annbox_cls::-webkit-scrollbar-thumb:hover {
+div#${prntid}.ulabel-night div.annbox_cls::-webkit-scrollbar-thumb:hover {
    background-color: rgb(90, 90, 90);
 } 
-div.ulabel-night div.annbox_cls::-webkit-scrollbar-corner {
+div#${prntid}.ulabel-night div.annbox_cls::-webkit-scrollbar-corner {
    background-color:rgb(0, 60, 95);
 }
 
+div#${prntid} a.repo-anchor {
+   text-transform: uppercase;
+}
 
-a.id-dialog-clickable-indicator {
+
+div#${prntid} a.id-dialog-clickable-indicator {
    position: absolute; 
    top: 0;
    left: 0;
@@ -934,13 +1920,13 @@ a.id-dialog-clickable-indicator {
    width: 400px;
    overflow: hidden;
 }
-a.id-dialog-clickable-indicator svg {
+div#${prntid} a.id-dialog-clickable-indicator svg {
    position: absolute;
    top: 0;
    left: 0;
 }
 
-.editable {
+div#${prntid} .editable {
    display: none;
    position: absolute;
    width: 50px;
@@ -950,36 +1936,36 @@ a.id-dialog-clickable-indicator svg {
    border-radius: 25px;
    z-index: 0;
 }
-.editable.soft {
+div#${prntid} .editable.soft {
    opacity: 0.4;
 }
-.editable:hover {
+div#${prntid} .editable:hover {
    background-color: white;
    opacity: 1.0;
 }
-.editable.soft:hover {
+div#${prntid} .editable.soft:hover {
    opacity: 0.7;
 }
 
-div.toolbox-refs {
+div#${prntid} div.toolbox-refs {
    text-align: center;
 }
-div.toolbox-refs a {
+div#${prntid} div.toolbox-refs a {
    color: rgb(5, 50, 133);
    display: inline-block;
    margin-top: 10px;
 }
-div.toolbox-refs a:hover {
+div#${prntid} div.toolbox-refs a:hover {
    color: rgb(44, 77, 139);
 }
-div.ulabel-night div.toolbox-refs a {
+div#${prntid}.ulabel-night div.toolbox-refs a {
    color: rgb(176, 202, 250);
 }
-div.ulabel-night div.toolbox-refs a:hover {
+div#${prntid}.ulabel-night div.toolbox-refs a:hover {
    color: rgb(123, 160, 228);
 }
 
-#submit-button {
+div#${prntid} #submit-button {
    display: block;
    padding: 20px;
    border-radius: 10px;
@@ -991,16 +1977,17 @@ div.ulabel-night div.toolbox-refs a:hover {
    width: 150px;
    margin: 30px auto;
 }
-#submit-button:hover {
+div#${prntid} #submit-button:hover {
    background-color: rgba(255, 166, 0, 1.0);
 }
-#submit-button:active {
+div#${prntid} #submit-button:active {
    box-shadow: 0 0 3px black;
 }
-div.ulabel-night #submit-button:active {
+div#${prntid}.ulabel-night #submit-button:active {
    box-shadow: 0 0 8px white;
 }
 `;
+}
 
 // TODO more of these
 const COLORS = [
@@ -1008,4 +1995,9 @@ const COLORS = [
    "darksalmon", "deeppink", "fuchsia"
 ];
 
-export { BBOX_SVG, POLYGON_SVG, CONTOUR_SVG, TBAR_SVG, DEMO_ANNOTATION, INIT_STYLE, COLORS };
+export { 
+   BBOX_SVG, BBOX3_SVG, POLYGON_SVG, CONTOUR_SVG, TBAR_SVG, POLYLINE_SVG, WHOLE_IMAGE_SVG, GLOBAL_SVG, 
+   DEMO_ANNOTATION, 
+   get_init_style, 
+   COLORS 
+};
