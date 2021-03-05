@@ -2,7 +2,6 @@
 <html>
     <head>
         <title>ULabel</title>
-        <link rel="icon" href="https://sentera.com/wp-content/uploads/2018/03/Favicon.png" sizes="192x192" />
 
         <!-- ULabel Library -->
         <script src="/ulabel.js"></script>
@@ -31,16 +30,45 @@
                 }
 
                 let subtasks = {
-                    "main": {
-                        "display_name": "Stand",
+                    "car_detection": {
+                        "display_name": "Car Detection",
                         "classes": [
                             {
-                                "name": "Male Stand",
+                                "name": "Sedan",
                                 "color": "blue",
                                 "id": 10
+                            },
+                            {
+                                "name": "SUV",
+                                "color": "green",
+                                "id": 11
+                            },
+                            {
+                                "name": "Truck",
+                                "color": "orange",
+                                "id": 12
+                            },
+                        ],
+                        "allowed_modes": ["bbox", "polygon", "contour", "bbox3"],
+                        "resume_from": null,
+                        "task_meta": null,
+                        "annotation_meta": null
+                    },
+                    "frame_review": {
+                        "display_name": "Frame Review",
+                        "classes": [
+                            {
+                                "name": "Blurry",
+                                "color": "gray",
+                                "id": 20
+                            },
+                            {
+                                "name": "Occluded",
+                                "color": "red",
+                                "id": 21
                             }
                         ],
-                        "allowed_modes": ["contour", "polygon"],
+                        "allowed_modes": ["whole-image"],
                         "resume_from": null,
                         "task_meta": null,
                         "annotation_meta": null
@@ -50,8 +78,8 @@
                 // Initial ULabel configuration
                 let ulabel = new ULabel(
                     "container", 
-                    "/demo_image.jpg", 
-                    "demo_user",
+                    ["/images/cs-demo-0.png", "/images/cs-demo-1.png", "/images/cs-demo-2.png"], 
+                    "DemoUser",
                     on_submit,
                     subtasks
                 );

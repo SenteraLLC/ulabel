@@ -2,7 +2,6 @@
 <html>
     <head>
         <title>ULabel</title>
-        <link rel="icon" href="https://sentera.com/wp-content/uploads/2018/03/Favicon.png" sizes="192x192" />
 
         <!-- ULabel Library -->
         <script src="/ulabel.js"></script>
@@ -31,40 +30,45 @@
                 }
 
                 let subtasks = {
-                    "main": {
-                        "display_name": "Male/Female Stand",
+                    "car_detection": {
+                        "display_name": "Car Detection",
                         "classes": [
                             {
-                                "name": "Male Stand",
+                                "name": "Sedan",
                                 "color": "blue",
                                 "id": 10
                             },
                             {
-                                "name": "Female Stand",
-                                "color": "pink",
+                                "name": "SUV",
+                                "color": "green",
                                 "id": 11
                             },
+                            {
+                                "name": "Truck",
+                                "color": "orange",
+                                "id": 12
+                            },
                         ],
-                        "allowed_modes": ["bbox", "polygon", "bbox3", "whole-image"],
+                        "allowed_modes": ["bbox", "polygon", "contour"],
                         "resume_from": null,
                         "task_meta": null,
                         "annotation_meta": null
                     },
-                    "review": {
-                        "display_name": "Review",
+                    "frame_review": {
+                        "display_name": "Frame Review",
                         "classes": [
                             {
-                                "name": "Reason 1",
-                                "color": "orange",
-                                "id": 12
+                                "name": "Blurry",
+                                "color": "gray",
+                                "id": 20
                             },
                             {
-                                "name": "Reason 2",
+                                "name": "Occluded",
                                 "color": "red",
-                                "id": 13
-                            },
+                                "id": 21
+                            }
                         ],
-                        "allowed_modes": ["global"],
+                        "allowed_modes": ["whole-image"],
                         "resume_from": null,
                         "task_meta": null,
                         "annotation_meta": null
@@ -74,13 +78,10 @@
                 // Initial ULabel configuration
                 let ulabel = new ULabel(
                     "container", 
-                    ["/demo_image.jpg", "/demo_image_1.jpg", "/demo_image.jpg"],
-                    "demo_user",
+                    "/images/cs-demo-0.png", 
+                    "DemoUser",
                     on_submit,
-                    subtasks,
-                    null,
-                    null,
-                    1
+                    subtasks
                 );
                 // Wait for ULabel instance to finish initialization
                 ulabel.init(function() {
