@@ -8,5 +8,5 @@
 - [ ] Version numbers match between package `package.json` and `src/version.js`
 - [ ] Ran `npm install` and `npm run build` AFTER bumping the version number
 
-## API Changes
+## Breaking API Changes
 
