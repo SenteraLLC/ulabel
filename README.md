@@ -94,6 +94,4 @@ node demo/server.js
 
 ## TODO
 
-- Canvas and image dimension mismatch
-    - Allow constructor to supply ratio
-    - Save/handle/draw annotations in a way that's agnostic to above
+- I should really start writing a spec

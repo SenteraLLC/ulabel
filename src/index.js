@@ -540,8 +540,8 @@ class ULabel {
                                 <canvas 
                                     id="${ul.config["canvas_did"]}" 
                                     class="demo-canvas" 
-                                    width=${ul.config["demo_width"]} 
-                                    height=${ul.config["demo_height"]}></canvas>
+                                    width=${ul.config["demo_width"]*ul.config["px_per_px"]} 
+                                    height=${ul.config["demo_height"]*ul.config["px_per_px"]}></canvas>
                                 <a href="#" class="wbutt win">+</a>
                             </div><!--
                             --><div class="setting">
@@ -1378,7 +1378,8 @@ class ULabel {
         on_submit,
         subtasks,
         task_meta=null,
-        annotation_meta=null
+        annotation_meta=null,
+        px_per_px=1
     ) {
         // Unroll safe default arguments
         if (task_meta == null) {task_meta = {};}
@@ -1401,6 +1402,7 @@ class ULabel {
             "image_id_pfx": "ann_image",
             "imgsz_class": "imgsz",
             "toolbox_id": "toolbox",
+            "px_per_px": px_per_px,
 
             // Configuration for the annotation task itself
             "image_data": ULabel.expand_image_data(image_data),
@@ -1537,13 +1539,13 @@ class ULabel {
                     <canvas 
                         id="${that.subtasks[st]["canvas_bid"]}" 
                         class="${that.config["canvas_class"]} ${that.config["imgsz_class"]} canvas_cls" 
-                        height=${that.config["image_height"]} 
-                        width=${that.config["image_width"]}></canvas>
+                        height=${that.config["image_height"]*this.config["px_per_px"]} 
+                        width=${that.config["image_width"]*this.config["px_per_px"]}></canvas>
                     <canvas 
                         id="${that.subtasks[st]["canvas_fid"]}" 
                         class="${that.config["canvas_class"]} ${that.config["imgsz_class"]} canvas_cls" 
-                        height=${that.config["image_height"]} 
-                        width=${that.config["image_width"]} 
+                        height=${that.config["image_height"]*this.config["px_per_px"]} 
+                        width=${that.config["image_width"]*this.config["px_per_px"]} 
                         oncontextmenu="return false"></canvas>
                     <div id="dialogs__${st}" class="dialogs_container"></div>
                 </div>
@@ -1705,7 +1707,7 @@ class ULabel {
 
     // Draw demo annotation in demo canvas
     redraw_demo() {
-        this.state["demo_canvas_context"].clearRect(0, 0, this.config["demo_width"], this.config["demo_height"]);
+        this.state["demo_canvas_context"].clearRect(0, 0, this.config["demo_width"]*this.config["px_per_px"], this.config["demo_height"]*this.config["px_per_px"]);
         this.draw_annotation(DEMO_ANNOTATION, "demo_canvas_context", true, null, "demo");
     }
 
@@ -1811,8 +1813,8 @@ class ULabel {
     // Set a point in a spatial payload using access string
     set_with_access_string(annid, access_str, val, undoing=null) {
         // Ensure the values are ints
-        val[0] = Math.round(val[0]);
-        val[1] = Math.round(val[1]);
+        // val[0] = Math.round(val[0]);
+        // val[1] = Math.round(val[1]);
         // TODO(3d)
         let bbi, bbj, bbk;
         switch (this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid]["spatial_type"]) {
@@ -1926,6 +1928,7 @@ class ULabel {
     // ================= Drawing Functions =================
 
     draw_bounding_box(annotation_object, ctx, demo=false, offset=null, subtask=null) {
+        const px_per_px = this.config["px_per_px"];
         let diffX = 0;
         let diffY = 0;
         if (offset != null) {
@@ -1946,7 +1949,7 @@ class ULabel {
         ctx.fillStyle = color;
         ctx.strokeStyle = color;
         ctx.lineJoin = "round";
-        ctx.lineWidth = line_size;
+        ctx.lineWidth = line_size*px_per_px;
         ctx.imageSmoothingEnabled = false;
         ctx.globalCompositeOperation = "source-over";
     
@@ -1954,16 +1957,17 @@ class ULabel {
         const sp = annotation_object["spatial_payload"][0];
         const ep = annotation_object["spatial_payload"][1];
         ctx.beginPath();
-        ctx.moveTo(sp[0] + diffX, sp[1] + diffY);
-        ctx.lineTo(sp[0] + diffX, ep[1] + diffY);
-        ctx.lineTo(ep[0] + diffX, ep[1] + diffY);
-        ctx.lineTo(ep[0] + diffX, sp[1] + diffY);
-        ctx.lineTo(sp[0] + diffX, sp[1] + diffY);
+        ctx.moveTo((sp[0] + diffX)*px_per_px, (sp[1] + diffY)*px_per_px);
+        ctx.lineTo((sp[0] + diffX)*px_per_px, (ep[1] + diffY)*px_per_px);
+        ctx.lineTo((ep[0] + diffX)*px_per_px, (ep[1] + diffY)*px_per_px);
+        ctx.lineTo((ep[0] + diffX)*px_per_px, (sp[1] + diffY)*px_per_px);
+        ctx.lineTo((sp[0] + diffX)*px_per_px, (sp[1] + diffY)*px_per_px);
         ctx.closePath();
         ctx.stroke();
     }
 
     draw_bbox3(annotation_object, ctx, demo=false, offset=null, subtask=null) {
+        const px_per_px = this.config["px_per_px"];
         let diffX = 0;
         let diffY = 0;
         let diffZ = 0;
@@ -1999,17 +2003,17 @@ class ULabel {
         ctx.fillStyle = color;
         ctx.strokeStyle = color;
         ctx.lineJoin = "round";
-        ctx.lineWidth = line_size;
+        ctx.lineWidth = line_size*px_per_px;
         ctx.imageSmoothingEnabled = false;
         ctx.globalCompositeOperation = "source-over";
     
         // Draw the box
         ctx.beginPath();
-        ctx.moveTo(sp[0] + diffX, sp[1] + diffY);
-        ctx.lineTo(sp[0] + diffX, ep[1] + diffY);
-        ctx.lineTo(ep[0] + diffX, ep[1] + diffY);
-        ctx.lineTo(ep[0] + diffX, sp[1] + diffY);
-        ctx.lineTo(sp[0] + diffX, sp[1] + diffY);
+        ctx.moveTo((sp[0] + diffX)*px_per_px, (sp[1] + diffY)*px_per_px);
+        ctx.lineTo((sp[0] + diffX)*px_per_px, (ep[1] + diffY)*px_per_px);
+        ctx.lineTo((ep[0] + diffX)*px_per_px, (ep[1] + diffY)*px_per_px);
+        ctx.lineTo((ep[0] + diffX)*px_per_px, (sp[1] + diffY)*px_per_px);
+        ctx.lineTo((sp[0] + diffX)*px_per_px, (sp[1] + diffY)*px_per_px);
         ctx.closePath();
         ctx.stroke();
         if (fill) {
@@ -2020,6 +2024,7 @@ class ULabel {
     }
     
     draw_polygon(annotation_object, ctx, demo=false, offset=null, subtask=null) {
+        const px_per_px = this.config["px_per_px"];
         let diffX = 0;
         let diffY = 0;
         if (offset != null) {
@@ -2042,7 +2047,7 @@ class ULabel {
         ctx.fillStyle = color;
         ctx.strokeStyle = color;
         ctx.lineJoin = "round";
-        ctx.lineWidth = line_size;
+        ctx.lineWidth = line_size*px_per_px;
         ctx.lineCap = "round";
         ctx.imageSmoothingEnabled = false;
         ctx.globalCompositeOperation = "source-over";
@@ -2050,14 +2055,15 @@ class ULabel {
         // Draw the box
         const pts = annotation_object["spatial_payload"];
         ctx.beginPath();
-        ctx.moveTo(pts[0][0] + diffX, pts[0][1] + diffY);
+        ctx.moveTo((pts[0][0] + diffX)*px_per_px, (pts[0][1] + diffY)*px_per_px);
         for (var pti = 1; pti < pts.length; pti++) {
-            ctx.lineTo(pts[pti][0] + diffX, pts[pti][1] + diffY);
+            ctx.lineTo((pts[pti][0] + diffX)*px_per_px, (pts[pti][1] + diffY)*px_per_px);
         }
         ctx.stroke();
     }
     
     draw_contour(annotation_object, ctx, demo=false, offset=null, subtask=null) {
+        const px_per_px = this.config["px_per_px"];
         let diffX = 0;
         let diffY = 0;
         if (offset != null) {
@@ -2079,7 +2085,7 @@ class ULabel {
         ctx.fillStyle = color;
         ctx.strokeStyle = color;
         ctx.lineJoin = "round";
-        ctx.lineWidth = line_size;
+        ctx.lineWidth = line_size*px_per_px;
         ctx.lineCap = "round";
         ctx.imageSmoothingEnabled = false;
         ctx.globalCompositeOperation = "source-over";
@@ -2087,14 +2093,15 @@ class ULabel {
         // Draw the box
         const pts = annotation_object["spatial_payload"];
         ctx.beginPath();
-        ctx.moveTo(pts[0][0] + diffX, pts[0][1] + diffY);
+        ctx.moveTo((pts[0][0] + diffX)*px_per_px, (pts[0][1] + diffY)*px_per_px);
         for (var pti = 1; pti < pts.length; pti++) {
-            ctx.lineTo(pts[pti][0] + diffX, pts[pti][1] + diffY);
+            ctx.lineTo((pts[pti][0] + diffX)*px_per_px, (pts[pti][1] + diffY)*px_per_px);
         }
         ctx.stroke();
     }
 
     draw_tbar(annotation_object, ctx, demo=false, offset=null, subtask=null) {
+        const px_per_px = this.config["px_per_px"];
         let diffX = 0;
         let diffY = 0;
         if (offset != null) {
@@ -2115,7 +2122,7 @@ class ULabel {
         ctx.fillStyle = color;
         ctx.strokeStyle = color;
         ctx.lineJoin = "round";
-        ctx.lineWidth = line_size;
+        ctx.lineWidth = line_size*px_per_px;
         ctx.imageSmoothingEnabled = false;
         ctx.globalCompositeOperation = "source-over";
     
@@ -2123,8 +2130,8 @@ class ULabel {
         const sp = annotation_object["spatial_payload"][0];
         const ep = annotation_object["spatial_payload"][1];
         ctx.beginPath();
-        ctx.moveTo(sp[0] + diffX, sp[1] + diffY);
-        ctx.lineTo(ep[0] + diffX, ep[1] + diffY);
+        ctx.moveTo((sp[0] + diffX)*px_per_px, (sp[1] + diffY)*px_per_px);
+        ctx.lineTo((ep[0] + diffX)*px_per_px, (ep[1] + diffY)*px_per_px);
         ctx.stroke();
 
         // Draw the cross of the tbar
@@ -2143,8 +2150,8 @@ class ULabel {
 
         ctx.lineCap = "square";
         ctx.beginPath();
-        ctx.moveTo(sb[0] + diffX, sb[1] + diffY);
-        ctx.lineTo(eb[0] + diffX, eb[1] + diffY);
+        ctx.moveTo((sb[0] + diffX)*px_per_px, (sb[1] + diffY)*px_per_px);
+        ctx.lineTo((eb[0] + diffX)*px_per_px, (eb[1] + diffY)*px_per_px);
         ctx.stroke();
         ctx.lineCap = "round";
 
@@ -2301,7 +2308,7 @@ class ULabel {
 
     redraw_all_annotations_in_subtask(subtask, offset=null, spatial_only=false) {
         // Clear the canvas
-        this.subtasks[subtask]["state"]["front_context"].clearRect(0, 0, this.config["image_width"], this.config["image_height"]);
+        this.subtasks[subtask]["state"]["front_context"].clearRect(0, 0, this.config["image_width"]*this.config["px_per_px"], this.config["image_height"]*this.config["px_per_px"]);
     
         if (!spatial_only) {
             this.register_nonspatial_redraw_start(subtask);
@@ -4108,22 +4115,30 @@ class ULabel {
     get_global_mouse_x(mouse_event) {
         const scale = this.get_empirical_scale();
         const annbox = $("#" + this.config["annbox_id"]);
-        return Math.round((mouse_event.pageX - annbox.offset().left + annbox.scrollLeft())/scale);
+        const raw = (mouse_event.pageX - annbox.offset().left + annbox.scrollLeft())/scale;
+        // return Math.round(raw);
+        return raw;
     }
     get_global_mouse_y(mouse_event) {
         const scale = this.get_empirical_scale();
         const annbox = $("#" + this.config["annbox_id"]);
-        return Math.round((mouse_event.pageY - annbox.offset().top + annbox.scrollTop())/scale);
+        const raw = (mouse_event.pageY - annbox.offset().top + annbox.scrollTop())/scale;
+        // return Math.round(raw);
+        return raw;
     }
     get_global_element_center_x(jqel) {
         const scale = this.get_empirical_scale();
         const annbox = $("#" + this.config["annbox_id"]);
-        return Math.round((jqel.offset().left + jqel.width()/2 - annbox.offset().left + annbox.scrollLeft())/scale);
+        const raw = (jqel.offset().left + jqel.width()/2 - annbox.offset().left + annbox.scrollLeft())/scale;
+        // return Math.round(raw);
+        return raw;
     }
     get_global_element_center_y(jqel) {
         const scale = this.get_empirical_scale();
         const annbox = $("#" + this.config["annbox_id"]);
-        return Math.round((jqel.offset().top + jqel.height()/2 - annbox.offset().top + annbox.scrollTop())/scale);
+        const raw = (jqel.offset().top + jqel.height()/2 - annbox.offset().top + annbox.scrollTop())/scale;
+        // return Math.round();
+        return raw;
     }
 
     // ================= Dialog Interaction Handlers =================

@@ -1630,6 +1630,7 @@ div#${prntid}.ulabel-night canvas.demo-canvas {
 div#${prntid} div.line-expl {
    width: 185px;
 }
+
 div#${prntid} div.line-expl a {
    display: inline-block;
    vertical-align: middle;
@@ -1637,6 +1638,8 @@ div#${prntid} div.line-expl a {
 div#${prntid} div.line-expl canvas {
    display: inline-block;
    vertical-align: middle;
+   width: 120px;
+   height: 40px;
 }
 div#${prntid} div.lstyl-row div.line-expl, div#${prntid} div.lstyl-row div.setting {
    display: inline-block;
