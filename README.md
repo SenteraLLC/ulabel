@@ -2,7 +2,7 @@
 
 A browser-based tool for annotating images.
 
-![Demo ULabel Session](https://ulabel.s3.us-east-2.amazonaws.com/output.gif)
+[Demo Gif](https://ulabel.s3.us-east-2.amazonaws.com/output.gif)
 
 ## Usage
 
