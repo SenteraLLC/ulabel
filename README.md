@@ -4,6 +4,8 @@ A browser-based tool for annotating images.
 
 [Demo Gif](https://ulabel.s3.us-east-2.amazonaws.com/output.gif)
 
+[Interactive Demo](https://ulabel.s3.us-east-2.amazonaws.com/live_demo.html)
+
 ## Usage
 
 ULabel is an entirely "frontend" tool. It can be incorporated into any HTML page using either the unpkg cdn
