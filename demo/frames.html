@@ -79,8 +79,12 @@
 
                 // Initial ULabel configuration
                 let ulabel = new ULabel(
-                    "container", 
-                    ["/images/cs-demo-0.png", "/images/cs-demo-1.png", "/images/cs-demo-2.png"], 
+                    "container",
+                    [
+                        "https://ulabel.s3.us-east-2.amazonaws.com/cs-demo-0.png", 
+                        "https://ulabel.s3.us-east-2.amazonaws.com/cs-demo-1.png", 
+                        "https://ulabel.s3.us-east-2.amazonaws.com/cs-demo-2.png"
+                    ],
                     "DemoUser",
                     on_submit,
                     subtasks
