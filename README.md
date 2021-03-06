@@ -20,7 +20,7 @@ npm install ulabel
 <script src="/node_modules/ulabel/dist/ulabel.js"></script>
 ```
 
-Once the script is included in your HTML doc, you can create a ULabel annotation session as follows.
+An API spec can be found [here](https://github.com/SenteraLLC/ulabel/blob/main/api_spec.md), but as a brief overview: Once the script is included in your HTML doc, you can create a ULabel annotation session as follows.
 
 ```html
 <!DOCTYPE html>
