@@ -13355,11 +13355,13 @@ div#${prntid} div.global_edit_suggestion {
    display: none;
    position: absolute;
    width: 150px;
-   height: 75px;
+   /*height: 75px;*/
+   height: 0px;
    text-align: center;
    z-index: 1;
    /* background-color: white; */
    transform: scale(0.66666);
+   overflow: visible;
 }
 div#${prntid} div.global_edit_suggestion.mcm {
    width: 225px;
@@ -13368,11 +13370,13 @@ div#${prntid} div.global_edit_suggestion.mcm {
 div#${prntid} a.global_sub_suggestion {
    width: 60px;
    height: 60px;
-   margin: 7.5px;
+   margin-left: 7.5px;
+   margin-right: 7.5px;
    display: inline-block;
    border-radius: 37.5px;
    background-color: white;
    overflow: hidden;
+   transform: translateY(-50%);
 }
 div#${prntid} a.global_sub_suggestion img {
    display: block;
@@ -15283,8 +15287,7 @@ class ULabel {
             }
         }
         this.state["zoom_val"] = Math.min(this.get_viewport_height_ratio(hgt), this.get_viewport_width_ratio(wdt));
-        this.rezoom(lft_cntr, top_cntr);
-        console.log(this.state["zoom_val"], lft_cntr, top_cntr);
+        this.rezoom(lft_cntr, top_cntr, true);
         return;
 	}
 
@@ -17658,6 +17661,7 @@ class ULabel {
     }
 
     get_edit_candidates(gblx, gbly, dst_thresh) {
+        dst_thresh /= this.get_empirical_scale();
         let ret = {
             "candidate_ids": [],
             "best": null
@@ -17714,7 +17718,7 @@ class ULabel {
                 mouse_event = this.state["last_move"];
             }
 
-            const dst_thresh = this.config["edit_handle_size"];
+            const dst_thresh = this.config["edit_handle_size"]/2;
             const global_x = this.get_global_mouse_x(mouse_event);
             const global_y = this.get_global_mouse_y(mouse_event);
 
@@ -17725,6 +17729,8 @@ class ULabel {
                 global_y,
                 dst_thresh
             );
+
+            console.log(edit_candidates);
 
             if (edit_candidates["best"] == null) {
                 this.hide_global_edit_suggestion();
@@ -18275,7 +18281,7 @@ class ULabel {
     }
     
     // Handle zooming at a certain focus
-    rezoom(foc_x=null, foc_y=null) {
+    rezoom(foc_x=null, foc_y=null, abs=false) {
         // JQuery convenience
         var imwrap = jquery_default()("#" + this.config["imwrap_id"]);
         var annbox = jquery_default()("#" + this.config["annbox_id"]);
@@ -18288,10 +18294,17 @@ class ULabel {
         }
 
         // Get old size and position
-        const old_width = imwrap.width();
-        const old_height = imwrap.height();
-        const old_left = annbox.scrollLeft();
-        const old_top = annbox.scrollTop();
+        let old_width = imwrap.width();
+        let old_height = imwrap.height();
+        let old_left = annbox.scrollLeft();
+        let old_top = annbox.scrollTop();
+        if (abs) {
+            old_width = this.config["image_width"];
+            old_height = this.config["image_height"];
+        }
+
+        const viewport_width = annbox.width();
+        const viewport_height = annbox.height();
 
         // Compute new size
         const new_width = Math.round(this.config["image_width"]*this.state["zoom_val"]);
@@ -18303,8 +18316,15 @@ class ULabel {
         toresize.css("height", new_height + "px");
 
         // Compute and apply new position
-        const new_left = (old_left + foc_x)*new_width/old_width - foc_x;
-        const new_top = (old_top + foc_y)*new_height/old_height - foc_y;
+        let new_left, new_top;
+        if (abs) {
+            new_left = foc_x*new_width/old_width - viewport_width/2;
+            new_top = foc_y*new_height/old_height - viewport_height/2;
+        }
+        else {
+            new_left = (old_left + foc_x)*new_width/old_width - foc_x;
+            new_top = (old_top + foc_y)*new_height/old_height - foc_y;
+        }
         annbox.scrollLeft(new_left);
         annbox.scrollTop(new_top);
 
