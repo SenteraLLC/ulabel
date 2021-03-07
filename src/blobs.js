@@ -1112,6 +1112,9 @@ const BBOX3_SVG = `
 let get_init_style = (prntid) => {
    const NONSP_SZ = 400;
    return `
+div#${prntid} {
+   display: none;
+}
 div#${prntid} * {
    box-sizing: content-box;
 }
