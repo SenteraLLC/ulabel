@@ -1745,11 +1745,13 @@ div#${prntid} div.global_edit_suggestion {
    display: none;
    position: absolute;
    width: 150px;
-   height: 75px;
+   /*height: 75px;*/
+   height: 0px;
    text-align: center;
    z-index: 1;
    /* background-color: white; */
    transform: scale(0.66666);
+   overflow: visible;
 }
 div#${prntid} div.global_edit_suggestion.mcm {
    width: 225px;
@@ -1758,11 +1760,13 @@ div#${prntid} div.global_edit_suggestion.mcm {
 div#${prntid} a.global_sub_suggestion {
    width: 60px;
    height: 60px;
-   margin: 7.5px;
+   margin-left: 7.5px;
+   margin-right: 7.5px;
    display: inline-block;
    border-radius: 37.5px;
    background-color: white;
    overflow: hidden;
+   transform: translateY(-50%);
 }
 div#${prntid} a.global_sub_suggestion img {
    display: block;

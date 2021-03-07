@@ -98,7 +98,8 @@ An API spec can be found [here](https://github.com/SenteraLLC/ulabel/blob/main/a
 The recommended way to develop new features is to use the tool as if you were running the demo. For testing new API features, you can create a new HTML file in `demo/`. The server in `demo.js` runs a static server from `demo/` so it will be served at `localhost:8080/<new-file>.html` automatically.
 
 ### Requirements
-- [npm](https://www.npmjs.com/get-npm) 
+
+- [npm](https://www.npmjs.com/get-npm)
 - [nodejs](https://nodejs.org/en/download/)
 
 ### Install Dependencies
@@ -107,7 +108,7 @@ The recommended way to develop new features is to use the tool as if you were ru
 npm install
 ```
 
-### Usage
+### Development Usage
 
 You should now be able to run the launcher from the repository root.
 
@@ -118,7 +119,7 @@ node demo.js
 
 ### Build
 
-The repository ships with the built `dist/ulabel.js` file. This file is not to be edited directly. Edits should be made in the `src/` dir and the package is built with 
+The repository ships with the built `dist/ulabel.js` file. This file is not to be edited directly. Edits should be made in the `src/` dir and the package is built with
 
 ```bash
 npm run build

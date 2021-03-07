@@ -53,7 +53,8 @@
                         "resume_from": null,
                         "task_meta": null,
                         "annotation_meta": null,
-                        "read_only": false
+                        "read_only": false,
+                        "inactive_opacity": 0.6
                     },
                     "frame_review": {
                         "display_name": "Frame Review",
@@ -87,7 +88,16 @@
                     ],
                     "DemoUser",
                     on_submit,
-                    subtasks
+                    subtasks,
+                    null,
+                    null,
+                    1,
+                    {
+                        "left": 200,
+                        "top": 200,
+                        "width": 500,
+                        "height": 500
+                    }
                 );
                 // Wait for ULabel instance to finish initialization
                 ulabel.init(function() {
