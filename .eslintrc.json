@@ -12,6 +12,6 @@
         "sourceType": "module"
     },
     "plugins": [],
-    "rules": {
-    }
+    "ignorePatterns": "dist/*",
+    "rules": {}
 }

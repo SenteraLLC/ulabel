@@ -1278,8 +1278,13 @@ class ULabel {
             // Initialize subtask config to null
             ul.subtasks[subtask_key] = {
                 "display_name": raw_subtask["display_name"] || subtask_key,
-                "read_only": ("read_only" in raw_subtask) && (raw_subtask["read_only"] === true)
+                "read_only": ("read_only" in raw_subtask) && (raw_subtask["read_only"] === true),
+                "inactive_opacity": 0.4
             };
+
+            if ("inactive_opacity" in raw_subtask && typeof raw_subtask["inactive_opacity"] == "number") {
+                ul.subtasks[subtask_key]["inactive_opacity"] = Math.min(Math.max(raw_subtask["inactive_opacity"], 0.0), 1.0);
+            }
 
             if (first_non_ro == null && !ul.subtasks[subtask_key]["read_only"]) {
                 first_non_ro = subtask_key;
@@ -1400,7 +1405,8 @@ class ULabel {
         subtasks,
         task_meta=null,
         annotation_meta=null,
-        px_per_px=1
+        px_per_px=1,
+        initial_crop=null
     ) {
         // Unroll safe default arguments
         if (task_meta == null) {task_meta = {};}
@@ -1436,6 +1442,7 @@ class ULabel {
             "imgsz_class": "imgsz",
             "toolbox_id": "toolbox",
             "px_per_px": px_per_px,
+            "initial_crop": initial_crop,
 
             // Configuration for the annotation task itself
             "image_data": ULabel.expand_image_data(this, image_data),
@@ -1617,8 +1624,7 @@ class ULabel {
             that.is_init = true;
             $(`div#${this.config["container_id"]}`).css("display", "block");
     
-            that.state["zoom_val"] = that.get_exact_fit_zoom_val();
-            that.rezoom(0, 0);
+            this.show_initial_crop();
             this.update_frame();
 
             // Draw demo annotation
@@ -1642,18 +1648,42 @@ class ULabel {
     }
 
     // A ratio of viewport height to image height
-	get_viewport_height_ratio() {
-		return $("#" + this.config["annbox_id"]).height() / this.config["image_height"];
+	get_viewport_height_ratio(hgt) {
+		return $("#" + this.config["annbox_id"]).height()/hgt;
 	}
 
 	// A ratio of viewport width to image width
-	get_viewport_width_ratio() {
-		return $("#" + this.config["annbox_id"]).width() / this.config["image_width"];
+	get_viewport_width_ratio(wdt) {
+		return $("#" + this.config["annbox_id"]).width()/wdt;
 	}
 
 	// The zoom ratio which fixes the entire image exactly in the viewport
-	get_exact_fit_zoom_val() {
-		return Math.min(this.get_viewport_height_ratio(), this.get_viewport_width_ratio());
+	show_initial_crop() {
+        let wdt = this.config["image_width"];
+        let hgt = this.config["image_height"];
+        let lft_cntr = 0;
+        let top_cntr = 0;
+        let initcrp = this.config["initial_crop"];
+        if (initcrp != null) {
+            if (
+                "width" in initcrp && 
+                "height" in initcrp &&
+                "left" in initcrp &&
+                "top" in initcrp
+            ) {
+                wdt = initcrp["width"];
+                hgt = initcrp["height"];
+                lft_cntr = initcrp["left"] + initcrp["width"]/2;
+                top_cntr = initcrp["top"] + initcrp["height"]/2;
+            }
+            else {
+                this.raise_error(`Initial crop must contain properties "width", "height", "left", and "top". Ignoring.`, ULabel.elvl_info);
+            }
+        }
+        this.state["zoom_val"] = Math.min(this.get_viewport_height_ratio(hgt), this.get_viewport_width_ratio(wdt));
+        this.rezoom(lft_cntr, top_cntr);
+        console.log(this.state["zoom_val"], lft_cntr, top_cntr);
+        return;
 	}
 
     // ================== Subtask Helpers ===================
@@ -1690,7 +1720,7 @@ class ULabel {
         // Adjust tab buttons in toolbox
         $("a#tb-st-switch--" + old_st).attr("href", "#");
         $("a#tb-st-switch--" + old_st).parent().removeClass("sel");
-        $("input#tb-st-range--" + old_st).val(40);
+        $("input#tb-st-range--" + old_st).val(Math.round(100*this.subtasks[old_st]["inactive_opacity"]));
         $("a#tb-st-switch--" + st_key).removeAttr("href");
         $("a#tb-st-switch--" + st_key).parent().addClass("sel");
         $("input#tb-st-range--" + st_key).val(100);

@@ -4,7 +4,7 @@ This should eventually be replaced with a more comprehensive approach to documen
 
 ## ULabel Constructor
 
-When the `ulabel.js` file is included, it attaches its class definition to the `window` object. Therefore, within the document, you may create a new annotation session with 
+When the `ulabel.js` file is included, it attaches its class definition to the `window` object. Therefore, within the document, you may create a new annotation session with
 
 ```javascript
 let ulabel = new ULabel(...);
@@ -29,13 +29,14 @@ class ULabel(
     subtasks,              // object
     task_meta=null,        // object
     annotation_meta=null,  // object
-    px_per_px=1            // number
+    px_per_px=1,           // number
+    init_crop=null         // object
 )
 ```
 
 ### `container_id`
 
-*string* -- The value of the `id` attribute of the `<div>` element that ULabel is meant to occupy. This element must exist in the document at the time the constructor is called. 
+*string* -- The value of the `id` attribute of the `<div>` element that ULabel is meant to occupy. This element must exist in the document at the time the constructor is called.
 
 ULabel has primarily been tested inside of divs that have been styled with `position=absolute;`, and `width`, `height`, `top`, and  `left` set. Stay tuned for official recommendations about this.
 
@@ -53,7 +54,7 @@ In the case of a multi-frame annotation job, an array of URLs may be given. Note
 
 *(obj) => {}* OR *object* -- Appearance and behavior of the "submit" button.
 
-Objects must be provided in the form of 
+Objects must be provided in the form of
 
 ```javascript
 {
@@ -143,7 +144,7 @@ As you can see, each subtask will have a corresponding list of annotation object
 
 *object* -- Configuration for each subtask in the annotation session.
 
-In certain cases, you may want to divide your annotations among different tasks. For example, if you are visualizing annotations from two different sources (e.g., different annotators, or one from a model, another from a human). ULabel supports this natively through what we call "subtasks". 
+In certain cases, you may want to divide your annotations among different tasks. For example, if you are visualizing annotations from two different sources (e.g., different annotators, or one from a model, another from a human). ULabel supports this natively through what we call "subtasks".
 
 Every annotation session requires at least one subtask. Each subtask has its own configuration, which is specified with a JSON object. See below for an example from the `frames.html` demo.
 
@@ -172,7 +173,8 @@ Every annotation session requires at least one subtask. Each subtask has its own
         "resume_from": null,
         "task_meta": null,
         "annotation_meta": null,
-        "read_only": false
+        "read_only": false,
+        "inactive_opacity": 0.6
     },
     "frame_review": {
         "display_name": "Frame Review",
@@ -224,3 +226,16 @@ These are provided for convenience. They simply pass their contents to the globa
 *number* -- The ratio of rendering resolution to image resolution.
 
 In some cases, you may want the annotations to render at a higher or lower resolution than the underlying image. For example, for very low resolution images like CT scans, you may want to specify a value of 2-4 for aesthetic purposes, whereas for very high resolution images that will only be annotated at a very coarse level, you may want to specify a value of 0.25 - 0.5 for performance purposes.
+
+### `init_crop`
+
+*object* -- A definition for a bounding box that the viewer should fit to at the beginning of the session. Units are pixels in the underlying image.
+
+```javascript
+{
+    "top": <number>,
+    "left": <number>,
+    "height": <number>,
+    "width": <number>
+}
+```

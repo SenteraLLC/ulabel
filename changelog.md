@@ -10,3 +10,5 @@ All notable changes to this project will be documented here.
 - Fixed shortcut suggestion for switching frames
 - Fixed link to ulabel repo
 - Added ctrl+s listener and attached it to the submit button
+- Added option for inactive opacity to be configured for each subtask
+- Added contructor parameter to start annotation session with image cropped to a specific bounding box
