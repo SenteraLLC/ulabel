@@ -4124,8 +4124,6 @@ class ULabel {
                 dst_thresh
             );
 
-            console.log(edit_candidates);
-
             if (edit_candidates["best"] == null) {
                 this.hide_global_edit_suggestion();
                 this.hide_edit_suggestion();

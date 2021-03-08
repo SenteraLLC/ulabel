@@ -13614,7 +13614,7 @@ const COLORS = [
 
 
 ;// CONCATENATED MODULE: ./src/version.js
-const ULABEL_VERSION = "0.4.4";
+const ULABEL_VERSION = "0.4.5";
 ;// CONCATENATED MODULE: ./src/index.js
 /*
 Uncertain Labeling Tool
@@ -17729,8 +17729,6 @@ class ULabel {
                 global_y,
                 dst_thresh
             );
-
-            console.log(edit_candidates);
 
             if (edit_candidates["best"] == null) {
                 this.hide_global_edit_suggestion();
