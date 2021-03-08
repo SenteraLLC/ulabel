@@ -4723,15 +4723,15 @@ class ULabel {
     }
 
     swap_frame_image(new_src, frame=0) {
-        let ret = $(`img#${this.config["image_id_pfx"]}__${frame}`).attr("src");
+        const ret = $(`img#${this.config["image_id_pfx"]}__${frame}`).attr("src");
         $(`img#${this.config["image_id_pfx"]}__${frame}`).attr("src", new_src);
         return ret;
     }
 
     // Swap annotation box background color
     swap_anno_bg_color(new_bg_color) {
-        var annbox = $("#" + this.config["annbox_id"]);
-        let ret = annbox.css("background-color");
+        const annbox = $("#" + this.config["annbox_id"]);
+        const ret = annbox.css("background-color");
         annbox.css("background-color", new_bg_color);
         return ret
     }

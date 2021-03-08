@@ -6,8 +6,6 @@ All notable changes to this project will be documented here.
 
 <nothing_yet>
 
-## [0.4.6] - March 7, 2021
-
 - Added a function to swap background color for the annotation box
 
 ## [0.4.5] - March 7, 2021
