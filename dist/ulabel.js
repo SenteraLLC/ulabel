@@ -18334,6 +18334,14 @@ class ULabel {
         return ret;
     }
 
+    // Swap annotation box background color
+    swap_anno_bg_color(new_bg_color) {
+        var annbox = jquery_default()("#" + this.config["annbox_id"]);
+        let ret = annbox.css("background-color");
+        annbox.css("background-color", new_bg_color);
+        return ret
+    }
+
     // Change frame
 
     update_frame(delta=null, new_frame=null) {
