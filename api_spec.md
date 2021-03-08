@@ -254,11 +254,13 @@ Display utilities are provided for a constructed `ULabel` object.
 
 ## Generic Callbacks
 
-Callbacks can be provided by calling `.to(fn, callback)` on a `ULabel` object.
+Callbacks can be provided by calling `.on(fn, callback)` on a `ULabel` object.
 For example:
+
 ```javascript
 let ulabel = new ULabel(...);
-ulabel.on(ulabel.handle_mouse_down, () => {
-    console.log("Mouse down within ULabel window.");
+ulabel.on(ulabel.begin_annotation, () => {
+    // Define some custom behavior here
+    console.log("The user just began a new annotation.");
 });
 ```
