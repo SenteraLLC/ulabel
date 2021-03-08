@@ -4,6 +4,8 @@ All notable changes to this project will be documented here.
 
 ## [Unreleased]
 
+<nothing_yet>
+
 ## [0.4.5] - March 7, 2021
 
 - Removed a console debugging message that I forgot to remove for 0.4.4
