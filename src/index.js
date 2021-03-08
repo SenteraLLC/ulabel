@@ -1265,7 +1265,7 @@ class ULabel {
 
                 // Same for regression payloads
                 // TODO
-            }    
+            }
         }
     }
 
@@ -1631,12 +1631,10 @@ class ULabel {
             that.redraw_demo();
 
             // Draw resumed from annotations
-            if (that.config["resume_from"] != null) {
-                that.redraw_all_annotations();
-            }
+            that.redraw_all_annotations();
 
             // Call the user-provided callback
-            callback.bind(that);
+            callback();
         }).catch((err) => {
             console.log(err);
             this.raise_error("Unable to load images: " + JSON.stringify(err), ULabel.elvl_fatal);

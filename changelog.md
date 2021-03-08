@@ -5,6 +5,8 @@ All notable changes to this project will be documented here.
 ## [Unreleased]
 
 - Removed a console debugging message that I forgot to remove for 0.4.4
+- Fixed bug with "resuming from" in sessions with a single frame
+- Fixed bug with `init` callback not getting called
 
 ## [0.4.4] - March 7, 2021
 
