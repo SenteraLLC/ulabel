@@ -251,3 +251,16 @@ Display utilities are provided for a constructed `ULabel` object.
 ### `swap_anno_bg_color(new_bg_color)`
 
 *(string) => string* -- Changes the background color for the annotation box. Returns the old color.
+
+## Generic Callbacks
+
+Callbacks can be provided by calling `.on(fn, callback)` on a `ULabel` object.
+For example:
+
+```javascript
+let ulabel = new ULabel(...);
+ulabel.on(ulabel.begin_annotation, () => {
+    // Define some custom behavior here
+    console.log("The user just began a new annotation.");
+});
+```
