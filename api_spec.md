@@ -239,3 +239,15 @@ In some cases, you may want the annotations to render at a higher or lower resol
     "width": <number>
 }
 ```
+
+## Display Utility Functions
+
+Display utilities are provided for a constructed `ULabel` object.
+
+### `swap_frame_image(new_src, frame=0)`
+
+*(string, int) => string* -- Changes the image source for a given frame. Returns the old source.
+
+### `swap_anno_bg_color(new_bg_color)`
+
+*(string) => string* -- Changes the background color for the annotation box. Returns the old color.
