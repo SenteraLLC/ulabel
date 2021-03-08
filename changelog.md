@@ -4,8 +4,6 @@ All notable changes to this project will be documented here.
 
 ## [Unreleased]
 
-<nothing_yet>
-
 - Added a function to swap background color for the annotation box
 - Added generic callback support
 
