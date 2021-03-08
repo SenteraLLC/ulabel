@@ -6,6 +6,8 @@ All notable changes to this project will be documented here.
 
 <nothing_yet>
 
+- Added a function to swap background color for the annotation box
+
 ## [0.4.5] - March 7, 2021
 
 - Removed a console debugging message that I forgot to remove for 0.4.4
