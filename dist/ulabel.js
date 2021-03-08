@@ -13647,8 +13647,6 @@ jQuery.fn.outer_html = function() {
 const MODES_3D = ["global", "bbox3"];
 const NONSPATIAL_MODES = ["whole-image", "global"];
 
-const DEFAULT_LINE_SIZE = 4.0;
-
 class ULabel {
 
     // ================= Internal constants =================
@@ -14871,7 +14869,7 @@ class ULabel {
 
                 // Test for line_size
                 if (ul.subtasks[subtask_key]["annotations"]["access"][subtask["resume_from"][i]["id"]]["line_size"] == null) {
-                    ul.subtasks[subtask_key]["annotations"]["access"][subtask["resume_from"][i]["id"]]["line_size"] = DEFAULT_LINE_SIZE;
+                    ul.subtasks[subtask_key]["annotations"]["access"][subtask["resume_from"][i]["id"]]["line_size"] = ul.state["line_size"];
                 }
 
                 // Ensure that spatial type is allowed
@@ -15023,7 +15021,8 @@ class ULabel {
         task_meta=null,
         annotation_meta=null,
         px_per_px=1,
-        initial_crop=null
+        initial_crop=null,
+        initial_line_size=4
     ) {
         // Unroll safe default arguments
         if (task_meta == null) {task_meta = {};}
@@ -15107,7 +15106,7 @@ class ULabel {
 
             // Global annotation state (subtasks also maintain an annotation state)
             "current_subtask": null,
-            "line_size": DEFAULT_LINE_SIZE,
+            "line_size": initial_line_size,
             "size_mode": "fixed",
 
             // Renderings state
@@ -16510,7 +16509,7 @@ class ULabel {
     }
     
     get_line_size(demo=false) {
-        let line_size = this.state["line_size"];
+        let line_size = this.state["line_size"]*this.config["px_per_px"];
         if (demo) {
             if (this.state["size_mode"] == "dynamic") {
                 line_size *= this.state["zoom_val"];

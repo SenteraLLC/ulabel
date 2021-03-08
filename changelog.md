@@ -6,6 +6,7 @@ All notable changes to this project will be documented here.
 
 - Added a function to swap background color for the annotation box
 - Added generic callback support
+- Added initial line size to the constructor
 
 ## [0.4.5] - March 7, 2021
 

@@ -31,6 +31,7 @@ class ULabel(
     annotation_meta=null,  // object
     px_per_px=1,           // number
     init_crop=null         // object
+    initial_line_size=4    // number
 )
 ```
 
@@ -239,6 +240,10 @@ In some cases, you may want the annotations to render at a higher or lower resol
     "width": <number>
 }
 ```
+
+### `initial_line_size`
+
+The line width with which new annotations are drawn initially. Units are pixels in the underlying image.
 
 ## Display Utility Functions
 
