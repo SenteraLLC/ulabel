@@ -4791,6 +4791,15 @@ class ULabel {
             this.suggest_edits(this.state["last_move"]);
         }
     }
+
+    // Generic Callback Support
+    on(fn, callback) {
+        var old_fn = fn.bind(this);
+        this[fn.name] = (...args) => {
+            old_fn(...args);
+            callback();
+        }
+    }
 }
 
 window.ULabel = ULabel;
