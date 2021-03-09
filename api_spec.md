@@ -62,6 +62,8 @@ Objects must be provided in the form of
     name: "<Arbitrary Button Name>",
     hook: (annotations) => {
         // Define submit behavior here
+
+        // If submit is unsuccessful and annotations edits should not be treated as "saved", return false
     }
 }
 ```

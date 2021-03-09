@@ -7,6 +7,11 @@ All notable changes to this project will be documented here.
 - Added a function to swap background color for the annotation box
 - Added generic callback support
 - Added initial line size to the constructor
+- Made cursor represent line size and color to be drawn
+- Allowed initial line size to be specified from constructor
+- Fixed incorrect links to repo from within package.json
+- Now keeping track of whether edited since last save, and shows warning before unload if so
+  - Callback is to return `false` if save is unsuccessful
 
 ## [0.4.5] - March 7, 2021
 
