@@ -15299,6 +15299,28 @@ class ULabel {
         return;
 	}
 
+    // ================== Cursor Helpers ====================
+    update_cursor() {
+        let color = this.get_annotation_color(null, true);
+        let thr_width = this.get_line_size()*this.state["zoom_val"]
+        let width = Math.max(Math.min(thr_width, 64), 6);
+        let cursor_svg = `<svg version="1.1" xmlns="http://www.w3.org/2000/svg" width="${width}px" height="${width}px" viewBox="0 0 ${width} ${width}">
+            <circle cx="${width/2}" cy="${width/2}" r="${width/2}" opacity="0.8" stroke="${color}" fill="${color}" />
+        </svg>`;
+
+        let bk_width = Math.max(Math.min(thr_width, 32), 6);
+        let bk_cursor_svg = `<svg version="1.1" xmlns="http://www.w3.org/2000/svg" width="${bk_width}px" height="${bk_width}px" viewBox="0 0 ${bk_width} ${bk_width}">
+            <circle cx="${bk_width/2}" cy="${bk_width/2}" r="${bk_width/2}" opacity="0.8" stroke="${color}" fill="${color}" />
+        </svg>`;
+        
+        let cursor_b64 = btoa(cursor_svg);
+        let bk_cursor_b64 = btoa(bk_cursor_svg);
+        jquery_default()("#"+this.config["annbox_id"]).css(
+            "cursor",
+            `url(data:image/svg+xml;base64,${cursor_b64}) ${width/2} ${width/2}, url(data:image/svg+xml;base64,${bk_cursor_b64}) ${bk_width/2} ${bk_width/2}, auto`
+        );
+    }
+
     // ================== Subtask Helpers ===================
 
     readjust_subtask_opacities() {
@@ -15387,7 +15409,9 @@ class ULabel {
     redraw_demo() {
         this.state["demo_canvas_context"].clearRect(0, 0, this.config["demo_width"]*this.config["px_per_px"], this.config["demo_height"]*this.config["px_per_px"]);
         this.draw_annotation(DEMO_ANNOTATION, "demo_canvas_context", true, null, "demo");
+        this.update_cursor();
     }
+
 
     // ================= Instance Utilities =================
 
