@@ -1700,7 +1700,7 @@ class ULabel {
         let thr_width = this.get_line_size()*this.state["zoom_val"]
         let width = Math.max(Math.min(thr_width, 64), 6);
         let cursor_svg = `<svg version="1.1" xmlns="http://www.w3.org/2000/svg" width="${width}px" height="${width}px" viewBox="0 0 ${width} ${width}">
-            <circle cx="${width/2}" cy="${width/2}" r="${width/2}" opacity="0.8" stroke="${color}" fill="${color}" />
+            <circle cx="${width/2}" cy="${width/2}" r="${width/2}" opacity="0.8" stroke="white" fill="${color}" />
         </svg>`;
 
         let bk_width = Math.max(Math.min(thr_width, 32), 6);

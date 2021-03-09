@@ -259,6 +259,14 @@ Display utilities are provided for a constructed `ULabel` object.
 
 *(string) => string* -- Changes the background color for the annotation box. Returns the old color.
 
+### `get_annotations(subtask)`
+
+TODO
+
+### `set_annotations(new_annotations, subtask)`
+
+TODO
+
 ## Generic Callbacks
 
 Callbacks can be provided by calling `.on(fn, callback)` on a `ULabel` object.
