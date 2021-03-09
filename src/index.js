@@ -30,8 +30,6 @@ jQuery.fn.outer_html = function() {
 const MODES_3D = ["global", "bbox3"];
 const NONSPATIAL_MODES = ["whole-image", "global"];
 
-const DEFAULT_LINE_SIZE = 4.0;
-
 class ULabel {
 
     // ================= Internal constants =================
@@ -585,7 +583,7 @@ class ULabel {
         $("#" + sp_id + " .toolbox_inner_cls .mode-selection").append(md_buttons.join("<!-- -->"));
         // TODO noconflict
         $("#" + sp_id + " .toolbox_inner_cls").append(`
-            <a href="#" id="submit-button">${ul.config["done_button"]}</a>
+            <a id="submit-button">${ul.config["done_button"]}</a>
         `);
 
         // Show current mode label
@@ -1067,7 +1065,7 @@ class ULabel {
         })
 
         // Button to save annotations
-        $(document).on("click", "a#submit-button", () => {
+        $(document).on("click", `a#submit-button[href="#"]`, () => {
             var submit_payload = {
                 "task_meta": ul.config["task_meta"],
                 "annotations": {}
@@ -1082,7 +1080,10 @@ class ULabel {
                     );
                 }
             }
-            ul.config["done_callback"](submit_payload);
+            if (ul.config["done_callback"](submit_payload) !== false) {
+                ul.state["edited"] = false;
+                $("#"+ul.config["container_id"] + " a#submit-button").removeAttr("href");
+            }
         });
 
         $(document).on("click", "#" + ul.config["toolbox_id"] + " a.night-button", function() {
@@ -1170,6 +1171,15 @@ class ULabel {
                 // console.log(keypress_event);
             }
         };
+
+        window.addEventListener("beforeunload", function (e) {
+            var confirmationMessage = '';
+            if (ul.state["edited"]) {
+                confirmationMessage = 'You have made unsave changes. Are you sure you would like to leave?';
+                (e || window.event).returnValue = confirmationMessage; //Gecko + IE
+                return confirmationMessage; //Gecko + Webkit, Safari, Chrome etc.
+            }
+        });
     }
 
 
@@ -1254,7 +1264,7 @@ class ULabel {
 
                 // Test for line_size
                 if (ul.subtasks[subtask_key]["annotations"]["access"][subtask["resume_from"][i]["id"]]["line_size"] == null) {
-                    ul.subtasks[subtask_key]["annotations"]["access"][subtask["resume_from"][i]["id"]]["line_size"] = DEFAULT_LINE_SIZE;
+                    ul.subtasks[subtask_key]["annotations"]["access"][subtask["resume_from"][i]["id"]]["line_size"] = ul.state["line_size"];
                 }
 
                 // Ensure that spatial type is allowed
@@ -1406,7 +1416,8 @@ class ULabel {
         task_meta=null,
         annotation_meta=null,
         px_per_px=1,
-        initial_crop=null
+        initial_crop=null,
+        initial_line_size=4
     ) {
         // Unroll safe default arguments
         if (task_meta == null) {task_meta = {};}
@@ -1490,7 +1501,7 @@ class ULabel {
 
             // Global annotation state (subtasks also maintain an annotation state)
             "current_subtask": null,
-            "line_size": DEFAULT_LINE_SIZE,
+            "line_size": initial_line_size,
             "size_mode": "fixed",
 
             // Renderings state
@@ -1683,6 +1694,28 @@ class ULabel {
         return;
 	}
 
+    // ================== Cursor Helpers ====================
+    update_cursor() {
+        let color = this.get_annotation_color(null, true);
+        let thr_width = this.get_line_size()*this.state["zoom_val"]
+        let width = Math.max(Math.min(thr_width, 64), 6);
+        let cursor_svg = `<svg version="1.1" xmlns="http://www.w3.org/2000/svg" width="${width}px" height="${width}px" viewBox="0 0 ${width} ${width}">
+            <circle cx="${width/2}" cy="${width/2}" r="${width/2}" opacity="0.8" stroke="white" fill="${color}" />
+        </svg>`;
+
+        let bk_width = Math.max(Math.min(thr_width, 32), 6);
+        let bk_cursor_svg = `<svg version="1.1" xmlns="http://www.w3.org/2000/svg" width="${bk_width}px" height="${bk_width}px" viewBox="0 0 ${bk_width} ${bk_width}">
+            <circle cx="${bk_width/2}" cy="${bk_width/2}" r="${bk_width/2}" opacity="0.8" stroke="${color}" fill="${color}" />
+        </svg>`;
+        
+        let cursor_b64 = btoa(cursor_svg);
+        let bk_cursor_b64 = btoa(bk_cursor_svg);
+        $("#"+this.config["annbox_id"]).css(
+            "cursor",
+            `url(data:image/svg+xml;base64,${cursor_b64}) ${width/2} ${width/2}, url(data:image/svg+xml;base64,${bk_cursor_b64}) ${bk_width/2} ${bk_width/2}, auto`
+        );
+    }
+
     // ================== Subtask Helpers ===================
 
     readjust_subtask_opacities() {
@@ -1771,7 +1804,9 @@ class ULabel {
     redraw_demo() {
         this.state["demo_canvas_context"].clearRect(0, 0, this.config["demo_width"]*this.config["px_per_px"], this.config["demo_height"]*this.config["px_per_px"]);
         this.draw_annotation(DEMO_ANNOTATION, "demo_canvas_context", true, null, "demo");
+        this.update_cursor();
     }
+
 
     // ================= Instance Utilities =================
 
@@ -2893,7 +2928,7 @@ class ULabel {
     }
     
     get_line_size(demo=false) {
-        let line_size = this.state["line_size"];
+        let line_size = this.state["line_size"]*this.config["px_per_px"];
         if (demo) {
             if (this.state["size_mode"] == "dynamic") {
                 line_size *= this.state["zoom_val"];
@@ -2911,9 +2946,8 @@ class ULabel {
     // Action Stream Events
 
     record_action(action, is_redo=false) {
-        // TODO(3d) 
-        // What am I going to do about undo/redo for 3d annotations???
-        // This might need to be condensed into a single stream.
+        $("#"+this.config["container_id"] + " a#submit-button").attr("href", "#");
+        this.state["edited"] = true;
 
         // After a new action, you can no longer redo old actions
         if (!is_redo) {

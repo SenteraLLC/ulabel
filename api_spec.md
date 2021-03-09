@@ -31,6 +31,7 @@ class ULabel(
     annotation_meta=null,  // object
     px_per_px=1,           // number
     init_crop=null         // object
+    initial_line_size=4    // number
 )
 ```
 
@@ -61,6 +62,8 @@ Objects must be provided in the form of
     name: "<Arbitrary Button Name>",
     hook: (annotations) => {
         // Define submit behavior here
+
+        // If submit is unsuccessful and annotations edits should not be treated as "saved", return false
     }
 }
 ```
@@ -240,6 +243,10 @@ In some cases, you may want the annotations to render at a higher or lower resol
 }
 ```
 
+### `initial_line_size`
+
+The line width with which new annotations are drawn initially. Units are pixels in the underlying image.
+
 ## Display Utility Functions
 
 Display utilities are provided for a constructed `ULabel` object.
@@ -251,6 +258,14 @@ Display utilities are provided for a constructed `ULabel` object.
 ### `swap_anno_bg_color(new_bg_color)`
 
 *(string) => string* -- Changes the background color for the annotation box. Returns the old color.
+
+### `get_annotations(subtask)`
+
+TODO
+
+### `set_annotations(new_annotations, subtask)`
+
+TODO
 
 ## Generic Callbacks
 

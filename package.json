@@ -10,7 +10,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/SenteraLLC/ULabel"
+    "url": "https://github.com/SenteraLLC/ulabel"
   },
   "keywords": [
     "image",
@@ -21,9 +21,9 @@
   "author": "Nicholas Heller <helle246@umn.edu> (https://www-users.cs.umn.edu/~helle246/)",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/SenteraLLC/ULabel/issues"
+    "url": "https://github.com/SenteraLLC/ulabel/issues"
   },
-  "homepage": "https://github.com/SenteraLLC/ULabel",
+  "homepage": "https://github.com/SenteraLLC/ulabel",
   "dependencies": {
     "express": "^4.17.1",
     "jquery": "^3.5.1",
