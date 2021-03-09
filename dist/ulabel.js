@@ -13604,14 +13604,19 @@ div#${prntid} #submit-button {
    text-align: center;
    width: 150px;
    margin: 30px auto;
+   opacity: 0.6;
 }
-div#${prntid} #submit-button:hover {
+div#${prntid} #submit-button[href="#"] {
+   opacity: 1.0;
+}
+
+div#${prntid} #submit-button[href="#"]:hover {
    background-color: rgba(255, 166, 0, 1.0);
 }
-div#${prntid} #submit-button:active {
+div#${prntid} #submit-button[href="#"]:active {
    box-shadow: 0 0 3px black;
 }
-div#${prntid}.ulabel-night #submit-button:active {
+div#${prntid}.ulabel-night #submit-button[href="#"]:active {
    box-shadow: 0 0 8px white;
 }
 `;
@@ -14200,7 +14205,7 @@ class ULabel {
         jquery_default()("#" + sp_id + " .toolbox_inner_cls .mode-selection").append(md_buttons.join("<!-- -->"));
         // TODO noconflict
         jquery_default()("#" + sp_id + " .toolbox_inner_cls").append(`
-            <a href="#" id="submit-button">${ul.config["done_button"]}</a>
+            <a id="submit-button">${ul.config["done_button"]}</a>
         `);
 
         // Show current mode label
@@ -14682,7 +14687,7 @@ class ULabel {
         })
 
         // Button to save annotations
-        jquery_default()(document).on("click", "a#submit-button", () => {
+        jquery_default()(document).on("click", `a#submit-button[href="#"]`, () => {
             var submit_payload = {
                 "task_meta": ul.config["task_meta"],
                 "annotations": {}
@@ -14697,7 +14702,10 @@ class ULabel {
                     );
                 }
             }
-            ul.config["done_callback"](submit_payload);
+            if (ul.config["done_callback"](submit_payload) !== false) {
+                ul.state["edited"] = false;
+                jquery_default()("#"+ul.config["container_id"] + " a#submit-button").removeAttr("href");
+            }
         });
 
         jquery_default()(document).on("click", "#" + ul.config["toolbox_id"] + " a.night-button", function() {
@@ -14785,6 +14793,15 @@ class ULabel {
                 // console.log(keypress_event);
             }
         };
+
+        window.addEventListener("beforeunload", function (e) {
+            var confirmationMessage = '';
+            if (ul.state["edited"]) {
+                confirmationMessage = 'You have made unsave changes. Are you sure you would like to leave?';
+                (e || window.event).returnValue = confirmationMessage; //Gecko + IE
+                return confirmationMessage; //Gecko + Webkit, Safari, Chrome etc.
+            }
+        });
     }
 
 
@@ -16551,9 +16568,8 @@ class ULabel {
     // Action Stream Events
 
     record_action(action, is_redo=false) {
-        // TODO(3d) 
-        // What am I going to do about undo/redo for 3d annotations???
-        // This might need to be condensed into a single stream.
+        jquery_default()("#"+this.config["container_id"] + " a#submit-button").attr("href", "#");
+        this.state["edited"] = true;
 
         // After a new action, you can no longer redo old actions
         if (!is_redo) {

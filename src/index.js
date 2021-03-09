@@ -583,7 +583,7 @@ class ULabel {
         $("#" + sp_id + " .toolbox_inner_cls .mode-selection").append(md_buttons.join("<!-- -->"));
         // TODO noconflict
         $("#" + sp_id + " .toolbox_inner_cls").append(`
-            <a href="#" id="submit-button">${ul.config["done_button"]}</a>
+            <a id="submit-button">${ul.config["done_button"]}</a>
         `);
 
         // Show current mode label
@@ -1065,7 +1065,7 @@ class ULabel {
         })
 
         // Button to save annotations
-        $(document).on("click", "a#submit-button", () => {
+        $(document).on("click", `a#submit-button[href="#"]`, () => {
             var submit_payload = {
                 "task_meta": ul.config["task_meta"],
                 "annotations": {}
@@ -1080,7 +1080,10 @@ class ULabel {
                     );
                 }
             }
-            ul.config["done_callback"](submit_payload);
+            if (ul.config["done_callback"](submit_payload) !== false) {
+                ul.state["edited"] = false;
+                $("#"+ul.config["container_id"] + " a#submit-button").removeAttr("href");
+            }
         });
 
         $(document).on("click", "#" + ul.config["toolbox_id"] + " a.night-button", function() {
@@ -1168,6 +1171,15 @@ class ULabel {
                 // console.log(keypress_event);
             }
         };
+
+        window.addEventListener("beforeunload", function (e) {
+            var confirmationMessage = '';
+            if (ul.state["edited"]) {
+                confirmationMessage = 'You have made unsave changes. Are you sure you would like to leave?';
+                (e || window.event).returnValue = confirmationMessage; //Gecko + IE
+                return confirmationMessage; //Gecko + Webkit, Safari, Chrome etc.
+            }
+        });
     }
 
 
@@ -2934,9 +2946,8 @@ class ULabel {
     // Action Stream Events
 
     record_action(action, is_redo=false) {
-        // TODO(3d) 
-        // What am I going to do about undo/redo for 3d annotations???
-        // This might need to be condensed into a single stream.
+        $("#"+this.config["container_id"] + " a#submit-button").attr("href", "#");
+        this.state["edited"] = true;
 
         // After a new action, you can no longer redo old actions
         if (!is_redo) {
