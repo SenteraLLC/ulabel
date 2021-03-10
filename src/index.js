@@ -899,6 +899,9 @@ class ULabel {
         new ResizeObserver(function() {
             ul.reposition_dialogs();
         }).observe(document.getElementById(ul.config["imwrap_id"]));
+        new ResizeObserver(function() {
+            ul.handle_toolbox_overflow();
+        }).observe(document.getElementById(ul.config["container_id"]));
 
         // Buttons to change annotation mode
         $(document).on("click", "a.md-btn", (e) => {
@@ -1627,6 +1630,8 @@ class ULabel {
             
             // Create listers to manipulate and export this object
             ULabel.create_listeners(that);
+
+            that.handle_toolbox_overflow();
             
             // Set the canvas elements in the correct stacking order given current subtask
             that.set_subtask(that.state["current_subtask"]);
@@ -1654,6 +1659,20 @@ class ULabel {
 
     version() {
         return ULabel.version();
+    }
+
+    handle_toolbox_overflow() {
+        let tabs_height = $("#"+this.config["container_id"] + " div.toolbox-tabs").height();
+        $("#"+this.config["container_id"] + " div.toolbox_inner_cls").css("height", `calc(100% - ${tabs_height+38}px)`);
+        let view_height = $("#"+this.config["container_id"] + " div.toolbox_cls")[0].scrollHeight - 38 - tabs_height;
+        let want_height = $("#"+this.config["container_id"] + " div.toolbox_inner_cls")[0].scrollHeight;
+        console.log(view_height, want_height);
+        if (want_height <= view_height) {
+            $("#"+this.config["container_id"] + " div.toolbox_inner_cls").css("overflow-y", "hidden");
+        }
+        else {
+            $("#"+this.config["container_id"] + " div.toolbox_inner_cls").css("overflow-y", "scroll");
+        }
     }
 
     // A ratio of viewport height to image height

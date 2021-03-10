@@ -13306,6 +13306,11 @@ div#${prntid} div.dialogs_container {
    left: 0;
 }
 
+div.toolbox_inner_cls {
+   height: calc(100% - 38px);
+   overflow-y: scroll;
+}
+
 /* ========== Tab Buttons ========== */
 
 div#${prntid} div.toolbox-tabs {
@@ -13516,20 +13521,20 @@ div#${prntid}.ulabel-night div.night-status {
 }
 
 
-div#${prntid}.ulabel-night div.annbox_cls::-webkit-scrollbar {
+div#${prntid}.ulabel-night *::-webkit-scrollbar {
    background-color: black;
 }
-div#${prntid}.ulabel-night div.annbox_cls::-webkit-scrollbar-track {
+div#${prntid}.ulabel-night *::-webkit-scrollbar-track {
    background-color: black;
 }
-div#${prntid}.ulabel-night div.annbox_cls::-webkit-scrollbar-thumb {
+div#${prntid}.ulabel-night *::-webkit-scrollbar-thumb {
    border: 1px solid rgb(110, 110, 110);
    background-color: rgb(51, 51, 51);
 }
-div#${prntid}.ulabel-night div.annbox_cls::-webkit-scrollbar-thumb:hover {
+div#${prntid}.ulabel-night *::-webkit-scrollbar-thumb:hover {
    background-color: rgb(90, 90, 90);
 } 
-div#${prntid}.ulabel-night div.annbox_cls::-webkit-scrollbar-corner {
+div#${prntid}.ulabel-night *::-webkit-scrollbar-corner {
    background-color:rgb(0, 60, 95);
 }
 
@@ -14521,6 +14526,9 @@ class ULabel {
         new ResizeObserver(function() {
             ul.reposition_dialogs();
         }).observe(document.getElementById(ul.config["imwrap_id"]));
+        new ResizeObserver(function() {
+            ul.handle_toolbox_overflow();
+        }).observe(document.getElementById(ul.config["container_id"]));
 
         // Buttons to change annotation mode
         jquery_default()(document).on("click", "a.md-btn", (e) => {
@@ -15249,6 +15257,8 @@ class ULabel {
             
             // Create listers to manipulate and export this object
             ULabel.create_listeners(that);
+
+            that.handle_toolbox_overflow();
             
             // Set the canvas elements in the correct stacking order given current subtask
             that.set_subtask(that.state["current_subtask"]);
@@ -15276,6 +15286,20 @@ class ULabel {
 
     version() {
         return ULabel.version();
+    }
+
+    handle_toolbox_overflow() {
+        let tabs_height = jquery_default()("#"+this.config["container_id"] + " div.toolbox-tabs").height();
+        jquery_default()("#"+this.config["container_id"] + " div.toolbox_inner_cls").css("height", `calc(100% - ${tabs_height+38}px)`);
+        let view_height = jquery_default()("#"+this.config["container_id"] + " div.toolbox_cls")[0].scrollHeight - 38 - tabs_height;
+        let want_height = jquery_default()("#"+this.config["container_id"] + " div.toolbox_inner_cls")[0].scrollHeight;
+        console.log(view_height, want_height);
+        if (want_height <= view_height) {
+            jquery_default()("#"+this.config["container_id"] + " div.toolbox_inner_cls").css("overflow-y", "hidden");
+        }
+        else {
+            jquery_default()("#"+this.config["container_id"] + " div.toolbox_inner_cls").css("overflow-y", "scroll");
+        }
     }
 
     // A ratio of viewport height to image height
