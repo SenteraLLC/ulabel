@@ -1486,11 +1486,6 @@ class ULabel {
         // Useful for the efficient redraw of nonspatial annotations
         this.tmp_nonspatial_element_ids = {};
 
-        // Populate these in an external "static" function
-        this.subtasks = {};
-        this.tot_num_classes = 0;
-        ULabel.initialize_subtasks(this, subtasks);
-
         // Create object for current ulabel state
         this.state = {
             // Viewer state
@@ -1507,6 +1502,11 @@ class ULabel {
             // Renderings state
             "demo_canvas_context": null
         };
+
+        // Populate these in an external "static" function
+        this.subtasks = {};
+        this.tot_num_classes = 0;
+        ULabel.initialize_subtasks(this, subtasks);
 
         // Create object for dragging interaction state
         // TODO(v1)
