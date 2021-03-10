@@ -15293,7 +15293,6 @@ class ULabel {
         jquery_default()("#"+this.config["container_id"] + " div.toolbox_inner_cls").css("height", `calc(100% - ${tabs_height+38}px)`);
         let view_height = jquery_default()("#"+this.config["container_id"] + " div.toolbox_cls")[0].scrollHeight - 38 - tabs_height;
         let want_height = jquery_default()("#"+this.config["container_id"] + " div.toolbox_inner_cls")[0].scrollHeight;
-        console.log(view_height, want_height);
         if (want_height <= view_height) {
             jquery_default()("#"+this.config["container_id"] + " div.toolbox_inner_cls").css("overflow-y", "hidden");
         }
@@ -18416,17 +18415,73 @@ class ULabel {
         return ret
     }
 
+
+    reset_interaction_state(subtask=null) {
+        let q = [];
+        if (subtask == null) {
+            for (let st in this.subtasks) {
+                q.push(st);
+            }
+        }
+        else {
+            q.push(subtask);
+        }
+        for (let i = 0; i < q.length; i++) {
+            if (this.subtasks[q[i]]["state"]["active_id"] != null) {
+                // Delete polygon ender if exists
+                jquery_default()("#ender_" + this.subtasks[q[i]]["state"]["active_id"]).remove();
+            }
+            this.subtasks[q[i]]["state"]["is_in_edit"] = false;
+            this.subtasks[q[i]]["state"]["is_in_move"] = false;
+            this.subtasks[q[i]]["state"]["is_in_progress"] = false;
+            this.subtasks[q[i]]["state"]["active_id"] = null;
+            this.show
+        }
+        this.drag_state = {
+            "active_key": null,
+            "release_button": null,
+            "annotation": {
+                "mouse_start": null, // Screen coordinates where the current mouse drag started
+                "offset_start": null, // Scroll values where the current mouse drag started
+                "zoom_val_start": null // zoom_val when the dragging interaction started
+            },
+            "edit": {
+                "mouse_start": null, // Screen coordinates where the current mouse drag started
+                "offset_start": null, // Scroll values where the current mouse drag started
+                "zoom_val_start": null // zoom_val when the dragging interaction started
+            },
+            "pan": {
+                "mouse_start": null, // Screen coordinates where the current mouse drag started
+                "offset_start": null, // Scroll values where the current mouse drag started
+                "zoom_val_start": null // zoom_val when the dragging interaction started
+            },
+            "zoom": {
+                "mouse_start": null, // Screen coordinates where the current mouse drag started
+                "offset_start": null, // Scroll values where the current mouse drag started
+                "zoom_val_start": null // zoom_val when the dragging interaction started
+            },
+            "move": {
+                "mouse_start": null, // Screen coordinates where the current mouse drag started
+                "offset_start": null, // Scroll values where the current mouse drag started
+                "zoom_val_start": null // zoom_val when the dragging interaction started
+            }
+        };
+    }
+
     // Allow for external access and modification of annotations within a subtask
     get_annotations(subtask) {
         let ret = [];
         for (let i = 0; i < this.subtasks[subtask]["annotations"]["ordering"].length; i++) {
             let id = this.subtasks[subtask]["annotations"]["ordering"][i];
-            ret.push(this.subtasks[subtask]["annotations"]["access"][id]);
+            if (id != this.subtasks[this.state["current_subtask"]]["state"]["active_id"]) {
+                ret.push(this.subtasks[subtask]["annotations"]["access"][id]);
+            }
         }
         return JSON.parse(JSON.stringify(ret));
     }
     set_annotations(new_annotations, subtask) {
         // Undo/redo won't work through a get/set
+        this.reset_interaction_state();
         this.subtasks[subtask]["actions"]["stream"] = [];
         this.subtasks[subtask]["actions"]["undo_stack"] = [];
         let newanns = JSON.parse(JSON.stringify(new_annotations));
