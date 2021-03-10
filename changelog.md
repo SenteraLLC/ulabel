@@ -4,7 +4,7 @@ All notable changes to this project will be documented here.
 
 ## [Unreleased]
 
-<nothing_yet>
+- Bugfix for resuming from nonspatial annotations
 
 ## [0.4.6] - March 9, 2021
 
