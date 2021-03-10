@@ -14722,7 +14722,7 @@ class ULabel {
         })
 
         // Keyboard only events
-        document.body.onkeydown = function(keypress_event) {
+        jquery_default()(document).on("keypress", (keypress_event) => {
             const shift = keypress_event.shiftKey;
             const ctrl = keypress_event.ctrlKey;
             let fms = ul.config["image_data"].frames.length > 1;
@@ -14792,7 +14792,7 @@ class ULabel {
             else {
                 // console.log(keypress_event);
             }
-        };
+        });
 
         window.addEventListener("beforeunload", function (e) {
             var confirmationMessage = '';
@@ -18391,6 +18391,35 @@ class ULabel {
         annbox.css("background-color", new_bg_color);
         return ret
     }
+
+    // Allow for external access and modification of annotations within a subtask
+    get_annotations(subtask) {
+        let ret = [];
+        for (let i = 0; i < this.subtasks[subtask]["annotations"]["ordering"].length; i++) {
+            let id = this.subtasks[subtask]["annotations"]["ordering"][i];
+            ret.push(this.subtasks[subtask]["annotations"]["access"][id]);
+        }
+        return JSON.parse(JSON.stringify(ret));
+    }
+    set_annotations(new_annotations, subtask) {
+        // Undo/redo won't work through a get/set
+        this.subtasks[subtask]["actions"]["stream"] = [];
+        this.subtasks[subtask]["actions"]["undo_stack"] = [];
+        let newanns = JSON.parse(JSON.stringify(new_annotations));
+        let new_ordering = [];
+        let new_access = {};
+        for (let i = 0; i < newanns.length; i++) {
+            new_ordering.push(newanns[i]["id"]);
+            new_access[newanns[i]["id"]] = newanns[i];
+        }
+        this.subtasks[subtask]["annotations"]["ordering"] = new_ordering;
+        this.subtasks[subtask]["annotations"]["access"] = new_access;
+        for (let i = 0; i < new_ordering.length; i++) {
+            this.rebuild_containing_box(new_ordering[i], false, subtask);
+        }
+        this.redraw_all_annotations(subtask);
+    }
+
 
     // Change frame
 

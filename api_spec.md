@@ -261,11 +261,11 @@ Display utilities are provided for a constructed `ULabel` object.
 
 ### `get_annotations(subtask)`
 
-TODO
+*(string) => array* -- Gets the current list of annotations within the provided subtask.
 
 ### `set_annotations(new_annotations, subtask)`
 
-TODO
+*(array, string) => void* -- Sets the annotations for the provided subtask.
 
 ## Generic Callbacks
 

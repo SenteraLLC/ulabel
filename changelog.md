@@ -5,6 +5,8 @@ All notable changes to this project will be documented here.
 ## [Unreleased]
 
 - Bugfix for resuming from nonspatial annotations
+- Created interface for `get` and `set` to allow for custom annotation processing
+- Changed to more inclusive keyboard event handling
 
 ## [0.4.6] - March 9, 2021
 
