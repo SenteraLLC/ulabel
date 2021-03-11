@@ -1685,6 +1685,11 @@ div#${prntid} div.dialogs_container {
    left: 0;
 }
 
+div.toolbox_inner_cls {
+   height: calc(100% - 38px);
+   overflow-y: scroll;
+}
+
 /* ========== Tab Buttons ========== */
 
 div#${prntid} div.toolbox-tabs {
@@ -1895,20 +1900,20 @@ div#${prntid}.ulabel-night div.night-status {
 }
 
 
-div#${prntid}.ulabel-night div.annbox_cls::-webkit-scrollbar {
+div#${prntid}.ulabel-night *::-webkit-scrollbar {
    background-color: black;
 }
-div#${prntid}.ulabel-night div.annbox_cls::-webkit-scrollbar-track {
+div#${prntid}.ulabel-night *::-webkit-scrollbar-track {
    background-color: black;
 }
-div#${prntid}.ulabel-night div.annbox_cls::-webkit-scrollbar-thumb {
+div#${prntid}.ulabel-night *::-webkit-scrollbar-thumb {
    border: 1px solid rgb(110, 110, 110);
    background-color: rgb(51, 51, 51);
 }
-div#${prntid}.ulabel-night div.annbox_cls::-webkit-scrollbar-thumb:hover {
+div#${prntid}.ulabel-night *::-webkit-scrollbar-thumb:hover {
    background-color: rgb(90, 90, 90);
 } 
-div#${prntid}.ulabel-night div.annbox_cls::-webkit-scrollbar-corner {
+div#${prntid}.ulabel-night *::-webkit-scrollbar-corner {
    background-color:rgb(0, 60, 95);
 }
 

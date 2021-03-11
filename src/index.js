@@ -899,6 +899,9 @@ class ULabel {
         new ResizeObserver(function() {
             ul.reposition_dialogs();
         }).observe(document.getElementById(ul.config["imwrap_id"]));
+        new ResizeObserver(function() {
+            ul.handle_toolbox_overflow();
+        }).observe(document.getElementById(ul.config["container_id"]));
 
         // Buttons to change annotation mode
         $(document).on("click", "a.md-btn", (e) => {
@@ -1100,7 +1103,7 @@ class ULabel {
         })
 
         // Keyboard only events
-        document.body.onkeydown = function(keypress_event) {
+        $(document).on("keypress", (keypress_event) => {
             const shift = keypress_event.shiftKey;
             const ctrl = keypress_event.ctrlKey;
             let fms = ul.config["image_data"].frames.length > 1;
@@ -1170,7 +1173,7 @@ class ULabel {
             else {
                 // console.log(keypress_event);
             }
-        };
+        });
 
         window.addEventListener("beforeunload", function (e) {
             var confirmationMessage = '';
@@ -1627,6 +1630,8 @@ class ULabel {
             
             // Create listers to manipulate and export this object
             ULabel.create_listeners(that);
+
+            that.handle_toolbox_overflow();
             
             // Set the canvas elements in the correct stacking order given current subtask
             that.set_subtask(that.state["current_subtask"]);
@@ -1654,6 +1659,19 @@ class ULabel {
 
     version() {
         return ULabel.version();
+    }
+
+    handle_toolbox_overflow() {
+        let tabs_height = $("#"+this.config["container_id"] + " div.toolbox-tabs").height();
+        $("#"+this.config["container_id"] + " div.toolbox_inner_cls").css("height", `calc(100% - ${tabs_height+38}px)`);
+        let view_height = $("#"+this.config["container_id"] + " div.toolbox_cls")[0].scrollHeight - 38 - tabs_height;
+        let want_height = $("#"+this.config["container_id"] + " div.toolbox_inner_cls")[0].scrollHeight;
+        if (want_height <= view_height) {
+            $("#"+this.config["container_id"] + " div.toolbox_inner_cls").css("overflow-y", "hidden");
+        }
+        else {
+            $("#"+this.config["container_id"] + " div.toolbox_inner_cls").css("overflow-y", "scroll");
+        }
     }
 
     // A ratio of viewport height to image height
@@ -4769,6 +4787,91 @@ class ULabel {
         annbox.css("background-color", new_bg_color);
         return ret
     }
+
+
+    reset_interaction_state(subtask=null) {
+        let q = [];
+        if (subtask == null) {
+            for (let st in this.subtasks) {
+                q.push(st);
+            }
+        }
+        else {
+            q.push(subtask);
+        }
+        for (let i = 0; i < q.length; i++) {
+            if (this.subtasks[q[i]]["state"]["active_id"] != null) {
+                // Delete polygon ender if exists
+                $("#ender_" + this.subtasks[q[i]]["state"]["active_id"]).remove();
+            }
+            this.subtasks[q[i]]["state"]["is_in_edit"] = false;
+            this.subtasks[q[i]]["state"]["is_in_move"] = false;
+            this.subtasks[q[i]]["state"]["is_in_progress"] = false;
+            this.subtasks[q[i]]["state"]["active_id"] = null;
+            this.show
+        }
+        this.drag_state = {
+            "active_key": null,
+            "release_button": null,
+            "annotation": {
+                "mouse_start": null, // Screen coordinates where the current mouse drag started
+                "offset_start": null, // Scroll values where the current mouse drag started
+                "zoom_val_start": null // zoom_val when the dragging interaction started
+            },
+            "edit": {
+                "mouse_start": null, // Screen coordinates where the current mouse drag started
+                "offset_start": null, // Scroll values where the current mouse drag started
+                "zoom_val_start": null // zoom_val when the dragging interaction started
+            },
+            "pan": {
+                "mouse_start": null, // Screen coordinates where the current mouse drag started
+                "offset_start": null, // Scroll values where the current mouse drag started
+                "zoom_val_start": null // zoom_val when the dragging interaction started
+            },
+            "zoom": {
+                "mouse_start": null, // Screen coordinates where the current mouse drag started
+                "offset_start": null, // Scroll values where the current mouse drag started
+                "zoom_val_start": null // zoom_val when the dragging interaction started
+            },
+            "move": {
+                "mouse_start": null, // Screen coordinates where the current mouse drag started
+                "offset_start": null, // Scroll values where the current mouse drag started
+                "zoom_val_start": null // zoom_val when the dragging interaction started
+            }
+        };
+    }
+
+    // Allow for external access and modification of annotations within a subtask
+    get_annotations(subtask) {
+        let ret = [];
+        for (let i = 0; i < this.subtasks[subtask]["annotations"]["ordering"].length; i++) {
+            let id = this.subtasks[subtask]["annotations"]["ordering"][i];
+            if (id != this.subtasks[this.state["current_subtask"]]["state"]["active_id"]) {
+                ret.push(this.subtasks[subtask]["annotations"]["access"][id]);
+            }
+        }
+        return JSON.parse(JSON.stringify(ret));
+    }
+    set_annotations(new_annotations, subtask) {
+        // Undo/redo won't work through a get/set
+        this.reset_interaction_state();
+        this.subtasks[subtask]["actions"]["stream"] = [];
+        this.subtasks[subtask]["actions"]["undo_stack"] = [];
+        let newanns = JSON.parse(JSON.stringify(new_annotations));
+        let new_ordering = [];
+        let new_access = {};
+        for (let i = 0; i < newanns.length; i++) {
+            new_ordering.push(newanns[i]["id"]);
+            new_access[newanns[i]["id"]] = newanns[i];
+        }
+        this.subtasks[subtask]["annotations"]["ordering"] = new_ordering;
+        this.subtasks[subtask]["annotations"]["access"] = new_access;
+        for (let i = 0; i < new_ordering.length; i++) {
+            this.rebuild_containing_box(new_ordering[i], false, subtask);
+        }
+        this.redraw_all_annotations(subtask);
+    }
+
 
     // Change frame
 
