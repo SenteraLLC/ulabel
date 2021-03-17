@@ -11551,8 +11551,9 @@ function version(uuid) {
 /******/ 	// The require function
 /******/ 	function __webpack_require__(moduleId) {
 /******/ 		// Check if module is in cache
-/******/ 		if(__webpack_module_cache__[moduleId]) {
-/******/ 			return __webpack_module_cache__[moduleId].exports;
+/******/ 		var cachedModule = __webpack_module_cache__[moduleId];
+/******/ 		if (cachedModule !== undefined) {
+/******/ 			return cachedModule.exports;
 /******/ 		}
 /******/ 		// Create a new module (and put it into the cache)
 /******/ 		var module = __webpack_module_cache__[moduleId] = {
@@ -13635,7 +13636,7 @@ const COLORS = [
 
 
 ;// CONCATENATED MODULE: ./src/version.js
-const ULABEL_VERSION = "0.4.7";
+const ULABEL_VERSION = "0.4.8-dev";
 ;// CONCATENATED MODULE: ./src/index.js
 /*
 Uncertain Labeling Tool
@@ -15047,7 +15048,8 @@ class ULabel {
         annotation_meta=null,
         px_per_px=1,
         initial_crop=null,
-        initial_line_size=4
+        initial_line_size=4,
+        instructions_url=null
     ) {
         // Unroll safe default arguments
         if (task_meta == null) {task_meta = {};}
@@ -15102,6 +15104,7 @@ class ULabel {
             // Behavior on special interactions
             "done_callback": on_submit_unrolled.hook,
             "done_button": on_submit_unrolled.name,
+            "instructions_url": instructions_url,
 
             // ID Dialog config
             "cl_opacity": 0.4,

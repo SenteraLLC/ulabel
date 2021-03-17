@@ -1420,7 +1420,8 @@ class ULabel {
         annotation_meta=null,
         px_per_px=1,
         initial_crop=null,
-        initial_line_size=4
+        initial_line_size=4,
+        instructions_url=null
     ) {
         // Unroll safe default arguments
         if (task_meta == null) {task_meta = {};}
@@ -1475,6 +1476,7 @@ class ULabel {
             // Behavior on special interactions
             "done_callback": on_submit_unrolled.hook,
             "done_button": on_submit_unrolled.name,
+            "instructions_url": instructions_url,
 
             // ID Dialog config
             "cl_opacity": 0.4,
