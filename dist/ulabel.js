@@ -14712,8 +14712,7 @@ class ULabel {
                 }
             }
             if (ul.config["done_callback"](submit_payload) !== false) {
-                ul.state["edited"] = false;
-                jquery_default()("#"+ul.config["container_id"] + " a#submit-button").removeAttr("href");
+                ul.set_saved(true);
             }
         });
 
@@ -16593,9 +16592,18 @@ class ULabel {
 
     // Action Stream Events
 
+    set_saved(saved) {
+        if (saved) {
+            jquery_default()("#"+this.config["container_id"] + " a#submit-button").removeAttr("href");
+        }
+        else {
+            jquery_default()("#"+this.config["container_id"] + " a#submit-button").attr("href", "#");
+        }
+        this.state["edited"] = !saved;
+    }
+
     record_action(action, is_redo=false) {
-        jquery_default()("#"+this.config["container_id"] + " a#submit-button").attr("href", "#");
-        this.state["edited"] = true;
+        this.set_saved(false);
 
         // After a new action, you can no longer redo old actions
         if (!is_redo) {
