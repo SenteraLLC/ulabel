@@ -1083,7 +1083,7 @@ class ULabel {
                     );
                 }
             }
-            if (ul.config["done_callback"](submit_payload) !== false) {
+            if (ul.config["done_callback"].bind(ul)(submit_payload) !== false) {
                 ul.set_saved(true);
             }
         });
