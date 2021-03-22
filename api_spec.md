@@ -32,6 +32,7 @@ class ULabel(
     px_per_px=1,           // number
     init_crop=null         // object
     initial_line_size=4    // number
+    instructions_url=null  // string
 )
 ```
 
@@ -62,6 +63,10 @@ Objects must be provided in the form of
     name: "<Arbitrary Button Name>",
     hook: (annotations) => {
         // Define submit behavior here
+
+        // ULabel instance is bound to this function, and so it can be accessed with this
+
+        // If behavior is to leave this page, use this.set_saved(true) to avoid warning to user
 
         // If submit is unsuccessful and annotations edits should not be treated as "saved", return false
     }
@@ -247,6 +252,10 @@ In some cases, you may want the annotations to render at a higher or lower resol
 
 The line width with which new annotations are drawn initially. Units are pixels in the underlying image.
 
+### `instructions_url`
+
+URL to a page that gives annotation instructions.
+
 ## Display Utility Functions
 
 Display utilities are provided for a constructed `ULabel` object.
@@ -266,6 +275,10 @@ Display utilities are provided for a constructed `ULabel` object.
 ### `set_annotations(new_annotations, subtask)`
 
 *(array, string) => void* -- Sets the annotations for the provided subtask.
+
+### `set_saved(saved)`
+
+*(bool) => void* -- Allows js script implementing the ULabel class to set saved status, e.g., during callback.
 
 ## Generic Callbacks
 

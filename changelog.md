@@ -4,7 +4,10 @@ All notable changes to this project will be documented here.
 
 ## [unreleased]
 
-<nothing_yet>
+- Added the `point` annotation mode
+- Added support for a link to instructions
+- Added a `set_saved()` function so page can unload without warning
+- Bound ulabel instance to submit callback so above function can be easily called
 
 ## [0.4.7] - March 11, 2021
 
