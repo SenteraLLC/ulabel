@@ -13777,7 +13777,7 @@ const COLORS = [
 
 
 ;// CONCATENATED MODULE: ./src/version.js
-const ULABEL_VERSION = "0.4.8-dev";
+const ULABEL_VERSION = "0.4.8";
 ;// CONCATENATED MODULE: ./src/index.js
 /*
 Uncertain Labeling Tool
@@ -17227,7 +17227,6 @@ class ULabel {
             this.subtasks[subtask]["annotations"]["access"][actid]["containing_box"]["brx"] += 3*line_size;
             this.subtasks[subtask]["annotations"]["access"][actid]["containing_box"]["bry"] += 3*line_size;
         }
-        console.log(this.subtasks[subtask]["annotations"]["access"][actid]["containing_box"]);
         // TODO modification here for T-Bar would be nice too
     }
 
