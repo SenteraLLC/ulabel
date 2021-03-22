@@ -2,7 +2,11 @@
 
 All notable changes to this project will be documented here.
 
-## [Unreleased]
+## [unreleased]
+
+<nothing_yet>
+
+## [0.4.7] - March 11, 2021
 
 - Bugfix for resuming from nonspatial annotations
 - Created interface for `get` and `set` to allow for custom annotation processing
