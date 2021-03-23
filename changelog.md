@@ -4,6 +4,10 @@ All notable changes to this project will be documented here.
 
 ## [unreleased]
 
+<nothing_yet>
+
+## [0.4.8] - March 23, 2021
+
 - Added the `point` annotation mode
 - Added support for a link to instructions
 - Added a `set_saved()` function so page can unload without warning
