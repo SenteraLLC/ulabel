@@ -12,6 +12,7 @@ import {
     DEMO_ANNOTATION, 
     BBOX_SVG, 
     BBOX3_SVG,
+    POINT_SVG,
     POLYGON_SVG, 
     CONTOUR_SVG, 
     get_init_style, 
@@ -570,6 +571,7 @@ class ULabel {
         let curmd = ul.subtasks[crst]["state"]["annotation_mode"];
         let md_buttons = [
             ULabel.get_md_button("bbox", "Bounding Box", BBOX_SVG, curmd, ul.subtasks),
+            ULabel.get_md_button("point", "Point", POINT_SVG, curmd, ul.subtasks),
             ULabel.get_md_button("polygon", "Polygon", POLYGON_SVG, curmd, ul.subtasks),
             ULabel.get_md_button("tbar", "T-Bar", TBAR_SVG, curmd, ul.subtasks),
             ULabel.get_md_button("polyline", "Polyline", POLYLINE_SVG, curmd, ul.subtasks),
@@ -1083,9 +1085,8 @@ class ULabel {
                     );
                 }
             }
-            if (ul.config["done_callback"](submit_payload) !== false) {
-                ul.state["edited"] = false;
-                $("#"+ul.config["container_id"] + " a#submit-button").removeAttr("href");
+            if (ul.config["done_callback"].bind(ul)(submit_payload) !== false) {
+                ul.set_saved(true);
             }
         });
 
@@ -1420,7 +1421,8 @@ class ULabel {
         annotation_meta=null,
         px_per_px=1,
         initial_crop=null,
-        initial_line_size=4
+        initial_line_size=4,
+        instructions_url=null
     ) {
         // Unroll safe default arguments
         if (task_meta == null) {task_meta = {};}
@@ -1475,6 +1477,7 @@ class ULabel {
             // Behavior on special interactions
             "done_callback": on_submit_unrolled.hook,
             "done_button": on_submit_unrolled.name,
+            "instructions_url": instructions_url,
 
             // ID Dialog config
             "cl_opacity": 0.4,
@@ -1843,6 +1846,10 @@ class ULabel {
     // Get the start of a spatial payload based on mouse event and current annotation mode
     get_init_spatial(gmx, gmy, annotation_mode) {
         switch (annotation_mode) {
+            case "point":
+                return [
+                    [gmx, gmy]
+                ];
             case "bbox":
             case "polygon":
             case "contour":
@@ -1881,6 +1888,8 @@ class ULabel {
                 bbj = parseInt(access_str[1], 10);
                 bbox_pts = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid]["spatial_payload"];
                 return [bbox_pts[bbi][0], bbox_pts[bbj][1]];
+            case "point":
+                return JSON.parse(JSON.stringify(this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid]["spatial_payload"]));
             case "bbox3":
                 // TODO(3d)
                 bbi = parseInt(access_str[0], 10);
@@ -1938,6 +1947,10 @@ class ULabel {
                 bbj = parseInt(access_str[1], 10);
                 this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid]["spatial_payload"][bbi][0] = val[0];
                 this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid]["spatial_payload"][bbj][1] = val[1];
+                break;
+            case "point":
+                this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid]["spatial_payload"][bbi][0] = val[0];
+                this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid]["spatial_payload"][bbi][0] = val[0];
                 break;
             case "bbox3":
                 bbi = parseInt(access_str[0], 10);
@@ -2077,6 +2090,45 @@ class ULabel {
         ctx.lineTo((ep[0] + diffX)*px_per_px, (ep[1] + diffY)*px_per_px);
         ctx.lineTo((ep[0] + diffX)*px_per_px, (sp[1] + diffY)*px_per_px);
         ctx.lineTo((sp[0] + diffX)*px_per_px, (sp[1] + diffY)*px_per_px);
+        ctx.closePath();
+        ctx.stroke();
+    }
+
+    draw_point(annotation_object, ctx, demo=false, offset=null, subtask=null) {
+        const px_per_px = this.config["px_per_px"];
+        let diffX = 0;
+        let diffY = 0;
+        if (offset != null) {
+            diffX = offset["diffX"];
+            diffY = offset["diffY"];
+        }
+
+        let line_size = null;
+        if ("line_size" in annotation_object) {
+            line_size = annotation_object["line_size"];
+        }
+        else {
+            line_size = this.get_line_size(demo);
+        }
+    
+        // Prep for bbox drawing
+        let color = this.get_annotation_color(annotation_object["classification_payloads"], false, subtask);
+        ctx.fillStyle = color;
+        ctx.strokeStyle = color;
+        ctx.lineJoin = "round";
+        ctx.lineWidth = line_size*px_per_px;
+        ctx.imageSmoothingEnabled = false;
+        ctx.globalCompositeOperation = "source-over";
+    
+        // Draw the box
+        const sp = annotation_object["spatial_payload"][0];
+        ctx.beginPath();
+        ctx.arc((sp[0] + diffX)*px_per_px, (sp[1] + diffY)*px_per_px, line_size*px_per_px*0.75, 0, 2*Math.PI);
+        ctx.closePath();
+        ctx.stroke();
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc((sp[0] + diffX)*px_per_px, (sp[1] + diffY)*px_per_px, line_size*px_per_px*3, 0, 2*Math.PI);
         ctx.closePath();
         ctx.stroke();
     }
@@ -2363,6 +2415,9 @@ class ULabel {
         switch (annotation_object["spatial_type"]) {
             case "bbox":
                 this.draw_bounding_box(annotation_object, ctx, demo, offset, subtask);
+                break;
+            case "point":
+                this.draw_point(annotation_object, ctx, demo, offset, subtask);
                 break;
             case "bbox3":
                 // TODO(new3d)
@@ -2889,9 +2944,10 @@ class ULabel {
                     }
                     break;
                 case "contour":
-                    // Not editable at the moment (TODO)
+                case "point":
+                    // Not editable at the moment
                     break;
-            }
+                }
         }
         // TODO(3d)
         // Iterate through 3d annotations here (e.g., bbox3)
@@ -2916,7 +2972,8 @@ class ULabel {
             switch (this.subtasks[this.state["current_subtask"]]["annotations"]["access"][edid]["spatial_type"]) {
                 case "bbox":
                 case "bbox3":
-                    // Can't propose new bounding box points
+                case "point":
+                    // Can't propose new bounding box or keypoint points
                     break;
                 case "polygon":
                     var npi = ULabel.get_nearest_point_on_polygon(
@@ -2963,9 +3020,18 @@ class ULabel {
 
     // Action Stream Events
 
+    set_saved(saved) {
+        if (saved) {
+            $("#"+this.config["container_id"] + " a#submit-button").removeAttr("href");
+        }
+        else {
+            $("#"+this.config["container_id"] + " a#submit-button").attr("href", "#");
+        }
+        this.state["edited"] = !saved;
+    }
+
     record_action(action, is_redo=false) {
-        $("#"+this.config["container_id"] + " a#submit-button").attr("href", "#");
-        this.state["edited"] = true;
+        this.set_saved(false);
 
         // After a new action, you can no longer redo old actions
         if (!is_redo) {
@@ -3305,6 +3371,11 @@ class ULabel {
                 this.suggest_edits(this.state["last_move"]);
             }
         }
+        else if (annotation_mode == "point") {
+            this.finish_annotation(null);
+            this.rebuild_containing_box(unq_id);
+            this.suggest_edits(this.state["last_move"]);
+        }
     }
     begin_annotation__undo(undo_payload) {
         // Parse necessary data
@@ -3381,6 +3452,14 @@ class ULabel {
         for (var pti = 1; pti < npts; pti++) {
             this.update_containing_box(this.subtasks[subtask]["annotations"]["access"][actid]["spatial_payload"][pti], actid, subtask);
         }
+        if (this.subtasks[subtask]["annotations"]["access"][actid]["spatial_type"]) {
+            let line_size = this.subtasks[subtask]["annotations"]["access"][actid]["line_size"];
+            this.subtasks[subtask]["annotations"]["access"][actid]["containing_box"]["tlx"] -= 3*line_size;
+            this.subtasks[subtask]["annotations"]["access"][actid]["containing_box"]["tly"] -= 3*line_size;
+            this.subtasks[subtask]["annotations"]["access"][actid]["containing_box"]["brx"] += 3*line_size;
+            this.subtasks[subtask]["annotations"]["access"][actid]["containing_box"]["bry"] += 3*line_size;
+        }
+        // TODO modification here for T-Bar would be nice too
     }
 
     continue_annotation(mouse_event, isclick=false, redo_payload=null) {
@@ -3877,6 +3956,7 @@ class ULabel {
             case "bbox3":
             case "contour":
             case "tbar":
+            case "point":
                 this.record_finish(actid);
                 // tobuffer this is where the annotation moves to back canvas
                 break;
@@ -3948,6 +4028,7 @@ class ULabel {
                 this.record_finish_edit(actid);
                 break;
             case "contour":
+            case "point":
                 // tobuffer this is where the annotation moves to back canvas
                 break;
             default:
@@ -3986,6 +4067,7 @@ class ULabel {
             case "bbox3":
             case "contour":
             case "tbar":
+            case "point":
                 // tobuffer this is where the annotation moves to back canvas
                 break;
             default:

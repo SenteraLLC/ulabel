@@ -11551,8 +11551,9 @@ function version(uuid) {
 /******/ 	// The require function
 /******/ 	function __webpack_require__(moduleId) {
 /******/ 		// Check if module is in cache
-/******/ 		if(__webpack_module_cache__[moduleId]) {
-/******/ 			return __webpack_module_cache__[moduleId].exports;
+/******/ 		var cachedModule = __webpack_module_cache__[moduleId];
+/******/ 		if (cachedModule !== undefined) {
+/******/ 			return cachedModule.exports;
 /******/ 		}
 /******/ 		// Create a new module (and put it into the cache)
 /******/ 		var module = __webpack_module_cache__[moduleId] = {
@@ -11711,6 +11712,147 @@ const BBOX_SVG = `
        id="path3715"
        inkscape:connector-curvature="0"
        sodipodi:nodetypes="ccccc" />
+  </g>
+</svg>
+`;
+const POINT_SVG = `
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="100mm"
+   height="100mm"
+   viewBox="0 0 100 100"
+   version="1.1"
+   id="svg7244"
+   inkscape:version="0.92.5 (2060ec1f9f, 2020-04-08)"
+   sodipodi:docname="point.svg">
+  <defs
+     id="defs7238">
+    <marker
+       inkscape:stockid="DotL"
+       orient="auto"
+       refY="0.0"
+       refX="0.0"
+       id="marker1156"
+       style="overflow:visible"
+       inkscape:isstock="true">
+      <path
+         id="path1154"
+         d="M -2.5,-1.0 C -2.5,1.7600000 -4.7400000,4.0 -7.5,4.0 C -10.260000,4.0 -12.5,1.7600000 -12.5,-1.0 C -12.5,-3.7600000 -10.260000,-6.0 -7.5,-6.0 C -4.7400000,-6.0 -2.5,-3.7600000 -2.5,-1.0 z "
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1pt;stroke-opacity:1;fill:#000000;fill-opacity:1"
+         transform="scale(0.8) translate(7.4, 1)" />
+    </marker>
+    <marker
+       inkscape:stockid="DotL"
+       orient="auto"
+       refY="0.0"
+       refX="0.0"
+       id="marker1152"
+       style="overflow:visible"
+       inkscape:isstock="true">
+      <path
+         id="path1150"
+         d="M -2.5,-1.0 C -2.5,1.7600000 -4.7400000,4.0 -7.5,4.0 C -10.260000,4.0 -12.5,1.7600000 -12.5,-1.0 C -12.5,-3.7600000 -10.260000,-6.0 -7.5,-6.0 C -4.7400000,-6.0 -2.5,-3.7600000 -2.5,-1.0 z "
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1pt;stroke-opacity:1;fill:#000000;fill-opacity:1"
+         transform="scale(0.8) translate(7.4, 1)" />
+    </marker>
+    <marker
+       inkscape:stockid="DotL"
+       orient="auto"
+       refY="0.0"
+       refX="0.0"
+       id="marker1148"
+       style="overflow:visible"
+       inkscape:isstock="true">
+      <path
+         id="path946"
+         d="M -2.5,-1.0 C -2.5,1.7600000 -4.7400000,4.0 -7.5,4.0 C -10.260000,4.0 -12.5,1.7600000 -12.5,-1.0 C -12.5,-3.7600000 -10.260000,-6.0 -7.5,-6.0 C -4.7400000,-6.0 -2.5,-3.7600000 -2.5,-1.0 z "
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1pt;stroke-opacity:1;fill:#000000;fill-opacity:1"
+         transform="scale(0.8) translate(7.4, 1)" />
+    </marker>
+    <marker
+       inkscape:stockid="DotL"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="DotL"
+       style="overflow:visible"
+       inkscape:isstock="true">
+      <path
+         inkscape:connector-curvature="0"
+         id="path4587"
+         d="m -2.5,-1 c 0,2.76 -2.24,5 -5,5 -2.76,0 -5,-2.24 -5,-5 0,-2.76 2.24,-5 5,-5 2.76,0 5,2.24 5,5 z"
+         style="fill:#000000;fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:1.00000003pt;stroke-opacity:1"
+         transform="matrix(0.8,0,0,0.8,5.92,0.8)" />
+    </marker>
+    <marker
+       inkscape:stockid="DotL"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="marker7235"
+       style="overflow:visible"
+       inkscape:isstock="true">
+      <path
+         inkscape:connector-curvature="0"
+         id="path7233"
+         d="m -2.5,-1 c 0,2.76 -2.24,5 -5,5 -2.76,0 -5,-2.24 -5,-5 0,-2.76 2.24,-5 5,-5 2.76,0 5,2.24 5,5 z"
+         style="fill:#000000;fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:1.00000003pt;stroke-opacity:1"
+         transform="matrix(0.8,0,0,0.8,5.92,0.8)" />
+    </marker>
+  </defs>
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="1.1443229"
+     inkscape:cx="138.27833"
+     inkscape:cy="159.299"
+     inkscape:document-units="mm"
+     inkscape:current-layer="layer1"
+     showgrid="false"
+     inkscape:window-width="1920"
+     inkscape:window-height="1043"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1" />
+  <metadata
+     id="metadata7241">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(0,-197)">
+    <circle
+       style="fill:#fedbdb;fill-opacity:0;stroke:#000000;stroke-width:3.34195209;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;paint-order:normal"
+       id="path884"
+       cx="50"
+       cy="247"
+       r="23.329023" />
+    <circle
+       style="fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:1.06185877;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;paint-order:normal"
+       id="path886"
+       cx="50"
+       cy="247"
+       r="6.9690704" />
   </g>
 </svg>
 `;
@@ -13635,7 +13777,7 @@ const COLORS = [
 
 
 ;// CONCATENATED MODULE: ./src/version.js
-const ULABEL_VERSION = "0.4.7";
+const ULABEL_VERSION = "0.4.8";
 ;// CONCATENATED MODULE: ./src/index.js
 /*
 Uncertain Labeling Tool
@@ -14197,6 +14339,7 @@ class ULabel {
         let curmd = ul.subtasks[crst]["state"]["annotation_mode"];
         let md_buttons = [
             ULabel.get_md_button("bbox", "Bounding Box", BBOX_SVG, curmd, ul.subtasks),
+            ULabel.get_md_button("point", "Point", POINT_SVG, curmd, ul.subtasks),
             ULabel.get_md_button("polygon", "Polygon", POLYGON_SVG, curmd, ul.subtasks),
             ULabel.get_md_button("tbar", "T-Bar", TBAR_SVG, curmd, ul.subtasks),
             ULabel.get_md_button("polyline", "Polyline", POLYLINE_SVG, curmd, ul.subtasks),
@@ -14710,9 +14853,8 @@ class ULabel {
                     );
                 }
             }
-            if (ul.config["done_callback"](submit_payload) !== false) {
-                ul.state["edited"] = false;
-                jquery_default()("#"+ul.config["container_id"] + " a#submit-button").removeAttr("href");
+            if (ul.config["done_callback"].bind(ul)(submit_payload) !== false) {
+                ul.set_saved(true);
             }
         });
 
@@ -15047,7 +15189,8 @@ class ULabel {
         annotation_meta=null,
         px_per_px=1,
         initial_crop=null,
-        initial_line_size=4
+        initial_line_size=4,
+        instructions_url=null
     ) {
         // Unroll safe default arguments
         if (task_meta == null) {task_meta = {};}
@@ -15102,6 +15245,7 @@ class ULabel {
             // Behavior on special interactions
             "done_callback": on_submit_unrolled.hook,
             "done_button": on_submit_unrolled.name,
+            "instructions_url": instructions_url,
 
             // ID Dialog config
             "cl_opacity": 0.4,
@@ -15470,6 +15614,10 @@ class ULabel {
     // Get the start of a spatial payload based on mouse event and current annotation mode
     get_init_spatial(gmx, gmy, annotation_mode) {
         switch (annotation_mode) {
+            case "point":
+                return [
+                    [gmx, gmy]
+                ];
             case "bbox":
             case "polygon":
             case "contour":
@@ -15508,6 +15656,8 @@ class ULabel {
                 bbj = parseInt(access_str[1], 10);
                 bbox_pts = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid]["spatial_payload"];
                 return [bbox_pts[bbi][0], bbox_pts[bbj][1]];
+            case "point":
+                return JSON.parse(JSON.stringify(this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid]["spatial_payload"]));
             case "bbox3":
                 // TODO(3d)
                 bbi = parseInt(access_str[0], 10);
@@ -15565,6 +15715,10 @@ class ULabel {
                 bbj = parseInt(access_str[1], 10);
                 this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid]["spatial_payload"][bbi][0] = val[0];
                 this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid]["spatial_payload"][bbj][1] = val[1];
+                break;
+            case "point":
+                this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid]["spatial_payload"][bbi][0] = val[0];
+                this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid]["spatial_payload"][bbi][0] = val[0];
                 break;
             case "bbox3":
                 bbi = parseInt(access_str[0], 10);
@@ -15704,6 +15858,45 @@ class ULabel {
         ctx.lineTo((ep[0] + diffX)*px_per_px, (ep[1] + diffY)*px_per_px);
         ctx.lineTo((ep[0] + diffX)*px_per_px, (sp[1] + diffY)*px_per_px);
         ctx.lineTo((sp[0] + diffX)*px_per_px, (sp[1] + diffY)*px_per_px);
+        ctx.closePath();
+        ctx.stroke();
+    }
+
+    draw_point(annotation_object, ctx, demo=false, offset=null, subtask=null) {
+        const px_per_px = this.config["px_per_px"];
+        let diffX = 0;
+        let diffY = 0;
+        if (offset != null) {
+            diffX = offset["diffX"];
+            diffY = offset["diffY"];
+        }
+
+        let line_size = null;
+        if ("line_size" in annotation_object) {
+            line_size = annotation_object["line_size"];
+        }
+        else {
+            line_size = this.get_line_size(demo);
+        }
+    
+        // Prep for bbox drawing
+        let color = this.get_annotation_color(annotation_object["classification_payloads"], false, subtask);
+        ctx.fillStyle = color;
+        ctx.strokeStyle = color;
+        ctx.lineJoin = "round";
+        ctx.lineWidth = line_size*px_per_px;
+        ctx.imageSmoothingEnabled = false;
+        ctx.globalCompositeOperation = "source-over";
+    
+        // Draw the box
+        const sp = annotation_object["spatial_payload"][0];
+        ctx.beginPath();
+        ctx.arc((sp[0] + diffX)*px_per_px, (sp[1] + diffY)*px_per_px, line_size*px_per_px*0.75, 0, 2*Math.PI);
+        ctx.closePath();
+        ctx.stroke();
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc((sp[0] + diffX)*px_per_px, (sp[1] + diffY)*px_per_px, line_size*px_per_px*3, 0, 2*Math.PI);
         ctx.closePath();
         ctx.stroke();
     }
@@ -15990,6 +16183,9 @@ class ULabel {
         switch (annotation_object["spatial_type"]) {
             case "bbox":
                 this.draw_bounding_box(annotation_object, ctx, demo, offset, subtask);
+                break;
+            case "point":
+                this.draw_point(annotation_object, ctx, demo, offset, subtask);
                 break;
             case "bbox3":
                 // TODO(new3d)
@@ -16516,9 +16712,10 @@ class ULabel {
                     }
                     break;
                 case "contour":
-                    // Not editable at the moment (TODO)
+                case "point":
+                    // Not editable at the moment
                     break;
-            }
+                }
         }
         // TODO(3d)
         // Iterate through 3d annotations here (e.g., bbox3)
@@ -16543,7 +16740,8 @@ class ULabel {
             switch (this.subtasks[this.state["current_subtask"]]["annotations"]["access"][edid]["spatial_type"]) {
                 case "bbox":
                 case "bbox3":
-                    // Can't propose new bounding box points
+                case "point":
+                    // Can't propose new bounding box or keypoint points
                     break;
                 case "polygon":
                     var npi = ULabel.get_nearest_point_on_polygon(
@@ -16590,9 +16788,18 @@ class ULabel {
 
     // Action Stream Events
 
+    set_saved(saved) {
+        if (saved) {
+            jquery_default()("#"+this.config["container_id"] + " a#submit-button").removeAttr("href");
+        }
+        else {
+            jquery_default()("#"+this.config["container_id"] + " a#submit-button").attr("href", "#");
+        }
+        this.state["edited"] = !saved;
+    }
+
     record_action(action, is_redo=false) {
-        jquery_default()("#"+this.config["container_id"] + " a#submit-button").attr("href", "#");
-        this.state["edited"] = true;
+        this.set_saved(false);
 
         // After a new action, you can no longer redo old actions
         if (!is_redo) {
@@ -16932,6 +17139,11 @@ class ULabel {
                 this.suggest_edits(this.state["last_move"]);
             }
         }
+        else if (annotation_mode == "point") {
+            this.finish_annotation(null);
+            this.rebuild_containing_box(unq_id);
+            this.suggest_edits(this.state["last_move"]);
+        }
     }
     begin_annotation__undo(undo_payload) {
         // Parse necessary data
@@ -17008,6 +17220,14 @@ class ULabel {
         for (var pti = 1; pti < npts; pti++) {
             this.update_containing_box(this.subtasks[subtask]["annotations"]["access"][actid]["spatial_payload"][pti], actid, subtask);
         }
+        if (this.subtasks[subtask]["annotations"]["access"][actid]["spatial_type"]) {
+            let line_size = this.subtasks[subtask]["annotations"]["access"][actid]["line_size"];
+            this.subtasks[subtask]["annotations"]["access"][actid]["containing_box"]["tlx"] -= 3*line_size;
+            this.subtasks[subtask]["annotations"]["access"][actid]["containing_box"]["tly"] -= 3*line_size;
+            this.subtasks[subtask]["annotations"]["access"][actid]["containing_box"]["brx"] += 3*line_size;
+            this.subtasks[subtask]["annotations"]["access"][actid]["containing_box"]["bry"] += 3*line_size;
+        }
+        // TODO modification here for T-Bar would be nice too
     }
 
     continue_annotation(mouse_event, isclick=false, redo_payload=null) {
@@ -17504,6 +17724,7 @@ class ULabel {
             case "bbox3":
             case "contour":
             case "tbar":
+            case "point":
                 this.record_finish(actid);
                 // tobuffer this is where the annotation moves to back canvas
                 break;
@@ -17575,6 +17796,7 @@ class ULabel {
                 this.record_finish_edit(actid);
                 break;
             case "contour":
+            case "point":
                 // tobuffer this is where the annotation moves to back canvas
                 break;
             default:
@@ -17613,6 +17835,7 @@ class ULabel {
             case "bbox3":
             case "contour":
             case "tbar":
+            case "point":
                 // tobuffer this is where the annotation moves to back canvas
                 break;
             default:
