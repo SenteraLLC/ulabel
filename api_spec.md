@@ -216,6 +216,7 @@ The full list of `"allowed_modes"` that are currently supported is:
 - `"contour"`: A freehand line
 - `"whole-image"`: A label to be applied to an entire frame
 - `"global"`: A label to be applied to the entire series of frames
+- `"point"`: A keypoint within a single frame
 
 The list of modes currently **under construction** is:
 
