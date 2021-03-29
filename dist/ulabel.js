@@ -13777,7 +13777,7 @@ const COLORS = [
 
 
 ;// CONCATENATED MODULE: ./src/version.js
-const ULABEL_VERSION = "0.4.8";
+const ULABEL_VERSION = "0.4.9";
 ;// CONCATENATED MODULE: ./src/index.js
 /*
 Uncertain Labeling Tool
@@ -17750,20 +17750,22 @@ class ULabel {
                 // TODO handle the case of merging with existing annotation
                 // Remove last point
                 n_kpts = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"].length;
-                if (redoing) {
-                    this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"][n_kpts - 1] = redo_payload.fin_pt;
+                if (n_kpts > 2) {
+                    popped = true;
+                    n_kpts -= 1;
+                    this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"].pop();
                 }
                 else {
-                    if (n_kpts > 2) {
-                        popped = true;
-                        n_kpts -= 1;
-                        this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"].pop();
-                    }
-                    else {
-                        popped = false;
-                        this.rebuild_containing_box(actid, false, this.state["current_subtask"]);
-                    }
+                    popped = false;
+                    this.rebuild_containing_box(actid, false, this.state["current_subtask"]);
                 }
+                console.log(
+                    "At finish...", 
+                    JSON.stringify(
+                        this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"],
+                        null, 2
+                    )
+                );
                 this.redraw_all_annotations(this.state["current_subtask"]); // tobuffer
                 this.record_action({
                     act_type: "finish_annotation",
@@ -17776,7 +17778,9 @@ class ULabel {
                     redo_payload: {
                         actid: actid,
                         popped: popped,
-                        fin_pt: JSON.parse(JSON.stringify(this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"][n_kpts - 1]))
+                        fin_pt: JSON.parse(JSON.stringify(
+                            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"][n_kpts - 1]
+                        ))
                     }
                 }, redoing);
                 // TODO remove all enders/mergers for this polyline
@@ -17821,19 +17825,18 @@ class ULabel {
         this.subtasks[this.state["current_subtask"]]["state"]["is_in_progress"] = false;
     }
     finish_annotation__undo(undo_payload) {
-        // This is only ever invoked for polygons
-        // Note that undoing a finish should not change containing box
-        this.subtasks[this.state["current_subtask"]]["state"]["is_in_progress"] = true;
-        this.subtasks[this.state["current_subtask"]]["state"]["active_id"] = undo_payload.actid;
-
-        jquery_default()("#dialogs__" + this.state["current_subtask"]).append(undo_payload.ender_html);
-        this.hide_edit_suggestion();
-        this.hide_global_edit_suggestion();
-        this.reposition_dialogs();
+        // This is only ever invoked for polygons and polylines
 
         // TODO(3d)
-        const n_kpts = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][undo_payload.actid]["spatial_payload"].length;
+        let n_kpts = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][undo_payload.actid]["spatial_payload"].length;
         let amd = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][undo_payload.actid]["spatial_type"];
+        if (amd == "polyline" && undo_payload.popped) {
+            let new_pt = JSON.parse(JSON.stringify(
+                this.subtasks[this.state["current_subtask"]]["annotations"]["access"][undo_payload.actid]["spatial_payload"][n_kpts - 1]
+            ));
+            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][undo_payload.actid]["spatial_payload"].push(new_pt);
+            n_kpts += 1;
+        }
         if (!NONSPATIAL_MODES.includes(amd)) {
             let pt = [
                 this.get_global_mouse_x(this.state["last_move"]),
@@ -17844,7 +17847,17 @@ class ULabel {
             }
             this.subtasks[this.state["current_subtask"]]["annotations"]["access"][undo_payload.actid]["spatial_payload"][n_kpts-1] = pt;
         }
+
+        // Note that undoing a finish should not change containing box
+        this.subtasks[this.state["current_subtask"]]["state"]["is_in_progress"] = true;
+        this.subtasks[this.state["current_subtask"]]["state"]["active_id"] = undo_payload.actid;
         this.redraw_all_annotations(this.state["current_subtask"]);
+        if (undo_payload.ender_html) {
+            jquery_default()("#dialogs__" + this.state["current_subtask"]).append(undo_payload.ender_html);
+        }
+        this.hide_edit_suggestion();
+        this.hide_global_edit_suggestion();
+        this.reposition_dialogs();
     }
     
     finish_edit() {
