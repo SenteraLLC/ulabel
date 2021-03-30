@@ -33,25 +33,49 @@ export type ULabelSubmitData = {
     task_meta: any;
 }
 export type ULabelSubmitHandler = (submitData: ULabelSubmitData) => void;
-export type ULabelSpatialType = 'contour' | 'polygon' | 'bbox' | 'tbar';
+
+/**
+ * @link https://github.com/SenteraLLC/ulabel/blob/main/api_spec.md#subtasks
+ */
+export type ULabelSpatialType = 'contour' | 'polygon' | 'bbox' | 'tbar' | 'bbox3' | 'whole-image' | 'global' | 'point';
+
 export type ULabelSubtask = {
     display_name: string,
     classes: { name: string, color: string, id: number }[],
     allowed_modes: ULabelSpatialType[],
-    resume_from: any,
+    resume_from: ULabelAnnotation[],
     task_meta: any,
     annotation_meta: any
+    read_only?: boolean;
 }
 export type ULabelSubtasks = { [key: string]: ULabelSubtask };
 
 export class ULabel {
+    /**
+     * @link https://github.com/SenteraLLC/ulabel/blob/main/api_spec.md#ulabel-constructor
+     */
     constructor(
         container_id: string,
-        image_url: string,
+        image_data: string | string[],
         username: string,
         on_submit: ULabelSubmitHandler,
-        subtasks: ULabelSubtasks
+        subtasks: ULabelSubtasks,
+        task_meta?: any,
+        annotation_meta?: any,
+        px_per_px?: number,
+        init_crop?: any,
+        initial_line_size?: number,
+        instructions_url?: string
     )
 
+    /**
+     * @link https://github.com/SenteraLLC/ulabel/blob/main/api_spec.md#display-utility-functions
+     */
     public init(callback: () => void): void;
+    public swap_frame_image(new_src: string, frame?: number): string;
+    public swap_anno_bg_color(new_bg_color: string): string;
+    public get_annotations(subtask: ULabelSubtask): ULabelAnnotation[];
+    public set_annotations(annotations: ULabelAnnotation[], subtask: ULabelSubtask);
+    public set_saved(saved: boolean);
+
 }
