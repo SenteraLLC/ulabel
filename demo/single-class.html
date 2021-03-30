@@ -16,7 +16,7 @@
 
             $(window).on("load", function() {
 
-                let on_submit = (annotations) => {
+                function on_submit(annotations) {
                     var element = document.createElement('a');
                     element.setAttribute(
                         "href", ('data:text/plain;charset=utf-8,' + 
