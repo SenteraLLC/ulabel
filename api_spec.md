@@ -61,7 +61,7 @@ Objects must be provided in the form of
 ```javascript
 {
     name: "<Arbitrary Button Name>",
-    hook: (annotations) => {
+    hook: function (annotations) {
         // Define submit behavior here
 
         // ULabel instance is bound to this function, and so it can be accessed with this
