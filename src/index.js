@@ -31,7 +31,7 @@ jQuery.fn.outer_html = function() {
 const MODES_3D = ["global", "bbox3"];
 const NONSPATIAL_MODES = ["whole-image", "global"];
 
-class ULabel {
+export class ULabel {
 
     // ================= Internal constants =================
 
