@@ -4,6 +4,8 @@ All notable changes to this project will be documented here.
 
 ## [unreleased]
 
+## [0.4.9] - April 1, 2021
+
 - Added support for `polyline` annotation mode
 - Added basic typescript typings
 - Fixed the main property in package.json so it points to a valid file. Also added the module field which points to the es6 module at the src folder
