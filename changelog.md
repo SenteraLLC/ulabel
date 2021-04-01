@@ -4,6 +4,8 @@ All notable changes to this project will be documented here.
 
 ## [unreleased]
 
+<nothing_yet>
+
 ## [0.4.9] - April 1, 2021
 
 - Added support for `polyline` annotation mode
