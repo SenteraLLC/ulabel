@@ -5,6 +5,10 @@ All notable changes to this project will be documented here.
 ## [unreleased]
 
 - Added support for `polyline` annotation mode
+- Added basic typescript typings
+- Fixed the main property in package.json so it points to a valid file. Also added the module field which points to the es6 module at the src folder
+- Moved express to the dev-dependencies because users of this module do not need to install express for the frontend only component
+- Exported the ULabel class in the module
 
 ## [0.4.8] - March 23, 2021
 
