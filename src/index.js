@@ -1073,7 +1073,7 @@ export class ULabel {
         })
 
         // Button to save annotations
-        $(document).on("click", `a#submit-button[href="#"]`, () => {
+        $(document).on("click", `a#submit-button[href="#"]`, async () => {
             var submit_payload = {
                 "task_meta": ul.config["task_meta"],
                 "annotations": {}
@@ -1088,8 +1088,15 @@ export class ULabel {
                     );
                 }
             }
-            if (ul.config["done_callback"].bind(ul)(submit_payload) !== false) {
-                ul.set_saved(true);
+            ul.set_saved(false, true);
+            try {
+                const save_success = await ul.config["done_callback"].bind(ul)(submit_payload);
+                ul.set_saved(!(save_success === false));
+            }
+            catch (err) {
+                console.log("Error waiting for submit script.")
+                console.log(err);
+                ul.set_saved(false);
             }
         });
 
@@ -1443,6 +1450,17 @@ export class ULabel {
             on_submit_unrolled = on_submit;
         }
 
+        // If on_submit hook is not async, wrap it in an async func
+        let fin_on_submit_hook;
+        if (on_submit_unrolled.hook.constructor.name == "AsyncFunction") {
+            fin_on_submit_hook = on_submit_unrolled.hook;
+        }
+        else {
+            fin_on_submit_hook = async function(annotations) {
+                return on_submit_unrolled.hook(annotations);
+            };
+        }
+
         // TODO 
         // Allow for importing spacing data -- a measure tool would be nice too
         // Much of this is hardcoded defaults, 
@@ -1478,7 +1496,7 @@ export class ULabel {
             "edit_handle_size": 30,
 
             // Behavior on special interactions
-            "done_callback": on_submit_unrolled.hook,
+            "done_callback": fin_on_submit_hook,
             "done_button": on_submit_unrolled.name,
             "instructions_url": instructions_url,
 
