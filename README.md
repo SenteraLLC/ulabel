@@ -46,7 +46,7 @@ An API spec can be found [here](https://github.com/SenteraLLC/ulabel/blob/main/a
         let image_url = "https://tinyurl.com/y6mxeuxs";
 
         // Specify submit behavior
-        let on_submit = (annotations) => {
+        let on_submit = async (annotations) => {
             // Download annotations as a json file
             let el = document.createElement('a');
             el.setAttribute("href", 'data:text/plain;charset=utf-8,' + encodeURIComponent(JSON.stringify(annotations, null, 2)));
@@ -55,6 +55,7 @@ An API spec can be found [here](https://github.com/SenteraLLC/ulabel/blob/main/a
             document.body.appendChild(el);
             el.click();
             document.body.removeChild(el);
+            return true;
         };
 
         let subtasks = {
@@ -78,7 +79,8 @@ An API spec can be found [here](https://github.com/SenteraLLC/ulabel/blob/main/a
                 "allowed_modes": ["bbox", "polygon", "tbar"],
                 "resume_from": null,
                 "task_meta": null,
-                "annotation_meta": null
+                "annotation_meta": null,
+                "read_only": true
             }
         };
 

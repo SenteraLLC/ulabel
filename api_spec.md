@@ -25,7 +25,7 @@ class ULabel(
     container_id,          // string
     image_data,            // string OR array
     username,              // string
-    on_submit,             // (obj) => {} OR object
+    on_submit,             // async (obj) => {} OR object
     subtasks,              // object
     task_meta=null,        // object
     annotation_meta=null,  // object
@@ -54,14 +54,14 @@ In the case of a multi-frame annotation job, an array of URLs may be given. Note
 
 ### `on_submit`
 
-*(obj) => {}* OR *object* -- Appearance and behavior of the "submit" button.
+*async (obj) => {}* OR *object* -- Appearance and behavior of the "submit" button.
 
 Objects must be provided in the form of
 
 ```javascript
 {
     name: "<Arbitrary Button Name>",
-    hook: function (annotations) {
+    hook: async function (annotations) {
         // Define submit behavior here
 
         // ULabel instance is bound to this function, and so it can be accessed with this
