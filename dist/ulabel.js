@@ -13754,6 +13754,7 @@ div#${prntid} #submit-button {
    width: 150px;
    margin: 30px auto;
    opacity: 0.6;
+   position: relative;
 }
 div#${prntid} #submit-button[href="#"] {
    opacity: 1.0;
@@ -13768,8 +13769,40 @@ div#${prntid} #submit-button[href="#"]:active {
 div#${prntid}.ulabel-night #submit-button[href="#"]:active {
    box-shadow: 0 0 8px white;
 }
+
+/* Dual ring loader */
+.lds-dual-ring {
+    position: absolute;
+    display: block;
+    width: 18px;
+    height: 18px;
+    top: 50%;
+    left: 50%;
+    transform: translateY(-50%) translateX(-50%);
+}
+.lds-dual-ring:after {
+    content: " ";
+    display: block;
+    width: 14.4px;
+    height: 14.4px;
+    margin: 1.8px;
+    border-radius: 50%;
+    border: 1.35px solid #fff;
+    border-color: #fff transparent #fff transparent;
+    animation: lds-dual-ring 1.2s linear infinite;
+}
+@keyframes lds-dual-ring {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
 `;
 }
+
+const BUTTON_LOADER_HTML = `<div class="lds-dual-ring"></div>`;
 
 // TODO more of these
 const COLORS = [
@@ -16822,12 +16855,19 @@ class ULabel {
 
     // Action Stream Events
 
-    set_saved(saved) {
+    set_saved(saved, in_progress=false) {
         if (saved) {
             jquery_default()("#"+this.config["container_id"] + " a#submit-button").removeAttr("href");
+            jquery_default()("#"+this.config["container_id"] + " a#submit-button").html(this.config["done_button"]);
         }
         else {
             jquery_default()("#"+this.config["container_id"] + " a#submit-button").attr("href", "#");
+            if (in_progress) {
+                jquery_default()("#"+this.config["container_id"] + " a#submit-button").html(BUTTON_LOADER_HTML);
+            }
+            else {
+                jquery_default()("#"+this.config["container_id"] + " a#submit-button").html(this.config["done_button"]);
+            }
         }
         this.state["edited"] = !saved;
     }
