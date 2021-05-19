@@ -2,6 +2,13 @@
 
 This should eventually be replaced with a more comprehensive approach to documentation (e.g., via readthedocs.org), but this markdown file will do for now.
 
+## Keyboard Shortcuts
+
+- `ctrl+z` or `cmd+z`: Undo
+- `ctrl+shift+z` or `cmd+shift+z`: Redo
+- `ctrl+scroll` or `shift+scroll` or `cmd+scroll`: Zoom -- up for in, down for out
+- `scrollclick+drag` or `ctrl+drag`: Pan
+
 ## ULabel Constructor
 
 When the `ulabel.js` file is included, it attaches its class definition to the `window` object. Therefore, within the document, you may create a new annotation session with

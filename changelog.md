@@ -6,6 +6,12 @@ All notable changes to this project will be documented here.
 
 <nothing_yet>
 
+## [0.4.12] - May 19, 2021
+
+- Fixed issue with detecting undo/redo on Firefox and Mac
+- Detected `shift+scroll` for zooming as well as `cmd/ctrl+scroll`
+- Fixed small issue with `beforeunload` warning
+
 ## [0.4.11] - May 18, 2021
 
 - Allow submission when page first loads without having to make an edit first
