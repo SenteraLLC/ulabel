@@ -589,7 +589,7 @@ export class ULabel {
         $("#" + sp_id + " .toolbox_inner_cls .mode-selection").append(md_buttons.join("<!-- -->"));
         // TODO noconflict
         $("#" + sp_id + " .toolbox_inner_cls").append(`
-            <a id="submit-button">${ul.config["done_button"]}</a>
+            <a id="submit-button" href="#">${ul.config["done_button"]}</a>
         `);
 
         // Show current mode label
@@ -1528,7 +1528,8 @@ export class ULabel {
             "size_mode": "fixed",
 
             // Renderings state
-            "demo_canvas_context": null
+            "demo_canvas_context": null,
+            "edited": true
         };
 
         // Populate these in an external "static" function
