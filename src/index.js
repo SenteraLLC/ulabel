@@ -300,7 +300,7 @@ export class ULabel {
         switch (mouse_event.button) {
             case 0:
                 if (mouse_event.target.id == ul.subtasks[ul.state["current_subtask"]]["canvas_fid"]) {
-                    if (mouse_event.ctrlKey) {
+                    if (mouse_event.ctrlKey || mouse_event.metaKey) {
                         return "pan";
                     }
                     if (mouse_event.shiftKey) {
@@ -869,7 +869,7 @@ export class ULabel {
         // Detection ctrl+scroll
         document.getElementById(ul.config["annbox_id"]).onwheel = function (wheel_event) {
             let fms = ul.config["image_data"].frames.length > 1;
-            if (wheel_event.ctrlKey) {
+            if (wheel_event.ctrlKey || wheel_event.shiftKey || wheel_event.metaKey) {
                 // Prevent scroll-zoom
                 wheel_event.preventDefault();
 
@@ -1115,9 +1115,9 @@ export class ULabel {
         })
 
         // Keyboard only events
-        $(document).on("keypress", (keypress_event) => {
+        document.addEventListener("keydown", (keypress_event) => {
             const shift = keypress_event.shiftKey;
-            const ctrl = keypress_event.ctrlKey;
+            const ctrl = keypress_event.ctrlKey || keypress_event.metaKey;
             let fms = ul.config["image_data"].frames.length > 1;
             let annbox = $("#"+ul.config["annbox_id"]);
             if (ctrl &&
@@ -1529,7 +1529,7 @@ export class ULabel {
 
             // Renderings state
             "demo_canvas_context": null,
-            "edited": true
+            "edited": false
         };
 
         // Populate these in an external "static" function
