@@ -6,6 +6,10 @@ All notable changes to this project will be documented here.
 
 <nothing_yet>
 
+## [0.4.11] - May 18, 2021
+
+- Allow submission when page first loads without having to make an edit first
+
 ## [0.4.10] - April 1, 2021
 
 - Call `on_submit` asynchronouly using await, and show loader until it finishes

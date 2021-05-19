@@ -13812,7 +13812,7 @@ const COLORS = [
 
 
 ;// CONCATENATED MODULE: ./src/version.js
-const ULABEL_VERSION = "0.4.10";
+const ULABEL_VERSION = "0.4.11";
 ;// CONCATENATED MODULE: ./src/index.js
 /*
 Uncertain Labeling Tool
@@ -14391,7 +14391,7 @@ class ULabel {
         jquery_default()("#" + sp_id + " .toolbox_inner_cls .mode-selection").append(md_buttons.join("<!-- -->"));
         // TODO noconflict
         jquery_default()("#" + sp_id + " .toolbox_inner_cls").append(`
-            <a id="submit-button">${ul.config["done_button"]}</a>
+            <a id="submit-button" href="#">${ul.config["done_button"]}</a>
         `);
 
         // Show current mode label
@@ -15330,7 +15330,8 @@ class ULabel {
             "size_mode": "fixed",
 
             // Renderings state
-            "demo_canvas_context": null
+            "demo_canvas_context": null,
+            "edited": true
         };
 
         // Populate these in an external "static" function
