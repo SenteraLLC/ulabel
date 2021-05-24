@@ -1272,7 +1272,7 @@ export class ULabel {
             for (var i = 0; i < subtask["resume_from"].length; i++) {
                 // Push to ordering and add to access
                 ul.subtasks[subtask_key]["annotations"]["ordering"].push(subtask["resume_from"][i]["id"]);
-                ul.subtasks[subtask_key]["annotations"]["access"][subtask["resume_from"][i]["id"]] = subtask["resume_from"][i];
+                ul.subtasks[subtask_key]["annotations"]["access"][subtask["resume_from"][i]["id"]] = JSON.parse(JSON.stringify(subtask["resume_from"][i]));
 
                 // Set new to false
                 ul.subtasks[subtask_key]["annotations"]["access"][subtask["resume_from"][i]["id"]]["new"] = false;
@@ -1286,10 +1286,26 @@ export class ULabel {
                 // TODO do I really want to do this?
 
                 // Ensure that classification payloads are compatible with config
-                // TODO
-
-                // Same for regression payloads
-                // TODO
+                let payloads = ul.subtasks[subtask_key]["annotations"]["access"][subtask["resume_from"][i]["id"]]["classification_payloads"];
+                let found_ids = [];
+                for (let j = 0; j < payloads.length; j++) {
+                    let this_id = payloads[j]["class_id"];
+                    if (!(ul.subtasks[subtask_key]["class_ids"].includes(this_id))) {
+                        alert(`Found class id ${this_id} in "resume_from" data but not in "allowed_classes"`);
+                        throw `Found class id ${this_id} in "resume_from" data but not in "allowed_classes"`;
+                    }
+                    found_ids.push(this_id);
+                }
+                for (let j = 0; j < ul.subtasks[subtask_key]["class_ids"].length; j++) {
+                    if (!(found_ids.includes(ul.subtasks[subtask_key]["class_ids"][j]))) {
+                        ul.subtasks[subtask_key]["annotations"]["access"][subtask["resume_from"][i]["id"]]["classification_payloads"].push(
+                            {
+                                "class_id": ul.subtasks[subtask_key]["class_ids"][j],
+                                "confidence": 0.0
+                            }
+                        )
+                    }
+                }
             }
         }
     }
