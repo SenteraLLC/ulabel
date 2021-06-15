@@ -6,6 +6,10 @@ All notable changes to this project will be documented here.
 
 <nothing_yet>
 
+## [0.4.14] - June 15, 2021
+
+- Fixed security vulnerability
+
 ## [0.4.13] - May 24, 2021
 
 - ULabel now allows for classification payloads without items for certain classes, and just assumes that omitted classes have a confidence of zero
