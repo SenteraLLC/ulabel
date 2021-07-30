@@ -1,2 +1,3 @@
 node_modules
 ulabel_local/py-dbapi/dbapi/__pycache__
+.vscode

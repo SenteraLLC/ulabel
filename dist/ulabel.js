@@ -11541,6 +11541,71 @@ function version(uuid) {
 
 
 
+/***/ }),
+
+/***/ 806:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+var __webpack_unused_export__;
+
+__webpack_unused_export__ = ({ value: true });
+exports.a = void 0;
+var ULabelAnnotation = /** @class */ (function () {
+    function ULabelAnnotation(id, is_new, parent_id, created_by, deprecated, spatial_type, spatial_payload, classification_payloads, line_size, containing_box, frame, text_payload, annotation_meta) {
+        if (is_new === void 0) { is_new = true; }
+        if (parent_id === void 0) { parent_id = null; }
+        if (deprecated === void 0) { deprecated = false; }
+        if (text_payload === void 0) { text_payload = ""; }
+        if (annotation_meta === void 0) { annotation_meta = null; }
+        this.id = id;
+        this.is_new = is_new;
+        this.parent_id = parent_id;
+        this.created_by = created_by;
+        this.deprecated = deprecated;
+        this.spatial_type = spatial_type;
+        this.spatial_payload = spatial_payload;
+        this.classification_payloads = classification_payloads;
+        this.line_size = line_size;
+        this.containing_box = containing_box;
+        this.frame = frame;
+        this.text_payload = text_payload;
+        this.annotation_meta = annotation_meta;
+    }
+    ULabelAnnotation.prototype.ensure_compatible_classification_payloads = function (ulabel_class_ids) {
+        var found_ids = [];
+        var i;
+        for (i = 0; i < this.classification_payloads.length; i++) {
+            var this_id = this.classification_payloads[i].class_id;
+            if (!ulabel_class_ids.includes(this_id)) {
+                alert("Found class id " + this_id + " in \"resume_from\" data but not in \"allowed_classes\"");
+                throw "Found class id " + this_id + " in \"resume_from\" data but not in \"allowed_classes\"";
+            }
+            found_ids.push(this_id);
+        }
+        for (i = 0; i < ulabel_class_ids.length; i++) {
+            if (!(found_ids.includes(ulabel_class_ids[i]))) {
+                this.classification_payloads.push({
+                    "class_id": ulabel_class_ids[i],
+                    "confidence": 0.0
+                });
+            }
+        }
+    };
+    ULabelAnnotation.from_json = function (json_block) {
+        var ret = new ULabelAnnotation();
+        Object.assign(ret, json_block);
+        // Handle 'new' keyword collision
+        if ("new" in json_block) {
+            ret.is_new = json_block["new"];
+        }
+        return ret;
+    };
+    return ULabelAnnotation;
+}());
+exports.a = ULabelAnnotation;
+
+
 /***/ })
 
 /******/ 	});
@@ -11618,6 +11683,8 @@ var __webpack_exports__ = {};
 
 // UNUSED EXPORTS: ULabel
 
+// EXTERNAL MODULE: ./src/annotation.js
+var annotation = __webpack_require__(806);
 // EXTERNAL MODULE: ./node_modules/jquery/dist/jquery.js
 var jquery = __webpack_require__(755);
 var jquery_default = /*#__PURE__*/__webpack_require__.n(jquery);
@@ -15074,40 +15141,22 @@ class ULabel {
             for (var i = 0; i < subtask["resume_from"].length; i++) {
                 // Push to ordering and add to access
                 ul.subtasks[subtask_key]["annotations"]["ordering"].push(subtask["resume_from"][i]["id"]);
-                ul.subtasks[subtask_key]["annotations"]["access"][subtask["resume_from"][i]["id"]] = JSON.parse(JSON.stringify(subtask["resume_from"][i]));
-
+                let current_annotation = annotation/* ULabelAnnotation.from_json */.a.from_json(JSON.parse(JSON.stringify(subtask["resume_from"][i])));
+                ul.subtasks[subtask_key]["annotations"]["access"][subtask["resume_from"][i]["id"]] = current_annotation;
+                
                 // Set new to false
-                ul.subtasks[subtask_key]["annotations"]["access"][subtask["resume_from"][i]["id"]]["new"] = false;
+                current_annotation["new"] = false;
 
                 // Test for line_size
-                if (ul.subtasks[subtask_key]["annotations"]["access"][subtask["resume_from"][i]["id"]]["line_size"] == null) {
-                    ul.subtasks[subtask_key]["annotations"]["access"][subtask["resume_from"][i]["id"]]["line_size"] = ul.state["line_size"];
+                if (current_annotation["line_size"] == null) {
+                    current_annotation["line_size"] = ul.state["line_size"];
                 }
 
                 // Ensure that spatial type is allowed
                 // TODO do I really want to do this?
 
                 // Ensure that classification payloads are compatible with config
-                let payloads = ul.subtasks[subtask_key]["annotations"]["access"][subtask["resume_from"][i]["id"]]["classification_payloads"];
-                let found_ids = [];
-                for (let j = 0; j < payloads.length; j++) {
-                    let this_id = payloads[j]["class_id"];
-                    if (!(ul.subtasks[subtask_key]["class_ids"].includes(this_id))) {
-                        alert(`Found class id ${this_id} in "resume_from" data but not in "allowed_classes"`);
-                        throw `Found class id ${this_id} in "resume_from" data but not in "allowed_classes"`;
-                    }
-                    found_ids.push(this_id);
-                }
-                for (let j = 0; j < ul.subtasks[subtask_key]["class_ids"].length; j++) {
-                    if (!(found_ids.includes(ul.subtasks[subtask_key]["class_ids"][j]))) {
-                        ul.subtasks[subtask_key]["annotations"]["access"][subtask["resume_from"][i]["id"]]["classification_payloads"].push(
-                            {
-                                "class_id": ul.subtasks[subtask_key]["class_ids"][j],
-                                "confidence": 0.0
-                            }
-                        )
-                    }
-                }
+                current_annotation.ensure_compatible_classification_payloads(ul.subtasks[subtask_key]["class_ids"])
             }
         }
     }
