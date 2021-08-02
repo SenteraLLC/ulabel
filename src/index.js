@@ -1863,7 +1863,6 @@ export class ULabel {
         if(subtask == null) {
             return;
         }
-        console.log(subtask)
         let class_ids = this.subtasks[subtask].class_ids; 
         let i, j;
         let class_counts = {};
@@ -1889,6 +1888,10 @@ export class ULabel {
         let class_name, class_count;
         for(i = 0;i<class_ids.length;i++) {
             class_name = this.subtasks[subtask].class_defs[i].name;
+            // MF-Tassels Hack
+            if(class_name.includes("OVERWRITE")) {
+                continue;
+            }
             class_count = class_counts[this.subtasks[subtask].class_defs[i].id];
             f_string += `${class_name}: ${class_count}<br>`;
         }
