@@ -1946,6 +1946,13 @@ div#${prntid} div.classification p.tb-header {
    margin: 0;
    margin-bottom: 5px;
 }
+div#${prntid} div.toolbox-class-counter {
+   padding: 10px 30px;
+}
+div#${prntid} div.toolbox-class-counter p.tb-header {
+   margin: 0;
+   margin-bottom: 5px;
+}
 
 div#${prntid} a.tbid-opt {
    display: inline-block;

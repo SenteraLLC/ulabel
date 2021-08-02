@@ -13637,6 +13637,13 @@ div#${prntid} div.classification p.tb-header {
    margin: 0;
    margin-bottom: 5px;
 }
+div#${prntid} div.toolbox-class-counter {
+   padding: 10px 30px;
+}
+div#${prntid} div.toolbox-class-counter p.tb-header {
+   margin: 0;
+   margin-bottom: 5px;
+}
 
 div#${prntid} a.tbid-opt {
    display: inline-block;
@@ -14427,6 +14434,11 @@ class ULabel {
                     <div class="toolbox-refs">
                         ${instructions}
                     </div>
+                    <div class="toolbox-divider"></div>
+                    <div class="toolbox-class-counter">
+                        <p class="tb-header">Annotation Count</p>
+                        <div class="id-toolbox-count-app"><div>
+                    </div>
                 </div>
                 <div class="toolbox-tabs">
                     ${tabs}
@@ -15139,11 +15151,7 @@ class ULabel {
         };
         if (subtask["resume_from"] != null) {
             for (var i = 0; i < subtask["resume_from"].length; i++) {
-                // Push to ordering and add to access
-                ul.subtasks[subtask_key]["annotations"]["ordering"].push(subtask["resume_from"][i]["id"]);
                 let current_annotation = annotation/* ULabelAnnotation.from_json */.a.from_json(JSON.parse(JSON.stringify(subtask["resume_from"][i])));
-                ul.subtasks[subtask_key]["annotations"]["access"][subtask["resume_from"][i]["id"]] = current_annotation;
-                
                 // Set new to false
                 current_annotation["new"] = false;
 
@@ -15157,6 +15165,10 @@ class ULabel {
 
                 // Ensure that classification payloads are compatible with config
                 current_annotation.ensure_compatible_classification_payloads(ul.subtasks[subtask_key]["class_ids"])
+
+                // Push to ordering and add to access
+                ul.subtasks[subtask_key]["annotations"]["ordering"].push(subtask["resume_from"][i]["id"]);
+                ul.subtasks[subtask_key]["annotations"]["access"][subtask["resume_from"][i]["id"]] = current_annotation;
             }
         }
     }
@@ -15720,6 +15732,44 @@ class ULabel {
         this.state["demo_canvas_context"].clearRect(0, 0, this.config["demo_width"]*this.config["px_per_px"], this.config["demo_height"]*this.config["px_per_px"]);
         this.draw_annotation(DEMO_ANNOTATION, "demo_canvas_context", true, null, "demo");
         this.update_cursor();
+    }
+
+    // Update count of each class in the toolbox.
+    update_toolbox_counter(subtask) {
+        if(subtask == null) {
+            return;
+        }
+        console.log(subtask)
+        let class_ids = this.subtasks[subtask].class_ids; 
+        let i, j;
+        let class_counts = {};
+        for(i = 0;i<class_ids.length;i++) {
+            class_counts[class_ids[i]] = 0;
+        }
+        let annotations = this.subtasks[subtask].annotations.access;
+        let annotation_ids = this.subtasks[subtask].annotations.ordering;
+        var current_annotation, current_payload;
+        for(i = 0;i<annotation_ids.length;i++) {
+            current_annotation = annotations[annotation_ids[i]];
+            if(current_annotation.deprecated == false) {
+                for(j = 0;j < current_annotation.classification_payloads.length;j++) {
+                    current_payload = current_annotation.classification_payloads[j];
+                    if(current_payload.confidence > 0.5) {
+                        class_counts[current_payload.class_id] += 1;
+                        break;
+                    }
+                }
+            }
+        }
+        let f_string = "";
+        let class_name, class_count;
+        for(i = 0;i<class_ids.length;i++) {
+            class_name = this.subtasks[subtask].class_defs[i].name;
+            class_count = class_counts[this.subtasks[subtask].class_defs[i].id];
+            f_string += `${class_name}: ${class_count}<br>`;
+        }
+        let test = `<p>${f_string}</p>`;
+        jquery_default()("#" + this.config["toolbox_id"] + " div.id-toolbox-count-app").html(test);
     }
 
 
@@ -16402,6 +16452,9 @@ class ULabel {
         else {
             this.redraw_all_annotations_in_subtask(subtask, offset, spatial_only);
         }
+
+        // TODO find a better place for this 
+        this.update_toolbox_counter(subtask);
     }
 
     // ================= On-Canvas HTML Dialog Utilities =================
