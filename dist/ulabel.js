@@ -15753,7 +15753,7 @@ class ULabel {
             if(current_annotation.deprecated == false) {
                 for(j = 0;j < current_annotation.classification_payloads.length;j++) {
                     current_payload = current_annotation.classification_payloads[j];
-                    if(current_payload.confidence > 0.5) {
+                    if(current_payload.confidence > 0.0) {
                         class_counts[current_payload.class_id] += 1;
                         break;
                     }
