@@ -13812,7 +13812,7 @@ const COLORS = [
 
 
 ;// CONCATENATED MODULE: ./src/version.js
-const ULABEL_VERSION = "0.4.14";
+const ULABEL_VERSION = "0.4.15";
 ;// CONCATENATED MODULE: ./src/index.js
 /*
 Uncertain Labeling Tool

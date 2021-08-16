@@ -4,7 +4,9 @@ All notable changes to this project will be documented here.
 
 ## [unreleased]
 
-<nothing_yet>
+## [0.4.15] - August 16, 2021
+
+- Fixed security vulnerability
 
 ## [0.4.14] - June 15, 2021
 
