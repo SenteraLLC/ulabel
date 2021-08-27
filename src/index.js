@@ -529,6 +529,9 @@ export class ULabel {
                                 </div>
                             </div>
                         </div>
+                        <div class="recenter-cont" style="text-align: center;">
+                            <a href="#" id="recenter-button">Re-Center</a>
+                        </div>
                         ${frame_range}
                     </div>
                     <div class="toolbox-divider"></div>
@@ -975,6 +978,10 @@ export class ULabel {
                 ul.state["size_mode"] = "dynamic";
             }
             ul.redraw_demo();
+        });
+
+        $(document).on("click", "#recenter-button", () => {
+            ul.show_initial_crop();
         });
 
         // Listener for soft id toolbox buttons
@@ -1744,8 +1751,14 @@ export class ULabel {
                 "left" in initcrp &&
                 "top" in initcrp
             ) {
+                initcrp["left"] = Math.max(initcrp["left"], 0);
+                initcrp["top"] = Math.max(initcrp["top"], 0);
+                initcrp["width"] = Math.min(initcrp["width"], wdt - initcrp["left"]);
+                initcrp["height"] = Math.min(initcrp["height"], hgt - initcrp["top"]);
+
                 wdt = initcrp["width"];
                 hgt = initcrp["height"];
+
                 lft_cntr = initcrp["left"] + initcrp["width"]/2;
                 top_cntr = initcrp["top"] + initcrp["height"]/2;
             }
