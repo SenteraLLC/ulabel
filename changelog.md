@@ -4,6 +4,14 @@ All notable changes to this project will be documented here.
 
 ## [unreleased]
 
+Nothing yet.
+
+## [0.4.16] - August 27, 2021
+
+- Provides an example of how users can be requested to annotate just a window within an image
+- Has better support for zooming into that region in the image
+- Added a button to "re-center" on the initial crop that was provided
+
 ## [0.4.15] - August 16, 2021
 
 - Fixed security vulnerability
