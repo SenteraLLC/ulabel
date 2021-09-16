@@ -3,6 +3,7 @@ Uncertain Labeling Tool
 Sentera Inc.
 */
 import { ULabelAnnotation } from './annotation';
+import { ClassCounterToolboxTab } from './toolbox';
 import $ from 'jquery';
 const jQuery = $;
 
@@ -559,10 +560,7 @@ export class ULabel {
                         ${instructions}
                     </div>
                     <div class="toolbox-divider"></div>
-                    <div class="toolbox-class-counter">
-                        <p class="tb-header">Annotation Count</p>
-                        <div class="id-toolbox-count-app"><div>
-                    </div>
+                    <div class="toolbox-class-counter"></div>
                 </div>
                 <div class="toolbox-tabs">
                     ${tabs}
@@ -1858,48 +1856,6 @@ export class ULabel {
         this.update_cursor();
     }
 
-    // Update count of each class in the toolbox.
-    update_toolbox_counter(subtask) {
-        if(subtask == null) {
-            return;
-        }
-        let class_ids = this.subtasks[subtask].class_ids; 
-        let i, j;
-        let class_counts = {};
-        for(i = 0;i<class_ids.length;i++) {
-            class_counts[class_ids[i]] = 0;
-        }
-        let annotations = this.subtasks[subtask].annotations.access;
-        let annotation_ids = this.subtasks[subtask].annotations.ordering;
-        var current_annotation, current_payload;
-        for(i = 0;i<annotation_ids.length;i++) {
-            current_annotation = annotations[annotation_ids[i]];
-            if(current_annotation.deprecated == false) {
-                for(j = 0;j < current_annotation.classification_payloads.length;j++) {
-                    current_payload = current_annotation.classification_payloads[j];
-                    if(current_payload.confidence > 0.0) {
-                        class_counts[current_payload.class_id] += 1;
-                        break;
-                    }
-                }
-            }
-        }
-        let f_string = "";
-        let class_name, class_count;
-        for(i = 0;i<class_ids.length;i++) {
-            class_name = this.subtasks[subtask].class_defs[i].name;
-            // MF-Tassels Hack
-            if(class_name.includes("OVERWRITE")) {
-                continue;
-            }
-            class_count = class_counts[this.subtasks[subtask].class_defs[i].id];
-            f_string += `${class_name}: ${class_count}<br>`;
-        }
-        let test = `<p>${f_string}</p>`;
-        $("#" + this.config["toolbox_id"] + " div.id-toolbox-count-app").html(test);
-    }
-
-
     // ================= Instance Utilities =================
 
     // A robust measure of zoom
@@ -2580,8 +2536,20 @@ export class ULabel {
             this.redraw_all_annotations_in_subtask(subtask, offset, spatial_only);
         }
 
-        // TODO find a better place for this 
-        this.update_toolbox_counter(subtask);
+        /*
+        TODO:
+        Make a Toolbox manager that tracks all the individual tabs
+        and updates them when appropriate.
+        Also TODO:
+        some update scheduling to make binding easier
+        i.e. a batch of functions run on adding, removing annotations
+        and a different batch run on redraw, a batch for subtask switch etc.
+        */
+        var test = new ClassCounterToolboxTab()
+        test.update_toolbox_counter(this.subtasks[subtask], this.config["toolbox_id"])
+        // TODO figure out how to have this occur from the toolbox
+        $("#" + this.config["toolbox_id"] + " div.toolbox-class-counter").html(test.inner_HTML);
+
     }
 
     // ================= On-Canvas HTML Dialog Utilities =================
