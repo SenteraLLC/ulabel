@@ -4,6 +4,7 @@ Sentera Inc.
 */
 import { ULabelAnnotation } from './annotation';
 import { ClassCounterToolboxTab } from './toolbox';
+import { ULabelSubtask } from './subtask';
 import $ from 'jquery';
 const jQuery = $;
 
@@ -553,8 +554,8 @@ export class ULabel {
                     </div>
                     <div class="toolbox-divider"></div>
                     <div class="classification">
-                        <p class="tb-header">Annotation ID</p>
-                        <div class="id-toolbox-app"></div>
+                        // <p class="tb-header">Annotation ID</p>
+                        // <div class="id-toolbox-app"></div>
                     </div>
                     <div class="toolbox-refs">
                         ${instructions}
@@ -1300,27 +1301,28 @@ export class ULabel {
         for (const subtask_key in stcs) {
             // For convenience, make a raw subtask var
             let raw_subtask = stcs[subtask_key];
+            ul.subtasks[subtask_key] = ULabelSubtask.from_json(subtask_key, raw_subtask);
 
-            // Initialize subtask config to null
-            ul.subtasks[subtask_key] = {
-                "display_name": raw_subtask["display_name"] || subtask_key,
-                "read_only": ("read_only" in raw_subtask) && (raw_subtask["read_only"] === true),
-                "inactive_opacity": 0.4
-            };
+            // // Initialize subtask config to null
+            // ul.subtasks[subtask_key] = {
+            //     "display_name": raw_subtask["display_name"] || subtask_key,
+            //     "read_only": ("read_only" in raw_subtask) && (raw_subtask["read_only"] === true),
+            //     "inactive_opacity": 0.4
+            // };
 
-            if ("inactive_opacity" in raw_subtask && typeof raw_subtask["inactive_opacity"] == "number") {
-                ul.subtasks[subtask_key]["inactive_opacity"] = Math.min(Math.max(raw_subtask["inactive_opacity"], 0.0), 1.0);
-            }
+            // if ("inactive_opacity" in raw_subtask && typeof raw_subtask["inactive_opacity"] == "number") {
+            //     ul.subtasks[subtask_key]["inactive_opacity"] = Math.min(Math.max(raw_subtask["inactive_opacity"], 0.0), 1.0);
+            // }
 
             if (first_non_ro == null && !ul.subtasks[subtask_key]["read_only"]) {
                 first_non_ro = subtask_key;
             }
 
-            //  Initialize an empty action stream for each subtask
-            ul.subtasks[subtask_key]["actions"] = {
-                "stream": [],
-                "undone_stack": []
-            };
+            // //  Initialize an empty action stream for each subtask
+            // ul.subtasks[subtask_key]["actions"] = {
+            //     "stream": [],
+            //     "undone_stack": []
+            // };
 
             // Process allowed_modes
             // They are placed in ul.subtasks[subtask_key]["allowed_modes"]

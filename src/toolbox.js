@@ -15,7 +15,7 @@ var __extends = (this && this.__extends) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ClassCounterToolboxTab = exports.ToolboxTab = void 0;
+exports.WholeImageClassifierToolboxTab = exports.ClassCounterToolboxTab = exports.AnnotationIDToolboxTab = exports.ToolboxTab = void 0;
 var toolboxDividerDiv = "<div class=toolbox-divider></div>";
 var ToolboxTab = /** @class */ (function () {
     function ToolboxTab(div_HTML_class, header_title, inner_HTML) {
@@ -26,6 +26,14 @@ var ToolboxTab = /** @class */ (function () {
     return ToolboxTab;
 }());
 exports.ToolboxTab = ToolboxTab;
+var AnnotationIDToolboxTab = /** @class */ (function (_super) {
+    __extends(AnnotationIDToolboxTab, _super);
+    function AnnotationIDToolboxTab(subtask) {
+        return _super.call(this, "toolbox-annotation-id", "Annotation ID", "<div class=\"id-toolbox-app\"></div>") || this;
+    }
+    return AnnotationIDToolboxTab;
+}(ToolboxTab));
+exports.AnnotationIDToolboxTab = AnnotationIDToolboxTab;
 var ClassCounterToolboxTab = /** @class */ (function (_super) {
     __extends(ClassCounterToolboxTab, _super);
     function ClassCounterToolboxTab() {
@@ -74,3 +82,11 @@ var ClassCounterToolboxTab = /** @class */ (function (_super) {
     return ClassCounterToolboxTab;
 }(ToolboxTab));
 exports.ClassCounterToolboxTab = ClassCounterToolboxTab;
+var WholeImageClassifierToolboxTab = /** @class */ (function (_super) {
+    __extends(WholeImageClassifierToolboxTab, _super);
+    function WholeImageClassifierToolboxTab() {
+        return _super.call(this, "toolbox-whole-image-classifier", "Whole Image Classification", "") || this;
+    }
+    return WholeImageClassifierToolboxTab;
+}(ToolboxTab));
+exports.WholeImageClassifierToolboxTab = WholeImageClassifierToolboxTab;

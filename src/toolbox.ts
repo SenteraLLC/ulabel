@@ -10,6 +10,17 @@ export class ToolboxTab {
     ) {}
 }
 
+export class AnnotationIDToolboxTab extends ToolboxTab {
+    constructor(subtask: any) {
+        super(
+            "toolbox-annotation-id",
+            "Annotation ID",
+            `<div class="id-toolbox-app"></div>`
+        )
+    }
+}
+
+
 export class ClassCounterToolboxTab extends ToolboxTab {
     constructor() {
         super(
@@ -58,4 +69,15 @@ export class ClassCounterToolboxTab extends ToolboxTab {
         }
         this.inner_HTML = `<p class="tb-header">${this.header_title}</p>` + `<p>${f_string}</p>`;
     }
+}
+
+export class WholeImageClassifierToolboxTab extends ToolboxTab {
+    constructor() {
+        super(
+            "toolbox-whole-image-classifier",
+            "Whole Image Classification",
+            ""
+        );
+    }
+
 }

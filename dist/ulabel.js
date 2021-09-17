@@ -11608,6 +11608,47 @@ exports.a = ULabelAnnotation;
 
 /***/ }),
 
+/***/ 167:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+var __webpack_unused_export__;
+
+__webpack_unused_export__ = ({ value: true });
+exports.W = void 0;
+var ULabelSubtask = /** @class */ (function () {
+    function ULabelSubtask(display_name, classes, allowed_modes, resume_from, task_meta, annotation_meta, read_only, inactivate_opacity) {
+        if (inactivate_opacity === void 0) { inactivate_opacity = 0.4; }
+        this.display_name = display_name;
+        this.classes = classes;
+        this.allowed_modes = allowed_modes;
+        this.resume_from = resume_from;
+        this.task_meta = task_meta;
+        this.annotation_meta = annotation_meta;
+        this.read_only = read_only;
+        this.inactivate_opacity = inactivate_opacity;
+        this.actions = {
+            "stream": [],
+            "undone_stack": []
+        };
+    }
+    ULabelSubtask.from_json = function (subtask_key, subtask_json) {
+        var ret = new ULabelSubtask(subtask_key, subtask_json["classes"], subtask_json["allowed_modes"], subtask_json["resume_from"], subtask_json["task_meta"], subtask_json["annotation_meta"]);
+        ret.read_only = ("read_only" in subtask_json) && (subtask_json["read_only"] === true);
+        console.log(ret.read_only);
+        if ("inactive_opacity" in subtask_json && typeof subtask_json["inactive_opacity"] == "number") {
+            ret.inactivate_opacity = Math.min(Math.max(subtask_json["inactive_opacity"], 0.0), 1.0);
+        }
+        return ret;
+    };
+    return ULabelSubtask;
+}());
+exports.W = ULabelSubtask;
+//export type ULabelSubtasks = { [key: string]: ULabelSubtask };
+
+
+/***/ }),
+
 /***/ 334:
 /***/ (function(__unused_webpack_module, exports) {
 
@@ -11629,7 +11670,7 @@ var __extends = (this && this.__extends) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.ClassCounterToolboxTab = exports.ToolboxTab = void 0;
+exports.WholeImageClassifierToolboxTab = exports.ClassCounterToolboxTab = exports.AnnotationIDToolboxTab = exports.ToolboxTab = void 0;
 var toolboxDividerDiv = "<div class=toolbox-divider></div>";
 var ToolboxTab = /** @class */ (function () {
     function ToolboxTab(div_HTML_class, header_title, inner_HTML) {
@@ -11640,6 +11681,14 @@ var ToolboxTab = /** @class */ (function () {
     return ToolboxTab;
 }());
 exports.ToolboxTab = ToolboxTab;
+var AnnotationIDToolboxTab = /** @class */ (function (_super) {
+    __extends(AnnotationIDToolboxTab, _super);
+    function AnnotationIDToolboxTab(subtask) {
+        return _super.call(this, "toolbox-annotation-id", "Annotation ID", "<div class=\"id-toolbox-app\"></div>") || this;
+    }
+    return AnnotationIDToolboxTab;
+}(ToolboxTab));
+exports.AnnotationIDToolboxTab = AnnotationIDToolboxTab;
 var ClassCounterToolboxTab = /** @class */ (function (_super) {
     __extends(ClassCounterToolboxTab, _super);
     function ClassCounterToolboxTab() {
@@ -11688,6 +11737,14 @@ var ClassCounterToolboxTab = /** @class */ (function (_super) {
     return ClassCounterToolboxTab;
 }(ToolboxTab));
 exports.ClassCounterToolboxTab = ClassCounterToolboxTab;
+var WholeImageClassifierToolboxTab = /** @class */ (function (_super) {
+    __extends(WholeImageClassifierToolboxTab, _super);
+    function WholeImageClassifierToolboxTab() {
+        return _super.call(this, "toolbox-whole-image-classifier", "Whole Image Classification", "") || this;
+    }
+    return WholeImageClassifierToolboxTab;
+}(ToolboxTab));
+exports.WholeImageClassifierToolboxTab = WholeImageClassifierToolboxTab;
 
 
 /***/ })
@@ -11771,6 +11828,8 @@ var __webpack_exports__ = {};
 var annotation = __webpack_require__(806);
 // EXTERNAL MODULE: ./src/toolbox.js
 var toolbox = __webpack_require__(334);
+// EXTERNAL MODULE: ./src/subtask.js
+var subtask = __webpack_require__(167);
 // EXTERNAL MODULE: ./node_modules/jquery/dist/jquery.js
 var jquery = __webpack_require__(755);
 var jquery_default = /*#__PURE__*/__webpack_require__.n(jquery);
@@ -13981,6 +14040,7 @@ Sentera Inc.
 
 
 
+
 const jQuery = (jquery_default());
 
 const { v4: uuidv4 } = __webpack_require__(614);
@@ -14515,8 +14575,8 @@ class ULabel {
                     </div>
                     <div class="toolbox-divider"></div>
                     <div class="classification">
-                        <p class="tb-header">Annotation ID</p>
-                        <div class="id-toolbox-app"></div>
+                        // <p class="tb-header">Annotation ID</p>
+                        // <div class="id-toolbox-app"></div>
                     </div>
                     <div class="toolbox-refs">
                         ${instructions}
@@ -15262,27 +15322,29 @@ class ULabel {
         for (const subtask_key in stcs) {
             // For convenience, make a raw subtask var
             let raw_subtask = stcs[subtask_key];
+            console.log(raw_subtask)
+            ul.subtasks[subtask_key] = subtask/* ULabelSubtask.from_json */.W.from_json(subtask_key, raw_subtask);
 
-            // Initialize subtask config to null
-            ul.subtasks[subtask_key] = {
-                "display_name": raw_subtask["display_name"] || subtask_key,
-                "read_only": ("read_only" in raw_subtask) && (raw_subtask["read_only"] === true),
-                "inactive_opacity": 0.4
-            };
+            // // Initialize subtask config to null
+            // ul.subtasks[subtask_key] = {
+            //     "display_name": raw_subtask["display_name"] || subtask_key,
+            //     "read_only": ("read_only" in raw_subtask) && (raw_subtask["read_only"] === true),
+            //     "inactive_opacity": 0.4
+            // };
 
-            if ("inactive_opacity" in raw_subtask && typeof raw_subtask["inactive_opacity"] == "number") {
-                ul.subtasks[subtask_key]["inactive_opacity"] = Math.min(Math.max(raw_subtask["inactive_opacity"], 0.0), 1.0);
-            }
+            // if ("inactive_opacity" in raw_subtask && typeof raw_subtask["inactive_opacity"] == "number") {
+            //     ul.subtasks[subtask_key]["inactive_opacity"] = Math.min(Math.max(raw_subtask["inactive_opacity"], 0.0), 1.0);
+            // }
 
             if (first_non_ro == null && !ul.subtasks[subtask_key]["read_only"]) {
                 first_non_ro = subtask_key;
             }
 
-            //  Initialize an empty action stream for each subtask
-            ul.subtasks[subtask_key]["actions"] = {
-                "stream": [],
-                "undone_stack": []
-            };
+            // //  Initialize an empty action stream for each subtask
+            // ul.subtasks[subtask_key]["actions"] = {
+            //     "stream": [],
+            //     "undone_stack": []
+            // };
 
             // Process allowed_modes
             // They are placed in ul.subtasks[subtask_key]["allowed_modes"]
