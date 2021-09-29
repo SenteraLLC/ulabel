@@ -6,6 +6,10 @@ All notable changes to this project will be documented here.
 
 Nothing yet.
 
+## [0.4.17] - September 29, 2021
+
+- Fixed an issue with setting annotations at the frame/global level.
+
 ## [0.4.16] - August 27, 2021
 
 - Provides an example of how users can be requested to annotate just a window within an image

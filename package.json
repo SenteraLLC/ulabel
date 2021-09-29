@@ -1,7 +1,7 @@
 {
   "name": "ulabel",
   "description": "An image annotation tool.",
-  "version": "0.4.16",
+  "version": "0.4.76",
   "main": "index.js",
   "module": "src/index.js",
   "scripts": {
