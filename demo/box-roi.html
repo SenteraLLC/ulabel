@@ -14,7 +14,13 @@
             /* global $ */
             /* global ULabel */
 
-            const roibox = [[400, 400], [3000, 700]];
+            const roibox = [[0, 0], [500, 500]];
+            let roi_line_size = 4;
+            const extbox = [
+                [roibox[0][0]-roi_line_size/2, roibox[0][1]-roi_line_size/2], 
+                [roibox[1][0]+roi_line_size/2, roibox[1][1]+roi_line_size/2]
+            ];
+
 
             $(window).on("load", function() {
 
@@ -90,7 +96,7 @@
                             "spatial_type": "bbox", 
                             
                             // (nullable) e.g. [[x1, y1], [x2, y2], ...]
-                            "spatial_payload": roibox, 
+                            "spatial_payload": extbox, 
                             
                             // The class associated with the annotation
                             "classification_payloads": [ 
@@ -101,7 +107,7 @@
                             ],
 
                             // size in underlying image pixels
-                            "line_size": 4, 
+                            "line_size": roi_line_size, 
 
                             // (nullable) frame ann was created for
                             "frame": 0, 
@@ -135,8 +141,8 @@
                       "height": roibox[1][1] - roibox[0][1],
                       "width": roibox[1][0] - roibox[0][0]
                     },
-                    initial_line_size=4,
-                    instructions_url=null
+                    4,
+                    null
                 );
                 // Wait for ULabel instance to finish initialization
                 ulabel.init(function() {

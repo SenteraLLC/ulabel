@@ -6,6 +6,10 @@ All notable changes to this project will be documented here.
 
 Nothing yet.
 
+## [0.4.18] - August 27, 2021
+
+- added checks to ensure `resume_from` object is compatible
+
 ## [0.4.16] - August 27, 2021
 
 - Provides an example of how users can be requested to annotate just a window within an image
