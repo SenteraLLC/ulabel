@@ -6,7 +6,11 @@ All notable changes to this project will be documented here.
 
 Nothing yet.
 
-## [0.4.18] - August 27, 2021
+## [0.4.19] - October 15, 2021
+
+- bugfix in `resume_from` processing
+
+## [0.4.18] - October 15, 2021
 
 - added checks to ensure `resume_from` object is compatible
 
