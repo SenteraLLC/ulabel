@@ -13812,7 +13812,7 @@ const COLORS = [
 
 
 ;// CONCATENATED MODULE: ./src/version.js
-const ULABEL_VERSION = "0.4.18";
+const ULABEL_VERSION = "0.4.19";
 ;// CONCATENATED MODULE: ./src/index.js
 /*
 Uncertain Labeling Tool
@@ -15149,7 +15149,7 @@ class ULabel {
                 // Ensure that classification payloads are compatible with config
                 let payloads = cand["classification_payloads"];
                 let found_ids = [];
-                let conf_not_found_i = null;
+                let conf_not_found_j = null;
                 let remaining_confidence = 1.0;
                 for (let j = 0; j < payloads.length; j++) {
                     let this_id = payloads[j]["class_id"];
@@ -15158,24 +15158,24 @@ class ULabel {
                         throw `Found class id ${this_id} in "resume_from" data but not in "allowed_classes"`;
                     }
                     found_ids.push(this_id);
-                    if (!("confidence" in payloads[i])) {
-                        if (conf_not_found_i !== null) {
+                    if (!("confidence" in payloads[j])) {
+                        if (conf_not_found_j !== null) {
                             throw("More than one classification payload was supplied without confidence for a single annotation.")
                         }
                         else {
-                            conf_not_found_i = i;
+                            conf_not_found_j = j;
                         }
                     }
                     else {
-                        cand["classification_payloads"][i]["confidence"] = parseFloat(payloads[i]["confidence"]);
-                        remaining_confidence -= cand["classification_payloads"][i]["confidence"];
+                        cand["classification_payloads"][j]["confidence"] = parseFloat(payloads[j]["confidence"]);
+                        remaining_confidence -= cand["classification_payloads"][j]["confidence"];
                     }
                 }
-                if (conf_not_found_i !== null) {
+                if (conf_not_found_j !== null) {
                     if (remaining_confidence < 0) {
                         throw("Supplied total confidence was greater than 100%");
                     }
-                    cand["classification_payloads"][conf_not_found_i]["confidence"] = remaining_confidence;
+                    cand["classification_payloads"][conf_not_found_j]["confidence"] = remaining_confidence;
                 }
                 for (let j = 0; j < ul.subtasks[subtask_key]["class_ids"].length; j++) {
                     if (!(found_ids.includes(ul.subtasks[subtask_key]["class_ids"][j]))) {
