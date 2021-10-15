@@ -1277,24 +1277,78 @@ export class ULabel {
         };
         if (subtask["resume_from"] != null) {
             for (var i = 0; i < subtask["resume_from"].length; i++) {
-                // Push to ordering and add to access
-                ul.subtasks[subtask_key]["annotations"]["ordering"].push(subtask["resume_from"][i]["id"]);
-                ul.subtasks[subtask_key]["annotations"]["access"][subtask["resume_from"][i]["id"]] = JSON.parse(JSON.stringify(subtask["resume_from"][i]));
+                // Get copy of annotation to import for modification before incorporation
+                let cand = JSON.parse(JSON.stringify(subtask["resume_from"][i]));
 
-                // Set new to false
-                ul.subtasks[subtask_key]["annotations"]["access"][subtask["resume_from"][i]["id"]]["new"] = false;
+                // Mark as not new
+                cand["new"] = false;
 
-                // Test for line_size
-                if (ul.subtasks[subtask_key]["annotations"]["access"][subtask["resume_from"][i]["id"]]["line_size"] == null) {
-                    ul.subtasks[subtask_key]["annotations"]["access"][subtask["resume_from"][i]["id"]]["line_size"] = ul.state["line_size"];
+                // Set to default line size if there is none
+                if (
+                    (!("line_size" in cand)) || (cand["line_size"] == null)
+                ) {
+                    cand["line_size"] = ul.state["line_size"];
+                }
+
+                // Add created by attribute if there is none
+                if (
+                    !("created_by" in cand)
+                ) {
+                    cand["created_by"] = null;
+                }
+
+                // Add created at attribute if there is none
+                if (
+                    !("created_at" in cand)
+                ) {
+                    cand["created_at"] = ULabel.get_time();
+                }
+                
+                // Add deprecated at attribute if there is none
+                if (
+                    !("deprecated" in cand)
+                ) {
+                    cand["deprecated"] = false;
+                }
+
+                // Throw error if no spatial type is found
+                if (
+                    !("spatial_type" in cand)
+                ) {
+                    alert(`Error: Attempted to import annotation without a spatial type (id: ${cand["id"]})`);
+                    throw `Error: Attempted to import annotation without a spatial type (id: ${cand["id"]})"`;
+                }
+
+                // Throw error if no spatial type is found
+                if (
+                    !("spatial_payload" in cand)
+                ) {
+                    alert(`Error: Attempted to import annotation without a spatial payload (id: ${cand["id"]})`);
+                    throw `Error: Attempted to import annotation without a spatial payload (id: ${cand["id"]})"`;
+                }
+
+                // Set frame to zero if not provided
+                if (
+                    !("frame" in cand)
+                ) {
+                    cand["frame"] = 0;
+                }
+
+                // Set annotation_meta if not provided
+                if (
+                    !("annotation_meta" in cand)
+                ) {
+                    cand["annotation_meta"] = {};
                 }
 
                 // Ensure that spatial type is allowed
                 // TODO do I really want to do this?
 
                 // Ensure that classification payloads are compatible with config
-                let payloads = ul.subtasks[subtask_key]["annotations"]["access"][subtask["resume_from"][i]["id"]]["classification_payloads"];
+                let payloads = cand["classification_payloads"];
                 let found_ids = [];
+                let conf_not_found_i = null;
+                let remaining_confidence = 1.0;
                 for (let j = 0; j < payloads.length; j++) {
                     let this_id = payloads[j]["class_id"];
                     if (!(ul.subtasks[subtask_key]["class_ids"].includes(this_id))) {
@@ -1302,10 +1356,28 @@ export class ULabel {
                         throw `Found class id ${this_id} in "resume_from" data but not in "allowed_classes"`;
                     }
                     found_ids.push(this_id);
+                    if (!("confidence" in payloads[i])) {
+                        if (conf_not_found_i !== null) {
+                            throw("More than one classification payload was supplied without confidence for a single annotation.")
+                        }
+                        else {
+                            conf_not_found_i = i;
+                        }
+                    }
+                    else {
+                        cand["classification_payloads"][i]["confidence"] = parseFloat(payloads[i]["confidence"]);
+                        remaining_confidence -= cand["classification_payloads"][i]["confidence"];
+                    }
+                }
+                if (conf_not_found_i !== null) {
+                    if (remaining_confidence < 0) {
+                        throw("Supplied total confidence was greater than 100%");
+                    }
+                    cand["classification_payloads"][conf_not_found_i]["confidence"] = remaining_confidence;
                 }
                 for (let j = 0; j < ul.subtasks[subtask_key]["class_ids"].length; j++) {
                     if (!(found_ids.includes(ul.subtasks[subtask_key]["class_ids"][j]))) {
-                        ul.subtasks[subtask_key]["annotations"]["access"][subtask["resume_from"][i]["id"]]["classification_payloads"].push(
+                        cand["classification_payloads"].push(
                             {
                                 "class_id": ul.subtasks[subtask_key]["class_ids"][j],
                                 "confidence": 0.0
@@ -1313,6 +1385,10 @@ export class ULabel {
                         )
                     }
                 }
+
+                // Push to ordering and add to access
+                ul.subtasks[subtask_key]["annotations"]["ordering"].push(cand["id"]);
+                ul.subtasks[subtask_key]["annotations"]["access"][subtask["resume_from"][i]["id"]] = JSON.parse(JSON.stringify(cand));
             }
         }
     }
