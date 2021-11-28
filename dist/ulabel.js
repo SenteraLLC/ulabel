@@ -13812,7 +13812,7 @@ const COLORS = [
 
 
 ;// CONCATENATED MODULE: ./src/version.js
-const ULABEL_VERSION = "0.4.19";
+const ULABEL_VERSION = "0.4.20";
 ;// CONCATENATED MODULE: ./src/index.js
 /*
 Uncertain Labeling Tool
@@ -15187,6 +15187,12 @@ class ULabel {
                         )
                     }
                 }
+                cand["classification_payloads"].sort(
+                    (a, b) => {return (
+                        ul.subtasks[subtask_key]["class_ids"].find((e) => e == a["class_id"]) -
+                        ul.subtasks[subtask_key]["class_ids"].find((e) => e == b["class_id"])
+                    );}
+                )
 
                 // Push to ordering and add to access
                 ul.subtasks[subtask_key]["annotations"]["ordering"].push(cand["id"]);
