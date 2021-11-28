@@ -6,6 +6,10 @@ All notable changes to this project will be documented here.
 
 Nothing yet.
 
+## [0.4.20]
+
+- bugfix in `resume_from` processing
+
 ## [0.4.19] - October 15, 2021
 
 - bugfix in `resume_from` processing
