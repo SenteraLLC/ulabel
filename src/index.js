@@ -474,6 +474,12 @@ export class ULabel {
             frame_range = ``;
         }
 
+        let fix_href = "";
+        let dyn_href = `href="#" `;
+        if (ul.state["size_mode"] == "dynamic") {
+            fix_href = `href="#" `;
+            dyn_href = "";
+        }
         const tool_html = `
         <div class="full_ulabel_container_">
             ${frame_annotation_dialogs}
@@ -548,8 +554,8 @@ export class ULabel {
                                 <a href="#" class="wbutt win">+</a>
                             </div><!--
                             --><div class="setting">
-                                <a class="fixed-setting">Fixed</a><br>
-                                <a href="#" class="dyn-setting">Dynamic</a>
+                                <a ${fix_href}class="fixed-setting">Fixed</a><br>
+                                <a ${dyn_href}class="dyn-setting">Dynamic</a>
                             </div>
                         </div>
                     </div>
@@ -1538,7 +1544,8 @@ export class ULabel {
         px_per_px=1,
         initial_crop=null,
         initial_line_size=4,
-        instructions_url=null
+        instructions_url=null,
+        initial_size_mode="fixed"
     ) {
         // Unroll safe default arguments
         if (task_meta == null) {task_meta = {};}
@@ -1565,6 +1572,11 @@ export class ULabel {
             fin_on_submit_hook = async function(annotations) {
                 return on_submit_unrolled.hook(annotations);
             };
+        }
+
+        // Make sure that initial size mode is valid
+        if (!(["fixed", "dynamic"].includes(initial_size_mode))) {
+            initial_size_mode = "fixed";
         }
 
         // TODO 
@@ -1630,7 +1642,7 @@ export class ULabel {
             // Global annotation state (subtasks also maintain an annotation state)
             "current_subtask": null,
             "line_size": initial_line_size,
-            "size_mode": "fixed",
+            "size_mode": initial_size_mode,
 
             // Renderings state
             "demo_canvas_context": null,
