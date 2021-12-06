@@ -29,17 +29,18 @@ The constructor is used to specify the configuration for an "annotation session"
 
 ```javascript
 class ULabel(
-    container_id,          // string
-    image_data,            // string OR array
-    username,              // string
-    on_submit,             // async (obj) => {} OR object
-    subtasks,              // object
-    task_meta=null,        // object
-    annotation_meta=null,  // object
-    px_per_px=1,           // number
-    init_crop=null         // object
-    initial_line_size=4    // number
-    instructions_url=null  // string
+    container_id,             // string
+    image_data,               // string OR array
+    username,                 // string
+    on_submit,                // async (obj) => {} OR object
+    subtasks,                 // object
+    task_meta=null,           // object
+    annotation_meta=null,     // object
+    px_per_px=1,              // number
+    init_crop=null,           // object
+    initial_line_size=4,      // number
+    instructions_url=null,    // string
+    initial_size_mode="fixed" // string
 )
 ```
 
@@ -263,6 +264,13 @@ The line width with which new annotations are drawn initially. Units are pixels 
 ### `instructions_url`
 
 URL to a page that gives annotation instructions.
+
+### `initial_size_mode`
+
+Whether to load the ULabel session in "fixed" or "dynamic" mode -- defines `line_size` behavior on zoom.
+
+- `"fixed"` (default): Keeps the line size constant *from the perspective of the annotator*
+- `"dynamic"`: Keeps the line size constant *from the perspective of the image*
 
 ## Display Utility Functions
 

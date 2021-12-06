@@ -4,7 +4,7 @@ All notable changes to this project will be documented here.
 
 ## [unreleased]
 
-Nothing yet.
+- Added constructor argument for initial line size mode
 
 ## [0.4.20]
 
