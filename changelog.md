@@ -4,7 +4,29 @@ All notable changes to this project will be documented here.
 
 ## [unreleased]
 
-<nothing_yet>
+Nothing yet.
+
+## [0.4.20]
+
+- bugfix in `resume_from` processing
+
+## [0.4.19] - October 15, 2021
+
+- bugfix in `resume_from` processing
+
+## [0.4.18] - October 15, 2021
+
+- added checks to ensure `resume_from` object is compatible
+
+## [0.4.16] - August 27, 2021
+
+- Provides an example of how users can be requested to annotate just a window within an image
+- Has better support for zooming into that region in the image
+- Added a button to "re-center" on the initial crop that was provided
+
+## [0.4.15] - August 16, 2021
+
+- Fixed security vulnerability
 
 ## [0.4.14] - June 15, 2021
 

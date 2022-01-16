@@ -531,6 +531,9 @@ export class ULabel {
                                 </div>
                             </div>
                         </div>
+                        <div class="recenter-cont" style="text-align: center;">
+                            <a href="#" id="recenter-button">Re-Center</a>
+                        </div>
                         ${frame_range}
                     </div>
                     <div class="toolbox-divider"></div>
@@ -981,6 +984,10 @@ export class ULabel {
             ul.redraw_demo();
         });
 
+        $(document).on("click", "#recenter-button", () => {
+            ul.show_initial_crop();
+        });
+
         // Listener for soft id toolbox buttons
         $(document).on("click", "#" + ul.config["toolbox_id"] + ' a.tbid-opt', (e) => {
             let tgt_jq = $(e.currentTarget);
@@ -1274,24 +1281,86 @@ export class ULabel {
         };
         if (subtask["resume_from"] != null) {
             for (var i = 0; i < subtask["resume_from"].length; i++) {
-                let current_annotation = ULabelAnnotation.from_json(JSON.parse(JSON.stringify(subtask["resume_from"][i])));
-                // Set new to false
-                current_annotation["new"] = false;
+                // Get copy of annotation to import for modification before incorporation
+                let cand = ULabelAnnotation.from_json(JSON.parse(JSON.stringify(subtask["resume_from"][i])));
 
-                // Test for line_size
-                if (current_annotation["line_size"] == null) {
-                    current_annotation["line_size"] = ul.state["line_size"];
+                // Mark as not new
+                cand["new"] = false;
+
+                // Set to default line size if there is none
+                if (
+                    (!("line_size" in cand)) || (cand["line_size"] == null)
+                ) {
+                    cand["line_size"] = ul.state["line_size"];
+                }
+
+                // Add created by attribute if there is none
+                if (
+                    !("created_by" in cand)
+                ) {
+                    cand["created_by"] = null;
+                }
+
+                // Add created at attribute if there is none
+                if (
+                    !("created_at" in cand)
+                ) {
+                    cand["created_at"] = ULabel.get_time();
+                }
+                
+                // Add deprecated at attribute if there is none
+                if (
+                    !("deprecated" in cand)
+                ) {
+                    cand["deprecated"] = false;
+                }
+
+                // Throw error if no spatial type is found
+                if (
+                    !("spatial_type" in cand)
+                ) {
+                    alert(`Error: Attempted to import annotation without a spatial type (id: ${cand["id"]})`);
+                    throw `Error: Attempted to import annotation without a spatial type (id: ${cand["id"]})"`;
+                }
+
+                // Throw error if no spatial type is found
+                if (
+                    !("spatial_payload" in cand)
+                ) {
+                    alert(`Error: Attempted to import annotation without a spatial payload (id: ${cand["id"]})`);
+                    throw `Error: Attempted to import annotation without a spatial payload (id: ${cand["id"]})"`;
+                }
+
+                // Set frame to zero if not provided
+                if (
+                    !("frame" in cand)
+                ) {
+                    cand["frame"] = 0;
+                }
+
+                // Set annotation_meta if not provided
+                if (
+                    !("annotation_meta" in cand)
+                ) {
+                    cand["annotation_meta"] = {};
                 }
 
                 // Ensure that spatial type is allowed
                 // TODO do I really want to do this?
 
                 // Ensure that classification payloads are compatible with config
-                current_annotation.ensure_compatible_classification_payloads(ul.subtasks[subtask_key]["class_ids"])
+                cand.ensure_compatible_classification_payloads(ul.subtasks[subtask_key]["class_ids"])
+                
+                cand["classification_payloads"].sort(
+                    (a, b) => {return (
+                        ul.subtasks[subtask_key]["class_ids"].find((e) => e == a["class_id"]) -
+                        ul.subtasks[subtask_key]["class_ids"].find((e) => e == b["class_id"])
+                    );}
+                )
 
                 // Push to ordering and add to access
-                ul.subtasks[subtask_key]["annotations"]["ordering"].push(subtask["resume_from"][i]["id"]);
-                ul.subtasks[subtask_key]["annotations"]["access"][subtask["resume_from"][i]["id"]] = current_annotation;
+                ul.subtasks[subtask_key]["annotations"]["ordering"].push(cand["id"]);
+                ul.subtasks[subtask_key]["annotations"]["access"][subtask["resume_from"][i]["id"]] = JSON.parse(JSON.stringify(cand));
             }
         }
     }
@@ -1731,8 +1800,14 @@ export class ULabel {
                 "left" in initcrp &&
                 "top" in initcrp
             ) {
+                initcrp["left"] = Math.max(initcrp["left"], 0);
+                initcrp["top"] = Math.max(initcrp["top"], 0);
+                initcrp["width"] = Math.min(initcrp["width"], wdt - initcrp["left"]);
+                initcrp["height"] = Math.min(initcrp["height"], hgt - initcrp["top"]);
+
                 wdt = initcrp["width"];
                 hgt = initcrp["height"];
+
                 lft_cntr = initcrp["left"] + initcrp["width"]/2;
                 top_cntr = initcrp["top"] + initcrp["height"]/2;
             }
