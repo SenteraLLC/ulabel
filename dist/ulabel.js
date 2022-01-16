@@ -13812,7 +13812,8 @@ const COLORS = [
 
 
 ;// CONCATENATED MODULE: ./src/version.js
-const ULABEL_VERSION = "0.4.20";
+const ULABEL_VERSION = "0.4.21";
+
 ;// CONCATENATED MODULE: ./src/index.js
 /*
 Uncertain Labeling Tool
@@ -17399,6 +17400,10 @@ class ULabel {
     rebuild_containing_box(actid, ignore_final=false, subtask=null) {
         if (subtask == null) {
             subtask = this.state["current_subtask"];
+        }
+        // No need to rebuild containing box for image-level annotation types.
+        if (NONSPATIAL_MODES.includes(this.subtasks[subtask]["annotations"]["access"][actid]["spatial_type"])) {
+            return;
         }
         let init_pt = this.subtasks[subtask]["annotations"]["access"][actid]["spatial_payload"][0];
         this.subtasks[subtask]["annotations"]["access"][actid]["containing_box"] = {

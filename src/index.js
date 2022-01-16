@@ -3598,6 +3598,10 @@ export class ULabel {
         if (subtask == null) {
             subtask = this.state["current_subtask"];
         }
+        // No need to rebuild containing box for image-level annotation types.
+        if (NONSPATIAL_MODES.includes(this.subtasks[subtask]["annotations"]["access"][actid]["spatial_type"])) {
+            return;
+        }
         let init_pt = this.subtasks[subtask]["annotations"]["access"][actid]["spatial_payload"][0];
         this.subtasks[subtask]["annotations"]["access"][actid]["containing_box"] = {
             "tlx": init_pt[0],
