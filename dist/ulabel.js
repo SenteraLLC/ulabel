@@ -11574,19 +11574,39 @@ var ULabelAnnotation = /** @class */ (function () {
     }
     ULabelAnnotation.prototype.ensure_compatible_classification_payloads = function (ulabel_class_ids) {
         var found_ids = [];
-        var i;
-        for (i = 0; i < this.classification_payloads.length; i++) {
-            var this_id = this.classification_payloads[i].class_id;
+        var j;
+        var conf_not_found_j = null;
+        var remaining_confidence = 1.0;
+        for (j = 0; j < this.classification_payloads.length; j++) {
+            var this_id = this.classification_payloads[j].class_id;
             if (!ulabel_class_ids.includes(this_id)) {
                 alert("Found class id " + this_id + " in \"resume_from\" data but not in \"allowed_classes\"");
                 throw "Found class id " + this_id + " in \"resume_from\" data but not in \"allowed_classes\"";
             }
             found_ids.push(this_id);
+            if (!("confidence" in this.classification_payloads[j])) {
+                if (conf_not_found_j !== null) {
+                    throw ("More than one classification payload was supplied without confidence for a single annotation.");
+                }
+                else {
+                    conf_not_found_j = j;
+                }
+            }
+            else {
+                this.classification_payloads[j].confidence = this.classification_payloads[j].confidence;
+                remaining_confidence -= this.classification_payloads[j]["confidence"];
+            }
         }
-        for (i = 0; i < ulabel_class_ids.length; i++) {
-            if (!(found_ids.includes(ulabel_class_ids[i]))) {
+        if (conf_not_found_j !== null) {
+            if (remaining_confidence < 0) {
+                throw ("Supplied total confidence was greater than 100%");
+            }
+            this.classification_payloads[conf_not_found_j].confidence = remaining_confidence;
+        }
+        for (j = 0; j < ulabel_class_ids.length; j++) {
+            if (!(found_ids.includes(ulabel_class_ids[j]))) {
                 this.classification_payloads.push({
-                    "class_id": ulabel_class_ids[i],
+                    "class_id": ulabel_class_ids[j],
                     "confidence": 0.0
                 });
             }
@@ -11604,6 +11624,210 @@ var ULabelAnnotation = /** @class */ (function () {
     return ULabelAnnotation;
 }());
 exports.a = ULabelAnnotation;
+
+
+/***/ }),
+
+/***/ 822:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+var __webpack_unused_export__;
+
+__webpack_unused_export__ = ({ value: true });
+exports.Z = void 0;
+var GeometricUtils = /** @class */ (function () {
+    function GeometricUtils() {
+    }
+    GeometricUtils.l2_norm = function (pt1, pt2) {
+        var ndim = pt1.length;
+        var sq = 0;
+        for (var i = 0; i < ndim; i++) {
+            sq += (pt1[i] - pt2[i]) * (pt1[i] - pt2[i]);
+        }
+        return Math.sqrt(sq);
+    };
+    // Get the point at a certain proportion of the segment between two points in a polygon
+    GeometricUtils.interpolate_poly_segment = function (pts, i, prop) {
+        var pt1 = pts[i % pts.length];
+        var pt2 = pts[(i + 1) % pts.length];
+        return [
+            pt1[0] * (1.0 - prop) + pt2[0] * prop,
+            pt1[1] * (1.0 - prop) + pt2[1] * prop
+        ];
+    };
+    // Given two points, return the line that goes through them in the form of
+    //    ax + by + c = 0
+    GeometricUtils.get_line_equation_through_points = function (p1, p2) {
+        var a = (p2[1] - p1[1]);
+        var b = (p1[0] - p2[0]);
+        // If the points are the same, no line can be inferred. Return null
+        if ((a == 0) && (b == 0))
+            return null;
+        var c = p1[1] * (p2[0] - p1[0]) - p1[0] * (p2[1] - p1[1]);
+        return {
+            "a": a,
+            "b": b,
+            "c": c
+        };
+    };
+    // Given a line segment in the form of ax + by + c = 0 and two endpoints for it,
+    //   return the point on the segment that is closest to the reference point, as well
+    //   as the distance away
+    GeometricUtils.get_nearest_point_on_segment = function (ref_x, ref_y, eq, kp1, kp2) {
+        // For convenience
+        var a = eq["a"];
+        var b = eq["b"];
+        var c = eq["c"];
+        // Where is that point on the line, exactly?
+        var nrx = (b * (b * ref_x - a * ref_y) - a * c) / (a * a + b * b);
+        var nry = (a * (a * ref_y - b * ref_x) - b * c) / (a * a + b * b);
+        // Where along the segment is that point?
+        var xprop = 0.0;
+        if (kp2[0] != kp1[0]) {
+            xprop = (nrx - kp1[0]) / (kp2[0] - kp1[0]);
+        }
+        var yprop = 0.0;
+        if (kp2[1] != kp1[1]) {
+            yprop = (nry - kp1[1]) / (kp2[1] - kp1[1]);
+        }
+        // If the point is at an end of the segment, just return null
+        if ((xprop < 0) || (xprop > 1) || (yprop < 0) || (yprop > 1)) {
+            return null;
+        }
+        // Distance from point to line
+        var dst = Math.abs(a * ref_x + b * ref_y + c) / Math.sqrt(a * a + b * b);
+        // Proportion of the length of segment from p1 to the nearest point
+        var seg_length = Math.sqrt((kp2[0] - kp1[0]) * (kp2[0] - kp1[0]) + (kp2[1] - kp1[1]) * (kp2[1] - kp1[1]));
+        var kprop = Math.sqrt((nrx - kp1[0]) * (nrx - kp1[0]) + (nry - kp1[1]) * (nry - kp1[1])) / seg_length;
+        // return object with info about the point
+        return {
+            "dst": dst,
+            "prop": kprop
+        };
+    };
+    // Return the point on a polygon that's closest to a reference along with its distance
+    GeometricUtils.get_nearest_point_on_polygon = function (ref_x, ref_y, spatial_payload, dstmax, include_segments) {
+        if (dstmax === void 0) { dstmax = Infinity; }
+        if (include_segments === void 0) { include_segments = false; }
+        var poly_pts = spatial_payload;
+        // Initialize return value to null object
+        var ret = {
+            "access": null,
+            "distance": null,
+            "point": null
+        };
+        if (!include_segments) {
+            // Look through polygon points one by one 
+            //    no need to look at last, it's the same as first
+            for (var kpi = 0; kpi < poly_pts.length; kpi++) {
+                var kp = poly_pts[kpi];
+                // Distance is measured with l2 norm
+                var kpdst = Math.sqrt(Math.pow(kp[0] - ref_x, 2) + Math.pow(kp[1] - ref_y, 2));
+                // If this a minimum distance so far, store it
+                if (ret["distance"] == null || kpdst < ret["distance"]) {
+                    ret["access"] = kpi;
+                    ret["distance"] = kpdst;
+                    ret["point"] = poly_pts[kpi];
+                }
+            }
+            return ret;
+        }
+        else {
+            for (var kpi = 0; kpi < poly_pts.length - 1; kpi++) {
+                var kp1 = poly_pts[kpi];
+                var kp2 = poly_pts[kpi + 1];
+                var eq = GeometricUtils.get_line_equation_through_points(kp1, kp2);
+                var nr = GeometricUtils.get_nearest_point_on_segment(ref_x, ref_y, eq, kp1, kp2);
+                if ((nr != null) && (nr["dst"] < dstmax) && (ret["distance"] == null || nr["dst"] < ret["distance"])) {
+                    ret["access"] = "" + (kpi + nr["prop"]);
+                    ret["distance"] = nr["dst"];
+                    ret["point"] = GeometricUtils.interpolate_poly_segment(poly_pts, kpi, nr["prop"]);
+                }
+            }
+            return ret;
+        }
+    };
+    GeometricUtils.get_nearest_point_on_bounding_box = function (ref_x, ref_y, spatial_payload, dstmax) {
+        if (dstmax === void 0) { dstmax = Infinity; }
+        var ret = {
+            "access": null,
+            "distance": null,
+            "point": null
+        };
+        for (var bbi = 0; bbi < 2; bbi++) {
+            for (var bbj = 0; bbj < 2; bbj++) {
+                var kp = [spatial_payload[bbi][0], spatial_payload[bbj][1]];
+                var kpdst = Math.sqrt(Math.pow(kp[0] - ref_x, 2) + Math.pow(kp[1] - ref_y, 2));
+                if (kpdst < dstmax && (ret["distance"] == null || kpdst < ret["distance"])) {
+                    ret["access"] = "" + bbi + bbj;
+                    ret["distance"] = kpdst;
+                    ret["point"] = kp;
+                }
+            }
+        }
+        return ret;
+    };
+    GeometricUtils.get_nearest_point_on_bbox3 = function (ref_x, ref_y, frame, spatial_payload, dstmax) {
+        if (dstmax === void 0) { dstmax = Infinity; }
+        var ret = {
+            "access": null,
+            "distance": null,
+            "point": null
+        };
+        for (var bbi = 0; bbi < 2; bbi++) {
+            for (var bbj = 0; bbj < 2; bbj++) {
+                var kp = [spatial_payload[bbi][0], spatial_payload[bbj][1]];
+                var kpdst = Math.sqrt(Math.pow(kp[0] - ref_x, 2) + Math.pow(kp[1] - ref_y, 2));
+                if (kpdst < dstmax && (ret["distance"] == null || kpdst < ret["distance"])) {
+                    ret["access"] = "" + bbi + bbj;
+                    ret["distance"] = kpdst;
+                    ret["point"] = kp;
+                }
+            }
+        }
+        var min_k = 0;
+        var min = spatial_payload[0][2];
+        var max_k = 1;
+        var max = spatial_payload[1][2];
+        if (max < min) {
+            var tmp = min_k;
+            min_k = max_k;
+            max_k = tmp;
+            tmp = min;
+            min = max;
+            max = tmp;
+        }
+        if (frame == min) {
+            ret["access"] += "" + min_k;
+        }
+        else if (frame == max) {
+            ret["access"] += "" + max_k;
+        }
+        return ret;
+    };
+    GeometricUtils.get_nearest_point_on_tbar = function (ref_x, ref_y, spatial_payload, dstmax) {
+        if (dstmax === void 0) { dstmax = Infinity; }
+        // TODO intelligently test against three grabbable points
+        var ret = {
+            "access": null,
+            "distance": null,
+            "point": null
+        };
+        for (var tbi = 0; tbi < 2; tbi++) {
+            var kp = [spatial_payload[tbi][0], spatial_payload[tbi][1]];
+            var kpdst = Math.sqrt(Math.pow(kp[0] - ref_x, 2) + Math.pow(kp[1] - ref_y, 2));
+            if (kpdst < dstmax && (ret["distance"] == null || kpdst < ret["distance"])) {
+                ret["access"] = "" + tbi + tbi;
+                ret["distance"] = kpdst;
+                ret["point"] = kp;
+            }
+        }
+        return ret;
+    };
+    return GeometricUtils;
+}());
+exports.Z = GeometricUtils;
 
 
 /***/ }),
@@ -11633,7 +11857,7 @@ var ULabelSubtask = /** @class */ (function () {
         };
     }
     ULabelSubtask.from_json = function (subtask_key, subtask_json) {
-        var ret = new ULabelSubtask(subtask_key, subtask_json["classes"], subtask_json["allowed_modes"], subtask_json["resume_from"], subtask_json["task_meta"], subtask_json["annotation_meta"]);
+        var ret = new ULabelSubtask(subtask_json["display_name"], subtask_json["classes"], subtask_json["allowed_modes"], subtask_json["resume_from"], subtask_json["task_meta"], subtask_json["annotation_meta"]);
         ret.read_only = ("read_only" in subtask_json) && (subtask_json["read_only"] === true);
         console.log(ret.read_only);
         if ("inactive_opacity" in subtask_json && typeof subtask_json["inactive_opacity"] == "number") {
@@ -11670,33 +11894,151 @@ var __extends = (this && this.__extends) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.WholeImageClassifierToolboxTab = exports.ClassCounterToolboxTab = exports.AnnotationIDToolboxTab = exports.ToolboxTab = void 0;
+exports.ClassCounterToolboxItem = exports.AnnotationIDToolboxItem = exports.LinestyleToolboxItem = exports.ZoomPanToolboxItem = exports.ModeSelectionToolboxItem = exports.ToolboxItem = exports.ToolboxTab = exports.Toolbox = void 0;
 var toolboxDividerDiv = "<div class=toolbox-divider></div>";
+/**
+ * Manager for toolbox. Contains ToolboxTab items.
+ */
+var Toolbox = /** @class */ (function () {
+    // public tabs: ToolboxTab[] = [];
+    // public items: ToolboxItem[] = []; 
+    function Toolbox(tabs, items) {
+        if (tabs === void 0) { tabs = []; }
+        if (items === void 0) { items = []; }
+        this.tabs = tabs;
+        this.items = items;
+    }
+    Toolbox.prototype.setup_toolbox_html = function (ulabel, frame_annotation_dialogs, images, ULABEL_VERSION) {
+        // Setup base div and ULabel version header
+        var toolbox_html = "\n        <div class=\"full_ulabel_container_\">\n            " + frame_annotation_dialogs + "\n            <div id=\"" + ulabel.config["annbox_id"] + "\" class=\"annbox_cls\">\n                <div id=\"" + ulabel.config["imwrap_id"] + "\" class=\"imwrap_cls " + ulabel.config["imgsz_class"] + "\">\n                    " + images + "\n                </div>\n            </div>\n            <div id=\"" + ulabel.config["toolbox_id"] + "\" class=\"toolbox_cls\">\n                <div class=\"toolbox-name-header\">\n                    <h1 class=\"toolname\"><a class=\"repo-anchor\" href=\"https://github.com/SenteraLLC/ulabel\">ULabel</a> <span class=\"version-number\">v" + ULABEL_VERSION + "</span></h1><!--\n                    --><div class=\"night-button-cont\">\n                        <a href=\"#\" class=\"night-button\">\n                            <div class=\"night-button-track\">\n                                <div class=\"night-status\"></div>\n                            </div>\n                        </a>\n                    </div>\n                </div>\n                <div class=\"toolbox_inner_cls\">\n        ";
+        for (var tbitem in this.items) {
+            toolbox_html += this.items[tbitem].get_html() + toolboxDividerDiv;
+        }
+        toolbox_html += "\n                </div>\n                <div class=\"toolbox-tabs\">\n                    " + this.get_toolbox_tabs(ulabel) + "\n                </div> \n            </div>\n        </div>";
+        return toolbox_html;
+    };
+    /**
+     * Adds tabs for each ULabel subtask to the toolbox.
+     */
+    Toolbox.prototype.get_toolbox_tabs = function (ulabel) {
+        var ret = "";
+        for (var st_key in ulabel.subtasks) {
+            var selected = st_key == ulabel.state["current_subtask"];
+            var subtask = ulabel.subtasks[st_key];
+            var current_tab = new ToolboxTab([], subtask, st_key, selected);
+            ret += current_tab.html;
+            this.tabs.push(current_tab);
+        }
+        return ret;
+    };
+    Toolbox.prototype.update = function () { };
+    return Toolbox;
+}());
+exports.Toolbox = Toolbox;
 var ToolboxTab = /** @class */ (function () {
-    function ToolboxTab(div_HTML_class, header_title, inner_HTML) {
-        this.div_HTML_class = div_HTML_class;
-        this.header_title = header_title;
-        this.inner_HTML = inner_HTML;
+    function ToolboxTab(toolboxitems, subtask, subtask_key, selected) {
+        if (toolboxitems === void 0) { toolboxitems = []; }
+        if (selected === void 0) { selected = false; }
+        this.toolboxitems = toolboxitems;
+        this.subtask = subtask;
+        this.subtask_key = subtask_key;
+        this.selected = selected;
+        var sel = "";
+        var href = " href=\"#\"";
+        var val = 50;
+        if (this.selected) {
+            if (this.subtask.read_only) {
+                href = "";
+            }
+            sel = " sel";
+            val = 100;
+        }
+        console.log(subtask.display_name);
+        console.log(subtask);
+        this.html = "\n        <div class=\"tb-st-tab" + sel + "\">\n            <a" + href + " id=\"tb-st-switch--" + subtask_key + "\" class=\"tb-st-switch\">" + this.subtask.display_name + "</a><!--\n            --><span class=\"tb-st-range\">\n                <input id=\"tb-st-range--" + subtask_key + "\" type=\"range\" min=0 max=100 value=" + val + " />\n            </span>\n        </div>\n        ";
     }
     return ToolboxTab;
 }());
 exports.ToolboxTab = ToolboxTab;
-var AnnotationIDToolboxTab = /** @class */ (function (_super) {
-    __extends(AnnotationIDToolboxTab, _super);
-    function AnnotationIDToolboxTab(subtask) {
-        return _super.call(this, "toolbox-annotation-id", "Annotation ID", "<div class=\"id-toolbox-app\"></div>") || this;
+var ToolboxItem = /** @class */ (function () {
+    function ToolboxItem() {
     }
-    return AnnotationIDToolboxTab;
-}(ToolboxTab));
-exports.AnnotationIDToolboxTab = AnnotationIDToolboxTab;
-var ClassCounterToolboxTab = /** @class */ (function (_super) {
-    __extends(ClassCounterToolboxTab, _super);
-    function ClassCounterToolboxTab() {
-        var _this = _super.call(this, "toolbox-class-counter", "Annotation Count", "") || this;
-        _this.inner_HTML = "<p class=\"tb-header\">" + _this.header_title + "</p>";
+    return ToolboxItem;
+}());
+exports.ToolboxItem = ToolboxItem;
+/**
+ * Toolbox item for selecting annotation mode.
+ */
+var ModeSelectionToolboxItem = /** @class */ (function (_super) {
+    __extends(ModeSelectionToolboxItem, _super);
+    function ModeSelectionToolboxItem() {
+        return _super.call(this) || this;
+    }
+    ModeSelectionToolboxItem.prototype.get_html = function () {
+        return "\n        <div class=\"mode-selection\">\n            <p class=\"current_mode_container\">\n                <span class=\"cmlbl\">Mode:</span>\n                <span class=\"current_mode\"></span>\n            </p>\n        </div>\n        ";
+    };
+    return ModeSelectionToolboxItem;
+}(ToolboxItem));
+exports.ModeSelectionToolboxItem = ModeSelectionToolboxItem;
+/**
+ * Toolbox item for zooming and panning.
+ */
+var ZoomPanToolboxItem = /** @class */ (function (_super) {
+    __extends(ZoomPanToolboxItem, _super);
+    function ZoomPanToolboxItem(frame_range) {
+        var _this = _super.call(this) || this;
+        _this.frame_range = frame_range;
         return _this;
     }
-    ClassCounterToolboxTab.prototype.update_toolbox_counter = function (subtask, toolbox_id) {
+    ZoomPanToolboxItem.prototype.get_html = function () {
+        return "\n        <div class=\"zoom-pan\">\n            <div class=\"half-tb htbmain set-zoom\">\n                <p class=\"shortcut-tip\">ctrl+scroll or shift+drag</p>\n                <div class=\"zpcont\">\n                    <div class=\"lblpyldcont\">\n                        <span class=\"pzlbl htblbl\">Zoom</span>\n                        <span class=\"zinout htbpyld\">\n                            <a href=\"#\" class=\"zbutt zout\">-</a>\n                            <a href=\"#\" class=\"zbutt zin\">+</a>\n                        </span>\n                    </div>\n                </div>\n            </div><!--\n            --><div class=\"half-tb htbmain set-pan\">\n                <p class=\"shortcut-tip\">scrollclick+drag or ctrl+drag</p>\n                <div class=\"zpcont\">\n                    <div class=\"lblpyldcont\">\n                        <span class=\"pzlbl htblbl\">Pan</span>\n                        <span class=\"panudlr htbpyld\">\n                            <a href=\"#\" class=\"pbutt left\"></a>\n                            <a href=\"#\" class=\"pbutt right\"></a>\n                            <a href=\"#\" class=\"pbutt up\"></a>\n                            <a href=\"#\" class=\"pbutt down\"></a>\n                            <span class=\"spokes\"></span>\n                        </span>\n                    </div>\n                </div>\n            </div>\n            <div class=\"recenter-cont\" style=\"text-align: center;\">\n                <a href=\"#\" id=\"recenter-button\">Re-Center</a>\n            </div>\n            " + this.frame_range + "\n        </div>\n        ";
+    };
+    return ZoomPanToolboxItem;
+}(ToolboxItem));
+exports.ZoomPanToolboxItem = ZoomPanToolboxItem;
+/**
+ * Toolbox Item for selecting line style.
+ */
+var LinestyleToolboxItem = /** @class */ (function (_super) {
+    __extends(LinestyleToolboxItem, _super);
+    function LinestyleToolboxItem(canvas_did, demo_width, demo_height, px_per_px) {
+        var _this = _super.call(this) || this;
+        _this.canvas_did = canvas_did;
+        _this.demo_width = demo_width;
+        _this.demo_height = demo_height;
+        _this.px_per_px = px_per_px;
+        return _this;
+    }
+    LinestyleToolboxItem.prototype.get_html = function () {
+        return "\n        <div class=\"linestyle\">\n            <p class=\"tb-header\">Line Width</p>\n            <div class=\"lstyl-row\">\n                <div class=\"line-expl\">\n                    <a href=\"#\" class=\"wbutt wout\">-</a>\n                    <canvas \n                        id=\"" + this.canvas_did + "\" \n                        class=\"demo-canvas\" \n                        width=" + this.demo_width * this.px_per_px + "} \n                        height=" + this.demo_height * this.px_per_px + "></canvas>\n                    <a href=\"#\" class=\"wbutt win\">+</a>\n                </div><!--\n                --><div class=\"setting\">\n                    <a class=\"fixed-setting\">Fixed</a><br>\n                    <a href=\"#\" class=\"dyn-setting\">Dynamic</a>\n                </div>\n            </div>\n        </div>\n        ";
+    };
+    return LinestyleToolboxItem;
+}(ToolboxItem));
+exports.LinestyleToolboxItem = LinestyleToolboxItem;
+/**
+ * Toolbox item for selection Annotation ID.
+ */
+var AnnotationIDToolboxItem = /** @class */ (function (_super) {
+    __extends(AnnotationIDToolboxItem, _super);
+    function AnnotationIDToolboxItem(instructions) {
+        var _this = _super.call(this) || this;
+        _this.instructions = instructions;
+        return _this;
+    }
+    AnnotationIDToolboxItem.prototype.get_html = function () {
+        return "\n        <div class=\"classification\">\n            <p class=\"tb-header\">Annotation ID</p>\n            <div class=\"id-toolbox-app\"></div>\n        </div>\n        <div class=\"toolbox-refs\">\n            " + this.instructions + "\n        </div>\n        ";
+    };
+    return AnnotationIDToolboxItem;
+}(ToolboxItem));
+exports.AnnotationIDToolboxItem = AnnotationIDToolboxItem;
+var ClassCounterToolboxItem = /** @class */ (function (_super) {
+    __extends(ClassCounterToolboxItem, _super);
+    function ClassCounterToolboxItem() {
+        var _this = _super.call(this) || this;
+        _this.inner_HTML = "<p class=\"tb-header\">Annotation Count</p>";
+        return _this;
+    }
+    ClassCounterToolboxItem.prototype.update_toolbox_counter = function (subtask, toolbox_id) {
         if (subtask == null) {
             return;
         }
@@ -11732,19 +12074,23 @@ var ClassCounterToolboxTab = /** @class */ (function (_super) {
             class_count = class_counts[subtask.class_defs[i].id];
             f_string += class_name + ": " + class_count + "<br>";
         }
-        this.inner_HTML = "<p class=\"tb-header\">" + this.header_title + "</p>" + ("<p>" + f_string + "</p>");
+        this.inner_HTML = "<p class=\"tb-header\">Annotation Count</p>" + ("<p>" + f_string + "</p>");
     };
-    return ClassCounterToolboxTab;
-}(ToolboxTab));
-exports.ClassCounterToolboxTab = ClassCounterToolboxTab;
-var WholeImageClassifierToolboxTab = /** @class */ (function (_super) {
-    __extends(WholeImageClassifierToolboxTab, _super);
-    function WholeImageClassifierToolboxTab() {
-        return _super.call(this, "toolbox-whole-image-classifier", "Whole Image Classification", "") || this;
-    }
-    return WholeImageClassifierToolboxTab;
-}(ToolboxTab));
-exports.WholeImageClassifierToolboxTab = WholeImageClassifierToolboxTab;
+    ClassCounterToolboxItem.prototype.get_html = function () {
+        return "\n        <div class=\"toolbox-class-counter\">" + this.inner_HTML + "</div>";
+    };
+    return ClassCounterToolboxItem;
+}(ToolboxItem));
+exports.ClassCounterToolboxItem = ClassCounterToolboxItem;
+// export class WholeImageClassifierToolboxTab extends ToolboxItem {
+//     constructor() {
+//         super(
+//             "toolbox-whole-image-classifier",
+//             "Whole Image Classification",
+//             ""
+//         );
+//     }
+// }
 
 
 /***/ })
@@ -11827,9 +12173,11 @@ var __webpack_exports__ = {};
 // EXTERNAL MODULE: ./src/annotation.js
 var annotation = __webpack_require__(806);
 // EXTERNAL MODULE: ./src/toolbox.js
-var toolbox = __webpack_require__(334);
+var src_toolbox = __webpack_require__(334);
 // EXTERNAL MODULE: ./src/subtask.js
 var subtask = __webpack_require__(167);
+// EXTERNAL MODULE: ./src/geometric_utils.js
+var geometric_utils = __webpack_require__(822);
 // EXTERNAL MODULE: ./node_modules/jquery/dist/jquery.js
 var jquery = __webpack_require__(755);
 var jquery_default = /*#__PURE__*/__webpack_require__.n(jquery);
@@ -14041,6 +14389,8 @@ Sentera Inc.
 
 
 
+
+
 const jQuery = (jquery_default());
 
 const { v4: uuidv4 } = __webpack_require__(614);
@@ -14083,204 +14433,6 @@ class ULabel {
         return (new Date()).toISOString();
     }
     
-    static l2_norm(pt1, pt2) {
-        let ndim = pt1.length;
-        let sq = 0;
-        for (var i = 0; i < ndim; i++) {
-            sq += (pt1[i] - pt2[i])*(pt1[i] - pt2[i]);
-        }
-        return Math.sqrt(sq);
-    }
-
-    // Get the point at a certain proportion of the segment between two points in a polygon
-    static interpolate_poly_segment(pts, i, prop) {
-        const pt1 = pts[i%pts.length];
-        const pt2 = pts[(i + 1)%pts.length];
-        return [
-            pt1[0]*(1.0 - prop) + pt2[0]*prop,
-            pt1[1]*(1.0 - prop) + pt2[1]*prop
-        ];
-    }
-    
-    // Given two points, return the line that goes through them in the form of
-    //    ax + by + c = 0
-    static get_line_equation_through_points(p1, p2) {
-        const a = (p2[1] - p1[1]);
-        const b = (p1[0] - p2[0]);
-
-        // If the points are the same, no line can be inferred. Return null
-        if ((a == 0) && (b == 0)) return null;
-
-        const c = p1[1]*(p2[0] - p1[0]) - p1[0]*(p2[1] - p1[1]);
-        return {
-            "a": a,
-            "b": b,
-            "c": c
-        };
-    }
-    
-    // Given a line segment in the form of ax + by + c = 0 and two endpoints for it,
-    //   return the point on the segment that is closest to the reference point, as well
-    //   as the distance away
-    static get_nearest_point_on_segment(ref_x, ref_y, eq, kp1, kp2) {
-        // For convenience
-        const a = eq["a"];
-        const b = eq["b"];
-        const c = eq["c"];
-    
-        // Where is that point on the line, exactly?
-        var nrx = (b*(b*ref_x - a*ref_y) - a*c)/(a*a + b*b);
-        var nry = (a*(a*ref_y - b*ref_x) - b*c)/(a*a + b*b);
-    
-        // Where along the segment is that point?
-        var xprop = 0.0;
-        if (kp2[0] != kp1[0]) {
-            xprop = (nrx - kp1[0])/(kp2[0] - kp1[0]);
-        }
-        var yprop = 0.0;
-        if (kp2[1] != kp1[1]) {
-            yprop = (nry - kp1[1])/(kp2[1] - kp1[1]);
-        }
-
-        // If the point is at an end of the segment, just return null
-        if ((xprop < 0) || (xprop > 1) || (yprop < 0) || (yprop > 1)) {
-            return null;        
-        }
-
-        // Distance from point to line
-        var dst = Math.abs(a*ref_x + b*ref_y + c)/Math.sqrt(a*a + b*b);
-        
-        // Proportion of the length of segment from p1 to the nearest point
-        const seg_length = Math.sqrt((kp2[0] - kp1[0])*(kp2[0] - kp1[0]) + (kp2[1] - kp1[1])*(kp2[1] - kp1[1]));
-        const kprop = Math.sqrt((nrx - kp1[0])*(nrx - kp1[0]) + (nry - kp1[1])*(nry - kp1[1]))/seg_length;
-
-        // return object with info about the point
-        return {
-            "dst": dst,
-            "prop": kprop
-        };
-    }
-    
-    // Return the point on a polygon that's closest to a reference along with its distance
-    static get_nearest_point_on_polygon(ref_x, ref_y, spatial_payload, dstmax=Infinity, include_segments=false) {
-        const poly_pts = spatial_payload;
-
-        // Initialize return value to null object
-        var ret = {
-            "access": null,
-            "distance": null,
-            "point": null
-        };
-        if (!include_segments) {
-            // Look through polygon points one by one 
-            //    no need to look at last, it's the same as first
-            for (let kpi = 0; kpi < poly_pts.length; kpi++) {
-                var kp = poly_pts[kpi];
-                // Distance is measured with l2 norm
-                let kpdst = Math.sqrt(Math.pow(kp[0] - ref_x, 2) + Math.pow(kp[1] - ref_y, 2));
-                // If this a minimum distance so far, store it
-                if (ret["distance"] == null || kpdst < ret["distance"]) {
-                    ret["access"] = kpi;
-                    ret["distance"] = kpdst;
-                    ret["point"] = poly_pts[kpi];
-                }
-            }
-            return ret;
-        }
-        else {
-            for (let kpi = 0; kpi < poly_pts.length-1; kpi++) {
-                var kp1 = poly_pts[kpi];
-                var kp2 = poly_pts[kpi+1];
-                var eq = ULabel.get_line_equation_through_points(kp1, kp2);
-                var nr = ULabel.get_nearest_point_on_segment(ref_x, ref_y, eq, kp1, kp2);
-                if ((nr != null) && (nr["dst"] < dstmax) && (ret["distance"] == null || nr["dst"] < ret["distance"])) {
-                    ret["access"] = "" + (kpi + nr["prop"]);
-                    ret["distance"] = nr["dst"];
-                    ret["point"] = ULabel.interpolate_poly_segment(poly_pts, kpi, nr["prop"]);
-                }
-            }
-            return ret;
-        }
-    }
-    
-    static get_nearest_point_on_bounding_box(ref_x, ref_y, spatial_payload, dstmax=Infinity) {
-        var ret = {
-            "access": null,
-            "distance": null,
-            "point": null
-        };
-        for (var bbi = 0; bbi < 2; bbi++) {
-            for (var bbj = 0; bbj < 2; bbj++) {
-                var kp = [spatial_payload[bbi][0], spatial_payload[bbj][1]];
-                var kpdst = Math.sqrt(Math.pow(kp[0] - ref_x, 2) + Math.pow(kp[1] - ref_y, 2));
-                if (kpdst < dstmax && (ret["distance"] == null || kpdst < ret["distance"])) {
-                    ret["access"] = `${bbi}${bbj}`;
-                    ret["distance"] = kpdst;
-                    ret["point"] = kp;
-                }
-            }
-        }
-        return ret;
-    }
-
-    static get_nearest_point_on_bbox3(ref_x, ref_y, frame, spatial_payload, dstmax=Infinity) {
-        var ret = {
-            "access": null,
-            "distance": null,
-            "point": null
-        };
-        for (var bbi = 0; bbi < 2; bbi++) {
-            for (var bbj = 0; bbj < 2; bbj++) {
-                var kp = [spatial_payload[bbi][0], spatial_payload[bbj][1]];
-                var kpdst = Math.sqrt(Math.pow(kp[0] - ref_x, 2) + Math.pow(kp[1] - ref_y, 2));
-                if (kpdst < dstmax && (ret["distance"] == null || kpdst < ret["distance"])) {
-                    ret["access"] = `${bbi}${bbj}`;
-                    ret["distance"] = kpdst;
-                    ret["point"] = kp;
-                }
-            }
-        }
-        let min_k = 0;
-        let min = spatial_payload[0][2];
-        let max_k = 1;
-        let max = spatial_payload[1][2];
-        if (max < min) {
-            let tmp = min_k;
-            min_k = max_k;
-            max_k = tmp;
-            tmp = min;
-            min = max;
-            max = tmp;
-        }
-
-        if (frame == min) {
-            ret["access"] += "" + min_k;
-        }
-        else if (frame == max) {
-            ret["access"] += "" + max_k;
-        }
-        return ret;
-    }
-
-    static get_nearest_point_on_tbar(ref_x, ref_y, spatial_payload, dstmax=Infinity) {
-        // TODO intelligently test against three grabbable points
-        var ret = {
-            "access": null,
-            "distance": null,
-            "point": null
-        };
-        for (var tbi = 0; tbi < 2; tbi++) {
-            var kp = [spatial_payload[tbi][0], spatial_payload[tbi][1]];
-            var kpdst = Math.sqrt(Math.pow(kp[0] - ref_x, 2) + Math.pow(kp[1] - ref_y, 2));
-            if (kpdst < dstmax && (ret["distance"] == null || kpdst < ret["distance"])) {
-                ret["access"] = `${tbi}${tbi}`;
-                ret["distance"] = kpdst;
-                ret["point"] = kp;
-            }
-        }
-        return ret;        
-    }
-
     // =========================== NIGHT MODE COOKIES =======================================
 
     static has_night_mode_cookie() {
@@ -14372,31 +14524,6 @@ class ULabel {
         </div>`;
     }
 
-    static get_toolbox_tabs(ul) {
-        let ret = "";
-        for (const st_key in ul.subtasks) {
-            let sel = "";
-            let href = ` href="#"`;
-            let val = 50;
-            if (st_key == ul.state["current_subtask"] || ul.subtasks[st_key]["read_only"]) {
-                href = "";
-            }
-            if (st_key == ul.state["current_subtask"]) {
-                sel = " sel";
-                val = 100;
-            }
-            ret += `
-            <div class="tb-st-tab${sel}">
-                <a${href} id="tb-st-switch--${st_key}" class="tb-st-switch">${ul.subtasks[st_key]["display_name"]}</a><!--
-                --><span class="tb-st-range">
-                    <input id="tb-st-range--${st_key}" type="range" min=0 max=100 value=${val} />
-                </span>
-            </div>
-            `;
-        }
-        return ret;
-    }
-    
 
     static get_images_html(ul) {
         let ret = "";
@@ -14476,12 +14603,6 @@ class ULabel {
             `;
         }
 
-        const tabs = ULabel.get_toolbox_tabs(ul);
-
-        const images = ULabel.get_images_html(ul);
-
-        const frame_annotation_dialogs = ULabel.get_frame_annotation_dialogs(ul);
-
         let frame_range = `
         <div class="full-tb htbmain set-frame">
             <p class="shortcut-tip">scroll to switch frames</p>
@@ -14497,101 +14618,33 @@ class ULabel {
             frame_range = ``;
         }
 
-        const tool_html = `
-        <div class="full_ulabel_container_">
-            ${frame_annotation_dialogs}
-            <div id="${ul.config["annbox_id"]}" class="annbox_cls">
-                <div id="${ul.config["imwrap_id"]}" class="imwrap_cls ${ul.config["imgsz_class"]}">
-                    ${images}
-                </div>
-            </div>
-            <div id="${ul.config["toolbox_id"]}" class="toolbox_cls">
-                <div class="toolbox-name-header">
-                    <h1 class="toolname"><a class="repo-anchor" href="https://github.com/SenteraLLC/ulabel">ULabel</a> <span class="version-number">v${ULABEL_VERSION}</span></h1><!--
-                    --><div class="night-button-cont">
-                        <a href="#" class="night-button">
-                            <div class="night-button-track">
-                                <div class="night-status"></div>
-                            </div>
-                        </a>
-                    </div>
-                </div>
-                <div class="toolbox_inner_cls">
-                    <div class="mode-selection">
-                        <p class="current_mode_container">
-                            <span class="cmlbl">Mode:</span>
-                            <span class="current_mode"></span>
-                        </p>
-                    </div>
-                    <div class="toolbox-divider"></div>
-                    <div class="zoom-pan">
-                        <div class="half-tb htbmain set-zoom">
-                            <p class="shortcut-tip">ctrl+scroll or shift+drag</p>
-                            <div class="zpcont">
-                                <div class="lblpyldcont">
-                                    <span class="pzlbl htblbl">Zoom</span>
-                                    <span class="zinout htbpyld">
-                                        <a href="#" class="zbutt zout">-</a>
-                                        <a href="#" class="zbutt zin">+</a>
-                                    </span>
-                                </div>
-                            </div>
-                        </div><!--
-                        --><div class="half-tb htbmain set-pan">
-                            <p class="shortcut-tip">scrollclick+drag or ctrl+drag</p>
-                            <div class="zpcont">
-                                <div class="lblpyldcont">
-                                    <span class="pzlbl htblbl">Pan</span>
-                                    <span class="panudlr htbpyld">
-                                        <a href="#" class="pbutt left"></a>
-                                        <a href="#" class="pbutt right"></a>
-                                        <a href="#" class="pbutt up"></a>
-                                        <a href="#" class="pbutt down"></a>
-                                        <span class="spokes"></span>
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="recenter-cont" style="text-align: center;">
-                            <a href="#" id="recenter-button">Re-Center</a>
-                        </div>
-                        ${frame_range}
-                    </div>
-                    <div class="toolbox-divider"></div>
-                    <div class="linestyle">
-                        <p class="tb-header">Line Width</p>
-                        <div class="lstyl-row">
-                            <div class="line-expl">
-                                <a href="#" class="wbutt wout">-</a>
-                                <canvas 
-                                    id="${ul.config["canvas_did"]}" 
-                                    class="demo-canvas" 
-                                    width=${ul.config["demo_width"]*ul.config["px_per_px"]} 
-                                    height=${ul.config["demo_height"]*ul.config["px_per_px"]}></canvas>
-                                <a href="#" class="wbutt win">+</a>
-                            </div><!--
-                            --><div class="setting">
-                                <a class="fixed-setting">Fixed</a><br>
-                                <a href="#" class="dyn-setting">Dynamic</a>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="toolbox-divider"></div>
-                    <div class="classification">
-                        // <p class="tb-header">Annotation ID</p>
-                        // <div class="id-toolbox-app"></div>
-                    </div>
-                    <div class="toolbox-refs">
-                        ${instructions}
-                    </div>
-                    <div class="toolbox-divider"></div>
-                    <div class="toolbox-class-counter"></div>
-                </div>
-                <div class="toolbox-tabs">
-                    ${tabs}
-                </div>
-            </div>
-        </div>`;
+        // const tabs = ULabel.get_toolbox_tabs(ul);
+        const images = ULabel.get_images_html(ul);
+        const frame_annotation_dialogs = ULabel.get_frame_annotation_dialogs(ul);
+
+        const mode_select_tbi = new src_toolbox.ModeSelectionToolboxItem();
+        const zoom_pan_tbi = new src_toolbox.ZoomPanToolboxItem(frame_range);
+        const linestyle_tbi = new src_toolbox.LinestyleToolboxItem(
+            ul.config["canvas_did"],
+            ul.config["demo_width"],
+            ul.config["demo_height"],
+            ul.config["px_per_px"]
+        );
+        const annotation_id_tbi = new src_toolbox.AnnotationIDToolboxItem(instructions);
+        const class_counter_tbi = new src_toolbox.ClassCounterToolboxItem();
+        
+        const toolbox = new src_toolbox.Toolbox(
+            [], 
+            [mode_select_tbi, zoom_pan_tbi, linestyle_tbi, annotation_id_tbi, class_counter_tbi],
+        );
+
+        
+        var tool_html = toolbox.setup_toolbox_html(
+            ul,
+            frame_annotation_dialogs,
+            images,
+            ULABEL_VERSION
+        )
         jquery_default()("#" + ul.config["container_id"]).html(tool_html)
 
 
@@ -15302,17 +15355,8 @@ class ULabel {
         };
         if (subtask["resume_from"] != null) {
             for (var i = 0; i < subtask["resume_from"].length; i++) {
-<<<<<<< HEAD
-                let current_annotation = annotation/* ULabelAnnotation.from_json */.a.from_json(JSON.parse(JSON.stringify(subtask["resume_from"][i])));
-                // Set new to false
-                current_annotation["new"] = false;
-
-                // Test for line_size
-                if (current_annotation["line_size"] == null) {
-                    current_annotation["line_size"] = ul.state["line_size"];
-=======
                 // Get copy of annotation to import for modification before incorporation
-                let cand = JSON.parse(JSON.stringify(subtask["resume_from"][i]));
+                let cand = annotation/* ULabelAnnotation.from_json */.a.from_json(JSON.parse(JSON.stringify(subtask["resume_from"][i])));
 
                 // Mark as not new
                 cand["new"] = false;
@@ -15373,60 +15417,14 @@ class ULabel {
                     !("annotation_meta" in cand)
                 ) {
                     cand["annotation_meta"] = {};
->>>>>>> main
                 }
 
                 // Ensure that spatial type is allowed
                 // TODO do I really want to do this?
 
                 // Ensure that classification payloads are compatible with config
-<<<<<<< HEAD
-                current_annotation.ensure_compatible_classification_payloads(ul.subtasks[subtask_key]["class_ids"])
-
-                // Push to ordering and add to access
-                ul.subtasks[subtask_key]["annotations"]["ordering"].push(subtask["resume_from"][i]["id"]);
-                ul.subtasks[subtask_key]["annotations"]["access"][subtask["resume_from"][i]["id"]] = current_annotation;
-=======
-                let payloads = cand["classification_payloads"];
-                let found_ids = [];
-                let conf_not_found_j = null;
-                let remaining_confidence = 1.0;
-                for (let j = 0; j < payloads.length; j++) {
-                    let this_id = payloads[j]["class_id"];
-                    if (!(ul.subtasks[subtask_key]["class_ids"].includes(this_id))) {
-                        alert(`Found class id ${this_id} in "resume_from" data but not in "allowed_classes"`);
-                        throw `Found class id ${this_id} in "resume_from" data but not in "allowed_classes"`;
-                    }
-                    found_ids.push(this_id);
-                    if (!("confidence" in payloads[j])) {
-                        if (conf_not_found_j !== null) {
-                            throw("More than one classification payload was supplied without confidence for a single annotation.")
-                        }
-                        else {
-                            conf_not_found_j = j;
-                        }
-                    }
-                    else {
-                        cand["classification_payloads"][j]["confidence"] = parseFloat(payloads[j]["confidence"]);
-                        remaining_confidence -= cand["classification_payloads"][j]["confidence"];
-                    }
-                }
-                if (conf_not_found_j !== null) {
-                    if (remaining_confidence < 0) {
-                        throw("Supplied total confidence was greater than 100%");
-                    }
-                    cand["classification_payloads"][conf_not_found_j]["confidence"] = remaining_confidence;
-                }
-                for (let j = 0; j < ul.subtasks[subtask_key]["class_ids"].length; j++) {
-                    if (!(found_ids.includes(ul.subtasks[subtask_key]["class_ids"][j]))) {
-                        cand["classification_payloads"].push(
-                            {
-                                "class_id": ul.subtasks[subtask_key]["class_ids"][j],
-                                "confidence": 0.0
-                            }
-                        )
-                    }
-                }
+                cand.ensure_compatible_classification_payloads(ul.subtasks[subtask_key]["class_ids"])
+                
                 cand["classification_payloads"].sort(
                     (a, b) => {return (
                         ul.subtasks[subtask_key]["class_ids"].find((e) => e == a["class_id"]) -
@@ -15437,7 +15435,6 @@ class ULabel {
                 // Push to ordering and add to access
                 ul.subtasks[subtask_key]["annotations"]["ordering"].push(cand["id"]);
                 ul.subtasks[subtask_key]["annotations"]["access"][subtask["resume_from"][i]["id"]] = JSON.parse(JSON.stringify(cand));
->>>>>>> main
             }
         }
     }
@@ -16097,7 +16094,7 @@ class ULabel {
                         return this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid]["spatial_payload"][bas];
                     }
                     else {
-                        return ULabel.interpolate_poly_segment(
+                        return geometric_utils/* GeometricUtils.interpolate_poly_segment */.Z.interpolate_poly_segment(
                             this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid]["spatial_payload"], 
                             bas, dif
                         );
@@ -16176,7 +16173,7 @@ class ULabel {
                         this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid]["spatial_payload"].splice(bas+1, 0, [val[0], val[1]]);
                     }
                     else {
-                        var newpt = ULabel.interpolate_poly_segment(
+                        var newpt = geometric_utils/* GeometricUtils.interpolate_poly_segment */.Z.interpolate_poly_segment(
                             this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid]["spatial_payload"], 
                             bas, dif
                         );
@@ -16699,7 +16696,9 @@ class ULabel {
         i.e. a batch of functions run on adding, removing annotations
         and a different batch run on redraw, a batch for subtask switch etc.
         */
-        var test = new toolbox.ClassCounterToolboxTab()
+
+        // TODO rework update structure to be more modular
+        var test = new src_toolbox.ClassCounterToolboxItem()
         test.update_toolbox_counter(this.subtasks[subtask], this.config["toolbox_id"])
         // TODO figure out how to have this occur from the toolbox
         jquery_default()("#" + this.config["toolbox_id"] + " div.toolbox-class-counter").html(test.inner_HTML);
@@ -17088,7 +17087,7 @@ class ULabel {
             let curfrm, pts;
             switch (this.subtasks[this.state["current_subtask"]]["annotations"]["access"][edid]["spatial_type"]) {
                 case "bbox":
-                    npi = ULabel.get_nearest_point_on_bounding_box(
+                    npi = geometric_utils/* GeometricUtils.get_nearest_point_on_bounding_box */.Z.get_nearest_point_on_bounding_box(
                         global_x, global_y, 
                         this.subtasks[this.state["current_subtask"]]["annotations"]["access"][edid]["spatial_payload"],
                         max_dist
@@ -17105,7 +17104,7 @@ class ULabel {
                     pts = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][edid]["spatial_payload"];
                     if ((curfrm >= Math.min(pts[0][2], pts[1][2])) && (curfrm <= Math.max(pts[0][2], pts[1][2]))) {
                         // TODO(new3d) Make sure this function works for bbox3 too
-                        npi = ULabel.get_nearest_point_on_bbox3(
+                        npi = geometric_utils/* GeometricUtils.get_nearest_point_on_bbox3 */.Z.get_nearest_point_on_bbox3(
                             global_x, global_y, curfrm,
                             pts,
                             max_dist
@@ -17120,7 +17119,7 @@ class ULabel {
                     break;
                 case "polygon":
                 case "polyline":
-                    npi = ULabel.get_nearest_point_on_polygon(
+                    npi = geometric_utils/* GeometricUtils.get_nearest_point_on_polygon */.Z.get_nearest_point_on_polygon(
                         global_x, global_y, 
                         this.subtasks[this.state["current_subtask"]]["annotations"]["access"][edid]["spatial_payload"],
                         max_dist, false
@@ -17133,7 +17132,7 @@ class ULabel {
                     }
                     break;
                 case "tbar":
-                    npi = ULabel.get_nearest_point_on_tbar(
+                    npi = geometric_utils/* GeometricUtils.get_nearest_point_on_tbar */.Z.get_nearest_point_on_tbar(
                         global_x, global_y,
                         this.subtasks[this.state["current_subtask"]]["annotations"]["access"][edid]["spatial_payload"],
                         max_dist
@@ -17179,7 +17178,7 @@ class ULabel {
                     break;
                 case "polygon":
                 case "polyline":
-                    var npi = ULabel.get_nearest_point_on_polygon(
+                    var npi = geometric_utils/* GeometricUtils.get_nearest_point_on_polygon */.Z.get_nearest_point_on_polygon(
                         global_x, global_y, 
                         this.subtasks[this.state["current_subtask"]]["annotations"]["access"][edid]["spatial_payload"],
                         max_dist/this.get_empirical_scale(), true
@@ -17776,7 +17775,7 @@ class ULabel {
                     this.redraw_all_annotations(this.state["current_subtask"], null, true); // tobuffer
                     break;
                 case "contour":
-                    if (ULabel.l2_norm(ms_loc, this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"][this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"].length-1])*this.config["px_per_px"] > 3) {
+                    if (geometric_utils/* GeometricUtils.l2_norm */.Z.l2_norm(ms_loc, this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"][this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"].length-1])*this.config["px_per_px"] > 3) {
                         this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"].push(ms_loc);
                         this.update_containing_box(ms_loc, actid);
                         this.redraw_all_annotations(this.state["current_subtask"], null, true); // TODO tobuffer, no need to redraw here, can just draw over
@@ -18779,6 +18778,7 @@ class ULabel {
         }
         this.redraw_demo();
     }
+    // Toolbox Annotation ID Update
     update_id_toolbox_display() {
         if (this.config["allow_soft_id"]) {
             // Not supported yet

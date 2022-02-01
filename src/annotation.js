@@ -24,19 +24,39 @@ var ULabelAnnotation = /** @class */ (function () {
     }
     ULabelAnnotation.prototype.ensure_compatible_classification_payloads = function (ulabel_class_ids) {
         var found_ids = [];
-        var i;
-        for (i = 0; i < this.classification_payloads.length; i++) {
-            var this_id = this.classification_payloads[i].class_id;
+        var j;
+        var conf_not_found_j = null;
+        var remaining_confidence = 1.0;
+        for (j = 0; j < this.classification_payloads.length; j++) {
+            var this_id = this.classification_payloads[j].class_id;
             if (!ulabel_class_ids.includes(this_id)) {
                 alert("Found class id " + this_id + " in \"resume_from\" data but not in \"allowed_classes\"");
                 throw "Found class id " + this_id + " in \"resume_from\" data but not in \"allowed_classes\"";
             }
             found_ids.push(this_id);
+            if (!("confidence" in this.classification_payloads[j])) {
+                if (conf_not_found_j !== null) {
+                    throw ("More than one classification payload was supplied without confidence for a single annotation.");
+                }
+                else {
+                    conf_not_found_j = j;
+                }
+            }
+            else {
+                this.classification_payloads[j].confidence = this.classification_payloads[j].confidence;
+                remaining_confidence -= this.classification_payloads[j]["confidence"];
+            }
         }
-        for (i = 0; i < ulabel_class_ids.length; i++) {
-            if (!(found_ids.includes(ulabel_class_ids[i]))) {
+        if (conf_not_found_j !== null) {
+            if (remaining_confidence < 0) {
+                throw ("Supplied total confidence was greater than 100%");
+            }
+            this.classification_payloads[conf_not_found_j].confidence = remaining_confidence;
+        }
+        for (j = 0; j < ulabel_class_ids.length; j++) {
+            if (!(found_ids.includes(ulabel_class_ids[j]))) {
                 this.classification_payloads.push({
-                    "class_id": ulabel_class_ids[i],
+                    "class_id": ulabel_class_ids[j],
                     "confidence": 0.0
                 });
             }

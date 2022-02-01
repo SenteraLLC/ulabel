@@ -15,33 +15,151 @@ var __extends = (this && this.__extends) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.WholeImageClassifierToolboxTab = exports.ClassCounterToolboxTab = exports.AnnotationIDToolboxTab = exports.ToolboxTab = void 0;
+exports.ClassCounterToolboxItem = exports.AnnotationIDToolboxItem = exports.LinestyleToolboxItem = exports.ZoomPanToolboxItem = exports.ModeSelectionToolboxItem = exports.ToolboxItem = exports.ToolboxTab = exports.Toolbox = void 0;
 var toolboxDividerDiv = "<div class=toolbox-divider></div>";
+/**
+ * Manager for toolbox. Contains ToolboxTab items.
+ */
+var Toolbox = /** @class */ (function () {
+    // public tabs: ToolboxTab[] = [];
+    // public items: ToolboxItem[] = []; 
+    function Toolbox(tabs, items) {
+        if (tabs === void 0) { tabs = []; }
+        if (items === void 0) { items = []; }
+        this.tabs = tabs;
+        this.items = items;
+    }
+    Toolbox.prototype.setup_toolbox_html = function (ulabel, frame_annotation_dialogs, images, ULABEL_VERSION) {
+        // Setup base div and ULabel version header
+        var toolbox_html = "\n        <div class=\"full_ulabel_container_\">\n            " + frame_annotation_dialogs + "\n            <div id=\"" + ulabel.config["annbox_id"] + "\" class=\"annbox_cls\">\n                <div id=\"" + ulabel.config["imwrap_id"] + "\" class=\"imwrap_cls " + ulabel.config["imgsz_class"] + "\">\n                    " + images + "\n                </div>\n            </div>\n            <div id=\"" + ulabel.config["toolbox_id"] + "\" class=\"toolbox_cls\">\n                <div class=\"toolbox-name-header\">\n                    <h1 class=\"toolname\"><a class=\"repo-anchor\" href=\"https://github.com/SenteraLLC/ulabel\">ULabel</a> <span class=\"version-number\">v" + ULABEL_VERSION + "</span></h1><!--\n                    --><div class=\"night-button-cont\">\n                        <a href=\"#\" class=\"night-button\">\n                            <div class=\"night-button-track\">\n                                <div class=\"night-status\"></div>\n                            </div>\n                        </a>\n                    </div>\n                </div>\n                <div class=\"toolbox_inner_cls\">\n        ";
+        for (var tbitem in this.items) {
+            toolbox_html += this.items[tbitem].get_html() + toolboxDividerDiv;
+        }
+        toolbox_html += "\n                </div>\n                <div class=\"toolbox-tabs\">\n                    " + this.get_toolbox_tabs(ulabel) + "\n                </div> \n            </div>\n        </div>";
+        return toolbox_html;
+    };
+    /**
+     * Adds tabs for each ULabel subtask to the toolbox.
+     */
+    Toolbox.prototype.get_toolbox_tabs = function (ulabel) {
+        var ret = "";
+        for (var st_key in ulabel.subtasks) {
+            var selected = st_key == ulabel.state["current_subtask"];
+            var subtask = ulabel.subtasks[st_key];
+            var current_tab = new ToolboxTab([], subtask, st_key, selected);
+            ret += current_tab.html;
+            this.tabs.push(current_tab);
+        }
+        return ret;
+    };
+    Toolbox.prototype.update = function () { };
+    return Toolbox;
+}());
+exports.Toolbox = Toolbox;
 var ToolboxTab = /** @class */ (function () {
-    function ToolboxTab(div_HTML_class, header_title, inner_HTML) {
-        this.div_HTML_class = div_HTML_class;
-        this.header_title = header_title;
-        this.inner_HTML = inner_HTML;
+    function ToolboxTab(toolboxitems, subtask, subtask_key, selected) {
+        if (toolboxitems === void 0) { toolboxitems = []; }
+        if (selected === void 0) { selected = false; }
+        this.toolboxitems = toolboxitems;
+        this.subtask = subtask;
+        this.subtask_key = subtask_key;
+        this.selected = selected;
+        var sel = "";
+        var href = " href=\"#\"";
+        var val = 50;
+        if (this.selected) {
+            if (this.subtask.read_only) {
+                href = "";
+            }
+            sel = " sel";
+            val = 100;
+        }
+        console.log(subtask.display_name);
+        console.log(subtask);
+        this.html = "\n        <div class=\"tb-st-tab" + sel + "\">\n            <a" + href + " id=\"tb-st-switch--" + subtask_key + "\" class=\"tb-st-switch\">" + this.subtask.display_name + "</a><!--\n            --><span class=\"tb-st-range\">\n                <input id=\"tb-st-range--" + subtask_key + "\" type=\"range\" min=0 max=100 value=" + val + " />\n            </span>\n        </div>\n        ";
     }
     return ToolboxTab;
 }());
 exports.ToolboxTab = ToolboxTab;
-var AnnotationIDToolboxTab = /** @class */ (function (_super) {
-    __extends(AnnotationIDToolboxTab, _super);
-    function AnnotationIDToolboxTab(subtask) {
-        return _super.call(this, "toolbox-annotation-id", "Annotation ID", "<div class=\"id-toolbox-app\"></div>") || this;
+var ToolboxItem = /** @class */ (function () {
+    function ToolboxItem() {
     }
-    return AnnotationIDToolboxTab;
-}(ToolboxTab));
-exports.AnnotationIDToolboxTab = AnnotationIDToolboxTab;
-var ClassCounterToolboxTab = /** @class */ (function (_super) {
-    __extends(ClassCounterToolboxTab, _super);
-    function ClassCounterToolboxTab() {
-        var _this = _super.call(this, "toolbox-class-counter", "Annotation Count", "") || this;
-        _this.inner_HTML = "<p class=\"tb-header\">" + _this.header_title + "</p>";
+    return ToolboxItem;
+}());
+exports.ToolboxItem = ToolboxItem;
+/**
+ * Toolbox item for selecting annotation mode.
+ */
+var ModeSelectionToolboxItem = /** @class */ (function (_super) {
+    __extends(ModeSelectionToolboxItem, _super);
+    function ModeSelectionToolboxItem() {
+        return _super.call(this) || this;
+    }
+    ModeSelectionToolboxItem.prototype.get_html = function () {
+        return "\n        <div class=\"mode-selection\">\n            <p class=\"current_mode_container\">\n                <span class=\"cmlbl\">Mode:</span>\n                <span class=\"current_mode\"></span>\n            </p>\n        </div>\n        ";
+    };
+    return ModeSelectionToolboxItem;
+}(ToolboxItem));
+exports.ModeSelectionToolboxItem = ModeSelectionToolboxItem;
+/**
+ * Toolbox item for zooming and panning.
+ */
+var ZoomPanToolboxItem = /** @class */ (function (_super) {
+    __extends(ZoomPanToolboxItem, _super);
+    function ZoomPanToolboxItem(frame_range) {
+        var _this = _super.call(this) || this;
+        _this.frame_range = frame_range;
         return _this;
     }
-    ClassCounterToolboxTab.prototype.update_toolbox_counter = function (subtask, toolbox_id) {
+    ZoomPanToolboxItem.prototype.get_html = function () {
+        return "\n        <div class=\"zoom-pan\">\n            <div class=\"half-tb htbmain set-zoom\">\n                <p class=\"shortcut-tip\">ctrl+scroll or shift+drag</p>\n                <div class=\"zpcont\">\n                    <div class=\"lblpyldcont\">\n                        <span class=\"pzlbl htblbl\">Zoom</span>\n                        <span class=\"zinout htbpyld\">\n                            <a href=\"#\" class=\"zbutt zout\">-</a>\n                            <a href=\"#\" class=\"zbutt zin\">+</a>\n                        </span>\n                    </div>\n                </div>\n            </div><!--\n            --><div class=\"half-tb htbmain set-pan\">\n                <p class=\"shortcut-tip\">scrollclick+drag or ctrl+drag</p>\n                <div class=\"zpcont\">\n                    <div class=\"lblpyldcont\">\n                        <span class=\"pzlbl htblbl\">Pan</span>\n                        <span class=\"panudlr htbpyld\">\n                            <a href=\"#\" class=\"pbutt left\"></a>\n                            <a href=\"#\" class=\"pbutt right\"></a>\n                            <a href=\"#\" class=\"pbutt up\"></a>\n                            <a href=\"#\" class=\"pbutt down\"></a>\n                            <span class=\"spokes\"></span>\n                        </span>\n                    </div>\n                </div>\n            </div>\n            <div class=\"recenter-cont\" style=\"text-align: center;\">\n                <a href=\"#\" id=\"recenter-button\">Re-Center</a>\n            </div>\n            " + this.frame_range + "\n        </div>\n        ";
+    };
+    return ZoomPanToolboxItem;
+}(ToolboxItem));
+exports.ZoomPanToolboxItem = ZoomPanToolboxItem;
+/**
+ * Toolbox Item for selecting line style.
+ */
+var LinestyleToolboxItem = /** @class */ (function (_super) {
+    __extends(LinestyleToolboxItem, _super);
+    function LinestyleToolboxItem(canvas_did, demo_width, demo_height, px_per_px) {
+        var _this = _super.call(this) || this;
+        _this.canvas_did = canvas_did;
+        _this.demo_width = demo_width;
+        _this.demo_height = demo_height;
+        _this.px_per_px = px_per_px;
+        return _this;
+    }
+    LinestyleToolboxItem.prototype.get_html = function () {
+        return "\n        <div class=\"linestyle\">\n            <p class=\"tb-header\">Line Width</p>\n            <div class=\"lstyl-row\">\n                <div class=\"line-expl\">\n                    <a href=\"#\" class=\"wbutt wout\">-</a>\n                    <canvas \n                        id=\"" + this.canvas_did + "\" \n                        class=\"demo-canvas\" \n                        width=" + this.demo_width * this.px_per_px + "} \n                        height=" + this.demo_height * this.px_per_px + "></canvas>\n                    <a href=\"#\" class=\"wbutt win\">+</a>\n                </div><!--\n                --><div class=\"setting\">\n                    <a class=\"fixed-setting\">Fixed</a><br>\n                    <a href=\"#\" class=\"dyn-setting\">Dynamic</a>\n                </div>\n            </div>\n        </div>\n        ";
+    };
+    return LinestyleToolboxItem;
+}(ToolboxItem));
+exports.LinestyleToolboxItem = LinestyleToolboxItem;
+/**
+ * Toolbox item for selection Annotation ID.
+ */
+var AnnotationIDToolboxItem = /** @class */ (function (_super) {
+    __extends(AnnotationIDToolboxItem, _super);
+    function AnnotationIDToolboxItem(instructions) {
+        var _this = _super.call(this) || this;
+        _this.instructions = instructions;
+        return _this;
+    }
+    AnnotationIDToolboxItem.prototype.get_html = function () {
+        return "\n        <div class=\"classification\">\n            <p class=\"tb-header\">Annotation ID</p>\n            <div class=\"id-toolbox-app\"></div>\n        </div>\n        <div class=\"toolbox-refs\">\n            " + this.instructions + "\n        </div>\n        ";
+    };
+    return AnnotationIDToolboxItem;
+}(ToolboxItem));
+exports.AnnotationIDToolboxItem = AnnotationIDToolboxItem;
+var ClassCounterToolboxItem = /** @class */ (function (_super) {
+    __extends(ClassCounterToolboxItem, _super);
+    function ClassCounterToolboxItem() {
+        var _this = _super.call(this) || this;
+        _this.inner_HTML = "<p class=\"tb-header\">Annotation Count</p>";
+        return _this;
+    }
+    ClassCounterToolboxItem.prototype.update_toolbox_counter = function (subtask, toolbox_id) {
         if (subtask == null) {
             return;
         }
@@ -77,16 +195,20 @@ var ClassCounterToolboxTab = /** @class */ (function (_super) {
             class_count = class_counts[subtask.class_defs[i].id];
             f_string += class_name + ": " + class_count + "<br>";
         }
-        this.inner_HTML = "<p class=\"tb-header\">" + this.header_title + "</p>" + ("<p>" + f_string + "</p>");
+        this.inner_HTML = "<p class=\"tb-header\">Annotation Count</p>" + ("<p>" + f_string + "</p>");
     };
-    return ClassCounterToolboxTab;
-}(ToolboxTab));
-exports.ClassCounterToolboxTab = ClassCounterToolboxTab;
-var WholeImageClassifierToolboxTab = /** @class */ (function (_super) {
-    __extends(WholeImageClassifierToolboxTab, _super);
-    function WholeImageClassifierToolboxTab() {
-        return _super.call(this, "toolbox-whole-image-classifier", "Whole Image Classification", "") || this;
-    }
-    return WholeImageClassifierToolboxTab;
-}(ToolboxTab));
-exports.WholeImageClassifierToolboxTab = WholeImageClassifierToolboxTab;
+    ClassCounterToolboxItem.prototype.get_html = function () {
+        return "\n        <div class=\"toolbox-class-counter\">" + this.inner_HTML + "</div>";
+    };
+    return ClassCounterToolboxItem;
+}(ToolboxItem));
+exports.ClassCounterToolboxItem = ClassCounterToolboxItem;
+// export class WholeImageClassifierToolboxTab extends ToolboxItem {
+//     constructor() {
+//         super(
+//             "toolbox-whole-image-classifier",
+//             "Whole Image Classification",
+//             ""
+//         );
+//     }
+// }

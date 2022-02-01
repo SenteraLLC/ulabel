@@ -2,7 +2,7 @@
 export type ULabelSpatialPayload2D = [number, number][]
 export type ULabelSpatialPayload3D = [number, number, number][]
 
-export default class GeometricUtils {
+export class GeometricUtils {
     public static l2_norm(pt1: Array<number>, pt2: Array<number>): number {
         let ndim = pt1.length;
         let sq = 0;

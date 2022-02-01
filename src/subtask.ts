@@ -20,7 +20,7 @@ export class ULabelSubtask {
 
     public static from_json(subtask_key: string, subtask_json: any): ULabelSubtask {
         let ret = new ULabelSubtask(
-            subtask_key,
+            subtask_json["display_name"],
             subtask_json["classes"],
             subtask_json["allowed_modes"],
             subtask_json["resume_from"],

@@ -3,7 +3,8 @@ Uncertain Labeling Tool
 Sentera Inc.
 */
 import { ULabelAnnotation } from './annotation';
-import { ClassCounterToolboxTab } from './toolbox';
+import { Toolbox, ClassCounterToolboxItem, ModeSelectionToolboxItem, ZoomPanToolboxItem, LinestyleToolboxItem } from './toolbox';
+import { AnnotationIDToolboxItem } from './toolbox';
 import { ULabelSubtask } from './subtask';
 import { GeometricUtils } from './geometric_utils';
 import $ from 'jquery';
@@ -154,31 +155,6 @@ export class ULabel {
         </div>`;
     }
 
-    static get_toolbox_tabs(ul) {
-        let ret = "";
-        for (const st_key in ul.subtasks) {
-            let sel = "";
-            let href = ` href="#"`;
-            let val = 50;
-            if (st_key == ul.state["current_subtask"] || ul.subtasks[st_key]["read_only"]) {
-                href = "";
-            }
-            if (st_key == ul.state["current_subtask"]) {
-                sel = " sel";
-                val = 100;
-            }
-            ret += `
-            <div class="tb-st-tab${sel}">
-                <a${href} id="tb-st-switch--${st_key}" class="tb-st-switch">${ul.subtasks[st_key]["display_name"]}</a><!--
-                --><span class="tb-st-range">
-                    <input id="tb-st-range--${st_key}" type="range" min=0 max=100 value=${val} />
-                </span>
-            </div>
-            `;
-        }
-        return ret;
-    }
-    
 
     static get_images_html(ul) {
         let ret = "";
@@ -258,12 +234,6 @@ export class ULabel {
             `;
         }
 
-        const tabs = ULabel.get_toolbox_tabs(ul);
-
-        const images = ULabel.get_images_html(ul);
-
-        const frame_annotation_dialogs = ULabel.get_frame_annotation_dialogs(ul);
-
         let frame_range = `
         <div class="full-tb htbmain set-frame">
             <p class="shortcut-tip">scroll to switch frames</p>
@@ -279,101 +249,33 @@ export class ULabel {
             frame_range = ``;
         }
 
-        const tool_html = `
-        <div class="full_ulabel_container_">
-            ${frame_annotation_dialogs}
-            <div id="${ul.config["annbox_id"]}" class="annbox_cls">
-                <div id="${ul.config["imwrap_id"]}" class="imwrap_cls ${ul.config["imgsz_class"]}">
-                    ${images}
-                </div>
-            </div>
-            <div id="${ul.config["toolbox_id"]}" class="toolbox_cls">
-                <div class="toolbox-name-header">
-                    <h1 class="toolname"><a class="repo-anchor" href="https://github.com/SenteraLLC/ulabel">ULabel</a> <span class="version-number">v${ULABEL_VERSION}</span></h1><!--
-                    --><div class="night-button-cont">
-                        <a href="#" class="night-button">
-                            <div class="night-button-track">
-                                <div class="night-status"></div>
-                            </div>
-                        </a>
-                    </div>
-                </div>
-                <div class="toolbox_inner_cls">
-                    <div class="mode-selection">
-                        <p class="current_mode_container">
-                            <span class="cmlbl">Mode:</span>
-                            <span class="current_mode"></span>
-                        </p>
-                    </div>
-                    <div class="toolbox-divider"></div>
-                    <div class="zoom-pan">
-                        <div class="half-tb htbmain set-zoom">
-                            <p class="shortcut-tip">ctrl+scroll or shift+drag</p>
-                            <div class="zpcont">
-                                <div class="lblpyldcont">
-                                    <span class="pzlbl htblbl">Zoom</span>
-                                    <span class="zinout htbpyld">
-                                        <a href="#" class="zbutt zout">-</a>
-                                        <a href="#" class="zbutt zin">+</a>
-                                    </span>
-                                </div>
-                            </div>
-                        </div><!--
-                        --><div class="half-tb htbmain set-pan">
-                            <p class="shortcut-tip">scrollclick+drag or ctrl+drag</p>
-                            <div class="zpcont">
-                                <div class="lblpyldcont">
-                                    <span class="pzlbl htblbl">Pan</span>
-                                    <span class="panudlr htbpyld">
-                                        <a href="#" class="pbutt left"></a>
-                                        <a href="#" class="pbutt right"></a>
-                                        <a href="#" class="pbutt up"></a>
-                                        <a href="#" class="pbutt down"></a>
-                                        <span class="spokes"></span>
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="recenter-cont" style="text-align: center;">
-                            <a href="#" id="recenter-button">Re-Center</a>
-                        </div>
-                        ${frame_range}
-                    </div>
-                    <div class="toolbox-divider"></div>
-                    <div class="linestyle">
-                        <p class="tb-header">Line Width</p>
-                        <div class="lstyl-row">
-                            <div class="line-expl">
-                                <a href="#" class="wbutt wout">-</a>
-                                <canvas 
-                                    id="${ul.config["canvas_did"]}" 
-                                    class="demo-canvas" 
-                                    width=${ul.config["demo_width"]*ul.config["px_per_px"]} 
-                                    height=${ul.config["demo_height"]*ul.config["px_per_px"]}></canvas>
-                                <a href="#" class="wbutt win">+</a>
-                            </div><!--
-                            --><div class="setting">
-                                <a class="fixed-setting">Fixed</a><br>
-                                <a href="#" class="dyn-setting">Dynamic</a>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="toolbox-divider"></div>
-                    <div class="classification">
-                        // <p class="tb-header">Annotation ID</p>
-                        // <div class="id-toolbox-app"></div>
-                    </div>
-                    <div class="toolbox-refs">
-                        ${instructions}
-                    </div>
-                    <div class="toolbox-divider"></div>
-                    <div class="toolbox-class-counter"></div>
-                </div>
-                <div class="toolbox-tabs">
-                    ${tabs}
-                </div>
-            </div>
-        </div>`;
+        // const tabs = ULabel.get_toolbox_tabs(ul);
+        const images = ULabel.get_images_html(ul);
+        const frame_annotation_dialogs = ULabel.get_frame_annotation_dialogs(ul);
+
+        const mode_select_tbi = new ModeSelectionToolboxItem();
+        const zoom_pan_tbi = new ZoomPanToolboxItem(frame_range);
+        const linestyle_tbi = new LinestyleToolboxItem(
+            ul.config["canvas_did"],
+            ul.config["demo_width"],
+            ul.config["demo_height"],
+            ul.config["px_per_px"]
+        );
+        const annotation_id_tbi = new AnnotationIDToolboxItem(instructions);
+        const class_counter_tbi = new ClassCounterToolboxItem();
+        
+        const toolbox = new Toolbox(
+            [], 
+            [mode_select_tbi, zoom_pan_tbi, linestyle_tbi, annotation_id_tbi, class_counter_tbi],
+        );
+
+        
+        var tool_html = toolbox.setup_toolbox_html(
+            ul,
+            frame_annotation_dialogs,
+            images,
+            ULABEL_VERSION
+        )
         $("#" + ul.config["container_id"]).html(tool_html)
 
 
@@ -2425,7 +2327,9 @@ export class ULabel {
         i.e. a batch of functions run on adding, removing annotations
         and a different batch run on redraw, a batch for subtask switch etc.
         */
-        var test = new ClassCounterToolboxTab()
+
+        // TODO rework update structure to be more modular
+        var test = new ClassCounterToolboxItem()
         test.update_toolbox_counter(this.subtasks[subtask], this.config["toolbox_id"])
         // TODO figure out how to have this occur from the toolbox
         $("#" + this.config["toolbox_id"] + " div.toolbox-class-counter").html(test.inner_HTML);
@@ -4505,6 +4409,7 @@ export class ULabel {
         }
         this.redraw_demo();
     }
+    // Toolbox Annotation ID Update
     update_id_toolbox_display() {
         if (this.config["allow_soft_id"]) {
             // Not supported yet

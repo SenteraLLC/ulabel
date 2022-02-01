@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.GeometricUtils = void 0;
 var GeometricUtils = /** @class */ (function () {
     function GeometricUtils() {
     }
@@ -191,4 +192,4 @@ var GeometricUtils = /** @class */ (function () {
     };
     return GeometricUtils;
 }());
-exports.default = GeometricUtils;
+exports.GeometricUtils = GeometricUtils;
