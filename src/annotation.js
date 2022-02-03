@@ -30,8 +30,8 @@ var ULabelAnnotation = /** @class */ (function () {
         for (j = 0; j < this.classification_payloads.length; j++) {
             var this_id = this.classification_payloads[j].class_id;
             if (!ulabel_class_ids.includes(this_id)) {
-                alert("Found class id " + this_id + " in \"resume_from\" data but not in \"allowed_classes\"");
-                throw "Found class id " + this_id + " in \"resume_from\" data but not in \"allowed_classes\"";
+                alert("Found class id ".concat(this_id, " in \"resume_from\" data but not in \"allowed_classes\""));
+                throw "Found class id ".concat(this_id, " in \"resume_from\" data but not in \"allowed_classes\"");
             }
             found_ids.push(this_id);
             if (!("confidence" in this.classification_payloads[j])) {

@@ -311,6 +311,8 @@ export class ULabel {
         if ($("#" + ul.config["toolbox_id"] + " .toolbox_inner_cls").height() > $("#" + ul.config["container_id"]).height()) {
             $("#" + ul.config["toolbox_id"]).css("overflow-y", "scroll");
         }
+        
+        ul.toolbox = toolbox;
 
     }
 
@@ -2322,20 +2324,11 @@ export class ULabel {
 
         /*
         TODO:
-        Make a Toolbox manager that tracks all the individual tabs
-        and updates them when appropriate.
-        Also TODO:
         some update scheduling to make binding easier
         i.e. a batch of functions run on adding, removing annotations
         and a different batch run on redraw, a batch for subtask switch etc.
         */
-
-        // TODO rework update structure to be more modular
-        var test = new ClassCounterToolboxItem()
-        test.update_toolbox_counter(this.subtasks[subtask], this.config["toolbox_id"])
-        // TODO figure out how to have this occur from the toolbox
-        $("#" + this.config["toolbox_id"] + " div.toolbox-class-counter").html(test.inner_HTML);
-
+        this.toolbox.redraw_update_items(this);
     }
 
     // ================= On-Canvas HTML Dialog Utilities =================

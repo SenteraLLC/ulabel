@@ -1,3 +1,5 @@
+import { Toolbox } from "./src/toolbox";
+
 export type ULabelAnnotation = {
     id: string;
     new: boolean;
@@ -54,6 +56,7 @@ export class ULabel {
     subtasks: ULabelSubtask[];
     state: any;
     config: any;
+    toolbox: Toolbox;
     /**
      * @link https://github.com/SenteraLLC/ulabel/blob/main/api_spec.md#ulabel-constructor
      */

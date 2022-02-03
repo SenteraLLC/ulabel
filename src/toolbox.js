@@ -31,11 +31,11 @@ var Toolbox = /** @class */ (function () {
     }
     Toolbox.prototype.setup_toolbox_html = function (ulabel, frame_annotation_dialogs, images, ULABEL_VERSION) {
         // Setup base div and ULabel version header
-        var toolbox_html = "\n        <div class=\"full_ulabel_container_\">\n            " + frame_annotation_dialogs + "\n            <div id=\"" + ulabel.config["annbox_id"] + "\" class=\"annbox_cls\">\n                <div id=\"" + ulabel.config["imwrap_id"] + "\" class=\"imwrap_cls " + ulabel.config["imgsz_class"] + "\">\n                    " + images + "\n                </div>\n            </div>\n            <div id=\"" + ulabel.config["toolbox_id"] + "\" class=\"toolbox_cls\">\n                <div class=\"toolbox-name-header\">\n                    <h1 class=\"toolname\"><a class=\"repo-anchor\" href=\"https://github.com/SenteraLLC/ulabel\">ULabel</a> <span class=\"version-number\">v" + ULABEL_VERSION + "</span></h1><!--\n                    --><div class=\"night-button-cont\">\n                        <a href=\"#\" class=\"night-button\">\n                            <div class=\"night-button-track\">\n                                <div class=\"night-status\"></div>\n                            </div>\n                        </a>\n                    </div>\n                </div>\n                <div class=\"toolbox_inner_cls\">\n        ";
+        var toolbox_html = "\n        <div class=\"full_ulabel_container_\">\n            ".concat(frame_annotation_dialogs, "\n            <div id=\"").concat(ulabel.config["annbox_id"], "\" class=\"annbox_cls\">\n                <div id=\"").concat(ulabel.config["imwrap_id"], "\" class=\"imwrap_cls ").concat(ulabel.config["imgsz_class"], "\">\n                    ").concat(images, "\n                </div>\n            </div>\n            <div id=\"").concat(ulabel.config["toolbox_id"], "\" class=\"toolbox_cls\">\n                <div class=\"toolbox-name-header\">\n                    <h1 class=\"toolname\"><a class=\"repo-anchor\" href=\"https://github.com/SenteraLLC/ulabel\">ULabel</a> <span class=\"version-number\">v").concat(ULABEL_VERSION, "</span></h1><!--\n                    --><div class=\"night-button-cont\">\n                        <a href=\"#\" class=\"night-button\">\n                            <div class=\"night-button-track\">\n                                <div class=\"night-status\"></div>\n                            </div>\n                        </a>\n                    </div>\n                </div>\n                <div class=\"toolbox_inner_cls\">\n        ");
         for (var tbitem in this.items) {
             toolbox_html += this.items[tbitem].get_html() + toolboxDividerDiv;
         }
-        toolbox_html += "\n                </div>\n                <div class=\"toolbox-tabs\">\n                    " + this.get_toolbox_tabs(ulabel) + "\n                </div> \n            </div>\n        </div>";
+        toolbox_html += "\n                </div>\n                <div class=\"toolbox-tabs\">\n                    ".concat(this.get_toolbox_tabs(ulabel), "\n                </div> \n            </div>\n        </div>");
         return toolbox_html;
     };
     /**
@@ -52,7 +52,12 @@ var Toolbox = /** @class */ (function () {
         }
         return ret;
     };
-    Toolbox.prototype.update = function () { };
+    Toolbox.prototype.redraw_update_items = function (ulabel) {
+        for (var _i = 0, _a = this.items; _i < _a.length; _i++) {
+            var tbitem = _a[_i];
+            tbitem.redraw_update(ulabel);
+        }
+    };
     return Toolbox;
 }());
 exports.Toolbox = Toolbox;
@@ -76,7 +81,7 @@ var ToolboxTab = /** @class */ (function () {
         }
         console.log(subtask.display_name);
         console.log(subtask);
-        this.html = "\n        <div class=\"tb-st-tab" + sel + "\">\n            <a" + href + " id=\"tb-st-switch--" + subtask_key + "\" class=\"tb-st-switch\">" + this.subtask.display_name + "</a><!--\n            --><span class=\"tb-st-range\">\n                <input id=\"tb-st-range--" + subtask_key + "\" type=\"range\" min=0 max=100 value=" + val + " />\n            </span>\n        </div>\n        ";
+        this.html = "\n        <div class=\"tb-st-tab".concat(sel, "\">\n            <a").concat(href, " id=\"tb-st-switch--").concat(subtask_key, "\" class=\"tb-st-switch\">").concat(this.subtask.display_name, "</a><!--\n            --><span class=\"tb-st-range\">\n                <input id=\"tb-st-range--").concat(subtask_key, "\" type=\"range\" min=0 max=100 value=").concat(val, " />\n            </span>\n        </div>\n        ");
     }
     return ToolboxTab;
 }());
@@ -84,6 +89,8 @@ exports.ToolboxTab = ToolboxTab;
 var ToolboxItem = /** @class */ (function () {
     function ToolboxItem() {
     }
+    ToolboxItem.prototype.redraw_update = function (ulabel) { };
+    ToolboxItem.prototype.frame_update = function (ulabel) { };
     return ToolboxItem;
 }());
 exports.ToolboxItem = ToolboxItem;
@@ -112,7 +119,7 @@ var ZoomPanToolboxItem = /** @class */ (function (_super) {
         return _this;
     }
     ZoomPanToolboxItem.prototype.get_html = function () {
-        return "\n        <div class=\"zoom-pan\">\n            <div class=\"half-tb htbmain set-zoom\">\n                <p class=\"shortcut-tip\">ctrl+scroll or shift+drag</p>\n                <div class=\"zpcont\">\n                    <div class=\"lblpyldcont\">\n                        <span class=\"pzlbl htblbl\">Zoom</span>\n                        <span class=\"zinout htbpyld\">\n                            <a href=\"#\" class=\"zbutt zout\">-</a>\n                            <a href=\"#\" class=\"zbutt zin\">+</a>\n                        </span>\n                    </div>\n                </div>\n            </div><!--\n            --><div class=\"half-tb htbmain set-pan\">\n                <p class=\"shortcut-tip\">scrollclick+drag or ctrl+drag</p>\n                <div class=\"zpcont\">\n                    <div class=\"lblpyldcont\">\n                        <span class=\"pzlbl htblbl\">Pan</span>\n                        <span class=\"panudlr htbpyld\">\n                            <a href=\"#\" class=\"pbutt left\"></a>\n                            <a href=\"#\" class=\"pbutt right\"></a>\n                            <a href=\"#\" class=\"pbutt up\"></a>\n                            <a href=\"#\" class=\"pbutt down\"></a>\n                            <span class=\"spokes\"></span>\n                        </span>\n                    </div>\n                </div>\n            </div>\n            <div class=\"recenter-cont\" style=\"text-align: center;\">\n                <a href=\"#\" id=\"recenter-button\">Re-Center</a>\n            </div>\n            " + this.frame_range + "\n        </div>\n        ";
+        return "\n        <div class=\"zoom-pan\">\n            <div class=\"half-tb htbmain set-zoom\">\n                <p class=\"shortcut-tip\">ctrl+scroll or shift+drag</p>\n                <div class=\"zpcont\">\n                    <div class=\"lblpyldcont\">\n                        <span class=\"pzlbl htblbl\">Zoom</span>\n                        <span class=\"zinout htbpyld\">\n                            <a href=\"#\" class=\"zbutt zout\">-</a>\n                            <a href=\"#\" class=\"zbutt zin\">+</a>\n                        </span>\n                    </div>\n                </div>\n            </div><!--\n            --><div class=\"half-tb htbmain set-pan\">\n                <p class=\"shortcut-tip\">scrollclick+drag or ctrl+drag</p>\n                <div class=\"zpcont\">\n                    <div class=\"lblpyldcont\">\n                        <span class=\"pzlbl htblbl\">Pan</span>\n                        <span class=\"panudlr htbpyld\">\n                            <a href=\"#\" class=\"pbutt left\"></a>\n                            <a href=\"#\" class=\"pbutt right\"></a>\n                            <a href=\"#\" class=\"pbutt up\"></a>\n                            <a href=\"#\" class=\"pbutt down\"></a>\n                            <span class=\"spokes\"></span>\n                        </span>\n                    </div>\n                </div>\n            </div>\n            <div class=\"recenter-cont\" style=\"text-align: center;\">\n                <a href=\"#\" id=\"recenter-button\">Re-Center</a>\n            </div>\n            ".concat(this.frame_range, "\n        </div>\n        ");
     };
     return ZoomPanToolboxItem;
 }(ToolboxItem));
@@ -131,7 +138,7 @@ var LinestyleToolboxItem = /** @class */ (function (_super) {
         return _this;
     }
     LinestyleToolboxItem.prototype.get_html = function () {
-        return "\n        <div class=\"linestyle\">\n            <p class=\"tb-header\">Line Width</p>\n            <div class=\"lstyl-row\">\n                <div class=\"line-expl\">\n                    <a href=\"#\" class=\"wbutt wout\">-</a>\n                    <canvas \n                        id=\"" + this.canvas_did + "\" \n                        class=\"demo-canvas\" \n                        width=" + this.demo_width * this.px_per_px + "} \n                        height=" + this.demo_height * this.px_per_px + "></canvas>\n                    <a href=\"#\" class=\"wbutt win\">+</a>\n                </div><!--\n                --><div class=\"setting\">\n                    <a class=\"fixed-setting\">Fixed</a><br>\n                    <a href=\"#\" class=\"dyn-setting\">Dynamic</a>\n                </div>\n            </div>\n        </div>\n        ";
+        return "\n        <div class=\"linestyle\">\n            <p class=\"tb-header\">Line Width</p>\n            <div class=\"lstyl-row\">\n                <div class=\"line-expl\">\n                    <a href=\"#\" class=\"wbutt wout\">-</a>\n                    <canvas \n                        id=\"".concat(this.canvas_did, "\" \n                        class=\"demo-canvas\" \n                        width=").concat(this.demo_width * this.px_per_px, "} \n                        height=").concat(this.demo_height * this.px_per_px, "></canvas>\n                    <a href=\"#\" class=\"wbutt win\">+</a>\n                </div><!--\n                --><div class=\"setting\">\n                    <a class=\"fixed-setting\">Fixed</a><br>\n                    <a href=\"#\" class=\"dyn-setting\">Dynamic</a>\n                </div>\n            </div>\n        </div>\n        ");
     };
     return LinestyleToolboxItem;
 }(ToolboxItem));
@@ -147,7 +154,7 @@ var AnnotationIDToolboxItem = /** @class */ (function (_super) {
         return _this;
     }
     AnnotationIDToolboxItem.prototype.get_html = function () {
-        return "\n        <div class=\"classification\">\n            <p class=\"tb-header\">Annotation ID</p>\n            <div class=\"id-toolbox-app\"></div>\n        </div>\n        <div class=\"toolbox-refs\">\n            " + this.instructions + "\n        </div>\n        ";
+        return "\n        <div class=\"classification\">\n            <p class=\"tb-header\">Annotation ID</p>\n            <div class=\"id-toolbox-app\"></div>\n        </div>\n        <div class=\"toolbox-refs\">\n            ".concat(this.instructions, "\n        </div>\n        ");
     };
     return AnnotationIDToolboxItem;
 }(ToolboxItem));
@@ -193,12 +200,16 @@ var ClassCounterToolboxItem = /** @class */ (function (_super) {
                 continue;
             }
             class_count = class_counts[subtask.class_defs[i].id];
-            f_string += class_name + ": " + class_count + "<br>";
+            f_string += "".concat(class_name, ": ").concat(class_count, "<br>");
         }
-        this.inner_HTML = "<p class=\"tb-header\">Annotation Count</p>" + ("<p>" + f_string + "</p>");
+        this.inner_HTML = "<p class=\"tb-header\">Annotation Count</p>" + "<p>".concat(f_string, "</p>");
     };
     ClassCounterToolboxItem.prototype.get_html = function () {
         return "\n        <div class=\"toolbox-class-counter\">" + this.inner_HTML + "</div>";
+    };
+    ClassCounterToolboxItem.prototype.redraw_update = function (ulabel) {
+        this.update_toolbox_counter(ulabel.subtasks[ulabel.state["current_subtask"]], ulabel.config["toolbox_id"]);
+        $("#" + ulabel.config["toolbox_id"] + " div.toolbox-class-counter").html(this.inner_HTML);
     };
     return ClassCounterToolboxItem;
 }(ToolboxItem));

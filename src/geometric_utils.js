@@ -125,7 +125,7 @@ var GeometricUtils = /** @class */ (function () {
                 var kp = [spatial_payload[bbi][0], spatial_payload[bbj][1]];
                 var kpdst = Math.sqrt(Math.pow(kp[0] - ref_x, 2) + Math.pow(kp[1] - ref_y, 2));
                 if (kpdst < dstmax && (ret["distance"] == null || kpdst < ret["distance"])) {
-                    ret["access"] = "" + bbi + bbj;
+                    ret["access"] = "".concat(bbi).concat(bbj);
                     ret["distance"] = kpdst;
                     ret["point"] = kp;
                 }
@@ -145,7 +145,7 @@ var GeometricUtils = /** @class */ (function () {
                 var kp = [spatial_payload[bbi][0], spatial_payload[bbj][1]];
                 var kpdst = Math.sqrt(Math.pow(kp[0] - ref_x, 2) + Math.pow(kp[1] - ref_y, 2));
                 if (kpdst < dstmax && (ret["distance"] == null || kpdst < ret["distance"])) {
-                    ret["access"] = "" + bbi + bbj;
+                    ret["access"] = "".concat(bbi).concat(bbj);
                     ret["distance"] = kpdst;
                     ret["point"] = kp;
                 }
@@ -183,7 +183,7 @@ var GeometricUtils = /** @class */ (function () {
             var kp = [spatial_payload[tbi][0], spatial_payload[tbi][1]];
             var kpdst = Math.sqrt(Math.pow(kp[0] - ref_x, 2) + Math.pow(kp[1] - ref_y, 2));
             if (kpdst < dstmax && (ret["distance"] == null || kpdst < ret["distance"])) {
-                ret["access"] = "" + tbi + tbi;
+                ret["access"] = "".concat(tbi).concat(tbi);
                 ret["distance"] = kpdst;
                 ret["point"] = kp;
             }

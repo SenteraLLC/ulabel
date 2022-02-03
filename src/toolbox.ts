@@ -73,8 +73,12 @@ export class Toolbox {
         }
         return ret 
     }
-
-    update() {}
+    
+    public redraw_update_items(ulabel: ULabel): void {
+        for(const tbitem of this.items) {
+            tbitem.redraw_update(ulabel);
+        }
+    }
 }
 
 export class ToolboxTab {
@@ -113,6 +117,8 @@ export abstract class ToolboxItem {
     constructor() {}
 
     abstract get_html(): string;
+    public redraw_update(ulabel: ULabel): void {}
+    public frame_update(ulabel: ULabel): void {} 
 }
 
 /**
@@ -293,6 +299,14 @@ export class ClassCounterToolboxItem extends ToolboxItem {
     public get_html() {
         return `
         <div class="toolbox-class-counter">` + this.inner_HTML + `</div>`;
+    }
+
+    public redraw_update(ulabel: ULabel) {
+        this.update_toolbox_counter(
+            ulabel.subtasks[ulabel.state["current_subtask"]],
+            ulabel.config["toolbox_id"]
+        );
+        $("#" + ulabel.config["toolbox_id"] + " div.toolbox-class-counter").html(this.inner_HTML);
     }
 }
 
