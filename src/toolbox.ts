@@ -340,15 +340,25 @@ export class AnnotationResizeItem extends ToolboxItem {
 
         switch(size) {
             case 's':
-                for (const [uuid, value] of subtask.annotations.access) value.line_size = small_size;
+                for (const [uuid, value] of subtask.annotations.access) {
+                    value.line_size = small_size;
+                }
             case 'm':
-                for (const [uuid, value] of subtask.annotations.access) value.line_size = medium_size;
+                for (const [uuid, value] of subtask.annotations.access) {
+                    value.line_size = medium_size;
+                }
             case 'l':
-                for (const [uuid, value] of subtask.annotations.access) value.line_size = large_size;
+                for (const [uuid, value] of subtask.annotations.access) {
+                    value.line_size = large_size;
+                }
             case '-':
-                for (const [uuid, value] of subtask.annotations.access) value.line_size -= increment_size;
+                for (const [uuid, value] of subtask.annotations.access) {
+                    value.line_size -= increment_size;
+                }
             case '+':
-                for (const [uuid, value] of subtask.annotations.access) value.line_size += increment_size;
+                for (const [uuid, value] of subtask.annotations.access) {
+                    value.line_size += increment_size;
+                }
             default:
                 return;
         }
