@@ -14643,10 +14643,11 @@ class ULabel {
         );
         const annotation_id_tbi = new src_toolbox.AnnotationIDToolboxItem(instructions);
         const class_counter_tbi = new src_toolbox.ClassCounterToolboxItem();
+        const annotaion_resize_tbi = new src_toolbox.AnnotationResizeItem(ul);
 
         const toolbox = new src_toolbox.Toolbox(
             [],
-            [mode_select_tbi, zoom_pan_tbi, linestyle_tbi, annotation_id_tbi, class_counter_tbi],
+            [mode_select_tbi, zoom_pan_tbi, linestyle_tbi, annotaion_resize_tbi, annotation_id_tbi, class_counter_tbi],
         );
 
 

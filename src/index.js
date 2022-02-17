@@ -3,7 +3,7 @@ Uncertain Labeling Tool
 Sentera Inc.
 */
 import { ULabelAnnotation } from './annotation';
-import { Toolbox, ClassCounterToolboxItem, ModeSelectionToolboxItem, ZoomPanToolboxItem, LinestyleToolboxItem } from './toolbox';
+import { Toolbox, ClassCounterToolboxItem, ModeSelectionToolboxItem, ZoomPanToolboxItem, LinestyleToolboxItem, AnnotationResizeItem} from './toolbox';
 import { AnnotationIDToolboxItem } from './toolbox';
 import { ULabelSubtask } from './subtask';
 import { GeometricUtils } from './geometric_utils';
@@ -263,10 +263,11 @@ export class ULabel {
         );
         const annotation_id_tbi = new AnnotationIDToolboxItem(instructions);
         const class_counter_tbi = new ClassCounterToolboxItem();
+        const annotaion_resize_tbi = new AnnotationResizeItem(ul);
 
         const toolbox = new Toolbox(
             [],
-            [mode_select_tbi, zoom_pan_tbi, linestyle_tbi, annotation_id_tbi, class_counter_tbi],
+            [mode_select_tbi, zoom_pan_tbi, linestyle_tbi, annotaion_resize_tbi, annotation_id_tbi, class_counter_tbi],
         );
 
 
