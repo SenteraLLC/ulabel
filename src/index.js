@@ -3,8 +3,8 @@ Uncertain Labeling Tool
 Sentera Inc.
 */
 import { ULabelAnnotation } from './annotation';
-import { Toolbox, ClassCounterToolboxItem, ModeSelectionToolboxItem, ZoomPanToolboxItem, LinestyleToolboxItem, AnnotationResizeItem} from './toolbox';
-import { AnnotationIDToolboxItem } from './toolbox';
+import { Toolbox, ClassCounterToolboxItem, ModeSelectionToolboxItem, ZoomPanToolboxItem, LinestyleToolboxItem } from './toolbox';
+import { AnnotationIDToolboxItem, AnnotationResizeItem } from './toolbox';
 import { ULabelSubtask } from './subtask';
 import { GeometricUtils } from './geometric_utils';
 import $ from 'jquery';
@@ -312,7 +312,7 @@ export class ULabel {
         if ($("#" + ul.config["toolbox_id"] + " .toolbox_inner_cls").height() > $("#" + ul.config["container_id"]).height()) {
             $("#" + ul.config["toolbox_id"]).css("overflow-y", "scroll");
         }
-        
+
         ul.toolbox = toolbox;
 
     }

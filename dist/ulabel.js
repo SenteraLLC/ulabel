@@ -12093,6 +12093,68 @@ var ClassCounterToolboxItem = /** @class */ (function (_super) {
     return ClassCounterToolboxItem;
 }(ToolboxItem));
 exports.ClassCounterToolboxItem = ClassCounterToolboxItem;
+/**
+ * Toolbox item for resizing all annotations
+ */
+var AnnotationResizeItem = /** @class */ (function (_super) {
+    __extends(AnnotationResizeItem, _super);
+    function AnnotationResizeItem(ulabel) {
+        var _this = _super.call(this) || this;
+        _this.inner_HTML = "<p class=\"tb-header\">Annotation Count</p>";
+        $(document).on("click", "a.butt-ann", function (e) {
+            var button = $(e.currentTarget);
+            var current_subtask_key = ulabel.state["current_subtask"];
+            var current_subtask = ulabel.subtasks[current_subtask_key];
+            var annotation_size = button.attr("id").slice(-1);
+            _this.update_annotation_size(current_subtask, annotation_size);
+            ulabel.redraw_all_annotations(null, null, false);
+        });
+        return _this;
+    }
+    //recieives a string of 's','m', 'l', '-', or '+' depending on which button was pressed
+    AnnotationResizeItem.prototype.update_annotation_size = function (subtask, size) {
+        var small_size = 5;
+        var medium_size = 9;
+        var large_size = 13;
+        var increment_size = 2;
+        if (subtask == null)
+            return;
+        switch (size) {
+            case 's':
+                for (var _i = 0, _a = subtask.annotations.access; _i < _a.length; _i++) {
+                    var _b = _a[_i], uuid = _b[0], value = _b[1];
+                    value.line_size = small_size;
+                }
+            case 'm':
+                for (var _c = 0, _d = subtask.annotations.access; _c < _d.length; _c++) {
+                    var _e = _d[_c], uuid = _e[0], value = _e[1];
+                    value.line_size = medium_size;
+                }
+            case 'l':
+                for (var _f = 0, _g = subtask.annotations.access; _f < _g.length; _f++) {
+                    var _h = _g[_f], uuid = _h[0], value = _h[1];
+                    value.line_size = large_size;
+                }
+            case '-':
+                for (var _j = 0, _k = subtask.annotations.access; _j < _k.length; _j++) {
+                    var _l = _k[_j], uuid = _l[0], value = _l[1];
+                    value.line_size -= increment_size;
+                }
+            case '+':
+                for (var _m = 0, _o = subtask.annotations.access; _m < _o.length; _m++) {
+                    var _p = _o[_m], uuid = _p[0], value = _p[1];
+                    value.line_size += increment_size;
+                }
+            default:
+                return;
+        }
+    };
+    AnnotationResizeItem.prototype.get_html = function () {
+        return "\n        <div class=\"annotation-resize\">\n            <p>Change annotation size</p>\n            <span class=annotation-size>\n                <a href=\"#\" class=butt-ann id=\"annotation-resize-s\">Small</a>\n                <a href=\"#\" class=butt-ann id=\"annotation-resize-m\">Medium</a>\n                <a href=\"#\" class=butt-ann id=\"annotation-resize-l\">Large</a>\n            </span>\n            <span class=annotation-inc>\n                <a href=\"#\" class=butt-ann id=\"annotation-resize--\">-</a>\n                <a href=\"#\" class=butt-ann id=\"annotation-resize-+\">+</a>\n            </span>\n        </div>\n        ";
+    };
+    return AnnotationResizeItem;
+}(ToolboxItem));
+exports.default = AnnotationResizeItem;
 // export class WholeImageClassifierToolboxTab extends ToolboxItem {
 //     constructor() {
 //         super(
@@ -14692,7 +14754,7 @@ class ULabel {
         if (jquery_default()("#" + ul.config["toolbox_id"] + " .toolbox_inner_cls").height() > jquery_default()("#" + ul.config["container_id"]).height()) {
             jquery_default()("#" + ul.config["toolbox_id"]).css("overflow-y", "scroll");
         }
-        
+
         ul.toolbox = toolbox;
 
     }
