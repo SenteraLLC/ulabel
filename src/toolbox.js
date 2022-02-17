@@ -245,22 +245,27 @@ var AnnotationResizeItem = /** @class */ (function (_super) {
                 for (var annotation_id in subtask.annotations.access) {
                     subtask.annotations.access[annotation_id].line_size = small_size;
                 }
+                break;
             case 'm':
                 for (var annotation_id in subtask.annotations.access) {
                     subtask.annotations.access[annotation_id].line_size = medium_size;
                 }
+                break;
             case 'l':
                 for (var annotation_id in subtask.annotations.access) {
                     subtask.annotations.access[annotation_id].line_size = large_size;
                 }
+                break;
             case '-':
                 for (var annotation_id in subtask.annotations.access) {
                     subtask.annotations.access[annotation_id].line_size -= increment_size;
                 }
+                break;
             case '+':
                 for (var annotation_id in subtask.annotations.access) {
                     subtask.annotations.access[annotation_id].line_size += increment_size;
                 }
+                break;
             default:
                 return;
         }

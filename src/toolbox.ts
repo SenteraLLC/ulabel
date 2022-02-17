@@ -343,22 +343,27 @@ export class AnnotationResizeItem extends ToolboxItem {
                 for (const annotation_id in subtask.annotations.access) {
                     subtask.annotations.access[annotation_id].line_size = small_size;
                 }
+                break;
             case 'm':
                 for (const annotation_id in subtask.annotations.access) {
                     subtask.annotations.access[annotation_id].line_size = medium_size;
                 }
+                break;
             case 'l':
                 for (const annotation_id in subtask.annotations.access) {
                     subtask.annotations.access[annotation_id].line_size = large_size;
                 }
+                break;
             case '-':
                 for (const annotation_id in subtask.annotations.access) {
                     subtask.annotations.access[annotation_id].line_size -= increment_size;
                 }
+                break;
             case '+':
                 for (const annotation_id in subtask.annotations.access) {
                     subtask.annotations.access[annotation_id].line_size += increment_size;
                 }
+                break; 
             default:
                 return;
         }
