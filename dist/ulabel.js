@@ -11894,7 +11894,7 @@ var __extends = (this && this.__extends) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.ClassCounterToolboxItem = exports.AnnotationIDToolboxItem = exports.LinestyleToolboxItem = exports.ZoomPanToolboxItem = exports.ModeSelectionToolboxItem = exports.ToolboxItem = exports.ToolboxTab = exports.Toolbox = void 0;
+exports.AnnotationResizeItem = exports.ClassCounterToolboxItem = exports.AnnotationIDToolboxItem = exports.LinestyleToolboxItem = exports.ZoomPanToolboxItem = exports.ModeSelectionToolboxItem = exports.ToolboxItem = exports.ToolboxTab = exports.Toolbox = void 0;
 var toolboxDividerDiv = "<div class=toolbox-divider></div>";
 /**
  * Manager for toolbox. Contains ToolboxTab items.
@@ -12121,29 +12121,24 @@ var AnnotationResizeItem = /** @class */ (function (_super) {
             return;
         switch (size) {
             case 's':
-                for (var _i = 0, _a = subtask.annotations.access; _i < _a.length; _i++) {
-                    var _b = _a[_i], uuid = _b[0], value = _b[1];
-                    value.line_size = small_size;
+                for (var annotation_id in subtask.annotations.access) {
+                    subtask.annotations.access[annotation_id].line_size = small_size;
                 }
             case 'm':
-                for (var _c = 0, _d = subtask.annotations.access; _c < _d.length; _c++) {
-                    var _e = _d[_c], uuid = _e[0], value = _e[1];
-                    value.line_size = medium_size;
+                for (var annotation_id in subtask.annotations.access) {
+                    subtask.annotations.access[annotation_id].line_size = medium_size;
                 }
             case 'l':
-                for (var _f = 0, _g = subtask.annotations.access; _f < _g.length; _f++) {
-                    var _h = _g[_f], uuid = _h[0], value = _h[1];
-                    value.line_size = large_size;
+                for (var annotation_id in subtask.annotations.access) {
+                    subtask.annotations.access[annotation_id].line_size = large_size;
                 }
             case '-':
-                for (var _j = 0, _k = subtask.annotations.access; _j < _k.length; _j++) {
-                    var _l = _k[_j], uuid = _l[0], value = _l[1];
-                    value.line_size -= increment_size;
+                for (var annotation_id in subtask.annotations.access) {
+                    subtask.annotations.access[annotation_id].line_size -= increment_size;
                 }
             case '+':
-                for (var _m = 0, _o = subtask.annotations.access; _m < _o.length; _m++) {
-                    var _p = _o[_m], uuid = _p[0], value = _p[1];
-                    value.line_size += increment_size;
+                for (var annotation_id in subtask.annotations.access) {
+                    subtask.annotations.access[annotation_id].line_size += increment_size;
                 }
             default:
                 return;
@@ -12154,7 +12149,7 @@ var AnnotationResizeItem = /** @class */ (function (_super) {
     };
     return AnnotationResizeItem;
 }(ToolboxItem));
-exports.default = AnnotationResizeItem;
+exports.AnnotationResizeItem = AnnotationResizeItem;
 // export class WholeImageClassifierToolboxTab extends ToolboxItem {
 //     constructor() {
 //         super(
