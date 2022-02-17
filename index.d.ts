@@ -83,5 +83,6 @@ export class ULabel {
     public get_annotations(subtask: ULabelSubtask): ULabelAnnotation[];
     public set_annotations(annotations: ULabelAnnotation[], subtask: ULabelSubtask);
     public set_saved(saved: boolean);
+    public redraw_all_annotations(subtask: any, offset:any, spatial_only: any);
 
 }

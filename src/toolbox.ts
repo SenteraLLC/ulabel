@@ -323,8 +323,9 @@ export class AnnotationResizeItem extends ToolboxItem {
             let button = $(e.currentTarget);
             var current_subtask_key = ulabel.state["current_subtask"];
             var current_subtask = ulabel.subtasks[current_subtask_key];
-            const annotation_size = button.attr("id").slice(-1)
-            this.update_annotation_size(current_subtask, annotation_size)
+            const annotation_size = button.attr("id").slice(-1);
+            this.update_annotation_size(current_subtask, annotation_size);
+            ulabel.redraw_all_annotations(null, null, false);
         })
     }
 
@@ -351,6 +352,8 @@ export class AnnotationResizeItem extends ToolboxItem {
             default:
                 return;
         }
+
+        
 
     }
     
