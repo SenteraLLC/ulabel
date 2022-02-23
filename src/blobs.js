@@ -1718,7 +1718,9 @@ div#${prntid}.ulabel-night span.spokes {
    background-color:rgb(24, 24, 24);
    /* border: 1px solid black; */
 }
-
+div#${prntid}.annotation-resize {
+   background-color: red;
+}
 div#${prntid} div.zpcont {
    height: 90px;
    position: relative;
