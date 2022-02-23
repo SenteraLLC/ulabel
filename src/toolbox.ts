@@ -375,7 +375,7 @@ export class AnnotationResizeItem extends ToolboxItem {
     public get_html() {
         return `
         <div class="annotation-resize">
-            <p>Change annotation size</p>
+            <p class="tb-header>Change Annotation Size</p>
             <span class=annotation-size>
                 <a href="#" class=butt-ann id="annotation-resize-s">Small</a>
                 <a href="#" class=butt-ann id="annotation-resize-m">Medium</a>

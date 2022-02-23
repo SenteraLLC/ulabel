@@ -1718,9 +1718,18 @@ div#${prntid}.ulabel-night span.spokes {
    background-color:rgb(24, 24, 24);
    /* border: 1px solid black; */
 }
+
+/* === Annotation Resize === */
+
+
 div#${prntid} div.annotation-resize {
-   background-color: red;
+   padding: 10px 30px;
 }
+div#${prntid} div.annotation-resize p.tb-header {
+   margin: 0;
+   margin-bottom: 5px;
+}
+
 div#${prntid} div.zpcont {
    height: 90px;
    position: relative;
