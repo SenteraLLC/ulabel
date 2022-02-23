@@ -13982,13 +13982,10 @@ div#${prntid}.ulabel-night span.spokes {
 div#${prntid} div.annotation-resize {
    padding: 10px 30px;
 }
-
 div#${prntid} div.annotation-resize p.tb-header {
    margin: 0;
    margin-bottom: 5px;
 }
-
-
 
 div#${prntid} div.zpcont {
    height: 90px;
