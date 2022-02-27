@@ -1725,9 +1725,50 @@ div#${prntid}.ulabel-night span.spokes {
 div#${prntid} div.annotation-resize {
    padding: 10px 30px;
 }
+
 div#${prntid} div.annotation-resize p.tb-header {
    margin: 0;
    margin-bottom: 5px;
+}
+
+div#${prntid} div.annotation-resize {
+   display: block;
+}
+
+div#${prntid} div.annotation-resize-button-holder {
+   vertical-align: middle;
+   margin: 0 auto;
+}
+
+div#${prntid} div.annotation-resize a.butt-ann {
+   display: inline-block;  
+   margin: auto;
+   color: white;
+   background-color: lightgray;
+   border: 1px solid rgb(168, 168, 168);
+   border-radius: 11px;
+   text-decoration: none;
+   text-align: center;
+   line-height: 20px;
+   transition: all 0.2s;
+}
+
+div#${prntid} div.annotation-resize span.annotation-size a.butt-ann {
+   font-size: 0.9em;
+   text-shadow: 0 0.04em 0.04em rgba(0,0,0,0.45);
+   padding: 10px 5px;
+   margin: 0 2px;
+}
+
+div#${prntid} div.annotation-resize span.annotation-inc a.butt-ann {
+   width: 20px;
+   height: 20px;
+}
+
+div#${prntid} div.annotation-resize a:hover {
+   border: 1px solid black;
+   box-shadow: 1px 1px 4px rgba(204, 204, 204, 0.9);
+   background-color:rgba(100, 148, 237, 0.486);
 }
 
 div#${prntid} div.zpcont {

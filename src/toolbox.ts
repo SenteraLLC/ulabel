@@ -367,29 +367,28 @@ export class AnnotationResizeItem extends ToolboxItem {
             default:
                 return;
         }
-
-        
-
     }
     
     public get_html() {
         return `
         <div class="annotation-resize">
             <p class="tb-header">Change Annotation Size</p>
-            <span class=annotation-size>
-                <a href="#" class=butt-ann id="annotation-resize-s">Small</a>
-                <a href="#" class=butt-ann id="annotation-resize-m">Medium</a>
-                <a href="#" class=butt-ann id="annotation-resize-l">Large</a>
-            </span>
-            <span class=annotation-inc>
-                <a href="#" class=butt-ann id="annotation-resize--">-</a>
-                <a href="#" class=butt-ann id="annotation-resize-+">+</a>
-            </span>
-            <p> Test </p>
+            <div class="annotation-resize-button-holder">
+                <span class="annotation-inc">
+                    <a href="#" class="butt-ann" id="annotation-resize--">-</a>
+                </span>
+                <span class="annotation-size">
+                    <a href="#" class="butt-ann" id="annotation-resize-s">Small</a>
+                    <a href="#" class="butt-ann" id="annotation-resize-m">Medium</a>
+                    <a href="#" class="butt-ann" id="annotation-resize-l">Large</a>
+                </span>
+                <span class="annotation-inc">
+                    <a href="#" class="butt-ann" id="annotation-resize-+">+</a>
+                </span>
+            </div>
         </div>
         `
     }
-
 }
 
 // export class WholeImageClassifierToolboxTab extends ToolboxItem {

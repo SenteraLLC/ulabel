@@ -271,7 +271,7 @@ var AnnotationResizeItem = /** @class */ (function (_super) {
         }
     };
     AnnotationResizeItem.prototype.get_html = function () {
-        return "\n        <div class=\"annotation-resize\">\n            <p>Change annotation size</p>\n            <span class=annotation-size>\n                <a href=\"#\" class=butt-ann id=\"annotation-resize-s\">Small</a>\n                <a href=\"#\" class=butt-ann id=\"annotation-resize-m\">Medium</a>\n                <a href=\"#\" class=butt-ann id=\"annotation-resize-l\">Large</a>\n            </span>\n            <span class=annotation-inc>\n                <a href=\"#\" class=butt-ann id=\"annotation-resize--\">-</a>\n                <a href=\"#\" class=butt-ann id=\"annotation-resize-+\">+</a>\n            </span>\n        </div>\n        ";
+        return "\n        <div class=\"annotation-resize\">\n            <p class=\"tb-header\">Change Annotation Size</p>\n            <div class=\"annotation-resize-button-holder\">\n                <span class=\"annotation-inc\">\n                    <a href=\"#\" class=\"butt-ann\" id=\"annotation-resize--\">-</a>\n                </span>\n                <span class=\"annotation-size\">\n                    <a href=\"#\" class=\"butt-ann\" id=\"annotation-resize-s\">Small</a>\n                    <a href=\"#\" class=\"butt-ann\" id=\"annotation-resize-m\">Medium</a>\n                    <a href=\"#\" class=\"butt-ann\" id=\"annotation-resize-l\">Large</a>\n                </span>\n                <span class=\"annotation-inc\">\n                    <a href=\"#\" class=\"butt-ann\" id=\"annotation-resize-+\">+</a>\n                </span>\n            </div>\n        </div>\n        ";
     };
     return AnnotationResizeItem;
 }(ToolboxItem));
