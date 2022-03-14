@@ -10,7 +10,7 @@ export class ULabelSubtask {
         public task_meta: any,
         public annotation_meta: any,
         public read_only?: boolean,
-        public inactivate_opacity: number = 0.4 
+        public inactivate_opacity: number = 0.4
     ) {
         this.actions = {
             "stream": [],

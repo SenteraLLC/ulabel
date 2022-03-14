@@ -11894,7 +11894,7 @@ var __extends = (this && this.__extends) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.ClassCounterToolboxItem = exports.AnnotationIDToolboxItem = exports.LinestyleToolboxItem = exports.ZoomPanToolboxItem = exports.ModeSelectionToolboxItem = exports.ToolboxItem = exports.ToolboxTab = exports.Toolbox = void 0;
+exports.AnnotationResizeItem = exports.ClassCounterToolboxItem = exports.AnnotationIDToolboxItem = exports.LinestyleToolboxItem = exports.ZoomPanToolboxItem = exports.ModeSelectionToolboxItem = exports.ToolboxItem = exports.ToolboxTab = exports.Toolbox = void 0;
 var toolboxDividerDiv = "<div class=toolbox-divider></div>";
 /**
  * Manager for toolbox. Contains ToolboxTab items.
@@ -12093,6 +12093,68 @@ var ClassCounterToolboxItem = /** @class */ (function (_super) {
     return ClassCounterToolboxItem;
 }(ToolboxItem));
 exports.ClassCounterToolboxItem = ClassCounterToolboxItem;
+/**
+ * Toolbox item for resizing all annotations
+ */
+var AnnotationResizeItem = /** @class */ (function (_super) {
+    __extends(AnnotationResizeItem, _super);
+    function AnnotationResizeItem(ulabel) {
+        var _this = _super.call(this) || this;
+        _this.inner_HTML = "<p class=\"tb-header\">Annotation Count</p>";
+        $(document).on("click", "a.butt-ann", function (e) {
+            var button = $(e.currentTarget);
+            var current_subtask_key = ulabel.state["current_subtask"];
+            var current_subtask = ulabel.subtasks[current_subtask_key];
+            var annotation_size = button.attr("id").slice(-1);
+            _this.update_annotation_size(current_subtask, annotation_size);
+            ulabel.redraw_all_annotations(null, null, false);
+        });
+        return _this;
+    }
+    //recieives a string of 's','m', 'l', '-', or '+' depending on which button was pressed
+    AnnotationResizeItem.prototype.update_annotation_size = function (subtask, size) {
+        var small_size = 5;
+        var medium_size = 9;
+        var large_size = 13;
+        var increment_size = 2;
+        if (subtask == null)
+            return;
+        switch (size) {
+            case 's':
+                for (var annotation_id in subtask.annotations.access) {
+                    subtask.annotations.access[annotation_id].line_size = small_size;
+                }
+                break;
+            case 'm':
+                for (var annotation_id in subtask.annotations.access) {
+                    subtask.annotations.access[annotation_id].line_size = medium_size;
+                }
+                break;
+            case 'l':
+                for (var annotation_id in subtask.annotations.access) {
+                    subtask.annotations.access[annotation_id].line_size = large_size;
+                }
+                break;
+            case '-':
+                for (var annotation_id in subtask.annotations.access) {
+                    subtask.annotations.access[annotation_id].line_size -= increment_size;
+                }
+                break;
+            case '+':
+                for (var annotation_id in subtask.annotations.access) {
+                    subtask.annotations.access[annotation_id].line_size += increment_size;
+                }
+                break;
+            default:
+                return;
+        }
+    };
+    AnnotationResizeItem.prototype.get_html = function () {
+        return "\n        <div class=\"annotation-resize\">\n            <p class=\"tb-header\">Change Annotation Size</p>\n            <div class=\"annotation-resize-button-holder\">\n                <span class=\"annotation-inc\">\n                    <a href=\"#\" class=\"butt-ann\" id=\"annotation-resize--\">-</a>\n                </span>\n                <span class=\"annotation-size\">\n                    <a href=\"#\" class=\"butt-ann\" id=\"annotation-resize-s\">Small</a>\n                    <a href=\"#\" class=\"butt-ann\" id=\"annotation-resize-m\">Medium</a>\n                    <a href=\"#\" class=\"butt-ann\" id=\"annotation-resize-l\">Large</a>\n                </span>\n                <span class=\"annotation-inc\">\n                    <a href=\"#\" class=\"butt-ann\" id=\"annotation-resize-+\">+</a>\n                </span>\n            </div>\n        </div>\n        ";
+    };
+    return AnnotationResizeItem;
+}(ToolboxItem));
+exports.AnnotationResizeItem = AnnotationResizeItem;
 // export class WholeImageClassifierToolboxTab extends ToolboxItem {
 //     constructor() {
 //         super(
@@ -13914,6 +13976,58 @@ div#${prntid}.ulabel-night span.spokes {
    /* border: 1px solid black; */
 }
 
+/* === Annotation Resize === */
+
+
+div#${prntid} div.annotation-resize {
+   padding: 10px 30px;
+}
+
+div#${prntid} div.annotation-resize p.tb-header {
+   margin: 0;
+   margin-bottom: 5px;
+}
+
+div#${prntid} div.annotation-resize {
+   display: block;
+}
+
+div#${prntid} div.annotation-resize-button-holder {
+   vertical-align: middle;
+   margin: 0 auto;
+}
+
+div#${prntid} div.annotation-resize a.butt-ann {
+   display: inline-block;  
+   margin: auto;
+   color: white;
+   background-color: lightgray;
+   border: 1px solid rgb(168, 168, 168);
+   border-radius: 11px;
+   text-decoration: none;
+   text-align: center;
+   line-height: 20px;
+   transition: all 0.2s;
+}
+
+div#${prntid} div.annotation-resize span.annotation-size a.butt-ann {
+   font-size: 0.9em;
+   text-shadow: 0 0.04em 0.04em rgba(0,0,0,0.45);
+   padding: 10px 5px;
+   margin: 0 2px;
+}
+
+div#${prntid} div.annotation-resize span.annotation-inc a.butt-ann {
+   width: 20px;
+   height: 20px;
+}
+
+div#${prntid} div.annotation-resize a:hover {
+   border: 1px solid black;
+   box-shadow: 1px 1px 4px rgba(204, 204, 204, 0.9);
+   background-color:rgba(100, 148, 237, 0.486);
+}
+
 div#${prntid} div.zpcont {
    height: 90px;
    position: relative;
@@ -14643,10 +14757,11 @@ class ULabel {
         );
         const annotation_id_tbi = new src_toolbox.AnnotationIDToolboxItem(instructions);
         const class_counter_tbi = new src_toolbox.ClassCounterToolboxItem();
+        const annotaion_resize_tbi = new src_toolbox.AnnotationResizeItem(ul);
 
         const toolbox = new src_toolbox.Toolbox(
             [],
-            [mode_select_tbi, zoom_pan_tbi, linestyle_tbi, annotation_id_tbi, class_counter_tbi],
+            [mode_select_tbi, zoom_pan_tbi, linestyle_tbi, annotaion_resize_tbi, annotation_id_tbi, class_counter_tbi],
         );
 
 
@@ -14691,7 +14806,7 @@ class ULabel {
         if (jquery_default()("#" + ul.config["toolbox_id"] + " .toolbox_inner_cls").height() > jquery_default()("#" + ul.config["container_id"]).height()) {
             jquery_default()("#" + ul.config["toolbox_id"]).css("overflow-y", "scroll");
         }
-        
+
         ul.toolbox = toolbox;
 
     }
