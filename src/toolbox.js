@@ -1,5 +1,8 @@
 "use strict";
 
+import $ from 'jquery';
+const jQuery = $;
+
 var __extends = (this && this.__extends) || (function () {
     var extendStatics = function (d, b) {
         extendStatics = Object.setPrototypeOf ||
