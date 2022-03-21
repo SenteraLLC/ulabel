@@ -1,5 +1,5 @@
-// import $ from 'jquery';
-"use strict";
+import $ from 'jquery';
+// "use strict";
 
 var __extends = (this && this.__extends) || (function () {
     var extendStatics = function (d, b) {
