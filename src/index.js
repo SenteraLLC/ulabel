@@ -4,7 +4,7 @@ Sentera Inc.
 */
 import { ULabelAnnotation } from './annotation';
 import { Toolbox, ClassCounterToolboxItem, ModeSelectionToolboxItem, ZoomPanToolboxItem, LinestyleToolboxItem } from './toolbox';
-import { AnnotationIDToolboxItem, AnnotationResizeItem } from './toolbox';
+import { AnnotationIDToolboxItem, AnnotationResizeItem } from './toolbox.js';
 import { ULabelSubtask } from './subtask';
 import { GeometricUtils } from './geometric_utils';
 import $ from 'jquery';
