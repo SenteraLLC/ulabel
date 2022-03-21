@@ -2,13 +2,15 @@
 Uncertain Labeling Tool
 Sentera Inc.
 */
+import $ from 'jquery';
+const jQuery = $;
+
 import { ULabelAnnotation } from './annotation';
 import { Toolbox, ClassCounterToolboxItem, ModeSelectionToolboxItem, ZoomPanToolboxItem, LinestyleToolboxItem } from './toolbox';
 import { AnnotationIDToolboxItem, AnnotationResizeItem } from './toolbox.js';
 import { ULabelSubtask } from './subtask';
 import { GeometricUtils } from './geometric_utils';
-import $ from 'jquery';
-const jQuery = $;
+
 
 const { v4: uuidv4 } = require('uuid');
 
