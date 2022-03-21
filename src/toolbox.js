@@ -1,3 +1,4 @@
+import $ from 'jquery';
 "use strict";
 
 var __extends = (this && this.__extends) || (function () {
@@ -17,9 +18,6 @@ var __extends = (this && this.__extends) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AnnotationResizeItem = exports.ClassCounterToolboxItem = exports.AnnotationIDToolboxItem = exports.LinestyleToolboxItem = exports.ZoomPanToolboxItem = exports.ModeSelectionToolboxItem = exports.ToolboxItem = exports.ToolboxTab = exports.Toolbox = void 0;
-
-import $ from 'jquery';
-const jQuery = $;
 
 var toolboxDividerDiv = "<div class=toolbox-divider></div>";
 /**
