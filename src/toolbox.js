@@ -1,8 +1,5 @@
 "use strict";
 
-import $ from 'jquery';
-const jQuery = $;
-
 var __extends = (this && this.__extends) || (function () {
     var extendStatics = function (d, b) {
         extendStatics = Object.setPrototypeOf ||
@@ -20,6 +17,10 @@ var __extends = (this && this.__extends) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AnnotationResizeItem = exports.ClassCounterToolboxItem = exports.AnnotationIDToolboxItem = exports.LinestyleToolboxItem = exports.ZoomPanToolboxItem = exports.ModeSelectionToolboxItem = exports.ToolboxItem = exports.ToolboxTab = exports.Toolbox = void 0;
+
+import $ from 'jquery';
+const jQuery = $;
+
 var toolboxDividerDiv = "<div class=toolbox-divider></div>";
 /**
  * Manager for toolbox. Contains ToolboxTab items.
