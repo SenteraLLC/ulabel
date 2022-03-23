@@ -1,4 +1,5 @@
 import { ULabel, ULabelAnnotation, ULabelSubtask } from "..";
+import $ from 'jquery';
 
 const toolboxDividerDiv = "<div class=toolbox-divider></div>"
 
