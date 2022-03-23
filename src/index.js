@@ -54,8 +54,8 @@ var __extends = (this && this.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.AnnotationResizeItem = exports.ClassCounterToolboxItem = exports.AnnotationIDToolboxItem = exports.LinestyleToolboxItem = exports.ZoomPanToolboxItem = exports.ModeSelectionToolboxItem = exports.ToolboxItem = exports.ToolboxTab = exports.Toolbox = void 0;
+// Object.defineProperty(exports, "__esModule", { value: true });
+// exports.AnnotationResizeItem = exports.ClassCounterToolboxItem = exports.AnnotationIDToolboxItem = exports.LinestyleToolboxItem = exports.ZoomPanToolboxItem = exports.ModeSelectionToolboxItem = exports.ToolboxItem = exports.ToolboxTab = exports.Toolbox = void 0;
 
 var toolboxDividerDiv = "<div class=toolbox-divider></div>";
 /**
@@ -101,7 +101,7 @@ var Toolbox = /** @class */ (function () {
     };
     return Toolbox;
 }());
-exports.Toolbox = Toolbox;
+// exports.Toolbox = Toolbox;
 var ToolboxTab = /** @class */ (function () {
     function ToolboxTab(toolboxitems, subtask, subtask_key, selected) {
         if (toolboxitems === void 0) { toolboxitems = []; }
@@ -126,7 +126,7 @@ var ToolboxTab = /** @class */ (function () {
     }
     return ToolboxTab;
 }());
-exports.ToolboxTab = ToolboxTab;
+// exports.ToolboxTab = ToolboxTab;
 var ToolboxItem = /** @class */ (function () {
     function ToolboxItem() {
     }
@@ -134,7 +134,7 @@ var ToolboxItem = /** @class */ (function () {
     ToolboxItem.prototype.frame_update = function (ulabel) { };
     return ToolboxItem;
 }());
-exports.ToolboxItem = ToolboxItem;
+// exports.ToolboxItem = ToolboxItem;
 /**
  * Toolbox item for selecting annotation mode.
  */
@@ -148,7 +148,7 @@ var ModeSelectionToolboxItem = /** @class */ (function (_super) {
     };
     return ModeSelectionToolboxItem;
 }(ToolboxItem));
-exports.ModeSelectionToolboxItem = ModeSelectionToolboxItem;
+// exports.ModeSelectionToolboxItem = ModeSelectionToolboxItem;
 /**
  * Toolbox item for zooming and panning.
  */
@@ -164,7 +164,7 @@ var ZoomPanToolboxItem = /** @class */ (function (_super) {
     };
     return ZoomPanToolboxItem;
 }(ToolboxItem));
-exports.ZoomPanToolboxItem = ZoomPanToolboxItem;
+// exports.ZoomPanToolboxItem = ZoomPanToolboxItem;
 /**
  * Toolbox Item for selecting line style.
  */
@@ -183,7 +183,7 @@ var LinestyleToolboxItem = /** @class */ (function (_super) {
     };
     return LinestyleToolboxItem;
 }(ToolboxItem));
-exports.LinestyleToolboxItem = LinestyleToolboxItem;
+// exports.LinestyleToolboxItem = LinestyleToolboxItem;
 /**
  * Toolbox item for selection Annotation ID.
  */
@@ -199,7 +199,7 @@ var AnnotationIDToolboxItem = /** @class */ (function (_super) {
     };
     return AnnotationIDToolboxItem;
 }(ToolboxItem));
-exports.AnnotationIDToolboxItem = AnnotationIDToolboxItem;
+// exports.AnnotationIDToolboxItem = AnnotationIDToolboxItem;
 var ClassCounterToolboxItem = /** @class */ (function (_super) {
     __extends(ClassCounterToolboxItem, _super);
     function ClassCounterToolboxItem() {
@@ -254,7 +254,7 @@ var ClassCounterToolboxItem = /** @class */ (function (_super) {
     };
     return ClassCounterToolboxItem;
 }(ToolboxItem));
-exports.ClassCounterToolboxItem = ClassCounterToolboxItem;
+// exports.ClassCounterToolboxItem = ClassCounterToolboxItem;
 /**
  * Toolbox item for resizing all annotations
  */
@@ -316,7 +316,7 @@ var AnnotationResizeItem = /** @class */ (function (_super) {
     };
     return AnnotationResizeItem;
 }(ToolboxItem));
-exports.AnnotationResizeItem = AnnotationResizeItem;
+// exports.AnnotationResizeItem = AnnotationResizeItem;
 
 
 
