@@ -36,8 +36,8 @@ jQuery.fn.outer_html = function () {
 const MODES_3D = ["global", "bbox3"];
 const NONSPATIAL_MODES = ["whole-image", "global"];
 
-import $ from 'jquery';
-"use strict";
+// import $ from 'jquery';
+// "use strict";
 
 var __extends = (this && this.__extends) || (function () {
     var extendStatics = function (d, b) {
