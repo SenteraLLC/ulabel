@@ -331,10 +331,10 @@ export class AnnotationResizeItem extends ToolboxItem {
 
     //recieives a string of 's','m', 'l', '-', or '+' depending on which button was pressed
     public update_annotation_size(subtask, size) {
-        const small_size = 5;
-        const medium_size = 9;
-        const large_size = 13;
-        const increment_size = 2;
+        const small_size = 1.5;
+        const medium_size = 0;
+        const large_size = 5;
+        const increment_size = 0.5;
 
         if (subtask == null) return;
 
@@ -386,6 +386,83 @@ export class AnnotationResizeItem extends ToolboxItem {
                     <a href="#" class="butt-ann" id="annotation-resize-+">+</a>
                 </span>
             </div>
+        </div>
+        `
+    }
+}
+
+export class RecolorActiveItem extends ToolboxItem {
+    public html: string;
+    public inner_HTML: string;
+    constructor(ulabel: ULabel) {
+        super();
+        this.inner_HTML = `<p class="tb-header">Recolor Annotations</p>`;
+        //event handler for the buttons
+        $(document).on("click", "input.color-change-btn", (e) => {
+            let button = $(e.currentTarget);
+            var current_subtask_key = ulabel.state["current_subtask"];
+            var current_subtask = ulabel.subtasks[current_subtask_key];
+            //slice 13,16 to grab the part of the id that specifies color
+            const color_from_id = button.attr("id").slice(13,16);
+            this.update_annotation_color(current_subtask, color_from_id);
+
+            ulabel.redraw_all_annotations(null, null, false);
+        })
+        $(document).on("input", "input.color-change-picker", (e) => {
+            var current_subtask_key = ulabel.state["current_subtask"];
+            var current_subtask = ulabel.subtasks[current_subtask_key];
+            let hex = e.currentTarget.value;
+            this.update_annotation_color(current_subtask, hex);
+
+            ulabel.redraw_all_annotations(null, null, false);
+        })
+    }
+
+    public update_annotation_color(subtask, color) {
+        
+        //check for the three special cases, otherwise assume color is a hex value
+        if (color == "yel") {
+            color ="Yellow";
+        }
+        if (color == "red") {
+            color ="Red";
+        }
+        if (color == "cya") {
+            color ="Cyan";
+        }
+        //console.log(color);
+
+        //console.log(subtask.state.id_payload);
+
+        let selected_id = "none";
+
+        subtask.state.id_payload.forEach(item => {
+            
+            if (item.confidence == 1) {
+                selected_id = item.class_id
+            }  
+        });
+
+        //if the selected id is still none, then that means the no id had a
+        //confidence of 1. Therefore the default is having the first annotation
+        //id selected, so we'll default to that
+
+        if (selected_id == "none") {
+            selected_id = subtask.state.id_payload[0].class_id;
+        }
+
+        console.log(selected_id)
+        console.log(subtask.state.id_payload)
+    }
+
+    public get_html() {
+        return `
+        <div class="recolor-active">
+            <p>Recolor Annotations</p>
+            <input type="button" class="color-change-btn" id="color-change-yel">
+            <input type="button" class="color-change-btn" id="color-change-red">
+            <input type="button" class="color-change-btn" id="color-change-cya">
+            <input type="color"  class="color-change-picker" id="color-change-pick">
         </div>
         `
     }

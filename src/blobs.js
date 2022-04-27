@@ -1771,6 +1771,32 @@ div#${prntid} div.annotation-resize a:hover {
    background-color:rgba(100, 148, 237, 0.486);
 }
 
+/* css for the recolor annotations item */
+
+div#${prntid} div.recolor-active {
+   padding: 10px 30px;
+   display: block;
+}
+
+div#${prntid} div.recolor-active input{
+   width: 50px;
+   height: 27px;
+}
+
+div#${prntid} div.recolor-active #color-change-yel {
+   background-color: yellow;
+}
+
+div#${prntid} div.recolor-active #color-change-red {
+   background-color: red;
+}
+
+div#${prntid} div.recolor-active #color-change-cya {
+   background-color: cyan;
+}
+
+
+
 div#${prntid} div.zpcont {
    height: 90px;
    position: relative;

@@ -15,7 +15,7 @@ var __extends = (this && this.__extends) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.AnnotationResizeItem = exports.ClassCounterToolboxItem = exports.AnnotationIDToolboxItem = exports.LinestyleToolboxItem = exports.ZoomPanToolboxItem = exports.ModeSelectionToolboxItem = exports.ToolboxItem = exports.ToolboxTab = exports.Toolbox = void 0;
+exports.RecolorActiveItem = exports.AnnotationResizeItem = exports.ClassCounterToolboxItem = exports.AnnotationIDToolboxItem = exports.LinestyleToolboxItem = exports.ZoomPanToolboxItem = exports.ModeSelectionToolboxItem = exports.ToolboxItem = exports.ToolboxTab = exports.Toolbox = void 0;
 var toolboxDividerDiv = "<div class=toolbox-divider></div>";
 /**
  * Manager for toolbox. Contains ToolboxTab items.
@@ -234,10 +234,10 @@ var AnnotationResizeItem = /** @class */ (function (_super) {
     }
     //recieives a string of 's','m', 'l', '-', or '+' depending on which button was pressed
     AnnotationResizeItem.prototype.update_annotation_size = function (subtask, size) {
-        var small_size = 5;
-        var medium_size = 9;
-        var large_size = 13;
-        var increment_size = 2;
+        var small_size = 1.5;
+        var medium_size = 0;
+        var large_size = 5;
+        var increment_size = 0.5;
         if (subtask == null)
             return;
         switch (size) {
@@ -276,6 +276,64 @@ var AnnotationResizeItem = /** @class */ (function (_super) {
     return AnnotationResizeItem;
 }(ToolboxItem));
 exports.AnnotationResizeItem = AnnotationResizeItem;
+var RecolorActiveItem = /** @class */ (function (_super) {
+    __extends(RecolorActiveItem, _super);
+    function RecolorActiveItem(ulabel) {
+        var _this = _super.call(this) || this;
+        _this.inner_HTML = "<p class=\"tb-header\">Recolor Annotations</p>";
+        //event handler for the buttons
+        $(document).on("click", "input.color-change-btn", function (e) {
+            var button = $(e.currentTarget);
+            var current_subtask_key = ulabel.state["current_subtask"];
+            var current_subtask = ulabel.subtasks[current_subtask_key];
+            //slice 13,16 to grab the part of the id that specifies color
+            var color_from_id = button.attr("id").slice(13, 16);
+            _this.update_annotation_color(current_subtask, color_from_id);
+            ulabel.redraw_all_annotations(null, null, false);
+        });
+        $(document).on("input", "input.color-change-picker", function (e) {
+            var current_subtask_key = ulabel.state["current_subtask"];
+            var current_subtask = ulabel.subtasks[current_subtask_key];
+            var hex = e.currentTarget.value;
+            _this.update_annotation_color(current_subtask, hex);
+            ulabel.redraw_all_annotations(null, null, false);
+        });
+        return _this;
+    }
+    RecolorActiveItem.prototype.update_annotation_color = function (subtask, color) {
+        //check for the three special cases, otherwise assume color is a hex value
+        if (color == "yel") {
+            color = "Yellow";
+        }
+        if (color == "red") {
+            color = "Red";
+        }
+        if (color == "cya") {
+            color = "Cyan";
+        }
+        //console.log(color);
+        //console.log(subtask.state.id_payload);
+        var selected_id = "none";
+        subtask.state.id_payload.forEach(function (item) {
+            if (item.confidence == 1) {
+                selected_id = item.class_id;
+            }
+        });
+        //if the selected id is still none, then that means the no id had a
+        //confidence of 1. Therefore the default is having the first annotation
+        //id selected, so we'll default to that
+        if (selected_id == "none") {
+            selected_id = subtask.state.id_payload[0].class_id;
+        }
+        console.log(selected_id);
+        console.log(subtask.state.id_payload);
+    };
+    RecolorActiveItem.prototype.get_html = function () {
+        return "\n        <div class=\"recolor-active\">\n            <p>Recolor Annotations</p>\n            <input type=\"button\" class=\"color-change-btn\" id=\"color-change-yel\">\n            <input type=\"button\" class=\"color-change-btn\" id=\"color-change-red\">\n            <input type=\"button\" class=\"color-change-btn\" id=\"color-change-cya\">\n            <input type=\"color\"  class=\"color-change-picker\" id=\"color-change-pick\">\n        </div>\n        ";
+    };
+    return RecolorActiveItem;
+}(ToolboxItem));
+exports.RecolorActiveItem = RecolorActiveItem;
 // export class WholeImageClassifierToolboxTab extends ToolboxItem {
 //     constructor() {
 //         super(
