@@ -378,12 +378,14 @@ export class AnnotationResizeItem extends ToolboxItem {
                 this.loop_through_annotations(subtask, this.cashed_size, "=")
                 //flip the bool state
                 this.is_vanished = !this.is_vanished
+                $("#annotation-resize-v").attr("style","background-color: "+"rgba(100, 148, 237, 0.8)");
                 return;
             }
             if (this.is_vanished !== true) {
                 this.loop_through_annotations(subtask, vanish_size, "=")
                 //flip the bool state
                 this.is_vanished = !this.is_vanished;
+                $("#annotation-resize-v").attr("style","background-color: "+"#1c2d4d");
                 return;
             }
             return;
