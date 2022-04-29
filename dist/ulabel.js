@@ -11832,474 +11832,17 @@ exports.Z = GeometricUtils;
 
 /***/ }),
 
-/***/ 167:
-/***/ ((__unused_webpack_module, exports) => {
+/***/ 318:
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
-var __webpack_unused_export__;
+// ESM COMPAT FLAG
+__webpack_require__.r(__webpack_exports__);
 
-__webpack_unused_export__ = ({ value: true });
-exports.W = void 0;
-var ULabelSubtask = /** @class */ (function () {
-    function ULabelSubtask(display_name, classes, allowed_modes, resume_from, task_meta, annotation_meta, read_only, inactivate_opacity) {
-        if (inactivate_opacity === void 0) { inactivate_opacity = 0.4; }
-        this.display_name = display_name;
-        this.classes = classes;
-        this.allowed_modes = allowed_modes;
-        this.resume_from = resume_from;
-        this.task_meta = task_meta;
-        this.annotation_meta = annotation_meta;
-        this.read_only = read_only;
-        this.inactivate_opacity = inactivate_opacity;
-        this.actions = {
-            "stream": [],
-            "undone_stack": []
-        };
-    }
-    ULabelSubtask.from_json = function (subtask_key, subtask_json) {
-        var ret = new ULabelSubtask(subtask_json["display_name"], subtask_json["classes"], subtask_json["allowed_modes"], subtask_json["resume_from"], subtask_json["task_meta"], subtask_json["annotation_meta"]);
-        ret.read_only = ("read_only" in subtask_json) && (subtask_json["read_only"] === true);
-        console.log(ret.read_only);
-        if ("inactive_opacity" in subtask_json && typeof subtask_json["inactive_opacity"] == "number") {
-            ret.inactivate_opacity = Math.min(Math.max(subtask_json["inactive_opacity"], 0.0), 1.0);
-        }
-        return ret;
-    };
-    return ULabelSubtask;
-}());
-exports.W = ULabelSubtask;
-//export type ULabelSubtasks = { [key: string]: ULabelSubtask };
-
-
-/***/ }),
-
-/***/ 334:
-/***/ (function(__unused_webpack_module, exports) {
-
-"use strict";
-
-var __extends = (this && this.__extends) || (function () {
-    var extendStatics = function (d, b) {
-        extendStatics = Object.setPrototypeOf ||
-            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
-        return extendStatics(d, b);
-    };
-    return function (d, b) {
-        if (typeof b !== "function" && b !== null)
-            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.RecolorActiveItem = exports.AnnotationResizeItem = exports.ClassCounterToolboxItem = exports.AnnotationIDToolboxItem = exports.LinestyleToolboxItem = exports.ZoomPanToolboxItem = exports.ModeSelectionToolboxItem = exports.ToolboxItem = exports.ToolboxTab = exports.Toolbox = void 0;
-var toolboxDividerDiv = "<div class=toolbox-divider></div>";
-/**
- * Manager for toolbox. Contains ToolboxTab items.
- */
-var Toolbox = /** @class */ (function () {
-    // public tabs: ToolboxTab[] = [];
-    // public items: ToolboxItem[] = []; 
-    function Toolbox(tabs, items) {
-        if (tabs === void 0) { tabs = []; }
-        if (items === void 0) { items = []; }
-        this.tabs = tabs;
-        this.items = items;
-    }
-    Toolbox.prototype.setup_toolbox_html = function (ulabel, frame_annotation_dialogs, images, ULABEL_VERSION) {
-        // Setup base div and ULabel version header
-        var toolbox_html = "\n        <div class=\"full_ulabel_container_\">\n            ".concat(frame_annotation_dialogs, "\n            <div id=\"").concat(ulabel.config["annbox_id"], "\" class=\"annbox_cls\">\n                <div id=\"").concat(ulabel.config["imwrap_id"], "\" class=\"imwrap_cls ").concat(ulabel.config["imgsz_class"], "\">\n                    ").concat(images, "\n                </div>\n            </div>\n            <div id=\"").concat(ulabel.config["toolbox_id"], "\" class=\"toolbox_cls\">\n                <div class=\"toolbox-name-header\">\n                    <h1 class=\"toolname\"><a class=\"repo-anchor\" href=\"https://github.com/SenteraLLC/ulabel\">ULabel</a> <span class=\"version-number\">v").concat(ULABEL_VERSION, "</span></h1><!--\n                    --><div class=\"night-button-cont\">\n                        <a href=\"#\" class=\"night-button\">\n                            <div class=\"night-button-track\">\n                                <div class=\"night-status\"></div>\n                            </div>\n                        </a>\n                    </div>\n                </div>\n                <div class=\"toolbox_inner_cls\">\n        ");
-        for (var tbitem in this.items) {
-            toolbox_html += this.items[tbitem].get_html() + toolboxDividerDiv;
-        }
-        toolbox_html += "\n                </div>\n                <div class=\"toolbox-tabs\">\n                    ".concat(this.get_toolbox_tabs(ulabel), "\n                </div> \n            </div>\n        </div>");
-        return toolbox_html;
-    };
-    /**
-     * Adds tabs for each ULabel subtask to the toolbox.
-     */
-    Toolbox.prototype.get_toolbox_tabs = function (ulabel) {
-        var ret = "";
-        for (var st_key in ulabel.subtasks) {
-            var selected = st_key == ulabel.state["current_subtask"];
-            var subtask = ulabel.subtasks[st_key];
-            var current_tab = new ToolboxTab([], subtask, st_key, selected);
-            ret += current_tab.html;
-            this.tabs.push(current_tab);
-        }
-        return ret;
-    };
-    Toolbox.prototype.redraw_update_items = function (ulabel) {
-        for (var _i = 0, _a = this.items; _i < _a.length; _i++) {
-            var tbitem = _a[_i];
-            tbitem.redraw_update(ulabel);
-        }
-    };
-    return Toolbox;
-}());
-exports.Toolbox = Toolbox;
-var ToolboxTab = /** @class */ (function () {
-    function ToolboxTab(toolboxitems, subtask, subtask_key, selected) {
-        if (toolboxitems === void 0) { toolboxitems = []; }
-        if (selected === void 0) { selected = false; }
-        this.toolboxitems = toolboxitems;
-        this.subtask = subtask;
-        this.subtask_key = subtask_key;
-        this.selected = selected;
-        var sel = "";
-        var href = " href=\"#\"";
-        var val = 50;
-        if (this.selected) {
-            if (this.subtask.read_only) {
-                href = "";
-            }
-            sel = " sel";
-            val = 100;
-        }
-        console.log(subtask.display_name);
-        console.log(subtask);
-        this.html = "\n        <div class=\"tb-st-tab".concat(sel, "\">\n            <a").concat(href, " id=\"tb-st-switch--").concat(subtask_key, "\" class=\"tb-st-switch\">").concat(this.subtask.display_name, "</a><!--\n            --><span class=\"tb-st-range\">\n                <input id=\"tb-st-range--").concat(subtask_key, "\" type=\"range\" min=0 max=100 value=").concat(val, " />\n            </span>\n        </div>\n        ");
-    }
-    return ToolboxTab;
-}());
-exports.ToolboxTab = ToolboxTab;
-var ToolboxItem = /** @class */ (function () {
-    function ToolboxItem() {
-    }
-    ToolboxItem.prototype.redraw_update = function (ulabel) { };
-    ToolboxItem.prototype.frame_update = function (ulabel) { };
-    return ToolboxItem;
-}());
-exports.ToolboxItem = ToolboxItem;
-/**
- * Toolbox item for selecting annotation mode.
- */
-var ModeSelectionToolboxItem = /** @class */ (function (_super) {
-    __extends(ModeSelectionToolboxItem, _super);
-    function ModeSelectionToolboxItem() {
-        return _super.call(this) || this;
-    }
-    ModeSelectionToolboxItem.prototype.get_html = function () {
-        return "\n        <div class=\"mode-selection\">\n            <p class=\"current_mode_container\">\n                <span class=\"cmlbl\">Mode:</span>\n                <span class=\"current_mode\"></span>\n            </p>\n        </div>\n        ";
-    };
-    return ModeSelectionToolboxItem;
-}(ToolboxItem));
-exports.ModeSelectionToolboxItem = ModeSelectionToolboxItem;
-/**
- * Toolbox item for zooming and panning.
- */
-var ZoomPanToolboxItem = /** @class */ (function (_super) {
-    __extends(ZoomPanToolboxItem, _super);
-    function ZoomPanToolboxItem(frame_range) {
-        var _this = _super.call(this) || this;
-        _this.frame_range = frame_range;
-        return _this;
-    }
-    ZoomPanToolboxItem.prototype.get_html = function () {
-        return "\n        <div class=\"zoom-pan\">\n            <div class=\"half-tb htbmain set-zoom\">\n                <p class=\"shortcut-tip\">ctrl+scroll or shift+drag</p>\n                <div class=\"zpcont\">\n                    <div class=\"lblpyldcont\">\n                        <span class=\"pzlbl htblbl\">Zoom</span>\n                        <span class=\"zinout htbpyld\">\n                            <a href=\"#\" class=\"zbutt zout\">-</a>\n                            <a href=\"#\" class=\"zbutt zin\">+</a>\n                        </span>\n                    </div>\n                </div>\n            </div><!--\n            --><div class=\"half-tb htbmain set-pan\">\n                <p class=\"shortcut-tip\">scrollclick+drag or ctrl+drag</p>\n                <div class=\"zpcont\">\n                    <div class=\"lblpyldcont\">\n                        <span class=\"pzlbl htblbl\">Pan</span>\n                        <span class=\"panudlr htbpyld\">\n                            <a href=\"#\" class=\"pbutt left\"></a>\n                            <a href=\"#\" class=\"pbutt right\"></a>\n                            <a href=\"#\" class=\"pbutt up\"></a>\n                            <a href=\"#\" class=\"pbutt down\"></a>\n                            <span class=\"spokes\"></span>\n                        </span>\n                    </div>\n                </div>\n            </div>\n            <div class=\"recenter-cont\" style=\"text-align: center;\">\n                <a href=\"#\" id=\"recenter-button\">Re-Center</a>\n            </div>\n            ".concat(this.frame_range, "\n        </div>\n        ");
-    };
-    return ZoomPanToolboxItem;
-}(ToolboxItem));
-exports.ZoomPanToolboxItem = ZoomPanToolboxItem;
-/**
- * Toolbox Item for selecting line style.
- */
-var LinestyleToolboxItem = /** @class */ (function (_super) {
-    __extends(LinestyleToolboxItem, _super);
-    function LinestyleToolboxItem(canvas_did, demo_width, demo_height, px_per_px) {
-        var _this = _super.call(this) || this;
-        _this.canvas_did = canvas_did;
-        _this.demo_width = demo_width;
-        _this.demo_height = demo_height;
-        _this.px_per_px = px_per_px;
-        return _this;
-    }
-    LinestyleToolboxItem.prototype.get_html = function () {
-        return "\n        <div class=\"linestyle\">\n            <p class=\"tb-header\">Line Width</p>\n            <div class=\"lstyl-row\">\n                <div class=\"line-expl\">\n                    <a href=\"#\" class=\"wbutt wout\">-</a>\n                    <canvas \n                        id=\"".concat(this.canvas_did, "\" \n                        class=\"demo-canvas\" \n                        width=").concat(this.demo_width * this.px_per_px, "} \n                        height=").concat(this.demo_height * this.px_per_px, "></canvas>\n                    <a href=\"#\" class=\"wbutt win\">+</a>\n                </div><!--\n                --><div class=\"setting\">\n                    <a class=\"fixed-setting\">Fixed</a><br>\n                    <a href=\"#\" class=\"dyn-setting\">Dynamic</a>\n                </div>\n            </div>\n        </div>\n        ");
-    };
-    return LinestyleToolboxItem;
-}(ToolboxItem));
-exports.LinestyleToolboxItem = LinestyleToolboxItem;
-/**
- * Toolbox item for selection Annotation ID.
- */
-var AnnotationIDToolboxItem = /** @class */ (function (_super) {
-    __extends(AnnotationIDToolboxItem, _super);
-    function AnnotationIDToolboxItem(instructions) {
-        var _this = _super.call(this) || this;
-        _this.instructions = instructions;
-        return _this;
-    }
-    AnnotationIDToolboxItem.prototype.get_html = function () {
-        return "\n        <div class=\"classification\">\n            <p class=\"tb-header\">Annotation ID</p>\n            <div class=\"id-toolbox-app\"></div>\n        </div>\n        <div class=\"toolbox-refs\">\n            ".concat(this.instructions, "\n        </div>\n        ");
-    };
-    return AnnotationIDToolboxItem;
-}(ToolboxItem));
-exports.AnnotationIDToolboxItem = AnnotationIDToolboxItem;
-var ClassCounterToolboxItem = /** @class */ (function (_super) {
-    __extends(ClassCounterToolboxItem, _super);
-    function ClassCounterToolboxItem() {
-        var _this = _super.call(this) || this;
-        _this.inner_HTML = "<p class=\"tb-header\">Annotation Count</p>";
-        return _this;
-    }
-    ClassCounterToolboxItem.prototype.update_toolbox_counter = function (subtask, toolbox_id) {
-        if (subtask == null) {
-            return;
-        }
-        var class_ids = subtask.class_ids;
-        var i, j;
-        var class_counts = {};
-        for (i = 0; i < class_ids.length; i++) {
-            class_counts[class_ids[i]] = 0;
-        }
-        var annotations = subtask.annotations.access;
-        var annotation_ids = subtask.annotations.ordering;
-        var current_annotation, current_payload;
-        for (i = 0; i < annotation_ids.length; i++) {
-            current_annotation = annotations[annotation_ids[i]];
-            if (current_annotation.deprecated == false) {
-                for (j = 0; j < current_annotation.classification_payloads.length; j++) {
-                    current_payload = current_annotation.classification_payloads[j];
-                    if (current_payload.confidence > 0.0) {
-                        class_counts[current_payload.class_id] += 1;
-                        break;
-                    }
-                }
-            }
-        }
-        var f_string = "";
-        var class_name, class_count;
-        for (i = 0; i < class_ids.length; i++) {
-            class_name = subtask.class_defs[i].name;
-            // MF-Tassels Hack
-            if (class_name.includes("OVERWRITE")) {
-                continue;
-            }
-            class_count = class_counts[subtask.class_defs[i].id];
-            f_string += "".concat(class_name, ": ").concat(class_count, "<br>");
-        }
-        this.inner_HTML = "<p class=\"tb-header\">Annotation Count</p>" + "<p>".concat(f_string, "</p>");
-    };
-    ClassCounterToolboxItem.prototype.get_html = function () {
-        return "\n        <div class=\"toolbox-class-counter\">" + this.inner_HTML + "</div>";
-    };
-    ClassCounterToolboxItem.prototype.redraw_update = function (ulabel) {
-        this.update_toolbox_counter(ulabel.subtasks[ulabel.state["current_subtask"]], ulabel.config["toolbox_id"]);
-        $("#" + ulabel.config["toolbox_id"] + " div.toolbox-class-counter").html(this.inner_HTML);
-    };
-    return ClassCounterToolboxItem;
-}(ToolboxItem));
-exports.ClassCounterToolboxItem = ClassCounterToolboxItem;
-/**
- * Toolbox item for resizing all annotations
- */
-var AnnotationResizeItem = /** @class */ (function (_super) {
-    __extends(AnnotationResizeItem, _super);
-    function AnnotationResizeItem(ulabel) {
-        var _this = _super.call(this) || this;
-        _this.inner_HTML = "<p class=\"tb-header\">Annotation Count</p>";
-        $(document).on("click", "a.butt-ann", function (e) {
-            var button = $(e.currentTarget);
-            var current_subtask_key = ulabel.state["current_subtask"];
-            var current_subtask = ulabel.subtasks[current_subtask_key];
-            var annotation_size = button.attr("id").slice(-1);
-            _this.update_annotation_size(current_subtask, annotation_size);
-            ulabel.redraw_all_annotations(null, null, false);
-        });
-        return _this;
-    }
-    //recieives a string of 's','m', 'l', '-', or '+' depending on which button was pressed
-    AnnotationResizeItem.prototype.update_annotation_size = function (subtask, size) {
-        var small_size = 1.5;
-        var medium_size = 0;
-        var large_size = 5;
-        var increment_size = 0.5;
-        if (subtask == null)
-            return;
-        switch (size) {
-            case 's':
-                for (var annotation_id in subtask.annotations.access) {
-                    subtask.annotations.access[annotation_id].line_size = small_size;
-                }
-                break;
-            case 'm':
-                for (var annotation_id in subtask.annotations.access) {
-                    subtask.annotations.access[annotation_id].line_size = medium_size;
-                }
-                break;
-            case 'l':
-                for (var annotation_id in subtask.annotations.access) {
-                    subtask.annotations.access[annotation_id].line_size = large_size;
-                }
-                break;
-            case '-':
-                for (var annotation_id in subtask.annotations.access) {
-                    subtask.annotations.access[annotation_id].line_size -= increment_size;
-                }
-                break;
-            case '+':
-                for (var annotation_id in subtask.annotations.access) {
-                    subtask.annotations.access[annotation_id].line_size += increment_size;
-                }
-                break;
-            default:
-                return;
-        }
-    };
-    AnnotationResizeItem.prototype.get_html = function () {
-        return "\n        <div class=\"annotation-resize\">\n            <p class=\"tb-header\">Change Annotation Size</p>\n            <div class=\"annotation-resize-button-holder\">\n                <span class=\"annotation-inc\">\n                    <a href=\"#\" class=\"butt-ann\" id=\"annotation-resize--\">-</a>\n                </span>\n                <span class=\"annotation-size\">\n                    <a href=\"#\" class=\"butt-ann\" id=\"annotation-resize-s\">Small</a>\n                    <a href=\"#\" class=\"butt-ann\" id=\"annotation-resize-m\">Medium</a>\n                    <a href=\"#\" class=\"butt-ann\" id=\"annotation-resize-l\">Large</a>\n                </span>\n                <span class=\"annotation-inc\">\n                    <a href=\"#\" class=\"butt-ann\" id=\"annotation-resize-+\">+</a>\n                </span>\n            </div>\n        </div>\n        ";
-    };
-    return AnnotationResizeItem;
-}(ToolboxItem));
-exports.AnnotationResizeItem = AnnotationResizeItem;
-var RecolorActiveItem = /** @class */ (function (_super) {
-    __extends(RecolorActiveItem, _super);
-    function RecolorActiveItem(ulabel) {
-        var _this = _super.call(this) || this;
-        _this.inner_HTML = "<p class=\"tb-header\">Recolor Annotations</p>";
-        //event handler for the buttons
-        $(document).on("click", "input.color-change-btn", function (e) {
-            var button = $(e.currentTarget);
-            var current_subtask_key = ulabel.state["current_subtask"];
-            var current_subtask = ulabel.subtasks[current_subtask_key];
-            //slice 13,16 to grab the part of the id that specifies color
-            var color_from_id = button.attr("id").slice(13, 16);
-            _this.update_annotation_color(current_subtask, color_from_id);
-            ulabel.redraw_all_annotations(null, null, false);
-        });
-        $(document).on("input", "input.color-change-picker", function (e) {
-            var current_subtask_key = ulabel.state["current_subtask"];
-            var current_subtask = ulabel.subtasks[current_subtask_key];
-            var hex = e.currentTarget.value;
-            _this.update_annotation_color(current_subtask, hex);
-            ulabel.redraw_all_annotations(null, null, false);
-        });
-        return _this;
-    }
-    RecolorActiveItem.prototype.update_annotation_color = function (subtask, color) {
-        //check for the three special cases, otherwise assume color is a hex value
-        if (color == "yel") {
-            color = "Yellow";
-        }
-        if (color == "red") {
-            color = "Red";
-        }
-        if (color == "cya") {
-            color = "Cyan";
-        }
-        //console.log(color);
-        //console.log(subtask.state.id_payload);
-        var selected_id = "none";
-        subtask.state.id_payload.forEach(function (item) {
-            if (item.confidence == 1) {
-                selected_id = item.class_id;
-            }
-        });
-        //if the selected id is still none, then that means the no id had a
-        //confidence of 1. Therefore the default is having the first annotation
-        //id selected, so we'll default to that
-        if (selected_id == "none") {
-            selected_id = subtask.state.id_payload[0].class_id;
-        }
-        console.log(selected_id);
-        console.log(subtask.state.id_payload);
-    };
-    RecolorActiveItem.prototype.get_html = function () {
-        return "\n        <div class=\"recolor-active\">\n            <p>Recolor Annotations</p>\n            <input type=\"button\" class=\"color-change-btn\" id=\"color-change-yel\">\n            <input type=\"button\" class=\"color-change-btn\" id=\"color-change-red\">\n            <input type=\"button\" class=\"color-change-btn\" id=\"color-change-cya\">\n            <input type=\"color\"  class=\"color-change-picker\" id=\"color-change-pick\">\n        </div>\n        ";
-    };
-    return RecolorActiveItem;
-}(ToolboxItem));
-exports.RecolorActiveItem = RecolorActiveItem;
-// export class WholeImageClassifierToolboxTab extends ToolboxItem {
-//     constructor() {
-//         super(
-//             "toolbox-whole-image-classifier",
-//             "Whole Image Classification",
-//             ""
-//         );
-//     }
-// }
-
-
-/***/ })
-
-/******/ 	});
-/************************************************************************/
-/******/ 	// The module cache
-/******/ 	var __webpack_module_cache__ = {};
-/******/ 	
-/******/ 	// The require function
-/******/ 	function __webpack_require__(moduleId) {
-/******/ 		// Check if module is in cache
-/******/ 		var cachedModule = __webpack_module_cache__[moduleId];
-/******/ 		if (cachedModule !== undefined) {
-/******/ 			return cachedModule.exports;
-/******/ 		}
-/******/ 		// Create a new module (and put it into the cache)
-/******/ 		var module = __webpack_module_cache__[moduleId] = {
-/******/ 			// no module.id needed
-/******/ 			// no module.loaded needed
-/******/ 			exports: {}
-/******/ 		};
-/******/ 	
-/******/ 		// Execute the module function
-/******/ 		__webpack_modules__[moduleId].call(module.exports, module, module.exports, __webpack_require__);
-/******/ 	
-/******/ 		// Return the exports of the module
-/******/ 		return module.exports;
-/******/ 	}
-/******/ 	
-/************************************************************************/
-/******/ 	/* webpack/runtime/compat get default export */
-/******/ 	(() => {
-/******/ 		// getDefaultExport function for compatibility with non-harmony modules
-/******/ 		__webpack_require__.n = (module) => {
-/******/ 			var getter = module && module.__esModule ?
-/******/ 				() => (module['default']) :
-/******/ 				() => (module);
-/******/ 			__webpack_require__.d(getter, { a: getter });
-/******/ 			return getter;
-/******/ 		};
-/******/ 	})();
-/******/ 	
-/******/ 	/* webpack/runtime/define property getters */
-/******/ 	(() => {
-/******/ 		// define getter functions for harmony exports
-/******/ 		__webpack_require__.d = (exports, definition) => {
-/******/ 			for(var key in definition) {
-/******/ 				if(__webpack_require__.o(definition, key) && !__webpack_require__.o(exports, key)) {
-/******/ 					Object.defineProperty(exports, key, { enumerable: true, get: definition[key] });
-/******/ 				}
-/******/ 			}
-/******/ 		};
-/******/ 	})();
-/******/ 	
-/******/ 	/* webpack/runtime/hasOwnProperty shorthand */
-/******/ 	(() => {
-/******/ 		__webpack_require__.o = (obj, prop) => (Object.prototype.hasOwnProperty.call(obj, prop))
-/******/ 	})();
-/******/ 	
-/******/ 	/* webpack/runtime/make namespace object */
-/******/ 	(() => {
-/******/ 		// define __esModule on exports
-/******/ 		__webpack_require__.r = (exports) => {
-/******/ 			if(typeof Symbol !== 'undefined' && Symbol.toStringTag) {
-/******/ 				Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
-/******/ 			}
-/******/ 			Object.defineProperty(exports, '__esModule', { value: true });
-/******/ 		};
-/******/ 	})();
-/******/ 	
-/************************************************************************/
-var __webpack_exports__ = {};
-// This entry need to be wrapped in an IIFE because it need to be in strict mode.
-(() => {
-"use strict";
-
-// UNUSED EXPORTS: ULabel
+// EXPORTS
+__webpack_require__.d(__webpack_exports__, {
+  "ULabel": () => (/* binding */ ULabel)
+});
 
 // EXTERNAL MODULE: ./src/annotation.js
 var annotation = __webpack_require__(806);
@@ -14039,15 +13582,12 @@ div#${prntid}.ulabel-night span.spokes {
 
 div#${prntid} div.annotation-resize {
    padding: 10px 30px;
+   display: block;
 }
 
 div#${prntid} div.annotation-resize p.tb-header {
    margin: 0;
-   margin-bottom: 5px;
-}
-
-div#${prntid} div.annotation-resize {
-   display: block;
+   margin-bottom: 10px;
 }
 
 div#${prntid} div.annotation-resize-button-holder {
@@ -14059,25 +13599,63 @@ div#${prntid} div.annotation-resize a.butt-ann {
    display: inline-block;  
    margin: auto;
    color: white;
-   background-color: lightgray;
+   background-color: rgba(100, 148, 237, 0.8);
    border: 1px solid rgb(168, 168, 168);
    border-radius: 11px;
    text-decoration: none;
    text-align: center;
-   line-height: 20px;
    transition: all 0.2s;
+}
+
+div#${prntid} div.annotation-resize #annotation-resize-s {
+   border-radius: 11px 0 0 11px;
+}
+
+div#${prntid} div.annotation-resize #annotation-resize-l {
+   border-radius: 0 11px 11px 0;
+   margin-left: -5px;
+}
+
+div#${prntid} div.annotation-resize #annotation-resize-inc {
+   line-height: 30px;
+   margin-top: -5px;
+   margin-bottom: 5px;
+}
+
+div#${prntid} div.annotation-resize #annotation-resize-dec {
+   line-height: 26px;
+}
+
+div#${prntid} div.annotation-resize span.annotation-size {
+   width: 115px;
+   margin: 0;
+}
+
+div#${prntid} div.annotation-resize span.annotation-inc {
+   display: inline-grid;
+   grid-template-columns: 1fr;
+   position: relative;
+   bottom: 9px;
 }
 
 div#${prntid} div.annotation-resize span.annotation-size a.butt-ann {
    font-size: 0.9em;
    text-shadow: 0 0.04em 0.04em rgba(0,0,0,0.45);
-   padding: 10px 5px;
+   padding: 16px 9px;
+}
+
+div#${prntid} div.annotation-resize span.annotation-vanish a.butt-ann {
+   font-size: 0.9em;
+   text-shadow: 0 0.04em 0.04em rgba(0,0,0,0.45);
+   padding: 16px 8px;
    margin: 0 2px;
 }
 
 div#${prntid} div.annotation-resize span.annotation-inc a.butt-ann {
-   width: 20px;
-   height: 20px;
+   width: 28px;
+   height: 28px;
+   border-radius: 17px;
+   font-size: 2em;
 }
 
 div#${prntid} div.annotation-resize a:hover {
@@ -14093,21 +13671,57 @@ div#${prntid} div.recolor-active {
    display: block;
 }
 
+div#${prntid} div.recolor-active p.tb-header {
+   margin: 0;
+   margin-bottom: 5px;
+}
+
+div#${prntid} div.recolor-active div.annotation-recolor-button-holder {
+   display: grid;
+   grid-template-columns: 2fr 1fr;
+   column-gap: 8px;
+}
+
 div#${prntid} div.recolor-active input{
    width: 50px;
    height: 27px;
 }
 
+div#${prntid} div.recolor-active input.color-change-btn {
+   width: 90%;
+}
+
+div#${prntid} div.recolor-active div.color-picker-container {
+   max-width: 90%;
+   background-color: Black;
+   border: 8px solid lightgray;
+}
+
+div#${prntid} div.recolor-active input.color-change-btn, div#${prntid} div.recolor-active div.color-picker-container {
+   border-radius: 6px;
+}
+
+div#${prntid} div.recolor-active div.color-picker-container input.color-change-picker {
+   width: 100%;
+   height: 100%;
+   padding: 0;
+   opacity: 0;
+}
+
 div#${prntid} div.recolor-active #color-change-yel {
    background-color: yellow;
+   
+   border: 1px solid rgb(200, 200, 0);
 }
 
 div#${prntid} div.recolor-active #color-change-red {
    background-color: red;
+   border: 1px solid rgb(200, 0, 0);
 }
 
 div#${prntid} div.recolor-active #color-change-cya {
    background-color: cyan;
+   border: 1px solid rgb(0, 200, 200);
 }
 
 
@@ -19523,7 +19137,559 @@ class ULabel {
 
 window.ULabel = ULabel;
 
-})();
 
+/***/ }),
+
+/***/ 167:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+var __webpack_unused_export__;
+
+__webpack_unused_export__ = ({ value: true });
+exports.W = void 0;
+var ULabelSubtask = /** @class */ (function () {
+    function ULabelSubtask(display_name, classes, allowed_modes, resume_from, task_meta, annotation_meta, read_only, inactivate_opacity) {
+        if (inactivate_opacity === void 0) { inactivate_opacity = 0.4; }
+        this.display_name = display_name;
+        this.classes = classes;
+        this.allowed_modes = allowed_modes;
+        this.resume_from = resume_from;
+        this.task_meta = task_meta;
+        this.annotation_meta = annotation_meta;
+        this.read_only = read_only;
+        this.inactivate_opacity = inactivate_opacity;
+        this.actions = {
+            "stream": [],
+            "undone_stack": []
+        };
+    }
+    ULabelSubtask.from_json = function (subtask_key, subtask_json) {
+        var ret = new ULabelSubtask(subtask_json["display_name"], subtask_json["classes"], subtask_json["allowed_modes"], subtask_json["resume_from"], subtask_json["task_meta"], subtask_json["annotation_meta"]);
+        ret.read_only = ("read_only" in subtask_json) && (subtask_json["read_only"] === true);
+        console.log(ret.read_only);
+        if ("inactive_opacity" in subtask_json && typeof subtask_json["inactive_opacity"] == "number") {
+            ret.inactivate_opacity = Math.min(Math.max(subtask_json["inactive_opacity"], 0.0), 1.0);
+        }
+        return ret;
+    };
+    return ULabelSubtask;
+}());
+exports.W = ULabelSubtask;
+//export type ULabelSubtasks = { [key: string]: ULabelSubtask };
+
+
+/***/ }),
+
+/***/ 334:
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+"use strict";
+
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = function (d, b) {
+        extendStatics = Object.setPrototypeOf ||
+            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
+        return extendStatics(d, b);
+    };
+    return function (d, b) {
+        if (typeof b !== "function" && b !== null)
+            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.RecolorActiveItem = exports.AnnotationResizeItem = exports.ClassCounterToolboxItem = exports.AnnotationIDToolboxItem = exports.LinestyleToolboxItem = exports.ZoomPanToolboxItem = exports.ModeSelectionToolboxItem = exports.ToolboxItem = exports.ToolboxTab = exports.Toolbox = void 0;
+var __1 = __webpack_require__(318);
+var toolboxDividerDiv = "<div class=toolbox-divider></div>";
+/**
+ * Manager for toolbox. Contains ToolboxTab items.
+ */
+var Toolbox = /** @class */ (function () {
+    // public tabs: ToolboxTab[] = [];
+    // public items: ToolboxItem[] = []; 
+    function Toolbox(tabs, items) {
+        if (tabs === void 0) { tabs = []; }
+        if (items === void 0) { items = []; }
+        this.tabs = tabs;
+        this.items = items;
+    }
+    Toolbox.prototype.setup_toolbox_html = function (ulabel, frame_annotation_dialogs, images, ULABEL_VERSION) {
+        // Setup base div and ULabel version header
+        var toolbox_html = "\n        <div class=\"full_ulabel_container_\">\n            ".concat(frame_annotation_dialogs, "\n            <div id=\"").concat(ulabel.config["annbox_id"], "\" class=\"annbox_cls\">\n                <div id=\"").concat(ulabel.config["imwrap_id"], "\" class=\"imwrap_cls ").concat(ulabel.config["imgsz_class"], "\">\n                    ").concat(images, "\n                </div>\n            </div>\n            <div id=\"").concat(ulabel.config["toolbox_id"], "\" class=\"toolbox_cls\">\n                <div class=\"toolbox-name-header\">\n                    <h1 class=\"toolname\"><a class=\"repo-anchor\" href=\"https://github.com/SenteraLLC/ulabel\">ULabel</a> <span class=\"version-number\">v").concat(ULABEL_VERSION, "</span></h1><!--\n                    --><div class=\"night-button-cont\">\n                        <a href=\"#\" class=\"night-button\">\n                            <div class=\"night-button-track\">\n                                <div class=\"night-status\"></div>\n                            </div>\n                        </a>\n                    </div>\n                </div>\n                <div class=\"toolbox_inner_cls\">\n        ");
+        for (var tbitem in this.items) {
+            toolbox_html += this.items[tbitem].get_html() + toolboxDividerDiv;
+        }
+        toolbox_html += "\n                </div>\n                <div class=\"toolbox-tabs\">\n                    ".concat(this.get_toolbox_tabs(ulabel), "\n                </div> \n            </div>\n        </div>");
+        return toolbox_html;
+    };
+    /**
+     * Adds tabs for each ULabel subtask to the toolbox.
+     */
+    Toolbox.prototype.get_toolbox_tabs = function (ulabel) {
+        var ret = "";
+        for (var st_key in ulabel.subtasks) {
+            var selected = st_key == ulabel.state["current_subtask"];
+            var subtask = ulabel.subtasks[st_key];
+            var current_tab = new ToolboxTab([], subtask, st_key, selected);
+            ret += current_tab.html;
+            this.tabs.push(current_tab);
+        }
+        return ret;
+    };
+    Toolbox.prototype.redraw_update_items = function (ulabel) {
+        for (var _i = 0, _a = this.items; _i < _a.length; _i++) {
+            var tbitem = _a[_i];
+            tbitem.redraw_update(ulabel);
+        }
+    };
+    return Toolbox;
+}());
+exports.Toolbox = Toolbox;
+var ToolboxTab = /** @class */ (function () {
+    function ToolboxTab(toolboxitems, subtask, subtask_key, selected) {
+        if (toolboxitems === void 0) { toolboxitems = []; }
+        if (selected === void 0) { selected = false; }
+        this.toolboxitems = toolboxitems;
+        this.subtask = subtask;
+        this.subtask_key = subtask_key;
+        this.selected = selected;
+        var sel = "";
+        var href = " href=\"#\"";
+        var val = 50;
+        if (this.selected) {
+            if (this.subtask.read_only) {
+                href = "";
+            }
+            sel = " sel";
+            val = 100;
+        }
+        console.log(subtask.display_name);
+        console.log(subtask);
+        this.html = "\n        <div class=\"tb-st-tab".concat(sel, "\">\n            <a").concat(href, " id=\"tb-st-switch--").concat(subtask_key, "\" class=\"tb-st-switch\">").concat(this.subtask.display_name, "</a><!--\n            --><span class=\"tb-st-range\">\n                <input id=\"tb-st-range--").concat(subtask_key, "\" type=\"range\" min=0 max=100 value=").concat(val, " />\n            </span>\n        </div>\n        ");
+    }
+    return ToolboxTab;
+}());
+exports.ToolboxTab = ToolboxTab;
+var ToolboxItem = /** @class */ (function () {
+    function ToolboxItem() {
+    }
+    ToolboxItem.prototype.redraw_update = function (ulabel) { };
+    ToolboxItem.prototype.frame_update = function (ulabel) { };
+    return ToolboxItem;
+}());
+exports.ToolboxItem = ToolboxItem;
+/**
+ * Toolbox item for selecting annotation mode.
+ */
+var ModeSelectionToolboxItem = /** @class */ (function (_super) {
+    __extends(ModeSelectionToolboxItem, _super);
+    function ModeSelectionToolboxItem() {
+        return _super.call(this) || this;
+    }
+    ModeSelectionToolboxItem.prototype.get_html = function () {
+        return "\n        <div class=\"mode-selection\">\n            <p class=\"current_mode_container\">\n                <span class=\"cmlbl\">Mode:</span>\n                <span class=\"current_mode\"></span>\n            </p>\n        </div>\n        ";
+    };
+    return ModeSelectionToolboxItem;
+}(ToolboxItem));
+exports.ModeSelectionToolboxItem = ModeSelectionToolboxItem;
+/**
+ * Toolbox item for zooming and panning.
+ */
+var ZoomPanToolboxItem = /** @class */ (function (_super) {
+    __extends(ZoomPanToolboxItem, _super);
+    function ZoomPanToolboxItem(frame_range) {
+        var _this = _super.call(this) || this;
+        _this.frame_range = frame_range;
+        return _this;
+    }
+    ZoomPanToolboxItem.prototype.get_html = function () {
+        return "\n        <div class=\"zoom-pan\">\n            <div class=\"half-tb htbmain set-zoom\">\n                <p class=\"shortcut-tip\">ctrl+scroll or shift+drag</p>\n                <div class=\"zpcont\">\n                    <div class=\"lblpyldcont\">\n                        <span class=\"pzlbl htblbl\">Zoom</span>\n                        <span class=\"zinout htbpyld\">\n                            <a href=\"#\" class=\"zbutt zout\">-</a>\n                            <a href=\"#\" class=\"zbutt zin\">+</a>\n                        </span>\n                    </div>\n                </div>\n            </div><!--\n            --><div class=\"half-tb htbmain set-pan\">\n                <p class=\"shortcut-tip\">scrollclick+drag or ctrl+drag</p>\n                <div class=\"zpcont\">\n                    <div class=\"lblpyldcont\">\n                        <span class=\"pzlbl htblbl\">Pan</span>\n                        <span class=\"panudlr htbpyld\">\n                            <a href=\"#\" class=\"pbutt left\"></a>\n                            <a href=\"#\" class=\"pbutt right\"></a>\n                            <a href=\"#\" class=\"pbutt up\"></a>\n                            <a href=\"#\" class=\"pbutt down\"></a>\n                            <span class=\"spokes\"></span>\n                        </span>\n                    </div>\n                </div>\n            </div>\n            <div class=\"recenter-cont\" style=\"text-align: center;\">\n                <a href=\"#\" id=\"recenter-button\">Re-Center</a>\n            </div>\n            ".concat(this.frame_range, "\n        </div>\n        ");
+    };
+    return ZoomPanToolboxItem;
+}(ToolboxItem));
+exports.ZoomPanToolboxItem = ZoomPanToolboxItem;
+/**
+ * Toolbox Item for selecting line style.
+ */
+var LinestyleToolboxItem = /** @class */ (function (_super) {
+    __extends(LinestyleToolboxItem, _super);
+    function LinestyleToolboxItem(canvas_did, demo_width, demo_height, px_per_px) {
+        var _this = _super.call(this) || this;
+        _this.canvas_did = canvas_did;
+        _this.demo_width = demo_width;
+        _this.demo_height = demo_height;
+        _this.px_per_px = px_per_px;
+        return _this;
+    }
+    LinestyleToolboxItem.prototype.get_html = function () {
+        return "\n        <div class=\"linestyle\">\n            <p class=\"tb-header\">Line Width</p>\n            <div class=\"lstyl-row\">\n                <div class=\"line-expl\">\n                    <a href=\"#\" class=\"wbutt wout\">-</a>\n                    <canvas \n                        id=\"".concat(this.canvas_did, "\" \n                        class=\"demo-canvas\" \n                        width=").concat(this.demo_width * this.px_per_px, "} \n                        height=").concat(this.demo_height * this.px_per_px, "></canvas>\n                    <a href=\"#\" class=\"wbutt win\">+</a>\n                </div><!--\n                --><div class=\"setting\">\n                    <a class=\"fixed-setting\">Fixed</a><br>\n                    <a href=\"#\" class=\"dyn-setting\">Dynamic</a>\n                </div>\n            </div>\n        </div>\n        ");
+    };
+    return LinestyleToolboxItem;
+}(ToolboxItem));
+exports.LinestyleToolboxItem = LinestyleToolboxItem;
+/**
+ * Toolbox item for selection Annotation ID.
+ */
+var AnnotationIDToolboxItem = /** @class */ (function (_super) {
+    __extends(AnnotationIDToolboxItem, _super);
+    function AnnotationIDToolboxItem(instructions) {
+        var _this = _super.call(this) || this;
+        _this.instructions = instructions;
+        return _this;
+    }
+    AnnotationIDToolboxItem.prototype.get_html = function () {
+        return "\n        <div class=\"classification\">\n            <p class=\"tb-header\">Annotation ID</p>\n            <div class=\"id-toolbox-app\"></div>\n        </div>\n        <div class=\"toolbox-refs\">\n            ".concat(this.instructions, "\n        </div>\n        ");
+    };
+    return AnnotationIDToolboxItem;
+}(ToolboxItem));
+exports.AnnotationIDToolboxItem = AnnotationIDToolboxItem;
+var ClassCounterToolboxItem = /** @class */ (function (_super) {
+    __extends(ClassCounterToolboxItem, _super);
+    function ClassCounterToolboxItem() {
+        var _this = _super.call(this) || this;
+        _this.inner_HTML = "<p class=\"tb-header\">Annotation Count</p>";
+        return _this;
+    }
+    ClassCounterToolboxItem.prototype.update_toolbox_counter = function (subtask, toolbox_id) {
+        if (subtask == null) {
+            return;
+        }
+        var class_ids = subtask.class_ids;
+        var i, j;
+        var class_counts = {};
+        for (i = 0; i < class_ids.length; i++) {
+            class_counts[class_ids[i]] = 0;
+        }
+        var annotations = subtask.annotations.access;
+        var annotation_ids = subtask.annotations.ordering;
+        var current_annotation, current_payload;
+        for (i = 0; i < annotation_ids.length; i++) {
+            current_annotation = annotations[annotation_ids[i]];
+            if (current_annotation.deprecated == false) {
+                for (j = 0; j < current_annotation.classification_payloads.length; j++) {
+                    current_payload = current_annotation.classification_payloads[j];
+                    if (current_payload.confidence > 0.0) {
+                        class_counts[current_payload.class_id] += 1;
+                        break;
+                    }
+                }
+            }
+        }
+        var f_string = "";
+        var class_name, class_count;
+        for (i = 0; i < class_ids.length; i++) {
+            class_name = subtask.class_defs[i].name;
+            // MF-Tassels Hack
+            if (class_name.includes("OVERWRITE")) {
+                continue;
+            }
+            class_count = class_counts[subtask.class_defs[i].id];
+            f_string += "".concat(class_name, ": ").concat(class_count, "<br>");
+        }
+        this.inner_HTML = "<p class=\"tb-header\">Annotation Count</p>" + "<p>".concat(f_string, "</p>");
+    };
+    ClassCounterToolboxItem.prototype.get_html = function () {
+        return "\n        <div class=\"toolbox-class-counter\">" + this.inner_HTML + "</div>";
+    };
+    ClassCounterToolboxItem.prototype.redraw_update = function (ulabel) {
+        this.update_toolbox_counter(ulabel.subtasks[ulabel.state["current_subtask"]], ulabel.config["toolbox_id"]);
+        $("#" + ulabel.config["toolbox_id"] + " div.toolbox-class-counter").html(this.inner_HTML);
+    };
+    return ClassCounterToolboxItem;
+}(ToolboxItem));
+exports.ClassCounterToolboxItem = ClassCounterToolboxItem;
+/**
+ * Toolbox item for resizing all annotations
+ */
+var AnnotationResizeItem = /** @class */ (function (_super) {
+    __extends(AnnotationResizeItem, _super);
+    function AnnotationResizeItem(ulabel) {
+        var _this = _super.call(this) || this;
+        _this.is_vanished = false;
+        _this.cashed_size = 1.5;
+        _this.inner_HTML = "<p class=\"tb-header\">Annotation Count</p>";
+        //Sets the default line size
+        //event listener for buttons
+        $(document).on("click", "a.butt-ann", function (e) {
+            var button = $(e.currentTarget);
+            var current_subtask_key = ulabel.state["current_subtask"];
+            var current_subtask = ulabel.subtasks[current_subtask_key];
+            var annotation_size = button.attr("id").slice(18);
+            console.log(annotation_size);
+            _this.update_annotation_size(current_subtask, annotation_size);
+            ulabel.redraw_all_annotations(null, null, false);
+        });
+        //event listener for keybinds
+        $(document).on("keypress", function (e) {
+            var current_subtask_key = ulabel.state["current_subtask"];
+            var current_subtask = ulabel.subtasks[current_subtask_key];
+            console.log(e.which);
+            switch (e.which) {
+                case 118:
+                    _this.update_annotation_size(current_subtask, "v");
+                    break;
+                case 115:
+                    _this.update_annotation_size(current_subtask, "s");
+                    break;
+                case 108:
+                    _this.update_annotation_size(current_subtask, "l");
+                    break;
+                case 45:
+                    _this.update_annotation_size(current_subtask, "dec");
+                    break;
+                case 61:
+                    _this.update_annotation_size(current_subtask, "inc");
+                    break;
+            }
+            ulabel.redraw_all_annotations(null, null, false);
+        });
+        return _this;
+    }
+    //recieives a string of 's', 'l', 'dec', 'inc', or 'v' depending on which button was pressed
+    AnnotationResizeItem.prototype.update_annotation_size = function (subtask, size) {
+        var small_size = 1.5;
+        var large_size = 5;
+        var increment_size = 0.5;
+        var vanish_size = 0.01;
+        if (subtask == null)
+            return;
+        //If the annotations are currently vanished and a button other than the vanish button is
+        //pressed, then we want to ignore the input
+        if (this.is_vanished && size !== "v")
+            return;
+        if (size == "v") {
+            if (this.is_vanished) {
+                this.loop_through_annotations(subtask, this.cashed_size, "=");
+                //flip the bool state
+                this.is_vanished = !this.is_vanished;
+                return;
+            }
+            if (this.is_vanished !== true) {
+                this.loop_through_annotations(subtask, vanish_size, "=");
+                //flip the bool state
+                this.is_vanished = !this.is_vanished;
+                return;
+            }
+            return;
+        }
+        switch (size) {
+            case 's':
+                this.loop_through_annotations(subtask, small_size, "=");
+                this.cashed_size = small_size;
+                break;
+            case 'l':
+                this.loop_through_annotations(subtask, large_size, "=");
+                this.cashed_size = large_size;
+                break;
+            case 'dec':
+                this.loop_through_annotations(subtask, increment_size, "-");
+                break;
+            case 'inc':
+                this.loop_through_annotations(subtask, increment_size, "+");
+                break;
+            default:
+                return;
+        }
+    };
+    //loops through all annotations in a subtask to change their line size
+    AnnotationResizeItem.prototype.loop_through_annotations = function (subtask, size, operation) {
+        if (operation == "=") {
+            for (var annotation_id in subtask.annotations.access) {
+                subtask.annotations.access[annotation_id].line_size = size;
+            }
+            return;
+        }
+        if (operation == "+") {
+            for (var annotation_id in subtask.annotations.access) {
+                subtask.annotations.access[annotation_id].line_size += size;
+                //temporary solution
+                this.cashed_size = subtask.annotations.access[annotation_id].line_size;
+            }
+            return;
+        }
+        if (operation == "-") {
+            for (var annotation_id in subtask.annotations.access) {
+                subtask.annotations.access[annotation_id].line_size -= size;
+                //temporary solution
+                this.cashed_size = subtask.annotations.access[annotation_id].line_size;
+            }
+            return;
+        }
+        return;
+    };
+    AnnotationResizeItem.prototype.get_html = function () {
+        return "\n        <div class=\"annotation-resize\">\n            <p class=\"tb-header\">Change Annotation Size</p>\n            <div class=\"annotation-resize-button-holder\">\n                <span class=\"annotation-vanish\">\n                    <a href=\"#\" class=\"butt-ann\" id=\"annotation-resize-v\">Vanish</a>\n                </span>\n                <span class=\"annotation-size\">\n                    <a href=\"#\" class=\"butt-ann\" id=\"annotation-resize-s\">Small</a>\n                    <a href=\"#\" class=\"butt-ann\" id=\"annotation-resize-l\">Large</a>\n                </span>\n                <span class=\"annotation-inc\">\n                    <a href=\"#\" class=\"butt-ann\" id=\"annotation-resize-inc\">+</a>\n                    <a href=\"#\" class=\"butt-ann\" id=\"annotation-resize-dec\">-</a>\n                </span>\n            </div>\n        </div>\n        ";
+    };
+    return AnnotationResizeItem;
+}(ToolboxItem));
+exports.AnnotationResizeItem = AnnotationResizeItem;
+var RecolorActiveItem = /** @class */ (function (_super) {
+    __extends(RecolorActiveItem, _super);
+    function RecolorActiveItem(ulabel) {
+        var _this = _super.call(this) || this;
+        _this.inner_HTML = "<p class=\"tb-header\">Recolor Annotations</p>";
+        //event handler for the buttons
+        $(document).on("click", "input.color-change-btn", function (e) {
+            var button = $(e.currentTarget);
+            var current_subtask_key = ulabel.state["current_subtask"];
+            var current_subtask = ulabel.subtasks[current_subtask_key];
+            //slice 13,16 to grab the part of the id that specifies color
+            var color_from_id = button.attr("id").slice(13, 16);
+            _this.update_annotation_color(current_subtask, color_from_id);
+            __1.ULabel.process_classes(ulabel, ulabel.state.current_subtask, current_subtask);
+            //ULabel.build_id_dialogs(ulabel)
+            ulabel.redraw_all_annotations(null, null, false);
+            console.log(ulabel);
+        });
+        $(document).on("input", "input.color-change-picker", function (e) {
+            //Gets the current subtask
+            var current_subtask_key = ulabel.state["current_subtask"];
+            var current_subtask = ulabel.subtasks[current_subtask_key];
+            //Gets the hex value from the color picker
+            var hex = e.currentTarget.value;
+            _this.update_annotation_color(current_subtask, hex);
+            //somewhat janky way to update the color on the color picker 
+            //to allow for more css options
+            var color_picker_container = document.getElementById("color-picker-container");
+            color_picker_container.style.backgroundColor = hex;
+            __1.ULabel.process_classes(ulabel, ulabel.state.current_subtask, current_subtask);
+            //ULabel.build_id_dialogs(ulabel)
+            ulabel.redraw_all_annotations(null, null, false);
+            console.log(ulabel);
+        });
+        return _this;
+    }
+    RecolorActiveItem.prototype.update_annotation_color = function (subtask, color) {
+        //check for the three special cases, otherwise assume color is a hex value
+        if (color == "yel") {
+            color = "Yellow";
+        }
+        if (color == "red") {
+            color = "Red";
+        }
+        if (color == "cya") {
+            color = "Cyan";
+        }
+        var selected_id = "none";
+        subtask.state.id_payload.forEach(function (item) {
+            if (item.confidence == 1) {
+                selected_id = item.class_id;
+            }
+        });
+        //if the selected id is still none, then that means that no id had a
+        //confidence of 1. Therefore the default is having the first annotation
+        //id selected, so we'll default to that
+        if (selected_id == "none") {
+            console.log(subtask.classes[0].id);
+            selected_id = subtask.classes[0].id;
+        }
+        // console.log(selected_id)
+        subtask.classes.forEach(function (item) {
+            if (item.id === selected_id) {
+                item.color = color;
+            }
+        });
+        //$("a.toolbox_sel_"+selected_id+":first").attr("backround-color", color);
+        var colored_square_element = ".toolbox_colprev_" + selected_id;
+        console.log($(colored_square_element));
+        $(colored_square_element).attr("style", "background-color: " + color);
+    };
+    RecolorActiveItem.prototype.get_html = function () {
+        return "\n        <div class=\"recolor-active\">\n            <p class=\"tb-header\">Recolor Annotations</p>\n            <div class=\"annotation-recolor-button-holder\">\n                <div class=\"color-btn-container\">\n                    <input type=\"button\" class=\"color-change-btn\" id=\"color-change-yel\">\n                    <input type=\"button\" class=\"color-change-btn\" id=\"color-change-red\">\n                    <input type=\"button\" class=\"color-change-btn\" id=\"color-change-cya\">\n                </div>\n                <div class=\"color-picker-container\" id=\"color-picker-container\">\n                    <input type=\"color\"  class=\"color-change-picker\" id=\"color-change-pick\">\n                </div>\n            </div>\n        </div>\n        ";
+    };
+    return RecolorActiveItem;
+}(ToolboxItem));
+exports.RecolorActiveItem = RecolorActiveItem;
+// export class WholeImageClassifierToolboxTab extends ToolboxItem {
+//     constructor() {
+//         super(
+//             "toolbox-whole-image-classifier",
+//             "Whole Image Classification",
+//             ""
+//         );
+//     }
+// }
+
+
+/***/ })
+
+/******/ 	});
+/************************************************************************/
+/******/ 	// The module cache
+/******/ 	var __webpack_module_cache__ = {};
+/******/ 	
+/******/ 	// The require function
+/******/ 	function __webpack_require__(moduleId) {
+/******/ 		// Check if module is in cache
+/******/ 		var cachedModule = __webpack_module_cache__[moduleId];
+/******/ 		if (cachedModule !== undefined) {
+/******/ 			return cachedModule.exports;
+/******/ 		}
+/******/ 		// Create a new module (and put it into the cache)
+/******/ 		var module = __webpack_module_cache__[moduleId] = {
+/******/ 			// no module.id needed
+/******/ 			// no module.loaded needed
+/******/ 			exports: {}
+/******/ 		};
+/******/ 	
+/******/ 		// Execute the module function
+/******/ 		__webpack_modules__[moduleId].call(module.exports, module, module.exports, __webpack_require__);
+/******/ 	
+/******/ 		// Return the exports of the module
+/******/ 		return module.exports;
+/******/ 	}
+/******/ 	
+/************************************************************************/
+/******/ 	/* webpack/runtime/compat get default export */
+/******/ 	(() => {
+/******/ 		// getDefaultExport function for compatibility with non-harmony modules
+/******/ 		__webpack_require__.n = (module) => {
+/******/ 			var getter = module && module.__esModule ?
+/******/ 				() => (module['default']) :
+/******/ 				() => (module);
+/******/ 			__webpack_require__.d(getter, { a: getter });
+/******/ 			return getter;
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/define property getters */
+/******/ 	(() => {
+/******/ 		// define getter functions for harmony exports
+/******/ 		__webpack_require__.d = (exports, definition) => {
+/******/ 			for(var key in definition) {
+/******/ 				if(__webpack_require__.o(definition, key) && !__webpack_require__.o(exports, key)) {
+/******/ 					Object.defineProperty(exports, key, { enumerable: true, get: definition[key] });
+/******/ 				}
+/******/ 			}
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/hasOwnProperty shorthand */
+/******/ 	(() => {
+/******/ 		__webpack_require__.o = (obj, prop) => (Object.prototype.hasOwnProperty.call(obj, prop))
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/make namespace object */
+/******/ 	(() => {
+/******/ 		// define __esModule on exports
+/******/ 		__webpack_require__.r = (exports) => {
+/******/ 			if(typeof Symbol !== 'undefined' && Symbol.toStringTag) {
+/******/ 				Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
+/******/ 			}
+/******/ 			Object.defineProperty(exports, '__esModule', { value: true });
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/************************************************************************/
+/******/ 	
+/******/ 	// startup
+/******/ 	// Load entry module and return exports
+/******/ 	// This entry module is referenced by other modules so it can't be inlined
+/******/ 	var __webpack_exports__ = __webpack_require__(318);
+/******/ 	
 /******/ })()
 ;

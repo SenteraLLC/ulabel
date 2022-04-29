@@ -72,17 +72,20 @@ export class ULabel {
         init_crop?: any,
         initial_line_size?: number,
         instructions_url?: string
-    )
-
-    /**
-     * @link https://github.com/SenteraLLC/ulabel/blob/main/api_spec.md#display-utility-functions
-     */
-    public init(callback: () => void): void;
-    public swap_frame_image(new_src: string, frame?: number): string;
-    public swap_anno_bg_color(new_bg_color: string): string;
-    public get_annotations(subtask: ULabelSubtask): ULabelAnnotation[];
-    public set_annotations(annotations: ULabelAnnotation[], subtask: ULabelSubtask);
-    public set_saved(saved: boolean);
-    public redraw_all_annotations(subtask: any, offset:any, spatial_only: any);
-
-}
+        )
+        
+        /**
+         * @link https://github.com/SenteraLLC/ulabel/blob/main/api_spec.md#display-utility-functions
+         */
+        public init(callback: () => void): void;
+        public swap_frame_image(new_src: string, frame?: number): string;
+        public swap_anno_bg_color(new_bg_color: string): string;
+        public get_annotations(subtask: ULabelSubtask): ULabelAnnotation[];
+        public set_annotations(annotations: ULabelAnnotation[], subtask: ULabelSubtask);
+        public set_saved(saved: boolean);
+        public redraw_all_annotations(subtask: any, offset:any, spatial_only: any);
+        static process_classes(ulabel_obj: any, arg1: string, subtask_obj: any);
+        static build_id_dialogs(ulabel_obj: any);
+        
+    }
+    

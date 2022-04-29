@@ -1724,15 +1724,12 @@ div#${prntid}.ulabel-night span.spokes {
 
 div#${prntid} div.annotation-resize {
    padding: 10px 30px;
+   display: block;
 }
 
 div#${prntid} div.annotation-resize p.tb-header {
    margin: 0;
-   margin-bottom: 5px;
-}
-
-div#${prntid} div.annotation-resize {
-   display: block;
+   margin-bottom: 10px;
 }
 
 div#${prntid} div.annotation-resize-button-holder {
@@ -1744,25 +1741,63 @@ div#${prntid} div.annotation-resize a.butt-ann {
    display: inline-block;  
    margin: auto;
    color: white;
-   background-color: lightgray;
+   background-color: rgba(100, 148, 237, 0.8);
    border: 1px solid rgb(168, 168, 168);
    border-radius: 11px;
    text-decoration: none;
    text-align: center;
-   line-height: 20px;
    transition: all 0.2s;
+}
+
+div#${prntid} div.annotation-resize #annotation-resize-s {
+   border-radius: 11px 0 0 11px;
+}
+
+div#${prntid} div.annotation-resize #annotation-resize-l {
+   border-radius: 0 11px 11px 0;
+   margin-left: -5px;
+}
+
+div#${prntid} div.annotation-resize #annotation-resize-inc {
+   line-height: 30px;
+   margin-top: -5px;
+   margin-bottom: 5px;
+}
+
+div#${prntid} div.annotation-resize #annotation-resize-dec {
+   line-height: 26px;
+}
+
+div#${prntid} div.annotation-resize span.annotation-size {
+   width: 115px;
+   margin: 0;
+}
+
+div#${prntid} div.annotation-resize span.annotation-inc {
+   display: inline-grid;
+   grid-template-columns: 1fr;
+   position: relative;
+   bottom: 9px;
 }
 
 div#${prntid} div.annotation-resize span.annotation-size a.butt-ann {
    font-size: 0.9em;
    text-shadow: 0 0.04em 0.04em rgba(0,0,0,0.45);
-   padding: 10px 5px;
+   padding: 16px 9px;
+}
+
+div#${prntid} div.annotation-resize span.annotation-vanish a.butt-ann {
+   font-size: 0.9em;
+   text-shadow: 0 0.04em 0.04em rgba(0,0,0,0.45);
+   padding: 16px 8px;
    margin: 0 2px;
 }
 
 div#${prntid} div.annotation-resize span.annotation-inc a.butt-ann {
-   width: 20px;
-   height: 20px;
+   width: 28px;
+   height: 28px;
+   border-radius: 17px;
+   font-size: 2em;
 }
 
 div#${prntid} div.annotation-resize a:hover {
@@ -1778,21 +1813,57 @@ div#${prntid} div.recolor-active {
    display: block;
 }
 
+div#${prntid} div.recolor-active p.tb-header {
+   margin: 0;
+   margin-bottom: 5px;
+}
+
+div#${prntid} div.recolor-active div.annotation-recolor-button-holder {
+   display: grid;
+   grid-template-columns: 2fr 1fr;
+   column-gap: 8px;
+}
+
 div#${prntid} div.recolor-active input{
    width: 50px;
    height: 27px;
 }
 
+div#${prntid} div.recolor-active input.color-change-btn {
+   width: 90%;
+}
+
+div#${prntid} div.recolor-active div.color-picker-container {
+   max-width: 90%;
+   background-color: Black;
+   border: 8px solid lightgray;
+}
+
+div#${prntid} div.recolor-active input.color-change-btn, div#${prntid} div.recolor-active div.color-picker-container {
+   border-radius: 6px;
+}
+
+div#${prntid} div.recolor-active div.color-picker-container input.color-change-picker {
+   width: 100%;
+   height: 100%;
+   padding: 0;
+   opacity: 0;
+}
+
 div#${prntid} div.recolor-active #color-change-yel {
    background-color: yellow;
+   
+   border: 1px solid rgb(200, 200, 0);
 }
 
 div#${prntid} div.recolor-active #color-change-red {
    background-color: red;
+   border: 1px solid rgb(200, 0, 0);
 }
 
 div#${prntid} div.recolor-active #color-change-cya {
    background-color: cyan;
+   border: 1px solid rgb(0, 200, 200);
 }
 
 
