@@ -1759,13 +1759,13 @@ div#${prntid} div.annotation-resize #annotation-resize-l {
 }
 
 div#${prntid} div.annotation-resize #annotation-resize-inc {
-   line-height: 30px;
+   line-height: 23px;
    margin-top: -5px;
    margin-bottom: 5px;
 }
 
 div#${prntid} div.annotation-resize #annotation-resize-dec {
-   line-height: 26px;
+   line-height: 19px;
 }
 
 div#${prntid} div.annotation-resize span.annotation-size {
@@ -1777,7 +1777,7 @@ div#${prntid} div.annotation-resize span.annotation-inc {
    display: inline-grid;
    grid-template-columns: 1fr;
    position: relative;
-   bottom: 9px;
+   bottom: 11px;
 }
 
 div#${prntid} div.annotation-resize span.annotation-size a.butt-ann {
@@ -1794,10 +1794,10 @@ div#${prntid} div.annotation-resize span.annotation-vanish a.butt-ann {
 }
 
 div#${prntid} div.annotation-resize span.annotation-inc a.butt-ann {
-   width: 28px;
-   height: 28px;
+   width: 22px;
+   height: 22px;
    border-radius: 17px;
-   font-size: 2em;
+   font-size: 1.4em;
 }
 
 div#${prntid} div.annotation-resize a:hover {
