@@ -581,22 +581,21 @@ export class KeypointSlider extends ToolboxItem {
             $("#keypoint-slider-label").text(e.currentTarget.value + "%")
 
             this.update_annotations(current_subtask, get_annotation_confidence(current_subtask) , e.currentTarget.value / 100)
-            // for (const annotation_id in current_subtask.) {
-
-            // }
+            ulabel.redraw_all_annotations(null, null, false);
         })
     }
     
     //annotation_confidence should be in the form [{id: "", confidence: "", class_id: ""}, {id: "", confidence: "", class_id: ""}, ...]
-    public update_annotations (subtask, annotation_confidence, filter_value) {
+    public update_annotations(subtask, annotation_confidence, filter_value) {
 
-        // for (const annotation in annotation_confidence) {
-        //     console.log(annotation_confidence[annotation])
-
-        //     if (annotation_confidence[annotation].confidence < filter_value) {
-        //         subtask.access[annotation_confidence[annotation].id].deprecated = true;
-        //     }
-        // }
+        for (let annotation in annotation_confidence) {
+            if (annotation_confidence[annotation].confidence < filter_value) {
+                subtask.annotations.access[annotation_confidence[annotation].id].deprecated = true
+            }
+            if (annotation_confidence[annotation].confidence >= filter_value) {
+                subtask.annotations.access[annotation_confidence[annotation].id].deprecated = false
+            }
+        }
     }
 
     public get_html() {
