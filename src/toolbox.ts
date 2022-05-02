@@ -428,7 +428,13 @@ export class AnnotationResizeItem extends ToolboxItem {
         }
         if (operation == "-") {
             for (const annotation_id in subtask.annotations.access) {
-                subtask.annotations.access[annotation_id].line_size -= size;
+                //Check to make sure annotation line size won't go 0 or negative. If it would
+                //set it equal to a small positive number
+                if (subtask.annotations.access[annotation_id].line_size - size <= 0.01) {
+                    subtask.annotations.access[annotation_id].line_size = 0.01
+                } else {
+                    subtask.annotations.access[annotation_id].line_size -= size;
+                }
                 //temporary solution
                 this.cashed_size = subtask.annotations.access[annotation_id].line_size
             }
