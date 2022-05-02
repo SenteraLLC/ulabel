@@ -4,7 +4,7 @@ Sentera Inc.
 */
 import { ULabelAnnotation } from './annotation';
 import { Toolbox, ClassCounterToolboxItem, ModeSelectionToolboxItem, ZoomPanToolboxItem, LinestyleToolboxItem } from './toolbox';
-import { AnnotationIDToolboxItem, AnnotationResizeItem, RecolorActiveItem } from './toolbox';
+import { AnnotationIDToolboxItem, AnnotationResizeItem, RecolorActiveItem, KeypointSlider } from './toolbox';
 import { ULabelSubtask } from './subtask';
 import { GeometricUtils } from './geometric_utils';
 import $ from 'jquery';
@@ -265,10 +265,11 @@ export class ULabel {
         const class_counter_tbi = new ClassCounterToolboxItem();
         const annotaion_resize_tbi = new AnnotationResizeItem(ul);
         const recolor_active_tbi = new RecolorActiveItem(ul);
+        const keypoint_slider = new KeypointSlider(ul);
 
         const toolbox = new Toolbox(
             [],
-            [mode_select_tbi, zoom_pan_tbi, linestyle_tbi, annotaion_resize_tbi, annotation_id_tbi, recolor_active_tbi, class_counter_tbi],
+            [mode_select_tbi, zoom_pan_tbi, linestyle_tbi, annotaion_resize_tbi, annotation_id_tbi, recolor_active_tbi, class_counter_tbi, keypoint_slider],
         );
 
 

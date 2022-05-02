@@ -15,9 +15,12 @@ var __extends = (this && this.__extends) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.RecolorActiveItem = exports.AnnotationResizeItem = exports.ClassCounterToolboxItem = exports.AnnotationIDToolboxItem = exports.LinestyleToolboxItem = exports.ZoomPanToolboxItem = exports.ModeSelectionToolboxItem = exports.ToolboxItem = exports.ToolboxTab = exports.Toolbox = void 0;
+exports.KeypointSlider = exports.RecolorActiveItem = exports.AnnotationResizeItem = exports.ClassCounterToolboxItem = exports.AnnotationIDToolboxItem = exports.LinestyleToolboxItem = exports.ZoomPanToolboxItem = exports.ModeSelectionToolboxItem = exports.ToolboxItem = exports.ToolboxTab = exports.Toolbox = void 0;
 var __1 = require("..");
 var toolboxDividerDiv = "<div class=toolbox-divider></div>";
+function read_annotation_confidence() {
+    return;
+}
 /**
  * Manager for toolbox. Contains ToolboxTab items.
  */
@@ -235,6 +238,7 @@ var AnnotationResizeItem = /** @class */ (function (_super) {
             console.log(annotation_size);
             _this.update_annotation_size(current_subtask, annotation_size);
             ulabel.redraw_all_annotations(null, null, false);
+            console.log(ulabel);
         });
         //event listener for keybinds
         $(document).on("keypress", function (e) {
@@ -399,7 +403,6 @@ var RecolorActiveItem = /** @class */ (function (_super) {
         //confidence of 1. Therefore the default is having the first annotation
         //id selected, so we'll default to that
         if (selected_id == "none") {
-            console.log(subtask.classes[0].id);
             selected_id = subtask.classes[0].id;
         }
         // console.log(selected_id)
@@ -410,7 +413,6 @@ var RecolorActiveItem = /** @class */ (function (_super) {
         });
         //$("a.toolbox_sel_"+selected_id+":first").attr("backround-color", color);
         var colored_square_element = ".toolbox_colprev_" + selected_id;
-        console.log($(colored_square_element));
         $(colored_square_element).attr("style", "background-color: " + color);
     };
     RecolorActiveItem.prototype.get_html = function () {
@@ -419,6 +421,35 @@ var RecolorActiveItem = /** @class */ (function (_super) {
     return RecolorActiveItem;
 }(ToolboxItem));
 exports.RecolorActiveItem = RecolorActiveItem;
+var KeypointSlider = /** @class */ (function (_super) {
+    __extends(KeypointSlider, _super);
+    function KeypointSlider(ulabel, filter_value_callback) {
+        var _this = _super.call(this) || this;
+        _this.inner_HTML = "<p class=\"tb-header\">Keypoint Slider</p>";
+        $(document).on("input", "#keypoint-slider", function (e) {
+            var current_subtask_key = ulabel.state["current_subtask"];
+            var current_subtask = ulabel.subtasks[current_subtask_key];
+            $("#keypoint-slider-label").text(e.currentTarget.value + "%");
+            console.log(current_subtask.allowed_modes);
+            console.log(current_subtask.annotation_meta);
+            console.log(current_subtask.classes);
+            console.log(current_subtask.display_name);
+            console.log(current_subtask.read_only);
+            console.log(current_subtask.resume_from);
+            console.log(current_subtask.task_meta);
+            console.log(ulabel);
+            console.log(current_subtask.annotations);
+            // for (const annotation_id in current_subtask.) {
+            // }
+        });
+        return _this;
+    }
+    KeypointSlider.prototype.get_html = function () {
+        return "\n        <div class=\"keypoint-slider\">\n            <p class=\"tb-header\">Keypoint Slider</p>\n            <div class=\"keypoint-slider-holder\">\n                <input type=\"range\" id=\"keypoint-slider\">\n                <label for=\"keypoint-slider\" id=\"keypoint-slider-label\">50%</label>\n            </div>\n        </div>\n        ";
+    };
+    return KeypointSlider;
+}(ToolboxItem));
+exports.KeypointSlider = KeypointSlider;
 // export class WholeImageClassifierToolboxTab extends ToolboxItem {
 //     constructor() {
 //         super(

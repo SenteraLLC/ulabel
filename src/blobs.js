@@ -1866,6 +1866,16 @@ div#${prntid} div.recolor-active #color-change-cya {
    border: 1px solid rgb(0, 200, 200);
 }
 
+/* css for the keypoint slider item */
+div#${prntid} div.keypoint-slider {
+   padding: 10px 30px;
+   display: block;
+}
+
+div#${prntid} div.keypoint-slider p.tb-header {
+   margin: 0;
+   margin-bottom: 5px;
+}
 
 
 div#${prntid} div.zpcont {
