@@ -14424,6 +14424,31 @@ class ULabel {
         return ret;
     }
 
+    static get_annotation_confidence(subtask) {
+        console.log("Callback was Called!")
+        console.log(subtask)
+        let return_list = []
+        for (const annotation in subtask.annotations.access) {
+            console.log(annotation)
+            console.log(subtask.annotations.access[annotation])
+            if (subtask.annotations.access[annotation].classification_payloads.length == 0) {
+                return;
+            }
+            let current_id = null
+            let current_confidence = null
+            for (let type_of_id in subtask.annotations.access[annotation].classification_payloads) {
+                if (subtask.annotations.access[annotation].classification_payloads[type_of_id].confidence > current_confidence) {
+                    current_id = subtask.annotations.access[annotation].classification_payloads[type_of_id].class_id;
+                    current_confidence = subtask.annotations.access[annotation].classification_payloads[type_of_id].confidence;
+                }
+            }
+            return_list.push({id: annotation, confidence: current_confidence, class_id: current_id});
+
+        }
+        // const subtask_id = subtask.
+        console.log(return_list)
+        return return_list
+    }
 
     static prep_window_html(ul) {
         // Bring image and annotation scaffolding in
@@ -14467,7 +14492,7 @@ class ULabel {
         const class_counter_tbi = new src_toolbox.ClassCounterToolboxItem();
         const annotaion_resize_tbi = new src_toolbox.AnnotationResizeItem(ul);
         const recolor_active_tbi = new src_toolbox.RecolorActiveItem(ul);
-        const keypoint_slider = new src_toolbox.KeypointSlider(ul);
+        const keypoint_slider = new src_toolbox.KeypointSlider(ul, this.get_annotation_confidence);
 
         const toolbox = new src_toolbox.Toolbox(
             [],
@@ -19621,26 +19646,28 @@ var RecolorActiveItem = /** @class */ (function (_super) {
 exports.RecolorActiveItem = RecolorActiveItem;
 var KeypointSlider = /** @class */ (function (_super) {
     __extends(KeypointSlider, _super);
-    function KeypointSlider(ulabel, filter_value_callback) {
+    function KeypointSlider(ulabel, get_annotation_confidence) {
         var _this = _super.call(this) || this;
         _this.inner_HTML = "<p class=\"tb-header\">Keypoint Slider</p>";
         $(document).on("input", "#keypoint-slider", function (e) {
             var current_subtask_key = ulabel.state["current_subtask"];
             var current_subtask = ulabel.subtasks[current_subtask_key];
             $("#keypoint-slider-label").text(e.currentTarget.value + "%");
-            console.log(current_subtask.allowed_modes);
-            console.log(current_subtask.annotation_meta);
-            console.log(current_subtask.classes);
-            console.log(current_subtask.display_name);
-            console.log(current_subtask.read_only);
-            console.log(current_subtask.resume_from);
-            console.log(current_subtask.task_meta);
-            console.log(ulabel);
+            _this.update_annotations(current_subtask, get_annotation_confidence(current_subtask), e.currentTarget.value / 100);
             // for (const annotation_id in current_subtask.) {
             // }
         });
         return _this;
     }
+    //annotation_confidence should be in the form [{id: "", confidence: "", class_id: ""}, {id: "", confidence: "", class_id: ""}, ...]
+    KeypointSlider.prototype.update_annotations = function (subtask, annotation_confidence, filter_value) {
+        // for (const annotation in annotation_confidence) {
+        //     console.log(annotation_confidence[annotation])
+        //     if (annotation_confidence[annotation].confidence < filter_value) {
+        //         subtask.access[annotation_confidence[annotation].id].deprecated = true;
+        //     }
+        // }
+    };
     KeypointSlider.prototype.get_html = function () {
         return "\n        <div class=\"keypoint-slider\">\n            <p class=\"tb-header\">Keypoint Slider</p>\n            <div class=\"keypoint-slider-holder\">\n                <input type=\"range\" id=\"keypoint-slider\">\n                <label for=\"keypoint-slider\" id=\"keypoint-slider-label\">50%</label>\n            </div>\n        </div>\n        ";
     };
