@@ -19410,7 +19410,7 @@ var AnnotationResizeItem = /** @class */ (function (_super) {
     function AnnotationResizeItem(ulabel) {
         var _this = _super.call(this) || this;
         _this.is_vanished = false;
-        _this.cashed_size = 1.5;
+        _this.cached_size = 1.5;
         _this.inner_HTML = "<p class=\"tb-header\">Annotation Count</p>";
         //Sets the default line size
         //event listener for buttons
@@ -19463,7 +19463,7 @@ var AnnotationResizeItem = /** @class */ (function (_super) {
             return;
         if (size == "v") {
             if (this.is_vanished) {
-                this.loop_through_annotations(subtask, this.cashed_size, "=");
+                this.loop_through_annotations(subtask, this.cached_size, "=");
                 //flip the bool state
                 this.is_vanished = !this.is_vanished;
                 $("#annotation-resize-v").attr("style", "background-color: " + "rgba(100, 148, 237, 0.8)");
@@ -19481,11 +19481,11 @@ var AnnotationResizeItem = /** @class */ (function (_super) {
         switch (size) {
             case 's':
                 this.loop_through_annotations(subtask, small_size, "=");
-                this.cashed_size = small_size;
+                this.cached_size = small_size;
                 break;
             case 'l':
                 this.loop_through_annotations(subtask, large_size, "=");
-                this.cashed_size = large_size;
+                this.cached_size = large_size;
                 break;
             case 'dec':
                 this.loop_through_annotations(subtask, increment_size, "-");
@@ -19509,7 +19509,7 @@ var AnnotationResizeItem = /** @class */ (function (_super) {
             for (var annotation_id in subtask.annotations.access) {
                 subtask.annotations.access[annotation_id].line_size += size;
                 //temporary solution
-                this.cashed_size = subtask.annotations.access[annotation_id].line_size;
+                this.cached_size = subtask.annotations.access[annotation_id].line_size;
             }
             return;
         }
@@ -19524,7 +19524,7 @@ var AnnotationResizeItem = /** @class */ (function (_super) {
                     subtask.annotations.access[annotation_id].line_size -= size;
                 }
                 //temporary solution
-                this.cashed_size = subtask.annotations.access[annotation_id].line_size;
+                this.cached_size = subtask.annotations.access[annotation_id].line_size;
             }
             return;
         }
