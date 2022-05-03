@@ -13735,35 +13735,14 @@ div#${prntid} div.keypoint-slider p.tb-header {
    margin-bottom: 5px;
 }
 
-div#${prntid} #histogram {
-      position: relative;
-      width: 660px;
-      height: 216px;
-      margin: 8px;
-      padding: 0;	
+div#${prntid} div.keypoint-slider div.keypoint-slider-holder{
+   padding: 8px;
 }
 
-div#${prntid} #histogram ul {
-    position:absolute;
-    top:0;
-    left:32px;
-    width:600px;
-    height:200px;
-    border-left:1px solid black;
-    border-bottom:1px solid black;	
+div#${prntid} #keypoint-slider-label {
+   position: relative;
+   bottom: 4px;
 }
-
-div#${prntid} #histogram li {
-   position:absolute;	
-   list-style:none;
-   background:lightblue;
-   width:40px;
-   text-align:center;
-   border:1px solid black;
-   visibility: hidden;
-}
-
-
 
 div#${prntid} div.zpcont {
    height: 90px;
@@ -19666,7 +19645,7 @@ var RecolorActiveItem = /** @class */ (function (_super) {
         $(colored_square_element).attr("style", "background-color: " + color);
     };
     RecolorActiveItem.prototype.get_html = function () {
-        return "\n        <div class=\"recolor-active\">\n            <p class=\"tb-header\">Recolor Annotations</p>\n            <div class=\"annotation-recolor-button-holder\">\n                <div class=\"color-btn-container\">\n                    <input type=\"button\" class=\"color-change-btn\" id=\"color-change-yel\">\n                    <input type=\"button\" class=\"color-change-btn\" id=\"color-change-red\">\n                    <input type=\"button\" class=\"color-change-btn\" id=\"color-change-cya\">\n                </div>\n                <div class=\"color-picker-container\" id=\"color-picker-container\">\n                    <input type=\"color\"  class=\"color-change-picker\" id=\"color-change-pick\">\n                </div>\n            </div>\n        </div>\n        ";
+        return "\n        <div class=\"recolor-active\">\n            <p class=\"tb-header\">Recolor Annotations</p>\n            <div class=\"annotation-recolor-button-holder\">\n                <div class=\"color-btn-container\">\n                    <input type=\"button\" class=\"color-change-btn\" id=\"color-change-yel\">\n                    <input type=\"button\" class=\"color-change-btn\" id=\"color-change-red\">\n                    <input type=\"button\" class=\"color-change-btn\" id=\"color-change-cya\">\n                </div>\n                <div class=\"color-picker-container\" id=\"color-picker-container\">\n                    <input type=\"color\" class=\"color-change-picker\" id=\"color-change-pick\">\n                </div>\n            </div>\n        </div>\n        ";
     };
     return RecolorActiveItem;
 }(ToolboxItem));
@@ -19681,7 +19660,7 @@ var KeypointSlider = /** @class */ (function (_super) {
             var current_subtask = ulabel.subtasks[current_subtask_key];
             $("#keypoint-slider-label").text(e.currentTarget.value + "%");
             var annotation_confidence = get_annotation_confidence(current_subtask);
-            _this.draw_histogram(current_subtask, annotation_confidence);
+            //this.draw_histogram(current_subtask, annotation_confidence)
             _this.update_annotations(current_subtask, annotation_confidence, e.currentTarget.value / 100);
             ulabel.redraw_all_annotations(null, null, false);
         });
@@ -19698,56 +19677,56 @@ var KeypointSlider = /** @class */ (function (_super) {
             }
         }
     };
-    KeypointSlider.prototype.make_histogram = function (subtask, annotation_confidence) {
-    };
-    KeypointSlider.prototype.draw_histogram = function (subtask, annotation_confidence) {
-        var canvas = document.getElementById("histogram");
-        var ctx = canvas.getContext("2d");
-        this.draw_grid(ctx, canvas.width, canvas.height, 11, "#444444");
-        this.draw_line(ctx, canvas.width / 11, 0, canvas.width / 11, 10 * canvas.height / 11, "#FFFF00");
-        this.draw_line(ctx, canvas.width / 11, 10 * canvas.height / 11, canvas.width, 10 * canvas.height / 11, "#FFFF00");
-        this.draw_rectangle(ctx, 0, 0, canvas.width / 14, canvas.height, "#FFFFFF");
-        this.draw_rectangle(ctx, 0, canvas.height - (canvas.height / 16), canvas.width, canvas.height, "#FFFFFF");
-    };
-    //x1, y1 is the x,y coordinate of the first endpoint, x2, y2 is the 
-    //x,y coordinate of the second endpoint.
-    KeypointSlider.prototype.draw_line = function (ctx, x1, y1, x2, y2, color) {
-        ctx.save();
-        ctx.strokeStyle = color;
-        ctx.beginPath();
-        ctx.moveTo(x1, y1);
-        ctx.lineTo(x2, y2);
-        ctx.stroke();
-        ctx.restore();
-    };
-    KeypointSlider.prototype.draw_rectangle = function (ctx, upper_left_x, upper_left_y, width, height, color) {
-        ctx.save();
-        ctx.fillStyle = color;
-        ctx.fillRect(upper_left_x, upper_left_y, width, height);
-        ctx.restore();
-    };
-    KeypointSlider.prototype.draw_rectangle_with_border = function (ctx, upper_left_x, upper_left_y, width, height, fill_color, border_color) {
-        ctx.save();
-        this.draw_rectangle(ctx, upper_left_x, upper_left_y, width, height, border_color);
-        this.draw_rectangle(ctx, upper_left_x + 1, upper_left_y + 1, width - 2, height - 2, fill_color);
-        ctx.restore();
-    };
-    KeypointSlider.prototype.draw_grid = function (ctx, canvas_width, canvas_height, grid_size, color) {
-        ctx.save();
-        var len = canvas_width / grid_size;
-        //draws the vertical lines in the grid
-        for (var i = 1; (i < len); i++) {
-            this.draw_line(ctx, len * i, 0, len * i, canvas_height, color);
-        }
-        //draws the horizontal lines in the grid
-        len = canvas_height / grid_size;
-        for (var i = 1; (i < len); i++) {
-            this.draw_line(ctx, 0, len * i, canvas_width, len * i, color);
-        }
-        ctx.restore();
-    };
+    // public make_histogram(subtask, annotation_confidence) {
+    // }
+    // public draw_histogram(subtask, annotation_confidence) {
+    //     let canvas = <HTMLCanvasElement> document.getElementById("histogram");
+    //     let ctx = canvas.getContext("2d")
+    //     this.draw_grid(ctx,canvas.width, canvas.height, 11, "#444444")
+    //     this.draw_line(ctx, canvas.width / 11, 0, canvas.width / 11, 10 * canvas.height / 11, "#FFFF00")
+    //     this.draw_line(ctx, canvas.width / 11, 10 * canvas.height / 11, canvas.width, 10 * canvas.height / 11, "#FFFF00")
+    //     this.draw_rectangle(ctx, 0, 0, canvas.width / 14, canvas.height, "#FFFFFF")
+    //     this.draw_rectangle(ctx, 0, canvas.height - (canvas.height / 16), canvas.width, canvas.height, "#FFFFFF")
+    // }
+    // //x1, y1 is the x,y coordinate of the first endpoint, x2, y2 is the 
+    // //x,y coordinate of the second endpoint.
+    // private draw_line(ctx, x1, y1, x2, y2, color) {
+    //     ctx.save();
+    //     ctx.strokeStyle = color;
+    //     ctx.beginPath();
+    //     ctx.moveTo(x1,y1);
+    //     ctx.lineTo(x2,y2);
+    //     ctx.stroke();
+    //     ctx.restore();
+    // }
+    // private draw_rectangle(ctx, upper_left_x, upper_left_y, width, height, color) {
+    //     ctx.save();
+    //     ctx.fillStyle = color;
+    //     ctx.fillRect(upper_left_x, upper_left_y, width, height);
+    //     ctx.restore();
+    // }
+    // private draw_rectangle_with_border(ctx, upper_left_x, upper_left_y, width, height, fill_color, border_color) {
+    //     ctx.save();
+    //     this.draw_rectangle(ctx, upper_left_x, upper_left_y, width, height, border_color)
+    //     this.draw_rectangle(ctx, upper_left_x + 1, upper_left_y + 1, width - 2, height - 2, fill_color)
+    //     ctx.restore();
+    // }
+    // private draw_grid(ctx, canvas_width, canvas_height, grid_size, color) {
+    //     ctx.save();
+    //     let len = canvas_width / grid_size;
+    //     //draws the vertical lines in the grid
+    //     for (let i = 1; (i < len); i++) {
+    //         this.draw_line(ctx, len * i, 0, len * i, canvas_height, color)
+    //     }
+    //     //draws the horizontal lines in the grid
+    //     len = canvas_height / grid_size;
+    //     for (let i = 1; (i < len); i++) {
+    //         this.draw_line(ctx, 0, len * i, canvas_width, len * i, color)
+    //     }
+    //     ctx.restore();
+    // }
     KeypointSlider.prototype.get_html = function () {
-        return "\n        <div class=\"keypoint-slider\">\n            <p class=\"tb-header\">Keypoint Slider</p>\n            <div id=\"histogram\">\n                200 <br/><br/> 100 <br/><br/> 0\n                <ul>\n                    <li>30:2007:lightblue</li>\n                    <li>40:2008:lightgreen</li>\n                    <li>80:2009:yellow</li>\n                    <li>14:2010:cyan</li>\n\n                </ul>\n            </div>\n            <canvas id=\"histogra\"><div>Inside canvas</div></canvas>\n            <div class=\"keypoint-slider-holder\">\n                <input type=\"range\" id=\"keypoint-slider\">\n                <label for=\"keypoint-slider\" id=\"keypoint-slider-label\">50%</label>\n            </div>\n        </div>\n        ";
+        return "\n        <div class=\"keypoint-slider\">\n            <p class=\"tb-header\">Keypoint Slider</p>\n            <div class=\"keypoint-slider-holder\">\n                <input type=\"range\" id=\"keypoint-slider\">\n                <label for=\"keypoint-slider\" id=\"keypoint-slider-label\">50%</label>\n            </div>\n        </div>\n        ";
     };
     return KeypointSlider;
 }(ToolboxItem));
