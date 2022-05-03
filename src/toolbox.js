@@ -235,10 +235,8 @@ var AnnotationResizeItem = /** @class */ (function (_super) {
             var current_subtask_key = ulabel.state["current_subtask"];
             var current_subtask = ulabel.subtasks[current_subtask_key];
             var annotation_size = button.attr("id").slice(18);
-            console.log(annotation_size);
             _this.update_annotation_size(current_subtask, annotation_size);
             ulabel.redraw_all_annotations(null, null, false);
-            console.log(ulabel);
         });
         //event listener for keybinds
         $(document).on("keypress", function (e) {
@@ -362,7 +360,6 @@ var RecolorActiveItem = /** @class */ (function (_super) {
             __1.ULabel.process_classes(ulabel, ulabel.state.current_subtask, current_subtask);
             //ULabel.build_id_dialogs(ulabel)
             ulabel.redraw_all_annotations(null, null, false);
-            console.log(ulabel);
         });
         $(document).on("input", "input.color-change-picker", function (e) {
             //Gets the current subtask
@@ -378,7 +375,6 @@ var RecolorActiveItem = /** @class */ (function (_super) {
             __1.ULabel.process_classes(ulabel, ulabel.state.current_subtask, current_subtask);
             //ULabel.build_id_dialogs(ulabel)
             ulabel.redraw_all_annotations(null, null, false);
-            console.log(ulabel);
         });
         return _this;
     }
@@ -430,13 +426,15 @@ var KeypointSlider = /** @class */ (function (_super) {
             var current_subtask_key = ulabel.state["current_subtask"];
             var current_subtask = ulabel.subtasks[current_subtask_key];
             $("#keypoint-slider-label").text(e.currentTarget.value + "%");
-            _this.update_annotations(current_subtask, get_annotation_confidence(current_subtask), e.currentTarget.value / 100);
+            var annotation_confidence = get_annotation_confidence(current_subtask);
+            _this.draw_histogram(current_subtask, annotation_confidence);
+            _this.update_annotations(current_subtask, annotation_confidence, e.currentTarget.value / 100);
+            ulabel.redraw_all_annotations(null, null, false);
         });
         return _this;
     }
     //annotation_confidence should be in the form [{id: "", confidence: "", class_id: ""}, {id: "", confidence: "", class_id: ""}, ...]
     KeypointSlider.prototype.update_annotations = function (subtask, annotation_confidence, filter_value) {
-        console.log(subtask, annotation_confidence);
         for (var annotation in annotation_confidence) {
             if (annotation_confidence[annotation].confidence < filter_value) {
                 subtask.annotations.access[annotation_confidence[annotation].id].deprecated = true;
@@ -445,10 +443,57 @@ var KeypointSlider = /** @class */ (function (_super) {
                 subtask.annotations.access[annotation_confidence[annotation].id].deprecated = false;
             }
         }
-        console.log(subtask);
+    };
+    KeypointSlider.prototype.make_histogram = function (subtask, annotation_confidence) {
+    };
+    KeypointSlider.prototype.draw_histogram = function (subtask, annotation_confidence) {
+        var canvas = document.getElementById("histogram");
+        var ctx = canvas.getContext("2d");
+        this.draw_grid(ctx, canvas.width, canvas.height, 11, "#444444");
+        this.draw_line(ctx, canvas.width / 11, 0, canvas.width / 11, 10 * canvas.height / 11, "#FFFF00");
+        this.draw_line(ctx, canvas.width / 11, 10 * canvas.height / 11, canvas.width, 10 * canvas.height / 11, "#FFFF00");
+        this.draw_rectangle(ctx, 0, 0, canvas.width / 14, canvas.height, "#FFFFFF");
+        this.draw_rectangle(ctx, 0, canvas.height - (canvas.height / 16), canvas.width, canvas.height, "#FFFFFF");
+    };
+    //x1, y1 is the x,y coordinate of the first endpoint, x2, y2 is the 
+    //x,y coordinate of the second endpoint.
+    KeypointSlider.prototype.draw_line = function (ctx, x1, y1, x2, y2, color) {
+        ctx.save();
+        ctx.strokeStyle = color;
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+        ctx.restore();
+    };
+    KeypointSlider.prototype.draw_rectangle = function (ctx, upper_left_x, upper_left_y, width, height, color) {
+        ctx.save();
+        ctx.fillStyle = color;
+        ctx.fillRect(upper_left_x, upper_left_y, width, height);
+        ctx.restore();
+    };
+    KeypointSlider.prototype.draw_rectangle_with_border = function (ctx, upper_left_x, upper_left_y, width, height, fill_color, border_color) {
+        ctx.save();
+        this.draw_rectangle(ctx, upper_left_x, upper_left_y, width, height, border_color);
+        this.draw_rectangle(ctx, upper_left_x + 1, upper_left_y + 1, width - 2, height - 2, fill_color);
+        ctx.restore();
+    };
+    KeypointSlider.prototype.draw_grid = function (ctx, canvas_width, canvas_height, grid_size, color) {
+        ctx.save();
+        var len = canvas_width / grid_size;
+        //draws the vertical lines in the grid
+        for (var i = 1; (i < len); i++) {
+            this.draw_line(ctx, len * i, 0, len * i, canvas_height, color);
+        }
+        //draws the horizontal lines in the grid
+        len = canvas_height / grid_size;
+        for (var i = 1; (i < len); i++) {
+            this.draw_line(ctx, 0, len * i, canvas_width, len * i, color);
+        }
+        ctx.restore();
     };
     KeypointSlider.prototype.get_html = function () {
-        return "\n        <div class=\"keypoint-slider\">\n            <p class=\"tb-header\">Keypoint Slider</p>\n            <div class=\"keypoint-slider-holder\">\n                <input type=\"range\" id=\"keypoint-slider\">\n                <label for=\"keypoint-slider\" id=\"keypoint-slider-label\">50%</label>\n            </div>\n        </div>\n        ";
+        return "\n        <div class=\"keypoint-slider\">\n            <p class=\"tb-header\">Keypoint Slider</p>\n            <div id=\"histogram\">\n                200 <br/><br/> 100 <br/><br/> 0\n                <ul>\n                    <li>30:2007:lightblue</li>\n                    <li>40:2008:lightgreen</li>\n                    <li>80:2009:yellow</li>\n                    <li>14:2010:cyan</li>\n\n                </ul>\n            </div>\n            <canvas id=\"histogra\"><div>Inside canvas</div></canvas>\n            <div class=\"keypoint-slider-holder\">\n                <input type=\"range\" id=\"keypoint-slider\">\n                <label for=\"keypoint-slider\" id=\"keypoint-slider-label\">50%</label>\n            </div>\n        </div>\n        ";
     };
     return KeypointSlider;
 }(ToolboxItem));

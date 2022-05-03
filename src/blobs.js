@@ -1877,6 +1877,35 @@ div#${prntid} div.keypoint-slider p.tb-header {
    margin-bottom: 5px;
 }
 
+div#${prntid} #histogram {
+      position: relative;
+      width: 660px;
+      height: 216px;
+      margin: 8px;
+      padding: 0;	
+}
+
+div#${prntid} #histogram ul {
+    position:absolute;
+    top:0;
+    left:32px;
+    width:600px;
+    height:200px;
+    border-left:1px solid black;
+    border-bottom:1px solid black;	
+}
+
+div#${prntid} #histogram li {
+   position:absolute;	
+   list-style:none;
+   background:lightblue;
+   width:40px;
+   text-align:center;
+   border:1px solid black;
+   visibility: hidden;
+}
+
+
 
 div#${prntid} div.zpcont {
    height: 90px;
