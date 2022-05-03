@@ -318,7 +318,7 @@ export class ClassCounterToolboxItem extends ToolboxItem {
  */
 export class AnnotationResizeItem extends ToolboxItem {
     public is_vanished: boolean = false;
-    public cached_size: number = 1.5;
+    public cashed_size: number = 1.5;
     public html: string;
     public inner_HTML: string;
     constructor(ulabel: ULabel) {
@@ -377,7 +377,7 @@ export class AnnotationResizeItem extends ToolboxItem {
 
         if (size == "v") {
             if (this.is_vanished) { 
-                this.loop_through_annotations(subtask, this.cached_size, "=")
+                this.loop_through_annotations(subtask, this.cashed_size, "=")
                 //flip the bool state
                 this.is_vanished = !this.is_vanished
                 $("#annotation-resize-v").attr("style","background-color: "+"rgba(100, 148, 237, 0.8)");
@@ -396,11 +396,11 @@ export class AnnotationResizeItem extends ToolboxItem {
         switch(size) {
             case 's':
                 this.loop_through_annotations(subtask, small_size, "=")
-                this.cached_size = small_size
+                this.cashed_size = small_size
                 break;           
             case 'l':
                 this.loop_through_annotations(subtask, large_size, "=")
-                this.cached_size = large_size
+                this.cashed_size = large_size
                 break;
             case 'dec':
                 this.loop_through_annotations(subtask, increment_size, "-")
@@ -424,21 +424,15 @@ export class AnnotationResizeItem extends ToolboxItem {
             for (const annotation_id in subtask.annotations.access) {
                 subtask.annotations.access[annotation_id].line_size += size;
                 //temporary solution
-                this.cached_size = subtask.annotations.access[annotation_id].line_size
+                this.cashed_size = subtask.annotations.access[annotation_id].line_size
             }
             return;
         }
         if (operation == "-") {
             for (const annotation_id in subtask.annotations.access) {
-                //Check to make sure annotation line size won't go 0 or negative. If it would
-                //set it equal to a small positive number
-                if (subtask.annotations.access[annotation_id].line_size - size <= 0.01) {
-                    subtask.annotations.access[annotation_id].line_size = 0.01
-                } else {
-                    subtask.annotations.access[annotation_id].line_size -= size;
-                }
+                subtask.annotations.access[annotation_id].line_size -= size;
                 //temporary solution
-                this.cached_size = subtask.annotations.access[annotation_id].line_size
+                this.cashed_size = subtask.annotations.access[annotation_id].line_size
             }
             return;
         }
@@ -562,6 +556,7 @@ export class RecolorActiveItem extends ToolboxItem {
                     <input type="button" class="color-change-btn" id="color-change-cya">
                 </div>
                 <div class="color-picker-container" id="color-picker-container">
+                    <canvas id="color-picker-canvas"></canvas>
                     <input type="color"  class="color-change-picker" id="color-change-pick">
                 </div>
             </div>
