@@ -1,6 +1,9 @@
 import { ULabel, ULabelAnnotation, ULabelSubtask } from "..";
 
 const toolboxDividerDiv = "<div class=toolbox-divider></div>"
+function read_annotation_confidence() {
+    return
+}
 
 /**
  * Manager for toolbox. Contains ToolboxTab items.
@@ -315,7 +318,7 @@ export class ClassCounterToolboxItem extends ToolboxItem {
  */
 export class AnnotationResizeItem extends ToolboxItem {
     public is_vanished: boolean = false;
-    public cached_size: number = 1.5;
+    public cashed_size: number = 1.5;
     public html: string;
     public inner_HTML: string;
     constructor(ulabel: ULabel) {
@@ -329,7 +332,6 @@ export class AnnotationResizeItem extends ToolboxItem {
             var current_subtask_key = ulabel.state["current_subtask"];
             var current_subtask = ulabel.subtasks[current_subtask_key];
             const annotation_size = button.attr("id").slice(18);
-            console.log(annotation_size)
             this.update_annotation_size(current_subtask, annotation_size);
             ulabel.redraw_all_annotations(null, null, false);
         })
@@ -375,7 +377,7 @@ export class AnnotationResizeItem extends ToolboxItem {
 
         if (size == "v") {
             if (this.is_vanished) { 
-                this.loop_through_annotations(subtask, this.cached_size, "=")
+                this.loop_through_annotations(subtask, this.cashed_size, "=")
                 //flip the bool state
                 this.is_vanished = !this.is_vanished
                 $("#annotation-resize-v").attr("style","background-color: "+"rgba(100, 148, 237, 0.8)");
@@ -394,11 +396,11 @@ export class AnnotationResizeItem extends ToolboxItem {
         switch(size) {
             case 's':
                 this.loop_through_annotations(subtask, small_size, "=")
-                this.cached_size = small_size
+                this.cashed_size = small_size
                 break;           
             case 'l':
                 this.loop_through_annotations(subtask, large_size, "=")
-                this.cached_size = large_size
+                this.cashed_size = large_size
                 break;
             case 'dec':
                 this.loop_through_annotations(subtask, increment_size, "-")
@@ -422,21 +424,15 @@ export class AnnotationResizeItem extends ToolboxItem {
             for (const annotation_id in subtask.annotations.access) {
                 subtask.annotations.access[annotation_id].line_size += size;
                 //temporary solution
-                this.cached_size = subtask.annotations.access[annotation_id].line_size
+                this.cashed_size = subtask.annotations.access[annotation_id].line_size
             }
             return;
         }
         if (operation == "-") {
             for (const annotation_id in subtask.annotations.access) {
-                //Check to make sure annotation line size won't go 0 or negative. If it would
-                //set it equal to a small positive number
-                if (subtask.annotations.access[annotation_id].line_size - size <= 0.01) {
-                    subtask.annotations.access[annotation_id].line_size = 0.01
-                } else {
-                    subtask.annotations.access[annotation_id].line_size -= size;
-                }
+                subtask.annotations.access[annotation_id].line_size -= size;
                 //temporary solution
-                this.cached_size = subtask.annotations.access[annotation_id].line_size
+                this.cashed_size = subtask.annotations.access[annotation_id].line_size
             }
             return;
         }
@@ -484,7 +480,6 @@ export class RecolorActiveItem extends ToolboxItem {
             //ULabel.build_id_dialogs(ulabel)
 
             ulabel.redraw_all_annotations(null, null, false);
-            console.log(ulabel)
         })
         $(document).on("input", "input.color-change-picker", (e) => {
             //Gets the current subtask
@@ -504,7 +499,6 @@ export class RecolorActiveItem extends ToolboxItem {
             //ULabel.build_id_dialogs(ulabel)
 
             ulabel.redraw_all_annotations(null, null, false);
-            console.log(ulabel)
         })
     }
 
@@ -535,7 +529,6 @@ export class RecolorActiveItem extends ToolboxItem {
         //id selected, so we'll default to that
 
         if (selected_id == "none") {
-            console.log(subtask.classes[0].id)
             selected_id = subtask.classes[0].id;
         }
         // console.log(selected_id)
@@ -548,7 +541,6 @@ export class RecolorActiveItem extends ToolboxItem {
 
         //$("a.toolbox_sel_"+selected_id+":first").attr("backround-color", color);
         let colored_square_element = ".toolbox_colprev_"+selected_id;
-        console.log($(colored_square_element));
         $(colored_square_element).attr("style","background-color: "+color);
         
     }
@@ -564,8 +556,127 @@ export class RecolorActiveItem extends ToolboxItem {
                     <input type="button" class="color-change-btn" id="color-change-cya">
                 </div>
                 <div class="color-picker-container" id="color-picker-container">
+                    <canvas id="color-picker-canvas"></canvas>
                     <input type="color"  class="color-change-picker" id="color-change-pick">
                 </div>
+            </div>
+        </div>
+        `
+    }
+}
+
+export class KeypointSlider extends ToolboxItem {
+    public html: string;
+    public inner_HTML: string;
+
+    constructor(ulabel: ULabel, get_annotation_confidence: Function) {
+        super();
+        this.inner_HTML = `<p class="tb-header">Keypoint Slider</p>`;
+        $(document).on("input", "#keypoint-slider", (e) => {
+            var current_subtask_key = ulabel.state["current_subtask"];
+            var current_subtask = ulabel.subtasks[current_subtask_key];
+            $("#keypoint-slider-label").text(e.currentTarget.value + "%")
+
+            const annotation_confidence = get_annotation_confidence(current_subtask)
+            
+            this.draw_histogram(current_subtask, annotation_confidence)
+            this.update_annotations(current_subtask, annotation_confidence , e.currentTarget.value / 100)
+            ulabel.redraw_all_annotations(null, null, false);
+        })
+    }
+    
+    //annotation_confidence should be in the form [{id: "", confidence: "", class_id: ""}, {id: "", confidence: "", class_id: ""}, ...]
+    public update_annotations(subtask, annotation_confidence, filter_value) {
+
+        for (let annotation in annotation_confidence) {
+            if (annotation_confidence[annotation].confidence < filter_value) {
+                subtask.annotations.access[annotation_confidence[annotation].id].deprecated = true
+            }
+            if (annotation_confidence[annotation].confidence >= filter_value) {
+                subtask.annotations.access[annotation_confidence[annotation].id].deprecated = false
+            }
+        }
+    }
+
+    public make_histogram(subtask, annotation_confidence) {
+
+    }
+
+    public draw_histogram(subtask, annotation_confidence) {
+        let canvas = <HTMLCanvasElement> document.getElementById("histogram");
+        let ctx = canvas.getContext("2d")
+
+        this.draw_grid(ctx,canvas.width, canvas.height, 11, "#444444")
+
+        
+        this.draw_line(ctx, canvas.width / 11, 0, canvas.width / 11, 10 * canvas.height / 11, "#FFFF00")
+        this.draw_line(ctx, canvas.width / 11, 10 * canvas.height / 11, canvas.width, 10 * canvas.height / 11, "#FFFF00")
+
+        this.draw_rectangle(ctx, 0, 0, canvas.width / 14, canvas.height, "#FFFFFF")
+        this.draw_rectangle(ctx, 0, canvas.height - (canvas.height / 16), canvas.width, canvas.height, "#FFFFFF")
+
+    }
+
+    //x1, y1 is the x,y coordinate of the first endpoint, x2, y2 is the 
+    //x,y coordinate of the second endpoint.
+    private draw_line(ctx, x1, y1, x2, y2, color) {
+        ctx.save();
+        ctx.strokeStyle = color;
+        ctx.beginPath();
+        ctx.moveTo(x1,y1);
+        ctx.lineTo(x2,y2);
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    private draw_rectangle(ctx, upper_left_x, upper_left_y, width, height, color) {
+        ctx.save();
+        ctx.fillStyle = color;
+        ctx.fillRect(upper_left_x, upper_left_y, width, height);
+        ctx.restore();
+
+    }
+
+    private draw_rectangle_with_border(ctx, upper_left_x, upper_left_y, width, height, fill_color, border_color) {
+        ctx.save();
+        this.draw_rectangle(ctx, upper_left_x, upper_left_y, width, height, border_color)
+        this.draw_rectangle(ctx, upper_left_x + 1, upper_left_y + 1, width - 2, height - 2, fill_color)
+        ctx.restore();
+    }
+
+    private draw_grid(ctx, canvas_width, canvas_height, grid_size, color) {
+        ctx.save();
+        let len = canvas_width / grid_size;
+        //draws the vertical lines in the grid
+        for (let i = 1; (i < len); i++) {
+            this.draw_line(ctx, len * i, 0, len * i, canvas_height, color)
+        }
+        //draws the horizontal lines in the grid
+        len = canvas_height / grid_size;
+        for (let i = 1; (i < len); i++) {
+            this.draw_line(ctx, 0, len * i, canvas_width, len * i, color)
+        }
+        ctx.restore();
+    }
+
+    public get_html() {
+        return`
+        <div class="keypoint-slider">
+            <p class="tb-header">Keypoint Slider</p>
+            <div id="histogram">
+                200 <br/><br/> 100 <br/><br/> 0
+                <ul>
+                    <li>30:2007:lightblue</li>
+                    <li>40:2008:lightgreen</li>
+                    <li>80:2009:yellow</li>
+                    <li>14:2010:cyan</li>
+
+                </ul>
+            </div>
+            <canvas id="histogra"></canvas>
+            <div class="keypoint-slider-holder">
+                <input type="range" id="keypoint-slider">
+                <label for="keypoint-slider" id="keypoint-slider-label">50%</label>
             </div>
         </div>
         `
