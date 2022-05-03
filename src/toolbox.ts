@@ -512,13 +512,13 @@ export class RecolorActiveItem extends ToolboxItem {
         
         //check for the three special cases, otherwise assume color is a hex value
         if (color == "yel") {
-            color ="Yellow";
+            color ="#FFFF00";
         }
         if (color == "red") {
-            color ="Red";
+            color ="#FF0000";
         }
         if (color == "cya") {
-            color ="Cyan";
+            color ="#00FFFF";
         }
 
         let selected_id = "none";
@@ -561,8 +561,10 @@ export class RecolorActiveItem extends ToolboxItem {
                     <input type="button" class="color-change-btn" id="color-change-red">
                     <input type="button" class="color-change-btn" id="color-change-cya">
                 </div>
-                <div class="color-picker-container" id="color-picker-container">
-                    <input type="color" class="color-change-picker" id="color-change-pick">
+                <div class="color-picker-border">
+                    <div class="color-picker-container" id="color-picker-container">
+                        <input type="color" class="color-change-picker" id="color-change-pick">
+                    </div>
                 </div>
             </div>
         </div>
