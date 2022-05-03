@@ -15,7 +15,8 @@ var __extends = (this && this.__extends) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.AnnotationResizeItem = exports.ClassCounterToolboxItem = exports.AnnotationIDToolboxItem = exports.LinestyleToolboxItem = exports.ZoomPanToolboxItem = exports.ModeSelectionToolboxItem = exports.ToolboxItem = exports.ToolboxTab = exports.Toolbox = void 0;
+exports.RecolorActiveItem = exports.AnnotationResizeItem = exports.ClassCounterToolboxItem = exports.AnnotationIDToolboxItem = exports.LinestyleToolboxItem = exports.ZoomPanToolboxItem = exports.ModeSelectionToolboxItem = exports.ToolboxItem = exports.ToolboxTab = exports.Toolbox = void 0;
+var __1 = require("..");
 var toolboxDividerDiv = "<div class=toolbox-divider></div>";
 /**
  * Manager for toolbox. Contains ToolboxTab items.
@@ -221,61 +222,210 @@ var AnnotationResizeItem = /** @class */ (function (_super) {
     __extends(AnnotationResizeItem, _super);
     function AnnotationResizeItem(ulabel) {
         var _this = _super.call(this) || this;
+        _this.is_vanished = false;
+        _this.cached_size = 1.5;
         _this.inner_HTML = "<p class=\"tb-header\">Annotation Count</p>";
+        //Sets the default line size
+        //event listener for buttons
         $(document).on("click", "a.butt-ann", function (e) {
             var button = $(e.currentTarget);
             var current_subtask_key = ulabel.state["current_subtask"];
             var current_subtask = ulabel.subtasks[current_subtask_key];
-            var annotation_size = button.attr("id").slice(-1);
+            var annotation_size = button.attr("id").slice(18);
+            console.log(annotation_size);
             _this.update_annotation_size(current_subtask, annotation_size);
+            ulabel.redraw_all_annotations(null, null, false);
+        });
+        //event listener for keybinds
+        $(document).on("keypress", function (e) {
+            var current_subtask_key = ulabel.state["current_subtask"];
+            var current_subtask = ulabel.subtasks[current_subtask_key];
+            console.log(e.which);
+            switch (e.which) {
+                case 118:
+                    _this.update_annotation_size(current_subtask, "v");
+                    break;
+                case 115:
+                    _this.update_annotation_size(current_subtask, "s");
+                    break;
+                case 108:
+                    _this.update_annotation_size(current_subtask, "l");
+                    break;
+                case 45:
+                    _this.update_annotation_size(current_subtask, "dec");
+                    break;
+                case 61:
+                    _this.update_annotation_size(current_subtask, "inc");
+                    break;
+            }
             ulabel.redraw_all_annotations(null, null, false);
         });
         return _this;
     }
-    //recieives a string of 's','m', 'l', '-', or '+' depending on which button was pressed
+    //recieives a string of 's', 'l', 'dec', 'inc', or 'v' depending on which button was pressed
     AnnotationResizeItem.prototype.update_annotation_size = function (subtask, size) {
-        var small_size = 5;
-        var medium_size = 9;
-        var large_size = 13;
-        var increment_size = 2;
+        var small_size = 1.5;
+        var large_size = 5;
+        var increment_size = 0.5;
+        var vanish_size = 0.01;
         if (subtask == null)
             return;
+        //If the annotations are currently vanished and a button other than the vanish button is
+        //pressed, then we want to ignore the input
+        if (this.is_vanished && size !== "v")
+            return;
+        if (size == "v") {
+            if (this.is_vanished) {
+                this.loop_through_annotations(subtask, this.cached_size, "=");
+                //flip the bool state
+                this.is_vanished = !this.is_vanished;
+                $("#annotation-resize-v").attr("style", "background-color: " + "rgba(100, 148, 237, 0.8)");
+                return;
+            }
+            if (this.is_vanished !== true) {
+                this.loop_through_annotations(subtask, vanish_size, "=");
+                //flip the bool state
+                this.is_vanished = !this.is_vanished;
+                $("#annotation-resize-v").attr("style", "background-color: " + "#1c2d4d");
+                return;
+            }
+            return;
+        }
         switch (size) {
             case 's':
-                for (var annotation_id in subtask.annotations.access) {
-                    subtask.annotations.access[annotation_id].line_size = small_size;
-                }
-                break;
-            case 'm':
-                for (var annotation_id in subtask.annotations.access) {
-                    subtask.annotations.access[annotation_id].line_size = medium_size;
-                }
+                this.loop_through_annotations(subtask, small_size, "=");
+                this.cached_size = small_size;
                 break;
             case 'l':
-                for (var annotation_id in subtask.annotations.access) {
-                    subtask.annotations.access[annotation_id].line_size = large_size;
-                }
+                this.loop_through_annotations(subtask, large_size, "=");
+                this.cached_size = large_size;
                 break;
-            case '-':
-                for (var annotation_id in subtask.annotations.access) {
-                    subtask.annotations.access[annotation_id].line_size -= increment_size;
-                }
+            case 'dec':
+                this.loop_through_annotations(subtask, increment_size, "-");
                 break;
-            case '+':
-                for (var annotation_id in subtask.annotations.access) {
-                    subtask.annotations.access[annotation_id].line_size += increment_size;
-                }
+            case 'inc':
+                this.loop_through_annotations(subtask, increment_size, "+");
                 break;
             default:
                 return;
         }
     };
+    //loops through all annotations in a subtask to change their line size
+    AnnotationResizeItem.prototype.loop_through_annotations = function (subtask, size, operation) {
+        if (operation == "=") {
+            for (var annotation_id in subtask.annotations.access) {
+                subtask.annotations.access[annotation_id].line_size = size;
+            }
+            return;
+        }
+        if (operation == "+") {
+            for (var annotation_id in subtask.annotations.access) {
+                subtask.annotations.access[annotation_id].line_size += size;
+                //temporary solution
+                this.cached_size = subtask.annotations.access[annotation_id].line_size;
+            }
+            return;
+        }
+        if (operation == "-") {
+            for (var annotation_id in subtask.annotations.access) {
+                //Check to make sure annotation line size won't go 0 or negative. If it would
+                //set it equal to a small positive number
+                if (subtask.annotations.access[annotation_id].line_size - size <= 0.01) {
+                    subtask.annotations.access[annotation_id].line_size = 0.01;
+                }
+                else {
+                    subtask.annotations.access[annotation_id].line_size -= size;
+                }
+                //temporary solution
+                this.cached_size = subtask.annotations.access[annotation_id].line_size;
+            }
+            return;
+        }
+        return;
+    };
     AnnotationResizeItem.prototype.get_html = function () {
-        return "\n        <div class=\"annotation-resize\">\n            <p class=\"tb-header\">Change Annotation Size</p>\n            <div class=\"annotation-resize-button-holder\">\n                <span class=\"annotation-inc\">\n                    <a href=\"#\" class=\"butt-ann\" id=\"annotation-resize--\">-</a>\n                </span>\n                <span class=\"annotation-size\">\n                    <a href=\"#\" class=\"butt-ann\" id=\"annotation-resize-s\">Small</a>\n                    <a href=\"#\" class=\"butt-ann\" id=\"annotation-resize-m\">Medium</a>\n                    <a href=\"#\" class=\"butt-ann\" id=\"annotation-resize-l\">Large</a>\n                </span>\n                <span class=\"annotation-inc\">\n                    <a href=\"#\" class=\"butt-ann\" id=\"annotation-resize-+\">+</a>\n                </span>\n            </div>\n        </div>\n        ";
+        return "\n        <div class=\"annotation-resize\">\n            <p class=\"tb-header\">Change Annotation Size</p>\n            <div class=\"annotation-resize-button-holder\">\n                <span class=\"annotation-vanish\">\n                    <a href=\"#\" class=\"butt-ann\" id=\"annotation-resize-v\">Vanish</a>\n                </span>\n                <span class=\"annotation-size\">\n                    <a href=\"#\" class=\"butt-ann\" id=\"annotation-resize-s\">Small</a>\n                    <a href=\"#\" class=\"butt-ann\" id=\"annotation-resize-l\">Large</a>\n                </span>\n                <span class=\"annotation-inc\">\n                    <a href=\"#\" class=\"butt-ann\" id=\"annotation-resize-inc\">+</a>\n                    <a href=\"#\" class=\"butt-ann\" id=\"annotation-resize-dec\">-</a>\n                </span>\n            </div>\n        </div>\n        ";
     };
     return AnnotationResizeItem;
 }(ToolboxItem));
 exports.AnnotationResizeItem = AnnotationResizeItem;
+var RecolorActiveItem = /** @class */ (function (_super) {
+    __extends(RecolorActiveItem, _super);
+    function RecolorActiveItem(ulabel) {
+        var _this = _super.call(this) || this;
+        _this.inner_HTML = "<p class=\"tb-header\">Recolor Annotations</p>";
+        //event handler for the buttons
+        $(document).on("click", "input.color-change-btn", function (e) {
+            var button = $(e.currentTarget);
+            var current_subtask_key = ulabel.state["current_subtask"];
+            var current_subtask = ulabel.subtasks[current_subtask_key];
+            //slice 13,16 to grab the part of the id that specifies color
+            var color_from_id = button.attr("id").slice(13, 16);
+            _this.update_annotation_color(current_subtask, color_from_id);
+            __1.ULabel.process_classes(ulabel, ulabel.state.current_subtask, current_subtask);
+            //ULabel.build_id_dialogs(ulabel)
+            ulabel.redraw_all_annotations(null, null, false);
+            console.log(ulabel);
+        });
+        $(document).on("input", "input.color-change-picker", function (e) {
+            //Gets the current subtask
+            var current_subtask_key = ulabel.state["current_subtask"];
+            var current_subtask = ulabel.subtasks[current_subtask_key];
+            //Gets the hex value from the color picker
+            var hex = e.currentTarget.value;
+            _this.update_annotation_color(current_subtask, hex);
+            //somewhat janky way to update the color on the color picker 
+            //to allow for more css options
+            var color_picker_container = document.getElementById("color-picker-container");
+            color_picker_container.style.backgroundColor = hex;
+            __1.ULabel.process_classes(ulabel, ulabel.state.current_subtask, current_subtask);
+            //ULabel.build_id_dialogs(ulabel)
+            ulabel.redraw_all_annotations(null, null, false);
+            console.log(ulabel);
+        });
+        return _this;
+    }
+    RecolorActiveItem.prototype.update_annotation_color = function (subtask, color) {
+        //check for the three special cases, otherwise assume color is a hex value
+        if (color == "yel") {
+            color = "Yellow";
+        }
+        if (color == "red") {
+            color = "Red";
+        }
+        if (color == "cya") {
+            color = "Cyan";
+        }
+        var selected_id = "none";
+        subtask.state.id_payload.forEach(function (item) {
+            if (item.confidence == 1) {
+                selected_id = item.class_id;
+            }
+        });
+        //if the selected id is still none, then that means that no id had a
+        //confidence of 1. Therefore the default is having the first annotation
+        //id selected, so we'll default to that
+        if (selected_id == "none") {
+            console.log(subtask.classes[0].id);
+            selected_id = subtask.classes[0].id;
+        }
+        // console.log(selected_id)
+        subtask.classes.forEach(function (item) {
+            if (item.id === selected_id) {
+                item.color = color;
+            }
+        });
+        //$("a.toolbox_sel_"+selected_id+":first").attr("backround-color", color);
+        var colored_square_element = ".toolbox_colprev_" + selected_id;
+        console.log($(colored_square_element));
+        $(colored_square_element).attr("style", "background-color: " + color);
+    };
+    RecolorActiveItem.prototype.get_html = function () {
+        return "\n        <div class=\"recolor-active\">\n            <p class=\"tb-header\">Recolor Annotations</p>\n            <div class=\"annotation-recolor-button-holder\">\n                <div class=\"color-btn-container\">\n                    <input type=\"button\" class=\"color-change-btn\" id=\"color-change-yel\">\n                    <input type=\"button\" class=\"color-change-btn\" id=\"color-change-red\">\n                    <input type=\"button\" class=\"color-change-btn\" id=\"color-change-cya\">\n                </div>\n                <div class=\"color-picker-container\" id=\"color-picker-container\">\n                    <input type=\"color\"  class=\"color-change-picker\" id=\"color-change-pick\">\n                </div>\n            </div>\n        </div>\n        ";
+    };
+    return RecolorActiveItem;
+}(ToolboxItem));
+exports.RecolorActiveItem = RecolorActiveItem;
 // export class WholeImageClassifierToolboxTab extends ToolboxItem {
 //     constructor() {
 //         super(
