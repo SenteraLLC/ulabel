@@ -1833,10 +1833,16 @@ div#${prntid} div.recolor-active input.color-change-btn {
    width: 90%;
 }
 
+div#${prntid} div.color-picker-border {
+   padding: 8px;
+   background-image: linear-gradient(to bottom right, red,orange,yellow,green,blue,indigo,violet);
+   border: 1px solid White;
+   border-radius: 6px;
+}
+
 div#${prntid} div.recolor-active div.color-picker-container {
-   max-width: 90%;
+   height: 100%;
    background-color: Black;
-   border: 8px solid lightgray;
 }
 
 div#${prntid} div.recolor-active input.color-change-btn, div#${prntid} div.recolor-active div.color-picker-container {
