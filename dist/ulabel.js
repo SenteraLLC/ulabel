@@ -11628,6 +11628,42 @@ exports.a = ULabelAnnotation;
 
 /***/ }),
 
+/***/ 419:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+var __webpack_unused_export__;
+
+__webpack_unused_export__ = ({ value: true });
+exports.kz = exports.gf = exports.sR = void 0;
+//Given an annotation returns the confidence of that annotation
+function get_annotation_confidence(annotation) {
+    var current_confidence = null;
+    for (var type_of_id in annotation.classification_payloads) {
+        if (annotation.classification_payloads[type_of_id].confidence > current_confidence) {
+            current_confidence = annotation.classification_payloads[type_of_id].confidence;
+        }
+    }
+    return current_confidence;
+}
+exports.sR = get_annotation_confidence;
+//Takes in an annotation and marks it either deprecated or not deprecated.
+function mark_deprecated(annotation, deprecated) {
+    annotation.deprecated = deprecated;
+}
+exports.gf = mark_deprecated;
+//if the annotation confidence is less than the filter value then return true, else return false
+function filter_low(annotation_confidence, filter_value) {
+    console.log(annotation_confidence, filter_value);
+    if (annotation_confidence < filter_value)
+        return true;
+    return false;
+}
+exports.kz = filter_low;
+
+
+/***/ }),
+
 /***/ 822:
 /***/ ((__unused_webpack_module, exports) => {
 
@@ -11852,6 +11888,8 @@ var src_toolbox = __webpack_require__(334);
 var subtask = __webpack_require__(167);
 // EXTERNAL MODULE: ./src/geometric_utils.js
 var geometric_utils = __webpack_require__(822);
+// EXTERNAL MODULE: ./src/annotation_operators.js
+var annotation_operators = __webpack_require__(419);
 // EXTERNAL MODULE: ./node_modules/jquery/dist/jquery.js
 var jquery = __webpack_require__(755);
 var jquery_default = /*#__PURE__*/__webpack_require__.n(jquery);
@@ -14238,6 +14276,7 @@ Sentera Inc.
 
 
 
+
 const jQuery = (jquery_default());
 
 const { v4: uuidv4 } = __webpack_require__(614);
@@ -14501,7 +14540,7 @@ class ULabel {
         const class_counter_tbi = new src_toolbox.ClassCounterToolboxItem();
         const annotaion_resize_tbi = new src_toolbox.AnnotationResizeItem(ul);
         const recolor_active_tbi = new src_toolbox.RecolorActiveItem(ul);
-        const keypoint_slider = new src_toolbox.KeypointSlider(ul, this.get_annotation_confidence);
+        const keypoint_slider = new src_toolbox.KeypointSlider(ul, annotation_operators/* filter_low */.kz, annotation_operators/* get_annotation_confidence */.sR, annotation_operators/* mark_deprecated */.gf);
 
         const toolbox = new src_toolbox.Toolbox(
             [],
@@ -19658,16 +19697,26 @@ var RecolorActiveItem = /** @class */ (function (_super) {
 exports.RecolorActiveItem = RecolorActiveItem;
 var KeypointSlider = /** @class */ (function (_super) {
     __extends(KeypointSlider, _super);
-    function KeypointSlider(ulabel, get_annotation_confidence) {
+    function KeypointSlider(ulabel, filter_fn, get_confidence, mark_deprecated) {
         var _this = _super.call(this) || this;
         _this.inner_HTML = "<p class=\"tb-header\">Keypoint Slider</p>";
         $(document).on("input", "#keypoint-slider", function (e) {
             var current_subtask_key = ulabel.state["current_subtask"];
             var current_subtask = ulabel.subtasks[current_subtask_key];
+            //update the slider value text next to the slider
             $("#keypoint-slider-label").text(e.currentTarget.value + "%");
-            var annotation_confidence = get_annotation_confidence(current_subtask);
-            //this.draw_histogram(current_subtask, annotation_confidence)
-            _this.update_annotations(current_subtask, annotation_confidence, e.currentTarget.value / 100);
+            var filter_value = e.currentTarget.value / 100;
+            for (var i in current_subtask.annotations.ordering) {
+                var current_annotation = current_subtask.annotations.access[current_subtask.annotations.ordering[i]];
+                var current_confidence = get_confidence(current_annotation);
+                var deprecate = filter_fn(current_confidence, filter_value);
+                console.log(deprecate);
+                if (deprecate == null)
+                    return;
+                mark_deprecated(current_annotation, deprecate);
+            }
+            // const annotation_confidence = get_annotation_confidence(current_subtask)
+            // this.update_annotations(current_subtask, annotation_confidence , e.currentTarget.value / 100)
             ulabel.redraw_all_annotations(null, null, false);
         });
         return _this;
@@ -19683,54 +19732,6 @@ var KeypointSlider = /** @class */ (function (_super) {
             }
         }
     };
-    // public make_histogram(subtask, annotation_confidence) {
-    // }
-    // public draw_histogram(subtask, annotation_confidence) {
-    //     let canvas = <HTMLCanvasElement> document.getElementById("histogram");
-    //     let ctx = canvas.getContext("2d")
-    //     this.draw_grid(ctx,canvas.width, canvas.height, 11, "#444444")
-    //     this.draw_line(ctx, canvas.width / 11, 0, canvas.width / 11, 10 * canvas.height / 11, "#FFFF00")
-    //     this.draw_line(ctx, canvas.width / 11, 10 * canvas.height / 11, canvas.width, 10 * canvas.height / 11, "#FFFF00")
-    //     this.draw_rectangle(ctx, 0, 0, canvas.width / 14, canvas.height, "#FFFFFF")
-    //     this.draw_rectangle(ctx, 0, canvas.height - (canvas.height / 16), canvas.width, canvas.height, "#FFFFFF")
-    // }
-    // //x1, y1 is the x,y coordinate of the first endpoint, x2, y2 is the 
-    // //x,y coordinate of the second endpoint.
-    // private draw_line(ctx, x1, y1, x2, y2, color) {
-    //     ctx.save();
-    //     ctx.strokeStyle = color;
-    //     ctx.beginPath();
-    //     ctx.moveTo(x1,y1);
-    //     ctx.lineTo(x2,y2);
-    //     ctx.stroke();
-    //     ctx.restore();
-    // }
-    // private draw_rectangle(ctx, upper_left_x, upper_left_y, width, height, color) {
-    //     ctx.save();
-    //     ctx.fillStyle = color;
-    //     ctx.fillRect(upper_left_x, upper_left_y, width, height);
-    //     ctx.restore();
-    // }
-    // private draw_rectangle_with_border(ctx, upper_left_x, upper_left_y, width, height, fill_color, border_color) {
-    //     ctx.save();
-    //     this.draw_rectangle(ctx, upper_left_x, upper_left_y, width, height, border_color)
-    //     this.draw_rectangle(ctx, upper_left_x + 1, upper_left_y + 1, width - 2, height - 2, fill_color)
-    //     ctx.restore();
-    // }
-    // private draw_grid(ctx, canvas_width, canvas_height, grid_size, color) {
-    //     ctx.save();
-    //     let len = canvas_width / grid_size;
-    //     //draws the vertical lines in the grid
-    //     for (let i = 1; (i < len); i++) {
-    //         this.draw_line(ctx, len * i, 0, len * i, canvas_height, color)
-    //     }
-    //     //draws the horizontal lines in the grid
-    //     len = canvas_height / grid_size;
-    //     for (let i = 1; (i < len); i++) {
-    //         this.draw_line(ctx, 0, len * i, canvas_width, len * i, color)
-    //     }
-    //     ctx.restore();
-    // }
     KeypointSlider.prototype.get_html = function () {
         return "\n        <div class=\"keypoint-slider\">\n            <p class=\"tb-header\">Keypoint Slider</p>\n            <div class=\"keypoint-slider-holder\">\n                <input type=\"range\" id=\"keypoint-slider\">\n                <label for=\"keypoint-slider\" id=\"keypoint-slider-label\">50%</label>\n            </div>\n        </div>\n        ";
     };
