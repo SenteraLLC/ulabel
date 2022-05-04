@@ -383,6 +383,10 @@ var RecolorActiveItem = /** @class */ (function (_super) {
             //ULabel.build_id_dialogs(ulabel)
             ulabel.redraw_all_annotations(null, null, false);
         });
+        $(document).on("input", "#gradient-toggle", function (e) {
+            console.log("event triggered");
+            ulabel.redraw_all_annotations(null, null, false);
+        });
         return _this;
     }
     RecolorActiveItem.prototype.update_annotation_color = function (subtask, color) {
@@ -419,7 +423,7 @@ var RecolorActiveItem = /** @class */ (function (_super) {
         $(colored_square_element).attr("style", "background-color: " + color);
     };
     RecolorActiveItem.prototype.get_html = function () {
-        return "\n        <div class=\"recolor-active\">\n            <p class=\"tb-header\">Recolor Annotations</p>\n            <div class=\"annotation-recolor-button-holder\">\n                <div class=\"color-btn-container\">\n                    <input type=\"button\" class=\"color-change-btn\" id=\"color-change-yel\">\n                    <input type=\"button\" class=\"color-change-btn\" id=\"color-change-red\">\n                    <input type=\"button\" class=\"color-change-btn\" id=\"color-change-cya\">\n                </div>\n                <div class=\"color-picker-border\">\n                    <div class=\"color-picker-container\" id=\"color-picker-container\">\n                        <input type=\"color\" class=\"color-change-picker\" id=\"color-change-pick\">\n                    </div>\n                </div>\n            </div>\n        </div>\n        ";
+        return "\n        <div class=\"recolor-active\">\n            <p class=\"tb-header\">Recolor Annotations</p>\n            <input type=\"checkbox\" id=\"gradient-toggle\" name=\"gradient-checkbox\" value=\"gradient\" checked></input>\n            <div class=\"annotation-recolor-button-holder\">\n                <div class=\"color-btn-container\">\n                    <input type=\"button\" class=\"color-change-btn\" id=\"color-change-yel\">\n                    <input type=\"button\" class=\"color-change-btn\" id=\"color-change-red\">\n                    <input type=\"button\" class=\"color-change-btn\" id=\"color-change-cya\">\n                </div>\n                <div class=\"color-picker-border\">\n                    <div class=\"color-picker-container\" id=\"color-picker-container\">\n                        <input type=\"color\" class=\"color-change-picker\" id=\"color-change-pick\">\n                    </div>\n                </div>\n            </div>\n        </div>\n        ";
     };
     return RecolorActiveItem;
 }(ToolboxItem));
@@ -450,17 +454,6 @@ var KeypointSlider = /** @class */ (function (_super) {
         });
         return _this;
     }
-    //annotation_confidence should be in the form [{id: "", confidence: "", class_id: ""}, {id: "", confidence: "", class_id: ""}, ...]
-    KeypointSlider.prototype.update_annotations = function (subtask, annotation_confidence, filter_value) {
-        for (var annotation in annotation_confidence) {
-            if (annotation_confidence[annotation].confidence < filter_value) {
-                subtask.annotations.access[annotation_confidence[annotation].id].deprecated = true;
-            }
-            if (annotation_confidence[annotation].confidence >= filter_value) {
-                subtask.annotations.access[annotation_confidence[annotation].id].deprecated = false;
-            }
-        }
-    };
     KeypointSlider.prototype.get_html = function () {
         return "\n        <div class=\"keypoint-slider\">\n            <p class=\"tb-header\">Keypoint Slider</p>\n            <div class=\"keypoint-slider-holder\">\n                <input type=\"range\" id=\"keypoint-slider\">\n                <label for=\"keypoint-slider\" id=\"keypoint-slider-label\">50%</label>\n            </div>\n        </div>\n        ";
     };

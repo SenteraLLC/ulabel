@@ -506,6 +506,10 @@ export class RecolorActiveItem extends ToolboxItem {
 
             ulabel.redraw_all_annotations(null, null, false);
         })
+        $(document).on("input", "#gradient-toggle", (e) => {
+            console.log("event triggered")
+            ulabel.redraw_all_annotations(null, null, false)
+        })
     }
 
     public update_annotation_color(subtask, color) {
@@ -555,6 +559,7 @@ export class RecolorActiveItem extends ToolboxItem {
         return `
         <div class="recolor-active">
             <p class="tb-header">Recolor Annotations</p>
+            <input type="checkbox" id="gradient-toggle" name="gradient-checkbox" value="gradient" checked></input>
             <div class="annotation-recolor-button-holder">
                 <div class="color-btn-container">
                     <input type="button" class="color-change-btn" id="color-change-yel">
@@ -601,21 +606,6 @@ export class KeypointSlider extends ToolboxItem {
             ulabel.redraw_all_annotations(null, null, false);
         })
     }
-    
-    //annotation_confidence should be in the form [{id: "", confidence: "", class_id: ""}, {id: "", confidence: "", class_id: ""}, ...]
-    public update_annotations(subtask, annotation_confidence, filter_value) {
-
-        for (let annotation in annotation_confidence) {
-            if (annotation_confidence[annotation].confidence < filter_value) {
-                subtask.annotations.access[annotation_confidence[annotation].id].deprecated = true
-            }
-            if (annotation_confidence[annotation].confidence >= filter_value) {
-                subtask.annotations.access[annotation_confidence[annotation].id].deprecated = false
-            }
-        }
-    }
-
-
 
     public get_html() {
         return`
