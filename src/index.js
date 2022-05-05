@@ -4,9 +4,10 @@ Sentera Inc.
 */
 import { ULabelAnnotation } from './annotation';
 import { Toolbox, ClassCounterToolboxItem, ModeSelectionToolboxItem, ZoomPanToolboxItem, LinestyleToolboxItem } from './toolbox';
-import { AnnotationIDToolboxItem, AnnotationResizeItem, RecolorActiveItem } from './toolbox';
+import { AnnotationIDToolboxItem, AnnotationResizeItem, RecolorActiveItem, KeypointSlider } from './toolbox';
 import { ULabelSubtask } from './subtask';
 import { GeometricUtils } from './geometric_utils';
+import { get_annotation_confidence, mark_deprecated, filter_low } from './annotation_operators';
 import $ from 'jquery';
 const jQuery = $;
 
@@ -222,6 +223,26 @@ export class ULabel {
         return ret;
     }
 
+    //returns a list of confidence values and ids of a subtask
+    static get_annotation_confidence(subtask) {
+        let return_list = []
+        for (const annotation in subtask.annotations.access) {
+            //If the subtask has not annotations, then return
+            if (subtask.annotations.access[annotation].classification_payloads.length == 0) {
+                return return_list;
+            }
+            let current_id = null
+            let current_confidence = null
+            for (let type_of_id in subtask.annotations.access[annotation].classification_payloads) {
+                if (subtask.annotations.access[annotation].classification_payloads[type_of_id].confidence > current_confidence) {
+                    current_id = subtask.annotations.access[annotation].classification_payloads[type_of_id].class_id;
+                    current_confidence = subtask.annotations.access[annotation].classification_payloads[type_of_id].confidence;
+                }
+            }
+            return_list.push({id: annotation, confidence: current_confidence, class_id: current_id});
+        }
+        return return_list
+    }
 
     static prep_window_html(ul) {
         // Bring image and annotation scaffolding in
@@ -265,10 +286,11 @@ export class ULabel {
         const class_counter_tbi = new ClassCounterToolboxItem();
         const annotaion_resize_tbi = new AnnotationResizeItem(ul);
         const recolor_active_tbi = new RecolorActiveItem(ul);
+        const keypoint_slider = new KeypointSlider(ul, filter_low, get_annotation_confidence, mark_deprecated);
 
         const toolbox = new Toolbox(
             [],
-            [mode_select_tbi, zoom_pan_tbi, linestyle_tbi, annotaion_resize_tbi, annotation_id_tbi, recolor_active_tbi, class_counter_tbi],
+            [mode_select_tbi, zoom_pan_tbi, linestyle_tbi, annotaion_resize_tbi, annotation_id_tbi, recolor_active_tbi, class_counter_tbi, keypoint_slider],
         );
 
 

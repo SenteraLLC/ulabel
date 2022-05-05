@@ -11628,6 +11628,42 @@ exports.a = ULabelAnnotation;
 
 /***/ }),
 
+/***/ 419:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+var __webpack_unused_export__;
+
+__webpack_unused_export__ = ({ value: true });
+exports.kz = exports.gf = exports.sR = void 0;
+//Given an annotation returns the confidence of that annotation
+function get_annotation_confidence(annotation) {
+    var current_confidence = null;
+    for (var type_of_id in annotation.classification_payloads) {
+        if (annotation.classification_payloads[type_of_id].confidence > current_confidence) {
+            current_confidence = annotation.classification_payloads[type_of_id].confidence;
+        }
+    }
+    return current_confidence;
+}
+exports.sR = get_annotation_confidence;
+//Takes in an annotation and marks it either deprecated or not deprecated.
+function mark_deprecated(annotation, deprecated) {
+    annotation.deprecated = deprecated;
+}
+exports.gf = mark_deprecated;
+//if the annotation confidence is less than the filter value then return true, else return false
+function filter_low(annotation_confidence, filter_value) {
+    console.log(annotation_confidence, filter_value);
+    if (annotation_confidence < filter_value)
+        return true;
+    return false;
+}
+exports.kz = filter_low;
+
+
+/***/ }),
+
 /***/ 822:
 /***/ ((__unused_webpack_module, exports) => {
 
@@ -11852,6 +11888,8 @@ var src_toolbox = __webpack_require__(334);
 var subtask = __webpack_require__(167);
 // EXTERNAL MODULE: ./src/geometric_utils.js
 var geometric_utils = __webpack_require__(822);
+// EXTERNAL MODULE: ./src/annotation_operators.js
+var annotation_operators = __webpack_require__(419);
 // EXTERNAL MODULE: ./node_modules/jquery/dist/jquery.js
 var jquery = __webpack_require__(755);
 var jquery_default = /*#__PURE__*/__webpack_require__.n(jquery);
@@ -13724,7 +13762,25 @@ div#${prntid} div.recolor-active #color-change-cya {
    border: 1px solid rgb(0, 200, 200);
 }
 
+/* css for the keypoint slider item */
+div#${prntid} div.keypoint-slider {
+   padding: 10px 30px;
+   display: block;
+}
 
+div#${prntid} div.keypoint-slider p.tb-header {
+   margin: 0;
+   margin-bottom: 5px;
+}
+
+div#${prntid} div.keypoint-slider div.keypoint-slider-holder{
+   padding: 8px;
+}
+
+div#${prntid} #keypoint-slider-label {
+   position: relative;
+   bottom: 3px;
+}
 
 div#${prntid} div.zpcont {
    height: 90px;
@@ -14214,6 +14270,7 @@ Sentera Inc.
 
 
 
+
 const jQuery = (jquery_default());
 
 const { v4: uuidv4 } = __webpack_require__(614);
@@ -14414,6 +14471,26 @@ class ULabel {
         return ret;
     }
 
+    //returns a list of confidence values and ids of a subtask
+    static get_annotation_confidence(subtask) {
+        let return_list = []
+        for (const annotation in subtask.annotations.access) {
+            //If the subtask has not annotations, then return
+            if (subtask.annotations.access[annotation].classification_payloads.length == 0) {
+                return return_list;
+            }
+            let current_id = null
+            let current_confidence = null
+            for (let type_of_id in subtask.annotations.access[annotation].classification_payloads) {
+                if (subtask.annotations.access[annotation].classification_payloads[type_of_id].confidence > current_confidence) {
+                    current_id = subtask.annotations.access[annotation].classification_payloads[type_of_id].class_id;
+                    current_confidence = subtask.annotations.access[annotation].classification_payloads[type_of_id].confidence;
+                }
+            }
+            return_list.push({id: annotation, confidence: current_confidence, class_id: current_id});
+        }
+        return return_list
+    }
 
     static prep_window_html(ul) {
         // Bring image and annotation scaffolding in
@@ -14457,10 +14534,11 @@ class ULabel {
         const class_counter_tbi = new src_toolbox.ClassCounterToolboxItem();
         const annotaion_resize_tbi = new src_toolbox.AnnotationResizeItem(ul);
         const recolor_active_tbi = new src_toolbox.RecolorActiveItem(ul);
+        const keypoint_slider = new src_toolbox.KeypointSlider(ul, annotation_operators/* filter_low */.kz, annotation_operators/* get_annotation_confidence */.sR, annotation_operators/* mark_deprecated */.gf);
 
         const toolbox = new src_toolbox.Toolbox(
             [],
-            [mode_select_tbi, zoom_pan_tbi, linestyle_tbi, annotaion_resize_tbi, annotation_id_tbi, recolor_active_tbi, class_counter_tbi],
+            [mode_select_tbi, zoom_pan_tbi, linestyle_tbi, annotaion_resize_tbi, annotation_id_tbi, recolor_active_tbi, class_counter_tbi, keypoint_slider],
         );
 
 
@@ -19202,9 +19280,12 @@ var __extends = (this && this.__extends) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.RecolorActiveItem = exports.AnnotationResizeItem = exports.ClassCounterToolboxItem = exports.AnnotationIDToolboxItem = exports.LinestyleToolboxItem = exports.ZoomPanToolboxItem = exports.ModeSelectionToolboxItem = exports.ToolboxItem = exports.ToolboxTab = exports.Toolbox = void 0;
+exports.KeypointSlider = exports.RecolorActiveItem = exports.AnnotationResizeItem = exports.ClassCounterToolboxItem = exports.AnnotationIDToolboxItem = exports.LinestyleToolboxItem = exports.ZoomPanToolboxItem = exports.ModeSelectionToolboxItem = exports.ToolboxItem = exports.ToolboxTab = exports.Toolbox = void 0;
 var __1 = __webpack_require__(318);
 var toolboxDividerDiv = "<div class=toolbox-divider></div>";
+function read_annotation_confidence() {
+    return;
+}
 /**
  * Manager for toolbox. Contains ToolboxTab items.
  */
@@ -19419,7 +19500,6 @@ var AnnotationResizeItem = /** @class */ (function (_super) {
             var current_subtask_key = ulabel.state["current_subtask"];
             var current_subtask = ulabel.subtasks[current_subtask_key];
             var annotation_size = button.attr("id").slice(18);
-            console.log(annotation_size);
             _this.update_annotation_size(current_subtask, annotation_size);
             ulabel.redraw_all_annotations(null, null, false);
         });
@@ -19552,7 +19632,6 @@ var RecolorActiveItem = /** @class */ (function (_super) {
             __1.ULabel.process_classes(ulabel, ulabel.state.current_subtask, current_subtask);
             //ULabel.build_id_dialogs(ulabel)
             ulabel.redraw_all_annotations(null, null, false);
-            console.log(ulabel);
         });
         $(document).on("input", "input.color-change-picker", function (e) {
             //Gets the current subtask
@@ -19568,7 +19647,6 @@ var RecolorActiveItem = /** @class */ (function (_super) {
             __1.ULabel.process_classes(ulabel, ulabel.state.current_subtask, current_subtask);
             //ULabel.build_id_dialogs(ulabel)
             ulabel.redraw_all_annotations(null, null, false);
-            console.log(ulabel);
         });
         return _this;
     }
@@ -19593,7 +19671,6 @@ var RecolorActiveItem = /** @class */ (function (_super) {
         //confidence of 1. Therefore the default is having the first annotation
         //id selected, so we'll default to that
         if (selected_id == "none") {
-            console.log(subtask.classes[0].id);
             selected_id = subtask.classes[0].id;
         }
         // console.log(selected_id)
@@ -19604,15 +19681,44 @@ var RecolorActiveItem = /** @class */ (function (_super) {
         });
         //$("a.toolbox_sel_"+selected_id+":first").attr("backround-color", color);
         var colored_square_element = ".toolbox_colprev_" + selected_id;
-        console.log($(colored_square_element));
         $(colored_square_element).attr("style", "background-color: " + color);
     };
     RecolorActiveItem.prototype.get_html = function () {
-        return "\n        <div class=\"recolor-active\">\n            <p class=\"tb-header\">Recolor Annotations</p>\n            <div class=\"annotation-recolor-button-holder\">\n                <div class=\"color-btn-container\">\n                    <input type=\"button\" class=\"color-change-btn\" id=\"color-change-yel\">\n                    <input type=\"button\" class=\"color-change-btn\" id=\"color-change-red\">\n                    <input type=\"button\" class=\"color-change-btn\" id=\"color-change-cya\">\n                </div>\n                <div class=\"color-picker-container\" id=\"color-picker-container\">\n                    <input type=\"color\"  class=\"color-change-picker\" id=\"color-change-pick\">\n                </div>\n            </div>\n        </div>\n        ";
+        return "\n        <div class=\"recolor-active\">\n            <p class=\"tb-header\">Recolor Annotations</p>\n            <div class=\"annotation-recolor-button-holder\">\n                <div class=\"color-btn-container\">\n                    <input type=\"button\" class=\"color-change-btn\" id=\"color-change-yel\">\n                    <input type=\"button\" class=\"color-change-btn\" id=\"color-change-red\">\n                    <input type=\"button\" class=\"color-change-btn\" id=\"color-change-cya\">\n                </div>\n                <div class=\"color-picker-container\" id=\"color-picker-container\">\n                    <input type=\"color\" class=\"color-change-picker\" id=\"color-change-pick\">\n                </div>\n            </div>\n        </div>\n        ";
     };
     return RecolorActiveItem;
 }(ToolboxItem));
 exports.RecolorActiveItem = RecolorActiveItem;
+var KeypointSlider = /** @class */ (function (_super) {
+    __extends(KeypointSlider, _super);
+    function KeypointSlider(ulabel, filter_fn, get_confidence, mark_deprecated) {
+        var _this = _super.call(this) || this;
+        _this.inner_HTML = "<p class=\"tb-header\">Keypoint Slider</p>";
+        $(document).on("input", "#keypoint-slider", function (e) {
+            var current_subtask_key = ulabel.state["current_subtask"];
+            var current_subtask = ulabel.subtasks[current_subtask_key];
+            //update the slider value text next to the slider
+            $("#keypoint-slider-label").text(e.currentTarget.value + "%");
+            var filter_value = e.currentTarget.value / 100;
+            for (var i in current_subtask.annotations.ordering) {
+                var current_annotation = current_subtask.annotations.access[current_subtask.annotations.ordering[i]];
+                var current_confidence = get_confidence(current_annotation);
+                var deprecate = filter_fn(current_confidence, filter_value);
+                console.log(deprecate);
+                if (deprecate == null)
+                    return;
+                mark_deprecated(current_annotation, deprecate);
+            }
+            ulabel.redraw_all_annotations(null, null, false);
+        });
+        return _this;
+    }
+    KeypointSlider.prototype.get_html = function () {
+        return "\n        <div class=\"keypoint-slider\">\n            <p class=\"tb-header\">Keypoint Slider</p>\n            <div class=\"keypoint-slider-holder\">\n                <input type=\"range\" id=\"keypoint-slider\">\n                <label for=\"keypoint-slider\" id=\"keypoint-slider-label\">50%</label>\n            </div>\n        </div>\n        ";
+    };
+    return KeypointSlider;
+}(ToolboxItem));
+exports.KeypointSlider = KeypointSlider;
 // export class WholeImageClassifierToolboxTab extends ToolboxItem {
 //     constructor() {
 //         super(

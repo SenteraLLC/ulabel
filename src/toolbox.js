@@ -15,9 +15,12 @@ var __extends = (this && this.__extends) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.RecolorActiveItem = exports.AnnotationResizeItem = exports.ClassCounterToolboxItem = exports.AnnotationIDToolboxItem = exports.LinestyleToolboxItem = exports.ZoomPanToolboxItem = exports.ModeSelectionToolboxItem = exports.ToolboxItem = exports.ToolboxTab = exports.Toolbox = void 0;
+exports.KeypointSlider = exports.RecolorActiveItem = exports.AnnotationResizeItem = exports.ClassCounterToolboxItem = exports.AnnotationIDToolboxItem = exports.LinestyleToolboxItem = exports.ZoomPanToolboxItem = exports.ModeSelectionToolboxItem = exports.ToolboxItem = exports.ToolboxTab = exports.Toolbox = void 0;
 var __1 = require("..");
 var toolboxDividerDiv = "<div class=toolbox-divider></div>";
+function read_annotation_confidence() {
+    return;
+}
 /**
  * Manager for toolbox. Contains ToolboxTab items.
  */
@@ -232,7 +235,6 @@ var AnnotationResizeItem = /** @class */ (function (_super) {
             var current_subtask_key = ulabel.state["current_subtask"];
             var current_subtask = ulabel.subtasks[current_subtask_key];
             var annotation_size = button.attr("id").slice(18);
-            console.log(annotation_size);
             _this.update_annotation_size(current_subtask, annotation_size);
             ulabel.redraw_all_annotations(null, null, false);
         });
@@ -365,7 +367,6 @@ var RecolorActiveItem = /** @class */ (function (_super) {
             __1.ULabel.process_classes(ulabel, ulabel.state.current_subtask, current_subtask);
             //ULabel.build_id_dialogs(ulabel)
             ulabel.redraw_all_annotations(null, null, false);
-            console.log(ulabel);
         });
         $(document).on("input", "input.color-change-picker", function (e) {
             //Gets the current subtask
@@ -381,7 +382,6 @@ var RecolorActiveItem = /** @class */ (function (_super) {
             __1.ULabel.process_classes(ulabel, ulabel.state.current_subtask, current_subtask);
             //ULabel.build_id_dialogs(ulabel)
             ulabel.redraw_all_annotations(null, null, false);
-            console.log(ulabel);
         });
         return _this;
     }
@@ -406,7 +406,6 @@ var RecolorActiveItem = /** @class */ (function (_super) {
         //confidence of 1. Therefore the default is having the first annotation
         //id selected, so we'll default to that
         if (selected_id == "none") {
-            console.log(subtask.classes[0].id);
             selected_id = subtask.classes[0].id;
         }
         // console.log(selected_id)
@@ -417,15 +416,44 @@ var RecolorActiveItem = /** @class */ (function (_super) {
         });
         //$("a.toolbox_sel_"+selected_id+":first").attr("backround-color", color);
         var colored_square_element = ".toolbox_colprev_" + selected_id;
-        console.log($(colored_square_element));
         $(colored_square_element).attr("style", "background-color: " + color);
     };
     RecolorActiveItem.prototype.get_html = function () {
-        return "\n        <div class=\"recolor-active\">\n            <p class=\"tb-header\">Recolor Annotations</p>\n            <div class=\"annotation-recolor-button-holder\">\n                <div class=\"color-btn-container\">\n                    <input type=\"button\" class=\"color-change-btn\" id=\"color-change-yel\">\n                    <input type=\"button\" class=\"color-change-btn\" id=\"color-change-red\">\n                    <input type=\"button\" class=\"color-change-btn\" id=\"color-change-cya\">\n                </div>\n                <div class=\"color-picker-container\" id=\"color-picker-container\">\n                    <input type=\"color\"  class=\"color-change-picker\" id=\"color-change-pick\">\n                </div>\n            </div>\n        </div>\n        ";
+        return "\n        <div class=\"recolor-active\">\n            <p class=\"tb-header\">Recolor Annotations</p>\n            <div class=\"annotation-recolor-button-holder\">\n                <div class=\"color-btn-container\">\n                    <input type=\"button\" class=\"color-change-btn\" id=\"color-change-yel\">\n                    <input type=\"button\" class=\"color-change-btn\" id=\"color-change-red\">\n                    <input type=\"button\" class=\"color-change-btn\" id=\"color-change-cya\">\n                </div>\n                <div class=\"color-picker-container\" id=\"color-picker-container\">\n                    <input type=\"color\" class=\"color-change-picker\" id=\"color-change-pick\">\n                </div>\n            </div>\n        </div>\n        ";
     };
     return RecolorActiveItem;
 }(ToolboxItem));
 exports.RecolorActiveItem = RecolorActiveItem;
+var KeypointSlider = /** @class */ (function (_super) {
+    __extends(KeypointSlider, _super);
+    function KeypointSlider(ulabel, filter_fn, get_confidence, mark_deprecated) {
+        var _this = _super.call(this) || this;
+        _this.inner_HTML = "<p class=\"tb-header\">Keypoint Slider</p>";
+        $(document).on("input", "#keypoint-slider", function (e) {
+            var current_subtask_key = ulabel.state["current_subtask"];
+            var current_subtask = ulabel.subtasks[current_subtask_key];
+            //update the slider value text next to the slider
+            $("#keypoint-slider-label").text(e.currentTarget.value + "%");
+            var filter_value = e.currentTarget.value / 100;
+            for (var i in current_subtask.annotations.ordering) {
+                var current_annotation = current_subtask.annotations.access[current_subtask.annotations.ordering[i]];
+                var current_confidence = get_confidence(current_annotation);
+                var deprecate = filter_fn(current_confidence, filter_value);
+                console.log(deprecate);
+                if (deprecate == null)
+                    return;
+                mark_deprecated(current_annotation, deprecate);
+            }
+            ulabel.redraw_all_annotations(null, null, false);
+        });
+        return _this;
+    }
+    KeypointSlider.prototype.get_html = function () {
+        return "\n        <div class=\"keypoint-slider\">\n            <p class=\"tb-header\">Keypoint Slider</p>\n            <div class=\"keypoint-slider-holder\">\n                <input type=\"range\" id=\"keypoint-slider\">\n                <label for=\"keypoint-slider\" id=\"keypoint-slider-label\">50%</label>\n            </div>\n        </div>\n        ";
+    };
+    return KeypointSlider;
+}(ToolboxItem));
+exports.KeypointSlider = KeypointSlider;
 // export class WholeImageClassifierToolboxTab extends ToolboxItem {
 //     constructor() {
 //         super(

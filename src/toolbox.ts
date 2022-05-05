@@ -1,6 +1,9 @@
 import { ULabel, ULabelAnnotation, ULabelSubtask } from "..";
 
 const toolboxDividerDiv = "<div class=toolbox-divider></div>"
+function read_annotation_confidence() {
+    return
+}
 
 /**
  * Manager for toolbox. Contains ToolboxTab items.
@@ -329,7 +332,6 @@ export class AnnotationResizeItem extends ToolboxItem {
             var current_subtask_key = ulabel.state["current_subtask"];
             var current_subtask = ulabel.subtasks[current_subtask_key];
             const annotation_size = button.attr("id").slice(18);
-            console.log(annotation_size)
             this.update_annotation_size(current_subtask, annotation_size);
             ulabel.redraw_all_annotations(null, null, false);
         })
@@ -484,7 +486,6 @@ export class RecolorActiveItem extends ToolboxItem {
             //ULabel.build_id_dialogs(ulabel)
 
             ulabel.redraw_all_annotations(null, null, false);
-            console.log(ulabel)
         })
         $(document).on("input", "input.color-change-picker", (e) => {
             //Gets the current subtask
@@ -504,7 +505,6 @@ export class RecolorActiveItem extends ToolboxItem {
             //ULabel.build_id_dialogs(ulabel)
 
             ulabel.redraw_all_annotations(null, null, false);
-            console.log(ulabel)
         })
     }
 
@@ -535,7 +535,6 @@ export class RecolorActiveItem extends ToolboxItem {
         //id selected, so we'll default to that
 
         if (selected_id == "none") {
-            console.log(subtask.classes[0].id)
             selected_id = subtask.classes[0].id;
         }
         // console.log(selected_id)
@@ -548,7 +547,6 @@ export class RecolorActiveItem extends ToolboxItem {
 
         //$("a.toolbox_sel_"+selected_id+":first").attr("backround-color", color);
         let colored_square_element = ".toolbox_colprev_"+selected_id;
-        console.log($(colored_square_element));
         $(colored_square_element).attr("style","background-color: "+color);
         
     }
@@ -564,8 +562,48 @@ export class RecolorActiveItem extends ToolboxItem {
                     <input type="button" class="color-change-btn" id="color-change-cya">
                 </div>
                 <div class="color-picker-container" id="color-picker-container">
-                    <input type="color"  class="color-change-picker" id="color-change-pick">
+                    <input type="color" class="color-change-picker" id="color-change-pick">
                 </div>
+            </div>
+        </div>
+        `
+    }
+}
+
+export class KeypointSlider extends ToolboxItem {
+    public html: string;
+    public inner_HTML: string;
+
+    constructor(ulabel: ULabel, filter_fn: Function, get_confidence: Function, mark_deprecated: Function) {
+        super();
+        this.inner_HTML = `<p class="tb-header">Keypoint Slider</p>`;
+        $(document).on("input", "#keypoint-slider", (e) => {
+            var current_subtask_key = ulabel.state["current_subtask"];
+            var current_subtask = ulabel.subtasks[current_subtask_key];
+            //update the slider value text next to the slider
+            $("#keypoint-slider-label").text(e.currentTarget.value + "%")
+
+            let filter_value = e.currentTarget.value / 100
+            for (let i in current_subtask.annotations.ordering) {
+                let current_annotation = current_subtask.annotations.access[current_subtask.annotations.ordering[i]]
+                let current_confidence = get_confidence(current_annotation)
+                let deprecate = filter_fn(current_confidence, filter_value)
+                console.log(deprecate)
+                if (deprecate == null) return;
+                mark_deprecated(current_annotation, deprecate)
+            }
+            
+            ulabel.redraw_all_annotations(null, null, false);
+        })
+    }
+
+    public get_html() {
+        return`
+        <div class="keypoint-slider">
+            <p class="tb-header">Keypoint Slider</p>
+            <div class="keypoint-slider-holder">
+                <input type="range" id="keypoint-slider">
+                <label for="keypoint-slider" id="keypoint-slider-label">50%</label>
             </div>
         </div>
         `
