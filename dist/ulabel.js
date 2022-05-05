@@ -13729,10 +13729,16 @@ div#${prntid} div.recolor-active input.color-change-btn {
    width: 90%;
 }
 
+div#${prntid} div.color-picker-border {
+   padding: 8px;
+   background-image: linear-gradient(to bottom right, red,orange,yellow,green,blue,indigo,violet);
+   border: 1px solid White;
+   border-radius: 6px;
+}
+
 div#${prntid} div.recolor-active div.color-picker-container {
-   max-width: 90%;
+   height: 100%;
    background-color: Black;
-   border: 8px solid lightgray;
 }
 
 div#${prntid} div.recolor-active input.color-change-btn, div#${prntid} div.recolor-active div.color-picker-container {
@@ -19653,13 +19659,13 @@ var RecolorActiveItem = /** @class */ (function (_super) {
     RecolorActiveItem.prototype.update_annotation_color = function (subtask, color) {
         //check for the three special cases, otherwise assume color is a hex value
         if (color == "yel") {
-            color = "Yellow";
+            color = "#FFFF00";
         }
         if (color == "red") {
-            color = "Red";
+            color = "#FF0000";
         }
         if (color == "cya") {
-            color = "Cyan";
+            color = "#00FFFF";
         }
         var selected_id = "none";
         subtask.state.id_payload.forEach(function (item) {
@@ -19684,7 +19690,7 @@ var RecolorActiveItem = /** @class */ (function (_super) {
         $(colored_square_element).attr("style", "background-color: " + color);
     };
     RecolorActiveItem.prototype.get_html = function () {
-        return "\n        <div class=\"recolor-active\">\n            <p class=\"tb-header\">Recolor Annotations</p>\n            <div class=\"annotation-recolor-button-holder\">\n                <div class=\"color-btn-container\">\n                    <input type=\"button\" class=\"color-change-btn\" id=\"color-change-yel\">\n                    <input type=\"button\" class=\"color-change-btn\" id=\"color-change-red\">\n                    <input type=\"button\" class=\"color-change-btn\" id=\"color-change-cya\">\n                </div>\n                <div class=\"color-picker-container\" id=\"color-picker-container\">\n                    <input type=\"color\" class=\"color-change-picker\" id=\"color-change-pick\">\n                </div>\n            </div>\n        </div>\n        ";
+        return "\n        <div class=\"recolor-active\">\n            <p class=\"tb-header\">Recolor Annotations</p>\n            <div class=\"annotation-recolor-button-holder\">\n                <div class=\"color-btn-container\">\n                    <input type=\"button\" class=\"color-change-btn\" id=\"color-change-yel\">\n                    <input type=\"button\" class=\"color-change-btn\" id=\"color-change-red\">\n                    <input type=\"button\" class=\"color-change-btn\" id=\"color-change-cya\">\n                </div>\n                <div class=\"color-picker-border\">\n                    <div class=\"color-picker-container\" id=\"color-picker-container\">\n                        <input type=\"color\" class=\"color-change-picker\" id=\"color-change-pick\">\n                    </div>\n                </div>\n            </div>\n        </div>\n        ";
     };
     return RecolorActiveItem;
 }(ToolboxItem));
