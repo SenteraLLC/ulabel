@@ -1829,6 +1829,32 @@ div#${prntid} div.recolor-active input{
    height: 27px;
 }
 
+div#${prntid} div.recolor-active div.recolor-tbi-gradient {
+   margin-bottom: 1em;
+   font-size: .85em;
+}
+
+div#${prntid} div.recolor-active div.recolor-tbi-gradient #gradient-toggle-label {
+   position: relative;
+   bottom: 2.5px;
+}
+
+div#${prntid} div.recolor-active div.recolor-tbi-gradient #gradient-toggle {
+   width: 1em;
+   height: 1em;
+}
+
+div#${prntid} div.recolor-active div.recolor-tbi-gradient #gradient-slider {
+   width: 8.6em;
+   height: 1em;
+   position: relative;
+   top: 2px;
+}
+
+div#${prntid} div.recolor-active div.recolor-tbi-gradient div.gradient-slider-value-display {
+   display: inline;
+}
+
 div#${prntid} div.recolor-active input.color-change-btn {
    width: 90%;
 }

@@ -1921,22 +1921,18 @@ export class ULabel {
         let grad_g = Math.round(((1 - gradient_max) * (parseInt(base_color_hex.slice(3,5), 16))) + gradient_max * 255)
         let grad_b = Math.round(((1 - gradient_max) * (parseInt(base_color_hex.slice(5,7), 16))) + gradient_max * 255)
 
-        const gradient = "#999999"
+        //Grab individual r g b values from the hex string and convert them to decimal
         let r = parseInt(base_color_hex.slice(1,3), 16)
         let g = parseInt(base_color_hex.slice(3,5), 16)
         let b = parseInt(base_color_hex.slice(5,7), 16)
 
-        // let grad_r = parseInt(gradient.slice(1,3), 16)
-        // let grad_g = parseInt(gradient.slice(3,5), 16)
-        // let grad_b = parseInt(gradient.slice(5,7), 16)
-        //console.log(base_color_hex, r,g,b, "The apply gradient function was called")
-
-        
-        //console.log(annotation_confidence, grad_r, r, "R values before the calculation")
+        //Apply a linear gradient based on the confidence
         let new_r = Math.round((1 - (annotation_confidence / gradient_quantity)) * grad_r + (annotation_confidence / gradient_quantity) * r)
         let new_g = Math.round((1 - (annotation_confidence / gradient_quantity)) * grad_g + (annotation_confidence / gradient_quantity) * g)
         let new_b = Math.round((1 - (annotation_confidence / gradient_quantity)) * grad_b + (annotation_confidence / gradient_quantity) * b)
 
+        //If the hex value is a single digit pad the front with a 0 to 
+        //ensure its two digits long
         if (new_r.toString(16).length == 1) {
             new_r = "0" + new_r.toString(16)
         }
@@ -1946,7 +1942,6 @@ export class ULabel {
         if (new_b.toString(16).length == 1) {
             new_b = "0" + new_b.toString(16)
         }
-
 
         return "#".concat(new_r.toString(16), new_g.toString(16), new_b.toString(16))
     }

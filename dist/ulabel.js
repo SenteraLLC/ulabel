@@ -13725,6 +13725,32 @@ div#${prntid} div.recolor-active input{
    height: 27px;
 }
 
+div#${prntid} div.recolor-active div.recolor-tbi-gradient {
+   margin-bottom: 1em;
+   font-size: .85em;
+}
+
+div#${prntid} div.recolor-active div.recolor-tbi-gradient #gradient-toggle-label {
+   position: relative;
+   bottom: 2.5px;
+}
+
+div#${prntid} div.recolor-active div.recolor-tbi-gradient #gradient-toggle {
+   width: 1em;
+   height: 1em;
+}
+
+div#${prntid} div.recolor-active div.recolor-tbi-gradient #gradient-slider {
+   width: 8.6em;
+   height: 1em;
+   position: relative;
+   top: 2px;
+}
+
+div#${prntid} div.recolor-active div.recolor-tbi-gradient div.gradient-slider-value-display {
+   display: inline;
+}
+
 div#${prntid} div.recolor-active input.color-change-btn {
    width: 90%;
 }
@@ -16175,22 +16201,18 @@ class ULabel {
         let grad_g = Math.round(((1 - gradient_max) * (parseInt(base_color_hex.slice(3,5), 16))) + gradient_max * 255)
         let grad_b = Math.round(((1 - gradient_max) * (parseInt(base_color_hex.slice(5,7), 16))) + gradient_max * 255)
 
-        const gradient = "#999999"
+        //Grab individual r g b values from the hex string and convert them to decimal
         let r = parseInt(base_color_hex.slice(1,3), 16)
         let g = parseInt(base_color_hex.slice(3,5), 16)
         let b = parseInt(base_color_hex.slice(5,7), 16)
 
-        // let grad_r = parseInt(gradient.slice(1,3), 16)
-        // let grad_g = parseInt(gradient.slice(3,5), 16)
-        // let grad_b = parseInt(gradient.slice(5,7), 16)
-        //console.log(base_color_hex, r,g,b, "The apply gradient function was called")
-
-        
-        //console.log(annotation_confidence, grad_r, r, "R values before the calculation")
+        //Apply a linear gradient based on the confidence
         let new_r = Math.round((1 - (annotation_confidence / gradient_quantity)) * grad_r + (annotation_confidence / gradient_quantity) * r)
         let new_g = Math.round((1 - (annotation_confidence / gradient_quantity)) * grad_g + (annotation_confidence / gradient_quantity) * g)
         let new_b = Math.round((1 - (annotation_confidence / gradient_quantity)) * grad_b + (annotation_confidence / gradient_quantity) * b)
 
+        //If the hex value is a single digit pad the front with a 0 to 
+        //ensure its two digits long
         if (new_r.toString(16).length == 1) {
             new_r = "0" + new_r.toString(16)
         }
@@ -16200,7 +16222,6 @@ class ULabel {
         if (new_b.toString(16).length == 1) {
             new_b = "0" + new_b.toString(16)
         }
-
 
         return "#".concat(new_r.toString(16), new_g.toString(16), new_b.toString(16))
     }
@@ -19751,7 +19772,7 @@ var RecolorActiveItem = /** @class */ (function (_super) {
             ulabel.redraw_all_annotations(null, null, false);
         });
         $(document).on("input", "#gradient-slider", function (e) {
-            $("#gradient-slider-label").text(e.currentTarget.value + "%");
+            $("div.gradient-slider-value-display").text(e.currentTarget.value + "%");
             ulabel.redraw_all_annotations(null, null, false);
         });
         return _this;
@@ -19790,7 +19811,7 @@ var RecolorActiveItem = /** @class */ (function (_super) {
         $(colored_square_element).attr("style", "background-color: " + color);
     };
     RecolorActiveItem.prototype.get_html = function () {
-        return "\n        <div class=\"recolor-active\">\n            <p class=\"tb-header\">Recolor Annotations</p>\n            <div>\n                <input type=\"checkbox\" id=\"gradient-toggle\" name=\"gradient-checkbox\" value=\"gradient\" checked>\n                <label for=\"gradient-toggle\">Toggle Gradients</label>\n            </div>\n            <div>\n                <input type=\"range\" id=\"gradient-slider\">\n                <label for=\"gradient-slider\" id=\"gradient-slider-label\">Change gradient endpoint</label>\n            </div>\n            <div class=\"annotation-recolor-button-holder\">\n                <div class=\"color-btn-container\">\n                    <input type=\"button\" class=\"color-change-btn\" id=\"color-change-yel\">\n                    <input type=\"button\" class=\"color-change-btn\" id=\"color-change-red\">\n                    <input type=\"button\" class=\"color-change-btn\" id=\"color-change-cya\">\n                </div>\n                <div class=\"color-picker-border\">\n                    <div class=\"color-picker-container\" id=\"color-picker-container\">\n                        <input type=\"color\" class=\"color-change-picker\" id=\"color-change-pick\">\n                    </div>\n                </div>\n            </div>\n        </div>\n        ";
+        return "\n        <div class=\"recolor-active\">\n            <p class=\"tb-header\">Recolor Annotations</p>\n            <div class=\"recolor-tbi-gradient\">\n                <div>\n                    <label for=\"gradient-toggle\" id=\"gradient-toggle-label\">Toggle Gradients</label>\n                    <input type=\"checkbox\" id=\"gradient-toggle\" name=\"gradient-checkbox\" value=\"gradient\" checked>\n                </div>\n                <div>\n                    <label for=\"gradient-slider\" id=\"gradient-slider-label\">Gradient Max</label>\n                    <input type=\"range\" id=\"gradient-slider\">\n                    <div class=\"gradient-slider-value-display\">50%</div>\n                </div>\n            </div>\n            <div class=\"annotation-recolor-button-holder\">\n                <div class=\"color-btn-container\">\n                    <input type=\"button\" class=\"color-change-btn\" id=\"color-change-yel\">\n                    <input type=\"button\" class=\"color-change-btn\" id=\"color-change-red\">\n                    <input type=\"button\" class=\"color-change-btn\" id=\"color-change-cya\">\n                </div>\n                <div class=\"color-picker-border\">\n                    <div class=\"color-picker-container\" id=\"color-picker-container\">\n                        <input type=\"color\" class=\"color-change-picker\" id=\"color-change-pick\">\n                    </div>\n                </div>\n            </div>\n        </div>\n        ";
     };
     return RecolorActiveItem;
 }(ToolboxItem));
