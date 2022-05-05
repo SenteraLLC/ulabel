@@ -19836,8 +19836,6 @@ var KeypointSlider = /** @class */ (function (_super) {
                     return;
                 mark_deprecated(current_annotation, deprecate);
             }
-            // const annotation_confidence = get_annotation_confidence(current_subtask)
-            // this.update_annotations(current_subtask, annotation_confidence , e.currentTarget.value / 100)
             ulabel.redraw_all_annotations(null, null, false);
         });
         return _this;
