@@ -16375,7 +16375,8 @@ class ULabel {
         }
 
         // Prep for bbox drawing
-        let color = this.get_annotation_color(annotation_object["classification_payloads"], false, subtask);
+        let base_color = this.get_annotation_color(annotation_object["classification_payloads"], false, subtask);
+        let color = this.apply_gradient(base_color, annotation_object)
         ctx.fillStyle = color;
         ctx.strokeStyle = color;
         ctx.lineJoin = "round";
@@ -16419,7 +16420,8 @@ class ULabel {
 
 
         // Prep for bbox drawing
-        let color = this.get_annotation_color(annotation_object["classification_payloads"], demo, subtask);
+        let base_color = this.get_annotation_color(annotation_object["classification_payloads"], demo, subtask);
+        let color = this.apply_gradient(base_color, annotation_object)
         ctx.fillStyle = color;
         ctx.strokeStyle = color;
         ctx.lineJoin = "round";
@@ -16457,7 +16459,8 @@ class ULabel {
 
 
         // Prep for bbox drawing
-        let color = this.get_annotation_color(annotation_object["classification_payloads"], demo, subtask);
+        let base_color = this.get_annotation_color(annotation_object["classification_payloads"], demo, subtask);
+        let color = this.apply_gradient(base_color, annotation_object)
         ctx.fillStyle = color;
         ctx.strokeStyle = color;
         ctx.lineJoin = "round";
@@ -16494,7 +16497,8 @@ class ULabel {
         }
 
         // Prep for tbar drawing
-        let color = this.get_annotation_color(annotation_object["classification_payloads"], demo, subtask);
+        let base_color = this.get_annotation_color(annotation_object["classification_payloads"], demo, subtask);
+        let color = this.apply_gradient(base_color, annotation_object)
         ctx.fillStyle = color;
         ctx.strokeStyle = color;
         ctx.lineJoin = "round";
