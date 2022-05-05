@@ -576,95 +576,28 @@ export class KeypointSlider extends ToolboxItem {
     public html: string;
     public inner_HTML: string;
 
-    constructor(ulabel: ULabel, get_annotation_confidence: Function) {
+    constructor(ulabel: ULabel, filter_fn: Function, get_confidence: Function, mark_deprecated: Function) {
         super();
         this.inner_HTML = `<p class="tb-header">Keypoint Slider</p>`;
         $(document).on("input", "#keypoint-slider", (e) => {
             var current_subtask_key = ulabel.state["current_subtask"];
             var current_subtask = ulabel.subtasks[current_subtask_key];
+            //update the slider value text next to the slider
             $("#keypoint-slider-label").text(e.currentTarget.value + "%")
 
-            const annotation_confidence = get_annotation_confidence(current_subtask)
+            let filter_value = e.currentTarget.value / 100
+            for (let i in current_subtask.annotations.ordering) {
+                let current_annotation = current_subtask.annotations.access[current_subtask.annotations.ordering[i]]
+                let current_confidence = get_confidence(current_annotation)
+                let deprecate = filter_fn(current_confidence, filter_value)
+                console.log(deprecate)
+                if (deprecate == null) return;
+                mark_deprecated(current_annotation, deprecate)
+            }
             
-            //this.draw_histogram(current_subtask, annotation_confidence)
-            this.update_annotations(current_subtask, annotation_confidence , e.currentTarget.value / 100)
             ulabel.redraw_all_annotations(null, null, false);
         })
     }
-    
-    //annotation_confidence should be in the form [{id: "", confidence: "", class_id: ""}, {id: "", confidence: "", class_id: ""}, ...]
-    public update_annotations(subtask, annotation_confidence, filter_value) {
-
-        for (let annotation in annotation_confidence) {
-            if (annotation_confidence[annotation].confidence < filter_value) {
-                subtask.annotations.access[annotation_confidence[annotation].id].deprecated = true
-            }
-            if (annotation_confidence[annotation].confidence >= filter_value) {
-                subtask.annotations.access[annotation_confidence[annotation].id].deprecated = false
-            }
-        }
-    }
-
-    // public make_histogram(subtask, annotation_confidence) {
-
-    // }
-
-    // public draw_histogram(subtask, annotation_confidence) {
-    //     let canvas = <HTMLCanvasElement> document.getElementById("histogram");
-    //     let ctx = canvas.getContext("2d")
-
-    //     this.draw_grid(ctx,canvas.width, canvas.height, 11, "#444444")
-
-        
-    //     this.draw_line(ctx, canvas.width / 11, 0, canvas.width / 11, 10 * canvas.height / 11, "#FFFF00")
-    //     this.draw_line(ctx, canvas.width / 11, 10 * canvas.height / 11, canvas.width, 10 * canvas.height / 11, "#FFFF00")
-
-    //     this.draw_rectangle(ctx, 0, 0, canvas.width / 14, canvas.height, "#FFFFFF")
-    //     this.draw_rectangle(ctx, 0, canvas.height - (canvas.height / 16), canvas.width, canvas.height, "#FFFFFF")
-
-    // }
-
-    // //x1, y1 is the x,y coordinate of the first endpoint, x2, y2 is the 
-    // //x,y coordinate of the second endpoint.
-    // private draw_line(ctx, x1, y1, x2, y2, color) {
-    //     ctx.save();
-    //     ctx.strokeStyle = color;
-    //     ctx.beginPath();
-    //     ctx.moveTo(x1,y1);
-    //     ctx.lineTo(x2,y2);
-    //     ctx.stroke();
-    //     ctx.restore();
-    // }
-
-    // private draw_rectangle(ctx, upper_left_x, upper_left_y, width, height, color) {
-    //     ctx.save();
-    //     ctx.fillStyle = color;
-    //     ctx.fillRect(upper_left_x, upper_left_y, width, height);
-    //     ctx.restore();
-
-    // }
-
-    // private draw_rectangle_with_border(ctx, upper_left_x, upper_left_y, width, height, fill_color, border_color) {
-    //     ctx.save();
-    //     this.draw_rectangle(ctx, upper_left_x, upper_left_y, width, height, border_color)
-    //     this.draw_rectangle(ctx, upper_left_x + 1, upper_left_y + 1, width - 2, height - 2, fill_color)
-    //     ctx.restore();
-    // }
-
-    // private draw_grid(ctx, canvas_width, canvas_height, grid_size, color) {
-    //     ctx.save();
-    //     let len = canvas_width / grid_size;
-    //     //draws the vertical lines in the grid
-    //     for (let i = 1; (i < len); i++) {
-    //         this.draw_line(ctx, len * i, 0, len * i, canvas_height, color)
-    //     }
-    //     //draws the horizontal lines in the grid
-    //     len = canvas_height / grid_size;
-    //     for (let i = 1; (i < len); i++) {
-    //         this.draw_line(ctx, 0, len * i, canvas_width, len * i, color)
-    //     }
-    //     ctx.restore();
-    // }
 
     public get_html() {
         return`

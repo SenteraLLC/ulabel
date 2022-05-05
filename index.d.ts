@@ -49,6 +49,7 @@ export type ULabelSubtask = {
     task_meta: any,
     annotation_meta: any
     read_only?: boolean;
+    annotations: { access: {}, ordering: [] }
 }
 export type ULabelSubtasks = { [key: string]: ULabelSubtask };
 

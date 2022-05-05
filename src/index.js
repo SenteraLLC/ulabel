@@ -7,6 +7,7 @@ import { Toolbox, ClassCounterToolboxItem, ModeSelectionToolboxItem, ZoomPanTool
 import { AnnotationIDToolboxItem, AnnotationResizeItem, RecolorActiveItem, KeypointSlider } from './toolbox';
 import { ULabelSubtask } from './subtask';
 import { GeometricUtils } from './geometric_utils';
+import { get_annotation_confidence, mark_deprecated, filter_low } from './annotation_operators';
 import $ from 'jquery';
 const jQuery = $;
 
@@ -285,7 +286,7 @@ export class ULabel {
         const class_counter_tbi = new ClassCounterToolboxItem();
         const annotaion_resize_tbi = new AnnotationResizeItem(ul);
         const recolor_active_tbi = new RecolorActiveItem(ul);
-        const keypoint_slider = new KeypointSlider(ul, this.get_annotation_confidence);
+        const keypoint_slider = new KeypointSlider(ul, filter_low, get_annotation_confidence, mark_deprecated);
 
         const toolbox = new Toolbox(
             [],
