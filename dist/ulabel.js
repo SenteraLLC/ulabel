@@ -16150,38 +16150,46 @@ class ULabel {
 
     //recieves a base color and applies a gradient to it based on its confidence
     apply_gradient(base_color, annotation_object) {
-
+        
+        //if the gradient toggle is checked off, then don't apply a gradient
         if (jquery_default()("#gradient-toggle").prop("checked") == false) {
             return base_color
         }
         
+        const annotation_confidence = (0,annotation_operators/* get_annotation_confidence */.sR)(annotation_object)
+        const gradient_max = jquery_default()("#gradient-slider").val() / 100
+
+        //if the annotation confidence is greater than the max gradient endpoint, then
+        //don't apply a gradient
+        if (annotation_confidence > gradient_max) {
+            return base_color
+        }
+
         let base_color_hex = this.color_to_hex(base_color)
+        let gradient_quantity = 0.85
 
-        //Have the gradient color be a lightened version of the base color
+        //Have the gradient color be a lightened version of the base color that is gradient_quantity% white
+        //and the remaining percent is base color
         //Decimal numbers
-        let grad_r = Math.round((parseInt(base_color_hex.slice(1,3), 16) + 255) / 2)
-        let grad_g = Math.round((parseInt(base_color_hex.slice(3,5), 16) + 255) / 2)
-        let grad_b = Math.round((parseInt(base_color_hex.slice(5,7), 16) + 255) / 2)
-
-        console.log(grad_r,grad_g,grad_b, "Gradient Hex")
+        let grad_r = Math.round(((1 - gradient_max) * (parseInt(base_color_hex.slice(1,3), 16))) + gradient_max * 255)
+        let grad_g = Math.round(((1 - gradient_max) * (parseInt(base_color_hex.slice(3,5), 16))) + gradient_max * 255)
+        let grad_b = Math.round(((1 - gradient_max) * (parseInt(base_color_hex.slice(5,7), 16))) + gradient_max * 255)
 
         const gradient = "#999999"
         let r = parseInt(base_color_hex.slice(1,3), 16)
         let g = parseInt(base_color_hex.slice(3,5), 16)
         let b = parseInt(base_color_hex.slice(5,7), 16)
 
-        console.log(r,g,b,"Base color")
         // let grad_r = parseInt(gradient.slice(1,3), 16)
         // let grad_g = parseInt(gradient.slice(3,5), 16)
         // let grad_b = parseInt(gradient.slice(5,7), 16)
         //console.log(base_color_hex, r,g,b, "The apply gradient function was called")
 
-        const annotation_confidence = (0,annotation_operators/* get_annotation_confidence */.sR)(annotation_object)
         
         //console.log(annotation_confidence, grad_r, r, "R values before the calculation")
-        let new_r = Math.round((1 * annotation_confidence) * grad_r + annotation_confidence * r)
-        let new_g = Math.round((1 * annotation_confidence) * grad_g + annotation_confidence * g)
-        let new_b = Math.round((1 * annotation_confidence) * grad_b + annotation_confidence * b)
+        let new_r = Math.round((1 - (annotation_confidence / gradient_quantity)) * grad_r + (annotation_confidence / gradient_quantity) * r)
+        let new_g = Math.round((1 - (annotation_confidence / gradient_quantity)) * grad_g + (annotation_confidence / gradient_quantity) * g)
+        let new_b = Math.round((1 - (annotation_confidence / gradient_quantity)) * grad_b + (annotation_confidence / gradient_quantity) * b)
 
         if (new_r.toString(16).length == 1) {
             new_r = "0" + new_r.toString(16)
@@ -16193,8 +16201,7 @@ class ULabel {
             new_b = "0" + new_b.toString(16)
         }
 
-        console.log(new_r.toString(16), new_g.toString(16), new_b.toString(16))
-        console.log("#".concat(new_r.toString(16), new_g.toString(16), new_b.toString(16)))
+
         return "#".concat(new_r.toString(16), new_g.toString(16), new_b.toString(16))
     }
 
@@ -19741,7 +19748,10 @@ var RecolorActiveItem = /** @class */ (function (_super) {
             ulabel.redraw_all_annotations(null, null, false);
         });
         $(document).on("input", "#gradient-toggle", function (e) {
-            console.log("event triggered");
+            ulabel.redraw_all_annotations(null, null, false);
+        });
+        $(document).on("input", "#gradient-slider", function (e) {
+            $("#gradient-slider-label").text(e.currentTarget.value + "%");
             ulabel.redraw_all_annotations(null, null, false);
         });
         return _this;
@@ -19780,7 +19790,7 @@ var RecolorActiveItem = /** @class */ (function (_super) {
         $(colored_square_element).attr("style", "background-color: " + color);
     };
     RecolorActiveItem.prototype.get_html = function () {
-        return "\n        <div class=\"recolor-active\">\n            <p class=\"tb-header\">Recolor Annotations</p>\n            <input type=\"checkbox\" id=\"gradient-toggle\" name=\"gradient-checkbox\" value=\"gradient\" checked></input>\n            <div class=\"annotation-recolor-button-holder\">\n                <div class=\"color-btn-container\">\n                    <input type=\"button\" class=\"color-change-btn\" id=\"color-change-yel\">\n                    <input type=\"button\" class=\"color-change-btn\" id=\"color-change-red\">\n                    <input type=\"button\" class=\"color-change-btn\" id=\"color-change-cya\">\n                </div>\n                <div class=\"color-picker-border\">\n                    <div class=\"color-picker-container\" id=\"color-picker-container\">\n                        <input type=\"color\" class=\"color-change-picker\" id=\"color-change-pick\">\n                    </div>\n                </div>\n            </div>\n        </div>\n        ";
+        return "\n        <div class=\"recolor-active\">\n            <p class=\"tb-header\">Recolor Annotations</p>\n            <div>\n                <input type=\"checkbox\" id=\"gradient-toggle\" name=\"gradient-checkbox\" value=\"gradient\" checked>\n                <label for=\"gradient-toggle\">Toggle Gradients</label>\n            </div>\n            <div>\n                <input type=\"range\" id=\"gradient-slider\">\n                <label for=\"gradient-slider\" id=\"gradient-slider-label\">Change gradient endpoint</label>\n            </div>\n            <div class=\"annotation-recolor-button-holder\">\n                <div class=\"color-btn-container\">\n                    <input type=\"button\" class=\"color-change-btn\" id=\"color-change-yel\">\n                    <input type=\"button\" class=\"color-change-btn\" id=\"color-change-red\">\n                    <input type=\"button\" class=\"color-change-btn\" id=\"color-change-cya\">\n                </div>\n                <div class=\"color-picker-border\">\n                    <div class=\"color-picker-container\" id=\"color-picker-container\">\n                        <input type=\"color\" class=\"color-change-picker\" id=\"color-change-pick\">\n                    </div>\n                </div>\n            </div>\n        </div>\n        ";
     };
     return RecolorActiveItem;
 }(ToolboxItem));

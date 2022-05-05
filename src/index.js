@@ -1896,38 +1896,46 @@ export class ULabel {
 
     //recieves a base color and applies a gradient to it based on its confidence
     apply_gradient(base_color, annotation_object) {
-
+        
+        //if the gradient toggle is checked off, then don't apply a gradient
         if ($("#gradient-toggle").prop("checked") == false) {
             return base_color
         }
         
+        const annotation_confidence = get_annotation_confidence(annotation_object)
+        const gradient_max = $("#gradient-slider").val() / 100
+
+        //if the annotation confidence is greater than the max gradient endpoint, then
+        //don't apply a gradient
+        if (annotation_confidence > gradient_max) {
+            return base_color
+        }
+
         let base_color_hex = this.color_to_hex(base_color)
+        let gradient_quantity = 0.85
 
-        //Have the gradient color be a lightened version of the base color
+        //Have the gradient color be a lightened version of the base color that is gradient_quantity% white
+        //and the remaining percent is base color
         //Decimal numbers
-        let grad_r = Math.round((parseInt(base_color_hex.slice(1,3), 16) + 255) / 2)
-        let grad_g = Math.round((parseInt(base_color_hex.slice(3,5), 16) + 255) / 2)
-        let grad_b = Math.round((parseInt(base_color_hex.slice(5,7), 16) + 255) / 2)
-
-        console.log(grad_r,grad_g,grad_b, "Gradient Hex")
+        let grad_r = Math.round(((1 - gradient_max) * (parseInt(base_color_hex.slice(1,3), 16))) + gradient_max * 255)
+        let grad_g = Math.round(((1 - gradient_max) * (parseInt(base_color_hex.slice(3,5), 16))) + gradient_max * 255)
+        let grad_b = Math.round(((1 - gradient_max) * (parseInt(base_color_hex.slice(5,7), 16))) + gradient_max * 255)
 
         const gradient = "#999999"
         let r = parseInt(base_color_hex.slice(1,3), 16)
         let g = parseInt(base_color_hex.slice(3,5), 16)
         let b = parseInt(base_color_hex.slice(5,7), 16)
 
-        console.log(r,g,b,"Base color")
         // let grad_r = parseInt(gradient.slice(1,3), 16)
         // let grad_g = parseInt(gradient.slice(3,5), 16)
         // let grad_b = parseInt(gradient.slice(5,7), 16)
         //console.log(base_color_hex, r,g,b, "The apply gradient function was called")
 
-        const annotation_confidence = get_annotation_confidence(annotation_object)
         
         //console.log(annotation_confidence, grad_r, r, "R values before the calculation")
-        let new_r = Math.round((1 * annotation_confidence) * grad_r + annotation_confidence * r)
-        let new_g = Math.round((1 * annotation_confidence) * grad_g + annotation_confidence * g)
-        let new_b = Math.round((1 * annotation_confidence) * grad_b + annotation_confidence * b)
+        let new_r = Math.round((1 - (annotation_confidence / gradient_quantity)) * grad_r + (annotation_confidence / gradient_quantity) * r)
+        let new_g = Math.round((1 - (annotation_confidence / gradient_quantity)) * grad_g + (annotation_confidence / gradient_quantity) * g)
+        let new_b = Math.round((1 - (annotation_confidence / gradient_quantity)) * grad_b + (annotation_confidence / gradient_quantity) * b)
 
         if (new_r.toString(16).length == 1) {
             new_r = "0" + new_r.toString(16)
@@ -1939,8 +1947,7 @@ export class ULabel {
             new_b = "0" + new_b.toString(16)
         }
 
-        console.log(new_r.toString(16), new_g.toString(16), new_b.toString(16))
-        console.log("#".concat(new_r.toString(16), new_g.toString(16), new_b.toString(16)))
+
         return "#".concat(new_r.toString(16), new_g.toString(16), new_b.toString(16))
     }
 
