@@ -19709,23 +19709,10 @@ var KeypointSlider = /** @class */ (function (_super) {
                     return;
                 mark_deprecated(current_annotation, deprecate);
             }
-            // const annotation_confidence = get_annotation_confidence(current_subtask)
-            // this.update_annotations(current_subtask, annotation_confidence , e.currentTarget.value / 100)
             ulabel.redraw_all_annotations(null, null, false);
         });
         return _this;
     }
-    //annotation_confidence should be in the form [{id: "", confidence: "", class_id: ""}, {id: "", confidence: "", class_id: ""}, ...]
-    KeypointSlider.prototype.update_annotations = function (subtask, annotation_confidence, filter_value) {
-        for (var annotation in annotation_confidence) {
-            if (annotation_confidence[annotation].confidence < filter_value) {
-                subtask.annotations.access[annotation_confidence[annotation].id].deprecated = true;
-            }
-            if (annotation_confidence[annotation].confidence >= filter_value) {
-                subtask.annotations.access[annotation_confidence[annotation].id].deprecated = false;
-            }
-        }
-    };
     KeypointSlider.prototype.get_html = function () {
         return "\n        <div class=\"keypoint-slider\">\n            <p class=\"tb-header\">Keypoint Slider</p>\n            <div class=\"keypoint-slider-holder\">\n                <input type=\"range\" id=\"keypoint-slider\">\n                <label for=\"keypoint-slider\" id=\"keypoint-slider-label\">50%</label>\n            </div>\n        </div>\n        ";
     };

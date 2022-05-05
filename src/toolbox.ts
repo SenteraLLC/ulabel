@@ -592,28 +592,10 @@ export class KeypointSlider extends ToolboxItem {
                 if (deprecate == null) return;
                 mark_deprecated(current_annotation, deprecate)
             }
-
-            // const annotation_confidence = get_annotation_confidence(current_subtask)
-            // this.update_annotations(current_subtask, annotation_confidence , e.currentTarget.value / 100)
             
             ulabel.redraw_all_annotations(null, null, false);
         })
     }
-    
-    //annotation_confidence should be in the form [{id: "", confidence: "", class_id: ""}, {id: "", confidence: "", class_id: ""}, ...]
-    public update_annotations(subtask, annotation_confidence, filter_value) {
-
-        for (let annotation in annotation_confidence) {
-            if (annotation_confidence[annotation].confidence < filter_value) {
-                subtask.annotations.access[annotation_confidence[annotation].id].deprecated = true
-            }
-            if (annotation_confidence[annotation].confidence >= filter_value) {
-                subtask.annotations.access[annotation_confidence[annotation].id].deprecated = false
-            }
-        }
-    }
-
-
 
     public get_html() {
         return`
