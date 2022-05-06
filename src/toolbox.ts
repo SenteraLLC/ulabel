@@ -587,8 +587,8 @@ export class RecolorActiveItem extends ToolboxItem {
                 </div>
                 <div>
                     <label for="gradient-slider" id="gradient-slider-label">Gradient Max</label>
-                    <input type="range" id="gradient-slider">
-                    <div class="gradient-slider-value-display">50%</div>
+                    <input type="range" id="gradient-slider" value="100">
+                    <div class="gradient-slider-value-display">100%</div>
                 </div>
             </div>
             <div class="annotation-recolor-button-holder">
