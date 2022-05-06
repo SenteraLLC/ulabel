@@ -470,6 +470,7 @@ export class AnnotationResizeItem extends ToolboxItem {
 export class RecolorActiveItem extends ToolboxItem { 
     public html: string;
     public inner_HTML: string;
+    private most_recent_draw: number = Date.now()
     constructor(ulabel: ULabel) {
         super();
         this.inner_HTML = `<p class="tb-header">Recolor Annotations</p>`;
@@ -478,11 +479,12 @@ export class RecolorActiveItem extends ToolboxItem {
             let button = $(e.currentTarget);
             var current_subtask_key = ulabel.state["current_subtask"];
             var current_subtask = ulabel.subtasks[current_subtask_key];
+
             //slice 13,16 to grab the part of the id that specifies color
             const color_from_id = button.attr("id").slice(13,16);
             this.update_annotation_color(current_subtask, color_from_id);
 
-            ULabel.process_classes(ulabel, ulabel.state.current_subtask, current_subtask)
+            ULabel.process_classes(ulabel, ulabel.state.current_subtask, current_subtask);
             //ULabel.build_id_dialogs(ulabel)
 
             ulabel.redraw_all_annotations(null, null, false);
@@ -491,27 +493,28 @@ export class RecolorActiveItem extends ToolboxItem {
             //Gets the current subtask
             var current_subtask_key = ulabel.state["current_subtask"];
             var current_subtask = ulabel.subtasks[current_subtask_key];
+
             //Gets the hex value from the color picker
             let hex = e.currentTarget.value;
-        
+
             this.update_annotation_color(current_subtask, hex);
             
             //somewhat janky way to update the color on the color picker 
             //to allow for more css options
-            let color_picker_container = document.getElementById("color-picker-container")
-            color_picker_container.style.backgroundColor = hex
+            let color_picker_container = document.getElementById("color-picker-container");
+            color_picker_container.style.backgroundColor = hex;
 
-            ULabel.process_classes(ulabel, ulabel.state.current_subtask, current_subtask)
+            ULabel.process_classes(ulabel, ulabel.state.current_subtask, current_subtask);
             //ULabel.build_id_dialogs(ulabel)
 
-            ulabel.redraw_all_annotations(null, null, false);
+            this.limit_redraw(ulabel);
         })
         $(document).on("input", "#gradient-toggle", (e) => {
-            ulabel.redraw_all_annotations(null, null, false)
+            ulabel.redraw_all_annotations(null, null, false);
         })
         $(document).on("input", "#gradient-slider", (e) => {
-            $("div.gradient-slider-value-display").text(e.currentTarget.value + "%")
-            ulabel.redraw_all_annotations(null, null, false)
+            $("div.gradient-slider-value-display").text(e.currentTarget.value + "%");
+            ulabel.redraw_all_annotations(null, null, false);
         })
     }
 
@@ -533,7 +536,7 @@ export class RecolorActiveItem extends ToolboxItem {
         subtask.state.id_payload.forEach(item => {
             
             if (item.confidence == 1) {
-                selected_id = item.class_id
+                selected_id = item.class_id;
             }  
         });
 
@@ -556,6 +559,21 @@ export class RecolorActiveItem extends ToolboxItem {
         let colored_square_element = ".toolbox_colprev_"+selected_id;
         $(colored_square_element).attr("style","background-color: "+color);
         
+    }
+
+    
+    private limit_redraw(ulabel: ULabel, wait_time: number = 100) {
+
+        //Compare most recent draw time to now and only draw if  
+        //more than wait_time milliseconds have passed. 
+        if (Date.now() - this.most_recent_draw > wait_time) {
+
+            //update most recent draw to now
+            this.most_recent_draw = Date.now();
+
+            //redraw annotations
+            ulabel.redraw_all_annotations(null, null, false);
+        }
     }
 
     public get_html() {
