@@ -11702,18 +11702,14 @@ function apply_gradient(annotation_object, base_color, get_annotation_confidence
     var r = parseInt(base_color_hex.slice(1, 3), 16);
     var g = parseInt(base_color_hex.slice(3, 5), 16);
     var b = parseInt(base_color_hex.slice(5, 7), 16);
-    console.log(r, g, b, "base RGB Hex");
-    console.log(grad_r, grad_g, grad_b, "gradient RGB Hex");
     //Apply a linear gradient based on the confidence
     var new_r = Math.round((1 - (annotation_confidence / gradient_quantity)) * grad_r + (annotation_confidence / gradient_quantity) * r);
     var new_g = Math.round((1 - (annotation_confidence / gradient_quantity)) * grad_g + (annotation_confidence / gradient_quantity) * g);
     var new_b = Math.round((1 - (annotation_confidence / gradient_quantity)) * grad_b + (annotation_confidence / gradient_quantity) * b);
-    console.log(new_r, new_g, new_b, "New RGB decimal");
     //Turn the new rgb values to a hexadecimal version
     var new_r_hex = new_r.toString(16);
     var new_g_hex = new_g.toString(16);
     var new_b_hex = new_b.toString(16);
-    console.log(new_r_hex, new_g_hex, new_b_hex, "New RGB Hex");
     //If the hex value is a single digit pad the front with a 0 to 
     //ensure its two digits long
     if (new_r_hex.length == 1) {
@@ -11725,12 +11721,6 @@ function apply_gradient(annotation_object, base_color, get_annotation_confidence
     if (new_b_hex.length == 1) {
         new_b_hex = "0" + new_b.toString(16);
     }
-    console.log(new_r_hex, new_g_hex, new_b_hex, "New RGB Hex after 0 padding");
-    // console.log("base: " + base_color_hex)
-    // console.log("new:  " + "#".concat(new_r.toString(16), new_g.toString(16), new_b.toString(16)))
-    // console.log(annotation_confidence)
-    console.log(annotation_object);
-    console.log("");
     return "#".concat(new_r.toString(16), new_g.toString(16), new_b.toString(16));
 }
 exports.ws = apply_gradient;
@@ -19780,6 +19770,7 @@ var RecolorActiveItem = /** @class */ (function (_super) {
     __extends(RecolorActiveItem, _super);
     function RecolorActiveItem(ulabel) {
         var _this = _super.call(this) || this;
+        _this.most_recent_draw = Date.now();
         _this.inner_HTML = "<p class=\"tb-header\">Recolor Annotations</p>";
         //event handler for the buttons
         $(document).on("click", "input.color-change-btn", function (e) {
@@ -19806,7 +19797,7 @@ var RecolorActiveItem = /** @class */ (function (_super) {
             color_picker_container.style.backgroundColor = hex;
             __1.ULabel.process_classes(ulabel, ulabel.state.current_subtask, current_subtask);
             //ULabel.build_id_dialogs(ulabel)
-            ulabel.redraw_all_annotations(null, null, false);
+            _this.limit_redraw(ulabel);
         });
         $(document).on("input", "#gradient-toggle", function (e) {
             ulabel.redraw_all_annotations(null, null, false);
@@ -19849,6 +19840,17 @@ var RecolorActiveItem = /** @class */ (function (_super) {
         //$("a.toolbox_sel_"+selected_id+":first").attr("backround-color", color);
         var colored_square_element = ".toolbox_colprev_" + selected_id;
         $(colored_square_element).attr("style", "background-color: " + color);
+    };
+    RecolorActiveItem.prototype.limit_redraw = function (ulabel, wait_time) {
+        if (wait_time === void 0) { wait_time = 100; }
+        //Compare most recent draw time to now and only draw if  
+        //more than wait_time milliseconds have passed. 
+        if (Date.now() - this.most_recent_draw > wait_time) {
+            //update most recent draw to now
+            this.most_recent_draw = Date.now();
+            //redraw annotations
+            ulabel.redraw_all_annotations(null, null, false);
+        }
     };
     RecolorActiveItem.prototype.get_html = function () {
         return "\n        <div class=\"recolor-active\">\n            <p class=\"tb-header\">Recolor Annotations</p>\n            <div class=\"recolor-tbi-gradient\">\n                <div>\n                    <label for=\"gradient-toggle\" id=\"gradient-toggle-label\">Toggle Gradients</label>\n                    <input type=\"checkbox\" id=\"gradient-toggle\" name=\"gradient-checkbox\" value=\"gradient\" checked>\n                </div>\n                <div>\n                    <label for=\"gradient-slider\" id=\"gradient-slider-label\">Gradient Max</label>\n                    <input type=\"range\" id=\"gradient-slider\" value=\"100\">\n                    <div class=\"gradient-slider-value-display\">100%</div>\n                </div>\n            </div>\n            <div class=\"annotation-recolor-button-holder\">\n                <div class=\"color-btn-container\">\n                    <input type=\"button\" class=\"color-change-btn\" id=\"color-change-yel\">\n                    <input type=\"button\" class=\"color-change-btn\" id=\"color-change-red\">\n                    <input type=\"button\" class=\"color-change-btn\" id=\"color-change-cya\">\n                </div>\n                <div class=\"color-picker-border\">\n                    <div class=\"color-picker-container\" id=\"color-picker-container\">\n                        <input type=\"color\" class=\"color-change-picker\" id=\"color-change-pick\">\n                    </div>\n                </div>\n            </div>\n        </div>\n        ";

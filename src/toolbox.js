@@ -355,6 +355,7 @@ var RecolorActiveItem = /** @class */ (function (_super) {
     __extends(RecolorActiveItem, _super);
     function RecolorActiveItem(ulabel) {
         var _this = _super.call(this) || this;
+        _this.most_recent_draw = Date.now();
         _this.inner_HTML = "<p class=\"tb-header\">Recolor Annotations</p>";
         //event handler for the buttons
         $(document).on("click", "input.color-change-btn", function (e) {
@@ -381,7 +382,7 @@ var RecolorActiveItem = /** @class */ (function (_super) {
             color_picker_container.style.backgroundColor = hex;
             __1.ULabel.process_classes(ulabel, ulabel.state.current_subtask, current_subtask);
             //ULabel.build_id_dialogs(ulabel)
-            ulabel.redraw_all_annotations(null, null, false);
+            _this.limit_redraw(ulabel);
         });
         $(document).on("input", "#gradient-toggle", function (e) {
             ulabel.redraw_all_annotations(null, null, false);
@@ -424,6 +425,17 @@ var RecolorActiveItem = /** @class */ (function (_super) {
         //$("a.toolbox_sel_"+selected_id+":first").attr("backround-color", color);
         var colored_square_element = ".toolbox_colprev_" + selected_id;
         $(colored_square_element).attr("style", "background-color: " + color);
+    };
+    RecolorActiveItem.prototype.limit_redraw = function (ulabel, wait_time) {
+        if (wait_time === void 0) { wait_time = 100; }
+        //Compare most recent draw time to now and only draw if  
+        //more than wait_time milliseconds have passed. 
+        if (Date.now() - this.most_recent_draw > wait_time) {
+            //update most recent draw to now
+            this.most_recent_draw = Date.now();
+            //redraw annotations
+            ulabel.redraw_all_annotations(null, null, false);
+        }
     };
     RecolorActiveItem.prototype.get_html = function () {
         return "\n        <div class=\"recolor-active\">\n            <p class=\"tb-header\">Recolor Annotations</p>\n            <div class=\"recolor-tbi-gradient\">\n                <div>\n                    <label for=\"gradient-toggle\" id=\"gradient-toggle-label\">Toggle Gradients</label>\n                    <input type=\"checkbox\" id=\"gradient-toggle\" name=\"gradient-checkbox\" value=\"gradient\" checked>\n                </div>\n                <div>\n                    <label for=\"gradient-slider\" id=\"gradient-slider-label\">Gradient Max</label>\n                    <input type=\"range\" id=\"gradient-slider\" value=\"100\">\n                    <div class=\"gradient-slider-value-display\">100%</div>\n                </div>\n            </div>\n            <div class=\"annotation-recolor-button-holder\">\n                <div class=\"color-btn-container\">\n                    <input type=\"button\" class=\"color-change-btn\" id=\"color-change-yel\">\n                    <input type=\"button\" class=\"color-change-btn\" id=\"color-change-red\">\n                    <input type=\"button\" class=\"color-change-btn\" id=\"color-change-cya\">\n                </div>\n                <div class=\"color-picker-border\">\n                    <div class=\"color-picker-container\" id=\"color-picker-container\">\n                        <input type=\"color\" class=\"color-change-picker\" id=\"color-change-pick\">\n                    </div>\n                </div>\n            </div>\n        </div>\n        ";
