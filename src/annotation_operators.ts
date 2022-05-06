@@ -2,7 +2,7 @@ import { ULabel, ULabelAnnotation, ULabelSubtask } from "..";
 
 //Given an annotation returns the confidence of that annotation
 export function get_annotation_confidence(annotation) {
-    let current_confidence = null;
+    let current_confidence = -1;
     for (let type_of_id in annotation.classification_payloads) {
         if (annotation.classification_payloads[type_of_id].confidence > current_confidence) {
             current_confidence = annotation.classification_payloads[type_of_id].confidence;

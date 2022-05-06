@@ -506,6 +506,13 @@ export class RecolorActiveItem extends ToolboxItem {
 
             ulabel.redraw_all_annotations(null, null, false);
         })
+        $(document).on("input", "#gradient-toggle", (e) => {
+            ulabel.redraw_all_annotations(null, null, false)
+        })
+        $(document).on("input", "#gradient-slider", (e) => {
+            $("div.gradient-slider-value-display").text(e.currentTarget.value + "%")
+            ulabel.redraw_all_annotations(null, null, false)
+        })
     }
 
     public update_annotation_color(subtask, color) {
@@ -555,6 +562,17 @@ export class RecolorActiveItem extends ToolboxItem {
         return `
         <div class="recolor-active">
             <p class="tb-header">Recolor Annotations</p>
+            <div class="recolor-tbi-gradient">
+                <div>
+                    <label for="gradient-toggle" id="gradient-toggle-label">Toggle Gradients</label>
+                    <input type="checkbox" id="gradient-toggle" name="gradient-checkbox" value="gradient" checked>
+                </div>
+                <div>
+                    <label for="gradient-slider" id="gradient-slider-label">Gradient Max</label>
+                    <input type="range" id="gradient-slider" value="100">
+                    <div class="gradient-slider-value-display">100%</div>
+                </div>
+            </div>
             <div class="annotation-recolor-button-holder">
                 <div class="color-btn-container">
                     <input type="button" class="color-change-btn" id="color-change-yel">
