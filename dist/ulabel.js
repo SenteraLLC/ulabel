@@ -13841,6 +13841,10 @@ div#${prntid} div.recolor-active div.recolor-tbi-gradient {
    font-size: .85em;
 }
 
+div#${prntid}.ulabel-night div.recolor-active div.recolor-tbi-gradient {
+   color: white;
+}
+
 div#${prntid} div.recolor-active div.recolor-tbi-gradient #gradient-toggle-label {
    position: relative;
    bottom: 2.5px;
