@@ -429,7 +429,7 @@ var RecolorActiveItem = /** @class */ (function (_super) {
     RecolorActiveItem.prototype.limit_redraw = function (ulabel, wait_time) {
         if (wait_time === void 0) { wait_time = 100; }
         //Compare most recent draw time to now and only draw if  
-        //more than 0.1 seconds have passed. 
+        //more than wait_time milliseconds have passed. 
         if (Date.now() - this.most_recent_draw > wait_time) {
             //update most recent draw to now
             this.most_recent_draw = Date.now();

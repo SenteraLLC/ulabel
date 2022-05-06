@@ -11702,18 +11702,14 @@ function apply_gradient(annotation_object, base_color, get_annotation_confidence
     var r = parseInt(base_color_hex.slice(1, 3), 16);
     var g = parseInt(base_color_hex.slice(3, 5), 16);
     var b = parseInt(base_color_hex.slice(5, 7), 16);
-    console.log(r, g, b, "base RGB Hex");
-    console.log(grad_r, grad_g, grad_b, "gradient RGB Hex");
     //Apply a linear gradient based on the confidence
     var new_r = Math.round((1 - (annotation_confidence / gradient_quantity)) * grad_r + (annotation_confidence / gradient_quantity) * r);
     var new_g = Math.round((1 - (annotation_confidence / gradient_quantity)) * grad_g + (annotation_confidence / gradient_quantity) * g);
     var new_b = Math.round((1 - (annotation_confidence / gradient_quantity)) * grad_b + (annotation_confidence / gradient_quantity) * b);
-    console.log(new_r, new_g, new_b, "New RGB decimal");
     //Turn the new rgb values to a hexadecimal version
     var new_r_hex = new_r.toString(16);
     var new_g_hex = new_g.toString(16);
     var new_b_hex = new_b.toString(16);
-    console.log(new_r_hex, new_g_hex, new_b_hex, "New RGB Hex");
     //If the hex value is a single digit pad the front with a 0 to 
     //ensure its two digits long
     if (new_r_hex.length == 1) {
@@ -11725,12 +11721,6 @@ function apply_gradient(annotation_object, base_color, get_annotation_confidence
     if (new_b_hex.length == 1) {
         new_b_hex = "0" + new_b.toString(16);
     }
-    console.log(new_r_hex, new_g_hex, new_b_hex, "New RGB Hex after 0 padding");
-    // console.log("base: " + base_color_hex)
-    // console.log("new:  " + "#".concat(new_r.toString(16), new_g.toString(16), new_b.toString(16)))
-    // console.log(annotation_confidence)
-    console.log(annotation_object);
-    console.log("");
     return "#".concat(new_r.toString(16), new_g.toString(16), new_b.toString(16));
 }
 exports.ws = apply_gradient;
@@ -19854,7 +19844,7 @@ var RecolorActiveItem = /** @class */ (function (_super) {
     RecolorActiveItem.prototype.limit_redraw = function (ulabel, wait_time) {
         if (wait_time === void 0) { wait_time = 100; }
         //Compare most recent draw time to now and only draw if  
-        //more than 0.1 seconds have passed. 
+        //more than wait_time milliseconds have passed. 
         if (Date.now() - this.most_recent_draw > wait_time) {
             //update most recent draw to now
             this.most_recent_draw = Date.now();
