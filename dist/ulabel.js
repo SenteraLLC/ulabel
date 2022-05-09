@@ -6680,7 +6680,8 @@ class ULabel {
       this.subtasks[this.state["current_subtask"]]["annotations"]["access"][new_id]["parent_id"] = old_id;
       this.subtasks[this.state["current_subtask"]]["annotations"]["ordering"].push(new_id); // Set parent_id and deprecated = true
 
-      this.subtasks[this.state["current_subtask"]]["annotations"]["access"][old_id]["deprecated"] = true; // Change edit candidate to new id
+      this.subtasks[this.state["current_subtask"]]["annotations"]["access"][old_id]["deprecated"] = true;
+      (0,annotation_operators/* set_confidence_to_neg_one */.eZ)(this.subtasks[this.state["current_subtask"]]["annotations"]["access"][old_id]); // Change edit candidate to new id
 
       this.subtasks[this.state["current_subtask"]]["state"]["move_candidate"]["annid"] = new_id;
     }

@@ -3738,7 +3738,7 @@ export class ULabel {
 
             // Set parent_id and deprecated = true
             this.subtasks[this.state["current_subtask"]]["annotations"]["access"][old_id]["deprecated"] = true;
-
+            set_confidence_to_neg_one(this.subtasks[this.state["current_subtask"]]["annotations"]["access"][old_id]);
             // Change edit candidate to new id
             this.subtasks[this.state["current_subtask"]]["state"]["move_candidate"]["annid"] = new_id;
         }
