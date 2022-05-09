@@ -3373,13 +3373,18 @@ class ULabel {
     const frame_annotation_dialogs = ULabel.get_frame_annotation_dialogs(ul);
     const mode_select_tbi = new src_toolbox.ModeSelectionToolboxItem();
     const zoom_pan_tbi = new src_toolbox.ZoomPanToolboxItem(frame_range);
-    const linestyle_tbi = new src_toolbox.LinestyleToolboxItem(ul.config["canvas_did"], ul.config["demo_width"], ul.config["demo_height"], ul.config["px_per_px"]);
-    const annotation_id_tbi = new src_toolbox.AnnotationIDToolboxItem(instructions);
+    const keypoint_slider = new src_toolbox.KeypointSlider(ul, annotation_operators/* filter_low */.kz, annotation_operators/* get_annotation_confidence */.sR, annotation_operators/* mark_deprecated */.gf);
     const class_counter_tbi = new src_toolbox.ClassCounterToolboxItem();
     const annotaion_resize_tbi = new src_toolbox.AnnotationResizeItem(ul);
-    const recolor_active_tbi = new src_toolbox.RecolorActiveItem(ul);
-    const keypoint_slider = new src_toolbox.KeypointSlider(ul, annotation_operators/* filter_low */.kz, annotation_operators/* get_annotation_confidence */.sR, annotation_operators/* mark_deprecated */.gf);
-    const toolbox = new src_toolbox.Toolbox([], [mode_select_tbi, zoom_pan_tbi, linestyle_tbi, annotaion_resize_tbi, annotation_id_tbi, recolor_active_tbi, class_counter_tbi, keypoint_slider]);
+    const annotation_id_tbi = new src_toolbox.AnnotationIDToolboxItem(instructions);
+    const recolor_active_tbi = new src_toolbox.RecolorActiveItem(ul); // const linestyle_tbi = new LinestyleToolboxItem(
+    //     ul.config["canvas_did"],
+    //     ul.config["demo_width"],
+    //     ul.config["demo_height"],
+    //     ul.config["px_per_px"]
+    // );
+
+    const toolbox = new src_toolbox.Toolbox([], [mode_select_tbi, zoom_pan_tbi, annotaion_resize_tbi, annotation_id_tbi, recolor_active_tbi, class_counter_tbi, keypoint_slider]);
     var tool_html = toolbox.setup_toolbox_html(ul, frame_annotation_dialogs, images, ULABEL_VERSION);
     jquery_default()("#" + ul.config["container_id"]).html(tool_html); // Build toolbox for the current subtask only
 
@@ -8587,7 +8592,7 @@ function (_super) {
   };
 
   RecolorActiveItem.prototype.get_html = function () {
-    return "\n        <div class=\"recolor-active\">\n            <p class=\"tb-header\">Recolor Annotations</p>\n            <div class=\"recolor-tbi-gradient\">\n                <div>\n                    <label for=\"gradient-toggle\" id=\"gradient-toggle-label\">Toggle Gradients</label>\n                    <input type=\"checkbox\" id=\"gradient-toggle\" name=\"gradient-checkbox\" value=\"gradient\" checked>\n                </div>\n                <div>\n                    <label for=\"gradient-slider\" id=\"gradient-slider-label\">Gradient Max</label>\n                    <input type=\"range\" id=\"gradient-slider\" value=\"100\">\n                    <div class=\"gradient-slider-value-display\">100%</div>\n                </div>\n            </div>\n            <div class=\"annotation-recolor-button-holder\">\n                <div class=\"color-btn-container\">\n                    <input type=\"button\" class=\"color-change-btn\" id=\"color-change-yel\">\n                    <input type=\"button\" class=\"color-change-btn\" id=\"color-change-red\">\n                    <input type=\"button\" class=\"color-change-btn\" id=\"color-change-cya\">\n                </div>\n                <div class=\"color-picker-border\">\n                    <div class=\"color-picker-container\" id=\"color-picker-container\">\n                        <input type=\"color\" class=\"color-change-picker\" id=\"color-change-pick\">\n                    </div>\n                </div>\n            </div>\n        </div>\n        ";
+    return "\n        <div class=\"recolor-active\">\n            <p class=\"tb-header\">Recolor Annotations</p>\n            <div class=\"recolor-tbi-gradient\">\n                <div>\n                    <label for=\"gradient-toggle\" id=\"gradient-toggle-label\">Toggle Gradients</label>\n                    <input type=\"checkbox\" id=\"gradient-toggle\" name=\"gradient-checkbox\" value=\"gradient\">\n                </div>\n                <div>\n                    <label for=\"gradient-slider\" id=\"gradient-slider-label\">Gradient Max</label>\n                    <input type=\"range\" id=\"gradient-slider\" value=\"100\">\n                    <div class=\"gradient-slider-value-display\">100%</div>\n                </div>\n            </div>\n            <div class=\"annotation-recolor-button-holder\">\n                <div class=\"color-btn-container\">\n                    <input type=\"button\" class=\"color-change-btn\" id=\"color-change-yel\">\n                    <input type=\"button\" class=\"color-change-btn\" id=\"color-change-red\">\n                    <input type=\"button\" class=\"color-change-btn\" id=\"color-change-cya\">\n                </div>\n                <div class=\"color-picker-border\">\n                    <div class=\"color-picker-container\" id=\"color-picker-container\">\n                        <input type=\"color\" class=\"color-change-picker\" id=\"color-change-pick\">\n                    </div>\n                </div>\n            </div>\n        </div>\n        ";
   };
 
   return RecolorActiveItem;

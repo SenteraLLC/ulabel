@@ -278,21 +278,21 @@ export class ULabel {
 
         const mode_select_tbi = new ModeSelectionToolboxItem();
         const zoom_pan_tbi = new ZoomPanToolboxItem(frame_range);
-        const linestyle_tbi = new LinestyleToolboxItem(
-            ul.config["canvas_did"],
-            ul.config["demo_width"],
-            ul.config["demo_height"],
-            ul.config["px_per_px"]
-        );
-        const annotation_id_tbi = new AnnotationIDToolboxItem(instructions);
+        const keypoint_slider = new KeypointSlider(ul, filter_low, get_annotation_confidence, mark_deprecated);
         const class_counter_tbi = new ClassCounterToolboxItem();
         const annotaion_resize_tbi = new AnnotationResizeItem(ul);
+        const annotation_id_tbi = new AnnotationIDToolboxItem(instructions);
         const recolor_active_tbi = new RecolorActiveItem(ul);
-        const keypoint_slider = new KeypointSlider(ul, filter_low, get_annotation_confidence, mark_deprecated);
+        // const linestyle_tbi = new LinestyleToolboxItem(
+        //     ul.config["canvas_did"],
+        //     ul.config["demo_width"],
+        //     ul.config["demo_height"],
+        //     ul.config["px_per_px"]
+        // );
 
         const toolbox = new Toolbox(
             [],
-            [mode_select_tbi, zoom_pan_tbi, linestyle_tbi, annotaion_resize_tbi, annotation_id_tbi, recolor_active_tbi, class_counter_tbi, keypoint_slider],
+            [mode_select_tbi, zoom_pan_tbi, annotaion_resize_tbi, annotation_id_tbi, recolor_active_tbi, class_counter_tbi, keypoint_slider],
         );
 
 
