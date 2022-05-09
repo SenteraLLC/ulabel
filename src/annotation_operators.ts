@@ -22,3 +22,10 @@ export function filter_low(annotation_confidence: number, filter_value: number) 
     if (annotation_confidence < filter_value) return true
     return false
 }
+
+// Set all confidence values to -1 
+export function set_confidence_to_neg_one(annotation: ULabelAnnotation) {
+    for (let type_of_id in annotation.classification_payloads) {
+        annotation.classification_payloads[type_of_id].confidence = -1;
+    }
+}

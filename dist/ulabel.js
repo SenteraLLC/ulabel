@@ -126,7 +126,7 @@ var __webpack_unused_export__;
 __webpack_unused_export__ = ({
   value: true
 });
-exports.kz = exports.gf = exports.sR = void 0; //Given an annotation returns the confidence of that annotation
+exports.eZ = exports.kz = exports.gf = exports.sR = void 0; //Given an annotation returns the confidence of that annotation
 
 function get_annotation_confidence(annotation) {
   var current_confidence = -1;
@@ -154,7 +154,15 @@ function filter_low(annotation_confidence, filter_value) {
   return false;
 }
 
-exports.kz = filter_low;
+exports.kz = filter_low; // Set all confidence values to -1 
+
+function set_confidence_to_neg_one(annotation) {
+  for (var type_of_id in annotation.classification_payloads) {
+    annotation.classification_payloads[type_of_id].confidence = -1;
+  }
+}
+
+exports.eZ = set_confidence_to_neg_one;
 
 /***/ }),
 
@@ -5555,14 +5563,21 @@ class ULabel {
       } // Make new annotation (copy of old)
 
 
-      this.subtasks[this.state["current_subtask"]]["annotations"]["access"][new_id] = JSON.parse(JSON.stringify(this.subtasks[this.state["current_subtask"]]["annotations"]["access"][old_id]));
-      this.subtasks[this.state["current_subtask"]]["annotations"]["access"][new_id]["id"] = new_id;
-      this.subtasks[this.state["current_subtask"]]["annotations"]["access"][new_id]["created_by"] = this.config["annotator"];
-      this.subtasks[this.state["current_subtask"]]["annotations"]["access"][new_id]["new"] = true;
-      this.subtasks[this.state["current_subtask"]]["annotations"]["access"][new_id]["parent_id"] = old_id;
+      var old_anno = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][old_id];
+      var new_anno = JSON.parse(JSON.stringify(old_anno));
+      new_anno["id"] = new_id;
+      new_anno["new"] = true;
+      new_anno["created_by"] = this.config["annotator"];
+      new_anno["parent_id"] = old_id; // Set classification_payload
+
+      (0,annotation_operators/* set_confidence_to_neg_one */.eZ)(old_anno);
+      new_anno["classification_payloads"] = JSON.parse(JSON.stringify(old_anno["classification_payloads"]));
+      console.log(old_anno);
+      console.log(new_anno);
+      this.subtasks[this.state["current_subtask"]]["annotations"]["access"][new_id] = new_anno;
       this.subtasks[this.state["current_subtask"]]["annotations"]["ordering"].push(new_id); // Set parent_id and deprecated = true
 
-      this.subtasks[this.state["current_subtask"]]["annotations"]["access"][old_id]["deprecated"] = true; // Work with new annotation from now on
+      old_anno["deprecated"] = true; // Work with new annotation from now on
 
       annid = new_id;
     }
@@ -5574,6 +5589,8 @@ class ULabel {
       this.subtasks[this.state["current_subtask"]]["state"]["is_in_progress"] = false;
     }
 
+    (0,annotation_operators/* set_confidence_to_neg_one */.eZ)(this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid]);
+    console.log("yuh");
     this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid]["deprecated"] = true;
     this.redraw_all_annotations(this.state["current_subtask"]);
     this.hide_global_edit_suggestion();

@@ -7,7 +7,7 @@ import { Toolbox, ClassCounterToolboxItem, ModeSelectionToolboxItem, ZoomPanTool
 import { AnnotationIDToolboxItem, AnnotationResizeItem, RecolorActiveItem, KeypointSlider } from './toolbox';
 import { ULabelSubtask } from './subtask';
 import { GeometricUtils } from './geometric_utils';
-import { get_annotation_confidence, mark_deprecated, filter_low } from './annotation_operators';
+import { get_annotation_confidence, mark_deprecated, filter_low, set_confidence_to_neg_one } from './annotation_operators';
 import { apply_gradient } from './drawing_utilities'
 import $ from 'jquery';
 const jQuery = $;
@@ -2659,15 +2659,24 @@ export class ULabel {
             }
 
             // Make new annotation (copy of old)
-            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][new_id] = JSON.parse(JSON.stringify(this.subtasks[this.state["current_subtask"]]["annotations"]["access"][old_id]));
-            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][new_id]["id"] = new_id;
-            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][new_id]["created_by"] = this.config["annotator"];
-            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][new_id]["new"] = true;
-            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][new_id]["parent_id"] = old_id;
+            var old_anno = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][old_id];
+            var new_anno = JSON.parse(JSON.stringify(old_anno));
+            new_anno["id"] = new_id;
+            new_anno["new"] = true;
+            new_anno["created_by"] = this.config["annotator"];
+            new_anno["parent_id"] = old_id;
+
+            // Set classification_payload
+            set_confidence_to_neg_one(old_anno)
+            new_anno["classification_payloads"] = JSON.parse(JSON.stringify(old_anno["classification_payloads"]));
+            console.log(old_anno)
+            console.log(new_anno)
+            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][new_id] = new_anno;
+
             this.subtasks[this.state["current_subtask"]]["annotations"]["ordering"].push(new_id);
 
             // Set parent_id and deprecated = true
-            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][old_id]["deprecated"] = true;
+            old_anno["deprecated"] = true;
 
             // Work with new annotation from now on
             annid = new_id;
@@ -2679,6 +2688,11 @@ export class ULabel {
             this.subtasks[this.state["current_subtask"]]["state"]["is_in_move"] = false;
             this.subtasks[this.state["current_subtask"]]["state"]["is_in_progress"] = false;
         }
+
+        set_confidence_to_neg_one(
+            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid]
+        );
+        console.log("yuh");
         this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid]["deprecated"] = true;
         this.redraw_all_annotations(this.state["current_subtask"]);
         this.hide_global_edit_suggestion();

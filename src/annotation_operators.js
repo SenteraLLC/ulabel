@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.filter_low = exports.mark_deprecated = exports.get_annotation_confidence = void 0;
+exports.set_confidence_to_neg_one = exports.filter_low = exports.mark_deprecated = exports.get_annotation_confidence = void 0;
 //Given an annotation returns the confidence of that annotation
 function get_annotation_confidence(annotation) {
     var current_confidence = -1;
@@ -25,3 +25,10 @@ function filter_low(annotation_confidence, filter_value) {
     return false;
 }
 exports.filter_low = filter_low;
+// Set all confidence values to -1 
+function set_confidence_to_neg_one(annotation) {
+    for (var type_of_id in annotation.classification_payloads) {
+        annotation.classification_payloads[type_of_id].confidence = -1;
+    }
+}
+exports.set_confidence_to_neg_one = set_confidence_to_neg_one;
