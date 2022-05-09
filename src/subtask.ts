@@ -1,4 +1,4 @@
-import { ULabelAnnotation, ULabelSpatialType } from "../ulabel";
+import { ULabelAnnotation, ULabelSpatialType } from "..";
 
 export class ULabelSubtask {
     public actions: { stream: any[]; undone_stack: any[]; };

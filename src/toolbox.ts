@@ -1,4 +1,4 @@
-import { ULabel, ULabelAnnotation, ULabelSubtask } from "../ulabel";
+import { ULabel, ULabelAnnotation, ULabelSubtask } from "..";
 
 const toolboxDividerDiv = "<div class=toolbox-divider></div>"
 function read_annotation_confidence() {

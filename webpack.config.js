@@ -17,8 +17,13 @@ module.exports = {
   output: {
     filename: 'ulabel.js',
     path: path.resolve(__dirname, 'dist'),
-    library: 'ulabel',
-    libraryTarget: 'umodule'
+    library : {
+      name: "ULabel",
+      type: "commonjs",
+      export: "default"
+    }
+    // library: 'ulabel',
+    // libraryTarget: 'umodule'
   },
   optimization: {
     minimize: false

@@ -1,4 +1,4 @@
-import { ULabel, ULabelAnnotation, ULabelSubtask } from "../ulabel";
+import { ULabel, ULabelAnnotation, ULabelSubtask } from "..";
 
 //Given an annotation returns the confidence of that annotation
 export function get_annotation_confidence(annotation) {
