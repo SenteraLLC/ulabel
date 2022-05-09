@@ -27,7 +27,10 @@
   },
   "homepage": "https://github.com/SenteraLLC/ulabel",
   "dependencies": {
+    "babel-loader": "^8.2.5",
     "jquery": "^3.5.1",
+    "ts-loader": "^9.3.0",
+    "ts-node": "^10.7.0",
     "ulabel": "^0.4.21",
     "uuidv4": "^6.2.6"
   },
