@@ -3384,7 +3384,7 @@ class ULabel {
     //     ul.config["px_per_px"]
     // );
 
-    const toolbox = new src_toolbox.Toolbox([], [mode_select_tbi, zoom_pan_tbi, annotaion_resize_tbi, annotation_id_tbi, recolor_active_tbi, class_counter_tbi, keypoint_slider]);
+    const toolbox = new src_toolbox.Toolbox([], [mode_select_tbi, zoom_pan_tbi, keypoint_slider, class_counter_tbi, annotaion_resize_tbi, annotation_id_tbi, recolor_active_tbi]);
     var tool_html = toolbox.setup_toolbox_html(ul, frame_annotation_dialogs, images, ULABEL_VERSION);
     jquery_default()("#" + ul.config["container_id"]).html(tool_html); // Build toolbox for the current subtask only
 
@@ -4392,9 +4392,11 @@ class ULabel {
         that.subtasks[st]["state"]["back_context"] = document.getElementById(that.subtasks[st]["canvas_bid"]).getContext("2d");
         that.subtasks[st]["state"]["front_context"] = document.getElementById(that.subtasks[st]["canvas_fid"]).getContext("2d");
       } // Get rendering context for demo canvas
+      // that.state["demo_canvas_context"] = document.getElementById(
+      //     that.config["canvas_did"]
+      // ).getContext("2d");
+      // Add the ID dialogs' HTML to the document
 
-
-      that.state["demo_canvas_context"] = document.getElementById(that.config["canvas_did"]).getContext("2d"); // Add the ID dialogs' HTML to the document
 
       ULabel.build_id_dialogs(that); // Add the HTML for the edit suggestion to the window
 
@@ -4567,10 +4569,9 @@ class ULabel {
   } // Draw demo annotation in demo canvas
 
 
-  redraw_demo() {
-    this.state["demo_canvas_context"].clearRect(0, 0, this.config["demo_width"] * this.config["px_per_px"], this.config["demo_height"] * this.config["px_per_px"]);
-    this.draw_annotation(DEMO_ANNOTATION, "demo_canvas_context", true, null, "demo");
-    this.update_cursor();
+  redraw_demo() {// this.state["demo_canvas_context"].clearRect(0, 0, this.config["demo_width"] * this.config["px_per_px"], this.config["demo_height"] * this.config["px_per_px"]);
+    // this.draw_annotation(DEMO_ANNOTATION, "demo_canvas_context", true, null, "demo");
+    // this.update_cursor();
   } // ================= Instance Utilities =================
   // A robust measure of zoom
 
@@ -5144,19 +5145,17 @@ class ULabel {
     // Don't draw if deprecated
     if (annotation_object["deprecated"]) return; // Get actual context from context key and subtask
 
-    let ctx = null;
+    let ctx = null; // if (subtask == "demo") {
+    //     // Must be demo
+    //     if (cvs_ctx != "demo_canvas_context") {
+    //         throw new Error("Error drawing demo annotation.")
+    //     }
+    //     ctx = this.state["demo_canvas_context"];
+    // }
+    // else {
+    // }
 
-    if (subtask == "demo") {
-      // Must be demo
-      if (cvs_ctx != "demo_canvas_context") {
-        throw new Error("Error drawing demo annotation.");
-      }
-
-      ctx = this.state["demo_canvas_context"];
-    } else {
-      ctx = this.subtasks[subtask]["state"][cvs_ctx];
-    } // Dispatch to annotation type's drawing function
-
+    ctx = this.subtasks[subtask]["state"][cvs_ctx]; // Dispatch to annotation type's drawing function
 
     switch (annotation_object["spatial_type"]) {
       case "bbox":

@@ -292,7 +292,15 @@ export class ULabel {
 
         const toolbox = new Toolbox(
             [],
-            [mode_select_tbi, zoom_pan_tbi, annotaion_resize_tbi, annotation_id_tbi, recolor_active_tbi, class_counter_tbi, keypoint_slider],
+            [
+                mode_select_tbi,
+                zoom_pan_tbi,
+                keypoint_slider,
+                class_counter_tbi,
+                annotaion_resize_tbi,
+                annotation_id_tbi,
+                recolor_active_tbi,
+            ],
         );
 
 
@@ -1455,9 +1463,9 @@ export class ULabel {
                 ).getContext("2d");
             }
             // Get rendering context for demo canvas
-            that.state["demo_canvas_context"] = document.getElementById(
-                that.config["canvas_did"]
-            ).getContext("2d");
+            // that.state["demo_canvas_context"] = document.getElementById(
+            //     that.config["canvas_did"]
+            // ).getContext("2d");
 
             // Add the ID dialogs' HTML to the document
             ULabel.build_id_dialogs(that);
@@ -1663,9 +1671,9 @@ export class ULabel {
 
     // Draw demo annotation in demo canvas
     redraw_demo() {
-        this.state["demo_canvas_context"].clearRect(0, 0, this.config["demo_width"] * this.config["px_per_px"], this.config["demo_height"] * this.config["px_per_px"]);
-        this.draw_annotation(DEMO_ANNOTATION, "demo_canvas_context", true, null, "demo");
-        this.update_cursor();
+        // this.state["demo_canvas_context"].clearRect(0, 0, this.config["demo_width"] * this.config["px_per_px"], this.config["demo_height"] * this.config["px_per_px"]);
+        // this.draw_annotation(DEMO_ANNOTATION, "demo_canvas_context", true, null, "demo");
+        // this.update_cursor();
     }
 
     // ================= Instance Utilities =================
@@ -2249,16 +2257,16 @@ export class ULabel {
 
         // Get actual context from context key and subtask
         let ctx = null;
-        if (subtask == "demo") {
-            // Must be demo
-            if (cvs_ctx != "demo_canvas_context") {
-                throw new Error("Error drawing demo annotation.")
-            }
-            ctx = this.state["demo_canvas_context"];
-        }
-        else {
-            ctx = this.subtasks[subtask]["state"][cvs_ctx];
-        }
+        // if (subtask == "demo") {
+        //     // Must be demo
+        //     if (cvs_ctx != "demo_canvas_context") {
+        //         throw new Error("Error drawing demo annotation.")
+        //     }
+        //     ctx = this.state["demo_canvas_context"];
+        // }
+        // else {
+        // }
+        ctx = this.subtasks[subtask]["state"][cvs_ctx];
 
         // Dispatch to annotation type's drawing function
         switch (annotation_object["spatial_type"]) {
