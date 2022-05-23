@@ -13,6 +13,9 @@ function apply_gradient(annotation_object, base_color, get_annotation_confidence
     if ($("#gradient-toggle").prop("checked") == false) {
         return base_color;
     }
+    if (annotation_object.classification_payloads == null) {
+        return base_color;
+    }
     var annotation_confidence = get_annotation_confidence(annotation_object);
     //if the annotation confidence is greater than the max gradient endpoint, then
     //don't apply a gradient
@@ -20,21 +23,23 @@ function apply_gradient(annotation_object, base_color, get_annotation_confidence
         return base_color;
     }
     var base_color_hex = color_to_hex(base_color);
+    //gradient_quantity is how strong you want the gradient to be
+    //made it a variable to make it easy to change in the future
     var gradient_quantity = 0.85;
     //Have the gradient color be a lightened version of the base color that is gradient_quantity% white
     //and the remaining percent is base color
     //Decimal numbers
-    var grad_r = Math.round(((1 - gradient_maximum) * (parseInt(base_color_hex.slice(1, 3), 16))) + gradient_maximum * 255);
-    var grad_g = Math.round(((1 - gradient_maximum) * (parseInt(base_color_hex.slice(3, 5), 16))) + gradient_maximum * 255);
-    var grad_b = Math.round(((1 - gradient_maximum) * (parseInt(base_color_hex.slice(5, 7), 16))) + gradient_maximum * 255);
+    var grad_r = Math.round(((1 - gradient_quantity) * (parseInt(base_color_hex.slice(1, 3), 16))) + gradient_quantity * 255);
+    var grad_g = Math.round(((1 - gradient_quantity) * (parseInt(base_color_hex.slice(3, 5), 16))) + gradient_quantity * 255);
+    var grad_b = Math.round(((1 - gradient_quantity) * (parseInt(base_color_hex.slice(5, 7), 16))) + gradient_quantity * 255);
     //Grab individual r g b values from the hex string and convert them to decimal
     var r = parseInt(base_color_hex.slice(1, 3), 16);
     var g = parseInt(base_color_hex.slice(3, 5), 16);
     var b = parseInt(base_color_hex.slice(5, 7), 16);
     //Apply a linear gradient based on the confidence
-    var new_r = Math.round((1 - (annotation_confidence / gradient_quantity)) * grad_r + (annotation_confidence / gradient_quantity) * r);
-    var new_g = Math.round((1 - (annotation_confidence / gradient_quantity)) * grad_g + (annotation_confidence / gradient_quantity) * g);
-    var new_b = Math.round((1 - (annotation_confidence / gradient_quantity)) * grad_b + (annotation_confidence / gradient_quantity) * b);
+    var new_r = Math.round((1 - (annotation_confidence / gradient_maximum)) * grad_r + (annotation_confidence / gradient_maximum) * r);
+    var new_g = Math.round((1 - (annotation_confidence / gradient_maximum)) * grad_g + (annotation_confidence / gradient_maximum) * g);
+    var new_b = Math.round((1 - (annotation_confidence / gradient_maximum)) * grad_b + (annotation_confidence / gradient_maximum) * b);
     //Turn the new rgb values to a hexadecimal version
     var new_r_hex = new_r.toString(16);
     var new_g_hex = new_g.toString(16);
@@ -50,7 +55,15 @@ function apply_gradient(annotation_object, base_color, get_annotation_confidence
     if (new_b_hex.length == 1) {
         new_b_hex = "0" + new_b.toString(16);
     }
-    return "#".concat(new_r.toString(16), new_g.toString(16), new_b.toString(16));
+    var final_hex = "#".concat(new_r_hex, new_g_hex, new_b_hex);
+    //Since hex values should always be a string with lenght 7, if its not
+    //then return the base color just in case.
+    if (final_hex.length == 7) {
+        return final_hex;
+    }
+    else {
+        return base_color_hex;
+    }
 }
 exports.apply_gradient = apply_gradient;
 /*takes in a string of any valid css color and returns its hex value
