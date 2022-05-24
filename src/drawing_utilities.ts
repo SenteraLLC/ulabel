@@ -73,7 +73,7 @@ export function apply_gradient(
 
     let final_hex = "#".concat(new_r_hex, new_g_hex, new_b_hex)
 
-    //Since hex values should always be a string with lenght 7, if its not
+    //Since hex values should always be a string with length 7, if its not
     //then return the base color just in case.
     if (final_hex.length == 7) {
         return final_hex
