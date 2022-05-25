@@ -3,7 +3,7 @@ Uncertain Labeling Tool
 Sentera Inc.
 */
 import { ULabelAnnotation } from './annotation';
-import { Toolbox, ClassCounterToolboxItem, ModeSelectionToolboxItem, ZoomPanToolboxItem, LinestyleToolboxItem } from './toolbox';
+import { Toolbox, ClassCounterToolboxItem, ModeSelectionToolboxItem, ZoomPanToolboxItem } from './toolbox';
 import { AnnotationIDToolboxItem, AnnotationResizeItem, RecolorActiveItem, KeypointSlider } from './toolbox';
 import { ULabelSubtask } from './subtask';
 import { GeometricUtils } from './geometric_utils';
@@ -278,12 +278,6 @@ export class ULabel {
 
         const mode_select_tbi = new ModeSelectionToolboxItem();
         const zoom_pan_tbi = new ZoomPanToolboxItem(frame_range);
-        const linestyle_tbi = new LinestyleToolboxItem(
-            ul.config["canvas_did"],
-            ul.config["demo_width"],
-            ul.config["demo_height"],
-            ul.config["px_per_px"]
-        );
         const annotation_id_tbi = new AnnotationIDToolboxItem(instructions);
         const class_counter_tbi = new ClassCounterToolboxItem();
         const annotaion_resize_tbi = new AnnotationResizeItem(ul);
@@ -292,22 +286,19 @@ export class ULabel {
 
         let configuration = new Configuration();
 
-        let toolbox_length = configuration.toolbox_item_order.length
+        let toolbox_length = configuration.default_toolbox_item_order.length
         let toolbox_items = []
 
         //We populate the toolbox_items array in the manner so that it gets
         //populated in the order in the config file
         if (toolbox_length > 0) {
             for (let i = 0; i < toolbox_length; i++) {
-                switch (configuration.toolbox_item_order.shift()) {
+                switch (configuration.default_toolbox_item_order.shift()) {
                     case "mode select":
                         toolbox_items.push(mode_select_tbi)
                         break;
                     case "zoom pan":
                         toolbox_items.push(zoom_pan_tbi)
-                        break;
-                    case "linestyle":
-                        toolbox_items.push(linestyle_tbi)
                         break;
                     case "annotation resize":
                         toolbox_items.push(annotaion_resize_tbi)
@@ -1497,9 +1488,9 @@ export class ULabel {
                 ).getContext("2d");
             }
             // Get rendering context for demo canvas
-            that.state["demo_canvas_context"] = document.getElementById(
-                that.config["canvas_did"]
-            ).getContext("2d");
+            // that.state["demo_canvas_context"] = document.getElementById(
+            //     that.config["canvas_did"]
+            // ).getContext("2d");
 
             // Add the ID dialogs' HTML to the document
             ULabel.build_id_dialogs(that);
@@ -1705,9 +1696,9 @@ export class ULabel {
 
     // Draw demo annotation in demo canvas
     redraw_demo() {
-        this.state["demo_canvas_context"].clearRect(0, 0, this.config["demo_width"] * this.config["px_per_px"], this.config["demo_height"] * this.config["px_per_px"]);
-        this.draw_annotation(DEMO_ANNOTATION, "demo_canvas_context", true, null, "demo");
-        this.update_cursor();
+        // this.state["demo_canvas_context"].clearRect(0, 0, this.config["demo_width"] * this.config["px_per_px"], this.config["demo_height"] * this.config["px_per_px"]);
+        // this.draw_annotation(DEMO_ANNOTATION, "demo_canvas_context", true, null, "demo");
+        // this.update_cursor();
     }
 
     // ================= Instance Utilities =================

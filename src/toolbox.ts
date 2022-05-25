@@ -193,40 +193,6 @@ export class ZoomPanToolboxItem extends ToolboxItem {
     }
 }
 
-/**
- * Toolbox Item for selecting line style.
- */
-export class LinestyleToolboxItem extends ToolboxItem { 
-    constructor(
-        public canvas_did: string,
-        public demo_width: number,
-        public demo_height: number,
-        public px_per_px: number 
-    ) {super();}
-
-    public get_html() {
-        return `
-        <div class="linestyle">
-            <p class="tb-header">Line Width</p>
-            <div class="lstyl-row">
-                <div class="line-expl">
-                    <a href="#" class="wbutt wout">-</a>
-                    <canvas 
-                        id="${this.canvas_did}" 
-                        class="demo-canvas" 
-                        width=${this.demo_width*this.px_per_px}} 
-                        height=${this.demo_height*this.px_per_px}></canvas>
-                    <a href="#" class="wbutt win">+</a>
-                </div><!--
-                --><div class="setting">
-                    <a class="fixed-setting">Fixed</a><br>
-                    <a href="#" class="dyn-setting">Dynamic</a>
-                </div>
-            </div>
-        </div>
-        `
-    }
-}
 
 /**
  * Toolbox item for selection Annotation ID.
@@ -250,7 +216,6 @@ export class AnnotationIDToolboxItem extends ToolboxItem {
         `;
     }
 }
-
 
 export class ClassCounterToolboxItem extends ToolboxItem {
     public html: string;

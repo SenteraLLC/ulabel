@@ -2,8 +2,8 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Configuration = void 0;
 var Configuration = /** @class */ (function () {
-    function Configuration(toolbox_item_order) {
-        if (toolbox_item_order === void 0) { toolbox_item_order = [
+    function Configuration(default_toolbox_item_order) {
+        if (default_toolbox_item_order === void 0) { default_toolbox_item_order = [
             "mode select",
             "zoom pan",
             "annotation resize",
@@ -11,9 +11,9 @@ var Configuration = /** @class */ (function () {
             "recolor active",
             "class counter",
             "keypoint slider",
-            "linestyle"
+            //"linestyle"
         ]; }
-        this.toolbox_item_order = toolbox_item_order;
+        this.default_toolbox_item_order = default_toolbox_item_order;
     }
     Configuration.prototype.update_toolbox_item_order = function () {
         console.log();

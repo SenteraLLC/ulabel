@@ -2,7 +2,7 @@ import { ToolboxItem } from "./toolbox"
 
 export class Configuration {
     constructor(
-        public toolbox_item_order: string[] = [
+        public default_toolbox_item_order: string[] = [
             "mode select",
             "zoom pan",
             "annotation resize",
@@ -10,7 +10,7 @@ export class Configuration {
             "recolor active",
             "class counter",
             "keypoint slider",
-            "linestyle"
+            //"linestyle"
         ]
     ) {
     }

@@ -15,7 +15,7 @@ var __extends = (this && this.__extends) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.KeypointSlider = exports.RecolorActiveItem = exports.AnnotationResizeItem = exports.ClassCounterToolboxItem = exports.AnnotationIDToolboxItem = exports.LinestyleToolboxItem = exports.ZoomPanToolboxItem = exports.ModeSelectionToolboxItem = exports.ToolboxItem = exports.ToolboxTab = exports.Toolbox = void 0;
+exports.KeypointSlider = exports.RecolorActiveItem = exports.AnnotationResizeItem = exports.ClassCounterToolboxItem = exports.AnnotationIDToolboxItem = exports.ZoomPanToolboxItem = exports.ModeSelectionToolboxItem = exports.ToolboxItem = exports.ToolboxTab = exports.Toolbox = void 0;
 var __1 = require("..");
 var toolboxDividerDiv = "<div class=toolbox-divider></div>";
 function read_annotation_confidence() {
@@ -128,25 +128,6 @@ var ZoomPanToolboxItem = /** @class */ (function (_super) {
     return ZoomPanToolboxItem;
 }(ToolboxItem));
 exports.ZoomPanToolboxItem = ZoomPanToolboxItem;
-/**
- * Toolbox Item for selecting line style.
- */
-var LinestyleToolboxItem = /** @class */ (function (_super) {
-    __extends(LinestyleToolboxItem, _super);
-    function LinestyleToolboxItem(canvas_did, demo_width, demo_height, px_per_px) {
-        var _this = _super.call(this) || this;
-        _this.canvas_did = canvas_did;
-        _this.demo_width = demo_width;
-        _this.demo_height = demo_height;
-        _this.px_per_px = px_per_px;
-        return _this;
-    }
-    LinestyleToolboxItem.prototype.get_html = function () {
-        return "\n        <div class=\"linestyle\">\n            <p class=\"tb-header\">Line Width</p>\n            <div class=\"lstyl-row\">\n                <div class=\"line-expl\">\n                    <a href=\"#\" class=\"wbutt wout\">-</a>\n                    <canvas \n                        id=\"".concat(this.canvas_did, "\" \n                        class=\"demo-canvas\" \n                        width=").concat(this.demo_width * this.px_per_px, "} \n                        height=").concat(this.demo_height * this.px_per_px, "></canvas>\n                    <a href=\"#\" class=\"wbutt win\">+</a>\n                </div><!--\n                --><div class=\"setting\">\n                    <a class=\"fixed-setting\">Fixed</a><br>\n                    <a href=\"#\" class=\"dyn-setting\">Dynamic</a>\n                </div>\n            </div>\n        </div>\n        ");
-    };
-    return LinestyleToolboxItem;
-}(ToolboxItem));
-exports.LinestyleToolboxItem = LinestyleToolboxItem;
 /**
  * Toolbox item for selection Annotation ID.
  */
