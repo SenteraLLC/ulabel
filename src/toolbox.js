@@ -17,6 +17,7 @@ var __extends = (this && this.__extends) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.KeypointSlider = exports.RecolorActiveItem = exports.AnnotationResizeItem = exports.ClassCounterToolboxItem = exports.AnnotationIDToolboxItem = exports.ZoomPanToolboxItem = exports.ModeSelectionToolboxItem = exports.ToolboxItem = exports.ToolboxTab = exports.Toolbox = void 0;
 var __1 = require("..");
+var configuration_1 = require("./configuration");
 var toolboxDividerDiv = "<div class=toolbox-divider></div>";
 function read_annotation_confidence() {
     return;
@@ -210,6 +211,9 @@ var AnnotationResizeItem = /** @class */ (function (_super) {
         _this.cached_size = 1.5;
         _this.inner_HTML = "<p class=\"tb-header\">Annotation Count</p>";
         //Sets the default line size
+        //grab the configuration defaults
+        var configuration = new configuration_1.Configuration;
+        _this.keybing_configuration = configuration.defalut_keybinds;
         //event listener for buttons
         $(document).on("click", "a.butt-ann", function (e) {
             var button = $(e.currentTarget);
@@ -225,19 +229,19 @@ var AnnotationResizeItem = /** @class */ (function (_super) {
             var current_subtask = ulabel.subtasks[current_subtask_key];
             console.log(e.which);
             switch (e.which) {
-                case 118:
+                case _this.keybing_configuration.annotation_vanish:
                     _this.update_annotation_size(current_subtask, "v");
                     break;
-                case 115:
+                case _this.keybing_configuration.annotation_size_small:
                     _this.update_annotation_size(current_subtask, "s");
                     break;
-                case 108:
+                case _this.keybing_configuration.annotation_size_large:
                     _this.update_annotation_size(current_subtask, "l");
                     break;
-                case 45:
+                case _this.keybing_configuration.annotation_size_minus:
                     _this.update_annotation_size(current_subtask, "dec");
                     break;
-                case 61:
+                case _this.keybing_configuration.annotation_size_plus:
                     _this.update_annotation_size(current_subtask, "inc");
                     break;
             }

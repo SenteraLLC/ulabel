@@ -1,4 +1,5 @@
 import { ULabel, ULabelAnnotation, ULabelSubtask } from "..";
+import { Configuration } from "./configuration";
 
 const toolboxDividerDiv = "<div class=toolbox-divider></div>"
 function read_annotation_confidence() {
@@ -286,10 +287,15 @@ export class AnnotationResizeItem extends ToolboxItem {
     public cached_size: number = 1.5;
     public html: string;
     public inner_HTML: string;
+    private keybing_configuration: {[key: string]: number}
     constructor(ulabel: ULabel) {
         super();
         this.inner_HTML = `<p class="tb-header">Annotation Count</p>`;
         //Sets the default line size
+
+        //grab the configuration defaults
+        let configuration = new Configuration;
+        this.keybing_configuration = configuration.defalut_keybinds
         
         //event listener for buttons
         $(document).on("click", "a.butt-ann", (e) => {
@@ -306,19 +312,19 @@ export class AnnotationResizeItem extends ToolboxItem {
             var current_subtask = ulabel.subtasks[current_subtask_key];
             console.log(e.which)
             switch(e.which) {
-                case 118:
+                case this.keybing_configuration.annotation_vanish:
                     this.update_annotation_size(current_subtask, "v")
                     break;
-                case 115:
+                case this.keybing_configuration.annotation_size_small:
                     this.update_annotation_size(current_subtask, "s")
                     break;
-                case 108:
+                case this.keybing_configuration.annotation_size_large:
                     this.update_annotation_size(current_subtask, "l")
                     break;
-                case 45:
+                case this.keybing_configuration.annotation_size_minus:
                     this.update_annotation_size(current_subtask, "dec")
                     break;
-                case 61:
+                case this.keybing_configuration.annotation_size_plus:
                     this.update_annotation_size(current_subtask, "inc")
                     break;
             }
