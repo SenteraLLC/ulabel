@@ -11664,6 +11664,38 @@ exports.kz = filter_low;
 
 /***/ }),
 
+/***/ 976:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+var __webpack_unused_export__;
+
+__webpack_unused_export__ = ({ value: true });
+exports.V = void 0;
+var Configuration = /** @class */ (function () {
+    function Configuration(toolbox_item_order) {
+        if (toolbox_item_order === void 0) { toolbox_item_order = [
+            "mode select",
+            "zoom pan",
+            "annotation resize",
+            "annotation id",
+            "recolor active",
+            "class counter",
+            "keypoint slider",
+            "linestyle"
+        ]; }
+        this.toolbox_item_order = toolbox_item_order;
+    }
+    Configuration.prototype.update_toolbox_item_order = function () {
+        console.log();
+    };
+    return Configuration;
+}());
+exports.V = Configuration;
+
+
+/***/ }),
+
 /***/ 848:
 /***/ ((__unused_webpack_module, exports) => {
 
@@ -11727,7 +11759,7 @@ function apply_gradient(annotation_object, base_color, get_annotation_confidence
         new_b_hex = "0" + new_b.toString(16);
     }
     var final_hex = "#".concat(new_r_hex, new_g_hex, new_b_hex);
-    //Since hex values should always be a string with lenght 7, if its not
+    //Since hex values should always be a string with length 7, if its not
     //then return the base color just in case.
     if (final_hex.length == 7) {
         return final_hex;
@@ -12014,6 +12046,8 @@ var geometric_utils = __webpack_require__(822);
 var annotation_operators = __webpack_require__(419);
 // EXTERNAL MODULE: ./src/drawing_utilities.js
 var drawing_utilities = __webpack_require__(848);
+// EXTERNAL MODULE: ./src/configuration.js
+var src_configuration = __webpack_require__(976);
 // EXTERNAL MODULE: ./node_modules/jquery/dist/jquery.js
 var jquery = __webpack_require__(755);
 var jquery_default = /*#__PURE__*/__webpack_require__.n(jquery);
@@ -14432,6 +14466,7 @@ Sentera Inc.
 
 
 
+
 const jQuery = (jquery_default());
 
 const { v4: uuidv4 } = __webpack_require__(614);
@@ -14697,9 +14732,56 @@ class ULabel {
         const recolor_active_tbi = new src_toolbox.RecolorActiveItem(ul);
         const keypoint_slider = new src_toolbox.KeypointSlider(ul, annotation_operators/* filter_low */.kz, annotation_operators/* get_annotation_confidence */.sR, annotation_operators/* mark_deprecated */.gf);
 
+        let configuration = new src_configuration/* Configuration */.V();
+
+        console.log(configuration)
+
+        let toolbox_length = configuration.toolbox_item_order.length
+        let toolbox_items = []
+
+        if (toolbox_length > 0) {
+            console.log("inside if")
+            for (let i = 0; i < toolbox_length; i++) {
+                console.log("inside while")
+                switch (configuration.toolbox_item_order.shift()) {
+                    case "mode select":
+                        toolbox_items.push(mode_select_tbi)
+                        break;
+                    case "zoom pan":
+                        toolbox_items.push(zoom_pan_tbi)
+                        break;
+                    case "linestyle":
+                        toolbox_items.push(linestyle_tbi)
+                        break;
+                    case "annotation resize":
+                        toolbox_items.push(annotaion_resize_tbi)
+                        break;
+                    case "annotation id":
+                        toolbox_items.push(annotation_id_tbi)
+                        break;
+                    case "recolor active":
+                        toolbox_items.push(recolor_active_tbi)
+                        break;
+                    case "class counter":
+                        toolbox_items.push(class_counter_tbi)
+                        break;
+                    case "keypoint slider":
+                        toolbox_items.push(keypoint_slider)
+                        break;
+                    default:
+                        Error("unknown toolbox item")                 
+                }
+            }
+        } else {
+            Error("No toolbox items supplied")
+        }
+
+        console.log("you made it past")
+
+
         const toolbox = new src_toolbox.Toolbox(
             [],
-            [mode_select_tbi, zoom_pan_tbi, linestyle_tbi, annotaion_resize_tbi, annotation_id_tbi, recolor_active_tbi, class_counter_tbi, keypoint_slider],
+            toolbox_items
         );
 
 

@@ -9,6 +9,7 @@ import { ULabelSubtask } from './subtask';
 import { GeometricUtils } from './geometric_utils';
 import { get_annotation_confidence, mark_deprecated, filter_low } from './annotation_operators';
 import { apply_gradient } from './drawing_utilities'
+import { Configuration } from './configuration';
 import $ from 'jquery';
 const jQuery = $;
 
@@ -289,9 +290,51 @@ export class ULabel {
         const recolor_active_tbi = new RecolorActiveItem(ul);
         const keypoint_slider = new KeypointSlider(ul, filter_low, get_annotation_confidence, mark_deprecated);
 
+        let configuration = new Configuration();
+
+        let toolbox_length = configuration.toolbox_item_order.length
+        let toolbox_items = []
+
+        //We populate the toolbox_items array in the manner so that it gets
+        //populated in the order in the config file
+        if (toolbox_length > 0) {
+            for (let i = 0; i < toolbox_length; i++) {
+                switch (configuration.toolbox_item_order.shift()) {
+                    case "mode select":
+                        toolbox_items.push(mode_select_tbi)
+                        break;
+                    case "zoom pan":
+                        toolbox_items.push(zoom_pan_tbi)
+                        break;
+                    case "linestyle":
+                        toolbox_items.push(linestyle_tbi)
+                        break;
+                    case "annotation resize":
+                        toolbox_items.push(annotaion_resize_tbi)
+                        break;
+                    case "annotation id":
+                        toolbox_items.push(annotation_id_tbi)
+                        break;
+                    case "recolor active":
+                        toolbox_items.push(recolor_active_tbi)
+                        break;
+                    case "class counter":
+                        toolbox_items.push(class_counter_tbi)
+                        break;
+                    case "keypoint slider":
+                        toolbox_items.push(keypoint_slider)
+                        break;
+                    default:
+                        Error("unknown toolbox item")                 
+                }
+            }
+        } else {
+            Error("No toolbox items supplied")
+        }
+
         const toolbox = new Toolbox(
             [],
-            [mode_select_tbi, zoom_pan_tbi, linestyle_tbi, annotaion_resize_tbi, annotation_id_tbi, recolor_active_tbi, class_counter_tbi, keypoint_slider],
+            toolbox_items
         );
 
 
