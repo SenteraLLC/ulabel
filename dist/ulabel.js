@@ -11727,7 +11727,7 @@ function apply_gradient(annotation_object, base_color, get_annotation_confidence
         new_b_hex = "0" + new_b.toString(16);
     }
     var final_hex = "#".concat(new_r_hex, new_g_hex, new_b_hex);
-    //Since hex values should always be a string with lenght 7, if its not
+    //Since hex values should always be a string with length 7, if its not
     //then return the base color just in case.
     if (final_hex.length == 7) {
         return final_hex;
@@ -14630,27 +14630,6 @@ class ULabel {
             }
         }
         return ret;
-    }
-
-    //returns a list of confidence values and ids of a subtask
-    static get_annotation_confidence(subtask) {
-        let return_list = []
-        for (const annotation in subtask.annotations.access) {
-            //If the subtask has not annotations, then return
-            if (subtask.annotations.access[annotation].classification_payloads.length == 0) {
-                return return_list;
-            }
-            let current_id = null
-            let current_confidence = null
-            for (let type_of_id in subtask.annotations.access[annotation].classification_payloads) {
-                if (subtask.annotations.access[annotation].classification_payloads[type_of_id].confidence > current_confidence) {
-                    current_id = subtask.annotations.access[annotation].classification_payloads[type_of_id].class_id;
-                    current_confidence = subtask.annotations.access[annotation].classification_payloads[type_of_id].confidence;
-                }
-            }
-            return_list.push({id: annotation, confidence: current_confidence, class_id: current_id});
-        }
-        return return_list
     }
 
     static prep_window_html(ul) {

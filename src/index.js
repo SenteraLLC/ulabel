@@ -224,27 +224,6 @@ export class ULabel {
         return ret;
     }
 
-    //returns a list of confidence values and ids of a subtask
-    static get_annotation_confidence(subtask) {
-        let return_list = []
-        for (const annotation in subtask.annotations.access) {
-            //If the subtask has not annotations, then return
-            if (subtask.annotations.access[annotation].classification_payloads.length == 0) {
-                return return_list;
-            }
-            let current_id = null
-            let current_confidence = null
-            for (let type_of_id in subtask.annotations.access[annotation].classification_payloads) {
-                if (subtask.annotations.access[annotation].classification_payloads[type_of_id].confidence > current_confidence) {
-                    current_id = subtask.annotations.access[annotation].classification_payloads[type_of_id].class_id;
-                    current_confidence = subtask.annotations.access[annotation].classification_payloads[type_of_id].confidence;
-                }
-            }
-            return_list.push({id: annotation, confidence: current_confidence, class_id: current_id});
-        }
-        return return_list
-    }
-
     static prep_window_html(ul) {
         // Bring image and annotation scaffolding in
         // TODO multi-image with spacing etc.
