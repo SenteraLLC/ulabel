@@ -287,7 +287,7 @@ export class AnnotationResizeItem extends ToolboxItem {
     public cached_size: number = 1.5;
     public html: string;
     public inner_HTML: string;
-    private keybing_configuration: {[key: string]: number}
+    private keybind_configuration: {[key: string]: number}
     constructor(ulabel: ULabel) {
         super();
         this.inner_HTML = `<p class="tb-header">Annotation Count</p>`;
@@ -295,7 +295,7 @@ export class AnnotationResizeItem extends ToolboxItem {
 
         //grab the configuration defaults
         let configuration = new Configuration;
-        this.keybing_configuration = configuration.defalut_keybinds
+        this.keybind_configuration = configuration.defalut_keybinds
         
         //event listener for buttons
         $(document).on("click", "a.butt-ann", (e) => {
@@ -312,19 +312,19 @@ export class AnnotationResizeItem extends ToolboxItem {
             var current_subtask = ulabel.subtasks[current_subtask_key];
             console.log(e.which)
             switch(e.which) {
-                case this.keybing_configuration.annotation_vanish:
+                case this.keybind_configuration.annotation_vanish:
                     this.update_annotation_size(current_subtask, "v")
                     break;
-                case this.keybing_configuration.annotation_size_small:
+                case this.keybind_configuration.annotation_size_small:
                     this.update_annotation_size(current_subtask, "s")
                     break;
-                case this.keybing_configuration.annotation_size_large:
+                case this.keybind_configuration.annotation_size_large:
                     this.update_annotation_size(current_subtask, "l")
                     break;
-                case this.keybing_configuration.annotation_size_minus:
+                case this.keybind_configuration.annotation_size_minus:
                     this.update_annotation_size(current_subtask, "dec")
                     break;
-                case this.keybing_configuration.annotation_size_plus:
+                case this.keybind_configuration.annotation_size_plus:
                     this.update_annotation_size(current_subtask, "inc")
                     break;
             }

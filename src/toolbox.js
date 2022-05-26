@@ -213,7 +213,7 @@ var AnnotationResizeItem = /** @class */ (function (_super) {
         //Sets the default line size
         //grab the configuration defaults
         var configuration = new configuration_1.Configuration;
-        _this.keybing_configuration = configuration.defalut_keybinds;
+        _this.keybind_configuration = configuration.defalut_keybinds;
         //event listener for buttons
         $(document).on("click", "a.butt-ann", function (e) {
             var button = $(e.currentTarget);
@@ -229,19 +229,19 @@ var AnnotationResizeItem = /** @class */ (function (_super) {
             var current_subtask = ulabel.subtasks[current_subtask_key];
             console.log(e.which);
             switch (e.which) {
-                case _this.keybing_configuration.annotation_vanish:
+                case _this.keybind_configuration.annotation_vanish:
                     _this.update_annotation_size(current_subtask, "v");
                     break;
-                case _this.keybing_configuration.annotation_size_small:
+                case _this.keybind_configuration.annotation_size_small:
                     _this.update_annotation_size(current_subtask, "s");
                     break;
-                case _this.keybing_configuration.annotation_size_large:
+                case _this.keybind_configuration.annotation_size_large:
                     _this.update_annotation_size(current_subtask, "l");
                     break;
-                case _this.keybing_configuration.annotation_size_minus:
+                case _this.keybind_configuration.annotation_size_minus:
                     _this.update_annotation_size(current_subtask, "dec");
                     break;
-                case _this.keybing_configuration.annotation_size_plus:
+                case _this.keybind_configuration.annotation_size_plus:
                     _this.update_annotation_size(current_subtask, "inc");
                     break;
             }
