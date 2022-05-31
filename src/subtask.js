@@ -12,6 +12,7 @@ var ULabelSubtask = /** @class */ (function () {
         this.annotation_meta = annotation_meta;
         this.read_only = read_only;
         this.inactivate_opacity = inactivate_opacity;
+        this.class_ids = [];
         this.actions = {
             "stream": [],
             "undone_stack": []

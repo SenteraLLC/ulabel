@@ -2,6 +2,7 @@ import { ULabelAnnotation, ULabelSpatialType } from "..";
 
 export class ULabelSubtask {
     public actions: { stream: any[]; undone_stack: any[]; };
+    public class_ids: number[] = [];
     constructor(
         public display_name: string,
         public classes: { name: string, color: string, id: number }[],

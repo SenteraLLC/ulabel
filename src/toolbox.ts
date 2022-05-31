@@ -468,9 +468,24 @@ export class RecolorActiveItem extends ToolboxItem {
     public html: string;
     public inner_HTML: string;
     private most_recent_draw: number = Date.now()
-    constructor(ulabel: ULabel, ...args) {
+    constructor(ulabel: ULabel) {
         super();
         this.inner_HTML = `<p class="tb-header">Recolor Annotations</p>`;
+        
+        let current_subtask_key = ulabel.state["current_subtask"];
+        let current_subtask = ulabel.subtasks[current_subtask_key];
+
+        //loop through all the types of annotations and check to see it there's
+        //a color cookie corresponding to that class id
+        for (let i = 0; i < current_subtask.classes.length; i++) {
+            let cookie_color = this.read_color_cookie(current_subtask.classes[i].id)
+            if (cookie_color !== null) {
+                console.log("called cookie color update annotation")
+                this.update_annotation_color(current_subtask, cookie_color, current_subtask.classes[i].id)
+            }
+        }
+        ULabel.process_classes(ulabel, ulabel.state.current_subtask, current_subtask);
+
         //event handler for the buttons
         $(document).on("click", "input.color-change-btn", (e) => {
             let button = $(e.currentTarget);
@@ -482,7 +497,6 @@ export class RecolorActiveItem extends ToolboxItem {
             this.update_annotation_color(current_subtask, color_from_id);
 
             ULabel.process_classes(ulabel, ulabel.state.current_subtask, current_subtask);
-            //ULabel.build_id_dialogs(ulabel)
 
             ulabel.redraw_all_annotations(null, null, false);
         })
@@ -502,7 +516,6 @@ export class RecolorActiveItem extends ToolboxItem {
             color_picker_container.style.backgroundColor = hex;
 
             ULabel.process_classes(ulabel, ulabel.state.current_subtask, current_subtask);
-            //ULabel.build_id_dialogs(ulabel)
 
             this.limit_redraw(ulabel);
         })
@@ -515,7 +528,11 @@ export class RecolorActiveItem extends ToolboxItem {
         })
     }
 
-    public update_annotation_color(subtask, color) {
+    public update_annotation_color(subtask, color, selected_id = null) {
+        let need_to_set_cookie = true
+        if (selected_id !== null) {
+            need_to_set_cookie = false
+        }
         
         //check for the three special cases, otherwise assume color is a hex value
         if (color == "yel") {
@@ -528,23 +545,20 @@ export class RecolorActiveItem extends ToolboxItem {
             color ="#00FFFF";
         }
 
-        let selected_id = "none";
+        if (selected_id == null) {
+            subtask.state.id_payload.forEach(item => {              
+                if (item.confidence == 1) {
+                    selected_id = item.class_id;
+                }  
+            });
+        }
 
-        subtask.state.id_payload.forEach(item => {
-            
-            if (item.confidence == 1) {
-                selected_id = item.class_id;
-            }  
-        });
-
-        //if the selected id is still none, then that means that no id had a
-        //confidence of 1. Therefore the default is having the first annotation
-        //id selected, so we'll default to that
-
-        if (selected_id == "none") {
+        //if the selected id is still null, then that means that no id was passed
+        //in or had a confidence of 1. Therefore the default is having the first 
+        //annotation id selected, so we'll default to that
+        if (selected_id == null) {
             selected_id = subtask.classes[0].id;
         }
-        // console.log(selected_id)
 
         subtask.classes.forEach(item => {
             if (item.id === selected_id) {
@@ -556,6 +570,10 @@ export class RecolorActiveItem extends ToolboxItem {
         let colored_square_element = ".toolbox_colprev_"+selected_id;
         $(colored_square_element).attr("style","background-color: "+color);
         
+        //Finally set a cookie to remember color preference if needed
+        if (need_to_set_cookie) {
+            this.set_color_cookie(selected_id, color);
+        }
     }
 
     
@@ -571,6 +589,31 @@ export class RecolorActiveItem extends ToolboxItem {
             //redraw annotations
             ulabel.redraw_all_annotations(null, null, false);
         }
+    }
+
+    private set_color_cookie(annotation_id, cookie_value) {
+        let d = new Date();
+        d.setTime(d.getTime() + (10000 * 24 * 60 * 60 * 1000));
+        document.cookie = "color" + annotation_id + "=" + cookie_value + ";" + d.toUTCString() + ";path=/";
+    }
+
+    private read_color_cookie(annotation_id) {
+        let cookie_name = "color" + annotation_id + "=";       
+
+        let cookie_array = document.cookie.split(";");
+
+        for (let i = 0; i < cookie_array.length; i++) {
+            let current_cookie = cookie_array[i];
+
+            //while there's whitespace at the front of the cookie, loop through and remove it
+            while (current_cookie.charAt(0) == " ") {
+                current_cookie = current_cookie.substring(1);
+            }
+            if (current_cookie.indexOf(cookie_name) == 0) {
+                return current_cookie.substring(cookie_name.length, current_cookie.length)
+            }
+        }
+        return null
     }
 
     public get_html() {
