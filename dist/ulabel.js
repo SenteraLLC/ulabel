@@ -19450,7 +19450,6 @@ var ULabelSubtask = /** @class */ (function () {
     ULabelSubtask.from_json = function (subtask_key, subtask_json) {
         var ret = new ULabelSubtask(subtask_json["display_name"], subtask_json["classes"], subtask_json["allowed_modes"], subtask_json["resume_from"], subtask_json["task_meta"], subtask_json["annotation_meta"]);
         ret.read_only = ("read_only" in subtask_json) && (subtask_json["read_only"] === true);
-        console.log(ret.read_only);
         if ("inactive_opacity" in subtask_json && typeof subtask_json["inactive_opacity"] == "number") {
             ret.inactivate_opacity = Math.min(Math.max(subtask_json["inactive_opacity"], 0.0), 1.0);
         }
@@ -19839,7 +19838,6 @@ var RecolorActiveItem = /** @class */ (function (_super) {
         for (var i = 0; i < current_subtask.classes.length; i++) {
             var cookie_color = _this.read_color_cookie(current_subtask.classes[i].id);
             if (cookie_color !== null) {
-                console.log("called cookie color update annotation");
                 _this.update_annotation_color(current_subtask, cookie_color, current_subtask.classes[i].id);
             }
         }

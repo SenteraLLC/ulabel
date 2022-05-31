@@ -369,7 +369,6 @@ var RecolorActiveItem = /** @class */ (function (_super) {
         for (var i = 0; i < current_subtask.classes.length; i++) {
             var cookie_color = _this.read_color_cookie(current_subtask.classes[i].id);
             if (cookie_color !== null) {
-                console.log("called cookie color update annotation");
                 _this.update_annotation_color(current_subtask, cookie_color, current_subtask.classes[i].id);
             }
         }

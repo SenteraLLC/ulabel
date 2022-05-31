@@ -480,7 +480,6 @@ export class RecolorActiveItem extends ToolboxItem {
         for (let i = 0; i < current_subtask.classes.length; i++) {
             let cookie_color = this.read_color_cookie(current_subtask.classes[i].id)
             if (cookie_color !== null) {
-                console.log("called cookie color update annotation")
                 this.update_annotation_color(current_subtask, cookie_color, current_subtask.classes[i].id)
             }
         }
