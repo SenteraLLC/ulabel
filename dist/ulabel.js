@@ -11706,7 +11706,6 @@ var Configuration = /** @class */ (function () {
     }
     Configuration.prototype.create_toolbox = function (ulabel, toolbox_item_order) {
         if (toolbox_item_order === void 0) { toolbox_item_order = this.default_toolbox_item_order; }
-        console.log(ulabel);
         //There's no point to having an empty toolbox, so throw an error if the toolbox is empty.
         //The toolbox won't actually break if there aren't any items in the toolbox, so if for
         //whatever reason we want that in the future, then feel free to remove this error.
@@ -11714,7 +11713,6 @@ var Configuration = /** @class */ (function () {
             throw new Error("No Toolbox Items Given");
         }
         var toolbox_instance_list = [];
-        console.log(toolbox_instance_list, "potatoe", []);
         //Go through the items in toolbox_item_order and add their instance to the toolbox instance list
         for (var i = 0; i < toolbox_item_order.length; i++) {
             var args = void 0, toolbox_key = void 0;

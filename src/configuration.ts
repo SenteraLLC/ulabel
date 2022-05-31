@@ -45,7 +45,6 @@ export class Configuration {
     constructor() {}
 
     public create_toolbox(ulabel: ULabel, toolbox_item_order = this.default_toolbox_item_order) {
-        console.log(ulabel)
 
         //There's no point to having an empty toolbox, so throw an error if the toolbox is empty.
         //The toolbox won't actually break if there aren't any items in the toolbox, so if for
@@ -55,7 +54,6 @@ export class Configuration {
         }
 
         let toolbox_instance_list = [];
-        console.log(toolbox_instance_list, "potatoe", []);
         //Go through the items in toolbox_item_order and add their instance to the toolbox instance list
         for (let i = 0; i < toolbox_item_order.length; i++) {
 
