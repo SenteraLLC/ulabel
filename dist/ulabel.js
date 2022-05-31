@@ -11632,10 +11632,9 @@ exports.a = ULabelAnnotation;
 /***/ ((__unused_webpack_module, exports) => {
 
 "use strict";
-var __webpack_unused_export__;
 
-__webpack_unused_export__ = ({ value: true });
-exports.kz = exports.gf = exports.sR = void 0;
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.filter_low = exports.mark_deprecated = exports.get_annotation_confidence = void 0;
 //Given an annotation returns the confidence of that annotation
 function get_annotation_confidence(annotation) {
     var current_confidence = -1;
@@ -11646,12 +11645,12 @@ function get_annotation_confidence(annotation) {
     }
     return current_confidence;
 }
-exports.sR = get_annotation_confidence;
+exports.get_annotation_confidence = get_annotation_confidence;
 //Takes in an annotation and marks it either deprecated or not deprecated.
 function mark_deprecated(annotation, deprecated) {
     annotation.deprecated = deprecated;
 }
-exports.gf = mark_deprecated;
+exports.mark_deprecated = mark_deprecated;
 //if the annotation confidence is less than the filter value then return true, else return false
 function filter_low(annotation_confidence, filter_value) {
     console.log(annotation_confidence, filter_value);
@@ -11659,41 +11658,93 @@ function filter_low(annotation_confidence, filter_value) {
         return true;
     return false;
 }
-exports.kz = filter_low;
+exports.filter_low = filter_low;
 
 
 /***/ }),
 
 /***/ 976:
-/***/ ((__unused_webpack_module, exports) => {
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.Configuration = void 0;
+var toolbox_1 = __webpack_require__(334);
+var annotation_operators_1 = __webpack_require__(419);
+var AllowedToolboxItem;
+(function (AllowedToolboxItem) {
+    AllowedToolboxItem[AllowedToolboxItem["ModeSelect"] = 0] = "ModeSelect";
+    AllowedToolboxItem[AllowedToolboxItem["ZoomPan"] = 1] = "ZoomPan";
+    AllowedToolboxItem[AllowedToolboxItem["AnnotationResize"] = 2] = "AnnotationResize";
+    AllowedToolboxItem[AllowedToolboxItem["AnnotationID"] = 3] = "AnnotationID";
+    AllowedToolboxItem[AllowedToolboxItem["RecolorActive"] = 4] = "RecolorActive";
+    AllowedToolboxItem[AllowedToolboxItem["ClassCounter"] = 5] = "ClassCounter";
+    AllowedToolboxItem[AllowedToolboxItem["KeypointSlider"] = 6] = "KeypointSlider";
+})(AllowedToolboxItem || (AllowedToolboxItem = {}));
 var Configuration = /** @class */ (function () {
-    function Configuration(default_toolbox_item_order, defalut_keybinds) {
-        if (default_toolbox_item_order === void 0) { default_toolbox_item_order = [
-            "mode select",
-            "zoom pan",
-            "annotation resize",
-            "annotation id",
-            "recolor active",
-            "class counter",
-            "keypoint slider",
-        ]; }
-        if (defalut_keybinds === void 0) { defalut_keybinds = {
-            "annotation_size_small": 115,
-            "annotation_size_large": 108,
-            "annotation_size_plus": 61,
-            "annotation_size_minus": 45,
-            "annotation_vanish": 118 //The v Key by default
-        }; }
-        this.default_toolbox_item_order = default_toolbox_item_order;
-        this.defalut_keybinds = defalut_keybinds;
+    function Configuration() {
+        this.toolbox_map = new Map([
+            [AllowedToolboxItem.ModeSelect, toolbox_1.ModeSelectionToolboxItem],
+            [AllowedToolboxItem.ZoomPan, toolbox_1.ZoomPanToolboxItem],
+            [AllowedToolboxItem.AnnotationResize, toolbox_1.AnnotationResizeItem],
+            [AllowedToolboxItem.AnnotationID, toolbox_1.AnnotationIDToolboxItem],
+            [AllowedToolboxItem.RecolorActive, toolbox_1.RecolorActiveItem],
+            [AllowedToolboxItem.ClassCounter, toolbox_1.ClassCounterToolboxItem],
+            [AllowedToolboxItem.KeypointSlider, toolbox_1.KeypointSliderItem]
+        ]);
+        //Change the order of the toolbox items here to change the order they show up in the toolbox
+        this.default_toolbox_item_order = [
+            AllowedToolboxItem.ModeSelect,
+            AllowedToolboxItem.ZoomPan,
+            AllowedToolboxItem.AnnotationResize,
+            AllowedToolboxItem.AnnotationID,
+            AllowedToolboxItem.RecolorActive,
+            AllowedToolboxItem.ClassCounter,
+            [AllowedToolboxItem.KeypointSlider, [annotation_operators_1.filter_low, annotation_operators_1.get_annotation_confidence, annotation_operators_1.mark_deprecated]]
+        ];
     }
-    Configuration.prototype.update_toolbox_item_order = function () {
-        console.log();
+    Configuration.prototype.create_toolbox = function (ulabel, toolbox_item_order) {
+        if (toolbox_item_order === void 0) { toolbox_item_order = this.default_toolbox_item_order; }
+        console.log(ulabel);
+        //There's no point to having an empty toolbox, so throw an error if the toolbox is empty.
+        //The toolbox won't actually break if there aren't any items in the toolbox, so if for
+        //whatever reason we want that in the future, then feel free to remove this error.
+        if (toolbox_item_order.length == 0) {
+            throw new Error("No Toolbox Items Given");
+        }
+        var toolbox_instance_list = [];
+        console.log(toolbox_instance_list, "potatoe", []);
+        //Go through the items in toolbox_item_order and add their instance to the toolbox instance list
+        for (var i = 0; i < toolbox_item_order.length; i++) {
+            var args = void 0, toolbox_key = void 0;
+            //If the value of toolbox_item_order[i] is a number then that means the it is one of the 
+            //enumerated toolbox items, so set it to the key, otherwise the element must be an array
+            //of which the first element of that array must be the enumerated value, and the arguments
+            //must be the second value
+            if (typeof (toolbox_item_order[i]) == "number") {
+                toolbox_key = toolbox_item_order[i];
+            }
+            else {
+                toolbox_key = toolbox_item_order[i][0];
+                args = toolbox_item_order[i][1];
+            }
+            var toolbox_item_class = this.toolbox_map.get(toolbox_key);
+            if (args == null) {
+                toolbox_instance_list.push(new toolbox_item_class(ulabel));
+            }
+            else {
+                toolbox_instance_list.push(new toolbox_item_class(ulabel, args));
+            }
+        }
+        return toolbox_instance_list;
+    };
+    Configuration.default_keybinds = {
+        "annotation_size_small": 115,
+        "annotation_size_large": 108,
+        "annotation_size_plus": 61,
+        "annotation_size_minus": 45,
+        "annotation_vanish": 118 //The v Key by default
     };
     return Configuration;
 }());
@@ -14673,107 +14724,21 @@ class ULabel {
         return ret;
     }
 
-    //returns a list of confidence values and ids of a subtask
-    static get_annotation_confidence(subtask) {
-        let return_list = []
-        for (const annotation in subtask.annotations.access) {
-            //If the subtask has not annotations, then return
-            if (subtask.annotations.access[annotation].classification_payloads.length == 0) {
-                return return_list;
-            }
-            let current_id = null
-            let current_confidence = null
-            for (let type_of_id in subtask.annotations.access[annotation].classification_payloads) {
-                if (subtask.annotations.access[annotation].classification_payloads[type_of_id].confidence > current_confidence) {
-                    current_id = subtask.annotations.access[annotation].classification_payloads[type_of_id].class_id;
-                    current_confidence = subtask.annotations.access[annotation].classification_payloads[type_of_id].confidence;
-                }
-            }
-            return_list.push({id: annotation, confidence: current_confidence, class_id: current_id});
-        }
-        return return_list
-    }
 
     static prep_window_html(ul) {
         // Bring image and annotation scaffolding in
         // TODO multi-image with spacing etc.
 
-        let instructions = "";
-        if (ul.config["instructions_url"] != null) {
-            instructions = `
-                <a href="${ul.config["instructions_url"]}" target="_blank" rel="noopener noreferrer">Instructions</a>
-            `;
-        }
-
-        let frame_range = `
-        <div class="full-tb htbmain set-frame">
-            <p class="shortcut-tip">scroll to switch frames</p>
-            <div class="zpcont">
-                <div class="lblpyldcont">
-                    <span class="pzlbl htblbl">Frame</span> &nbsp;
-                    <input class="frame_input" type="range" min=0 max=${ul.config["image_data"].frames.length - 1} value=0 />
-                </div>
-            </div>
-        </div>
-        `;
-        if (ul.config["image_data"]["frames"].length == 1) {
-            frame_range = ``;
-        }
-
         // const tabs = ULabel.get_toolbox_tabs(ul);
         const images = ULabel.get_images_html(ul);
         const frame_annotation_dialogs = ULabel.get_frame_annotation_dialogs(ul);
 
-        const mode_select_tbi = new src_toolbox.ModeSelectionToolboxItem();
-        const zoom_pan_tbi = new src_toolbox.ZoomPanToolboxItem(frame_range);
-        const annotation_id_tbi = new src_toolbox.AnnotationIDToolboxItem(instructions);
-        const class_counter_tbi = new src_toolbox.ClassCounterToolboxItem();
-        const annotaion_resize_tbi = new src_toolbox.AnnotationResizeItem(ul);
-        const recolor_active_tbi = new src_toolbox.RecolorActiveItem(ul);
-        const keypoint_slider = new src_toolbox.KeypointSlider(ul, annotation_operators/* filter_low */.kz, annotation_operators/* get_annotation_confidence */.sR, annotation_operators/* mark_deprecated */.gf);
-
         let configuration = new src_configuration.Configuration();
-
-        let toolbox_length = configuration.default_toolbox_item_order.length
-        let toolbox_items = []
-
-        //We populate the toolbox_items array in the manner so that it gets
-        //populated in the order in the config file
-        if (toolbox_length > 0) {
-            for (let i = 0; i < toolbox_length; i++) {
-                switch (configuration.default_toolbox_item_order.shift()) {
-                    case "mode select":
-                        toolbox_items.push(mode_select_tbi)
-                        break;
-                    case "zoom pan":
-                        toolbox_items.push(zoom_pan_tbi)
-                        break;
-                    case "annotation resize":
-                        toolbox_items.push(annotaion_resize_tbi)
-                        break;
-                    case "annotation id":
-                        toolbox_items.push(annotation_id_tbi)
-                        break;
-                    case "recolor active":
-                        toolbox_items.push(recolor_active_tbi)
-                        break;
-                    case "class counter":
-                        toolbox_items.push(class_counter_tbi)
-                        break;
-                    case "keypoint slider":
-                        toolbox_items.push(keypoint_slider)
-                        break;
-                    default:
-                        Error("unknown toolbox item")                 
-                }
-            }
-        } else {
-            Error("No toolbox items supplied")
-        }
-
+        
+        // const toolbox = configuration.create_toolbox();
         const toolbox = new src_toolbox.Toolbox(
             [],
-            toolbox_items
+            configuration.create_toolbox(ul)
         );
 
 
@@ -16398,7 +16363,7 @@ class ULabel {
 
         // Prep for bbox drawing
         let base_color = this.get_annotation_color(annotation_object["classification_payloads"], false, subtask);
-        let color = (0,drawing_utilities/* apply_gradient */.ws)(annotation_object, base_color, annotation_operators/* get_annotation_confidence */.sR, jquery_default()("#gradient-slider").val() / 100)
+        let color = (0,drawing_utilities/* apply_gradient */.ws)(annotation_object, base_color, annotation_operators.get_annotation_confidence, jquery_default()("#gradient-slider").val() / 100)
         ctx.fillStyle = color;
         ctx.strokeStyle = color;
         ctx.lineJoin = "round";
@@ -16438,7 +16403,7 @@ class ULabel {
 
         // Prep for bbox drawing
         let base_color = this.get_annotation_color(annotation_object["classification_payloads"], false, subtask);
-        let color = (0,drawing_utilities/* apply_gradient */.ws)(annotation_object, base_color, annotation_operators/* get_annotation_confidence */.sR, jquery_default()("#gradient-slider").val() / 100)
+        let color = (0,drawing_utilities/* apply_gradient */.ws)(annotation_object, base_color, annotation_operators.get_annotation_confidence, jquery_default()("#gradient-slider").val() / 100)
         ctx.fillStyle = color;
         ctx.strokeStyle = color;
         ctx.lineJoin = "round";
@@ -16493,7 +16458,7 @@ class ULabel {
 
         // Prep for bbox drawing
         let base_color = this.get_annotation_color(annotation_object["classification_payloads"], false, subtask);
-        let color = (0,drawing_utilities/* apply_gradient */.ws)(annotation_object, base_color, annotation_operators/* get_annotation_confidence */.sR, jquery_default()("#gradient-slider").val() / 100)
+        let color = (0,drawing_utilities/* apply_gradient */.ws)(annotation_object, base_color, annotation_operators.get_annotation_confidence, jquery_default()("#gradient-slider").val() / 100)
         ctx.fillStyle = color;
         ctx.strokeStyle = color;
         ctx.lineJoin = "round";
@@ -16538,7 +16503,7 @@ class ULabel {
 
         // Prep for bbox drawing
         let base_color = this.get_annotation_color(annotation_object["classification_payloads"], demo, subtask);
-        let color = (0,drawing_utilities/* apply_gradient */.ws)(annotation_object, base_color, annotation_operators/* get_annotation_confidence */.sR, jquery_default()("#gradient-slider").val() / 100)
+        let color = (0,drawing_utilities/* apply_gradient */.ws)(annotation_object, base_color, annotation_operators.get_annotation_confidence, jquery_default()("#gradient-slider").val() / 100)
         ctx.fillStyle = color;
         ctx.strokeStyle = color;
         ctx.lineJoin = "round";
@@ -16577,7 +16542,7 @@ class ULabel {
 
         // Prep for bbox drawing
         let base_color = this.get_annotation_color(annotation_object["classification_payloads"], demo, subtask);
-        let color = (0,drawing_utilities/* apply_gradient */.ws)(annotation_object, base_color, annotation_operators/* get_annotation_confidence */.sR, jquery_default()("#gradient-slider").val() / 100)
+        let color = (0,drawing_utilities/* apply_gradient */.ws)(annotation_object, base_color, annotation_operators.get_annotation_confidence, jquery_default()("#gradient-slider").val() / 100)
         ctx.fillStyle = color;
         ctx.strokeStyle = color;
         ctx.lineJoin = "round";
@@ -16615,7 +16580,7 @@ class ULabel {
 
         // Prep for tbar drawing
         let base_color = this.get_annotation_color(annotation_object["classification_payloads"], demo, subtask);
-        let color = (0,drawing_utilities/* apply_gradient */.ws)(annotation_object, base_color, annotation_operators/* get_annotation_confidence */.sR, jquery_default()("#gradient-slider").val() / 100)
+        let color = (0,drawing_utilities/* apply_gradient */.ws)(annotation_object, base_color, annotation_operators.get_annotation_confidence, jquery_default()("#gradient-slider").val() / 100)
         ctx.fillStyle = color;
         ctx.strokeStyle = color;
         ctx.lineJoin = "round";
@@ -19521,7 +19486,7 @@ var __extends = (this && this.__extends) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.KeypointSlider = exports.RecolorActiveItem = exports.AnnotationResizeItem = exports.ClassCounterToolboxItem = exports.AnnotationIDToolboxItem = exports.ZoomPanToolboxItem = exports.ModeSelectionToolboxItem = exports.ToolboxItem = exports.ToolboxTab = exports.Toolbox = void 0;
+exports.KeypointSliderItem = exports.RecolorActiveItem = exports.AnnotationResizeItem = exports.ClassCounterToolboxItem = exports.AnnotationIDToolboxItem = exports.ZoomPanToolboxItem = exports.ModeSelectionToolboxItem = exports.ToolboxItem = exports.ToolboxTab = exports.Toolbox = void 0;
 var __1 = __webpack_require__(318);
 var configuration_1 = __webpack_require__(976);
 var toolboxDividerDiv = "<div class=toolbox-divider></div>";
@@ -19611,6 +19576,10 @@ exports.ToolboxItem = ToolboxItem;
 var ModeSelectionToolboxItem = /** @class */ (function (_super) {
     __extends(ModeSelectionToolboxItem, _super);
     function ModeSelectionToolboxItem() {
+        var args = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            args[_i] = arguments[_i];
+        }
         return _super.call(this) || this;
     }
     ModeSelectionToolboxItem.prototype.get_html = function () {
@@ -19624,11 +19593,19 @@ exports.ModeSelectionToolboxItem = ModeSelectionToolboxItem;
  */
 var ZoomPanToolboxItem = /** @class */ (function (_super) {
     __extends(ZoomPanToolboxItem, _super);
-    function ZoomPanToolboxItem(frame_range) {
+    function ZoomPanToolboxItem(ulabel) {
         var _this = _super.call(this) || this;
-        _this.frame_range = frame_range;
+        _this.ulabel = ulabel;
+        _this.set_frame_range(ulabel);
         return _this;
     }
+    ZoomPanToolboxItem.prototype.set_frame_range = function (ulabel) {
+        if (ulabel.config["image_data"]["frames"].length == 1) {
+            this.frame_range = "";
+            return;
+        }
+        this.frame_range = "\n            <div class=\"full-tb htbmain set-frame\">\n                <p class=\"shortcut-tip\">scroll to switch frames</p>\n                <div class=\"zpcont\">\n                    <div class=\"lblpyldcont\">\n                        <span class=\"pzlbl htblbl\">Frame</span> &nbsp;\n                        <input class=\"frame_input\" type=\"range\" min=0 max=".concat(ulabel.config["image_data"].frames.length - 1, " value=0 />\n                    </div>\n                </div>\n            </div>\n            ");
+    };
     ZoomPanToolboxItem.prototype.get_html = function () {
         return "\n        <div class=\"zoom-pan\">\n            <div class=\"half-tb htbmain set-zoom\">\n                <p class=\"shortcut-tip\">ctrl+scroll or shift+drag</p>\n                <div class=\"zpcont\">\n                    <div class=\"lblpyldcont\">\n                        <span class=\"pzlbl htblbl\">Zoom</span>\n                        <span class=\"zinout htbpyld\">\n                            <a href=\"#\" class=\"zbutt zout\">-</a>\n                            <a href=\"#\" class=\"zbutt zin\">+</a>\n                        </span>\n                    </div>\n                </div>\n            </div><!--\n            --><div class=\"half-tb htbmain set-pan\">\n                <p class=\"shortcut-tip\">scrollclick+drag or ctrl+drag</p>\n                <div class=\"zpcont\">\n                    <div class=\"lblpyldcont\">\n                        <span class=\"pzlbl htblbl\">Pan</span>\n                        <span class=\"panudlr htbpyld\">\n                            <a href=\"#\" class=\"pbutt left\"></a>\n                            <a href=\"#\" class=\"pbutt right\"></a>\n                            <a href=\"#\" class=\"pbutt up\"></a>\n                            <a href=\"#\" class=\"pbutt down\"></a>\n                            <span class=\"spokes\"></span>\n                        </span>\n                    </div>\n                </div>\n            </div>\n            <div class=\"recenter-cont\" style=\"text-align: center;\">\n                <a href=\"#\" id=\"recenter-button\">Re-Center</a>\n            </div>\n            ".concat(this.frame_range, "\n        </div>\n        ");
     };
@@ -19640,11 +19617,18 @@ exports.ZoomPanToolboxItem = ZoomPanToolboxItem;
  */
 var AnnotationIDToolboxItem = /** @class */ (function (_super) {
     __extends(AnnotationIDToolboxItem, _super);
-    function AnnotationIDToolboxItem(instructions) {
+    function AnnotationIDToolboxItem(ulabel) {
         var _this = _super.call(this) || this;
-        _this.instructions = instructions;
+        _this.ulabel = ulabel;
+        _this.set_instructions(ulabel);
         return _this;
     }
+    AnnotationIDToolboxItem.prototype.set_instructions = function (ulabel) {
+        this.instructions = "";
+        if (ulabel.config["instructions_url"] != null) {
+            this.instructions = "\n                <a href=\"".concat(ulabel.config["instructions_url"], "\" target=\"_blank\" rel=\"noopener noreferrer\">Instructions</a>\n            ");
+        }
+    };
     AnnotationIDToolboxItem.prototype.get_html = function () {
         return "\n        <div class=\"classification\">\n            <p class=\"tb-header\">Annotation ID</p>\n            <div class=\"id-toolbox-app\"></div>\n        </div>\n        <div class=\"toolbox-refs\">\n            ".concat(this.instructions, "\n        </div>\n        ");
     };
@@ -19654,6 +19638,10 @@ exports.AnnotationIDToolboxItem = AnnotationIDToolboxItem;
 var ClassCounterToolboxItem = /** @class */ (function (_super) {
     __extends(ClassCounterToolboxItem, _super);
     function ClassCounterToolboxItem() {
+        var args = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            args[_i] = arguments[_i];
+        }
         var _this = _super.call(this) || this;
         _this.inner_HTML = "<p class=\"tb-header\">Annotation Count</p>";
         return _this;
@@ -19715,11 +19703,8 @@ var AnnotationResizeItem = /** @class */ (function (_super) {
         var _this = _super.call(this) || this;
         _this.is_vanished = false;
         _this.cached_size = 1.5;
+        _this.keybind_configuration = configuration_1.Configuration.default_keybinds;
         _this.inner_HTML = "<p class=\"tb-header\">Annotation Count</p>";
-        //Sets the default line size
-        //grab the configuration defaults
-        var configuration = new configuration_1.Configuration;
-        _this.keybind_configuration = configuration.defalut_keybinds;
         //event listener for buttons
         $(document).on("click", "a.butt-ann", function (e) {
             var button = $(e.currentTarget);
@@ -19845,6 +19830,10 @@ exports.AnnotationResizeItem = AnnotationResizeItem;
 var RecolorActiveItem = /** @class */ (function (_super) {
     __extends(RecolorActiveItem, _super);
     function RecolorActiveItem(ulabel) {
+        var args = [];
+        for (var _i = 1; _i < arguments.length; _i++) {
+            args[_i - 1] = arguments[_i];
+        }
         var _this = _super.call(this) || this;
         _this.most_recent_draw = Date.now();
         _this.inner_HTML = "<p class=\"tb-header\">Recolor Annotations</p>";
@@ -19934,11 +19923,18 @@ var RecolorActiveItem = /** @class */ (function (_super) {
     return RecolorActiveItem;
 }(ToolboxItem));
 exports.RecolorActiveItem = RecolorActiveItem;
-var KeypointSlider = /** @class */ (function (_super) {
-    __extends(KeypointSlider, _super);
-    function KeypointSlider(ulabel, filter_fn, get_confidence, mark_deprecated) {
+var KeypointSliderItem = /** @class */ (function (_super) {
+    __extends(KeypointSliderItem, _super);
+    //function_array must contain three functions
+    //the first function is how to filter the annotations
+    //the second is how to get the particular confidence
+    //the third is how to mark the annotations deprecated
+    function KeypointSliderItem(ulabel, function_array) {
         var _this = _super.call(this) || this;
         _this.inner_HTML = "<p class=\"tb-header\">Keypoint Slider</p>";
+        _this.filter_function = function_array[0];
+        _this.get_confidence = function_array[1];
+        _this.mark_deprecated = function_array[2];
         $(document).on("input", "#keypoint-slider", function (e) {
             var current_subtask_key = ulabel.state["current_subtask"];
             var current_subtask = ulabel.subtasks[current_subtask_key];
@@ -19947,23 +19943,23 @@ var KeypointSlider = /** @class */ (function (_super) {
             var filter_value = e.currentTarget.value / 100;
             for (var i in current_subtask.annotations.ordering) {
                 var current_annotation = current_subtask.annotations.access[current_subtask.annotations.ordering[i]];
-                var current_confidence = get_confidence(current_annotation);
-                var deprecate = filter_fn(current_confidence, filter_value);
+                var current_confidence = _this.get_confidence(current_annotation);
+                var deprecate = _this.filter_function(current_confidence, filter_value);
                 console.log(deprecate);
                 if (deprecate == null)
                     return;
-                mark_deprecated(current_annotation, deprecate);
+                _this.mark_deprecated(current_annotation, deprecate);
             }
             ulabel.redraw_all_annotations(null, null, false);
         });
         return _this;
     }
-    KeypointSlider.prototype.get_html = function () {
+    KeypointSliderItem.prototype.get_html = function () {
         return "\n        <div class=\"keypoint-slider\">\n            <p class=\"tb-header\">Keypoint Slider</p>\n            <div class=\"keypoint-slider-holder\">\n                <input type=\"range\" id=\"keypoint-slider\">\n                <label for=\"keypoint-slider\" id=\"keypoint-slider-label\">50%</label>\n            </div>\n        </div>\n        ";
     };
-    return KeypointSlider;
+    return KeypointSliderItem;
 }(ToolboxItem));
-exports.KeypointSlider = KeypointSlider;
+exports.KeypointSliderItem = KeypointSliderItem;
 // export class WholeImageClassifierToolboxTab extends ToolboxItem {
 //     constructor() {
 //         super(

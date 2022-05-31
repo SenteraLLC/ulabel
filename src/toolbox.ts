@@ -129,7 +129,7 @@ export abstract class ToolboxItem {
  * Toolbox item for selecting annotation mode.
  */
 export class ModeSelectionToolboxItem extends ToolboxItem {
-    constructor() {
+    constructor(...args) {
         super();
     }
 
@@ -149,10 +149,30 @@ export class ModeSelectionToolboxItem extends ToolboxItem {
  * Toolbox item for zooming and panning.
  */
 export class ZoomPanToolboxItem extends ToolboxItem {
+    public frame_range: string
     constructor(
-        public frame_range: string
+        public ulabel: ULabel
     ) {
         super();
+        this.set_frame_range(ulabel);
+    }
+
+    private set_frame_range(ulabel) {
+        if (ulabel.config["image_data"]["frames"].length == 1) {
+            this.frame_range = ``;
+            return
+        }
+        this.frame_range = `
+            <div class="full-tb htbmain set-frame">
+                <p class="shortcut-tip">scroll to switch frames</p>
+                <div class="zpcont">
+                    <div class="lblpyldcont">
+                        <span class="pzlbl htblbl">Frame</span> &nbsp;
+                        <input class="frame_input" type="range" min=0 max=${ulabel.config["image_data"].frames.length - 1} value=0 />
+                    </div>
+                </div>
+            </div>
+            `;
     }
 
     public get_html() {
@@ -199,10 +219,21 @@ export class ZoomPanToolboxItem extends ToolboxItem {
  * Toolbox item for selection Annotation ID.
  */
 export class AnnotationIDToolboxItem extends ToolboxItem {
+    instructions: string
     constructor(
-        public instructions: string,
+        public ulabel: ULabel
     ) {
         super();
+        this.set_instructions(ulabel);
+    }
+
+    private set_instructions(ulabel) {
+        this.instructions = "";
+        if (ulabel.config["instructions_url"] != null) {
+            this.instructions = `
+                <a href="${ulabel.config["instructions_url"]}" target="_blank" rel="noopener noreferrer">Instructions</a>
+            `;
+        }
     }
 
     public get_html() {
@@ -221,7 +252,7 @@ export class AnnotationIDToolboxItem extends ToolboxItem {
 export class ClassCounterToolboxItem extends ToolboxItem {
     public html: string;
     public inner_HTML: string;
-    constructor() {
+    constructor(...args) {
         super();
         this.inner_HTML = `<p class="tb-header">Annotation Count</p>`;
     }
@@ -287,15 +318,10 @@ export class AnnotationResizeItem extends ToolboxItem {
     public cached_size: number = 1.5;
     public html: string;
     public inner_HTML: string;
-    private keybind_configuration: {[key: string]: number}
+    private keybind_configuration: {[key: string]: number} = Configuration.default_keybinds
     constructor(ulabel: ULabel) {
         super();
         this.inner_HTML = `<p class="tb-header">Annotation Count</p>`;
-        //Sets the default line size
-
-        //grab the configuration defaults
-        let configuration = new Configuration;
-        this.keybind_configuration = configuration.defalut_keybinds
         
         //event listener for buttons
         $(document).on("click", "a.butt-ann", (e) => {
@@ -442,7 +468,7 @@ export class RecolorActiveItem extends ToolboxItem {
     public html: string;
     public inner_HTML: string;
     private most_recent_draw: number = Date.now()
-    constructor(ulabel: ULabel) {
+    constructor(ulabel: ULabel, ...args) {
         super();
         this.inner_HTML = `<p class="tb-header">Recolor Annotations</p>`;
         //event handler for the buttons
@@ -579,13 +605,23 @@ export class RecolorActiveItem extends ToolboxItem {
     }
 }
 
-export class KeypointSlider extends ToolboxItem {
+export class KeypointSliderItem extends ToolboxItem {
     public html: string;
     public inner_HTML: string;
+    public filter_function: Function;
+    public get_confidence: Function;
+    public mark_deprecated: Function;
 
-    constructor(ulabel: ULabel, filter_fn: Function, get_confidence: Function, mark_deprecated: Function) {
+    //function_array must contain three functions
+    //the first function is how to filter the annotations
+    //the second is how to get the particular confidence
+    //the third is how to mark the annotations deprecated
+    constructor(ulabel: ULabel, function_array: Function[]) {
         super();
         this.inner_HTML = `<p class="tb-header">Keypoint Slider</p>`;
+        this.filter_function = function_array[0];
+        this.get_confidence = function_array[1];
+        this.mark_deprecated = function_array[2];
         $(document).on("input", "#keypoint-slider", (e) => {
             var current_subtask_key = ulabel.state["current_subtask"];
             var current_subtask = ulabel.subtasks[current_subtask_key];
@@ -595,11 +631,11 @@ export class KeypointSlider extends ToolboxItem {
             let filter_value = e.currentTarget.value / 100
             for (let i in current_subtask.annotations.ordering) {
                 let current_annotation = current_subtask.annotations.access[current_subtask.annotations.ordering[i]]
-                let current_confidence = get_confidence(current_annotation)
-                let deprecate = filter_fn(current_confidence, filter_value)
+                let current_confidence = this.get_confidence(current_annotation)
+                let deprecate = this.filter_function(current_confidence, filter_value)
                 console.log(deprecate)
                 if (deprecate == null) return;
-                mark_deprecated(current_annotation, deprecate)
+                this.mark_deprecated(current_annotation, deprecate)
             }
             
             ulabel.redraw_all_annotations(null, null, false);

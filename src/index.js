@@ -225,107 +225,21 @@ export class ULabel {
         return ret;
     }
 
-    //returns a list of confidence values and ids of a subtask
-    static get_annotation_confidence(subtask) {
-        let return_list = []
-        for (const annotation in subtask.annotations.access) {
-            //If the subtask has not annotations, then return
-            if (subtask.annotations.access[annotation].classification_payloads.length == 0) {
-                return return_list;
-            }
-            let current_id = null
-            let current_confidence = null
-            for (let type_of_id in subtask.annotations.access[annotation].classification_payloads) {
-                if (subtask.annotations.access[annotation].classification_payloads[type_of_id].confidence > current_confidence) {
-                    current_id = subtask.annotations.access[annotation].classification_payloads[type_of_id].class_id;
-                    current_confidence = subtask.annotations.access[annotation].classification_payloads[type_of_id].confidence;
-                }
-            }
-            return_list.push({id: annotation, confidence: current_confidence, class_id: current_id});
-        }
-        return return_list
-    }
 
     static prep_window_html(ul) {
         // Bring image and annotation scaffolding in
         // TODO multi-image with spacing etc.
 
-        let instructions = "";
-        if (ul.config["instructions_url"] != null) {
-            instructions = `
-                <a href="${ul.config["instructions_url"]}" target="_blank" rel="noopener noreferrer">Instructions</a>
-            `;
-        }
-
-        let frame_range = `
-        <div class="full-tb htbmain set-frame">
-            <p class="shortcut-tip">scroll to switch frames</p>
-            <div class="zpcont">
-                <div class="lblpyldcont">
-                    <span class="pzlbl htblbl">Frame</span> &nbsp;
-                    <input class="frame_input" type="range" min=0 max=${ul.config["image_data"].frames.length - 1} value=0 />
-                </div>
-            </div>
-        </div>
-        `;
-        if (ul.config["image_data"]["frames"].length == 1) {
-            frame_range = ``;
-        }
-
         // const tabs = ULabel.get_toolbox_tabs(ul);
         const images = ULabel.get_images_html(ul);
         const frame_annotation_dialogs = ULabel.get_frame_annotation_dialogs(ul);
 
-        const mode_select_tbi = new ModeSelectionToolboxItem();
-        const zoom_pan_tbi = new ZoomPanToolboxItem(frame_range);
-        const annotation_id_tbi = new AnnotationIDToolboxItem(instructions);
-        const class_counter_tbi = new ClassCounterToolboxItem();
-        const annotaion_resize_tbi = new AnnotationResizeItem(ul);
-        const recolor_active_tbi = new RecolorActiveItem(ul);
-        const keypoint_slider = new KeypointSlider(ul, filter_low, get_annotation_confidence, mark_deprecated);
-
         let configuration = new Configuration();
-
-        let toolbox_length = configuration.default_toolbox_item_order.length
-        let toolbox_items = []
-
-        //We populate the toolbox_items array in the manner so that it gets
-        //populated in the order in the config file
-        if (toolbox_length > 0) {
-            for (let i = 0; i < toolbox_length; i++) {
-                switch (configuration.default_toolbox_item_order.shift()) {
-                    case "mode select":
-                        toolbox_items.push(mode_select_tbi)
-                        break;
-                    case "zoom pan":
-                        toolbox_items.push(zoom_pan_tbi)
-                        break;
-                    case "annotation resize":
-                        toolbox_items.push(annotaion_resize_tbi)
-                        break;
-                    case "annotation id":
-                        toolbox_items.push(annotation_id_tbi)
-                        break;
-                    case "recolor active":
-                        toolbox_items.push(recolor_active_tbi)
-                        break;
-                    case "class counter":
-                        toolbox_items.push(class_counter_tbi)
-                        break;
-                    case "keypoint slider":
-                        toolbox_items.push(keypoint_slider)
-                        break;
-                    default:
-                        Error("unknown toolbox item")                 
-                }
-            }
-        } else {
-            Error("No toolbox items supplied")
-        }
-
+        
+        // const toolbox = configuration.create_toolbox();
         const toolbox = new Toolbox(
             [],
-            toolbox_items
+            configuration.create_toolbox(ul)
         );
 
 
