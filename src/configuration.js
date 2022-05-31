@@ -71,11 +71,11 @@ var Configuration = /** @class */ (function () {
         return toolbox_instance_list;
     };
     Configuration.default_keybinds = {
-        "annotation_size_small": 115,
-        "annotation_size_large": 108,
-        "annotation_size_plus": 61,
-        "annotation_size_minus": 45,
-        "annotation_vanish": 118 //The v Key by default
+        "annotation_size_small": "s",
+        "annotation_size_large": "l",
+        "annotation_size_plus": "=",
+        "annotation_size_minus": "-",
+        "annotation_vanish": "v" //The v Key by default
     };
     return Configuration;
 }());

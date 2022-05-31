@@ -247,8 +247,8 @@ var AnnotationResizeItem = /** @class */ (function (_super) {
         $(document).on("keypress", function (e) {
             var current_subtask_key = ulabel.state["current_subtask"];
             var current_subtask = ulabel.subtasks[current_subtask_key];
-            console.log(e.which);
-            switch (e.which) {
+            console.log(e.key);
+            switch (e.key) {
                 case _this.keybind_configuration.annotation_vanish:
                     _this.update_annotation_size(current_subtask, "v");
                     break;

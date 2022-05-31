@@ -34,12 +34,12 @@ export class Configuration {
         [AllowedToolboxItem.KeypointSlider, [filter_low, get_annotation_confidence, mark_deprecated]]
     ]
 
-    public static default_keybinds: {[key: string]: number} = {
-        "annotation_size_small": 115, //The s Key by default
-        "annotation_size_large": 108, //The l Key by default
-        "annotation_size_plus": 61,   //The = Key by default
-        "annotation_size_minus": 45,  //The - Key by default
-        "annotation_vanish": 118      //The v Key by default
+    public static default_keybinds: {[key: string]: string} = {
+        "annotation_size_small": "s", //The s Key by default
+        "annotation_size_large": "l", //The l Key by default
+        "annotation_size_plus": "=",   //The = Key by default
+        "annotation_size_minus": "-",  //The - Key by default
+        "annotation_vanish": "v"      //The v Key by default
     }
 
     constructor() {}

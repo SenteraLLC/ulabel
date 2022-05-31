@@ -318,7 +318,7 @@ export class AnnotationResizeItem extends ToolboxItem {
     public cached_size: number = 1.5;
     public html: string;
     public inner_HTML: string;
-    private keybind_configuration: {[key: string]: number} = Configuration.default_keybinds
+    private keybind_configuration: {[key: string]: string} = Configuration.default_keybinds
     constructor(ulabel: ULabel) {
         super();
         this.inner_HTML = `<p class="tb-header">Annotation Count</p>`;
@@ -336,8 +336,8 @@ export class AnnotationResizeItem extends ToolboxItem {
         $(document).on("keypress", (e) => {
             var current_subtask_key = ulabel.state["current_subtask"];
             var current_subtask = ulabel.subtasks[current_subtask_key];
-            console.log(e.which)
-            switch(e.which) {
+            console.log(e.key)
+            switch(e.key) {
                 case this.keybind_configuration.annotation_vanish:
                     this.update_annotation_size(current_subtask, "v")
                     break;
