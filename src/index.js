@@ -3,12 +3,13 @@ Uncertain Labeling Tool
 Sentera Inc.
 */
 import { ULabelAnnotation } from './annotation';
-import { Toolbox, ClassCounterToolboxItem, ModeSelectionToolboxItem, ZoomPanToolboxItem, LinestyleToolboxItem } from './toolbox';
+import { Toolbox, ClassCounterToolboxItem, ModeSelectionToolboxItem, ZoomPanToolboxItem } from './toolbox';
 import { AnnotationIDToolboxItem, AnnotationResizeItem, RecolorActiveItem, KeypointSlider } from './toolbox';
 import { ULabelSubtask } from './subtask';
 import { GeometricUtils } from './geometric_utils';
 import { get_annotation_confidence, mark_deprecated, filter_low } from './annotation_operators';
 import { apply_gradient } from './drawing_utilities'
+import { Configuration } from './configuration';
 import $ from 'jquery';
 const jQuery = $;
 
@@ -224,53 +225,21 @@ export class ULabel {
         return ret;
     }
 
+
     static prep_window_html(ul) {
         // Bring image and annotation scaffolding in
         // TODO multi-image with spacing etc.
-
-        let instructions = "";
-        if (ul.config["instructions_url"] != null) {
-            instructions = `
-                <a href="${ul.config["instructions_url"]}" target="_blank" rel="noopener noreferrer">Instructions</a>
-            `;
-        }
-
-        let frame_range = `
-        <div class="full-tb htbmain set-frame">
-            <p class="shortcut-tip">scroll to switch frames</p>
-            <div class="zpcont">
-                <div class="lblpyldcont">
-                    <span class="pzlbl htblbl">Frame</span> &nbsp;
-                    <input class="frame_input" type="range" min=0 max=${ul.config["image_data"].frames.length - 1} value=0 />
-                </div>
-            </div>
-        </div>
-        `;
-        if (ul.config["image_data"]["frames"].length == 1) {
-            frame_range = ``;
-        }
 
         // const tabs = ULabel.get_toolbox_tabs(ul);
         const images = ULabel.get_images_html(ul);
         const frame_annotation_dialogs = ULabel.get_frame_annotation_dialogs(ul);
 
-        const mode_select_tbi = new ModeSelectionToolboxItem();
-        const zoom_pan_tbi = new ZoomPanToolboxItem(frame_range);
-        const linestyle_tbi = new LinestyleToolboxItem(
-            ul.config["canvas_did"],
-            ul.config["demo_width"],
-            ul.config["demo_height"],
-            ul.config["px_per_px"]
-        );
-        const annotation_id_tbi = new AnnotationIDToolboxItem(instructions);
-        const class_counter_tbi = new ClassCounterToolboxItem();
-        const annotaion_resize_tbi = new AnnotationResizeItem(ul);
-        const recolor_active_tbi = new RecolorActiveItem(ul);
-        const keypoint_slider = new KeypointSlider(ul, filter_low, get_annotation_confidence, mark_deprecated);
-
+        let configuration = new Configuration();
+        
+        // const toolbox = configuration.create_toolbox();
         const toolbox = new Toolbox(
             [],
-            [mode_select_tbi, zoom_pan_tbi, linestyle_tbi, annotaion_resize_tbi, annotation_id_tbi, recolor_active_tbi, class_counter_tbi, keypoint_slider],
+            configuration.create_toolbox(ul)
         );
 
 
@@ -1433,9 +1402,9 @@ export class ULabel {
                 ).getContext("2d");
             }
             // Get rendering context for demo canvas
-            that.state["demo_canvas_context"] = document.getElementById(
-                that.config["canvas_did"]
-            ).getContext("2d");
+            // that.state["demo_canvas_context"] = document.getElementById(
+            //     that.config["canvas_did"]
+            // ).getContext("2d");
 
             // Add the ID dialogs' HTML to the document
             ULabel.build_id_dialogs(that);
@@ -1641,9 +1610,9 @@ export class ULabel {
 
     // Draw demo annotation in demo canvas
     redraw_demo() {
-        this.state["demo_canvas_context"].clearRect(0, 0, this.config["demo_width"] * this.config["px_per_px"], this.config["demo_height"] * this.config["px_per_px"]);
-        this.draw_annotation(DEMO_ANNOTATION, "demo_canvas_context", true, null, "demo");
-        this.update_cursor();
+        // this.state["demo_canvas_context"].clearRect(0, 0, this.config["demo_width"] * this.config["px_per_px"], this.config["demo_height"] * this.config["px_per_px"]);
+        // this.draw_annotation(DEMO_ANNOTATION, "demo_canvas_context", true, null, "demo");
+        // this.update_cursor();
     }
 
     // ================= Instance Utilities =================

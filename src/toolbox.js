@@ -15,8 +15,9 @@ var __extends = (this && this.__extends) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.KeypointSlider = exports.RecolorActiveItem = exports.AnnotationResizeItem = exports.ClassCounterToolboxItem = exports.AnnotationIDToolboxItem = exports.LinestyleToolboxItem = exports.ZoomPanToolboxItem = exports.ModeSelectionToolboxItem = exports.ToolboxItem = exports.ToolboxTab = exports.Toolbox = void 0;
+exports.KeypointSliderItem = exports.RecolorActiveItem = exports.AnnotationResizeItem = exports.ClassCounterToolboxItem = exports.AnnotationIDToolboxItem = exports.ZoomPanToolboxItem = exports.ModeSelectionToolboxItem = exports.ToolboxItem = exports.ToolboxTab = exports.Toolbox = void 0;
 var __1 = require("..");
+var configuration_1 = require("./configuration");
 var toolboxDividerDiv = "<div class=toolbox-divider></div>";
 function read_annotation_confidence() {
     return;
@@ -104,6 +105,10 @@ exports.ToolboxItem = ToolboxItem;
 var ModeSelectionToolboxItem = /** @class */ (function (_super) {
     __extends(ModeSelectionToolboxItem, _super);
     function ModeSelectionToolboxItem() {
+        var args = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            args[_i] = arguments[_i];
+        }
         return _super.call(this) || this;
     }
     ModeSelectionToolboxItem.prototype.get_html = function () {
@@ -117,11 +122,19 @@ exports.ModeSelectionToolboxItem = ModeSelectionToolboxItem;
  */
 var ZoomPanToolboxItem = /** @class */ (function (_super) {
     __extends(ZoomPanToolboxItem, _super);
-    function ZoomPanToolboxItem(frame_range) {
+    function ZoomPanToolboxItem(ulabel) {
         var _this = _super.call(this) || this;
-        _this.frame_range = frame_range;
+        _this.ulabel = ulabel;
+        _this.set_frame_range(ulabel);
         return _this;
     }
+    ZoomPanToolboxItem.prototype.set_frame_range = function (ulabel) {
+        if (ulabel.config["image_data"]["frames"].length == 1) {
+            this.frame_range = "";
+            return;
+        }
+        this.frame_range = "\n            <div class=\"full-tb htbmain set-frame\">\n                <p class=\"shortcut-tip\">scroll to switch frames</p>\n                <div class=\"zpcont\">\n                    <div class=\"lblpyldcont\">\n                        <span class=\"pzlbl htblbl\">Frame</span> &nbsp;\n                        <input class=\"frame_input\" type=\"range\" min=0 max=".concat(ulabel.config["image_data"].frames.length - 1, " value=0 />\n                    </div>\n                </div>\n            </div>\n            ");
+    };
     ZoomPanToolboxItem.prototype.get_html = function () {
         return "\n        <div class=\"zoom-pan\">\n            <div class=\"half-tb htbmain set-zoom\">\n                <p class=\"shortcut-tip\">ctrl+scroll or shift+drag</p>\n                <div class=\"zpcont\">\n                    <div class=\"lblpyldcont\">\n                        <span class=\"pzlbl htblbl\">Zoom</span>\n                        <span class=\"zinout htbpyld\">\n                            <a href=\"#\" class=\"zbutt zout\">-</a>\n                            <a href=\"#\" class=\"zbutt zin\">+</a>\n                        </span>\n                    </div>\n                </div>\n            </div><!--\n            --><div class=\"half-tb htbmain set-pan\">\n                <p class=\"shortcut-tip\">scrollclick+drag or ctrl+drag</p>\n                <div class=\"zpcont\">\n                    <div class=\"lblpyldcont\">\n                        <span class=\"pzlbl htblbl\">Pan</span>\n                        <span class=\"panudlr htbpyld\">\n                            <a href=\"#\" class=\"pbutt left\"></a>\n                            <a href=\"#\" class=\"pbutt right\"></a>\n                            <a href=\"#\" class=\"pbutt up\"></a>\n                            <a href=\"#\" class=\"pbutt down\"></a>\n                            <span class=\"spokes\"></span>\n                        </span>\n                    </div>\n                </div>\n            </div>\n            <div class=\"recenter-cont\" style=\"text-align: center;\">\n                <a href=\"#\" id=\"recenter-button\">Re-Center</a>\n            </div>\n            ".concat(this.frame_range, "\n        </div>\n        ");
     };
@@ -129,34 +142,22 @@ var ZoomPanToolboxItem = /** @class */ (function (_super) {
 }(ToolboxItem));
 exports.ZoomPanToolboxItem = ZoomPanToolboxItem;
 /**
- * Toolbox Item for selecting line style.
- */
-var LinestyleToolboxItem = /** @class */ (function (_super) {
-    __extends(LinestyleToolboxItem, _super);
-    function LinestyleToolboxItem(canvas_did, demo_width, demo_height, px_per_px) {
-        var _this = _super.call(this) || this;
-        _this.canvas_did = canvas_did;
-        _this.demo_width = demo_width;
-        _this.demo_height = demo_height;
-        _this.px_per_px = px_per_px;
-        return _this;
-    }
-    LinestyleToolboxItem.prototype.get_html = function () {
-        return "\n        <div class=\"linestyle\">\n            <p class=\"tb-header\">Line Width</p>\n            <div class=\"lstyl-row\">\n                <div class=\"line-expl\">\n                    <a href=\"#\" class=\"wbutt wout\">-</a>\n                    <canvas \n                        id=\"".concat(this.canvas_did, "\" \n                        class=\"demo-canvas\" \n                        width=").concat(this.demo_width * this.px_per_px, "} \n                        height=").concat(this.demo_height * this.px_per_px, "></canvas>\n                    <a href=\"#\" class=\"wbutt win\">+</a>\n                </div><!--\n                --><div class=\"setting\">\n                    <a class=\"fixed-setting\">Fixed</a><br>\n                    <a href=\"#\" class=\"dyn-setting\">Dynamic</a>\n                </div>\n            </div>\n        </div>\n        ");
-    };
-    return LinestyleToolboxItem;
-}(ToolboxItem));
-exports.LinestyleToolboxItem = LinestyleToolboxItem;
-/**
  * Toolbox item for selection Annotation ID.
  */
 var AnnotationIDToolboxItem = /** @class */ (function (_super) {
     __extends(AnnotationIDToolboxItem, _super);
-    function AnnotationIDToolboxItem(instructions) {
+    function AnnotationIDToolboxItem(ulabel) {
         var _this = _super.call(this) || this;
-        _this.instructions = instructions;
+        _this.ulabel = ulabel;
+        _this.set_instructions(ulabel);
         return _this;
     }
+    AnnotationIDToolboxItem.prototype.set_instructions = function (ulabel) {
+        this.instructions = "";
+        if (ulabel.config["instructions_url"] != null) {
+            this.instructions = "\n                <a href=\"".concat(ulabel.config["instructions_url"], "\" target=\"_blank\" rel=\"noopener noreferrer\">Instructions</a>\n            ");
+        }
+    };
     AnnotationIDToolboxItem.prototype.get_html = function () {
         return "\n        <div class=\"classification\">\n            <p class=\"tb-header\">Annotation ID</p>\n            <div class=\"id-toolbox-app\"></div>\n        </div>\n        <div class=\"toolbox-refs\">\n            ".concat(this.instructions, "\n        </div>\n        ");
     };
@@ -166,6 +167,10 @@ exports.AnnotationIDToolboxItem = AnnotationIDToolboxItem;
 var ClassCounterToolboxItem = /** @class */ (function (_super) {
     __extends(ClassCounterToolboxItem, _super);
     function ClassCounterToolboxItem() {
+        var args = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            args[_i] = arguments[_i];
+        }
         var _this = _super.call(this) || this;
         _this.inner_HTML = "<p class=\"tb-header\">Annotation Count</p>";
         return _this;
@@ -227,8 +232,8 @@ var AnnotationResizeItem = /** @class */ (function (_super) {
         var _this = _super.call(this) || this;
         _this.is_vanished = false;
         _this.cached_size = 1.5;
+        _this.keybind_configuration = configuration_1.Configuration.default_keybinds;
         _this.inner_HTML = "<p class=\"tb-header\">Annotation Count</p>";
-        //Sets the default line size
         //event listener for buttons
         $(document).on("click", "a.butt-ann", function (e) {
             var button = $(e.currentTarget);
@@ -242,21 +247,21 @@ var AnnotationResizeItem = /** @class */ (function (_super) {
         $(document).on("keypress", function (e) {
             var current_subtask_key = ulabel.state["current_subtask"];
             var current_subtask = ulabel.subtasks[current_subtask_key];
-            console.log(e.which);
-            switch (e.which) {
-                case 118:
+            console.log(e.key);
+            switch (e.key) {
+                case _this.keybind_configuration.annotation_vanish:
                     _this.update_annotation_size(current_subtask, "v");
                     break;
-                case 115:
+                case _this.keybind_configuration.annotation_size_small:
                     _this.update_annotation_size(current_subtask, "s");
                     break;
-                case 108:
+                case _this.keybind_configuration.annotation_size_large:
                     _this.update_annotation_size(current_subtask, "l");
                     break;
-                case 45:
+                case _this.keybind_configuration.annotation_size_minus:
                     _this.update_annotation_size(current_subtask, "dec");
                     break;
-                case 61:
+                case _this.keybind_configuration.annotation_size_plus:
                     _this.update_annotation_size(current_subtask, "inc");
                     break;
             }
@@ -354,6 +359,10 @@ exports.AnnotationResizeItem = AnnotationResizeItem;
 var RecolorActiveItem = /** @class */ (function (_super) {
     __extends(RecolorActiveItem, _super);
     function RecolorActiveItem(ulabel) {
+        var args = [];
+        for (var _i = 1; _i < arguments.length; _i++) {
+            args[_i - 1] = arguments[_i];
+        }
         var _this = _super.call(this) || this;
         _this.most_recent_draw = Date.now();
         _this.inner_HTML = "<p class=\"tb-header\">Recolor Annotations</p>";
@@ -443,11 +452,18 @@ var RecolorActiveItem = /** @class */ (function (_super) {
     return RecolorActiveItem;
 }(ToolboxItem));
 exports.RecolorActiveItem = RecolorActiveItem;
-var KeypointSlider = /** @class */ (function (_super) {
-    __extends(KeypointSlider, _super);
-    function KeypointSlider(ulabel, filter_fn, get_confidence, mark_deprecated) {
+var KeypointSliderItem = /** @class */ (function (_super) {
+    __extends(KeypointSliderItem, _super);
+    //function_array must contain three functions
+    //the first function is how to filter the annotations
+    //the second is how to get the particular confidence
+    //the third is how to mark the annotations deprecated
+    function KeypointSliderItem(ulabel, function_array) {
         var _this = _super.call(this) || this;
         _this.inner_HTML = "<p class=\"tb-header\">Keypoint Slider</p>";
+        _this.filter_function = function_array[0];
+        _this.get_confidence = function_array[1];
+        _this.mark_deprecated = function_array[2];
         $(document).on("input", "#keypoint-slider", function (e) {
             var current_subtask_key = ulabel.state["current_subtask"];
             var current_subtask = ulabel.subtasks[current_subtask_key];
@@ -456,23 +472,23 @@ var KeypointSlider = /** @class */ (function (_super) {
             var filter_value = e.currentTarget.value / 100;
             for (var i in current_subtask.annotations.ordering) {
                 var current_annotation = current_subtask.annotations.access[current_subtask.annotations.ordering[i]];
-                var current_confidence = get_confidence(current_annotation);
-                var deprecate = filter_fn(current_confidence, filter_value);
+                var current_confidence = _this.get_confidence(current_annotation);
+                var deprecate = _this.filter_function(current_confidence, filter_value);
                 console.log(deprecate);
                 if (deprecate == null)
                     return;
-                mark_deprecated(current_annotation, deprecate);
+                _this.mark_deprecated(current_annotation, deprecate);
             }
             ulabel.redraw_all_annotations(null, null, false);
         });
         return _this;
     }
-    KeypointSlider.prototype.get_html = function () {
+    KeypointSliderItem.prototype.get_html = function () {
         return "\n        <div class=\"keypoint-slider\">\n            <p class=\"tb-header\">Keypoint Slider</p>\n            <div class=\"keypoint-slider-holder\">\n                <input type=\"range\" id=\"keypoint-slider\">\n                <label for=\"keypoint-slider\" id=\"keypoint-slider-label\">50%</label>\n            </div>\n        </div>\n        ";
     };
-    return KeypointSlider;
+    return KeypointSliderItem;
 }(ToolboxItem));
-exports.KeypointSlider = KeypointSlider;
+exports.KeypointSliderItem = KeypointSliderItem;
 // export class WholeImageClassifierToolboxTab extends ToolboxItem {
 //     constructor() {
 //         super(
