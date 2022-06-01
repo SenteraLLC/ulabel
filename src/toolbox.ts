@@ -622,7 +622,7 @@ export class RecolorActiveItem extends ToolboxItem {
             <div class="recolor-tbi-gradient">
                 <div>
                     <label for="gradient-toggle" id="gradient-toggle-label">Toggle Gradients</label>
-                    <input type="checkbox" id="gradient-toggle" name="gradient-checkbox" value="gradient" checked>
+                    <input type="checkbox" id="gradient-toggle" name="gradient-checkbox" value="gradient">
                 </div>
                 <div>
                     <label for="gradient-slider" id="gradient-slider-label">Gradient Max</label>
