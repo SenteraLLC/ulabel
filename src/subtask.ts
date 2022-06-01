@@ -2,6 +2,7 @@ import { ULabelAnnotation, ULabelSpatialType } from "..";
 
 export class ULabelSubtask {
     public actions: { stream: any[]; undone_stack: any[]; };
+    public class_ids: number[] = [];
     constructor(
         public display_name: string,
         public classes: { name: string, color: string, id: number }[],
@@ -28,7 +29,6 @@ export class ULabelSubtask {
             subtask_json["annotation_meta"],
         )
         ret.read_only = ("read_only" in subtask_json) && (subtask_json["read_only"] === true)
-        console.log(ret.read_only)
         if ("inactive_opacity" in subtask_json && typeof subtask_json["inactive_opacity"] == "number") {
             ret.inactivate_opacity = Math.min(Math.max(subtask_json["inactive_opacity"], 0.0), 1.0);
         }

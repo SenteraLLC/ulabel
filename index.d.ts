@@ -12,6 +12,7 @@ export type ULabelAnnotation = {
     deprecated: boolean;
     spatial_type: ULabelSpatialType;
     spatial_payload: [number, number][];
+    class_ids: number[];
     classification_payloads: {
         class_id: number;
         confidence: number;
