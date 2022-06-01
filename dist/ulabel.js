@@ -12091,7 +12091,8 @@ __webpack_require__.r(__webpack_exports__);
 
 // EXPORTS
 __webpack_require__.d(__webpack_exports__, {
-  "ULabel": () => (/* binding */ ULabel)
+  "ULabel": () => (/* binding */ ULabel),
+  "default": () => (/* binding */ src)
 });
 
 // EXTERNAL MODULE: ./src/annotation.js
@@ -14528,6 +14529,7 @@ Sentera Inc.
 
 
 const jQuery = (jquery_default());
+window.$ = window.jQuery = __webpack_require__(755);
 
 const { v4: uuidv4 } = __webpack_require__(614);
 
@@ -19423,6 +19425,7 @@ class ULabel {
 }
 
 window.ULabel = ULabel;
+/* harmony default export */ const src = (ULabel);
 
 
 /***/ }),
@@ -20084,6 +20087,7 @@ exports.KeypointSliderItem = KeypointSliderItem;
 /******/ 	// Load entry module and return exports
 /******/ 	// This entry module is referenced by other modules so it can't be inlined
 /******/ 	var __webpack_exports__ = __webpack_require__(318);
+/******/ 	exports.ULabel = __webpack_exports__.default;
 /******/ 	
 /******/ })()
 ;
