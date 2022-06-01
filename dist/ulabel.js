@@ -19441,6 +19441,7 @@ var ULabelSubtask = /** @class */ (function () {
         this.annotation_meta = annotation_meta;
         this.read_only = read_only;
         this.inactivate_opacity = inactivate_opacity;
+        this.class_ids = [];
         this.actions = {
             "stream": [],
             "undone_stack": []
@@ -19449,7 +19450,6 @@ var ULabelSubtask = /** @class */ (function () {
     ULabelSubtask.from_json = function (subtask_key, subtask_json) {
         var ret = new ULabelSubtask(subtask_json["display_name"], subtask_json["classes"], subtask_json["allowed_modes"], subtask_json["resume_from"], subtask_json["task_meta"], subtask_json["annotation_meta"]);
         ret.read_only = ("read_only" in subtask_json) && (subtask_json["read_only"] === true);
-        console.log(ret.read_only);
         if ("inactive_opacity" in subtask_json && typeof subtask_json["inactive_opacity"] == "number") {
             ret.inactivate_opacity = Math.min(Math.max(subtask_json["inactive_opacity"], 0.0), 1.0);
         }
@@ -19828,13 +19828,20 @@ exports.AnnotationResizeItem = AnnotationResizeItem;
 var RecolorActiveItem = /** @class */ (function (_super) {
     __extends(RecolorActiveItem, _super);
     function RecolorActiveItem(ulabel) {
-        var args = [];
-        for (var _i = 1; _i < arguments.length; _i++) {
-            args[_i - 1] = arguments[_i];
-        }
         var _this = _super.call(this) || this;
         _this.most_recent_draw = Date.now();
         _this.inner_HTML = "<p class=\"tb-header\">Recolor Annotations</p>";
+        var current_subtask_key = ulabel.state["current_subtask"];
+        var current_subtask = ulabel.subtasks[current_subtask_key];
+        //loop through all the types of annotations and check to see it there's
+        //a color cookie corresponding to that class id
+        for (var i = 0; i < current_subtask.classes.length; i++) {
+            var cookie_color = _this.read_color_cookie(current_subtask.classes[i].id);
+            if (cookie_color !== null) {
+                _this.update_annotation_color(current_subtask, cookie_color, current_subtask.classes[i].id);
+            }
+        }
+        __1.ULabel.process_classes(ulabel, ulabel.state.current_subtask, current_subtask);
         //event handler for the buttons
         $(document).on("click", "input.color-change-btn", function (e) {
             var button = $(e.currentTarget);
@@ -19844,7 +19851,6 @@ var RecolorActiveItem = /** @class */ (function (_super) {
             var color_from_id = button.attr("id").slice(13, 16);
             _this.update_annotation_color(current_subtask, color_from_id);
             __1.ULabel.process_classes(ulabel, ulabel.state.current_subtask, current_subtask);
-            //ULabel.build_id_dialogs(ulabel)
             ulabel.redraw_all_annotations(null, null, false);
         });
         $(document).on("input", "input.color-change-picker", function (e) {
@@ -19859,7 +19865,6 @@ var RecolorActiveItem = /** @class */ (function (_super) {
             var color_picker_container = document.getElementById("color-picker-container");
             color_picker_container.style.backgroundColor = hex;
             __1.ULabel.process_classes(ulabel, ulabel.state.current_subtask, current_subtask);
-            //ULabel.build_id_dialogs(ulabel)
             _this.limit_redraw(ulabel);
         });
         $(document).on("input", "#gradient-toggle", function (e) {
@@ -19871,7 +19876,12 @@ var RecolorActiveItem = /** @class */ (function (_super) {
         });
         return _this;
     }
-    RecolorActiveItem.prototype.update_annotation_color = function (subtask, color) {
+    RecolorActiveItem.prototype.update_annotation_color = function (subtask, color, selected_id) {
+        if (selected_id === void 0) { selected_id = null; }
+        var need_to_set_cookie = true;
+        if (selected_id !== null) {
+            need_to_set_cookie = false;
+        }
         //check for the three special cases, otherwise assume color is a hex value
         if (color == "yel") {
             color = "#FFFF00";
@@ -19882,19 +19892,19 @@ var RecolorActiveItem = /** @class */ (function (_super) {
         if (color == "cya") {
             color = "#00FFFF";
         }
-        var selected_id = "none";
-        subtask.state.id_payload.forEach(function (item) {
-            if (item.confidence == 1) {
-                selected_id = item.class_id;
-            }
-        });
-        //if the selected id is still none, then that means that no id had a
-        //confidence of 1. Therefore the default is having the first annotation
-        //id selected, so we'll default to that
-        if (selected_id == "none") {
+        if (selected_id == null) {
+            subtask.state.id_payload.forEach(function (item) {
+                if (item.confidence == 1) {
+                    selected_id = item.class_id;
+                }
+            });
+        }
+        //if the selected id is still null, then that means that no id was passed
+        //in or had a confidence of 1. Therefore the default is having the first 
+        //annotation id selected, so we'll default to that
+        if (selected_id == null) {
             selected_id = subtask.classes[0].id;
         }
-        // console.log(selected_id)
         subtask.classes.forEach(function (item) {
             if (item.id === selected_id) {
                 item.color = color;
@@ -19903,6 +19913,10 @@ var RecolorActiveItem = /** @class */ (function (_super) {
         //$("a.toolbox_sel_"+selected_id+":first").attr("backround-color", color);
         var colored_square_element = ".toolbox_colprev_" + selected_id;
         $(colored_square_element).attr("style", "background-color: " + color);
+        //Finally set a cookie to remember color preference if needed
+        if (need_to_set_cookie) {
+            this.set_color_cookie(selected_id, color);
+        }
     };
     RecolorActiveItem.prototype.limit_redraw = function (ulabel, wait_time) {
         if (wait_time === void 0) { wait_time = 100; }
@@ -19914,6 +19928,26 @@ var RecolorActiveItem = /** @class */ (function (_super) {
             //redraw annotations
             ulabel.redraw_all_annotations(null, null, false);
         }
+    };
+    RecolorActiveItem.prototype.set_color_cookie = function (annotation_id, cookie_value) {
+        var d = new Date();
+        d.setTime(d.getTime() + (10000 * 24 * 60 * 60 * 1000));
+        document.cookie = "color" + annotation_id + "=" + cookie_value + ";" + d.toUTCString() + ";path=/";
+    };
+    RecolorActiveItem.prototype.read_color_cookie = function (annotation_id) {
+        var cookie_name = "color" + annotation_id + "=";
+        var cookie_array = document.cookie.split(";");
+        for (var i = 0; i < cookie_array.length; i++) {
+            var current_cookie = cookie_array[i];
+            //while there's whitespace at the front of the cookie, loop through and remove it
+            while (current_cookie.charAt(0) == " ") {
+                current_cookie = current_cookie.substring(1);
+            }
+            if (current_cookie.indexOf(cookie_name) == 0) {
+                return current_cookie.substring(cookie_name.length, current_cookie.length);
+            }
+        }
+        return null;
     };
     RecolorActiveItem.prototype.get_html = function () {
         return "\n        <div class=\"recolor-active\">\n            <p class=\"tb-header\">Recolor Annotations</p>\n            <div class=\"recolor-tbi-gradient\">\n                <div>\n                    <label for=\"gradient-toggle\" id=\"gradient-toggle-label\">Toggle Gradients</label>\n                    <input type=\"checkbox\" id=\"gradient-toggle\" name=\"gradient-checkbox\" value=\"gradient\" checked>\n                </div>\n                <div>\n                    <label for=\"gradient-slider\" id=\"gradient-slider-label\">Gradient Max</label>\n                    <input type=\"range\" id=\"gradient-slider\" value=\"100\">\n                    <div class=\"gradient-slider-value-display\">100%</div>\n                </div>\n            </div>\n            <div class=\"annotation-recolor-button-holder\">\n                <div class=\"color-btn-container\">\n                    <input type=\"button\" class=\"color-change-btn\" id=\"color-change-yel\">\n                    <input type=\"button\" class=\"color-change-btn\" id=\"color-change-red\">\n                    <input type=\"button\" class=\"color-change-btn\" id=\"color-change-cya\">\n                </div>\n                <div class=\"color-picker-border\">\n                    <div class=\"color-picker-container\" id=\"color-picker-container\">\n                        <input type=\"color\" class=\"color-change-picker\" id=\"color-change-pick\">\n                    </div>\n                </div>\n            </div>\n        </div>\n        ";
