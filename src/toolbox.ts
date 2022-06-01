@@ -650,20 +650,19 @@ export class RecolorActiveItem extends ToolboxItem {
 export class KeypointSliderItem extends ToolboxItem {
     public html: string;
     public inner_HTML: string;
-    public filter_function: Function;
-    public get_confidence: Function;
-    public mark_deprecated: Function;
+    public name: string
 
     //function_array must contain three functions
     //the first function is how to filter the annotations
     //the second is how to get the particular confidence
     //the third is how to mark the annotations deprecated
-    constructor(ulabel: ULabel, function_array: Function[]) {
+    constructor(ulabel: ULabel, kwargs: {[name: string]: any}) {
         super();
         this.inner_HTML = `<p class="tb-header">Keypoint Slider</p>`;
-        this.filter_function = function_array[0];
-        this.get_confidence = function_array[1];
-        this.mark_deprecated = function_array[2];
+        this.name = kwargs.name;
+        let filter_function = kwargs.filter_function;
+        let get_confidence = kwargs.confidence_function;
+        let mark_deprecated = kwargs.mark_deprecated;
         $(document).on("input", "#keypoint-slider", (e) => {
             var current_subtask_key = ulabel.state["current_subtask"];
             var current_subtask = ulabel.subtasks[current_subtask_key];
@@ -673,11 +672,11 @@ export class KeypointSliderItem extends ToolboxItem {
             let filter_value = e.currentTarget.value / 100
             for (let i in current_subtask.annotations.ordering) {
                 let current_annotation = current_subtask.annotations.access[current_subtask.annotations.ordering[i]]
-                let current_confidence = this.get_confidence(current_annotation)
-                let deprecate = this.filter_function(current_confidence, filter_value)
+                let current_confidence = get_confidence(current_annotation)
+                let deprecate = filter_function(current_confidence, filter_value)
                 console.log(deprecate)
                 if (deprecate == null) return;
-                this.mark_deprecated(current_annotation, deprecate)
+                mark_deprecated(current_annotation, deprecate)
             }
             
             ulabel.redraw_all_annotations(null, null, false);
@@ -687,7 +686,7 @@ export class KeypointSliderItem extends ToolboxItem {
     public get_html() {
         return`
         <div class="keypoint-slider">
-            <p class="tb-header">Keypoint Slider</p>
+            <p class="tb-header">${this.name}</p>
             <div class="keypoint-slider-holder">
                 <input type="range" id="keypoint-slider">
                 <label for="keypoint-slider" id="keypoint-slider-label">50%</label>
