@@ -11701,7 +11701,12 @@ var Configuration = /** @class */ (function () {
             AllowedToolboxItem.AnnotationID,
             AllowedToolboxItem.RecolorActive,
             AllowedToolboxItem.ClassCounter,
-            [AllowedToolboxItem.KeypointSlider, [annotation_operators_1.filter_low, annotation_operators_1.get_annotation_confidence, annotation_operators_1.mark_deprecated]]
+            [AllowedToolboxItem.KeypointSlider, {
+                    "name": "Fliter Low Confidence",
+                    "filter_function": annotation_operators_1.filter_low,
+                    "confidence_function": annotation_operators_1.get_annotation_confidence,
+                    "mark_deprecated": annotation_operators_1.mark_deprecated
+                }]
         ];
     }
     Configuration.prototype.create_toolbox = function (ulabel, toolbox_item_order) {
@@ -19927,12 +19932,13 @@ var KeypointSliderItem = /** @class */ (function (_super) {
     //the first function is how to filter the annotations
     //the second is how to get the particular confidence
     //the third is how to mark the annotations deprecated
-    function KeypointSliderItem(ulabel, function_array) {
+    function KeypointSliderItem(ulabel, args_dictionary) {
         var _this = _super.call(this) || this;
         _this.inner_HTML = "<p class=\"tb-header\">Keypoint Slider</p>";
-        _this.filter_function = function_array[0];
-        _this.get_confidence = function_array[1];
-        _this.mark_deprecated = function_array[2];
+        _this.name = args_dictionary.name;
+        var filter_function = args_dictionary.filter_function;
+        var get_confidence = args_dictionary.confidence_function;
+        var mark_deprecated = args_dictionary.mark_deprecated;
         $(document).on("input", "#keypoint-slider", function (e) {
             var current_subtask_key = ulabel.state["current_subtask"];
             var current_subtask = ulabel.subtasks[current_subtask_key];
@@ -19941,19 +19947,19 @@ var KeypointSliderItem = /** @class */ (function (_super) {
             var filter_value = e.currentTarget.value / 100;
             for (var i in current_subtask.annotations.ordering) {
                 var current_annotation = current_subtask.annotations.access[current_subtask.annotations.ordering[i]];
-                var current_confidence = _this.get_confidence(current_annotation);
-                var deprecate = _this.filter_function(current_confidence, filter_value);
+                var current_confidence = get_confidence(current_annotation);
+                var deprecate = filter_function(current_confidence, filter_value);
                 console.log(deprecate);
                 if (deprecate == null)
                     return;
-                _this.mark_deprecated(current_annotation, deprecate);
+                mark_deprecated(current_annotation, deprecate);
             }
             ulabel.redraw_all_annotations(null, null, false);
         });
         return _this;
     }
     KeypointSliderItem.prototype.get_html = function () {
-        return "\n        <div class=\"keypoint-slider\">\n            <p class=\"tb-header\">Keypoint Slider</p>\n            <div class=\"keypoint-slider-holder\">\n                <input type=\"range\" id=\"keypoint-slider\">\n                <label for=\"keypoint-slider\" id=\"keypoint-slider-label\">50%</label>\n            </div>\n        </div>\n        ";
+        return "\n        <div class=\"keypoint-slider\">\n            <p class=\"tb-header\">".concat(this.name, "</p>\n            <div class=\"keypoint-slider-holder\">\n                <input type=\"range\" id=\"keypoint-slider\">\n                <label for=\"keypoint-slider\" id=\"keypoint-slider-label\">50%</label>\n            </div>\n        </div>\n        ");
     };
     return KeypointSliderItem;
 }(ToolboxItem));

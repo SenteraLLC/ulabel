@@ -31,7 +31,12 @@ export class Configuration {
         AllowedToolboxItem.AnnotationID,
         AllowedToolboxItem.RecolorActive,
         AllowedToolboxItem.ClassCounter,
-        [AllowedToolboxItem.KeypointSlider, [filter_low, get_annotation_confidence, mark_deprecated]]
+        [AllowedToolboxItem.KeypointSlider, {
+            "name": "Fliter Low Confidence",
+            "filter_function": filter_low, 
+            "confidence_function": get_annotation_confidence, 
+            "mark_deprecated": mark_deprecated
+        }]
     ]
 
     public static default_keybinds: {[key: string]: string} = {

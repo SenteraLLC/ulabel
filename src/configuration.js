@@ -32,7 +32,12 @@ var Configuration = /** @class */ (function () {
             AllowedToolboxItem.AnnotationID,
             AllowedToolboxItem.RecolorActive,
             AllowedToolboxItem.ClassCounter,
-            [AllowedToolboxItem.KeypointSlider, [annotation_operators_1.filter_low, annotation_operators_1.get_annotation_confidence, annotation_operators_1.mark_deprecated]]
+            [AllowedToolboxItem.KeypointSlider, {
+                    "name": "Fliter Low Confidence",
+                    "filter_function": annotation_operators_1.filter_low,
+                    "confidence_function": annotation_operators_1.get_annotation_confidence,
+                    "mark_deprecated": annotation_operators_1.mark_deprecated
+                }]
         ];
     }
     Configuration.prototype.create_toolbox = function (ulabel, toolbox_item_order) {
