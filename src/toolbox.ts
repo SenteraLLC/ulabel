@@ -656,13 +656,13 @@ export class KeypointSliderItem extends ToolboxItem {
     //the first function is how to filter the annotations
     //the second is how to get the particular confidence
     //the third is how to mark the annotations deprecated
-    constructor(ulabel: ULabel, args_dictionary: {[name: string]: any}) {
+    constructor(ulabel: ULabel, kwargs: {[name: string]: any}) {
         super();
         this.inner_HTML = `<p class="tb-header">Keypoint Slider</p>`;
-        this.name = args_dictionary.name;
-        let filter_function = args_dictionary.filter_function;
-        let get_confidence = args_dictionary.confidence_function;
-        let mark_deprecated = args_dictionary.mark_deprecated;
+        this.name = kwargs.name;
+        let filter_function = kwargs.filter_function;
+        let get_confidence = kwargs.confidence_function;
+        let mark_deprecated = kwargs.mark_deprecated;
         $(document).on("input", "#keypoint-slider", (e) => {
             var current_subtask_key = ulabel.state["current_subtask"];
             var current_subtask = ulabel.subtasks[current_subtask_key];

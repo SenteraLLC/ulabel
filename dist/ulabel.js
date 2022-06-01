@@ -19966,13 +19966,13 @@ var KeypointSliderItem = /** @class */ (function (_super) {
     //the first function is how to filter the annotations
     //the second is how to get the particular confidence
     //the third is how to mark the annotations deprecated
-    function KeypointSliderItem(ulabel, args_dictionary) {
+    function KeypointSliderItem(ulabel, kwargs) {
         var _this = _super.call(this) || this;
         _this.inner_HTML = "<p class=\"tb-header\">Keypoint Slider</p>";
-        _this.name = args_dictionary.name;
-        var filter_function = args_dictionary.filter_function;
-        var get_confidence = args_dictionary.confidence_function;
-        var mark_deprecated = args_dictionary.mark_deprecated;
+        _this.name = kwargs.name;
+        var filter_function = kwargs.filter_function;
+        var get_confidence = kwargs.confidence_function;
+        var mark_deprecated = kwargs.mark_deprecated;
         $(document).on("input", "#keypoint-slider", function (e) {
             var current_subtask_key = ulabel.state["current_subtask"];
             var current_subtask = ulabel.subtasks[current_subtask_key];
