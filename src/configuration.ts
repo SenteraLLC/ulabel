@@ -35,7 +35,8 @@ export class Configuration {
             "name": "Fliter Low Confidence",
             "filter_function": filter_low, 
             "confidence_function": get_annotation_confidence, 
-            "mark_deprecated": mark_deprecated
+            "mark_deprecated": mark_deprecated,
+            "default_value": 0.05
         }]
     ]
 

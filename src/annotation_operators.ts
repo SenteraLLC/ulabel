@@ -18,7 +18,6 @@ export function mark_deprecated(annotation: ULabelAnnotation, deprecated: boolea
 
 //if the annotation confidence is less than the filter value then return true, else return false
 export function filter_low(annotation_confidence: number, filter_value: number) {
-    console.log(annotation_confidence, filter_value)
     if (annotation_confidence < filter_value) return true
     return false
 }

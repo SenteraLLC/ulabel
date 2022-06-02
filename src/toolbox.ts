@@ -650,7 +650,11 @@ export class RecolorActiveItem extends ToolboxItem {
 export class KeypointSliderItem extends ToolboxItem {
     public html: string;
     public inner_HTML: string;
-    public name: string
+    public name: string;
+    public filter_function: Function;
+    public get_confidence: Function;
+    public mark_deprecated: Function;
+    public default_value: number  //defalut value must be a number between 0 and 1 inclusive
 
     //function_array must contain three functions
     //the first function is how to filter the annotations
@@ -660,9 +664,34 @@ export class KeypointSliderItem extends ToolboxItem {
         super();
         this.inner_HTML = `<p class="tb-header">Keypoint Slider</p>`;
         this.name = kwargs.name;
-        let filter_function = kwargs.filter_function;
-        let get_confidence = kwargs.confidence_function;
-        let mark_deprecated = kwargs.mark_deprecated;
+        this.filter_function = kwargs.filter_function;
+        this.get_confidence = kwargs.confidence_function;
+        this.mark_deprecated = kwargs.mark_deprecated;
+        
+        
+        //if the user doesn't give a default for the slider, then the defalut is 0
+        if (kwargs.hasOwnProperty("default_value")) {
+
+            //check to make sure the defalut value given is valid
+            if ((kwargs.default_value >= 0) && (kwargs.default_value <= 1)) {
+                this.default_value = kwargs.default_value
+            } else {
+                throw Error("Invalid defalut keypoint slider value given")
+            }
+
+        } else {
+            this.default_value = 0;
+        }
+        
+        let current_subtask_key = ulabel.state["current_subtask"];
+        let current_subtask = ulabel.subtasks[current_subtask_key];
+
+        //update the annotations with the default filter
+        this.deprecate_annotations(current_subtask, this.default_value);
+
+        //The annotations are drawn for the first time after the toolbox is loaded
+        //so we don't actually have to redraw the annotations after deprecating them.
+        
         $(document).on("input", "#keypoint-slider", (e) => {
             var current_subtask_key = ulabel.state["current_subtask"];
             var current_subtask = ulabel.subtasks[current_subtask_key];
@@ -670,17 +699,19 @@ export class KeypointSliderItem extends ToolboxItem {
             $("#keypoint-slider-label").text(e.currentTarget.value + "%")
 
             let filter_value = e.currentTarget.value / 100
-            for (let i in current_subtask.annotations.ordering) {
-                let current_annotation = current_subtask.annotations.access[current_subtask.annotations.ordering[i]]
-                let current_confidence = get_confidence(current_annotation)
-                let deprecate = filter_function(current_confidence, filter_value)
-                console.log(deprecate)
-                if (deprecate == null) return;
-                mark_deprecated(current_annotation, deprecate)
-            }
+            this.deprecate_annotations(current_subtask, filter_value);
             
             ulabel.redraw_all_annotations(null, null, false);
         })
+    }
+
+    public deprecate_annotations(current_subtask, filter_value) {
+        for (let i in current_subtask.annotations.ordering) {
+            let current_annotation: ULabelAnnotation = current_subtask.annotations.access[current_subtask.annotations.ordering[i]]
+            let current_confidence: number = this.get_confidence(current_annotation)
+            let deprecate: boolean = this.filter_function(current_confidence, filter_value)
+            this.mark_deprecated(current_annotation, deprecate)
+        }
     }
 
     public get_html() {
@@ -688,8 +719,8 @@ export class KeypointSliderItem extends ToolboxItem {
         <div class="keypoint-slider">
             <p class="tb-header">${this.name}</p>
             <div class="keypoint-slider-holder">
-                <input type="range" id="keypoint-slider">
-                <label for="keypoint-slider" id="keypoint-slider-label">50%</label>
+                <input type="range" id="keypoint-slider" value="${this.default_value * 100}">
+                <label for="keypoint-slider" id="keypoint-slider-label">${this.default_value * 100}%</label>
             </div>
         </div>
         `
