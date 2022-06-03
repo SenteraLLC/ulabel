@@ -36,7 +36,8 @@ var Configuration = /** @class */ (function () {
                     "name": "Fliter Low Confidence",
                     "filter_function": annotation_operators_1.filter_low,
                     "confidence_function": annotation_operators_1.get_annotation_confidence,
-                    "mark_deprecated": annotation_operators_1.mark_deprecated
+                    "mark_deprecated": annotation_operators_1.mark_deprecated,
+                    "default_value": 0.05
                 }]
         ];
     }

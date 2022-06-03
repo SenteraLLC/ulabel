@@ -19,7 +19,6 @@ function mark_deprecated(annotation, deprecated) {
 exports.mark_deprecated = mark_deprecated;
 //if the annotation confidence is less than the filter value then return true, else return false
 function filter_low(annotation_confidence, filter_value) {
-    console.log(annotation_confidence, filter_value);
     if (annotation_confidence < filter_value)
         return true;
     return false;

@@ -12,6 +12,7 @@ import { apply_gradient } from './drawing_utilities'
 import { Configuration } from './configuration';
 import $ from 'jquery';
 const jQuery = $;
+window.$ = window.jQuery = require('jquery');
 
 const { v4: uuidv4 } = require('uuid');
 
@@ -4921,3 +4922,4 @@ export class ULabel {
 }
 
 window.ULabel = ULabel;
+export default ULabel;
