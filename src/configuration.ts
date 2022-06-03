@@ -48,6 +48,8 @@ export class Configuration {
         "annotation_vanish": "v"      //The v Key by default
     }
 
+    public static annotation_gradient_default: boolean = true;
+
     constructor() {}
 
     public create_toolbox(ulabel: ULabel, toolbox_item_order = this.default_toolbox_item_order) {

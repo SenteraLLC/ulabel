@@ -400,6 +400,7 @@ var RecolorActiveItem = /** @class */ (function (_super) {
         });
         $(document).on("input", "#gradient-toggle", function (e) {
             ulabel.redraw_all_annotations(null, null, false);
+            _this.set_gradient_cookie($("#gradient-toggle").prop("checked"));
         });
         $(document).on("input", "#gradient-slider", function (e) {
             $("div.gradient-slider-value-display").text(e.currentTarget.value + "%");
@@ -480,8 +481,37 @@ var RecolorActiveItem = /** @class */ (function (_super) {
         }
         return null;
     };
+    RecolorActiveItem.prototype.set_gradient_cookie = function (gradient_status) {
+        var d = new Date();
+        d.setTime(d.getTime() + (10000 * 24 * 60 * 60 * 1000));
+        document.cookie = "gradient=" + gradient_status + ";" + d.toUTCString() + ";path=/";
+    };
+    RecolorActiveItem.prototype.read_gradient_cookie = function () {
+        var cookie_name = "gradient=";
+        var cookie_array = document.cookie.split(";");
+        for (var i = 0; i < cookie_array.length; i++) {
+            var current_cookie = cookie_array[i];
+            //while there's whitespace at the front of the cookie, loop through and remove it
+            while (current_cookie.charAt(0) == " ") {
+                current_cookie = current_cookie.substring(1);
+            }
+            if (current_cookie.indexOf(cookie_name) == 0) {
+                return (current_cookie.substring(cookie_name.length, current_cookie.length) == "true");
+            }
+        }
+        return null;
+    };
     RecolorActiveItem.prototype.get_html = function () {
-        return "\n        <div class=\"recolor-active\">\n            <p class=\"tb-header\">Recolor Annotations</p>\n            <div class=\"recolor-tbi-gradient\">\n                <div>\n                    <label for=\"gradient-toggle\" id=\"gradient-toggle-label\">Toggle Gradients</label>\n                    <input type=\"checkbox\" id=\"gradient-toggle\" name=\"gradient-checkbox\" value=\"gradient\">\n                </div>\n                <div>\n                    <label for=\"gradient-slider\" id=\"gradient-slider-label\">Gradient Max</label>\n                    <input type=\"range\" id=\"gradient-slider\" value=\"100\">\n                    <div class=\"gradient-slider-value-display\">100%</div>\n                </div>\n            </div>\n            <div class=\"annotation-recolor-button-holder\">\n                <div class=\"color-btn-container\">\n                    <input type=\"button\" class=\"color-change-btn\" id=\"color-change-yel\">\n                    <input type=\"button\" class=\"color-change-btn\" id=\"color-change-red\">\n                    <input type=\"button\" class=\"color-change-btn\" id=\"color-change-cya\">\n                </div>\n                <div class=\"color-picker-border\">\n                    <div class=\"color-picker-container\" id=\"color-picker-container\">\n                        <input type=\"color\" class=\"color-change-picker\" id=\"color-change-pick\">\n                    </div>\n                </div>\n            </div>\n        </div>\n        ";
+        var checked_status_bool = this.read_gradient_cookie(); //true, false, or null
+        var checked_status_string = "";
+        //null means no cookie, so grab the default from configuration
+        if (checked_status_bool == null) {
+            checked_status_bool = configuration_1.Configuration.annotation_gradient_default;
+        }
+        if (checked_status_bool == true) {
+            checked_status_string = "checked";
+        }
+        return "\n        <div class=\"recolor-active\">\n            <p class=\"tb-header\">Recolor Annotations</p>\n            <div class=\"recolor-tbi-gradient\">\n                <div>\n                    <label for=\"gradient-toggle\" id=\"gradient-toggle-label\">Toggle Gradients</label>\n                    <input type=\"checkbox\" id=\"gradient-toggle\" name=\"gradient-checkbox\" value=\"gradient\" ".concat(checked_status_string, ">\n                </div>\n                <div>\n                    <label for=\"gradient-slider\" id=\"gradient-slider-label\">Gradient Max</label>\n                    <input type=\"range\" id=\"gradient-slider\" value=\"100\">\n                    <div class=\"gradient-slider-value-display\">100%</div>\n                </div>\n            </div>\n            <div class=\"annotation-recolor-button-holder\">\n                <div class=\"color-btn-container\">\n                    <input type=\"button\" class=\"color-change-btn\" id=\"color-change-yel\">\n                    <input type=\"button\" class=\"color-change-btn\" id=\"color-change-red\">\n                    <input type=\"button\" class=\"color-change-btn\" id=\"color-change-cya\">\n                </div>\n                <div class=\"color-picker-border\">\n                    <div class=\"color-picker-container\" id=\"color-picker-container\">\n                        <input type=\"color\" class=\"color-change-picker\" id=\"color-change-pick\">\n                    </div>\n                </div>\n            </div>\n        </div>\n        ");
     };
     return RecolorActiveItem;
 }(ToolboxItem));

@@ -520,6 +520,7 @@ export class RecolorActiveItem extends ToolboxItem {
         })
         $(document).on("input", "#gradient-toggle", (e) => {
             ulabel.redraw_all_annotations(null, null, false);
+            this.set_gradient_cookie($("#gradient-toggle").prop("checked"));  
         })
         $(document).on("input", "#gradient-slider", (e) => {
             $("div.gradient-slider-value-display").text(e.currentTarget.value + "%");
@@ -615,14 +616,55 @@ export class RecolorActiveItem extends ToolboxItem {
         return null
     }
 
+    private set_gradient_cookie(gradient_status) {
+        let d = new Date();
+        d.setTime(d.getTime() + (10000 * 24 * 60 * 60 * 1000));
+        document.cookie = "gradient=" + gradient_status + ";" + d.toUTCString() + ";path=/";
+    }
+
+    private read_gradient_cookie() {
+        let cookie_name = "gradient=";       
+
+        let cookie_array = document.cookie.split(";");
+
+        for (let i = 0; i < cookie_array.length; i++) {
+            let current_cookie = cookie_array[i];
+
+            //while there's whitespace at the front of the cookie, loop through and remove it
+            while (current_cookie.charAt(0) == " ") {
+                current_cookie = current_cookie.substring(1);
+            }
+
+            if (current_cookie.indexOf(cookie_name) == 0) {
+                return (current_cookie.substring(cookie_name.length, current_cookie.length) == "true")
+            }
+        }
+
+        return null
+    }
+
     public get_html() {
+
+        let checked_status_bool: boolean = this.read_gradient_cookie(); //true, false, or null
+        let checked_status_string: string = ""
+
+        //null means no cookie, so grab the default from configuration
+        if (checked_status_bool == null) {
+            checked_status_bool = Configuration.annotation_gradient_default;
+        }
+
+        if (checked_status_bool == true) {
+            checked_status_string = "checked";
+
+        }
+
         return `
         <div class="recolor-active">
             <p class="tb-header">Recolor Annotations</p>
             <div class="recolor-tbi-gradient">
                 <div>
                     <label for="gradient-toggle" id="gradient-toggle-label">Toggle Gradients</label>
-                    <input type="checkbox" id="gradient-toggle" name="gradient-checkbox" value="gradient">
+                    <input type="checkbox" id="gradient-toggle" name="gradient-checkbox" value="gradient" ${checked_status_string}>
                 </div>
                 <div>
                     <label for="gradient-slider" id="gradient-slider-label">Gradient Max</label>
