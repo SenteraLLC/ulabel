@@ -502,6 +502,7 @@ var RecolorActiveItem = /** @class */ (function (_super) {
         return null;
     };
     RecolorActiveItem.prototype.get_html = function () {
+<<<<<<< HEAD
         var checked_status_bool = this.read_gradient_cookie(); //true, false, or null
         var checked_status_string = "";
         //null means no cookie, so grab the default from configuration
@@ -512,6 +513,9 @@ var RecolorActiveItem = /** @class */ (function (_super) {
             checked_status_string = "checked";
         }
         return "\n        <div class=\"recolor-active\">\n            <p class=\"tb-header\">Recolor Annotations</p>\n            <div class=\"recolor-tbi-gradient\">\n                <div>\n                    <label for=\"gradient-toggle\" id=\"gradient-toggle-label\">Toggle Gradients</label>\n                    <input type=\"checkbox\" id=\"gradient-toggle\" name=\"gradient-checkbox\" value=\"gradient\" ".concat(checked_status_string, ">\n                </div>\n                <div>\n                    <label for=\"gradient-slider\" id=\"gradient-slider-label\">Gradient Max</label>\n                    <input type=\"range\" id=\"gradient-slider\" value=\"100\">\n                    <div class=\"gradient-slider-value-display\">100%</div>\n                </div>\n            </div>\n            <div class=\"annotation-recolor-button-holder\">\n                <div class=\"color-btn-container\">\n                    <input type=\"button\" class=\"color-change-btn\" id=\"color-change-yel\">\n                    <input type=\"button\" class=\"color-change-btn\" id=\"color-change-red\">\n                    <input type=\"button\" class=\"color-change-btn\" id=\"color-change-cya\">\n                </div>\n                <div class=\"color-picker-border\">\n                    <div class=\"color-picker-container\" id=\"color-picker-container\">\n                        <input type=\"color\" class=\"color-change-picker\" id=\"color-change-pick\">\n                    </div>\n                </div>\n            </div>\n        </div>\n        ");
+=======
+        return "\n        <div class=\"recolor-active\">\n            <p class=\"tb-header\">Recolor Annotations</p>\n            <div class=\"recolor-tbi-gradient\">\n                <div>\n                    <label for=\"gradient-toggle\" id=\"gradient-toggle-label\">Toggle Gradients</label>\n                    <input type=\"checkbox\" id=\"gradient-toggle\" name=\"gradient-checkbox\" value=\"gradient\">\n                </div>\n                <div>\n                    <label for=\"gradient-slider\" id=\"gradient-slider-label\">Gradient Max</label>\n                    <input type=\"range\" id=\"gradient-slider\" value=\"100\">\n                    <div class=\"gradient-slider-value-display\">100%</div>\n                </div>\n            </div>\n            <div class=\"annotation-recolor-button-holder\">\n                <div class=\"color-btn-container\">\n                    <input type=\"button\" class=\"color-change-btn\" id=\"color-change-yel\">\n                    <input type=\"button\" class=\"color-change-btn\" id=\"color-change-red\">\n                    <input type=\"button\" class=\"color-change-btn\" id=\"color-change-cya\">\n                </div>\n                <div class=\"color-picker-border\">\n                    <div class=\"color-picker-container\" id=\"color-picker-container\">\n                        <input type=\"color\" class=\"color-change-picker\" id=\"color-change-pick\">\n                    </div>\n                </div>\n            </div>\n        </div>\n        ";
+>>>>>>> typescript-refactor
     };
     return RecolorActiveItem;
 }(ToolboxItem));
@@ -526,30 +530,49 @@ var KeypointSliderItem = /** @class */ (function (_super) {
         var _this = _super.call(this) || this;
         _this.inner_HTML = "<p class=\"tb-header\">Keypoint Slider</p>";
         _this.name = kwargs.name;
-        var filter_function = kwargs.filter_function;
-        var get_confidence = kwargs.confidence_function;
-        var mark_deprecated = kwargs.mark_deprecated;
+        _this.filter_function = kwargs.filter_function;
+        _this.get_confidence = kwargs.confidence_function;
+        _this.mark_deprecated = kwargs.mark_deprecated;
+        //if the user doesn't give a default for the slider, then the defalut is 0
+        if (kwargs.hasOwnProperty("default_value")) {
+            //check to make sure the defalut value given is valid
+            if ((kwargs.default_value >= 0) && (kwargs.default_value <= 1)) {
+                _this.default_value = kwargs.default_value;
+            }
+            else {
+                throw Error("Invalid defalut keypoint slider value given");
+            }
+        }
+        else {
+            _this.default_value = 0;
+        }
+        var current_subtask_key = ulabel.state["current_subtask"];
+        var current_subtask = ulabel.subtasks[current_subtask_key];
+        //update the annotations with the default filter
+        _this.deprecate_annotations(current_subtask, _this.default_value);
+        //The annotations are drawn for the first time after the toolbox is loaded
+        //so we don't actually have to redraw the annotations after deprecating them.
         $(document).on("input", "#keypoint-slider", function (e) {
             var current_subtask_key = ulabel.state["current_subtask"];
             var current_subtask = ulabel.subtasks[current_subtask_key];
             //update the slider value text next to the slider
             $("#keypoint-slider-label").text(e.currentTarget.value + "%");
             var filter_value = e.currentTarget.value / 100;
-            for (var i in current_subtask.annotations.ordering) {
-                var current_annotation = current_subtask.annotations.access[current_subtask.annotations.ordering[i]];
-                var current_confidence = get_confidence(current_annotation);
-                var deprecate = filter_function(current_confidence, filter_value);
-                console.log(deprecate);
-                if (deprecate == null)
-                    return;
-                mark_deprecated(current_annotation, deprecate);
-            }
+            _this.deprecate_annotations(current_subtask, filter_value);
             ulabel.redraw_all_annotations(null, null, false);
         });
         return _this;
     }
+    KeypointSliderItem.prototype.deprecate_annotations = function (current_subtask, filter_value) {
+        for (var i in current_subtask.annotations.ordering) {
+            var current_annotation = current_subtask.annotations.access[current_subtask.annotations.ordering[i]];
+            var current_confidence = this.get_confidence(current_annotation);
+            var deprecate = this.filter_function(current_confidence, filter_value);
+            this.mark_deprecated(current_annotation, deprecate);
+        }
+    };
     KeypointSliderItem.prototype.get_html = function () {
-        return "\n        <div class=\"keypoint-slider\">\n            <p class=\"tb-header\">".concat(this.name, "</p>\n            <div class=\"keypoint-slider-holder\">\n                <input type=\"range\" id=\"keypoint-slider\">\n                <label for=\"keypoint-slider\" id=\"keypoint-slider-label\">50%</label>\n            </div>\n        </div>\n        ");
+        return "\n        <div class=\"keypoint-slider\">\n            <p class=\"tb-header\">".concat(this.name, "</p>\n            <div class=\"keypoint-slider-holder\">\n                <input type=\"range\" id=\"keypoint-slider\" value=\"").concat(this.default_value * 100, "\">\n                <label for=\"keypoint-slider\" id=\"keypoint-slider-label\">").concat(this.default_value * 100, "%</label>\n            </div>\n        </div>\n        ");
     };
     return KeypointSliderItem;
 }(ToolboxItem));

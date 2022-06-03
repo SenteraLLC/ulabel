@@ -5,6 +5,11 @@ module.exports = {
   output: {
     filename: 'ulabel.js',
     path: path.resolve(__dirname, 'dist'),
+    library : {
+      name: "ULabel",
+      type: "commonjs",
+      export: "default"
+    }
   },
   optimization: {
     minimize: false
