@@ -664,11 +664,7 @@ export class RecolorActiveItem extends ToolboxItem {
             <div class="recolor-tbi-gradient">
                 <div>
                     <label for="gradient-toggle" id="gradient-toggle-label">Toggle Gradients</label>
-<<<<<<< HEAD
                     <input type="checkbox" id="gradient-toggle" name="gradient-checkbox" value="gradient" ${checked_status_string}>
-=======
-                    <input type="checkbox" id="gradient-toggle" name="gradient-checkbox" value="gradient">
->>>>>>> typescript-refactor
                 </div>
                 <div>
                     <label for="gradient-slider" id="gradient-slider-label">Gradient Max</label>
