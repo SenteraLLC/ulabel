@@ -48,7 +48,7 @@ export class Configuration {
         "annotation_vanish": "v"      //The v Key by default
     }
 
-    public static annotation_gradient_default: boolean = true;
+    public static annotation_gradient_default: boolean = false;
 
     constructor() {}
 
