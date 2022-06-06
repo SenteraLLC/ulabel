@@ -739,7 +739,7 @@ export class KeypointSliderItem extends ToolboxItem {
         $(document).on("input", "#" + this.name.split(" ").join("-").toLowerCase(), (e) => {
             var current_subtask_key = ulabel.state["current_subtask"];
             var current_subtask = ulabel.subtasks[current_subtask_key];
-            
+
             //update the slider value text next to the slider
             $("#" + this.name.split(" ").join("-").toLowerCase() + "-label").text(e.currentTarget.value + "%")
 
@@ -754,6 +754,11 @@ export class KeypointSliderItem extends ToolboxItem {
         for (let i in current_subtask.annotations.ordering) {
             let current_annotation: ULabelAnnotation = current_subtask.annotations.access[current_subtask.annotations.ordering[i]]
 
+            //kinda a hack, but an annotation can't be human deprecated if its not deprecated
+            if (current_annotation.deprecated == false) {
+                current_annotation.human_deprecated = false
+            }
+
             //we don't want to change any annotations that were hand edited by the user.
             if (current_annotation.human_deprecated) {
                 continue;
@@ -765,6 +770,7 @@ export class KeypointSliderItem extends ToolboxItem {
         }
     }
 
+    //all annotations that are deprecated on load are considered to be human deprecated
     public check_for_human_deprecated(current_subtask) {
         for (let i in current_subtask.annotations.ordering) {
             let current_annotation: ULabelAnnotation = current_subtask.annotations.access[current_subtask.annotations.ordering[i]]

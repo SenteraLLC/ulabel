@@ -562,6 +562,10 @@ var KeypointSliderItem = /** @class */ (function (_super) {
     KeypointSliderItem.prototype.deprecate_annotations = function (current_subtask, filter_value) {
         for (var i in current_subtask.annotations.ordering) {
             var current_annotation = current_subtask.annotations.access[current_subtask.annotations.ordering[i]];
+            //kinda a hack, but an annotation can't be human deprecated if its not deprecated
+            if (current_annotation.deprecated == false) {
+                current_annotation.human_deprecated = false;
+            }
             //we don't want to change any annotations that were hand edited by the user.
             if (current_annotation.human_deprecated) {
                 continue;
@@ -571,6 +575,7 @@ var KeypointSliderItem = /** @class */ (function (_super) {
             this.mark_deprecated(current_annotation, deprecate);
         }
     };
+    //all annotations that are deprecated on load are considered to be human deprecated
     KeypointSliderItem.prototype.check_for_human_deprecated = function (current_subtask) {
         for (var i in current_subtask.annotations.ordering) {
             var current_annotation = current_subtask.annotations.access[current_subtask.annotations.ordering[i]];

@@ -2616,6 +2616,8 @@ export class ULabel {
 
             // Set parent_id and deprecated = true
             this.subtasks[this.state["current_subtask"]]["annotations"]["access"][old_id]["deprecated"] = true;
+            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][old_id]["human_deprecated"] = true;
+            console.log(this.subtasks[this.state["current_subtask"]]["annotations"]["access"][old_id], "Inside deprecate")
 
             // Work with new annotation from now on
             annid = new_id;
@@ -2628,6 +2630,7 @@ export class ULabel {
             this.subtasks[this.state["current_subtask"]]["state"]["is_in_progress"] = false;
         }
         this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid]["deprecated"] = true;
+        this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid]["human_deprecated"] = true;
         this.redraw_all_annotations(this.state["current_subtask"]);
         this.hide_global_edit_suggestion();
 
