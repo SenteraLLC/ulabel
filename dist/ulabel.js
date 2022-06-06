@@ -17123,7 +17123,6 @@ class ULabel {
             // Set parent_id and deprecated = true
             this.subtasks[this.state["current_subtask"]]["annotations"]["access"][old_id]["deprecated"] = true;
             this.subtasks[this.state["current_subtask"]]["annotations"]["access"][old_id]["human_deprecated"] = true;
-            console.log(this.subtasks[this.state["current_subtask"]]["annotations"]["access"][old_id], "Inside deprecate")
 
             // Work with new annotation from now on
             annid = new_id;
@@ -17508,6 +17507,7 @@ class ULabel {
             "created_by": this.config["annotator"],
             "created_at": ULabel.get_time(),
             "deprecated": false,
+            "human_deprecated": false,
             "spatial_type": annotation_mode,
             "spatial_payload": null,
             "classification_payloads": JSON.parse(JSON.stringify(init_idpyld)),
@@ -17637,6 +17637,7 @@ class ULabel {
             "created_by": this.config["annotator"],
             "created_at": ULabel.get_time(),
             "deprecated": false,
+            "human_deprecated": false,
             "spatial_type": annotation_mode,
             "spatial_payload": init_spatial,
             "classification_payloads": JSON.parse(JSON.stringify(init_idpyld)),
@@ -17936,6 +17937,7 @@ class ULabel {
 
             // Set parent_id and deprecated = true
             this.subtasks[this.state["current_subtask"]]["annotations"]["access"][old_id]["deprecated"] = true;
+            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][old_id]["human_deprecated"] = true;
 
             // Change edit candidate to new id
             this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"]["annid"] = new_id;
@@ -18093,6 +18095,7 @@ class ULabel {
             this.subtasks[this.state["current_subtask"]]["annotations"]["access"][redo_payload.new_id]["new"] = true;
             this.subtasks[this.state["current_subtask"]]["annotations"]["access"][redo_payload.new_id]["parent_id"] = redo_payload.old_id;
             this.subtasks[this.state["current_subtask"]]["annotations"]["access"][redo_payload.old_id]["deprecated"] = true;
+            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][redo_payload.old_id]["human_deprecated"] = true;
             this.subtasks[this.state["current_subtask"]]["annotations"]["ordering"].push(redo_payload.new_id);
         }
         const ms_loc = [
@@ -18181,6 +18184,7 @@ class ULabel {
 
             // Set parent_id and deprecated = true
             this.subtasks[this.state["current_subtask"]]["annotations"]["access"][old_id]["deprecated"] = true;
+            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][old_id]["human_deprecated"] = true;
 
             // Change edit candidate to new id
             this.subtasks[this.state["current_subtask"]]["state"]["move_candidate"]["annid"] = new_id;
@@ -18517,6 +18521,7 @@ class ULabel {
             this.subtasks[this.state["current_subtask"]]["annotations"]["access"][redo_payload.new_id]["new"] = true;
             this.subtasks[this.state["current_subtask"]]["annotations"]["access"][redo_payload.new_id]["parent_id"] = redo_payload.old_id;
             this.subtasks[this.state["current_subtask"]]["annotations"]["access"][redo_payload.old_id]["deprecated"] = true;
+            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][redo_payload.old_id]["human_deprecated"] = true;
             this.subtasks[this.state["current_subtask"]]["annotations"]["ordering"].push(redo_payload.new_id);
         }
 
@@ -20062,7 +20067,6 @@ var KeypointSliderItem = /** @class */ (function (_super) {
     KeypointSliderItem.prototype.check_for_human_deprecated = function (current_subtask) {
         for (var i in current_subtask.annotations.ordering) {
             var current_annotation = current_subtask.annotations.access[current_subtask.annotations.ordering[i]];
-            console.log(current_annotation);
             if (current_annotation.deprecated) {
                 current_annotation.human_deprecated = true;
             }

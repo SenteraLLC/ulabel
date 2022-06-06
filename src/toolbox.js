@@ -579,7 +579,6 @@ var KeypointSliderItem = /** @class */ (function (_super) {
     KeypointSliderItem.prototype.check_for_human_deprecated = function (current_subtask) {
         for (var i in current_subtask.annotations.ordering) {
             var current_annotation = current_subtask.annotations.access[current_subtask.annotations.ordering[i]];
-            console.log(current_annotation);
             if (current_annotation.deprecated) {
                 current_annotation.human_deprecated = true;
             }

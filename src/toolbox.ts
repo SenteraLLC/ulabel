@@ -774,7 +774,6 @@ export class KeypointSliderItem extends ToolboxItem {
     public check_for_human_deprecated(current_subtask) {
         for (let i in current_subtask.annotations.ordering) {
             let current_annotation: ULabelAnnotation = current_subtask.annotations.access[current_subtask.annotations.ordering[i]]
-            console.log(current_annotation)
             if (current_annotation.deprecated) {
                 current_annotation.human_deprecated = true;
             }
