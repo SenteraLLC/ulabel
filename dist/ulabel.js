@@ -11751,7 +11751,7 @@ var Configuration = /** @class */ (function () {
         "annotation_size_minus": "-",
         "annotation_vanish": "v" //The v Key by default
     };
-    Configuration.annotation_gradient_default = true;
+    Configuration.annotation_gradient_default = false;
     return Configuration;
 }());
 exports.Configuration = Configuration;
@@ -20033,7 +20033,7 @@ var KeypointSliderItem = /** @class */ (function (_super) {
         //Check to see if any of the annotations were deprecated by default
         _this.check_for_human_deprecated(current_subtask);
         //update the annotations with the default filter
-        _this.deprecate_annotations(current_subtask, _this.default_value);
+        // this.deprecate_annotations(current_subtask, this.default_value);
         //The annotations are drawn for the first time after the toolbox is loaded
         //so we don't actually have to redraw the annotations after deprecating them.
         $(document).on("input", "#" + _this.name.split(" ").join("-").toLowerCase(), function (e) {

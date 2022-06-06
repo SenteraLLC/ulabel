@@ -81,7 +81,7 @@ var Configuration = /** @class */ (function () {
         "annotation_size_minus": "-",
         "annotation_vanish": "v" //The v Key by default
     };
-    Configuration.annotation_gradient_default = true;
+    Configuration.annotation_gradient_default = false;
     return Configuration;
 }());
 exports.Configuration = Configuration;

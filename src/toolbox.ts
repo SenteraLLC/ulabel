@@ -731,7 +731,7 @@ export class KeypointSliderItem extends ToolboxItem {
         this.check_for_human_deprecated(current_subtask);
 
         //update the annotations with the default filter
-        this.deprecate_annotations(current_subtask, this.default_value);
+        // this.deprecate_annotations(current_subtask, this.default_value);
 
         //The annotations are drawn for the first time after the toolbox is loaded
         //so we don't actually have to redraw the annotations after deprecating them.
