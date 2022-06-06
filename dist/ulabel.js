@@ -20063,12 +20063,17 @@ var KeypointSliderItem = /** @class */ (function (_super) {
             this.mark_deprecated(current_annotation, deprecate);
         }
     };
-    //all annotations that are deprecated on load are considered to be human deprecated
+    //if an annotation is deprecated and has a child, then assume its human deprecated.
     KeypointSliderItem.prototype.check_for_human_deprecated = function (current_subtask) {
         for (var i in current_subtask.annotations.ordering) {
             var current_annotation = current_subtask.annotations.access[current_subtask.annotations.ordering[i]];
-            if (current_annotation.deprecated) {
-                current_annotation.human_deprecated = true;
+            var parent_id = current_annotation.parent_id;
+            //if the parent id exists and is deprecated, then assume that it was human deprecated
+            if (parent_id != null) {
+                var parent_annotation = current_subtask.annotations.access[parent_id];
+                if (parent_annotation.deprecated) {
+                    parent_annotation.human_deprecated = true;
+                }
             }
         }
     };

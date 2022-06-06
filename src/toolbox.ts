@@ -770,12 +770,19 @@ export class KeypointSliderItem extends ToolboxItem {
         }
     }
 
-    //all annotations that are deprecated on load are considered to be human deprecated
+    //if an annotation is deprecated and has a child, then assume its human deprecated.
     public check_for_human_deprecated(current_subtask) {
         for (let i in current_subtask.annotations.ordering) {
             let current_annotation: ULabelAnnotation = current_subtask.annotations.access[current_subtask.annotations.ordering[i]]
-            if (current_annotation.deprecated) {
-                current_annotation.human_deprecated = true;
+
+            let parent_id = current_annotation.parent_id
+
+            //if the parent id exists and is deprecated, then assume that it was human deprecated
+            if (parent_id != null) {
+                let parent_annotation = current_subtask.annotations.access[parent_id]
+                if (parent_annotation.deprecated) {
+                    parent_annotation.human_deprecated = true
+                }
             }
         }
     }
