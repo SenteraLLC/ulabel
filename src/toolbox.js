@@ -524,6 +524,7 @@ var KeypointSliderItem = /** @class */ (function (_super) {
     //the third is how to mark the annotations deprecated
     function KeypointSliderItem(ulabel, kwargs) {
         var _this = _super.call(this) || this;
+        _this.default_value = 0; //defalut value must be a number between 0 and 1 inclusive
         _this.inner_HTML = "<p class=\"tb-header\">Keypoint Slider</p>";
         _this.name = kwargs.name;
         _this.filter_function = kwargs.filter_function;
@@ -539,11 +540,10 @@ var KeypointSliderItem = /** @class */ (function (_super) {
                 throw Error("Invalid defalut keypoint slider value given");
             }
         }
-        else {
-            _this.default_value = 0;
-        }
         var current_subtask_key = ulabel.state["current_subtask"];
         var current_subtask = ulabel.subtasks[current_subtask_key];
+        //Check to see if any of the annotations were deprecated by default
+        _this.check_for_human_deprecated(current_subtask);
         //update the annotations with the default filter
         _this.deprecate_annotations(current_subtask, _this.default_value);
         //The annotations are drawn for the first time after the toolbox is loaded
@@ -562,13 +562,26 @@ var KeypointSliderItem = /** @class */ (function (_super) {
     KeypointSliderItem.prototype.deprecate_annotations = function (current_subtask, filter_value) {
         for (var i in current_subtask.annotations.ordering) {
             var current_annotation = current_subtask.annotations.access[current_subtask.annotations.ordering[i]];
+            //we don't want to change any annotations that were hand edited by the user.
+            if (current_annotation.human_deprecated) {
+                continue;
+            }
             var current_confidence = this.get_confidence(current_annotation);
             var deprecate = this.filter_function(current_confidence, filter_value);
             this.mark_deprecated(current_annotation, deprecate);
         }
     };
+    KeypointSliderItem.prototype.check_for_human_deprecated = function (current_subtask) {
+        for (var i in current_subtask.annotations.ordering) {
+            var current_annotation = current_subtask.annotations.access[current_subtask.annotations.ordering[i]];
+            console.log(current_annotation);
+            if (current_annotation.deprecated) {
+                current_annotation.human_deprecated = true;
+            }
+        }
+    };
     KeypointSliderItem.prototype.get_html = function () {
-        return "\n        <div class=\"keypoint-slider\">\n            <p class=\"tb-header\">".concat(this.name, "</p>\n            <div class=\"keypoint-slider-holder\">\n                <input type=\"range\" id=\"keypoint-slider\" value=\"").concat(this.default_value * 100, "\">\n                <label for=\"keypoint-slider\" id=\"keypoint-slider-label\">").concat(this.default_value * 100, "%</label>\n            </div>\n        </div>\n        ");
+        return "\n        <div class=\"keypoint-slider\">\n            <p class=\"tb-header\">".concat(this.name, "</p>\n            <div class=\"keypoint-slider-holder\">\n                <input \n                    type=\"range\" \n                    id=\"").concat(this.name.split(" ").join("-").toLowerCase(), "\" \n                    class=\"keypoint-slider\" value=\"").concat(this.default_value * 100, "\"\n                />\n                <label \n                    for=\"").concat(this.name.split(" ").join("-").toLowerCase(), "\" \n                    id=\"").concat(this.name.split(" ").join("-").toLowerCase(), "-label\"\n                    class=\"keypoint-slider-label\">\n                    ").concat(this.default_value * 100, "%\n                </label>\n            </div>\n        </div>");
     };
     return KeypointSliderItem;
 }(ToolboxItem));

@@ -2,12 +2,13 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ULabelAnnotation = void 0;
 var ULabelAnnotation = /** @class */ (function () {
-    function ULabelAnnotation(id, is_new, parent_id, created_by, deprecated, spatial_type, spatial_payload, classification_payloads, line_size, containing_box, frame, text_payload, annotation_meta) {
+    function ULabelAnnotation(id, is_new, parent_id, created_by, deprecated, spatial_type, spatial_payload, classification_payloads, line_size, containing_box, frame, text_payload, annotation_meta, human_deprecated) {
         if (is_new === void 0) { is_new = true; }
         if (parent_id === void 0) { parent_id = null; }
         if (deprecated === void 0) { deprecated = false; }
         if (text_payload === void 0) { text_payload = ""; }
         if (annotation_meta === void 0) { annotation_meta = null; }
+        if (human_deprecated === void 0) { human_deprecated = null; }
         this.id = id;
         this.is_new = is_new;
         this.parent_id = parent_id;
@@ -21,6 +22,7 @@ var ULabelAnnotation = /** @class */ (function () {
         this.frame = frame;
         this.text_payload = text_payload;
         this.annotation_meta = annotation_meta;
+        this.human_deprecated = human_deprecated;
     }
     ULabelAnnotation.prototype.ensure_compatible_classification_payloads = function (ulabel_class_ids) {
         var found_ids = [];

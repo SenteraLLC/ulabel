@@ -1,5 +1,6 @@
-import { ULabel, ULabelAnnotation, ULabelSubtask } from "..";
+import { ULabel, ULabelSubtask } from "..";
 import { Configuration } from "./configuration";
+import { ULabelAnnotation } from "./annotation";
 
 const toolboxDividerDiv = "<div class=toolbox-divider></div>"
 function read_annotation_confidence() {
@@ -696,7 +697,7 @@ export class KeypointSliderItem extends ToolboxItem {
     public filter_function: Function;
     public get_confidence: Function;
     public mark_deprecated: Function;
-    public default_value: number  //defalut value must be a number between 0 and 1 inclusive
+    public default_value: number = 0; //defalut value must be a number between 0 and 1 inclusive
 
     //function_array must contain three functions
     //the first function is how to filter the annotations
@@ -721,12 +722,13 @@ export class KeypointSliderItem extends ToolboxItem {
                 throw Error("Invalid defalut keypoint slider value given")
             }
 
-        } else {
-            this.default_value = 0;
         }
         
         let current_subtask_key = ulabel.state["current_subtask"];
         let current_subtask = ulabel.subtasks[current_subtask_key];
+
+        //Check to see if any of the annotations were deprecated by default
+        this.check_for_human_deprecated(current_subtask);
 
         //update the annotations with the default filter
         this.deprecate_annotations(current_subtask, this.default_value);
@@ -750,9 +752,25 @@ export class KeypointSliderItem extends ToolboxItem {
     public deprecate_annotations(current_subtask, filter_value) {
         for (let i in current_subtask.annotations.ordering) {
             let current_annotation: ULabelAnnotation = current_subtask.annotations.access[current_subtask.annotations.ordering[i]]
+
+            //we don't want to change any annotations that were hand edited by the user.
+            if (current_annotation.human_deprecated) {
+                continue;
+            }
+
             let current_confidence: number = this.get_confidence(current_annotation)
             let deprecate: boolean = this.filter_function(current_confidence, filter_value)
             this.mark_deprecated(current_annotation, deprecate)
+        }
+    }
+
+    public check_for_human_deprecated(current_subtask) {
+        for (let i in current_subtask.annotations.ordering) {
+            let current_annotation: ULabelAnnotation = current_subtask.annotations.access[current_subtask.annotations.ordering[i]]
+            console.log(current_annotation)
+            if (current_annotation.deprecated) {
+                current_annotation.human_deprecated = true;
+            }
         }
     }
 
@@ -761,11 +779,19 @@ export class KeypointSliderItem extends ToolboxItem {
         <div class="keypoint-slider">
             <p class="tb-header">${this.name}</p>
             <div class="keypoint-slider-holder">
-                <input type="range" id="keypoint-slider" value="${this.default_value * 100}">
-                <label for="keypoint-slider" id="keypoint-slider-label">${this.default_value * 100}%</label>
+                <input 
+                    type="range" 
+                    id="${this.name.split(" ").join("-").toLowerCase()}" 
+                    class="keypoint-slider" value="${this.default_value * 100}"
+                />
+                <label 
+                    for="${this.name.split(" ").join("-").toLowerCase()}" 
+                    id="${this.name.split(" ").join("-").toLowerCase()}-label"
+                    class="keypoint-slider-label">
+                    ${this.default_value * 100}%
+                </label>
             </div>
-        </div>
-        `
+        </div>`
     }
 }
 

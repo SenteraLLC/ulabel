@@ -32,7 +32,7 @@ export class Configuration {
         AllowedToolboxItem.RecolorActive,
         AllowedToolboxItem.ClassCounter,
         [AllowedToolboxItem.KeypointSlider, {
-            "name": "Fliter Low Confidence",
+            "name": "Filter Low Confidence",
             "filter_function": filter_low, 
             "confidence_function": get_annotation_confidence, 
             "mark_deprecated": mark_deprecated,

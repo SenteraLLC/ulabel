@@ -11552,12 +11552,13 @@ var __webpack_unused_export__;
 __webpack_unused_export__ = ({ value: true });
 exports.a = void 0;
 var ULabelAnnotation = /** @class */ (function () {
-    function ULabelAnnotation(id, is_new, parent_id, created_by, deprecated, spatial_type, spatial_payload, classification_payloads, line_size, containing_box, frame, text_payload, annotation_meta) {
+    function ULabelAnnotation(id, is_new, parent_id, created_by, deprecated, spatial_type, spatial_payload, classification_payloads, line_size, containing_box, frame, text_payload, annotation_meta, human_deprecated) {
         if (is_new === void 0) { is_new = true; }
         if (parent_id === void 0) { parent_id = null; }
         if (deprecated === void 0) { deprecated = false; }
         if (text_payload === void 0) { text_payload = ""; }
         if (annotation_meta === void 0) { annotation_meta = null; }
+        if (human_deprecated === void 0) { human_deprecated = null; }
         this.id = id;
         this.is_new = is_new;
         this.parent_id = parent_id;
@@ -11571,6 +11572,7 @@ var ULabelAnnotation = /** @class */ (function () {
         this.frame = frame;
         this.text_payload = text_payload;
         this.annotation_meta = annotation_meta;
+        this.human_deprecated = human_deprecated;
     }
     ULabelAnnotation.prototype.ensure_compatible_classification_payloads = function (ulabel_class_ids) {
         var found_ids = [];
@@ -11701,7 +11703,7 @@ var Configuration = /** @class */ (function () {
             AllowedToolboxItem.RecolorActive,
             AllowedToolboxItem.ClassCounter,
             [AllowedToolboxItem.KeypointSlider, {
-                    "name": "Fliter Low Confidence",
+                    "name": "Filter Low Confidence",
                     "filter_function": annotation_operators_1.filter_low,
                     "confidence_function": annotation_operators_1.get_annotation_confidence,
                     "mark_deprecated": annotation_operators_1.mark_deprecated,
@@ -20002,6 +20004,7 @@ var KeypointSliderItem = /** @class */ (function (_super) {
     //the third is how to mark the annotations deprecated
     function KeypointSliderItem(ulabel, kwargs) {
         var _this = _super.call(this) || this;
+        _this.default_value = 0; //defalut value must be a number between 0 and 1 inclusive
         _this.inner_HTML = "<p class=\"tb-header\">Keypoint Slider</p>";
         _this.name = kwargs.name;
         _this.filter_function = kwargs.filter_function;
@@ -20017,11 +20020,10 @@ var KeypointSliderItem = /** @class */ (function (_super) {
                 throw Error("Invalid defalut keypoint slider value given");
             }
         }
-        else {
-            _this.default_value = 0;
-        }
         var current_subtask_key = ulabel.state["current_subtask"];
         var current_subtask = ulabel.subtasks[current_subtask_key];
+        //Check to see if any of the annotations were deprecated by default
+        _this.check_for_human_deprecated(current_subtask);
         //update the annotations with the default filter
         _this.deprecate_annotations(current_subtask, _this.default_value);
         //The annotations are drawn for the first time after the toolbox is loaded
@@ -20040,13 +20042,26 @@ var KeypointSliderItem = /** @class */ (function (_super) {
     KeypointSliderItem.prototype.deprecate_annotations = function (current_subtask, filter_value) {
         for (var i in current_subtask.annotations.ordering) {
             var current_annotation = current_subtask.annotations.access[current_subtask.annotations.ordering[i]];
+            //we don't want to change any annotations that were hand edited by the user.
+            if (current_annotation.human_deprecated) {
+                continue;
+            }
             var current_confidence = this.get_confidence(current_annotation);
             var deprecate = this.filter_function(current_confidence, filter_value);
             this.mark_deprecated(current_annotation, deprecate);
         }
     };
+    KeypointSliderItem.prototype.check_for_human_deprecated = function (current_subtask) {
+        for (var i in current_subtask.annotations.ordering) {
+            var current_annotation = current_subtask.annotations.access[current_subtask.annotations.ordering[i]];
+            console.log(current_annotation);
+            if (current_annotation.deprecated) {
+                current_annotation.human_deprecated = true;
+            }
+        }
+    };
     KeypointSliderItem.prototype.get_html = function () {
-        return "\n        <div class=\"keypoint-slider\">\n            <p class=\"tb-header\">".concat(this.name, "</p>\n            <div class=\"keypoint-slider-holder\">\n                <input type=\"range\" id=\"keypoint-slider\" value=\"").concat(this.default_value * 100, "\">\n                <label for=\"keypoint-slider\" id=\"keypoint-slider-label\">").concat(this.default_value * 100, "%</label>\n            </div>\n        </div>\n        ");
+        return "\n        <div class=\"keypoint-slider\">\n            <p class=\"tb-header\">".concat(this.name, "</p>\n            <div class=\"keypoint-slider-holder\">\n                <input \n                    type=\"range\" \n                    id=\"").concat(this.name.split(" ").join("-").toLowerCase(), "\" \n                    class=\"keypoint-slider\" value=\"").concat(this.default_value * 100, "\"\n                />\n                <label \n                    for=\"").concat(this.name.split(" ").join("-").toLowerCase(), "\" \n                    id=\"").concat(this.name.split(" ").join("-").toLowerCase(), "-label\"\n                    class=\"keypoint-slider-label\">\n                    ").concat(this.default_value * 100, "%\n                </label>\n            </div>\n        </div>");
     };
     return KeypointSliderItem;
 }(ToolboxItem));
