@@ -780,9 +780,15 @@ export class KeypointSliderItem extends ToolboxItem {
             //if the parent id exists and is deprecated, then assume that it was human deprecated
             if (parent_id != null) {
                 let parent_annotation = current_subtask.annotations.access[parent_id]
-                if (parent_annotation.deprecated) {
-                    parent_annotation.human_deprecated = true
+
+                //check if the parent annotation exists
+                if (parent_annotation != null) {
+                    
+                    if (parent_annotation.deprecated) {
+                        parent_annotation.human_deprecated = true
+                    }
                 }
+
             }
         }
     }
