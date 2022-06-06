@@ -548,11 +548,11 @@ var KeypointSliderItem = /** @class */ (function (_super) {
         _this.deprecate_annotations(current_subtask, _this.default_value);
         //The annotations are drawn for the first time after the toolbox is loaded
         //so we don't actually have to redraw the annotations after deprecating them.
-        $(document).on("input", "#keypoint-slider", function (e) {
+        $(document).on("input", "#" + _this.name.split(" ").join("-").toLowerCase(), function (e) {
             var current_subtask_key = ulabel.state["current_subtask"];
             var current_subtask = ulabel.subtasks[current_subtask_key];
             //update the slider value text next to the slider
-            $("#keypoint-slider-label").text(e.currentTarget.value + "%");
+            $("#" + _this.name.split(" ").join("-").toLowerCase() + "-label").text(e.currentTarget.value + "%");
             var filter_value = e.currentTarget.value / 100;
             _this.deprecate_annotations(current_subtask, filter_value);
             ulabel.redraw_all_annotations(null, null, false);
