@@ -33,7 +33,7 @@ var Configuration = /** @class */ (function () {
             AllowedToolboxItem.RecolorActive,
             AllowedToolboxItem.ClassCounter,
             [AllowedToolboxItem.KeypointSlider, {
-                    "name": "Fliter Low Confidence",
+                    "name": "Filter Low Confidence",
                     "filter_function": annotation_operators_1.filter_low,
                     "confidence_function": annotation_operators_1.get_annotation_confidence,
                     "mark_deprecated": annotation_operators_1.mark_deprecated,

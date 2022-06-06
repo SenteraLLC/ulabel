@@ -28,7 +28,8 @@ export class ULabelAnnotation {
         public containing_box?: ULabelContainingBox,
         public frame?: number,
         public text_payload: string = "",
-        public annotation_meta: any = null
+        public annotation_meta: any = null,
+        public human_deprecated: boolean = null,
     ) {}
 
     public ensure_compatible_classification_payloads(ulabel_class_ids: [number]) {

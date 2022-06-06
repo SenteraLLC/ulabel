@@ -1,5 +1,6 @@
-import { ULabel, ULabelAnnotation, ULabelSubtask } from "..";
+import { ULabel, ULabelSubtask } from "..";
 import { Configuration } from "./configuration";
+import { ULabelAnnotation } from "./annotation";
 
 const toolboxDividerDiv = "<div class=toolbox-divider></div>"
 function read_annotation_confidence() {
@@ -696,7 +697,7 @@ export class KeypointSliderItem extends ToolboxItem {
     public filter_function: Function;
     public get_confidence: Function;
     public mark_deprecated: Function;
-    public default_value: number  //defalut value must be a number between 0 and 1 inclusive
+    public default_value: number = 0; //defalut value must be a number between 0 and 1 inclusive
 
     //function_array must contain three functions
     //the first function is how to filter the annotations
@@ -721,12 +722,13 @@ export class KeypointSliderItem extends ToolboxItem {
                 throw Error("Invalid defalut keypoint slider value given")
             }
 
-        } else {
-            this.default_value = 0;
         }
         
         let current_subtask_key = ulabel.state["current_subtask"];
         let current_subtask = ulabel.subtasks[current_subtask_key];
+
+        //Check to see if any of the annotations were deprecated by default
+        this.check_for_human_deprecated(current_subtask);
 
         //update the annotations with the default filter
         this.deprecate_annotations(current_subtask, this.default_value);
@@ -734,11 +736,12 @@ export class KeypointSliderItem extends ToolboxItem {
         //The annotations are drawn for the first time after the toolbox is loaded
         //so we don't actually have to redraw the annotations after deprecating them.
         
-        $(document).on("input", "#keypoint-slider", (e) => {
+        $(document).on("input", "#" + this.name.split(" ").join("-").toLowerCase(), (e) => {
             var current_subtask_key = ulabel.state["current_subtask"];
             var current_subtask = ulabel.subtasks[current_subtask_key];
+
             //update the slider value text next to the slider
-            $("#keypoint-slider-label").text(e.currentTarget.value + "%")
+            $("#" + this.name.split(" ").join("-").toLowerCase() + "-label").text(e.currentTarget.value + "%")
 
             let filter_value = e.currentTarget.value / 100
             this.deprecate_annotations(current_subtask, filter_value);
@@ -750,9 +753,37 @@ export class KeypointSliderItem extends ToolboxItem {
     public deprecate_annotations(current_subtask, filter_value) {
         for (let i in current_subtask.annotations.ordering) {
             let current_annotation: ULabelAnnotation = current_subtask.annotations.access[current_subtask.annotations.ordering[i]]
+
+            //kinda a hack, but an annotation can't be human deprecated if its not deprecated
+            if (current_annotation.deprecated == false) {
+                current_annotation.human_deprecated = false
+            }
+
+            //we don't want to change any annotations that were hand edited by the user.
+            if (current_annotation.human_deprecated) {
+                continue;
+            }
+
             let current_confidence: number = this.get_confidence(current_annotation)
             let deprecate: boolean = this.filter_function(current_confidence, filter_value)
             this.mark_deprecated(current_annotation, deprecate)
+        }
+    }
+
+    //if an annotation is deprecated and has a child, then assume its human deprecated.
+    public check_for_human_deprecated(current_subtask) {
+        for (let i in current_subtask.annotations.ordering) {
+            let current_annotation: ULabelAnnotation = current_subtask.annotations.access[current_subtask.annotations.ordering[i]]
+
+            let parent_id = current_annotation.parent_id
+
+            //if the parent id exists and is deprecated, then assume that it was human deprecated
+            if (parent_id != null) {
+                let parent_annotation = current_subtask.annotations.access[parent_id]
+                if (parent_annotation.deprecated) {
+                    parent_annotation.human_deprecated = true
+                }
+            }
         }
     }
 
@@ -761,11 +792,19 @@ export class KeypointSliderItem extends ToolboxItem {
         <div class="keypoint-slider">
             <p class="tb-header">${this.name}</p>
             <div class="keypoint-slider-holder">
-                <input type="range" id="keypoint-slider" value="${this.default_value * 100}">
-                <label for="keypoint-slider" id="keypoint-slider-label">${this.default_value * 100}%</label>
+                <input 
+                    type="range" 
+                    id="${this.name.split(" ").join("-").toLowerCase()}" 
+                    class="keypoint-slider" value="${this.default_value * 100}"
+                />
+                <label 
+                    for="${this.name.split(" ").join("-").toLowerCase()}" 
+                    id="${this.name.split(" ").join("-").toLowerCase()}-label"
+                    class="keypoint-slider-label">
+                    ${this.default_value * 100}%
+                </label>
             </div>
-        </div>
-        `
+        </div>`
     }
 }
 
