@@ -11928,6 +11928,9 @@ var GeometricUtils = /** @class */ (function () {
     //   return the point on the segment that is closest to the reference point, as well
     //   as the distance away
     GeometricUtils.get_nearest_point_on_segment = function (ref_x, ref_y, eq, kp1, kp2) {
+        //check to make sure eq exists
+        if (eq == null)
+            return null;
         // For convenience
         var a = eq["a"];
         var b = eq["b"];
