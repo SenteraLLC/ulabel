@@ -43,6 +43,9 @@ export class GeometricUtils {
     //   return the point on the segment that is closest to the reference point, as well
     //   as the distance away
     public static get_nearest_point_on_segment(ref_x: number, ref_y: number, eq: object, kp1: Array<number>, kp2: Array<number>): object {
+        //check to make sure eq exists
+        if (eq == null) return null
+
         // For convenience
         const a = eq["a"];
         const b = eq["b"];
