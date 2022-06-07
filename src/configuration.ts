@@ -40,17 +40,35 @@ export class Configuration {
         }]
     ]
 
-    public static default_keybinds: {[key: string]: string} = {
-        "annotation_size_small": "s", //The s Key by default
-        "annotation_size_large": "l", //The l Key by default
-        "annotation_size_plus": "=",   //The = Key by default
-        "annotation_size_minus": "-",  //The - Key by default
-        "annotation_vanish": "v"      //The v Key by default
+    public config: {[key: string]: unknown} = {
+
+        "default_keybinds": {
+            "annotation_size_small": "s", //The s Key by default
+            "annotation_size_large": "l", //The l Key by default
+            "annotation_size_plus": "=",   //The = Key by default
+            "annotation_size_minus": "-",  //The - Key by default
+            "annotation_vanish": "v"      //The v Key by default
+        },
+
     }
 
     public static annotation_gradient_default: boolean = false;
 
-    constructor() {}
+    constructor(...kwargs: {[key: string]: unknown}[]) {
+        this.modify_config(...kwargs)
+    }
+
+    public modify_config(...kwargs: {[key: string]: unknown}[]) {
+
+        //we don't know how many arguments we'll recieve, so loop through all of the elements in kwargs
+        for (let i = 0; i < kwargs.length; i++) {
+
+            //for every key: value pair, overwrite them/add them to the config
+            for (let key in kwargs[i]) {
+                this.config[key] = kwargs[i][key]
+            }
+        }
+    }
 
     public create_toolbox(ulabel: ULabel, toolbox_item_order = this.default_toolbox_item_order) {
 

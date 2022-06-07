@@ -15,6 +15,10 @@ var AllowedToolboxItem;
 })(AllowedToolboxItem || (AllowedToolboxItem = {}));
 var Configuration = /** @class */ (function () {
     function Configuration() {
+        var kwargs = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            kwargs[_i] = arguments[_i];
+        }
         this.toolbox_map = new Map([
             [AllowedToolboxItem.ModeSelect, toolbox_1.ModeSelectionToolboxItem],
             [AllowedToolboxItem.ZoomPan, toolbox_1.ZoomPanToolboxItem],
@@ -40,7 +44,30 @@ var Configuration = /** @class */ (function () {
                     "default_value": 0.05
                 }]
         ];
+        this.config = {
+            "default_keybinds": {
+                "annotation_size_small": "s",
+                "annotation_size_large": "l",
+                "annotation_size_plus": "=",
+                "annotation_size_minus": "-",
+                "annotation_vanish": "v" //The v Key by default
+            },
+        };
+        this.modify_config.apply(this, kwargs);
     }
+    Configuration.prototype.modify_config = function () {
+        var kwargs = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            kwargs[_i] = arguments[_i];
+        }
+        //we don't know how many arguments we'll recieve, so loop through all of the elements in kwargs
+        for (var i = 0; i < kwargs.length; i++) {
+            //for every key: value pair, overwrite them/add them to the config
+            for (var key in kwargs[i]) {
+                this.config[key] = kwargs[i][key];
+            }
+        }
+    };
     Configuration.prototype.create_toolbox = function (ulabel, toolbox_item_order) {
         if (toolbox_item_order === void 0) { toolbox_item_order = this.default_toolbox_item_order; }
         //There's no point to having an empty toolbox, so throw an error if the toolbox is empty.
@@ -73,13 +100,6 @@ var Configuration = /** @class */ (function () {
             }
         }
         return toolbox_instance_list;
-    };
-    Configuration.default_keybinds = {
-        "annotation_size_small": "s",
-        "annotation_size_large": "l",
-        "annotation_size_plus": "=",
-        "annotation_size_minus": "-",
-        "annotation_vanish": "v" //The v Key by default
     };
     Configuration.annotation_gradient_default = false;
     return Configuration;

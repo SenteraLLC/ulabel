@@ -235,12 +235,48 @@ export class ULabel {
         const images = ULabel.get_images_html(ul);
         const frame_annotation_dialogs = ULabel.get_frame_annotation_dialogs(ul);
 
-        let configuration = new Configuration();
+        //let configuration = new Configuration();
+
+        console.log(ul)
+
+        // let toolbox_item_order = ul.configuration.default_toolbox_item_order;
+
+        // //create the toolbox
+        // if (toolbox_item_order.length == 0) {
+        //     throw new Error("No Toolbox Items Given")
+        // }
+
+        // let toolbox_instance_list = [];
+        // //Go through the items in toolbox_item_order and add their instance to the toolbox instance list
+        // for (let i = 0; i < toolbox_item_order.length; i++) {
+
+        //     let args, toolbox_key;
+
+        //     //If the value of toolbox_item_order[i] is a number then that means the it is one of the 
+        //     //enumerated toolbox items, so set it to the key, otherwise the element must be an array
+        //     //of which the first element of that array must be the enumerated value, and the arguments
+        //     //must be the second value
+        //     if (typeof(toolbox_item_order[i]) == "number") {
+        //         toolbox_key = toolbox_item_order[i]
+        //     } else {
+
+        //         toolbox_key = toolbox_item_order[i][0];
+        //         args = toolbox_item_order[i][1]  
+        //     }
+
+        //     let toolbox_item_class = ul.Configuration.toolbox_map.get(toolbox_key);
+
+        //     if (args == null) {
+        //         toolbox_instance_list.push(new ul.Configuration.toolbox_item_class(ulabel))
+        //     } else {
+        //         toolbox_instance_list.push(new ul.Configuration.toolbox_item_class(ulabel, args))
+        //     }           
+        // }
         
         // const toolbox = configuration.create_toolbox();
         const toolbox = new Toolbox(
             [],
-            configuration.create_toolbox(ul)
+            ul.configuration.create_toolbox(ul)
         );
 
 
@@ -1266,6 +1302,11 @@ export class ULabel {
             "annotation_meta": annotation_meta
         };
 
+        // this.configuration = new Configuration({
+        //     "test": "potatoe"
+        // });
+
+
         // Useful for the efficient redraw of nonspatial annotations
         this.tmp_nonspatial_element_ids = {};
 
@@ -1348,6 +1389,10 @@ export class ULabel {
     init(callback) {
         // Add stylesheet
         ULabel.add_style_to_document(this);
+
+        this.configuration = new Configuration({
+            "test": "potatoe"
+        });
 
         var that = this;
         that.state["current_subtask"] = Object.keys(that.subtasks)[0];
