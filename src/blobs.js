@@ -1917,9 +1917,13 @@ div#${prntid} div.keypoint-slider div.keypoint-slider-holder{
    padding: 8px;
 }
 
-div#${prntid} #keypoint-slider-label {
+div#${prntid} .keypoint-slider-label {
    position: relative;
    bottom: 3px;
+}
+
+div#${prntid}.ulabel-night .keypoint-slider-label {
+   color: white;
 }
 
 div#${prntid} div.zpcont {
