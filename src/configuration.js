@@ -68,39 +68,6 @@ var Configuration = /** @class */ (function () {
             }
         }
     };
-    Configuration.prototype.create_toolbox = function (ulabel, toolbox_item_order) {
-        if (toolbox_item_order === void 0) { toolbox_item_order = this.default_toolbox_item_order; }
-        //There's no point to having an empty toolbox, so throw an error if the toolbox is empty.
-        //The toolbox won't actually break if there aren't any items in the toolbox, so if for
-        //whatever reason we want that in the future, then feel free to remove this error.
-        if (toolbox_item_order.length == 0) {
-            throw new Error("No Toolbox Items Given");
-        }
-        var toolbox_instance_list = [];
-        //Go through the items in toolbox_item_order and add their instance to the toolbox instance list
-        for (var i = 0; i < toolbox_item_order.length; i++) {
-            var args = void 0, toolbox_key = void 0;
-            //If the value of toolbox_item_order[i] is a number then that means the it is one of the 
-            //enumerated toolbox items, so set it to the key, otherwise the element must be an array
-            //of which the first element of that array must be the enumerated value, and the arguments
-            //must be the second value
-            if (typeof (toolbox_item_order[i]) == "number") {
-                toolbox_key = toolbox_item_order[i];
-            }
-            else {
-                toolbox_key = toolbox_item_order[i][0];
-                args = toolbox_item_order[i][1];
-            }
-            var toolbox_item_class = this.toolbox_map.get(toolbox_key);
-            if (args == null) {
-                toolbox_instance_list.push(new toolbox_item_class(ulabel));
-            }
-            else {
-                toolbox_instance_list.push(new toolbox_item_class(ulabel, args));
-            }
-        }
-        return toolbox_instance_list;
-    };
     Configuration.annotation_gradient_default = false;
     return Configuration;
 }());
