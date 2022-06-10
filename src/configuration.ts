@@ -45,7 +45,7 @@ export class Configuration {
         "annotation_size_plus": "=",   //The = Key by default
         "annotation_size_minus": "-",  //The - Key by default
         "annotation_vanish": "v"      //The v Key by default
-        }
+    }
 
     public static annotation_gradient_default: boolean = false;
 
