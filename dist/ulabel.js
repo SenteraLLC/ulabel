@@ -11685,6 +11685,10 @@ var AllowedToolboxItem;
 })(AllowedToolboxItem || (AllowedToolboxItem = {}));
 var Configuration = /** @class */ (function () {
     function Configuration() {
+        var kwargs = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            kwargs[_i] = arguments[_i];
+        }
         this.toolbox_map = new Map([
             [AllowedToolboxItem.ModeSelect, toolbox_1.ModeSelectionToolboxItem],
             [AllowedToolboxItem.ZoomPan, toolbox_1.ZoomPanToolboxItem],
@@ -11710,46 +11714,27 @@ var Configuration = /** @class */ (function () {
                     "default_value": 0.05
                 }]
         ];
+        this.default_keybinds = {
+            "annotation_size_small": "s",
+            "annotation_size_large": "l",
+            "annotation_size_plus": "=",
+            "annotation_size_minus": "-",
+            "annotation_vanish": "v" //The v Key by default
+        };
+        this.modify_config.apply(this, kwargs);
     }
-    Configuration.prototype.create_toolbox = function (ulabel, toolbox_item_order) {
-        if (toolbox_item_order === void 0) { toolbox_item_order = this.default_toolbox_item_order; }
-        //There's no point to having an empty toolbox, so throw an error if the toolbox is empty.
-        //The toolbox won't actually break if there aren't any items in the toolbox, so if for
-        //whatever reason we want that in the future, then feel free to remove this error.
-        if (toolbox_item_order.length == 0) {
-            throw new Error("No Toolbox Items Given");
+    Configuration.prototype.modify_config = function () {
+        var kwargs = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            kwargs[_i] = arguments[_i];
         }
-        var toolbox_instance_list = [];
-        //Go through the items in toolbox_item_order and add their instance to the toolbox instance list
-        for (var i = 0; i < toolbox_item_order.length; i++) {
-            var args = void 0, toolbox_key = void 0;
-            //If the value of toolbox_item_order[i] is a number then that means the it is one of the 
-            //enumerated toolbox items, so set it to the key, otherwise the element must be an array
-            //of which the first element of that array must be the enumerated value, and the arguments
-            //must be the second value
-            if (typeof (toolbox_item_order[i]) == "number") {
-                toolbox_key = toolbox_item_order[i];
-            }
-            else {
-                toolbox_key = toolbox_item_order[i][0];
-                args = toolbox_item_order[i][1];
-            }
-            var toolbox_item_class = this.toolbox_map.get(toolbox_key);
-            if (args == null) {
-                toolbox_instance_list.push(new toolbox_item_class(ulabel));
-            }
-            else {
-                toolbox_instance_list.push(new toolbox_item_class(ulabel, args));
+        //we don't know how many arguments we'll recieve, so loop through all of the elements in kwargs
+        for (var i = 0; i < kwargs.length; i++) {
+            //for every key: value pair, overwrite them/add them to the config
+            for (var key in kwargs[i]) {
+                this[key] = kwargs[i][key];
             }
         }
-        return toolbox_instance_list;
-    };
-    Configuration.default_keybinds = {
-        "annotation_size_small": "s",
-        "annotation_size_large": "l",
-        "annotation_size_plus": "=",
-        "annotation_size_minus": "-",
-        "annotation_vanish": "v" //The v Key by default
     };
     Configuration.annotation_gradient_default = false;
     return Configuration;
@@ -12114,7 +12099,7 @@ var annotation_operators = __webpack_require__(419);
 // EXTERNAL MODULE: ./src/drawing_utilities.js
 var drawing_utilities = __webpack_require__(848);
 // EXTERNAL MODULE: ./src/configuration.js
-var src_configuration = __webpack_require__(976);
+var configuration = __webpack_require__(976);
 // EXTERNAL MODULE: ./node_modules/jquery/dist/jquery.js
 var jquery = __webpack_require__(755);
 var jquery_default = /*#__PURE__*/__webpack_require__.n(jquery);
@@ -14739,6 +14724,49 @@ class ULabel {
         return ret;
     }
 
+    static create_toolbox(ulabel, toolbox_item_order = null) {
+
+        //grab the default toolbox if one wasn't provided
+        if (toolbox_item_order == null) {
+            toolbox_item_order = ulabel.config.default_toolbox_item_order
+        }
+
+        //There's no point to having an empty toolbox, so throw an error if the toolbox is empty.
+        //The toolbox won't actually break if there aren't any items in the toolbox, so if for
+        //whatever reason we want that in the future, then feel free to remove this error.
+        if (toolbox_item_order.length == 0) {
+            throw new Error("No Toolbox Items Given")
+        }
+
+        let toolbox_instance_list = [];
+        //Go through the items in toolbox_item_order and add their instance to the toolbox instance list
+        for (let i = 0; i < toolbox_item_order.length; i++) {
+
+            let args, toolbox_key;
+
+            //If the value of toolbox_item_order[i] is a number then that means the it is one of the 
+            //enumerated toolbox items, so set it to the key, otherwise the element must be an array
+            //of which the first element of that array must be the enumerated value, and the arguments
+            //must be the second value
+            if (typeof(toolbox_item_order[i]) == "number") {
+                toolbox_key = toolbox_item_order[i]
+            } else {
+
+                toolbox_key = toolbox_item_order[i][0];
+                args = toolbox_item_order[i][1]  
+            }
+
+            let toolbox_item_class = ulabel.config.toolbox_map.get(toolbox_key);
+
+            if (args == null) {
+                toolbox_instance_list.push(new toolbox_item_class(ulabel))
+            } else {
+                toolbox_instance_list.push(new toolbox_item_class(ulabel, args))
+            }           
+        }
+
+        return toolbox_instance_list
+    }
 
     static prep_window_html(ul) {
         // Bring image and annotation scaffolding in
@@ -14747,13 +14775,11 @@ class ULabel {
         // const tabs = ULabel.get_toolbox_tabs(ul);
         const images = ULabel.get_images_html(ul);
         const frame_annotation_dialogs = ULabel.get_frame_annotation_dialogs(ul);
-
-        let configuration = new src_configuration.Configuration();
         
         // const toolbox = configuration.create_toolbox();
         const toolbox = new src_toolbox.Toolbox(
             [],
-            configuration.create_toolbox(ul)
+            ULabel.create_toolbox(ul)
         );
 
 
@@ -15701,7 +15727,8 @@ class ULabel {
         px_per_px = 1,
         initial_crop = null,
         initial_line_size = 4,
-        instructions_url = null
+        instructions_url = null,
+        config_data = null
     ) {
         // Unroll safe default arguments
         if (task_meta == null) { task_meta = {}; }
@@ -15734,7 +15761,9 @@ class ULabel {
         // Allow for importing spacing data -- a measure tool would be nice too
         // Much of this is hardcoded defaults, 
         //   some might be offloaded to the constructor eventually...
-        this.config = {
+
+        //create the config and add ulabel dependent data
+        this.config = new configuration.Configuration({
             // Values useful for generating HTML for tool
             // TODO(v1) Make sure these don't conflict with other page elements
             "container_id": container_id,
@@ -15777,7 +15806,13 @@ class ULabel {
             // Passthrough
             "task_meta": task_meta,
             "annotation_meta": annotation_meta
-        };
+        });
+
+        //add passed in data to config
+        if (config_data != null) {
+            this.config.modify_config(config_data)
+        }
+
 
         // Useful for the efficient redraw of nonspatial annotations
         this.tmp_nonspatial_element_ids = {};
@@ -15861,6 +15896,8 @@ class ULabel {
     init(callback) {
         // Add stylesheet
         ULabel.add_style_to_document(this);
+
+        
 
         var that = this;
         that.state["current_subtask"] = Object.keys(that.subtasks)[0];
@@ -19727,8 +19764,9 @@ var AnnotationResizeItem = /** @class */ (function (_super) {
         var _this = _super.call(this) || this;
         _this.is_vanished = false;
         _this.cached_size = 1.5;
-        _this.keybind_configuration = configuration_1.Configuration.default_keybinds;
         _this.inner_HTML = "<p class=\"tb-header\">Annotation Count</p>";
+        //get default keybinds
+        _this.keybind_configuration = ulabel.config.default_keybinds;
         //event listener for buttons
         $(document).on("click", "a.butt-ann", function (e) {
             var button = $(e.currentTarget);

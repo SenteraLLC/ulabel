@@ -226,6 +226,49 @@ export class ULabel {
         return ret;
     }
 
+    static create_toolbox(ulabel, toolbox_item_order = null) {
+
+        //grab the default toolbox if one wasn't provided
+        if (toolbox_item_order == null) {
+            toolbox_item_order = ulabel.config.default_toolbox_item_order
+        }
+
+        //There's no point to having an empty toolbox, so throw an error if the toolbox is empty.
+        //The toolbox won't actually break if there aren't any items in the toolbox, so if for
+        //whatever reason we want that in the future, then feel free to remove this error.
+        if (toolbox_item_order.length == 0) {
+            throw new Error("No Toolbox Items Given")
+        }
+
+        let toolbox_instance_list = [];
+        //Go through the items in toolbox_item_order and add their instance to the toolbox instance list
+        for (let i = 0; i < toolbox_item_order.length; i++) {
+
+            let args, toolbox_key;
+
+            //If the value of toolbox_item_order[i] is a number then that means the it is one of the 
+            //enumerated toolbox items, so set it to the key, otherwise the element must be an array
+            //of which the first element of that array must be the enumerated value, and the arguments
+            //must be the second value
+            if (typeof(toolbox_item_order[i]) == "number") {
+                toolbox_key = toolbox_item_order[i]
+            } else {
+
+                toolbox_key = toolbox_item_order[i][0];
+                args = toolbox_item_order[i][1]  
+            }
+
+            let toolbox_item_class = ulabel.config.toolbox_map.get(toolbox_key);
+
+            if (args == null) {
+                toolbox_instance_list.push(new toolbox_item_class(ulabel))
+            } else {
+                toolbox_instance_list.push(new toolbox_item_class(ulabel, args))
+            }           
+        }
+
+        return toolbox_instance_list
+    }
 
     static prep_window_html(ul) {
         // Bring image and annotation scaffolding in
@@ -234,13 +277,11 @@ export class ULabel {
         // const tabs = ULabel.get_toolbox_tabs(ul);
         const images = ULabel.get_images_html(ul);
         const frame_annotation_dialogs = ULabel.get_frame_annotation_dialogs(ul);
-
-        let configuration = new Configuration();
         
         // const toolbox = configuration.create_toolbox();
         const toolbox = new Toolbox(
             [],
-            configuration.create_toolbox(ul)
+            ULabel.create_toolbox(ul)
         );
 
 
@@ -1188,7 +1229,8 @@ export class ULabel {
         px_per_px = 1,
         initial_crop = null,
         initial_line_size = 4,
-        instructions_url = null
+        instructions_url = null,
+        config_data = null
     ) {
         // Unroll safe default arguments
         if (task_meta == null) { task_meta = {}; }
@@ -1221,7 +1263,9 @@ export class ULabel {
         // Allow for importing spacing data -- a measure tool would be nice too
         // Much of this is hardcoded defaults, 
         //   some might be offloaded to the constructor eventually...
-        this.config = {
+
+        //create the config and add ulabel dependent data
+        this.config = new Configuration({
             // Values useful for generating HTML for tool
             // TODO(v1) Make sure these don't conflict with other page elements
             "container_id": container_id,
@@ -1264,7 +1308,13 @@ export class ULabel {
             // Passthrough
             "task_meta": task_meta,
             "annotation_meta": annotation_meta
-        };
+        });
+
+        //add passed in data to config
+        if (config_data != null) {
+            this.config.modify_config(config_data)
+        }
+
 
         // Useful for the efficient redraw of nonspatial annotations
         this.tmp_nonspatial_element_ids = {};
@@ -1348,6 +1398,8 @@ export class ULabel {
     init(callback) {
         // Add stylesheet
         ULabel.add_style_to_document(this);
+
+        
 
         var that = this;
         that.state["current_subtask"] = Object.keys(that.subtasks)[0];

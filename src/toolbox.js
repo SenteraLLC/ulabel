@@ -232,8 +232,9 @@ var AnnotationResizeItem = /** @class */ (function (_super) {
         var _this = _super.call(this) || this;
         _this.is_vanished = false;
         _this.cached_size = 1.5;
-        _this.keybind_configuration = configuration_1.Configuration.default_keybinds;
         _this.inner_HTML = "<p class=\"tb-header\">Annotation Count</p>";
+        //get default keybinds
+        _this.keybind_configuration = ulabel.config.default_keybinds;
         //event listener for buttons
         $(document).on("click", "a.butt-ann", function (e) {
             var button = $(e.currentTarget);

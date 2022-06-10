@@ -319,11 +319,14 @@ export class AnnotationResizeItem extends ToolboxItem {
     public cached_size: number = 1.5;
     public html: string;
     public inner_HTML: string;
-    private keybind_configuration: {[key: string]: string} = Configuration.default_keybinds
+    private keybind_configuration: {[key: string]: string}
     constructor(ulabel: ULabel) {
         super();
         this.inner_HTML = `<p class="tb-header">Annotation Count</p>`;
         
+        //get default keybinds
+        this.keybind_configuration = ulabel.config.default_keybinds
+
         //event listener for buttons
         $(document).on("click", "a.butt-ann", (e) => {
             let button = $(e.currentTarget);

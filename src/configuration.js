@@ -15,6 +15,10 @@ var AllowedToolboxItem;
 })(AllowedToolboxItem || (AllowedToolboxItem = {}));
 var Configuration = /** @class */ (function () {
     function Configuration() {
+        var kwargs = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            kwargs[_i] = arguments[_i];
+        }
         this.toolbox_map = new Map([
             [AllowedToolboxItem.ModeSelect, toolbox_1.ModeSelectionToolboxItem],
             [AllowedToolboxItem.ZoomPan, toolbox_1.ZoomPanToolboxItem],
@@ -40,46 +44,27 @@ var Configuration = /** @class */ (function () {
                     "default_value": 0.05
                 }]
         ];
+        this.default_keybinds = {
+            "annotation_size_small": "s",
+            "annotation_size_large": "l",
+            "annotation_size_plus": "=",
+            "annotation_size_minus": "-",
+            "annotation_vanish": "v" //The v Key by default
+        };
+        this.modify_config.apply(this, kwargs);
     }
-    Configuration.prototype.create_toolbox = function (ulabel, toolbox_item_order) {
-        if (toolbox_item_order === void 0) { toolbox_item_order = this.default_toolbox_item_order; }
-        //There's no point to having an empty toolbox, so throw an error if the toolbox is empty.
-        //The toolbox won't actually break if there aren't any items in the toolbox, so if for
-        //whatever reason we want that in the future, then feel free to remove this error.
-        if (toolbox_item_order.length == 0) {
-            throw new Error("No Toolbox Items Given");
+    Configuration.prototype.modify_config = function () {
+        var kwargs = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            kwargs[_i] = arguments[_i];
         }
-        var toolbox_instance_list = [];
-        //Go through the items in toolbox_item_order and add their instance to the toolbox instance list
-        for (var i = 0; i < toolbox_item_order.length; i++) {
-            var args = void 0, toolbox_key = void 0;
-            //If the value of toolbox_item_order[i] is a number then that means the it is one of the 
-            //enumerated toolbox items, so set it to the key, otherwise the element must be an array
-            //of which the first element of that array must be the enumerated value, and the arguments
-            //must be the second value
-            if (typeof (toolbox_item_order[i]) == "number") {
-                toolbox_key = toolbox_item_order[i];
-            }
-            else {
-                toolbox_key = toolbox_item_order[i][0];
-                args = toolbox_item_order[i][1];
-            }
-            var toolbox_item_class = this.toolbox_map.get(toolbox_key);
-            if (args == null) {
-                toolbox_instance_list.push(new toolbox_item_class(ulabel));
-            }
-            else {
-                toolbox_instance_list.push(new toolbox_item_class(ulabel, args));
+        //we don't know how many arguments we'll recieve, so loop through all of the elements in kwargs
+        for (var i = 0; i < kwargs.length; i++) {
+            //for every key: value pair, overwrite them/add them to the config
+            for (var key in kwargs[i]) {
+                this[key] = kwargs[i][key];
             }
         }
-        return toolbox_instance_list;
-    };
-    Configuration.default_keybinds = {
-        "annotation_size_small": "s",
-        "annotation_size_large": "l",
-        "annotation_size_plus": "=",
-        "annotation_size_minus": "-",
-        "annotation_vanish": "v" //The v Key by default
     };
     Configuration.annotation_gradient_default = false;
     return Configuration;
