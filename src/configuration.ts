@@ -40,11 +40,11 @@ export class Configuration {
     ]
 
     public default_keybinds = {
-            "annotation_size_small": "s", //The s Key by default
-            "annotation_size_large": "l", //The l Key by default
-            "annotation_size_plus": "=",   //The = Key by default
-            "annotation_size_minus": "-",  //The - Key by default
-            "annotation_vanish": "v"      //The v Key by default
+        "annotation_size_small": "s", //The s Key by default
+        "annotation_size_large": "l", //The l Key by default
+        "annotation_size_plus": "=",   //The = Key by default
+        "annotation_size_minus": "-",  //The - Key by default
+        "annotation_vanish": "v"      //The v Key by default
         }
 
     public static annotation_gradient_default: boolean = false;
