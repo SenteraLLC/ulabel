@@ -39,17 +39,13 @@ export class Configuration {
         }]
     ]
 
-    public config: {[key: string]: unknown} = {
-
-        "default_keybinds": {
+    public default_keybinds = {
             "annotation_size_small": "s", //The s Key by default
             "annotation_size_large": "l", //The l Key by default
             "annotation_size_plus": "=",   //The = Key by default
             "annotation_size_minus": "-",  //The - Key by default
             "annotation_vanish": "v"      //The v Key by default
-        },
-
-    }
+        }
 
     public static annotation_gradient_default: boolean = false;
 
@@ -64,7 +60,7 @@ export class Configuration {
 
             //for every key: value pair, overwrite them/add them to the config
             for (let key in kwargs[i]) {
-                this.config[key] = kwargs[i][key]
+                this[key] = kwargs[i][key]
             }
         }
     }

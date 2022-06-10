@@ -11714,14 +11714,12 @@ var Configuration = /** @class */ (function () {
                     "default_value": 0.05
                 }]
         ];
-        this.config = {
-            "default_keybinds": {
-                "annotation_size_small": "s",
-                "annotation_size_large": "l",
-                "annotation_size_plus": "=",
-                "annotation_size_minus": "-",
-                "annotation_vanish": "v" //The v Key by default
-            },
+        this.default_keybinds = {
+            "annotation_size_small": "s",
+            "annotation_size_large": "l",
+            "annotation_size_plus": "=",
+            "annotation_size_minus": "-",
+            "annotation_vanish": "v" //The v Key by default
         };
         this.modify_config.apply(this, kwargs);
     }
@@ -11734,7 +11732,7 @@ var Configuration = /** @class */ (function () {
         for (var i = 0; i < kwargs.length; i++) {
             //for every key: value pair, overwrite them/add them to the config
             for (var key in kwargs[i]) {
-                this.config[key] = kwargs[i][key];
+                this[key] = kwargs[i][key];
             }
         }
     };
@@ -14730,7 +14728,7 @@ class ULabel {
 
         //grab the default toolbox if one wasn't provided
         if (toolbox_item_order == null) {
-            toolbox_item_order = ulabel.configuration.default_toolbox_item_order
+            toolbox_item_order = ulabel.config.default_toolbox_item_order
         }
 
         //There's no point to having an empty toolbox, so throw an error if the toolbox is empty.
@@ -14758,7 +14756,7 @@ class ULabel {
                 args = toolbox_item_order[i][1]  
             }
 
-            let toolbox_item_class = ulabel.configuration.toolbox_map.get(toolbox_key);
+            let toolbox_item_class = ulabel.config.toolbox_map.get(toolbox_key);
 
             if (args == null) {
                 toolbox_instance_list.push(new toolbox_item_class(ulabel))
@@ -15729,7 +15727,8 @@ class ULabel {
         px_per_px = 1,
         initial_crop = null,
         initial_line_size = 4,
-        instructions_url = null
+        instructions_url = null,
+        config_data = null
     ) {
         // Unroll safe default arguments
         if (task_meta == null) { task_meta = {}; }
@@ -15762,7 +15761,9 @@ class ULabel {
         // Allow for importing spacing data -- a measure tool would be nice too
         // Much of this is hardcoded defaults, 
         //   some might be offloaded to the constructor eventually...
-        this.config = {
+
+        //create the config and add ulabel dependent data
+        this.config = new configuration.Configuration({
             // Values useful for generating HTML for tool
             // TODO(v1) Make sure these don't conflict with other page elements
             "container_id": container_id,
@@ -15805,11 +15806,12 @@ class ULabel {
             // Passthrough
             "task_meta": task_meta,
             "annotation_meta": annotation_meta
-        };
+        });
 
-        // this.configuration = new Configuration({
-        //     "test": "potatoe"
-        // });
+        //add passed in data to config
+        if (config_data != null) {
+            this.config.modify_config(config_data)
+        }
 
 
         // Useful for the efficient redraw of nonspatial annotations
@@ -15895,9 +15897,7 @@ class ULabel {
         // Add stylesheet
         ULabel.add_style_to_document(this);
 
-        this.configuration = new configuration.Configuration({
-            "test": "potatoe"
-        });
+        
 
         var that = this;
         that.state["current_subtask"] = Object.keys(that.subtasks)[0];

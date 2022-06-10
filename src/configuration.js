@@ -44,14 +44,12 @@ var Configuration = /** @class */ (function () {
                     "default_value": 0.05
                 }]
         ];
-        this.config = {
-            "default_keybinds": {
-                "annotation_size_small": "s",
-                "annotation_size_large": "l",
-                "annotation_size_plus": "=",
-                "annotation_size_minus": "-",
-                "annotation_vanish": "v" //The v Key by default
-            },
+        this.default_keybinds = {
+            "annotation_size_small": "s",
+            "annotation_size_large": "l",
+            "annotation_size_plus": "=",
+            "annotation_size_minus": "-",
+            "annotation_vanish": "v" //The v Key by default
         };
         this.modify_config.apply(this, kwargs);
     }
@@ -64,7 +62,7 @@ var Configuration = /** @class */ (function () {
         for (var i = 0; i < kwargs.length; i++) {
             //for every key: value pair, overwrite them/add them to the config
             for (var key in kwargs[i]) {
-                this.config[key] = kwargs[i][key];
+                this[key] = kwargs[i][key];
             }
         }
     };
