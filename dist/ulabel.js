@@ -20064,6 +20064,10 @@ var KeypointSliderItem = /** @class */ (function (_super) {
         _this.filter_function = kwargs.filter_function;
         _this.get_confidence = kwargs.confidence_function;
         _this.mark_deprecated = kwargs.mark_deprecated;
+        //if the config has a default value override, then use that instead
+        if (ulabel.config.hasOwnProperty(_this.name.split(" ").join("_").toLowerCase() + "_default_value")) {
+            kwargs._default_value = ulabel.config[_this.name.split(" ").join("_").toLowerCase() + "_default_value"];
+        }
         //if the user doesn't give a default for the slider, then the defalut is 0
         if (kwargs.hasOwnProperty("default_value")) {
             //check to make sure the default value given is valid
