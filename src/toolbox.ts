@@ -716,7 +716,7 @@ export class KeypointSliderItem extends ToolboxItem {
         
         
         //if the config has a default value override, then use that instead
-        if (ulabel.config.hasOwnProperty(this.name.split(" ").join("_").toLowerCase() + "_default_value")) {
+        if (ulabel.config.hasOwnProperty(this.name.replaceAll(" ","_").toLowerCase() + "_default_value")) {
             kwargs._default_value = ulabel.config[this.name.split(" ").join("_").toLowerCase() + "_default_value"];
         }
 
