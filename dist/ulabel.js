@@ -11721,6 +11721,7 @@ var Configuration = /** @class */ (function () {
             "annotation_size_minus": "-",
             "annotation_vanish": "v" //The v Key by default
         };
+        this.filter_annotations_on_load = false;
         this.modify_config.apply(this, kwargs);
     }
     Configuration.prototype.modify_config = function () {
@@ -20063,9 +20064,13 @@ var KeypointSliderItem = /** @class */ (function (_super) {
         _this.filter_function = kwargs.filter_function;
         _this.get_confidence = kwargs.confidence_function;
         _this.mark_deprecated = kwargs.mark_deprecated;
+        //if the config has a default value override, then use that instead
+        if (ulabel.config.hasOwnProperty(_this.name.replaceAll(" ", "_").toLowerCase() + "_default_value")) {
+            kwargs._default_value = ulabel.config[_this.name.split(" ").join("_").toLowerCase() + "_default_value"];
+        }
         //if the user doesn't give a default for the slider, then the defalut is 0
         if (kwargs.hasOwnProperty("default_value")) {
-            //check to make sure the defalut value given is valid
+            //check to make sure the default value given is valid
             if ((kwargs.default_value >= 0) && (kwargs.default_value <= 1)) {
                 _this.default_value = kwargs.default_value;
             }
@@ -20077,8 +20082,10 @@ var KeypointSliderItem = /** @class */ (function (_super) {
         var current_subtask = ulabel.subtasks[current_subtask_key];
         //Check to see if any of the annotations were deprecated by default
         _this.check_for_human_deprecated(current_subtask);
-        //update the annotations with the default filter
-        // this.deprecate_annotations(current_subtask, this.default_value);
+        //check the config to see if we should update the annotations with the default filter on load
+        if (ulabel.config.filter_annotations_on_load) {
+            _this.deprecate_annotations(current_subtask, _this.default_value);
+        }
         //The annotations are drawn for the first time after the toolbox is loaded
         //so we don't actually have to redraw the annotations after deprecating them.
         $(document).on("input", "#" + _this.name.split(" ").join("-").toLowerCase(), function (e) {

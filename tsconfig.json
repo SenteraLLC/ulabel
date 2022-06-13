@@ -3,5 +3,9 @@
         "target": "es5",
         "module": "commonjs",
         "sourceMap": false,
-    }
+        "lib": [
+            "ES2021.String",
+            "DOM",
+        ]
+    },
 }

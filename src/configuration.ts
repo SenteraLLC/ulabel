@@ -47,6 +47,10 @@ export class Configuration {
         "annotation_vanish": "v"      //The v Key by default
     }
 
+    public filter_low_confidence_default_value: number;
+
+    public filter_annotations_on_load: boolean = false;
+
     public static annotation_gradient_default: boolean = false;
 
     constructor(...kwargs: {[key: string]: unknown}[]) {
