@@ -51,6 +51,7 @@ var Configuration = /** @class */ (function () {
             "annotation_size_minus": "-",
             "annotation_vanish": "v" //The v Key by default
         };
+        this.filter_annotations_on_load = false;
         this.modify_config.apply(this, kwargs);
     }
     Configuration.prototype.modify_config = function () {
