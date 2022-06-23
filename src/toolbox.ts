@@ -508,15 +508,15 @@ export class AnnotationResizeItem extends ToolboxItem {
             <p class="tb-header">Change Annotation Size</p>
             <div class="annotation-resize-button-holder">
                 <span class="annotation-vanish">
-                    <a href="#" class="butt-ann" id="annotation-resize-v">Vanish</a>
+                    <a href="#" class="butt-ann button" id="annotation-resize-v">Vanish</a>
                 </span>
                 <span class="annotation-size">
-                    <a href="#" class="butt-ann" id="annotation-resize-s">Small</a>
-                    <a href="#" class="butt-ann" id="annotation-resize-l">Large</a>
+                    <a href="#" class="butt-ann button" id="annotation-resize-s">Small</a>
+                    <a href="#" class="butt-ann button" id="annotation-resize-l">Large</a>
                 </span>
-                <span class="annotation-inc">
-                    <a href="#" class="butt-ann" id="annotation-resize-inc">+</a>
-                    <a href="#" class="butt-ann" id="annotation-resize-dec">-</a>
+                <span class="annotation-inc increment">
+                    <a href="#" class="butt-ann button inc" id="annotation-resize-inc">+</a>
+                    <a href="#" class="butt-ann button dec" id="annotation-resize-dec">-</a>
                 </span>
             </div>
         </div>
@@ -875,6 +875,10 @@ export class KeypointSliderItem extends ToolboxItem {
                     class="keypoint-slider-label">
                     ${this.default_value * 100}%
                 </label>
+                <span class="increment" >
+                    <a href="#" class="button inc" >+</a>
+                    <a href="#" class="button dec" >-</a>
+                </span>
             </div>
         </div>`
     }

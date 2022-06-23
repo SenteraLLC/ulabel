@@ -13845,7 +13845,7 @@ div#${prntid} div.annotation-resize-button-holder {
    margin: 0 auto;
 }
 
-div#${prntid} div.annotation-resize a.butt-ann {
+div#${prntid} a.button {
    display: inline-block;  
    margin: auto;
    color: white;
@@ -13866,13 +13866,13 @@ div#${prntid} div.annotation-resize #annotation-resize-l {
    margin-left: -5px;
 }
 
-div#${prntid} div.annotation-resize #annotation-resize-inc {
+div#${prntid} a.inc {
    line-height: 23px;
    margin-top: -5px;
    margin-bottom: 5px;
 }
 
-div#${prntid} div.annotation-resize #annotation-resize-dec {
+div#${prntid} a.dec {
    line-height: 19px;
 }
 
@@ -13901,14 +13901,14 @@ div#${prntid} div.annotation-resize span.annotation-vanish a.butt-ann {
    margin: 0 2px;
 }
 
-div#${prntid} div.annotation-resize span.annotation-inc a.butt-ann {
+div#${prntid} span.increment a.button {
    width: 22px;
    height: 22px;
    border-radius: 17px;
    font-size: 1.4em;
 }
 
-div#${prntid} div.annotation-resize a:hover {
+div#${prntid} a.button:hover {
    border: 1px solid black;
    box-shadow: 1px 1px 4px rgba(204, 204, 204, 0.9);
    background-color:rgba(100, 148, 237, 0.486);
@@ -14023,11 +14023,27 @@ div#${prntid} div.keypoint-slider p.tb-header {
 
 div#${prntid} div.keypoint-slider div.keypoint-slider-holder{
    padding: 8px;
+   position: relative;
 }
 
 div#${prntid} .keypoint-slider-label {
    position: relative;
    bottom: 3px;
+}
+
+div#${prntid} div.keypoint-slider span.increment {
+   position: absolute;
+   right: 0;
+   bottom: 0.4em;
+}
+
+div#${prntid} div.keypoint-slider a.inc {
+   margin: 0;
+}
+
+div#${prntid} div.keypoint-slider a.dec {
+   position: relative;
+   bottom: 0.07em;
 }
 
 div#${prntid}.ulabel-night .keypoint-slider-label {
@@ -19928,7 +19944,7 @@ var AnnotationResizeItem = /** @class */ (function (_super) {
         return null;
     };
     AnnotationResizeItem.prototype.get_html = function () {
-        return "\n        <div class=\"annotation-resize\">\n            <p class=\"tb-header\">Change Annotation Size</p>\n            <div class=\"annotation-resize-button-holder\">\n                <span class=\"annotation-vanish\">\n                    <a href=\"#\" class=\"butt-ann\" id=\"annotation-resize-v\">Vanish</a>\n                </span>\n                <span class=\"annotation-size\">\n                    <a href=\"#\" class=\"butt-ann\" id=\"annotation-resize-s\">Small</a>\n                    <a href=\"#\" class=\"butt-ann\" id=\"annotation-resize-l\">Large</a>\n                </span>\n                <span class=\"annotation-inc\">\n                    <a href=\"#\" class=\"butt-ann\" id=\"annotation-resize-inc\">+</a>\n                    <a href=\"#\" class=\"butt-ann\" id=\"annotation-resize-dec\">-</a>\n                </span>\n            </div>\n        </div>\n        ";
+        return "\n        <div class=\"annotation-resize\">\n            <p class=\"tb-header\">Change Annotation Size</p>\n            <div class=\"annotation-resize-button-holder\">\n                <span class=\"annotation-vanish\">\n                    <a href=\"#\" class=\"butt-ann button\" id=\"annotation-resize-v\">Vanish</a>\n                </span>\n                <span class=\"annotation-size\">\n                    <a href=\"#\" class=\"butt-ann button\" id=\"annotation-resize-s\">Small</a>\n                    <a href=\"#\" class=\"butt-ann button\" id=\"annotation-resize-l\">Large</a>\n                </span>\n                <span class=\"annotation-inc increment\">\n                    <a href=\"#\" class=\"butt-ann button inc\" id=\"annotation-resize-inc\">+</a>\n                    <a href=\"#\" class=\"butt-ann button dec\" id=\"annotation-resize-dec\">-</a>\n                </span>\n            </div>\n        </div>\n        ";
     };
     return AnnotationResizeItem;
 }(ToolboxItem));
@@ -20176,7 +20192,7 @@ var KeypointSliderItem = /** @class */ (function (_super) {
         }
     };
     KeypointSliderItem.prototype.get_html = function () {
-        return "\n        <div class=\"keypoint-slider\">\n            <p class=\"tb-header\">".concat(this.name, "</p>\n            <div class=\"keypoint-slider-holder\">\n                <input \n                    type=\"range\" \n                    id=\"").concat(this.name.split(" ").join("-").toLowerCase(), "\" \n                    class=\"keypoint-slider\" value=\"").concat(this.default_value * 100, "\"\n                />\n                <label \n                    for=\"").concat(this.name.split(" ").join("-").toLowerCase(), "\" \n                    id=\"").concat(this.name.split(" ").join("-").toLowerCase(), "-label\"\n                    class=\"keypoint-slider-label\">\n                    ").concat(this.default_value * 100, "%\n                </label>\n            </div>\n        </div>");
+        return "\n        <div class=\"keypoint-slider\">\n            <p class=\"tb-header\">".concat(this.name, "</p>\n            <div class=\"keypoint-slider-holder\">\n                <input \n                    type=\"range\" \n                    id=\"").concat(this.name.split(" ").join("-").toLowerCase(), "\" \n                    class=\"keypoint-slider\" value=\"").concat(this.default_value * 100, "\"\n                />\n                <label \n                    for=\"").concat(this.name.split(" ").join("-").toLowerCase(), "\" \n                    id=\"").concat(this.name.split(" ").join("-").toLowerCase(), "-label\"\n                    class=\"keypoint-slider-label\">\n                    ").concat(this.default_value * 100, "%\n                </label>\n                <span class=\"increment\" >\n                    <a href=\"#\" class=\"button inc\" >+</a>\n                    <a href=\"#\" class=\"button dec\" >-</a>\n                </span>\n            </div>\n        </div>");
     };
     return KeypointSliderItem;
 }(ToolboxItem));
