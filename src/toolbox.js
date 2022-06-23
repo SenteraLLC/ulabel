@@ -606,6 +606,19 @@ var KeypointSliderItem = /** @class */ (function (_super) {
             _this.deprecate_annotations(current_subtask, filter_value);
             ulabel.redraw_all_annotations(null, null, false);
         });
+        $(document).on("click", "a.keypoint-slider-increment", function (e) {
+            var button_text = e.currentTarget.outerText;
+            var slider = document.getElementById(_this.name.split(" ").join("-").toLowerCase());
+            if (button_text == "+") {
+                slider.value = (slider.valueAsNumber + 1).toString();
+            }
+            else if (button_text == "-") {
+                slider.value = (slider.valueAsNumber - 1).toString();
+            }
+            else {
+                throw Error("Unknown Keypoint Slider Button Pressed");
+            }
+        });
         return _this;
     }
     KeypointSliderItem.prototype.deprecate_annotations = function (current_subtask, filter_value) {
@@ -642,7 +655,7 @@ var KeypointSliderItem = /** @class */ (function (_super) {
         }
     };
     KeypointSliderItem.prototype.get_html = function () {
-        return "\n        <div class=\"keypoint-slider\">\n            <p class=\"tb-header\">".concat(this.name, "</p>\n            <div class=\"keypoint-slider-holder\">\n                <input \n                    type=\"range\" \n                    id=\"").concat(this.name.split(" ").join("-").toLowerCase(), "\" \n                    class=\"keypoint-slider\" value=\"").concat(this.default_value * 100, "\"\n                />\n                <label \n                    for=\"").concat(this.name.split(" ").join("-").toLowerCase(), "\" \n                    id=\"").concat(this.name.split(" ").join("-").toLowerCase(), "-label\"\n                    class=\"keypoint-slider-label\">\n                    ").concat(this.default_value * 100, "%\n                </label>\n                <span class=\"increment\" >\n                    <a href=\"#\" class=\"button inc\" >+</a>\n                    <a href=\"#\" class=\"button dec\" >-</a>\n                </span>\n            </div>\n        </div>");
+        return "\n        <div class=\"keypoint-slider\">\n            <p class=\"tb-header\">".concat(this.name, "</p>\n            <div class=\"keypoint-slider-holder\">\n                <input \n                    type=\"range\" \n                    id=\"").concat(this.name.split(" ").join("-").toLowerCase(), "\" \n                    class=\"keypoint-slider\" value=\"").concat(this.default_value * 100, "\"\n                />\n                <label \n                    for=\"").concat(this.name.split(" ").join("-").toLowerCase(), "\" \n                    id=\"").concat(this.name.split(" ").join("-").toLowerCase(), "-label\"\n                    class=\"keypoint-slider-label\">\n                    ").concat(this.default_value * 100, "%\n                </label>\n                <span class=\"increment\" >\n                    <a href=\"#\" class=\"button inc keypoint-slider-increment\" >+</a>\n                    <a href=\"#\" class=\"button dec keypoint-slider-increment\" >-</a>\n                </span>\n            </div>\n        </div>");
     };
     return KeypointSliderItem;
 }(ToolboxItem));

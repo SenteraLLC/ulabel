@@ -814,6 +814,19 @@ export class KeypointSliderItem extends ToolboxItem {
             
             ulabel.redraw_all_annotations(null, null, false);
         })
+
+        $(document).on("click", "a.keypoint-slider-increment", (e) => {
+            let button_text = e.currentTarget.outerText
+            let slider = <HTMLInputElement> document.getElementById(this.name.split(" ").join("-").toLowerCase())
+
+            if (button_text == "+") {
+                slider.value = (slider.valueAsNumber + 1).toString();
+            } else if (button_text == "-") {
+                slider.value = (slider.valueAsNumber - 1).toString();
+            } else {
+                throw Error("Unknown Keypoint Slider Button Pressed");
+            }
+        })
     }
 
     public deprecate_annotations(current_subtask, filter_value) {
@@ -876,8 +889,8 @@ export class KeypointSliderItem extends ToolboxItem {
                     ${this.default_value * 100}%
                 </label>
                 <span class="increment" >
-                    <a href="#" class="button inc" >+</a>
-                    <a href="#" class="button dec" >-</a>
+                    <a href="#" class="button inc keypoint-slider-increment" >+</a>
+                    <a href="#" class="button dec keypoint-slider-increment" >-</a>
                 </span>
             </div>
         </div>`
