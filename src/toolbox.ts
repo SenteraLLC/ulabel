@@ -431,6 +431,7 @@ export class AnnotationResizeItem extends ToolboxItem {
             for (const annotation_id in subtask.annotations.access) {
                 subtask.annotations.access[annotation_id].line_size = size;
             }
+            this.set_size_cookie(size)
             return;
         }
         if (operation == "+") {
@@ -439,6 +440,7 @@ export class AnnotationResizeItem extends ToolboxItem {
                 //temporary solution
                 this.cached_size = subtask.annotations.access[annotation_id].line_size
             }
+            this.set_size_cookie(subtask.annotations.access[subtask.annotations.ordering[0]].line_size)
             return;
         }
         if (operation == "-") {
@@ -453,9 +455,38 @@ export class AnnotationResizeItem extends ToolboxItem {
                 //temporary solution
                 this.cached_size = subtask.annotations.access[annotation_id].line_size
             }
+            this.set_size_cookie(subtask.annotations.access[subtask.annotations.ordering[0]].line_size)
             return;
         }
-        return;
+        throw Error("Invalid Operation given to loop_through_annotations")
+    }
+
+    private set_size_cookie(cookie_value) {
+        let d = new Date();
+        d.setTime(d.getTime() + (10000 * 24 * 60 * 60 * 1000));
+        document.cookie = "size=" + cookie_value + ";" + d.toUTCString() + ";path=/";
+        console.log(document.cookie)
+    }
+
+    private read_size_cookie() {
+        let cookie_name = "size=";       
+
+        let cookie_array = document.cookie.split(";");
+
+        for (let i = 0; i < cookie_array.length; i++) {
+            let current_cookie = cookie_array[i];
+
+            //while there's whitespace at the front of the cookie, loop through and remove it
+            while (current_cookie.charAt(0) == " ") {
+                current_cookie = current_cookie.substring(1);
+            }
+
+            if (current_cookie.indexOf(cookie_name) == 0) {
+                return current_cookie.substring(cookie_name.length, current_cookie.length)
+            }
+        }
+
+        return null
     }
     
     public get_html() {

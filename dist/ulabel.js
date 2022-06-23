@@ -19868,6 +19868,7 @@ var AnnotationResizeItem = /** @class */ (function (_super) {
             for (var annotation_id in subtask.annotations.access) {
                 subtask.annotations.access[annotation_id].line_size = size;
             }
+            this.set_size_cookie(size);
             return;
         }
         if (operation == "+") {
@@ -19876,6 +19877,7 @@ var AnnotationResizeItem = /** @class */ (function (_super) {
                 //temporary solution
                 this.cached_size = subtask.annotations.access[annotation_id].line_size;
             }
+            this.set_size_cookie(subtask.annotations.access[subtask.annotations.ordering[0]].line_size);
             return;
         }
         if (operation == "-") {
@@ -19891,9 +19893,31 @@ var AnnotationResizeItem = /** @class */ (function (_super) {
                 //temporary solution
                 this.cached_size = subtask.annotations.access[annotation_id].line_size;
             }
+            this.set_size_cookie(subtask.annotations.access[subtask.annotations.ordering[0]].line_size);
             return;
         }
-        return;
+        throw Error("Invalid Operation given to loop_through_annotations");
+    };
+    AnnotationResizeItem.prototype.set_size_cookie = function (cookie_value) {
+        var d = new Date();
+        d.setTime(d.getTime() + (10000 * 24 * 60 * 60 * 1000));
+        document.cookie = "size=" + cookie_value + ";" + d.toUTCString() + ";path=/";
+        console.log(document.cookie);
+    };
+    AnnotationResizeItem.prototype.read_size_cookie = function () {
+        var cookie_name = "size=";
+        var cookie_array = document.cookie.split(";");
+        for (var i = 0; i < cookie_array.length; i++) {
+            var current_cookie = cookie_array[i];
+            //while there's whitespace at the front of the cookie, loop through and remove it
+            while (current_cookie.charAt(0) == " ") {
+                current_cookie = current_cookie.substring(1);
+            }
+            if (current_cookie.indexOf(cookie_name) == 0) {
+                return current_cookie.substring(cookie_name.length, current_cookie.length);
+            }
+        }
+        return null;
     };
     AnnotationResizeItem.prototype.get_html = function () {
         return "\n        <div class=\"annotation-resize\">\n            <p class=\"tb-header\">Change Annotation Size</p>\n            <div class=\"annotation-resize-button-holder\">\n                <span class=\"annotation-vanish\">\n                    <a href=\"#\" class=\"butt-ann\" id=\"annotation-resize-v\">Vanish</a>\n                </span>\n                <span class=\"annotation-size\">\n                    <a href=\"#\" class=\"butt-ann\" id=\"annotation-resize-s\">Small</a>\n                    <a href=\"#\" class=\"butt-ann\" id=\"annotation-resize-l\">Large</a>\n                </span>\n                <span class=\"annotation-inc\">\n                    <a href=\"#\" class=\"butt-ann\" id=\"annotation-resize-inc\">+</a>\n                    <a href=\"#\" class=\"butt-ann\" id=\"annotation-resize-dec\">-</a>\n                </span>\n            </div>\n        </div>\n        ";
