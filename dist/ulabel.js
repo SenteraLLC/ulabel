@@ -19769,8 +19769,16 @@ var AnnotationResizeItem = /** @class */ (function (_super) {
         _this.inner_HTML = "<p class=\"tb-header\">Annotation Count</p>";
         //get default keybinds
         _this.keybind_configuration = ulabel.config.default_keybinds;
-        //check for default annotation size and update annotations
-        if (ulabel.config.default_annotation_size != undefined) {
+        //First check for a size cookie, if one isn't found then check the config
+        //for a default annotation size. If neither are found it will use the size
+        //that the annotation was saved as.
+        console.log(_this.read_size_cookie());
+        if (_this.read_size_cookie() != null) {
+            var current_subtask_key = ulabel.state["current_subtask"];
+            var current_subtask = ulabel.subtasks[current_subtask_key];
+            _this.update_annotation_size(current_subtask, Number(_this.read_size_cookie()));
+        }
+        else if (ulabel.config.default_annotation_size != undefined) {
             var current_subtask_key = ulabel.state["current_subtask"];
             var current_subtask = ulabel.subtasks[current_subtask_key];
             _this.update_annotation_size(current_subtask, ulabel.config.default_annotation_size);
@@ -19905,6 +19913,7 @@ var AnnotationResizeItem = /** @class */ (function (_super) {
         console.log(document.cookie);
     };
     AnnotationResizeItem.prototype.read_size_cookie = function () {
+        console.log("read size cookie", document.cookie);
         var cookie_name = "size=";
         var cookie_array = document.cookie.split(";");
         for (var i = 0; i < cookie_array.length; i++) {

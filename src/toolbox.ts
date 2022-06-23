@@ -327,8 +327,16 @@ export class AnnotationResizeItem extends ToolboxItem {
         //get default keybinds
         this.keybind_configuration = ulabel.config.default_keybinds
 
-        //check for default annotation size and update annotations
-        if (ulabel.config.default_annotation_size != undefined) {
+        //First check for a size cookie, if one isn't found then check the config
+        //for a default annotation size. If neither are found it will use the size
+        //that the annotation was saved as.
+        console.log(this.read_size_cookie())
+        if (this.read_size_cookie() != null) {
+            let current_subtask_key = ulabel.state["current_subtask"];
+            let current_subtask = ulabel.subtasks[current_subtask_key];
+            this.update_annotation_size(current_subtask, Number(this.read_size_cookie()));
+        } 
+        else if (ulabel.config.default_annotation_size != undefined) {
             let current_subtask_key = ulabel.state["current_subtask"];
             let current_subtask = ulabel.subtasks[current_subtask_key];
             this.update_annotation_size(current_subtask, ulabel.config.default_annotation_size);
@@ -367,7 +375,7 @@ export class AnnotationResizeItem extends ToolboxItem {
             }
             ulabel.redraw_all_annotations(null, null, false);
         } )
-        }
+    }
         
 
     //recieives a string of 's', 'l', 'dec', 'inc', or 'v' depending on which button was pressed
@@ -469,6 +477,7 @@ export class AnnotationResizeItem extends ToolboxItem {
     }
 
     private read_size_cookie() {
+        console.log("read size cookie", document.cookie)
         let cookie_name = "size=";       
 
         let cookie_array = document.cookie.split(";");
