@@ -697,6 +697,7 @@ export class KeypointSliderItem extends ToolboxItem {
     public html: string;
     public inner_HTML: string;
     public name: string;
+    public slider_bar_id: string;
     public filter_function: Function;
     public get_confidence: Function;
     public mark_deprecated: Function;
@@ -713,14 +714,15 @@ export class KeypointSliderItem extends ToolboxItem {
         this.filter_function = kwargs.filter_function;
         this.get_confidence = kwargs.confidence_function;
         this.mark_deprecated = kwargs.mark_deprecated;
-        
+        this.slider_bar_id = this.name.replaceAll(" ", "-").toLowerCase();
         
         //if the config has a default value override, then use that instead
         if (ulabel.config.hasOwnProperty(this.name.replaceAll(" ","_").toLowerCase() + "_default_value")) {
             kwargs._default_value = ulabel.config[this.name.split(" ").join("_").toLowerCase() + "_default_value"];
         }
 
-        //if the user doesn't give a default for the slider, then the defalut is 0
+        //if this keypoint slider has a generic default, then use it
+        //otherwise the defalut is 0
         if (kwargs.hasOwnProperty("default_value")) {
 
             //check to make sure the default value given is valid
@@ -747,20 +749,17 @@ export class KeypointSliderItem extends ToolboxItem {
         //so we don't actually have to redraw the annotations after deprecating them.
         
         $(document).on("input", "#" + this.name.split(" ").join("-").toLowerCase(), (e) => {
-            var current_subtask_key = ulabel.state["current_subtask"];
-            var current_subtask = ulabel.subtasks[current_subtask_key];
-
-            //update the slider value text next to the slider
-            $("#" + this.name.split(" ").join("-").toLowerCase() + "-label").text(e.currentTarget.value + "%")
-
-            let filter_value = e.currentTarget.value / 100
-            this.deprecate_annotations(current_subtask, filter_value);
-            
-            ulabel.redraw_all_annotations(null, null, false);
+            let filter_value = e.currentTarget.value / 100;
+            this.deprecate_annotations(ulabel, filter_value);
         })
     }
 
-    public deprecate_annotations(current_subtask, filter_value) {
+    public deprecate_annotations(ulabel, filter_value) {
+
+        //get the current subtask
+        let current_subtask_key = ulabel.state["current_subtask"];
+        let current_subtask = ulabel.subtasks[current_subtask_key];
+
         for (let i in current_subtask.annotations.ordering) {
             let current_annotation: ULabelAnnotation = current_subtask.annotations.access[current_subtask.annotations.ordering[i]]
 
@@ -778,6 +777,12 @@ export class KeypointSliderItem extends ToolboxItem {
             let deprecate: boolean = this.filter_function(current_confidence, filter_value)
             this.mark_deprecated(current_annotation, deprecate)
         }
+
+        //Update the slider bar's position, and the label's text.
+        $("#" + this.slider_bar_id).val(Math.round(filter_value * 100));
+        $("#" + this.slider_bar_id + "-label").text(Math.round(filter_value * 100) + "%");
+
+        ulabel.redraw_all_annotations(null, null, false);
     }
 
     //if an annotation is deprecated and has a child, then assume its human deprecated.
