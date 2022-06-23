@@ -11721,6 +11721,7 @@ var Configuration = /** @class */ (function () {
             "annotation_size_minus": "-",
             "annotation_vanish": "v" //The v Key by default
         };
+        this.default_annotation_size = 6;
         this.filter_annotations_on_load = false;
         this.modify_config.apply(this, kwargs);
     }
@@ -19768,6 +19769,12 @@ var AnnotationResizeItem = /** @class */ (function (_super) {
         _this.inner_HTML = "<p class=\"tb-header\">Annotation Count</p>";
         //get default keybinds
         _this.keybind_configuration = ulabel.config.default_keybinds;
+        //check for default annotation size and update annotations
+        if (ulabel.config.default_annotation_size != undefined) {
+            var current_subtask_key = ulabel.state["current_subtask"];
+            var current_subtask = ulabel.subtasks[current_subtask_key];
+            _this.update_annotation_size(current_subtask, ulabel.config.default_annotation_size);
+        }
         //event listener for buttons
         $(document).on("click", "a.butt-ann", function (e) {
             var button = $(e.currentTarget);
@@ -19804,6 +19811,7 @@ var AnnotationResizeItem = /** @class */ (function (_super) {
         return _this;
     }
     //recieives a string of 's', 'l', 'dec', 'inc', or 'v' depending on which button was pressed
+    //also the constructor can pass in a number from the config
     AnnotationResizeItem.prototype.update_annotation_size = function (subtask, size) {
         var small_size = 1.5;
         var large_size = 5;
@@ -19815,6 +19823,9 @@ var AnnotationResizeItem = /** @class */ (function (_super) {
         //pressed, then we want to ignore the input
         if (this.is_vanished && size !== "v")
             return;
+        if (typeof (size) === "number") {
+            this.loop_through_annotations(subtask, size, "=");
+        }
         if (size == "v") {
             if (this.is_vanished) {
                 this.loop_through_annotations(subtask, this.cached_size, "=");

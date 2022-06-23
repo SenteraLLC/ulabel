@@ -327,6 +327,13 @@ export class AnnotationResizeItem extends ToolboxItem {
         //get default keybinds
         this.keybind_configuration = ulabel.config.default_keybinds
 
+        //check for default annotation size and update annotations
+        if (ulabel.config.default_annotation_size != undefined) {
+            let current_subtask_key = ulabel.state["current_subtask"];
+            let current_subtask = ulabel.subtasks[current_subtask_key];
+            this.update_annotation_size(current_subtask, ulabel.config.default_annotation_size);
+        }
+
         //event listener for buttons
         $(document).on("click", "a.butt-ann", (e) => {
             let button = $(e.currentTarget);
@@ -364,6 +371,7 @@ export class AnnotationResizeItem extends ToolboxItem {
         
 
     //recieives a string of 's', 'l', 'dec', 'inc', or 'v' depending on which button was pressed
+    //also the constructor can pass in a number from the config
     public update_annotation_size(subtask, size) {
         const small_size = 1.5;
         const large_size = 5;
@@ -374,7 +382,11 @@ export class AnnotationResizeItem extends ToolboxItem {
 
         //If the annotations are currently vanished and a button other than the vanish button is
         //pressed, then we want to ignore the input
-        if(this.is_vanished && size !== "v") return;
+        if (this.is_vanished && size !== "v") return;
+
+        if (typeof(size) === "number") {
+            this.loop_through_annotations(subtask, size, "=");
+        }
 
         if (size == "v") {
             if (this.is_vanished) { 
