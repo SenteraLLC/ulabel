@@ -327,18 +327,18 @@ export class AnnotationResizeItem extends ToolboxItem {
         //get default keybinds
         this.keybind_configuration = ulabel.config.default_keybinds
 
+        //grab current subtask for convinience
+        let current_subtask_key = ulabel.state["current_subtask"];
+        let current_subtask = ulabel.subtasks[current_subtask_key];
+
         //First check for a size cookie, if one isn't found then check the config
         //for a default annotation size. If neither are found it will use the size
         //that the annotation was saved as.
-        console.log(this.read_size_cookie())
-        if (this.read_size_cookie() != null) {
-            let current_subtask_key = ulabel.state["current_subtask"];
-            let current_subtask = ulabel.subtasks[current_subtask_key];
-            this.update_annotation_size(current_subtask, Number(this.read_size_cookie()));
+        console.log(this.read_size_cookie(current_subtask))
+        if (this.read_size_cookie(current_subtask) != null) {           
+            this.update_annotation_size(current_subtask, Number(this.read_size_cookie(current_subtask)));
         } 
-        else if (ulabel.config.default_annotation_size != undefined) {
-            let current_subtask_key = ulabel.state["current_subtask"];
-            let current_subtask = ulabel.subtasks[current_subtask_key];
+        else if (ulabel.config.default_annotation_size != undefined) {          
             this.update_annotation_size(current_subtask, ulabel.config.default_annotation_size);
         }
 
@@ -439,7 +439,7 @@ export class AnnotationResizeItem extends ToolboxItem {
             for (const annotation_id in subtask.annotations.access) {
                 subtask.annotations.access[annotation_id].line_size = size;
             }
-            this.set_size_cookie(size)
+            this.set_size_cookie(size, subtask)
             return;
         }
         if (operation == "+") {
@@ -448,7 +448,7 @@ export class AnnotationResizeItem extends ToolboxItem {
                 //temporary solution
                 this.cached_size = subtask.annotations.access[annotation_id].line_size
             }
-            this.set_size_cookie(subtask.annotations.access[subtask.annotations.ordering[0]].line_size)
+            this.set_size_cookie(subtask.annotations.access[subtask.annotations.ordering[0]].line_size, subtask)
             return;
         }
         if (operation == "-") {
@@ -463,22 +463,26 @@ export class AnnotationResizeItem extends ToolboxItem {
                 //temporary solution
                 this.cached_size = subtask.annotations.access[annotation_id].line_size
             }
-            this.set_size_cookie(subtask.annotations.access[subtask.annotations.ordering[0]].line_size)
+            this.set_size_cookie(subtask.annotations.access[subtask.annotations.ordering[0]].line_size, subtask)
             return;
         }
         throw Error("Invalid Operation given to loop_through_annotations")
     }
 
-    private set_size_cookie(cookie_value) {
+    private set_size_cookie(cookie_value, subtask) {
         let d = new Date();
         d.setTime(d.getTime() + (10000 * 24 * 60 * 60 * 1000));
-        document.cookie = "size=" + cookie_value + ";" + d.toUTCString() + ";path=/";
-        console.log(document.cookie)
+
+        let subtask_name = subtask.display_name.replaceAll(" ","_").toLowerCase();
+
+        document.cookie = subtask_name + "_size=" + cookie_value + ";" + d.toUTCString() + ";path=/";
     }
 
-    private read_size_cookie() {
-        console.log("read size cookie", document.cookie)
-        let cookie_name = "size=";       
+    private read_size_cookie(subtask) {
+
+        let subtask_name = subtask.display_name.replaceAll(" ","_").toLowerCase();
+
+        let cookie_name = subtask_name + "_size=";       
 
         let cookie_array = document.cookie.split(";");
 
