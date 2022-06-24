@@ -47,6 +47,8 @@ export class Configuration {
         "annotation_vanish": "v"      //The v Key by default
     }
 
+    public default_annotation_size: number = 6;
+
     public filter_low_confidence_default_value: number;
 
     public filter_annotations_on_load: boolean = false;
