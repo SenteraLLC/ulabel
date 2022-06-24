@@ -20125,7 +20125,7 @@ var KeypointSliderItem = /** @class */ (function (_super) {
         _this.mark_deprecated = kwargs.mark_deprecated;
         //if the config has a default value override, then use that instead
         if (ulabel.config.hasOwnProperty(_this.name.replaceAll(" ", "_").toLowerCase() + "_default_value")) {
-            kwargs._default_value = ulabel.config[_this.name.split(" ").join("_").toLowerCase() + "_default_value"];
+            kwargs._default_value = ulabel.config[_this.name.replaceAll(" ", "_").toLowerCase() + "_default_value"];
         }
         //if the user doesn't give a default for the slider, then the defalut is 0
         if (kwargs.hasOwnProperty("default_value")) {
@@ -20147,18 +20147,18 @@ var KeypointSliderItem = /** @class */ (function (_super) {
         }
         //The annotations are drawn for the first time after the toolbox is loaded
         //so we don't actually have to redraw the annotations after deprecating them.
-        $(document).on("input", "#" + _this.name.split(" ").join("-").toLowerCase(), function (e) {
+        $(document).on("input", "#" + _this.name.replaceAll(" ", "-").toLowerCase(), function (e) {
             var current_subtask_key = ulabel.state["current_subtask"];
             var current_subtask = ulabel.subtasks[current_subtask_key];
             //update the slider value text next to the slider
-            $("#" + _this.name.split(" ").join("-").toLowerCase() + "-label").text(e.currentTarget.value + "%");
+            $("#" + _this.name.replaceAll(" ", "-").toLowerCase() + "-label").text(e.currentTarget.value + "%");
             var filter_value = e.currentTarget.value / 100;
             _this.deprecate_annotations(current_subtask, filter_value);
             ulabel.redraw_all_annotations(null, null, false);
         });
         $(document).on("click", "a.keypoint-slider-increment", function (e) {
             var button_text = e.currentTarget.outerText;
-            var slider = document.getElementById(_this.name.split(" ").join("-").toLowerCase());
+            var slider = document.getElementById(_this.name.replaceAll(" ", "-").toLowerCase());
             if (button_text == "+") {
                 slider.value = (slider.valueAsNumber + 1).toString();
             }
@@ -20205,7 +20205,7 @@ var KeypointSliderItem = /** @class */ (function (_super) {
         }
     };
     KeypointSliderItem.prototype.get_html = function () {
-        return "\n        <div class=\"keypoint-slider\">\n            <p class=\"tb-header\">".concat(this.name, "</p>\n            <div class=\"keypoint-slider-holder\">\n                <input \n                    type=\"range\" \n                    id=\"").concat(this.name.split(" ").join("-").toLowerCase(), "\" \n                    class=\"keypoint-slider\" value=\"").concat(this.default_value * 100, "\"\n                />\n                <label \n                    for=\"").concat(this.name.split(" ").join("-").toLowerCase(), "\" \n                    id=\"").concat(this.name.split(" ").join("-").toLowerCase(), "-label\"\n                    class=\"keypoint-slider-label\">\n                    ").concat(this.default_value * 100, "%\n                </label>\n                <span class=\"increment\" >\n                    <a href=\"#\" class=\"button inc keypoint-slider-increment\" >+</a>\n                    <a href=\"#\" class=\"button dec keypoint-slider-increment\" >-</a>\n                </span>\n            </div>\n        </div>");
+        return "\n        <div class=\"keypoint-slider\">\n            <p class=\"tb-header\">".concat(this.name, "</p>\n            <div class=\"keypoint-slider-holder\">\n                <input \n                    type=\"range\" \n                    id=\"").concat(this.name.replaceAll(" ", "-").toLowerCase(), "\" \n                    class=\"keypoint-slider\" value=\"").concat(this.default_value * 100, "\"\n                />\n                <label \n                    for=\"").concat(this.name.replaceAll(" ", "-").toLowerCase(), "\" \n                    id=\"").concat(this.name.replaceAll(" ", "-").toLowerCase(), "-label\"\n                    class=\"keypoint-slider-label\">\n                    ").concat(this.default_value * 100, "%\n                </label>\n                <span class=\"increment\" >\n                    <a href=\"#\" class=\"button inc keypoint-slider-increment\" >+</a>\n                    <a href=\"#\" class=\"button dec keypoint-slider-increment\" >-</a>\n                </span>\n            </div>\n        </div>");
     };
     return KeypointSliderItem;
 }(ToolboxItem));

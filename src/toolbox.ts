@@ -772,8 +772,8 @@ export class KeypointSliderItem extends ToolboxItem {
         
         
         //if the config has a default value override, then use that instead
-        if (ulabel.config.hasOwnProperty(this.name.replaceAll(" ","_").toLowerCase() + "_default_value")) {
-            kwargs._default_value = ulabel.config[this.name.split(" ").join("_").toLowerCase() + "_default_value"];
+        if (ulabel.config.hasOwnProperty(this.name.replaceAll(" ", "_").toLowerCase() + "_default_value")) {
+            kwargs._default_value = ulabel.config[this.name.replaceAll(" ", "_").toLowerCase() + "_default_value"];
         }
 
         //if the user doesn't give a default for the slider, then the defalut is 0
@@ -802,12 +802,12 @@ export class KeypointSliderItem extends ToolboxItem {
         //The annotations are drawn for the first time after the toolbox is loaded
         //so we don't actually have to redraw the annotations after deprecating them.
         
-        $(document).on("input", "#" + this.name.split(" ").join("-").toLowerCase(), (e) => {
+        $(document).on("input", "#" + this.name.replaceAll(" ", "-").toLowerCase(), (e) => {
             var current_subtask_key = ulabel.state["current_subtask"];
             var current_subtask = ulabel.subtasks[current_subtask_key];
 
             //update the slider value text next to the slider
-            $("#" + this.name.split(" ").join("-").toLowerCase() + "-label").text(e.currentTarget.value + "%")
+            $("#" + this.name.replaceAll(" ", "-").toLowerCase() + "-label").text(e.currentTarget.value + "%")
 
             let filter_value = e.currentTarget.value / 100
             this.deprecate_annotations(current_subtask, filter_value);
@@ -817,7 +817,7 @@ export class KeypointSliderItem extends ToolboxItem {
 
         $(document).on("click", "a.keypoint-slider-increment", (e) => {
             let button_text = e.currentTarget.outerText
-            let slider = <HTMLInputElement> document.getElementById(this.name.split(" ").join("-").toLowerCase())
+            let slider = <HTMLInputElement> document.getElementById(this.name.replaceAll(" ", "-").toLowerCase())
 
             if (button_text == "+") {
                 slider.value = (slider.valueAsNumber + 1).toString();
@@ -879,12 +879,12 @@ export class KeypointSliderItem extends ToolboxItem {
             <div class="keypoint-slider-holder">
                 <input 
                     type="range" 
-                    id="${this.name.split(" ").join("-").toLowerCase()}" 
+                    id="${this.name.replaceAll(" ", "-").toLowerCase()}" 
                     class="keypoint-slider" value="${this.default_value * 100}"
                 />
                 <label 
-                    for="${this.name.split(" ").join("-").toLowerCase()}" 
-                    id="${this.name.split(" ").join("-").toLowerCase()}-label"
+                    for="${this.name.replaceAll(" ", "-").toLowerCase()}" 
+                    id="${this.name.replaceAll(" ", "-").toLowerCase()}-label"
                     class="keypoint-slider-label">
                     ${this.default_value * 100}%
                 </label>
