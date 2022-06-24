@@ -2729,6 +2729,14 @@ export class ULabel {
     }
 
 
+    /**
+     * Get the annotation with nearest active keypoint (e.g. corners for a bbox, endpoints for polylines) to a point
+     * @param {*} global_x 
+     * @param {*} global_y 
+     * @param {*} max_dist Maximum distance to search
+     * @param {*} candidates Candidates to search across
+     * @returns 
+     */
     get_nearest_active_keypoint(global_x, global_y, max_dist, candidates = null) {
         var ret = {
             "annid": null,
@@ -2818,6 +2826,14 @@ export class ULabel {
         return ret;
     }
 
+    /**
+     * Get annotation segment to a point.
+     * @param {*} global_x 
+     * @param {*} global_y 
+     * @param {*} max_dist Maximum distance to search
+     * @param {*} candidates Candidates to search across 
+     * @returns 
+     */
     get_nearest_segment_point(global_x, global_y, max_dist, candidates = null) {
         var ret = {
             "annid": null,
@@ -4124,6 +4140,13 @@ export class ULabel {
         this.update_frame(diffZ);
     }
 
+    /**
+     * Get initial edit candidates with bounding box collisions
+     * @param {*} gblx Global x coordinate 
+     * @param {*} gbly Global y coordinate
+     * @param {*} dst_thresh Threshold to adjust boxes by 
+     * @returns 
+     */
     get_edit_candidates(gblx, gbly, dst_thresh) {
         dst_thresh /= this.get_empirical_scale();
         let ret = {
@@ -4175,6 +4198,13 @@ export class ULabel {
         return ret;
     }
 
+    /** 
+     * Suggest edit candidates based on mouse position
+     * Workflow is as follows:
+     * Find annotations where cursor is within bounding box
+     * Find closest keypoints (ends of polygons/polylines etc) within a range defined by the edit handle
+     * If no endpoints, search along segments with infinite range 
+     */  
     suggest_edits(mouse_event = null, nonspatial_id = null) {
         let best_candidate;
         if (nonspatial_id == null) {
@@ -4209,7 +4239,7 @@ export class ULabel {
                 edit_candidates["best"] = nearest_active_keypoint;
             }
             else { // If none are found, look for a point along a segment that's close enough
-                const nearest_segment_point = this.get_nearest_segment_point(global_x, global_y, dst_thresh, edit_candidates["candidate_ids"]);
+                const nearest_segment_point = this.get_nearest_segment_point(global_x, global_y, Infinity, edit_candidates["candidate_ids"]);
                 if (nearest_segment_point != null && nearest_segment_point.point != null) {
                     this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"] = nearest_segment_point;
                     this.show_edit_suggestion(nearest_segment_point, false);

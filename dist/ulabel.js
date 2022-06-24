@@ -17249,6 +17249,14 @@ class ULabel {
     }
 
 
+    /**
+     * Get the annotation with nearest active keypoint (e.g. corners for a bbox, endpoints for polylines) to a point
+     * @param {*} global_x 
+     * @param {*} global_y 
+     * @param {*} max_dist Maximum distance to search
+     * @param {*} candidates Candidates to search across
+     * @returns 
+     */
     get_nearest_active_keypoint(global_x, global_y, max_dist, candidates = null) {
         var ret = {
             "annid": null,
@@ -17338,6 +17346,14 @@ class ULabel {
         return ret;
     }
 
+    /**
+     * Get annotation segment to a point.
+     * @param {*} global_x 
+     * @param {*} global_y 
+     * @param {*} max_dist Maximum distance to search
+     * @param {*} candidates Candidates to search across 
+     * @returns 
+     */
     get_nearest_segment_point(global_x, global_y, max_dist, candidates = null) {
         var ret = {
             "annid": null,
@@ -18644,6 +18660,13 @@ class ULabel {
         this.update_frame(diffZ);
     }
 
+    /**
+     * Get initial edit candidates with bounding box collisions
+     * @param {*} gblx Global x coordinate 
+     * @param {*} gbly Global y coordinate
+     * @param {*} dst_thresh Threshold to adjust boxes by 
+     * @returns 
+     */
     get_edit_candidates(gblx, gbly, dst_thresh) {
         dst_thresh /= this.get_empirical_scale();
         let ret = {
@@ -18695,6 +18718,13 @@ class ULabel {
         return ret;
     }
 
+    /** 
+     * Suggest edit candidates based on mouse position
+     * Workflow is as follows:
+     * Find annotations where cursor is within bounding box
+     * Find closest keypoints (ends of polygons/polylines etc) within a range defined by the edit handle
+     * If no endpoints, search along segments with infinite range 
+     */  
     suggest_edits(mouse_event = null, nonspatial_id = null) {
         let best_candidate;
         if (nonspatial_id == null) {
@@ -18729,7 +18759,7 @@ class ULabel {
                 edit_candidates["best"] = nearest_active_keypoint;
             }
             else { // If none are found, look for a point along a segment that's close enough
-                const nearest_segment_point = this.get_nearest_segment_point(global_x, global_y, dst_thresh, edit_candidates["candidate_ids"]);
+                const nearest_segment_point = this.get_nearest_segment_point(global_x, global_y, Infinity, edit_candidates["candidate_ids"]);
                 if (nearest_segment_point != null && nearest_segment_point.point != null) {
                     this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"] = nearest_segment_point;
                     this.show_edit_suggestion(nearest_segment_point, false);
@@ -20127,11 +20157,13 @@ var KeypointSliderItem = /** @class */ (function (_super) {
         _this.filter_function = kwargs.filter_function;
         _this.get_confidence = kwargs.confidence_function;
         _this.mark_deprecated = kwargs.mark_deprecated;
+        _this.slider_bar_id = _this.name.replaceAll(" ", "-").toLowerCase();
         //if the config has a default value override, then use that instead
         if (ulabel.config.hasOwnProperty(_this.name.replaceAll(" ", "_").toLowerCase() + "_default_value")) {
             kwargs._default_value = ulabel.config[_this.name.replaceAll(" ", "_").toLowerCase() + "_default_value"];
         }
-        //if the user doesn't give a default for the slider, then the defalut is 0
+        //if this keypoint slider has a generic default, then use it
+        //otherwise the defalut is 0
         if (kwargs.hasOwnProperty("default_value")) {
             //check to make sure the default value given is valid
             if ((kwargs.default_value >= 0) && (kwargs.default_value <= 1)) {
@@ -20152,11 +20184,8 @@ var KeypointSliderItem = /** @class */ (function (_super) {
         //The annotations are drawn for the first time after the toolbox is loaded
         //so we don't actually have to redraw the annotations after deprecating them.
         $(document).on("input", "#" + _this.name.replaceAll(" ", "-").toLowerCase(), function (e) {
-            //update the slider value text next to the slider
-            $("#" + _this.name.replaceAll(" ", "-").toLowerCase() + "-label").text(e.currentTarget.value + "%");
             var filter_value = e.currentTarget.value / 100;
-            _this.deprecate_annotations(current_subtask, filter_value);
-            ulabel.redraw_all_annotations(null, null, false);
+            _this.deprecate_annotations(ulabel, filter_value);
         });
         $(document).on("click", "a." + _this.name.replaceAll(" ", "-").toLowerCase() + "-button", function (e) {
             var button_text = e.currentTarget.outerText;
@@ -20188,7 +20217,10 @@ var KeypointSliderItem = /** @class */ (function (_super) {
         });
         return _this;
     }
-    KeypointSliderItem.prototype.deprecate_annotations = function (current_subtask, filter_value) {
+    KeypointSliderItem.prototype.deprecate_annotations = function (ulabel, filter_value) {
+        //get the current subtask
+        var current_subtask_key = ulabel.state["current_subtask"];
+        var current_subtask = ulabel.subtasks[current_subtask_key];
         for (var i in current_subtask.annotations.ordering) {
             var current_annotation = current_subtask.annotations.access[current_subtask.annotations.ordering[i]];
             //kinda a hack, but an annotation can't be human deprecated if its not deprecated
@@ -20203,6 +20235,10 @@ var KeypointSliderItem = /** @class */ (function (_super) {
             var deprecate = this.filter_function(current_confidence, filter_value);
             this.mark_deprecated(current_annotation, deprecate);
         }
+        //Update the slider bar's position, and the label's text.
+        $("#" + this.slider_bar_id).val(Math.round(filter_value * 100));
+        $("#" + this.slider_bar_id + "-label").text(Math.round(filter_value * 100) + "%");
+        ulabel.redraw_all_annotations(null, null, false);
     };
     //if an annotation is deprecated and has a child, then assume its human deprecated.
     KeypointSliderItem.prototype.check_for_human_deprecated = function (current_subtask) {
