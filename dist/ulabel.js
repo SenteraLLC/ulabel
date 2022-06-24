@@ -20159,7 +20159,7 @@ var KeypointSliderItem = /** @class */ (function (_super) {
         _this.check_for_human_deprecated(current_subtask);
         //check the config to see if we should update the annotations with the default filter on load
         if (ulabel.config.filter_annotations_on_load) {
-            _this.deprecate_annotations(current_subtask, _this.default_value);
+            _this.deprecate_annotations(ulabel, _this.default_value);
         }
         //The annotations are drawn for the first time after the toolbox is loaded
         //so we don't actually have to redraw the annotations after deprecating them.

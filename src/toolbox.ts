@@ -798,7 +798,7 @@ export class KeypointSliderItem extends ToolboxItem {
 
         //check the config to see if we should update the annotations with the default filter on load
         if (ulabel.config.filter_annotations_on_load) {
-            this.deprecate_annotations(current_subtask, this.default_value);
+            this.deprecate_annotations(ulabel, this.default_value);
         }
 
         //The annotations are drawn for the first time after the toolbox is loaded
