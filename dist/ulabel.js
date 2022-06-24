@@ -17282,7 +17282,7 @@ class ULabel {
                     npi = geometric_utils/* GeometricUtils.get_nearest_point_on_polygon */.Z.get_nearest_point_on_polygon(
                         global_x, global_y,
                         this.subtasks[this.state["current_subtask"]]["annotations"]["access"][edid]["spatial_payload"],
-                        ret['distance'], true
+                        max_dist, false
                     );
                     if (npi["distance"] < ret["distance"]) {
                         ret["annid"] = edid;
@@ -17350,7 +17350,7 @@ class ULabel {
                     var npi = geometric_utils/* GeometricUtils.get_nearest_point_on_polygon */.Z.get_nearest_point_on_polygon(
                         global_x, global_y,
                         this.subtasks[this.state["current_subtask"]]["annotations"]["access"][edid]["spatial_payload"],
-                        ret['distance'], false
+                        max_dist / this.get_empirical_scale(), false
                     );
                     if (npi["distance"] != null && npi["distance"] < ret["distance"]) {
                         ret["annid"] = edid;
