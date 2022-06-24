@@ -35,7 +35,11 @@ export class Configuration {
             "filter_function": filter_low, 
             "confidence_function": get_annotation_confidence, 
             "mark_deprecated": mark_deprecated,
-            "default_value": 0.05
+            "default_value": 0.05,
+            "keybinds": {
+                "increment": "e",
+                "decrement": "w"
+            }
         }]
     ]
 

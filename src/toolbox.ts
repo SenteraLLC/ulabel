@@ -508,15 +508,15 @@ export class AnnotationResizeItem extends ToolboxItem {
             <p class="tb-header">Change Annotation Size</p>
             <div class="annotation-resize-button-holder">
                 <span class="annotation-vanish">
-                    <a href="#" class="butt-ann" id="annotation-resize-v">Vanish</a>
+                    <a href="#" class="butt-ann button" id="annotation-resize-v">Vanish</a>
                 </span>
                 <span class="annotation-size">
-                    <a href="#" class="butt-ann" id="annotation-resize-s">Small</a>
-                    <a href="#" class="butt-ann" id="annotation-resize-l">Large</a>
+                    <a href="#" class="butt-ann button" id="annotation-resize-s">Small</a>
+                    <a href="#" class="butt-ann button" id="annotation-resize-l">Large</a>
                 </span>
-                <span class="annotation-inc">
-                    <a href="#" class="butt-ann" id="annotation-resize-inc">+</a>
-                    <a href="#" class="butt-ann" id="annotation-resize-dec">-</a>
+                <span class="annotation-inc increment">
+                    <a href="#" class="butt-ann button inc" id="annotation-resize-inc">+</a>
+                    <a href="#" class="butt-ann button dec" id="annotation-resize-dec">-</a>
                 </span>
             </div>
         </div>
@@ -804,9 +804,42 @@ export class KeypointSliderItem extends ToolboxItem {
         //The annotations are drawn for the first time after the toolbox is loaded
         //so we don't actually have to redraw the annotations after deprecating them.
         
-        $(document).on("input", "#" + this.name.split(" ").join("-").toLowerCase(), (e) => {
+        $(document).on("input", "#" + this.name.replaceAll(" ", "-").toLowerCase(), (e) => {
             let filter_value = e.currentTarget.value / 100;
             this.deprecate_annotations(ulabel, filter_value);
+        })
+
+        $(document).on("click", "a." + this.name.replaceAll(" ", "-").toLowerCase() + "-button", (e) => {
+            let button_text = e.currentTarget.outerText
+            let slider = <HTMLInputElement> document.getElementById(this.name.replaceAll(" ", "-").toLowerCase())
+
+            if (button_text == "+") {
+                slider.value = (slider.valueAsNumber + 1).toString();
+            } else if (button_text == "-") {
+                slider.value = (slider.valueAsNumber - 1).toString();
+            } else {
+                throw Error("Unknown Keypoint Slider Button Pressed");
+            }
+
+            //update the slider's label
+            $("#" + slider.id + "-label").text(slider.value + "%");
+
+            this.deprecate_annotations(ulabel, Number(slider.value) / 100);
+            ulabel.redraw_all_annotations(null, null, false);
+        })
+
+        //event listener for keybinds
+        $(document).on("keypress", (e) => {
+
+            if (e.key == kwargs.keybinds.increment) {
+                let button = <HTMLAnchorElement> document.getElementsByClassName(this.name.replaceAll(" ", "-").toLowerCase() + "-button inc")[0]
+                button.click()
+            }
+
+            if (e.key == kwargs.keybinds.decrement) {
+                let button = <HTMLAnchorElement> document.getElementsByClassName(this.name.replaceAll(" ", "-").toLowerCase() + "-button dec")[0]
+                button.click()
+            }
         })
     }
 
@@ -873,15 +906,19 @@ export class KeypointSliderItem extends ToolboxItem {
             <div class="keypoint-slider-holder">
                 <input 
                     type="range" 
-                    id="${this.name.split(" ").join("-").toLowerCase()}" 
+                    id="${this.name.replaceAll(" ", "-").toLowerCase()}" 
                     class="keypoint-slider" value="${this.default_value * 100}"
                 />
                 <label 
-                    for="${this.name.split(" ").join("-").toLowerCase()}" 
-                    id="${this.name.split(" ").join("-").toLowerCase()}-label"
+                    for="${this.name.replaceAll(" ", "-").toLowerCase()}" 
+                    id="${this.name.replaceAll(" ", "-").toLowerCase()}-label"
                     class="keypoint-slider-label">
                     ${this.default_value * 100}%
                 </label>
+                <span class="increment" >
+                    <a href="#" class="button inc keypoint-slider-increment ${this.name.replaceAll(" ", "-").toLowerCase()}-button" >+</a>
+                    <a href="#" class="button dec keypoint-slider-increment ${this.name.replaceAll(" ", "-").toLowerCase()}-button" >-</a>
+                </span>
             </div>
         </div>`
     }

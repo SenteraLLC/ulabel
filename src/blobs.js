@@ -1737,7 +1737,7 @@ div#${prntid} div.annotation-resize-button-holder {
    margin: 0 auto;
 }
 
-div#${prntid} div.annotation-resize a.butt-ann {
+div#${prntid} a.button {
    display: inline-block;  
    margin: auto;
    color: white;
@@ -1758,13 +1758,13 @@ div#${prntid} div.annotation-resize #annotation-resize-l {
    margin-left: -5px;
 }
 
-div#${prntid} div.annotation-resize #annotation-resize-inc {
+div#${prntid} a.inc {
    line-height: 23px;
    margin-top: -5px;
    margin-bottom: 5px;
 }
 
-div#${prntid} div.annotation-resize #annotation-resize-dec {
+div#${prntid} a.dec {
    line-height: 19px;
 }
 
@@ -1793,14 +1793,14 @@ div#${prntid} div.annotation-resize span.annotation-vanish a.butt-ann {
    margin: 0 2px;
 }
 
-div#${prntid} div.annotation-resize span.annotation-inc a.butt-ann {
+div#${prntid} span.increment a.button {
    width: 22px;
    height: 22px;
    border-radius: 17px;
    font-size: 1.4em;
 }
 
-div#${prntid} div.annotation-resize a:hover {
+div#${prntid} a.button:hover {
    border: 1px solid black;
    box-shadow: 1px 1px 4px rgba(204, 204, 204, 0.9);
    background-color:rgba(100, 148, 237, 0.486);
@@ -1915,11 +1915,27 @@ div#${prntid} div.keypoint-slider p.tb-header {
 
 div#${prntid} div.keypoint-slider div.keypoint-slider-holder{
    padding: 8px;
+   position: relative;
 }
 
 div#${prntid} .keypoint-slider-label {
    position: relative;
    bottom: 3px;
+}
+
+div#${prntid} div.keypoint-slider span.increment {
+   position: absolute;
+   right: 0;
+   bottom: 0.4em;
+}
+
+div#${prntid} div.keypoint-slider a.inc {
+   margin: 0;
+}
+
+div#${prntid} div.keypoint-slider a.dec {
+   position: relative;
+   bottom: 0.07em;
 }
 
 div#${prntid}.ulabel-night .keypoint-slider-label {
