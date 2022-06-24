@@ -2729,6 +2729,14 @@ export class ULabel {
     }
 
 
+    /**
+     * Get the annotation with nearest active keypoint (e.g. corners for a bbox, endpoints for polylines) to a point
+     * @param {*} global_x 
+     * @param {*} global_y 
+     * @param {*} max_dist Maximum distance to search
+     * @param {*} candidates Candidates to search across
+     * @returns 
+     */
     get_nearest_active_keypoint(global_x, global_y, max_dist, candidates = null) {
         var ret = {
             "annid": null,
@@ -2819,11 +2827,11 @@ export class ULabel {
     }
 
     /**
-     * Get the distance to various types of annotations
+     * Get annotation segment to a point.
      * @param {*} global_x 
      * @param {*} global_y 
-     * @param {*} max_dist 
-     * @param {*} candidates 
+     * @param {*} max_dist Maximum distance to search
+     * @param {*} candidates Candidates to search across 
      * @returns 
      */
     get_nearest_segment_point(global_x, global_y, max_dist, candidates = null) {
@@ -4133,10 +4141,10 @@ export class ULabel {
     }
 
     /**
-     * Get best candidates for the edit dialog 
-     * @param {*} gblx 
-     * @param {*} gbly 
-     * @param {*} dst_thresh 
+     * Get initial edit candidates with bounding box collisions
+     * @param {*} gblx Global x coordinate 
+     * @param {*} gbly Global y coordinate
+     * @param {*} dst_thresh Threshold to adjust boxes by 
      * @returns 
      */
     get_edit_candidates(gblx, gbly, dst_thresh) {
@@ -4191,7 +4199,11 @@ export class ULabel {
     }
 
     /** 
-     * Find the best candidate for opening the global edit
+     * Suggest edit candidates based on mouse position
+     * Workflow is as follows:
+     * Find annotations where cursor is within bounding box
+     * Find closest keypoints (ends of polygons/polylines etc) within a range defined by the edit handle
+     * If no endpoints, search along segments with infinite range 
      */  
     suggest_edits(mouse_event = null, nonspatial_id = null) {
         let best_candidate;
