@@ -831,6 +831,18 @@ export class KeypointSliderItem extends ToolboxItem {
             this.deprecate_annotations(current_subtask, Number(slider.value) / 100);
             ulabel.redraw_all_annotations(null, null, false);
         })
+
+        //event listener for keybinds
+        $(document).on("keypress", (e) => {
+          //  console.log(kwargs.keybinds.increment, kwargs.keybinds.decrement)
+
+            if (e.key == kwargs.keybinds.increment) {
+                console.log(e.key)
+            }
+            if (e.key == kwargs.keybinds.decrement) {
+                console.log(e.key)
+            }
+        })
     }
 
     public deprecate_annotations(current_subtask, filter_value) {
