@@ -618,6 +618,8 @@ var KeypointSliderItem = /** @class */ (function (_super) {
             }
             //update the slider's label
             $("#" + slider.id + "-label").text(slider.value + "%");
+            _this.deprecate_annotations(current_subtask, Number(slider.value) / 100);
+            ulabel.redraw_all_annotations(null, null, false);
         });
         return _this;
     }
