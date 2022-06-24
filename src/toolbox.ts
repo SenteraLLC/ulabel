@@ -774,7 +774,7 @@ export class KeypointSliderItem extends ToolboxItem {
         
         //if the config has a default value override, then use that instead
         if (ulabel.config.hasOwnProperty(this.name.replaceAll(" ","_").toLowerCase() + "_default_value")) {
-            kwargs._default_value = ulabel.config[this.name.split(" ").join("_").toLowerCase() + "_default_value"];
+            kwargs.default_value = ulabel.config[this.name.split(" ").join("_").toLowerCase() + "_default_value"];
         }
 
         //if this keypoint slider has a generic default, then use it
@@ -798,7 +798,7 @@ export class KeypointSliderItem extends ToolboxItem {
 
         //check the config to see if we should update the annotations with the default filter on load
         if (ulabel.config.filter_annotations_on_load) {
-            this.deprecate_annotations(current_subtask, this.default_value);
+            this.deprecate_annotations(ulabel, this.default_value, false);
         }
 
         //The annotations are drawn for the first time after the toolbox is loaded
@@ -810,7 +810,7 @@ export class KeypointSliderItem extends ToolboxItem {
         })
     }
 
-    public deprecate_annotations(ulabel, filter_value) {
+    public deprecate_annotations(ulabel, filter_value, redraw: boolean = true) {
 
         //get the current subtask
         let current_subtask_key = ulabel.state["current_subtask"];
@@ -838,7 +838,9 @@ export class KeypointSliderItem extends ToolboxItem {
         $("#" + this.slider_bar_id).val(Math.round(filter_value * 100));
         $("#" + this.slider_bar_id + "-label").text(Math.round(filter_value * 100) + "%");
 
-        ulabel.redraw_all_annotations(null, null, false);
+        if (redraw) {
+            ulabel.redraw_all_annotations(null, null, false);
+        }
     }
 
     //if an annotation is deprecated and has a child, then assume its human deprecated.
