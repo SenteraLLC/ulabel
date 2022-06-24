@@ -813,7 +813,7 @@ export class KeypointSliderItem extends ToolboxItem {
             ulabel.redraw_all_annotations(null, null, false);
         })
 
-        $(document).on("click", "a.keypoint-slider-increment", (e) => {
+        $(document).on("click", "a." + this.name.replaceAll(" ", "-").toLowerCase() + "-button", (e) => {
             let button_text = e.currentTarget.outerText
             let slider = <HTMLInputElement> document.getElementById(this.name.replaceAll(" ", "-").toLowerCase())
 
@@ -905,8 +905,8 @@ export class KeypointSliderItem extends ToolboxItem {
                     ${this.default_value * 100}%
                 </label>
                 <span class="increment" >
-                    <a href="#" class="button inc keypoint-slider-increment" >+</a>
-                    <a href="#" class="button dec keypoint-slider-increment" >-</a>
+                    <a href="#" class="button inc keypoint-slider-increment ${this.name.replaceAll(" ", "-").toLowerCase()}-button " >+</a>
+                    <a href="#" class="button dec keypoint-slider-increment ${this.name.replaceAll(" ", "-").toLowerCase()}-button " >-</a>
                 </span>
             </div>
         </div>`
