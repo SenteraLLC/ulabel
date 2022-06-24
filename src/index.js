@@ -2734,7 +2734,6 @@ export class ULabel {
             "annid": null,
             "access": null,
             "distance": max_dist / this.get_empirical_scale(),
-            // "distance": Infinity,
             "point": null
         };
         if (candidates == null) {
@@ -2831,8 +2830,7 @@ export class ULabel {
         var ret = {
             "annid": null,
             "access": null,
-            "distance": Infinity,
-            // "distance": Infinity,
+            "distance": max_dist / this.get_empirical_scale(),
             "point": null
         };
         if (candidates == null) {
@@ -2851,7 +2849,7 @@ export class ULabel {
                     var npi = GeometricUtils.get_nearest_point_on_polygon(
                         global_x, global_y,
                         this.subtasks[this.state["current_subtask"]]["annotations"]["access"][edid]["spatial_payload"],
-                        Infinity, true
+                        max_dist / this.get_empirical_scale(), true
                     );
                     if (npi["distance"] != null && npi["distance"] < ret["distance"]) {
                         ret["annid"] = edid;
@@ -4189,7 +4187,6 @@ export class ULabel {
                 }
             }
         }
-        console.log(ret["candidate_ids"].length);
         return ret;
     }
 
@@ -4231,7 +4228,7 @@ export class ULabel {
                 edit_candidates["best"] = nearest_active_keypoint;
             }
             else { // If none are found, look for a point along a segment that's close enough
-                const nearest_segment_point = this.get_nearest_segment_point(global_x, global_y, dst_thresh, edit_candidates["candidate_ids"]);
+                const nearest_segment_point = this.get_nearest_segment_point(global_x, global_y, Infinity, edit_candidates["candidate_ids"]);
                 if (nearest_segment_point != null && nearest_segment_point.point != null) {
                     this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"] = nearest_segment_point;
                     this.show_edit_suggestion(nearest_segment_point, false);
