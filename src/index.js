@@ -4201,7 +4201,6 @@ export class ULabel {
             }
 
             const dst_thresh = this.config["edit_handle_size"] / 2;
-            // const dst_thresh = this.config["image_width"];
             const global_x = this.get_global_mouse_x(mouse_event);
             const global_y = this.get_global_mouse_y(mouse_event);
 
