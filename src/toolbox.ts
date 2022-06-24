@@ -834,13 +834,15 @@ export class KeypointSliderItem extends ToolboxItem {
 
         //event listener for keybinds
         $(document).on("keypress", (e) => {
-          //  console.log(kwargs.keybinds.increment, kwargs.keybinds.decrement)
 
             if (e.key == kwargs.keybinds.increment) {
-                console.log(e.key)
+                let button = <HTMLAnchorElement> document.getElementsByClassName(this.name.replaceAll(" ", "-").toLowerCase() + "-button inc")[0]
+                button.click()
             }
+
             if (e.key == kwargs.keybinds.decrement) {
-                console.log(e.key)
+                let button = <HTMLAnchorElement> document.getElementsByClassName(this.name.replaceAll(" ", "-").toLowerCase() + "-button dec")[0]
+                button.click()
             }
         })
     }
@@ -905,8 +907,8 @@ export class KeypointSliderItem extends ToolboxItem {
                     ${this.default_value * 100}%
                 </label>
                 <span class="increment" >
-                    <a href="#" class="button inc keypoint-slider-increment ${this.name.replaceAll(" ", "-").toLowerCase()}-button " >+</a>
-                    <a href="#" class="button dec keypoint-slider-increment ${this.name.replaceAll(" ", "-").toLowerCase()}-button " >-</a>
+                    <a href="#" class="button inc keypoint-slider-increment ${this.name.replaceAll(" ", "-").toLowerCase()}-button" >+</a>
+                    <a href="#" class="button dec keypoint-slider-increment ${this.name.replaceAll(" ", "-").toLowerCase()}-button" >-</a>
                 </span>
             </div>
         </div>`

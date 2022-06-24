@@ -623,12 +623,13 @@ var KeypointSliderItem = /** @class */ (function (_super) {
         });
         //event listener for keybinds
         $(document).on("keypress", function (e) {
-            //  console.log(kwargs.keybinds.increment, kwargs.keybinds.decrement)
             if (e.key == kwargs.keybinds.increment) {
-                console.log(e.key);
+                var button = document.getElementsByClassName(_this.name.replaceAll(" ", "-").toLowerCase() + "-button inc")[0];
+                button.click();
             }
             if (e.key == kwargs.keybinds.decrement) {
-                console.log(e.key);
+                var button = document.getElementsByClassName(_this.name.replaceAll(" ", "-").toLowerCase() + "-button dec")[0];
+                button.click();
             }
         });
         return _this;
@@ -667,7 +668,7 @@ var KeypointSliderItem = /** @class */ (function (_super) {
         }
     };
     KeypointSliderItem.prototype.get_html = function () {
-        return "\n        <div class=\"keypoint-slider\">\n            <p class=\"tb-header\">".concat(this.name, "</p>\n            <div class=\"keypoint-slider-holder\">\n                <input \n                    type=\"range\" \n                    id=\"").concat(this.name.replaceAll(" ", "-").toLowerCase(), "\" \n                    class=\"keypoint-slider\" value=\"").concat(this.default_value * 100, "\"\n                />\n                <label \n                    for=\"").concat(this.name.replaceAll(" ", "-").toLowerCase(), "\" \n                    id=\"").concat(this.name.replaceAll(" ", "-").toLowerCase(), "-label\"\n                    class=\"keypoint-slider-label\">\n                    ").concat(this.default_value * 100, "%\n                </label>\n                <span class=\"increment\" >\n                    <a href=\"#\" class=\"button inc keypoint-slider-increment ").concat(this.name.replaceAll(" ", "-").toLowerCase(), "-button \" >+</a>\n                    <a href=\"#\" class=\"button dec keypoint-slider-increment ").concat(this.name.replaceAll(" ", "-").toLowerCase(), "-button \" >-</a>\n                </span>\n            </div>\n        </div>");
+        return "\n        <div class=\"keypoint-slider\">\n            <p class=\"tb-header\">".concat(this.name, "</p>\n            <div class=\"keypoint-slider-holder\">\n                <input \n                    type=\"range\" \n                    id=\"").concat(this.name.replaceAll(" ", "-").toLowerCase(), "\" \n                    class=\"keypoint-slider\" value=\"").concat(this.default_value * 100, "\"\n                />\n                <label \n                    for=\"").concat(this.name.replaceAll(" ", "-").toLowerCase(), "\" \n                    id=\"").concat(this.name.replaceAll(" ", "-").toLowerCase(), "-label\"\n                    class=\"keypoint-slider-label\">\n                    ").concat(this.default_value * 100, "%\n                </label>\n                <span class=\"increment\" >\n                    <a href=\"#\" class=\"button inc keypoint-slider-increment ").concat(this.name.replaceAll(" ", "-").toLowerCase(), "-button\" >+</a>\n                    <a href=\"#\" class=\"button dec keypoint-slider-increment ").concat(this.name.replaceAll(" ", "-").toLowerCase(), "-button\" >-</a>\n                </span>\n            </div>\n        </div>");
     };
     return KeypointSliderItem;
 }(ToolboxItem));
