@@ -20159,7 +20159,7 @@ var KeypointSliderItem = /** @class */ (function (_super) {
         _this.check_for_human_deprecated(current_subtask);
         //check the config to see if we should update the annotations with the default filter on load
         if (ulabel.config.filter_annotations_on_load) {
-            _this.deprecate_annotations(ulabel, _this.default_value, true);
+            _this.deprecate_annotations(ulabel, _this.default_value, false);
         }
         //The annotations are drawn for the first time after the toolbox is loaded
         //so we don't actually have to redraw the annotations after deprecating them.
@@ -20169,8 +20169,8 @@ var KeypointSliderItem = /** @class */ (function (_super) {
         });
         return _this;
     }
-    KeypointSliderItem.prototype.deprecate_annotations = function (ulabel, filter_value, from_constructor) {
-        if (from_constructor === void 0) { from_constructor = false; }
+    KeypointSliderItem.prototype.deprecate_annotations = function (ulabel, filter_value, redraw) {
+        if (redraw === void 0) { redraw = true; }
         //get the current subtask
         var current_subtask_key = ulabel.state["current_subtask"];
         var current_subtask = ulabel.subtasks[current_subtask_key];
@@ -20191,7 +20191,7 @@ var KeypointSliderItem = /** @class */ (function (_super) {
         //Update the slider bar's position, and the label's text.
         $("#" + this.slider_bar_id).val(Math.round(filter_value * 100));
         $("#" + this.slider_bar_id + "-label").text(Math.round(filter_value * 100) + "%");
-        if (!from_constructor) {
+        if (redraw) {
             ulabel.redraw_all_annotations(null, null, false);
         }
     };

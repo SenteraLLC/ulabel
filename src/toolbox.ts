@@ -798,7 +798,7 @@ export class KeypointSliderItem extends ToolboxItem {
 
         //check the config to see if we should update the annotations with the default filter on load
         if (ulabel.config.filter_annotations_on_load) {
-            this.deprecate_annotations(ulabel, this.default_value, true);
+            this.deprecate_annotations(ulabel, this.default_value, false);
         }
 
         //The annotations are drawn for the first time after the toolbox is loaded
@@ -810,7 +810,7 @@ export class KeypointSliderItem extends ToolboxItem {
         })
     }
 
-    public deprecate_annotations(ulabel, filter_value, from_constructor = false) {
+    public deprecate_annotations(ulabel, filter_value, redraw: boolean = true) {
 
         //get the current subtask
         let current_subtask_key = ulabel.state["current_subtask"];
@@ -838,7 +838,7 @@ export class KeypointSliderItem extends ToolboxItem {
         $("#" + this.slider_bar_id).val(Math.round(filter_value * 100));
         $("#" + this.slider_bar_id + "-label").text(Math.round(filter_value * 100) + "%");
 
-        if (!from_constructor) {
+        if (redraw) {
             ulabel.redraw_all_annotations(null, null, false);
         }
     }
