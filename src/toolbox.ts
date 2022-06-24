@@ -824,6 +824,9 @@ export class KeypointSliderItem extends ToolboxItem {
             } else {
                 throw Error("Unknown Keypoint Slider Button Pressed");
             }
+
+            //update the slider's label
+            $("#" + slider.id + "-label").text(slider.value + "%")
         })
     }
 
