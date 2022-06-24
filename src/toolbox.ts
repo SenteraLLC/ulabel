@@ -824,7 +824,7 @@ export class KeypointSliderItem extends ToolboxItem {
             //update the slider's label
             $("#" + slider.id + "-label").text(Math.round(slider.valueAsNumber) + "%");
 
-            this.deprecate_annotations(ulabel, Number(slider.value) / 100);
+            this.deprecate_annotations(ulabel, slider.valueAsNumber / 100);
             ulabel.redraw_all_annotations(null, null, false);
         })
 
@@ -913,7 +913,7 @@ export class KeypointSliderItem extends ToolboxItem {
                     for="${this.name.replaceAll(" ", "-").toLowerCase()}" 
                     id="${this.name.replaceAll(" ", "-").toLowerCase()}-label"
                     class="keypoint-slider-label">
-                    ${this.default_value * 100}%
+                    ${Math.round(this.default_value * 100)}%
                 </label>
                 <span class="increment" >
                     <a href="#" class="button inc keypoint-slider-increment ${this.name.replaceAll(" ", "-").toLowerCase()}-button" >+</a>
