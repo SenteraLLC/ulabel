@@ -803,8 +803,6 @@ export class KeypointSliderItem extends ToolboxItem {
         //so we don't actually have to redraw the annotations after deprecating them.
         
         $(document).on("input", "#" + this.name.replaceAll(" ", "-").toLowerCase(), (e) => {
-            var current_subtask_key = ulabel.state["current_subtask"];
-            var current_subtask = ulabel.subtasks[current_subtask_key];
 
             //update the slider value text next to the slider
             $("#" + this.name.replaceAll(" ", "-").toLowerCase() + "-label").text(e.currentTarget.value + "%")
