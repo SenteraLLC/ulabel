@@ -17233,7 +17233,6 @@ class ULabel {
             "annid": null,
             "access": null,
             "distance": max_dist / this.get_empirical_scale(),
-            // "distance": Infinity,
             "point": null
         };
         if (candidates == null) {
@@ -17330,8 +17329,7 @@ class ULabel {
         var ret = {
             "annid": null,
             "access": null,
-            "distance": Infinity,
-            // "distance": Infinity,
+            "distance": max_dist / this.get_empirical_scale(),
             "point": null
         };
         if (candidates == null) {
@@ -17350,7 +17348,7 @@ class ULabel {
                     var npi = geometric_utils/* GeometricUtils.get_nearest_point_on_polygon */.Z.get_nearest_point_on_polygon(
                         global_x, global_y,
                         this.subtasks[this.state["current_subtask"]]["annotations"]["access"][edid]["spatial_payload"],
-                        Infinity, true
+                        max_dist / this.get_empirical_scale(), true
                     );
                     if (npi["distance"] != null && npi["distance"] < ret["distance"]) {
                         ret["annid"] = edid;
@@ -18688,7 +18686,6 @@ class ULabel {
                 }
             }
         }
-        console.log(ret["candidate_ids"].length);
         return ret;
     }
 
@@ -18724,17 +18721,15 @@ class ULabel {
 
             // Look for an existing point that's close enough to suggest editing it
             const nearest_active_keypoint = this.get_nearest_active_keypoint(global_x, global_y, dst_thresh, edit_candidates["candidate_ids"]);
-            console.log(nearest_active_keypoint)
             if (nearest_active_keypoint != null && nearest_active_keypoint.point != null) {
                 this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"] = nearest_active_keypoint;
                 this.show_edit_suggestion(nearest_active_keypoint, true);
                 edit_candidates["best"] = nearest_active_keypoint;
             }
             else { // If none are found, look for a point along a segment that's close enough
-                const nearest_segment_point = this.get_nearest_segment_point(global_x, global_y, dst_thresh, edit_candidates["candidate_ids"]);
+                const nearest_segment_point = this.get_nearest_segment_point(global_x, global_y, Infinity, edit_candidates["candidate_ids"]);
                 if (nearest_segment_point != null && nearest_segment_point.point != null) {
                     this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"] = nearest_segment_point;
-                    // var display_soft = nearest_segment_point['distance'] > dst_thresh;
                     this.show_edit_suggestion(nearest_segment_point, false);
                     edit_candidates["best"] = nearest_segment_point;
                 }
