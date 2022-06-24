@@ -2734,6 +2734,7 @@ export class ULabel {
             "annid": null,
             "access": null,
             "distance": max_dist / this.get_empirical_scale(),
+            // "distance": Infinity,
             "point": null
         };
         if (candidates == null) {
@@ -2782,7 +2783,7 @@ export class ULabel {
                     npi = GeometricUtils.get_nearest_point_on_polygon(
                         global_x, global_y,
                         this.subtasks[this.state["current_subtask"]]["annotations"]["access"][edid]["spatial_payload"],
-                        max_dist, false
+                        ret['distance'], true
                     );
                     if (npi["distance"] < ret["distance"]) {
                         ret["annid"] = edid;
@@ -2818,11 +2819,20 @@ export class ULabel {
         return ret;
     }
 
+    /**
+     * Get the distance to various types of annotations
+     * @param {*} global_x 
+     * @param {*} global_y 
+     * @param {*} max_dist 
+     * @param {*} candidates 
+     * @returns 
+     */
     get_nearest_segment_point(global_x, global_y, max_dist, candidates = null) {
         var ret = {
             "annid": null,
             "access": null,
             "distance": max_dist / this.get_empirical_scale(),
+            // "distance": Infinity,
             "point": null
         };
         if (candidates == null) {
@@ -2841,7 +2851,7 @@ export class ULabel {
                     var npi = GeometricUtils.get_nearest_point_on_polygon(
                         global_x, global_y,
                         this.subtasks[this.state["current_subtask"]]["annotations"]["access"][edid]["spatial_payload"],
-                        max_dist / this.get_empirical_scale(), true
+                        ret['distance'], false
                     );
                     if (npi["distance"] != null && npi["distance"] < ret["distance"]) {
                         ret["annid"] = edid;
@@ -4124,6 +4134,13 @@ export class ULabel {
         this.update_frame(diffZ);
     }
 
+    /**
+     * Get best candidates for the edit dialog 
+     * @param {*} gblx 
+     * @param {*} gbly 
+     * @param {*} dst_thresh 
+     * @returns 
+     */
     get_edit_candidates(gblx, gbly, dst_thresh) {
         dst_thresh /= this.get_empirical_scale();
         let ret = {
@@ -4172,9 +4189,13 @@ export class ULabel {
                 }
             }
         }
+        console.log(ret["candidate_ids"].length);
         return ret;
     }
 
+    /** 
+     * Find the best candidate for opening the global edit
+     */  
     suggest_edits(mouse_event = null, nonspatial_id = null) {
         let best_candidate;
         if (nonspatial_id == null) {
@@ -4183,6 +4204,7 @@ export class ULabel {
             }
 
             const dst_thresh = this.config["edit_handle_size"] / 2;
+            // const dst_thresh = this.config["image_width"];
             const global_x = this.get_global_mouse_x(mouse_event);
             const global_y = this.get_global_mouse_y(mouse_event);
 
@@ -4203,6 +4225,7 @@ export class ULabel {
 
             // Look for an existing point that's close enough to suggest editing it
             const nearest_active_keypoint = this.get_nearest_active_keypoint(global_x, global_y, dst_thresh, edit_candidates["candidate_ids"]);
+            console.log(nearest_active_keypoint)
             if (nearest_active_keypoint != null && nearest_active_keypoint.point != null) {
                 this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"] = nearest_active_keypoint;
                 this.show_edit_suggestion(nearest_active_keypoint, true);
