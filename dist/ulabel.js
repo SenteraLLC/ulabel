@@ -13370,6 +13370,7 @@ div#${prntid} {
 }
 div#${prntid} * {
    box-sizing: content-box;
+   text-align: center;
 }
 div#${prntid}.ulabel-night {
    background-color: black;
@@ -14028,6 +14029,7 @@ div#${prntid} div.keypoint-slider p.tb-header {
 div#${prntid} div.keypoint-slider div.keypoint-slider-holder{
    padding: 8px;
    position: relative;
+   text-align: left;
 }
 
 div#${prntid} .keypoint-slider-label {
