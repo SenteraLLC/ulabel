@@ -17330,7 +17330,7 @@ class ULabel {
         var ret = {
             "annid": null,
             "access": null,
-            "distance": max_dist / this.get_empirical_scale(),
+            "distance": Infinity,
             // "distance": Infinity,
             "point": null
         };
@@ -17350,7 +17350,7 @@ class ULabel {
                     var npi = geometric_utils/* GeometricUtils.get_nearest_point_on_polygon */.Z.get_nearest_point_on_polygon(
                         global_x, global_y,
                         this.subtasks[this.state["current_subtask"]]["annotations"]["access"][edid]["spatial_payload"],
-                        max_dist / this.get_empirical_scale(), false
+                        Infinity, true
                     );
                     if (npi["distance"] != null && npi["distance"] < ret["distance"]) {
                         ret["annid"] = edid;
@@ -18734,6 +18734,7 @@ class ULabel {
                 const nearest_segment_point = this.get_nearest_segment_point(global_x, global_y, dst_thresh, edit_candidates["candidate_ids"]);
                 if (nearest_segment_point != null && nearest_segment_point.point != null) {
                     this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"] = nearest_segment_point;
+                    // var display_soft = nearest_segment_point['distance'] > dst_thresh;
                     this.show_edit_suggestion(nearest_segment_point, false);
                     edit_candidates["best"] = nearest_segment_point;
                 }

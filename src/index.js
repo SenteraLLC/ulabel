@@ -2831,7 +2831,7 @@ export class ULabel {
         var ret = {
             "annid": null,
             "access": null,
-            "distance": max_dist / this.get_empirical_scale(),
+            "distance": Infinity,
             // "distance": Infinity,
             "point": null
         };
@@ -2851,7 +2851,7 @@ export class ULabel {
                     var npi = GeometricUtils.get_nearest_point_on_polygon(
                         global_x, global_y,
                         this.subtasks[this.state["current_subtask"]]["annotations"]["access"][edid]["spatial_payload"],
-                        max_dist / this.get_empirical_scale(), false
+                        Infinity, true
                     );
                     if (npi["distance"] != null && npi["distance"] < ret["distance"]) {
                         ret["annid"] = edid;
@@ -4225,7 +4225,6 @@ export class ULabel {
 
             // Look for an existing point that's close enough to suggest editing it
             const nearest_active_keypoint = this.get_nearest_active_keypoint(global_x, global_y, dst_thresh, edit_candidates["candidate_ids"]);
-            console.log(nearest_active_keypoint)
             if (nearest_active_keypoint != null && nearest_active_keypoint.point != null) {
                 this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"] = nearest_active_keypoint;
                 this.show_edit_suggestion(nearest_active_keypoint, true);
