@@ -824,7 +824,7 @@ export class KeypointSliderItem extends ToolboxItem {
             //update the slider's label
             $("#" + slider.id + "-label").text(slider.value + "%");
 
-            this.deprecate_annotations(current_subtask, Number(slider.value) / 100);
+            this.deprecate_annotations(ulabel, Number(slider.value) / 100);
             ulabel.redraw_all_annotations(null, null, false);
         })
 
