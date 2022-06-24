@@ -822,7 +822,7 @@ export class KeypointSliderItem extends ToolboxItem {
             }
 
             //update the slider's label
-            $("#" + slider.id + "-label").text(slider.value + "%");
+            $("#" + slider.id + "-label").text(Math.round(slider.valueAsNumber) + "%");
 
             this.deprecate_annotations(ulabel, Number(slider.value) / 100);
             ulabel.redraw_all_annotations(null, null, false);

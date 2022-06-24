@@ -616,7 +616,7 @@ var KeypointSliderItem = /** @class */ (function (_super) {
                 throw Error("Unknown Keypoint Slider Button Pressed");
             }
             //update the slider's label
-            $("#" + slider.id + "-label").text(slider.value + "%");
+            $("#" + slider.id + "-label").text(Math.round(slider.valueAsNumber) + "%");
             _this.deprecate_annotations(ulabel, Number(slider.value) / 100);
             ulabel.redraw_all_annotations(null, null, false);
         });
