@@ -37,8 +37,8 @@ export class Configuration {
             "mark_deprecated": mark_deprecated,
             "default_value": 0.05,
             "keybinds": {
-                "increment": "e",
-                "decrement": "w"
+                "increment": "2",
+                "decrement": "1"
             }
         }]
     ]

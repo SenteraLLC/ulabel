@@ -11713,8 +11713,8 @@ var Configuration = /** @class */ (function () {
                     "mark_deprecated": annotation_operators_1.mark_deprecated,
                     "default_value": 0.05,
                     "keybinds": {
-                        "increment": "e",
-                        "decrement": "w"
+                        "increment": "2",
+                        "decrement": "1"
                     }
                 }]
         ];
