@@ -357,6 +357,9 @@ export class AnnotationResizeItem extends ToolboxItem {
             var current_subtask = ulabel.subtasks[current_subtask_key];
             console.log(e.key)
             switch(e.key) {
+                case this.keybind_configuration.annotation_vanish.toUpperCase():
+                    this.update_all_subtask_annotation_size(ulabel, "v");
+                    break;
                 case this.keybind_configuration.annotation_vanish:
                     this.update_annotation_size(current_subtask, "v")
                     break;
@@ -467,6 +470,14 @@ export class AnnotationResizeItem extends ToolboxItem {
             return;
         }
         throw Error("Invalid Operation given to loop_through_annotations")
+    }
+
+    public update_all_subtask_annotation_size(ulabel, size) {
+        console.log(ulabel)
+        for (let subtask in ulabel.subtasks) {
+            console.log(subtask)
+            this.update_annotation_size(ulabel.subtasks[subtask], size)
+        }
     }
 
     private set_size_cookie(cookie_value, subtask) {

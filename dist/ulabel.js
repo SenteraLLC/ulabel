@@ -19849,6 +19849,9 @@ var AnnotationResizeItem = /** @class */ (function (_super) {
             var current_subtask = ulabel.subtasks[current_subtask_key];
             console.log(e.key);
             switch (e.key) {
+                case _this.keybind_configuration.annotation_vanish.toUpperCase():
+                    _this.update_all_subtask_annotation_size(ulabel, "v");
+                    break;
                 case _this.keybind_configuration.annotation_vanish:
                     _this.update_annotation_size(current_subtask, "v");
                     break;
@@ -19956,6 +19959,13 @@ var AnnotationResizeItem = /** @class */ (function (_super) {
             return;
         }
         throw Error("Invalid Operation given to loop_through_annotations");
+    };
+    AnnotationResizeItem.prototype.update_all_subtask_annotation_size = function (ulabel, size) {
+        console.log(ulabel);
+        for (var subtask in ulabel.subtasks) {
+            console.log(subtask);
+            this.update_annotation_size(ulabel.subtasks[subtask], size);
+        }
     };
     AnnotationResizeItem.prototype.set_size_cookie = function (cookie_value, subtask) {
         var d = new Date();
