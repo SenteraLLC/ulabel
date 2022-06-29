@@ -19828,7 +19828,6 @@ var AnnotationResizeItem = /** @class */ (function (_super) {
         //First check for a size cookie, if one isn't found then check the config
         //for a default annotation size. If neither are found it will use the size
         //that the annotation was saved as.
-        console.log(_this.read_size_cookie(current_subtask));
         if (_this.read_size_cookie(current_subtask) != null) {
             _this.update_annotation_size(current_subtask, Number(_this.read_size_cookie(current_subtask)));
         }

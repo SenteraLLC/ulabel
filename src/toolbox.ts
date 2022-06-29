@@ -336,7 +336,6 @@ export class AnnotationResizeItem extends ToolboxItem {
         //First check for a size cookie, if one isn't found then check the config
         //for a default annotation size. If neither are found it will use the size
         //that the annotation was saved as.
-        console.log(this.read_size_cookie(current_subtask))
         if (this.read_size_cookie(current_subtask) != null) {           
             this.update_annotation_size(current_subtask, Number(this.read_size_cookie(current_subtask)));
         } 
