@@ -407,7 +407,7 @@ export class AnnotationResizeItem extends ToolboxItem {
                 $("#annotation-resize-v").attr("style","background-color: "+"rgba(100, 148, 237, 0.8)");
                 return;
             }
-            if (this[subtask.display_name.replaceAll(" ", "-").toLowerCase() + "-vanished"] !== true) {
+            if (!this[subtask.display_name.replaceAll(" ", "-").toLowerCase() + "-vanished"]) {
                 this.loop_through_annotations(subtask, vanish_size, "=")
                 //flip the bool state
                 this[subtask.display_name.replaceAll(" ", "-").toLowerCase() + "-vanished"] = !this[subtask.display_name.replaceAll(" ", "-").toLowerCase() + "-vanished"]
