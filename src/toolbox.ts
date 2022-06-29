@@ -356,7 +356,6 @@ export class AnnotationResizeItem extends ToolboxItem {
         $(document).on("keypress", (e) => {
             var current_subtask_key = ulabel.state["current_subtask"];
             var current_subtask = ulabel.subtasks[current_subtask_key];
-            console.log(e.key)
             switch(e.key) {
                 case this.keybind_configuration.annotation_vanish.toUpperCase():
                     this.update_all_subtask_annotation_size(ulabel, "v");
@@ -473,10 +472,9 @@ export class AnnotationResizeItem extends ToolboxItem {
         throw Error("Invalid Operation given to loop_through_annotations")
     }
 
+    //Loop through all subtasks and apply a size to them all
     public update_all_subtask_annotation_size(ulabel, size) {
-        console.log(ulabel)
         for (let subtask in ulabel.subtasks) {
-            console.log(subtask)
             this.update_annotation_size(ulabel.subtasks[subtask], size)
         }
     }
