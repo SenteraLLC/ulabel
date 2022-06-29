@@ -315,7 +315,6 @@ export class ClassCounterToolboxItem extends ToolboxItem {
  * Toolbox item for resizing all annotations
  */
 export class AnnotationResizeItem extends ToolboxItem {
-    public is_vanished: boolean = false;
     public cached_size: number = 1.5;
     public html: string;
     public inner_HTML: string;
@@ -393,24 +392,24 @@ export class AnnotationResizeItem extends ToolboxItem {
 
         //If the annotations are currently vanished and a button other than the vanish button is
         //pressed, then we want to ignore the input
-        if (this.is_vanished && size !== "v") return;
+        if (this[subtask.display_name.replaceAll(" ", "-").toLowerCase() + "-vanished"] && size !== "v") return;
 
         if (typeof(size) === "number") {
             this.loop_through_annotations(subtask, size, "=");
         }
 
         if (size == "v") {
-            if (this.is_vanished) { 
+            if (this[subtask.display_name.replaceAll(" ", "-").toLowerCase() + "-vanished"]) { 
                 this.loop_through_annotations(subtask, this.cached_size, "=")
                 //flip the bool state
-                this.is_vanished = !this.is_vanished
+                this[subtask.display_name.replaceAll(" ", "-").toLowerCase() + "-vanished"] = !this[subtask.display_name.replaceAll(" ", "-").toLowerCase() + "-vanished"]
                 $("#annotation-resize-v").attr("style","background-color: "+"rgba(100, 148, 237, 0.8)");
                 return;
             }
-            if (this.is_vanished !== true) {
+            if (this[subtask.display_name.replaceAll(" ", "-").toLowerCase() + "-vanished"] !== true) {
                 this.loop_through_annotations(subtask, vanish_size, "=")
                 //flip the bool state
-                this.is_vanished = !this.is_vanished;
+                this[subtask.display_name.replaceAll(" ", "-").toLowerCase() + "-vanished"] = !this[subtask.display_name.replaceAll(" ", "-").toLowerCase() + "-vanished"]
                 $("#annotation-resize-v").attr("style","background-color: "+"#1c2d4d");
                 return;
             }

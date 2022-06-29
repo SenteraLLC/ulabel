@@ -230,7 +230,6 @@ var AnnotationResizeItem = /** @class */ (function (_super) {
     __extends(AnnotationResizeItem, _super);
     function AnnotationResizeItem(ulabel) {
         var _this = _super.call(this) || this;
-        _this.is_vanished = false;
         _this.cached_size = 1.5;
         _this.inner_HTML = "<p class=\"tb-header\">Annotation Count</p>";
         //get default keybinds
@@ -297,23 +296,23 @@ var AnnotationResizeItem = /** @class */ (function (_super) {
             return;
         //If the annotations are currently vanished and a button other than the vanish button is
         //pressed, then we want to ignore the input
-        if (this.is_vanished && size !== "v")
+        if (this[subtask.display_name.replaceAll(" ", "-").toLowerCase() + "-vanished"] && size !== "v")
             return;
         if (typeof (size) === "number") {
             this.loop_through_annotations(subtask, size, "=");
         }
         if (size == "v") {
-            if (this.is_vanished) {
+            if (this[subtask.display_name.replaceAll(" ", "-").toLowerCase() + "-vanished"]) {
                 this.loop_through_annotations(subtask, this.cached_size, "=");
                 //flip the bool state
-                this.is_vanished = !this.is_vanished;
+                this[subtask.display_name.replaceAll(" ", "-").toLowerCase() + "-vanished"] = !this[subtask.display_name.replaceAll(" ", "-").toLowerCase() + "-vanished"];
                 $("#annotation-resize-v").attr("style", "background-color: " + "rgba(100, 148, 237, 0.8)");
                 return;
             }
-            if (this.is_vanished !== true) {
+            if (this[subtask.display_name.replaceAll(" ", "-").toLowerCase() + "-vanished"] !== true) {
                 this.loop_through_annotations(subtask, vanish_size, "=");
                 //flip the bool state
-                this.is_vanished = !this.is_vanished;
+                this[subtask.display_name.replaceAll(" ", "-").toLowerCase() + "-vanished"] = !this[subtask.display_name.replaceAll(" ", "-").toLowerCase() + "-vanished"];
                 $("#annotation-resize-v").attr("style", "background-color: " + "#1c2d4d");
                 return;
             }
