@@ -19820,6 +19820,8 @@ var AnnotationResizeItem = /** @class */ (function (_super) {
         _this.inner_HTML = "<p class=\"tb-header\">Annotation Count</p>";
         //get default keybinds
         _this.keybind_configuration = ulabel.config.default_keybinds;
+        //update cased size to default
+        _this.cached_size = ulabel.config.default_annotation_size;
         //grab current subtask for convinience
         var current_subtask_key = ulabel.state["current_subtask"];
         var current_subtask = ulabel.subtasks[current_subtask_key];

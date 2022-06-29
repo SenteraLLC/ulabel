@@ -326,6 +326,9 @@ export class AnnotationResizeItem extends ToolboxItem {
         //get default keybinds
         this.keybind_configuration = ulabel.config.default_keybinds
 
+        //update cased size to default
+        this.cached_size = ulabel.config.default_annotation_size
+
         //grab current subtask for convinience
         let current_subtask_key = ulabel.state["current_subtask"];
         let current_subtask = ulabel.subtasks[current_subtask_key];
