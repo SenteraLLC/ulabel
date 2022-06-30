@@ -390,27 +390,27 @@ export class AnnotationResizeItem extends ToolboxItem {
         const vanish_size = 0.01;
 
         if (subtask == null) return;
-
+let subtask_vanished_flag = subtask.display_name.replaceAll(" ", "-").toLowerCase() + "-vanished";
         //If the annotations are currently vanished and a button other than the vanish button is
         //pressed, then we want to ignore the input
-        if (this[subtask.display_name.replaceAll(" ", "-").toLowerCase() + "-vanished"] && size !== "v") return;
+        if (this[subtask_vanished_flag] && size !== "v") return;
 
         if (typeof(size) === "number") {
             this.loop_through_annotations(subtask, size, "=");
         }
 
         if (size == "v") {
-            if (this[subtask.display_name.replaceAll(" ", "-").toLowerCase() + "-vanished"]) { 
+            if (this[subtask_vanished_flag]) { 
                 this.loop_through_annotations(subtask, this.cached_size, "=")
                 //flip the bool state
-                this[subtask.display_name.replaceAll(" ", "-").toLowerCase() + "-vanished"] = !this[subtask.display_name.replaceAll(" ", "-").toLowerCase() + "-vanished"]
+                this[subtask_vanished_flag] = !this[subtask_vanished_flag]
                 $("#annotation-resize-v").attr("style","background-color: "+"rgba(100, 148, 237, 0.8)");
                 return;
             }
-            if (!this[subtask.display_name.replaceAll(" ", "-").toLowerCase() + "-vanished"]) {
+            if (!this[subtask_vanished_flag]) {
                 this.loop_through_annotations(subtask, vanish_size, "=")
                 //flip the bool state
-                this[subtask.display_name.replaceAll(" ", "-").toLowerCase() + "-vanished"] = !this[subtask.display_name.replaceAll(" ", "-").toLowerCase() + "-vanished"]
+                this[subtask_vanished_flag] = !this[subtask_vanished_flag]
                 $("#annotation-resize-v").attr("style","background-color: "+"#1c2d4d");
                 return;
             }
