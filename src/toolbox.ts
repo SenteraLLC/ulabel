@@ -332,7 +332,6 @@ export class AnnotationResizeItem extends ToolboxItem {
     constructor(ulabel: ULabel) {
         super();
         this.inner_HTML = `<p class="tb-header">Annotation Count</p>`;
-        console.log(document.cookie)
         //get default keybinds
         this.keybind_configuration = ulabel.config.default_keybinds
 
@@ -347,26 +346,19 @@ export class AnnotationResizeItem extends ToolboxItem {
             let cashed_size_property = ulabel.subtasks[subtask].display_name.replaceLowerConcat(" ", "-", "-cashed-size")
             let size_cookie = this.read_size_cookie(ulabel.subtasks[subtask])
             if ((size_cookie != null) && size_cookie != "NaN") {
-                console.log(size_cookie, size_cookie != "NaN")
                 this.update_annotation_size(ulabel.subtasks[subtask], Number(size_cookie));
-                console.log(size_cookie, "inside constructor", subtask)
                 this[cashed_size_property] = Number(size_cookie)
             }
             else if (ulabel.config.default_annotation_size != undefined) {          
                 this.update_annotation_size(ulabel.subtasks[subtask], ulabel.config.default_annotation_size);
                 this[cashed_size_property] = ulabel.config.default_annotation_size
-                console.log(this.read_size_cookie(ulabel.subtasks[subtask]), "inside constructor", subtask, 2)
             } 
             else {
                 const DEFAULT_SIZE = 5
                 this.update_annotation_size(ulabel.subtasks[subtask], DEFAULT_SIZE)
                 this[cashed_size_property] = DEFAULT_SIZE
-                console.log(this.read_size_cookie(ulabel.subtasks[subtask]), "inside constructor", subtask, 3)
             }
         }
-
-        console.log(document.cookie)
-        console.log(ulabel)
 
         //event listener for buttons
         $(document).on("click", "a.butt-ann", (e) => {
@@ -400,10 +392,6 @@ export class AnnotationResizeItem extends ToolboxItem {
                 case this.keybind_configuration.annotation_size_plus:
                     this.update_annotation_size(current_subtask, "inc")
                     break;
-                default:
-                    for (let subtask in ulabel.subtasks) {
-                        console.log(this[ulabel.subtasks[subtask].display_name.replaceLowerConcat(" ", "-", "-cashed-size")], ulabel.subtasks[subtask].display_name.replaceLowerConcat(" ", "-", "-cashed-size"))
-                    }
             }
             ulabel.redraw_all_annotations(null, null, false);
         } )
@@ -418,10 +406,6 @@ export class AnnotationResizeItem extends ToolboxItem {
         const increment_size = 0.5;
         const vanish_size = 0.01;
         let subtask_cashed_size = subtask.display_name.replaceLowerConcat(" ", "-", "-cashed-size");
-
-        if (size == "v") {
-            console.log(this[subtask_cashed_size], subtask)
-        }
 
         if (subtask == null) return;
         let subtask_vanished_flag = subtask.display_name.replaceLowerConcat(" ", "-", "-vanished");
@@ -482,7 +466,6 @@ export class AnnotationResizeItem extends ToolboxItem {
         }
         if (operation == "+") {
             for (const annotation_id in subtask.annotations.access) {
-                console.log(subtask.annotations.access[annotation_id].line_size)
                 subtask.annotations.access[annotation_id].line_size += size;
                 //temporary solution
                 this[subtask_cashed_size] = subtask.annotations.access[annotation_id].line_size
@@ -525,7 +508,6 @@ export class AnnotationResizeItem extends ToolboxItem {
     }
 
     private read_size_cookie(subtask) {
-        console.log(subtask, "Read Size Cookie")
         let subtask_name = subtask.display_name.replaceLowerConcat(" ", "_");
 
         let cookie_name = subtask_name + "_size=";       
