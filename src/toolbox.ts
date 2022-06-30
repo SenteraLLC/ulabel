@@ -3,9 +3,12 @@ import { Configuration } from "./configuration";
 import { ULabelAnnotation } from "./annotation";
 
 const toolboxDividerDiv = "<div class=toolbox-divider></div>"
-function read_annotation_confidence() {
-    return
+String.prototype.replaceLower = function(before: string, after: string) {
+    this.replaceAll(before, after)
+    this.toLowerCase()
+    return this
 }
+
 
 /**
  * Manager for toolbox. Contains ToolboxTab items.
@@ -393,24 +396,24 @@ export class AnnotationResizeItem extends ToolboxItem {
 
         //If the annotations are currently vanished and a button other than the vanish button is
         //pressed, then we want to ignore the input
-        if (this[subtask.display_name.replaceAll(" ", "-").toLowerCase() + "-vanished"] && size !== "v") return;
+        if (this[subtask.display_name.replaceLower(" ", "-") + "-vanished"] && size !== "v") return;
 
         if (typeof(size) === "number") {
             this.loop_through_annotations(subtask, size, "=");
         }
 
         if (size == "v") {
-            if (this[subtask.display_name.replaceAll(" ", "-").toLowerCase() + "-vanished"]) { 
+            if (this[subtask.display_name.replaceLower(" ", "-") + "-vanished"]) { 
                 this.loop_through_annotations(subtask, this.cached_size, "=")
                 //flip the bool state
-                this[subtask.display_name.replaceAll(" ", "-").toLowerCase() + "-vanished"] = !this[subtask.display_name.replaceAll(" ", "-").toLowerCase() + "-vanished"]
+                this[subtask.display_name.replaceLower(" ", "-") + "-vanished"] = !this[subtask.display_name.replaceLower(" ", "-") + "-vanished"]
                 $("#annotation-resize-v").attr("style","background-color: "+"rgba(100, 148, 237, 0.8)");
                 return;
             }
-            if (this[subtask.display_name.replaceAll(" ", "-").toLowerCase() + "-vanished"] !== true) {
+            if (this[subtask.display_name.replaceLower(" ", "-") + "-vanished"] !== true) {
                 this.loop_through_annotations(subtask, vanish_size, "=")
                 //flip the bool state
-                this[subtask.display_name.replaceAll(" ", "-").toLowerCase() + "-vanished"] = !this[subtask.display_name.replaceAll(" ", "-").toLowerCase() + "-vanished"]
+                this[subtask.display_name.replaceLower(" ", "-") + "-vanished"] = !this[subtask.display_name.replaceLower(" ", "-") + "-vanished"]
                 $("#annotation-resize-v").attr("style","background-color: "+"#1c2d4d");
                 return;
             }
@@ -483,14 +486,14 @@ export class AnnotationResizeItem extends ToolboxItem {
         let d = new Date();
         d.setTime(d.getTime() + (10000 * 24 * 60 * 60 * 1000));
 
-        let subtask_name = subtask.display_name.replaceAll(" ","_").toLowerCase();
+        let subtask_name = subtask.display_name.replaceLower(" ", "_");
 
         document.cookie = subtask_name + "_size=" + cookie_value + ";" + d.toUTCString() + ";path=/";
     }
 
     private read_size_cookie(subtask) {
 
-        let subtask_name = subtask.display_name.replaceAll(" ","_").toLowerCase();
+        let subtask_name = subtask.display_name.replaceLower(" ", "_");
 
         let cookie_name = subtask_name + "_size=";       
 
@@ -780,11 +783,11 @@ export class KeypointSliderItem extends ToolboxItem {
         this.filter_function = kwargs.filter_function;
         this.get_confidence = kwargs.confidence_function;
         this.mark_deprecated = kwargs.mark_deprecated;
-        this.slider_bar_id = this.name.replaceAll(" ", "-").toLowerCase();
+        this.slider_bar_id = this.name.replaceLower(" ", "-");
         
         //if the config has a default value override, then use that instead
-        if (ulabel.config.hasOwnProperty(this.name.replaceAll(" ","_").toLowerCase() + "_default_value")) {
-            kwargs.default_value = ulabel.config[this.name.split(" ").join("_").toLowerCase() + "_default_value"];
+        if (ulabel.config.hasOwnProperty(this.name.replaceLower(" ", "_") + "_default_value")) {
+            kwargs.default_value = ulabel.config[this.name.replaceLower(" ", "_") + "_default_value"];
         }
 
         //if this keypoint slider has a generic default, then use it
@@ -814,14 +817,14 @@ export class KeypointSliderItem extends ToolboxItem {
         //The annotations are drawn for the first time after the toolbox is loaded
         //so we don't actually have to redraw the annotations after deprecating them.
         
-        $(document).on("input", "#" + this.name.replaceAll(" ", "-").toLowerCase(), (e) => {
+        $(document).on("input", "#" + this.name.replaceLower(" ", "-"), (e) => {
             let filter_value = e.currentTarget.value / 100;
             this.deprecate_annotations(ulabel, filter_value);
         })
 
-        $(document).on("click", "a." + this.name.replaceAll(" ", "-").toLowerCase() + "-button", (e) => {
+        $(document).on("click", "a." + this.name.replaceLower(" ", "-") + "-button", (e) => {
             let button_text = e.currentTarget.outerText
-            let slider = <HTMLInputElement> document.getElementById(this.name.replaceAll(" ", "-").toLowerCase())
+            let slider = <HTMLInputElement> document.getElementById(this.name.replaceLower(" ", "-"))
 
             if (button_text == "+") {
                 slider.value = (slider.valueAsNumber + 1).toString();
@@ -842,12 +845,12 @@ export class KeypointSliderItem extends ToolboxItem {
         $(document).on("keypress", (e) => {
 
             if (e.key == kwargs.keybinds.increment) {
-                let button = <HTMLAnchorElement> document.getElementsByClassName(this.name.replaceAll(" ", "-").toLowerCase() + "-button inc")[0]
+                let button = <HTMLAnchorElement> document.getElementsByClassName(this.name.replaceLower(" ", "-") + "-button inc")[0]
                 button.click()
             }
 
             if (e.key == kwargs.keybinds.decrement) {
-                let button = <HTMLAnchorElement> document.getElementsByClassName(this.name.replaceAll(" ", "-").toLowerCase() + "-button dec")[0]
+                let button = <HTMLAnchorElement> document.getElementsByClassName(this.name.replaceLower(" ", "-") + "-button dec")[0]
                 button.click()
             }
         })
@@ -916,18 +919,18 @@ export class KeypointSliderItem extends ToolboxItem {
             <div class="keypoint-slider-holder">
                 <input 
                     type="range" 
-                    id="${this.name.replaceAll(" ", "-").toLowerCase()}" 
+                    id="${this.name.replaceLower(" ", "-")}" 
                     class="keypoint-slider" value="${this.default_value * 100}"
                 />
                 <label 
-                    for="${this.name.replaceAll(" ", "-").toLowerCase()}" 
-                    id="${this.name.replaceAll(" ", "-").toLowerCase()}-label"
+                    for="${this.name.replaceLower(" ", "-")}" 
+                    id="${this.name.replaceLower(" ", "-")}-label"
                     class="keypoint-slider-label">
                     ${Math.round(this.default_value * 100)}%
                 </label>
                 <span class="increment" >
-                    <a href="#" class="button inc keypoint-slider-increment ${this.name.replaceAll(" ", "-").toLowerCase()}-button" >+</a>
-                    <a href="#" class="button dec keypoint-slider-increment ${this.name.replaceAll(" ", "-").toLowerCase()}-button" >-</a>
+                    <a href="#" class="button inc keypoint-slider-increment ${this.name.replaceLower(" ", "-")}-button" >+</a>
+                    <a href="#" class="button dec keypoint-slider-increment ${this.name.replaceLower(" ", "-")}-button" >-</a>
                 </span>
             </div>
         </div>`

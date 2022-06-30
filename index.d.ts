@@ -91,3 +91,8 @@ export class ULabel {
         
     }
     
+declare global {
+    interface String {
+    replaceLower(before: String, after: String): string
+    }
+}
