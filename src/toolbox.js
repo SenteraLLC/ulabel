@@ -19,9 +19,16 @@ exports.KeypointSliderItem = exports.RecolorActiveItem = exports.AnnotationResiz
 var __1 = require("..");
 var configuration_1 = require("./configuration");
 var toolboxDividerDiv = "<div class=toolbox-divider></div>";
-function read_annotation_confidence() {
-    return;
-}
+/** Chains the replaceAll method and the toLowerCase method.
+ *  Optionally concatenates a string at the end of the method.
+  */
+String.prototype.replaceLowerConcat = function (before, after, concat_string) {
+    if (concat_string === void 0) { concat_string = null; }
+    if (typeof (concat_string) === "string") {
+        return this.replaceAll(before, after).toLowerCase().concat(concat_string);
+    }
+    return this.replaceAll(before, after).toLowerCase();
+};
 /**
  * Manager for toolbox. Contains ToolboxTab items.
  */
@@ -230,7 +237,6 @@ var AnnotationResizeItem = /** @class */ (function (_super) {
     __extends(AnnotationResizeItem, _super);
     function AnnotationResizeItem(ulabel) {
         var _this = _super.call(this) || this;
-        _this.is_vanished = false;
         _this.cached_size = 1.5;
         _this.inner_HTML = "<p class=\"tb-header\">Annotation Count</p>";
         //get default keybinds
@@ -241,12 +247,22 @@ var AnnotationResizeItem = /** @class */ (function (_super) {
         //First check for a size cookie, if one isn't found then check the config
         //for a default annotation size. If neither are found it will use the size
         //that the annotation was saved as.
-        console.log(_this.read_size_cookie(current_subtask));
-        if (_this.read_size_cookie(current_subtask) != null) {
-            _this.update_annotation_size(current_subtask, Number(_this.read_size_cookie(current_subtask)));
-        }
-        else if (ulabel.config.default_annotation_size != undefined) {
-            _this.update_annotation_size(current_subtask, ulabel.config.default_annotation_size);
+        for (var subtask in ulabel.subtasks) {
+            var cached_size_property = ulabel.subtasks[subtask].display_name.replaceLowerConcat(" ", "-", "-cached-size");
+            var size_cookie = _this.read_size_cookie(ulabel.subtasks[subtask]);
+            if ((size_cookie != null) && size_cookie != "NaN") {
+                _this.update_annotation_size(ulabel.subtasks[subtask], Number(size_cookie));
+                _this[cached_size_property] = Number(size_cookie);
+            }
+            else if (ulabel.config.default_annotation_size != undefined) {
+                _this.update_annotation_size(ulabel.subtasks[subtask], ulabel.config.default_annotation_size);
+                _this[cached_size_property] = ulabel.config.default_annotation_size;
+            }
+            else {
+                var DEFAULT_SIZE = 5;
+                _this.update_annotation_size(ulabel.subtasks[subtask], DEFAULT_SIZE);
+                _this[cached_size_property] = DEFAULT_SIZE;
+            }
         }
         //event listener for buttons
         $(document).on("click", "a.butt-ann", function (e) {
@@ -261,8 +277,10 @@ var AnnotationResizeItem = /** @class */ (function (_super) {
         $(document).on("keypress", function (e) {
             var current_subtask_key = ulabel.state["current_subtask"];
             var current_subtask = ulabel.subtasks[current_subtask_key];
-            console.log(e.key);
             switch (e.key) {
+                case _this.keybind_configuration.annotation_vanish.toUpperCase():
+                    _this.update_all_subtask_annotation_size(ulabel, "v");
+                    break;
                 case _this.keybind_configuration.annotation_vanish:
                     _this.update_annotation_size(current_subtask, "v");
                     break;
@@ -290,27 +308,29 @@ var AnnotationResizeItem = /** @class */ (function (_super) {
         var large_size = 5;
         var increment_size = 0.5;
         var vanish_size = 0.01;
+        var subtask_cached_size = subtask.display_name.replaceLowerConcat(" ", "-", "-cached-size");
         if (subtask == null)
             return;
+        var subtask_vanished_flag = subtask.display_name.replaceLowerConcat(" ", "-", "-vanished");
         //If the annotations are currently vanished and a button other than the vanish button is
         //pressed, then we want to ignore the input
-        if (this.is_vanished && size !== "v")
+        if (this[subtask_vanished_flag] && size !== "v")
             return;
         if (typeof (size) === "number") {
             this.loop_through_annotations(subtask, size, "=");
         }
         if (size == "v") {
-            if (this.is_vanished) {
-                this.loop_through_annotations(subtask, this.cached_size, "=");
+            if (this[subtask_vanished_flag]) {
+                this.loop_through_annotations(subtask, this[subtask_cached_size], "=");
                 //flip the bool state
-                this.is_vanished = !this.is_vanished;
+                this[subtask_vanished_flag] = !this[subtask_vanished_flag];
                 $("#annotation-resize-v").attr("style", "background-color: " + "rgba(100, 148, 237, 0.8)");
                 return;
             }
-            if (this.is_vanished !== true) {
+            if (!this[subtask_vanished_flag]) {
                 this.loop_through_annotations(subtask, vanish_size, "=");
                 //flip the bool state
-                this.is_vanished = !this.is_vanished;
+                this[subtask_vanished_flag] = !this[subtask_vanished_flag];
                 $("#annotation-resize-v").attr("style", "background-color: " + "#1c2d4d");
                 return;
             }
@@ -319,11 +339,11 @@ var AnnotationResizeItem = /** @class */ (function (_super) {
         switch (size) {
             case 's':
                 this.loop_through_annotations(subtask, small_size, "=");
-                this.cached_size = small_size;
+                this[subtask_cached_size] = small_size;
                 break;
             case 'l':
                 this.loop_through_annotations(subtask, large_size, "=");
-                this.cached_size = large_size;
+                this[subtask_cached_size] = large_size;
                 break;
             case 'dec':
                 this.loop_through_annotations(subtask, increment_size, "-");
@@ -337,6 +357,7 @@ var AnnotationResizeItem = /** @class */ (function (_super) {
     };
     //loops through all annotations in a subtask to change their line size
     AnnotationResizeItem.prototype.loop_through_annotations = function (subtask, size, operation) {
+        var subtask_cached_size = subtask.display_name.replaceLowerConcat(" ", "-", "-cached-size");
         if (operation == "=") {
             for (var annotation_id in subtask.annotations.access) {
                 subtask.annotations.access[annotation_id].line_size = size;
@@ -348,7 +369,7 @@ var AnnotationResizeItem = /** @class */ (function (_super) {
             for (var annotation_id in subtask.annotations.access) {
                 subtask.annotations.access[annotation_id].line_size += size;
                 //temporary solution
-                this.cached_size = subtask.annotations.access[annotation_id].line_size;
+                this[subtask_cached_size] = subtask.annotations.access[annotation_id].line_size;
             }
             this.set_size_cookie(subtask.annotations.access[subtask.annotations.ordering[0]].line_size, subtask);
             return;
@@ -364,21 +385,27 @@ var AnnotationResizeItem = /** @class */ (function (_super) {
                     subtask.annotations.access[annotation_id].line_size -= size;
                 }
                 //temporary solution
-                this.cached_size = subtask.annotations.access[annotation_id].line_size;
+                this[subtask_cached_size] = subtask.annotations.access[annotation_id].line_size;
             }
             this.set_size_cookie(subtask.annotations.access[subtask.annotations.ordering[0]].line_size, subtask);
             return;
         }
         throw Error("Invalid Operation given to loop_through_annotations");
     };
+    //Loop through all subtasks and apply a size to them all
+    AnnotationResizeItem.prototype.update_all_subtask_annotation_size = function (ulabel, size) {
+        for (var subtask in ulabel.subtasks) {
+            this.update_annotation_size(ulabel.subtasks[subtask], size);
+        }
+    };
     AnnotationResizeItem.prototype.set_size_cookie = function (cookie_value, subtask) {
         var d = new Date();
         d.setTime(d.getTime() + (10000 * 24 * 60 * 60 * 1000));
-        var subtask_name = subtask.display_name.replaceAll(" ", "_").toLowerCase();
+        var subtask_name = subtask.display_name.replaceLowerConcat(" ", "_");
         document.cookie = subtask_name + "_size=" + cookie_value + ";" + d.toUTCString() + ";path=/";
     };
     AnnotationResizeItem.prototype.read_size_cookie = function (subtask) {
-        var subtask_name = subtask.display_name.replaceAll(" ", "_").toLowerCase();
+        var subtask_name = subtask.display_name.replaceLowerConcat(" ", "_");
         var cookie_name = subtask_name + "_size=";
         var cookie_array = document.cookie.split(";");
         for (var i = 0; i < cookie_array.length; i++) {
@@ -573,10 +600,10 @@ var KeypointSliderItem = /** @class */ (function (_super) {
         _this.filter_function = kwargs.filter_function;
         _this.get_confidence = kwargs.confidence_function;
         _this.mark_deprecated = kwargs.mark_deprecated;
-        _this.slider_bar_id = _this.name.replaceAll(" ", "-").toLowerCase();
+        _this.slider_bar_id = _this.name.replaceLowerConcat(" ", "-");
         //if the config has a default value override, then use that instead
-        if (ulabel.config.hasOwnProperty(_this.name.replaceAll(" ", "_").toLowerCase() + "_default_value")) {
-            kwargs.default_value = ulabel.config[_this.name.split(" ").join("_").toLowerCase() + "_default_value"];
+        if (ulabel.config.hasOwnProperty(_this.name.replaceLowerConcat(" ", "_", "_default_value"))) {
+            kwargs.default_value = ulabel.config[_this.name.replaceLowerConcat(" ", "_", "_default_value")];
         }
         //if this keypoint slider has a generic default, then use it
         //otherwise the defalut is 0
@@ -599,13 +626,13 @@ var KeypointSliderItem = /** @class */ (function (_super) {
         }
         //The annotations are drawn for the first time after the toolbox is loaded
         //so we don't actually have to redraw the annotations after deprecating them.
-        $(document).on("input", "#" + _this.name.replaceAll(" ", "-").toLowerCase(), function (e) {
+        $(document).on("input", "#" + _this.name.replaceLowerConcat(" ", "-"), function (e) {
             var filter_value = e.currentTarget.value / 100;
             _this.deprecate_annotations(ulabel, filter_value);
         });
-        $(document).on("click", "a." + _this.name.replaceAll(" ", "-").toLowerCase() + "-button", function (e) {
+        $(document).on("click", "a." + _this.name.replaceLowerConcat(" ", "-") + "-button", function (e) {
             var button_text = e.currentTarget.outerText;
-            var slider = document.getElementById(_this.name.replaceAll(" ", "-").toLowerCase());
+            var slider = document.getElementById(_this.name.replaceLowerConcat(" ", "-"));
             if (button_text == "+") {
                 slider.value = (slider.valueAsNumber + 1).toString();
             }
@@ -623,11 +650,11 @@ var KeypointSliderItem = /** @class */ (function (_super) {
         //event listener for keybinds
         $(document).on("keypress", function (e) {
             if (e.key == kwargs.keybinds.increment) {
-                var button = document.getElementsByClassName(_this.name.replaceAll(" ", "-").toLowerCase() + "-button inc")[0];
+                var button = document.getElementsByClassName(_this.name.replaceLowerConcat(" ", "-") + "-button inc")[0];
                 button.click();
             }
             if (e.key == kwargs.keybinds.decrement) {
-                var button = document.getElementsByClassName(_this.name.replaceAll(" ", "-").toLowerCase() + "-button dec")[0];
+                var button = document.getElementsByClassName(_this.name.replaceLowerConcat(" ", "-") + "-button dec")[0];
                 button.click();
             }
         });
@@ -677,7 +704,8 @@ var KeypointSliderItem = /** @class */ (function (_super) {
         }
     };
     KeypointSliderItem.prototype.get_html = function () {
-        return "\n        <div class=\"keypoint-slider\">\n            <p class=\"tb-header\">".concat(this.name, "</p>\n            <div class=\"keypoint-slider-holder\">\n                <input \n                    type=\"range\" \n                    id=\"").concat(this.name.replaceAll(" ", "-").toLowerCase(), "\" \n                    class=\"keypoint-slider\" value=\"").concat(this.default_value * 100, "\"\n                />\n                <label \n                    for=\"").concat(this.name.replaceAll(" ", "-").toLowerCase(), "\" \n                    id=\"").concat(this.name.replaceAll(" ", "-").toLowerCase(), "-label\"\n                    class=\"keypoint-slider-label\">\n                    ").concat(Math.round(this.default_value * 100), "%\n                </label>\n                <span class=\"increment\" >\n                    <a href=\"#\" class=\"button inc keypoint-slider-increment ").concat(this.name.replaceAll(" ", "-").toLowerCase(), "-button\" >+</a>\n                    <a href=\"#\" class=\"button dec keypoint-slider-increment ").concat(this.name.replaceAll(" ", "-").toLowerCase(), "-button\" >-</a>\n                </span>\n            </div>\n        </div>");
+        var component_name = this.name.replaceLowerConcat(" ", "-");
+        return "\n        <div class=\"keypoint-slider\">\n            <p class=\"tb-header\">".concat(this.name, "</p>\n            <div class=\"keypoint-slider-holder\">\n                <input \n                    type=\"range\" \n                    id=\"").concat(component_name, "\" \n                    class=\"keypoint-slider\" value=\"").concat(this.default_value * 100, "\"\n                />\n                <label \n                    for=\"").concat(component_name, "\" \n                    id=\"").concat(component_name, "-label\"\n                    class=\"keypoint-slider-label\">\n                    ").concat(Math.round(this.default_value * 100), "%\n                </label>\n                <span class=\"increment\" >\n                    <a href=\"#\" class=\"button inc keypoint-slider-increment ").concat(component_name, "-button\" >+</a>\n                    <a href=\"#\" class=\"button dec keypoint-slider-increment ").concat(component_name, "-button\" >-</a>\n                </span>\n            </div>\n        </div>");
     };
     return KeypointSliderItem;
 }(ToolboxItem));
