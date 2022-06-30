@@ -15300,6 +15300,15 @@ class ULabel {
             }
             ul.suggest_edits(null);
         });
+        jquery_default()(document).on("keypress", (e) => {
+            if (e.key == "d") {
+                console.log(ul)
+                if (ul.subtasks[ul.state["current_subtask"]]["active_annotation"] != null) {
+                    console.log("delete attempted")
+                    ul.delete_annotation(ul.subtasks[ul.state["current_subtask"]]["active_annotation"])
+                }
+            }   
+        })
 
         // Listener for id_dialog click interactions
         jquery_default()(document).on("click", "#" + ul.config["container_id"] + " a.id-dialog-clickable-indicator", (e) => {
@@ -18729,6 +18738,7 @@ class ULabel {
      */  
     suggest_edits(mouse_event = null, nonspatial_id = null) {
         let best_candidate;
+        console.log(this.subtasks[this.state["current_subtask"]]["active_annotation"]);
         if (nonspatial_id == null) {
             if (mouse_event == null) {
                 mouse_event = this.state["last_move"];
@@ -18750,6 +18760,7 @@ class ULabel {
                 this.hide_global_edit_suggestion();
                 this.hide_edit_suggestion();
                 this.subtasks[this.state["current_subtask"]]["state"]["move_candidate"] = null;
+                this.subtasks[this.state["current_subtask"]]["active_annotation"] = null;
                 return;
             }
 
@@ -18782,6 +18793,7 @@ class ULabel {
             best_candidate = nonspatial_id;
         }
         this.show_global_edit_suggestion(best_candidate, null, nonspatial_id);
+        this.subtasks[this.state["current_subtask"]]["active_annotation"] = best_candidate
     }
 
 
