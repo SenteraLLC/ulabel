@@ -4,15 +4,16 @@ import { ULabelAnnotation } from "./annotation";
 
 const toolboxDividerDiv = "<div class=toolbox-divider></div>"
 
-/** Chains the replaceAll method and the toLowerCase method  */
+/** Chains the replaceAll method and the toLowerCase method.
+ *  Optionally concatenates a string at the end of the method.
+  */
 String.prototype.replaceLowerConcat = function(before: string, after: string, concat_string: string = null) {
-    this.replaceAll(before, after)
-    this.toLowerCase()
     
     if (typeof(concat_string) === "string") {
-        return this.concat(concat_string)
+        return this.replaceAll(before, after).toLowerCase().concat(concat_string)
     }
-    return this
+
+    return this.replaceAll(before, after).toLowerCase()
 }
 
 
@@ -399,7 +400,7 @@ export class AnnotationResizeItem extends ToolboxItem {
         const vanish_size = 0.01;
 
         if (subtask == null) return;
-let subtask_vanished_flag = subtask.display_name.replaceAll(" ", "-").toLowerCase() + "-vanished";
+        let subtask_vanished_flag = subtask.display_name.replaceLowerConcat(" ", "-", "-vanished");
         //If the annotations are currently vanished and a button other than the vanish button is
         //pressed, then we want to ignore the input
         if (this[subtask_vanished_flag] && size !== "v") return;
@@ -919,24 +920,25 @@ export class KeypointSliderItem extends ToolboxItem {
     }
 
     public get_html() {
+        let component_name = this.name.replaceLowerConcat(" ", "-")
         return`
         <div class="keypoint-slider">
             <p class="tb-header">${this.name}</p>
             <div class="keypoint-slider-holder">
                 <input 
                     type="range" 
-                    id="${this.name.replaceLowerConcat(" ", "-")}" 
+                    id="${component_name}" 
                     class="keypoint-slider" value="${this.default_value * 100}"
                 />
                 <label 
-                    for="${this.name.replaceLowerConcat(" ", "-")}" 
-                    id="${this.name.replaceLowerConcat(" ", "-")}-label"
+                    for="${component_name}" 
+                    id="${component_name}-label"
                     class="keypoint-slider-label">
                     ${Math.round(this.default_value * 100)}%
                 </label>
                 <span class="increment" >
-                    <a href="#" class="button inc keypoint-slider-increment ${this.name.replaceLowerConcat(" ", "-")}-button" >+</a>
-                    <a href="#" class="button dec keypoint-slider-increment ${this.name.replaceLowerConcat(" ", "-")}-button" >-</a>
+                    <a href="#" class="button inc keypoint-slider-increment ${component_name}-button" >+</a>
+                    <a href="#" class="button dec keypoint-slider-increment ${component_name}-button" >-</a>
                 </span>
             </div>
         </div>`

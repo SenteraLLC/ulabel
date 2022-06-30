@@ -19605,17 +19605,16 @@ exports.KeypointSliderItem = exports.RecolorActiveItem = exports.AnnotationResiz
 var __1 = __webpack_require__(318);
 var configuration_1 = __webpack_require__(976);
 var toolboxDividerDiv = "<div class=toolbox-divider></div>";
-/** Chains the replaceAll method and the toLowerCase method  */
+/** Chains the replaceAll method and the toLowerCase method.
+ *  Optionally concatenates a string at the end of the method.
+  */
 String.prototype.replaceLowerConcat = function (before, after, concat_string) {
     if (concat_string === void 0) { concat_string = null; }
-    this.replaceAll(before, after);
-    this.toLowerCase();
     if (typeof (concat_string) === "string") {
-        return this.concat(concat_string);
+        return this.replaceAll(before, after).toLowerCase().concat(concat_string);
     }
-    return this;
+    return this.replaceAll(before, after).toLowerCase();
 };
-"this".replaceLowerConcat(" ", "-");
 /**
  * Manager for toolbox. Contains ToolboxTab items.
  */
@@ -19888,25 +19887,26 @@ var AnnotationResizeItem = /** @class */ (function (_super) {
         var vanish_size = 0.01;
         if (subtask == null)
             return;
+        var subtask_vanished_flag = subtask.display_name.replaceLowerConcat(" ", "-", "-vanished");
         //If the annotations are currently vanished and a button other than the vanish button is
         //pressed, then we want to ignore the input
-        if (this[subtask.display_name.replaceLowerConcat(" ", "-") + "-vanished"] && size !== "v")
+        if (this[subtask_vanished_flag] && size !== "v")
             return;
         if (typeof (size) === "number") {
             this.loop_through_annotations(subtask, size, "=");
         }
         if (size == "v") {
-            if (this[subtask.display_name.replaceLowerConcat(" ", "-") + "-vanished"]) {
+            if (this[subtask_vanished_flag]) {
                 this.loop_through_annotations(subtask, this.cached_size, "=");
                 //flip the bool state
-                this[subtask.display_name.replaceLowerConcat(" ", "-") + "-vanished"] = !this[subtask.display_name.replaceLowerConcat(" ", "-") + "-vanished"];
+                this[subtask_vanished_flag] = !this[subtask_vanished_flag];
                 $("#annotation-resize-v").attr("style", "background-color: " + "rgba(100, 148, 237, 0.8)");
                 return;
             }
-            if (this[subtask.display_name.replaceLowerConcat(" ", "-") + "-vanished"] !== true) {
+            if (!this[subtask_vanished_flag]) {
                 this.loop_through_annotations(subtask, vanish_size, "=");
                 //flip the bool state
-                this[subtask.display_name.replaceLowerConcat(" ", "-") + "-vanished"] = !this[subtask.display_name.replaceLowerConcat(" ", "-") + "-vanished"];
+                this[subtask_vanished_flag] = !this[subtask_vanished_flag];
                 $("#annotation-resize-v").attr("style", "background-color: " + "#1c2d4d");
                 return;
             }
@@ -20177,8 +20177,8 @@ var KeypointSliderItem = /** @class */ (function (_super) {
         _this.mark_deprecated = kwargs.mark_deprecated;
         _this.slider_bar_id = _this.name.replaceLowerConcat(" ", "-");
         //if the config has a default value override, then use that instead
-        if (ulabel.config.hasOwnProperty(_this.name.replaceLowerConcat(" ", "_") + "_default_value")) {
-            kwargs.default_value = ulabel.config[_this.name.replaceLowerConcat(" ", "_") + "_default_value"];
+        if (ulabel.config.hasOwnProperty(_this.name.replaceLowerConcat(" ", "_", "_default_value"))) {
+            kwargs.default_value = ulabel.config[_this.name.replaceLowerConcat(" ", "_", "_default_value")];
         }
         //if this keypoint slider has a generic default, then use it
         //otherwise the defalut is 0
@@ -20279,7 +20279,8 @@ var KeypointSliderItem = /** @class */ (function (_super) {
         }
     };
     KeypointSliderItem.prototype.get_html = function () {
-        return "\n        <div class=\"keypoint-slider\">\n            <p class=\"tb-header\">".concat(this.name, "</p>\n            <div class=\"keypoint-slider-holder\">\n                <input \n                    type=\"range\" \n                    id=\"").concat(this.name.replaceLowerConcat(" ", "-"), "\" \n                    class=\"keypoint-slider\" value=\"").concat(this.default_value * 100, "\"\n                />\n                <label \n                    for=\"").concat(this.name.replaceLowerConcat(" ", "-"), "\" \n                    id=\"").concat(this.name.replaceLowerConcat(" ", "-"), "-label\"\n                    class=\"keypoint-slider-label\">\n                    ").concat(Math.round(this.default_value * 100), "%\n                </label>\n                <span class=\"increment\" >\n                    <a href=\"#\" class=\"button inc keypoint-slider-increment ").concat(this.name.replaceLowerConcat(" ", "-"), "-button\" >+</a>\n                    <a href=\"#\" class=\"button dec keypoint-slider-increment ").concat(this.name.replaceLowerConcat(" ", "-"), "-button\" >-</a>\n                </span>\n            </div>\n        </div>");
+        var component_name = this.name.replaceLowerConcat(" ", "-");
+        return "\n        <div class=\"keypoint-slider\">\n            <p class=\"tb-header\">".concat(this.name, "</p>\n            <div class=\"keypoint-slider-holder\">\n                <input \n                    type=\"range\" \n                    id=\"").concat(component_name, "\" \n                    class=\"keypoint-slider\" value=\"").concat(this.default_value * 100, "\"\n                />\n                <label \n                    for=\"").concat(component_name, "\" \n                    id=\"").concat(component_name, "-label\"\n                    class=\"keypoint-slider-label\">\n                    ").concat(Math.round(this.default_value * 100), "%\n                </label>\n                <span class=\"increment\" >\n                    <a href=\"#\" class=\"button inc keypoint-slider-increment ").concat(component_name, "-button\" >+</a>\n                    <a href=\"#\" class=\"button dec keypoint-slider-increment ").concat(component_name, "-button\" >-</a>\n                </span>\n            </div>\n        </div>");
     };
     return KeypointSliderItem;
 }(ToolboxItem));
