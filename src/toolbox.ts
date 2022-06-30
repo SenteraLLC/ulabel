@@ -332,12 +332,9 @@ export class AnnotationResizeItem extends ToolboxItem {
     constructor(ulabel: ULabel) {
         super();
         this.inner_HTML = `<p class="tb-header">Annotation Count</p>`;
-        
+        console.log(document.cookie)
         //get default keybinds
         this.keybind_configuration = ulabel.config.default_keybinds
-
-        //update cased size to default
-        this.cached_size = ulabel.config.default_annotation_size
 
         //grab current subtask for convinience
         let current_subtask_key = ulabel.state["current_subtask"];
@@ -346,26 +343,28 @@ export class AnnotationResizeItem extends ToolboxItem {
         //First check for a size cookie, if one isn't found then check the config
         //for a default annotation size. If neither are found it will use the size
         //that the annotation was saved as.
-        if (this.read_size_cookie(current_subtask) != null) {           
-            this.update_annotation_size(current_subtask, Number(this.read_size_cookie(current_subtask)));
-        } 
-        else if (ulabel.config.default_annotation_size != undefined) {          
-            this.update_annotation_size(current_subtask, ulabel.config.default_annotation_size);
+        for (let subtask in ulabel.subtasks) {
+            if (this.read_size_cookie(ulabel.subtasks[subtask]) != null) {
+                this.update_annotation_size(ulabel.subtasks[subtask], Number(this.read_size_cookie(ulabel.subtasks[subtask])));
+            }
+            else if (ulabel.config.default_annotation_size != undefined) {          
+                this.update_annotation_size(ulabel.subtasks[subtask], ulabel.config.default_annotation_size);
+            }
         }
 
         //event listener for buttons
         $(document).on("click", "a.butt-ann", (e) => {
             let button = $(e.currentTarget);
-            var current_subtask_key = ulabel.state["current_subtask"];
-            var current_subtask = ulabel.subtasks[current_subtask_key];
+            let current_subtask_key = ulabel.state["current_subtask"];
+            let current_subtask = ulabel.subtasks[current_subtask_key];
             const annotation_size = button.attr("id").slice(18);
             this.update_annotation_size(current_subtask, annotation_size);
             ulabel.redraw_all_annotations(null, null, false);
         })
         //event listener for keybinds
         $(document).on("keypress", (e) => {
-            var current_subtask_key = ulabel.state["current_subtask"];
-            var current_subtask = ulabel.subtasks[current_subtask_key];
+            let current_subtask_key = ulabel.state["current_subtask"];
+            let current_subtask = ulabel.subtasks[current_subtask_key];
             switch(e.key) {
                 case this.keybind_configuration.annotation_vanish.toUpperCase():
                     this.update_all_subtask_annotation_size(ulabel, "v");
@@ -398,6 +397,7 @@ export class AnnotationResizeItem extends ToolboxItem {
         const large_size = 5;
         const increment_size = 0.5;
         const vanish_size = 0.01;
+        let subtask_cashed_size = subtask.display_name.replaceLowerConcat(" ", "-", "-cashed-size");
 
         if (subtask == null) return;
         let subtask_vanished_flag = subtask.display_name.replaceLowerConcat(" ", "-", "-vanished");
@@ -411,7 +411,7 @@ export class AnnotationResizeItem extends ToolboxItem {
 
         if (size == "v") {
             if (this[subtask_vanished_flag]) { 
-                this.loop_through_annotations(subtask, this.cached_size, "=")
+                this.loop_through_annotations(subtask, this[subtask_cashed_size], "=")
                 //flip the bool state
                 this[subtask_vanished_flag] = !this[subtask_vanished_flag]
                 $("#annotation-resize-v").attr("style","background-color: "+"rgba(100, 148, 237, 0.8)");
@@ -430,11 +430,11 @@ export class AnnotationResizeItem extends ToolboxItem {
         switch(size) {
             case 's':
                 this.loop_through_annotations(subtask, small_size, "=")
-                this.cached_size = small_size
+                this[subtask_cashed_size] = small_size
                 break;           
             case 'l':
                 this.loop_through_annotations(subtask, large_size, "=")
-                this.cached_size = large_size
+                this[subtask_cashed_size] = large_size
                 break;
             case 'dec':
                 this.loop_through_annotations(subtask, increment_size, "-")
@@ -448,6 +448,7 @@ export class AnnotationResizeItem extends ToolboxItem {
     }
     //loops through all annotations in a subtask to change their line size
     public loop_through_annotations(subtask, size, operation) {
+        let subtask_cashed_size = subtask.display_name.replaceLowerConcat(" ", "-", "-cashed-size");
         if (operation == "=") {
             for (const annotation_id in subtask.annotations.access) {
                 subtask.annotations.access[annotation_id].line_size = size;
@@ -459,7 +460,7 @@ export class AnnotationResizeItem extends ToolboxItem {
             for (const annotation_id in subtask.annotations.access) {
                 subtask.annotations.access[annotation_id].line_size += size;
                 //temporary solution
-                this.cached_size = subtask.annotations.access[annotation_id].line_size
+                this[subtask_cashed_size] = subtask.annotations.access[annotation_id].line_size
             }
             this.set_size_cookie(subtask.annotations.access[subtask.annotations.ordering[0]].line_size, subtask)
             return;
@@ -474,7 +475,7 @@ export class AnnotationResizeItem extends ToolboxItem {
                     subtask.annotations.access[annotation_id].line_size -= size;
                 }
                 //temporary solution
-                this.cached_size = subtask.annotations.access[annotation_id].line_size
+                this[subtask_cashed_size] = subtask.annotations.access[annotation_id].line_size
             }
             this.set_size_cookie(subtask.annotations.access[subtask.annotations.ordering[0]].line_size, subtask)
             return;
@@ -499,7 +500,7 @@ export class AnnotationResizeItem extends ToolboxItem {
     }
 
     private read_size_cookie(subtask) {
-
+        console.log(subtask, "Read Size Cookie")
         let subtask_name = subtask.display_name.replaceLowerConcat(" ", "_");
 
         let cookie_name = subtask_name + "_size=";       

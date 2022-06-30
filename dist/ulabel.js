@@ -19825,21 +19825,22 @@ var AnnotationResizeItem = /** @class */ (function (_super) {
         var _this = _super.call(this) || this;
         _this.cached_size = 1.5;
         _this.inner_HTML = "<p class=\"tb-header\">Annotation Count</p>";
+        console.log(document.cookie);
         //get default keybinds
         _this.keybind_configuration = ulabel.config.default_keybinds;
-        //update cased size to default
-        _this.cached_size = ulabel.config.default_annotation_size;
         //grab current subtask for convinience
         var current_subtask_key = ulabel.state["current_subtask"];
         var current_subtask = ulabel.subtasks[current_subtask_key];
         //First check for a size cookie, if one isn't found then check the config
         //for a default annotation size. If neither are found it will use the size
         //that the annotation was saved as.
-        if (_this.read_size_cookie(current_subtask) != null) {
-            _this.update_annotation_size(current_subtask, Number(_this.read_size_cookie(current_subtask)));
-        }
-        else if (ulabel.config.default_annotation_size != undefined) {
-            _this.update_annotation_size(current_subtask, ulabel.config.default_annotation_size);
+        for (var subtask in ulabel.subtasks) {
+            if (_this.read_size_cookie(ulabel.subtasks[subtask]) != null) {
+                _this.update_annotation_size(ulabel.subtasks[subtask], Number(_this.read_size_cookie(ulabel.subtasks[subtask])));
+            }
+            else if (ulabel.config.default_annotation_size != undefined) {
+                _this.update_annotation_size(ulabel.subtasks[subtask], ulabel.config.default_annotation_size);
+            }
         }
         //event listener for buttons
         $(document).on("click", "a.butt-ann", function (e) {
@@ -19885,6 +19886,7 @@ var AnnotationResizeItem = /** @class */ (function (_super) {
         var large_size = 5;
         var increment_size = 0.5;
         var vanish_size = 0.01;
+        var subtask_cashed_size = subtask.display_name.replaceLowerConcat(" ", "-", "-cashed-size");
         if (subtask == null)
             return;
         var subtask_vanished_flag = subtask.display_name.replaceLowerConcat(" ", "-", "-vanished");
@@ -19897,7 +19899,7 @@ var AnnotationResizeItem = /** @class */ (function (_super) {
         }
         if (size == "v") {
             if (this[subtask_vanished_flag]) {
-                this.loop_through_annotations(subtask, this.cached_size, "=");
+                this.loop_through_annotations(subtask, this[subtask_cashed_size], "=");
                 //flip the bool state
                 this[subtask_vanished_flag] = !this[subtask_vanished_flag];
                 $("#annotation-resize-v").attr("style", "background-color: " + "rgba(100, 148, 237, 0.8)");
@@ -19915,11 +19917,11 @@ var AnnotationResizeItem = /** @class */ (function (_super) {
         switch (size) {
             case 's':
                 this.loop_through_annotations(subtask, small_size, "=");
-                this.cached_size = small_size;
+                this[subtask_cashed_size] = small_size;
                 break;
             case 'l':
                 this.loop_through_annotations(subtask, large_size, "=");
-                this.cached_size = large_size;
+                this[subtask_cashed_size] = large_size;
                 break;
             case 'dec':
                 this.loop_through_annotations(subtask, increment_size, "-");
@@ -19933,6 +19935,7 @@ var AnnotationResizeItem = /** @class */ (function (_super) {
     };
     //loops through all annotations in a subtask to change their line size
     AnnotationResizeItem.prototype.loop_through_annotations = function (subtask, size, operation) {
+        var subtask_cashed_size = subtask.display_name.replaceLowerConcat(" ", "-", "-cashed-size");
         if (operation == "=") {
             for (var annotation_id in subtask.annotations.access) {
                 subtask.annotations.access[annotation_id].line_size = size;
@@ -19944,7 +19947,7 @@ var AnnotationResizeItem = /** @class */ (function (_super) {
             for (var annotation_id in subtask.annotations.access) {
                 subtask.annotations.access[annotation_id].line_size += size;
                 //temporary solution
-                this.cached_size = subtask.annotations.access[annotation_id].line_size;
+                this[subtask_cashed_size] = subtask.annotations.access[annotation_id].line_size;
             }
             this.set_size_cookie(subtask.annotations.access[subtask.annotations.ordering[0]].line_size, subtask);
             return;
@@ -19960,7 +19963,7 @@ var AnnotationResizeItem = /** @class */ (function (_super) {
                     subtask.annotations.access[annotation_id].line_size -= size;
                 }
                 //temporary solution
-                this.cached_size = subtask.annotations.access[annotation_id].line_size;
+                this[subtask_cashed_size] = subtask.annotations.access[annotation_id].line_size;
             }
             this.set_size_cookie(subtask.annotations.access[subtask.annotations.ordering[0]].line_size, subtask);
             return;
@@ -19980,6 +19983,7 @@ var AnnotationResizeItem = /** @class */ (function (_super) {
         document.cookie = subtask_name + "_size=" + cookie_value + ";" + d.toUTCString() + ";path=/";
     };
     AnnotationResizeItem.prototype.read_size_cookie = function (subtask) {
+        console.log(subtask, "Read Size Cookie");
         var subtask_name = subtask.display_name.replaceLowerConcat(" ", "_");
         var cookie_name = subtask_name + "_size=";
         var cookie_array = document.cookie.split(";");
