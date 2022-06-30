@@ -15302,10 +15302,14 @@ class ULabel {
             ul.suggest_edits(null);
         });
         jquery_default()(document).on("keypress", (e) => {
+            
+            //check the key pressed against the delete annotation keybind in the config
             if (e.key == ul.config.delete_annotation_keybind) {
-                console.log(ul)
+
+                //check the active_annotation to make sure its not null
                 if (ul.subtasks[ul.state["current_subtask"]]["active_annotation"] != null) {
-                    console.log("delete attempted")
+
+                    //delete the active annotation
                     ul.delete_annotation(ul.subtasks[ul.state["current_subtask"]]["active_annotation"])
                 }
             }   
