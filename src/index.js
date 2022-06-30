@@ -779,7 +779,7 @@ export class ULabel {
             ul.suggest_edits(null);
         });
         $(document).on("keypress", (e) => {
-            if (e.key == "d") {
+            if (e.key == ul.config.delete_annotation_keybind) {
                 console.log(ul)
                 if (ul.subtasks[ul.state["current_subtask"]]["active_annotation"] != null) {
                     console.log("delete attempted")

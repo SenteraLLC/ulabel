@@ -11726,6 +11726,7 @@ var Configuration = /** @class */ (function () {
             "annotation_vanish": "v" //The v Key by default
         };
         this.default_annotation_size = 6;
+        this.delete_annotation_keybind = "d";
         this.filter_annotations_on_load = false;
         this.modify_config.apply(this, kwargs);
     }
@@ -15301,7 +15302,7 @@ class ULabel {
             ul.suggest_edits(null);
         });
         jquery_default()(document).on("keypress", (e) => {
-            if (e.key == "d") {
+            if (e.key == ul.config.delete_annotation_keybind) {
                 console.log(ul)
                 if (ul.subtasks[ul.state["current_subtask"]]["active_annotation"] != null) {
                     console.log("delete attempted")
