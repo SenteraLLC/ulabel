@@ -19605,11 +19605,17 @@ exports.KeypointSliderItem = exports.RecolorActiveItem = exports.AnnotationResiz
 var __1 = __webpack_require__(318);
 var configuration_1 = __webpack_require__(976);
 var toolboxDividerDiv = "<div class=toolbox-divider></div>";
-String.prototype.replaceLower = function (before, after) {
+/** Chains the replaceAll method and the toLowerCase method  */
+String.prototype.replaceLowerConcat = function (before, after, concat_string) {
+    if (concat_string === void 0) { concat_string = null; }
     this.replaceAll(before, after);
     this.toLowerCase();
+    if (typeof (concat_string) === "string") {
+        return this.concat(concat_string);
+    }
     return this;
 };
+"this".replaceLowerConcat(" ", "-");
 /**
  * Manager for toolbox. Contains ToolboxTab items.
  */
@@ -19884,23 +19890,23 @@ var AnnotationResizeItem = /** @class */ (function (_super) {
             return;
         //If the annotations are currently vanished and a button other than the vanish button is
         //pressed, then we want to ignore the input
-        if (this[subtask.display_name.replaceLower(" ", "-") + "-vanished"] && size !== "v")
+        if (this[subtask.display_name.replaceLowerConcat(" ", "-") + "-vanished"] && size !== "v")
             return;
         if (typeof (size) === "number") {
             this.loop_through_annotations(subtask, size, "=");
         }
         if (size == "v") {
-            if (this[subtask.display_name.replaceLower(" ", "-") + "-vanished"]) {
+            if (this[subtask.display_name.replaceLowerConcat(" ", "-") + "-vanished"]) {
                 this.loop_through_annotations(subtask, this.cached_size, "=");
                 //flip the bool state
-                this[subtask.display_name.replaceLower(" ", "-") + "-vanished"] = !this[subtask.display_name.replaceLower(" ", "-") + "-vanished"];
+                this[subtask.display_name.replaceLowerConcat(" ", "-") + "-vanished"] = !this[subtask.display_name.replaceLowerConcat(" ", "-") + "-vanished"];
                 $("#annotation-resize-v").attr("style", "background-color: " + "rgba(100, 148, 237, 0.8)");
                 return;
             }
-            if (this[subtask.display_name.replaceLower(" ", "-") + "-vanished"] !== true) {
+            if (this[subtask.display_name.replaceLowerConcat(" ", "-") + "-vanished"] !== true) {
                 this.loop_through_annotations(subtask, vanish_size, "=");
                 //flip the bool state
-                this[subtask.display_name.replaceLower(" ", "-") + "-vanished"] = !this[subtask.display_name.replaceLower(" ", "-") + "-vanished"];
+                this[subtask.display_name.replaceLowerConcat(" ", "-") + "-vanished"] = !this[subtask.display_name.replaceLowerConcat(" ", "-") + "-vanished"];
                 $("#annotation-resize-v").attr("style", "background-color: " + "#1c2d4d");
                 return;
             }
@@ -19970,11 +19976,11 @@ var AnnotationResizeItem = /** @class */ (function (_super) {
     AnnotationResizeItem.prototype.set_size_cookie = function (cookie_value, subtask) {
         var d = new Date();
         d.setTime(d.getTime() + (10000 * 24 * 60 * 60 * 1000));
-        var subtask_name = subtask.display_name.replaceLower(" ", "_");
+        var subtask_name = subtask.display_name.replaceLowerConcat(" ", "_");
         document.cookie = subtask_name + "_size=" + cookie_value + ";" + d.toUTCString() + ";path=/";
     };
     AnnotationResizeItem.prototype.read_size_cookie = function (subtask) {
-        var subtask_name = subtask.display_name.replaceLower(" ", "_");
+        var subtask_name = subtask.display_name.replaceLowerConcat(" ", "_");
         var cookie_name = subtask_name + "_size=";
         var cookie_array = document.cookie.split(";");
         for (var i = 0; i < cookie_array.length; i++) {
@@ -20169,10 +20175,10 @@ var KeypointSliderItem = /** @class */ (function (_super) {
         _this.filter_function = kwargs.filter_function;
         _this.get_confidence = kwargs.confidence_function;
         _this.mark_deprecated = kwargs.mark_deprecated;
-        _this.slider_bar_id = _this.name.replaceLower(" ", "-");
+        _this.slider_bar_id = _this.name.replaceLowerConcat(" ", "-");
         //if the config has a default value override, then use that instead
-        if (ulabel.config.hasOwnProperty(_this.name.replaceLower(" ", "_") + "_default_value")) {
-            kwargs.default_value = ulabel.config[_this.name.replaceLower(" ", "_") + "_default_value"];
+        if (ulabel.config.hasOwnProperty(_this.name.replaceLowerConcat(" ", "_") + "_default_value")) {
+            kwargs.default_value = ulabel.config[_this.name.replaceLowerConcat(" ", "_") + "_default_value"];
         }
         //if this keypoint slider has a generic default, then use it
         //otherwise the defalut is 0
@@ -20195,13 +20201,13 @@ var KeypointSliderItem = /** @class */ (function (_super) {
         }
         //The annotations are drawn for the first time after the toolbox is loaded
         //so we don't actually have to redraw the annotations after deprecating them.
-        $(document).on("input", "#" + _this.name.replaceLower(" ", "-"), function (e) {
+        $(document).on("input", "#" + _this.name.replaceLowerConcat(" ", "-"), function (e) {
             var filter_value = e.currentTarget.value / 100;
             _this.deprecate_annotations(ulabel, filter_value);
         });
-        $(document).on("click", "a." + _this.name.replaceLower(" ", "-") + "-button", function (e) {
+        $(document).on("click", "a." + _this.name.replaceLowerConcat(" ", "-") + "-button", function (e) {
             var button_text = e.currentTarget.outerText;
-            var slider = document.getElementById(_this.name.replaceLower(" ", "-"));
+            var slider = document.getElementById(_this.name.replaceLowerConcat(" ", "-"));
             if (button_text == "+") {
                 slider.value = (slider.valueAsNumber + 1).toString();
             }
@@ -20219,11 +20225,11 @@ var KeypointSliderItem = /** @class */ (function (_super) {
         //event listener for keybinds
         $(document).on("keypress", function (e) {
             if (e.key == kwargs.keybinds.increment) {
-                var button = document.getElementsByClassName(_this.name.replaceLower(" ", "-") + "-button inc")[0];
+                var button = document.getElementsByClassName(_this.name.replaceLowerConcat(" ", "-") + "-button inc")[0];
                 button.click();
             }
             if (e.key == kwargs.keybinds.decrement) {
-                var button = document.getElementsByClassName(_this.name.replaceLower(" ", "-") + "-button dec")[0];
+                var button = document.getElementsByClassName(_this.name.replaceLowerConcat(" ", "-") + "-button dec")[0];
                 button.click();
             }
         });
@@ -20273,7 +20279,7 @@ var KeypointSliderItem = /** @class */ (function (_super) {
         }
     };
     KeypointSliderItem.prototype.get_html = function () {
-        return "\n        <div class=\"keypoint-slider\">\n            <p class=\"tb-header\">".concat(this.name, "</p>\n            <div class=\"keypoint-slider-holder\">\n                <input \n                    type=\"range\" \n                    id=\"").concat(this.name.replaceLower(" ", "-"), "\" \n                    class=\"keypoint-slider\" value=\"").concat(this.default_value * 100, "\"\n                />\n                <label \n                    for=\"").concat(this.name.replaceLower(" ", "-"), "\" \n                    id=\"").concat(this.name.replaceLower(" ", "-"), "-label\"\n                    class=\"keypoint-slider-label\">\n                    ").concat(Math.round(this.default_value * 100), "%\n                </label>\n                <span class=\"increment\" >\n                    <a href=\"#\" class=\"button inc keypoint-slider-increment ").concat(this.name.replaceLower(" ", "-"), "-button\" >+</a>\n                    <a href=\"#\" class=\"button dec keypoint-slider-increment ").concat(this.name.replaceLower(" ", "-"), "-button\" >-</a>\n                </span>\n            </div>\n        </div>");
+        return "\n        <div class=\"keypoint-slider\">\n            <p class=\"tb-header\">".concat(this.name, "</p>\n            <div class=\"keypoint-slider-holder\">\n                <input \n                    type=\"range\" \n                    id=\"").concat(this.name.replaceLowerConcat(" ", "-"), "\" \n                    class=\"keypoint-slider\" value=\"").concat(this.default_value * 100, "\"\n                />\n                <label \n                    for=\"").concat(this.name.replaceLowerConcat(" ", "-"), "\" \n                    id=\"").concat(this.name.replaceLowerConcat(" ", "-"), "-label\"\n                    class=\"keypoint-slider-label\">\n                    ").concat(Math.round(this.default_value * 100), "%\n                </label>\n                <span class=\"increment\" >\n                    <a href=\"#\" class=\"button inc keypoint-slider-increment ").concat(this.name.replaceLowerConcat(" ", "-"), "-button\" >+</a>\n                    <a href=\"#\" class=\"button dec keypoint-slider-increment ").concat(this.name.replaceLowerConcat(" ", "-"), "-button\" >-</a>\n                </span>\n            </div>\n        </div>");
     };
     return KeypointSliderItem;
 }(ToolboxItem));

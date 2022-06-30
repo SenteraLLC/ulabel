@@ -3,9 +3,15 @@ import { Configuration } from "./configuration";
 import { ULabelAnnotation } from "./annotation";
 
 const toolboxDividerDiv = "<div class=toolbox-divider></div>"
-String.prototype.replaceLower = function(before: string, after: string) {
+
+/** Chains the replaceAll method and the toLowerCase method  */
+String.prototype.replaceLowerConcat = function(before: string, after: string, concat_string: string = null) {
     this.replaceAll(before, after)
     this.toLowerCase()
+    
+    if (typeof(concat_string) === "string") {
+        return this.concat(concat_string)
+    }
     return this
 }
 
@@ -396,24 +402,24 @@ export class AnnotationResizeItem extends ToolboxItem {
 
         //If the annotations are currently vanished and a button other than the vanish button is
         //pressed, then we want to ignore the input
-        if (this[subtask.display_name.replaceLower(" ", "-") + "-vanished"] && size !== "v") return;
+        if (this[subtask.display_name.replaceLowerConcat(" ", "-", "-vanished")] && size !== "v") return;
 
         if (typeof(size) === "number") {
             this.loop_through_annotations(subtask, size, "=");
         }
 
         if (size == "v") {
-            if (this[subtask.display_name.replaceLower(" ", "-") + "-vanished"]) { 
+            if (this[subtask.display_name.replaceLowerConcat(" ", "-", "-vanished")]) { 
                 this.loop_through_annotations(subtask, this.cached_size, "=")
                 //flip the bool state
-                this[subtask.display_name.replaceLower(" ", "-") + "-vanished"] = !this[subtask.display_name.replaceLower(" ", "-") + "-vanished"]
+                this[subtask.display_name.replaceLowerConcat(" ", "-", "-vanished")] = !this[subtask.display_name.replaceLowerConcat(" ", "-", "-vanished")]
                 $("#annotation-resize-v").attr("style","background-color: "+"rgba(100, 148, 237, 0.8)");
                 return;
             }
-            if (this[subtask.display_name.replaceLower(" ", "-") + "-vanished"] !== true) {
+            if (this[subtask.display_name.replaceLowerConcat(" ", "-", "-vanished")] !== true) {
                 this.loop_through_annotations(subtask, vanish_size, "=")
                 //flip the bool state
-                this[subtask.display_name.replaceLower(" ", "-") + "-vanished"] = !this[subtask.display_name.replaceLower(" ", "-") + "-vanished"]
+                this[subtask.display_name.replaceLowerConcat(" ", "-", "-vanished")] = !this[subtask.display_name.replaceLowerConcat(" ", "-", "-vanished")]
                 $("#annotation-resize-v").attr("style","background-color: "+"#1c2d4d");
                 return;
             }
@@ -486,14 +492,14 @@ export class AnnotationResizeItem extends ToolboxItem {
         let d = new Date();
         d.setTime(d.getTime() + (10000 * 24 * 60 * 60 * 1000));
 
-        let subtask_name = subtask.display_name.replaceLower(" ", "_");
+        let subtask_name = subtask.display_name.replaceLowerConcat(" ", "_");
 
         document.cookie = subtask_name + "_size=" + cookie_value + ";" + d.toUTCString() + ";path=/";
     }
 
     private read_size_cookie(subtask) {
 
-        let subtask_name = subtask.display_name.replaceLower(" ", "_");
+        let subtask_name = subtask.display_name.replaceLowerConcat(" ", "_");
 
         let cookie_name = subtask_name + "_size=";       
 
@@ -783,11 +789,11 @@ export class KeypointSliderItem extends ToolboxItem {
         this.filter_function = kwargs.filter_function;
         this.get_confidence = kwargs.confidence_function;
         this.mark_deprecated = kwargs.mark_deprecated;
-        this.slider_bar_id = this.name.replaceLower(" ", "-");
+        this.slider_bar_id = this.name.replaceLowerConcat(" ", "-");
         
         //if the config has a default value override, then use that instead
-        if (ulabel.config.hasOwnProperty(this.name.replaceLower(" ", "_") + "_default_value")) {
-            kwargs.default_value = ulabel.config[this.name.replaceLower(" ", "_") + "_default_value"];
+        if (ulabel.config.hasOwnProperty(this.name.replaceLowerConcat(" ", "_", "_default_value"))) {
+            kwargs.default_value = ulabel.config[this.name.replaceLowerConcat(" ", "_", "_default_value")];
         }
 
         //if this keypoint slider has a generic default, then use it
@@ -817,14 +823,14 @@ export class KeypointSliderItem extends ToolboxItem {
         //The annotations are drawn for the first time after the toolbox is loaded
         //so we don't actually have to redraw the annotations after deprecating them.
         
-        $(document).on("input", "#" + this.name.replaceLower(" ", "-"), (e) => {
+        $(document).on("input", "#" + this.name.replaceLowerConcat(" ", "-"), (e) => {
             let filter_value = e.currentTarget.value / 100;
             this.deprecate_annotations(ulabel, filter_value);
         })
 
-        $(document).on("click", "a." + this.name.replaceLower(" ", "-") + "-button", (e) => {
+        $(document).on("click", "a." + this.name.replaceLowerConcat(" ", "-") + "-button", (e) => {
             let button_text = e.currentTarget.outerText
-            let slider = <HTMLInputElement> document.getElementById(this.name.replaceLower(" ", "-"))
+            let slider = <HTMLInputElement> document.getElementById(this.name.replaceLowerConcat(" ", "-"))
 
             if (button_text == "+") {
                 slider.value = (slider.valueAsNumber + 1).toString();
@@ -845,12 +851,12 @@ export class KeypointSliderItem extends ToolboxItem {
         $(document).on("keypress", (e) => {
 
             if (e.key == kwargs.keybinds.increment) {
-                let button = <HTMLAnchorElement> document.getElementsByClassName(this.name.replaceLower(" ", "-") + "-button inc")[0]
+                let button = <HTMLAnchorElement> document.getElementsByClassName(this.name.replaceLowerConcat(" ", "-") + "-button inc")[0]
                 button.click()
             }
 
             if (e.key == kwargs.keybinds.decrement) {
-                let button = <HTMLAnchorElement> document.getElementsByClassName(this.name.replaceLower(" ", "-") + "-button dec")[0]
+                let button = <HTMLAnchorElement> document.getElementsByClassName(this.name.replaceLowerConcat(" ", "-") + "-button dec")[0]
                 button.click()
             }
         })
@@ -919,18 +925,18 @@ export class KeypointSliderItem extends ToolboxItem {
             <div class="keypoint-slider-holder">
                 <input 
                     type="range" 
-                    id="${this.name.replaceLower(" ", "-")}" 
+                    id="${this.name.replaceLowerConcat(" ", "-")}" 
                     class="keypoint-slider" value="${this.default_value * 100}"
                 />
                 <label 
-                    for="${this.name.replaceLower(" ", "-")}" 
-                    id="${this.name.replaceLower(" ", "-")}-label"
+                    for="${this.name.replaceLowerConcat(" ", "-")}" 
+                    id="${this.name.replaceLowerConcat(" ", "-")}-label"
                     class="keypoint-slider-label">
                     ${Math.round(this.default_value * 100)}%
                 </label>
                 <span class="increment" >
-                    <a href="#" class="button inc keypoint-slider-increment ${this.name.replaceLower(" ", "-")}-button" >+</a>
-                    <a href="#" class="button dec keypoint-slider-increment ${this.name.replaceLower(" ", "-")}-button" >-</a>
+                    <a href="#" class="button inc keypoint-slider-increment ${this.name.replaceLowerConcat(" ", "-")}-button" >+</a>
+                    <a href="#" class="button dec keypoint-slider-increment ${this.name.replaceLowerConcat(" ", "-")}-button" >-</a>
                 </span>
             </div>
         </div>`
