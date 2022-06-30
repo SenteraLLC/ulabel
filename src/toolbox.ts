@@ -343,20 +343,20 @@ export class AnnotationResizeItem extends ToolboxItem {
         //for a default annotation size. If neither are found it will use the size
         //that the annotation was saved as.
         for (let subtask in ulabel.subtasks) {
-            let cashed_size_property = ulabel.subtasks[subtask].display_name.replaceLowerConcat(" ", "-", "-cashed-size")
+            let cached_size_property = ulabel.subtasks[subtask].display_name.replaceLowerConcat(" ", "-", "-cached-size")
             let size_cookie = this.read_size_cookie(ulabel.subtasks[subtask])
             if ((size_cookie != null) && size_cookie != "NaN") {
                 this.update_annotation_size(ulabel.subtasks[subtask], Number(size_cookie));
-                this[cashed_size_property] = Number(size_cookie)
+                this[cached_size_property] = Number(size_cookie)
             }
             else if (ulabel.config.default_annotation_size != undefined) {          
                 this.update_annotation_size(ulabel.subtasks[subtask], ulabel.config.default_annotation_size);
-                this[cashed_size_property] = ulabel.config.default_annotation_size
+                this[cached_size_property] = ulabel.config.default_annotation_size
             } 
             else {
                 const DEFAULT_SIZE = 5
                 this.update_annotation_size(ulabel.subtasks[subtask], DEFAULT_SIZE)
-                this[cashed_size_property] = DEFAULT_SIZE
+                this[cached_size_property] = DEFAULT_SIZE
             }
         }
 
@@ -405,7 +405,7 @@ export class AnnotationResizeItem extends ToolboxItem {
         const large_size = 5;
         const increment_size = 0.5;
         const vanish_size = 0.01;
-        let subtask_cashed_size = subtask.display_name.replaceLowerConcat(" ", "-", "-cashed-size");
+        let subtask_cached_size = subtask.display_name.replaceLowerConcat(" ", "-", "-cached-size");
 
         if (subtask == null) return;
         let subtask_vanished_flag = subtask.display_name.replaceLowerConcat(" ", "-", "-vanished");
@@ -419,7 +419,7 @@ export class AnnotationResizeItem extends ToolboxItem {
 
         if (size == "v") {
             if (this[subtask_vanished_flag]) { 
-                this.loop_through_annotations(subtask, this[subtask_cashed_size], "=")
+                this.loop_through_annotations(subtask, this[subtask_cached_size], "=")
                 //flip the bool state
                 this[subtask_vanished_flag] = !this[subtask_vanished_flag]
                 $("#annotation-resize-v").attr("style","background-color: "+"rgba(100, 148, 237, 0.8)");
@@ -438,11 +438,11 @@ export class AnnotationResizeItem extends ToolboxItem {
         switch(size) {
             case 's':
                 this.loop_through_annotations(subtask, small_size, "=")
-                this[subtask_cashed_size] = small_size
+                this[subtask_cached_size] = small_size
                 break;           
             case 'l':
                 this.loop_through_annotations(subtask, large_size, "=")
-                this[subtask_cashed_size] = large_size
+                this[subtask_cached_size] = large_size
                 break;
             case 'dec':
                 this.loop_through_annotations(subtask, increment_size, "-")
@@ -456,7 +456,7 @@ export class AnnotationResizeItem extends ToolboxItem {
     }
     //loops through all annotations in a subtask to change their line size
     public loop_through_annotations(subtask, size, operation) {
-        let subtask_cashed_size = subtask.display_name.replaceLowerConcat(" ", "-", "-cashed-size");
+        let subtask_cached_size = subtask.display_name.replaceLowerConcat(" ", "-", "-cached-size");
         if (operation == "=") {
             for (const annotation_id in subtask.annotations.access) {
                 subtask.annotations.access[annotation_id].line_size = size;
@@ -468,7 +468,7 @@ export class AnnotationResizeItem extends ToolboxItem {
             for (const annotation_id in subtask.annotations.access) {
                 subtask.annotations.access[annotation_id].line_size += size;
                 //temporary solution
-                this[subtask_cashed_size] = subtask.annotations.access[annotation_id].line_size
+                this[subtask_cached_size] = subtask.annotations.access[annotation_id].line_size
             }
             this.set_size_cookie(subtask.annotations.access[subtask.annotations.ordering[0]].line_size, subtask)
             return;
@@ -483,7 +483,7 @@ export class AnnotationResizeItem extends ToolboxItem {
                     subtask.annotations.access[annotation_id].line_size -= size;
                 }
                 //temporary solution
-                this[subtask_cashed_size] = subtask.annotations.access[annotation_id].line_size
+                this[subtask_cached_size] = subtask.annotations.access[annotation_id].line_size
             }
             this.set_size_cookie(subtask.annotations.access[subtask.annotations.ordering[0]].line_size, subtask)
             return;
