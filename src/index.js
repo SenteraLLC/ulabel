@@ -830,7 +830,6 @@ export class ULabel {
         });
         $(document).on("mouseenter", "div.global_edit_suggestion", (e) => {
             let active_annotation = ul.subtasks[ul.state["current_subtask"]]["active_annotation"]
-            console.log(ul)
             let confidence = 0;
             for (let idx in ul.subtasks[ul.state["current_subtask"]].annotations.access[active_annotation].classification_payloads) {
                 let loop_confidence = ul.subtasks[ul.state["current_subtask"]].annotations.access[active_annotation].classification_payloads[idx].confidence
@@ -838,7 +837,6 @@ export class ULabel {
                     confidence = loop_confidence
                 }
             }
-            console.log(confidence)
             $(".annotation-confidence-value").text(confidence)
         })
         $(document).on("mouseenter", "div.fad_annotation_rows div.fad_row", (e) => {
