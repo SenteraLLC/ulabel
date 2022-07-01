@@ -828,8 +828,13 @@ export class ULabel {
             // Show idd
             ul.show_id_dialog(e.pageX, e.pageY, e.target.id.substring("reclf__".length), false, true);
         });
+
+        //Whenever the mouse makes the dialogs show up, update the displayed annotation confidence.
         $(document).on("mouseenter", "div.global_edit_suggestion", (e) => {
+            //Grab the currently active annotation
             let active_annotation = ul.subtasks[ul.state["current_subtask"]]["active_annotation"]
+
+            //Loop through the classification payload to get the active annotation's confidence
             let confidence = 0;
             for (let idx in ul.subtasks[ul.state["current_subtask"]].annotations.access[active_annotation].classification_payloads) {
                 let loop_confidence = ul.subtasks[ul.state["current_subtask"]].annotations.access[active_annotation].classification_payloads[idx].confidence
@@ -837,6 +842,8 @@ export class ULabel {
                     confidence = loop_confidence
                 }
             }
+
+            //Update the display dialog with the annotation's confidence
             $(".annotation-confidence-value").text(confidence)
         })
         $(document).on("mouseenter", "div.fad_annotation_rows div.fad_row", (e) => {

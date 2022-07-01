@@ -15120,19 +15120,16 @@ class ULabel {
             });
 
             // Register these dialogs with each subtask
-            ul.subtasks[stkey]["state"]["visible_dialogs"][local_id] = {
-                "left": 0.0,
-                "top": 0.0,
-                "pin": "center"
-            };
-            ul.subtasks[stkey]["state"]["visible_dialogs"][global_id] = {
-                "left": 0.0,
-                "top": 0.0,
-                "pin": "center"
-            };
-
-
-
+            // ul.subtasks[stkey]["state"]["visible_dialogs"][local_id] = {
+            //     "left": 0.0,
+            //     "top": 0.0,
+            //     "pin": "center"
+            // };
+            // ul.subtasks[stkey]["state"]["visible_dialogs"][global_id] = {
+            //     "left": 0.0,
+            //     "top": 0.0,
+            //     "pin": "center"
+            // };
         }
     }   
 
@@ -15351,8 +15348,13 @@ class ULabel {
             // Show idd
             ul.show_id_dialog(e.pageX, e.pageY, e.target.id.substring("reclf__".length), false, true);
         });
+
+        //Whenever the mouse makes the dialogs show up, update the displayed annotation confidence.
         jquery_default()(document).on("mouseenter", "div.global_edit_suggestion", (e) => {
+            //Grab the currently active annotation
             let active_annotation = ul.subtasks[ul.state["current_subtask"]]["active_annotation"]
+
+            //Loop through the classification payload to get the active annotation's confidence
             let confidence = 0;
             for (let idx in ul.subtasks[ul.state["current_subtask"]].annotations.access[active_annotation].classification_payloads) {
                 let loop_confidence = ul.subtasks[ul.state["current_subtask"]].annotations.access[active_annotation].classification_payloads[idx].confidence
@@ -15360,6 +15362,8 @@ class ULabel {
                     confidence = loop_confidence
                 }
             }
+
+            //Update the display dialog with the annotation's confidence
             jquery_default()(".annotation-confidence-value").text(confidence)
         })
         jquery_default()(document).on("mouseenter", "div.fad_annotation_rows div.fad_row", (e) => {
