@@ -595,21 +595,6 @@ export class ULabel {
                 "font-size": "1.2em",
                 "margin-left": "-1.4em",
             });
-
-            // Register these dialogs with each subtask
-            ul.subtasks[stkey]["state"]["visible_dialogs"][local_id] = {
-                "left": 0.0,
-                "top": 0.0,
-                "pin": "center"
-            };
-            ul.subtasks[stkey]["state"]["visible_dialogs"][global_id] = {
-                "left": 0.0,
-                "top": 0.0,
-                "pin": "center"
-            };
-
-
-
         }
     }   
 
