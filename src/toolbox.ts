@@ -218,6 +218,9 @@ export class ZoomPanToolboxItem extends ToolboxItem {
             </div>
             <div class="recenter-cont" style="text-align: center;">
                 <a href="#" id="recenter-button">Re-Center</a>
+                <a href="#" id="toggle-crop-button">Toggle Crop</a>
+            </div>
+            <div class="toggle-crop-cont style="text-align: center;">
             </div>
             ${this.frame_range}
         </div>

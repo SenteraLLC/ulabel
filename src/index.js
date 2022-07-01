@@ -1304,11 +1304,13 @@ export class ULabel {
         task_meta = null,
         annotation_meta = null,
         px_per_px = 1,
-        initial_crop = null,
+        initial_crop = null, //{top: #, left: #, height: #, width: #,}
         initial_line_size = 4,
         instructions_url = null,
         config_data = null
     ) {
+        console.log(initial_crop)
+        console.log(this)
         // Unroll safe default arguments
         if (task_meta == null) { task_meta = {}; }
         if (annotation_meta == null) { annotation_meta = {}; }
