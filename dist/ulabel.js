@@ -17220,16 +17220,6 @@ class ULabel {
         jquery_default()("#" + idd_id_front).css("display", "none");
     }
 
-    show_id_confidence_dialog() {
-        let esid = "edit_suggestion__" + this.state["current_subtask"];
-
-        // active annotation ul.subtasks[ul.state["current_subtask"]]["active_annotation"]
-    }
-
-    hide_id_confidence_dialog() {
-
-    }
-
 
     // ================= Annotation Utilities =================
 
