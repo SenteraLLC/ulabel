@@ -552,6 +552,67 @@ export class ULabel {
 
     }
 
+    static build_confidence_dialog(ul) {
+        for (const stkey in ul.subtasks) {
+            let local_id = `annotation_confidence__${stkey}`;
+            let global_id = `global_annotation_confidence__${stkey}`;
+
+            let subtask_dialog_container_jq = $("#dialogs__" + stkey);
+            let global_edit_suggestion_jq = $("#global_edit_suggestion__" + stkey);
+
+            //Local confidence dialog
+            subtask_dialog_container_jq.append(`
+                <p id="${local_id}" class="annotation-confidence editable"></p>
+            `);
+            $("#" + local_id).css({
+                "height": ul.config["edit_handle_size"] + "px",
+                "width": ul.config["edit_handle_size"] + "px",
+            });
+
+            // Global edit suggestion
+            let id_edit = "";
+            let mcm_ind = "";
+            if (!ul.subtasks[stkey]["single_class_mode"]) {
+                id_edit = `--><a href="#" class="reid_suggestion global_sub_suggestion gedit-target"></a><!--`;
+                mcm_ind = " mcm";
+            }
+            global_edit_suggestion_jq.append(`
+                <div id="${global_id}" class="annotation-confidence gedit-target${mcm_ind}">
+                    <p class="annotation-confidence-title" style="margin: 0.25em; margin-top: 1em; padding-top: 0.3em; opacity: 1;">Annotation Confidence:</p>
+                    <p class="annotation-confidence-value" style="margin: 0.25em; opacity: 1;">
+                    ${ul.subtasks[ul.state["current_subtask"]]["active_annotation"]}
+                    </p>
+                </div>
+            `);
+            $("#" + global_id).css({
+                "background-color": "black",
+                "color": "white",
+                "opacity": "0.6",
+                "height": "3em",
+                "width": "14.5em",
+                "margin-top": "-9.5em",
+                "border-radius": "1em",
+                "font-size": "1.2em",
+                "margin-left": "-1.4em",
+            });
+
+            // Register these dialogs with each subtask
+            ul.subtasks[stkey]["state"]["visible_dialogs"][local_id] = {
+                "left": 0.0,
+                "top": 0.0,
+                "pin": "center"
+            };
+            ul.subtasks[stkey]["state"]["visible_dialogs"][global_id] = {
+                "left": 0.0,
+                "top": 0.0,
+                "pin": "center"
+            };
+
+
+
+        }
+    }   
+
     static create_listeners(ul) {
 
         // ================= Mouse Events in the ID Dialog ================= 
@@ -767,6 +828,19 @@ export class ULabel {
             // Show idd
             ul.show_id_dialog(e.pageX, e.pageY, e.target.id.substring("reclf__".length), false, true);
         });
+        $(document).on("mouseenter", "div.global_edit_suggestion", (e) => {
+            let active_annotation = ul.subtasks[ul.state["current_subtask"]]["active_annotation"]
+            console.log(ul)
+            let confidence = 0;
+            for (let idx in ul.subtasks[ul.state["current_subtask"]].annotations.access[active_annotation].classification_payloads) {
+                let loop_confidence = ul.subtasks[ul.state["current_subtask"]].annotations.access[active_annotation].classification_payloads[idx].confidence
+                if (loop_confidence > confidence) {
+                    confidence = loop_confidence
+                }
+            }
+            console.log(confidence)
+            $(".annotation-confidence-value").text(confidence)
+        })
         $(document).on("mouseenter", "div.fad_annotation_rows div.fad_row", (e) => {
             // Show thumbnail for idd
             ul.suggest_edits(null, $(e.currentTarget).attr("id").substring("row__".length));
@@ -1477,6 +1551,9 @@ export class ULabel {
 
             // Add the HTML for the edit suggestion to the window
             ULabel.build_edit_suggestion(that);
+
+            // Add dialo to show annotation confidence
+            ULabel.build_confidence_dialog(that);
 
             // Create listers to manipulate and export this object
             ULabel.create_listeners(that);
@@ -2618,6 +2695,16 @@ export class ULabel {
         this.subtasks[this.state["current_subtask"]]["state"]["idd_associated_annotation"] = null;
         $("#" + idd_id).css("display", "none");
         $("#" + idd_id_front).css("display", "none");
+    }
+
+    show_id_confidence_dialog() {
+        let esid = "edit_suggestion__" + this.state["current_subtask"];
+
+        // active annotation ul.subtasks[ul.state["current_subtask"]]["active_annotation"]
+    }
+
+    hide_id_confidence_dialog() {
+
     }
 
 
