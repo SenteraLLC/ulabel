@@ -779,7 +779,7 @@ export class ULabel {
             ul.suggest_edits(null);
         });
         $(document).on("keypress", (e) => {
-            
+
             //check the key pressed against the delete annotation keybind in the config
             if (e.key == ul.config.delete_annotation_keybind) {
 
@@ -4220,7 +4220,7 @@ export class ULabel {
      */  
     suggest_edits(mouse_event = null, nonspatial_id = null) {
         let best_candidate;
-        console.log(this.subtasks[this.state["current_subtask"]]["active_annotation"]);
+
         if (nonspatial_id == null) {
             if (mouse_event == null) {
                 mouse_event = this.state["last_move"];
