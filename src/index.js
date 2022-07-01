@@ -1552,7 +1552,7 @@ export class ULabel {
             // Add the HTML for the edit suggestion to the window
             ULabel.build_edit_suggestion(that);
 
-            // Add dialo to show annotation confidence
+            // Add dialog to show annotation confidence
             ULabel.build_confidence_dialog(that);
 
             // Create listers to manipulate and export this object
