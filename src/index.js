@@ -293,6 +293,9 @@ export class ULabel {
         )
         $("#" + ul.config["container_id"]).html(tool_html)
 
+        if (ul.config.initial_crop == null) {
+            document.getElementById("toggle-crop-button").style.display = "none";
+        }
 
         // Build toolbox for the current subtask only
         const crst = Object.keys(ul.subtasks)[0];
