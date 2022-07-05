@@ -293,10 +293,6 @@ export class ULabel {
         )
         $("#" + ul.config["container_id"]).html(tool_html)
 
-        if (ul.config.initial_crop == null) {
-            document.getElementById("toggle-crop-button").style.display = "none";
-        }
-
         // Build toolbox for the current subtask only
         const crst = Object.keys(ul.subtasks)[0];
 
@@ -1364,7 +1360,6 @@ export class ULabel {
         instructions_url = null,
         config_data = null
     ) {
-        console.log(initial_crop)
         console.log(this)
         // Unroll safe default arguments
         if (task_meta == null) { task_meta = {}; }
