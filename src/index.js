@@ -1562,9 +1562,8 @@ export class ULabel {
             else {
                 this.raise_error(`Initial crop must contain properties "width", "height", "left", and "top". Ignoring.`, ULabel.elvl_info);
             }
-        } else {
-            this.show_whole_image();
         }
+        this.show_whole_image();
         return;
     }
 
