@@ -16059,35 +16059,35 @@ class ULabel {
 
     // The zoom ratio which fixes the entire image exactly in the viewport
     show_initial_crop() {
-        let wdt = this.config["image_width"];
-        let hgt = this.config["image_height"];
-        let lft_cntr = 0;
-        let top_cntr = 0;
-        let initcrp = this.config["initial_crop"];
-        if (initcrp != null) {
+        let initial_crop = this.config["initial_crop"];
+        if (initial_crop != null) {
             if (
-                "width" in initcrp &&
-                "height" in initcrp &&
-                "left" in initcrp &&
-                "top" in initcrp
+                "width" in initial_crop &&
+                "height" in initial_crop &&
+                "left" in initial_crop &&
+                "top" in initial_crop
             ) {
-                initcrp["left"] = Math.max(initcrp["left"], 0);
-                initcrp["top"] = Math.max(initcrp["top"], 0);
-                initcrp["width"] = Math.min(initcrp["width"], wdt - initcrp["left"]);
-                initcrp["height"] = Math.min(initcrp["height"], hgt - initcrp["top"]);
+                initial_crop["left"] = Math.max(initial_crop["left"], 0);
+                initial_crop["top"] = Math.max(initial_crop["top"], 0);
+                initial_crop["width"] = Math.min(initial_crop["width"], wdt - initial_crop["left"]);
+                initial_crop["height"] = Math.min(initial_crop["height"], hgt - initial_crop["top"]);
 
-                wdt = initcrp["width"];
-                hgt = initcrp["height"];
+                wdt = initial_crop["width"];
+                hgt = initial_crop["height"];
 
-                lft_cntr = initcrp["left"] + initcrp["width"] / 2;
-                top_cntr = initcrp["top"] + initcrp["height"] / 2;
+                lft_cntr = initial_crop["left"] + initial_crop["width"] / 2;
+                top_cntr = initial_crop["top"] + initial_crop["height"] / 2;
+
+                this.state["zoom_val"] = Math.min(this.get_viewport_height_ratio(hgt), this.get_viewport_width_ratio(wdt));
+                this.rezoom(lft_cntr, top_cntr, true);
+                return;
             }
             else {
                 this.raise_error(`Initial crop must contain properties "width", "height", "left", and "top". Ignoring.`, ULabel.elvl_info);
             }
+        } else {
+            this.show_whole_image();
         }
-        this.state["zoom_val"] = Math.min(this.get_viewport_height_ratio(hgt), this.get_viewport_width_ratio(wdt));
-        this.rezoom(lft_cntr, top_cntr, true);
         return;
     }
 
