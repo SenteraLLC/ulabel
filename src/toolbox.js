@@ -133,6 +133,9 @@ var ZoomPanToolboxItem = /** @class */ (function (_super) {
         var _this = _super.call(this) || this;
         _this.ulabel = ulabel;
         _this.set_frame_range(ulabel);
+        $(document).on("click", "#recenter-button", function () {
+            ulabel.show_initial_crop();
+        });
         return _this;
     }
     ZoomPanToolboxItem.prototype.set_frame_range = function (ulabel) {

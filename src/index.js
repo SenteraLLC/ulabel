@@ -706,10 +706,6 @@ export class ULabel {
             ul.redraw_demo();
         });
 
-        $(document).on("click", "#recenter-button", () => {
-            ul.show_initial_crop();
-        });
-
         // Listener for soft id toolbox buttons
         $(document).on("click", "#" + ul.config["toolbox_id"] + ' a.tbid-opt', (e) => {
             let tgt_jq = $(e.currentTarget);

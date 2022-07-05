@@ -166,6 +166,10 @@ export class ZoomPanToolboxItem extends ToolboxItem {
     ) {
         super();
         this.set_frame_range(ulabel);
+
+        $(document).on("click", "#recenter-button", () => {
+            ulabel.show_initial_crop();
+        });
     }
 
     private set_frame_range(ulabel) {

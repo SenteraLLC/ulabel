@@ -15229,10 +15229,6 @@ class ULabel {
             ul.redraw_demo();
         });
 
-        jquery_default()(document).on("click", "#recenter-button", () => {
-            ul.show_initial_crop();
-        });
-
         // Listener for soft id toolbox buttons
         jquery_default()(document).on("click", "#" + ul.config["toolbox_id"] + ' a.tbid-opt', (e) => {
             let tgt_jq = jquery_default()(e.currentTarget);
@@ -19748,6 +19744,9 @@ var ZoomPanToolboxItem = /** @class */ (function (_super) {
         var _this = _super.call(this) || this;
         _this.ulabel = ulabel;
         _this.set_frame_range(ulabel);
+        $(document).on("click", "#recenter-button", function () {
+            ulabel.show_initial_crop();
+        });
         return _this;
     }
     ZoomPanToolboxItem.prototype.set_frame_range = function (ulabel) {
