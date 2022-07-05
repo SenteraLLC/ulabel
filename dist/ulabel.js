@@ -14856,17 +14856,56 @@ class ULabel {
         let contains_zoom_pan = function(array) {
             
             //check if the array is empty
-            if (array.length == 0) return;
+            if (array.length == 0) return false;
             
             // Loop through everything in the array and check if its the ZoomPanToolboxItem
             for (let idx in array) {
                 if (array[idx] instanceof src_toolbox.ZoomPanToolboxItem) {
-                    return true
+                    return true;
                 }
             }
             
             // If the ZoomPanToolboxItem wasn't found then return false
-            return false
+            return false;
+        }
+
+        // Check if initial_crop exists and has the appropriate properties
+        let check_initial_crop = function(initial_crop) {
+
+            // If initial_crop doesn't exist, return false
+            if (initial_crop == null) return false;
+
+            // If initial_crop has the appropriate properties, return true
+            if (
+                "width" in ul.config.initial_crop &&
+                "height" in ul.config.initial_crop &&
+                "left" in ul.config.initial_crop &&
+                "top" in ul.config.initial_crop
+            ) {
+                return true;
+            }
+
+            // If initial_crop exists but doesn't have the appropriate properties,
+            // then raise an error and return false
+            ul.raise_error("initial_crop missing necessary properties. Ignoring.");
+            return false;
+            
+        }
+
+        // Update the pan-zoom toolbox item if it exists
+        console.log(ul)
+        // Make sure the toolbox contains the ZoomPanToolboxItem
+        if (contains_zoom_pan(ul.toolbox.items)) {
+
+            // Make sure the initial_crop exists and contains the necessary properties
+            if (check_initial_crop(ul.config.initial_crop)) {
+               
+            }
+
+            //code here
+
+
+
         }
     }
 
