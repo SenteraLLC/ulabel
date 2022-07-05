@@ -14877,10 +14877,10 @@ class ULabel {
 
             // If initial_crop has the appropriate properties, return true
             if (
-                "width" in ul.config.initial_crop &&
-                "height" in ul.config.initial_crop &&
-                "left" in ul.config.initial_crop &&
-                "top" in ul.config.initial_crop
+                "width" in initial_crop &&
+                "height" in initial_crop &&
+                "left" in initial_crop &&
+                "top" in initial_crop
             ) {
                 return true;
             }
