@@ -1534,7 +1534,7 @@ export class ULabel {
         return $("#" + this.config["annbox_id"]).width() / wdt;
     }
 
-    // The zoom ratio which fixes the entire image exactly in the viewport
+    // The zoom ratio which fixes the entire image exactly in the viewport with a predetermined crop
     show_initial_crop() {
         let initial_crop = this.config["initial_crop"];
         if (initial_crop != null) {
@@ -1567,6 +1567,7 @@ export class ULabel {
         return;
     }
 
+    //Shows the whole image in the viewport
     show_whole_image() {
         // Grab values from config
         let wdt = this.config["image_width"];
