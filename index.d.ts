@@ -81,6 +81,7 @@ export class ULabel {
          */
         public init(callback: () => void): void;
         public show_initial_crop(): void;
+        public show_whole_image(): void;
         public swap_frame_image(new_src: string, frame?: number): string;
         public swap_anno_bg_color(new_bg_color: string): string;
         public get_annotations(subtask: ULabelSubtask): ULabelAnnotation[];

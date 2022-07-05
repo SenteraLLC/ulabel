@@ -170,6 +170,10 @@ export class ZoomPanToolboxItem extends ToolboxItem {
         $(document).on("click", "#recenter-button", () => {
             ulabel.show_initial_crop();
         });
+
+        $(document).on("click", "#recenter-whole-image-button", () => {
+            ulabel.show_whole_image();
+        });
     }
 
     private set_frame_range(ulabel) {
