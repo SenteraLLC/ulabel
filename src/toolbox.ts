@@ -226,7 +226,7 @@ export class ZoomPanToolboxItem extends ToolboxItem {
             </div>
             <div class="recenter-cont" style="text-align: center;">
                 <a href="#" id="recenter-button">Re-Center</a>
-                <a href="#" id="recenter-whole-image-button">Show Whole Image</a>
+                <a href="#" id="recenter-whole-image-button">Whole Image</a>
             </div>
             ${this.frame_range}
         </div>

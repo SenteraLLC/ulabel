@@ -369,20 +369,21 @@ export class ULabel {
             
         }
 
-        // Update the pan-zoom toolbox item if it exists
-        console.log(ul)
         // Make sure the toolbox contains the ZoomPanToolboxItem
         if (contains_zoom_pan(ul.toolbox.items)) {
 
             // Make sure the initial_crop exists and contains the necessary properties
             if (check_initial_crop(ul.config.initial_crop)) {
-               
+
+                // Grab the initial crop button and rename it
+                let initial_crop_button = document.getElementById("recenter-button");
+                initial_crop_button.innerHTML = "Initial Crop"
+            } else {
+
+                // Grab the whole image button and set its display to none
+                let whole_image_button = document.getElementById("recenter-whole-image-button");
+                whole_image_button.style.display = "none";
             }
-
-            //code here
-
-
-
         }
     }
 
@@ -1595,18 +1596,21 @@ export class ULabel {
                 "left" in initial_crop &&
                 "top" in initial_crop
             ) {
+                let width = this.config["image_width"];
+                let height = this.config["image_height"];
+
                 initial_crop["left"] = Math.max(initial_crop["left"], 0);
                 initial_crop["top"] = Math.max(initial_crop["top"], 0);
-                initial_crop["width"] = Math.min(initial_crop["width"], wdt - initial_crop["left"]);
-                initial_crop["height"] = Math.min(initial_crop["height"], hgt - initial_crop["top"]);
+                initial_crop["width"] = Math.min(initial_crop["width"], width - initial_crop["left"]);
+                initial_crop["height"] = Math.min(initial_crop["height"], height - initial_crop["top"]);
 
-                wdt = initial_crop["width"];
-                hgt = initial_crop["height"];
+                width = initial_crop["width"];
+                height = initial_crop["height"];
 
-                lft_cntr = initial_crop["left"] + initial_crop["width"] / 2;
-                top_cntr = initial_crop["top"] + initial_crop["height"] / 2;
+                let lft_cntr = initial_crop["left"] + initial_crop["width"] / 2;
+                let top_cntr = initial_crop["top"] + initial_crop["height"] / 2;
 
-                this.state["zoom_val"] = Math.min(this.get_viewport_height_ratio(hgt), this.get_viewport_width_ratio(wdt));
+                this.state["zoom_val"] = Math.min(this.get_viewport_height_ratio(height), this.get_viewport_width_ratio(width));
                 this.rezoom(lft_cntr, top_cntr, true);
                 return;
             }
@@ -1618,7 +1622,7 @@ export class ULabel {
         return;
     }
 
-    //Shows the whole image in the viewport
+    // Shows the whole image in the viewport
     show_whole_image() {
         // Grab values from config
         let wdt = this.config["image_width"];
