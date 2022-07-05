@@ -329,6 +329,22 @@ export class ULabel {
 
         ul.toolbox = toolbox;
 
+        // Check an array to see if it contains a ZoomPanToolboxItem
+        let contains_zoom_pan = function(array) {
+            
+            //check if the array is empty
+            if (array.length == 0) return;
+            
+            // Loop through everything in the array and check if its the ZoomPanToolboxItem
+            for (let idx in array) {
+                if (array[idx] instanceof ZoomPanToolboxItem) {
+                    return true
+                }
+            }
+            
+            // If the ZoomPanToolboxItem wasn't found then return false
+            return false
+        }
     }
 
     static get_idd_string(idd_id, wdt, center_coord, cl_opacity, class_ids, inner_rad, outer_rad, class_defs) {
