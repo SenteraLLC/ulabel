@@ -1568,6 +1568,18 @@ export class ULabel {
         return;
     }
 
+    show_whole_image() {
+        // Grab values from config
+        let wdt = this.config["image_width"];
+        let hgt = this.config["image_height"];
+        let lft_cntr = 0;
+        let top_cntr = 0;
+
+        this.state["zoom_val"] = Math.min(this.get_viewport_height_ratio(hgt), this.get_viewport_width_ratio(wdt));
+        this.rezoom(lft_cntr, top_cntr, true);
+        return;
+    }
+
     // ================== Cursor Helpers ====================
     update_cursor() {
         let color = this.get_annotation_color(null, true);
