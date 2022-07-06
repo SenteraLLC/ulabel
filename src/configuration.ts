@@ -51,6 +51,8 @@ export class Configuration {
         "annotation_vanish": "v"      //The v Key by default
     }
 
+    public change_zoom_keybind: string = "r";
+
     public default_annotation_size: number = 6;
 
     public delete_annotation_keybind: string = "d";

@@ -166,6 +166,23 @@ export class ZoomPanToolboxItem extends ToolboxItem {
     ) {
         super();
         this.set_frame_range(ulabel);
+
+        $(document).on("click", "#recenter-button", () => {
+            ulabel.show_initial_crop();
+        });
+
+        $(document).on("click", "#recenter-whole-image-button", () => {
+            ulabel.show_whole_image();
+        });
+
+        $(document).on("keypress", (e) => {
+            if (e.key == ulabel.config.change_zoom_keybind.toLowerCase()) {
+                document.getElementById("recenter-button").click()
+            }
+            if (e.key == ulabel.config.change_zoom_keybind.toUpperCase()) {
+                document.getElementById("recenter-whole-image-button").click()
+            }
+        })
     }
 
     private set_frame_range(ulabel) {
@@ -218,6 +235,7 @@ export class ZoomPanToolboxItem extends ToolboxItem {
             </div>
             <div class="recenter-cont" style="text-align: center;">
                 <a href="#" id="recenter-button">Re-Center</a>
+                <a href="#" id="recenter-whole-image-button">Whole Image</a>
             </div>
             ${this.frame_range}
         </div>

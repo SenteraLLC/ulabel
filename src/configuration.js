@@ -55,6 +55,7 @@ var Configuration = /** @class */ (function () {
             "annotation_size_minus": "-",
             "annotation_vanish": "v" //The v Key by default
         };
+        this.change_zoom_keybind = "r";
         this.default_annotation_size = 6;
         this.delete_annotation_keybind = "d";
         this.filter_annotations_on_load = false;

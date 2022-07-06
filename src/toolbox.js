@@ -133,6 +133,20 @@ var ZoomPanToolboxItem = /** @class */ (function (_super) {
         var _this = _super.call(this) || this;
         _this.ulabel = ulabel;
         _this.set_frame_range(ulabel);
+        $(document).on("click", "#recenter-button", function () {
+            ulabel.show_initial_crop();
+        });
+        $(document).on("click", "#recenter-whole-image-button", function () {
+            ulabel.show_whole_image();
+        });
+        $(document).on("keypress", function (e) {
+            if (e.key == ulabel.config.change_zoom_keybind.toLowerCase()) {
+                document.getElementById("recenter-button").click();
+            }
+            if (e.key == ulabel.config.change_zoom_keybind.toUpperCase()) {
+                document.getElementById("recenter-whole-image-button").click();
+            }
+        });
         return _this;
     }
     ZoomPanToolboxItem.prototype.set_frame_range = function (ulabel) {
@@ -143,7 +157,7 @@ var ZoomPanToolboxItem = /** @class */ (function (_super) {
         this.frame_range = "\n            <div class=\"full-tb htbmain set-frame\">\n                <p class=\"shortcut-tip\">scroll to switch frames</p>\n                <div class=\"zpcont\">\n                    <div class=\"lblpyldcont\">\n                        <span class=\"pzlbl htblbl\">Frame</span> &nbsp;\n                        <input class=\"frame_input\" type=\"range\" min=0 max=".concat(ulabel.config["image_data"].frames.length - 1, " value=0 />\n                    </div>\n                </div>\n            </div>\n            ");
     };
     ZoomPanToolboxItem.prototype.get_html = function () {
-        return "\n        <div class=\"zoom-pan\">\n            <div class=\"half-tb htbmain set-zoom\">\n                <p class=\"shortcut-tip\">ctrl+scroll or shift+drag</p>\n                <div class=\"zpcont\">\n                    <div class=\"lblpyldcont\">\n                        <span class=\"pzlbl htblbl\">Zoom</span>\n                        <span class=\"zinout htbpyld\">\n                            <a href=\"#\" class=\"zbutt zout\">-</a>\n                            <a href=\"#\" class=\"zbutt zin\">+</a>\n                        </span>\n                    </div>\n                </div>\n            </div><!--\n            --><div class=\"half-tb htbmain set-pan\">\n                <p class=\"shortcut-tip\">scrollclick+drag or ctrl+drag</p>\n                <div class=\"zpcont\">\n                    <div class=\"lblpyldcont\">\n                        <span class=\"pzlbl htblbl\">Pan</span>\n                        <span class=\"panudlr htbpyld\">\n                            <a href=\"#\" class=\"pbutt left\"></a>\n                            <a href=\"#\" class=\"pbutt right\"></a>\n                            <a href=\"#\" class=\"pbutt up\"></a>\n                            <a href=\"#\" class=\"pbutt down\"></a>\n                            <span class=\"spokes\"></span>\n                        </span>\n                    </div>\n                </div>\n            </div>\n            <div class=\"recenter-cont\" style=\"text-align: center;\">\n                <a href=\"#\" id=\"recenter-button\">Re-Center</a>\n            </div>\n            ".concat(this.frame_range, "\n        </div>\n        ");
+        return "\n        <div class=\"zoom-pan\">\n            <div class=\"half-tb htbmain set-zoom\">\n                <p class=\"shortcut-tip\">ctrl+scroll or shift+drag</p>\n                <div class=\"zpcont\">\n                    <div class=\"lblpyldcont\">\n                        <span class=\"pzlbl htblbl\">Zoom</span>\n                        <span class=\"zinout htbpyld\">\n                            <a href=\"#\" class=\"zbutt zout\">-</a>\n                            <a href=\"#\" class=\"zbutt zin\">+</a>\n                        </span>\n                    </div>\n                </div>\n            </div><!--\n            --><div class=\"half-tb htbmain set-pan\">\n                <p class=\"shortcut-tip\">scrollclick+drag or ctrl+drag</p>\n                <div class=\"zpcont\">\n                    <div class=\"lblpyldcont\">\n                        <span class=\"pzlbl htblbl\">Pan</span>\n                        <span class=\"panudlr htbpyld\">\n                            <a href=\"#\" class=\"pbutt left\"></a>\n                            <a href=\"#\" class=\"pbutt right\"></a>\n                            <a href=\"#\" class=\"pbutt up\"></a>\n                            <a href=\"#\" class=\"pbutt down\"></a>\n                            <span class=\"spokes\"></span>\n                        </span>\n                    </div>\n                </div>\n            </div>\n            <div class=\"recenter-cont\" style=\"text-align: center;\">\n                <a href=\"#\" id=\"recenter-button\">Re-Center</a>\n                <a href=\"#\" id=\"recenter-whole-image-button\">Whole Image</a>\n            </div>\n            ".concat(this.frame_range, "\n        </div>\n        ");
     };
     return ZoomPanToolboxItem;
 }(ToolboxItem));
