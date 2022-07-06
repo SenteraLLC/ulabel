@@ -59,6 +59,7 @@ var Configuration = /** @class */ (function () {
         this.default_annotation_size = 6;
         this.delete_annotation_keybind = "d";
         this.filter_annotations_on_load = false;
+        this.switch_subtask_keybind = "z";
         this.modify_config.apply(this, kwargs);
     }
     Configuration.prototype.modify_config = function () {
