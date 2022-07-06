@@ -835,6 +835,40 @@ export class ULabel {
             ul.set_subtask(switch_to);
         });
 
+        // Keybind to switch active subtask
+        $(document).on("keypress", (e) => {
+            
+            // Ignore if in the middle of annotation
+            if (ul.subtasks[ul.state["current_subtask"]]["state"]["is_in_progress"]) {
+                return;
+            }
+
+            // Check for the right keypress
+            if (e.key == ul.config.switch_subtask_keybind) {
+
+                let current_subtask = ul.state["current_subtask"];
+                let toolbox_tab_keys = [];
+    
+                // Put all of the toolbox tab keys in a list
+                for(let idx in ul.toolbox.tabs) {
+                    toolbox_tab_keys.push(ul.toolbox.tabs[idx].subtask_key);
+                }
+    
+                // Get the index of the next subtask in line
+                let new_subtask_index = toolbox_tab_keys.indexOf(current_subtask) + 1;  // +1 gets the next subtask
+    
+                // If the current subtask was the last one in the array, then
+                // loop around to the first subtask
+                if (new_subtask_index == toolbox_tab_keys.length) {
+                    new_subtask_index = 0;
+                }
+    
+                let new_subtask = toolbox_tab_keys[new_subtask_index];
+    
+                ul.set_subtask(new_subtask);
+            }
+        })
+
         $(document).on("input", "input.frame_input", () => {
             ul.update_frame();
         });

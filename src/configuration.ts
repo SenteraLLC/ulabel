@@ -61,6 +61,8 @@ export class Configuration {
 
     public filter_annotations_on_load: boolean = false;
 
+    public switch_subtask_keybind: string = "z";
+
     public static annotation_gradient_default: boolean = false;
 
     constructor(...kwargs: {[key: string]: unknown}[]) {
