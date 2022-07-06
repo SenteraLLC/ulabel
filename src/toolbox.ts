@@ -479,7 +479,11 @@ export class AnnotationResizeItem extends ToolboxItem {
             for (const annotation_id in subtask.annotations.access) {
                 subtask.annotations.access[annotation_id].line_size = size;
             }
-            this.set_size_cookie(size, subtask)
+
+            // Don't set the vanished size as a cookie
+            if (size == 0.01) return;
+
+            this.set_size_cookie(size, subtask);
             return;
         }
         if (operation == "+") {

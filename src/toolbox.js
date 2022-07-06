@@ -376,6 +376,9 @@ var AnnotationResizeItem = /** @class */ (function (_super) {
             for (var annotation_id in subtask.annotations.access) {
                 subtask.annotations.access[annotation_id].line_size = size;
             }
+            // Don't set the vanished size as a cookie
+            if (size == 0.01)
+                return;
             this.set_size_cookie(size, subtask);
             return;
         }
