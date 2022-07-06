@@ -174,6 +174,15 @@ export class ZoomPanToolboxItem extends ToolboxItem {
         $(document).on("click", "#recenter-whole-image-button", () => {
             ulabel.show_whole_image();
         });
+
+        $(document).on("keypress", (e) => {
+            if (e.key == ulabel.config.change_zoom_keybind.toLowerCase()) {
+                document.getElementById("recenter-button").click()
+            }
+            if (e.key == ulabel.config.change_zoom_keybind.toUpperCase()) {
+                document.getElementById("recenter-whole-image-button").click()
+            }
+        })
     }
 
     private set_frame_range(ulabel) {

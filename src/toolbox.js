@@ -139,6 +139,14 @@ var ZoomPanToolboxItem = /** @class */ (function (_super) {
         $(document).on("click", "#recenter-whole-image-button", function () {
             ulabel.show_whole_image();
         });
+        $(document).on("keypress", function (e) {
+            if (e.key == ulabel.config.change_zoom_keybind.toLowerCase()) {
+                document.getElementById("recenter-button").click();
+            }
+            if (e.key == ulabel.config.change_zoom_keybind.toUpperCase()) {
+                document.getElementById("recenter-whole-image-button").click();
+            }
+        });
         return _this;
     }
     ZoomPanToolboxItem.prototype.set_frame_range = function (ulabel) {
