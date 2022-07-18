@@ -140,8 +140,23 @@ export abstract class ToolboxItem {
  * Toolbox item for selecting annotation mode.
  */
 export class ModeSelectionToolboxItem extends ToolboxItem {
-    constructor(...args) {
+    constructor(public ulabel: ULabel) {
         super();
+
+        // Buttons to change annotation mode
+        $(document).on("click", "a.md-btn", (e) => {
+            console.log("big boy")
+            let tgt_jq = $(e.currentTarget);
+            let crst = ulabel.state["current_subtask"];
+            if (tgt_jq.hasClass("sel") || ulabel.subtasks[crst]["state"]["is_in_progress"]) return;
+            var new_mode = tgt_jq.attr("id").split("--")[1];
+            ulabel.subtasks[crst]["state"]["annotation_mode"] = new_mode;
+            $("a.md-btn.sel").attr("href", "#");
+            $("a.md-btn.sel").removeClass("sel");
+            tgt_jq.addClass("sel");
+            tgt_jq.removeAttr("href");
+            ulabel.show_annotation_mode(tgt_jq);
+        });
     }
 
     public get_html() {

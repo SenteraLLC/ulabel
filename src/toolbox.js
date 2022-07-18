@@ -111,12 +111,25 @@ exports.ToolboxItem = ToolboxItem;
  */
 var ModeSelectionToolboxItem = /** @class */ (function (_super) {
     __extends(ModeSelectionToolboxItem, _super);
-    function ModeSelectionToolboxItem() {
-        var args = [];
-        for (var _i = 0; _i < arguments.length; _i++) {
-            args[_i] = arguments[_i];
-        }
-        return _super.call(this) || this;
+    function ModeSelectionToolboxItem(ulabel) {
+        var _this = _super.call(this) || this;
+        _this.ulabel = ulabel;
+        // Buttons to change annotation mode
+        $(document).on("click", "a.md-btn", function (e) {
+            console.log("big boy");
+            var tgt_jq = $(e.currentTarget);
+            var crst = ulabel.state["current_subtask"];
+            if (tgt_jq.hasClass("sel") || ulabel.subtasks[crst]["state"]["is_in_progress"])
+                return;
+            var new_mode = tgt_jq.attr("id").split("--")[1];
+            ulabel.subtasks[crst]["state"]["annotation_mode"] = new_mode;
+            $("a.md-btn.sel").attr("href", "#");
+            $("a.md-btn.sel").removeClass("sel");
+            tgt_jq.addClass("sel");
+            tgt_jq.removeAttr("href");
+            ulabel.show_annotation_mode(tgt_jq);
+        });
+        return _this;
     }
     ModeSelectionToolboxItem.prototype.get_html = function () {
         return "\n        <div class=\"mode-selection\">\n            <p class=\"current_mode_container\">\n                <span class=\"cmlbl\">Mode:</span>\n                <span class=\"current_mode\"></span>\n            </p>\n        </div>\n        ";
