@@ -19877,18 +19877,17 @@ var ModeSelectionToolboxItem = /** @class */ (function (_super) {
         _this.ulabel = ulabel;
         // Buttons to change annotation mode
         $(document).on("click", "a.md-btn", function (e) {
-            console.log("big boy");
-            var tgt_jq = $(e.currentTarget);
-            var crst = ulabel.state["current_subtask"];
-            if (tgt_jq.hasClass("sel") || ulabel.subtasks[crst]["state"]["is_in_progress"])
+            var target_jq = $(e.currentTarget);
+            var current_subtask = ulabel.state["current_subtask"];
+            if (target_jq.hasClass("sel") || ulabel.subtasks[current_subtask]["state"]["is_in_progress"])
                 return;
-            var new_mode = tgt_jq.attr("id").split("--")[1];
-            ulabel.subtasks[crst]["state"]["annotation_mode"] = new_mode;
+            var new_mode = target_jq.attr("id").split("--")[1];
+            ulabel.subtasks[current_subtask]["state"]["annotation_mode"] = new_mode;
             $("a.md-btn.sel").attr("href", "#");
             $("a.md-btn.sel").removeClass("sel");
-            tgt_jq.addClass("sel");
-            tgt_jq.removeAttr("href");
-            ulabel.show_annotation_mode(tgt_jq);
+            target_jq.addClass("sel");
+            target_jq.removeAttr("href");
+            ulabel.show_annotation_mode(target_jq);
         });
         return _this;
     }
