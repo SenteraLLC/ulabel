@@ -146,17 +146,22 @@ export class ModeSelectionToolboxItem extends ToolboxItem {
         // Buttons to change annotation mode
         $(document).on("click", "a.md-btn", (e) => {
             
+            // Grab the current target and the current subtask
             let target_jq = $(e.currentTarget);
             let current_subtask = ulabel.state["current_subtask"];
 
+            // Check if creation of a new annotation is in progress
             if (target_jq.hasClass("sel") || ulabel.subtasks[current_subtask]["state"]["is_in_progress"]) return;
 
+            // Get the new mode and set it to ulabel's current mode
             let new_mode = target_jq.attr("id").split("--")[1];
             ulabel.subtasks[current_subtask]["state"]["annotation_mode"] = new_mode;
 
+            // Reset the previously selected mode button
             $("a.md-btn.sel").attr("href", "#");
             $("a.md-btn.sel").removeClass("sel");
 
+            // Make the selected class look selected
             target_jq.addClass("sel");
             target_jq.removeAttr("href");
 
