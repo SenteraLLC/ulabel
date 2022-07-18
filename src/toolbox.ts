@@ -150,7 +150,7 @@ export class ModeSelectionToolboxItem extends ToolboxItem {
             let target_jq = $(e.currentTarget);
             let current_subtask = ulabel.state["current_subtask"];
 
-            // Check if creation of a new annotation is in progress
+            // Check if button clicked is already selected, or if creation of a new annotation is in progress
             if (target_jq.hasClass("sel") || ulabel.subtasks[current_subtask]["state"]["is_in_progress"]) return;
 
             // Get the new mode and set it to ulabel's current mode
@@ -167,6 +167,56 @@ export class ModeSelectionToolboxItem extends ToolboxItem {
 
             ulabel.show_annotation_mode(target_jq);
         });
+
+        $(document).on("keypress", (e) => {
+
+            // If creation of a new annotation is in progress, don't change the mode
+            let current_subtask = ulabel.state["current_subtask"];
+            if (ulabel.subtasks[current_subtask]["state"]["is_in_progress"]) return;
+
+            // Check if the correct key was pressed
+            if (e.key == ulabel.config.toggle_annotation_mode_keybind) {
+
+                let mode_button_array: HTMLElement[] = []
+
+                // Loop through all of the mode buttons
+                for (let idx in Array.from(document.getElementsByClassName("md-btn"))) {
+    
+                    // Grab mode button
+                    let mode_button = <HTMLElement> document.getElementsByClassName("md-btn")[idx]
+
+                    // Continue without adding it to the array if its display is none
+                    if (mode_button.style.display == "none") {
+                        continue
+                    }
+                    mode_button_array.push(mode_button)                  
+                } 
+
+                // Grab the currently selected mode button
+                let selected_mode_button = <HTMLAnchorElement> Array.from(document.getElementsByClassName("md-btn sel"))[0] // There's only ever going to be one element in this array, so grab the first one
+
+                let new_button_index: number
+
+                // Loop through all of the mode select buttons that are currently displayed 
+                // to find which one is the currently selected button.  Once its found add 1
+                // to get the index of the next mode select button. If the new button index
+                // is the same as the array's length, then loop back and set the new button
+                // to 0.
+                for (let idx in mode_button_array) {
+                    if (mode_button_array[idx] === selected_mode_button) {
+                        new_button_index = Number(idx) + 1
+                        if (new_button_index == mode_button_array.length) {
+                            new_button_index = 0
+                        }
+                    }
+                }
+
+                // Grab the button for the mode we want to switch to
+                let new_selected_button = mode_button_array[new_button_index]
+
+                new_selected_button.click()
+            }
+        })
     }
 
     public get_html() {

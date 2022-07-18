@@ -11730,6 +11730,7 @@ var Configuration = /** @class */ (function () {
         this.delete_annotation_keybind = "d";
         this.filter_annotations_on_load = false;
         this.switch_subtask_keybind = "z";
+        this.toggle_annotation_mode_keybind = "u";
         this.modify_config.apply(this, kwargs);
     }
     Configuration.prototype.modify_config = function () {
@@ -19880,7 +19881,7 @@ var ModeSelectionToolboxItem = /** @class */ (function (_super) {
             // Grab the current target and the current subtask
             var target_jq = $(e.currentTarget);
             var current_subtask = ulabel.state["current_subtask"];
-            // Check if creation of a new annotation is in progress
+            // Check if button clicked is already selected, or if creation of a new annotation is in progress
             if (target_jq.hasClass("sel") || ulabel.subtasks[current_subtask]["state"]["is_in_progress"])
                 return;
             // Get the new mode and set it to ulabel's current mode
@@ -19893,6 +19894,45 @@ var ModeSelectionToolboxItem = /** @class */ (function (_super) {
             target_jq.addClass("sel");
             target_jq.removeAttr("href");
             ulabel.show_annotation_mode(target_jq);
+        });
+        $(document).on("keypress", function (e) {
+            // If creation of a new annotation is in progress, don't change the mode
+            var current_subtask = ulabel.state["current_subtask"];
+            if (ulabel.subtasks[current_subtask]["state"]["is_in_progress"])
+                return;
+            // Check if the correct key was pressed
+            if (e.key == ulabel.config.toggle_annotation_mode_keybind) {
+                var mode_button_array = [];
+                // Loop through all of the mode buttons
+                for (var inex2electricboogaloo in Array.from(document.getElementsByClassName("md-btn"))) {
+                    // Grab a mode button
+                    var mode_button = document.getElementsByClassName("md-btn")[inex2electricboogaloo];
+                    // Continue without adding it to the array if its display is none
+                    if (mode_button.style.display == "none") {
+                        continue;
+                    }
+                    mode_button_array.push(mode_button);
+                }
+                // Grab the currently selected mode button
+                var selected_mode_button = Array.from(document.getElementsByClassName("md-btn sel"))[0]; // There's only ever going to be one element in this array, so grab the first one
+                var new_button_index = void 0;
+                // Loop through all of the mode select buttons that are currently displayed 
+                // to find which one is the currently selected button.  Once its found add 1
+                // to get the index of the next mode select button. If the new button index
+                // is the same as the array's length, then loop back and set the new button
+                // to 0.
+                for (var idx in mode_button_array) {
+                    if (mode_button_array[idx] === selected_mode_button) {
+                        new_button_index = Number(idx) + 1;
+                        if (new_button_index == mode_button_array.length) {
+                            new_button_index = 0;
+                        }
+                    }
+                }
+                // Grab the button for the mode we want to switch to
+                var new_selected_button = mode_button_array[new_button_index];
+                new_selected_button.click();
+            }
         });
         return _this;
     }

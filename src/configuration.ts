@@ -52,16 +52,18 @@ export class Configuration {
     }
 
     public change_zoom_keybind: string = "r";
-
+    
     public default_annotation_size: number = 6;
-
+    
     public delete_annotation_keybind: string = "d";
-
+    
     public filter_low_confidence_default_value: number;
-
+    
     public filter_annotations_on_load: boolean = false;
-
+    
     public switch_subtask_keybind: string = "z";
+    
+    public toggle_annotation_mode_keybind: string = "u";
 
     public static annotation_gradient_default: boolean = false;
 
