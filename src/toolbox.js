@@ -142,9 +142,9 @@ var ModeSelectionToolboxItem = /** @class */ (function (_super) {
             if (e.key == ulabel.config.toggle_annotation_mode_keybind) {
                 var mode_button_array = [];
                 // Loop through all of the mode buttons
-                for (var inex2electricboogaloo in Array.from(document.getElementsByClassName("md-btn"))) {
-                    // Grab a mode button
-                    var mode_button = document.getElementsByClassName("md-btn")[inex2electricboogaloo];
+                for (var idx in Array.from(document.getElementsByClassName("md-btn"))) {
+                    // Grab mode button
+                    var mode_button = document.getElementsByClassName("md-btn")[idx];
                     // Continue without adding it to the array if its display is none
                     if (mode_button.style.display == "none") {
                         continue;

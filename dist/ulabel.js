@@ -15222,6 +15222,13 @@ class ULabel {
             ul.handle_mouse_move(mouse_event);
         });
 
+        jquery_default()(document).on("keypress", (e) => {
+            if (e.key == "c") {
+                console.log("begin annotation")
+                ul.begin_annotation(ul.state["last_move"])
+            }
+        })
+
         // Detection ctrl+scroll
         document.getElementById(ul.config["annbox_id"]).onwheel = function (wheel_event) {
             let fms = ul.config["image_data"].frames.length > 1;
@@ -17846,6 +17853,10 @@ class ULabel {
         let gmy = null;
         let init_spatial = null;
         let init_idpyld = null;
+
+        console.log(mouse_event, "mouse event")
+        console.log(redo_payload, "redo_ payload")
+
         if (redo_payload == null) {
             unq_id = this.make_new_annotation_id();
             line_size = this.get_line_size();
@@ -17868,6 +17879,8 @@ class ULabel {
             init_spatial = redo_payload.init_spatial;
             init_idpyld = redo_payload.init_payload;
         }
+
+        console.log(gmx, gmy, "global mouse values")
 
         // TODO(3d) 
         let containing_box = {
@@ -19904,9 +19917,9 @@ var ModeSelectionToolboxItem = /** @class */ (function (_super) {
             if (e.key == ulabel.config.toggle_annotation_mode_keybind) {
                 var mode_button_array = [];
                 // Loop through all of the mode buttons
-                for (var inex2electricboogaloo in Array.from(document.getElementsByClassName("md-btn"))) {
-                    // Grab a mode button
-                    var mode_button = document.getElementsByClassName("md-btn")[inex2electricboogaloo];
+                for (var idx in Array.from(document.getElementsByClassName("md-btn"))) {
+                    // Grab mode button
+                    var mode_button = document.getElementsByClassName("md-btn")[idx];
                     // Continue without adding it to the array if its display is none
                     if (mode_button.style.display == "none") {
                         continue;

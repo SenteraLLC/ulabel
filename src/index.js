@@ -696,6 +696,13 @@ export class ULabel {
             ul.handle_mouse_move(mouse_event);
         });
 
+        $(document).on("keypress", (e) => {
+            if (e.key == "c") {
+                console.log("begin annotation")
+                ul.begin_annotation(ul.state["last_move"])
+            }
+        })
+
         // Detection ctrl+scroll
         document.getElementById(ul.config["annbox_id"]).onwheel = function (wheel_event) {
             let fms = ul.config["image_data"].frames.length > 1;
@@ -3320,6 +3327,10 @@ export class ULabel {
         let gmy = null;
         let init_spatial = null;
         let init_idpyld = null;
+
+        console.log(mouse_event, "mouse event")
+        console.log(redo_payload, "redo_ payload")
+
         if (redo_payload == null) {
             unq_id = this.make_new_annotation_id();
             line_size = this.get_line_size();
@@ -3342,6 +3353,8 @@ export class ULabel {
             init_spatial = redo_payload.init_spatial;
             init_idpyld = redo_payload.init_payload;
         }
+
+        console.log(gmx, gmy, "global mouse values")
 
         // TODO(3d) 
         let containing_box = {
