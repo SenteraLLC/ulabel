@@ -1050,6 +1050,37 @@ export class KeypointSliderItem extends ToolboxItem {
     }
 }
 
+export class SubmitButtons extends ToolboxItem {
+    private submit_buttons: {name: string, hook: Function, color?: string}[]
+
+    constructor(sumbit_buttons: {name: string, hook: Function, color?: string}[]) {
+        super();
+        this.submit_buttons = sumbit_buttons
+    }
+
+    get_html(): string {
+        let toolboxitem_html = ``
+        for (let idx in this.submit_buttons) {
+
+            let button_color
+            if (this.submit_buttons[idx].color !== undefined) {
+                button_color = this.submit_buttons[idx].color
+            } else {
+                // If no color provided use hard coded default
+                button_color = "rgba(255, 166, 0, 0.739)"
+            }
+
+            toolboxitem_html += `
+            <button onclick="${this.submit_buttons[idx].hook}" background-color="${button_color}">
+                ${this.submit_buttons[idx].name}
+            </button>
+            `
+        }
+        return toolboxitem_html
+        
+    }
+}
+
 // export class WholeImageClassifierToolboxTab extends ToolboxItem {
 //     constructor() {
 //         super(

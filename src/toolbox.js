@@ -15,7 +15,7 @@ var __extends = (this && this.__extends) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.KeypointSliderItem = exports.RecolorActiveItem = exports.AnnotationResizeItem = exports.ClassCounterToolboxItem = exports.AnnotationIDToolboxItem = exports.ZoomPanToolboxItem = exports.ModeSelectionToolboxItem = exports.ToolboxItem = exports.ToolboxTab = exports.Toolbox = void 0;
+exports.SubmitButtons = exports.KeypointSliderItem = exports.RecolorActiveItem = exports.AnnotationResizeItem = exports.ClassCounterToolboxItem = exports.AnnotationIDToolboxItem = exports.ZoomPanToolboxItem = exports.ModeSelectionToolboxItem = exports.ToolboxItem = exports.ToolboxTab = exports.Toolbox = void 0;
 var __1 = require("..");
 var configuration_1 = require("./configuration");
 var toolboxDividerDiv = "<div class=toolbox-divider></div>";
@@ -783,6 +783,31 @@ var KeypointSliderItem = /** @class */ (function (_super) {
     return KeypointSliderItem;
 }(ToolboxItem));
 exports.KeypointSliderItem = KeypointSliderItem;
+var SubmitButtons = /** @class */ (function (_super) {
+    __extends(SubmitButtons, _super);
+    function SubmitButtons(sumbit_buttons) {
+        var _this = _super.call(this) || this;
+        _this.submit_buttons = sumbit_buttons;
+        return _this;
+    }
+    SubmitButtons.prototype.get_html = function () {
+        var toolboxitem_html = "";
+        for (var idx in this.submit_buttons) {
+            var button_color = void 0;
+            if (this.submit_buttons[idx].color !== undefined) {
+                button_color = this.submit_buttons[idx].color;
+            }
+            else {
+                // If no color provided use hard coded default
+                button_color = "rgba(255, 166, 0, 0.739)";
+            }
+            toolboxitem_html += "\n            <button onclick=\"".concat(this.submit_buttons[idx].hook, "\" background-color=\"").concat(button_color, "\">\n                ").concat(this.submit_buttons[idx].name, "\n            </button>\n            ");
+        }
+        return toolboxitem_html;
+    };
+    return SubmitButtons;
+}(ToolboxItem));
+exports.SubmitButtons = SubmitButtons;
 // export class WholeImageClassifierToolboxTab extends ToolboxItem {
 //     constructor() {
 //         super(
