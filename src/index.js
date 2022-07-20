@@ -696,6 +696,23 @@ export class ULabel {
             ul.handle_mouse_move(mouse_event);
         });
 
+        $(document).on("keypress", (e) => {   
+            // Check for the correct keypress
+            if (e.key == ul.config.create_point_annotation_keybind) {
+
+                // Grab current subtask
+                let current_subtask_key = ul.state["current_subtask"];
+                let current_subtask = ul.subtasks[current_subtask_key];
+                
+                // Only allow keypress to create point annotations
+                if (current_subtask.state.annotation_mode == "point") {
+                    
+                    // Create an annotation based on the last mouse position
+                    ul.begin_annotation(ul.state["last_move"])
+                }
+            }
+        })
+
         // Detection ctrl+scroll
         document.getElementById(ul.config["annbox_id"]).onwheel = function (wheel_event) {
             let fms = ul.config["image_data"].frames.length > 1;
@@ -3320,6 +3337,7 @@ export class ULabel {
         let gmy = null;
         let init_spatial = null;
         let init_idpyld = null;
+
         if (redo_payload == null) {
             unq_id = this.make_new_annotation_id();
             line_size = this.get_line_size();
