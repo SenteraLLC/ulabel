@@ -15222,10 +15222,20 @@ class ULabel {
             ul.handle_mouse_move(mouse_event);
         });
 
-        jquery_default()(document).on("keypress", (e) => {
+        jquery_default()(document).on("keypress", (e) => {   
+            // Check for the correct keypress
             if (e.key == "c") {
-                console.log("begin annotation")
-                ul.begin_annotation(ul.state["last_move"])
+                
+                // Grab current subtask
+                let current_subtask_key = ul.state["current_subtask"];
+                let current_subtask = ul.subtasks[current_subtask_key];
+                
+                // Only allow keypress to create point annotations
+                if (current_subtask.state.annotation_mode == "point") {
+                    
+                    // Create an annotation based on the last mouse position
+                    ul.begin_annotation(ul.state["last_move"])
+                }
             }
         })
 
