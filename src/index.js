@@ -698,7 +698,7 @@ export class ULabel {
 
         $(document).on("keypress", (e) => {   
             // Check for the correct keypress
-            if (e.key == "c") {
+            if (e.key == ul.config.create_point_annotation_keybind) {
 
                 // Grab current subtask
                 let current_subtask_key = ul.state["current_subtask"];

@@ -52,6 +52,8 @@ export class Configuration {
     }
 
     public change_zoom_keybind: string = "r";
+
+    public create_point_annotation_keybind: string = "c";
     
     public default_annotation_size: number = 6;
     

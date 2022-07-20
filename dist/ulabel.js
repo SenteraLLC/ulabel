@@ -11726,6 +11726,7 @@ var Configuration = /** @class */ (function () {
             "annotation_vanish": "v" //The v Key by default
         };
         this.change_zoom_keybind = "r";
+        this.create_point_annotation_keybind = "c";
         this.default_annotation_size = 6;
         this.delete_annotation_keybind = "d";
         this.filter_annotations_on_load = false;
@@ -15224,7 +15225,7 @@ class ULabel {
 
         jquery_default()(document).on("keypress", (e) => {   
             // Check for the correct keypress
-            if (e.key == "c") {
+            if (e.key == ul.config.create_point_annotation_keybind) {
 
                 // Grab current subtask
                 let current_subtask_key = ul.state["current_subtask"];
