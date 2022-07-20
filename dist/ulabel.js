@@ -15225,7 +15225,7 @@ class ULabel {
         jquery_default()(document).on("keypress", (e) => {   
             // Check for the correct keypress
             if (e.key == "c") {
-                
+
                 // Grab current subtask
                 let current_subtask_key = ul.state["current_subtask"];
                 let current_subtask = ul.subtasks[current_subtask_key];
@@ -17864,9 +17864,6 @@ class ULabel {
         let init_spatial = null;
         let init_idpyld = null;
 
-        console.log(mouse_event, "mouse event")
-        console.log(redo_payload, "redo_ payload")
-
         if (redo_payload == null) {
             unq_id = this.make_new_annotation_id();
             line_size = this.get_line_size();
@@ -17889,8 +17886,6 @@ class ULabel {
             init_spatial = redo_payload.init_spatial;
             init_idpyld = redo_payload.init_payload;
         }
-
-        console.log(gmx, gmy, "global mouse values")
 
         // TODO(3d) 
         let containing_box = {
