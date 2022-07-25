@@ -20615,11 +20615,9 @@ var SubmitButtons = /** @class */ (function (_super) {
     __extends(SubmitButtons, _super);
     function SubmitButtons(ulabel) {
         var _this = _super.call(this) || this;
-        _this.click = "clicked";
         _this.submit_buttons = ulabel.config.submit_buttons;
-        console.log(_this.submit_buttons);
-        console.log(_this.my_function);
         var _loop_1 = function (idx) {
+            // Create a unique event listener for each submit button in the submit buttons array.
             $(document).on("click", "#" + this_1.submit_buttons[idx].name.replaceLowerConcat(" ", "-"), function () { return __awaiter(_this, void 0, void 0, function () {
                 var submit_payload, stkey, i;
                 return __generator(this, function (_a) {
@@ -20638,7 +20636,9 @@ var SubmitButtons = /** @class */ (function (_super) {
                                 }
                             }
                             return [4 /*yield*/, this.submit_buttons[idx].hook(submit_payload)];
-                        case 1: return [2 /*return*/, _a.sent()];
+                        case 1:
+                            _a.sent();
+                            return [2 /*return*/];
                     }
                 });
             }); });
@@ -20649,13 +20649,9 @@ var SubmitButtons = /** @class */ (function (_super) {
         }
         return _this;
     }
-    SubmitButtons.prototype.my_function = function () {
-        this.button_holder_name;
-    };
     SubmitButtons.prototype.get_html = function () {
         var toolboxitem_html = "";
         for (var idx in this.submit_buttons) {
-            console.log("inside submit button creator", idx);
             var button_color = void 0;
             if (this.submit_buttons[idx].color !== undefined) {
                 button_color = this.submit_buttons[idx].color;
@@ -20664,7 +20660,7 @@ var SubmitButtons = /** @class */ (function (_super) {
                 // If no color provided use hard coded default
                 button_color = "rgba(255, 166, 0, 0.739)";
             }
-            toolboxitem_html += "\n            <button \n            id=\"".concat(this.submit_buttons[idx].name.replaceLowerConcat(" ", "-"), "\" \n            class=\"submit-button\" \n            style=\"\n                display: block;\n                width: 6em;\n                font-size: 1.5em;\n                color: white;\n                background-color: ").concat(button_color, "; \n                margin-left: auto;\n                margin-right: auto;\n                margin-top: 0.5em;\n                margin-bottom: 0.5em;\n                padding: 1em;\n                border: 1px solid ").concat(button_color, ";\n                border-radius: 0.5em;\n            \">\n                ").concat(this.submit_buttons[idx].name, "\n            </button>\n            ");
+            toolboxitem_html += "\n            <button \n            id=\"".concat(this.submit_buttons[idx].name.replaceLowerConcat(" ", "-"), "\" \n            class=\"submit-button\" \n            style=\"\n                display: block;\n                width: 6em;\n                font-size: 1.5em;\n                color: white;\n                background-color: ").concat(button_color, "; \n                margin-left: auto;\n                margin-right: auto;\n                margin-top: 0.5em;\n                margin-bottom: 0.5em;\n                padding: 1em;\n                border: 1px solid ").concat(button_color, ";\n                border-radius: 0.5em;\n                cursor: pointer;\n            \">\n                ").concat(this.submit_buttons[idx].name, "\n            </button>\n            ");
         }
         return toolboxitem_html;
     };

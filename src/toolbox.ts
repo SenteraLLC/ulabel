@@ -1053,20 +1053,15 @@ export class KeypointSliderItem extends ToolboxItem {
 
 export class SubmitButtons extends ToolboxItem {
     private submit_buttons: {name: string, hook: Function, color?: string}[];
-    private button_holder_name: string;
-    private click: string = "clicked"
 
     constructor(ulabel: ULabel) {
         super();
     
         this.submit_buttons = ulabel.config.submit_buttons
-        console.log(this.submit_buttons)
-        
-        
-        console.log(this.my_function)
 
         for (let idx in this.submit_buttons) {
-            
+
+            // Create a unique event listener for each submit button in the submit buttons array.
             $(document).on("click", "#" + this.submit_buttons[idx].name.replaceLowerConcat(" ", "-"), async () => {
                 // Create the submit payload
                 let submit_payload = {
@@ -1088,20 +1083,15 @@ export class SubmitButtons extends ToolboxItem {
                     }
                 }
                 
-                return await this.submit_buttons[idx].hook(submit_payload)
+                await this.submit_buttons[idx].hook(submit_payload)
             })
         }
-    }
-
-    my_function() {
-        this.button_holder_name
     }
 
     get_html(): string {
         let toolboxitem_html = ``
 
         for (let idx in this.submit_buttons) {
-            console.log("inside submit button creator", idx)
 
             let button_color
             if (this.submit_buttons[idx].color !== undefined) {
@@ -1128,6 +1118,7 @@ export class SubmitButtons extends ToolboxItem {
                 padding: 1em;
                 border: 1px solid ${button_color};
                 border-radius: 0.5em;
+                cursor: pointer;
             ">
                 ${this.submit_buttons[idx].name}
             </button>
