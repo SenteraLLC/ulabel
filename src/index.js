@@ -9,7 +9,7 @@ import { ULabelSubtask } from './subtask';
 import { GeometricUtils } from './geometric_utils';
 import { get_annotation_confidence, mark_deprecated, filter_low } from './annotation_operators';
 import { apply_gradient } from './drawing_utilities'
-import { Configuration } from './configuration';
+import { Configuration, AllowedToolboxItem } from './configuration';
 import $ from 'jquery';
 const jQuery = $;
 window.$ = window.jQuery = require('jquery');
@@ -253,7 +253,6 @@ export class ULabel {
             if (typeof(toolbox_item_order[i]) == "number") {
                 toolbox_key = toolbox_item_order[i]
             } else {
-
                 toolbox_key = toolbox_item_order[i][0];
                 args = toolbox_item_order[i][1]  
             }
@@ -264,8 +263,8 @@ export class ULabel {
                 toolbox_instance_list.push(new toolbox_item_class(ulabel))
             } else {
                 toolbox_instance_list.push(new toolbox_item_class(ulabel, args))
-            }           
-        }
+            }  
+        }                    
 
         return toolbox_instance_list
     }
@@ -314,9 +313,9 @@ export class ULabel {
         // Append but don't wait
         $("#" + sp_id + " .toolbox_inner_cls .mode-selection").append(md_buttons.join("<!-- -->"));
         // TODO noconflict
-        $("#" + sp_id + " .toolbox_inner_cls").append(`
-            <a id="submit-button" href="#">${ul.config["done_button"]}</a>
-        `);
+        // $("#" + sp_id + " .toolbox_inner_cls").append(`
+        //     <a id="submit-button" href="#">${ul.config["done_button"]}</a>
+        // `);
 
         // Show current mode label
         ul.show_annotation_mode();
@@ -974,32 +973,32 @@ export class ULabel {
         })
 
         // Button to save annotations
-        $(document).on("click", `a#submit-button[href="#"]`, async () => {
-            var submit_payload = {
-                "task_meta": ul.config["task_meta"],
-                "annotations": {}
-            };
-            for (const stkey in ul.subtasks) {
-                submit_payload["annotations"][stkey] = [];
-                for (var i = 0; i < ul.subtasks[stkey]["annotations"]["ordering"].length; i++) {
-                    submit_payload["annotations"][stkey].push(
-                        ul.subtasks[stkey]["annotations"]["access"][
-                        ul.subtasks[stkey]["annotations"]["ordering"][i]
-                        ]
-                    );
-                }
-            }
-            ul.set_saved(false, true);
-            try {
-                const save_success = await ul.config["done_callback"].bind(ul)(submit_payload);
-                ul.set_saved(!(save_success === false));
-            }
-            catch (err) {
-                console.log("Error waiting for submit script.")
-                console.log(err);
-                ul.set_saved(false);
-            }
-        });
+        // $(document).on("click", `a#submit-button[href="#"]`, async () => {
+        //     var submit_payload = {
+        //         "task_meta": ul.config["task_meta"],
+        //         "annotations": {}
+        //     };
+        //     for (const stkey in ul.subtasks) {
+        //         submit_payload["annotations"][stkey] = [];
+        //         for (var i = 0; i < ul.subtasks[stkey]["annotations"]["ordering"].length; i++) {
+        //             submit_payload["annotations"][stkey].push(
+        //                 ul.subtasks[stkey]["annotations"]["access"][
+        //                 ul.subtasks[stkey]["annotations"]["ordering"][i]
+        //                 ]
+        //             );
+        //         }
+        //     }
+        //     ul.set_saved(false, true);
+        //     try {
+        //         const save_success = await ul.config["done_callback"].bind(ul)(submit_payload);
+        //         ul.set_saved(!(save_success === false));
+        //     }
+        //     catch (err) {
+        //         console.log("Error waiting for submit script.")
+        //         console.log(err);
+        //         ul.set_saved(false);
+        //     }
+        // });
 
         $(document).on("click", "#" + ul.config["toolbox_id"] + " a.night-button", function () {
             if ($("#" + ul.config["container_id"]).hasClass("ulabel-night")) {
@@ -1389,7 +1388,7 @@ export class ULabel {
         container_id,
         image_data,
         username,
-        on_submit,
+        submit_buttons,
         subtasks,
         task_meta = null,
         annotation_meta = null,
@@ -1400,32 +1399,40 @@ export class ULabel {
         config_data = null
     ) {
         console.log(this)
-        // Unroll safe default arguments
-        if (task_meta == null) { task_meta = {}; }
-        if (annotation_meta == null) { annotation_meta = {}; }
+        // // Unroll safe default arguments
+        // if (task_meta == null) { task_meta = {}; }
+        // if (annotation_meta == null) { annotation_meta = {}; }
 
-        // Unroll submit button
-        let on_submit_unrolled;
-        if (typeof on_submit == "function") {
-            on_submit_unrolled = {
-                name: "Submit",
-                hook: on_submit
-            };
-        }
-        else {
-            on_submit_unrolled = on_submit;
-        }
 
-        // If on_submit hook is not async, wrap it in an async func
-        let fin_on_submit_hook;
-        if (on_submit_unrolled.hook.constructor.name == "AsyncFunction") {
-            fin_on_submit_hook = on_submit_unrolled.hook;
-        }
-        else {
-            fin_on_submit_hook = async function (annotations) {
-                return on_submit_unrolled.hook(annotations);
-            };
-        }
+        // if (Array.isArray(submit_buttons)) {
+        //     this.buttons
+        // }
+
+
+        // // Unroll submit button
+        // let on_submit_unrolled;
+        // if (typeof submit_buttons == "function") {
+        //     on_submit_unrolled = {
+        //         name: "Submit",
+        //         hook: submit_buttons
+        //     };
+        // }
+        // else {
+        //     on_submit_unrolled = submit_buttons;
+        // }
+
+        // // If on_submit hook is not async, wrap it in an async func
+        // let fin_on_submit_hook;
+        // if (on_submit_unrolled.hook.constructor.name == "AsyncFunction") {
+        //     fin_on_submit_hook = on_submit_unrolled.hook;
+        // }
+        // else {
+        //     fin_on_submit_hook = async function (annotations) {
+        //         return on_submit_unrolled.hook(annotations);
+        //     };
+        // }
+
+        // this.submit_buttons1 = on_submit_unrolled
 
         // TODO 
         // Allow for importing spacing data -- a measure tool would be nice too
@@ -1464,9 +1471,10 @@ export class ULabel {
             "edit_handle_size": 30,
 
             // Behavior on special interactions
-            "done_callback": fin_on_submit_hook,
-            "done_button": on_submit_unrolled.name,
+            // "done_callback": fin_on_submit_hook,
+            // "done_button": on_submit_unrolled.name,
             "instructions_url": instructions_url,
+            "submit_buttons": submit_buttons,
 
             // ID Dialog config
             "cl_opacity": 0.4,

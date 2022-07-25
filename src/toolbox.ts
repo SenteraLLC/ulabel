@@ -1,6 +1,7 @@
 import { ULabel, ULabelSubtask } from "..";
 import { Configuration } from "./configuration";
 import { ULabelAnnotation } from "./annotation";
+import { event } from "jquery";
 
 const toolboxDividerDiv = "<div class=toolbox-divider></div>"
 
@@ -1051,16 +1052,56 @@ export class KeypointSliderItem extends ToolboxItem {
 }
 
 export class SubmitButtons extends ToolboxItem {
-    private submit_buttons: {name: string, hook: Function, color?: string}[]
+    private submit_buttons: {name: string, hook: Function, color?: string}[];
+    private button_holder_name: string;
+    private click: string = "clicked"
 
-    constructor(sumbit_buttons: {name: string, hook: Function, color?: string}[]) {
+    constructor(ulabel: ULabel) {
         super();
-        this.submit_buttons = sumbit_buttons
+    
+        this.submit_buttons = ulabel.config.submit_buttons
+        console.log(this.submit_buttons)
+        
+        
+        console.log(this.my_function)
+
+        for (let idx in this.submit_buttons) {
+            
+            $(document).on("click", "#" + this.submit_buttons[idx].name.replaceLowerConcat(" ", "-"), async () => {
+                // Create the submit payload
+                let submit_payload = {
+                    "task_meta": ulabel.config["task_meta"],
+                    "annotations": {}
+                };
+
+                // Loop through all of the subtasks
+                for (const stkey in ulabel.subtasks) {
+                    submit_payload["annotations"][stkey] = [];
+
+                    // Add all of the annotations in that subtask
+                    for (let i = 0; i < ulabel.subtasks[stkey]["annotations"]["ordering"].length; i++) {
+                        submit_payload["annotations"][stkey].push(
+                            ulabel.subtasks[stkey]["annotations"]["access"][
+                            ulabel.subtasks[stkey]["annotations"]["ordering"][i]
+                            ]
+                        );
+                    }
+                }
+                
+                return await this.submit_buttons[idx].hook(submit_payload)
+            })
+        }
+    }
+
+    my_function() {
+        this.button_holder_name
     }
 
     get_html(): string {
         let toolboxitem_html = ``
+
         for (let idx in this.submit_buttons) {
+            console.log("inside submit button creator", idx)
 
             let button_color
             if (this.submit_buttons[idx].color !== undefined) {
@@ -1071,13 +1112,24 @@ export class SubmitButtons extends ToolboxItem {
             }
 
             toolboxitem_html += `
-            <button onclick="${this.submit_buttons[idx].hook}" background-color="${button_color}">
+            <button 
+            id="${this.submit_buttons[idx].name.replaceLowerConcat(" ", "-")}" 
+            class="submit-button" 
+            style="
+                background-color: ${button_color}; 
+                display: block;
+                margin-left: auto;
+                margin-right: auto;
+                margin-top: 0.5em;
+                margin-bottom: 0.5em;
+                padding: 2em;
+            ">
                 ${this.submit_buttons[idx].name}
             </button>
             `
         }
-        return toolboxitem_html
         
+        return toolboxitem_html
     }
 }
 

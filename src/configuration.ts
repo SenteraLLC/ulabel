@@ -1,4 +1,4 @@
-import { ModeSelectionToolboxItem, ZoomPanToolboxItem, AnnotationIDToolboxItem, ClassCounterToolboxItem, AnnotationResizeItem, RecolorActiveItem, KeypointSliderItem } from "./toolbox"
+import { ModeSelectionToolboxItem, ZoomPanToolboxItem, AnnotationIDToolboxItem, ClassCounterToolboxItem, AnnotationResizeItem, RecolorActiveItem, KeypointSliderItem, SubmitButtons } from "./toolbox"
 import { get_annotation_confidence, mark_deprecated, filter_low } from "./annotation_operators";
 
 enum AllowedToolboxItem {
@@ -8,7 +8,8 @@ enum AllowedToolboxItem {
     AnnotationID,
     RecolorActive,
     ClassCounter,
-    KeypointSlider
+    KeypointSlider,
+    SubmitButtons
 }
 
 export class Configuration {
@@ -19,7 +20,8 @@ export class Configuration {
         [AllowedToolboxItem.AnnotationID, AnnotationIDToolboxItem],
         [AllowedToolboxItem.RecolorActive, RecolorActiveItem],
         [AllowedToolboxItem.ClassCounter, ClassCounterToolboxItem],
-        [AllowedToolboxItem.KeypointSlider, KeypointSliderItem]
+        [AllowedToolboxItem.KeypointSlider, KeypointSliderItem],
+        [AllowedToolboxItem.SubmitButtons, SubmitButtons]
     ]);
     
     //Change the order of the toolbox items here to change the order they show up in the toolbox
@@ -40,7 +42,8 @@ export class Configuration {
                 "increment": "2",
                 "decrement": "1"
             }
-        }]
+        }],
+        AllowedToolboxItem.SubmitButtons,
     ]
 
     public default_keybinds = {
