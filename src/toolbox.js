@@ -872,7 +872,7 @@ var SubmitButtons = /** @class */ (function (_super) {
                 // If no color provided use hard coded default
                 button_color = "rgba(255, 166, 0, 0.739)";
             }
-            toolboxitem_html += "\n            <button \n            id=\"".concat(this.submit_buttons[idx].name.replaceLowerConcat(" ", "-"), "\" \n            class=\"submit-button\" \n            style=\"\n                background-color: ").concat(button_color, "; \n                display: block;\n                margin-left: auto;\n                margin-right: auto;\n                margin-top: 0.5em;\n                margin-bottom: 0.5em;\n                padding: 2em;\n            \">\n                ").concat(this.submit_buttons[idx].name, "\n            </button>\n            ");
+            toolboxitem_html += "\n            <button \n            id=\"".concat(this.submit_buttons[idx].name.replaceLowerConcat(" ", "-"), "\" \n            class=\"submit-button\" \n            style=\"\n                display: block;\n                width: 6em;\n                font-size: 1.5em;\n                color: white;\n                background-color: ").concat(button_color, "; \n                margin-left: auto;\n                margin-right: auto;\n                margin-top: 0.5em;\n                margin-bottom: 0.5em;\n                padding: 1em;\n                border: 1px solid ").concat(button_color, ";\n                border-radius: 0.5em;\n            \">\n                ").concat(this.submit_buttons[idx].name, "\n            </button>\n            ");
         }
         return toolboxitem_html;
     };

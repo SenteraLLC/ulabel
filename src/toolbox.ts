@@ -1116,13 +1116,18 @@ export class SubmitButtons extends ToolboxItem {
             id="${this.submit_buttons[idx].name.replaceLowerConcat(" ", "-")}" 
             class="submit-button" 
             style="
-                background-color: ${button_color}; 
                 display: block;
+                width: 6em;
+                font-size: 1.5em;
+                color: white;
+                background-color: ${button_color}; 
                 margin-left: auto;
                 margin-right: auto;
                 margin-top: 0.5em;
                 margin-bottom: 0.5em;
-                padding: 2em;
+                padding: 1em;
+                border: 1px solid ${button_color};
+                border-radius: 0.5em;
             ">
                 ${this.submit_buttons[idx].name}
             </button>
