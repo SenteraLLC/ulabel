@@ -823,7 +823,15 @@ var SubmitButtons = /** @class */ (function (_super) {
     __extends(SubmitButtons, _super);
     function SubmitButtons(ulabel) {
         var _this = _super.call(this) || this;
+        // Grab the submit buttons from ulabel
         _this.submit_buttons = ulabel.config.submit_buttons;
+        // For legacy reasons submit_buttons may be a function, in that case convert it to the right format
+        if (typeof _this.submit_buttons == "function") {
+            _this.submit_buttons = [{
+                    "name": "Submit",
+                    "hook": _this.submit_buttons
+                }];
+        }
         var _loop_1 = function (idx) {
             // Create a unique event listener for each submit button in the submit buttons array.
             $(document).on("click", "#" + this_1.submit_buttons[idx].name.replaceLowerConcat(" ", "-"), function () { return __awaiter(_this, void 0, void 0, function () {

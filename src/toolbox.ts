@@ -1052,12 +1052,21 @@ export class KeypointSliderItem extends ToolboxItem {
 }
 
 export class SubmitButtons extends ToolboxItem {
-    private submit_buttons: {name: string, hook: Function, color?: string}[];
+    private submit_buttons: {name: string, hook: Function, color?: string}[] | Function;
 
     constructor(ulabel: ULabel) {
         super();
     
+        // Grab the submit buttons from ulabel
         this.submit_buttons = ulabel.config.submit_buttons
+
+        // For legacy reasons submit_buttons may be a function, in that case convert it to the right format
+        if (typeof this.submit_buttons == "function") {
+            this.submit_buttons = [{
+                "name": "Submit",
+                "hook": this.submit_buttons
+            }]
+        }
 
         for (let idx in this.submit_buttons) {
 
