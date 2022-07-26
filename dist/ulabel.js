@@ -20619,10 +20619,15 @@ var SubmitButtons = /** @class */ (function (_super) {
         var _loop_1 = function (idx) {
             // Create a unique event listener for each submit button in the submit buttons array.
             $(document).on("click", "#" + this_1.submit_buttons[idx].name.replaceLowerConcat(" ", "-"), function () { return __awaiter(_this, void 0, void 0, function () {
-                var submit_payload, stkey, i;
+                var button, submit_payload, stkey, i;
                 return __generator(this, function (_a) {
                     switch (_a.label) {
                         case 0:
+                            button = document.getElementById(this.submit_buttons[idx].name.replaceLowerConcat(" ", "-"));
+                            console.log(button);
+                            // Set the button to disabled until we're done processing the previous click
+                            button.disabled = true;
+                            button.innerText = "( )";
                             submit_payload = {
                                 "task_meta": ulabel.config["task_meta"],
                                 "annotations": {}
@@ -20638,6 +20643,9 @@ var SubmitButtons = /** @class */ (function (_super) {
                             return [4 /*yield*/, this.submit_buttons[idx].hook(submit_payload)];
                         case 1:
                             _a.sent();
+                            // Set the button back to its initial state
+                            button.disabled = false;
+                            button.innerText = this.submit_buttons[idx].name;
                             return [2 /*return*/];
                     }
                 });

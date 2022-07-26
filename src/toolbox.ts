@@ -1063,6 +1063,14 @@ export class SubmitButtons extends ToolboxItem {
 
             // Create a unique event listener for each submit button in the submit buttons array.
             $(document).on("click", "#" + this.submit_buttons[idx].name.replaceLowerConcat(" ", "-"), async () => {
+                // Grab the button
+                const button: HTMLButtonElement = <HTMLButtonElement> document.getElementById(this.submit_buttons[idx].name.replaceLowerConcat(" ", "-"));
+                console.log(button)
+                
+                // Set the button to disabled until we're done processing the previous click
+                button.disabled = true;
+                button.innerText = "( )";
+
                 // Create the submit payload
                 let submit_payload = {
                     "task_meta": ulabel.config["task_meta"],
@@ -1083,7 +1091,11 @@ export class SubmitButtons extends ToolboxItem {
                     }
                 }
                 
-                await this.submit_buttons[idx].hook(submit_payload)
+                await this.submit_buttons[idx].hook(submit_payload);
+
+                // Set the button back to its initial state
+                button.disabled = false;
+                button.innerText = this.submit_buttons[idx].name;
             })
         }
     }
