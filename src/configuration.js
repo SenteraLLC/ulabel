@@ -12,6 +12,7 @@ var AllowedToolboxItem;
     AllowedToolboxItem[AllowedToolboxItem["RecolorActive"] = 4] = "RecolorActive";
     AllowedToolboxItem[AllowedToolboxItem["ClassCounter"] = 5] = "ClassCounter";
     AllowedToolboxItem[AllowedToolboxItem["KeypointSlider"] = 6] = "KeypointSlider";
+    AllowedToolboxItem[AllowedToolboxItem["SubmitButtons"] = 7] = "SubmitButtons";
 })(AllowedToolboxItem || (AllowedToolboxItem = {}));
 var Configuration = /** @class */ (function () {
     function Configuration() {
@@ -26,7 +27,8 @@ var Configuration = /** @class */ (function () {
             [AllowedToolboxItem.AnnotationID, toolbox_1.AnnotationIDToolboxItem],
             [AllowedToolboxItem.RecolorActive, toolbox_1.RecolorActiveItem],
             [AllowedToolboxItem.ClassCounter, toolbox_1.ClassCounterToolboxItem],
-            [AllowedToolboxItem.KeypointSlider, toolbox_1.KeypointSliderItem]
+            [AllowedToolboxItem.KeypointSlider, toolbox_1.KeypointSliderItem],
+            [AllowedToolboxItem.SubmitButtons, toolbox_1.SubmitButtons]
         ]);
         //Change the order of the toolbox items here to change the order they show up in the toolbox
         this.default_toolbox_item_order = [
@@ -46,7 +48,8 @@ var Configuration = /** @class */ (function () {
                         "increment": "2",
                         "decrement": "1"
                     }
-                }]
+                }],
+            AllowedToolboxItem.SubmitButtons,
         ];
         this.default_keybinds = {
             "annotation_size_small": "s",

@@ -1,6 +1,7 @@
 import { ULabel, ULabelSubtask } from "..";
 import { Configuration } from "./configuration";
 import { ULabelAnnotation } from "./annotation";
+import { event } from "jquery";
 
 const toolboxDividerDiv = "<div class=toolbox-divider></div>"
 
@@ -1047,6 +1048,121 @@ export class KeypointSliderItem extends ToolboxItem {
                 </span>
             </div>
         </div>`
+    }
+}
+
+export class SubmitButtons extends ToolboxItem {
+    private submit_buttons: {name: string, hook: Function, color?: string}[] | Function;
+
+    constructor(ulabel: ULabel) {
+        super();
+    
+        // Grab the submit buttons from ulabel
+        this.submit_buttons = ulabel.config.submit_buttons
+
+        // For legacy reasons submit_buttons may be a function, in that case convert it to the right format
+        if (typeof this.submit_buttons == "function") {
+            this.submit_buttons = [{
+                "name": "Submit",
+                "hook": this.submit_buttons
+            }]
+        }
+
+        for (let idx in this.submit_buttons) {
+
+            // Create a unique event listener for each submit button in the submit buttons array.
+            $(document).on("click", "#" + this.submit_buttons[idx].name.replaceLowerConcat(" ", "-"), async (e) => {
+                // Grab the button
+                const button: HTMLButtonElement = <HTMLButtonElement> document.getElementById(this.submit_buttons[idx].name.replaceLowerConcat(" ", "-"));
+                
+                // Grab all of the submit buttons
+                let submit_button_elements = <HTMLButtonElement[]> Array.from(document.getElementsByClassName("submit-button"));
+                
+                // Make all the buttons look disabled
+                for (let i in submit_button_elements) {
+                    submit_button_elements[i].disabled = true;
+                    submit_button_elements[i].style.filter = "opacity(0.7)";
+                }
+
+                // Give the clicked button a loading animation
+                button.innerText = "";
+                let animation = document.createElement("div");
+                animation.className = "lds-dual-ring";
+                button.appendChild(animation);
+
+                // Create the submit payload
+                let submit_payload = {
+                    "task_meta": ulabel.config["task_meta"],
+                    "annotations": {}
+                };
+
+                // Loop through all of the subtasks
+                for (const stkey in ulabel.subtasks) {
+                    submit_payload["annotations"][stkey] = [];
+
+                    // Add all of the annotations in that subtask
+                    for (let i = 0; i < ulabel.subtasks[stkey]["annotations"]["ordering"].length; i++) {
+                        submit_payload["annotations"][stkey].push(
+                            ulabel.subtasks[stkey]["annotations"]["access"][
+                            ulabel.subtasks[stkey]["annotations"]["ordering"][i]
+                            ]
+                        );
+                    }
+                }
+                
+                await this.submit_buttons[idx].hook(submit_payload);
+
+                // Give the button back its name
+                button.innerText = this.submit_buttons[idx].name;
+
+                // Re-enable the buttons
+                for (let i in submit_button_elements) {
+                    submit_button_elements[i].disabled = false;
+                    submit_button_elements[i].style.filter = "opacity(1)";
+                }
+            })
+        }
+    }
+
+    get_html(): string {
+        let toolboxitem_html = ``
+
+        for (let idx in this.submit_buttons) {
+
+            let button_color
+            if (this.submit_buttons[idx].color !== undefined) {
+                button_color = this.submit_buttons[idx].color
+            } else {
+                // If no color provided use hard coded default
+                button_color = "rgba(255, 166, 0, 0.739)"
+            }
+
+            toolboxitem_html += `
+            <button 
+            id="${this.submit_buttons[idx].name.replaceLowerConcat(" ", "-")}" 
+            class="submit-button" 
+            style="
+                display: block;
+                height: 1.2em;
+                width: 6em;
+                font-size: 1.5em;
+                color: white;
+                background-color: ${button_color}; 
+                margin-left: auto;
+                margin-right: auto;
+                margin-top: 0.5em;
+                margin-bottom: 0.5em;
+                padding: 1em;
+                border: 1px solid ${button_color};
+                border-radius: 0.5em;
+                cursor: pointer;
+            ">
+                ${this.submit_buttons[idx].name}
+            </button>
+            `
+        }
+        
+        return toolboxitem_html
     }
 }
 
