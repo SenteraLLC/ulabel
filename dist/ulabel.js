@@ -14842,10 +14842,6 @@ class ULabel {
 
         // Append but don't wait
         jquery_default()("#" + sp_id + " .toolbox_inner_cls .mode-selection").append(md_buttons.join("<!-- -->"));
-        // TODO noconflict
-        // $("#" + sp_id + " .toolbox_inner_cls").append(`
-        //     <a id="submit-button" href="#">${ul.config["done_button"]}</a>
-        // `);
 
         // Show current mode label
         ul.show_annotation_mode();
@@ -15573,7 +15569,7 @@ class ULabel {
                 )
             ) {
                 keypress_event.preventDefault();
-                jquery_default()("a#submit-button").trigger("click");
+                jquery_default()(".submit-button")[0].click(); // Click the first submit button
             }
             else if (keypress_event.key == "l") {
                 // console.log("Listing annotations using the \"l\" key has been deprecated.");
