@@ -834,17 +834,20 @@ var SubmitButtons = /** @class */ (function (_super) {
         }
         var _loop_1 = function (idx) {
             // Create a unique event listener for each submit button in the submit buttons array.
-            $(document).on("click", "#" + this_1.submit_buttons[idx].name.replaceLowerConcat(" ", "-"), function () { return __awaiter(_this, void 0, void 0, function () {
-                var button, animation, submit_payload, stkey, i;
+            $(document).on("click", "#" + this_1.submit_buttons[idx].name.replaceLowerConcat(" ", "-"), function (e) { return __awaiter(_this, void 0, void 0, function () {
+                var button, submit_button_elements, i, animation, submit_payload, stkey, i, i;
                 return __generator(this, function (_a) {
                     switch (_a.label) {
                         case 0:
                             button = document.getElementById(this.submit_buttons[idx].name.replaceLowerConcat(" ", "-"));
-                            console.log(button);
-                            // Set the button to disabled until we're done processing the previous click
-                            button.disabled = true;
+                            submit_button_elements = Array.from(document.getElementsByClassName("submit-button"));
+                            // Make all the buttons look disabled
+                            for (i in submit_button_elements) {
+                                submit_button_elements[i].disabled = true;
+                                submit_button_elements[i].style.filter = "opacity(0.7)";
+                            }
+                            // Give the clicked button a loading animation
                             button.innerText = "";
-                            button.style.filter = "opacity(0.7)";
                             animation = document.createElement("div");
                             animation.className = "lds-dual-ring";
                             button.appendChild(animation);
@@ -863,10 +866,13 @@ var SubmitButtons = /** @class */ (function (_super) {
                             return [4 /*yield*/, this.submit_buttons[idx].hook(submit_payload)];
                         case 1:
                             _a.sent();
-                            // Set the button back to its initial state
-                            button.disabled = false;
+                            // Give the button back its name
                             button.innerText = this.submit_buttons[idx].name;
-                            button.style.filter = "opacity(1)";
+                            // Re-enable the buttons
+                            for (i in submit_button_elements) {
+                                submit_button_elements[i].disabled = false;
+                                submit_button_elements[i].style.filter = "opacity(1)";
+                            }
                             return [2 /*return*/];
                     }
                 });
