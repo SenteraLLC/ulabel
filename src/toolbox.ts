@@ -1078,7 +1078,12 @@ export class SubmitButtons extends ToolboxItem {
                 
                 // Set the button to disabled until we're done processing the previous click
                 button.disabled = true;
-                button.innerText = "( )";
+                button.innerText = "";
+                button.style.filter = "opacity(0.7)";
+
+                let animation = document.createElement("div");
+                animation.className = "lds-dual-ring";
+                button.appendChild(animation);
 
                 // Create the submit payload
                 let submit_payload = {
@@ -1105,6 +1110,7 @@ export class SubmitButtons extends ToolboxItem {
                 // Set the button back to its initial state
                 button.disabled = false;
                 button.innerText = this.submit_buttons[idx].name;
+                button.style.filter = "opacity(1)";
             })
         }
     }
@@ -1128,6 +1134,7 @@ export class SubmitButtons extends ToolboxItem {
             class="submit-button" 
             style="
                 display: block;
+                height: 1.2em;
                 width: 6em;
                 font-size: 1.5em;
                 color: white;

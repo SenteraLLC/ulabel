@@ -20627,7 +20627,7 @@ var SubmitButtons = /** @class */ (function (_super) {
         var _loop_1 = function (idx) {
             // Create a unique event listener for each submit button in the submit buttons array.
             $(document).on("click", "#" + this_1.submit_buttons[idx].name.replaceLowerConcat(" ", "-"), function () { return __awaiter(_this, void 0, void 0, function () {
-                var button, submit_payload, stkey, i;
+                var button, animation, submit_payload, stkey, i;
                 return __generator(this, function (_a) {
                     switch (_a.label) {
                         case 0:
@@ -20635,7 +20635,11 @@ var SubmitButtons = /** @class */ (function (_super) {
                             console.log(button);
                             // Set the button to disabled until we're done processing the previous click
                             button.disabled = true;
-                            button.innerText = "( )";
+                            button.innerText = "";
+                            button.style.filter = "opacity(0.7)";
+                            animation = document.createElement("div");
+                            animation.className = "lds-dual-ring";
+                            button.appendChild(animation);
                             submit_payload = {
                                 "task_meta": ulabel.config["task_meta"],
                                 "annotations": {}
@@ -20654,6 +20658,7 @@ var SubmitButtons = /** @class */ (function (_super) {
                             // Set the button back to its initial state
                             button.disabled = false;
                             button.innerText = this.submit_buttons[idx].name;
+                            button.style.filter = "opacity(1)";
                             return [2 /*return*/];
                     }
                 });
@@ -20676,7 +20681,7 @@ var SubmitButtons = /** @class */ (function (_super) {
                 // If no color provided use hard coded default
                 button_color = "rgba(255, 166, 0, 0.739)";
             }
-            toolboxitem_html += "\n            <button \n            id=\"".concat(this.submit_buttons[idx].name.replaceLowerConcat(" ", "-"), "\" \n            class=\"submit-button\" \n            style=\"\n                display: block;\n                width: 6em;\n                font-size: 1.5em;\n                color: white;\n                background-color: ").concat(button_color, "; \n                margin-left: auto;\n                margin-right: auto;\n                margin-top: 0.5em;\n                margin-bottom: 0.5em;\n                padding: 1em;\n                border: 1px solid ").concat(button_color, ";\n                border-radius: 0.5em;\n                cursor: pointer;\n            \">\n                ").concat(this.submit_buttons[idx].name, "\n            </button>\n            ");
+            toolboxitem_html += "\n            <button \n            id=\"".concat(this.submit_buttons[idx].name.replaceLowerConcat(" ", "-"), "\" \n            class=\"submit-button\" \n            style=\"\n                display: block;\n                height: 1.2em;\n                width: 6em;\n                font-size: 1.5em;\n                color: white;\n                background-color: ").concat(button_color, "; \n                margin-left: auto;\n                margin-right: auto;\n                margin-top: 0.5em;\n                margin-bottom: 0.5em;\n                padding: 1em;\n                border: 1px solid ").concat(button_color, ";\n                border-radius: 0.5em;\n                cursor: pointer;\n            \">\n                ").concat(this.submit_buttons[idx].name, "\n            </button>\n            ");
         }
         return toolboxitem_html;
     };
