@@ -14530,7 +14530,7 @@ div#${prntid}.ulabel-night #submit-button[href="#"]:active {
 `;
 }
 
-const BUTTON_LOADER_HTML = `<div class="lds-dual-ring"></div>`;
+const BUTTON_LOADER_HTML = (/* unused pure expression or super */ null && (`<div class="lds-dual-ring"></div>`));
 
 // TODO more of these
 const COLORS = [
@@ -17619,19 +17619,19 @@ class ULabel {
     // Action Stream Events
 
     set_saved(saved, in_progress = false) {
-        if (saved) {
-            jquery_default()("#" + this.config["container_id"] + " a#submit-button").removeAttr("href");
-            jquery_default()("#" + this.config["container_id"] + " a#submit-button").html(this.config["done_button"]);
-        }
-        else {
-            jquery_default()("#" + this.config["container_id"] + " a#submit-button").attr("href", "#");
-            if (in_progress) {
-                jquery_default()("#" + this.config["container_id"] + " a#submit-button").html(BUTTON_LOADER_HTML);
-            }
-            else {
-                jquery_default()("#" + this.config["container_id"] + " a#submit-button").html(this.config["done_button"]);
-            }
-        }
+        // if (saved) {
+        //     $("#" + this.config["container_id"] + " a#submit-button").removeAttr("href");
+        //     $("#" + this.config["container_id"] + " a#submit-button").html(this.config["done_button"]);
+        // }
+        // else {
+        //     $("#" + this.config["container_id"] + " a#submit-button").attr("href", "#");
+        //     if (in_progress) {
+        //         $("#" + this.config["container_id"] + " a#submit-button").html(BUTTON_LOADER_HTML);
+        //     }
+        //     else {
+        //         $("#" + this.config["container_id"] + " a#submit-button").html(this.config["done_button"]);
+        //     }
+        // }
         this.state["edited"] = !saved;
     }
 

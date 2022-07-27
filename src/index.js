@@ -3089,19 +3089,19 @@ export class ULabel {
     // Action Stream Events
 
     set_saved(saved, in_progress = false) {
-        if (saved) {
-            $("#" + this.config["container_id"] + " a#submit-button").removeAttr("href");
-            $("#" + this.config["container_id"] + " a#submit-button").html(this.config["done_button"]);
-        }
-        else {
-            $("#" + this.config["container_id"] + " a#submit-button").attr("href", "#");
-            if (in_progress) {
-                $("#" + this.config["container_id"] + " a#submit-button").html(BUTTON_LOADER_HTML);
-            }
-            else {
-                $("#" + this.config["container_id"] + " a#submit-button").html(this.config["done_button"]);
-            }
-        }
+        // if (saved) {
+        //     $("#" + this.config["container_id"] + " a#submit-button").removeAttr("href");
+        //     $("#" + this.config["container_id"] + " a#submit-button").html(this.config["done_button"]);
+        // }
+        // else {
+        //     $("#" + this.config["container_id"] + " a#submit-button").attr("href", "#");
+        //     if (in_progress) {
+        //         $("#" + this.config["container_id"] + " a#submit-button").html(BUTTON_LOADER_HTML);
+        //     }
+        //     else {
+        //         $("#" + this.config["container_id"] + " a#submit-button").html(this.config["done_button"]);
+        //     }
+        // }
         this.state["edited"] = !saved;
     }
 
