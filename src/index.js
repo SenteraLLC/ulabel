@@ -269,7 +269,7 @@ export class ULabel {
         return toolbox_instance_list
     }
 
-    static prep_window_html(ul) {
+    static prep_window_html(ul, toolbox_item_order = null) {
         // Bring image and annotation scaffolding in
         // TODO multi-image with spacing etc.
 
@@ -280,7 +280,7 @@ export class ULabel {
         // const toolbox = configuration.create_toolbox();
         const toolbox = new Toolbox(
             [],
-            ULabel.create_toolbox(ul)
+            ULabel.create_toolbox(ul, toolbox_item_order)
         );
 
 
@@ -1392,9 +1392,11 @@ export class ULabel {
         initial_crop = null, //{top: #, left: #, height: #, width: #,}
         initial_line_size = 4,
         instructions_url = null,
-        config_data = null
+        config_data = null,
+        toolbox_order = null
     ) {
         console.log(this)
+        console.log(toolbox_order, "Toolbox order", task_meta)
         // // Unroll safe default arguments
         // if (task_meta == null) { task_meta = {}; }
         // if (annotation_meta == null) { annotation_meta = {}; }
@@ -1487,6 +1489,8 @@ export class ULabel {
             this.config.modify_config(config_data)
         }
 
+        this.toolbox_order = toolbox_order;
+
 
         // Useful for the efficient redraw of nonspatial annotations
         this.tmp_nonspatial_element_ids = {};
@@ -1577,7 +1581,7 @@ export class ULabel {
         that.state["current_subtask"] = Object.keys(that.subtasks)[0];
 
         // Place image element
-        ULabel.prep_window_html(this);
+        ULabel.prep_window_html(this, this.toolbox_order);
 
         // Detect night cookie
         if (ULabel.has_night_mode_cookie()) {
