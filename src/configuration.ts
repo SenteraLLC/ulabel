@@ -2,14 +2,14 @@ import { ModeSelectionToolboxItem, ZoomPanToolboxItem, AnnotationIDToolboxItem, 
 import { get_annotation_confidence, mark_deprecated, filter_low } from "./annotation_operators";
 
 enum AllowedToolboxItem {
-    ModeSelect,
-    ZoomPan,
-    AnnotationResize,
-    AnnotationID,
-    RecolorActive,
-    ClassCounter,
-    KeypointSlider,
-    SubmitButtons
+    ModeSelect,         // 0
+    ZoomPan,            // 1
+    AnnotationResize,   // 2
+    AnnotationID,       // 3
+    RecolorActive,      // 4
+    ClassCounter,       // 5
+    KeypointSlider,     // 6
+    SubmitButtons       // 7
 }
 
 export class Configuration {
