@@ -442,4 +442,52 @@ export class HTMLBuilder {
             };
         }
     }
+
+    static build_confidence_dialog(ulabel: ULabel) {
+        for (const stkey in ulabel.subtasks) {
+            let local_id = `annotation_confidence__${stkey}`;
+            let global_id = `global_annotation_confidence__${stkey}`;
+
+            let subtask_dialog_container_jq = $("#dialogs__" + stkey);
+            let global_edit_suggestion_jq = $("#global_edit_suggestion__" + stkey);
+
+            //Local confidence dialog
+            subtask_dialog_container_jq.append(`
+                <p id="${local_id}" class="annotation-confidence editable"></p>
+            `);
+            $("#" + local_id).css({
+                "height": ulabel.config["edit_handle_size"] + "px",
+                "width": ulabel.config["edit_handle_size"] + "px",
+            });
+
+            // Global edit suggestion
+            let id_edit: string = "";
+            let mcm_ind: string = "";
+            if (!ulabel.subtasks[stkey]["single_class_mode"]) {
+                id_edit = `--><a href="#" class="reid_suggestion global_sub_suggestion gedit-target"></a><!--`;
+                mcm_ind = " mcm";
+            }
+            global_edit_suggestion_jq.append(`
+                <div id="${global_id}" class="annotation-confidence gedit-target${mcm_ind}">
+                    <p class="annotation-confidence-title" style="margin: 0.25em; margin-top: 1em; padding-top: 0.3em; opacity: 1;">Annotation Confidence:</p>
+                    <p class="annotation-confidence-value" style="margin: 0.25em; opacity: 1;">
+                    ${ulabel.subtasks[ulabel.state["current_subtask"]]["active_annotation"]}
+                    </p>
+                </div>
+            `);
+
+            // Style the dialog
+            $("#" + global_id).css({
+                "background-color": "black",
+                "color": "white",
+                "opacity": "0.6",
+                "height": "3em",
+                "width": "14.5em",
+                "margin-top": "-9.5em",
+                "border-radius": "1em",
+                "font-size": "1.2em",
+                "margin-left": "-1.4em",
+            });
+        }
+    }
 }
