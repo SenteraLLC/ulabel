@@ -246,6 +246,41 @@ var HTMLBuilder = /** @class */ (function () {
             "border-radius": "".concat(inner_rad, "px")
         });
     };
+    HTMLBuilder.build_edit_suggestion = function (ulabel) {
+        // TODO noconflict
+        // DONE Migrated to subtasks
+        for (var stkey in ulabel.subtasks) {
+            var local_id = "edit_suggestion__".concat(stkey);
+            var global_id = "global_edit_suggestion__".concat(stkey);
+            var subtask_dialog_container_jq = $("#dialogs__" + stkey);
+            // Local edit suggestion
+            subtask_dialog_container_jq.append("\n                <a href=\"#\" id=\"".concat(local_id, "\" class=\"edit_suggestion editable\"></a>\n            "));
+            $("#" + local_id).css({
+                "height": ulabel.config["edit_handle_size"] + "px",
+                "width": ulabel.config["edit_handle_size"] + "px",
+                "border-radius": ulabel.config["edit_handle_size"] / 2 + "px"
+            });
+            // Global edit suggestion
+            var id_edit = "";
+            var mcm_ind = "";
+            if (!ulabel.subtasks[stkey]["single_class_mode"]) {
+                id_edit = "--><a href=\"#\" class=\"reid_suggestion global_sub_suggestion gedit-target\"></a><!--";
+                mcm_ind = " mcm";
+            }
+            subtask_dialog_container_jq.append("\n                <div id=\"".concat(global_id, "\" class=\"global_edit_suggestion glob_editable gedit-target").concat(mcm_ind, "\">\n                    <a href=\"#\" class=\"move_suggestion global_sub_suggestion movable gedit-target\">\n                        <img class=\"movable gedit-target\" src=\"data:image/png;base64,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\">\n                    </a><!--\n                    ").concat(id_edit, "\n                    --><a href=\"#\" class=\"delete_suggestion global_sub_suggestion gedit-target\">\n                        <span class=\"bigx gedit-target\">&#215;</span>\n                    </a>\n                </div>\n            "));
+            // Register these dialogs with each subtask
+            ulabel.subtasks[stkey]["state"]["visible_dialogs"][local_id] = {
+                "left": 0.0,
+                "top": 0.0,
+                "pin": "center"
+            };
+            ulabel.subtasks[stkey]["state"]["visible_dialogs"][global_id] = {
+                "left": 0.0,
+                "top": 0.0,
+                "pin": "center"
+            };
+        }
+    };
     return HTMLBuilder;
 }());
 exports.HTMLBuilder = HTMLBuilder;
