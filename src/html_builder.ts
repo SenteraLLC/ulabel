@@ -1,3 +1,5 @@
+import { ULabel } from "..";
+
 export class HTMLBuilder {
 
     static get_md_button(md_key, md_name, svg_blob, cur_md, subtasks) {
@@ -21,5 +23,22 @@ export class HTMLBuilder {
         </div>`;
     }
 
-    
+    static get_images_html(ulabel: ULabel) {
+        let images_html: string = "";
+
+        let display: string;
+        for (let i = 0; i < ulabel.config["image_data"].frames.length; i++) {
+            if (i != 0) {
+                display = "none";
+            }
+            else {
+                display = "block";
+            }
+            images_html += `
+                <img id="${ulabel.config["image_id_pfx"]}__${i}" src="${ulabel.config["image_data"].frames[i]}" class="imwrap_cls ${ulabel.config["imgsz_class"]} image_frame" style="z-index: 50; display: ${display};" />
+            `;
+        }
+        return images_html;
+    }
+
 }
