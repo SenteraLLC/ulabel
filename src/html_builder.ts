@@ -11,10 +11,20 @@ import {
     TBAR_SVG,
     POLYLINE_SVG,
     WHOLE_IMAGE_SVG,
-    GLOBAL_SVG
+    GLOBAL_SVG,
+    get_init_style
 } from './blobs';
 
 export class HTMLBuilder {
+
+    static add_style_to_document(ulabel: ULabel) {
+        let head = document.head || document.getElementsByTagName('head')[0];
+        let style = document.createElement('style');
+        head.appendChild(style);
+        
+        style.appendChild(document.createTextNode(get_init_style(ulabel.config["container_id"])));
+        
+    }
 
     private static get_md_button(md_key, md_name, svg_blob, cur_md, subtasks) {
         let sel = "";

@@ -7,6 +7,12 @@ var blobs_1 = require("./blobs");
 var HTMLBuilder = /** @class */ (function () {
     function HTMLBuilder() {
     }
+    HTMLBuilder.add_style_to_document = function (ulabel) {
+        var head = document.head || document.getElementsByTagName('head')[0];
+        var style = document.createElement('style');
+        head.appendChild(style);
+        style.appendChild(document.createTextNode((0, blobs_1.get_init_style)(ulabel.config["container_id"])));
+    };
     HTMLBuilder.get_md_button = function (md_key, md_name, svg_blob, cur_md, subtasks) {
         var sel = "";
         var href = " href=\"#\"";
