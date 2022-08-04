@@ -77,6 +77,42 @@ var Toolbox = /** @class */ (function () {
         this.tabs = tabs;
         this.items = items;
     }
+    Toolbox.create_toolbox = function (ulabel, toolbox_item_order) {
+        // Grab the default toolbox if one wasn't provided
+        if (toolbox_item_order == null) {
+            toolbox_item_order = ulabel.config.default_toolbox_item_order;
+        }
+        // There's no point to having an empty toolbox, so throw an error if the toolbox is empty.
+        // The toolbox won't actually break if there aren't any items in the toolbox, so this
+        // error isn't strictly neccesary.
+        if (toolbox_item_order.length === 0) {
+            throw new Error("No Toolbox Items Given");
+        }
+        var toolbox_instance_list = [];
+        // Go through the items in toolbox_item_order and add their instance to the toolbox instance list
+        for (var i = 0; i < toolbox_item_order.length; i++) {
+            var args = void 0, toolbox_key = void 0;
+            // If the value of toolbox_item_order[i] is a number then that means the it is one of the 
+            // enumerated toolbox items, so set it to the key, otherwise the element must be an array
+            // of which the first element of that array must be the enumerated value, and the arguments
+            // must be the second value
+            if (typeof (toolbox_item_order[i]) === "number") {
+                toolbox_key = toolbox_item_order[i];
+            }
+            else {
+                toolbox_key = toolbox_item_order[i][0];
+                args = toolbox_item_order[i][1];
+            }
+            var toolbox_item_class = ulabel.config.toolbox_map.get(toolbox_key);
+            if (args == null) {
+                toolbox_instance_list.push(new toolbox_item_class(ulabel));
+            }
+            else {
+                toolbox_instance_list.push(new toolbox_item_class(ulabel, args));
+            }
+        }
+        return toolbox_instance_list;
+    };
     Toolbox.prototype.setup_toolbox_html = function (ulabel, frame_annotation_dialogs, images, ULABEL_VERSION) {
         // Setup base div and ULabel version header
         var toolbox_html = "\n        <div class=\"full_ulabel_container_\">\n            ".concat(frame_annotation_dialogs, "\n            <div id=\"").concat(ulabel.config["annbox_id"], "\" class=\"annbox_cls\">\n                <div id=\"").concat(ulabel.config["imwrap_id"], "\" class=\"imwrap_cls ").concat(ulabel.config["imgsz_class"], "\">\n                    ").concat(images, "\n                </div>\n            </div>\n            <div id=\"").concat(ulabel.config["toolbox_id"], "\" class=\"toolbox_cls\">\n                <div class=\"toolbox-name-header\">\n                    <h1 class=\"toolname\"><a class=\"repo-anchor\" href=\"https://github.com/SenteraLLC/ulabel\">ULabel</a> <span class=\"version-number\">v").concat(ULABEL_VERSION, "</span></h1><!--\n                    --><div class=\"night-button-cont\">\n                        <a href=\"#\" class=\"night-button\">\n                            <div class=\"night-button-track\">\n                                <div class=\"night-status\"></div>\n                            </div>\n                        </a>\n                    </div>\n                </div>\n                <div class=\"toolbox_inner_cls\">\n        ");

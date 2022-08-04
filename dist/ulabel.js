@@ -11664,460 +11664,26 @@ exports.filter_low = filter_low;
 
 /***/ }),
 
-/***/ 976:
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.Configuration = void 0;
-var toolbox_1 = __webpack_require__(334);
-var annotation_operators_1 = __webpack_require__(419);
-var AllowedToolboxItem;
-(function (AllowedToolboxItem) {
-    AllowedToolboxItem[AllowedToolboxItem["ModeSelect"] = 0] = "ModeSelect";
-    AllowedToolboxItem[AllowedToolboxItem["ZoomPan"] = 1] = "ZoomPan";
-    AllowedToolboxItem[AllowedToolboxItem["AnnotationResize"] = 2] = "AnnotationResize";
-    AllowedToolboxItem[AllowedToolboxItem["AnnotationID"] = 3] = "AnnotationID";
-    AllowedToolboxItem[AllowedToolboxItem["RecolorActive"] = 4] = "RecolorActive";
-    AllowedToolboxItem[AllowedToolboxItem["ClassCounter"] = 5] = "ClassCounter";
-    AllowedToolboxItem[AllowedToolboxItem["KeypointSlider"] = 6] = "KeypointSlider";
-    AllowedToolboxItem[AllowedToolboxItem["SubmitButtons"] = 7] = "SubmitButtons";
-})(AllowedToolboxItem || (AllowedToolboxItem = {}));
-var Configuration = /** @class */ (function () {
-    function Configuration() {
-        var kwargs = [];
-        for (var _i = 0; _i < arguments.length; _i++) {
-            kwargs[_i] = arguments[_i];
-        }
-        this.toolbox_map = new Map([
-            [AllowedToolboxItem.ModeSelect, toolbox_1.ModeSelectionToolboxItem],
-            [AllowedToolboxItem.ZoomPan, toolbox_1.ZoomPanToolboxItem],
-            [AllowedToolboxItem.AnnotationResize, toolbox_1.AnnotationResizeItem],
-            [AllowedToolboxItem.AnnotationID, toolbox_1.AnnotationIDToolboxItem],
-            [AllowedToolboxItem.RecolorActive, toolbox_1.RecolorActiveItem],
-            [AllowedToolboxItem.ClassCounter, toolbox_1.ClassCounterToolboxItem],
-            [AllowedToolboxItem.KeypointSlider, toolbox_1.KeypointSliderItem],
-            [AllowedToolboxItem.SubmitButtons, toolbox_1.SubmitButtons]
-        ]);
-        //Change the order of the toolbox items here to change the order they show up in the toolbox
-        this.default_toolbox_item_order = [
-            AllowedToolboxItem.ModeSelect,
-            AllowedToolboxItem.ZoomPan,
-            AllowedToolboxItem.AnnotationResize,
-            AllowedToolboxItem.AnnotationID,
-            AllowedToolboxItem.RecolorActive,
-            AllowedToolboxItem.ClassCounter,
-            [AllowedToolboxItem.KeypointSlider, {
-                    "name": "Filter Low Confidence",
-                    "filter_function": annotation_operators_1.filter_low,
-                    "confidence_function": annotation_operators_1.get_annotation_confidence,
-                    "mark_deprecated": annotation_operators_1.mark_deprecated,
-                    "default_value": 0.05,
-                    "keybinds": {
-                        "increment": "2",
-                        "decrement": "1"
-                    }
-                }],
-            AllowedToolboxItem.SubmitButtons,
-        ];
-        this.default_keybinds = {
-            "annotation_size_small": "s",
-            "annotation_size_large": "l",
-            "annotation_size_plus": "=",
-            "annotation_size_minus": "-",
-            "annotation_vanish": "v" //The v Key by default
-        };
-        this.change_zoom_keybind = "r";
-        this.create_point_annotation_keybind = "c";
-        this.default_annotation_size = 6;
-        this.delete_annotation_keybind = "d";
-        this.filter_annotations_on_load = false;
-        this.switch_subtask_keybind = "z";
-        this.toggle_annotation_mode_keybind = "u";
-        this.modify_config.apply(this, kwargs);
-    }
-    Configuration.prototype.modify_config = function () {
-        var kwargs = [];
-        for (var _i = 0; _i < arguments.length; _i++) {
-            kwargs[_i] = arguments[_i];
-        }
-        //we don't know how many arguments we'll recieve, so loop through all of the elements in kwargs
-        for (var i = 0; i < kwargs.length; i++) {
-            //for every key: value pair, overwrite them/add them to the config
-            for (var key in kwargs[i]) {
-                this[key] = kwargs[i][key];
-            }
-        }
-    };
-    Configuration.annotation_gradient_default = false;
-    return Configuration;
-}());
-exports.Configuration = Configuration;
-
-
-/***/ }),
-
-/***/ 848:
-/***/ ((__unused_webpack_module, exports) => {
-
-"use strict";
-var __webpack_unused_export__;
-
-/*
-This file is designed to hold all the functions
-required for drawing to the canvas
-*/
-__webpack_unused_export__ = ({ value: true });
-__webpack_unused_export__ = exports.ws = void 0;
-/*recieves a base color and applies a gradient to it based on its confidence
-The reason for passing in the get confidence function is so that we can apply
-a gradient based on diffrent confidence statistics if we choose to do so*/
-function apply_gradient(annotation_object, base_color, get_annotation_confidence, gradient_maximum) {
-    //if the gradient toggle is checked off, then don't apply a gradient
-    if ($("#gradient-toggle").prop("checked") == false) {
-        return base_color;
-    }
-    if (annotation_object.classification_payloads == null) {
-        return base_color;
-    }
-    var annotation_confidence = get_annotation_confidence(annotation_object);
-    //if the annotation confidence is greater than the max gradient endpoint, then
-    //don't apply a gradient
-    if (annotation_confidence > gradient_maximum) {
-        return base_color;
-    }
-    var base_color_hex = color_to_hex(base_color);
-    //gradient_quantity is how strong you want the gradient to be
-    //made it a variable to make it easy to change in the future
-    var gradient_quantity = 0.85;
-    //Have the gradient color be a lightened version of the base color that is gradient_quantity% white
-    //and the remaining percent is base color
-    //Decimal numbers
-    var grad_r = Math.round(((1 - gradient_quantity) * (parseInt(base_color_hex.slice(1, 3), 16))) + gradient_quantity * 255);
-    var grad_g = Math.round(((1 - gradient_quantity) * (parseInt(base_color_hex.slice(3, 5), 16))) + gradient_quantity * 255);
-    var grad_b = Math.round(((1 - gradient_quantity) * (parseInt(base_color_hex.slice(5, 7), 16))) + gradient_quantity * 255);
-    //Grab individual r g b values from the hex string and convert them to decimal
-    var r = parseInt(base_color_hex.slice(1, 3), 16);
-    var g = parseInt(base_color_hex.slice(3, 5), 16);
-    var b = parseInt(base_color_hex.slice(5, 7), 16);
-    //Apply a linear gradient based on the confidence
-    var new_r = Math.round((1 - (annotation_confidence / gradient_maximum)) * grad_r + (annotation_confidence / gradient_maximum) * r);
-    var new_g = Math.round((1 - (annotation_confidence / gradient_maximum)) * grad_g + (annotation_confidence / gradient_maximum) * g);
-    var new_b = Math.round((1 - (annotation_confidence / gradient_maximum)) * grad_b + (annotation_confidence / gradient_maximum) * b);
-    //Turn the new rgb values to a hexadecimal version
-    var new_r_hex = new_r.toString(16);
-    var new_g_hex = new_g.toString(16);
-    var new_b_hex = new_b.toString(16);
-    //If the hex value is a single digit pad the front with a 0 to 
-    //ensure its two digits long
-    if (new_r_hex.length == 1) {
-        new_r_hex = "0" + new_r.toString(16);
-    }
-    if (new_g_hex.length == 1) {
-        new_g_hex = "0" + new_g.toString(16);
-    }
-    if (new_b_hex.length == 1) {
-        new_b_hex = "0" + new_b.toString(16);
-    }
-    var final_hex = "#".concat(new_r_hex, new_g_hex, new_b_hex);
-    //Since hex values should always be a string with length 7, if its not
-    //then return the base color just in case.
-    if (final_hex.length == 7) {
-        return final_hex;
-    }
-    else {
-        return base_color_hex;
-    }
-}
-exports.ws = apply_gradient;
-/*takes in a string of any valid css color and returns its hex value
-if given string is not a valid css color, returns the string passed in */
-function color_to_hex(color) {
-    var colors = { "aliceblue": "#f0f8ff", "antiquewhite": "#faebd7", "aqua": "#00ffff", "aquamarine": "#7fffd4", "azure": "#f0ffff",
-        "beige": "#f5f5dc", "bisque": "#ffe4c4", "black": "#000000", "blanchedalmond": "#ffebcd", "blue": "#0000ff", "blueviolet": "#8a2be2",
-        "brown": "#a52a2a", "burlywood": "#deb887",
-        "cadetblue": "#5f9ea0", "chartreuse": "#7fff00", "chocolate": "#d2691e", "coral": "#ff7f50", "cornflowerblue": "#6495ed",
-        "cornsilk": "#fff8dc", "crimson": "#dc143c", "cyan": "#00ffff",
-        "darkblue": "#00008b", "darkcyan": "#008b8b", "darkgoldenrod": "#b8860b", "darkgray": "#a9a9a9", "darkgreen": "#006400",
-        "darkkhaki": "#bdb76b", "darkmagenta": "#8b008b", "darkolivegreen": "#556b2f", "darkorange": "#ff8c00", "darkorchid": "#9932cc",
-        "darkred": "#8b0000", "darksalmon": "#e9967a", "darkseagreen": "#8fbc8f", "darkslateblue": "#483d8b", "darkslategray": "#2f4f4f",
-        "darkturquoise": "#00ced1", "darkviolet": "#9400d3", "deeppink": "#ff1493", "deepskyblue": "#00bfff", "dimgray": "#696969",
-        "dodgerblue": "#1e90ff",
-        "firebrick": "#b22222", "floralwhite": "#fffaf0", "forestgreen": "#228b22", "fuchsia": "#ff00ff",
-        "gainsboro": "#dcdcdc", "ghostwhite": "#f8f8ff", "gold": "#ffd700", "goldenrod": "#daa520", "gray": "#808080", "green": "#008000",
-        "greenyellow": "#adff2f",
-        "honeydew": "#f0fff0", "hotpink": "#ff69b4",
-        "indianred ": "#cd5c5c", "indigo": "#4b0082", "ivory": "#fffff0",
-        "khaki": "#f0e68c",
-        "lavender": "#e6e6fa", "lavenderblush": "#fff0f5", "lawngreen": "#7cfc00", "lemonchiffon": "#fffacd", "lightblue": "#add8e6",
-        "lightcoral": "#f08080", "lightcyan": "#e0ffff", "lightgoldenrodyellow": "#fafad2", "lightgrey": "#d3d3d3", "lightgreen": "#90ee90",
-        "lightpink": "#ffb6c1", "lightsalmon": "#ffa07a", "lightseagreen": "#20b2aa", "lightskyblue": "#87cefa", "lightslategray": "#778899",
-        "lightsteelblue": "#b0c4de", "lightyellow": "#ffffe0", "lime": "#00ff00", "limegreen": "#32cd32", "linen": "#faf0e6",
-        "magenta": "#ff00ff", "maroon": "#800000", "mediumaquamarine": "#66cdaa", "mediumblue": "#0000cd", "mediumorchid": "#ba55d3",
-        "mediumpurple": "#9370d8", "mediumseagreen": "#3cb371", "mediumslateblue": "#7b68ee", "mediumspringgreen": "#00fa9a",
-        "mediumturquoise": "#48d1cc", "mediumvioletred": "#c71585", "midnightblue": "#191970", "mintcream": "#f5fffa", "mistyrose": "#ffe4e1",
-        "moccasin": "#ffe4b5",
-        "navajowhite": "#ffdead", "navy": "#000080",
-        "oldlace": "#fdf5e6", "olive": "#808000", "olivedrab": "#6b8e23", "orange": "#ffa500", "orangered": "#ff4500", "orchid": "#da70d6",
-        "palegoldenrod": "#eee8aa", "palegreen": "#98fb98", "paleturquoise": "#afeeee", "palevioletred": "#d87093", "papayawhip": "#ffefd5",
-        "peachpuff": "#ffdab9", "peru": "#cd853f", "pink": "#ffc0cb", "plum": "#dda0dd", "powderblue": "#b0e0e6", "purple": "#800080",
-        "rebeccapurple": "#663399", "red": "#ff0000", "rosybrown": "#bc8f8f", "royalblue": "#4169e1",
-        "saddlebrown": "#8b4513", "salmon": "#fa8072", "sandybrown": "#f4a460", "seagreen": "#2e8b57", "seashell": "#fff5ee", "sienna": "#a0522d",
-        "silver": "#c0c0c0", "skyblue": "#87ceeb", "slateblue": "#6a5acd", "slategray": "#708090", "snow": "#fffafa", "springgreen": "#00ff7f",
-        "steelblue": "#4682b4",
-        "tan": "#d2b48c", "teal": "#008080", "thistle": "#d8bfd8", "tomato": "#ff6347", "turquoise": "#40e0d0",
-        "violet": "#ee82ee",
-        "wheat": "#f5deb3", "white": "#ffffff", "whitesmoke": "#f5f5f5",
-        "yellow": "#ffff00", "yellowgreen": "#9acd32" };
-    if (typeof colors[color.toLowerCase()] != 'undefined') {
-        return colors[color.toLowerCase()];
-    }
-    return color;
-}
-__webpack_unused_export__ = color_to_hex;
-
-
-/***/ }),
-
-/***/ 822:
-/***/ ((__unused_webpack_module, exports) => {
-
-"use strict";
-var __webpack_unused_export__;
-
-__webpack_unused_export__ = ({ value: true });
-exports.Z = void 0;
-var GeometricUtils = /** @class */ (function () {
-    function GeometricUtils() {
-    }
-    GeometricUtils.l2_norm = function (pt1, pt2) {
-        var ndim = pt1.length;
-        var sq = 0;
-        for (var i = 0; i < ndim; i++) {
-            sq += (pt1[i] - pt2[i]) * (pt1[i] - pt2[i]);
-        }
-        return Math.sqrt(sq);
-    };
-    // Get the point at a certain proportion of the segment between two points in a polygon
-    GeometricUtils.interpolate_poly_segment = function (pts, i, prop) {
-        var pt1 = pts[i % pts.length];
-        var pt2 = pts[(i + 1) % pts.length];
-        return [
-            pt1[0] * (1.0 - prop) + pt2[0] * prop,
-            pt1[1] * (1.0 - prop) + pt2[1] * prop
-        ];
-    };
-    // Given two points, return the line that goes through them in the form of
-    //    ax + by + c = 0
-    GeometricUtils.get_line_equation_through_points = function (p1, p2) {
-        var a = (p2[1] - p1[1]);
-        var b = (p1[0] - p2[0]);
-        // If the points are the same, no line can be inferred. Return null
-        if ((a == 0) && (b == 0))
-            return null;
-        var c = p1[1] * (p2[0] - p1[0]) - p1[0] * (p2[1] - p1[1]);
-        return {
-            "a": a,
-            "b": b,
-            "c": c
-        };
-    };
-    // Given a line segment in the form of ax + by + c = 0 and two endpoints for it,
-    //   return the point on the segment that is closest to the reference point, as well
-    //   as the distance away
-    GeometricUtils.get_nearest_point_on_segment = function (ref_x, ref_y, eq, kp1, kp2) {
-        //check to make sure eq exists
-        if (eq == null)
-            return null;
-        // For convenience
-        var a = eq["a"];
-        var b = eq["b"];
-        var c = eq["c"];
-        // Where is that point on the line, exactly?
-        var nrx = (b * (b * ref_x - a * ref_y) - a * c) / (a * a + b * b);
-        var nry = (a * (a * ref_y - b * ref_x) - b * c) / (a * a + b * b);
-        // Where along the segment is that point?
-        var xprop = 0.0;
-        if (kp2[0] != kp1[0]) {
-            xprop = (nrx - kp1[0]) / (kp2[0] - kp1[0]);
-        }
-        var yprop = 0.0;
-        if (kp2[1] != kp1[1]) {
-            yprop = (nry - kp1[1]) / (kp2[1] - kp1[1]);
-        }
-        // If the point is at an end of the segment, just return null
-        if ((xprop < 0) || (xprop > 1) || (yprop < 0) || (yprop > 1)) {
-            return null;
-        }
-        // Distance from point to line
-        var dst = Math.abs(a * ref_x + b * ref_y + c) / Math.sqrt(a * a + b * b);
-        // Proportion of the length of segment from p1 to the nearest point
-        var seg_length = Math.sqrt((kp2[0] - kp1[0]) * (kp2[0] - kp1[0]) + (kp2[1] - kp1[1]) * (kp2[1] - kp1[1]));
-        var kprop = Math.sqrt((nrx - kp1[0]) * (nrx - kp1[0]) + (nry - kp1[1]) * (nry - kp1[1])) / seg_length;
-        // return object with info about the point
-        return {
-            "dst": dst,
-            "prop": kprop
-        };
-    };
-    // Return the point on a polygon that's closest to a reference along with its distance
-    GeometricUtils.get_nearest_point_on_polygon = function (ref_x, ref_y, spatial_payload, dstmax, include_segments) {
-        if (dstmax === void 0) { dstmax = Infinity; }
-        if (include_segments === void 0) { include_segments = false; }
-        var poly_pts = spatial_payload;
-        // Initialize return value to null object
-        var ret = {
-            "access": null,
-            "distance": null,
-            "point": null
-        };
-        if (!include_segments) {
-            // Look through polygon points one by one 
-            //    no need to look at last, it's the same as first
-            for (var kpi = 0; kpi < poly_pts.length; kpi++) {
-                var kp = poly_pts[kpi];
-                // Distance is measured with l2 norm
-                var kpdst = Math.sqrt(Math.pow(kp[0] - ref_x, 2) + Math.pow(kp[1] - ref_y, 2));
-                // If this a minimum distance so far, store it
-                if (ret["distance"] == null || kpdst < ret["distance"]) {
-                    ret["access"] = kpi;
-                    ret["distance"] = kpdst;
-                    ret["point"] = poly_pts[kpi];
-                }
-            }
-            return ret;
-        }
-        else {
-            for (var kpi = 0; kpi < poly_pts.length - 1; kpi++) {
-                var kp1 = poly_pts[kpi];
-                var kp2 = poly_pts[kpi + 1];
-                var eq = GeometricUtils.get_line_equation_through_points(kp1, kp2);
-                var nr = GeometricUtils.get_nearest_point_on_segment(ref_x, ref_y, eq, kp1, kp2);
-                if ((nr != null) && (nr["dst"] < dstmax) && (ret["distance"] == null || nr["dst"] < ret["distance"])) {
-                    ret["access"] = "" + (kpi + nr["prop"]);
-                    ret["distance"] = nr["dst"];
-                    ret["point"] = GeometricUtils.interpolate_poly_segment(poly_pts, kpi, nr["prop"]);
-                }
-            }
-            return ret;
-        }
-    };
-    GeometricUtils.get_nearest_point_on_bounding_box = function (ref_x, ref_y, spatial_payload, dstmax) {
-        if (dstmax === void 0) { dstmax = Infinity; }
-        var ret = {
-            "access": null,
-            "distance": null,
-            "point": null
-        };
-        for (var bbi = 0; bbi < 2; bbi++) {
-            for (var bbj = 0; bbj < 2; bbj++) {
-                var kp = [spatial_payload[bbi][0], spatial_payload[bbj][1]];
-                var kpdst = Math.sqrt(Math.pow(kp[0] - ref_x, 2) + Math.pow(kp[1] - ref_y, 2));
-                if (kpdst < dstmax && (ret["distance"] == null || kpdst < ret["distance"])) {
-                    ret["access"] = "".concat(bbi).concat(bbj);
-                    ret["distance"] = kpdst;
-                    ret["point"] = kp;
-                }
-            }
-        }
-        return ret;
-    };
-    GeometricUtils.get_nearest_point_on_bbox3 = function (ref_x, ref_y, frame, spatial_payload, dstmax) {
-        if (dstmax === void 0) { dstmax = Infinity; }
-        var ret = {
-            "access": null,
-            "distance": null,
-            "point": null
-        };
-        for (var bbi = 0; bbi < 2; bbi++) {
-            for (var bbj = 0; bbj < 2; bbj++) {
-                var kp = [spatial_payload[bbi][0], spatial_payload[bbj][1]];
-                var kpdst = Math.sqrt(Math.pow(kp[0] - ref_x, 2) + Math.pow(kp[1] - ref_y, 2));
-                if (kpdst < dstmax && (ret["distance"] == null || kpdst < ret["distance"])) {
-                    ret["access"] = "".concat(bbi).concat(bbj);
-                    ret["distance"] = kpdst;
-                    ret["point"] = kp;
-                }
-            }
-        }
-        var min_k = 0;
-        var min = spatial_payload[0][2];
-        var max_k = 1;
-        var max = spatial_payload[1][2];
-        if (max < min) {
-            var tmp = min_k;
-            min_k = max_k;
-            max_k = tmp;
-            tmp = min;
-            min = max;
-            max = tmp;
-        }
-        if (frame == min) {
-            ret["access"] += "" + min_k;
-        }
-        else if (frame == max) {
-            ret["access"] += "" + max_k;
-        }
-        return ret;
-    };
-    GeometricUtils.get_nearest_point_on_tbar = function (ref_x, ref_y, spatial_payload, dstmax) {
-        if (dstmax === void 0) { dstmax = Infinity; }
-        // TODO intelligently test against three grabbable points
-        var ret = {
-            "access": null,
-            "distance": null,
-            "point": null
-        };
-        for (var tbi = 0; tbi < 2; tbi++) {
-            var kp = [spatial_payload[tbi][0], spatial_payload[tbi][1]];
-            var kpdst = Math.sqrt(Math.pow(kp[0] - ref_x, 2) + Math.pow(kp[1] - ref_y, 2));
-            if (kpdst < dstmax && (ret["distance"] == null || kpdst < ret["distance"])) {
-                ret["access"] = "".concat(tbi).concat(tbi);
-                ret["distance"] = kpdst;
-                ret["point"] = kp;
-            }
-        }
-        return ret;
-    };
-    return GeometricUtils;
-}());
-exports.Z = GeometricUtils;
-
-
-/***/ }),
-
-/***/ 318:
+/***/ 769:
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
-// ESM COMPAT FLAG
 __webpack_require__.r(__webpack_exports__);
-
-// EXPORTS
-__webpack_require__.d(__webpack_exports__, {
-  "ULabel": () => (/* binding */ ULabel),
-  "default": () => (/* binding */ src)
-});
-
-// EXTERNAL MODULE: ./src/annotation.js
-var annotation = __webpack_require__(806);
-// EXTERNAL MODULE: ./src/toolbox.js
-var src_toolbox = __webpack_require__(334);
-// EXTERNAL MODULE: ./src/subtask.js
-var subtask = __webpack_require__(167);
-// EXTERNAL MODULE: ./src/geometric_utils.js
-var geometric_utils = __webpack_require__(822);
-// EXTERNAL MODULE: ./src/annotation_operators.js
-var annotation_operators = __webpack_require__(419);
-// EXTERNAL MODULE: ./src/drawing_utilities.js
-var drawing_utilities = __webpack_require__(848);
-// EXTERNAL MODULE: ./src/configuration.js
-var configuration = __webpack_require__(976);
-// EXTERNAL MODULE: ./node_modules/jquery/dist/jquery.js
-var jquery = __webpack_require__(755);
-var jquery_default = /*#__PURE__*/__webpack_require__.n(jquery);
-;// CONCATENATED MODULE: ./src/blobs.js
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "BBOX_SVG": () => (/* binding */ BBOX_SVG),
+/* harmony export */   "BBOX3_SVG": () => (/* binding */ BBOX3_SVG),
+/* harmony export */   "POINT_SVG": () => (/* binding */ POINT_SVG),
+/* harmony export */   "POLYGON_SVG": () => (/* binding */ POLYGON_SVG),
+/* harmony export */   "CONTOUR_SVG": () => (/* binding */ CONTOUR_SVG),
+/* harmony export */   "TBAR_SVG": () => (/* binding */ TBAR_SVG),
+/* harmony export */   "POLYLINE_SVG": () => (/* binding */ POLYLINE_SVG),
+/* harmony export */   "WHOLE_IMAGE_SVG": () => (/* binding */ WHOLE_IMAGE_SVG),
+/* harmony export */   "GLOBAL_SVG": () => (/* binding */ GLOBAL_SVG),
+/* harmony export */   "DEMO_ANNOTATION": () => (/* binding */ DEMO_ANNOTATION),
+/* harmony export */   "get_init_style": () => (/* binding */ get_init_style),
+/* harmony export */   "COLORS": () => (/* binding */ COLORS),
+/* harmony export */   "BUTTON_LOADER_HTML": () => (/* binding */ BUTTON_LOADER_HTML)
+/* harmony export */ });
 const DEMO_ANNOTATION = {"id":"7c64913a-9d8c-475a-af1a-658944e37c31","new":true,"parent_id":null,"created_by":"TestUser","created_at":"2020-12-21T02:41:47.304Z","deprecated":false,"spatial_type":"contour","spatial_payload":[[4,25],[4,25],[4,24],[4,23],[4,22],[4,22],[5,22],[5,21],[5,20],[6,20],[6,19],[7,19],[7,18],[8,18],[8,18],[10,18],[11,18],[11,17],[12,17],[12,16],[12,16],[13,16],[14,15],[16,14],[16,14],[17,14],[18,14],[18,13],[19,13],[20,13],[20,13],[21,13],[22,13],[23,13],[24,13],[24,13],[25,13],[26,13],[27,13],[28,13],[28,13],[29,13],[30,13],[31,13],[32,13],[34,13],[36,14],[36,14],[37,15],[40,15],[40,16],[41,16],[42,17],[43,17],[44,18],[44,18],[45,18],[46,18],[47,18],[47,18],[48,18],[48,18],[49,19],[50,20],[52,20],[52,20],[53,21],[54,21],[55,21],[56,21],[57,21],[58,22],[59,22],[60,22],[60,22],[61,22],[63,22],[64,22],[64,22],[65,22],[66,22],[67,22],[68,22],[68,21],[69,21],[70,20],[70,19],[71,19],[71,18],[72,18],[72,18],[72,18],[73,18],[75,17],[75,16],[76,16],[76,16],[76,15],[77,14],[78,14],[79,14],[79,13],[79,12],[80,12],[81,12],[82,11],[83,11],[84,10],[85,10],[86,10],[87,10],[88,10],[88,10],[89,10],[90,10],[91,10],[92,10],[92,10],[93,10],[94,10],[94,10],[95,10],[96,10],[96,11],[96,11],[98,11],[98,12],[99,12],[100,13],[100,14],[101,14],[101,15],[102,15],[104,16],[104,17],[104,18],[105,18],[106,18],[106,18],[107,18],[107,19],[107,20],[108,20],[108,21],[108,21],[108,22],[109,22],[109,22],[109,23]],"classification_payloads": null,"annotation_meta":"is_assigned_to_each_annotation"};
 const BBOX_SVG = `
 <svg
@@ -14530,7 +14096,7 @@ div#${prntid}.ulabel-night #submit-button[href="#"]:active {
 `;
 }
 
-const BUTTON_LOADER_HTML = (/* unused pure expression or super */ null && (`<div class="lds-dual-ring"></div>`));
+const BUTTON_LOADER_HTML = `<div class="lds-dual-ring"></div>`;
 
 // TODO more of these
 const COLORS = [
@@ -14539,9 +14105,789 @@ const COLORS = [
 ];
 
 
-;// CONCATENATED MODULE: ./src/version.js
-const ULABEL_VERSION = "0.4.20";
-;// CONCATENATED MODULE: ./src/index.js
+
+/***/ }),
+
+/***/ 976:
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.Configuration = void 0;
+var toolbox_1 = __webpack_require__(334);
+var annotation_operators_1 = __webpack_require__(419);
+var AllowedToolboxItem;
+(function (AllowedToolboxItem) {
+    AllowedToolboxItem[AllowedToolboxItem["ModeSelect"] = 0] = "ModeSelect";
+    AllowedToolboxItem[AllowedToolboxItem["ZoomPan"] = 1] = "ZoomPan";
+    AllowedToolboxItem[AllowedToolboxItem["AnnotationResize"] = 2] = "AnnotationResize";
+    AllowedToolboxItem[AllowedToolboxItem["AnnotationID"] = 3] = "AnnotationID";
+    AllowedToolboxItem[AllowedToolboxItem["RecolorActive"] = 4] = "RecolorActive";
+    AllowedToolboxItem[AllowedToolboxItem["ClassCounter"] = 5] = "ClassCounter";
+    AllowedToolboxItem[AllowedToolboxItem["KeypointSlider"] = 6] = "KeypointSlider";
+    AllowedToolboxItem[AllowedToolboxItem["SubmitButtons"] = 7] = "SubmitButtons"; // 7
+})(AllowedToolboxItem || (AllowedToolboxItem = {}));
+var Configuration = /** @class */ (function () {
+    function Configuration() {
+        var kwargs = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            kwargs[_i] = arguments[_i];
+        }
+        this.toolbox_map = new Map([
+            [AllowedToolboxItem.ModeSelect, toolbox_1.ModeSelectionToolboxItem],
+            [AllowedToolboxItem.ZoomPan, toolbox_1.ZoomPanToolboxItem],
+            [AllowedToolboxItem.AnnotationResize, toolbox_1.AnnotationResizeItem],
+            [AllowedToolboxItem.AnnotationID, toolbox_1.AnnotationIDToolboxItem],
+            [AllowedToolboxItem.RecolorActive, toolbox_1.RecolorActiveItem],
+            [AllowedToolboxItem.ClassCounter, toolbox_1.ClassCounterToolboxItem],
+            [AllowedToolboxItem.KeypointSlider, toolbox_1.KeypointSliderItem],
+            [AllowedToolboxItem.SubmitButtons, toolbox_1.SubmitButtons]
+        ]);
+        //Change the order of the toolbox items here to change the order they show up in the toolbox
+        this.default_toolbox_item_order = [
+            AllowedToolboxItem.ModeSelect,
+            AllowedToolboxItem.ZoomPan,
+            AllowedToolboxItem.AnnotationResize,
+            AllowedToolboxItem.AnnotationID,
+            AllowedToolboxItem.RecolorActive,
+            AllowedToolboxItem.ClassCounter,
+            [AllowedToolboxItem.KeypointSlider, {
+                    "name": "Filter Low Confidence",
+                    "filter_function": annotation_operators_1.filter_low,
+                    "confidence_function": annotation_operators_1.get_annotation_confidence,
+                    "mark_deprecated": annotation_operators_1.mark_deprecated,
+                    "default_value": 0.05,
+                    "keybinds": {
+                        "increment": "2",
+                        "decrement": "1"
+                    }
+                }],
+            AllowedToolboxItem.SubmitButtons,
+        ];
+        this.default_keybinds = {
+            "annotation_size_small": "s",
+            "annotation_size_large": "l",
+            "annotation_size_plus": "=",
+            "annotation_size_minus": "-",
+            "annotation_vanish": "v" //The v Key by default
+        };
+        this.change_zoom_keybind = "r";
+        this.create_point_annotation_keybind = "c";
+        this.default_annotation_size = 6;
+        this.delete_annotation_keybind = "d";
+        this.filter_annotations_on_load = false;
+        this.switch_subtask_keybind = "z";
+        this.toggle_annotation_mode_keybind = "u";
+        this.modify_config.apply(this, kwargs);
+    }
+    Configuration.prototype.modify_config = function () {
+        var kwargs = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            kwargs[_i] = arguments[_i];
+        }
+        //we don't know how many arguments we'll recieve, so loop through all of the elements in kwargs
+        for (var i = 0; i < kwargs.length; i++) {
+            //for every key: value pair, overwrite them/add them to the config
+            for (var key in kwargs[i]) {
+                this[key] = kwargs[i][key];
+            }
+        }
+    };
+    Configuration.annotation_gradient_default = false;
+    return Configuration;
+}());
+exports.Configuration = Configuration;
+
+
+/***/ }),
+
+/***/ 848:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+var __webpack_unused_export__;
+
+/*
+This file is designed to hold all the functions
+required for drawing to the canvas
+*/
+__webpack_unused_export__ = ({ value: true });
+__webpack_unused_export__ = exports.ws = void 0;
+/*recieves a base color and applies a gradient to it based on its confidence
+The reason for passing in the get confidence function is so that we can apply
+a gradient based on diffrent confidence statistics if we choose to do so*/
+function apply_gradient(annotation_object, base_color, get_annotation_confidence, gradient_maximum) {
+    //if the gradient toggle is checked off, then don't apply a gradient
+    if ($("#gradient-toggle").prop("checked") == false) {
+        return base_color;
+    }
+    if (annotation_object.classification_payloads == null) {
+        return base_color;
+    }
+    var annotation_confidence = get_annotation_confidence(annotation_object);
+    //if the annotation confidence is greater than the max gradient endpoint, then
+    //don't apply a gradient
+    if (annotation_confidence > gradient_maximum) {
+        return base_color;
+    }
+    var base_color_hex = color_to_hex(base_color);
+    //gradient_quantity is how strong you want the gradient to be
+    //made it a variable to make it easy to change in the future
+    var gradient_quantity = 0.85;
+    //Have the gradient color be a lightened version of the base color that is gradient_quantity% white
+    //and the remaining percent is base color
+    //Decimal numbers
+    var grad_r = Math.round(((1 - gradient_quantity) * (parseInt(base_color_hex.slice(1, 3), 16))) + gradient_quantity * 255);
+    var grad_g = Math.round(((1 - gradient_quantity) * (parseInt(base_color_hex.slice(3, 5), 16))) + gradient_quantity * 255);
+    var grad_b = Math.round(((1 - gradient_quantity) * (parseInt(base_color_hex.slice(5, 7), 16))) + gradient_quantity * 255);
+    //Grab individual r g b values from the hex string and convert them to decimal
+    var r = parseInt(base_color_hex.slice(1, 3), 16);
+    var g = parseInt(base_color_hex.slice(3, 5), 16);
+    var b = parseInt(base_color_hex.slice(5, 7), 16);
+    //Apply a linear gradient based on the confidence
+    var new_r = Math.round((1 - (annotation_confidence / gradient_maximum)) * grad_r + (annotation_confidence / gradient_maximum) * r);
+    var new_g = Math.round((1 - (annotation_confidence / gradient_maximum)) * grad_g + (annotation_confidence / gradient_maximum) * g);
+    var new_b = Math.round((1 - (annotation_confidence / gradient_maximum)) * grad_b + (annotation_confidence / gradient_maximum) * b);
+    //Turn the new rgb values to a hexadecimal version
+    var new_r_hex = new_r.toString(16);
+    var new_g_hex = new_g.toString(16);
+    var new_b_hex = new_b.toString(16);
+    //If the hex value is a single digit pad the front with a 0 to 
+    //ensure its two digits long
+    if (new_r_hex.length == 1) {
+        new_r_hex = "0" + new_r.toString(16);
+    }
+    if (new_g_hex.length == 1) {
+        new_g_hex = "0" + new_g.toString(16);
+    }
+    if (new_b_hex.length == 1) {
+        new_b_hex = "0" + new_b.toString(16);
+    }
+    var final_hex = "#".concat(new_r_hex, new_g_hex, new_b_hex);
+    //Since hex values should always be a string with length 7, if its not
+    //then return the base color just in case.
+    if (final_hex.length == 7) {
+        return final_hex;
+    }
+    else {
+        return base_color_hex;
+    }
+}
+exports.ws = apply_gradient;
+/*takes in a string of any valid css color and returns its hex value
+if given string is not a valid css color, returns the string passed in */
+function color_to_hex(color) {
+    var colors = { "aliceblue": "#f0f8ff", "antiquewhite": "#faebd7", "aqua": "#00ffff", "aquamarine": "#7fffd4", "azure": "#f0ffff",
+        "beige": "#f5f5dc", "bisque": "#ffe4c4", "black": "#000000", "blanchedalmond": "#ffebcd", "blue": "#0000ff", "blueviolet": "#8a2be2",
+        "brown": "#a52a2a", "burlywood": "#deb887",
+        "cadetblue": "#5f9ea0", "chartreuse": "#7fff00", "chocolate": "#d2691e", "coral": "#ff7f50", "cornflowerblue": "#6495ed",
+        "cornsilk": "#fff8dc", "crimson": "#dc143c", "cyan": "#00ffff",
+        "darkblue": "#00008b", "darkcyan": "#008b8b", "darkgoldenrod": "#b8860b", "darkgray": "#a9a9a9", "darkgreen": "#006400",
+        "darkkhaki": "#bdb76b", "darkmagenta": "#8b008b", "darkolivegreen": "#556b2f", "darkorange": "#ff8c00", "darkorchid": "#9932cc",
+        "darkred": "#8b0000", "darksalmon": "#e9967a", "darkseagreen": "#8fbc8f", "darkslateblue": "#483d8b", "darkslategray": "#2f4f4f",
+        "darkturquoise": "#00ced1", "darkviolet": "#9400d3", "deeppink": "#ff1493", "deepskyblue": "#00bfff", "dimgray": "#696969",
+        "dodgerblue": "#1e90ff",
+        "firebrick": "#b22222", "floralwhite": "#fffaf0", "forestgreen": "#228b22", "fuchsia": "#ff00ff",
+        "gainsboro": "#dcdcdc", "ghostwhite": "#f8f8ff", "gold": "#ffd700", "goldenrod": "#daa520", "gray": "#808080", "green": "#008000",
+        "greenyellow": "#adff2f",
+        "honeydew": "#f0fff0", "hotpink": "#ff69b4",
+        "indianred ": "#cd5c5c", "indigo": "#4b0082", "ivory": "#fffff0",
+        "khaki": "#f0e68c",
+        "lavender": "#e6e6fa", "lavenderblush": "#fff0f5", "lawngreen": "#7cfc00", "lemonchiffon": "#fffacd", "lightblue": "#add8e6",
+        "lightcoral": "#f08080", "lightcyan": "#e0ffff", "lightgoldenrodyellow": "#fafad2", "lightgrey": "#d3d3d3", "lightgreen": "#90ee90",
+        "lightpink": "#ffb6c1", "lightsalmon": "#ffa07a", "lightseagreen": "#20b2aa", "lightskyblue": "#87cefa", "lightslategray": "#778899",
+        "lightsteelblue": "#b0c4de", "lightyellow": "#ffffe0", "lime": "#00ff00", "limegreen": "#32cd32", "linen": "#faf0e6",
+        "magenta": "#ff00ff", "maroon": "#800000", "mediumaquamarine": "#66cdaa", "mediumblue": "#0000cd", "mediumorchid": "#ba55d3",
+        "mediumpurple": "#9370d8", "mediumseagreen": "#3cb371", "mediumslateblue": "#7b68ee", "mediumspringgreen": "#00fa9a",
+        "mediumturquoise": "#48d1cc", "mediumvioletred": "#c71585", "midnightblue": "#191970", "mintcream": "#f5fffa", "mistyrose": "#ffe4e1",
+        "moccasin": "#ffe4b5",
+        "navajowhite": "#ffdead", "navy": "#000080",
+        "oldlace": "#fdf5e6", "olive": "#808000", "olivedrab": "#6b8e23", "orange": "#ffa500", "orangered": "#ff4500", "orchid": "#da70d6",
+        "palegoldenrod": "#eee8aa", "palegreen": "#98fb98", "paleturquoise": "#afeeee", "palevioletred": "#d87093", "papayawhip": "#ffefd5",
+        "peachpuff": "#ffdab9", "peru": "#cd853f", "pink": "#ffc0cb", "plum": "#dda0dd", "powderblue": "#b0e0e6", "purple": "#800080",
+        "rebeccapurple": "#663399", "red": "#ff0000", "rosybrown": "#bc8f8f", "royalblue": "#4169e1",
+        "saddlebrown": "#8b4513", "salmon": "#fa8072", "sandybrown": "#f4a460", "seagreen": "#2e8b57", "seashell": "#fff5ee", "sienna": "#a0522d",
+        "silver": "#c0c0c0", "skyblue": "#87ceeb", "slateblue": "#6a5acd", "slategray": "#708090", "snow": "#fffafa", "springgreen": "#00ff7f",
+        "steelblue": "#4682b4",
+        "tan": "#d2b48c", "teal": "#008080", "thistle": "#d8bfd8", "tomato": "#ff6347", "turquoise": "#40e0d0",
+        "violet": "#ee82ee",
+        "wheat": "#f5deb3", "white": "#ffffff", "whitesmoke": "#f5f5f5",
+        "yellow": "#ffff00", "yellowgreen": "#9acd32" };
+    if (typeof colors[color.toLowerCase()] != 'undefined') {
+        return colors[color.toLowerCase()];
+    }
+    return color;
+}
+__webpack_unused_export__ = color_to_hex;
+
+
+/***/ }),
+
+/***/ 822:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+var __webpack_unused_export__;
+
+__webpack_unused_export__ = ({ value: true });
+exports.Z = void 0;
+var GeometricUtils = /** @class */ (function () {
+    function GeometricUtils() {
+    }
+    GeometricUtils.l2_norm = function (pt1, pt2) {
+        var ndim = pt1.length;
+        var sq = 0;
+        for (var i = 0; i < ndim; i++) {
+            sq += (pt1[i] - pt2[i]) * (pt1[i] - pt2[i]);
+        }
+        return Math.sqrt(sq);
+    };
+    // Get the point at a certain proportion of the segment between two points in a polygon
+    GeometricUtils.interpolate_poly_segment = function (pts, i, prop) {
+        var pt1 = pts[i % pts.length];
+        var pt2 = pts[(i + 1) % pts.length];
+        return [
+            pt1[0] * (1.0 - prop) + pt2[0] * prop,
+            pt1[1] * (1.0 - prop) + pt2[1] * prop
+        ];
+    };
+    // Given two points, return the line that goes through them in the form of
+    //    ax + by + c = 0
+    GeometricUtils.get_line_equation_through_points = function (p1, p2) {
+        var a = (p2[1] - p1[1]);
+        var b = (p1[0] - p2[0]);
+        // If the points are the same, no line can be inferred. Return null
+        if ((a == 0) && (b == 0))
+            return null;
+        var c = p1[1] * (p2[0] - p1[0]) - p1[0] * (p2[1] - p1[1]);
+        return {
+            "a": a,
+            "b": b,
+            "c": c
+        };
+    };
+    // Given a line segment in the form of ax + by + c = 0 and two endpoints for it,
+    //   return the point on the segment that is closest to the reference point, as well
+    //   as the distance away
+    GeometricUtils.get_nearest_point_on_segment = function (ref_x, ref_y, eq, kp1, kp2) {
+        //check to make sure eq exists
+        if (eq == null)
+            return null;
+        // For convenience
+        var a = eq["a"];
+        var b = eq["b"];
+        var c = eq["c"];
+        // Where is that point on the line, exactly?
+        var nrx = (b * (b * ref_x - a * ref_y) - a * c) / (a * a + b * b);
+        var nry = (a * (a * ref_y - b * ref_x) - b * c) / (a * a + b * b);
+        // Where along the segment is that point?
+        var xprop = 0.0;
+        if (kp2[0] != kp1[0]) {
+            xprop = (nrx - kp1[0]) / (kp2[0] - kp1[0]);
+        }
+        var yprop = 0.0;
+        if (kp2[1] != kp1[1]) {
+            yprop = (nry - kp1[1]) / (kp2[1] - kp1[1]);
+        }
+        // If the point is at an end of the segment, just return null
+        if ((xprop < 0) || (xprop > 1) || (yprop < 0) || (yprop > 1)) {
+            return null;
+        }
+        // Distance from point to line
+        var dst = Math.abs(a * ref_x + b * ref_y + c) / Math.sqrt(a * a + b * b);
+        // Proportion of the length of segment from p1 to the nearest point
+        var seg_length = Math.sqrt((kp2[0] - kp1[0]) * (kp2[0] - kp1[0]) + (kp2[1] - kp1[1]) * (kp2[1] - kp1[1]));
+        var kprop = Math.sqrt((nrx - kp1[0]) * (nrx - kp1[0]) + (nry - kp1[1]) * (nry - kp1[1])) / seg_length;
+        // return object with info about the point
+        return {
+            "dst": dst,
+            "prop": kprop
+        };
+    };
+    // Return the point on a polygon that's closest to a reference along with its distance
+    GeometricUtils.get_nearest_point_on_polygon = function (ref_x, ref_y, spatial_payload, dstmax, include_segments) {
+        if (dstmax === void 0) { dstmax = Infinity; }
+        if (include_segments === void 0) { include_segments = false; }
+        var poly_pts = spatial_payload;
+        // Initialize return value to null object
+        var ret = {
+            "access": null,
+            "distance": null,
+            "point": null
+        };
+        if (!include_segments) {
+            // Look through polygon points one by one 
+            //    no need to look at last, it's the same as first
+            for (var kpi = 0; kpi < poly_pts.length; kpi++) {
+                var kp = poly_pts[kpi];
+                // Distance is measured with l2 norm
+                var kpdst = Math.sqrt(Math.pow(kp[0] - ref_x, 2) + Math.pow(kp[1] - ref_y, 2));
+                // If this a minimum distance so far, store it
+                if (ret["distance"] == null || kpdst < ret["distance"]) {
+                    ret["access"] = kpi;
+                    ret["distance"] = kpdst;
+                    ret["point"] = poly_pts[kpi];
+                }
+            }
+            return ret;
+        }
+        else {
+            for (var kpi = 0; kpi < poly_pts.length - 1; kpi++) {
+                var kp1 = poly_pts[kpi];
+                var kp2 = poly_pts[kpi + 1];
+                var eq = GeometricUtils.get_line_equation_through_points(kp1, kp2);
+                var nr = GeometricUtils.get_nearest_point_on_segment(ref_x, ref_y, eq, kp1, kp2);
+                if ((nr != null) && (nr["dst"] < dstmax) && (ret["distance"] == null || nr["dst"] < ret["distance"])) {
+                    ret["access"] = "" + (kpi + nr["prop"]);
+                    ret["distance"] = nr["dst"];
+                    ret["point"] = GeometricUtils.interpolate_poly_segment(poly_pts, kpi, nr["prop"]);
+                }
+            }
+            return ret;
+        }
+    };
+    GeometricUtils.get_nearest_point_on_bounding_box = function (ref_x, ref_y, spatial_payload, dstmax) {
+        if (dstmax === void 0) { dstmax = Infinity; }
+        var ret = {
+            "access": null,
+            "distance": null,
+            "point": null
+        };
+        for (var bbi = 0; bbi < 2; bbi++) {
+            for (var bbj = 0; bbj < 2; bbj++) {
+                var kp = [spatial_payload[bbi][0], spatial_payload[bbj][1]];
+                var kpdst = Math.sqrt(Math.pow(kp[0] - ref_x, 2) + Math.pow(kp[1] - ref_y, 2));
+                if (kpdst < dstmax && (ret["distance"] == null || kpdst < ret["distance"])) {
+                    ret["access"] = "".concat(bbi).concat(bbj);
+                    ret["distance"] = kpdst;
+                    ret["point"] = kp;
+                }
+            }
+        }
+        return ret;
+    };
+    GeometricUtils.get_nearest_point_on_bbox3 = function (ref_x, ref_y, frame, spatial_payload, dstmax) {
+        if (dstmax === void 0) { dstmax = Infinity; }
+        var ret = {
+            "access": null,
+            "distance": null,
+            "point": null
+        };
+        for (var bbi = 0; bbi < 2; bbi++) {
+            for (var bbj = 0; bbj < 2; bbj++) {
+                var kp = [spatial_payload[bbi][0], spatial_payload[bbj][1]];
+                var kpdst = Math.sqrt(Math.pow(kp[0] - ref_x, 2) + Math.pow(kp[1] - ref_y, 2));
+                if (kpdst < dstmax && (ret["distance"] == null || kpdst < ret["distance"])) {
+                    ret["access"] = "".concat(bbi).concat(bbj);
+                    ret["distance"] = kpdst;
+                    ret["point"] = kp;
+                }
+            }
+        }
+        var min_k = 0;
+        var min = spatial_payload[0][2];
+        var max_k = 1;
+        var max = spatial_payload[1][2];
+        if (max < min) {
+            var tmp = min_k;
+            min_k = max_k;
+            max_k = tmp;
+            tmp = min;
+            min = max;
+            max = tmp;
+        }
+        if (frame == min) {
+            ret["access"] += "" + min_k;
+        }
+        else if (frame == max) {
+            ret["access"] += "" + max_k;
+        }
+        return ret;
+    };
+    GeometricUtils.get_nearest_point_on_tbar = function (ref_x, ref_y, spatial_payload, dstmax) {
+        if (dstmax === void 0) { dstmax = Infinity; }
+        // TODO intelligently test against three grabbable points
+        var ret = {
+            "access": null,
+            "distance": null,
+            "point": null
+        };
+        for (var tbi = 0; tbi < 2; tbi++) {
+            var kp = [spatial_payload[tbi][0], spatial_payload[tbi][1]];
+            var kpdst = Math.sqrt(Math.pow(kp[0] - ref_x, 2) + Math.pow(kp[1] - ref_y, 2));
+            if (kpdst < dstmax && (ret["distance"] == null || kpdst < ret["distance"])) {
+                ret["access"] = "".concat(tbi).concat(tbi);
+                ret["distance"] = kpdst;
+                ret["point"] = kp;
+            }
+        }
+        return ret;
+    };
+    return GeometricUtils;
+}());
+exports.Z = GeometricUtils;
+
+
+/***/ }),
+
+/***/ 37:
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+"use strict";
+var __webpack_unused_export__;
+
+__webpack_unused_export__ = ({ value: true });
+exports.k = void 0;
+var toolbox_1 = __webpack_require__(334);
+var version_1 = __webpack_require__(345);
+var blobs_1 = __webpack_require__(769);
+var HTMLBuilder = /** @class */ (function () {
+    function HTMLBuilder() {
+    }
+    HTMLBuilder.add_style_to_document = function (ulabel) {
+        var head = document.head || document.getElementsByTagName('head')[0];
+        var style = document.createElement('style');
+        head.appendChild(style);
+        style.appendChild(document.createTextNode((0, blobs_1.get_init_style)(ulabel.config["container_id"])));
+    };
+    HTMLBuilder.get_md_button = function (md_key, md_name, svg_blob, cur_md, subtasks) {
+        var sel = "";
+        var href = " href=\"#\"";
+        if (cur_md == md_key) {
+            sel = " sel";
+            href = "";
+        }
+        var subtask_classes = "";
+        for (var st_key in subtasks) {
+            if (subtasks[st_key]["allowed_modes"].includes(md_key)) {
+                subtask_classes += " md-en4--" + st_key;
+            }
+        }
+        return "<div class=\"mode-opt\">\n            <a".concat(href, " id=\"md-btn--").concat(md_key, "\" class=\"md-btn").concat(sel).concat(subtask_classes, " invert-this-svg\" amdname=\"").concat(md_name, "\">\n                ").concat(svg_blob, "\n            </a>\n        </div>");
+    };
+    HTMLBuilder.get_images_html = function (ulabel) {
+        var images_html = "";
+        var display;
+        for (var i = 0; i < ulabel.config["image_data"].frames.length; i++) {
+            if (i != 0) {
+                display = "none";
+            }
+            else {
+                display = "block";
+            }
+            images_html += "\n                <img id=\"".concat(ulabel.config["image_id_pfx"], "__").concat(i, "\" src=\"").concat(ulabel.config["image_data"].frames[i], "\" class=\"imwrap_cls ").concat(ulabel.config["imgsz_class"], " image_frame\" style=\"z-index: 50; display: ").concat(display, ";\" />\n            ");
+        }
+        return images_html;
+    };
+    HTMLBuilder.get_frame_annotation_dialogs = function (ulabel) {
+        var frame_annotation_dialog = "";
+        var tot = 0;
+        for (var st_key in ulabel.subtasks) {
+            if (!ulabel.subtasks[st_key].allowed_modes.includes('whole-image') &&
+                !ulabel.subtasks[st_key].allowed_modes.includes('global')) {
+                continue;
+            }
+            tot += 1;
+        }
+        var ind = 0;
+        for (var st_key in ulabel.subtasks) {
+            if (!ulabel.subtasks[st_key].allowed_modes.includes('whole-image') &&
+                !ulabel.subtasks[st_key].allowed_modes.includes('global')) {
+                continue;
+            }
+            frame_annotation_dialog += "\n                <div id=\"fad_st__".concat(st_key, "\" class=\"frame_annotation_dialog fad_st__").concat(st_key, " fad_ind__").concat(tot - ind - 1, "\">\n                    <div class=\"hide_overflow_container\">\n                        <div class=\"row_container\">\n                            <div class=\"fad_row name\">\n                                <div class=\"fad_row_inner\">\n                                    <div class=\"fad_st_name\">").concat(ulabel.subtasks[st_key].display_name, "</div>\n                                </div>\n                            </div>\n                            <div class=\"fad_row add\">\n                                <div class=\"fad_row_inner\">\n                                    <div class=\"fad_st_add\">\n                                        <a class=\"add-glob-button\" href=\"#\">+</a>\n                                    </div>\n                                </div>\n                            </div><div class=\"fad_annotation_rows\"></div>\n                        </div>\n                    </div>\n                </div>\n            ");
+            ind += 1;
+            if (ind > 4) {
+                throw new Error("At most 4 subtasks can have allow 'whole-image' or 'global' annotations.");
+            }
+        }
+        return frame_annotation_dialog;
+    };
+    HTMLBuilder.prep_window_html = function (ulabel, toolbox_item_order) {
+        // Bring image and annotation scaffolding in
+        // TODO multi-image with spacing etc.
+        if (toolbox_item_order === void 0) { toolbox_item_order = null; }
+        // const tabs = ULabel.get_toolbox_tabs(ul);
+        var images = HTMLBuilder.get_images_html(ulabel);
+        var frame_annotation_dialogs = HTMLBuilder.get_frame_annotation_dialogs(ulabel);
+        // const toolbox = configuration.create_toolbox();
+        var toolbox = new toolbox_1.Toolbox([], toolbox_1.Toolbox.create_toolbox(ulabel, toolbox_item_order));
+        var tool_html = toolbox.setup_toolbox_html(ulabel, frame_annotation_dialogs, images, version_1.ULABEL_VERSION);
+        // Set the container's html to the toolbox html we just created
+        $("#" + ulabel.config["container_id"]).html(tool_html);
+        // Build toolbox for the current subtask only
+        var current_subtask = Object.keys(ulabel.subtasks)[0];
+        // Initialize toolbox based on configuration
+        var sp_id = ulabel.config["toolbox_id"];
+        var curmd = ulabel.subtasks[current_subtask]["state"]["annotation_mode"];
+        var md_buttons = [
+            HTMLBuilder.get_md_button("bbox", "Bounding Box", blobs_1.BBOX_SVG, curmd, ulabel.subtasks),
+            HTMLBuilder.get_md_button("point", "Point", blobs_1.POINT_SVG, curmd, ulabel.subtasks),
+            HTMLBuilder.get_md_button("polygon", "Polygon", blobs_1.POLYGON_SVG, curmd, ulabel.subtasks),
+            HTMLBuilder.get_md_button("tbar", "T-Bar", blobs_1.TBAR_SVG, curmd, ulabel.subtasks),
+            HTMLBuilder.get_md_button("polyline", "Polyline", blobs_1.POLYLINE_SVG, curmd, ulabel.subtasks),
+            HTMLBuilder.get_md_button("contour", "Contour", blobs_1.CONTOUR_SVG, curmd, ulabel.subtasks),
+            HTMLBuilder.get_md_button("bbox3", "Bounding Cube", blobs_1.BBOX3_SVG, curmd, ulabel.subtasks),
+            HTMLBuilder.get_md_button("whole-image", "Whole Frame", blobs_1.WHOLE_IMAGE_SVG, curmd, ulabel.subtasks),
+            HTMLBuilder.get_md_button("global", "Global", blobs_1.GLOBAL_SVG, curmd, ulabel.subtasks),
+        ];
+        // Append but don't wait
+        $("#" + sp_id + " .toolbox_inner_cls .mode-selection").append(md_buttons.join("<!-- -->"));
+        // Show current mode label
+        ulabel.show_annotation_mode(null);
+        // Make sure that entire toolbox is shown
+        if ($("#" + ulabel.config["toolbox_id"] + " .toolbox_inner_cls").height() > $("#" + ulabel.config["container_id"]).height()) {
+            $("#" + ulabel.config["toolbox_id"]).css("overflow-y", "scroll");
+        }
+        ulabel.toolbox = toolbox;
+        // Check an array to see if it contains a ZoomPanToolboxItem
+        var contains_zoom_pan = function (array) {
+            //check if the array is empty
+            if (array.length == 0)
+                return false;
+            // Loop through everything in the array and check if its the ZoomPanToolboxItem
+            for (var idx in array) {
+                if (array[idx] instanceof toolbox_1.ZoomPanToolboxItem) {
+                    return true;
+                }
+            }
+            // If the ZoomPanToolboxItem wasn't found then return false
+            return false;
+        };
+        // Check if initial_crop exists and has the appropriate properties
+        var check_initial_crop = function (initial_crop) {
+            // If initial_crop doesn't exist, return false
+            if (initial_crop == null)
+                return false;
+            // If initial_crop has the appropriate properties, return true
+            if ("width" in initial_crop &&
+                "height" in initial_crop &&
+                "left" in initial_crop &&
+                "top" in initial_crop) {
+                return true;
+            }
+            // If initial_crop exists but doesn't have the appropriate properties,
+            // then raise an error and return false
+            ulabel.raise_error("initial_crop missing necessary properties. Ignoring.");
+            return false;
+        };
+        // Make sure the toolbox contains the ZoomPanToolboxItem
+        if (contains_zoom_pan(ulabel.toolbox.items)) {
+            // Make sure the initial_crop exists and contains the necessary properties
+            if (check_initial_crop(ulabel.config.initial_crop)) {
+                // Grab the initial crop button and rename it
+                var initial_crop_button = document.getElementById("recenter-button");
+                initial_crop_button.innerHTML = "Initial Crop";
+            }
+            else {
+                // Grab the whole image button and set its display to none
+                var whole_image_button = document.getElementById("recenter-whole-image-button");
+                whole_image_button.style.display = "none";
+            }
+        }
+    };
+    HTMLBuilder.get_idd_string = function (idd_id, width, center_coord, cl_opacity, class_ids, inner_rad, outer_rad, class_defs) {
+        // TODO noconflict
+        var dialog_html = "\n        <div id=\"".concat(idd_id, "\" class=\"id_dialog\" style=\"width: ").concat(width, "px; height: ").concat(width, "px;\">\n            <a class=\"id-dialog-clickable-indicator\" href=\"#\"></a>\n            <svg width=\"").concat(width, "\" height=\"").concat(width, "\">\n        ");
+        for (var i = 0; i < class_ids.length; i++) {
+            var srt_prop = 1 / class_ids.length;
+            var cum_prop = i / class_ids.length;
+            var srk_prop = 1 / class_ids.length;
+            var gap_prop = 1.0 - srk_prop;
+            var rad_back = inner_rad + 1.0 * (outer_rad - inner_rad) / 2;
+            var rad_frnt = inner_rad + srt_prop * (outer_rad - inner_rad) / 2;
+            var wdt_back = 1.0 * (outer_rad - inner_rad);
+            var wdt_frnt = srt_prop * (outer_rad - inner_rad);
+            var srk_back = 2 * Math.PI * rad_back * srk_prop;
+            var gap_back = 2 * Math.PI * rad_back * gap_prop;
+            var off_back = 2 * Math.PI * rad_back * cum_prop;
+            var srk_frnt = 2 * Math.PI * rad_frnt * srk_prop;
+            var gap_frnt = 2 * Math.PI * rad_frnt * gap_prop;
+            var off_frnt = 2 * Math.PI * rad_frnt * cum_prop;
+            var ths_id = class_ids[i];
+            var ths_col = class_defs[i]["color"];
+            // TODO should names also go on the id dialog?
+            // let ths_nam = class_defs[i]["name"];
+            dialog_html += "\n            <circle\n                r=\"".concat(rad_back, "\" cx=\"").concat(center_coord, "\" cy=\"").concat(center_coord, "\" \n                stroke=\"").concat(ths_col, "\" \n                fill-opacity=\"0\"\n                stroke-opacity=\"").concat(cl_opacity, "\"\n                stroke-width=\"").concat(wdt_back, "\"; \n                stroke-dasharray=\"").concat(srk_back, " ").concat(gap_back, "\" \n                stroke-dashoffset=\"").concat(off_back, "\" />\n            <circle\n                id=\"").concat(idd_id, "__circ_").concat(ths_id, "\"\n                r=\"").concat(rad_frnt, "\" cx=\"").concat(center_coord, "\" cy=\"").concat(center_coord, "\"\n                fill-opacity=\"0\"\n                stroke=\"").concat(ths_col, "\" \n                stroke-opacity=\"1.0\"\n                stroke-width=\"").concat(wdt_frnt, "\" \n                stroke-dasharray=\"").concat(srk_frnt, " ").concat(gap_frnt, "\" \n                stroke-dashoffset=\"").concat(off_frnt, "\" />\n            ");
+        }
+        dialog_html += "\n            </svg>\n            <div class=\"centcirc\"></div>\n        </div>";
+        return dialog_html;
+    };
+    HTMLBuilder.build_id_dialogs = function (ulabel) {
+        var full_toolbox_html = "<div class=\"toolbox-id-app-payload\">";
+        var width = ulabel.config.outer_diameter;
+        // TODO real names here!
+        var inner_rad = ulabel.config.inner_prop * width / 2;
+        var inner_diam = inner_rad * 2;
+        var outer_rad = 0.5 * width;
+        var inner_top = outer_rad - inner_rad;
+        var inner_lft = outer_rad - inner_rad;
+        var cl_opacity = 0.4;
+        var tbid = ulabel.config.toolbox_id;
+        var center_coord = width / 2;
+        for (var st in ulabel.subtasks) {
+            var idd_id = ulabel.subtasks[st]["state"]["idd_id"];
+            var idd_id_front = ulabel.subtasks[st]["state"]["idd_id_front"];
+            var subtask_dialog_container_jq = $("#dialogs__" + st);
+            var front_subtask_dialog_container_jq = $("#front_dialogs__" + st);
+            var dialog_html_v2 = HTMLBuilder.get_idd_string(idd_id, width, center_coord, cl_opacity, ulabel.subtasks[st]["class_ids"], inner_rad, outer_rad, ulabel.subtasks[st]["class_defs"]);
+            var front_dialog_html_v2 = HTMLBuilder.get_idd_string(idd_id_front, width, center_coord, cl_opacity, ulabel.subtasks[st]["class_ids"], inner_rad, outer_rad, ulabel.subtasks[st]["class_defs"]);
+            // TODO noconflict
+            var toolbox_html = "<div id=\"tb-id-app--".concat(st, "\" class=\"tb-id-app\">");
+            var class_ids = ulabel.subtasks[st]["class_ids"];
+            for (var i = 0; i < class_ids.length; i++) {
+                var this_id = class_ids[i];
+                var this_color = ulabel.subtasks[st]["class_defs"][i]["color"];
+                var this_name = ulabel.subtasks[st]["class_defs"][i]["name"];
+                var sel = "";
+                var href = ' href="#"';
+                if (i == 0) {
+                    sel = " sel";
+                    href = "";
+                }
+                if (ulabel.config["allow_soft_id"]) {
+                    var msg = "Only hard id is currently supported";
+                    throw new Error(msg);
+                }
+                else {
+                    toolbox_html += "\n                        <a".concat(href, " id=\"").concat(tbid, "_sel_").concat(this_id, "\" class=\"tbid-opt").concat(sel, "\">\n                            <div class=\"colprev ").concat(tbid, "_colprev_").concat(this_id, "\" style=\"background-color: ").concat(this_color, "\"></div> <span class=\"tb-cls-nam\">").concat(this_name, "</span>\n                        </a>\n                    ");
+                }
+            }
+            toolbox_html += "\n            </div>";
+            // Add dialog to the document
+            // front_subtask_dialog_container_jq.append(dialog_html);
+            // $("#" + ul.subtasks[st]["idd_id"]).attr("id", ul.subtasks[st]["idd_id_front"]);
+            front_subtask_dialog_container_jq.append(front_dialog_html_v2); // TODO(new3d) MOVE THIS TO GLOB BOX -- superimpose atop thee anchor already there when needed, no remove and add back
+            subtask_dialog_container_jq.append(dialog_html_v2);
+            // console.log(dialog_html);
+            // console.log(dialog_html_v2);
+            // Wait to add full toolbox
+            full_toolbox_html += toolbox_html;
+            ulabel.subtasks[st]["state"]["visible_dialogs"][idd_id] = {
+                "left": 0.0,
+                "top": 0.0,
+                "pin": "center"
+            };
+        }
+        // Add all toolbox html at once
+        $("#" + ulabel.config["toolbox_id"] + " div.id-toolbox-app").html(full_toolbox_html);
+        // Style revisions based on the size
+        var idci = $("#" + ulabel.config["container_id"] + " a.id-dialog-clickable-indicator");
+        idci.css({
+            "height": "".concat(width, "px"),
+            "width": "".concat(width, "px"),
+            "border-radius": "".concat(outer_rad, "px"),
+        });
+        var ccirc = $("#" + ulabel.config["container_id"] + " div.centcirc");
+        ccirc.css({
+            "position": "absolute",
+            "top": "".concat(inner_top, "px"),
+            "left": "".concat(inner_lft, "px"),
+            "width": "".concat(inner_diam, "px"),
+            "height": "".concat(inner_diam, "px"),
+            "background-color": "black",
+            "border-radius": "".concat(inner_rad, "px")
+        });
+    };
+    HTMLBuilder.build_edit_suggestion = function (ulabel) {
+        // TODO noconflict
+        // DONE Migrated to subtasks
+        for (var stkey in ulabel.subtasks) {
+            var local_id = "edit_suggestion__".concat(stkey);
+            var global_id = "global_edit_suggestion__".concat(stkey);
+            var subtask_dialog_container_jq = $("#dialogs__" + stkey);
+            // Local edit suggestion
+            subtask_dialog_container_jq.append("\n                <a href=\"#\" id=\"".concat(local_id, "\" class=\"edit_suggestion editable\"></a>\n            "));
+            $("#" + local_id).css({
+                "height": ulabel.config["edit_handle_size"] + "px",
+                "width": ulabel.config["edit_handle_size"] + "px",
+                "border-radius": ulabel.config["edit_handle_size"] / 2 + "px"
+            });
+            // Global edit suggestion
+            var id_edit = "";
+            var mcm_ind = "";
+            if (!ulabel.subtasks[stkey]["single_class_mode"]) {
+                id_edit = "--><a href=\"#\" class=\"reid_suggestion global_sub_suggestion gedit-target\"></a><!--";
+                mcm_ind = " mcm";
+            }
+            subtask_dialog_container_jq.append("\n                <div id=\"".concat(global_id, "\" class=\"global_edit_suggestion glob_editable gedit-target").concat(mcm_ind, "\">\n                    <a href=\"#\" class=\"move_suggestion global_sub_suggestion movable gedit-target\">\n                        <img class=\"movable gedit-target\" src=\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAOEAAADhCAMAAAAJbSJIAAAAdVBMVEX///8jHyAAAAD7+/sfGxwcFxhta2s3NDUEAABxcHBqaWnr6+seGRoSCw0yLzC0s7O6ubl4dncLAAN9fHz19fUsKCkWERInIyTW1dV5eHjBwMCko6ODgoJAPj7o5+jw7/BYVleLiopHRUXKysqtrK1PTE0/PD0MlkEbAAAF+ElEQVR4nO2d63aiMBRGIYJTWhyrKPZia2sv7/+IQ7QWYhLITcmXyf41yzWLOXs+GsDmHJLkqsz32X5+3X/yuhSkTEuyGLuMyzElKYVMxy7kUhRHwUaxGLuUyzA9CYaaYtEKhpkiIxii4pQVDO9ELc4FQ0uRSzC0FAUJhpXi7Y1QMJwUC5lgKClO5YJhpNgrGEKKwlU0pBQHEqTcQCv2LDIdReATVXqZOFO8HbtQU5QSRE5RMUHcFJUTRE1RYRVlFOFWVE1BPEVtQbRLv8Yig5miQYIHRZjlxijBgyLIRWMxdLMthzyOXbwKH+aCjeLH2OUrsJ1ZGM62Y5evwKK2MKwRTtNPq7P0c+zyFZisc2PBfD0Zu3wV7kpeUfSzyX+WZ3djF68Gr0jul5zO8v78dM5LEMFGMWUVyVMi+L1F8sR+mKcwgo1i1lUk98lEYDhJmBRhTtEj3RSbBCWGXUWoBCltik2CUsNWESxByinFg6DU8KQIlyDlrmwuB/lRUG7YKDb/EzOcVbTLakHI18Pxz3LD5OGLkMVqvDId0WMYCNEQn2iITzTEJxriEw3xiYb4REN8oiE+0RCfaIhPNMQnGuITDfGJhvhEQ3yiIT7RMABEe6LCojjfpzcD2pmvxC5flllLuSx3Y5d04KMqnh39uEy2L39aXrauDvtcVBZ7wxdkVpO1z5t5XteknpmP9Lk9LA95/uqyJqe85oetZcSwT+PU+VLWvqZ4V5fHEs0aitrOlzzzM8XOLlYTxW7vkp9bI5nN1vqKbHNWvvFP8Wyrta7iefeZf/s/2Y3W2op8e12+8eMKfWK34VoedAZQiPoH841Pe0BXqaBtRb0LVTwwZ+lT01UlbB9TTVE2rGN52aK1kJSolqJk5JFfjzvSGhVSlI5bqd8uXrc6b7LusWFFaYIpebhG6Yo8yMscUOwRvL9O7YpwbWGKijCCpopAgmaKUIImivI+euLn6N+5vGDhUz9YghS9FOWCMz8TpMylvf98inLB5naNqFPZ3p/vHjX+Nb67WJqixSwLlllp9zXhpLYZydCFTdGZYBP4u5XhticWTbqKfaeoLuWLleF36a6UVtFhgmma/bUy/Js5rOU0DMapoFeGPylWTgX9MkxJ1XdjYIZfhvRu5cvxIT0zLN8Sx0f0zTDNkr3D5flwRL8Msy+7kUCiQ/plSIcWBb+W/gfXwyR5DPaepjod1mWK5beVodP70qo9bpjPFlX3wO6eD3O758OVu+fDij2yq2f8wvYZf1U4esbnpvfJU8T8nqbi/3ZY37UJ5y+G9H2pIEEKWIq6CVKgFHsEJQlSgBTNBIEUTQVD+B3wgGCPIsjv8QcF0fdiKAhi7KeRzERXE0TeE6UoKNnXlvq/r01ZEHVvotZJ5v/+Uk5RJ0GK/3uEd+zccF1BhH3eTIr6ggh79Tspmggi9Fv8pqi3yLT43zOz29TmCVIeD31P/go2it+078niC8yL9a59v7vqIJ0v3v146OH7D326RXIB30Nq3FLnKfzN/M3YJbkl/F7uaIhPNMQnGuITDfGJhvhEQ3yiIT7REJ9oiE80xCca4hMN8YmG+ERDfKIhPtEQn2iISfDv5Q7+3eqnAapHRanhT9+Ef/tXB2kHqB4UZYa/jSF+bvDsoTsClzxJDTudL2ApsiNwmxTFhkxrD1SKZ0OMaYqidyM8sR8CpciMof5Jke/YXXLNWTnKisoLNpcD7hPRZyAn6mQt67oaJl8j3OhYDUuho0i8Z1FbGNbSDl6PeLcZijCzmzlxHeTtnQp41agqxWKkj3lbwXW5lfQ/DnJj+K6R6yPqX1QR1Bj9PzZGimavUhkL6WR3OepvNvAD7RSxEqRoKuIJJkmho4i0yLRoXDRwLhMsyiliJkhRTBE1QYpSirgJUhRWVMRVtMvgpR/tQs8zkCL2KXqkVxE/QUrPcqPzIjGfkV40wkiQIkkxlAQpwhTDSZAiGMwUUoIUbkUNK0HKWYqhJUhhFEMUZG7gwjtFj/ymGGaClJ8UQ02QsiBZmpm/KByB+T7bX3ko8T9Zz1H5wFZx8QAAAABJRU5ErkJggg==\">\n                    </a><!--\n                    ").concat(id_edit, "\n                    --><a href=\"#\" class=\"delete_suggestion global_sub_suggestion gedit-target\">\n                        <span class=\"bigx gedit-target\">&#215;</span>\n                    </a>\n                </div>\n            "));
+            // Register these dialogs with each subtask
+            ulabel.subtasks[stkey]["state"]["visible_dialogs"][local_id] = {
+                "left": 0.0,
+                "top": 0.0,
+                "pin": "center"
+            };
+            ulabel.subtasks[stkey]["state"]["visible_dialogs"][global_id] = {
+                "left": 0.0,
+                "top": 0.0,
+                "pin": "center"
+            };
+        }
+    };
+    HTMLBuilder.build_confidence_dialog = function (ulabel) {
+        for (var stkey in ulabel.subtasks) {
+            var local_id = "annotation_confidence__".concat(stkey);
+            var global_id = "global_annotation_confidence__".concat(stkey);
+            var subtask_dialog_container_jq = $("#dialogs__" + stkey);
+            var global_edit_suggestion_jq = $("#global_edit_suggestion__" + stkey);
+            //Local confidence dialog
+            subtask_dialog_container_jq.append("\n                <p id=\"".concat(local_id, "\" class=\"annotation-confidence editable\"></p>\n            "));
+            $("#" + local_id).css({
+                "height": ulabel.config["edit_handle_size"] + "px",
+                "width": ulabel.config["edit_handle_size"] + "px",
+            });
+            // Global edit suggestion
+            var id_edit = "";
+            var mcm_ind = "";
+            if (!ulabel.subtasks[stkey]["single_class_mode"]) {
+                id_edit = "--><a href=\"#\" class=\"reid_suggestion global_sub_suggestion gedit-target\"></a><!--";
+                mcm_ind = " mcm";
+            }
+            global_edit_suggestion_jq.append("\n                <div id=\"".concat(global_id, "\" class=\"annotation-confidence gedit-target").concat(mcm_ind, "\">\n                    <p class=\"annotation-confidence-title\" style=\"margin: 0.25em; margin-top: 1em; padding-top: 0.3em; opacity: 1;\">Annotation Confidence:</p>\n                    <p class=\"annotation-confidence-value\" style=\"margin: 0.25em; opacity: 1;\">\n                    ").concat(ulabel.subtasks[ulabel.state["current_subtask"]]["active_annotation"], "\n                    </p>\n                </div>\n            "));
+            // Style the dialog
+            $("#" + global_id).css({
+                "background-color": "black",
+                "color": "white",
+                "opacity": "0.6",
+                "height": "3em",
+                "width": "14.5em",
+                "margin-top": "-9.5em",
+                "border-radius": "1em",
+                "font-size": "1.2em",
+                "margin-left": "-1.4em",
+            });
+        }
+    };
+    return HTMLBuilder;
+}());
+exports.k = HTMLBuilder;
+
+
+/***/ }),
+
+/***/ 138:
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "ULabel": () => (/* binding */ ULabel),
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _annotation__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(806);
+/* harmony import */ var _toolbox__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(334);
+/* harmony import */ var _toolbox__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_toolbox__WEBPACK_IMPORTED_MODULE_1__);
+/* harmony import */ var _subtask__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(167);
+/* harmony import */ var _geometric_utils__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(822);
+/* harmony import */ var _annotation_operators__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(419);
+/* harmony import */ var _drawing_utilities__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(848);
+/* harmony import */ var _configuration__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(976);
+/* harmony import */ var _html_builder__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(37);
+/* harmony import */ var jquery__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(755);
+/* harmony import */ var jquery__WEBPACK_IMPORTED_MODULE_8___default = /*#__PURE__*/__webpack_require__.n(jquery__WEBPACK_IMPORTED_MODULE_8__);
+/* harmony import */ var _blobs__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(769);
+/* harmony import */ var _version__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(345);
 /*
 Uncertain Labeling Tool
 Sentera Inc.
@@ -14555,7 +14901,8 @@ Sentera Inc.
 
 
 
-const jQuery = (jquery_default());
+
+const jQuery = (jquery__WEBPACK_IMPORTED_MODULE_8___default());
 window.$ = window.jQuery = __webpack_require__(755);
 
 const { v4: uuidv4 } = __webpack_require__(614);
@@ -14577,21 +14924,9 @@ class ULabel {
     static get elvl_info() { return 0; }
     static get elvl_standard() { return 1; }
     static get elvl_fatal() { return 2; }
-    static version() { return ULABEL_VERSION; }
+    static version() { return _version__WEBPACK_IMPORTED_MODULE_10__.ULABEL_VERSION; }
 
     // ================= Static Utilities =================
-
-    static add_style_to_document(ul) {
-        let head = document.head || document.getElementsByTagName('head')[0];
-        let style = document.createElement('style');
-        head.appendChild(style);
-        if (style.styleSheet) {
-            style.styleSheet.cssText = get_init_style(ul.config["container_id"]);
-        }
-        else {
-            style.appendChild(document.createTextNode(get_init_style(ul.config["container_id"])));
-        }
-    }
 
     // Returns current epoch time in milliseconds
     static get_time() {
@@ -14648,10 +14983,10 @@ class ULabel {
                     }
                     return "annotation";
                 }
-                else if (jquery_default()(mouse_event.target).hasClass("editable")) {
+                else if (jquery__WEBPACK_IMPORTED_MODULE_8___default()(mouse_event.target).hasClass("editable")) {
                     return "edit";
                 }
-                else if (jquery_default()(mouse_event.target).hasClass("movable")) {
+                else if (jquery__WEBPACK_IMPORTED_MODULE_8___default()(mouse_event.target).hasClass("movable")) {
                     mouse_event.preventDefault();
                     return "move";
                 }
@@ -14666,523 +15001,11 @@ class ULabel {
         }
     }
 
-    // ================= Init helpers =================
-
-    static get_md_button(md_key, md_name, svg_blob, cur_md, subtasks) {
-        let sel = "";
-        let href = ` href="#"`;
-        if (cur_md == md_key) {
-            sel = " sel";
-            href = "";
-        }
-        let st_classes = "";
-        for (const st_key in subtasks) {
-            if (subtasks[st_key]["allowed_modes"].includes(md_key)) {
-                st_classes += " md-en4--" + st_key;
-            }
-        }
-
-        return `<div class="mode-opt">
-            <a${href} id="md-btn--${md_key}" class="md-btn${sel}${st_classes} invert-this-svg" amdname="${md_name}">
-                ${svg_blob}
-            </a>
-        </div>`;
-    }
-
-
-    static get_images_html(ul) {
-        let ret = "";
-
-        let dsply;
-        for (let i = 0; i < ul.config["image_data"].frames.length; i++) {
-            if (i != 0) {
-                dsply = "none";
-            }
-            else {
-                dsply = "block";
-            }
-            ret += `
-                <img id="${ul.config["image_id_pfx"]}__${i}" src="${ul.config["image_data"].frames[i]}" class="imwrap_cls ${ul.config["imgsz_class"]} image_frame" style="z-index: 50; display: ${dsply};" />
-            `;
-        }
-        return ret;
-    }
-
-    static get_frame_annotation_dialogs(ul) {
-        let ret = "";
-        let tot = 0;
-        for (const st_key in ul.subtasks) {
-            if (
-                !ul.subtasks[st_key].allowed_modes.includes('whole-image') &&
-                !ul.subtasks[st_key].allowed_modes.includes('global')
-            ) {
-                continue;
-            }
-            tot += 1;
-        }
-        let ind = 0;
-        for (const st_key in ul.subtasks) {
-            if (
-                !ul.subtasks[st_key].allowed_modes.includes('whole-image') &&
-                !ul.subtasks[st_key].allowed_modes.includes('global')
-            ) {
-                continue;
-            }
-            ret += `
-                <div id="fad_st__${st_key}" class="frame_annotation_dialog fad_st__${st_key} fad_ind__${tot - ind - 1}">
-                    <div class="hide_overflow_container">
-                        <div class="row_container">
-                            <div class="fad_row name">
-                                <div class="fad_row_inner">
-                                    <div class="fad_st_name">${ul.subtasks[st_key].display_name}</div>
-                                </div>
-                            </div>
-                            <div class="fad_row add">
-                                <div class="fad_row_inner">
-                                    <div class="fad_st_add">
-                                        <a class="add-glob-button" href="#">+</a>
-                                    </div>
-                                </div>
-                            </div><div class="fad_annotation_rows"></div>
-                        </div>
-                    </div>
-                </div>
-            `;
-            ind += 1;
-            if (ind > 4) {
-                throw new Error("At most 4 subtasks can have allow 'whole-image' or 'global' annotations.");
-            }
-        }
-        return ret;
-    }
-
-    static create_toolbox(ulabel, toolbox_item_order = null) {
-
-        //grab the default toolbox if one wasn't provided
-        if (toolbox_item_order == null) {
-            toolbox_item_order = ulabel.config.default_toolbox_item_order
-        }
-
-        //There's no point to having an empty toolbox, so throw an error if the toolbox is empty.
-        //The toolbox won't actually break if there aren't any items in the toolbox, so if for
-        //whatever reason we want that in the future, then feel free to remove this error.
-        if (toolbox_item_order.length == 0) {
-            throw new Error("No Toolbox Items Given")
-        }
-
-        let toolbox_instance_list = [];
-        //Go through the items in toolbox_item_order and add their instance to the toolbox instance list
-        for (let i = 0; i < toolbox_item_order.length; i++) {
-
-            let args, toolbox_key;
-
-            //If the value of toolbox_item_order[i] is a number then that means the it is one of the 
-            //enumerated toolbox items, so set it to the key, otherwise the element must be an array
-            //of which the first element of that array must be the enumerated value, and the arguments
-            //must be the second value
-            if (typeof(toolbox_item_order[i]) == "number") {
-                toolbox_key = toolbox_item_order[i]
-            } else {
-                toolbox_key = toolbox_item_order[i][0];
-                args = toolbox_item_order[i][1]  
-            }
-
-            let toolbox_item_class = ulabel.config.toolbox_map.get(toolbox_key);
-
-            if (args == null) {
-                toolbox_instance_list.push(new toolbox_item_class(ulabel))
-            } else {
-                toolbox_instance_list.push(new toolbox_item_class(ulabel, args))
-            }  
-        }                    
-
-        return toolbox_instance_list
-    }
-
-    static prep_window_html(ul, toolbox_item_order = null) {
-        // Bring image and annotation scaffolding in
-        // TODO multi-image with spacing etc.
-
-        // const tabs = ULabel.get_toolbox_tabs(ul);
-        const images = ULabel.get_images_html(ul);
-        const frame_annotation_dialogs = ULabel.get_frame_annotation_dialogs(ul);
-        
-        // const toolbox = configuration.create_toolbox();
-        const toolbox = new src_toolbox.Toolbox(
-            [],
-            ULabel.create_toolbox(ul, toolbox_item_order)
-        );
-
-
-        var tool_html = toolbox.setup_toolbox_html(
-            ul,
-            frame_annotation_dialogs,
-            images,
-            ULABEL_VERSION
-        )
-        jquery_default()("#" + ul.config["container_id"]).html(tool_html)
-
-        // Build toolbox for the current subtask only
-        const crst = Object.keys(ul.subtasks)[0];
-
-        // Initialize toolbox based on configuration
-        const sp_id = ul.config["toolbox_id"];
-        let curmd = ul.subtasks[crst]["state"]["annotation_mode"];
-        let md_buttons = [
-            ULabel.get_md_button("bbox", "Bounding Box", BBOX_SVG, curmd, ul.subtasks),
-            ULabel.get_md_button("point", "Point", POINT_SVG, curmd, ul.subtasks),
-            ULabel.get_md_button("polygon", "Polygon", POLYGON_SVG, curmd, ul.subtasks),
-            ULabel.get_md_button("tbar", "T-Bar", TBAR_SVG, curmd, ul.subtasks),
-            ULabel.get_md_button("polyline", "Polyline", POLYLINE_SVG, curmd, ul.subtasks),
-            ULabel.get_md_button("contour", "Contour", CONTOUR_SVG, curmd, ul.subtasks),
-            ULabel.get_md_button("bbox3", "Bounding Cube", BBOX3_SVG, curmd, ul.subtasks),
-            ULabel.get_md_button("whole-image", "Whole Frame", WHOLE_IMAGE_SVG, curmd, ul.subtasks),
-            ULabel.get_md_button("global", "Global", GLOBAL_SVG, curmd, ul.subtasks),
-        ];
-
-        // Append but don't wait
-        jquery_default()("#" + sp_id + " .toolbox_inner_cls .mode-selection").append(md_buttons.join("<!-- -->"));
-
-        // Show current mode label
-        ul.show_annotation_mode();
-
-        // Make sure that entire toolbox is shown
-        if (jquery_default()("#" + ul.config["toolbox_id"] + " .toolbox_inner_cls").height() > jquery_default()("#" + ul.config["container_id"]).height()) {
-            jquery_default()("#" + ul.config["toolbox_id"]).css("overflow-y", "scroll");
-        }
-
-        ul.toolbox = toolbox;
-
-        // Check an array to see if it contains a ZoomPanToolboxItem
-        let contains_zoom_pan = function(array) {
-            
-            //check if the array is empty
-            if (array.length == 0) return false;
-            
-            // Loop through everything in the array and check if its the ZoomPanToolboxItem
-            for (let idx in array) {
-                if (array[idx] instanceof src_toolbox.ZoomPanToolboxItem) {
-                    return true;
-                }
-            }
-            
-            // If the ZoomPanToolboxItem wasn't found then return false
-            return false;
-        }
-
-        // Check if initial_crop exists and has the appropriate properties
-        let check_initial_crop = function(initial_crop) {
-
-            // If initial_crop doesn't exist, return false
-            if (initial_crop == null) return false;
-
-            // If initial_crop has the appropriate properties, return true
-            if (
-                "width" in initial_crop &&
-                "height" in initial_crop &&
-                "left" in initial_crop &&
-                "top" in initial_crop
-            ) {
-                return true;
-            }
-
-            // If initial_crop exists but doesn't have the appropriate properties,
-            // then raise an error and return false
-            ul.raise_error("initial_crop missing necessary properties. Ignoring.");
-            return false;
-            
-        }
-
-        // Make sure the toolbox contains the ZoomPanToolboxItem
-        if (contains_zoom_pan(ul.toolbox.items)) {
-
-            // Make sure the initial_crop exists and contains the necessary properties
-            if (check_initial_crop(ul.config.initial_crop)) {
-
-                // Grab the initial crop button and rename it
-                let initial_crop_button = document.getElementById("recenter-button");
-                initial_crop_button.innerHTML = "Initial Crop"
-            } else {
-
-                // Grab the whole image button and set its display to none
-                let whole_image_button = document.getElementById("recenter-whole-image-button");
-                whole_image_button.style.display = "none";
-            }
-        }
-    }
-
-    static get_idd_string(idd_id, wdt, center_coord, cl_opacity, class_ids, inner_rad, outer_rad, class_defs) {
-        // TODO noconflict
-        let dialog_html = `
-        <div id="${idd_id}" class="id_dialog" style="width: ${wdt}px; height: ${wdt}px;">
-            <a class="id-dialog-clickable-indicator" href="#"></a>
-            <svg width="${wdt}" height="${wdt}">
-        `;
-
-        for (var i = 0; i < class_ids.length; i++) {
-
-            let srt_prop = 1 / class_ids.length;
-
-            let cum_prop = i / class_ids.length;
-            let srk_prop = 1 / class_ids.length;
-            let gap_prop = 1.0 - srk_prop;
-
-            let rad_back = inner_rad + 1.0 * (outer_rad - inner_rad) / 2;
-            let rad_frnt = inner_rad + srt_prop * (outer_rad - inner_rad) / 2;
-
-            let wdt_back = 1.0 * (outer_rad - inner_rad);
-            let wdt_frnt = srt_prop * (outer_rad - inner_rad);
-
-            let srk_back = 2 * Math.PI * rad_back * srk_prop;
-            let gap_back = 2 * Math.PI * rad_back * gap_prop;
-            let off_back = 2 * Math.PI * rad_back * cum_prop;
-
-            let srk_frnt = 2 * Math.PI * rad_frnt * srk_prop;
-            let gap_frnt = 2 * Math.PI * rad_frnt * gap_prop;
-            let off_frnt = 2 * Math.PI * rad_frnt * cum_prop;
-
-            let ths_id = class_ids[i];
-            let ths_col = class_defs[i]["color"];
-            // TODO should names also go on the id dialog?
-            // let ths_nam = class_defs[i]["name"];
-            dialog_html += `
-            <circle
-                r="${rad_back}" cx="${center_coord}" cy="${center_coord}" 
-                stroke="${ths_col}" 
-                fill-opacity="0"
-                stroke-opacity="${cl_opacity}"
-                stroke-width="${wdt_back}"; 
-                stroke-dasharray="${srk_back} ${gap_back}" 
-                stroke-dashoffset="${off_back}" />
-            <circle
-                id="${idd_id}__circ_${ths_id}"
-                r="${rad_frnt}" cx="${center_coord}" cy="${center_coord}"
-                fill-opacity="0"
-                stroke="${ths_col}" 
-                stroke-opacity="1.0"
-                stroke-width="${wdt_frnt}" 
-                stroke-dasharray="${srk_frnt} ${gap_frnt}" 
-                stroke-dashoffset="${off_frnt}" />
-            `;
-        }
-        dialog_html += `
-            </svg>
-            <div class="centcirc"></div>
-        </div>`;
-
-        return dialog_html;
-    }
-
-    static build_id_dialogs(ul) {
-        var full_toolbox_html = `<div class="toolbox-id-app-payload">`;
-
-        const wdt = ul.config["outer_diameter"];
-        // TODO real names here!
-        const inner_rad = ul.config["inner_prop"] * wdt / 2;
-        const inner_diam = inner_rad * 2;
-        const outer_rad = 0.5 * wdt;
-        const inner_top = outer_rad - inner_rad;
-        const inner_lft = outer_rad - inner_rad;
-
-        const cl_opacity = 0.4;
-        let tbid = ul.config["toolbox_id"];
-
-        const center_coord = wdt / 2;
-
-        for (const st in ul.subtasks) {
-            const idd_id = ul.subtasks[st]["state"]["idd_id"];
-            const idd_id_front = ul.subtasks[st]["state"]["idd_id_front"];
-
-            let subtask_dialog_container_jq = jquery_default()("#dialogs__" + st);
-            let front_subtask_dialog_container_jq = jquery_default()("#front_dialogs__" + st);
-
-            let dialog_html_v2 = ULabel.get_idd_string(
-                idd_id, wdt, center_coord, cl_opacity, ul.subtasks[st]["class_ids"],
-                inner_rad, outer_rad, ul.subtasks[st]["class_defs"]
-            );
-            let front_dialog_html_v2 = ULabel.get_idd_string(
-                idd_id_front, wdt, center_coord, cl_opacity, ul.subtasks[st]["class_ids"],
-                inner_rad, outer_rad, ul.subtasks[st]["class_defs"]
-            );
-
-            // TODO noconflict
-            var toolbox_html = `<div id="tb-id-app--${st}" class="tb-id-app">`;
-            const class_ids = ul.subtasks[st]["class_ids"];
-
-
-            for (var i = 0; i < class_ids.length; i++) {
-
-                let ths_id = class_ids[i];
-                let ths_col = ul.subtasks[st]["class_defs"][i]["color"];
-                let ths_nam = ul.subtasks[st]["class_defs"][i]["name"];
-
-                let sel = "";
-                let href = ' href="#"';
-                if (i == 0) {
-                    sel = " sel";
-                    href = "";
-                }
-                if (ul.config["allow_soft_id"]) {
-                    let msg = "Only hard id is currently supported";
-                    throw new Error(msg);
-                }
-                else {
-                    toolbox_html += `
-                        <a${href} id="${tbid}_sel_${ths_id}" class="tbid-opt${sel}">
-                            <div class="colprev ${tbid}_colprev_${ths_id}" style="background-color: ${ths_col}"></div> <span class="tb-cls-nam">${ths_nam}</span>
-                        </a>
-                    `;
-                }
-            }
-            toolbox_html += `
-            </div>`;
-
-            // Add dialog to the document
-            // front_subtask_dialog_container_jq.append(dialog_html);
-            // $("#" + ul.subtasks[st]["idd_id"]).attr("id", ul.subtasks[st]["idd_id_front"]);
-            front_subtask_dialog_container_jq.append(front_dialog_html_v2); // TODO(new3d) MOVE THIS TO GLOB BOX -- superimpose atop thee anchor already there when needed, no remove and add back
-            subtask_dialog_container_jq.append(dialog_html_v2);
-            // console.log(dialog_html);
-            // console.log(dialog_html_v2);
-
-            // Wait to add full toolbox
-            full_toolbox_html += toolbox_html;
-
-            ul.subtasks[st]["state"]["visible_dialogs"][idd_id] = {
-                "left": 0.0,
-                "top": 0.0,
-                "pin": "center"
-            };
-        }
-
-        // Add all toolbox html at once
-        jquery_default()("#" + ul.config["toolbox_id"] + " div.id-toolbox-app").html(full_toolbox_html);
-
-        // Style revisions based on the size
-        let idci = jquery_default()("#" + ul.config["container_id"] + " a.id-dialog-clickable-indicator");
-        idci.css({
-            "height": `${wdt}px`,
-            "width": `${wdt}px`,
-            "border-radius": `${outer_rad}px`,
-        });
-        let ccirc = jquery_default()("#" + ul.config["container_id"] + " div.centcirc");
-        ccirc.css({
-            "position": "absolute",
-            "top": `${inner_top}px`,
-            "left": `${inner_lft}px`,
-            "width": `${inner_diam}px`,
-            "height": `${inner_diam}px`,
-            "background-color": "black",
-            "border-radius": `${inner_rad}px`
-        });
-
-    }
-
-    static build_edit_suggestion(ul) {
-        // TODO noconflict
-        // DONE Migrated to subtasks
-
-        for (const stkey in ul.subtasks) {
-            let local_id = `edit_suggestion__${stkey}`;
-            let global_id = `global_edit_suggestion__${stkey}`;
-
-            let subtask_dialog_container_jq = jquery_default()("#dialogs__" + stkey);
-
-            // Local edit suggestion
-            subtask_dialog_container_jq.append(`
-                <a href="#" id="${local_id}" class="edit_suggestion editable"></a>
-            `);
-            jquery_default()("#" + local_id).css({
-                "height": ul.config["edit_handle_size"] + "px",
-                "width": ul.config["edit_handle_size"] + "px",
-                "border-radius": ul.config["edit_handle_size"] / 2 + "px"
-            });
-
-            // Global edit suggestion
-            let id_edit = "";
-            let mcm_ind = "";
-            if (!ul.subtasks[stkey]["single_class_mode"]) {
-                id_edit = `--><a href="#" class="reid_suggestion global_sub_suggestion gedit-target"></a><!--`;
-                mcm_ind = " mcm";
-            }
-            subtask_dialog_container_jq.append(`
-                <div id="${global_id}" class="global_edit_suggestion glob_editable gedit-target${mcm_ind}">
-                    <a href="#" class="move_suggestion global_sub_suggestion movable gedit-target">
-                        <img class="movable gedit-target" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAOEAAADhCAMAAAAJbSJIAAAAdVBMVEX///8jHyAAAAD7+/sfGxwcFxhta2s3NDUEAABxcHBqaWnr6+seGRoSCw0yLzC0s7O6ubl4dncLAAN9fHz19fUsKCkWERInIyTW1dV5eHjBwMCko6ODgoJAPj7o5+jw7/BYVleLiopHRUXKysqtrK1PTE0/PD0MlkEbAAAF+ElEQVR4nO2d63aiMBRGIYJTWhyrKPZia2sv7/+IQ7QWYhLITcmXyf41yzWLOXs+GsDmHJLkqsz32X5+3X/yuhSkTEuyGLuMyzElKYVMxy7kUhRHwUaxGLuUyzA9CYaaYtEKhpkiIxii4pQVDO9ELc4FQ0uRSzC0FAUJhpXi7Y1QMJwUC5lgKClO5YJhpNgrGEKKwlU0pBQHEqTcQCv2LDIdReATVXqZOFO8HbtQU5QSRE5RMUHcFJUTRE1RYRVlFOFWVE1BPEVtQbRLv8Yig5miQYIHRZjlxijBgyLIRWMxdLMthzyOXbwKH+aCjeLH2OUrsJ1ZGM62Y5evwKK2MKwRTtNPq7P0c+zyFZisc2PBfD0Zu3wV7kpeUfSzyX+WZ3djF68Gr0jul5zO8v78dM5LEMFGMWUVyVMi+L1F8sR+mKcwgo1i1lUk98lEYDhJmBRhTtEj3RSbBCWGXUWoBCltik2CUsNWESxByinFg6DU8KQIlyDlrmwuB/lRUG7YKDb/EzOcVbTLakHI18Pxz3LD5OGLkMVqvDId0WMYCNEQn2iITzTEJxriEw3xiYb4REN8oiE+0RCfaIhPNMQnGuITDfGJhvhEQ3yiIT7RMABEe6LCojjfpzcD2pmvxC5flllLuSx3Y5d04KMqnh39uEy2L39aXrauDvtcVBZ7wxdkVpO1z5t5XteknpmP9Lk9LA95/uqyJqe85oetZcSwT+PU+VLWvqZ4V5fHEs0aitrOlzzzM8XOLlYTxW7vkp9bI5nN1vqKbHNWvvFP8Wyrta7iefeZf/s/2Y3W2op8e12+8eMKfWK34VoedAZQiPoH841Pe0BXqaBtRb0LVTwwZ+lT01UlbB9TTVE2rGN52aK1kJSolqJk5JFfjzvSGhVSlI5bqd8uXrc6b7LusWFFaYIpebhG6Yo8yMscUOwRvL9O7YpwbWGKijCCpopAgmaKUIImivI+euLn6N+5vGDhUz9YghS9FOWCMz8TpMylvf98inLB5naNqFPZ3p/vHjX+Nb67WJqixSwLlllp9zXhpLYZydCFTdGZYBP4u5XhticWTbqKfaeoLuWLleF36a6UVtFhgmma/bUy/Js5rOU0DMapoFeGPylWTgX9MkxJ1XdjYIZfhvRu5cvxIT0zLN8Sx0f0zTDNkr3D5flwRL8Msy+7kUCiQ/plSIcWBb+W/gfXwyR5DPaepjod1mWK5beVodP70qo9bpjPFlX3wO6eD3O758OVu+fDij2yq2f8wvYZf1U4esbnpvfJU8T8nqbi/3ZY37UJ5y+G9H2pIEEKWIq6CVKgFHsEJQlSgBTNBIEUTQVD+B3wgGCPIsjv8QcF0fdiKAhi7KeRzERXE0TeE6UoKNnXlvq/r01ZEHVvotZJ5v/+Uk5RJ0GK/3uEd+zccF1BhH3eTIr6ggh79Tspmggi9Fv8pqi3yLT43zOz29TmCVIeD31P/go2it+078niC8yL9a59v7vqIJ0v3v146OH7D326RXIB30Nq3FLnKfzN/M3YJbkl/F7uaIhPNMQnGuITDfGJhvhEQ3yiIT7REJ9oiE80xCca4hMN8YmG+ERDfKIhPtEQn2iISfDv5Q7+3eqnAapHRanhT9+Ef/tXB2kHqB4UZYa/jSF+bvDsoTsClzxJDTudL2ApsiNwmxTFhkxrD1SKZ0OMaYqidyM8sR8CpciMof5Jke/YXXLNWTnKisoLNpcD7hPRZyAn6mQt67oaJl8j3OhYDUuho0i8Z1FbGNbSDl6PeLcZijCzmzlxHeTtnQp41agqxWKkj3lbwXW5lfQ/DnJj+K6R6yPqX1QR1Bj9PzZGimavUhkL6WR3OepvNvAD7RSxEqRoKuIJJkmho4i0yLRoXDRwLhMsyiliJkhRTBE1QYpSirgJUhRWVMRVtMvgpR/tQs8zkCL2KXqkVxE/QUrPcqPzIjGfkV40wkiQIkkxlAQpwhTDSZAiGMwUUoIUbkUNK0HKWYqhJUhhFEMUZG7gwjtFj/ymGGaClJ8UQ02QsiBZmpm/KByB+T7bX3ko8T9Zz1H5wFZx8QAAAABJRU5ErkJggg==">
-                    </a><!--
-                    ${id_edit}
-                    --><a href="#" class="delete_suggestion global_sub_suggestion gedit-target">
-                        <span class="bigx gedit-target">&#215;</span>
-                    </a>
-                </div>
-            `);
-
-            // Register these dialogs with each subtask
-            ul.subtasks[stkey]["state"]["visible_dialogs"][local_id] = {
-                "left": 0.0,
-                "top": 0.0,
-                "pin": "center"
-            };
-            ul.subtasks[stkey]["state"]["visible_dialogs"][global_id] = {
-                "left": 0.0,
-                "top": 0.0,
-                "pin": "center"
-            };
-        }
-
-    }
-
-    static build_confidence_dialog(ul) {
-        for (const stkey in ul.subtasks) {
-            let local_id = `annotation_confidence__${stkey}`;
-            let global_id = `global_annotation_confidence__${stkey}`;
-
-            let subtask_dialog_container_jq = jquery_default()("#dialogs__" + stkey);
-            let global_edit_suggestion_jq = jquery_default()("#global_edit_suggestion__" + stkey);
-
-            //Local confidence dialog
-            subtask_dialog_container_jq.append(`
-                <p id="${local_id}" class="annotation-confidence editable"></p>
-            `);
-            jquery_default()("#" + local_id).css({
-                "height": ul.config["edit_handle_size"] + "px",
-                "width": ul.config["edit_handle_size"] + "px",
-            });
-
-            // Global edit suggestion
-            let id_edit = "";
-            let mcm_ind = "";
-            if (!ul.subtasks[stkey]["single_class_mode"]) {
-                id_edit = `--><a href="#" class="reid_suggestion global_sub_suggestion gedit-target"></a><!--`;
-                mcm_ind = " mcm";
-            }
-            global_edit_suggestion_jq.append(`
-                <div id="${global_id}" class="annotation-confidence gedit-target${mcm_ind}">
-                    <p class="annotation-confidence-title" style="margin: 0.25em; margin-top: 1em; padding-top: 0.3em; opacity: 1;">Annotation Confidence:</p>
-                    <p class="annotation-confidence-value" style="margin: 0.25em; opacity: 1;">
-                    ${ul.subtasks[ul.state["current_subtask"]]["active_annotation"]}
-                    </p>
-                </div>
-            `);
-            jquery_default()("#" + global_id).css({
-                "background-color": "black",
-                "color": "white",
-                "opacity": "0.6",
-                "height": "3em",
-                "width": "14.5em",
-                "margin-top": "-9.5em",
-                "border-radius": "1em",
-                "font-size": "1.2em",
-                "margin-left": "-1.4em",
-            });
-        }
-    }   
-
     static create_listeners(ul) {
 
         // ================= Mouse Events in the ID Dialog ================= 
 
-        var iddg = jquery_default()(".id_dialog");
+        var iddg = jquery__WEBPACK_IMPORTED_MODULE_8___default()(".id_dialog");
 
         // Hover interactions
 
@@ -15198,7 +15021,7 @@ class ULabel {
 
         // ================= Mouse Events in the Annotation Container ================= 
 
-        var annbox = jquery_default()("#" + ul.config["annbox_id"]);
+        var annbox = jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + ul.config["annbox_id"]);
 
         // Detect and record mousedown
         annbox.mousedown(function (mouse_event) {
@@ -15206,11 +15029,11 @@ class ULabel {
         });
 
         // Detect and record mouseup
-        jquery_default()(window).mouseup(function (mouse_event) {
+        jquery__WEBPACK_IMPORTED_MODULE_8___default()(window).mouseup(function (mouse_event) {
             ul.handle_mouse_up(mouse_event);
         });
 
-        jquery_default()(window).on("click", (e) => {
+        jquery__WEBPACK_IMPORTED_MODULE_8___default()(window).on("click", (e) => {
             if (e.shiftKey) {
                 e.preventDefault();
             }
@@ -15221,7 +15044,7 @@ class ULabel {
             ul.handle_mouse_move(mouse_event);
         });
 
-        jquery_default()(document).on("keypress", (e) => {   
+        jquery__WEBPACK_IMPORTED_MODULE_8___default()(document).on("keypress", (e) => {   
             // Check for the correct keypress
             if (e.key == ul.config.create_point_annotation_keybind) {
 
@@ -15283,8 +15106,8 @@ class ULabel {
 
     
 
-        jquery_default()(document).on("click", "#" + ul.config["toolbox_id"] + " .zbutt", (e) => {
-            let tgt_jq = jquery_default()(e.currentTarget);
+        jquery__WEBPACK_IMPORTED_MODULE_8___default()(document).on("click", "#" + ul.config["toolbox_id"] + " .zbutt", (e) => {
+            let tgt_jq = jquery__WEBPACK_IMPORTED_MODULE_8___default()(e.currentTarget);
             if (tgt_jq.hasClass("zin")) {
                 ul.state["zoom_val"] *= 1.1;
             }
@@ -15293,9 +15116,9 @@ class ULabel {
             }
             ul.rezoom();
         });
-        jquery_default()(document).on("click", "#" + ul.config["toolbox_id"] + " .pbutt", (e) => {
-            let tgt_jq = jquery_default()(e.currentTarget);
-            let annbox = jquery_default()("#" + ul.config["annbox_id"]);
+        jquery__WEBPACK_IMPORTED_MODULE_8___default()(document).on("click", "#" + ul.config["toolbox_id"] + " .pbutt", (e) => {
+            let tgt_jq = jquery__WEBPACK_IMPORTED_MODULE_8___default()(e.currentTarget);
+            let annbox = jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + ul.config["annbox_id"]);
             if (tgt_jq.hasClass("up")) {
                 annbox.scrollTop(annbox.scrollTop() - 20);
             }
@@ -15309,8 +15132,8 @@ class ULabel {
                 annbox.scrollLeft(annbox.scrollLeft() + 20);
             }
         });
-        jquery_default()(document).on("click", "#" + ul.config["toolbox_id"] + " .wbutt", (e) => {
-            let tgt_jq = jquery_default()(e.currentTarget);
+        jquery__WEBPACK_IMPORTED_MODULE_8___default()(document).on("click", "#" + ul.config["toolbox_id"] + " .wbutt", (e) => {
+            let tgt_jq = jquery__WEBPACK_IMPORTED_MODULE_8___default()(e.currentTarget);
             if (tgt_jq.hasClass("win")) {
                 ul.state["line_size"] *= 1.1;
             }
@@ -15319,18 +15142,18 @@ class ULabel {
             }
             ul.redraw_demo();
         });
-        jquery_default()(document).on("click", "#" + ul.config["toolbox_id"] + " .setting a", (e) => {
-            let tgt_jq = jquery_default()(e.currentTarget);
+        jquery__WEBPACK_IMPORTED_MODULE_8___default()(document).on("click", "#" + ul.config["toolbox_id"] + " .setting a", (e) => {
+            let tgt_jq = jquery__WEBPACK_IMPORTED_MODULE_8___default()(e.currentTarget);
             if (!e.currentTarget.hasAttribute("href")) return;
             if (tgt_jq.hasClass("fixed-setting")) {
-                jquery_default()("#" + ul.config["toolbox_id"] + " .setting a.fixed-setting").removeAttr("href");
-                jquery_default()("#" + ul.config["toolbox_id"] + " .setting a.dyn-setting").attr("href", "#");
+                jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + ul.config["toolbox_id"] + " .setting a.fixed-setting").removeAttr("href");
+                jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + ul.config["toolbox_id"] + " .setting a.dyn-setting").attr("href", "#");
                 ul.state["line_size"] = ul.state["line_size"] * ul.state["zoom_val"];
                 ul.state["size_mode"] = "fixed";
             }
             else if (tgt_jq.hasClass("dyn-setting")) {
-                jquery_default()("#" + ul.config["toolbox_id"] + " .setting a.dyn-setting").removeAttr("href");
-                jquery_default()("#" + ul.config["toolbox_id"] + " .setting a.fixed-setting").attr("href", "#");
+                jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + ul.config["toolbox_id"] + " .setting a.dyn-setting").removeAttr("href");
+                jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + ul.config["toolbox_id"] + " .setting a.fixed-setting").attr("href", "#");
                 ul.state["line_size"] = ul.get_line_size();
                 ul.state["size_mode"] = "dynamic";
             }
@@ -15338,13 +15161,13 @@ class ULabel {
         });
 
         // Listener for soft id toolbox buttons
-        jquery_default()(document).on("click", "#" + ul.config["toolbox_id"] + ' a.tbid-opt', (e) => {
-            let tgt_jq = jquery_default()(e.currentTarget);
+        jquery__WEBPACK_IMPORTED_MODULE_8___default()(document).on("click", "#" + ul.config["toolbox_id"] + ' a.tbid-opt', (e) => {
+            let tgt_jq = jquery__WEBPACK_IMPORTED_MODULE_8___default()(e.currentTarget);
             let pfx = "div#tb-id-app--" + ul.state["current_subtask"];
             let crst = ul.state["current_subtask"];
             if (tgt_jq.attr("href") == "#") {
-                jquery_default()(pfx + " a.tbid-opt.sel").attr("href", "#");
-                jquery_default()(pfx + " a.tbid-opt.sel").removeClass("sel");
+                jquery__WEBPACK_IMPORTED_MODULE_8___default()(pfx + " a.tbid-opt.sel").attr("href", "#");
+                jquery__WEBPACK_IMPORTED_MODULE_8___default()(pfx + " a.tbid-opt.sel").removeClass("sel");
                 tgt_jq.addClass("sel");
                 tgt_jq.removeAttr("href");
                 let idarr = tgt_jq.attr("id").split("_");
@@ -15354,8 +15177,8 @@ class ULabel {
             }
         });
 
-        jquery_default()(document).on("click", "a.tb-st-switch[href]", (e) => {
-            let switch_to = jquery_default()(e.target).attr("id").split("--")[1];
+        jquery__WEBPACK_IMPORTED_MODULE_8___default()(document).on("click", "a.tb-st-switch[href]", (e) => {
+            let switch_to = jquery__WEBPACK_IMPORTED_MODULE_8___default()(e.target).attr("id").split("--")[1];
 
             // Ignore if in the middle of annotation
             if (ul.subtasks[ul.state["current_subtask"]]["state"]["is_in_progress"]) {
@@ -15366,7 +15189,7 @@ class ULabel {
         });
 
         // Keybind to switch active subtask
-        jquery_default()(document).on("keypress", (e) => {
+        jquery__WEBPACK_IMPORTED_MODULE_8___default()(document).on("keypress", (e) => {
             
             // Ignore if in the middle of annotation
             if (ul.subtasks[ul.state["current_subtask"]]["state"]["is_in_progress"]) {
@@ -15399,38 +15222,38 @@ class ULabel {
             }
         })
 
-        jquery_default()(document).on("input", "input.frame_input", () => {
+        jquery__WEBPACK_IMPORTED_MODULE_8___default()(document).on("input", "input.frame_input", () => {
             ul.update_frame();
         });
 
 
-        jquery_default()(document).on("input", "span.tb-st-range input", () => {
+        jquery__WEBPACK_IMPORTED_MODULE_8___default()(document).on("input", "span.tb-st-range input", () => {
             ul.readjust_subtask_opacities();
         });
 
-        jquery_default()(document).on("click", "div.fad_row.add a.add-glob-button", () => {
+        jquery__WEBPACK_IMPORTED_MODULE_8___default()(document).on("click", "div.fad_row.add a.add-glob-button", () => {
             ul.create_nonspatial_annotation();
         });
-        jquery_default()(document).on("focus", "textarea.nonspatial_note", () => {
-            jquery_default()("div.frame_annotation_dialog.active").addClass("permopen");
+        jquery__WEBPACK_IMPORTED_MODULE_8___default()(document).on("focus", "textarea.nonspatial_note", () => {
+            jquery__WEBPACK_IMPORTED_MODULE_8___default()("div.frame_annotation_dialog.active").addClass("permopen");
         });
-        jquery_default()(document).on("focusout", "textarea.nonspatial_note", () => {
-            jquery_default()("div.frame_annotation_dialog.permopen").removeClass("permopen");
+        jquery__WEBPACK_IMPORTED_MODULE_8___default()(document).on("focusout", "textarea.nonspatial_note", () => {
+            jquery__WEBPACK_IMPORTED_MODULE_8___default()("div.frame_annotation_dialog.permopen").removeClass("permopen");
         });
-        jquery_default()(document).on("input", "textarea.nonspatial_note", (e) => {
+        jquery__WEBPACK_IMPORTED_MODULE_8___default()(document).on("input", "textarea.nonspatial_note", (e) => {
             // Update annotation's text field
             ul.subtasks[ul.state["current_subtask"]]["annotations"]["access"][e.target.id.substring("note__".length)]["text_payload"] = e.target.value;
         });
-        jquery_default()(document).on("click", "a.fad_button.delete", (e) => {
+        jquery__WEBPACK_IMPORTED_MODULE_8___default()(document).on("click", "a.fad_button.delete", (e) => {
             ul.delete_annotation(e.target.id.substring("delete__".length));
         });
-        jquery_default()(document).on("click", "a.fad_button.reclf", (e) => {
+        jquery__WEBPACK_IMPORTED_MODULE_8___default()(document).on("click", "a.fad_button.reclf", (e) => {
             // Show idd
             ul.show_id_dialog(e.pageX, e.pageY, e.target.id.substring("reclf__".length), false, true);
         });
 
         //Whenever the mouse makes the dialogs show up, update the displayed annotation confidence.
-        jquery_default()(document).on("mouseenter", "div.global_edit_suggestion", (e) => {
+        jquery__WEBPACK_IMPORTED_MODULE_8___default()(document).on("mouseenter", "div.global_edit_suggestion", (e) => {
             //Grab the currently active annotation
             let active_annotation = ul.subtasks[ul.state["current_subtask"]]["active_annotation"]
 
@@ -15444,20 +15267,20 @@ class ULabel {
             }
 
             //Update the display dialog with the annotation's confidence
-            jquery_default()(".annotation-confidence-value").text(confidence)
+            jquery__WEBPACK_IMPORTED_MODULE_8___default()(".annotation-confidence-value").text(confidence)
         })
-        jquery_default()(document).on("mouseenter", "div.fad_annotation_rows div.fad_row", (e) => {
+        jquery__WEBPACK_IMPORTED_MODULE_8___default()(document).on("mouseenter", "div.fad_annotation_rows div.fad_row", (e) => {
             // Show thumbnail for idd
-            ul.suggest_edits(null, jquery_default()(e.currentTarget).attr("id").substring("row__".length));
+            ul.suggest_edits(null, jquery__WEBPACK_IMPORTED_MODULE_8___default()(e.currentTarget).attr("id").substring("row__".length));
         });
-        jquery_default()(document).on("mouseleave", "div.fad_annotation_rows div.fad_row", () => {
+        jquery__WEBPACK_IMPORTED_MODULE_8___default()(document).on("mouseleave", "div.fad_annotation_rows div.fad_row", () => {
             // Show thumbnail for idd
             if (ul.subtasks[ul.state["current_subtask"]]["state"]["idd_visible"] && !ul.subtasks[ul.state["current_subtask"]]["state"]["idd_thumbnail"]) {
                 return;
             }
             ul.suggest_edits(null);
         });
-        jquery_default()(document).on("keypress", (e) => {
+        jquery__WEBPACK_IMPORTED_MODULE_8___default()(document).on("keypress", (e) => {
 
             //check the key pressed against the delete annotation keybind in the config
             if (e.key == ul.config.delete_annotation_keybind) {
@@ -15472,7 +15295,7 @@ class ULabel {
         })
 
         // Listener for id_dialog click interactions
-        jquery_default()(document).on("click", "#" + ul.config["container_id"] + " a.id-dialog-clickable-indicator", (e) => {
+        jquery__WEBPACK_IMPORTED_MODULE_8___default()(document).on("click", "#" + ul.config["container_id"] + " a.id-dialog-clickable-indicator", (e) => {
             let crst = ul.state["current_subtask"];
             if (!ul.subtasks[crst]["state"]["idd_thumbnail"]) {
                 ul.handle_id_dialog_click(e);
@@ -15481,7 +15304,7 @@ class ULabel {
                 // It's always covered up as a thumbnail. See below
             }
         });
-        jquery_default()(document).on("click", ".global_edit_suggestion a.reid_suggestion", (e) => {
+        jquery__WEBPACK_IMPORTED_MODULE_8___default()(document).on("click", ".global_edit_suggestion a.reid_suggestion", (e) => {
             let crst = ul.state["current_subtask"];
             let annid = ul.subtasks[crst]["state"]["idd_associated_annotation"];
             ul.hide_global_edit_suggestion();
@@ -15493,7 +15316,7 @@ class ULabel {
             );
         });
 
-        jquery_default()(document).on("click", "#" + ul.config["annbox_id"] + " .delete_suggestion", () => {
+        jquery__WEBPACK_IMPORTED_MODULE_8___default()(document).on("click", "#" + ul.config["annbox_id"] + " .delete_suggestion", () => {
             let crst = ul.state["current_subtask"];
             ul.delete_annotation(ul.subtasks[crst]["state"]["move_candidate"]["annid"]);
         })
@@ -15526,14 +15349,14 @@ class ULabel {
         //     }
         // });
 
-        jquery_default()(document).on("click", "#" + ul.config["toolbox_id"] + " a.night-button", function () {
-            if (jquery_default()("#" + ul.config["container_id"]).hasClass("ulabel-night")) {
-                jquery_default()("#" + ul.config["container_id"]).removeClass("ulabel-night");
+        jquery__WEBPACK_IMPORTED_MODULE_8___default()(document).on("click", "#" + ul.config["toolbox_id"] + " a.night-button", function () {
+            if (jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + ul.config["container_id"]).hasClass("ulabel-night")) {
+                jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + ul.config["container_id"]).removeClass("ulabel-night");
                 // Destroy any night cookie
                 ULabel.destroy_night_mode_cookie();
             }
             else {
-                jquery_default()("#" + ul.config["container_id"]).addClass("ulabel-night");
+                jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + ul.config["container_id"]).addClass("ulabel-night");
                 // Drop a night cookie
                 ULabel.set_night_mode_cookie();
             }
@@ -15544,7 +15367,7 @@ class ULabel {
             const shift = keypress_event.shiftKey;
             const ctrl = keypress_event.ctrlKey || keypress_event.metaKey;
             let fms = ul.config["image_data"].frames.length > 1;
-            let annbox = jquery_default()("#" + ul.config["annbox_id"]);
+            let annbox = jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + ul.config["annbox_id"]);
             if (ctrl &&
                 (
                     keypress_event.key == "z" ||
@@ -15569,7 +15392,7 @@ class ULabel {
                 )
             ) {
                 keypress_event.preventDefault();
-                jquery_default()(".submit-button")[0].click(); // Click the first submit button
+                jquery__WEBPACK_IMPORTED_MODULE_8___default()(".submit-button")[0].click(); // Click the first submit button
             }
             else if (keypress_event.key == "l") {
                 // console.log("Listing annotations using the \"l\" key has been deprecated.");
@@ -15651,7 +15474,7 @@ class ULabel {
                 let name = subtask["classes"][i];
                 ul.subtasks[subtask_key]["class_defs"].push({
                     "name": name,
-                    "color": COLORS[ul.tot_num_classes],
+                    "color": _blobs__WEBPACK_IMPORTED_MODULE_9__.COLORS[ul.tot_num_classes],
                     "id": ul.tot_num_classes
                 });
                 ul.subtasks[subtask_key]["class_ids"].push(ul.tot_num_classes);
@@ -15660,7 +15483,7 @@ class ULabel {
                 // Start with default object
                 let repl = {
                     "name": `Class ${ul.tot_num_classes}`,
-                    "color": COLORS[ul.tot_num_classes],
+                    "color": _blobs__WEBPACK_IMPORTED_MODULE_9__.COLORS[ul.tot_num_classes],
                     "id": ul.tot_num_classes
                 };
 
@@ -15696,7 +15519,7 @@ class ULabel {
         if (subtask["resume_from"] != null) {
             for (var i = 0; i < subtask["resume_from"].length; i++) {
                 // Get copy of annotation to import for modification before incorporation
-                let cand = annotation/* ULabelAnnotation.from_json */.a.from_json(JSON.parse(JSON.stringify(subtask["resume_from"][i])));
+                let cand = _annotation__WEBPACK_IMPORTED_MODULE_0__/* .ULabelAnnotation.from_json */ .a.from_json(JSON.parse(JSON.stringify(subtask["resume_from"][i])));
 
                 // Mark as not new
                 cand["new"] = false;
@@ -15786,7 +15609,7 @@ class ULabel {
         for (const subtask_key in stcs) {
             // For convenience, make a raw subtask var
             let raw_subtask = stcs[subtask_key];
-            ul.subtasks[subtask_key] = subtask/* ULabelSubtask.from_json */.W.from_json(subtask_key, raw_subtask);
+            ul.subtasks[subtask_key] = _subtask__WEBPACK_IMPORTED_MODULE_2__/* .ULabelSubtask.from_json */ .W.from_json(subtask_key, raw_subtask);
 
             // // Initialize subtask config to null
             // ul.subtasks[subtask_key] = {
@@ -15968,7 +15791,7 @@ class ULabel {
         //   some might be offloaded to the constructor eventually...
 
         //create the config and add ulabel dependent data
-        this.config = new configuration.Configuration({
+        this.config = new _configuration__WEBPACK_IMPORTED_MODULE_6__.Configuration({
             // Values useful for generating HTML for tool
             // TODO(v1) Make sure these don't conflict with other page elements
             "container_id": container_id,
@@ -16103,19 +15926,17 @@ class ULabel {
 
     init(callback) {
         // Add stylesheet
-        ULabel.add_style_to_document(this);
+        _html_builder__WEBPACK_IMPORTED_MODULE_7__/* .HTMLBuilder.add_style_to_document */ .k.add_style_to_document(this);
 
-        
-
-        var that = this;
+        let that = this;
         that.state["current_subtask"] = Object.keys(that.subtasks)[0];
 
         // Place image element
-        ULabel.prep_window_html(this, this.toolbox_order);
+        _html_builder__WEBPACK_IMPORTED_MODULE_7__/* .HTMLBuilder.prep_window_html */ .k.prep_window_html(this, this.toolbox_order);
 
         // Detect night cookie
         if (ULabel.has_night_mode_cookie()) {
-            jquery_default()("#" + this.config["container_id"]).addClass("ulabel-night");
+            jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + this.config["container_id"]).addClass("ulabel-night");
         }
 
         var images = [document.getElementById(`${this.config["image_id_pfx"]}__0`)];
@@ -16132,7 +15953,7 @@ class ULabel {
 
             // Add canvasses for each subtask and get their rendering contexts
             for (const st in that.subtasks) {
-                jquery_default()("#" + that.config["imwrap_id"]).append(`
+                jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + that.config["imwrap_id"]).append(`
                 <div id="canvasses__${st}" class="canvasses">
                     <canvas 
                         id="${that.subtasks[st]["canvas_bid"]}" 
@@ -16148,7 +15969,7 @@ class ULabel {
                     <div id="dialogs__${st}" class="dialogs_container"></div>
                 </div>
                 `);
-                jquery_default()("#" + that.config["container_id"] + ` div#fad_st__${st}`).append(`
+                jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + that.config["container_id"] + ` div#fad_st__${st}`).append(`
                     <div id="front_dialogs__${st}" class="front_dialogs"></div>
                 `);
 
@@ -16166,13 +15987,13 @@ class ULabel {
             // ).getContext("2d");
 
             // Add the ID dialogs' HTML to the document
-            ULabel.build_id_dialogs(that);
+            _html_builder__WEBPACK_IMPORTED_MODULE_7__/* .HTMLBuilder.build_id_dialogs */ .k.build_id_dialogs(that);
 
             // Add the HTML for the edit suggestion to the window
-            ULabel.build_edit_suggestion(that);
+            _html_builder__WEBPACK_IMPORTED_MODULE_7__/* .HTMLBuilder.build_edit_suggestion */ .k.build_edit_suggestion(that);
 
             // Add dialog to show annotation confidence
-            ULabel.build_confidence_dialog(that);
+            _html_builder__WEBPACK_IMPORTED_MODULE_7__/* .HTMLBuilder.build_confidence_dialog */ .k.build_confidence_dialog(that);
 
             // Create listers to manipulate and export this object
             ULabel.create_listeners(that);
@@ -16184,7 +16005,7 @@ class ULabel {
 
             // Indicate that the object is now init!
             that.is_init = true;
-            jquery_default()(`div#${this.config["container_id"]}`).css("display", "block");
+            jquery__WEBPACK_IMPORTED_MODULE_8___default()(`div#${this.config["container_id"]}`).css("display", "block");
 
             this.show_initial_crop();
             this.update_frame();
@@ -16208,26 +16029,26 @@ class ULabel {
     }
 
     handle_toolbox_overflow() {
-        let tabs_height = jquery_default()("#" + this.config["container_id"] + " div.toolbox-tabs").height();
-        jquery_default()("#" + this.config["container_id"] + " div.toolbox_inner_cls").css("height", `calc(100% - ${tabs_height + 38}px)`);
-        let view_height = jquery_default()("#" + this.config["container_id"] + " div.toolbox_cls")[0].scrollHeight - 38 - tabs_height;
-        let want_height = jquery_default()("#" + this.config["container_id"] + " div.toolbox_inner_cls")[0].scrollHeight;
+        let tabs_height = jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + this.config["container_id"] + " div.toolbox-tabs").height();
+        jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + this.config["container_id"] + " div.toolbox_inner_cls").css("height", `calc(100% - ${tabs_height + 38}px)`);
+        let view_height = jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + this.config["container_id"] + " div.toolbox_cls")[0].scrollHeight - 38 - tabs_height;
+        let want_height = jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + this.config["container_id"] + " div.toolbox_inner_cls")[0].scrollHeight;
         if (want_height <= view_height) {
-            jquery_default()("#" + this.config["container_id"] + " div.toolbox_inner_cls").css("overflow-y", "hidden");
+            jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + this.config["container_id"] + " div.toolbox_inner_cls").css("overflow-y", "hidden");
         }
         else {
-            jquery_default()("#" + this.config["container_id"] + " div.toolbox_inner_cls").css("overflow-y", "scroll");
+            jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + this.config["container_id"] + " div.toolbox_inner_cls").css("overflow-y", "scroll");
         }
     }
 
     // A ratio of viewport height to image height
     get_viewport_height_ratio(hgt) {
-        return jquery_default()("#" + this.config["annbox_id"]).height() / hgt;
+        return jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + this.config["annbox_id"]).height() / hgt;
     }
 
     // A ratio of viewport width to image width
     get_viewport_width_ratio(wdt) {
-        return jquery_default()("#" + this.config["annbox_id"]).width() / wdt;
+        return jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + this.config["annbox_id"]).width() / wdt;
     }
 
     // The zoom ratio which fixes the entire image exactly in the viewport with a predetermined crop
@@ -16295,7 +16116,7 @@ class ULabel {
 
         let cursor_b64 = btoa(cursor_svg);
         let bk_cursor_b64 = btoa(bk_cursor_svg);
-        jquery_default()("#" + this.config["annbox_id"]).css(
+        jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + this.config["annbox_id"]).css(
             "cursor",
             `url(data:image/svg+xml;base64,${cursor_b64}) ${width / 2} ${width / 2}, url(data:image/svg+xml;base64,${bk_cursor_b64}) ${bk_width / 2} ${bk_width / 2}, auto`
         );
@@ -16305,8 +16126,8 @@ class ULabel {
 
     readjust_subtask_opacities() {
         for (const st_key in this.subtasks) {
-            let sliderval = jquery_default()("#tb-st-range--" + st_key).val();
-            jquery_default()("div#canvasses__" + st_key).css("opacity", sliderval / 100);
+            let sliderval = jquery__WEBPACK_IMPORTED_MODULE_8___default()("#tb-st-range--" + st_key).val();
+            jquery__WEBPACK_IMPORTED_MODULE_8___default()("div#canvasses__" + st_key).css("opacity", sliderval / 100);
         }
     }
 
@@ -16317,28 +16138,28 @@ class ULabel {
         this.state["current_subtask"] = st_key;
 
         // Bring new set of canvasses out to front
-        jquery_default()("div.canvasses").css("z-index", 75);
-        jquery_default()("div#canvasses__" + this.state["current_subtask"]).css("z-index", 100);
+        jquery__WEBPACK_IMPORTED_MODULE_8___default()("div.canvasses").css("z-index", 75);
+        jquery__WEBPACK_IMPORTED_MODULE_8___default()("div#canvasses__" + this.state["current_subtask"]).css("z-index", 100);
 
         // Show appropriate set of dialogs
-        jquery_default()("div.dialogs_container").css("display", "none");
-        jquery_default()("div#dialogs__" + this.state["current_subtask"]).css("display", "block");
+        jquery__WEBPACK_IMPORTED_MODULE_8___default()("div.dialogs_container").css("display", "none");
+        jquery__WEBPACK_IMPORTED_MODULE_8___default()("div#dialogs__" + this.state["current_subtask"]).css("display", "block");
 
         // Show appropriate set of annotation modes
-        jquery_default()("a.md-btn").css("display", "none");
-        jquery_default()("a.md-btn.md-en4--" + st_key).css("display", "inline-block");
+        jquery__WEBPACK_IMPORTED_MODULE_8___default()("a.md-btn").css("display", "none");
+        jquery__WEBPACK_IMPORTED_MODULE_8___default()("a.md-btn.md-en4--" + st_key).css("display", "inline-block");
 
         // Show appropriate set of class options
-        jquery_default()("div.tb-id-app").css("display", "none");
-        jquery_default()("div#tb-id-app--" + this.state["current_subtask"]).css("display", "block");
+        jquery__WEBPACK_IMPORTED_MODULE_8___default()("div.tb-id-app").css("display", "none");
+        jquery__WEBPACK_IMPORTED_MODULE_8___default()("div#tb-id-app--" + this.state["current_subtask"]).css("display", "block");
 
         // Adjust tab buttons in toolbox
-        jquery_default()("a#tb-st-switch--" + old_st).attr("href", "#");
-        jquery_default()("a#tb-st-switch--" + old_st).parent().removeClass("sel");
-        jquery_default()("input#tb-st-range--" + old_st).val(Math.round(100 * this.subtasks[old_st]["inactive_opacity"]));
-        jquery_default()("a#tb-st-switch--" + st_key).removeAttr("href");
-        jquery_default()("a#tb-st-switch--" + st_key).parent().addClass("sel");
-        jquery_default()("input#tb-st-range--" + st_key).val(100);
+        jquery__WEBPACK_IMPORTED_MODULE_8___default()("a#tb-st-switch--" + old_st).attr("href", "#");
+        jquery__WEBPACK_IMPORTED_MODULE_8___default()("a#tb-st-switch--" + old_st).parent().removeClass("sel");
+        jquery__WEBPACK_IMPORTED_MODULE_8___default()("input#tb-st-range--" + old_st).val(Math.round(100 * this.subtasks[old_st]["inactive_opacity"]));
+        jquery__WEBPACK_IMPORTED_MODULE_8___default()("a#tb-st-switch--" + st_key).removeAttr("href");
+        jquery__WEBPACK_IMPORTED_MODULE_8___default()("a#tb-st-switch--" + st_key).parent().addClass("sel");
+        jquery__WEBPACK_IMPORTED_MODULE_8___default()("input#tb-st-range--" + st_key).val(100);
 
         // Update toolbox opts
         this.update_annotation_mode();
@@ -16354,10 +16175,10 @@ class ULabel {
     // ================= Toolbox Functions ==================
 
     update_annotation_mode() {
-        jquery_default()("a.md-btn.sel").attr("href", "#");
-        jquery_default()("a.md-btn.sel").removeClass("sel");
-        jquery_default()("a#md-btn--" + this.subtasks[this.state["current_subtask"]]["state"]["annotation_mode"]).addClass("sel");
-        jquery_default()("a#md-btn--" + this.subtasks[this.state["current_subtask"]]["state"]["annotation_mode"]).removeAttr("href");
+        jquery__WEBPACK_IMPORTED_MODULE_8___default()("a.md-btn.sel").attr("href", "#");
+        jquery__WEBPACK_IMPORTED_MODULE_8___default()("a.md-btn.sel").removeClass("sel");
+        jquery__WEBPACK_IMPORTED_MODULE_8___default()("a#md-btn--" + this.subtasks[this.state["current_subtask"]]["state"]["annotation_mode"]).addClass("sel");
+        jquery__WEBPACK_IMPORTED_MODULE_8___default()("a#md-btn--" + this.subtasks[this.state["current_subtask"]]["state"]["annotation_mode"]).removeAttr("href");
         this.show_annotation_mode();
     }
 
@@ -16372,16 +16193,16 @@ class ULabel {
     // Show annotation mode
     show_annotation_mode(el = null) {
         if (el == null) {
-            el = jquery_default()("a.md-btn.sel");
+            el = jquery__WEBPACK_IMPORTED_MODULE_8___default()("a.md-btn.sel");
         }
         let new_name = el.attr("amdname");
-        jquery_default()("#" + this.config["toolbox_id"] + " .current_mode").html(new_name);
-        jquery_default()(`div.frame_annotation_dialog:not(.fad_st__${this.state["current_subtask"]})`).removeClass("active");
+        jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + this.config["toolbox_id"] + " .current_mode").html(new_name);
+        jquery__WEBPACK_IMPORTED_MODULE_8___default()(`div.frame_annotation_dialog:not(.fad_st__${this.state["current_subtask"]})`).removeClass("active");
         if (["whole-image", "global"].includes(this.subtasks[this.state["current_subtask"]]["state"]["annotation_mode"])) {
-            jquery_default()(`div.frame_annotation_dialog.fad_st__${this.state["current_subtask"]}`).addClass("active");
+            jquery__WEBPACK_IMPORTED_MODULE_8___default()(`div.frame_annotation_dialog.fad_st__${this.state["current_subtask"]}`).addClass("active");
         }
         else {
-            jquery_default()("div.frame_annotation_dialog").removeClass("active");
+            jquery__WEBPACK_IMPORTED_MODULE_8___default()("div.frame_annotation_dialog").removeClass("active");
         }
     }
 
@@ -16397,7 +16218,7 @@ class ULabel {
     // A robust measure of zoom
     get_empirical_scale() {
         // Simple ratio of canvas width to image x-dimension
-        return jquery_default()("#" + this.config["imwrap_id"]).width() / this.config["image_width"];
+        return jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + this.config["imwrap_id"]).width() / this.config["image_width"];
     }
 
     // Get a unique ID for new annotations
@@ -16479,7 +16300,7 @@ class ULabel {
                         return this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid]["spatial_payload"][bas];
                     }
                     else {
-                        return geometric_utils/* GeometricUtils.interpolate_poly_segment */.Z.interpolate_poly_segment(
+                        return _geometric_utils__WEBPACK_IMPORTED_MODULE_3__/* .GeometricUtils.interpolate_poly_segment */ .Z.interpolate_poly_segment(
                             this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid]["spatial_payload"],
                             bas, dif
                         );
@@ -16558,7 +16379,7 @@ class ULabel {
                         this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid]["spatial_payload"].splice(bas + 1, 0, [val[0], val[1]]);
                     }
                     else {
-                        var newpt = geometric_utils/* GeometricUtils.interpolate_poly_segment */.Z.interpolate_poly_segment(
+                        var newpt = _geometric_utils__WEBPACK_IMPORTED_MODULE_3__/* .GeometricUtils.interpolate_poly_segment */ .Z.interpolate_poly_segment(
                             this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid]["spatial_payload"],
                             bas, dif
                         );
@@ -16588,7 +16409,7 @@ class ULabel {
             let dist_prop = 1.0;
             let class_ids = this.subtasks[crst]["class_ids"];
             let pfx = "div#tb-id-app--" + this.state["current_subtask"];
-            let idarr = jquery_default()(pfx + " a.tbid-opt.sel").attr("id").split("_");
+            let idarr = jquery__WEBPACK_IMPORTED_MODULE_8___default()(pfx + " a.tbid-opt.sel").attr("id").split("_");
             let class_ind = class_ids.indexOf(parseInt(idarr[idarr.length - 1]));
             // Recompute and render opaque pie slices
             for (var i = 0; i < class_ids.length; i++) {
@@ -16641,7 +16462,7 @@ class ULabel {
 
         // Prep for bbox drawing
         let base_color = this.get_annotation_color(annotation_object["classification_payloads"], false, subtask);
-        let color = (0,drawing_utilities/* apply_gradient */.ws)(annotation_object, base_color, annotation_operators.get_annotation_confidence, jquery_default()("#gradient-slider").val() / 100)
+        let color = (0,_drawing_utilities__WEBPACK_IMPORTED_MODULE_5__/* .apply_gradient */ .ws)(annotation_object, base_color, _annotation_operators__WEBPACK_IMPORTED_MODULE_4__.get_annotation_confidence, jquery__WEBPACK_IMPORTED_MODULE_8___default()("#gradient-slider").val() / 100)
         ctx.fillStyle = color;
         ctx.strokeStyle = color;
         ctx.lineJoin = "round";
@@ -16681,7 +16502,7 @@ class ULabel {
 
         // Prep for bbox drawing
         let base_color = this.get_annotation_color(annotation_object["classification_payloads"], false, subtask);
-        let color = (0,drawing_utilities/* apply_gradient */.ws)(annotation_object, base_color, annotation_operators.get_annotation_confidence, jquery_default()("#gradient-slider").val() / 100)
+        let color = (0,_drawing_utilities__WEBPACK_IMPORTED_MODULE_5__/* .apply_gradient */ .ws)(annotation_object, base_color, _annotation_operators__WEBPACK_IMPORTED_MODULE_4__.get_annotation_confidence, jquery__WEBPACK_IMPORTED_MODULE_8___default()("#gradient-slider").val() / 100)
         ctx.fillStyle = color;
         ctx.strokeStyle = color;
         ctx.lineJoin = "round";
@@ -16736,7 +16557,7 @@ class ULabel {
 
         // Prep for bbox drawing
         let base_color = this.get_annotation_color(annotation_object["classification_payloads"], false, subtask);
-        let color = (0,drawing_utilities/* apply_gradient */.ws)(annotation_object, base_color, annotation_operators.get_annotation_confidence, jquery_default()("#gradient-slider").val() / 100)
+        let color = (0,_drawing_utilities__WEBPACK_IMPORTED_MODULE_5__/* .apply_gradient */ .ws)(annotation_object, base_color, _annotation_operators__WEBPACK_IMPORTED_MODULE_4__.get_annotation_confidence, jquery__WEBPACK_IMPORTED_MODULE_8___default()("#gradient-slider").val() / 100)
         ctx.fillStyle = color;
         ctx.strokeStyle = color;
         ctx.lineJoin = "round";
@@ -16781,7 +16602,7 @@ class ULabel {
 
         // Prep for bbox drawing
         let base_color = this.get_annotation_color(annotation_object["classification_payloads"], demo, subtask);
-        let color = (0,drawing_utilities/* apply_gradient */.ws)(annotation_object, base_color, annotation_operators.get_annotation_confidence, jquery_default()("#gradient-slider").val() / 100)
+        let color = (0,_drawing_utilities__WEBPACK_IMPORTED_MODULE_5__/* .apply_gradient */ .ws)(annotation_object, base_color, _annotation_operators__WEBPACK_IMPORTED_MODULE_4__.get_annotation_confidence, jquery__WEBPACK_IMPORTED_MODULE_8___default()("#gradient-slider").val() / 100)
         ctx.fillStyle = color;
         ctx.strokeStyle = color;
         ctx.lineJoin = "round";
@@ -16820,7 +16641,7 @@ class ULabel {
 
         // Prep for bbox drawing
         let base_color = this.get_annotation_color(annotation_object["classification_payloads"], demo, subtask);
-        let color = (0,drawing_utilities/* apply_gradient */.ws)(annotation_object, base_color, annotation_operators.get_annotation_confidence, jquery_default()("#gradient-slider").val() / 100)
+        let color = (0,_drawing_utilities__WEBPACK_IMPORTED_MODULE_5__/* .apply_gradient */ .ws)(annotation_object, base_color, _annotation_operators__WEBPACK_IMPORTED_MODULE_4__.get_annotation_confidence, jquery__WEBPACK_IMPORTED_MODULE_8___default()("#gradient-slider").val() / 100)
         ctx.fillStyle = color;
         ctx.strokeStyle = color;
         ctx.lineJoin = "round";
@@ -16858,7 +16679,7 @@ class ULabel {
 
         // Prep for tbar drawing
         let base_color = this.get_annotation_color(annotation_object["classification_payloads"], demo, subtask);
-        let color = (0,drawing_utilities/* apply_gradient */.ws)(annotation_object, base_color, annotation_operators.get_annotation_confidence, jquery_default()("#gradient-slider").val() / 100)
+        let color = (0,_drawing_utilities__WEBPACK_IMPORTED_MODULE_5__/* .apply_gradient */ .ws)(annotation_object, base_color, _annotation_operators__WEBPACK_IMPORTED_MODULE_4__.get_annotation_confidence, jquery__WEBPACK_IMPORTED_MODULE_8___default()("#gradient-slider").val() / 100)
         ctx.fillStyle = color;
         ctx.strokeStyle = color;
         ctx.lineJoin = "round";
@@ -16900,10 +16721,10 @@ class ULabel {
     register_nonspatial_redraw_start(subtask) {
         // TODO(3d)
         this.tmp_nonspatial_element_ids[subtask] = [];
-        let nonsp_window = jquery_default()(`div#fad_st__${subtask}`);
+        let nonsp_window = jquery__WEBPACK_IMPORTED_MODULE_8___default()(`div#fad_st__${subtask}`);
         if (nonsp_window.length) {
-            jquery_default()(`div#fad_st__${subtask} div.fad_annotation_rows div.fad_row`).each((idx, val) => {
-                this.tmp_nonspatial_element_ids[subtask].push(jquery_default()(val).attr("id"));
+            jquery__WEBPACK_IMPORTED_MODULE_8___default()(`div#fad_st__${subtask} div.fad_annotation_rows div.fad_row`).each((idx, val) => {
+                this.tmp_nonspatial_element_ids[subtask].push(jquery__WEBPACK_IMPORTED_MODULE_8___default()(val).attr("id"));
             });
         }
     }
@@ -16921,7 +16742,7 @@ class ULabel {
             }
         }
         if (!found) {
-            jquery_default()(`div#fad_st__${subtask} div.fad_annotation_rows`).append(`
+            jquery__WEBPACK_IMPORTED_MODULE_8___default()(`div#fad_st__${subtask} div.fad_annotation_rows`).append(`
             <div id="row__${annotation_object["id"]}" class="fad_row">
                 <div class="fad_buttons">
                     <div class="fad_inp_container text">
@@ -16941,25 +16762,25 @@ class ULabel {
             `);
         }
         else {
-            jquery_default()(`textarea#note__${annotation_object["id"]}`).val(annotation_object["text_payload"]);
-            jquery_default()(`div#icon__${annotation_object["id"]}`).css("background-color", this.get_annotation_color(annotation_object["classification_payloads"], false, subtask));
+            jquery__WEBPACK_IMPORTED_MODULE_8___default()(`textarea#note__${annotation_object["id"]}`).val(annotation_object["text_payload"]);
+            jquery__WEBPACK_IMPORTED_MODULE_8___default()(`div#icon__${annotation_object["id"]}`).css("background-color", this.get_annotation_color(annotation_object["classification_payloads"], false, subtask));
         }
     }
 
 
     draw_whole_image_annotation(annotation_object, subtask = null) {
-        this.draw_nonspatial_annotation(annotation_object, WHOLE_IMAGE_SVG, subtask);
+        this.draw_nonspatial_annotation(annotation_object, _blobs__WEBPACK_IMPORTED_MODULE_9__.WHOLE_IMAGE_SVG, subtask);
 
     }
 
     draw_global_annotation(annotation_object, subtask = null) {
-        this.draw_nonspatial_annotation(annotation_object, GLOBAL_SVG, subtask);
+        this.draw_nonspatial_annotation(annotation_object, _blobs__WEBPACK_IMPORTED_MODULE_9__.GLOBAL_SVG, subtask);
     }
 
     handle_nonspatial_redraw_end(subtask) {
         // TODO(3d)
         for (let i = 0; i < this.tmp_nonspatial_element_ids[subtask].length; i++) {
-            jquery_default()(`#${this.tmp_nonspatial_element_ids[subtask][i]}`).remove();
+            jquery__WEBPACK_IMPORTED_MODULE_8___default()(`#${this.tmp_nonspatial_element_ids[subtask][i]}`).remove();
         }
         this.tmp_nonspatial_element_ids[subtask] = [];
     }
@@ -17093,7 +16914,7 @@ class ULabel {
     // dialogs that are meant to be visible are in their correct positions
     reposition_dialogs() {
         // Get info about image wrapper
-        var imwrap = jquery_default()("#" + this.config["imwrap_id"]);
+        var imwrap = jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + this.config["imwrap_id"]);
         const new_dimx = imwrap.width();
         const new_dimy = imwrap.height();
 
@@ -17103,7 +16924,7 @@ class ULabel {
         // Iterate over all visible dialogs and apply new positions
         for (var id in this.subtasks[crst]["state"]["visible_dialogs"]) {
             let el = this.subtasks[crst]["state"]["visible_dialogs"][id];
-            let jqel = jquery_default()("#" + id);
+            let jqel = jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + id);
             let new_left = el["left"] * new_dimx;
             let new_top = el["top"] * new_dimy;
             switch (el["pin"]) {
@@ -17139,13 +16960,13 @@ class ULabel {
             <span id="${ender_id}_inner" class="ender_inner"></span>
         </a>
         `;
-        jquery_default()("#dialogs__" + this.state["current_subtask"]).append(ender_html);
-        jquery_default()("#" + ender_id).css({
+        jquery__WEBPACK_IMPORTED_MODULE_8___default()("#dialogs__" + this.state["current_subtask"]).append(ender_html);
+        jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + ender_id).css({
             "width": this.config["polygon_ender_size"] + "px",
             "height": this.config["polygon_ender_size"] + "px",
             "border-radius": this.config["polygon_ender_size"] / 2 + "px"
         });
-        jquery_default()("#" + ender_id + "_inner").css({
+        jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + ender_id + "_inner").css({
             "width": this.config["polygon_ender_size"] / 5 + "px",
             "height": this.config["polygon_ender_size"] / 5 + "px",
             "border-radius": this.config["polygon_ender_size"] / 10 + "px",
@@ -17164,14 +16985,14 @@ class ULabel {
     destroy_polygon_ender(polygon_id) {
         // Create ender id
         const ender_id = "ender_" + polygon_id;
-        jquery_default()("#" + ender_id).remove();
+        jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + ender_id).remove();
         delete this.subtasks[this.state["current_subtask"]]["state"]["visible_dialogs"][ender_id];
         this.reposition_dialogs();
     }
 
     show_edit_suggestion(nearest_point, currently_exists) {
         let esid = "edit_suggestion__" + this.state["current_subtask"];
-        var esjq = jquery_default()("#" + esid);
+        var esjq = jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + esid);
         esjq.css("display", "block");
         if (currently_exists) {
             esjq.removeClass("soft");
@@ -17185,7 +17006,7 @@ class ULabel {
     }
 
     hide_edit_suggestion() {
-        jquery_default()(".edit_suggestion").css("display", "none");
+        jquery__WEBPACK_IMPORTED_MODULE_8___default()(".edit_suggestion").css("display", "none");
     }
 
     show_global_edit_suggestion(annid, offset = null, nonspatial_id = null) {
@@ -17200,7 +17021,7 @@ class ULabel {
         let idd_y;
         if (nonspatial_id == null) {
             let esid = "global_edit_suggestion__" + this.state["current_subtask"];
-            var esjq = jquery_default()("#" + esid);
+            var esjq = jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + esid);
             esjq.css("display", "block");
             let cbox = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid]["containing_box"];
             let new_lft = (cbox["tlx"] + cbox["brx"] + 2 * diffX) / (2 * this.config["image_width"]);
@@ -17213,8 +17034,8 @@ class ULabel {
         }
         else {
             // TODO(new3d)
-            idd_x = jquery_default()("#reclf__" + nonspatial_id).offset().left - 85;//this.get_global_element_center_x($("#reclf__" + nonspatial_id));
-            idd_y = jquery_default()("#reclf__" + nonspatial_id).offset().top - 85;//this.get_global_element_center_y($("#reclf__" + nonspatial_id));
+            idd_x = jquery__WEBPACK_IMPORTED_MODULE_8___default()("#reclf__" + nonspatial_id).offset().left - 85;//this.get_global_element_center_x($("#reclf__" + nonspatial_id));
+            idd_y = jquery__WEBPACK_IMPORTED_MODULE_8___default()("#reclf__" + nonspatial_id).offset().top - 85;//this.get_global_element_center_y($("#reclf__" + nonspatial_id));
         }
 
 
@@ -17225,7 +17046,7 @@ class ULabel {
     }
 
     hide_global_edit_suggestion() {
-        jquery_default()(".global_edit_suggestion").css("display", "none");
+        jquery__WEBPACK_IMPORTED_MODULE_8___default()(".global_edit_suggestion").css("display", "none");
         this.hide_id_dialog();
     }
 
@@ -17242,7 +17063,7 @@ class ULabel {
 
         let idd_id = this.subtasks[this.state["current_subtask"]]["state"]["idd_id"];
         let idd_niu_id = this.subtasks[this.state["current_subtask"]]["state"]["idd_id_front"];
-        let new_height = jquery_default()(`#global_edit_suggestion__${stkey} a.reid_suggestion`)[0].getBoundingClientRect().height;
+        let new_height = jquery__WEBPACK_IMPORTED_MODULE_8___default()(`#global_edit_suggestion__${stkey} a.reid_suggestion`)[0].getBoundingClientRect().height;
 
         if (nonspatial) {
             this.subtasks[this.state["current_subtask"]]["state"]["idd_which"] = "front";
@@ -17259,11 +17080,11 @@ class ULabel {
                 "pin": "center"
             };
         }
-        let idd = jquery_default()("#" + idd_id);
-        let idd_niu = jquery_default()("#" + idd_niu_id);
+        let idd = jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + idd_id);
+        let idd_niu = jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + idd_niu_id);
         if (nonspatial) {
-            let new_home = jquery_default()(`#reclf__${active_ann}`);
-            let fad_st = jquery_default()(`#fad_st__${stkey} div.front_dialogs`);
+            let new_home = jquery__WEBPACK_IMPORTED_MODULE_8___default()(`#reclf__${active_ann}`);
+            let fad_st = jquery__WEBPACK_IMPORTED_MODULE_8___default()(`#fad_st__${stkey} div.front_dialogs`);
             let ofst = -100;
             let zidx = 2000;
             if (thumbnail) {
@@ -17291,12 +17112,12 @@ class ULabel {
             if (!idd.hasClass("thumb")) {
                 idd.addClass("thumb");
             }
-            jquery_default()("#" + idd_id + ".thumb").css({
+            jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + idd_id + ".thumb").css({
                 "transform": `scale(${scale_ratio})`
             });
         }
         else {
-            jquery_default()("#" + idd_id + ".thumb").css({
+            jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + idd_id + ".thumb").css({
                 "transform": `scale(1.0)`
             });
             if (idd.hasClass("thumb")) {
@@ -17327,8 +17148,8 @@ class ULabel {
         let idd_id_front = this.subtasks[this.state["current_subtask"]]["state"]["idd_id_front"];
         this.subtasks[this.state["current_subtask"]]["state"]["idd_visible"] = false;
         this.subtasks[this.state["current_subtask"]]["state"]["idd_associated_annotation"] = null;
-        jquery_default()("#" + idd_id).css("display", "none");
-        jquery_default()("#" + idd_id_front).css("display", "none");
+        jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + idd_id).css("display", "none");
+        jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + idd_id_front).css("display", "none");
     }
 
 
@@ -17479,7 +17300,7 @@ class ULabel {
             let curfrm, pts;
             switch (this.subtasks[this.state["current_subtask"]]["annotations"]["access"][edid]["spatial_type"]) {
                 case "bbox":
-                    npi = geometric_utils/* GeometricUtils.get_nearest_point_on_bounding_box */.Z.get_nearest_point_on_bounding_box(
+                    npi = _geometric_utils__WEBPACK_IMPORTED_MODULE_3__/* .GeometricUtils.get_nearest_point_on_bounding_box */ .Z.get_nearest_point_on_bounding_box(
                         global_x, global_y,
                         this.subtasks[this.state["current_subtask"]]["annotations"]["access"][edid]["spatial_payload"],
                         max_dist
@@ -17496,7 +17317,7 @@ class ULabel {
                     pts = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][edid]["spatial_payload"];
                     if ((curfrm >= Math.min(pts[0][2], pts[1][2])) && (curfrm <= Math.max(pts[0][2], pts[1][2]))) {
                         // TODO(new3d) Make sure this function works for bbox3 too
-                        npi = geometric_utils/* GeometricUtils.get_nearest_point_on_bbox3 */.Z.get_nearest_point_on_bbox3(
+                        npi = _geometric_utils__WEBPACK_IMPORTED_MODULE_3__/* .GeometricUtils.get_nearest_point_on_bbox3 */ .Z.get_nearest_point_on_bbox3(
                             global_x, global_y, curfrm,
                             pts,
                             max_dist
@@ -17511,7 +17332,7 @@ class ULabel {
                     break;
                 case "polygon":
                 case "polyline":
-                    npi = geometric_utils/* GeometricUtils.get_nearest_point_on_polygon */.Z.get_nearest_point_on_polygon(
+                    npi = _geometric_utils__WEBPACK_IMPORTED_MODULE_3__/* .GeometricUtils.get_nearest_point_on_polygon */ .Z.get_nearest_point_on_polygon(
                         global_x, global_y,
                         this.subtasks[this.state["current_subtask"]]["annotations"]["access"][edid]["spatial_payload"],
                         max_dist, false
@@ -17524,7 +17345,7 @@ class ULabel {
                     }
                     break;
                 case "tbar":
-                    npi = geometric_utils/* GeometricUtils.get_nearest_point_on_tbar */.Z.get_nearest_point_on_tbar(
+                    npi = _geometric_utils__WEBPACK_IMPORTED_MODULE_3__/* .GeometricUtils.get_nearest_point_on_tbar */ .Z.get_nearest_point_on_tbar(
                         global_x, global_y,
                         this.subtasks[this.state["current_subtask"]]["annotations"]["access"][edid]["spatial_payload"],
                         max_dist
@@ -17578,7 +17399,7 @@ class ULabel {
                     break;
                 case "polygon":
                 case "polyline":
-                    var npi = geometric_utils/* GeometricUtils.get_nearest_point_on_polygon */.Z.get_nearest_point_on_polygon(
+                    var npi = _geometric_utils__WEBPACK_IMPORTED_MODULE_3__/* .GeometricUtils.get_nearest_point_on_polygon */ .Z.get_nearest_point_on_polygon(
                         global_x, global_y,
                         this.subtasks[this.state["current_subtask"]]["annotations"]["access"][edid]["spatial_payload"],
                         max_dist / this.get_empirical_scale(), true
@@ -18140,7 +17961,7 @@ class ULabel {
                         this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"][0][1]
                     ];
                     ender_dist = Math.pow(Math.pow(ms_loc[0] - ender_pt[0], 2) + Math.pow(ms_loc[1] - ender_pt[1], 2), 0.5);
-                    ender_thresh = jquery_default()("#ender_" + actid).width() / (2 * this.get_empirical_scale());
+                    ender_thresh = jquery__WEBPACK_IMPORTED_MODULE_8___default()("#ender_" + actid).width() / (2 * this.get_empirical_scale());
                     if (ender_dist < ender_thresh) {
                         this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"][n_kpts - 1] = ender_pt;
                     }
@@ -18178,7 +17999,7 @@ class ULabel {
                     this.redraw_all_annotations(this.state["current_subtask"], null, true); // tobuffer
                     break;
                 case "contour":
-                    if (geometric_utils/* GeometricUtils.l2_norm */.Z.l2_norm(ms_loc, this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"][this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"].length - 1]) * this.config["px_per_px"] > 3) {
+                    if (_geometric_utils__WEBPACK_IMPORTED_MODULE_3__/* .GeometricUtils.l2_norm */ .Z.l2_norm(ms_loc, this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"][this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"].length - 1]) * this.config["px_per_px"] > 3) {
                         this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"].push(ms_loc);
                         this.update_containing_box(ms_loc, actid);
                         this.redraw_all_annotations(this.state["current_subtask"], null, true); // TODO tobuffer, no need to redraw here, can just draw over
@@ -18519,7 +18340,7 @@ class ULabel {
             }
         });
         // Hide point edit suggestion
-        jquery_default()(".edit_suggestion").css("display", "none");
+        jquery__WEBPACK_IMPORTED_MODULE_8___default()(".edit_suggestion").css("display", "none");
 
         this.move_annotation(mouse_event);
     }
@@ -18571,13 +18392,13 @@ class ULabel {
                     frame: this.state["current_frame"],
                     undo_payload: {
                         actid: actid,
-                        ender_html: jquery_default()("#ender_" + actid).outer_html()
+                        ender_html: jquery__WEBPACK_IMPORTED_MODULE_8___default()("#ender_" + actid).outer_html()
                     },
                     redo_payload: {
                         actid: actid
                     }
                 }, redoing);
-                jquery_default()("#ender_" + actid).remove(); // TODO remove from visible dialogs
+                jquery__WEBPACK_IMPORTED_MODULE_8___default()("#ender_" + actid).remove(); // TODO remove from visible dialogs
                 break;
             case "polyline":
                 // TODO handle the case of merging with existing annotation
@@ -18686,7 +18507,7 @@ class ULabel {
         this.subtasks[this.state["current_subtask"]]["state"]["active_id"] = undo_payload.actid;
         this.redraw_all_annotations(this.state["current_subtask"]);
         if (undo_payload.ender_html) {
-            jquery_default()("#dialogs__" + this.state["current_subtask"]).append(undo_payload.ender_html);
+            jquery__WEBPACK_IMPORTED_MODULE_8___default()("#dialogs__" + this.state["current_subtask"]).append(undo_payload.ender_html);
         }
         this.hide_edit_suggestion();
         this.hide_global_edit_suggestion();
@@ -18942,7 +18763,7 @@ class ULabel {
             const global_x = this.get_global_mouse_x(mouse_event);
             const global_y = this.get_global_mouse_y(mouse_event);
 
-            if (jquery_default()(mouse_event.target).hasClass("gedit-target")) return;
+            if (jquery__WEBPACK_IMPORTED_MODULE_8___default()(mouse_event.target).hasClass("gedit-target")) return;
 
             const edit_candidates = this.get_edit_candidates(
                 global_x,
@@ -19014,28 +18835,28 @@ class ULabel {
     // Get the mouse position on the screen
     get_global_mouse_x(mouse_event) {
         const scale = this.get_empirical_scale();
-        const annbox = jquery_default()("#" + this.config["annbox_id"]);
+        const annbox = jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + this.config["annbox_id"]);
         const raw = (mouse_event.pageX - annbox.offset().left + annbox.scrollLeft()) / scale;
         // return Math.round(raw);
         return raw;
     }
     get_global_mouse_y(mouse_event) {
         const scale = this.get_empirical_scale();
-        const annbox = jquery_default()("#" + this.config["annbox_id"]);
+        const annbox = jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + this.config["annbox_id"]);
         const raw = (mouse_event.pageY - annbox.offset().top + annbox.scrollTop()) / scale;
         // return Math.round(raw);
         return raw;
     }
     get_global_element_center_x(jqel) {
         const scale = this.get_empirical_scale();
-        const annbox = jquery_default()("#" + this.config["annbox_id"]);
+        const annbox = jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + this.config["annbox_id"]);
         const raw = (jqel.offset().left + jqel.width() / 2 - annbox.offset().left + annbox.scrollLeft()) / scale;
         // return Math.round(raw);
         return raw;
     }
     get_global_element_center_y(jqel) {
         const scale = this.get_empirical_scale();
-        const annbox = jquery_default()("#" + this.config["annbox_id"]);
+        const annbox = jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + this.config["annbox_id"]);
         const raw = (jqel.offset().top + jqel.height() / 2 - annbox.offset().top + annbox.scrollTop()) / scale;
         // return Math.round();
         return raw;
@@ -19046,9 +18867,9 @@ class ULabel {
     // ----------------- ID Dialog -----------------
 
     lookup_id_dialog_mouse_pos(mouse_event, front) {
-        let idd = jquery_default()("#" + this.subtasks[this.state["current_subtask"]]["state"]["idd_id"]);
+        let idd = jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + this.subtasks[this.state["current_subtask"]]["state"]["idd_id"]);
         if (front) {
-            idd = jquery_default()("#" + this.subtasks[this.state["current_subtask"]]["state"]["idd_id_front"]);
+            idd = jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + this.subtasks[this.state["current_subtask"]]["state"]["idd_id_front"]);
         }
 
         // Get mouse position relative to center of div
@@ -19132,7 +18953,7 @@ class ULabel {
                 let dist_prop = 1.0;
                 let class_ids = this.subtasks[crst]["class_ids"];
                 let pfx = "div#tb-id-app--" + this.state["current_subtask"];
-                let idarr = jquery_default()(pfx + " a.tbid-opt.sel").attr("id").split("_");
+                let idarr = jquery__WEBPACK_IMPORTED_MODULE_8___default()(pfx + " a.tbid-opt.sel").attr("id").split("_");
                 let class_ind = class_ids.indexOf(parseInt(idarr[idarr.length - 1]));
                 // Recompute and render opaque pie slices
                 for (var i = 0; i < class_ids.length; i++) {
@@ -19189,7 +19010,7 @@ class ULabel {
             else {
                 idd_id = this.subtasks[this.state["current_subtask"]]["state"]["idd_id_front"];
             }
-            var circ = jquery_default()(`#${idd_id}__circ_` + class_ids[i])
+            var circ = jquery__WEBPACK_IMPORTED_MODULE_8___default()(`#${idd_id}__circ_` + class_ids[i])
             // circ.attr("r", rad_frnt);
             // circ.attr("stroke-dasharray", `${srk_frnt} ${gap_frnt}`)
             // circ.attr("stroke-dashoffset", off_frnt)
@@ -19213,11 +19034,11 @@ class ULabel {
             for (var i = 0; i < class_ids.length; i++) {
                 let cls = class_ids[i];
                 if (this.subtasks[this.state["current_subtask"]]["state"]["id_payload"][i]["confidence"] > 0.5) {
-                    if (!(jquery_default()(pfx + " #" + this.config["toolbox_id"] + " a#toolbox_sel_" + cls).hasClass("sel"))) {
-                        jquery_default()(pfx + " #" + this.config["toolbox_id"] + " a.tbid-opt.sel").attr("href", "#");
-                        jquery_default()(pfx + " #" + this.config["toolbox_id"] + " a.tbid-opt.sel").removeClass("sel");
-                        jquery_default()(pfx + " #" + this.config["toolbox_id"] + " a#toolbox_sel_" + cls).addClass("sel");
-                        jquery_default()(pfx + " #" + this.config["toolbox_id"] + " a#toolbox_sel_" + cls).removeAttr("href");
+                    if (!(jquery__WEBPACK_IMPORTED_MODULE_8___default()(pfx + " #" + this.config["toolbox_id"] + " a#toolbox_sel_" + cls).hasClass("sel"))) {
+                        jquery__WEBPACK_IMPORTED_MODULE_8___default()(pfx + " #" + this.config["toolbox_id"] + " a.tbid-opt.sel").attr("href", "#");
+                        jquery__WEBPACK_IMPORTED_MODULE_8___default()(pfx + " #" + this.config["toolbox_id"] + " a.tbid-opt.sel").removeClass("sel");
+                        jquery__WEBPACK_IMPORTED_MODULE_8___default()(pfx + " #" + this.config["toolbox_id"] + " a#toolbox_sel_" + cls).addClass("sel");
+                        jquery__WEBPACK_IMPORTED_MODULE_8___default()(pfx + " #" + this.config["toolbox_id"] + " a#toolbox_sel_" + cls).removeAttr("href");
                     }
                 }
             }
@@ -19398,7 +19219,7 @@ class ULabel {
     // Called when mousedown fires within annbox
     start_drag(drag_key, release_button, mouse_event) {
         // Convenience
-        const annbox = jquery_default()("#" + this.config["annbox_id"]);
+        const annbox = jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + this.config["annbox_id"]);
 
         this.drag_state["active_key"] = drag_key;
         this.drag_state["release_button"] = release_button;
@@ -19412,8 +19233,8 @@ class ULabel {
             annbox.scrollLeft(),
             annbox.scrollTop()
         ];
-        jquery_default()(`textarea`).trigger("blur");
-        jquery_default()("div.permopen").removeClass("permopen");
+        jquery__WEBPACK_IMPORTED_MODULE_8___default()(`textarea`).trigger("blur");
+        jquery__WEBPACK_IMPORTED_MODULE_8___default()("div.permopen").removeClass("permopen");
         // TODO handle this drag start
         let annmd;
         switch (drag_key) {
@@ -19493,7 +19314,7 @@ class ULabel {
     // Pan to correct location given mouse dragging
     drag_repan(mouse_event) {
         // Convenience
-        var annbox = jquery_default()("#" + this.config["annbox_id"]);
+        var annbox = jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + this.config["annbox_id"]);
 
         // Pan based on mouse position
         const aX = mouse_event.clientX;
@@ -19520,8 +19341,8 @@ class ULabel {
     // Handle zooming at a certain focus
     rezoom(foc_x = null, foc_y = null, abs = false) {
         // JQuery convenience
-        var imwrap = jquery_default()("#" + this.config["imwrap_id"]);
-        var annbox = jquery_default()("#" + this.config["annbox_id"]);
+        var imwrap = jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + this.config["imwrap_id"]);
+        var annbox = jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + this.config["annbox_id"]);
 
         if (foc_x == null) {
             foc_x = annbox.width() / 2;
@@ -19548,7 +19369,7 @@ class ULabel {
         const new_height = Math.round(this.config["image_height"] * this.state["zoom_val"]);
 
         // Apply new size
-        var toresize = jquery_default()("." + this.config["imgsz_class"]);
+        var toresize = jquery__WEBPACK_IMPORTED_MODULE_8___default()("." + this.config["imgsz_class"]);
         toresize.css("width", new_width + "px");
         toresize.css("height", new_height + "px");
 
@@ -19570,14 +19391,14 @@ class ULabel {
     }
 
     swap_frame_image(new_src, frame = 0) {
-        const ret = jquery_default()(`img#${this.config["image_id_pfx"]}__${frame}`).attr("src");
-        jquery_default()(`img#${this.config["image_id_pfx"]}__${frame}`).attr("src", new_src);
+        const ret = jquery__WEBPACK_IMPORTED_MODULE_8___default()(`img#${this.config["image_id_pfx"]}__${frame}`).attr("src");
+        jquery__WEBPACK_IMPORTED_MODULE_8___default()(`img#${this.config["image_id_pfx"]}__${frame}`).attr("src", new_src);
         return ret;
     }
 
     // Swap annotation box background color
     swap_anno_bg_color(new_bg_color) {
-        const annbox = jquery_default()("#" + this.config["annbox_id"]);
+        const annbox = jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + this.config["annbox_id"]);
         const ret = annbox.css("background-color");
         annbox.css("background-color", new_bg_color);
         return ret
@@ -19597,7 +19418,7 @@ class ULabel {
         for (let i = 0; i < q.length; i++) {
             if (this.subtasks[q[i]]["state"]["active_id"] != null) {
                 // Delete polygon ender if exists
-                jquery_default()("#ender_" + this.subtasks[q[i]]["state"]["active_id"]).remove();
+                jquery__WEBPACK_IMPORTED_MODULE_8___default()("#ender_" + this.subtasks[q[i]]["state"]["active_id"]).remove();
             }
             this.subtasks[q[i]]["state"]["is_in_edit"] = false;
             this.subtasks[q[i]]["state"]["is_in_move"] = false;
@@ -19686,7 +19507,7 @@ class ULabel {
             }
         }
         if (new_frame == null) {
-            new_frame = parseInt(jquery_default()(`div#${this.config["toolbox_id"]} input.frame_input`).val());
+            new_frame = parseInt(jquery__WEBPACK_IMPORTED_MODULE_8___default()(`div#${this.config["toolbox_id"]} input.frame_input`).val());
             if (delta != null) {
                 new_frame = Math.min(Math.max(new_frame + delta, 0), this.config["image_data"].frames.length - 1);
             }
@@ -19695,13 +19516,13 @@ class ULabel {
             new_frame = Math.min(Math.max(new_frame, 0), this.config["image_data"].frames.length - 1);
         }
         // Change the val above
-        jquery_default()(`div#${this.config["toolbox_id"]} input.frame_input`).val(new_frame);
+        jquery__WEBPACK_IMPORTED_MODULE_8___default()(`div#${this.config["toolbox_id"]} input.frame_input`).val(new_frame);
         let old_frame = this.state["current_frame"];
         this.state["current_frame"] = new_frame;
         // $(`img#${this.config["image_id_pfx"]}__${old_frame}`).css("z-index", "initial");
-        jquery_default()(`img#${this.config["image_id_pfx"]}__${old_frame}`).css("display", "none");
+        jquery__WEBPACK_IMPORTED_MODULE_8___default()(`img#${this.config["image_id_pfx"]}__${old_frame}`).css("display", "none");
         // $(`img#${this.config["image_id_pfx"]}__${new_frame}`).css("z-index", 50);
-        jquery_default()(`img#${this.config["image_id_pfx"]}__${new_frame}`).css("display", "block");
+        jquery__WEBPACK_IMPORTED_MODULE_8___default()(`img#${this.config["image_id_pfx"]}__${new_frame}`).css("display", "block");
         if (
             actid &&
             MODES_3D.includes(
@@ -19740,7 +19561,7 @@ class ULabel {
 }
 
 window.ULabel = ULabel;
-/* harmony default export */ const src = (ULabel);
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (ULabel);
 
 
 /***/ }),
@@ -19844,7 +19665,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.SubmitButtons = exports.KeypointSliderItem = exports.RecolorActiveItem = exports.AnnotationResizeItem = exports.ClassCounterToolboxItem = exports.AnnotationIDToolboxItem = exports.ZoomPanToolboxItem = exports.ModeSelectionToolboxItem = exports.ToolboxItem = exports.ToolboxTab = exports.Toolbox = void 0;
-var __1 = __webpack_require__(318);
+var __1 = __webpack_require__(138);
 var configuration_1 = __webpack_require__(976);
 var toolboxDividerDiv = "<div class=toolbox-divider></div>";
 /** Chains the replaceAll method and the toLowerCase method.
@@ -19869,6 +19690,42 @@ var Toolbox = /** @class */ (function () {
         this.tabs = tabs;
         this.items = items;
     }
+    Toolbox.create_toolbox = function (ulabel, toolbox_item_order) {
+        // Grab the default toolbox if one wasn't provided
+        if (toolbox_item_order == null) {
+            toolbox_item_order = ulabel.config.default_toolbox_item_order;
+        }
+        // There's no point to having an empty toolbox, so throw an error if the toolbox is empty.
+        // The toolbox won't actually break if there aren't any items in the toolbox, so this
+        // error isn't strictly neccesary.
+        if (toolbox_item_order.length === 0) {
+            throw new Error("No Toolbox Items Given");
+        }
+        var toolbox_instance_list = [];
+        // Go through the items in toolbox_item_order and add their instance to the toolbox instance list
+        for (var i = 0; i < toolbox_item_order.length; i++) {
+            var args = void 0, toolbox_key = void 0;
+            // If the value of toolbox_item_order[i] is a number then that means the it is one of the 
+            // enumerated toolbox items, so set it to the key, otherwise the element must be an array
+            // of which the first element of that array must be the enumerated value, and the arguments
+            // must be the second value
+            if (typeof (toolbox_item_order[i]) === "number") {
+                toolbox_key = toolbox_item_order[i];
+            }
+            else {
+                toolbox_key = toolbox_item_order[i][0];
+                args = toolbox_item_order[i][1];
+            }
+            var toolbox_item_class = ulabel.config.toolbox_map.get(toolbox_key);
+            if (args == null) {
+                toolbox_instance_list.push(new toolbox_item_class(ulabel));
+            }
+            else {
+                toolbox_instance_list.push(new toolbox_item_class(ulabel, args));
+            }
+        }
+        return toolbox_instance_list;
+    };
     Toolbox.prototype.setup_toolbox_html = function (ulabel, frame_annotation_dialogs, images, ULABEL_VERSION) {
         // Setup base div and ULabel version header
         var toolbox_html = "\n        <div class=\"full_ulabel_container_\">\n            ".concat(frame_annotation_dialogs, "\n            <div id=\"").concat(ulabel.config["annbox_id"], "\" class=\"annbox_cls\">\n                <div id=\"").concat(ulabel.config["imwrap_id"], "\" class=\"imwrap_cls ").concat(ulabel.config["imgsz_class"], "\">\n                    ").concat(images, "\n                </div>\n            </div>\n            <div id=\"").concat(ulabel.config["toolbox_id"], "\" class=\"toolbox_cls\">\n                <div class=\"toolbox-name-header\">\n                    <h1 class=\"toolname\"><a class=\"repo-anchor\" href=\"https://github.com/SenteraLLC/ulabel\">ULabel</a> <span class=\"version-number\">v").concat(ULABEL_VERSION, "</span></h1><!--\n                    --><div class=\"night-button-cont\">\n                        <a href=\"#\" class=\"night-button\">\n                            <div class=\"night-button-track\">\n                                <div class=\"night-status\"></div>\n                            </div>\n                        </a>\n                    </div>\n                </div>\n                <div class=\"toolbox_inner_cls\">\n        ");
@@ -20705,6 +20562,18 @@ exports.SubmitButtons = SubmitButtons;
 // }
 
 
+/***/ }),
+
+/***/ 345:
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "ULABEL_VERSION": () => (/* binding */ ULABEL_VERSION)
+/* harmony export */ });
+const ULABEL_VERSION = "0.4.20";
+
 /***/ })
 
 /******/ 	});
@@ -20779,7 +20648,7 @@ exports.SubmitButtons = SubmitButtons;
 /******/ 	// startup
 /******/ 	// Load entry module and return exports
 /******/ 	// This entry module is referenced by other modules so it can't be inlined
-/******/ 	var __webpack_exports__ = __webpack_require__(318);
+/******/ 	var __webpack_exports__ = __webpack_require__(138);
 /******/ 	exports.ULabel = __webpack_exports__.default;
 /******/ 	
 /******/ })()

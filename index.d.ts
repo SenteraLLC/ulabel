@@ -89,6 +89,7 @@ export class ULabel {
         public set_saved(saved: boolean);
         public redraw_all_annotations(subtask: any, offset:any, spatial_only: any);
         public show_annotation_mode(target_jq: JQuery<any>);
+        public raise_error(message: string, level?: number);
         static process_classes(ulabel_obj: any, arg1: string, subtask_obj: any);
         static build_id_dialogs(ulabel_obj: any);
         
