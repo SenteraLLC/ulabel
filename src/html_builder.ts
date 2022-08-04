@@ -18,8 +18,8 @@ import {
 export class HTMLBuilder {
 
     static add_style_to_document(ulabel: ULabel) {
-        let head = document.head || document.getElementsByTagName('head')[0];
-        let style = document.createElement('style');
+        let head: HTMLHeadElement = document.head || document.getElementsByTagName('head')[0];
+        let style: HTMLStyleElement = document.createElement('style');
         head.appendChild(style);
         
         style.appendChild(document.createTextNode(get_init_style(ulabel.config["container_id"])));
@@ -27,21 +27,21 @@ export class HTMLBuilder {
     }
 
     private static get_md_button(md_key, md_name, svg_blob, cur_md, subtasks) {
-        let sel = "";
-        let href = ` href="#"`;
+        let sel: string = "";
+        let href: string = ` href="#"`;
         if (cur_md == md_key) {
             sel = " sel";
             href = "";
         }
-        let st_classes = "";
+        let subtask_classes: string = "";
         for (const st_key in subtasks) {
             if (subtasks[st_key]["allowed_modes"].includes(md_key)) {
-                st_classes += " md-en4--" + st_key;
+                subtask_classes += " md-en4--" + st_key;
             }
         }
 
         return `<div class="mode-opt">
-            <a${href} id="md-btn--${md_key}" class="md-btn${sel}${st_classes} invert-this-svg" amdname="${md_name}">
+            <a${href} id="md-btn--${md_key}" class="md-btn${sel}${subtask_classes} invert-this-svg" amdname="${md_name}">
                 ${svg_blob}
             </a>
         </div>`;
