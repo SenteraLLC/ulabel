@@ -215,7 +215,7 @@ export class HTMLBuilder {
         }
     }
 
-    static get_idd_string(
+    private static get_idd_string(
         idd_id, 
         width, 
         center_coord, 
@@ -284,5 +284,109 @@ export class HTMLBuilder {
         </div>`;
 
         return dialog_html;
+    }
+
+    static build_id_dialogs(ulabel: ULabel) {
+        let full_toolbox_html: string = `<div class="toolbox-id-app-payload">`;
+
+        const width = ulabel.config.outer_diameter;
+        // TODO real names here!
+        const inner_rad: number = ulabel.config.inner_prop * width / 2;
+        const inner_diam: number = inner_rad * 2;
+        const outer_rad: number = 0.5 * width;
+        const inner_top: number = outer_rad - inner_rad;
+        const inner_lft: number = outer_rad - inner_rad;
+
+        const cl_opacity: number = 0.4;
+        let tbid: string = ulabel.config.toolbox_id;
+
+        const center_coord: number = width / 2;
+
+        for (const st in ulabel.subtasks) {
+            const idd_id = ulabel.subtasks[st]["state"]["idd_id"];
+            const idd_id_front = ulabel.subtasks[st]["state"]["idd_id_front"];
+
+            let subtask_dialog_container_jq = $("#dialogs__" + st);
+            let front_subtask_dialog_container_jq = $("#front_dialogs__" + st);
+
+            let dialog_html_v2 = HTMLBuilder.get_idd_string(
+                idd_id, width, center_coord, cl_opacity, ulabel.subtasks[st]["class_ids"],
+                inner_rad, outer_rad, ulabel.subtasks[st]["class_defs"]
+            );
+            let front_dialog_html_v2 = HTMLBuilder.get_idd_string(
+                idd_id_front, width, center_coord, cl_opacity, ulabel.subtasks[st]["class_ids"],
+                inner_rad, outer_rad, ulabel.subtasks[st]["class_defs"]
+            );
+
+            // TODO noconflict
+            let toolbox_html: string = `<div id="tb-id-app--${st}" class="tb-id-app">`;
+            const class_ids = ulabel.subtasks[st]["class_ids"];
+
+
+            for (let i = 0; i < class_ids.length; i++) {
+
+                let this_id: string = class_ids[i];
+                let this_color: string = ulabel.subtasks[st]["class_defs"][i]["color"];
+                let this_name: string = ulabel.subtasks[st]["class_defs"][i]["name"];
+
+                let sel: string = "";
+                let href: string = ' href="#"';
+                if (i == 0) {
+                    sel = " sel";
+                    href = "";
+                }
+                if (ulabel.config["allow_soft_id"]) {
+                    let msg = "Only hard id is currently supported";
+                    throw new Error(msg);
+                }
+                else {
+                    toolbox_html += `
+                        <a${href} id="${tbid}_sel_${this_id}" class="tbid-opt${sel}">
+                            <div class="colprev ${tbid}_colprev_${this_id}" style="background-color: ${this_color}"></div> <span class="tb-cls-nam">${this_name}</span>
+                        </a>
+                    `;
+                }
+            }
+            toolbox_html += `
+            </div>`;
+
+            // Add dialog to the document
+            // front_subtask_dialog_container_jq.append(dialog_html);
+            // $("#" + ul.subtasks[st]["idd_id"]).attr("id", ul.subtasks[st]["idd_id_front"]);
+            front_subtask_dialog_container_jq.append(front_dialog_html_v2); // TODO(new3d) MOVE THIS TO GLOB BOX -- superimpose atop thee anchor already there when needed, no remove and add back
+            subtask_dialog_container_jq.append(dialog_html_v2);
+            // console.log(dialog_html);
+            // console.log(dialog_html_v2);
+
+            // Wait to add full toolbox
+            full_toolbox_html += toolbox_html;
+
+            ulabel.subtasks[st]["state"]["visible_dialogs"][idd_id] = {
+                "left": 0.0,
+                "top": 0.0,
+                "pin": "center"
+            };
+        }
+
+        // Add all toolbox html at once
+        $("#" + ulabel.config["toolbox_id"] + " div.id-toolbox-app").html(full_toolbox_html);
+
+        // Style revisions based on the size
+        let idci = $("#" + ulabel.config["container_id"] + " a.id-dialog-clickable-indicator");
+        idci.css({
+            "height": `${width}px`,
+            "width": `${width}px`,
+            "border-radius": `${outer_rad}px`,
+        });
+        let ccirc = $("#" + ulabel.config["container_id"] + " div.centcirc");
+        ccirc.css({
+            "position": "absolute",
+            "top": `${inner_top}px`,
+            "left": `${inner_lft}px`,
+            "width": `${inner_diam}px`,
+            "height": `${inner_diam}px`,
+            "background-color": "black",
+            "border-radius": `${inner_rad}px`
+        });
     }
 }

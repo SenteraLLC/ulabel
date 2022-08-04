@@ -170,6 +170,82 @@ var HTMLBuilder = /** @class */ (function () {
         dialog_html += "\n            </svg>\n            <div class=\"centcirc\"></div>\n        </div>";
         return dialog_html;
     };
+    HTMLBuilder.build_id_dialogs = function (ulabel) {
+        var full_toolbox_html = "<div class=\"toolbox-id-app-payload\">";
+        var width = ulabel.config.outer_diameter;
+        // TODO real names here!
+        var inner_rad = ulabel.config.inner_prop * width / 2;
+        var inner_diam = inner_rad * 2;
+        var outer_rad = 0.5 * width;
+        var inner_top = outer_rad - inner_rad;
+        var inner_lft = outer_rad - inner_rad;
+        var cl_opacity = 0.4;
+        var tbid = ulabel.config.toolbox_id;
+        var center_coord = width / 2;
+        for (var st in ulabel.subtasks) {
+            var idd_id = ulabel.subtasks[st]["state"]["idd_id"];
+            var idd_id_front = ulabel.subtasks[st]["state"]["idd_id_front"];
+            var subtask_dialog_container_jq = $("#dialogs__" + st);
+            var front_subtask_dialog_container_jq = $("#front_dialogs__" + st);
+            var dialog_html_v2 = HTMLBuilder.get_idd_string(idd_id, width, center_coord, cl_opacity, ulabel.subtasks[st]["class_ids"], inner_rad, outer_rad, ulabel.subtasks[st]["class_defs"]);
+            var front_dialog_html_v2 = HTMLBuilder.get_idd_string(idd_id_front, width, center_coord, cl_opacity, ulabel.subtasks[st]["class_ids"], inner_rad, outer_rad, ulabel.subtasks[st]["class_defs"]);
+            // TODO noconflict
+            var toolbox_html = "<div id=\"tb-id-app--".concat(st, "\" class=\"tb-id-app\">");
+            var class_ids = ulabel.subtasks[st]["class_ids"];
+            for (var i = 0; i < class_ids.length; i++) {
+                var this_id = class_ids[i];
+                var this_color = ulabel.subtasks[st]["class_defs"][i]["color"];
+                var this_name = ulabel.subtasks[st]["class_defs"][i]["name"];
+                var sel = "";
+                var href = ' href="#"';
+                if (i == 0) {
+                    sel = " sel";
+                    href = "";
+                }
+                if (ulabel.config["allow_soft_id"]) {
+                    var msg = "Only hard id is currently supported";
+                    throw new Error(msg);
+                }
+                else {
+                    toolbox_html += "\n                        <a".concat(href, " id=\"").concat(tbid, "_sel_").concat(this_id, "\" class=\"tbid-opt").concat(sel, "\">\n                            <div class=\"colprev ").concat(tbid, "_colprev_").concat(this_id, "\" style=\"background-color: ").concat(this_color, "\"></div> <span class=\"tb-cls-nam\">").concat(this_name, "</span>\n                        </a>\n                    ");
+                }
+            }
+            toolbox_html += "\n            </div>";
+            // Add dialog to the document
+            // front_subtask_dialog_container_jq.append(dialog_html);
+            // $("#" + ul.subtasks[st]["idd_id"]).attr("id", ul.subtasks[st]["idd_id_front"]);
+            front_subtask_dialog_container_jq.append(front_dialog_html_v2); // TODO(new3d) MOVE THIS TO GLOB BOX -- superimpose atop thee anchor already there when needed, no remove and add back
+            subtask_dialog_container_jq.append(dialog_html_v2);
+            // console.log(dialog_html);
+            // console.log(dialog_html_v2);
+            // Wait to add full toolbox
+            full_toolbox_html += toolbox_html;
+            ulabel.subtasks[st]["state"]["visible_dialogs"][idd_id] = {
+                "left": 0.0,
+                "top": 0.0,
+                "pin": "center"
+            };
+        }
+        // Add all toolbox html at once
+        $("#" + ulabel.config["toolbox_id"] + " div.id-toolbox-app").html(full_toolbox_html);
+        // Style revisions based on the size
+        var idci = $("#" + ulabel.config["container_id"] + " a.id-dialog-clickable-indicator");
+        idci.css({
+            "height": "".concat(width, "px"),
+            "width": "".concat(width, "px"),
+            "border-radius": "".concat(outer_rad, "px"),
+        });
+        var ccirc = $("#" + ulabel.config["container_id"] + " div.centcirc");
+        ccirc.css({
+            "position": "absolute",
+            "top": "".concat(inner_top, "px"),
+            "left": "".concat(inner_lft, "px"),
+            "width": "".concat(inner_diam, "px"),
+            "height": "".concat(inner_diam, "px"),
+            "background-color": "black",
+            "border-radius": "".concat(inner_rad, "px")
+        });
+    };
     return HTMLBuilder;
 }());
 exports.HTMLBuilder = HTMLBuilder;
