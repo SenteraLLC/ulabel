@@ -14928,18 +14928,6 @@ class ULabel {
 
     // ================= Static Utilities =================
 
-    static add_style_to_document(ul) {
-        let head = document.head || document.getElementsByTagName('head')[0];
-        let style = document.createElement('style');
-        head.appendChild(style);
-        if (style.styleSheet) {
-            style.styleSheet.cssText = (0,_blobs__WEBPACK_IMPORTED_MODULE_9__.get_init_style)(ul.config["container_id"]);
-        }
-        else {
-            style.appendChild(document.createTextNode((0,_blobs__WEBPACK_IMPORTED_MODULE_9__.get_init_style)(ul.config["container_id"])));
-        }
-    }
-
     // Returns current epoch time in milliseconds
     static get_time() {
         return (new Date()).toISOString();
