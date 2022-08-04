@@ -143,6 +143,33 @@ var HTMLBuilder = /** @class */ (function () {
             }
         }
     };
+    HTMLBuilder.get_idd_string = function (idd_id, width, center_coord, cl_opacity, class_ids, inner_rad, outer_rad, class_defs) {
+        // TODO noconflict
+        var dialog_html = "\n        <div id=\"".concat(idd_id, "\" class=\"id_dialog\" style=\"width: ").concat(width, "px; height: ").concat(width, "px;\">\n            <a class=\"id-dialog-clickable-indicator\" href=\"#\"></a>\n            <svg width=\"").concat(width, "\" height=\"").concat(width, "\">\n        ");
+        for (var i = 0; i < class_ids.length; i++) {
+            var srt_prop = 1 / class_ids.length;
+            var cum_prop = i / class_ids.length;
+            var srk_prop = 1 / class_ids.length;
+            var gap_prop = 1.0 - srk_prop;
+            var rad_back = inner_rad + 1.0 * (outer_rad - inner_rad) / 2;
+            var rad_frnt = inner_rad + srt_prop * (outer_rad - inner_rad) / 2;
+            var wdt_back = 1.0 * (outer_rad - inner_rad);
+            var wdt_frnt = srt_prop * (outer_rad - inner_rad);
+            var srk_back = 2 * Math.PI * rad_back * srk_prop;
+            var gap_back = 2 * Math.PI * rad_back * gap_prop;
+            var off_back = 2 * Math.PI * rad_back * cum_prop;
+            var srk_frnt = 2 * Math.PI * rad_frnt * srk_prop;
+            var gap_frnt = 2 * Math.PI * rad_frnt * gap_prop;
+            var off_frnt = 2 * Math.PI * rad_frnt * cum_prop;
+            var ths_id = class_ids[i];
+            var ths_col = class_defs[i]["color"];
+            // TODO should names also go on the id dialog?
+            // let ths_nam = class_defs[i]["name"];
+            dialog_html += "\n            <circle\n                r=\"".concat(rad_back, "\" cx=\"").concat(center_coord, "\" cy=\"").concat(center_coord, "\" \n                stroke=\"").concat(ths_col, "\" \n                fill-opacity=\"0\"\n                stroke-opacity=\"").concat(cl_opacity, "\"\n                stroke-width=\"").concat(wdt_back, "\"; \n                stroke-dasharray=\"").concat(srk_back, " ").concat(gap_back, "\" \n                stroke-dashoffset=\"").concat(off_back, "\" />\n            <circle\n                id=\"").concat(idd_id, "__circ_").concat(ths_id, "\"\n                r=\"").concat(rad_frnt, "\" cx=\"").concat(center_coord, "\" cy=\"").concat(center_coord, "\"\n                fill-opacity=\"0\"\n                stroke=\"").concat(ths_col, "\" \n                stroke-opacity=\"1.0\"\n                stroke-width=\"").concat(wdt_frnt, "\" \n                stroke-dasharray=\"").concat(srk_frnt, " ").concat(gap_frnt, "\" \n                stroke-dashoffset=\"").concat(off_frnt, "\" />\n            ");
+        }
+        dialog_html += "\n            </svg>\n            <div class=\"centcirc\"></div>\n        </div>";
+        return dialog_html;
+    };
     return HTMLBuilder;
 }());
 exports.HTMLBuilder = HTMLBuilder;

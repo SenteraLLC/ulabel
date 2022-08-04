@@ -214,4 +214,75 @@ export class HTMLBuilder {
             }
         }
     }
+
+    static get_idd_string(
+        idd_id, 
+        width, 
+        center_coord, 
+        cl_opacity, 
+        class_ids, 
+        inner_rad, 
+        outer_rad, 
+        class_defs
+    ) {
+        // TODO noconflict
+        let dialog_html: string = `
+        <div id="${idd_id}" class="id_dialog" style="width: ${width}px; height: ${width}px;">
+            <a class="id-dialog-clickable-indicator" href="#"></a>
+            <svg width="${width}" height="${width}">
+        `;
+
+        for (let i = 0; i < class_ids.length; i++) {
+
+            let srt_prop = 1 / class_ids.length;
+
+            let cum_prop = i / class_ids.length;
+            let srk_prop = 1 / class_ids.length;
+            let gap_prop = 1.0 - srk_prop;
+
+            let rad_back = inner_rad + 1.0 * (outer_rad - inner_rad) / 2;
+            let rad_frnt = inner_rad + srt_prop * (outer_rad - inner_rad) / 2;
+
+            let wdt_back = 1.0 * (outer_rad - inner_rad);
+            let wdt_frnt = srt_prop * (outer_rad - inner_rad);
+
+            let srk_back = 2 * Math.PI * rad_back * srk_prop;
+            let gap_back = 2 * Math.PI * rad_back * gap_prop;
+            let off_back = 2 * Math.PI * rad_back * cum_prop;
+
+            let srk_frnt = 2 * Math.PI * rad_frnt * srk_prop;
+            let gap_frnt = 2 * Math.PI * rad_frnt * gap_prop;
+            let off_frnt = 2 * Math.PI * rad_frnt * cum_prop;
+
+            let ths_id = class_ids[i];
+            let ths_col = class_defs[i]["color"];
+            // TODO should names also go on the id dialog?
+            // let ths_nam = class_defs[i]["name"];
+            dialog_html += `
+            <circle
+                r="${rad_back}" cx="${center_coord}" cy="${center_coord}" 
+                stroke="${ths_col}" 
+                fill-opacity="0"
+                stroke-opacity="${cl_opacity}"
+                stroke-width="${wdt_back}"; 
+                stroke-dasharray="${srk_back} ${gap_back}" 
+                stroke-dashoffset="${off_back}" />
+            <circle
+                id="${idd_id}__circ_${ths_id}"
+                r="${rad_frnt}" cx="${center_coord}" cy="${center_coord}"
+                fill-opacity="0"
+                stroke="${ths_col}" 
+                stroke-opacity="1.0"
+                stroke-width="${wdt_frnt}" 
+                stroke-dasharray="${srk_frnt} ${gap_frnt}" 
+                stroke-dashoffset="${off_frnt}" />
+            `;
+        }
+        dialog_html += `
+            </svg>
+            <div class="centcirc"></div>
+        </div>`;
+
+        return dialog_html;
+    }
 }
