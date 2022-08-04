@@ -1,8 +1,22 @@
 import { ULabel } from "..";
+import { Toolbox, ZoomPanToolboxItem } from "./toolbox";
+import { ULABEL_VERSION } from './version';
+
+import {
+    BBOX_SVG,
+    BBOX3_SVG,
+    POINT_SVG,
+    POLYGON_SVG,
+    CONTOUR_SVG,
+    TBAR_SVG,
+    POLYLINE_SVG,
+    WHOLE_IMAGE_SVG,
+    GLOBAL_SVG
+} from './blobs';
 
 export class HTMLBuilder {
 
-    static get_md_button(md_key, md_name, svg_blob, cur_md, subtasks) {
+    private static get_md_button(md_key, md_name, svg_blob, cur_md, subtasks) {
         let sel = "";
         let href = ` href="#"`;
         if (cur_md == md_key) {
@@ -23,7 +37,7 @@ export class HTMLBuilder {
         </div>`;
     }
 
-    static get_images_html(ulabel: ULabel) {
+    private static get_images_html(ulabel: ULabel) {
         let images_html: string = "";
 
         let display: string;
@@ -41,7 +55,7 @@ export class HTMLBuilder {
         return images_html;
     }
 
-    static get_frame_annotation_dialogs(ulabel: ULabel) {
+    private static get_frame_annotation_dialogs(ulabel: ULabel) {
         let frame_annotation_dialog: string = "";
         let tot: number = 0;
         for (const st_key in ulabel.subtasks) {
@@ -87,5 +101,117 @@ export class HTMLBuilder {
             }
         }
         return frame_annotation_dialog;
+    }
+
+    static prep_window_html(ulabel: ULabel, toolbox_item_order: unknown[] = null) {
+        // Bring image and annotation scaffolding in
+        // TODO multi-image with spacing etc.
+
+        // const tabs = ULabel.get_toolbox_tabs(ul);
+        const images: string = HTMLBuilder.get_images_html(ulabel);
+        const frame_annotation_dialogs: string = HTMLBuilder.get_frame_annotation_dialogs(ulabel);
+        
+        // const toolbox = configuration.create_toolbox();
+        const toolbox: Toolbox = new Toolbox(
+            [],
+            Toolbox.create_toolbox(ulabel, toolbox_item_order)
+        );
+
+        let tool_html: string = toolbox.setup_toolbox_html(
+            ulabel,
+            frame_annotation_dialogs,
+            images,
+            ULABEL_VERSION
+        )
+
+        // Set the container's html to the toolbox html we just created
+        $("#" + ulabel.config["container_id"]).html(tool_html)
+
+        // Build toolbox for the current subtask only
+        const current_subtask: string = Object.keys(ulabel.subtasks)[0];
+
+        // Initialize toolbox based on configuration
+        const sp_id = ulabel.config["toolbox_id"];
+        let curmd = ulabel.subtasks[current_subtask]["state"]["annotation_mode"];
+        let md_buttons: string[] = [
+            HTMLBuilder.get_md_button("bbox", "Bounding Box", BBOX_SVG, curmd, ulabel.subtasks),
+            HTMLBuilder.get_md_button("point", "Point", POINT_SVG, curmd, ulabel.subtasks),
+            HTMLBuilder.get_md_button("polygon", "Polygon", POLYGON_SVG, curmd, ulabel.subtasks),
+            HTMLBuilder.get_md_button("tbar", "T-Bar", TBAR_SVG, curmd, ulabel.subtasks),
+            HTMLBuilder.get_md_button("polyline", "Polyline", POLYLINE_SVG, curmd, ulabel.subtasks),
+            HTMLBuilder.get_md_button("contour", "Contour", CONTOUR_SVG, curmd, ulabel.subtasks),
+            HTMLBuilder.get_md_button("bbox3", "Bounding Cube", BBOX3_SVG, curmd, ulabel.subtasks),
+            HTMLBuilder.get_md_button("whole-image", "Whole Frame", WHOLE_IMAGE_SVG, curmd, ulabel.subtasks),
+            HTMLBuilder.get_md_button("global", "Global", GLOBAL_SVG, curmd, ulabel.subtasks),
+        ];
+
+        // Append but don't wait
+        $("#" + sp_id + " .toolbox_inner_cls .mode-selection").append(md_buttons.join("<!-- -->"));
+
+        // Show current mode label
+        ulabel.show_annotation_mode(null);
+
+        // Make sure that entire toolbox is shown
+        if ($("#" + ulabel.config["toolbox_id"] + " .toolbox_inner_cls").height() > $("#" + ulabel.config["container_id"]).height()) {
+            $("#" + ulabel.config["toolbox_id"]).css("overflow-y", "scroll");
+        }
+
+        ulabel.toolbox = toolbox;
+
+        // Check an array to see if it contains a ZoomPanToolboxItem
+        let contains_zoom_pan: Function = function(array: unknown[]) {
+            
+            //check if the array is empty
+            if (array.length == 0) return false;
+            
+            // Loop through everything in the array and check if its the ZoomPanToolboxItem
+            for (let idx in array) {
+                if (array[idx] instanceof ZoomPanToolboxItem) {
+                    return true;
+                }
+            }
+            
+            // If the ZoomPanToolboxItem wasn't found then return false
+            return false;
+        }
+
+        // Check if initial_crop exists and has the appropriate properties
+        let check_initial_crop: Function = function(initial_crop) {
+
+            // If initial_crop doesn't exist, return false
+            if (initial_crop == null) return false;
+
+            // If initial_crop has the appropriate properties, return true
+            if (
+                "width" in initial_crop &&
+                "height" in initial_crop &&
+                "left" in initial_crop &&
+                "top" in initial_crop
+            ) {
+                return true;
+            }
+
+            // If initial_crop exists but doesn't have the appropriate properties,
+            // then raise an error and return false
+            ulabel.raise_error("initial_crop missing necessary properties. Ignoring.");
+            return false;
+        }
+
+        // Make sure the toolbox contains the ZoomPanToolboxItem
+        if (contains_zoom_pan(ulabel.toolbox.items)) {
+
+            // Make sure the initial_crop exists and contains the necessary properties
+            if (check_initial_crop(ulabel.config.initial_crop)) {
+
+                // Grab the initial crop button and rename it
+                let initial_crop_button = document.getElementById("recenter-button");
+                initial_crop_button.innerHTML = "Initial Crop"
+            } 
+            else {
+                // Grab the whole image button and set its display to none
+                let whole_image_button = document.getElementById("recenter-whole-image-button");
+                whole_image_button.style.display = "none";
+            }
+        }
     }
 }
