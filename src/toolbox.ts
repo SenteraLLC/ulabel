@@ -1,7 +1,6 @@
 import { ULabel, ULabelSubtask } from "..";
 import { Configuration } from "./configuration";
 import { ULabelAnnotation } from "./annotation";
-import { event } from "jquery";
 
 const toolboxDividerDiv = "<div class=toolbox-divider></div>"
 
@@ -29,6 +28,48 @@ export class Toolbox {
         public tabs: ToolboxTab[] = [],
         public items: ToolboxItem[] = []
     ) {
+    }
+
+    public static create_toolbox(ulabel: ULabel, toolbox_item_order: unknown[]) {
+        // Grab the default toolbox if one wasn't provided
+        if (toolbox_item_order == null) {
+            toolbox_item_order = ulabel.config.default_toolbox_item_order
+        }
+
+        // There's no point to having an empty toolbox, so throw an error if the toolbox is empty.
+        // The toolbox won't actually break if there aren't any items in the toolbox, so this
+        // error isn't strictly neccesary.
+        if (toolbox_item_order.length === 0) {
+            throw new Error("No Toolbox Items Given")
+        }
+
+        let toolbox_instance_list = [];
+        // Go through the items in toolbox_item_order and add their instance to the toolbox instance list
+        for (let i = 0; i < toolbox_item_order.length; i++) {
+
+            let args: object, toolbox_key: number;
+
+            // If the value of toolbox_item_order[i] is a number then that means the it is one of the 
+            // enumerated toolbox items, so set it to the key, otherwise the element must be an array
+            // of which the first element of that array must be the enumerated value, and the arguments
+            // must be the second value
+            if (typeof(toolbox_item_order[i]) === "number") {
+                toolbox_key = <number> toolbox_item_order[i]
+            } else {
+                toolbox_key = toolbox_item_order[i][0];
+                args = toolbox_item_order[i][1]  
+            }
+
+            let toolbox_item_class = ulabel.config.toolbox_map.get(toolbox_key);
+
+            if (args == null) {
+                toolbox_instance_list.push(new toolbox_item_class(ulabel))
+            } else {
+                toolbox_instance_list.push(new toolbox_item_class(ulabel, args))
+            }  
+        }                    
+
+        return toolbox_instance_list
     }
 
     public setup_toolbox_html(ulabel: ULabel, frame_annotation_dialogs: any, images: any, ULABEL_VERSION: any): string {
