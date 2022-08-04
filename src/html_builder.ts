@@ -41,4 +41,51 @@ export class HTMLBuilder {
         return images_html;
     }
 
+    static get_frame_annotation_dialogs(ulabel: ULabel) {
+        let frame_annotation_dialog: string = "";
+        let tot: number = 0;
+        for (const st_key in ulabel.subtasks) {
+            if (
+                !ulabel.subtasks[st_key].allowed_modes.includes('whole-image') &&
+                !ulabel.subtasks[st_key].allowed_modes.includes('global')
+            ) {
+                continue;
+            }
+            tot += 1;
+        }
+        let ind: number = 0;
+        for (const st_key in ulabel.subtasks) {
+            if (
+                !ulabel.subtasks[st_key].allowed_modes.includes('whole-image') &&
+                !ulabel.subtasks[st_key].allowed_modes.includes('global')
+            ) {
+                continue;
+            }
+            frame_annotation_dialog += `
+                <div id="fad_st__${st_key}" class="frame_annotation_dialog fad_st__${st_key} fad_ind__${tot - ind - 1}">
+                    <div class="hide_overflow_container">
+                        <div class="row_container">
+                            <div class="fad_row name">
+                                <div class="fad_row_inner">
+                                    <div class="fad_st_name">${ulabel.subtasks[st_key].display_name}</div>
+                                </div>
+                            </div>
+                            <div class="fad_row add">
+                                <div class="fad_row_inner">
+                                    <div class="fad_st_add">
+                                        <a class="add-glob-button" href="#">+</a>
+                                    </div>
+                                </div>
+                            </div><div class="fad_annotation_rows"></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            ind += 1;
+            if (ind > 4) {
+                throw new Error("At most 4 subtasks can have allow 'whole-image' or 'global' annotations.");
+            }
+        }
+        return frame_annotation_dialog;
+    }
 }

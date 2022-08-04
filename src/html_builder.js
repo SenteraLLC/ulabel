@@ -33,6 +33,30 @@ var HTMLBuilder = /** @class */ (function () {
         }
         return images_html;
     };
+    HTMLBuilder.get_frame_annotation_dialogs = function (ulabel) {
+        var frame_annotation_dialog = "";
+        var tot = 0;
+        for (var st_key in ulabel.subtasks) {
+            if (!ulabel.subtasks[st_key].allowed_modes.includes('whole-image') &&
+                !ulabel.subtasks[st_key].allowed_modes.includes('global')) {
+                continue;
+            }
+            tot += 1;
+        }
+        var ind = 0;
+        for (var st_key in ulabel.subtasks) {
+            if (!ulabel.subtasks[st_key].allowed_modes.includes('whole-image') &&
+                !ulabel.subtasks[st_key].allowed_modes.includes('global')) {
+                continue;
+            }
+            frame_annotation_dialog += "\n                <div id=\"fad_st__".concat(st_key, "\" class=\"frame_annotation_dialog fad_st__").concat(st_key, " fad_ind__").concat(tot - ind - 1, "\">\n                    <div class=\"hide_overflow_container\">\n                        <div class=\"row_container\">\n                            <div class=\"fad_row name\">\n                                <div class=\"fad_row_inner\">\n                                    <div class=\"fad_st_name\">").concat(ulabel.subtasks[st_key].display_name, "</div>\n                                </div>\n                            </div>\n                            <div class=\"fad_row add\">\n                                <div class=\"fad_row_inner\">\n                                    <div class=\"fad_st_add\">\n                                        <a class=\"add-glob-button\" href=\"#\">+</a>\n                                    </div>\n                                </div>\n                            </div><div class=\"fad_annotation_rows\"></div>\n                        </div>\n                    </div>\n                </div>\n            ");
+            ind += 1;
+            if (ind > 4) {
+                throw new Error("At most 4 subtasks can have allow 'whole-image' or 'global' annotations.");
+            }
+        }
+        return frame_annotation_dialog;
+    };
     return HTMLBuilder;
 }());
 exports.HTMLBuilder = HTMLBuilder;
