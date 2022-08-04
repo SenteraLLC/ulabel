@@ -11682,7 +11682,7 @@ var AllowedToolboxItem;
     AllowedToolboxItem[AllowedToolboxItem["RecolorActive"] = 4] = "RecolorActive";
     AllowedToolboxItem[AllowedToolboxItem["ClassCounter"] = 5] = "ClassCounter";
     AllowedToolboxItem[AllowedToolboxItem["KeypointSlider"] = 6] = "KeypointSlider";
-    AllowedToolboxItem[AllowedToolboxItem["SubmitButtons"] = 7] = "SubmitButtons";
+    AllowedToolboxItem[AllowedToolboxItem["SubmitButtons"] = 7] = "SubmitButtons"; // 7
 })(AllowedToolboxItem || (AllowedToolboxItem = {}));
 var Configuration = /** @class */ (function () {
     function Configuration() {
