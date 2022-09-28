@@ -1,6 +1,1883 @@
 /******/ (() => { // webpackBootstrap
 /******/ 	var __webpack_modules__ = ({
 
+/***/ 525:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+var __webpack_unused_export__;
+
+__webpack_unused_export__ = ({ value: true });
+exports.a = void 0;
+var ULabelAnnotation = /** @class */ (function () {
+    function ULabelAnnotation(id, is_new, parent_id, created_by, deprecated, spatial_type, spatial_payload, classification_payloads, line_size, containing_box, frame, text_payload, annotation_meta, human_deprecated) {
+        if (is_new === void 0) { is_new = true; }
+        if (parent_id === void 0) { parent_id = null; }
+        if (deprecated === void 0) { deprecated = false; }
+        if (text_payload === void 0) { text_payload = ""; }
+        if (annotation_meta === void 0) { annotation_meta = null; }
+        if (human_deprecated === void 0) { human_deprecated = null; }
+        this.id = id;
+        this.is_new = is_new;
+        this.parent_id = parent_id;
+        this.created_by = created_by;
+        this.deprecated = deprecated;
+        this.spatial_type = spatial_type;
+        this.spatial_payload = spatial_payload;
+        this.classification_payloads = classification_payloads;
+        this.line_size = line_size;
+        this.containing_box = containing_box;
+        this.frame = frame;
+        this.text_payload = text_payload;
+        this.annotation_meta = annotation_meta;
+        this.human_deprecated = human_deprecated;
+    }
+    ULabelAnnotation.prototype.ensure_compatible_classification_payloads = function (ulabel_class_ids) {
+        var found_ids = [];
+        var j;
+        var conf_not_found_j = null;
+        var remaining_confidence = 1.0;
+        for (j = 0; j < this.classification_payloads.length; j++) {
+            var this_id = this.classification_payloads[j].class_id;
+            if (!ulabel_class_ids.includes(this_id)) {
+                alert("Found class id ".concat(this_id, " in \"resume_from\" data but not in \"allowed_classes\""));
+                throw "Found class id ".concat(this_id, " in \"resume_from\" data but not in \"allowed_classes\"");
+            }
+            found_ids.push(this_id);
+            if (!("confidence" in this.classification_payloads[j])) {
+                if (conf_not_found_j !== null) {
+                    throw ("More than one classification payload was supplied without confidence for a single annotation.");
+                }
+                else {
+                    conf_not_found_j = j;
+                }
+            }
+            else {
+                this.classification_payloads[j].confidence = this.classification_payloads[j].confidence;
+                remaining_confidence -= this.classification_payloads[j]["confidence"];
+            }
+        }
+        if (conf_not_found_j !== null) {
+            if (remaining_confidence < 0) {
+                throw ("Supplied total confidence was greater than 100%");
+            }
+            this.classification_payloads[conf_not_found_j].confidence = remaining_confidence;
+        }
+        for (j = 0; j < ulabel_class_ids.length; j++) {
+            if (!(found_ids.includes(ulabel_class_ids[j]))) {
+                this.classification_payloads.push({
+                    "class_id": ulabel_class_ids[j],
+                    "confidence": 0.0
+                });
+            }
+        }
+    };
+    ULabelAnnotation.from_json = function (json_block) {
+        var ret = new ULabelAnnotation();
+        Object.assign(ret, json_block);
+        // Handle 'new' keyword collision
+        if ("new" in json_block) {
+            ret.is_new = json_block["new"];
+        }
+        return ret;
+    };
+    return ULabelAnnotation;
+}());
+exports.a = ULabelAnnotation;
+
+
+/***/ }),
+
+/***/ 65:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.filter_low = exports.mark_deprecated = exports.get_annotation_confidence = void 0;
+//Given an annotation returns the confidence of that annotation
+function get_annotation_confidence(annotation) {
+    var current_confidence = -1;
+    for (var type_of_id in annotation.classification_payloads) {
+        if (annotation.classification_payloads[type_of_id].confidence > current_confidence) {
+            current_confidence = annotation.classification_payloads[type_of_id].confidence;
+        }
+    }
+    return current_confidence;
+}
+exports.get_annotation_confidence = get_annotation_confidence;
+//Takes in an annotation and marks it either deprecated or not deprecated.
+function mark_deprecated(annotation, deprecated) {
+    annotation.deprecated = deprecated;
+}
+exports.mark_deprecated = mark_deprecated;
+//if the annotation confidence is less than the filter value then return true, else return false
+function filter_low(annotation_confidence, filter_value) {
+    if (annotation_confidence < filter_value)
+        return true;
+    return false;
+}
+exports.filter_low = filter_low;
+
+
+/***/ }),
+
+/***/ 478:
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.Configuration = void 0;
+var toolbox_1 = __webpack_require__(213);
+var annotation_operators_1 = __webpack_require__(65);
+var AllowedToolboxItem;
+(function (AllowedToolboxItem) {
+    AllowedToolboxItem[AllowedToolboxItem["ModeSelect"] = 0] = "ModeSelect";
+    AllowedToolboxItem[AllowedToolboxItem["ZoomPan"] = 1] = "ZoomPan";
+    AllowedToolboxItem[AllowedToolboxItem["AnnotationResize"] = 2] = "AnnotationResize";
+    AllowedToolboxItem[AllowedToolboxItem["AnnotationID"] = 3] = "AnnotationID";
+    AllowedToolboxItem[AllowedToolboxItem["RecolorActive"] = 4] = "RecolorActive";
+    AllowedToolboxItem[AllowedToolboxItem["ClassCounter"] = 5] = "ClassCounter";
+    AllowedToolboxItem[AllowedToolboxItem["KeypointSlider"] = 6] = "KeypointSlider";
+    AllowedToolboxItem[AllowedToolboxItem["SubmitButtons"] = 7] = "SubmitButtons"; // 7
+})(AllowedToolboxItem || (AllowedToolboxItem = {}));
+var Configuration = /** @class */ (function () {
+    function Configuration() {
+        var kwargs = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            kwargs[_i] = arguments[_i];
+        }
+        this.toolbox_map = new Map([
+            [AllowedToolboxItem.ModeSelect, toolbox_1.ModeSelectionToolboxItem],
+            [AllowedToolboxItem.ZoomPan, toolbox_1.ZoomPanToolboxItem],
+            [AllowedToolboxItem.AnnotationResize, toolbox_1.AnnotationResizeItem],
+            [AllowedToolboxItem.AnnotationID, toolbox_1.AnnotationIDToolboxItem],
+            [AllowedToolboxItem.RecolorActive, toolbox_1.RecolorActiveItem],
+            [AllowedToolboxItem.ClassCounter, toolbox_1.ClassCounterToolboxItem],
+            [AllowedToolboxItem.KeypointSlider, toolbox_1.KeypointSliderItem],
+            [AllowedToolboxItem.SubmitButtons, toolbox_1.SubmitButtons]
+        ]);
+        //Change the order of the toolbox items here to change the order they show up in the toolbox
+        this.default_toolbox_item_order = [
+            AllowedToolboxItem.ModeSelect,
+            AllowedToolboxItem.ZoomPan,
+            AllowedToolboxItem.AnnotationResize,
+            AllowedToolboxItem.AnnotationID,
+            AllowedToolboxItem.RecolorActive,
+            AllowedToolboxItem.ClassCounter,
+            [AllowedToolboxItem.KeypointSlider, {
+                    "name": "Filter Low Confidence",
+                    "filter_function": annotation_operators_1.filter_low,
+                    "confidence_function": annotation_operators_1.get_annotation_confidence,
+                    "mark_deprecated": annotation_operators_1.mark_deprecated,
+                    "default_value": 0.05,
+                    "keybinds": {
+                        "increment": "2",
+                        "decrement": "1"
+                    }
+                }],
+            AllowedToolboxItem.SubmitButtons,
+        ];
+        this.default_keybinds = {
+            "annotation_size_small": "s",
+            "annotation_size_large": "l",
+            "annotation_size_plus": "=",
+            "annotation_size_minus": "-",
+            "annotation_vanish": "v" //The v Key by default
+        };
+        this.change_zoom_keybind = "r";
+        this.create_point_annotation_keybind = "c";
+        this.default_annotation_size = 6;
+        this.delete_annotation_keybind = "d";
+        this.filter_annotations_on_load = false;
+        this.switch_subtask_keybind = "z";
+        this.toggle_annotation_mode_keybind = "u";
+        this.modify_config.apply(this, kwargs);
+    }
+    Configuration.prototype.modify_config = function () {
+        var kwargs = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            kwargs[_i] = arguments[_i];
+        }
+        //we don't know how many arguments we'll recieve, so loop through all of the elements in kwargs
+        for (var i = 0; i < kwargs.length; i++) {
+            //for every key: value pair, overwrite them/add them to the config
+            for (var key in kwargs[i]) {
+                this[key] = kwargs[i][key];
+            }
+        }
+    };
+    Configuration.annotation_gradient_default = false;
+    return Configuration;
+}());
+exports.Configuration = Configuration;
+
+
+/***/ }),
+
+/***/ 548:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+var __webpack_unused_export__;
+
+/*
+This file is designed to hold all the functions
+required for drawing to the canvas
+*/
+__webpack_unused_export__ = ({ value: true });
+__webpack_unused_export__ = exports.ws = void 0;
+/*recieves a base color and applies a gradient to it based on its confidence
+The reason for passing in the get confidence function is so that we can apply
+a gradient based on diffrent confidence statistics if we choose to do so*/
+function apply_gradient(annotation_object, base_color, get_annotation_confidence, gradient_maximum) {
+    //if the gradient toggle is checked off, then don't apply a gradient
+    if ($("#gradient-toggle").prop("checked") == false) {
+        return base_color;
+    }
+    if (annotation_object.classification_payloads == null) {
+        return base_color;
+    }
+    var annotation_confidence = get_annotation_confidence(annotation_object);
+    //if the annotation confidence is greater than the max gradient endpoint, then
+    //don't apply a gradient
+    if (annotation_confidence > gradient_maximum) {
+        return base_color;
+    }
+    var base_color_hex = color_to_hex(base_color);
+    //gradient_quantity is how strong you want the gradient to be
+    //made it a variable to make it easy to change in the future
+    var gradient_quantity = 0.85;
+    //Have the gradient color be a lightened version of the base color that is gradient_quantity% white
+    //and the remaining percent is base color
+    //Decimal numbers
+    var grad_r = Math.round(((1 - gradient_quantity) * (parseInt(base_color_hex.slice(1, 3), 16))) + gradient_quantity * 255);
+    var grad_g = Math.round(((1 - gradient_quantity) * (parseInt(base_color_hex.slice(3, 5), 16))) + gradient_quantity * 255);
+    var grad_b = Math.round(((1 - gradient_quantity) * (parseInt(base_color_hex.slice(5, 7), 16))) + gradient_quantity * 255);
+    //Grab individual r g b values from the hex string and convert them to decimal
+    var r = parseInt(base_color_hex.slice(1, 3), 16);
+    var g = parseInt(base_color_hex.slice(3, 5), 16);
+    var b = parseInt(base_color_hex.slice(5, 7), 16);
+    //Apply a linear gradient based on the confidence
+    var new_r = Math.round((1 - (annotation_confidence / gradient_maximum)) * grad_r + (annotation_confidence / gradient_maximum) * r);
+    var new_g = Math.round((1 - (annotation_confidence / gradient_maximum)) * grad_g + (annotation_confidence / gradient_maximum) * g);
+    var new_b = Math.round((1 - (annotation_confidence / gradient_maximum)) * grad_b + (annotation_confidence / gradient_maximum) * b);
+    //Turn the new rgb values to a hexadecimal version
+    var new_r_hex = new_r.toString(16);
+    var new_g_hex = new_g.toString(16);
+    var new_b_hex = new_b.toString(16);
+    //If the hex value is a single digit pad the front with a 0 to 
+    //ensure its two digits long
+    if (new_r_hex.length == 1) {
+        new_r_hex = "0" + new_r.toString(16);
+    }
+    if (new_g_hex.length == 1) {
+        new_g_hex = "0" + new_g.toString(16);
+    }
+    if (new_b_hex.length == 1) {
+        new_b_hex = "0" + new_b.toString(16);
+    }
+    var final_hex = "#".concat(new_r_hex, new_g_hex, new_b_hex);
+    //Since hex values should always be a string with length 7, if its not
+    //then return the base color just in case.
+    if (final_hex.length == 7) {
+        return final_hex;
+    }
+    else {
+        return base_color_hex;
+    }
+}
+exports.ws = apply_gradient;
+/*takes in a string of any valid css color and returns its hex value
+if given string is not a valid css color, returns the string passed in */
+function color_to_hex(color) {
+    var colors = { "aliceblue": "#f0f8ff", "antiquewhite": "#faebd7", "aqua": "#00ffff", "aquamarine": "#7fffd4", "azure": "#f0ffff",
+        "beige": "#f5f5dc", "bisque": "#ffe4c4", "black": "#000000", "blanchedalmond": "#ffebcd", "blue": "#0000ff", "blueviolet": "#8a2be2",
+        "brown": "#a52a2a", "burlywood": "#deb887",
+        "cadetblue": "#5f9ea0", "chartreuse": "#7fff00", "chocolate": "#d2691e", "coral": "#ff7f50", "cornflowerblue": "#6495ed",
+        "cornsilk": "#fff8dc", "crimson": "#dc143c", "cyan": "#00ffff",
+        "darkblue": "#00008b", "darkcyan": "#008b8b", "darkgoldenrod": "#b8860b", "darkgray": "#a9a9a9", "darkgreen": "#006400",
+        "darkkhaki": "#bdb76b", "darkmagenta": "#8b008b", "darkolivegreen": "#556b2f", "darkorange": "#ff8c00", "darkorchid": "#9932cc",
+        "darkred": "#8b0000", "darksalmon": "#e9967a", "darkseagreen": "#8fbc8f", "darkslateblue": "#483d8b", "darkslategray": "#2f4f4f",
+        "darkturquoise": "#00ced1", "darkviolet": "#9400d3", "deeppink": "#ff1493", "deepskyblue": "#00bfff", "dimgray": "#696969",
+        "dodgerblue": "#1e90ff",
+        "firebrick": "#b22222", "floralwhite": "#fffaf0", "forestgreen": "#228b22", "fuchsia": "#ff00ff",
+        "gainsboro": "#dcdcdc", "ghostwhite": "#f8f8ff", "gold": "#ffd700", "goldenrod": "#daa520", "gray": "#808080", "green": "#008000",
+        "greenyellow": "#adff2f",
+        "honeydew": "#f0fff0", "hotpink": "#ff69b4",
+        "indianred ": "#cd5c5c", "indigo": "#4b0082", "ivory": "#fffff0",
+        "khaki": "#f0e68c",
+        "lavender": "#e6e6fa", "lavenderblush": "#fff0f5", "lawngreen": "#7cfc00", "lemonchiffon": "#fffacd", "lightblue": "#add8e6",
+        "lightcoral": "#f08080", "lightcyan": "#e0ffff", "lightgoldenrodyellow": "#fafad2", "lightgrey": "#d3d3d3", "lightgreen": "#90ee90",
+        "lightpink": "#ffb6c1", "lightsalmon": "#ffa07a", "lightseagreen": "#20b2aa", "lightskyblue": "#87cefa", "lightslategray": "#778899",
+        "lightsteelblue": "#b0c4de", "lightyellow": "#ffffe0", "lime": "#00ff00", "limegreen": "#32cd32", "linen": "#faf0e6",
+        "magenta": "#ff00ff", "maroon": "#800000", "mediumaquamarine": "#66cdaa", "mediumblue": "#0000cd", "mediumorchid": "#ba55d3",
+        "mediumpurple": "#9370d8", "mediumseagreen": "#3cb371", "mediumslateblue": "#7b68ee", "mediumspringgreen": "#00fa9a",
+        "mediumturquoise": "#48d1cc", "mediumvioletred": "#c71585", "midnightblue": "#191970", "mintcream": "#f5fffa", "mistyrose": "#ffe4e1",
+        "moccasin": "#ffe4b5",
+        "navajowhite": "#ffdead", "navy": "#000080",
+        "oldlace": "#fdf5e6", "olive": "#808000", "olivedrab": "#6b8e23", "orange": "#ffa500", "orangered": "#ff4500", "orchid": "#da70d6",
+        "palegoldenrod": "#eee8aa", "palegreen": "#98fb98", "paleturquoise": "#afeeee", "palevioletred": "#d87093", "papayawhip": "#ffefd5",
+        "peachpuff": "#ffdab9", "peru": "#cd853f", "pink": "#ffc0cb", "plum": "#dda0dd", "powderblue": "#b0e0e6", "purple": "#800080",
+        "rebeccapurple": "#663399", "red": "#ff0000", "rosybrown": "#bc8f8f", "royalblue": "#4169e1",
+        "saddlebrown": "#8b4513", "salmon": "#fa8072", "sandybrown": "#f4a460", "seagreen": "#2e8b57", "seashell": "#fff5ee", "sienna": "#a0522d",
+        "silver": "#c0c0c0", "skyblue": "#87ceeb", "slateblue": "#6a5acd", "slategray": "#708090", "snow": "#fffafa", "springgreen": "#00ff7f",
+        "steelblue": "#4682b4",
+        "tan": "#d2b48c", "teal": "#008080", "thistle": "#d8bfd8", "tomato": "#ff6347", "turquoise": "#40e0d0",
+        "violet": "#ee82ee",
+        "wheat": "#f5deb3", "white": "#ffffff", "whitesmoke": "#f5f5f5",
+        "yellow": "#ffff00", "yellowgreen": "#9acd32" };
+    if (typeof colors[color.toLowerCase()] != 'undefined') {
+        return colors[color.toLowerCase()];
+    }
+    return color;
+}
+__webpack_unused_export__ = color_to_hex;
+
+
+/***/ }),
+
+/***/ 848:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+var __webpack_unused_export__;
+
+__webpack_unused_export__ = ({ value: true });
+exports.Z = void 0;
+var GeometricUtils = /** @class */ (function () {
+    function GeometricUtils() {
+    }
+    GeometricUtils.l2_norm = function (pt1, pt2) {
+        var ndim = pt1.length;
+        var sq = 0;
+        for (var i = 0; i < ndim; i++) {
+            sq += (pt1[i] - pt2[i]) * (pt1[i] - pt2[i]);
+        }
+        return Math.sqrt(sq);
+    };
+    // Get the point at a certain proportion of the segment between two points in a polygon
+    GeometricUtils.interpolate_poly_segment = function (pts, i, prop) {
+        var pt1 = pts[i % pts.length];
+        var pt2 = pts[(i + 1) % pts.length];
+        return [
+            pt1[0] * (1.0 - prop) + pt2[0] * prop,
+            pt1[1] * (1.0 - prop) + pt2[1] * prop
+        ];
+    };
+    // Given two points, return the line that goes through them in the form of
+    //    ax + by + c = 0
+    GeometricUtils.get_line_equation_through_points = function (p1, p2) {
+        var a = (p2[1] - p1[1]);
+        var b = (p1[0] - p2[0]);
+        // If the points are the same, no line can be inferred. Return null
+        if ((a == 0) && (b == 0))
+            return null;
+        var c = p1[1] * (p2[0] - p1[0]) - p1[0] * (p2[1] - p1[1]);
+        return {
+            "a": a,
+            "b": b,
+            "c": c
+        };
+    };
+    // Given a line segment in the form of ax + by + c = 0 and two endpoints for it,
+    //   return the point on the segment that is closest to the reference point, as well
+    //   as the distance away
+    GeometricUtils.get_nearest_point_on_segment = function (ref_x, ref_y, eq, kp1, kp2) {
+        //check to make sure eq exists
+        if (eq == null)
+            return null;
+        // For convenience
+        var a = eq["a"];
+        var b = eq["b"];
+        var c = eq["c"];
+        // Where is that point on the line, exactly?
+        var nrx = (b * (b * ref_x - a * ref_y) - a * c) / (a * a + b * b);
+        var nry = (a * (a * ref_y - b * ref_x) - b * c) / (a * a + b * b);
+        // Where along the segment is that point?
+        var xprop = 0.0;
+        if (kp2[0] != kp1[0]) {
+            xprop = (nrx - kp1[0]) / (kp2[0] - kp1[0]);
+        }
+        var yprop = 0.0;
+        if (kp2[1] != kp1[1]) {
+            yprop = (nry - kp1[1]) / (kp2[1] - kp1[1]);
+        }
+        // If the point is at an end of the segment, just return null
+        if ((xprop < 0) || (xprop > 1) || (yprop < 0) || (yprop > 1)) {
+            return null;
+        }
+        // Distance from point to line
+        var dst = Math.abs(a * ref_x + b * ref_y + c) / Math.sqrt(a * a + b * b);
+        // Proportion of the length of segment from p1 to the nearest point
+        var seg_length = Math.sqrt((kp2[0] - kp1[0]) * (kp2[0] - kp1[0]) + (kp2[1] - kp1[1]) * (kp2[1] - kp1[1]));
+        var kprop = Math.sqrt((nrx - kp1[0]) * (nrx - kp1[0]) + (nry - kp1[1]) * (nry - kp1[1])) / seg_length;
+        // return object with info about the point
+        return {
+            "dst": dst,
+            "prop": kprop
+        };
+    };
+    // Return the point on a polygon that's closest to a reference along with its distance
+    GeometricUtils.get_nearest_point_on_polygon = function (ref_x, ref_y, spatial_payload, dstmax, include_segments) {
+        if (dstmax === void 0) { dstmax = Infinity; }
+        if (include_segments === void 0) { include_segments = false; }
+        var poly_pts = spatial_payload;
+        // Initialize return value to null object
+        var ret = {
+            "access": null,
+            "distance": null,
+            "point": null
+        };
+        if (!include_segments) {
+            // Look through polygon points one by one 
+            //    no need to look at last, it's the same as first
+            for (var kpi = 0; kpi < poly_pts.length; kpi++) {
+                var kp = poly_pts[kpi];
+                // Distance is measured with l2 norm
+                var kpdst = Math.sqrt(Math.pow(kp[0] - ref_x, 2) + Math.pow(kp[1] - ref_y, 2));
+                // If this a minimum distance so far, store it
+                if (ret["distance"] == null || kpdst < ret["distance"]) {
+                    ret["access"] = kpi;
+                    ret["distance"] = kpdst;
+                    ret["point"] = poly_pts[kpi];
+                }
+            }
+            return ret;
+        }
+        else {
+            for (var kpi = 0; kpi < poly_pts.length - 1; kpi++) {
+                var kp1 = poly_pts[kpi];
+                var kp2 = poly_pts[kpi + 1];
+                var eq = GeometricUtils.get_line_equation_through_points(kp1, kp2);
+                var nr = GeometricUtils.get_nearest_point_on_segment(ref_x, ref_y, eq, kp1, kp2);
+                if ((nr != null) && (nr["dst"] < dstmax) && (ret["distance"] == null || nr["dst"] < ret["distance"])) {
+                    ret["access"] = "" + (kpi + nr["prop"]);
+                    ret["distance"] = nr["dst"];
+                    ret["point"] = GeometricUtils.interpolate_poly_segment(poly_pts, kpi, nr["prop"]);
+                }
+            }
+            return ret;
+        }
+    };
+    GeometricUtils.get_nearest_point_on_bounding_box = function (ref_x, ref_y, spatial_payload, dstmax) {
+        if (dstmax === void 0) { dstmax = Infinity; }
+        var ret = {
+            "access": null,
+            "distance": null,
+            "point": null
+        };
+        for (var bbi = 0; bbi < 2; bbi++) {
+            for (var bbj = 0; bbj < 2; bbj++) {
+                var kp = [spatial_payload[bbi][0], spatial_payload[bbj][1]];
+                var kpdst = Math.sqrt(Math.pow(kp[0] - ref_x, 2) + Math.pow(kp[1] - ref_y, 2));
+                if (kpdst < dstmax && (ret["distance"] == null || kpdst < ret["distance"])) {
+                    ret["access"] = "".concat(bbi).concat(bbj);
+                    ret["distance"] = kpdst;
+                    ret["point"] = kp;
+                }
+            }
+        }
+        return ret;
+    };
+    GeometricUtils.get_nearest_point_on_bbox3 = function (ref_x, ref_y, frame, spatial_payload, dstmax) {
+        if (dstmax === void 0) { dstmax = Infinity; }
+        var ret = {
+            "access": null,
+            "distance": null,
+            "point": null
+        };
+        for (var bbi = 0; bbi < 2; bbi++) {
+            for (var bbj = 0; bbj < 2; bbj++) {
+                var kp = [spatial_payload[bbi][0], spatial_payload[bbj][1]];
+                var kpdst = Math.sqrt(Math.pow(kp[0] - ref_x, 2) + Math.pow(kp[1] - ref_y, 2));
+                if (kpdst < dstmax && (ret["distance"] == null || kpdst < ret["distance"])) {
+                    ret["access"] = "".concat(bbi).concat(bbj);
+                    ret["distance"] = kpdst;
+                    ret["point"] = kp;
+                }
+            }
+        }
+        var min_k = 0;
+        var min = spatial_payload[0][2];
+        var max_k = 1;
+        var max = spatial_payload[1][2];
+        if (max < min) {
+            var tmp = min_k;
+            min_k = max_k;
+            max_k = tmp;
+            tmp = min;
+            min = max;
+            max = tmp;
+        }
+        if (frame == min) {
+            ret["access"] += "" + min_k;
+        }
+        else if (frame == max) {
+            ret["access"] += "" + max_k;
+        }
+        return ret;
+    };
+    GeometricUtils.get_nearest_point_on_tbar = function (ref_x, ref_y, spatial_payload, dstmax) {
+        if (dstmax === void 0) { dstmax = Infinity; }
+        // TODO intelligently test against three grabbable points
+        var ret = {
+            "access": null,
+            "distance": null,
+            "point": null
+        };
+        for (var tbi = 0; tbi < 2; tbi++) {
+            var kp = [spatial_payload[tbi][0], spatial_payload[tbi][1]];
+            var kpdst = Math.sqrt(Math.pow(kp[0] - ref_x, 2) + Math.pow(kp[1] - ref_y, 2));
+            if (kpdst < dstmax && (ret["distance"] == null || kpdst < ret["distance"])) {
+                ret["access"] = "".concat(tbi).concat(tbi);
+                ret["distance"] = kpdst;
+                ret["point"] = kp;
+            }
+        }
+        return ret;
+    };
+    return GeometricUtils;
+}());
+exports.Z = GeometricUtils;
+
+
+/***/ }),
+
+/***/ 918:
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+
+"use strict";
+var __webpack_unused_export__;
+
+__webpack_unused_export__ = ({ value: true });
+exports.k = void 0;
+var toolbox_1 = __webpack_require__(213);
+var version_1 = __webpack_require__(345);
+var blobs_1 = __webpack_require__(769);
+var HTMLBuilder = /** @class */ (function () {
+    function HTMLBuilder() {
+    }
+    HTMLBuilder.add_style_to_document = function (ulabel) {
+        var head = document.head || document.getElementsByTagName('head')[0];
+        var style = document.createElement('style');
+        head.appendChild(style);
+        style.appendChild(document.createTextNode((0, blobs_1.get_init_style)(ulabel.config["container_id"])));
+    };
+    HTMLBuilder.get_md_button = function (md_key, md_name, svg_blob, cur_md, subtasks) {
+        var sel = "";
+        var href = " href=\"#\"";
+        if (cur_md == md_key) {
+            sel = " sel";
+            href = "";
+        }
+        var subtask_classes = "";
+        for (var st_key in subtasks) {
+            if (subtasks[st_key]["allowed_modes"].includes(md_key)) {
+                subtask_classes += " md-en4--" + st_key;
+            }
+        }
+        return "<div class=\"mode-opt\">\n            <a".concat(href, " id=\"md-btn--").concat(md_key, "\" class=\"md-btn").concat(sel).concat(subtask_classes, " invert-this-svg\" amdname=\"").concat(md_name, "\">\n                ").concat(svg_blob, "\n            </a>\n        </div>");
+    };
+    HTMLBuilder.get_images_html = function (ulabel) {
+        var images_html = "";
+        var display;
+        for (var i = 0; i < ulabel.config["image_data"].frames.length; i++) {
+            if (i != 0) {
+                display = "none";
+            }
+            else {
+                display = "block";
+            }
+            images_html += "\n                <img id=\"".concat(ulabel.config["image_id_pfx"], "__").concat(i, "\" src=\"").concat(ulabel.config["image_data"].frames[i], "\" class=\"imwrap_cls ").concat(ulabel.config["imgsz_class"], " image_frame\" style=\"z-index: 50; display: ").concat(display, ";\" />\n            ");
+        }
+        return images_html;
+    };
+    HTMLBuilder.get_frame_annotation_dialogs = function (ulabel) {
+        var frame_annotation_dialog = "";
+        var tot = 0;
+        for (var st_key in ulabel.subtasks) {
+            if (!ulabel.subtasks[st_key].allowed_modes.includes('whole-image') &&
+                !ulabel.subtasks[st_key].allowed_modes.includes('global')) {
+                continue;
+            }
+            tot += 1;
+        }
+        var ind = 0;
+        for (var st_key in ulabel.subtasks) {
+            if (!ulabel.subtasks[st_key].allowed_modes.includes('whole-image') &&
+                !ulabel.subtasks[st_key].allowed_modes.includes('global')) {
+                continue;
+            }
+            frame_annotation_dialog += "\n                <div id=\"fad_st__".concat(st_key, "\" class=\"frame_annotation_dialog fad_st__").concat(st_key, " fad_ind__").concat(tot - ind - 1, "\">\n                    <div class=\"hide_overflow_container\">\n                        <div class=\"row_container\">\n                            <div class=\"fad_row name\">\n                                <div class=\"fad_row_inner\">\n                                    <div class=\"fad_st_name\">").concat(ulabel.subtasks[st_key].display_name, "</div>\n                                </div>\n                            </div>\n                            <div class=\"fad_row add\">\n                                <div class=\"fad_row_inner\">\n                                    <div class=\"fad_st_add\">\n                                        <a class=\"add-glob-button\" href=\"#\">+</a>\n                                    </div>\n                                </div>\n                            </div><div class=\"fad_annotation_rows\"></div>\n                        </div>\n                    </div>\n                </div>\n            ");
+            ind += 1;
+            if (ind > 4) {
+                throw new Error("At most 4 subtasks can have allow 'whole-image' or 'global' annotations.");
+            }
+        }
+        return frame_annotation_dialog;
+    };
+    HTMLBuilder.prep_window_html = function (ulabel, toolbox_item_order) {
+        // Bring image and annotation scaffolding in
+        // TODO multi-image with spacing etc.
+        if (toolbox_item_order === void 0) { toolbox_item_order = null; }
+        // const tabs = ULabel.get_toolbox_tabs(ul);
+        var images = HTMLBuilder.get_images_html(ulabel);
+        var frame_annotation_dialogs = HTMLBuilder.get_frame_annotation_dialogs(ulabel);
+        // const toolbox = configuration.create_toolbox();
+        var toolbox = new toolbox_1.Toolbox([], toolbox_1.Toolbox.create_toolbox(ulabel, toolbox_item_order));
+        var tool_html = toolbox.setup_toolbox_html(ulabel, frame_annotation_dialogs, images, version_1.ULABEL_VERSION);
+        // Set the container's html to the toolbox html we just created
+        $("#" + ulabel.config["container_id"]).html(tool_html);
+        // Build toolbox for the current subtask only
+        var current_subtask = Object.keys(ulabel.subtasks)[0];
+        // Initialize toolbox based on configuration
+        var sp_id = ulabel.config["toolbox_id"];
+        var curmd = ulabel.subtasks[current_subtask]["state"]["annotation_mode"];
+        var md_buttons = [
+            HTMLBuilder.get_md_button("bbox", "Bounding Box", blobs_1.BBOX_SVG, curmd, ulabel.subtasks),
+            HTMLBuilder.get_md_button("point", "Point", blobs_1.POINT_SVG, curmd, ulabel.subtasks),
+            HTMLBuilder.get_md_button("polygon", "Polygon", blobs_1.POLYGON_SVG, curmd, ulabel.subtasks),
+            HTMLBuilder.get_md_button("tbar", "T-Bar", blobs_1.TBAR_SVG, curmd, ulabel.subtasks),
+            HTMLBuilder.get_md_button("polyline", "Polyline", blobs_1.POLYLINE_SVG, curmd, ulabel.subtasks),
+            HTMLBuilder.get_md_button("contour", "Contour", blobs_1.CONTOUR_SVG, curmd, ulabel.subtasks),
+            HTMLBuilder.get_md_button("bbox3", "Bounding Cube", blobs_1.BBOX3_SVG, curmd, ulabel.subtasks),
+            HTMLBuilder.get_md_button("whole-image", "Whole Frame", blobs_1.WHOLE_IMAGE_SVG, curmd, ulabel.subtasks),
+            HTMLBuilder.get_md_button("global", "Global", blobs_1.GLOBAL_SVG, curmd, ulabel.subtasks),
+        ];
+        // Append but don't wait
+        $("#" + sp_id + " .toolbox_inner_cls .mode-selection").append(md_buttons.join("<!-- -->"));
+        // Show current mode label
+        ulabel.show_annotation_mode(null);
+        // Make sure that entire toolbox is shown
+        if ($("#" + ulabel.config["toolbox_id"] + " .toolbox_inner_cls").height() > $("#" + ulabel.config["container_id"]).height()) {
+            $("#" + ulabel.config["toolbox_id"]).css("overflow-y", "scroll");
+        }
+        ulabel.toolbox = toolbox;
+        // Check an array to see if it contains a ZoomPanToolboxItem
+        var contains_zoom_pan = function (array) {
+            //check if the array is empty
+            if (array.length == 0)
+                return false;
+            // Loop through everything in the array and check if its the ZoomPanToolboxItem
+            for (var idx in array) {
+                if (array[idx] instanceof toolbox_1.ZoomPanToolboxItem) {
+                    return true;
+                }
+            }
+            // If the ZoomPanToolboxItem wasn't found then return false
+            return false;
+        };
+        // Check if initial_crop exists and has the appropriate properties
+        var check_initial_crop = function (initial_crop) {
+            // If initial_crop doesn't exist, return false
+            if (initial_crop == null)
+                return false;
+            // If initial_crop has the appropriate properties, return true
+            if ("width" in initial_crop &&
+                "height" in initial_crop &&
+                "left" in initial_crop &&
+                "top" in initial_crop) {
+                return true;
+            }
+            // If initial_crop exists but doesn't have the appropriate properties,
+            // then raise an error and return false
+            ulabel.raise_error("initial_crop missing necessary properties. Ignoring.");
+            return false;
+        };
+        // Make sure the toolbox contains the ZoomPanToolboxItem
+        if (contains_zoom_pan(ulabel.toolbox.items)) {
+            // Make sure the initial_crop exists and contains the necessary properties
+            if (check_initial_crop(ulabel.config.initial_crop)) {
+                // Grab the initial crop button and rename it
+                var initial_crop_button = document.getElementById("recenter-button");
+                initial_crop_button.innerHTML = "Initial Crop";
+            }
+            else {
+                // Grab the whole image button and set its display to none
+                var whole_image_button = document.getElementById("recenter-whole-image-button");
+                whole_image_button.style.display = "none";
+            }
+        }
+    };
+    HTMLBuilder.get_idd_string = function (idd_id, width, center_coord, cl_opacity, class_ids, inner_rad, outer_rad, class_defs) {
+        // TODO noconflict
+        var dialog_html = "\n        <div id=\"".concat(idd_id, "\" class=\"id_dialog\" style=\"width: ").concat(width, "px; height: ").concat(width, "px;\">\n            <a class=\"id-dialog-clickable-indicator\" href=\"#\"></a>\n            <svg width=\"").concat(width, "\" height=\"").concat(width, "\">\n        ");
+        for (var i = 0; i < class_ids.length; i++) {
+            var srt_prop = 1 / class_ids.length;
+            var cum_prop = i / class_ids.length;
+            var srk_prop = 1 / class_ids.length;
+            var gap_prop = 1.0 - srk_prop;
+            var rad_back = inner_rad + 1.0 * (outer_rad - inner_rad) / 2;
+            var rad_frnt = inner_rad + srt_prop * (outer_rad - inner_rad) / 2;
+            var wdt_back = 1.0 * (outer_rad - inner_rad);
+            var wdt_frnt = srt_prop * (outer_rad - inner_rad);
+            var srk_back = 2 * Math.PI * rad_back * srk_prop;
+            var gap_back = 2 * Math.PI * rad_back * gap_prop;
+            var off_back = 2 * Math.PI * rad_back * cum_prop;
+            var srk_frnt = 2 * Math.PI * rad_frnt * srk_prop;
+            var gap_frnt = 2 * Math.PI * rad_frnt * gap_prop;
+            var off_frnt = 2 * Math.PI * rad_frnt * cum_prop;
+            var ths_id = class_ids[i];
+            var ths_col = class_defs[i]["color"];
+            // TODO should names also go on the id dialog?
+            // let ths_nam = class_defs[i]["name"];
+            dialog_html += "\n            <circle\n                r=\"".concat(rad_back, "\" cx=\"").concat(center_coord, "\" cy=\"").concat(center_coord, "\" \n                stroke=\"").concat(ths_col, "\" \n                fill-opacity=\"0\"\n                stroke-opacity=\"").concat(cl_opacity, "\"\n                stroke-width=\"").concat(wdt_back, "\"; \n                stroke-dasharray=\"").concat(srk_back, " ").concat(gap_back, "\" \n                stroke-dashoffset=\"").concat(off_back, "\" />\n            <circle\n                id=\"").concat(idd_id, "__circ_").concat(ths_id, "\"\n                r=\"").concat(rad_frnt, "\" cx=\"").concat(center_coord, "\" cy=\"").concat(center_coord, "\"\n                fill-opacity=\"0\"\n                stroke=\"").concat(ths_col, "\" \n                stroke-opacity=\"1.0\"\n                stroke-width=\"").concat(wdt_frnt, "\" \n                stroke-dasharray=\"").concat(srk_frnt, " ").concat(gap_frnt, "\" \n                stroke-dashoffset=\"").concat(off_frnt, "\" />\n            ");
+        }
+        dialog_html += "\n            </svg>\n            <div class=\"centcirc\"></div>\n        </div>";
+        return dialog_html;
+    };
+    HTMLBuilder.build_id_dialogs = function (ulabel) {
+        var full_toolbox_html = "<div class=\"toolbox-id-app-payload\">";
+        var width = ulabel.config.outer_diameter;
+        // TODO real names here!
+        var inner_rad = ulabel.config.inner_prop * width / 2;
+        var inner_diam = inner_rad * 2;
+        var outer_rad = 0.5 * width;
+        var inner_top = outer_rad - inner_rad;
+        var inner_lft = outer_rad - inner_rad;
+        var cl_opacity = 0.4;
+        var tbid = ulabel.config.toolbox_id;
+        var center_coord = width / 2;
+        for (var st in ulabel.subtasks) {
+            var idd_id = ulabel.subtasks[st]["state"]["idd_id"];
+            var idd_id_front = ulabel.subtasks[st]["state"]["idd_id_front"];
+            var subtask_dialog_container_jq = $("#dialogs__" + st);
+            var front_subtask_dialog_container_jq = $("#front_dialogs__" + st);
+            var dialog_html_v2 = HTMLBuilder.get_idd_string(idd_id, width, center_coord, cl_opacity, ulabel.subtasks[st]["class_ids"], inner_rad, outer_rad, ulabel.subtasks[st]["class_defs"]);
+            var front_dialog_html_v2 = HTMLBuilder.get_idd_string(idd_id_front, width, center_coord, cl_opacity, ulabel.subtasks[st]["class_ids"], inner_rad, outer_rad, ulabel.subtasks[st]["class_defs"]);
+            // TODO noconflict
+            var toolbox_html = "<div id=\"tb-id-app--".concat(st, "\" class=\"tb-id-app\">");
+            var class_ids = ulabel.subtasks[st]["class_ids"];
+            for (var i = 0; i < class_ids.length; i++) {
+                var this_id = class_ids[i];
+                var this_color = ulabel.subtasks[st]["class_defs"][i]["color"];
+                var this_name = ulabel.subtasks[st]["class_defs"][i]["name"];
+                var sel = "";
+                var href = ' href="#"';
+                if (i == 0) {
+                    sel = " sel";
+                    href = "";
+                }
+                if (ulabel.config["allow_soft_id"]) {
+                    var msg = "Only hard id is currently supported";
+                    throw new Error(msg);
+                }
+                else {
+                    toolbox_html += "\n                        <a".concat(href, " id=\"").concat(tbid, "_sel_").concat(this_id, "\" class=\"tbid-opt").concat(sel, "\">\n                            <div class=\"colprev ").concat(tbid, "_colprev_").concat(this_id, "\" style=\"background-color: ").concat(this_color, "\"></div> <span class=\"tb-cls-nam\">").concat(this_name, "</span>\n                        </a>\n                    ");
+                }
+            }
+            toolbox_html += "\n            </div>";
+            // Add dialog to the document
+            // front_subtask_dialog_container_jq.append(dialog_html);
+            // $("#" + ul.subtasks[st]["idd_id"]).attr("id", ul.subtasks[st]["idd_id_front"]);
+            front_subtask_dialog_container_jq.append(front_dialog_html_v2); // TODO(new3d) MOVE THIS TO GLOB BOX -- superimpose atop thee anchor already there when needed, no remove and add back
+            subtask_dialog_container_jq.append(dialog_html_v2);
+            // console.log(dialog_html);
+            // console.log(dialog_html_v2);
+            // Wait to add full toolbox
+            full_toolbox_html += toolbox_html;
+            ulabel.subtasks[st]["state"]["visible_dialogs"][idd_id] = {
+                "left": 0.0,
+                "top": 0.0,
+                "pin": "center"
+            };
+        }
+        // Add all toolbox html at once
+        $("#" + ulabel.config["toolbox_id"] + " div.id-toolbox-app").html(full_toolbox_html);
+        // Style revisions based on the size
+        var idci = $("#" + ulabel.config["container_id"] + " a.id-dialog-clickable-indicator");
+        idci.css({
+            "height": "".concat(width, "px"),
+            "width": "".concat(width, "px"),
+            "border-radius": "".concat(outer_rad, "px"),
+        });
+        var ccirc = $("#" + ulabel.config["container_id"] + " div.centcirc");
+        ccirc.css({
+            "position": "absolute",
+            "top": "".concat(inner_top, "px"),
+            "left": "".concat(inner_lft, "px"),
+            "width": "".concat(inner_diam, "px"),
+            "height": "".concat(inner_diam, "px"),
+            "background-color": "black",
+            "border-radius": "".concat(inner_rad, "px")
+        });
+    };
+    HTMLBuilder.build_edit_suggestion = function (ulabel) {
+        // TODO noconflict
+        // DONE Migrated to subtasks
+        for (var stkey in ulabel.subtasks) {
+            var local_id = "edit_suggestion__".concat(stkey);
+            var global_id = "global_edit_suggestion__".concat(stkey);
+            var subtask_dialog_container_jq = $("#dialogs__" + stkey);
+            // Local edit suggestion
+            subtask_dialog_container_jq.append("\n                <a href=\"#\" id=\"".concat(local_id, "\" class=\"edit_suggestion editable\"></a>\n            "));
+            $("#" + local_id).css({
+                "height": ulabel.config["edit_handle_size"] + "px",
+                "width": ulabel.config["edit_handle_size"] + "px",
+                "border-radius": ulabel.config["edit_handle_size"] / 2 + "px"
+            });
+            // Global edit suggestion
+            var id_edit = "";
+            var mcm_ind = "";
+            if (!ulabel.subtasks[stkey]["single_class_mode"]) {
+                id_edit = "--><a href=\"#\" class=\"reid_suggestion global_sub_suggestion gedit-target\"></a><!--";
+                mcm_ind = " mcm";
+            }
+            subtask_dialog_container_jq.append("\n                <div id=\"".concat(global_id, "\" class=\"global_edit_suggestion glob_editable gedit-target").concat(mcm_ind, "\">\n                    <a href=\"#\" class=\"move_suggestion global_sub_suggestion movable gedit-target\">\n                        <img class=\"movable gedit-target\" src=\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAOEAAADhCAMAAAAJbSJIAAAAdVBMVEX///8jHyAAAAD7+/sfGxwcFxhta2s3NDUEAABxcHBqaWnr6+seGRoSCw0yLzC0s7O6ubl4dncLAAN9fHz19fUsKCkWERInIyTW1dV5eHjBwMCko6ODgoJAPj7o5+jw7/BYVleLiopHRUXKysqtrK1PTE0/PD0MlkEbAAAF+ElEQVR4nO2d63aiMBRGIYJTWhyrKPZia2sv7/+IQ7QWYhLITcmXyf41yzWLOXs+GsDmHJLkqsz32X5+3X/yuhSkTEuyGLuMyzElKYVMxy7kUhRHwUaxGLuUyzA9CYaaYtEKhpkiIxii4pQVDO9ELc4FQ0uRSzC0FAUJhpXi7Y1QMJwUC5lgKClO5YJhpNgrGEKKwlU0pBQHEqTcQCv2LDIdReATVXqZOFO8HbtQU5QSRE5RMUHcFJUTRE1RYRVlFOFWVE1BPEVtQbRLv8Yig5miQYIHRZjlxijBgyLIRWMxdLMthzyOXbwKH+aCjeLH2OUrsJ1ZGM62Y5evwKK2MKwRTtNPq7P0c+zyFZisc2PBfD0Zu3wV7kpeUfSzyX+WZ3djF68Gr0jul5zO8v78dM5LEMFGMWUVyVMi+L1F8sR+mKcwgo1i1lUk98lEYDhJmBRhTtEj3RSbBCWGXUWoBCltik2CUsNWESxByinFg6DU8KQIlyDlrmwuB/lRUG7YKDb/EzOcVbTLakHI18Pxz3LD5OGLkMVqvDId0WMYCNEQn2iITzTEJxriEw3xiYb4REN8oiE+0RCfaIhPNMQnGuITDfGJhvhEQ3yiIT7RMABEe6LCojjfpzcD2pmvxC5flllLuSx3Y5d04KMqnh39uEy2L39aXrauDvtcVBZ7wxdkVpO1z5t5XteknpmP9Lk9LA95/uqyJqe85oetZcSwT+PU+VLWvqZ4V5fHEs0aitrOlzzzM8XOLlYTxW7vkp9bI5nN1vqKbHNWvvFP8Wyrta7iefeZf/s/2Y3W2op8e12+8eMKfWK34VoedAZQiPoH841Pe0BXqaBtRb0LVTwwZ+lT01UlbB9TTVE2rGN52aK1kJSolqJk5JFfjzvSGhVSlI5bqd8uXrc6b7LusWFFaYIpebhG6Yo8yMscUOwRvL9O7YpwbWGKijCCpopAgmaKUIImivI+euLn6N+5vGDhUz9YghS9FOWCMz8TpMylvf98inLB5naNqFPZ3p/vHjX+Nb67WJqixSwLlllp9zXhpLYZydCFTdGZYBP4u5XhticWTbqKfaeoLuWLleF36a6UVtFhgmma/bUy/Js5rOU0DMapoFeGPylWTgX9MkxJ1XdjYIZfhvRu5cvxIT0zLN8Sx0f0zTDNkr3D5flwRL8Msy+7kUCiQ/plSIcWBb+W/gfXwyR5DPaepjod1mWK5beVodP70qo9bpjPFlX3wO6eD3O758OVu+fDij2yq2f8wvYZf1U4esbnpvfJU8T8nqbi/3ZY37UJ5y+G9H2pIEEKWIq6CVKgFHsEJQlSgBTNBIEUTQVD+B3wgGCPIsjv8QcF0fdiKAhi7KeRzERXE0TeE6UoKNnXlvq/r01ZEHVvotZJ5v/+Uk5RJ0GK/3uEd+zccF1BhH3eTIr6ggh79Tspmggi9Fv8pqi3yLT43zOz29TmCVIeD31P/go2it+078niC8yL9a59v7vqIJ0v3v146OH7D326RXIB30Nq3FLnKfzN/M3YJbkl/F7uaIhPNMQnGuITDfGJhvhEQ3yiIT7REJ9oiE80xCca4hMN8YmG+ERDfKIhPtEQn2iISfDv5Q7+3eqnAapHRanhT9+Ef/tXB2kHqB4UZYa/jSF+bvDsoTsClzxJDTudL2ApsiNwmxTFhkxrD1SKZ0OMaYqidyM8sR8CpciMof5Jke/YXXLNWTnKisoLNpcD7hPRZyAn6mQt67oaJl8j3OhYDUuho0i8Z1FbGNbSDl6PeLcZijCzmzlxHeTtnQp41agqxWKkj3lbwXW5lfQ/DnJj+K6R6yPqX1QR1Bj9PzZGimavUhkL6WR3OepvNvAD7RSxEqRoKuIJJkmho4i0yLRoXDRwLhMsyiliJkhRTBE1QYpSirgJUhRWVMRVtMvgpR/tQs8zkCL2KXqkVxE/QUrPcqPzIjGfkV40wkiQIkkxlAQpwhTDSZAiGMwUUoIUbkUNK0HKWYqhJUhhFEMUZG7gwjtFj/ymGGaClJ8UQ02QsiBZmpm/KByB+T7bX3ko8T9Zz1H5wFZx8QAAAABJRU5ErkJggg==\">\n                    </a><!--\n                    ").concat(id_edit, "\n                    --><a href=\"#\" class=\"delete_suggestion global_sub_suggestion gedit-target\">\n                        <span class=\"bigx gedit-target\">&#215;</span>\n                    </a>\n                </div>\n            "));
+            // Register these dialogs with each subtask
+            ulabel.subtasks[stkey]["state"]["visible_dialogs"][local_id] = {
+                "left": 0.0,
+                "top": 0.0,
+                "pin": "center"
+            };
+            ulabel.subtasks[stkey]["state"]["visible_dialogs"][global_id] = {
+                "left": 0.0,
+                "top": 0.0,
+                "pin": "center"
+            };
+        }
+    };
+    HTMLBuilder.build_confidence_dialog = function (ulabel) {
+        for (var stkey in ulabel.subtasks) {
+            var local_id = "annotation_confidence__".concat(stkey);
+            var global_id = "global_annotation_confidence__".concat(stkey);
+            var subtask_dialog_container_jq = $("#dialogs__" + stkey);
+            var global_edit_suggestion_jq = $("#global_edit_suggestion__" + stkey);
+            //Local confidence dialog
+            subtask_dialog_container_jq.append("\n                <p id=\"".concat(local_id, "\" class=\"annotation-confidence editable\"></p>\n            "));
+            $("#" + local_id).css({
+                "height": ulabel.config["edit_handle_size"] + "px",
+                "width": ulabel.config["edit_handle_size"] + "px",
+            });
+            // Global edit suggestion
+            var id_edit = "";
+            var mcm_ind = "";
+            if (!ulabel.subtasks[stkey]["single_class_mode"]) {
+                id_edit = "--><a href=\"#\" class=\"reid_suggestion global_sub_suggestion gedit-target\"></a><!--";
+                mcm_ind = " mcm";
+            }
+            global_edit_suggestion_jq.append("\n                <div id=\"".concat(global_id, "\" class=\"annotation-confidence gedit-target").concat(mcm_ind, "\">\n                    <p class=\"annotation-confidence-title\" style=\"margin: 0.25em; margin-top: 1em; padding-top: 0.3em; opacity: 1;\">Annotation Confidence:</p>\n                    <p class=\"annotation-confidence-value\" style=\"margin: 0.25em; opacity: 1;\">\n                    ").concat(ulabel.subtasks[ulabel.state["current_subtask"]]["active_annotation"], "\n                    </p>\n                </div>\n            "));
+            // Style the dialog
+            $("#" + global_id).css({
+                "background-color": "black",
+                "color": "white",
+                "opacity": "0.6",
+                "height": "3em",
+                "width": "14.5em",
+                "margin-top": "-9.5em",
+                "border-radius": "1em",
+                "font-size": "1.2em",
+                "margin-left": "-1.4em",
+            });
+        }
+    };
+    return HTMLBuilder;
+}());
+exports.k = HTMLBuilder;
+
+
+/***/ }),
+
+/***/ 701:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+var __webpack_unused_export__;
+
+__webpack_unused_export__ = ({ value: true });
+exports.W = void 0;
+var ULabelSubtask = /** @class */ (function () {
+    function ULabelSubtask(display_name, classes, allowed_modes, resume_from, task_meta, annotation_meta, read_only, inactive_opacity) {
+        if (inactive_opacity === void 0) { inactive_opacity = 0.4; }
+        this.display_name = display_name;
+        this.classes = classes;
+        this.allowed_modes = allowed_modes;
+        this.resume_from = resume_from;
+        this.task_meta = task_meta;
+        this.annotation_meta = annotation_meta;
+        this.read_only = read_only;
+        this.inactive_opacity = inactive_opacity;
+        this.class_ids = [];
+        this.actions = {
+            "stream": [],
+            "undone_stack": []
+        };
+    }
+    ULabelSubtask.from_json = function (subtask_key, subtask_json) {
+        var ret = new ULabelSubtask(subtask_json["display_name"], subtask_json["classes"], subtask_json["allowed_modes"], subtask_json["resume_from"], subtask_json["task_meta"], subtask_json["annotation_meta"]);
+        ret.read_only = ("read_only" in subtask_json) && (subtask_json["read_only"] === true);
+        if ("inactive_opacity" in subtask_json && typeof subtask_json["inactive_opacity"] == "number") {
+            ret.inactive_opacity = Math.min(Math.max(subtask_json["inactive_opacity"], 0.0), 1.0);
+        }
+        return ret;
+    };
+    return ULabelSubtask;
+}());
+exports.W = ULabelSubtask;
+//export type ULabelSubtasks = { [key: string]: ULabelSubtask };
+
+
+/***/ }),
+
+/***/ 213:
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+"use strict";
+
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = function (d, b) {
+        extendStatics = Object.setPrototypeOf ||
+            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
+        return extendStatics(d, b);
+    };
+    return function (d, b) {
+        if (typeof b !== "function" && b !== null)
+            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __generator = (this && this.__generator) || function (thisArg, body) {
+    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
+    return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
+    function verb(n) { return function (v) { return step([n, v]); }; }
+    function step(op) {
+        if (f) throw new TypeError("Generator is already executing.");
+        while (_) try {
+            if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
+            if (y = 0, t) op = [op[0] & 2, t.value];
+            switch (op[0]) {
+                case 0: case 1: t = op; break;
+                case 4: _.label++; return { value: op[1], done: false };
+                case 5: _.label++; y = op[1]; op = [0]; continue;
+                case 7: op = _.ops.pop(); _.trys.pop(); continue;
+                default:
+                    if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
+                    if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
+                    if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
+                    if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
+                    if (t[2]) _.ops.pop();
+                    _.trys.pop(); continue;
+            }
+            op = body.call(thisArg, _);
+        } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
+        if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
+    }
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.SubmitButtons = exports.KeypointSliderItem = exports.RecolorActiveItem = exports.AnnotationResizeItem = exports.ClassCounterToolboxItem = exports.AnnotationIDToolboxItem = exports.ZoomPanToolboxItem = exports.ModeSelectionToolboxItem = exports.ToolboxItem = exports.ToolboxTab = exports.Toolbox = void 0;
+var __1 = __webpack_require__(138);
+var configuration_1 = __webpack_require__(478);
+var toolboxDividerDiv = "<div class=toolbox-divider></div>";
+/** Chains the replaceAll method and the toLowerCase method.
+ *  Optionally concatenates a string at the end of the method.
+  */
+String.prototype.replaceLowerConcat = function (before, after, concat_string) {
+    if (concat_string === void 0) { concat_string = null; }
+    if (typeof (concat_string) === "string") {
+        return this.replaceAll(before, after).toLowerCase().concat(concat_string);
+    }
+    return this.replaceAll(before, after).toLowerCase();
+};
+/**
+ * Manager for toolbox. Contains ToolboxTab items.
+ */
+var Toolbox = /** @class */ (function () {
+    // public tabs: ToolboxTab[] = [];
+    // public items: ToolboxItem[] = []; 
+    function Toolbox(tabs, items) {
+        if (tabs === void 0) { tabs = []; }
+        if (items === void 0) { items = []; }
+        this.tabs = tabs;
+        this.items = items;
+    }
+    Toolbox.create_toolbox = function (ulabel, toolbox_item_order) {
+        // Grab the default toolbox if one wasn't provided
+        if (toolbox_item_order == null) {
+            toolbox_item_order = ulabel.config.default_toolbox_item_order;
+        }
+        // There's no point to having an empty toolbox, so throw an error if the toolbox is empty.
+        // The toolbox won't actually break if there aren't any items in the toolbox, so this
+        // error isn't strictly neccesary.
+        if (toolbox_item_order.length === 0) {
+            throw new Error("No Toolbox Items Given");
+        }
+        var toolbox_instance_list = [];
+        // Go through the items in toolbox_item_order and add their instance to the toolbox instance list
+        for (var i = 0; i < toolbox_item_order.length; i++) {
+            var args = void 0, toolbox_key = void 0;
+            // If the value of toolbox_item_order[i] is a number then that means the it is one of the 
+            // enumerated toolbox items, so set it to the key, otherwise the element must be an array
+            // of which the first element of that array must be the enumerated value, and the arguments
+            // must be the second value
+            if (typeof (toolbox_item_order[i]) === "number") {
+                toolbox_key = toolbox_item_order[i];
+            }
+            else {
+                toolbox_key = toolbox_item_order[i][0];
+                args = toolbox_item_order[i][1];
+            }
+            var toolbox_item_class = ulabel.config.toolbox_map.get(toolbox_key);
+            if (args == null) {
+                toolbox_instance_list.push(new toolbox_item_class(ulabel));
+            }
+            else {
+                toolbox_instance_list.push(new toolbox_item_class(ulabel, args));
+            }
+        }
+        return toolbox_instance_list;
+    };
+    Toolbox.prototype.setup_toolbox_html = function (ulabel, frame_annotation_dialogs, images, ULABEL_VERSION) {
+        // Setup base div and ULabel version header
+        var toolbox_html = "\n        <div class=\"full_ulabel_container_\">\n            ".concat(frame_annotation_dialogs, "\n            <div id=\"").concat(ulabel.config["annbox_id"], "\" class=\"annbox_cls\">\n                <div id=\"").concat(ulabel.config["imwrap_id"], "\" class=\"imwrap_cls ").concat(ulabel.config["imgsz_class"], "\">\n                    ").concat(images, "\n                </div>\n            </div>\n            <div id=\"").concat(ulabel.config["toolbox_id"], "\" class=\"toolbox_cls\">\n                <div class=\"toolbox-name-header\">\n                    <h1 class=\"toolname\"><a class=\"repo-anchor\" href=\"https://github.com/SenteraLLC/ulabel\">ULabel</a> <span class=\"version-number\">v").concat(ULABEL_VERSION, "</span></h1><!--\n                    --><div class=\"night-button-cont\">\n                        <a href=\"#\" class=\"night-button\">\n                            <div class=\"night-button-track\">\n                                <div class=\"night-status\"></div>\n                            </div>\n                        </a>\n                    </div>\n                </div>\n                <div class=\"toolbox_inner_cls\">\n        ");
+        for (var tbitem in this.items) {
+            toolbox_html += this.items[tbitem].get_html() + toolboxDividerDiv;
+        }
+        toolbox_html += "\n                </div>\n                <div class=\"toolbox-tabs\">\n                    ".concat(this.get_toolbox_tabs(ulabel), "\n                </div> \n            </div>\n        </div>");
+        return toolbox_html;
+    };
+    /**
+     * Adds tabs for each ULabel subtask to the toolbox.
+     */
+    Toolbox.prototype.get_toolbox_tabs = function (ulabel) {
+        var ret = "";
+        for (var st_key in ulabel.subtasks) {
+            var selected = st_key == ulabel.state["current_subtask"];
+            var subtask = ulabel.subtasks[st_key];
+            var current_tab = new ToolboxTab([], subtask, st_key, selected);
+            ret += current_tab.html;
+            this.tabs.push(current_tab);
+        }
+        return ret;
+    };
+    Toolbox.prototype.redraw_update_items = function (ulabel) {
+        for (var _i = 0, _a = this.items; _i < _a.length; _i++) {
+            var tbitem = _a[_i];
+            tbitem.redraw_update(ulabel);
+        }
+    };
+    return Toolbox;
+}());
+exports.Toolbox = Toolbox;
+var ToolboxTab = /** @class */ (function () {
+    function ToolboxTab(toolboxitems, subtask, subtask_key, selected) {
+        if (toolboxitems === void 0) { toolboxitems = []; }
+        if (selected === void 0) { selected = false; }
+        this.toolboxitems = toolboxitems;
+        this.subtask = subtask;
+        this.subtask_key = subtask_key;
+        this.selected = selected;
+        var sel = "";
+        var href = " href=\"#\"";
+        var val = subtask.inactive_opacity * 100;
+        if (this.selected) {
+            if (this.subtask.read_only) {
+                href = "";
+            }
+            sel = " sel";
+            val = 100;
+        }
+        console.log(subtask.display_name);
+        console.log(subtask);
+        this.html = "\n        <div class=\"tb-st-tab".concat(sel, "\">\n            <a").concat(href, " id=\"tb-st-switch--").concat(subtask_key, "\" class=\"tb-st-switch\">").concat(this.subtask.display_name, "</a><!--\n            --><span class=\"tb-st-range\">\n                <input id=\"tb-st-range--").concat(subtask_key, "\" type=\"range\" min=0 max=100 value=").concat(val, " />\n            </span>\n        </div>\n        ");
+    }
+    return ToolboxTab;
+}());
+exports.ToolboxTab = ToolboxTab;
+var ToolboxItem = /** @class */ (function () {
+    function ToolboxItem() {
+    }
+    ToolboxItem.prototype.redraw_update = function (ulabel) { };
+    ToolboxItem.prototype.frame_update = function (ulabel) { };
+    return ToolboxItem;
+}());
+exports.ToolboxItem = ToolboxItem;
+/**
+ * Toolbox item for selecting annotation mode.
+ */
+var ModeSelectionToolboxItem = /** @class */ (function (_super) {
+    __extends(ModeSelectionToolboxItem, _super);
+    function ModeSelectionToolboxItem(ulabel) {
+        var _this = _super.call(this) || this;
+        _this.ulabel = ulabel;
+        // Buttons to change annotation mode
+        $(document).on("click", "a.md-btn", function (e) {
+            // Grab the current target and the current subtask
+            var target_jq = $(e.currentTarget);
+            var current_subtask = ulabel.state["current_subtask"];
+            // Check if button clicked is already selected, or if creation of a new annotation is in progress
+            if (target_jq.hasClass("sel") || ulabel.subtasks[current_subtask]["state"]["is_in_progress"])
+                return;
+            // Get the new mode and set it to ulabel's current mode
+            var new_mode = target_jq.attr("id").split("--")[1];
+            ulabel.subtasks[current_subtask]["state"]["annotation_mode"] = new_mode;
+            // Reset the previously selected mode button
+            $("a.md-btn.sel").attr("href", "#");
+            $("a.md-btn.sel").removeClass("sel");
+            // Make the selected class look selected
+            target_jq.addClass("sel");
+            target_jq.removeAttr("href");
+            ulabel.show_annotation_mode(target_jq);
+        });
+        $(document).on("keypress", function (e) {
+            // If creation of a new annotation is in progress, don't change the mode
+            var current_subtask = ulabel.state["current_subtask"];
+            if (ulabel.subtasks[current_subtask]["state"]["is_in_progress"])
+                return;
+            // Check if the correct key was pressed
+            if (e.key == ulabel.config.toggle_annotation_mode_keybind) {
+                var mode_button_array = [];
+                // Loop through all of the mode buttons
+                for (var idx in Array.from(document.getElementsByClassName("md-btn"))) {
+                    // Grab mode button
+                    var mode_button = document.getElementsByClassName("md-btn")[idx];
+                    // Continue without adding it to the array if its display is none
+                    if (mode_button.style.display == "none") {
+                        continue;
+                    }
+                    mode_button_array.push(mode_button);
+                }
+                // Grab the currently selected mode button
+                var selected_mode_button = Array.from(document.getElementsByClassName("md-btn sel"))[0]; // There's only ever going to be one element in this array, so grab the first one
+                var new_button_index = void 0;
+                // Loop through all of the mode select buttons that are currently displayed 
+                // to find which one is the currently selected button.  Once its found add 1
+                // to get the index of the next mode select button. If the new button index
+                // is the same as the array's length, then loop back and set the new button
+                // to 0.
+                for (var idx in mode_button_array) {
+                    if (mode_button_array[idx] === selected_mode_button) {
+                        new_button_index = Number(idx) + 1;
+                        if (new_button_index == mode_button_array.length) {
+                            new_button_index = 0;
+                        }
+                    }
+                }
+                // Grab the button for the mode we want to switch to
+                var new_selected_button = mode_button_array[new_button_index];
+                new_selected_button.click();
+            }
+        });
+        return _this;
+    }
+    ModeSelectionToolboxItem.prototype.get_html = function () {
+        return "\n        <div class=\"mode-selection\">\n            <p class=\"current_mode_container\">\n                <span class=\"cmlbl\">Mode:</span>\n                <span class=\"current_mode\"></span>\n            </p>\n        </div>\n        ";
+    };
+    return ModeSelectionToolboxItem;
+}(ToolboxItem));
+exports.ModeSelectionToolboxItem = ModeSelectionToolboxItem;
+/**
+ * Toolbox item for zooming and panning.
+ */
+var ZoomPanToolboxItem = /** @class */ (function (_super) {
+    __extends(ZoomPanToolboxItem, _super);
+    function ZoomPanToolboxItem(ulabel) {
+        var _this = _super.call(this) || this;
+        _this.ulabel = ulabel;
+        _this.set_frame_range(ulabel);
+        $(document).on("click", "#recenter-button", function () {
+            ulabel.show_initial_crop();
+        });
+        $(document).on("click", "#recenter-whole-image-button", function () {
+            ulabel.show_whole_image();
+        });
+        $(document).on("keypress", function (e) {
+            if (e.key == ulabel.config.change_zoom_keybind.toLowerCase()) {
+                document.getElementById("recenter-button").click();
+            }
+            if (e.key == ulabel.config.change_zoom_keybind.toUpperCase()) {
+                document.getElementById("recenter-whole-image-button").click();
+            }
+        });
+        return _this;
+    }
+    ZoomPanToolboxItem.prototype.set_frame_range = function (ulabel) {
+        if (ulabel.config["image_data"]["frames"].length == 1) {
+            this.frame_range = "";
+            return;
+        }
+        this.frame_range = "\n            <div class=\"full-tb htbmain set-frame\">\n                <p class=\"shortcut-tip\">scroll to switch frames</p>\n                <div class=\"zpcont\">\n                    <div class=\"lblpyldcont\">\n                        <span class=\"pzlbl htblbl\">Frame</span> &nbsp;\n                        <input class=\"frame_input\" type=\"range\" min=0 max=".concat(ulabel.config["image_data"].frames.length - 1, " value=0 />\n                    </div>\n                </div>\n            </div>\n            ");
+    };
+    ZoomPanToolboxItem.prototype.get_html = function () {
+        return "\n        <div class=\"zoom-pan\">\n            <div class=\"half-tb htbmain set-zoom\">\n                <p class=\"shortcut-tip\">ctrl+scroll or shift+drag</p>\n                <div class=\"zpcont\">\n                    <div class=\"lblpyldcont\">\n                        <span class=\"pzlbl htblbl\">Zoom</span>\n                        <span class=\"zinout htbpyld\">\n                            <a href=\"#\" class=\"zbutt zout\">-</a>\n                            <a href=\"#\" class=\"zbutt zin\">+</a>\n                        </span>\n                    </div>\n                </div>\n            </div><!--\n            --><div class=\"half-tb htbmain set-pan\">\n                <p class=\"shortcut-tip\">scrollclick+drag or ctrl+drag</p>\n                <div class=\"zpcont\">\n                    <div class=\"lblpyldcont\">\n                        <span class=\"pzlbl htblbl\">Pan</span>\n                        <span class=\"panudlr htbpyld\">\n                            <a href=\"#\" class=\"pbutt left\"></a>\n                            <a href=\"#\" class=\"pbutt right\"></a>\n                            <a href=\"#\" class=\"pbutt up\"></a>\n                            <a href=\"#\" class=\"pbutt down\"></a>\n                            <span class=\"spokes\"></span>\n                        </span>\n                    </div>\n                </div>\n            </div>\n            <div class=\"recenter-cont\" style=\"text-align: center;\">\n                <a href=\"#\" id=\"recenter-button\">Re-Center</a>\n                <a href=\"#\" id=\"recenter-whole-image-button\">Whole Image</a>\n            </div>\n            ".concat(this.frame_range, "\n        </div>\n        ");
+    };
+    return ZoomPanToolboxItem;
+}(ToolboxItem));
+exports.ZoomPanToolboxItem = ZoomPanToolboxItem;
+/**
+ * Toolbox item for selection Annotation ID.
+ */
+var AnnotationIDToolboxItem = /** @class */ (function (_super) {
+    __extends(AnnotationIDToolboxItem, _super);
+    function AnnotationIDToolboxItem(ulabel) {
+        var _this = _super.call(this) || this;
+        _this.ulabel = ulabel;
+        _this.set_instructions(ulabel);
+        return _this;
+    }
+    AnnotationIDToolboxItem.prototype.set_instructions = function (ulabel) {
+        this.instructions = "";
+        if (ulabel.config["instructions_url"] != null) {
+            this.instructions = "\n                <a href=\"".concat(ulabel.config["instructions_url"], "\" target=\"_blank\" rel=\"noopener noreferrer\">Instructions</a>\n            ");
+        }
+    };
+    AnnotationIDToolboxItem.prototype.get_html = function () {
+        return "\n        <div class=\"classification\">\n            <p class=\"tb-header\">Annotation ID</p>\n            <div class=\"id-toolbox-app\"></div>\n        </div>\n        <div class=\"toolbox-refs\">\n            ".concat(this.instructions, "\n        </div>\n        ");
+    };
+    return AnnotationIDToolboxItem;
+}(ToolboxItem));
+exports.AnnotationIDToolboxItem = AnnotationIDToolboxItem;
+var ClassCounterToolboxItem = /** @class */ (function (_super) {
+    __extends(ClassCounterToolboxItem, _super);
+    function ClassCounterToolboxItem() {
+        var args = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            args[_i] = arguments[_i];
+        }
+        var _this = _super.call(this) || this;
+        _this.inner_HTML = "<p class=\"tb-header\">Annotation Count</p>";
+        return _this;
+    }
+    ClassCounterToolboxItem.prototype.update_toolbox_counter = function (subtask, toolbox_id) {
+        if (subtask == null) {
+            return;
+        }
+        var class_ids = subtask.class_ids;
+        var i, j;
+        var class_counts = {};
+        for (i = 0; i < class_ids.length; i++) {
+            class_counts[class_ids[i]] = 0;
+        }
+        var annotations = subtask.annotations.access;
+        var annotation_ids = subtask.annotations.ordering;
+        var current_annotation, current_payload;
+        for (i = 0; i < annotation_ids.length; i++) {
+            current_annotation = annotations[annotation_ids[i]];
+            if (current_annotation.deprecated == false) {
+                for (j = 0; j < current_annotation.classification_payloads.length; j++) {
+                    current_payload = current_annotation.classification_payloads[j];
+                    if (current_payload.confidence > 0.0) {
+                        class_counts[current_payload.class_id] += 1;
+                        break;
+                    }
+                }
+            }
+        }
+        var f_string = "";
+        var class_name, class_count;
+        for (i = 0; i < class_ids.length; i++) {
+            class_name = subtask.class_defs[i].name;
+            // MF-Tassels Hack
+            if (class_name.includes("OVERWRITE")) {
+                continue;
+            }
+            class_count = class_counts[subtask.class_defs[i].id];
+            f_string += "".concat(class_name, ": ").concat(class_count, "<br>");
+        }
+        this.inner_HTML = "<p class=\"tb-header\">Annotation Count</p>" + "<p>".concat(f_string, "</p>");
+    };
+    ClassCounterToolboxItem.prototype.get_html = function () {
+        return "\n        <div class=\"toolbox-class-counter\">" + this.inner_HTML + "</div>";
+    };
+    ClassCounterToolboxItem.prototype.redraw_update = function (ulabel) {
+        this.update_toolbox_counter(ulabel.subtasks[ulabel.state["current_subtask"]], ulabel.config["toolbox_id"]);
+        $("#" + ulabel.config["toolbox_id"] + " div.toolbox-class-counter").html(this.inner_HTML);
+    };
+    return ClassCounterToolboxItem;
+}(ToolboxItem));
+exports.ClassCounterToolboxItem = ClassCounterToolboxItem;
+/**
+ * Toolbox item for resizing all annotations
+ */
+var AnnotationResizeItem = /** @class */ (function (_super) {
+    __extends(AnnotationResizeItem, _super);
+    function AnnotationResizeItem(ulabel) {
+        var _this = _super.call(this) || this;
+        _this.cached_size = 1.5;
+        _this.inner_HTML = "<p class=\"tb-header\">Annotation Count</p>";
+        //get default keybinds
+        _this.keybind_configuration = ulabel.config.default_keybinds;
+        //grab current subtask for convinience
+        var current_subtask_key = ulabel.state["current_subtask"];
+        var current_subtask = ulabel.subtasks[current_subtask_key];
+        //First check for a size cookie, if one isn't found then check the config
+        //for a default annotation size. If neither are found it will use the size
+        //that the annotation was saved as.
+        for (var subtask in ulabel.subtasks) {
+            var cached_size_property = ulabel.subtasks[subtask].display_name.replaceLowerConcat(" ", "-", "-cached-size");
+            var size_cookie = _this.read_size_cookie(ulabel.subtasks[subtask]);
+            if ((size_cookie != null) && size_cookie != "NaN") {
+                _this.update_annotation_size(ulabel.subtasks[subtask], Number(size_cookie));
+                _this[cached_size_property] = Number(size_cookie);
+            }
+            else if (ulabel.config.default_annotation_size != undefined) {
+                _this.update_annotation_size(ulabel.subtasks[subtask], ulabel.config.default_annotation_size);
+                _this[cached_size_property] = ulabel.config.default_annotation_size;
+            }
+            else {
+                var DEFAULT_SIZE = 5;
+                _this.update_annotation_size(ulabel.subtasks[subtask], DEFAULT_SIZE);
+                _this[cached_size_property] = DEFAULT_SIZE;
+            }
+        }
+        //event listener for buttons
+        $(document).on("click", "a.butt-ann", function (e) {
+            var button = $(e.currentTarget);
+            var current_subtask_key = ulabel.state["current_subtask"];
+            var current_subtask = ulabel.subtasks[current_subtask_key];
+            var annotation_size = button.attr("id").slice(18);
+            _this.update_annotation_size(current_subtask, annotation_size);
+            ulabel.redraw_all_annotations(null, null, false);
+        });
+        //event listener for keybinds
+        $(document).on("keypress", function (e) {
+            var current_subtask_key = ulabel.state["current_subtask"];
+            var current_subtask = ulabel.subtasks[current_subtask_key];
+            switch (e.key) {
+                case _this.keybind_configuration.annotation_vanish.toUpperCase():
+                    _this.update_all_subtask_annotation_size(ulabel, "v");
+                    break;
+                case _this.keybind_configuration.annotation_vanish:
+                    _this.update_annotation_size(current_subtask, "v");
+                    break;
+                case _this.keybind_configuration.annotation_size_small:
+                    _this.update_annotation_size(current_subtask, "s");
+                    break;
+                case _this.keybind_configuration.annotation_size_large:
+                    _this.update_annotation_size(current_subtask, "l");
+                    break;
+                case _this.keybind_configuration.annotation_size_minus:
+                    _this.update_annotation_size(current_subtask, "dec");
+                    break;
+                case _this.keybind_configuration.annotation_size_plus:
+                    _this.update_annotation_size(current_subtask, "inc");
+                    break;
+            }
+            ulabel.redraw_all_annotations(null, null, false);
+        });
+        return _this;
+    }
+    //recieives a string of 's', 'l', 'dec', 'inc', or 'v' depending on which button was pressed
+    //also the constructor can pass in a number from the config
+    AnnotationResizeItem.prototype.update_annotation_size = function (subtask, size) {
+        var small_size = 1.5;
+        var large_size = 5;
+        var increment_size = 0.5;
+        var vanish_size = 0.01;
+        var subtask_cached_size = subtask.display_name.replaceLowerConcat(" ", "-", "-cached-size");
+        if (subtask == null)
+            return;
+        var subtask_vanished_flag = subtask.display_name.replaceLowerConcat(" ", "-", "-vanished");
+        //If the annotations are currently vanished and a button other than the vanish button is
+        //pressed, then we want to ignore the input
+        if (this[subtask_vanished_flag] && size !== "v")
+            return;
+        if (typeof (size) === "number") {
+            this.loop_through_annotations(subtask, size, "=");
+        }
+        if (size == "v") {
+            if (this[subtask_vanished_flag]) {
+                this.loop_through_annotations(subtask, this[subtask_cached_size], "=");
+                //flip the bool state
+                this[subtask_vanished_flag] = !this[subtask_vanished_flag];
+                $("#annotation-resize-v").attr("style", "background-color: " + "rgba(100, 148, 237, 0.8)");
+                return;
+            }
+            if (!this[subtask_vanished_flag]) {
+                this.loop_through_annotations(subtask, vanish_size, "=");
+                //flip the bool state
+                this[subtask_vanished_flag] = !this[subtask_vanished_flag];
+                $("#annotation-resize-v").attr("style", "background-color: " + "#1c2d4d");
+                return;
+            }
+            return;
+        }
+        switch (size) {
+            case 's':
+                this.loop_through_annotations(subtask, small_size, "=");
+                this[subtask_cached_size] = small_size;
+                break;
+            case 'l':
+                this.loop_through_annotations(subtask, large_size, "=");
+                this[subtask_cached_size] = large_size;
+                break;
+            case 'dec':
+                this.loop_through_annotations(subtask, increment_size, "-");
+                break;
+            case 'inc':
+                this.loop_through_annotations(subtask, increment_size, "+");
+                break;
+            default:
+                return;
+        }
+    };
+    //loops through all annotations in a subtask to change their line size
+    AnnotationResizeItem.prototype.loop_through_annotations = function (subtask, size, operation) {
+        var subtask_cached_size = subtask.display_name.replaceLowerConcat(" ", "-", "-cached-size");
+        if (operation == "=") {
+            for (var annotation_id in subtask.annotations.access) {
+                subtask.annotations.access[annotation_id].line_size = size;
+            }
+            // Don't set the vanished size as a cookie
+            if (size == 0.01)
+                return;
+            this.set_size_cookie(size, subtask);
+            return;
+        }
+        if (operation == "+") {
+            for (var annotation_id in subtask.annotations.access) {
+                subtask.annotations.access[annotation_id].line_size += size;
+                //temporary solution
+                this[subtask_cached_size] = subtask.annotations.access[annotation_id].line_size;
+            }
+            this.set_size_cookie(subtask.annotations.access[subtask.annotations.ordering[0]].line_size, subtask);
+            return;
+        }
+        if (operation == "-") {
+            for (var annotation_id in subtask.annotations.access) {
+                //Check to make sure annotation line size won't go 0 or negative. If it would
+                //set it equal to a small positive number
+                if (subtask.annotations.access[annotation_id].line_size - size <= 0.01) {
+                    subtask.annotations.access[annotation_id].line_size = 0.01;
+                }
+                else {
+                    subtask.annotations.access[annotation_id].line_size -= size;
+                }
+                //temporary solution
+                this[subtask_cached_size] = subtask.annotations.access[annotation_id].line_size;
+            }
+            this.set_size_cookie(subtask.annotations.access[subtask.annotations.ordering[0]].line_size, subtask);
+            return;
+        }
+        throw Error("Invalid Operation given to loop_through_annotations");
+    };
+    //Loop through all subtasks and apply a size to them all
+    AnnotationResizeItem.prototype.update_all_subtask_annotation_size = function (ulabel, size) {
+        for (var subtask in ulabel.subtasks) {
+            this.update_annotation_size(ulabel.subtasks[subtask], size);
+        }
+    };
+    AnnotationResizeItem.prototype.set_size_cookie = function (cookie_value, subtask) {
+        var d = new Date();
+        d.setTime(d.getTime() + (10000 * 24 * 60 * 60 * 1000));
+        var subtask_name = subtask.display_name.replaceLowerConcat(" ", "_");
+        document.cookie = subtask_name + "_size=" + cookie_value + ";" + d.toUTCString() + ";path=/";
+    };
+    AnnotationResizeItem.prototype.read_size_cookie = function (subtask) {
+        var subtask_name = subtask.display_name.replaceLowerConcat(" ", "_");
+        var cookie_name = subtask_name + "_size=";
+        var cookie_array = document.cookie.split(";");
+        for (var i = 0; i < cookie_array.length; i++) {
+            var current_cookie = cookie_array[i];
+            //while there's whitespace at the front of the cookie, loop through and remove it
+            while (current_cookie.charAt(0) == " ") {
+                current_cookie = current_cookie.substring(1);
+            }
+            if (current_cookie.indexOf(cookie_name) == 0) {
+                return current_cookie.substring(cookie_name.length, current_cookie.length);
+            }
+        }
+        return null;
+    };
+    AnnotationResizeItem.prototype.get_html = function () {
+        return "\n        <div class=\"annotation-resize\">\n            <p class=\"tb-header\">Change Annotation Size</p>\n            <div class=\"annotation-resize-button-holder\">\n                <span class=\"annotation-vanish\">\n                    <a href=\"#\" class=\"butt-ann button\" id=\"annotation-resize-v\">Vanish</a>\n                </span>\n                <span class=\"annotation-size\">\n                    <a href=\"#\" class=\"butt-ann button\" id=\"annotation-resize-s\">Small</a>\n                    <a href=\"#\" class=\"butt-ann button\" id=\"annotation-resize-l\">Large</a>\n                </span>\n                <span class=\"annotation-inc increment\">\n                    <a href=\"#\" class=\"butt-ann button inc\" id=\"annotation-resize-inc\">+</a>\n                    <a href=\"#\" class=\"butt-ann button dec\" id=\"annotation-resize-dec\">-</a>\n                </span>\n            </div>\n        </div>\n        ";
+    };
+    return AnnotationResizeItem;
+}(ToolboxItem));
+exports.AnnotationResizeItem = AnnotationResizeItem;
+var RecolorActiveItem = /** @class */ (function (_super) {
+    __extends(RecolorActiveItem, _super);
+    function RecolorActiveItem(ulabel) {
+        var _this = _super.call(this) || this;
+        _this.most_recent_draw = Date.now();
+        _this.inner_HTML = "<p class=\"tb-header\">Recolor Annotations</p>";
+        var current_subtask_key = ulabel.state["current_subtask"];
+        var current_subtask = ulabel.subtasks[current_subtask_key];
+        //loop through all the types of annotations and check to see it there's
+        //a color cookie corresponding to that class id
+        for (var i = 0; i < current_subtask.classes.length; i++) {
+            var cookie_color = _this.read_color_cookie(current_subtask.classes[i].id);
+            if (cookie_color !== null) {
+                _this.update_annotation_color(current_subtask, cookie_color, current_subtask.classes[i].id);
+            }
+        }
+        __1.ULabel.process_classes(ulabel, ulabel.state.current_subtask, current_subtask);
+        //event handler for the buttons
+        $(document).on("click", "input.color-change-btn", function (e) {
+            var button = $(e.currentTarget);
+            var current_subtask_key = ulabel.state["current_subtask"];
+            var current_subtask = ulabel.subtasks[current_subtask_key];
+            //slice 13,16 to grab the part of the id that specifies color
+            var color_from_id = button.attr("id").slice(13, 16);
+            _this.update_annotation_color(current_subtask, color_from_id);
+            __1.ULabel.process_classes(ulabel, ulabel.state.current_subtask, current_subtask);
+            ulabel.redraw_all_annotations(null, null, false);
+        });
+        $(document).on("input", "input.color-change-picker", function (e) {
+            //Gets the current subtask
+            var current_subtask_key = ulabel.state["current_subtask"];
+            var current_subtask = ulabel.subtasks[current_subtask_key];
+            //Gets the hex value from the color picker
+            var hex = e.currentTarget.value;
+            _this.update_annotation_color(current_subtask, hex);
+            //somewhat janky way to update the color on the color picker 
+            //to allow for more css options
+            var color_picker_container = document.getElementById("color-picker-container");
+            color_picker_container.style.backgroundColor = hex;
+            __1.ULabel.process_classes(ulabel, ulabel.state.current_subtask, current_subtask);
+            _this.limit_redraw(ulabel);
+        });
+        $(document).on("input", "#gradient-toggle", function (e) {
+            ulabel.redraw_all_annotations(null, null, false);
+            _this.set_gradient_cookie($("#gradient-toggle").prop("checked"));
+        });
+        $(document).on("input", "#gradient-slider", function (e) {
+            $("div.gradient-slider-value-display").text(e.currentTarget.value + "%");
+            ulabel.redraw_all_annotations(null, null, false);
+        });
+        return _this;
+    }
+    RecolorActiveItem.prototype.update_annotation_color = function (subtask, color, selected_id) {
+        if (selected_id === void 0) { selected_id = null; }
+        var need_to_set_cookie = true;
+        if (selected_id !== null) {
+            need_to_set_cookie = false;
+        }
+        //check for the three special cases, otherwise assume color is a hex value
+        if (color == "yel") {
+            color = "#FFFF00";
+        }
+        if (color == "red") {
+            color = "#FF0000";
+        }
+        if (color == "cya") {
+            color = "#00FFFF";
+        }
+        if (selected_id == null) {
+            subtask.state.id_payload.forEach(function (item) {
+                if (item.confidence == 1) {
+                    selected_id = item.class_id;
+                }
+            });
+        }
+        //if the selected id is still null, then that means that no id was passed
+        //in or had a confidence of 1. Therefore the default is having the first 
+        //annotation id selected, so we'll default to that
+        if (selected_id == null) {
+            selected_id = subtask.classes[0].id;
+        }
+        subtask.classes.forEach(function (item) {
+            if (item.id === selected_id) {
+                item.color = color;
+            }
+        });
+        //$("a.toolbox_sel_"+selected_id+":first").attr("backround-color", color);
+        var colored_square_element = ".toolbox_colprev_" + selected_id;
+        $(colored_square_element).attr("style", "background-color: " + color);
+        //Finally set a cookie to remember color preference if needed
+        if (need_to_set_cookie) {
+            this.set_color_cookie(selected_id, color);
+        }
+    };
+    RecolorActiveItem.prototype.limit_redraw = function (ulabel, wait_time) {
+        if (wait_time === void 0) { wait_time = 100; }
+        //Compare most recent draw time to now and only draw if  
+        //more than wait_time milliseconds have passed. 
+        if (Date.now() - this.most_recent_draw > wait_time) {
+            //update most recent draw to now
+            this.most_recent_draw = Date.now();
+            //redraw annotations
+            ulabel.redraw_all_annotations(null, null, false);
+        }
+    };
+    RecolorActiveItem.prototype.set_color_cookie = function (annotation_id, cookie_value) {
+        var d = new Date();
+        d.setTime(d.getTime() + (10000 * 24 * 60 * 60 * 1000));
+        document.cookie = "color" + annotation_id + "=" + cookie_value + ";" + d.toUTCString() + ";path=/";
+    };
+    RecolorActiveItem.prototype.read_color_cookie = function (annotation_id) {
+        var cookie_name = "color" + annotation_id + "=";
+        var cookie_array = document.cookie.split(";");
+        for (var i = 0; i < cookie_array.length; i++) {
+            var current_cookie = cookie_array[i];
+            //while there's whitespace at the front of the cookie, loop through and remove it
+            while (current_cookie.charAt(0) == " ") {
+                current_cookie = current_cookie.substring(1);
+            }
+            if (current_cookie.indexOf(cookie_name) == 0) {
+                return current_cookie.substring(cookie_name.length, current_cookie.length);
+            }
+        }
+        return null;
+    };
+    RecolorActiveItem.prototype.set_gradient_cookie = function (gradient_status) {
+        var d = new Date();
+        d.setTime(d.getTime() + (10000 * 24 * 60 * 60 * 1000));
+        document.cookie = "gradient=" + gradient_status + ";" + d.toUTCString() + ";path=/";
+    };
+    RecolorActiveItem.prototype.read_gradient_cookie = function () {
+        var cookie_name = "gradient=";
+        var cookie_array = document.cookie.split(";");
+        for (var i = 0; i < cookie_array.length; i++) {
+            var current_cookie = cookie_array[i];
+            //while there's whitespace at the front of the cookie, loop through and remove it
+            while (current_cookie.charAt(0) == " ") {
+                current_cookie = current_cookie.substring(1);
+            }
+            if (current_cookie.indexOf(cookie_name) == 0) {
+                return (current_cookie.substring(cookie_name.length, current_cookie.length) == "true");
+            }
+        }
+        return null;
+    };
+    RecolorActiveItem.prototype.get_html = function () {
+        var checked_status_bool = this.read_gradient_cookie(); //true, false, or null
+        var checked_status_string = "";
+        //null means no cookie, so grab the default from configuration
+        if (checked_status_bool == null) {
+            checked_status_bool = configuration_1.Configuration.annotation_gradient_default;
+        }
+        if (checked_status_bool == true) {
+            checked_status_string = "checked";
+        }
+        return "\n        <div class=\"recolor-active\">\n            <p class=\"tb-header\">Recolor Annotations</p>\n            <div class=\"recolor-tbi-gradient\">\n                <div>\n                    <label for=\"gradient-toggle\" id=\"gradient-toggle-label\">Toggle Gradients</label>\n                    <input type=\"checkbox\" id=\"gradient-toggle\" name=\"gradient-checkbox\" value=\"gradient\" ".concat(checked_status_string, ">\n                </div>\n                <div>\n                    <label for=\"gradient-slider\" id=\"gradient-slider-label\">Gradient Max</label>\n                    <input type=\"range\" id=\"gradient-slider\" value=\"100\">\n                    <div class=\"gradient-slider-value-display\">100%</div>\n                </div>\n            </div>\n            <div class=\"annotation-recolor-button-holder\">\n                <div class=\"color-btn-container\">\n                    <input type=\"button\" class=\"color-change-btn\" id=\"color-change-yel\">\n                    <input type=\"button\" class=\"color-change-btn\" id=\"color-change-red\">\n                    <input type=\"button\" class=\"color-change-btn\" id=\"color-change-cya\">\n                </div>\n                <div class=\"color-picker-border\">\n                    <div class=\"color-picker-container\" id=\"color-picker-container\">\n                        <input type=\"color\" class=\"color-change-picker\" id=\"color-change-pick\">\n                    </div>\n                </div>\n            </div>\n        </div>\n        ");
+    };
+    return RecolorActiveItem;
+}(ToolboxItem));
+exports.RecolorActiveItem = RecolorActiveItem;
+var KeypointSliderItem = /** @class */ (function (_super) {
+    __extends(KeypointSliderItem, _super);
+    //function_array must contain three functions
+    //the first function is how to filter the annotations
+    //the second is how to get the particular confidence
+    //the third is how to mark the annotations deprecated
+    function KeypointSliderItem(ulabel, kwargs) {
+        var _this = _super.call(this) || this;
+        _this.default_value = 0; //defalut value must be a number between 0 and 1 inclusive
+        _this.inner_HTML = "<p class=\"tb-header\">Keypoint Slider</p>";
+        _this.name = kwargs.name;
+        _this.filter_function = kwargs.filter_function;
+        _this.get_confidence = kwargs.confidence_function;
+        _this.mark_deprecated = kwargs.mark_deprecated;
+        _this.slider_bar_id = _this.name.replaceLowerConcat(" ", "-");
+        //if the config has a default value override, then use that instead
+        if (ulabel.config.hasOwnProperty(_this.name.replaceLowerConcat(" ", "_", "_default_value"))) {
+            kwargs.default_value = ulabel.config[_this.name.replaceLowerConcat(" ", "_", "_default_value")];
+        }
+        //if this keypoint slider has a generic default, then use it
+        //otherwise the defalut is 0
+        if (kwargs.hasOwnProperty("default_value")) {
+            //check to make sure the default value given is valid
+            if ((kwargs.default_value >= 0) && (kwargs.default_value <= 1)) {
+                _this.default_value = kwargs.default_value;
+            }
+            else {
+                throw Error("Invalid defalut keypoint slider value given");
+            }
+        }
+        var current_subtask_key = ulabel.state["current_subtask"];
+        var current_subtask = ulabel.subtasks[current_subtask_key];
+        //Check to see if any of the annotations were deprecated by default
+        _this.check_for_human_deprecated(current_subtask);
+        //check the config to see if we should update the annotations with the default filter on load
+        if (ulabel.config.filter_annotations_on_load) {
+            _this.deprecate_annotations(ulabel, _this.default_value, false);
+        }
+        //The annotations are drawn for the first time after the toolbox is loaded
+        //so we don't actually have to redraw the annotations after deprecating them.
+        $(document).on("input", "#" + _this.name.replaceLowerConcat(" ", "-"), function (e) {
+            var filter_value = e.currentTarget.value / 100;
+            _this.deprecate_annotations(ulabel, filter_value);
+        });
+        $(document).on("click", "a." + _this.name.replaceLowerConcat(" ", "-") + "-button", function (e) {
+            var button_text = e.currentTarget.outerText;
+            var slider = document.getElementById(_this.name.replaceLowerConcat(" ", "-"));
+            if (button_text == "+") {
+                slider.value = (slider.valueAsNumber + 1).toString();
+            }
+            else if (button_text == "-") {
+                slider.value = (slider.valueAsNumber - 1).toString();
+            }
+            else {
+                throw Error("Unknown Keypoint Slider Button Pressed");
+            }
+            //update the slider's label
+            $("#" + slider.id + "-label").text(Math.round(slider.valueAsNumber) + "%");
+            _this.deprecate_annotations(ulabel, slider.valueAsNumber / 100);
+            ulabel.redraw_all_annotations(null, null, false);
+        });
+        //event listener for keybinds
+        $(document).on("keypress", function (e) {
+            if (e.key == kwargs.keybinds.increment) {
+                var button = document.getElementsByClassName(_this.name.replaceLowerConcat(" ", "-") + "-button inc")[0];
+                button.click();
+            }
+            if (e.key == kwargs.keybinds.decrement) {
+                var button = document.getElementsByClassName(_this.name.replaceLowerConcat(" ", "-") + "-button dec")[0];
+                button.click();
+            }
+        });
+        return _this;
+    }
+    KeypointSliderItem.prototype.deprecate_annotations = function (ulabel, filter_value, redraw) {
+        if (redraw === void 0) { redraw = true; }
+        //get the current subtask
+        var current_subtask_key = ulabel.state["current_subtask"];
+        var current_subtask = ulabel.subtasks[current_subtask_key];
+        for (var i in current_subtask.annotations.ordering) {
+            var current_annotation = current_subtask.annotations.access[current_subtask.annotations.ordering[i]];
+            //kinda a hack, but an annotation can't be human deprecated if its not deprecated
+            if (current_annotation.deprecated == false) {
+                current_annotation.human_deprecated = false;
+            }
+            //we don't want to change any annotations that were hand edited by the user.
+            if (current_annotation.human_deprecated) {
+                continue;
+            }
+            var current_confidence = this.get_confidence(current_annotation);
+            var deprecate = this.filter_function(current_confidence, filter_value);
+            this.mark_deprecated(current_annotation, deprecate);
+        }
+        //Update the slider bar's position, and the label's text.
+        $("#" + this.slider_bar_id).val(Math.round(filter_value * 100));
+        $("#" + this.slider_bar_id + "-label").text(Math.round(filter_value * 100) + "%");
+        if (redraw) {
+            ulabel.redraw_all_annotations(null, null, false);
+        }
+    };
+    //if an annotation is deprecated and has a child, then assume its human deprecated.
+    KeypointSliderItem.prototype.check_for_human_deprecated = function (current_subtask) {
+        for (var i in current_subtask.annotations.ordering) {
+            var current_annotation = current_subtask.annotations.access[current_subtask.annotations.ordering[i]];
+            var parent_id = current_annotation.parent_id;
+            //if the parent id exists and is deprecated, then assume that it was human deprecated
+            if (parent_id != null) {
+                var parent_annotation = current_subtask.annotations.access[parent_id];
+                //check if the parent annotation exists
+                if (parent_annotation != null) {
+                    if (parent_annotation.deprecated) {
+                        parent_annotation.human_deprecated = true;
+                    }
+                }
+            }
+        }
+    };
+    KeypointSliderItem.prototype.get_html = function () {
+        var component_name = this.name.replaceLowerConcat(" ", "-");
+        return "\n        <div class=\"keypoint-slider\">\n            <p class=\"tb-header\">".concat(this.name, "</p>\n            <div class=\"keypoint-slider-holder\">\n                <input \n                    type=\"range\" \n                    id=\"").concat(component_name, "\" \n                    class=\"keypoint-slider\" value=\"").concat(this.default_value * 100, "\"\n                />\n                <label \n                    for=\"").concat(component_name, "\" \n                    id=\"").concat(component_name, "-label\"\n                    class=\"keypoint-slider-label\">\n                    ").concat(Math.round(this.default_value * 100), "%\n                </label>\n                <span class=\"increment\" >\n                    <a href=\"#\" class=\"button inc keypoint-slider-increment ").concat(component_name, "-button\" >+</a>\n                    <a href=\"#\" class=\"button dec keypoint-slider-increment ").concat(component_name, "-button\" >-</a>\n                </span>\n            </div>\n        </div>");
+    };
+    return KeypointSliderItem;
+}(ToolboxItem));
+exports.KeypointSliderItem = KeypointSliderItem;
+var SubmitButtons = /** @class */ (function (_super) {
+    __extends(SubmitButtons, _super);
+    function SubmitButtons(ulabel) {
+        var _this = _super.call(this) || this;
+        // Grab the submit buttons from ulabel
+        _this.submit_buttons = ulabel.config.submit_buttons;
+        // For legacy reasons submit_buttons may be a function, in that case convert it to the right format
+        if (typeof _this.submit_buttons == "function") {
+            _this.submit_buttons = [{
+                    "name": "Submit",
+                    "hook": _this.submit_buttons
+                }];
+        }
+        var _loop_1 = function (idx) {
+            // Create a unique event listener for each submit button in the submit buttons array.
+            $(document).on("click", "#" + this_1.submit_buttons[idx].name.replaceLowerConcat(" ", "-"), function (e) { return __awaiter(_this, void 0, void 0, function () {
+                var button, submit_button_elements, i, animation, submit_payload, stkey, i, i;
+                return __generator(this, function (_a) {
+                    switch (_a.label) {
+                        case 0:
+                            button = document.getElementById(this.submit_buttons[idx].name.replaceLowerConcat(" ", "-"));
+                            submit_button_elements = Array.from(document.getElementsByClassName("submit-button"));
+                            // Make all the buttons look disabled
+                            for (i in submit_button_elements) {
+                                submit_button_elements[i].disabled = true;
+                                submit_button_elements[i].style.filter = "opacity(0.7)";
+                            }
+                            // Give the clicked button a loading animation
+                            button.innerText = "";
+                            animation = document.createElement("div");
+                            animation.className = "lds-dual-ring";
+                            button.appendChild(animation);
+                            submit_payload = {
+                                "task_meta": ulabel.config["task_meta"],
+                                "annotations": {}
+                            };
+                            // Loop through all of the subtasks
+                            for (stkey in ulabel.subtasks) {
+                                submit_payload["annotations"][stkey] = [];
+                                // Add all of the annotations in that subtask
+                                for (i = 0; i < ulabel.subtasks[stkey]["annotations"]["ordering"].length; i++) {
+                                    submit_payload["annotations"][stkey].push(ulabel.subtasks[stkey]["annotations"]["access"][ulabel.subtasks[stkey]["annotations"]["ordering"][i]]);
+                                }
+                            }
+                            return [4 /*yield*/, this.submit_buttons[idx].hook(submit_payload)];
+                        case 1:
+                            _a.sent();
+                            // Give the button back its name
+                            button.innerText = this.submit_buttons[idx].name;
+                            // Re-enable the buttons
+                            for (i in submit_button_elements) {
+                                submit_button_elements[i].disabled = false;
+                                submit_button_elements[i].style.filter = "opacity(1)";
+                            }
+                            return [2 /*return*/];
+                    }
+                });
+            }); });
+        };
+        var this_1 = this;
+        for (var idx in _this.submit_buttons) {
+            _loop_1(idx);
+        }
+        return _this;
+    }
+    SubmitButtons.prototype.get_html = function () {
+        var toolboxitem_html = "";
+        for (var idx in this.submit_buttons) {
+            var button_color = void 0;
+            if (this.submit_buttons[idx].color !== undefined) {
+                button_color = this.submit_buttons[idx].color;
+            }
+            else {
+                // If no color provided use hard coded default
+                button_color = "rgba(255, 166, 0, 0.739)";
+            }
+            toolboxitem_html += "\n            <button \n            id=\"".concat(this.submit_buttons[idx].name.replaceLowerConcat(" ", "-"), "\" \n            class=\"submit-button\" \n            style=\"\n                display: block;\n                height: 1.2em;\n                width: 6em;\n                font-size: 1.5em;\n                color: white;\n                background-color: ").concat(button_color, "; \n                margin-left: auto;\n                margin-right: auto;\n                margin-top: 0.5em;\n                margin-bottom: 0.5em;\n                padding: 1em;\n                border: 1px solid ").concat(button_color, ";\n                border-radius: 0.5em;\n                cursor: pointer;\n            \">\n                ").concat(this.submit_buttons[idx].name, "\n            </button>\n            ");
+        }
+        return toolboxitem_html;
+    };
+    return SubmitButtons;
+}(ToolboxItem));
+exports.SubmitButtons = SubmitButtons;
+// export class WholeImageClassifierToolboxTab extends ToolboxItem {
+//     constructor() {
+//         super(
+//             "toolbox-whole-image-classifier",
+//             "Whole Image Classification",
+//             ""
+//         );
+//     }
+// }
+
+
+/***/ }),
+
 /***/ 755:
 /***/ (function(module, exports) {
 
@@ -11543,146 +13420,25 @@ function version(uuid) {
 
 /***/ }),
 
-/***/ 806:
-/***/ ((__unused_webpack_module, exports) => {
-
-"use strict";
-var __webpack_unused_export__;
-
-__webpack_unused_export__ = ({ value: true });
-exports.a = void 0;
-var ULabelAnnotation = /** @class */ (function () {
-    function ULabelAnnotation(id, is_new, parent_id, created_by, deprecated, spatial_type, spatial_payload, classification_payloads, line_size, containing_box, frame, text_payload, annotation_meta, human_deprecated) {
-        if (is_new === void 0) { is_new = true; }
-        if (parent_id === void 0) { parent_id = null; }
-        if (deprecated === void 0) { deprecated = false; }
-        if (text_payload === void 0) { text_payload = ""; }
-        if (annotation_meta === void 0) { annotation_meta = null; }
-        if (human_deprecated === void 0) { human_deprecated = null; }
-        this.id = id;
-        this.is_new = is_new;
-        this.parent_id = parent_id;
-        this.created_by = created_by;
-        this.deprecated = deprecated;
-        this.spatial_type = spatial_type;
-        this.spatial_payload = spatial_payload;
-        this.classification_payloads = classification_payloads;
-        this.line_size = line_size;
-        this.containing_box = containing_box;
-        this.frame = frame;
-        this.text_payload = text_payload;
-        this.annotation_meta = annotation_meta;
-        this.human_deprecated = human_deprecated;
-    }
-    ULabelAnnotation.prototype.ensure_compatible_classification_payloads = function (ulabel_class_ids) {
-        var found_ids = [];
-        var j;
-        var conf_not_found_j = null;
-        var remaining_confidence = 1.0;
-        for (j = 0; j < this.classification_payloads.length; j++) {
-            var this_id = this.classification_payloads[j].class_id;
-            if (!ulabel_class_ids.includes(this_id)) {
-                alert("Found class id ".concat(this_id, " in \"resume_from\" data but not in \"allowed_classes\""));
-                throw "Found class id ".concat(this_id, " in \"resume_from\" data but not in \"allowed_classes\"");
-            }
-            found_ids.push(this_id);
-            if (!("confidence" in this.classification_payloads[j])) {
-                if (conf_not_found_j !== null) {
-                    throw ("More than one classification payload was supplied without confidence for a single annotation.");
-                }
-                else {
-                    conf_not_found_j = j;
-                }
-            }
-            else {
-                this.classification_payloads[j].confidence = this.classification_payloads[j].confidence;
-                remaining_confidence -= this.classification_payloads[j]["confidence"];
-            }
-        }
-        if (conf_not_found_j !== null) {
-            if (remaining_confidence < 0) {
-                throw ("Supplied total confidence was greater than 100%");
-            }
-            this.classification_payloads[conf_not_found_j].confidence = remaining_confidence;
-        }
-        for (j = 0; j < ulabel_class_ids.length; j++) {
-            if (!(found_ids.includes(ulabel_class_ids[j]))) {
-                this.classification_payloads.push({
-                    "class_id": ulabel_class_ids[j],
-                    "confidence": 0.0
-                });
-            }
-        }
-    };
-    ULabelAnnotation.from_json = function (json_block) {
-        var ret = new ULabelAnnotation();
-        Object.assign(ret, json_block);
-        // Handle 'new' keyword collision
-        if ("new" in json_block) {
-            ret.is_new = json_block["new"];
-        }
-        return ret;
-    };
-    return ULabelAnnotation;
-}());
-exports.a = ULabelAnnotation;
-
-
-/***/ }),
-
-/***/ 419:
-/***/ ((__unused_webpack_module, exports) => {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.filter_low = exports.mark_deprecated = exports.get_annotation_confidence = void 0;
-//Given an annotation returns the confidence of that annotation
-function get_annotation_confidence(annotation) {
-    var current_confidence = -1;
-    for (var type_of_id in annotation.classification_payloads) {
-        if (annotation.classification_payloads[type_of_id].confidence > current_confidence) {
-            current_confidence = annotation.classification_payloads[type_of_id].confidence;
-        }
-    }
-    return current_confidence;
-}
-exports.get_annotation_confidence = get_annotation_confidence;
-//Takes in an annotation and marks it either deprecated or not deprecated.
-function mark_deprecated(annotation, deprecated) {
-    annotation.deprecated = deprecated;
-}
-exports.mark_deprecated = mark_deprecated;
-//if the annotation confidence is less than the filter value then return true, else return false
-function filter_low(annotation_confidence, filter_value) {
-    if (annotation_confidence < filter_value)
-        return true;
-    return false;
-}
-exports.filter_low = filter_low;
-
-
-/***/ }),
-
 /***/ 769:
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "BBOX_SVG": () => (/* binding */ BBOX_SVG),
 /* harmony export */   "BBOX3_SVG": () => (/* binding */ BBOX3_SVG),
+/* harmony export */   "BBOX_SVG": () => (/* binding */ BBOX_SVG),
+/* harmony export */   "BUTTON_LOADER_HTML": () => (/* binding */ BUTTON_LOADER_HTML),
+/* harmony export */   "COLORS": () => (/* binding */ COLORS),
+/* harmony export */   "CONTOUR_SVG": () => (/* binding */ CONTOUR_SVG),
+/* harmony export */   "DEMO_ANNOTATION": () => (/* binding */ DEMO_ANNOTATION),
+/* harmony export */   "GLOBAL_SVG": () => (/* binding */ GLOBAL_SVG),
 /* harmony export */   "POINT_SVG": () => (/* binding */ POINT_SVG),
 /* harmony export */   "POLYGON_SVG": () => (/* binding */ POLYGON_SVG),
-/* harmony export */   "CONTOUR_SVG": () => (/* binding */ CONTOUR_SVG),
-/* harmony export */   "TBAR_SVG": () => (/* binding */ TBAR_SVG),
 /* harmony export */   "POLYLINE_SVG": () => (/* binding */ POLYLINE_SVG),
+/* harmony export */   "TBAR_SVG": () => (/* binding */ TBAR_SVG),
 /* harmony export */   "WHOLE_IMAGE_SVG": () => (/* binding */ WHOLE_IMAGE_SVG),
-/* harmony export */   "GLOBAL_SVG": () => (/* binding */ GLOBAL_SVG),
-/* harmony export */   "DEMO_ANNOTATION": () => (/* binding */ DEMO_ANNOTATION),
-/* harmony export */   "get_init_style": () => (/* binding */ get_init_style),
-/* harmony export */   "COLORS": () => (/* binding */ COLORS),
-/* harmony export */   "BUTTON_LOADER_HTML": () => (/* binding */ BUTTON_LOADER_HTML)
+/* harmony export */   "get_init_style": () => (/* binding */ get_init_style)
 /* harmony export */ });
 const DEMO_ANNOTATION = {"id":"7c64913a-9d8c-475a-af1a-658944e37c31","new":true,"parent_id":null,"created_by":"TestUser","created_at":"2020-12-21T02:41:47.304Z","deprecated":false,"spatial_type":"contour","spatial_payload":[[4,25],[4,25],[4,24],[4,23],[4,22],[4,22],[5,22],[5,21],[5,20],[6,20],[6,19],[7,19],[7,18],[8,18],[8,18],[10,18],[11,18],[11,17],[12,17],[12,16],[12,16],[13,16],[14,15],[16,14],[16,14],[17,14],[18,14],[18,13],[19,13],[20,13],[20,13],[21,13],[22,13],[23,13],[24,13],[24,13],[25,13],[26,13],[27,13],[28,13],[28,13],[29,13],[30,13],[31,13],[32,13],[34,13],[36,14],[36,14],[37,15],[40,15],[40,16],[41,16],[42,17],[43,17],[44,18],[44,18],[45,18],[46,18],[47,18],[47,18],[48,18],[48,18],[49,19],[50,20],[52,20],[52,20],[53,21],[54,21],[55,21],[56,21],[57,21],[58,22],[59,22],[60,22],[60,22],[61,22],[63,22],[64,22],[64,22],[65,22],[66,22],[67,22],[68,22],[68,21],[69,21],[70,20],[70,19],[71,19],[71,18],[72,18],[72,18],[72,18],[73,18],[75,17],[75,16],[76,16],[76,16],[76,15],[77,14],[78,14],[79,14],[79,13],[79,12],[80,12],[81,12],[82,11],[83,11],[84,10],[85,10],[86,10],[87,10],[88,10],[88,10],[89,10],[90,10],[91,10],[92,10],[92,10],[93,10],[94,10],[94,10],[95,10],[96,10],[96,11],[96,11],[98,11],[98,12],[99,12],[100,13],[100,14],[101,14],[101,15],[102,15],[104,16],[104,17],[104,18],[105,18],[106,18],[106,18],[107,18],[107,19],[107,20],[108,20],[108,21],[108,21],[108,22],[109,22],[109,22],[109,23]],"classification_payloads": null,"annotation_meta":"is_assigned_to_each_annotation"};
 const BBOX_SVG = `
@@ -14108,764 +15864,6 @@ const COLORS = [
 
 /***/ }),
 
-/***/ 976:
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.Configuration = void 0;
-var toolbox_1 = __webpack_require__(334);
-var annotation_operators_1 = __webpack_require__(419);
-var AllowedToolboxItem;
-(function (AllowedToolboxItem) {
-    AllowedToolboxItem[AllowedToolboxItem["ModeSelect"] = 0] = "ModeSelect";
-    AllowedToolboxItem[AllowedToolboxItem["ZoomPan"] = 1] = "ZoomPan";
-    AllowedToolboxItem[AllowedToolboxItem["AnnotationResize"] = 2] = "AnnotationResize";
-    AllowedToolboxItem[AllowedToolboxItem["AnnotationID"] = 3] = "AnnotationID";
-    AllowedToolboxItem[AllowedToolboxItem["RecolorActive"] = 4] = "RecolorActive";
-    AllowedToolboxItem[AllowedToolboxItem["ClassCounter"] = 5] = "ClassCounter";
-    AllowedToolboxItem[AllowedToolboxItem["KeypointSlider"] = 6] = "KeypointSlider";
-    AllowedToolboxItem[AllowedToolboxItem["SubmitButtons"] = 7] = "SubmitButtons"; // 7
-})(AllowedToolboxItem || (AllowedToolboxItem = {}));
-var Configuration = /** @class */ (function () {
-    function Configuration() {
-        var kwargs = [];
-        for (var _i = 0; _i < arguments.length; _i++) {
-            kwargs[_i] = arguments[_i];
-        }
-        this.toolbox_map = new Map([
-            [AllowedToolboxItem.ModeSelect, toolbox_1.ModeSelectionToolboxItem],
-            [AllowedToolboxItem.ZoomPan, toolbox_1.ZoomPanToolboxItem],
-            [AllowedToolboxItem.AnnotationResize, toolbox_1.AnnotationResizeItem],
-            [AllowedToolboxItem.AnnotationID, toolbox_1.AnnotationIDToolboxItem],
-            [AllowedToolboxItem.RecolorActive, toolbox_1.RecolorActiveItem],
-            [AllowedToolboxItem.ClassCounter, toolbox_1.ClassCounterToolboxItem],
-            [AllowedToolboxItem.KeypointSlider, toolbox_1.KeypointSliderItem],
-            [AllowedToolboxItem.SubmitButtons, toolbox_1.SubmitButtons]
-        ]);
-        //Change the order of the toolbox items here to change the order they show up in the toolbox
-        this.default_toolbox_item_order = [
-            AllowedToolboxItem.ModeSelect,
-            AllowedToolboxItem.ZoomPan,
-            AllowedToolboxItem.AnnotationResize,
-            AllowedToolboxItem.AnnotationID,
-            AllowedToolboxItem.RecolorActive,
-            AllowedToolboxItem.ClassCounter,
-            [AllowedToolboxItem.KeypointSlider, {
-                    "name": "Filter Low Confidence",
-                    "filter_function": annotation_operators_1.filter_low,
-                    "confidence_function": annotation_operators_1.get_annotation_confidence,
-                    "mark_deprecated": annotation_operators_1.mark_deprecated,
-                    "default_value": 0.05,
-                    "keybinds": {
-                        "increment": "2",
-                        "decrement": "1"
-                    }
-                }],
-            AllowedToolboxItem.SubmitButtons,
-        ];
-        this.default_keybinds = {
-            "annotation_size_small": "s",
-            "annotation_size_large": "l",
-            "annotation_size_plus": "=",
-            "annotation_size_minus": "-",
-            "annotation_vanish": "v" //The v Key by default
-        };
-        this.change_zoom_keybind = "r";
-        this.create_point_annotation_keybind = "c";
-        this.default_annotation_size = 6;
-        this.delete_annotation_keybind = "d";
-        this.filter_annotations_on_load = false;
-        this.switch_subtask_keybind = "z";
-        this.toggle_annotation_mode_keybind = "u";
-        this.modify_config.apply(this, kwargs);
-    }
-    Configuration.prototype.modify_config = function () {
-        var kwargs = [];
-        for (var _i = 0; _i < arguments.length; _i++) {
-            kwargs[_i] = arguments[_i];
-        }
-        //we don't know how many arguments we'll recieve, so loop through all of the elements in kwargs
-        for (var i = 0; i < kwargs.length; i++) {
-            //for every key: value pair, overwrite them/add them to the config
-            for (var key in kwargs[i]) {
-                this[key] = kwargs[i][key];
-            }
-        }
-    };
-    Configuration.annotation_gradient_default = false;
-    return Configuration;
-}());
-exports.Configuration = Configuration;
-
-
-/***/ }),
-
-/***/ 848:
-/***/ ((__unused_webpack_module, exports) => {
-
-"use strict";
-var __webpack_unused_export__;
-
-/*
-This file is designed to hold all the functions
-required for drawing to the canvas
-*/
-__webpack_unused_export__ = ({ value: true });
-__webpack_unused_export__ = exports.ws = void 0;
-/*recieves a base color and applies a gradient to it based on its confidence
-The reason for passing in the get confidence function is so that we can apply
-a gradient based on diffrent confidence statistics if we choose to do so*/
-function apply_gradient(annotation_object, base_color, get_annotation_confidence, gradient_maximum) {
-    //if the gradient toggle is checked off, then don't apply a gradient
-    if ($("#gradient-toggle").prop("checked") == false) {
-        return base_color;
-    }
-    if (annotation_object.classification_payloads == null) {
-        return base_color;
-    }
-    var annotation_confidence = get_annotation_confidence(annotation_object);
-    //if the annotation confidence is greater than the max gradient endpoint, then
-    //don't apply a gradient
-    if (annotation_confidence > gradient_maximum) {
-        return base_color;
-    }
-    var base_color_hex = color_to_hex(base_color);
-    //gradient_quantity is how strong you want the gradient to be
-    //made it a variable to make it easy to change in the future
-    var gradient_quantity = 0.85;
-    //Have the gradient color be a lightened version of the base color that is gradient_quantity% white
-    //and the remaining percent is base color
-    //Decimal numbers
-    var grad_r = Math.round(((1 - gradient_quantity) * (parseInt(base_color_hex.slice(1, 3), 16))) + gradient_quantity * 255);
-    var grad_g = Math.round(((1 - gradient_quantity) * (parseInt(base_color_hex.slice(3, 5), 16))) + gradient_quantity * 255);
-    var grad_b = Math.round(((1 - gradient_quantity) * (parseInt(base_color_hex.slice(5, 7), 16))) + gradient_quantity * 255);
-    //Grab individual r g b values from the hex string and convert them to decimal
-    var r = parseInt(base_color_hex.slice(1, 3), 16);
-    var g = parseInt(base_color_hex.slice(3, 5), 16);
-    var b = parseInt(base_color_hex.slice(5, 7), 16);
-    //Apply a linear gradient based on the confidence
-    var new_r = Math.round((1 - (annotation_confidence / gradient_maximum)) * grad_r + (annotation_confidence / gradient_maximum) * r);
-    var new_g = Math.round((1 - (annotation_confidence / gradient_maximum)) * grad_g + (annotation_confidence / gradient_maximum) * g);
-    var new_b = Math.round((1 - (annotation_confidence / gradient_maximum)) * grad_b + (annotation_confidence / gradient_maximum) * b);
-    //Turn the new rgb values to a hexadecimal version
-    var new_r_hex = new_r.toString(16);
-    var new_g_hex = new_g.toString(16);
-    var new_b_hex = new_b.toString(16);
-    //If the hex value is a single digit pad the front with a 0 to 
-    //ensure its two digits long
-    if (new_r_hex.length == 1) {
-        new_r_hex = "0" + new_r.toString(16);
-    }
-    if (new_g_hex.length == 1) {
-        new_g_hex = "0" + new_g.toString(16);
-    }
-    if (new_b_hex.length == 1) {
-        new_b_hex = "0" + new_b.toString(16);
-    }
-    var final_hex = "#".concat(new_r_hex, new_g_hex, new_b_hex);
-    //Since hex values should always be a string with length 7, if its not
-    //then return the base color just in case.
-    if (final_hex.length == 7) {
-        return final_hex;
-    }
-    else {
-        return base_color_hex;
-    }
-}
-exports.ws = apply_gradient;
-/*takes in a string of any valid css color and returns its hex value
-if given string is not a valid css color, returns the string passed in */
-function color_to_hex(color) {
-    var colors = { "aliceblue": "#f0f8ff", "antiquewhite": "#faebd7", "aqua": "#00ffff", "aquamarine": "#7fffd4", "azure": "#f0ffff",
-        "beige": "#f5f5dc", "bisque": "#ffe4c4", "black": "#000000", "blanchedalmond": "#ffebcd", "blue": "#0000ff", "blueviolet": "#8a2be2",
-        "brown": "#a52a2a", "burlywood": "#deb887",
-        "cadetblue": "#5f9ea0", "chartreuse": "#7fff00", "chocolate": "#d2691e", "coral": "#ff7f50", "cornflowerblue": "#6495ed",
-        "cornsilk": "#fff8dc", "crimson": "#dc143c", "cyan": "#00ffff",
-        "darkblue": "#00008b", "darkcyan": "#008b8b", "darkgoldenrod": "#b8860b", "darkgray": "#a9a9a9", "darkgreen": "#006400",
-        "darkkhaki": "#bdb76b", "darkmagenta": "#8b008b", "darkolivegreen": "#556b2f", "darkorange": "#ff8c00", "darkorchid": "#9932cc",
-        "darkred": "#8b0000", "darksalmon": "#e9967a", "darkseagreen": "#8fbc8f", "darkslateblue": "#483d8b", "darkslategray": "#2f4f4f",
-        "darkturquoise": "#00ced1", "darkviolet": "#9400d3", "deeppink": "#ff1493", "deepskyblue": "#00bfff", "dimgray": "#696969",
-        "dodgerblue": "#1e90ff",
-        "firebrick": "#b22222", "floralwhite": "#fffaf0", "forestgreen": "#228b22", "fuchsia": "#ff00ff",
-        "gainsboro": "#dcdcdc", "ghostwhite": "#f8f8ff", "gold": "#ffd700", "goldenrod": "#daa520", "gray": "#808080", "green": "#008000",
-        "greenyellow": "#adff2f",
-        "honeydew": "#f0fff0", "hotpink": "#ff69b4",
-        "indianred ": "#cd5c5c", "indigo": "#4b0082", "ivory": "#fffff0",
-        "khaki": "#f0e68c",
-        "lavender": "#e6e6fa", "lavenderblush": "#fff0f5", "lawngreen": "#7cfc00", "lemonchiffon": "#fffacd", "lightblue": "#add8e6",
-        "lightcoral": "#f08080", "lightcyan": "#e0ffff", "lightgoldenrodyellow": "#fafad2", "lightgrey": "#d3d3d3", "lightgreen": "#90ee90",
-        "lightpink": "#ffb6c1", "lightsalmon": "#ffa07a", "lightseagreen": "#20b2aa", "lightskyblue": "#87cefa", "lightslategray": "#778899",
-        "lightsteelblue": "#b0c4de", "lightyellow": "#ffffe0", "lime": "#00ff00", "limegreen": "#32cd32", "linen": "#faf0e6",
-        "magenta": "#ff00ff", "maroon": "#800000", "mediumaquamarine": "#66cdaa", "mediumblue": "#0000cd", "mediumorchid": "#ba55d3",
-        "mediumpurple": "#9370d8", "mediumseagreen": "#3cb371", "mediumslateblue": "#7b68ee", "mediumspringgreen": "#00fa9a",
-        "mediumturquoise": "#48d1cc", "mediumvioletred": "#c71585", "midnightblue": "#191970", "mintcream": "#f5fffa", "mistyrose": "#ffe4e1",
-        "moccasin": "#ffe4b5",
-        "navajowhite": "#ffdead", "navy": "#000080",
-        "oldlace": "#fdf5e6", "olive": "#808000", "olivedrab": "#6b8e23", "orange": "#ffa500", "orangered": "#ff4500", "orchid": "#da70d6",
-        "palegoldenrod": "#eee8aa", "palegreen": "#98fb98", "paleturquoise": "#afeeee", "palevioletred": "#d87093", "papayawhip": "#ffefd5",
-        "peachpuff": "#ffdab9", "peru": "#cd853f", "pink": "#ffc0cb", "plum": "#dda0dd", "powderblue": "#b0e0e6", "purple": "#800080",
-        "rebeccapurple": "#663399", "red": "#ff0000", "rosybrown": "#bc8f8f", "royalblue": "#4169e1",
-        "saddlebrown": "#8b4513", "salmon": "#fa8072", "sandybrown": "#f4a460", "seagreen": "#2e8b57", "seashell": "#fff5ee", "sienna": "#a0522d",
-        "silver": "#c0c0c0", "skyblue": "#87ceeb", "slateblue": "#6a5acd", "slategray": "#708090", "snow": "#fffafa", "springgreen": "#00ff7f",
-        "steelblue": "#4682b4",
-        "tan": "#d2b48c", "teal": "#008080", "thistle": "#d8bfd8", "tomato": "#ff6347", "turquoise": "#40e0d0",
-        "violet": "#ee82ee",
-        "wheat": "#f5deb3", "white": "#ffffff", "whitesmoke": "#f5f5f5",
-        "yellow": "#ffff00", "yellowgreen": "#9acd32" };
-    if (typeof colors[color.toLowerCase()] != 'undefined') {
-        return colors[color.toLowerCase()];
-    }
-    return color;
-}
-__webpack_unused_export__ = color_to_hex;
-
-
-/***/ }),
-
-/***/ 822:
-/***/ ((__unused_webpack_module, exports) => {
-
-"use strict";
-var __webpack_unused_export__;
-
-__webpack_unused_export__ = ({ value: true });
-exports.Z = void 0;
-var GeometricUtils = /** @class */ (function () {
-    function GeometricUtils() {
-    }
-    GeometricUtils.l2_norm = function (pt1, pt2) {
-        var ndim = pt1.length;
-        var sq = 0;
-        for (var i = 0; i < ndim; i++) {
-            sq += (pt1[i] - pt2[i]) * (pt1[i] - pt2[i]);
-        }
-        return Math.sqrt(sq);
-    };
-    // Get the point at a certain proportion of the segment between two points in a polygon
-    GeometricUtils.interpolate_poly_segment = function (pts, i, prop) {
-        var pt1 = pts[i % pts.length];
-        var pt2 = pts[(i + 1) % pts.length];
-        return [
-            pt1[0] * (1.0 - prop) + pt2[0] * prop,
-            pt1[1] * (1.0 - prop) + pt2[1] * prop
-        ];
-    };
-    // Given two points, return the line that goes through them in the form of
-    //    ax + by + c = 0
-    GeometricUtils.get_line_equation_through_points = function (p1, p2) {
-        var a = (p2[1] - p1[1]);
-        var b = (p1[0] - p2[0]);
-        // If the points are the same, no line can be inferred. Return null
-        if ((a == 0) && (b == 0))
-            return null;
-        var c = p1[1] * (p2[0] - p1[0]) - p1[0] * (p2[1] - p1[1]);
-        return {
-            "a": a,
-            "b": b,
-            "c": c
-        };
-    };
-    // Given a line segment in the form of ax + by + c = 0 and two endpoints for it,
-    //   return the point on the segment that is closest to the reference point, as well
-    //   as the distance away
-    GeometricUtils.get_nearest_point_on_segment = function (ref_x, ref_y, eq, kp1, kp2) {
-        //check to make sure eq exists
-        if (eq == null)
-            return null;
-        // For convenience
-        var a = eq["a"];
-        var b = eq["b"];
-        var c = eq["c"];
-        // Where is that point on the line, exactly?
-        var nrx = (b * (b * ref_x - a * ref_y) - a * c) / (a * a + b * b);
-        var nry = (a * (a * ref_y - b * ref_x) - b * c) / (a * a + b * b);
-        // Where along the segment is that point?
-        var xprop = 0.0;
-        if (kp2[0] != kp1[0]) {
-            xprop = (nrx - kp1[0]) / (kp2[0] - kp1[0]);
-        }
-        var yprop = 0.0;
-        if (kp2[1] != kp1[1]) {
-            yprop = (nry - kp1[1]) / (kp2[1] - kp1[1]);
-        }
-        // If the point is at an end of the segment, just return null
-        if ((xprop < 0) || (xprop > 1) || (yprop < 0) || (yprop > 1)) {
-            return null;
-        }
-        // Distance from point to line
-        var dst = Math.abs(a * ref_x + b * ref_y + c) / Math.sqrt(a * a + b * b);
-        // Proportion of the length of segment from p1 to the nearest point
-        var seg_length = Math.sqrt((kp2[0] - kp1[0]) * (kp2[0] - kp1[0]) + (kp2[1] - kp1[1]) * (kp2[1] - kp1[1]));
-        var kprop = Math.sqrt((nrx - kp1[0]) * (nrx - kp1[0]) + (nry - kp1[1]) * (nry - kp1[1])) / seg_length;
-        // return object with info about the point
-        return {
-            "dst": dst,
-            "prop": kprop
-        };
-    };
-    // Return the point on a polygon that's closest to a reference along with its distance
-    GeometricUtils.get_nearest_point_on_polygon = function (ref_x, ref_y, spatial_payload, dstmax, include_segments) {
-        if (dstmax === void 0) { dstmax = Infinity; }
-        if (include_segments === void 0) { include_segments = false; }
-        var poly_pts = spatial_payload;
-        // Initialize return value to null object
-        var ret = {
-            "access": null,
-            "distance": null,
-            "point": null
-        };
-        if (!include_segments) {
-            // Look through polygon points one by one 
-            //    no need to look at last, it's the same as first
-            for (var kpi = 0; kpi < poly_pts.length; kpi++) {
-                var kp = poly_pts[kpi];
-                // Distance is measured with l2 norm
-                var kpdst = Math.sqrt(Math.pow(kp[0] - ref_x, 2) + Math.pow(kp[1] - ref_y, 2));
-                // If this a minimum distance so far, store it
-                if (ret["distance"] == null || kpdst < ret["distance"]) {
-                    ret["access"] = kpi;
-                    ret["distance"] = kpdst;
-                    ret["point"] = poly_pts[kpi];
-                }
-            }
-            return ret;
-        }
-        else {
-            for (var kpi = 0; kpi < poly_pts.length - 1; kpi++) {
-                var kp1 = poly_pts[kpi];
-                var kp2 = poly_pts[kpi + 1];
-                var eq = GeometricUtils.get_line_equation_through_points(kp1, kp2);
-                var nr = GeometricUtils.get_nearest_point_on_segment(ref_x, ref_y, eq, kp1, kp2);
-                if ((nr != null) && (nr["dst"] < dstmax) && (ret["distance"] == null || nr["dst"] < ret["distance"])) {
-                    ret["access"] = "" + (kpi + nr["prop"]);
-                    ret["distance"] = nr["dst"];
-                    ret["point"] = GeometricUtils.interpolate_poly_segment(poly_pts, kpi, nr["prop"]);
-                }
-            }
-            return ret;
-        }
-    };
-    GeometricUtils.get_nearest_point_on_bounding_box = function (ref_x, ref_y, spatial_payload, dstmax) {
-        if (dstmax === void 0) { dstmax = Infinity; }
-        var ret = {
-            "access": null,
-            "distance": null,
-            "point": null
-        };
-        for (var bbi = 0; bbi < 2; bbi++) {
-            for (var bbj = 0; bbj < 2; bbj++) {
-                var kp = [spatial_payload[bbi][0], spatial_payload[bbj][1]];
-                var kpdst = Math.sqrt(Math.pow(kp[0] - ref_x, 2) + Math.pow(kp[1] - ref_y, 2));
-                if (kpdst < dstmax && (ret["distance"] == null || kpdst < ret["distance"])) {
-                    ret["access"] = "".concat(bbi).concat(bbj);
-                    ret["distance"] = kpdst;
-                    ret["point"] = kp;
-                }
-            }
-        }
-        return ret;
-    };
-    GeometricUtils.get_nearest_point_on_bbox3 = function (ref_x, ref_y, frame, spatial_payload, dstmax) {
-        if (dstmax === void 0) { dstmax = Infinity; }
-        var ret = {
-            "access": null,
-            "distance": null,
-            "point": null
-        };
-        for (var bbi = 0; bbi < 2; bbi++) {
-            for (var bbj = 0; bbj < 2; bbj++) {
-                var kp = [spatial_payload[bbi][0], spatial_payload[bbj][1]];
-                var kpdst = Math.sqrt(Math.pow(kp[0] - ref_x, 2) + Math.pow(kp[1] - ref_y, 2));
-                if (kpdst < dstmax && (ret["distance"] == null || kpdst < ret["distance"])) {
-                    ret["access"] = "".concat(bbi).concat(bbj);
-                    ret["distance"] = kpdst;
-                    ret["point"] = kp;
-                }
-            }
-        }
-        var min_k = 0;
-        var min = spatial_payload[0][2];
-        var max_k = 1;
-        var max = spatial_payload[1][2];
-        if (max < min) {
-            var tmp = min_k;
-            min_k = max_k;
-            max_k = tmp;
-            tmp = min;
-            min = max;
-            max = tmp;
-        }
-        if (frame == min) {
-            ret["access"] += "" + min_k;
-        }
-        else if (frame == max) {
-            ret["access"] += "" + max_k;
-        }
-        return ret;
-    };
-    GeometricUtils.get_nearest_point_on_tbar = function (ref_x, ref_y, spatial_payload, dstmax) {
-        if (dstmax === void 0) { dstmax = Infinity; }
-        // TODO intelligently test against three grabbable points
-        var ret = {
-            "access": null,
-            "distance": null,
-            "point": null
-        };
-        for (var tbi = 0; tbi < 2; tbi++) {
-            var kp = [spatial_payload[tbi][0], spatial_payload[tbi][1]];
-            var kpdst = Math.sqrt(Math.pow(kp[0] - ref_x, 2) + Math.pow(kp[1] - ref_y, 2));
-            if (kpdst < dstmax && (ret["distance"] == null || kpdst < ret["distance"])) {
-                ret["access"] = "".concat(tbi).concat(tbi);
-                ret["distance"] = kpdst;
-                ret["point"] = kp;
-            }
-        }
-        return ret;
-    };
-    return GeometricUtils;
-}());
-exports.Z = GeometricUtils;
-
-
-/***/ }),
-
-/***/ 37:
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
-
-"use strict";
-var __webpack_unused_export__;
-
-__webpack_unused_export__ = ({ value: true });
-exports.k = void 0;
-var toolbox_1 = __webpack_require__(334);
-var version_1 = __webpack_require__(345);
-var blobs_1 = __webpack_require__(769);
-var HTMLBuilder = /** @class */ (function () {
-    function HTMLBuilder() {
-    }
-    HTMLBuilder.add_style_to_document = function (ulabel) {
-        var head = document.head || document.getElementsByTagName('head')[0];
-        var style = document.createElement('style');
-        head.appendChild(style);
-        style.appendChild(document.createTextNode((0, blobs_1.get_init_style)(ulabel.config["container_id"])));
-    };
-    HTMLBuilder.get_md_button = function (md_key, md_name, svg_blob, cur_md, subtasks) {
-        var sel = "";
-        var href = " href=\"#\"";
-        if (cur_md == md_key) {
-            sel = " sel";
-            href = "";
-        }
-        var subtask_classes = "";
-        for (var st_key in subtasks) {
-            if (subtasks[st_key]["allowed_modes"].includes(md_key)) {
-                subtask_classes += " md-en4--" + st_key;
-            }
-        }
-        return "<div class=\"mode-opt\">\n            <a".concat(href, " id=\"md-btn--").concat(md_key, "\" class=\"md-btn").concat(sel).concat(subtask_classes, " invert-this-svg\" amdname=\"").concat(md_name, "\">\n                ").concat(svg_blob, "\n            </a>\n        </div>");
-    };
-    HTMLBuilder.get_images_html = function (ulabel) {
-        var images_html = "";
-        var display;
-        for (var i = 0; i < ulabel.config["image_data"].frames.length; i++) {
-            if (i != 0) {
-                display = "none";
-            }
-            else {
-                display = "block";
-            }
-            images_html += "\n                <img id=\"".concat(ulabel.config["image_id_pfx"], "__").concat(i, "\" src=\"").concat(ulabel.config["image_data"].frames[i], "\" class=\"imwrap_cls ").concat(ulabel.config["imgsz_class"], " image_frame\" style=\"z-index: 50; display: ").concat(display, ";\" />\n            ");
-        }
-        return images_html;
-    };
-    HTMLBuilder.get_frame_annotation_dialogs = function (ulabel) {
-        var frame_annotation_dialog = "";
-        var tot = 0;
-        for (var st_key in ulabel.subtasks) {
-            if (!ulabel.subtasks[st_key].allowed_modes.includes('whole-image') &&
-                !ulabel.subtasks[st_key].allowed_modes.includes('global')) {
-                continue;
-            }
-            tot += 1;
-        }
-        var ind = 0;
-        for (var st_key in ulabel.subtasks) {
-            if (!ulabel.subtasks[st_key].allowed_modes.includes('whole-image') &&
-                !ulabel.subtasks[st_key].allowed_modes.includes('global')) {
-                continue;
-            }
-            frame_annotation_dialog += "\n                <div id=\"fad_st__".concat(st_key, "\" class=\"frame_annotation_dialog fad_st__").concat(st_key, " fad_ind__").concat(tot - ind - 1, "\">\n                    <div class=\"hide_overflow_container\">\n                        <div class=\"row_container\">\n                            <div class=\"fad_row name\">\n                                <div class=\"fad_row_inner\">\n                                    <div class=\"fad_st_name\">").concat(ulabel.subtasks[st_key].display_name, "</div>\n                                </div>\n                            </div>\n                            <div class=\"fad_row add\">\n                                <div class=\"fad_row_inner\">\n                                    <div class=\"fad_st_add\">\n                                        <a class=\"add-glob-button\" href=\"#\">+</a>\n                                    </div>\n                                </div>\n                            </div><div class=\"fad_annotation_rows\"></div>\n                        </div>\n                    </div>\n                </div>\n            ");
-            ind += 1;
-            if (ind > 4) {
-                throw new Error("At most 4 subtasks can have allow 'whole-image' or 'global' annotations.");
-            }
-        }
-        return frame_annotation_dialog;
-    };
-    HTMLBuilder.prep_window_html = function (ulabel, toolbox_item_order) {
-        // Bring image and annotation scaffolding in
-        // TODO multi-image with spacing etc.
-        if (toolbox_item_order === void 0) { toolbox_item_order = null; }
-        // const tabs = ULabel.get_toolbox_tabs(ul);
-        var images = HTMLBuilder.get_images_html(ulabel);
-        var frame_annotation_dialogs = HTMLBuilder.get_frame_annotation_dialogs(ulabel);
-        // const toolbox = configuration.create_toolbox();
-        var toolbox = new toolbox_1.Toolbox([], toolbox_1.Toolbox.create_toolbox(ulabel, toolbox_item_order));
-        var tool_html = toolbox.setup_toolbox_html(ulabel, frame_annotation_dialogs, images, version_1.ULABEL_VERSION);
-        // Set the container's html to the toolbox html we just created
-        $("#" + ulabel.config["container_id"]).html(tool_html);
-        // Build toolbox for the current subtask only
-        var current_subtask = Object.keys(ulabel.subtasks)[0];
-        // Initialize toolbox based on configuration
-        var sp_id = ulabel.config["toolbox_id"];
-        var curmd = ulabel.subtasks[current_subtask]["state"]["annotation_mode"];
-        var md_buttons = [
-            HTMLBuilder.get_md_button("bbox", "Bounding Box", blobs_1.BBOX_SVG, curmd, ulabel.subtasks),
-            HTMLBuilder.get_md_button("point", "Point", blobs_1.POINT_SVG, curmd, ulabel.subtasks),
-            HTMLBuilder.get_md_button("polygon", "Polygon", blobs_1.POLYGON_SVG, curmd, ulabel.subtasks),
-            HTMLBuilder.get_md_button("tbar", "T-Bar", blobs_1.TBAR_SVG, curmd, ulabel.subtasks),
-            HTMLBuilder.get_md_button("polyline", "Polyline", blobs_1.POLYLINE_SVG, curmd, ulabel.subtasks),
-            HTMLBuilder.get_md_button("contour", "Contour", blobs_1.CONTOUR_SVG, curmd, ulabel.subtasks),
-            HTMLBuilder.get_md_button("bbox3", "Bounding Cube", blobs_1.BBOX3_SVG, curmd, ulabel.subtasks),
-            HTMLBuilder.get_md_button("whole-image", "Whole Frame", blobs_1.WHOLE_IMAGE_SVG, curmd, ulabel.subtasks),
-            HTMLBuilder.get_md_button("global", "Global", blobs_1.GLOBAL_SVG, curmd, ulabel.subtasks),
-        ];
-        // Append but don't wait
-        $("#" + sp_id + " .toolbox_inner_cls .mode-selection").append(md_buttons.join("<!-- -->"));
-        // Show current mode label
-        ulabel.show_annotation_mode(null);
-        // Make sure that entire toolbox is shown
-        if ($("#" + ulabel.config["toolbox_id"] + " .toolbox_inner_cls").height() > $("#" + ulabel.config["container_id"]).height()) {
-            $("#" + ulabel.config["toolbox_id"]).css("overflow-y", "scroll");
-        }
-        ulabel.toolbox = toolbox;
-        // Check an array to see if it contains a ZoomPanToolboxItem
-        var contains_zoom_pan = function (array) {
-            //check if the array is empty
-            if (array.length == 0)
-                return false;
-            // Loop through everything in the array and check if its the ZoomPanToolboxItem
-            for (var idx in array) {
-                if (array[idx] instanceof toolbox_1.ZoomPanToolboxItem) {
-                    return true;
-                }
-            }
-            // If the ZoomPanToolboxItem wasn't found then return false
-            return false;
-        };
-        // Check if initial_crop exists and has the appropriate properties
-        var check_initial_crop = function (initial_crop) {
-            // If initial_crop doesn't exist, return false
-            if (initial_crop == null)
-                return false;
-            // If initial_crop has the appropriate properties, return true
-            if ("width" in initial_crop &&
-                "height" in initial_crop &&
-                "left" in initial_crop &&
-                "top" in initial_crop) {
-                return true;
-            }
-            // If initial_crop exists but doesn't have the appropriate properties,
-            // then raise an error and return false
-            ulabel.raise_error("initial_crop missing necessary properties. Ignoring.");
-            return false;
-        };
-        // Make sure the toolbox contains the ZoomPanToolboxItem
-        if (contains_zoom_pan(ulabel.toolbox.items)) {
-            // Make sure the initial_crop exists and contains the necessary properties
-            if (check_initial_crop(ulabel.config.initial_crop)) {
-                // Grab the initial crop button and rename it
-                var initial_crop_button = document.getElementById("recenter-button");
-                initial_crop_button.innerHTML = "Initial Crop";
-            }
-            else {
-                // Grab the whole image button and set its display to none
-                var whole_image_button = document.getElementById("recenter-whole-image-button");
-                whole_image_button.style.display = "none";
-            }
-        }
-    };
-    HTMLBuilder.get_idd_string = function (idd_id, width, center_coord, cl_opacity, class_ids, inner_rad, outer_rad, class_defs) {
-        // TODO noconflict
-        var dialog_html = "\n        <div id=\"".concat(idd_id, "\" class=\"id_dialog\" style=\"width: ").concat(width, "px; height: ").concat(width, "px;\">\n            <a class=\"id-dialog-clickable-indicator\" href=\"#\"></a>\n            <svg width=\"").concat(width, "\" height=\"").concat(width, "\">\n        ");
-        for (var i = 0; i < class_ids.length; i++) {
-            var srt_prop = 1 / class_ids.length;
-            var cum_prop = i / class_ids.length;
-            var srk_prop = 1 / class_ids.length;
-            var gap_prop = 1.0 - srk_prop;
-            var rad_back = inner_rad + 1.0 * (outer_rad - inner_rad) / 2;
-            var rad_frnt = inner_rad + srt_prop * (outer_rad - inner_rad) / 2;
-            var wdt_back = 1.0 * (outer_rad - inner_rad);
-            var wdt_frnt = srt_prop * (outer_rad - inner_rad);
-            var srk_back = 2 * Math.PI * rad_back * srk_prop;
-            var gap_back = 2 * Math.PI * rad_back * gap_prop;
-            var off_back = 2 * Math.PI * rad_back * cum_prop;
-            var srk_frnt = 2 * Math.PI * rad_frnt * srk_prop;
-            var gap_frnt = 2 * Math.PI * rad_frnt * gap_prop;
-            var off_frnt = 2 * Math.PI * rad_frnt * cum_prop;
-            var ths_id = class_ids[i];
-            var ths_col = class_defs[i]["color"];
-            // TODO should names also go on the id dialog?
-            // let ths_nam = class_defs[i]["name"];
-            dialog_html += "\n            <circle\n                r=\"".concat(rad_back, "\" cx=\"").concat(center_coord, "\" cy=\"").concat(center_coord, "\" \n                stroke=\"").concat(ths_col, "\" \n                fill-opacity=\"0\"\n                stroke-opacity=\"").concat(cl_opacity, "\"\n                stroke-width=\"").concat(wdt_back, "\"; \n                stroke-dasharray=\"").concat(srk_back, " ").concat(gap_back, "\" \n                stroke-dashoffset=\"").concat(off_back, "\" />\n            <circle\n                id=\"").concat(idd_id, "__circ_").concat(ths_id, "\"\n                r=\"").concat(rad_frnt, "\" cx=\"").concat(center_coord, "\" cy=\"").concat(center_coord, "\"\n                fill-opacity=\"0\"\n                stroke=\"").concat(ths_col, "\" \n                stroke-opacity=\"1.0\"\n                stroke-width=\"").concat(wdt_frnt, "\" \n                stroke-dasharray=\"").concat(srk_frnt, " ").concat(gap_frnt, "\" \n                stroke-dashoffset=\"").concat(off_frnt, "\" />\n            ");
-        }
-        dialog_html += "\n            </svg>\n            <div class=\"centcirc\"></div>\n        </div>";
-        return dialog_html;
-    };
-    HTMLBuilder.build_id_dialogs = function (ulabel) {
-        var full_toolbox_html = "<div class=\"toolbox-id-app-payload\">";
-        var width = ulabel.config.outer_diameter;
-        // TODO real names here!
-        var inner_rad = ulabel.config.inner_prop * width / 2;
-        var inner_diam = inner_rad * 2;
-        var outer_rad = 0.5 * width;
-        var inner_top = outer_rad - inner_rad;
-        var inner_lft = outer_rad - inner_rad;
-        var cl_opacity = 0.4;
-        var tbid = ulabel.config.toolbox_id;
-        var center_coord = width / 2;
-        for (var st in ulabel.subtasks) {
-            var idd_id = ulabel.subtasks[st]["state"]["idd_id"];
-            var idd_id_front = ulabel.subtasks[st]["state"]["idd_id_front"];
-            var subtask_dialog_container_jq = $("#dialogs__" + st);
-            var front_subtask_dialog_container_jq = $("#front_dialogs__" + st);
-            var dialog_html_v2 = HTMLBuilder.get_idd_string(idd_id, width, center_coord, cl_opacity, ulabel.subtasks[st]["class_ids"], inner_rad, outer_rad, ulabel.subtasks[st]["class_defs"]);
-            var front_dialog_html_v2 = HTMLBuilder.get_idd_string(idd_id_front, width, center_coord, cl_opacity, ulabel.subtasks[st]["class_ids"], inner_rad, outer_rad, ulabel.subtasks[st]["class_defs"]);
-            // TODO noconflict
-            var toolbox_html = "<div id=\"tb-id-app--".concat(st, "\" class=\"tb-id-app\">");
-            var class_ids = ulabel.subtasks[st]["class_ids"];
-            for (var i = 0; i < class_ids.length; i++) {
-                var this_id = class_ids[i];
-                var this_color = ulabel.subtasks[st]["class_defs"][i]["color"];
-                var this_name = ulabel.subtasks[st]["class_defs"][i]["name"];
-                var sel = "";
-                var href = ' href="#"';
-                if (i == 0) {
-                    sel = " sel";
-                    href = "";
-                }
-                if (ulabel.config["allow_soft_id"]) {
-                    var msg = "Only hard id is currently supported";
-                    throw new Error(msg);
-                }
-                else {
-                    toolbox_html += "\n                        <a".concat(href, " id=\"").concat(tbid, "_sel_").concat(this_id, "\" class=\"tbid-opt").concat(sel, "\">\n                            <div class=\"colprev ").concat(tbid, "_colprev_").concat(this_id, "\" style=\"background-color: ").concat(this_color, "\"></div> <span class=\"tb-cls-nam\">").concat(this_name, "</span>\n                        </a>\n                    ");
-                }
-            }
-            toolbox_html += "\n            </div>";
-            // Add dialog to the document
-            // front_subtask_dialog_container_jq.append(dialog_html);
-            // $("#" + ul.subtasks[st]["idd_id"]).attr("id", ul.subtasks[st]["idd_id_front"]);
-            front_subtask_dialog_container_jq.append(front_dialog_html_v2); // TODO(new3d) MOVE THIS TO GLOB BOX -- superimpose atop thee anchor already there when needed, no remove and add back
-            subtask_dialog_container_jq.append(dialog_html_v2);
-            // console.log(dialog_html);
-            // console.log(dialog_html_v2);
-            // Wait to add full toolbox
-            full_toolbox_html += toolbox_html;
-            ulabel.subtasks[st]["state"]["visible_dialogs"][idd_id] = {
-                "left": 0.0,
-                "top": 0.0,
-                "pin": "center"
-            };
-        }
-        // Add all toolbox html at once
-        $("#" + ulabel.config["toolbox_id"] + " div.id-toolbox-app").html(full_toolbox_html);
-        // Style revisions based on the size
-        var idci = $("#" + ulabel.config["container_id"] + " a.id-dialog-clickable-indicator");
-        idci.css({
-            "height": "".concat(width, "px"),
-            "width": "".concat(width, "px"),
-            "border-radius": "".concat(outer_rad, "px"),
-        });
-        var ccirc = $("#" + ulabel.config["container_id"] + " div.centcirc");
-        ccirc.css({
-            "position": "absolute",
-            "top": "".concat(inner_top, "px"),
-            "left": "".concat(inner_lft, "px"),
-            "width": "".concat(inner_diam, "px"),
-            "height": "".concat(inner_diam, "px"),
-            "background-color": "black",
-            "border-radius": "".concat(inner_rad, "px")
-        });
-    };
-    HTMLBuilder.build_edit_suggestion = function (ulabel) {
-        // TODO noconflict
-        // DONE Migrated to subtasks
-        for (var stkey in ulabel.subtasks) {
-            var local_id = "edit_suggestion__".concat(stkey);
-            var global_id = "global_edit_suggestion__".concat(stkey);
-            var subtask_dialog_container_jq = $("#dialogs__" + stkey);
-            // Local edit suggestion
-            subtask_dialog_container_jq.append("\n                <a href=\"#\" id=\"".concat(local_id, "\" class=\"edit_suggestion editable\"></a>\n            "));
-            $("#" + local_id).css({
-                "height": ulabel.config["edit_handle_size"] + "px",
-                "width": ulabel.config["edit_handle_size"] + "px",
-                "border-radius": ulabel.config["edit_handle_size"] / 2 + "px"
-            });
-            // Global edit suggestion
-            var id_edit = "";
-            var mcm_ind = "";
-            if (!ulabel.subtasks[stkey]["single_class_mode"]) {
-                id_edit = "--><a href=\"#\" class=\"reid_suggestion global_sub_suggestion gedit-target\"></a><!--";
-                mcm_ind = " mcm";
-            }
-            subtask_dialog_container_jq.append("\n                <div id=\"".concat(global_id, "\" class=\"global_edit_suggestion glob_editable gedit-target").concat(mcm_ind, "\">\n                    <a href=\"#\" class=\"move_suggestion global_sub_suggestion movable gedit-target\">\n                        <img class=\"movable gedit-target\" src=\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAOEAAADhCAMAAAAJbSJIAAAAdVBMVEX///8jHyAAAAD7+/sfGxwcFxhta2s3NDUEAABxcHBqaWnr6+seGRoSCw0yLzC0s7O6ubl4dncLAAN9fHz19fUsKCkWERInIyTW1dV5eHjBwMCko6ODgoJAPj7o5+jw7/BYVleLiopHRUXKysqtrK1PTE0/PD0MlkEbAAAF+ElEQVR4nO2d63aiMBRGIYJTWhyrKPZia2sv7/+IQ7QWYhLITcmXyf41yzWLOXs+GsDmHJLkqsz32X5+3X/yuhSkTEuyGLuMyzElKYVMxy7kUhRHwUaxGLuUyzA9CYaaYtEKhpkiIxii4pQVDO9ELc4FQ0uRSzC0FAUJhpXi7Y1QMJwUC5lgKClO5YJhpNgrGEKKwlU0pBQHEqTcQCv2LDIdReATVXqZOFO8HbtQU5QSRE5RMUHcFJUTRE1RYRVlFOFWVE1BPEVtQbRLv8Yig5miQYIHRZjlxijBgyLIRWMxdLMthzyOXbwKH+aCjeLH2OUrsJ1ZGM62Y5evwKK2MKwRTtNPq7P0c+zyFZisc2PBfD0Zu3wV7kpeUfSzyX+WZ3djF68Gr0jul5zO8v78dM5LEMFGMWUVyVMi+L1F8sR+mKcwgo1i1lUk98lEYDhJmBRhTtEj3RSbBCWGXUWoBCltik2CUsNWESxByinFg6DU8KQIlyDlrmwuB/lRUG7YKDb/EzOcVbTLakHI18Pxz3LD5OGLkMVqvDId0WMYCNEQn2iITzTEJxriEw3xiYb4REN8oiE+0RCfaIhPNMQnGuITDfGJhvhEQ3yiIT7RMABEe6LCojjfpzcD2pmvxC5flllLuSx3Y5d04KMqnh39uEy2L39aXrauDvtcVBZ7wxdkVpO1z5t5XteknpmP9Lk9LA95/uqyJqe85oetZcSwT+PU+VLWvqZ4V5fHEs0aitrOlzzzM8XOLlYTxW7vkp9bI5nN1vqKbHNWvvFP8Wyrta7iefeZf/s/2Y3W2op8e12+8eMKfWK34VoedAZQiPoH841Pe0BXqaBtRb0LVTwwZ+lT01UlbB9TTVE2rGN52aK1kJSolqJk5JFfjzvSGhVSlI5bqd8uXrc6b7LusWFFaYIpebhG6Yo8yMscUOwRvL9O7YpwbWGKijCCpopAgmaKUIImivI+euLn6N+5vGDhUz9YghS9FOWCMz8TpMylvf98inLB5naNqFPZ3p/vHjX+Nb67WJqixSwLlllp9zXhpLYZydCFTdGZYBP4u5XhticWTbqKfaeoLuWLleF36a6UVtFhgmma/bUy/Js5rOU0DMapoFeGPylWTgX9MkxJ1XdjYIZfhvRu5cvxIT0zLN8Sx0f0zTDNkr3D5flwRL8Msy+7kUCiQ/plSIcWBb+W/gfXwyR5DPaepjod1mWK5beVodP70qo9bpjPFlX3wO6eD3O758OVu+fDij2yq2f8wvYZf1U4esbnpvfJU8T8nqbi/3ZY37UJ5y+G9H2pIEEKWIq6CVKgFHsEJQlSgBTNBIEUTQVD+B3wgGCPIsjv8QcF0fdiKAhi7KeRzERXE0TeE6UoKNnXlvq/r01ZEHVvotZJ5v/+Uk5RJ0GK/3uEd+zccF1BhH3eTIr6ggh79Tspmggi9Fv8pqi3yLT43zOz29TmCVIeD31P/go2it+078niC8yL9a59v7vqIJ0v3v146OH7D326RXIB30Nq3FLnKfzN/M3YJbkl/F7uaIhPNMQnGuITDfGJhvhEQ3yiIT7REJ9oiE80xCca4hMN8YmG+ERDfKIhPtEQn2iISfDv5Q7+3eqnAapHRanhT9+Ef/tXB2kHqB4UZYa/jSF+bvDsoTsClzxJDTudL2ApsiNwmxTFhkxrD1SKZ0OMaYqidyM8sR8CpciMof5Jke/YXXLNWTnKisoLNpcD7hPRZyAn6mQt67oaJl8j3OhYDUuho0i8Z1FbGNbSDl6PeLcZijCzmzlxHeTtnQp41agqxWKkj3lbwXW5lfQ/DnJj+K6R6yPqX1QR1Bj9PzZGimavUhkL6WR3OepvNvAD7RSxEqRoKuIJJkmho4i0yLRoXDRwLhMsyiliJkhRTBE1QYpSirgJUhRWVMRVtMvgpR/tQs8zkCL2KXqkVxE/QUrPcqPzIjGfkV40wkiQIkkxlAQpwhTDSZAiGMwUUoIUbkUNK0HKWYqhJUhhFEMUZG7gwjtFj/ymGGaClJ8UQ02QsiBZmpm/KByB+T7bX3ko8T9Zz1H5wFZx8QAAAABJRU5ErkJggg==\">\n                    </a><!--\n                    ").concat(id_edit, "\n                    --><a href=\"#\" class=\"delete_suggestion global_sub_suggestion gedit-target\">\n                        <span class=\"bigx gedit-target\">&#215;</span>\n                    </a>\n                </div>\n            "));
-            // Register these dialogs with each subtask
-            ulabel.subtasks[stkey]["state"]["visible_dialogs"][local_id] = {
-                "left": 0.0,
-                "top": 0.0,
-                "pin": "center"
-            };
-            ulabel.subtasks[stkey]["state"]["visible_dialogs"][global_id] = {
-                "left": 0.0,
-                "top": 0.0,
-                "pin": "center"
-            };
-        }
-    };
-    HTMLBuilder.build_confidence_dialog = function (ulabel) {
-        for (var stkey in ulabel.subtasks) {
-            var local_id = "annotation_confidence__".concat(stkey);
-            var global_id = "global_annotation_confidence__".concat(stkey);
-            var subtask_dialog_container_jq = $("#dialogs__" + stkey);
-            var global_edit_suggestion_jq = $("#global_edit_suggestion__" + stkey);
-            //Local confidence dialog
-            subtask_dialog_container_jq.append("\n                <p id=\"".concat(local_id, "\" class=\"annotation-confidence editable\"></p>\n            "));
-            $("#" + local_id).css({
-                "height": ulabel.config["edit_handle_size"] + "px",
-                "width": ulabel.config["edit_handle_size"] + "px",
-            });
-            // Global edit suggestion
-            var id_edit = "";
-            var mcm_ind = "";
-            if (!ulabel.subtasks[stkey]["single_class_mode"]) {
-                id_edit = "--><a href=\"#\" class=\"reid_suggestion global_sub_suggestion gedit-target\"></a><!--";
-                mcm_ind = " mcm";
-            }
-            global_edit_suggestion_jq.append("\n                <div id=\"".concat(global_id, "\" class=\"annotation-confidence gedit-target").concat(mcm_ind, "\">\n                    <p class=\"annotation-confidence-title\" style=\"margin: 0.25em; margin-top: 1em; padding-top: 0.3em; opacity: 1;\">Annotation Confidence:</p>\n                    <p class=\"annotation-confidence-value\" style=\"margin: 0.25em; opacity: 1;\">\n                    ").concat(ulabel.subtasks[ulabel.state["current_subtask"]]["active_annotation"], "\n                    </p>\n                </div>\n            "));
-            // Style the dialog
-            $("#" + global_id).css({
-                "background-color": "black",
-                "color": "white",
-                "opacity": "0.6",
-                "height": "3em",
-                "width": "14.5em",
-                "margin-top": "-9.5em",
-                "border-radius": "1em",
-                "font-size": "1.2em",
-                "margin-left": "-1.4em",
-            });
-        }
-    };
-    return HTMLBuilder;
-}());
-exports.k = HTMLBuilder;
-
-
-/***/ }),
-
 /***/ 138:
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
@@ -14875,19 +15873,17 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   "ULabel": () => (/* binding */ ULabel),
 /* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
 /* harmony export */ });
-/* harmony import */ var _annotation__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(806);
-/* harmony import */ var _toolbox__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(334);
-/* harmony import */ var _toolbox__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_toolbox__WEBPACK_IMPORTED_MODULE_1__);
-/* harmony import */ var _subtask__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(167);
-/* harmony import */ var _geometric_utils__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(822);
-/* harmony import */ var _annotation_operators__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(419);
-/* harmony import */ var _drawing_utilities__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(848);
-/* harmony import */ var _configuration__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(976);
-/* harmony import */ var _html_builder__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(37);
-/* harmony import */ var jquery__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(755);
-/* harmony import */ var jquery__WEBPACK_IMPORTED_MODULE_8___default = /*#__PURE__*/__webpack_require__.n(jquery__WEBPACK_IMPORTED_MODULE_8__);
-/* harmony import */ var _blobs__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(769);
-/* harmony import */ var _version__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(345);
+/* harmony import */ var _build_annotation__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(525);
+/* harmony import */ var _build_subtask__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(701);
+/* harmony import */ var _build_geometric_utils__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(848);
+/* harmony import */ var _build_annotation_operators__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(65);
+/* harmony import */ var _build_drawing_utilities__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(548);
+/* harmony import */ var _build_configuration__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(478);
+/* harmony import */ var _build_html_builder__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(918);
+/* harmony import */ var jquery__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(755);
+/* harmony import */ var jquery__WEBPACK_IMPORTED_MODULE_7___default = /*#__PURE__*/__webpack_require__.n(jquery__WEBPACK_IMPORTED_MODULE_7__);
+/* harmony import */ var _blobs__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(769);
+/* harmony import */ var _version__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(345);
 /*
 Uncertain Labeling Tool
 Sentera Inc.
@@ -14900,9 +15896,7 @@ Sentera Inc.
 
 
 
-
-
-const jQuery = (jquery__WEBPACK_IMPORTED_MODULE_8___default());
+const jQuery = (jquery__WEBPACK_IMPORTED_MODULE_7___default());
 window.$ = window.jQuery = __webpack_require__(755);
 
 const { v4: uuidv4 } = __webpack_require__(614);
@@ -14924,7 +15918,7 @@ class ULabel {
     static get elvl_info() { return 0; }
     static get elvl_standard() { return 1; }
     static get elvl_fatal() { return 2; }
-    static version() { return _version__WEBPACK_IMPORTED_MODULE_10__.ULABEL_VERSION; }
+    static version() { return _version__WEBPACK_IMPORTED_MODULE_9__.ULABEL_VERSION; }
 
     // ================= Static Utilities =================
 
@@ -14983,10 +15977,10 @@ class ULabel {
                     }
                     return "annotation";
                 }
-                else if (jquery__WEBPACK_IMPORTED_MODULE_8___default()(mouse_event.target).hasClass("editable")) {
+                else if (jquery__WEBPACK_IMPORTED_MODULE_7___default()(mouse_event.target).hasClass("editable")) {
                     return "edit";
                 }
-                else if (jquery__WEBPACK_IMPORTED_MODULE_8___default()(mouse_event.target).hasClass("movable")) {
+                else if (jquery__WEBPACK_IMPORTED_MODULE_7___default()(mouse_event.target).hasClass("movable")) {
                     mouse_event.preventDefault();
                     return "move";
                 }
@@ -15005,7 +15999,7 @@ class ULabel {
 
         // ================= Mouse Events in the ID Dialog ================= 
 
-        var iddg = jquery__WEBPACK_IMPORTED_MODULE_8___default()(".id_dialog");
+        var iddg = jquery__WEBPACK_IMPORTED_MODULE_7___default()(".id_dialog");
 
         // Hover interactions
 
@@ -15021,7 +16015,7 @@ class ULabel {
 
         // ================= Mouse Events in the Annotation Container ================= 
 
-        var annbox = jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + ul.config["annbox_id"]);
+        var annbox = jquery__WEBPACK_IMPORTED_MODULE_7___default()("#" + ul.config["annbox_id"]);
 
         // Detect and record mousedown
         annbox.mousedown(function (mouse_event) {
@@ -15029,11 +16023,11 @@ class ULabel {
         });
 
         // Detect and record mouseup
-        jquery__WEBPACK_IMPORTED_MODULE_8___default()(window).mouseup(function (mouse_event) {
+        jquery__WEBPACK_IMPORTED_MODULE_7___default()(window).mouseup(function (mouse_event) {
             ul.handle_mouse_up(mouse_event);
         });
 
-        jquery__WEBPACK_IMPORTED_MODULE_8___default()(window).on("click", (e) => {
+        jquery__WEBPACK_IMPORTED_MODULE_7___default()(window).on("click", (e) => {
             if (e.shiftKey) {
                 e.preventDefault();
             }
@@ -15044,7 +16038,7 @@ class ULabel {
             ul.handle_mouse_move(mouse_event);
         });
 
-        jquery__WEBPACK_IMPORTED_MODULE_8___default()(document).on("keypress", (e) => {   
+        jquery__WEBPACK_IMPORTED_MODULE_7___default()(document).on("keypress", (e) => {   
             // Check for the correct keypress
             if (e.key == ul.config.create_point_annotation_keybind) {
 
@@ -15106,8 +16100,8 @@ class ULabel {
 
     
 
-        jquery__WEBPACK_IMPORTED_MODULE_8___default()(document).on("click", "#" + ul.config["toolbox_id"] + " .zbutt", (e) => {
-            let tgt_jq = jquery__WEBPACK_IMPORTED_MODULE_8___default()(e.currentTarget);
+        jquery__WEBPACK_IMPORTED_MODULE_7___default()(document).on("click", "#" + ul.config["toolbox_id"] + " .zbutt", (e) => {
+            let tgt_jq = jquery__WEBPACK_IMPORTED_MODULE_7___default()(e.currentTarget);
             if (tgt_jq.hasClass("zin")) {
                 ul.state["zoom_val"] *= 1.1;
             }
@@ -15116,9 +16110,9 @@ class ULabel {
             }
             ul.rezoom();
         });
-        jquery__WEBPACK_IMPORTED_MODULE_8___default()(document).on("click", "#" + ul.config["toolbox_id"] + " .pbutt", (e) => {
-            let tgt_jq = jquery__WEBPACK_IMPORTED_MODULE_8___default()(e.currentTarget);
-            let annbox = jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + ul.config["annbox_id"]);
+        jquery__WEBPACK_IMPORTED_MODULE_7___default()(document).on("click", "#" + ul.config["toolbox_id"] + " .pbutt", (e) => {
+            let tgt_jq = jquery__WEBPACK_IMPORTED_MODULE_7___default()(e.currentTarget);
+            let annbox = jquery__WEBPACK_IMPORTED_MODULE_7___default()("#" + ul.config["annbox_id"]);
             if (tgt_jq.hasClass("up")) {
                 annbox.scrollTop(annbox.scrollTop() - 20);
             }
@@ -15132,8 +16126,8 @@ class ULabel {
                 annbox.scrollLeft(annbox.scrollLeft() + 20);
             }
         });
-        jquery__WEBPACK_IMPORTED_MODULE_8___default()(document).on("click", "#" + ul.config["toolbox_id"] + " .wbutt", (e) => {
-            let tgt_jq = jquery__WEBPACK_IMPORTED_MODULE_8___default()(e.currentTarget);
+        jquery__WEBPACK_IMPORTED_MODULE_7___default()(document).on("click", "#" + ul.config["toolbox_id"] + " .wbutt", (e) => {
+            let tgt_jq = jquery__WEBPACK_IMPORTED_MODULE_7___default()(e.currentTarget);
             if (tgt_jq.hasClass("win")) {
                 ul.state["line_size"] *= 1.1;
             }
@@ -15142,18 +16136,18 @@ class ULabel {
             }
             ul.redraw_demo();
         });
-        jquery__WEBPACK_IMPORTED_MODULE_8___default()(document).on("click", "#" + ul.config["toolbox_id"] + " .setting a", (e) => {
-            let tgt_jq = jquery__WEBPACK_IMPORTED_MODULE_8___default()(e.currentTarget);
+        jquery__WEBPACK_IMPORTED_MODULE_7___default()(document).on("click", "#" + ul.config["toolbox_id"] + " .setting a", (e) => {
+            let tgt_jq = jquery__WEBPACK_IMPORTED_MODULE_7___default()(e.currentTarget);
             if (!e.currentTarget.hasAttribute("href")) return;
             if (tgt_jq.hasClass("fixed-setting")) {
-                jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + ul.config["toolbox_id"] + " .setting a.fixed-setting").removeAttr("href");
-                jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + ul.config["toolbox_id"] + " .setting a.dyn-setting").attr("href", "#");
+                jquery__WEBPACK_IMPORTED_MODULE_7___default()("#" + ul.config["toolbox_id"] + " .setting a.fixed-setting").removeAttr("href");
+                jquery__WEBPACK_IMPORTED_MODULE_7___default()("#" + ul.config["toolbox_id"] + " .setting a.dyn-setting").attr("href", "#");
                 ul.state["line_size"] = ul.state["line_size"] * ul.state["zoom_val"];
                 ul.state["size_mode"] = "fixed";
             }
             else if (tgt_jq.hasClass("dyn-setting")) {
-                jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + ul.config["toolbox_id"] + " .setting a.dyn-setting").removeAttr("href");
-                jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + ul.config["toolbox_id"] + " .setting a.fixed-setting").attr("href", "#");
+                jquery__WEBPACK_IMPORTED_MODULE_7___default()("#" + ul.config["toolbox_id"] + " .setting a.dyn-setting").removeAttr("href");
+                jquery__WEBPACK_IMPORTED_MODULE_7___default()("#" + ul.config["toolbox_id"] + " .setting a.fixed-setting").attr("href", "#");
                 ul.state["line_size"] = ul.get_line_size();
                 ul.state["size_mode"] = "dynamic";
             }
@@ -15161,13 +16155,13 @@ class ULabel {
         });
 
         // Listener for soft id toolbox buttons
-        jquery__WEBPACK_IMPORTED_MODULE_8___default()(document).on("click", "#" + ul.config["toolbox_id"] + ' a.tbid-opt', (e) => {
-            let tgt_jq = jquery__WEBPACK_IMPORTED_MODULE_8___default()(e.currentTarget);
+        jquery__WEBPACK_IMPORTED_MODULE_7___default()(document).on("click", "#" + ul.config["toolbox_id"] + ' a.tbid-opt', (e) => {
+            let tgt_jq = jquery__WEBPACK_IMPORTED_MODULE_7___default()(e.currentTarget);
             let pfx = "div#tb-id-app--" + ul.state["current_subtask"];
             let crst = ul.state["current_subtask"];
             if (tgt_jq.attr("href") == "#") {
-                jquery__WEBPACK_IMPORTED_MODULE_8___default()(pfx + " a.tbid-opt.sel").attr("href", "#");
-                jquery__WEBPACK_IMPORTED_MODULE_8___default()(pfx + " a.tbid-opt.sel").removeClass("sel");
+                jquery__WEBPACK_IMPORTED_MODULE_7___default()(pfx + " a.tbid-opt.sel").attr("href", "#");
+                jquery__WEBPACK_IMPORTED_MODULE_7___default()(pfx + " a.tbid-opt.sel").removeClass("sel");
                 tgt_jq.addClass("sel");
                 tgt_jq.removeAttr("href");
                 let idarr = tgt_jq.attr("id").split("_");
@@ -15177,8 +16171,8 @@ class ULabel {
             }
         });
 
-        jquery__WEBPACK_IMPORTED_MODULE_8___default()(document).on("click", "a.tb-st-switch[href]", (e) => {
-            let switch_to = jquery__WEBPACK_IMPORTED_MODULE_8___default()(e.target).attr("id").split("--")[1];
+        jquery__WEBPACK_IMPORTED_MODULE_7___default()(document).on("click", "a.tb-st-switch[href]", (e) => {
+            let switch_to = jquery__WEBPACK_IMPORTED_MODULE_7___default()(e.target).attr("id").split("--")[1];
 
             // Ignore if in the middle of annotation
             if (ul.subtasks[ul.state["current_subtask"]]["state"]["is_in_progress"]) {
@@ -15189,7 +16183,7 @@ class ULabel {
         });
 
         // Keybind to switch active subtask
-        jquery__WEBPACK_IMPORTED_MODULE_8___default()(document).on("keypress", (e) => {
+        jquery__WEBPACK_IMPORTED_MODULE_7___default()(document).on("keypress", (e) => {
             
             // Ignore if in the middle of annotation
             if (ul.subtasks[ul.state["current_subtask"]]["state"]["is_in_progress"]) {
@@ -15222,38 +16216,38 @@ class ULabel {
             }
         })
 
-        jquery__WEBPACK_IMPORTED_MODULE_8___default()(document).on("input", "input.frame_input", () => {
+        jquery__WEBPACK_IMPORTED_MODULE_7___default()(document).on("input", "input.frame_input", () => {
             ul.update_frame();
         });
 
 
-        jquery__WEBPACK_IMPORTED_MODULE_8___default()(document).on("input", "span.tb-st-range input", () => {
+        jquery__WEBPACK_IMPORTED_MODULE_7___default()(document).on("input", "span.tb-st-range input", () => {
             ul.readjust_subtask_opacities();
         });
 
-        jquery__WEBPACK_IMPORTED_MODULE_8___default()(document).on("click", "div.fad_row.add a.add-glob-button", () => {
+        jquery__WEBPACK_IMPORTED_MODULE_7___default()(document).on("click", "div.fad_row.add a.add-glob-button", () => {
             ul.create_nonspatial_annotation();
         });
-        jquery__WEBPACK_IMPORTED_MODULE_8___default()(document).on("focus", "textarea.nonspatial_note", () => {
-            jquery__WEBPACK_IMPORTED_MODULE_8___default()("div.frame_annotation_dialog.active").addClass("permopen");
+        jquery__WEBPACK_IMPORTED_MODULE_7___default()(document).on("focus", "textarea.nonspatial_note", () => {
+            jquery__WEBPACK_IMPORTED_MODULE_7___default()("div.frame_annotation_dialog.active").addClass("permopen");
         });
-        jquery__WEBPACK_IMPORTED_MODULE_8___default()(document).on("focusout", "textarea.nonspatial_note", () => {
-            jquery__WEBPACK_IMPORTED_MODULE_8___default()("div.frame_annotation_dialog.permopen").removeClass("permopen");
+        jquery__WEBPACK_IMPORTED_MODULE_7___default()(document).on("focusout", "textarea.nonspatial_note", () => {
+            jquery__WEBPACK_IMPORTED_MODULE_7___default()("div.frame_annotation_dialog.permopen").removeClass("permopen");
         });
-        jquery__WEBPACK_IMPORTED_MODULE_8___default()(document).on("input", "textarea.nonspatial_note", (e) => {
+        jquery__WEBPACK_IMPORTED_MODULE_7___default()(document).on("input", "textarea.nonspatial_note", (e) => {
             // Update annotation's text field
             ul.subtasks[ul.state["current_subtask"]]["annotations"]["access"][e.target.id.substring("note__".length)]["text_payload"] = e.target.value;
         });
-        jquery__WEBPACK_IMPORTED_MODULE_8___default()(document).on("click", "a.fad_button.delete", (e) => {
+        jquery__WEBPACK_IMPORTED_MODULE_7___default()(document).on("click", "a.fad_button.delete", (e) => {
             ul.delete_annotation(e.target.id.substring("delete__".length));
         });
-        jquery__WEBPACK_IMPORTED_MODULE_8___default()(document).on("click", "a.fad_button.reclf", (e) => {
+        jquery__WEBPACK_IMPORTED_MODULE_7___default()(document).on("click", "a.fad_button.reclf", (e) => {
             // Show idd
             ul.show_id_dialog(e.pageX, e.pageY, e.target.id.substring("reclf__".length), false, true);
         });
 
         //Whenever the mouse makes the dialogs show up, update the displayed annotation confidence.
-        jquery__WEBPACK_IMPORTED_MODULE_8___default()(document).on("mouseenter", "div.global_edit_suggestion", (e) => {
+        jquery__WEBPACK_IMPORTED_MODULE_7___default()(document).on("mouseenter", "div.global_edit_suggestion", (e) => {
             //Grab the currently active annotation
             let active_annotation = ul.subtasks[ul.state["current_subtask"]]["active_annotation"]
 
@@ -15267,20 +16261,20 @@ class ULabel {
             }
 
             //Update the display dialog with the annotation's confidence
-            jquery__WEBPACK_IMPORTED_MODULE_8___default()(".annotation-confidence-value").text(confidence)
+            jquery__WEBPACK_IMPORTED_MODULE_7___default()(".annotation-confidence-value").text(confidence)
         })
-        jquery__WEBPACK_IMPORTED_MODULE_8___default()(document).on("mouseenter", "div.fad_annotation_rows div.fad_row", (e) => {
+        jquery__WEBPACK_IMPORTED_MODULE_7___default()(document).on("mouseenter", "div.fad_annotation_rows div.fad_row", (e) => {
             // Show thumbnail for idd
-            ul.suggest_edits(null, jquery__WEBPACK_IMPORTED_MODULE_8___default()(e.currentTarget).attr("id").substring("row__".length));
+            ul.suggest_edits(null, jquery__WEBPACK_IMPORTED_MODULE_7___default()(e.currentTarget).attr("id").substring("row__".length));
         });
-        jquery__WEBPACK_IMPORTED_MODULE_8___default()(document).on("mouseleave", "div.fad_annotation_rows div.fad_row", () => {
+        jquery__WEBPACK_IMPORTED_MODULE_7___default()(document).on("mouseleave", "div.fad_annotation_rows div.fad_row", () => {
             // Show thumbnail for idd
             if (ul.subtasks[ul.state["current_subtask"]]["state"]["idd_visible"] && !ul.subtasks[ul.state["current_subtask"]]["state"]["idd_thumbnail"]) {
                 return;
             }
             ul.suggest_edits(null);
         });
-        jquery__WEBPACK_IMPORTED_MODULE_8___default()(document).on("keypress", (e) => {
+        jquery__WEBPACK_IMPORTED_MODULE_7___default()(document).on("keypress", (e) => {
 
             //check the key pressed against the delete annotation keybind in the config
             if (e.key == ul.config.delete_annotation_keybind) {
@@ -15295,7 +16289,7 @@ class ULabel {
         })
 
         // Listener for id_dialog click interactions
-        jquery__WEBPACK_IMPORTED_MODULE_8___default()(document).on("click", "#" + ul.config["container_id"] + " a.id-dialog-clickable-indicator", (e) => {
+        jquery__WEBPACK_IMPORTED_MODULE_7___default()(document).on("click", "#" + ul.config["container_id"] + " a.id-dialog-clickable-indicator", (e) => {
             let crst = ul.state["current_subtask"];
             if (!ul.subtasks[crst]["state"]["idd_thumbnail"]) {
                 ul.handle_id_dialog_click(e);
@@ -15304,7 +16298,7 @@ class ULabel {
                 // It's always covered up as a thumbnail. See below
             }
         });
-        jquery__WEBPACK_IMPORTED_MODULE_8___default()(document).on("click", ".global_edit_suggestion a.reid_suggestion", (e) => {
+        jquery__WEBPACK_IMPORTED_MODULE_7___default()(document).on("click", ".global_edit_suggestion a.reid_suggestion", (e) => {
             let crst = ul.state["current_subtask"];
             let annid = ul.subtasks[crst]["state"]["idd_associated_annotation"];
             ul.hide_global_edit_suggestion();
@@ -15316,7 +16310,7 @@ class ULabel {
             );
         });
 
-        jquery__WEBPACK_IMPORTED_MODULE_8___default()(document).on("click", "#" + ul.config["annbox_id"] + " .delete_suggestion", () => {
+        jquery__WEBPACK_IMPORTED_MODULE_7___default()(document).on("click", "#" + ul.config["annbox_id"] + " .delete_suggestion", () => {
             let crst = ul.state["current_subtask"];
             ul.delete_annotation(ul.subtasks[crst]["state"]["move_candidate"]["annid"]);
         })
@@ -15349,14 +16343,14 @@ class ULabel {
         //     }
         // });
 
-        jquery__WEBPACK_IMPORTED_MODULE_8___default()(document).on("click", "#" + ul.config["toolbox_id"] + " a.night-button", function () {
-            if (jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + ul.config["container_id"]).hasClass("ulabel-night")) {
-                jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + ul.config["container_id"]).removeClass("ulabel-night");
+        jquery__WEBPACK_IMPORTED_MODULE_7___default()(document).on("click", "#" + ul.config["toolbox_id"] + " a.night-button", function () {
+            if (jquery__WEBPACK_IMPORTED_MODULE_7___default()("#" + ul.config["container_id"]).hasClass("ulabel-night")) {
+                jquery__WEBPACK_IMPORTED_MODULE_7___default()("#" + ul.config["container_id"]).removeClass("ulabel-night");
                 // Destroy any night cookie
                 ULabel.destroy_night_mode_cookie();
             }
             else {
-                jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + ul.config["container_id"]).addClass("ulabel-night");
+                jquery__WEBPACK_IMPORTED_MODULE_7___default()("#" + ul.config["container_id"]).addClass("ulabel-night");
                 // Drop a night cookie
                 ULabel.set_night_mode_cookie();
             }
@@ -15367,7 +16361,7 @@ class ULabel {
             const shift = keypress_event.shiftKey;
             const ctrl = keypress_event.ctrlKey || keypress_event.metaKey;
             let fms = ul.config["image_data"].frames.length > 1;
-            let annbox = jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + ul.config["annbox_id"]);
+            let annbox = jquery__WEBPACK_IMPORTED_MODULE_7___default()("#" + ul.config["annbox_id"]);
             if (ctrl &&
                 (
                     keypress_event.key == "z" ||
@@ -15392,7 +16386,7 @@ class ULabel {
                 )
             ) {
                 keypress_event.preventDefault();
-                jquery__WEBPACK_IMPORTED_MODULE_8___default()(".submit-button")[0].click(); // Click the first submit button
+                jquery__WEBPACK_IMPORTED_MODULE_7___default()(".submit-button")[0].click(); // Click the first submit button
             }
             else if (keypress_event.key == "l") {
                 // console.log("Listing annotations using the \"l\" key has been deprecated.");
@@ -15474,7 +16468,7 @@ class ULabel {
                 let name = subtask["classes"][i];
                 ul.subtasks[subtask_key]["class_defs"].push({
                     "name": name,
-                    "color": _blobs__WEBPACK_IMPORTED_MODULE_9__.COLORS[ul.tot_num_classes],
+                    "color": _blobs__WEBPACK_IMPORTED_MODULE_8__.COLORS[ul.tot_num_classes],
                     "id": ul.tot_num_classes
                 });
                 ul.subtasks[subtask_key]["class_ids"].push(ul.tot_num_classes);
@@ -15483,7 +16477,7 @@ class ULabel {
                 // Start with default object
                 let repl = {
                     "name": `Class ${ul.tot_num_classes}`,
-                    "color": _blobs__WEBPACK_IMPORTED_MODULE_9__.COLORS[ul.tot_num_classes],
+                    "color": _blobs__WEBPACK_IMPORTED_MODULE_8__.COLORS[ul.tot_num_classes],
                     "id": ul.tot_num_classes
                 };
 
@@ -15519,7 +16513,7 @@ class ULabel {
         if (subtask["resume_from"] != null) {
             for (var i = 0; i < subtask["resume_from"].length; i++) {
                 // Get copy of annotation to import for modification before incorporation
-                let cand = _annotation__WEBPACK_IMPORTED_MODULE_0__/* .ULabelAnnotation.from_json */ .a.from_json(JSON.parse(JSON.stringify(subtask["resume_from"][i])));
+                let cand = _build_annotation__WEBPACK_IMPORTED_MODULE_0__/* .ULabelAnnotation.from_json */ .a.from_json(JSON.parse(JSON.stringify(subtask["resume_from"][i])));
 
                 // Mark as not new
                 cand["new"] = false;
@@ -15609,7 +16603,7 @@ class ULabel {
         for (const subtask_key in stcs) {
             // For convenience, make a raw subtask var
             let raw_subtask = stcs[subtask_key];
-            ul.subtasks[subtask_key] = _subtask__WEBPACK_IMPORTED_MODULE_2__/* .ULabelSubtask.from_json */ .W.from_json(subtask_key, raw_subtask);
+            ul.subtasks[subtask_key] = _build_subtask__WEBPACK_IMPORTED_MODULE_1__/* .ULabelSubtask.from_json */ .W.from_json(subtask_key, raw_subtask);
 
             // // Initialize subtask config to null
             // ul.subtasks[subtask_key] = {
@@ -15791,7 +16785,7 @@ class ULabel {
         //   some might be offloaded to the constructor eventually...
 
         //create the config and add ulabel dependent data
-        this.config = new _configuration__WEBPACK_IMPORTED_MODULE_6__.Configuration({
+        this.config = new _build_configuration__WEBPACK_IMPORTED_MODULE_5__.Configuration({
             // Values useful for generating HTML for tool
             // TODO(v1) Make sure these don't conflict with other page elements
             "container_id": container_id,
@@ -15926,17 +16920,17 @@ class ULabel {
 
     init(callback) {
         // Add stylesheet
-        _html_builder__WEBPACK_IMPORTED_MODULE_7__/* .HTMLBuilder.add_style_to_document */ .k.add_style_to_document(this);
+        _build_html_builder__WEBPACK_IMPORTED_MODULE_6__/* .HTMLBuilder.add_style_to_document */ .k.add_style_to_document(this);
 
         let that = this;
         that.state["current_subtask"] = Object.keys(that.subtasks)[0];
 
         // Place image element
-        _html_builder__WEBPACK_IMPORTED_MODULE_7__/* .HTMLBuilder.prep_window_html */ .k.prep_window_html(this, this.toolbox_order);
+        _build_html_builder__WEBPACK_IMPORTED_MODULE_6__/* .HTMLBuilder.prep_window_html */ .k.prep_window_html(this, this.toolbox_order);
 
         // Detect night cookie
         if (ULabel.has_night_mode_cookie()) {
-            jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + this.config["container_id"]).addClass("ulabel-night");
+            jquery__WEBPACK_IMPORTED_MODULE_7___default()("#" + this.config["container_id"]).addClass("ulabel-night");
         }
 
         var images = [document.getElementById(`${this.config["image_id_pfx"]}__0`)];
@@ -15953,7 +16947,7 @@ class ULabel {
 
             // Add canvasses for each subtask and get their rendering contexts
             for (const st in that.subtasks) {
-                jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + that.config["imwrap_id"]).append(`
+                jquery__WEBPACK_IMPORTED_MODULE_7___default()("#" + that.config["imwrap_id"]).append(`
                 <div id="canvasses__${st}" class="canvasses">
                     <canvas 
                         id="${that.subtasks[st]["canvas_bid"]}" 
@@ -15969,7 +16963,7 @@ class ULabel {
                     <div id="dialogs__${st}" class="dialogs_container"></div>
                 </div>
                 `);
-                jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + that.config["container_id"] + ` div#fad_st__${st}`).append(`
+                jquery__WEBPACK_IMPORTED_MODULE_7___default()("#" + that.config["container_id"] + ` div#fad_st__${st}`).append(`
                     <div id="front_dialogs__${st}" class="front_dialogs"></div>
                 `);
 
@@ -15987,13 +16981,13 @@ class ULabel {
             // ).getContext("2d");
 
             // Add the ID dialogs' HTML to the document
-            _html_builder__WEBPACK_IMPORTED_MODULE_7__/* .HTMLBuilder.build_id_dialogs */ .k.build_id_dialogs(that);
+            _build_html_builder__WEBPACK_IMPORTED_MODULE_6__/* .HTMLBuilder.build_id_dialogs */ .k.build_id_dialogs(that);
 
             // Add the HTML for the edit suggestion to the window
-            _html_builder__WEBPACK_IMPORTED_MODULE_7__/* .HTMLBuilder.build_edit_suggestion */ .k.build_edit_suggestion(that);
+            _build_html_builder__WEBPACK_IMPORTED_MODULE_6__/* .HTMLBuilder.build_edit_suggestion */ .k.build_edit_suggestion(that);
 
             // Add dialog to show annotation confidence
-            _html_builder__WEBPACK_IMPORTED_MODULE_7__/* .HTMLBuilder.build_confidence_dialog */ .k.build_confidence_dialog(that);
+            _build_html_builder__WEBPACK_IMPORTED_MODULE_6__/* .HTMLBuilder.build_confidence_dialog */ .k.build_confidence_dialog(that);
 
             // Create listers to manipulate and export this object
             ULabel.create_listeners(that);
@@ -16005,7 +16999,7 @@ class ULabel {
 
             // Indicate that the object is now init!
             that.is_init = true;
-            jquery__WEBPACK_IMPORTED_MODULE_8___default()(`div#${this.config["container_id"]}`).css("display", "block");
+            jquery__WEBPACK_IMPORTED_MODULE_7___default()(`div#${this.config["container_id"]}`).css("display", "block");
 
             this.show_initial_crop();
             this.update_frame();
@@ -16029,26 +17023,26 @@ class ULabel {
     }
 
     handle_toolbox_overflow() {
-        let tabs_height = jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + this.config["container_id"] + " div.toolbox-tabs").height();
-        jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + this.config["container_id"] + " div.toolbox_inner_cls").css("height", `calc(100% - ${tabs_height + 38}px)`);
-        let view_height = jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + this.config["container_id"] + " div.toolbox_cls")[0].scrollHeight - 38 - tabs_height;
-        let want_height = jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + this.config["container_id"] + " div.toolbox_inner_cls")[0].scrollHeight;
+        let tabs_height = jquery__WEBPACK_IMPORTED_MODULE_7___default()("#" + this.config["container_id"] + " div.toolbox-tabs").height();
+        jquery__WEBPACK_IMPORTED_MODULE_7___default()("#" + this.config["container_id"] + " div.toolbox_inner_cls").css("height", `calc(100% - ${tabs_height + 38}px)`);
+        let view_height = jquery__WEBPACK_IMPORTED_MODULE_7___default()("#" + this.config["container_id"] + " div.toolbox_cls")[0].scrollHeight - 38 - tabs_height;
+        let want_height = jquery__WEBPACK_IMPORTED_MODULE_7___default()("#" + this.config["container_id"] + " div.toolbox_inner_cls")[0].scrollHeight;
         if (want_height <= view_height) {
-            jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + this.config["container_id"] + " div.toolbox_inner_cls").css("overflow-y", "hidden");
+            jquery__WEBPACK_IMPORTED_MODULE_7___default()("#" + this.config["container_id"] + " div.toolbox_inner_cls").css("overflow-y", "hidden");
         }
         else {
-            jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + this.config["container_id"] + " div.toolbox_inner_cls").css("overflow-y", "scroll");
+            jquery__WEBPACK_IMPORTED_MODULE_7___default()("#" + this.config["container_id"] + " div.toolbox_inner_cls").css("overflow-y", "scroll");
         }
     }
 
     // A ratio of viewport height to image height
     get_viewport_height_ratio(hgt) {
-        return jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + this.config["annbox_id"]).height() / hgt;
+        return jquery__WEBPACK_IMPORTED_MODULE_7___default()("#" + this.config["annbox_id"]).height() / hgt;
     }
 
     // A ratio of viewport width to image width
     get_viewport_width_ratio(wdt) {
-        return jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + this.config["annbox_id"]).width() / wdt;
+        return jquery__WEBPACK_IMPORTED_MODULE_7___default()("#" + this.config["annbox_id"]).width() / wdt;
     }
 
     // The zoom ratio which fixes the entire image exactly in the viewport with a predetermined crop
@@ -16116,7 +17110,7 @@ class ULabel {
 
         let cursor_b64 = btoa(cursor_svg);
         let bk_cursor_b64 = btoa(bk_cursor_svg);
-        jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + this.config["annbox_id"]).css(
+        jquery__WEBPACK_IMPORTED_MODULE_7___default()("#" + this.config["annbox_id"]).css(
             "cursor",
             `url(data:image/svg+xml;base64,${cursor_b64}) ${width / 2} ${width / 2}, url(data:image/svg+xml;base64,${bk_cursor_b64}) ${bk_width / 2} ${bk_width / 2}, auto`
         );
@@ -16126,8 +17120,8 @@ class ULabel {
 
     readjust_subtask_opacities() {
         for (const st_key in this.subtasks) {
-            let sliderval = jquery__WEBPACK_IMPORTED_MODULE_8___default()("#tb-st-range--" + st_key).val();
-            jquery__WEBPACK_IMPORTED_MODULE_8___default()("div#canvasses__" + st_key).css("opacity", sliderval / 100);
+            let sliderval = jquery__WEBPACK_IMPORTED_MODULE_7___default()("#tb-st-range--" + st_key).val();
+            jquery__WEBPACK_IMPORTED_MODULE_7___default()("div#canvasses__" + st_key).css("opacity", sliderval / 100);
         }
     }
 
@@ -16138,28 +17132,28 @@ class ULabel {
         this.state["current_subtask"] = st_key;
 
         // Bring new set of canvasses out to front
-        jquery__WEBPACK_IMPORTED_MODULE_8___default()("div.canvasses").css("z-index", 75);
-        jquery__WEBPACK_IMPORTED_MODULE_8___default()("div#canvasses__" + this.state["current_subtask"]).css("z-index", 100);
+        jquery__WEBPACK_IMPORTED_MODULE_7___default()("div.canvasses").css("z-index", 75);
+        jquery__WEBPACK_IMPORTED_MODULE_7___default()("div#canvasses__" + this.state["current_subtask"]).css("z-index", 100);
 
         // Show appropriate set of dialogs
-        jquery__WEBPACK_IMPORTED_MODULE_8___default()("div.dialogs_container").css("display", "none");
-        jquery__WEBPACK_IMPORTED_MODULE_8___default()("div#dialogs__" + this.state["current_subtask"]).css("display", "block");
+        jquery__WEBPACK_IMPORTED_MODULE_7___default()("div.dialogs_container").css("display", "none");
+        jquery__WEBPACK_IMPORTED_MODULE_7___default()("div#dialogs__" + this.state["current_subtask"]).css("display", "block");
 
         // Show appropriate set of annotation modes
-        jquery__WEBPACK_IMPORTED_MODULE_8___default()("a.md-btn").css("display", "none");
-        jquery__WEBPACK_IMPORTED_MODULE_8___default()("a.md-btn.md-en4--" + st_key).css("display", "inline-block");
+        jquery__WEBPACK_IMPORTED_MODULE_7___default()("a.md-btn").css("display", "none");
+        jquery__WEBPACK_IMPORTED_MODULE_7___default()("a.md-btn.md-en4--" + st_key).css("display", "inline-block");
 
         // Show appropriate set of class options
-        jquery__WEBPACK_IMPORTED_MODULE_8___default()("div.tb-id-app").css("display", "none");
-        jquery__WEBPACK_IMPORTED_MODULE_8___default()("div#tb-id-app--" + this.state["current_subtask"]).css("display", "block");
+        jquery__WEBPACK_IMPORTED_MODULE_7___default()("div.tb-id-app").css("display", "none");
+        jquery__WEBPACK_IMPORTED_MODULE_7___default()("div#tb-id-app--" + this.state["current_subtask"]).css("display", "block");
 
         // Adjust tab buttons in toolbox
-        jquery__WEBPACK_IMPORTED_MODULE_8___default()("a#tb-st-switch--" + old_st).attr("href", "#");
-        jquery__WEBPACK_IMPORTED_MODULE_8___default()("a#tb-st-switch--" + old_st).parent().removeClass("sel");
-        jquery__WEBPACK_IMPORTED_MODULE_8___default()("input#tb-st-range--" + old_st).val(Math.round(100 * this.subtasks[old_st]["inactive_opacity"]));
-        jquery__WEBPACK_IMPORTED_MODULE_8___default()("a#tb-st-switch--" + st_key).removeAttr("href");
-        jquery__WEBPACK_IMPORTED_MODULE_8___default()("a#tb-st-switch--" + st_key).parent().addClass("sel");
-        jquery__WEBPACK_IMPORTED_MODULE_8___default()("input#tb-st-range--" + st_key).val(100);
+        jquery__WEBPACK_IMPORTED_MODULE_7___default()("a#tb-st-switch--" + old_st).attr("href", "#");
+        jquery__WEBPACK_IMPORTED_MODULE_7___default()("a#tb-st-switch--" + old_st).parent().removeClass("sel");
+        jquery__WEBPACK_IMPORTED_MODULE_7___default()("input#tb-st-range--" + old_st).val(Math.round(100 * this.subtasks[old_st]["inactive_opacity"]));
+        jquery__WEBPACK_IMPORTED_MODULE_7___default()("a#tb-st-switch--" + st_key).removeAttr("href");
+        jquery__WEBPACK_IMPORTED_MODULE_7___default()("a#tb-st-switch--" + st_key).parent().addClass("sel");
+        jquery__WEBPACK_IMPORTED_MODULE_7___default()("input#tb-st-range--" + st_key).val(100);
 
         // Update toolbox opts
         this.update_annotation_mode();
@@ -16175,10 +17169,10 @@ class ULabel {
     // ================= Toolbox Functions ==================
 
     update_annotation_mode() {
-        jquery__WEBPACK_IMPORTED_MODULE_8___default()("a.md-btn.sel").attr("href", "#");
-        jquery__WEBPACK_IMPORTED_MODULE_8___default()("a.md-btn.sel").removeClass("sel");
-        jquery__WEBPACK_IMPORTED_MODULE_8___default()("a#md-btn--" + this.subtasks[this.state["current_subtask"]]["state"]["annotation_mode"]).addClass("sel");
-        jquery__WEBPACK_IMPORTED_MODULE_8___default()("a#md-btn--" + this.subtasks[this.state["current_subtask"]]["state"]["annotation_mode"]).removeAttr("href");
+        jquery__WEBPACK_IMPORTED_MODULE_7___default()("a.md-btn.sel").attr("href", "#");
+        jquery__WEBPACK_IMPORTED_MODULE_7___default()("a.md-btn.sel").removeClass("sel");
+        jquery__WEBPACK_IMPORTED_MODULE_7___default()("a#md-btn--" + this.subtasks[this.state["current_subtask"]]["state"]["annotation_mode"]).addClass("sel");
+        jquery__WEBPACK_IMPORTED_MODULE_7___default()("a#md-btn--" + this.subtasks[this.state["current_subtask"]]["state"]["annotation_mode"]).removeAttr("href");
         this.show_annotation_mode();
     }
 
@@ -16193,16 +17187,16 @@ class ULabel {
     // Show annotation mode
     show_annotation_mode(el = null) {
         if (el == null) {
-            el = jquery__WEBPACK_IMPORTED_MODULE_8___default()("a.md-btn.sel");
+            el = jquery__WEBPACK_IMPORTED_MODULE_7___default()("a.md-btn.sel");
         }
         let new_name = el.attr("amdname");
-        jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + this.config["toolbox_id"] + " .current_mode").html(new_name);
-        jquery__WEBPACK_IMPORTED_MODULE_8___default()(`div.frame_annotation_dialog:not(.fad_st__${this.state["current_subtask"]})`).removeClass("active");
+        jquery__WEBPACK_IMPORTED_MODULE_7___default()("#" + this.config["toolbox_id"] + " .current_mode").html(new_name);
+        jquery__WEBPACK_IMPORTED_MODULE_7___default()(`div.frame_annotation_dialog:not(.fad_st__${this.state["current_subtask"]})`).removeClass("active");
         if (["whole-image", "global"].includes(this.subtasks[this.state["current_subtask"]]["state"]["annotation_mode"])) {
-            jquery__WEBPACK_IMPORTED_MODULE_8___default()(`div.frame_annotation_dialog.fad_st__${this.state["current_subtask"]}`).addClass("active");
+            jquery__WEBPACK_IMPORTED_MODULE_7___default()(`div.frame_annotation_dialog.fad_st__${this.state["current_subtask"]}`).addClass("active");
         }
         else {
-            jquery__WEBPACK_IMPORTED_MODULE_8___default()("div.frame_annotation_dialog").removeClass("active");
+            jquery__WEBPACK_IMPORTED_MODULE_7___default()("div.frame_annotation_dialog").removeClass("active");
         }
     }
 
@@ -16218,7 +17212,7 @@ class ULabel {
     // A robust measure of zoom
     get_empirical_scale() {
         // Simple ratio of canvas width to image x-dimension
-        return jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + this.config["imwrap_id"]).width() / this.config["image_width"];
+        return jquery__WEBPACK_IMPORTED_MODULE_7___default()("#" + this.config["imwrap_id"]).width() / this.config["image_width"];
     }
 
     // Get a unique ID for new annotations
@@ -16300,7 +17294,7 @@ class ULabel {
                         return this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid]["spatial_payload"][bas];
                     }
                     else {
-                        return _geometric_utils__WEBPACK_IMPORTED_MODULE_3__/* .GeometricUtils.interpolate_poly_segment */ .Z.interpolate_poly_segment(
+                        return _build_geometric_utils__WEBPACK_IMPORTED_MODULE_2__/* .GeometricUtils.interpolate_poly_segment */ .Z.interpolate_poly_segment(
                             this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid]["spatial_payload"],
                             bas, dif
                         );
@@ -16379,7 +17373,7 @@ class ULabel {
                         this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid]["spatial_payload"].splice(bas + 1, 0, [val[0], val[1]]);
                     }
                     else {
-                        var newpt = _geometric_utils__WEBPACK_IMPORTED_MODULE_3__/* .GeometricUtils.interpolate_poly_segment */ .Z.interpolate_poly_segment(
+                        var newpt = _build_geometric_utils__WEBPACK_IMPORTED_MODULE_2__/* .GeometricUtils.interpolate_poly_segment */ .Z.interpolate_poly_segment(
                             this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid]["spatial_payload"],
                             bas, dif
                         );
@@ -16409,7 +17403,7 @@ class ULabel {
             let dist_prop = 1.0;
             let class_ids = this.subtasks[crst]["class_ids"];
             let pfx = "div#tb-id-app--" + this.state["current_subtask"];
-            let idarr = jquery__WEBPACK_IMPORTED_MODULE_8___default()(pfx + " a.tbid-opt.sel").attr("id").split("_");
+            let idarr = jquery__WEBPACK_IMPORTED_MODULE_7___default()(pfx + " a.tbid-opt.sel").attr("id").split("_");
             let class_ind = class_ids.indexOf(parseInt(idarr[idarr.length - 1]));
             // Recompute and render opaque pie slices
             for (var i = 0; i < class_ids.length; i++) {
@@ -16462,7 +17456,7 @@ class ULabel {
 
         // Prep for bbox drawing
         let base_color = this.get_annotation_color(annotation_object["classification_payloads"], false, subtask);
-        let color = (0,_drawing_utilities__WEBPACK_IMPORTED_MODULE_5__/* .apply_gradient */ .ws)(annotation_object, base_color, _annotation_operators__WEBPACK_IMPORTED_MODULE_4__.get_annotation_confidence, jquery__WEBPACK_IMPORTED_MODULE_8___default()("#gradient-slider").val() / 100)
+        let color = (0,_build_drawing_utilities__WEBPACK_IMPORTED_MODULE_4__/* .apply_gradient */ .ws)(annotation_object, base_color, _build_annotation_operators__WEBPACK_IMPORTED_MODULE_3__.get_annotation_confidence, jquery__WEBPACK_IMPORTED_MODULE_7___default()("#gradient-slider").val() / 100)
         ctx.fillStyle = color;
         ctx.strokeStyle = color;
         ctx.lineJoin = "round";
@@ -16502,7 +17496,7 @@ class ULabel {
 
         // Prep for bbox drawing
         let base_color = this.get_annotation_color(annotation_object["classification_payloads"], false, subtask);
-        let color = (0,_drawing_utilities__WEBPACK_IMPORTED_MODULE_5__/* .apply_gradient */ .ws)(annotation_object, base_color, _annotation_operators__WEBPACK_IMPORTED_MODULE_4__.get_annotation_confidence, jquery__WEBPACK_IMPORTED_MODULE_8___default()("#gradient-slider").val() / 100)
+        let color = (0,_build_drawing_utilities__WEBPACK_IMPORTED_MODULE_4__/* .apply_gradient */ .ws)(annotation_object, base_color, _build_annotation_operators__WEBPACK_IMPORTED_MODULE_3__.get_annotation_confidence, jquery__WEBPACK_IMPORTED_MODULE_7___default()("#gradient-slider").val() / 100)
         ctx.fillStyle = color;
         ctx.strokeStyle = color;
         ctx.lineJoin = "round";
@@ -16557,7 +17551,7 @@ class ULabel {
 
         // Prep for bbox drawing
         let base_color = this.get_annotation_color(annotation_object["classification_payloads"], false, subtask);
-        let color = (0,_drawing_utilities__WEBPACK_IMPORTED_MODULE_5__/* .apply_gradient */ .ws)(annotation_object, base_color, _annotation_operators__WEBPACK_IMPORTED_MODULE_4__.get_annotation_confidence, jquery__WEBPACK_IMPORTED_MODULE_8___default()("#gradient-slider").val() / 100)
+        let color = (0,_build_drawing_utilities__WEBPACK_IMPORTED_MODULE_4__/* .apply_gradient */ .ws)(annotation_object, base_color, _build_annotation_operators__WEBPACK_IMPORTED_MODULE_3__.get_annotation_confidence, jquery__WEBPACK_IMPORTED_MODULE_7___default()("#gradient-slider").val() / 100)
         ctx.fillStyle = color;
         ctx.strokeStyle = color;
         ctx.lineJoin = "round";
@@ -16602,7 +17596,7 @@ class ULabel {
 
         // Prep for bbox drawing
         let base_color = this.get_annotation_color(annotation_object["classification_payloads"], demo, subtask);
-        let color = (0,_drawing_utilities__WEBPACK_IMPORTED_MODULE_5__/* .apply_gradient */ .ws)(annotation_object, base_color, _annotation_operators__WEBPACK_IMPORTED_MODULE_4__.get_annotation_confidence, jquery__WEBPACK_IMPORTED_MODULE_8___default()("#gradient-slider").val() / 100)
+        let color = (0,_build_drawing_utilities__WEBPACK_IMPORTED_MODULE_4__/* .apply_gradient */ .ws)(annotation_object, base_color, _build_annotation_operators__WEBPACK_IMPORTED_MODULE_3__.get_annotation_confidence, jquery__WEBPACK_IMPORTED_MODULE_7___default()("#gradient-slider").val() / 100)
         ctx.fillStyle = color;
         ctx.strokeStyle = color;
         ctx.lineJoin = "round";
@@ -16641,7 +17635,7 @@ class ULabel {
 
         // Prep for bbox drawing
         let base_color = this.get_annotation_color(annotation_object["classification_payloads"], demo, subtask);
-        let color = (0,_drawing_utilities__WEBPACK_IMPORTED_MODULE_5__/* .apply_gradient */ .ws)(annotation_object, base_color, _annotation_operators__WEBPACK_IMPORTED_MODULE_4__.get_annotation_confidence, jquery__WEBPACK_IMPORTED_MODULE_8___default()("#gradient-slider").val() / 100)
+        let color = (0,_build_drawing_utilities__WEBPACK_IMPORTED_MODULE_4__/* .apply_gradient */ .ws)(annotation_object, base_color, _build_annotation_operators__WEBPACK_IMPORTED_MODULE_3__.get_annotation_confidence, jquery__WEBPACK_IMPORTED_MODULE_7___default()("#gradient-slider").val() / 100)
         ctx.fillStyle = color;
         ctx.strokeStyle = color;
         ctx.lineJoin = "round";
@@ -16679,7 +17673,7 @@ class ULabel {
 
         // Prep for tbar drawing
         let base_color = this.get_annotation_color(annotation_object["classification_payloads"], demo, subtask);
-        let color = (0,_drawing_utilities__WEBPACK_IMPORTED_MODULE_5__/* .apply_gradient */ .ws)(annotation_object, base_color, _annotation_operators__WEBPACK_IMPORTED_MODULE_4__.get_annotation_confidence, jquery__WEBPACK_IMPORTED_MODULE_8___default()("#gradient-slider").val() / 100)
+        let color = (0,_build_drawing_utilities__WEBPACK_IMPORTED_MODULE_4__/* .apply_gradient */ .ws)(annotation_object, base_color, _build_annotation_operators__WEBPACK_IMPORTED_MODULE_3__.get_annotation_confidence, jquery__WEBPACK_IMPORTED_MODULE_7___default()("#gradient-slider").val() / 100)
         ctx.fillStyle = color;
         ctx.strokeStyle = color;
         ctx.lineJoin = "round";
@@ -16721,10 +17715,10 @@ class ULabel {
     register_nonspatial_redraw_start(subtask) {
         // TODO(3d)
         this.tmp_nonspatial_element_ids[subtask] = [];
-        let nonsp_window = jquery__WEBPACK_IMPORTED_MODULE_8___default()(`div#fad_st__${subtask}`);
+        let nonsp_window = jquery__WEBPACK_IMPORTED_MODULE_7___default()(`div#fad_st__${subtask}`);
         if (nonsp_window.length) {
-            jquery__WEBPACK_IMPORTED_MODULE_8___default()(`div#fad_st__${subtask} div.fad_annotation_rows div.fad_row`).each((idx, val) => {
-                this.tmp_nonspatial_element_ids[subtask].push(jquery__WEBPACK_IMPORTED_MODULE_8___default()(val).attr("id"));
+            jquery__WEBPACK_IMPORTED_MODULE_7___default()(`div#fad_st__${subtask} div.fad_annotation_rows div.fad_row`).each((idx, val) => {
+                this.tmp_nonspatial_element_ids[subtask].push(jquery__WEBPACK_IMPORTED_MODULE_7___default()(val).attr("id"));
             });
         }
     }
@@ -16742,7 +17736,7 @@ class ULabel {
             }
         }
         if (!found) {
-            jquery__WEBPACK_IMPORTED_MODULE_8___default()(`div#fad_st__${subtask} div.fad_annotation_rows`).append(`
+            jquery__WEBPACK_IMPORTED_MODULE_7___default()(`div#fad_st__${subtask} div.fad_annotation_rows`).append(`
             <div id="row__${annotation_object["id"]}" class="fad_row">
                 <div class="fad_buttons">
                     <div class="fad_inp_container text">
@@ -16762,25 +17756,25 @@ class ULabel {
             `);
         }
         else {
-            jquery__WEBPACK_IMPORTED_MODULE_8___default()(`textarea#note__${annotation_object["id"]}`).val(annotation_object["text_payload"]);
-            jquery__WEBPACK_IMPORTED_MODULE_8___default()(`div#icon__${annotation_object["id"]}`).css("background-color", this.get_annotation_color(annotation_object["classification_payloads"], false, subtask));
+            jquery__WEBPACK_IMPORTED_MODULE_7___default()(`textarea#note__${annotation_object["id"]}`).val(annotation_object["text_payload"]);
+            jquery__WEBPACK_IMPORTED_MODULE_7___default()(`div#icon__${annotation_object["id"]}`).css("background-color", this.get_annotation_color(annotation_object["classification_payloads"], false, subtask));
         }
     }
 
 
     draw_whole_image_annotation(annotation_object, subtask = null) {
-        this.draw_nonspatial_annotation(annotation_object, _blobs__WEBPACK_IMPORTED_MODULE_9__.WHOLE_IMAGE_SVG, subtask);
+        this.draw_nonspatial_annotation(annotation_object, _blobs__WEBPACK_IMPORTED_MODULE_8__.WHOLE_IMAGE_SVG, subtask);
 
     }
 
     draw_global_annotation(annotation_object, subtask = null) {
-        this.draw_nonspatial_annotation(annotation_object, _blobs__WEBPACK_IMPORTED_MODULE_9__.GLOBAL_SVG, subtask);
+        this.draw_nonspatial_annotation(annotation_object, _blobs__WEBPACK_IMPORTED_MODULE_8__.GLOBAL_SVG, subtask);
     }
 
     handle_nonspatial_redraw_end(subtask) {
         // TODO(3d)
         for (let i = 0; i < this.tmp_nonspatial_element_ids[subtask].length; i++) {
-            jquery__WEBPACK_IMPORTED_MODULE_8___default()(`#${this.tmp_nonspatial_element_ids[subtask][i]}`).remove();
+            jquery__WEBPACK_IMPORTED_MODULE_7___default()(`#${this.tmp_nonspatial_element_ids[subtask][i]}`).remove();
         }
         this.tmp_nonspatial_element_ids[subtask] = [];
     }
@@ -16914,7 +17908,7 @@ class ULabel {
     // dialogs that are meant to be visible are in their correct positions
     reposition_dialogs() {
         // Get info about image wrapper
-        var imwrap = jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + this.config["imwrap_id"]);
+        var imwrap = jquery__WEBPACK_IMPORTED_MODULE_7___default()("#" + this.config["imwrap_id"]);
         const new_dimx = imwrap.width();
         const new_dimy = imwrap.height();
 
@@ -16924,7 +17918,7 @@ class ULabel {
         // Iterate over all visible dialogs and apply new positions
         for (var id in this.subtasks[crst]["state"]["visible_dialogs"]) {
             let el = this.subtasks[crst]["state"]["visible_dialogs"][id];
-            let jqel = jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + id);
+            let jqel = jquery__WEBPACK_IMPORTED_MODULE_7___default()("#" + id);
             let new_left = el["left"] * new_dimx;
             let new_top = el["top"] * new_dimy;
             switch (el["pin"]) {
@@ -16960,13 +17954,13 @@ class ULabel {
             <span id="${ender_id}_inner" class="ender_inner"></span>
         </a>
         `;
-        jquery__WEBPACK_IMPORTED_MODULE_8___default()("#dialogs__" + this.state["current_subtask"]).append(ender_html);
-        jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + ender_id).css({
+        jquery__WEBPACK_IMPORTED_MODULE_7___default()("#dialogs__" + this.state["current_subtask"]).append(ender_html);
+        jquery__WEBPACK_IMPORTED_MODULE_7___default()("#" + ender_id).css({
             "width": this.config["polygon_ender_size"] + "px",
             "height": this.config["polygon_ender_size"] + "px",
             "border-radius": this.config["polygon_ender_size"] / 2 + "px"
         });
-        jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + ender_id + "_inner").css({
+        jquery__WEBPACK_IMPORTED_MODULE_7___default()("#" + ender_id + "_inner").css({
             "width": this.config["polygon_ender_size"] / 5 + "px",
             "height": this.config["polygon_ender_size"] / 5 + "px",
             "border-radius": this.config["polygon_ender_size"] / 10 + "px",
@@ -16985,14 +17979,14 @@ class ULabel {
     destroy_polygon_ender(polygon_id) {
         // Create ender id
         const ender_id = "ender_" + polygon_id;
-        jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + ender_id).remove();
+        jquery__WEBPACK_IMPORTED_MODULE_7___default()("#" + ender_id).remove();
         delete this.subtasks[this.state["current_subtask"]]["state"]["visible_dialogs"][ender_id];
         this.reposition_dialogs();
     }
 
     show_edit_suggestion(nearest_point, currently_exists) {
         let esid = "edit_suggestion__" + this.state["current_subtask"];
-        var esjq = jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + esid);
+        var esjq = jquery__WEBPACK_IMPORTED_MODULE_7___default()("#" + esid);
         esjq.css("display", "block");
         if (currently_exists) {
             esjq.removeClass("soft");
@@ -17006,7 +18000,7 @@ class ULabel {
     }
 
     hide_edit_suggestion() {
-        jquery__WEBPACK_IMPORTED_MODULE_8___default()(".edit_suggestion").css("display", "none");
+        jquery__WEBPACK_IMPORTED_MODULE_7___default()(".edit_suggestion").css("display", "none");
     }
 
     show_global_edit_suggestion(annid, offset = null, nonspatial_id = null) {
@@ -17021,7 +18015,7 @@ class ULabel {
         let idd_y;
         if (nonspatial_id == null) {
             let esid = "global_edit_suggestion__" + this.state["current_subtask"];
-            var esjq = jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + esid);
+            var esjq = jquery__WEBPACK_IMPORTED_MODULE_7___default()("#" + esid);
             esjq.css("display", "block");
             let cbox = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid]["containing_box"];
             let new_lft = (cbox["tlx"] + cbox["brx"] + 2 * diffX) / (2 * this.config["image_width"]);
@@ -17034,8 +18028,8 @@ class ULabel {
         }
         else {
             // TODO(new3d)
-            idd_x = jquery__WEBPACK_IMPORTED_MODULE_8___default()("#reclf__" + nonspatial_id).offset().left - 85;//this.get_global_element_center_x($("#reclf__" + nonspatial_id));
-            idd_y = jquery__WEBPACK_IMPORTED_MODULE_8___default()("#reclf__" + nonspatial_id).offset().top - 85;//this.get_global_element_center_y($("#reclf__" + nonspatial_id));
+            idd_x = jquery__WEBPACK_IMPORTED_MODULE_7___default()("#reclf__" + nonspatial_id).offset().left - 85;//this.get_global_element_center_x($("#reclf__" + nonspatial_id));
+            idd_y = jquery__WEBPACK_IMPORTED_MODULE_7___default()("#reclf__" + nonspatial_id).offset().top - 85;//this.get_global_element_center_y($("#reclf__" + nonspatial_id));
         }
 
 
@@ -17046,7 +18040,7 @@ class ULabel {
     }
 
     hide_global_edit_suggestion() {
-        jquery__WEBPACK_IMPORTED_MODULE_8___default()(".global_edit_suggestion").css("display", "none");
+        jquery__WEBPACK_IMPORTED_MODULE_7___default()(".global_edit_suggestion").css("display", "none");
         this.hide_id_dialog();
     }
 
@@ -17063,7 +18057,7 @@ class ULabel {
 
         let idd_id = this.subtasks[this.state["current_subtask"]]["state"]["idd_id"];
         let idd_niu_id = this.subtasks[this.state["current_subtask"]]["state"]["idd_id_front"];
-        let new_height = jquery__WEBPACK_IMPORTED_MODULE_8___default()(`#global_edit_suggestion__${stkey} a.reid_suggestion`)[0].getBoundingClientRect().height;
+        let new_height = jquery__WEBPACK_IMPORTED_MODULE_7___default()(`#global_edit_suggestion__${stkey} a.reid_suggestion`)[0].getBoundingClientRect().height;
 
         if (nonspatial) {
             this.subtasks[this.state["current_subtask"]]["state"]["idd_which"] = "front";
@@ -17080,11 +18074,11 @@ class ULabel {
                 "pin": "center"
             };
         }
-        let idd = jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + idd_id);
-        let idd_niu = jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + idd_niu_id);
+        let idd = jquery__WEBPACK_IMPORTED_MODULE_7___default()("#" + idd_id);
+        let idd_niu = jquery__WEBPACK_IMPORTED_MODULE_7___default()("#" + idd_niu_id);
         if (nonspatial) {
-            let new_home = jquery__WEBPACK_IMPORTED_MODULE_8___default()(`#reclf__${active_ann}`);
-            let fad_st = jquery__WEBPACK_IMPORTED_MODULE_8___default()(`#fad_st__${stkey} div.front_dialogs`);
+            let new_home = jquery__WEBPACK_IMPORTED_MODULE_7___default()(`#reclf__${active_ann}`);
+            let fad_st = jquery__WEBPACK_IMPORTED_MODULE_7___default()(`#fad_st__${stkey} div.front_dialogs`);
             let ofst = -100;
             let zidx = 2000;
             if (thumbnail) {
@@ -17112,12 +18106,12 @@ class ULabel {
             if (!idd.hasClass("thumb")) {
                 idd.addClass("thumb");
             }
-            jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + idd_id + ".thumb").css({
+            jquery__WEBPACK_IMPORTED_MODULE_7___default()("#" + idd_id + ".thumb").css({
                 "transform": `scale(${scale_ratio})`
             });
         }
         else {
-            jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + idd_id + ".thumb").css({
+            jquery__WEBPACK_IMPORTED_MODULE_7___default()("#" + idd_id + ".thumb").css({
                 "transform": `scale(1.0)`
             });
             if (idd.hasClass("thumb")) {
@@ -17148,8 +18142,8 @@ class ULabel {
         let idd_id_front = this.subtasks[this.state["current_subtask"]]["state"]["idd_id_front"];
         this.subtasks[this.state["current_subtask"]]["state"]["idd_visible"] = false;
         this.subtasks[this.state["current_subtask"]]["state"]["idd_associated_annotation"] = null;
-        jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + idd_id).css("display", "none");
-        jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + idd_id_front).css("display", "none");
+        jquery__WEBPACK_IMPORTED_MODULE_7___default()("#" + idd_id).css("display", "none");
+        jquery__WEBPACK_IMPORTED_MODULE_7___default()("#" + idd_id_front).css("display", "none");
     }
 
 
@@ -17300,7 +18294,7 @@ class ULabel {
             let curfrm, pts;
             switch (this.subtasks[this.state["current_subtask"]]["annotations"]["access"][edid]["spatial_type"]) {
                 case "bbox":
-                    npi = _geometric_utils__WEBPACK_IMPORTED_MODULE_3__/* .GeometricUtils.get_nearest_point_on_bounding_box */ .Z.get_nearest_point_on_bounding_box(
+                    npi = _build_geometric_utils__WEBPACK_IMPORTED_MODULE_2__/* .GeometricUtils.get_nearest_point_on_bounding_box */ .Z.get_nearest_point_on_bounding_box(
                         global_x, global_y,
                         this.subtasks[this.state["current_subtask"]]["annotations"]["access"][edid]["spatial_payload"],
                         max_dist
@@ -17317,7 +18311,7 @@ class ULabel {
                     pts = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][edid]["spatial_payload"];
                     if ((curfrm >= Math.min(pts[0][2], pts[1][2])) && (curfrm <= Math.max(pts[0][2], pts[1][2]))) {
                         // TODO(new3d) Make sure this function works for bbox3 too
-                        npi = _geometric_utils__WEBPACK_IMPORTED_MODULE_3__/* .GeometricUtils.get_nearest_point_on_bbox3 */ .Z.get_nearest_point_on_bbox3(
+                        npi = _build_geometric_utils__WEBPACK_IMPORTED_MODULE_2__/* .GeometricUtils.get_nearest_point_on_bbox3 */ .Z.get_nearest_point_on_bbox3(
                             global_x, global_y, curfrm,
                             pts,
                             max_dist
@@ -17332,7 +18326,7 @@ class ULabel {
                     break;
                 case "polygon":
                 case "polyline":
-                    npi = _geometric_utils__WEBPACK_IMPORTED_MODULE_3__/* .GeometricUtils.get_nearest_point_on_polygon */ .Z.get_nearest_point_on_polygon(
+                    npi = _build_geometric_utils__WEBPACK_IMPORTED_MODULE_2__/* .GeometricUtils.get_nearest_point_on_polygon */ .Z.get_nearest_point_on_polygon(
                         global_x, global_y,
                         this.subtasks[this.state["current_subtask"]]["annotations"]["access"][edid]["spatial_payload"],
                         max_dist, false
@@ -17345,7 +18339,7 @@ class ULabel {
                     }
                     break;
                 case "tbar":
-                    npi = _geometric_utils__WEBPACK_IMPORTED_MODULE_3__/* .GeometricUtils.get_nearest_point_on_tbar */ .Z.get_nearest_point_on_tbar(
+                    npi = _build_geometric_utils__WEBPACK_IMPORTED_MODULE_2__/* .GeometricUtils.get_nearest_point_on_tbar */ .Z.get_nearest_point_on_tbar(
                         global_x, global_y,
                         this.subtasks[this.state["current_subtask"]]["annotations"]["access"][edid]["spatial_payload"],
                         max_dist
@@ -17399,7 +18393,7 @@ class ULabel {
                     break;
                 case "polygon":
                 case "polyline":
-                    var npi = _geometric_utils__WEBPACK_IMPORTED_MODULE_3__/* .GeometricUtils.get_nearest_point_on_polygon */ .Z.get_nearest_point_on_polygon(
+                    var npi = _build_geometric_utils__WEBPACK_IMPORTED_MODULE_2__/* .GeometricUtils.get_nearest_point_on_polygon */ .Z.get_nearest_point_on_polygon(
                         global_x, global_y,
                         this.subtasks[this.state["current_subtask"]]["annotations"]["access"][edid]["spatial_payload"],
                         max_dist / this.get_empirical_scale(), true
@@ -17961,7 +18955,7 @@ class ULabel {
                         this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"][0][1]
                     ];
                     ender_dist = Math.pow(Math.pow(ms_loc[0] - ender_pt[0], 2) + Math.pow(ms_loc[1] - ender_pt[1], 2), 0.5);
-                    ender_thresh = jquery__WEBPACK_IMPORTED_MODULE_8___default()("#ender_" + actid).width() / (2 * this.get_empirical_scale());
+                    ender_thresh = jquery__WEBPACK_IMPORTED_MODULE_7___default()("#ender_" + actid).width() / (2 * this.get_empirical_scale());
                     if (ender_dist < ender_thresh) {
                         this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"][n_kpts - 1] = ender_pt;
                     }
@@ -17999,7 +18993,7 @@ class ULabel {
                     this.redraw_all_annotations(this.state["current_subtask"], null, true); // tobuffer
                     break;
                 case "contour":
-                    if (_geometric_utils__WEBPACK_IMPORTED_MODULE_3__/* .GeometricUtils.l2_norm */ .Z.l2_norm(ms_loc, this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"][this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"].length - 1]) * this.config["px_per_px"] > 3) {
+                    if (_build_geometric_utils__WEBPACK_IMPORTED_MODULE_2__/* .GeometricUtils.l2_norm */ .Z.l2_norm(ms_loc, this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"][this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"].length - 1]) * this.config["px_per_px"] > 3) {
                         this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"].push(ms_loc);
                         this.update_containing_box(ms_loc, actid);
                         this.redraw_all_annotations(this.state["current_subtask"], null, true); // TODO tobuffer, no need to redraw here, can just draw over
@@ -18340,7 +19334,7 @@ class ULabel {
             }
         });
         // Hide point edit suggestion
-        jquery__WEBPACK_IMPORTED_MODULE_8___default()(".edit_suggestion").css("display", "none");
+        jquery__WEBPACK_IMPORTED_MODULE_7___default()(".edit_suggestion").css("display", "none");
 
         this.move_annotation(mouse_event);
     }
@@ -18392,13 +19386,13 @@ class ULabel {
                     frame: this.state["current_frame"],
                     undo_payload: {
                         actid: actid,
-                        ender_html: jquery__WEBPACK_IMPORTED_MODULE_8___default()("#ender_" + actid).outer_html()
+                        ender_html: jquery__WEBPACK_IMPORTED_MODULE_7___default()("#ender_" + actid).outer_html()
                     },
                     redo_payload: {
                         actid: actid
                     }
                 }, redoing);
-                jquery__WEBPACK_IMPORTED_MODULE_8___default()("#ender_" + actid).remove(); // TODO remove from visible dialogs
+                jquery__WEBPACK_IMPORTED_MODULE_7___default()("#ender_" + actid).remove(); // TODO remove from visible dialogs
                 break;
             case "polyline":
                 // TODO handle the case of merging with existing annotation
@@ -18507,7 +19501,7 @@ class ULabel {
         this.subtasks[this.state["current_subtask"]]["state"]["active_id"] = undo_payload.actid;
         this.redraw_all_annotations(this.state["current_subtask"]);
         if (undo_payload.ender_html) {
-            jquery__WEBPACK_IMPORTED_MODULE_8___default()("#dialogs__" + this.state["current_subtask"]).append(undo_payload.ender_html);
+            jquery__WEBPACK_IMPORTED_MODULE_7___default()("#dialogs__" + this.state["current_subtask"]).append(undo_payload.ender_html);
         }
         this.hide_edit_suggestion();
         this.hide_global_edit_suggestion();
@@ -18763,7 +19757,7 @@ class ULabel {
             const global_x = this.get_global_mouse_x(mouse_event);
             const global_y = this.get_global_mouse_y(mouse_event);
 
-            if (jquery__WEBPACK_IMPORTED_MODULE_8___default()(mouse_event.target).hasClass("gedit-target")) return;
+            if (jquery__WEBPACK_IMPORTED_MODULE_7___default()(mouse_event.target).hasClass("gedit-target")) return;
 
             const edit_candidates = this.get_edit_candidates(
                 global_x,
@@ -18835,28 +19829,28 @@ class ULabel {
     // Get the mouse position on the screen
     get_global_mouse_x(mouse_event) {
         const scale = this.get_empirical_scale();
-        const annbox = jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + this.config["annbox_id"]);
+        const annbox = jquery__WEBPACK_IMPORTED_MODULE_7___default()("#" + this.config["annbox_id"]);
         const raw = (mouse_event.pageX - annbox.offset().left + annbox.scrollLeft()) / scale;
         // return Math.round(raw);
         return raw;
     }
     get_global_mouse_y(mouse_event) {
         const scale = this.get_empirical_scale();
-        const annbox = jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + this.config["annbox_id"]);
+        const annbox = jquery__WEBPACK_IMPORTED_MODULE_7___default()("#" + this.config["annbox_id"]);
         const raw = (mouse_event.pageY - annbox.offset().top + annbox.scrollTop()) / scale;
         // return Math.round(raw);
         return raw;
     }
     get_global_element_center_x(jqel) {
         const scale = this.get_empirical_scale();
-        const annbox = jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + this.config["annbox_id"]);
+        const annbox = jquery__WEBPACK_IMPORTED_MODULE_7___default()("#" + this.config["annbox_id"]);
         const raw = (jqel.offset().left + jqel.width() / 2 - annbox.offset().left + annbox.scrollLeft()) / scale;
         // return Math.round(raw);
         return raw;
     }
     get_global_element_center_y(jqel) {
         const scale = this.get_empirical_scale();
-        const annbox = jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + this.config["annbox_id"]);
+        const annbox = jquery__WEBPACK_IMPORTED_MODULE_7___default()("#" + this.config["annbox_id"]);
         const raw = (jqel.offset().top + jqel.height() / 2 - annbox.offset().top + annbox.scrollTop()) / scale;
         // return Math.round();
         return raw;
@@ -18867,9 +19861,9 @@ class ULabel {
     // ----------------- ID Dialog -----------------
 
     lookup_id_dialog_mouse_pos(mouse_event, front) {
-        let idd = jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + this.subtasks[this.state["current_subtask"]]["state"]["idd_id"]);
+        let idd = jquery__WEBPACK_IMPORTED_MODULE_7___default()("#" + this.subtasks[this.state["current_subtask"]]["state"]["idd_id"]);
         if (front) {
-            idd = jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + this.subtasks[this.state["current_subtask"]]["state"]["idd_id_front"]);
+            idd = jquery__WEBPACK_IMPORTED_MODULE_7___default()("#" + this.subtasks[this.state["current_subtask"]]["state"]["idd_id_front"]);
         }
 
         // Get mouse position relative to center of div
@@ -18953,7 +19947,7 @@ class ULabel {
                 let dist_prop = 1.0;
                 let class_ids = this.subtasks[crst]["class_ids"];
                 let pfx = "div#tb-id-app--" + this.state["current_subtask"];
-                let idarr = jquery__WEBPACK_IMPORTED_MODULE_8___default()(pfx + " a.tbid-opt.sel").attr("id").split("_");
+                let idarr = jquery__WEBPACK_IMPORTED_MODULE_7___default()(pfx + " a.tbid-opt.sel").attr("id").split("_");
                 let class_ind = class_ids.indexOf(parseInt(idarr[idarr.length - 1]));
                 // Recompute and render opaque pie slices
                 for (var i = 0; i < class_ids.length; i++) {
@@ -19010,7 +20004,7 @@ class ULabel {
             else {
                 idd_id = this.subtasks[this.state["current_subtask"]]["state"]["idd_id_front"];
             }
-            var circ = jquery__WEBPACK_IMPORTED_MODULE_8___default()(`#${idd_id}__circ_` + class_ids[i])
+            var circ = jquery__WEBPACK_IMPORTED_MODULE_7___default()(`#${idd_id}__circ_` + class_ids[i])
             // circ.attr("r", rad_frnt);
             // circ.attr("stroke-dasharray", `${srk_frnt} ${gap_frnt}`)
             // circ.attr("stroke-dashoffset", off_frnt)
@@ -19034,11 +20028,11 @@ class ULabel {
             for (var i = 0; i < class_ids.length; i++) {
                 let cls = class_ids[i];
                 if (this.subtasks[this.state["current_subtask"]]["state"]["id_payload"][i]["confidence"] > 0.5) {
-                    if (!(jquery__WEBPACK_IMPORTED_MODULE_8___default()(pfx + " #" + this.config["toolbox_id"] + " a#toolbox_sel_" + cls).hasClass("sel"))) {
-                        jquery__WEBPACK_IMPORTED_MODULE_8___default()(pfx + " #" + this.config["toolbox_id"] + " a.tbid-opt.sel").attr("href", "#");
-                        jquery__WEBPACK_IMPORTED_MODULE_8___default()(pfx + " #" + this.config["toolbox_id"] + " a.tbid-opt.sel").removeClass("sel");
-                        jquery__WEBPACK_IMPORTED_MODULE_8___default()(pfx + " #" + this.config["toolbox_id"] + " a#toolbox_sel_" + cls).addClass("sel");
-                        jquery__WEBPACK_IMPORTED_MODULE_8___default()(pfx + " #" + this.config["toolbox_id"] + " a#toolbox_sel_" + cls).removeAttr("href");
+                    if (!(jquery__WEBPACK_IMPORTED_MODULE_7___default()(pfx + " #" + this.config["toolbox_id"] + " a#toolbox_sel_" + cls).hasClass("sel"))) {
+                        jquery__WEBPACK_IMPORTED_MODULE_7___default()(pfx + " #" + this.config["toolbox_id"] + " a.tbid-opt.sel").attr("href", "#");
+                        jquery__WEBPACK_IMPORTED_MODULE_7___default()(pfx + " #" + this.config["toolbox_id"] + " a.tbid-opt.sel").removeClass("sel");
+                        jquery__WEBPACK_IMPORTED_MODULE_7___default()(pfx + " #" + this.config["toolbox_id"] + " a#toolbox_sel_" + cls).addClass("sel");
+                        jquery__WEBPACK_IMPORTED_MODULE_7___default()(pfx + " #" + this.config["toolbox_id"] + " a#toolbox_sel_" + cls).removeAttr("href");
                     }
                 }
             }
@@ -19219,7 +20213,7 @@ class ULabel {
     // Called when mousedown fires within annbox
     start_drag(drag_key, release_button, mouse_event) {
         // Convenience
-        const annbox = jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + this.config["annbox_id"]);
+        const annbox = jquery__WEBPACK_IMPORTED_MODULE_7___default()("#" + this.config["annbox_id"]);
 
         this.drag_state["active_key"] = drag_key;
         this.drag_state["release_button"] = release_button;
@@ -19233,8 +20227,8 @@ class ULabel {
             annbox.scrollLeft(),
             annbox.scrollTop()
         ];
-        jquery__WEBPACK_IMPORTED_MODULE_8___default()(`textarea`).trigger("blur");
-        jquery__WEBPACK_IMPORTED_MODULE_8___default()("div.permopen").removeClass("permopen");
+        jquery__WEBPACK_IMPORTED_MODULE_7___default()(`textarea`).trigger("blur");
+        jquery__WEBPACK_IMPORTED_MODULE_7___default()("div.permopen").removeClass("permopen");
         // TODO handle this drag start
         let annmd;
         switch (drag_key) {
@@ -19314,7 +20308,7 @@ class ULabel {
     // Pan to correct location given mouse dragging
     drag_repan(mouse_event) {
         // Convenience
-        var annbox = jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + this.config["annbox_id"]);
+        var annbox = jquery__WEBPACK_IMPORTED_MODULE_7___default()("#" + this.config["annbox_id"]);
 
         // Pan based on mouse position
         const aX = mouse_event.clientX;
@@ -19341,8 +20335,8 @@ class ULabel {
     // Handle zooming at a certain focus
     rezoom(foc_x = null, foc_y = null, abs = false) {
         // JQuery convenience
-        var imwrap = jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + this.config["imwrap_id"]);
-        var annbox = jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + this.config["annbox_id"]);
+        var imwrap = jquery__WEBPACK_IMPORTED_MODULE_7___default()("#" + this.config["imwrap_id"]);
+        var annbox = jquery__WEBPACK_IMPORTED_MODULE_7___default()("#" + this.config["annbox_id"]);
 
         if (foc_x == null) {
             foc_x = annbox.width() / 2;
@@ -19369,7 +20363,7 @@ class ULabel {
         const new_height = Math.round(this.config["image_height"] * this.state["zoom_val"]);
 
         // Apply new size
-        var toresize = jquery__WEBPACK_IMPORTED_MODULE_8___default()("." + this.config["imgsz_class"]);
+        var toresize = jquery__WEBPACK_IMPORTED_MODULE_7___default()("." + this.config["imgsz_class"]);
         toresize.css("width", new_width + "px");
         toresize.css("height", new_height + "px");
 
@@ -19391,14 +20385,14 @@ class ULabel {
     }
 
     swap_frame_image(new_src, frame = 0) {
-        const ret = jquery__WEBPACK_IMPORTED_MODULE_8___default()(`img#${this.config["image_id_pfx"]}__${frame}`).attr("src");
-        jquery__WEBPACK_IMPORTED_MODULE_8___default()(`img#${this.config["image_id_pfx"]}__${frame}`).attr("src", new_src);
+        const ret = jquery__WEBPACK_IMPORTED_MODULE_7___default()(`img#${this.config["image_id_pfx"]}__${frame}`).attr("src");
+        jquery__WEBPACK_IMPORTED_MODULE_7___default()(`img#${this.config["image_id_pfx"]}__${frame}`).attr("src", new_src);
         return ret;
     }
 
     // Swap annotation box background color
     swap_anno_bg_color(new_bg_color) {
-        const annbox = jquery__WEBPACK_IMPORTED_MODULE_8___default()("#" + this.config["annbox_id"]);
+        const annbox = jquery__WEBPACK_IMPORTED_MODULE_7___default()("#" + this.config["annbox_id"]);
         const ret = annbox.css("background-color");
         annbox.css("background-color", new_bg_color);
         return ret
@@ -19418,7 +20412,7 @@ class ULabel {
         for (let i = 0; i < q.length; i++) {
             if (this.subtasks[q[i]]["state"]["active_id"] != null) {
                 // Delete polygon ender if exists
-                jquery__WEBPACK_IMPORTED_MODULE_8___default()("#ender_" + this.subtasks[q[i]]["state"]["active_id"]).remove();
+                jquery__WEBPACK_IMPORTED_MODULE_7___default()("#ender_" + this.subtasks[q[i]]["state"]["active_id"]).remove();
             }
             this.subtasks[q[i]]["state"]["is_in_edit"] = false;
             this.subtasks[q[i]]["state"]["is_in_move"] = false;
@@ -19507,7 +20501,7 @@ class ULabel {
             }
         }
         if (new_frame == null) {
-            new_frame = parseInt(jquery__WEBPACK_IMPORTED_MODULE_8___default()(`div#${this.config["toolbox_id"]} input.frame_input`).val());
+            new_frame = parseInt(jquery__WEBPACK_IMPORTED_MODULE_7___default()(`div#${this.config["toolbox_id"]} input.frame_input`).val());
             if (delta != null) {
                 new_frame = Math.min(Math.max(new_frame + delta, 0), this.config["image_data"].frames.length - 1);
             }
@@ -19516,13 +20510,13 @@ class ULabel {
             new_frame = Math.min(Math.max(new_frame, 0), this.config["image_data"].frames.length - 1);
         }
         // Change the val above
-        jquery__WEBPACK_IMPORTED_MODULE_8___default()(`div#${this.config["toolbox_id"]} input.frame_input`).val(new_frame);
+        jquery__WEBPACK_IMPORTED_MODULE_7___default()(`div#${this.config["toolbox_id"]} input.frame_input`).val(new_frame);
         let old_frame = this.state["current_frame"];
         this.state["current_frame"] = new_frame;
         // $(`img#${this.config["image_id_pfx"]}__${old_frame}`).css("z-index", "initial");
-        jquery__WEBPACK_IMPORTED_MODULE_8___default()(`img#${this.config["image_id_pfx"]}__${old_frame}`).css("display", "none");
+        jquery__WEBPACK_IMPORTED_MODULE_7___default()(`img#${this.config["image_id_pfx"]}__${old_frame}`).css("display", "none");
         // $(`img#${this.config["image_id_pfx"]}__${new_frame}`).css("z-index", 50);
-        jquery__WEBPACK_IMPORTED_MODULE_8___default()(`img#${this.config["image_id_pfx"]}__${new_frame}`).css("display", "block");
+        jquery__WEBPACK_IMPORTED_MODULE_7___default()(`img#${this.config["image_id_pfx"]}__${new_frame}`).css("display", "block");
         if (
             actid &&
             MODES_3D.includes(
@@ -19562,1004 +20556,6 @@ class ULabel {
 
 window.ULabel = ULabel;
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (ULabel);
-
-
-/***/ }),
-
-/***/ 167:
-/***/ ((__unused_webpack_module, exports) => {
-
-"use strict";
-var __webpack_unused_export__;
-
-__webpack_unused_export__ = ({ value: true });
-exports.W = void 0;
-var ULabelSubtask = /** @class */ (function () {
-    function ULabelSubtask(display_name, classes, allowed_modes, resume_from, task_meta, annotation_meta, read_only, inactive_opacity) {
-        if (inactive_opacity === void 0) { inactive_opacity = 0.4; }
-        this.display_name = display_name;
-        this.classes = classes;
-        this.allowed_modes = allowed_modes;
-        this.resume_from = resume_from;
-        this.task_meta = task_meta;
-        this.annotation_meta = annotation_meta;
-        this.read_only = read_only;
-        this.inactive_opacity = inactive_opacity;
-        this.class_ids = [];
-        this.actions = {
-            "stream": [],
-            "undone_stack": []
-        };
-    }
-    ULabelSubtask.from_json = function (subtask_key, subtask_json) {
-        var ret = new ULabelSubtask(subtask_json["display_name"], subtask_json["classes"], subtask_json["allowed_modes"], subtask_json["resume_from"], subtask_json["task_meta"], subtask_json["annotation_meta"]);
-        ret.read_only = ("read_only" in subtask_json) && (subtask_json["read_only"] === true);
-        if ("inactive_opacity" in subtask_json && typeof subtask_json["inactive_opacity"] == "number") {
-            ret.inactive_opacity = Math.min(Math.max(subtask_json["inactive_opacity"], 0.0), 1.0);
-        }
-        return ret;
-    };
-    return ULabelSubtask;
-}());
-exports.W = ULabelSubtask;
-//export type ULabelSubtasks = { [key: string]: ULabelSubtask };
-
-
-/***/ }),
-
-/***/ 334:
-/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
-
-"use strict";
-
-var __extends = (this && this.__extends) || (function () {
-    var extendStatics = function (d, b) {
-        extendStatics = Object.setPrototypeOf ||
-            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
-        return extendStatics(d, b);
-    };
-    return function (d, b) {
-        if (typeof b !== "function" && b !== null)
-            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-var __generator = (this && this.__generator) || function (thisArg, body) {
-    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
-    return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
-    function verb(n) { return function (v) { return step([n, v]); }; }
-    function step(op) {
-        if (f) throw new TypeError("Generator is already executing.");
-        while (_) try {
-            if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
-            if (y = 0, t) op = [op[0] & 2, t.value];
-            switch (op[0]) {
-                case 0: case 1: t = op; break;
-                case 4: _.label++; return { value: op[1], done: false };
-                case 5: _.label++; y = op[1]; op = [0]; continue;
-                case 7: op = _.ops.pop(); _.trys.pop(); continue;
-                default:
-                    if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
-                    if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
-                    if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
-                    if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
-                    if (t[2]) _.ops.pop();
-                    _.trys.pop(); continue;
-            }
-            op = body.call(thisArg, _);
-        } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
-        if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
-    }
-};
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.SubmitButtons = exports.KeypointSliderItem = exports.RecolorActiveItem = exports.AnnotationResizeItem = exports.ClassCounterToolboxItem = exports.AnnotationIDToolboxItem = exports.ZoomPanToolboxItem = exports.ModeSelectionToolboxItem = exports.ToolboxItem = exports.ToolboxTab = exports.Toolbox = void 0;
-var __1 = __webpack_require__(138);
-var configuration_1 = __webpack_require__(976);
-var toolboxDividerDiv = "<div class=toolbox-divider></div>";
-/** Chains the replaceAll method and the toLowerCase method.
- *  Optionally concatenates a string at the end of the method.
-  */
-String.prototype.replaceLowerConcat = function (before, after, concat_string) {
-    if (concat_string === void 0) { concat_string = null; }
-    if (typeof (concat_string) === "string") {
-        return this.replaceAll(before, after).toLowerCase().concat(concat_string);
-    }
-    return this.replaceAll(before, after).toLowerCase();
-};
-/**
- * Manager for toolbox. Contains ToolboxTab items.
- */
-var Toolbox = /** @class */ (function () {
-    // public tabs: ToolboxTab[] = [];
-    // public items: ToolboxItem[] = []; 
-    function Toolbox(tabs, items) {
-        if (tabs === void 0) { tabs = []; }
-        if (items === void 0) { items = []; }
-        this.tabs = tabs;
-        this.items = items;
-    }
-    Toolbox.create_toolbox = function (ulabel, toolbox_item_order) {
-        // Grab the default toolbox if one wasn't provided
-        if (toolbox_item_order == null) {
-            toolbox_item_order = ulabel.config.default_toolbox_item_order;
-        }
-        // There's no point to having an empty toolbox, so throw an error if the toolbox is empty.
-        // The toolbox won't actually break if there aren't any items in the toolbox, so this
-        // error isn't strictly neccesary.
-        if (toolbox_item_order.length === 0) {
-            throw new Error("No Toolbox Items Given");
-        }
-        var toolbox_instance_list = [];
-        // Go through the items in toolbox_item_order and add their instance to the toolbox instance list
-        for (var i = 0; i < toolbox_item_order.length; i++) {
-            var args = void 0, toolbox_key = void 0;
-            // If the value of toolbox_item_order[i] is a number then that means the it is one of the 
-            // enumerated toolbox items, so set it to the key, otherwise the element must be an array
-            // of which the first element of that array must be the enumerated value, and the arguments
-            // must be the second value
-            if (typeof (toolbox_item_order[i]) === "number") {
-                toolbox_key = toolbox_item_order[i];
-            }
-            else {
-                toolbox_key = toolbox_item_order[i][0];
-                args = toolbox_item_order[i][1];
-            }
-            var toolbox_item_class = ulabel.config.toolbox_map.get(toolbox_key);
-            if (args == null) {
-                toolbox_instance_list.push(new toolbox_item_class(ulabel));
-            }
-            else {
-                toolbox_instance_list.push(new toolbox_item_class(ulabel, args));
-            }
-        }
-        return toolbox_instance_list;
-    };
-    Toolbox.prototype.setup_toolbox_html = function (ulabel, frame_annotation_dialogs, images, ULABEL_VERSION) {
-        // Setup base div and ULabel version header
-        var toolbox_html = "\n        <div class=\"full_ulabel_container_\">\n            ".concat(frame_annotation_dialogs, "\n            <div id=\"").concat(ulabel.config["annbox_id"], "\" class=\"annbox_cls\">\n                <div id=\"").concat(ulabel.config["imwrap_id"], "\" class=\"imwrap_cls ").concat(ulabel.config["imgsz_class"], "\">\n                    ").concat(images, "\n                </div>\n            </div>\n            <div id=\"").concat(ulabel.config["toolbox_id"], "\" class=\"toolbox_cls\">\n                <div class=\"toolbox-name-header\">\n                    <h1 class=\"toolname\"><a class=\"repo-anchor\" href=\"https://github.com/SenteraLLC/ulabel\">ULabel</a> <span class=\"version-number\">v").concat(ULABEL_VERSION, "</span></h1><!--\n                    --><div class=\"night-button-cont\">\n                        <a href=\"#\" class=\"night-button\">\n                            <div class=\"night-button-track\">\n                                <div class=\"night-status\"></div>\n                            </div>\n                        </a>\n                    </div>\n                </div>\n                <div class=\"toolbox_inner_cls\">\n        ");
-        for (var tbitem in this.items) {
-            toolbox_html += this.items[tbitem].get_html() + toolboxDividerDiv;
-        }
-        toolbox_html += "\n                </div>\n                <div class=\"toolbox-tabs\">\n                    ".concat(this.get_toolbox_tabs(ulabel), "\n                </div> \n            </div>\n        </div>");
-        return toolbox_html;
-    };
-    /**
-     * Adds tabs for each ULabel subtask to the toolbox.
-     */
-    Toolbox.prototype.get_toolbox_tabs = function (ulabel) {
-        var ret = "";
-        for (var st_key in ulabel.subtasks) {
-            var selected = st_key == ulabel.state["current_subtask"];
-            var subtask = ulabel.subtasks[st_key];
-            var current_tab = new ToolboxTab([], subtask, st_key, selected);
-            ret += current_tab.html;
-            this.tabs.push(current_tab);
-        }
-        return ret;
-    };
-    Toolbox.prototype.redraw_update_items = function (ulabel) {
-        for (var _i = 0, _a = this.items; _i < _a.length; _i++) {
-            var tbitem = _a[_i];
-            tbitem.redraw_update(ulabel);
-        }
-    };
-    return Toolbox;
-}());
-exports.Toolbox = Toolbox;
-var ToolboxTab = /** @class */ (function () {
-    function ToolboxTab(toolboxitems, subtask, subtask_key, selected) {
-        if (toolboxitems === void 0) { toolboxitems = []; }
-        if (selected === void 0) { selected = false; }
-        this.toolboxitems = toolboxitems;
-        this.subtask = subtask;
-        this.subtask_key = subtask_key;
-        this.selected = selected;
-        var sel = "";
-        var href = " href=\"#\"";
-        var val = subtask.inactive_opacity * 100;
-        if (this.selected) {
-            if (this.subtask.read_only) {
-                href = "";
-            }
-            sel = " sel";
-            val = 100;
-        }
-        console.log(subtask.display_name);
-        console.log(subtask);
-        this.html = "\n        <div class=\"tb-st-tab".concat(sel, "\">\n            <a").concat(href, " id=\"tb-st-switch--").concat(subtask_key, "\" class=\"tb-st-switch\">").concat(this.subtask.display_name, "</a><!--\n            --><span class=\"tb-st-range\">\n                <input id=\"tb-st-range--").concat(subtask_key, "\" type=\"range\" min=0 max=100 value=").concat(val, " />\n            </span>\n        </div>\n        ");
-    }
-    return ToolboxTab;
-}());
-exports.ToolboxTab = ToolboxTab;
-var ToolboxItem = /** @class */ (function () {
-    function ToolboxItem() {
-    }
-    ToolboxItem.prototype.redraw_update = function (ulabel) { };
-    ToolboxItem.prototype.frame_update = function (ulabel) { };
-    return ToolboxItem;
-}());
-exports.ToolboxItem = ToolboxItem;
-/**
- * Toolbox item for selecting annotation mode.
- */
-var ModeSelectionToolboxItem = /** @class */ (function (_super) {
-    __extends(ModeSelectionToolboxItem, _super);
-    function ModeSelectionToolboxItem(ulabel) {
-        var _this = _super.call(this) || this;
-        _this.ulabel = ulabel;
-        // Buttons to change annotation mode
-        $(document).on("click", "a.md-btn", function (e) {
-            // Grab the current target and the current subtask
-            var target_jq = $(e.currentTarget);
-            var current_subtask = ulabel.state["current_subtask"];
-            // Check if button clicked is already selected, or if creation of a new annotation is in progress
-            if (target_jq.hasClass("sel") || ulabel.subtasks[current_subtask]["state"]["is_in_progress"])
-                return;
-            // Get the new mode and set it to ulabel's current mode
-            var new_mode = target_jq.attr("id").split("--")[1];
-            ulabel.subtasks[current_subtask]["state"]["annotation_mode"] = new_mode;
-            // Reset the previously selected mode button
-            $("a.md-btn.sel").attr("href", "#");
-            $("a.md-btn.sel").removeClass("sel");
-            // Make the selected class look selected
-            target_jq.addClass("sel");
-            target_jq.removeAttr("href");
-            ulabel.show_annotation_mode(target_jq);
-        });
-        $(document).on("keypress", function (e) {
-            // If creation of a new annotation is in progress, don't change the mode
-            var current_subtask = ulabel.state["current_subtask"];
-            if (ulabel.subtasks[current_subtask]["state"]["is_in_progress"])
-                return;
-            // Check if the correct key was pressed
-            if (e.key == ulabel.config.toggle_annotation_mode_keybind) {
-                var mode_button_array = [];
-                // Loop through all of the mode buttons
-                for (var idx in Array.from(document.getElementsByClassName("md-btn"))) {
-                    // Grab mode button
-                    var mode_button = document.getElementsByClassName("md-btn")[idx];
-                    // Continue without adding it to the array if its display is none
-                    if (mode_button.style.display == "none") {
-                        continue;
-                    }
-                    mode_button_array.push(mode_button);
-                }
-                // Grab the currently selected mode button
-                var selected_mode_button = Array.from(document.getElementsByClassName("md-btn sel"))[0]; // There's only ever going to be one element in this array, so grab the first one
-                var new_button_index = void 0;
-                // Loop through all of the mode select buttons that are currently displayed 
-                // to find which one is the currently selected button.  Once its found add 1
-                // to get the index of the next mode select button. If the new button index
-                // is the same as the array's length, then loop back and set the new button
-                // to 0.
-                for (var idx in mode_button_array) {
-                    if (mode_button_array[idx] === selected_mode_button) {
-                        new_button_index = Number(idx) + 1;
-                        if (new_button_index == mode_button_array.length) {
-                            new_button_index = 0;
-                        }
-                    }
-                }
-                // Grab the button for the mode we want to switch to
-                var new_selected_button = mode_button_array[new_button_index];
-                new_selected_button.click();
-            }
-        });
-        return _this;
-    }
-    ModeSelectionToolboxItem.prototype.get_html = function () {
-        return "\n        <div class=\"mode-selection\">\n            <p class=\"current_mode_container\">\n                <span class=\"cmlbl\">Mode:</span>\n                <span class=\"current_mode\"></span>\n            </p>\n        </div>\n        ";
-    };
-    return ModeSelectionToolboxItem;
-}(ToolboxItem));
-exports.ModeSelectionToolboxItem = ModeSelectionToolboxItem;
-/**
- * Toolbox item for zooming and panning.
- */
-var ZoomPanToolboxItem = /** @class */ (function (_super) {
-    __extends(ZoomPanToolboxItem, _super);
-    function ZoomPanToolboxItem(ulabel) {
-        var _this = _super.call(this) || this;
-        _this.ulabel = ulabel;
-        _this.set_frame_range(ulabel);
-        $(document).on("click", "#recenter-button", function () {
-            ulabel.show_initial_crop();
-        });
-        $(document).on("click", "#recenter-whole-image-button", function () {
-            ulabel.show_whole_image();
-        });
-        $(document).on("keypress", function (e) {
-            if (e.key == ulabel.config.change_zoom_keybind.toLowerCase()) {
-                document.getElementById("recenter-button").click();
-            }
-            if (e.key == ulabel.config.change_zoom_keybind.toUpperCase()) {
-                document.getElementById("recenter-whole-image-button").click();
-            }
-        });
-        return _this;
-    }
-    ZoomPanToolboxItem.prototype.set_frame_range = function (ulabel) {
-        if (ulabel.config["image_data"]["frames"].length == 1) {
-            this.frame_range = "";
-            return;
-        }
-        this.frame_range = "\n            <div class=\"full-tb htbmain set-frame\">\n                <p class=\"shortcut-tip\">scroll to switch frames</p>\n                <div class=\"zpcont\">\n                    <div class=\"lblpyldcont\">\n                        <span class=\"pzlbl htblbl\">Frame</span> &nbsp;\n                        <input class=\"frame_input\" type=\"range\" min=0 max=".concat(ulabel.config["image_data"].frames.length - 1, " value=0 />\n                    </div>\n                </div>\n            </div>\n            ");
-    };
-    ZoomPanToolboxItem.prototype.get_html = function () {
-        return "\n        <div class=\"zoom-pan\">\n            <div class=\"half-tb htbmain set-zoom\">\n                <p class=\"shortcut-tip\">ctrl+scroll or shift+drag</p>\n                <div class=\"zpcont\">\n                    <div class=\"lblpyldcont\">\n                        <span class=\"pzlbl htblbl\">Zoom</span>\n                        <span class=\"zinout htbpyld\">\n                            <a href=\"#\" class=\"zbutt zout\">-</a>\n                            <a href=\"#\" class=\"zbutt zin\">+</a>\n                        </span>\n                    </div>\n                </div>\n            </div><!--\n            --><div class=\"half-tb htbmain set-pan\">\n                <p class=\"shortcut-tip\">scrollclick+drag or ctrl+drag</p>\n                <div class=\"zpcont\">\n                    <div class=\"lblpyldcont\">\n                        <span class=\"pzlbl htblbl\">Pan</span>\n                        <span class=\"panudlr htbpyld\">\n                            <a href=\"#\" class=\"pbutt left\"></a>\n                            <a href=\"#\" class=\"pbutt right\"></a>\n                            <a href=\"#\" class=\"pbutt up\"></a>\n                            <a href=\"#\" class=\"pbutt down\"></a>\n                            <span class=\"spokes\"></span>\n                        </span>\n                    </div>\n                </div>\n            </div>\n            <div class=\"recenter-cont\" style=\"text-align: center;\">\n                <a href=\"#\" id=\"recenter-button\">Re-Center</a>\n                <a href=\"#\" id=\"recenter-whole-image-button\">Whole Image</a>\n            </div>\n            ".concat(this.frame_range, "\n        </div>\n        ");
-    };
-    return ZoomPanToolboxItem;
-}(ToolboxItem));
-exports.ZoomPanToolboxItem = ZoomPanToolboxItem;
-/**
- * Toolbox item for selection Annotation ID.
- */
-var AnnotationIDToolboxItem = /** @class */ (function (_super) {
-    __extends(AnnotationIDToolboxItem, _super);
-    function AnnotationIDToolboxItem(ulabel) {
-        var _this = _super.call(this) || this;
-        _this.ulabel = ulabel;
-        _this.set_instructions(ulabel);
-        return _this;
-    }
-    AnnotationIDToolboxItem.prototype.set_instructions = function (ulabel) {
-        this.instructions = "";
-        if (ulabel.config["instructions_url"] != null) {
-            this.instructions = "\n                <a href=\"".concat(ulabel.config["instructions_url"], "\" target=\"_blank\" rel=\"noopener noreferrer\">Instructions</a>\n            ");
-        }
-    };
-    AnnotationIDToolboxItem.prototype.get_html = function () {
-        return "\n        <div class=\"classification\">\n            <p class=\"tb-header\">Annotation ID</p>\n            <div class=\"id-toolbox-app\"></div>\n        </div>\n        <div class=\"toolbox-refs\">\n            ".concat(this.instructions, "\n        </div>\n        ");
-    };
-    return AnnotationIDToolboxItem;
-}(ToolboxItem));
-exports.AnnotationIDToolboxItem = AnnotationIDToolboxItem;
-var ClassCounterToolboxItem = /** @class */ (function (_super) {
-    __extends(ClassCounterToolboxItem, _super);
-    function ClassCounterToolboxItem() {
-        var args = [];
-        for (var _i = 0; _i < arguments.length; _i++) {
-            args[_i] = arguments[_i];
-        }
-        var _this = _super.call(this) || this;
-        _this.inner_HTML = "<p class=\"tb-header\">Annotation Count</p>";
-        return _this;
-    }
-    ClassCounterToolboxItem.prototype.update_toolbox_counter = function (subtask, toolbox_id) {
-        if (subtask == null) {
-            return;
-        }
-        var class_ids = subtask.class_ids;
-        var i, j;
-        var class_counts = {};
-        for (i = 0; i < class_ids.length; i++) {
-            class_counts[class_ids[i]] = 0;
-        }
-        var annotations = subtask.annotations.access;
-        var annotation_ids = subtask.annotations.ordering;
-        var current_annotation, current_payload;
-        for (i = 0; i < annotation_ids.length; i++) {
-            current_annotation = annotations[annotation_ids[i]];
-            if (current_annotation.deprecated == false) {
-                for (j = 0; j < current_annotation.classification_payloads.length; j++) {
-                    current_payload = current_annotation.classification_payloads[j];
-                    if (current_payload.confidence > 0.0) {
-                        class_counts[current_payload.class_id] += 1;
-                        break;
-                    }
-                }
-            }
-        }
-        var f_string = "";
-        var class_name, class_count;
-        for (i = 0; i < class_ids.length; i++) {
-            class_name = subtask.class_defs[i].name;
-            // MF-Tassels Hack
-            if (class_name.includes("OVERWRITE")) {
-                continue;
-            }
-            class_count = class_counts[subtask.class_defs[i].id];
-            f_string += "".concat(class_name, ": ").concat(class_count, "<br>");
-        }
-        this.inner_HTML = "<p class=\"tb-header\">Annotation Count</p>" + "<p>".concat(f_string, "</p>");
-    };
-    ClassCounterToolboxItem.prototype.get_html = function () {
-        return "\n        <div class=\"toolbox-class-counter\">" + this.inner_HTML + "</div>";
-    };
-    ClassCounterToolboxItem.prototype.redraw_update = function (ulabel) {
-        this.update_toolbox_counter(ulabel.subtasks[ulabel.state["current_subtask"]], ulabel.config["toolbox_id"]);
-        $("#" + ulabel.config["toolbox_id"] + " div.toolbox-class-counter").html(this.inner_HTML);
-    };
-    return ClassCounterToolboxItem;
-}(ToolboxItem));
-exports.ClassCounterToolboxItem = ClassCounterToolboxItem;
-/**
- * Toolbox item for resizing all annotations
- */
-var AnnotationResizeItem = /** @class */ (function (_super) {
-    __extends(AnnotationResizeItem, _super);
-    function AnnotationResizeItem(ulabel) {
-        var _this = _super.call(this) || this;
-        _this.cached_size = 1.5;
-        _this.inner_HTML = "<p class=\"tb-header\">Annotation Count</p>";
-        //get default keybinds
-        _this.keybind_configuration = ulabel.config.default_keybinds;
-        //grab current subtask for convinience
-        var current_subtask_key = ulabel.state["current_subtask"];
-        var current_subtask = ulabel.subtasks[current_subtask_key];
-        //First check for a size cookie, if one isn't found then check the config
-        //for a default annotation size. If neither are found it will use the size
-        //that the annotation was saved as.
-        for (var subtask in ulabel.subtasks) {
-            var cached_size_property = ulabel.subtasks[subtask].display_name.replaceLowerConcat(" ", "-", "-cached-size");
-            var size_cookie = _this.read_size_cookie(ulabel.subtasks[subtask]);
-            if ((size_cookie != null) && size_cookie != "NaN") {
-                _this.update_annotation_size(ulabel.subtasks[subtask], Number(size_cookie));
-                _this[cached_size_property] = Number(size_cookie);
-            }
-            else if (ulabel.config.default_annotation_size != undefined) {
-                _this.update_annotation_size(ulabel.subtasks[subtask], ulabel.config.default_annotation_size);
-                _this[cached_size_property] = ulabel.config.default_annotation_size;
-            }
-            else {
-                var DEFAULT_SIZE = 5;
-                _this.update_annotation_size(ulabel.subtasks[subtask], DEFAULT_SIZE);
-                _this[cached_size_property] = DEFAULT_SIZE;
-            }
-        }
-        //event listener for buttons
-        $(document).on("click", "a.butt-ann", function (e) {
-            var button = $(e.currentTarget);
-            var current_subtask_key = ulabel.state["current_subtask"];
-            var current_subtask = ulabel.subtasks[current_subtask_key];
-            var annotation_size = button.attr("id").slice(18);
-            _this.update_annotation_size(current_subtask, annotation_size);
-            ulabel.redraw_all_annotations(null, null, false);
-        });
-        //event listener for keybinds
-        $(document).on("keypress", function (e) {
-            var current_subtask_key = ulabel.state["current_subtask"];
-            var current_subtask = ulabel.subtasks[current_subtask_key];
-            switch (e.key) {
-                case _this.keybind_configuration.annotation_vanish.toUpperCase():
-                    _this.update_all_subtask_annotation_size(ulabel, "v");
-                    break;
-                case _this.keybind_configuration.annotation_vanish:
-                    _this.update_annotation_size(current_subtask, "v");
-                    break;
-                case _this.keybind_configuration.annotation_size_small:
-                    _this.update_annotation_size(current_subtask, "s");
-                    break;
-                case _this.keybind_configuration.annotation_size_large:
-                    _this.update_annotation_size(current_subtask, "l");
-                    break;
-                case _this.keybind_configuration.annotation_size_minus:
-                    _this.update_annotation_size(current_subtask, "dec");
-                    break;
-                case _this.keybind_configuration.annotation_size_plus:
-                    _this.update_annotation_size(current_subtask, "inc");
-                    break;
-            }
-            ulabel.redraw_all_annotations(null, null, false);
-        });
-        return _this;
-    }
-    //recieives a string of 's', 'l', 'dec', 'inc', or 'v' depending on which button was pressed
-    //also the constructor can pass in a number from the config
-    AnnotationResizeItem.prototype.update_annotation_size = function (subtask, size) {
-        var small_size = 1.5;
-        var large_size = 5;
-        var increment_size = 0.5;
-        var vanish_size = 0.01;
-        var subtask_cached_size = subtask.display_name.replaceLowerConcat(" ", "-", "-cached-size");
-        if (subtask == null)
-            return;
-        var subtask_vanished_flag = subtask.display_name.replaceLowerConcat(" ", "-", "-vanished");
-        //If the annotations are currently vanished and a button other than the vanish button is
-        //pressed, then we want to ignore the input
-        if (this[subtask_vanished_flag] && size !== "v")
-            return;
-        if (typeof (size) === "number") {
-            this.loop_through_annotations(subtask, size, "=");
-        }
-        if (size == "v") {
-            if (this[subtask_vanished_flag]) {
-                this.loop_through_annotations(subtask, this[subtask_cached_size], "=");
-                //flip the bool state
-                this[subtask_vanished_flag] = !this[subtask_vanished_flag];
-                $("#annotation-resize-v").attr("style", "background-color: " + "rgba(100, 148, 237, 0.8)");
-                return;
-            }
-            if (!this[subtask_vanished_flag]) {
-                this.loop_through_annotations(subtask, vanish_size, "=");
-                //flip the bool state
-                this[subtask_vanished_flag] = !this[subtask_vanished_flag];
-                $("#annotation-resize-v").attr("style", "background-color: " + "#1c2d4d");
-                return;
-            }
-            return;
-        }
-        switch (size) {
-            case 's':
-                this.loop_through_annotations(subtask, small_size, "=");
-                this[subtask_cached_size] = small_size;
-                break;
-            case 'l':
-                this.loop_through_annotations(subtask, large_size, "=");
-                this[subtask_cached_size] = large_size;
-                break;
-            case 'dec':
-                this.loop_through_annotations(subtask, increment_size, "-");
-                break;
-            case 'inc':
-                this.loop_through_annotations(subtask, increment_size, "+");
-                break;
-            default:
-                return;
-        }
-    };
-    //loops through all annotations in a subtask to change their line size
-    AnnotationResizeItem.prototype.loop_through_annotations = function (subtask, size, operation) {
-        var subtask_cached_size = subtask.display_name.replaceLowerConcat(" ", "-", "-cached-size");
-        if (operation == "=") {
-            for (var annotation_id in subtask.annotations.access) {
-                subtask.annotations.access[annotation_id].line_size = size;
-            }
-            // Don't set the vanished size as a cookie
-            if (size == 0.01)
-                return;
-            this.set_size_cookie(size, subtask);
-            return;
-        }
-        if (operation == "+") {
-            for (var annotation_id in subtask.annotations.access) {
-                subtask.annotations.access[annotation_id].line_size += size;
-                //temporary solution
-                this[subtask_cached_size] = subtask.annotations.access[annotation_id].line_size;
-            }
-            this.set_size_cookie(subtask.annotations.access[subtask.annotations.ordering[0]].line_size, subtask);
-            return;
-        }
-        if (operation == "-") {
-            for (var annotation_id in subtask.annotations.access) {
-                //Check to make sure annotation line size won't go 0 or negative. If it would
-                //set it equal to a small positive number
-                if (subtask.annotations.access[annotation_id].line_size - size <= 0.01) {
-                    subtask.annotations.access[annotation_id].line_size = 0.01;
-                }
-                else {
-                    subtask.annotations.access[annotation_id].line_size -= size;
-                }
-                //temporary solution
-                this[subtask_cached_size] = subtask.annotations.access[annotation_id].line_size;
-            }
-            this.set_size_cookie(subtask.annotations.access[subtask.annotations.ordering[0]].line_size, subtask);
-            return;
-        }
-        throw Error("Invalid Operation given to loop_through_annotations");
-    };
-    //Loop through all subtasks and apply a size to them all
-    AnnotationResizeItem.prototype.update_all_subtask_annotation_size = function (ulabel, size) {
-        for (var subtask in ulabel.subtasks) {
-            this.update_annotation_size(ulabel.subtasks[subtask], size);
-        }
-    };
-    AnnotationResizeItem.prototype.set_size_cookie = function (cookie_value, subtask) {
-        var d = new Date();
-        d.setTime(d.getTime() + (10000 * 24 * 60 * 60 * 1000));
-        var subtask_name = subtask.display_name.replaceLowerConcat(" ", "_");
-        document.cookie = subtask_name + "_size=" + cookie_value + ";" + d.toUTCString() + ";path=/";
-    };
-    AnnotationResizeItem.prototype.read_size_cookie = function (subtask) {
-        var subtask_name = subtask.display_name.replaceLowerConcat(" ", "_");
-        var cookie_name = subtask_name + "_size=";
-        var cookie_array = document.cookie.split(";");
-        for (var i = 0; i < cookie_array.length; i++) {
-            var current_cookie = cookie_array[i];
-            //while there's whitespace at the front of the cookie, loop through and remove it
-            while (current_cookie.charAt(0) == " ") {
-                current_cookie = current_cookie.substring(1);
-            }
-            if (current_cookie.indexOf(cookie_name) == 0) {
-                return current_cookie.substring(cookie_name.length, current_cookie.length);
-            }
-        }
-        return null;
-    };
-    AnnotationResizeItem.prototype.get_html = function () {
-        return "\n        <div class=\"annotation-resize\">\n            <p class=\"tb-header\">Change Annotation Size</p>\n            <div class=\"annotation-resize-button-holder\">\n                <span class=\"annotation-vanish\">\n                    <a href=\"#\" class=\"butt-ann button\" id=\"annotation-resize-v\">Vanish</a>\n                </span>\n                <span class=\"annotation-size\">\n                    <a href=\"#\" class=\"butt-ann button\" id=\"annotation-resize-s\">Small</a>\n                    <a href=\"#\" class=\"butt-ann button\" id=\"annotation-resize-l\">Large</a>\n                </span>\n                <span class=\"annotation-inc increment\">\n                    <a href=\"#\" class=\"butt-ann button inc\" id=\"annotation-resize-inc\">+</a>\n                    <a href=\"#\" class=\"butt-ann button dec\" id=\"annotation-resize-dec\">-</a>\n                </span>\n            </div>\n        </div>\n        ";
-    };
-    return AnnotationResizeItem;
-}(ToolboxItem));
-exports.AnnotationResizeItem = AnnotationResizeItem;
-var RecolorActiveItem = /** @class */ (function (_super) {
-    __extends(RecolorActiveItem, _super);
-    function RecolorActiveItem(ulabel) {
-        var _this = _super.call(this) || this;
-        _this.most_recent_draw = Date.now();
-        _this.inner_HTML = "<p class=\"tb-header\">Recolor Annotations</p>";
-        var current_subtask_key = ulabel.state["current_subtask"];
-        var current_subtask = ulabel.subtasks[current_subtask_key];
-        //loop through all the types of annotations and check to see it there's
-        //a color cookie corresponding to that class id
-        for (var i = 0; i < current_subtask.classes.length; i++) {
-            var cookie_color = _this.read_color_cookie(current_subtask.classes[i].id);
-            if (cookie_color !== null) {
-                _this.update_annotation_color(current_subtask, cookie_color, current_subtask.classes[i].id);
-            }
-        }
-        __1.ULabel.process_classes(ulabel, ulabel.state.current_subtask, current_subtask);
-        //event handler for the buttons
-        $(document).on("click", "input.color-change-btn", function (e) {
-            var button = $(e.currentTarget);
-            var current_subtask_key = ulabel.state["current_subtask"];
-            var current_subtask = ulabel.subtasks[current_subtask_key];
-            //slice 13,16 to grab the part of the id that specifies color
-            var color_from_id = button.attr("id").slice(13, 16);
-            _this.update_annotation_color(current_subtask, color_from_id);
-            __1.ULabel.process_classes(ulabel, ulabel.state.current_subtask, current_subtask);
-            ulabel.redraw_all_annotations(null, null, false);
-        });
-        $(document).on("input", "input.color-change-picker", function (e) {
-            //Gets the current subtask
-            var current_subtask_key = ulabel.state["current_subtask"];
-            var current_subtask = ulabel.subtasks[current_subtask_key];
-            //Gets the hex value from the color picker
-            var hex = e.currentTarget.value;
-            _this.update_annotation_color(current_subtask, hex);
-            //somewhat janky way to update the color on the color picker 
-            //to allow for more css options
-            var color_picker_container = document.getElementById("color-picker-container");
-            color_picker_container.style.backgroundColor = hex;
-            __1.ULabel.process_classes(ulabel, ulabel.state.current_subtask, current_subtask);
-            _this.limit_redraw(ulabel);
-        });
-        $(document).on("input", "#gradient-toggle", function (e) {
-            ulabel.redraw_all_annotations(null, null, false);
-            _this.set_gradient_cookie($("#gradient-toggle").prop("checked"));
-        });
-        $(document).on("input", "#gradient-slider", function (e) {
-            $("div.gradient-slider-value-display").text(e.currentTarget.value + "%");
-            ulabel.redraw_all_annotations(null, null, false);
-        });
-        return _this;
-    }
-    RecolorActiveItem.prototype.update_annotation_color = function (subtask, color, selected_id) {
-        if (selected_id === void 0) { selected_id = null; }
-        var need_to_set_cookie = true;
-        if (selected_id !== null) {
-            need_to_set_cookie = false;
-        }
-        //check for the three special cases, otherwise assume color is a hex value
-        if (color == "yel") {
-            color = "#FFFF00";
-        }
-        if (color == "red") {
-            color = "#FF0000";
-        }
-        if (color == "cya") {
-            color = "#00FFFF";
-        }
-        if (selected_id == null) {
-            subtask.state.id_payload.forEach(function (item) {
-                if (item.confidence == 1) {
-                    selected_id = item.class_id;
-                }
-            });
-        }
-        //if the selected id is still null, then that means that no id was passed
-        //in or had a confidence of 1. Therefore the default is having the first 
-        //annotation id selected, so we'll default to that
-        if (selected_id == null) {
-            selected_id = subtask.classes[0].id;
-        }
-        subtask.classes.forEach(function (item) {
-            if (item.id === selected_id) {
-                item.color = color;
-            }
-        });
-        //$("a.toolbox_sel_"+selected_id+":first").attr("backround-color", color);
-        var colored_square_element = ".toolbox_colprev_" + selected_id;
-        $(colored_square_element).attr("style", "background-color: " + color);
-        //Finally set a cookie to remember color preference if needed
-        if (need_to_set_cookie) {
-            this.set_color_cookie(selected_id, color);
-        }
-    };
-    RecolorActiveItem.prototype.limit_redraw = function (ulabel, wait_time) {
-        if (wait_time === void 0) { wait_time = 100; }
-        //Compare most recent draw time to now and only draw if  
-        //more than wait_time milliseconds have passed. 
-        if (Date.now() - this.most_recent_draw > wait_time) {
-            //update most recent draw to now
-            this.most_recent_draw = Date.now();
-            //redraw annotations
-            ulabel.redraw_all_annotations(null, null, false);
-        }
-    };
-    RecolorActiveItem.prototype.set_color_cookie = function (annotation_id, cookie_value) {
-        var d = new Date();
-        d.setTime(d.getTime() + (10000 * 24 * 60 * 60 * 1000));
-        document.cookie = "color" + annotation_id + "=" + cookie_value + ";" + d.toUTCString() + ";path=/";
-    };
-    RecolorActiveItem.prototype.read_color_cookie = function (annotation_id) {
-        var cookie_name = "color" + annotation_id + "=";
-        var cookie_array = document.cookie.split(";");
-        for (var i = 0; i < cookie_array.length; i++) {
-            var current_cookie = cookie_array[i];
-            //while there's whitespace at the front of the cookie, loop through and remove it
-            while (current_cookie.charAt(0) == " ") {
-                current_cookie = current_cookie.substring(1);
-            }
-            if (current_cookie.indexOf(cookie_name) == 0) {
-                return current_cookie.substring(cookie_name.length, current_cookie.length);
-            }
-        }
-        return null;
-    };
-    RecolorActiveItem.prototype.set_gradient_cookie = function (gradient_status) {
-        var d = new Date();
-        d.setTime(d.getTime() + (10000 * 24 * 60 * 60 * 1000));
-        document.cookie = "gradient=" + gradient_status + ";" + d.toUTCString() + ";path=/";
-    };
-    RecolorActiveItem.prototype.read_gradient_cookie = function () {
-        var cookie_name = "gradient=";
-        var cookie_array = document.cookie.split(";");
-        for (var i = 0; i < cookie_array.length; i++) {
-            var current_cookie = cookie_array[i];
-            //while there's whitespace at the front of the cookie, loop through and remove it
-            while (current_cookie.charAt(0) == " ") {
-                current_cookie = current_cookie.substring(1);
-            }
-            if (current_cookie.indexOf(cookie_name) == 0) {
-                return (current_cookie.substring(cookie_name.length, current_cookie.length) == "true");
-            }
-        }
-        return null;
-    };
-    RecolorActiveItem.prototype.get_html = function () {
-        var checked_status_bool = this.read_gradient_cookie(); //true, false, or null
-        var checked_status_string = "";
-        //null means no cookie, so grab the default from configuration
-        if (checked_status_bool == null) {
-            checked_status_bool = configuration_1.Configuration.annotation_gradient_default;
-        }
-        if (checked_status_bool == true) {
-            checked_status_string = "checked";
-        }
-        return "\n        <div class=\"recolor-active\">\n            <p class=\"tb-header\">Recolor Annotations</p>\n            <div class=\"recolor-tbi-gradient\">\n                <div>\n                    <label for=\"gradient-toggle\" id=\"gradient-toggle-label\">Toggle Gradients</label>\n                    <input type=\"checkbox\" id=\"gradient-toggle\" name=\"gradient-checkbox\" value=\"gradient\" ".concat(checked_status_string, ">\n                </div>\n                <div>\n                    <label for=\"gradient-slider\" id=\"gradient-slider-label\">Gradient Max</label>\n                    <input type=\"range\" id=\"gradient-slider\" value=\"100\">\n                    <div class=\"gradient-slider-value-display\">100%</div>\n                </div>\n            </div>\n            <div class=\"annotation-recolor-button-holder\">\n                <div class=\"color-btn-container\">\n                    <input type=\"button\" class=\"color-change-btn\" id=\"color-change-yel\">\n                    <input type=\"button\" class=\"color-change-btn\" id=\"color-change-red\">\n                    <input type=\"button\" class=\"color-change-btn\" id=\"color-change-cya\">\n                </div>\n                <div class=\"color-picker-border\">\n                    <div class=\"color-picker-container\" id=\"color-picker-container\">\n                        <input type=\"color\" class=\"color-change-picker\" id=\"color-change-pick\">\n                    </div>\n                </div>\n            </div>\n        </div>\n        ");
-    };
-    return RecolorActiveItem;
-}(ToolboxItem));
-exports.RecolorActiveItem = RecolorActiveItem;
-var KeypointSliderItem = /** @class */ (function (_super) {
-    __extends(KeypointSliderItem, _super);
-    //function_array must contain three functions
-    //the first function is how to filter the annotations
-    //the second is how to get the particular confidence
-    //the third is how to mark the annotations deprecated
-    function KeypointSliderItem(ulabel, kwargs) {
-        var _this = _super.call(this) || this;
-        _this.default_value = 0; //defalut value must be a number between 0 and 1 inclusive
-        _this.inner_HTML = "<p class=\"tb-header\">Keypoint Slider</p>";
-        _this.name = kwargs.name;
-        _this.filter_function = kwargs.filter_function;
-        _this.get_confidence = kwargs.confidence_function;
-        _this.mark_deprecated = kwargs.mark_deprecated;
-        _this.slider_bar_id = _this.name.replaceLowerConcat(" ", "-");
-        //if the config has a default value override, then use that instead
-        if (ulabel.config.hasOwnProperty(_this.name.replaceLowerConcat(" ", "_", "_default_value"))) {
-            kwargs.default_value = ulabel.config[_this.name.replaceLowerConcat(" ", "_", "_default_value")];
-        }
-        //if this keypoint slider has a generic default, then use it
-        //otherwise the defalut is 0
-        if (kwargs.hasOwnProperty("default_value")) {
-            //check to make sure the default value given is valid
-            if ((kwargs.default_value >= 0) && (kwargs.default_value <= 1)) {
-                _this.default_value = kwargs.default_value;
-            }
-            else {
-                throw Error("Invalid defalut keypoint slider value given");
-            }
-        }
-        var current_subtask_key = ulabel.state["current_subtask"];
-        var current_subtask = ulabel.subtasks[current_subtask_key];
-        //Check to see if any of the annotations were deprecated by default
-        _this.check_for_human_deprecated(current_subtask);
-        //check the config to see if we should update the annotations with the default filter on load
-        if (ulabel.config.filter_annotations_on_load) {
-            _this.deprecate_annotations(ulabel, _this.default_value, false);
-        }
-        //The annotations are drawn for the first time after the toolbox is loaded
-        //so we don't actually have to redraw the annotations after deprecating them.
-        $(document).on("input", "#" + _this.name.replaceLowerConcat(" ", "-"), function (e) {
-            var filter_value = e.currentTarget.value / 100;
-            _this.deprecate_annotations(ulabel, filter_value);
-        });
-        $(document).on("click", "a." + _this.name.replaceLowerConcat(" ", "-") + "-button", function (e) {
-            var button_text = e.currentTarget.outerText;
-            var slider = document.getElementById(_this.name.replaceLowerConcat(" ", "-"));
-            if (button_text == "+") {
-                slider.value = (slider.valueAsNumber + 1).toString();
-            }
-            else if (button_text == "-") {
-                slider.value = (slider.valueAsNumber - 1).toString();
-            }
-            else {
-                throw Error("Unknown Keypoint Slider Button Pressed");
-            }
-            //update the slider's label
-            $("#" + slider.id + "-label").text(Math.round(slider.valueAsNumber) + "%");
-            _this.deprecate_annotations(ulabel, slider.valueAsNumber / 100);
-            ulabel.redraw_all_annotations(null, null, false);
-        });
-        //event listener for keybinds
-        $(document).on("keypress", function (e) {
-            if (e.key == kwargs.keybinds.increment) {
-                var button = document.getElementsByClassName(_this.name.replaceLowerConcat(" ", "-") + "-button inc")[0];
-                button.click();
-            }
-            if (e.key == kwargs.keybinds.decrement) {
-                var button = document.getElementsByClassName(_this.name.replaceLowerConcat(" ", "-") + "-button dec")[0];
-                button.click();
-            }
-        });
-        return _this;
-    }
-    KeypointSliderItem.prototype.deprecate_annotations = function (ulabel, filter_value, redraw) {
-        if (redraw === void 0) { redraw = true; }
-        //get the current subtask
-        var current_subtask_key = ulabel.state["current_subtask"];
-        var current_subtask = ulabel.subtasks[current_subtask_key];
-        for (var i in current_subtask.annotations.ordering) {
-            var current_annotation = current_subtask.annotations.access[current_subtask.annotations.ordering[i]];
-            //kinda a hack, but an annotation can't be human deprecated if its not deprecated
-            if (current_annotation.deprecated == false) {
-                current_annotation.human_deprecated = false;
-            }
-            //we don't want to change any annotations that were hand edited by the user.
-            if (current_annotation.human_deprecated) {
-                continue;
-            }
-            var current_confidence = this.get_confidence(current_annotation);
-            var deprecate = this.filter_function(current_confidence, filter_value);
-            this.mark_deprecated(current_annotation, deprecate);
-        }
-        //Update the slider bar's position, and the label's text.
-        $("#" + this.slider_bar_id).val(Math.round(filter_value * 100));
-        $("#" + this.slider_bar_id + "-label").text(Math.round(filter_value * 100) + "%");
-        if (redraw) {
-            ulabel.redraw_all_annotations(null, null, false);
-        }
-    };
-    //if an annotation is deprecated and has a child, then assume its human deprecated.
-    KeypointSliderItem.prototype.check_for_human_deprecated = function (current_subtask) {
-        for (var i in current_subtask.annotations.ordering) {
-            var current_annotation = current_subtask.annotations.access[current_subtask.annotations.ordering[i]];
-            var parent_id = current_annotation.parent_id;
-            //if the parent id exists and is deprecated, then assume that it was human deprecated
-            if (parent_id != null) {
-                var parent_annotation = current_subtask.annotations.access[parent_id];
-                //check if the parent annotation exists
-                if (parent_annotation != null) {
-                    if (parent_annotation.deprecated) {
-                        parent_annotation.human_deprecated = true;
-                    }
-                }
-            }
-        }
-    };
-    KeypointSliderItem.prototype.get_html = function () {
-        var component_name = this.name.replaceLowerConcat(" ", "-");
-        return "\n        <div class=\"keypoint-slider\">\n            <p class=\"tb-header\">".concat(this.name, "</p>\n            <div class=\"keypoint-slider-holder\">\n                <input \n                    type=\"range\" \n                    id=\"").concat(component_name, "\" \n                    class=\"keypoint-slider\" value=\"").concat(this.default_value * 100, "\"\n                />\n                <label \n                    for=\"").concat(component_name, "\" \n                    id=\"").concat(component_name, "-label\"\n                    class=\"keypoint-slider-label\">\n                    ").concat(Math.round(this.default_value * 100), "%\n                </label>\n                <span class=\"increment\" >\n                    <a href=\"#\" class=\"button inc keypoint-slider-increment ").concat(component_name, "-button\" >+</a>\n                    <a href=\"#\" class=\"button dec keypoint-slider-increment ").concat(component_name, "-button\" >-</a>\n                </span>\n            </div>\n        </div>");
-    };
-    return KeypointSliderItem;
-}(ToolboxItem));
-exports.KeypointSliderItem = KeypointSliderItem;
-var SubmitButtons = /** @class */ (function (_super) {
-    __extends(SubmitButtons, _super);
-    function SubmitButtons(ulabel) {
-        var _this = _super.call(this) || this;
-        // Grab the submit buttons from ulabel
-        _this.submit_buttons = ulabel.config.submit_buttons;
-        // For legacy reasons submit_buttons may be a function, in that case convert it to the right format
-        if (typeof _this.submit_buttons == "function") {
-            _this.submit_buttons = [{
-                    "name": "Submit",
-                    "hook": _this.submit_buttons
-                }];
-        }
-        var _loop_1 = function (idx) {
-            // Create a unique event listener for each submit button in the submit buttons array.
-            $(document).on("click", "#" + this_1.submit_buttons[idx].name.replaceLowerConcat(" ", "-"), function (e) { return __awaiter(_this, void 0, void 0, function () {
-                var button, submit_button_elements, i, animation, submit_payload, stkey, i, i;
-                return __generator(this, function (_a) {
-                    switch (_a.label) {
-                        case 0:
-                            button = document.getElementById(this.submit_buttons[idx].name.replaceLowerConcat(" ", "-"));
-                            submit_button_elements = Array.from(document.getElementsByClassName("submit-button"));
-                            // Make all the buttons look disabled
-                            for (i in submit_button_elements) {
-                                submit_button_elements[i].disabled = true;
-                                submit_button_elements[i].style.filter = "opacity(0.7)";
-                            }
-                            // Give the clicked button a loading animation
-                            button.innerText = "";
-                            animation = document.createElement("div");
-                            animation.className = "lds-dual-ring";
-                            button.appendChild(animation);
-                            submit_payload = {
-                                "task_meta": ulabel.config["task_meta"],
-                                "annotations": {}
-                            };
-                            // Loop through all of the subtasks
-                            for (stkey in ulabel.subtasks) {
-                                submit_payload["annotations"][stkey] = [];
-                                // Add all of the annotations in that subtask
-                                for (i = 0; i < ulabel.subtasks[stkey]["annotations"]["ordering"].length; i++) {
-                                    submit_payload["annotations"][stkey].push(ulabel.subtasks[stkey]["annotations"]["access"][ulabel.subtasks[stkey]["annotations"]["ordering"][i]]);
-                                }
-                            }
-                            return [4 /*yield*/, this.submit_buttons[idx].hook(submit_payload)];
-                        case 1:
-                            _a.sent();
-                            // Give the button back its name
-                            button.innerText = this.submit_buttons[idx].name;
-                            // Re-enable the buttons
-                            for (i in submit_button_elements) {
-                                submit_button_elements[i].disabled = false;
-                                submit_button_elements[i].style.filter = "opacity(1)";
-                            }
-                            return [2 /*return*/];
-                    }
-                });
-            }); });
-        };
-        var this_1 = this;
-        for (var idx in _this.submit_buttons) {
-            _loop_1(idx);
-        }
-        return _this;
-    }
-    SubmitButtons.prototype.get_html = function () {
-        var toolboxitem_html = "";
-        for (var idx in this.submit_buttons) {
-            var button_color = void 0;
-            if (this.submit_buttons[idx].color !== undefined) {
-                button_color = this.submit_buttons[idx].color;
-            }
-            else {
-                // If no color provided use hard coded default
-                button_color = "rgba(255, 166, 0, 0.739)";
-            }
-            toolboxitem_html += "\n            <button \n            id=\"".concat(this.submit_buttons[idx].name.replaceLowerConcat(" ", "-"), "\" \n            class=\"submit-button\" \n            style=\"\n                display: block;\n                height: 1.2em;\n                width: 6em;\n                font-size: 1.5em;\n                color: white;\n                background-color: ").concat(button_color, "; \n                margin-left: auto;\n                margin-right: auto;\n                margin-top: 0.5em;\n                margin-bottom: 0.5em;\n                padding: 1em;\n                border: 1px solid ").concat(button_color, ";\n                border-radius: 0.5em;\n                cursor: pointer;\n            \">\n                ").concat(this.submit_buttons[idx].name, "\n            </button>\n            ");
-        }
-        return toolboxitem_html;
-    };
-    return SubmitButtons;
-}(ToolboxItem));
-exports.SubmitButtons = SubmitButtons;
-// export class WholeImageClassifierToolboxTab extends ToolboxItem {
-//     constructor() {
-//         super(
-//             "toolbox-whole-image-classifier",
-//             "Whole Image Classification",
-//             ""
-//         );
-//     }
-// }
 
 
 /***/ }),
@@ -20649,7 +20645,7 @@ const ULABEL_VERSION = "0.4.20";
 /******/ 	// Load entry module and return exports
 /******/ 	// This entry module is referenced by other modules so it can't be inlined
 /******/ 	var __webpack_exports__ = __webpack_require__(138);
-/******/ 	exports.ULabel = __webpack_exports__.default;
+/******/ 	exports.ULabel = __webpack_exports__["default"];
 /******/ 	
 /******/ })()
 ;

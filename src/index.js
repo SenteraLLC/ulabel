@@ -2,15 +2,13 @@
 Uncertain Labeling Tool
 Sentera Inc.
 */
-import { ULabelAnnotation } from './annotation';
-import { Toolbox, ClassCounterToolboxItem, ModeSelectionToolboxItem, ZoomPanToolboxItem } from './toolbox';
-import { AnnotationIDToolboxItem, AnnotationResizeItem, RecolorActiveItem, KeypointSlider } from './toolbox';
-import { ULabelSubtask } from './subtask';
-import { GeometricUtils } from './geometric_utils';
-import { get_annotation_confidence, mark_deprecated, filter_low } from './annotation_operators';
-import { apply_gradient } from './drawing_utilities'
-import { Configuration, AllowedToolboxItem } from './configuration';
-import { HTMLBuilder } from './html_builder';
+import { ULabelAnnotation } from '../build/annotation';
+import { ULabelSubtask } from '../build/subtask';
+import { GeometricUtils } from '../build/geometric_utils';
+import { get_annotation_confidence } from '../build/annotation_operators';
+import { apply_gradient } from '../build/drawing_utilities'
+import { Configuration } from '../build/configuration';
+import { HTMLBuilder } from '../build/html_builder';
 import $ from 'jquery';
 const jQuery = $;
 window.$ = window.jQuery = require('jquery');
@@ -18,20 +16,9 @@ window.$ = window.jQuery = require('jquery');
 const { v4: uuidv4 } = require('uuid');
 
 import {
-    DEMO_ANNOTATION,
-    BBOX_SVG,
-    BBOX3_SVG,
-    POINT_SVG,
-    POLYGON_SVG,
-    CONTOUR_SVG,
-    get_init_style,
     COLORS,
-    TBAR_SVG,
-    POLYLINE_SVG,
     WHOLE_IMAGE_SVG,
-    GLOBAL_SVG,
-    BUTTON_LOADER_HTML
-} from './blobs';
+    GLOBAL_SVG} from './blobs';
 import { ULABEL_VERSION } from './version';
 
 jQuery.fn.outer_html = function () {

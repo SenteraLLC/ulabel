@@ -6,6 +6,7 @@
         "lib": [
             "ES2021.String",
             "DOM",
-        ]
+        ],
+        "outDir": "./build",
     },
 }

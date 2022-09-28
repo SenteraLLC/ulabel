@@ -28,6 +28,7 @@
   "homepage": "https://github.com/SenteraLLC/ulabel",
   "dependencies": {
     "jquery": "^3.5.1",
+    "uglifyjs-webpack-plugin": "^2.2.0",
     "ulabel": "^0.4.21",
     "uuidv4": "^6.2.6"
   },
@@ -37,7 +38,7 @@
     "@typescript-eslint/parser": "^4.16.1",
     "eslint": "^7.21.0",
     "express": "^4.17.1",
-    "webpack": "^5.13.0",
+    "webpack": "^5.74.0",
     "webpack-cli": "^4.3.1"
   },
   "unpkg": "dist/ulabel.js"
