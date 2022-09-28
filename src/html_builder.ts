@@ -1,6 +1,6 @@
 import { ULabel } from "..";
 import { Toolbox, ZoomPanToolboxItem } from "./toolbox";
-import { ULABEL_VERSION } from './version';
+import { ULABEL_VERSION } from '../src/version';
 
 import {
     BBOX_SVG,
@@ -13,7 +13,7 @@ import {
     WHOLE_IMAGE_SVG,
     GLOBAL_SVG,
     get_init_style
-} from './blobs';
+} from '../src/blobs';
 
 export class HTMLBuilder {
 
