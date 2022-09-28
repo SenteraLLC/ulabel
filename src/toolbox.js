@@ -155,7 +155,7 @@ var ToolboxTab = /** @class */ (function () {
         this.selected = selected;
         var sel = "";
         var href = " href=\"#\"";
-        var val = 50;
+        var val = subtask.inactive_opacity * 100;
         if (this.selected) {
             if (this.subtask.read_only) {
                 href = "";

@@ -11,7 +11,7 @@ export class ULabelSubtask {
         public task_meta: any,
         public annotation_meta: any,
         public read_only?: boolean,
-        public inactivate_opacity: number = 0.4
+        public inactive_opacity: number = 0.4
     ) {
         this.actions = {
             "stream": [],
@@ -30,7 +30,7 @@ export class ULabelSubtask {
         )
         ret.read_only = ("read_only" in subtask_json) && (subtask_json["read_only"] === true)
         if ("inactive_opacity" in subtask_json && typeof subtask_json["inactive_opacity"] == "number") {
-            ret.inactivate_opacity = Math.min(Math.max(subtask_json["inactive_opacity"], 0.0), 1.0);
+            ret.inactive_opacity = Math.min(Math.max(subtask_json["inactive_opacity"], 0.0), 1.0);
         }
         return ret;
     }

@@ -51,6 +51,7 @@ export type ULabelSubtask = {
     annotation_meta: any
     read_only?: boolean;
     annotations: { access: {}, ordering: [] }
+    inactive_opacity: number;
 }
 export type ULabelSubtasks = { [key: string]: ULabelSubtask };
 
