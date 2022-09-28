@@ -889,8 +889,8 @@ var __webpack_unused_export__;
 __webpack_unused_export__ = ({ value: true });
 exports.W = void 0;
 var ULabelSubtask = /** @class */ (function () {
-    function ULabelSubtask(display_name, classes, allowed_modes, resume_from, task_meta, annotation_meta, read_only, inactivate_opacity) {
-        if (inactivate_opacity === void 0) { inactivate_opacity = 0.4; }
+    function ULabelSubtask(display_name, classes, allowed_modes, resume_from, task_meta, annotation_meta, read_only, inactive_opacity) {
+        if (inactive_opacity === void 0) { inactive_opacity = 0.4; }
         this.display_name = display_name;
         this.classes = classes;
         this.allowed_modes = allowed_modes;
@@ -898,7 +898,7 @@ var ULabelSubtask = /** @class */ (function () {
         this.task_meta = task_meta;
         this.annotation_meta = annotation_meta;
         this.read_only = read_only;
-        this.inactivate_opacity = inactivate_opacity;
+        this.inactive_opacity = inactive_opacity;
         this.class_ids = [];
         this.actions = {
             "stream": [],
@@ -909,7 +909,7 @@ var ULabelSubtask = /** @class */ (function () {
         var ret = new ULabelSubtask(subtask_json["display_name"], subtask_json["classes"], subtask_json["allowed_modes"], subtask_json["resume_from"], subtask_json["task_meta"], subtask_json["annotation_meta"]);
         ret.read_only = ("read_only" in subtask_json) && (subtask_json["read_only"] === true);
         if ("inactive_opacity" in subtask_json && typeof subtask_json["inactive_opacity"] == "number") {
-            ret.inactivate_opacity = Math.min(Math.max(subtask_json["inactive_opacity"], 0.0), 1.0);
+            ret.inactive_opacity = Math.min(Math.max(subtask_json["inactive_opacity"], 0.0), 1.0);
         }
         return ret;
     };
@@ -1082,7 +1082,7 @@ var ToolboxTab = /** @class */ (function () {
         this.selected = selected;
         var sel = "";
         var href = " href=\"#\"";
-        var val = 50;
+        var val = subtask.inactive_opacity * 100;
         if (this.selected) {
             if (this.subtask.read_only) {
                 href = "";
