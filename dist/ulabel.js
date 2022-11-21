@@ -17023,15 +17023,26 @@ class ULabel {
     }
 
     handle_toolbox_overflow() {
-        let tabs_height = jquery__WEBPACK_IMPORTED_MODULE_7___default()("#" + this.config["container_id"] + " div.toolbox-tabs").height();
-        jquery__WEBPACK_IMPORTED_MODULE_7___default()("#" + this.config["container_id"] + " div.toolbox_inner_cls").css("height", `calc(100% - ${tabs_height + 38}px)`);
-        let view_height = jquery__WEBPACK_IMPORTED_MODULE_7___default()("#" + this.config["container_id"] + " div.toolbox_cls")[0].scrollHeight - 38 - tabs_height;
-        let want_height = jquery__WEBPACK_IMPORTED_MODULE_7___default()("#" + this.config["container_id"] + " div.toolbox_inner_cls")[0].scrollHeight;
+        // let tabs_height = jquery__WEBPACK_IMPORTED_MODULE_7___default()("#" + this.config["container_id"] + " div.toolbox-tabs").height();
+        // jquery__WEBPACK_IMPORTED_MODULE_7___default()("#" + this.config["container_id"] + " div.toolbox_inner_cls").css("height", `calc(100% - ${tabs_height + 38}px)`);
+        // let view_height = jquery__WEBPACK_IMPORTED_MODULE_7___default()("#" + this.config["container_id"] + " div.toolbox_cls")[0].scrollHeight - 38 - tabs_height;
+        // let want_height = jquery__WEBPACK_IMPORTED_MODULE_7___default()("#" + this.config["container_id"] + " div.toolbox_inner_cls")[0].scrollHeight;
+        // if (want_height <= view_height) {
+        //     jquery__WEBPACK_IMPORTED_MODULE_7___default()("#" + this.config["container_id"] + " div.toolbox_inner_cls").css("overflow-y", "hidden");
+        // }
+        // else {
+        //     jquery__WEBPACK_IMPORTED_MODULE_7___default()("#" + this.config["container_id"] + " div.toolbox_inner_cls").css("overflow-y", "scroll");
+        // }
+		let tabs_height = document.getElementsByClassName("toolbox-tabs")[0].scrollHeight;
+        let toolbox_inner_cls = document.getElementsByClassName("toolbox_inner_cls")[0];
+        toolbox_inner_cls.style.height=`calc(100% - ${tabs_height + 38}px)`;
+        let view_height = document.getElementById("toolbox").scrollHeight - 38 - tabs_height;
+        let want_height = toolbox_inner_cls.scrollHeight;
         if (want_height <= view_height) {
-            jquery__WEBPACK_IMPORTED_MODULE_7___default()("#" + this.config["container_id"] + " div.toolbox_inner_cls").css("overflow-y", "hidden");
+            toolbox_inner_cls.style.overflowY = "hidden";
         }
         else {
-            jquery__WEBPACK_IMPORTED_MODULE_7___default()("#" + this.config["container_id"] + " div.toolbox_inner_cls").css("overflow-y", "scroll");
+            toolbox_inner_cls.style.overflowY = "scroll";
         }
     }
 
