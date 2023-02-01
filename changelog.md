@@ -6,6 +6,10 @@ All notable changes to this project will be documented here.
 
 Nothing yet.
 
+## [0.4.21] - January 16th, 2022
+
+- Fixed an issue with setting annotations at the frame/global level.
+
 ## [0.4.20]
 
 - bugfix in `resume_from` processing
@@ -17,6 +21,7 @@ Nothing yet.
 ## [0.4.18] - October 15, 2021
 
 - added checks to ensure `resume_from` object is compatible
+
 
 ## [0.4.16] - August 27, 2021
 
