@@ -28,7 +28,6 @@
   "homepage": "https://github.com/SenteraLLC/ulabel",
   "dependencies": {
     "jquery": "^3.5.1",
-    "uglifyjs-webpack-plugin": "^2.2.0",
     "ulabel": "^0.4.21",
     "uuidv4": "^6.2.6"
   },
