@@ -433,33 +433,6 @@ export class ULabel {
         })
 
         // Button to save annotations
-        // $(document).on("click", `a#submit-button[href="#"]`, async () => {
-        //     var submit_payload = {
-        //         "task_meta": ul.config["task_meta"],
-        //         "annotations": {}
-        //     };
-        //     for (const stkey in ul.subtasks) {
-        //         submit_payload["annotations"][stkey] = [];
-        //         for (var i = 0; i < ul.subtasks[stkey]["annotations"]["ordering"].length; i++) {
-        //             submit_payload["annotations"][stkey].push(
-        //                 ul.subtasks[stkey]["annotations"]["access"][
-        //                 ul.subtasks[stkey]["annotations"]["ordering"][i]
-        //                 ]
-        //             );
-        //         }
-        //     }
-        //     ul.set_saved(false, true);
-        //     try {
-        //         const save_success = await ul.config["done_callback"].bind(ul)(submit_payload);
-        //         ul.set_saved(!(save_success === false));
-        //     }
-        //     catch (err) {
-        //         console.log("Error waiting for submit script.")
-        //         console.log(err);
-        //         ul.set_saved(false);
-        //     }
-        // });
-
         $(document).on("click", "#" + ul.config["toolbox_id"] + " a.night-button", function () {
             if ($("#" + ul.config["container_id"]).hasClass("ulabel-night")) {
                 $("#" + ul.config["container_id"]).removeClass("ulabel-night");
@@ -722,26 +695,12 @@ export class ULabel {
             let raw_subtask = stcs[subtask_key];
             ul.subtasks[subtask_key] = ULabelSubtask.from_json(subtask_key, raw_subtask);
 
-            // // Initialize subtask config to null
-            // ul.subtasks[subtask_key] = {
-            //     "display_name": raw_subtask["display_name"] || subtask_key,
-            //     "read_only": ("read_only" in raw_subtask) && (raw_subtask["read_only"] === true),
-            //     "inactive_opacity": 0.4
-            // };
 
-            // if ("inactive_opacity" in raw_subtask && typeof raw_subtask["inactive_opacity"] == "number") {
-            //     ul.subtasks[subtask_key]["inactive_opacity"] = Math.min(Math.max(raw_subtask["inactive_opacity"], 0.0), 1.0);
-            // }
 
             if (first_non_ro == null && !ul.subtasks[subtask_key]["read_only"]) {
                 first_non_ro = subtask_key;
             }
 
-            // //  Initialize an empty action stream for each subtask
-            // ul.subtasks[subtask_key]["actions"] = {
-            //     "stream": [],
-            //     "undone_stack": []
-            // };
 
             // Process allowed_modes
             // They are placed in ul.subtasks[subtask_key]["allowed_modes"]
@@ -861,40 +820,7 @@ export class ULabel {
     ) {
         console.log(this)
         console.log(toolbox_order, "Toolbox order", task_meta)
-        // // Unroll safe default arguments
-        // if (task_meta == null) { task_meta = {}; }
-        // if (annotation_meta == null) { annotation_meta = {}; }
 
-
-        // if (Array.isArray(submit_buttons)) {
-        //     this.buttons
-        // }
-
-
-        // // Unroll submit button
-        // let on_submit_unrolled;
-        // if (typeof submit_buttons == "function") {
-        //     on_submit_unrolled = {
-        //         name: "Submit",
-        //         hook: submit_buttons
-        //     };
-        // }
-        // else {
-        //     on_submit_unrolled = submit_buttons;
-        // }
-
-        // // If on_submit hook is not async, wrap it in an async func
-        // let fin_on_submit_hook;
-        // if (on_submit_unrolled.hook.constructor.name == "AsyncFunction") {
-        //     fin_on_submit_hook = on_submit_unrolled.hook;
-        // }
-        // else {
-        //     fin_on_submit_hook = async function (annotations) {
-        //         return on_submit_unrolled.hook(annotations);
-        //     };
-        // }
-
-        // this.submit_buttons1 = on_submit_unrolled
 
         // TODO 
         // Allow for importing spacing data -- a measure tool would be nice too
@@ -2555,19 +2481,6 @@ export class ULabel {
     // Action Stream Events
 
     set_saved(saved, in_progress = false) {
-        // if (saved) {
-        //     $("#" + this.config["container_id"] + " a#submit-button").removeAttr("href");
-        //     $("#" + this.config["container_id"] + " a#submit-button").html(this.config["done_button"]);
-        // }
-        // else {
-        //     $("#" + this.config["container_id"] + " a#submit-button").attr("href", "#");
-        //     if (in_progress) {
-        //         $("#" + this.config["container_id"] + " a#submit-button").html(BUTTON_LOADER_HTML);
-        //     }
-        //     else {
-        //         $("#" + this.config["container_id"] + " a#submit-button").html(this.config["done_button"]);
-        //     }
-        // }
         this.state["edited"] = !saved;
     }
 

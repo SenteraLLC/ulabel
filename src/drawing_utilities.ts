@@ -141,7 +141,7 @@ export function color_to_hex(color: string) {
 
     "yellow":"#ffff00","yellowgreen":"#9acd32"};
 
-    if (typeof colors[color.toLowerCase()] != 'undefined'){
+    if (color.toLowerCase() in colors){
         return colors[color.toLowerCase()];
     }
     return color;
