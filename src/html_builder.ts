@@ -361,12 +361,8 @@ export class HTMLBuilder {
             </div>`;
 
             // Add dialog to the document
-            // front_subtask_dialog_container_jq.append(dialog_html);
-            // $("#" + ul.subtasks[st]["idd_id"]).attr("id", ul.subtasks[st]["idd_id_front"]);
             front_subtask_dialog_container_jq.append(front_dialog_html_v2); // TODO(new3d) MOVE THIS TO GLOB BOX -- superimpose atop thee anchor already there when needed, no remove and add back
             subtask_dialog_container_jq.append(dialog_html_v2);
-            // console.log(dialog_html);
-            // console.log(dialog_html_v2);
 
             // Wait to add full toolbox
             full_toolbox_html += toolbox_html;
