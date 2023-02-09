@@ -5,9 +5,9 @@ required for drawing to the canvas
 
 import { ULabelAnnotation } from './annotation';
 
-/*recieves a base color and applies a gradient to it based on its confidence
+/* Receives a base color and applies a gradient to it based on its confidence
 The reason for passing in the get confidence function is so that we can apply
-a gradient based on diffrent confidence statistics if we choose to do so*/
+a gradient based on diffrent confidence statistics if we choose to do so. */
 export function apply_gradient(
     annotation_object: ULabelAnnotation, 
     base_color: string, 
