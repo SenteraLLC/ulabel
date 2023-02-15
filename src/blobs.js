@@ -1258,6 +1258,7 @@ div#${prntid} {
 }
 div#${prntid} * {
    box-sizing: content-box;
+   text-align: center;
 }
 div#${prntid}.ulabel-night {
    background-color: black;
@@ -1719,6 +1720,230 @@ div#${prntid}.ulabel-night span.spokes {
    /* border: 1px solid black; */
 }
 
+/* === Annotation Resize === */
+
+
+div#${prntid} div.annotation-resize {
+   padding: 10px 30px;
+   display: block;
+}
+
+div#${prntid} div.annotation-resize p.tb-header {
+   margin: 0;
+   margin-bottom: 10px;
+}
+
+div#${prntid} div.annotation-resize-button-holder {
+   vertical-align: middle;
+   margin: 0 auto;
+}
+
+div#${prntid} a.button {
+   display: inline-block;  
+   margin: auto;
+   color: white;
+   background-color: rgba(100, 148, 237, 0.8);
+   border: 1px solid rgb(168, 168, 168);
+   border-radius: 11px;
+   text-decoration: none;
+   text-align: center;
+   transition: all 0.2s;
+}
+
+div#${prntid} div.annotation-resize #annotation-resize-s {
+   border-radius: 11px 0 0 11px;
+}
+
+div#${prntid} div.annotation-resize #annotation-resize-l {
+   border-radius: 0 11px 11px 0;
+   margin-left: -5px;
+}
+
+div#${prntid} a.inc {
+   line-height: 23px;
+   margin-top: -5px;
+   margin-bottom: 5px;
+}
+
+div#${prntid} a.dec {
+   line-height: 19px;
+}
+
+div#${prntid} div.annotation-resize span.annotation-size {
+   width: 115px;
+   margin: 0;
+}
+
+div#${prntid} div.annotation-resize span.annotation-inc {
+   display: inline-grid;
+   grid-template-columns: 1fr;
+   position: relative;
+   bottom: 11px;
+}
+
+div#${prntid} div.annotation-resize span.annotation-size a.butt-ann {
+   font-size: 0.9em;
+   text-shadow: 0 0.04em 0.04em rgba(0,0,0,0.45);
+   padding: 16px 9px;
+}
+
+div#${prntid} div.annotation-resize span.annotation-vanish a.butt-ann {
+   font-size: 0.9em;
+   text-shadow: 0 0.04em 0.04em rgba(0,0,0,0.45);
+   padding: 16px 8px;
+   margin: 0 2px;
+}
+
+div#${prntid} span.increment a.button {
+   width: 22px;
+   height: 22px;
+   border-radius: 17px;
+   font-size: 1.4em;
+}
+
+div#${prntid} a.button:hover {
+   border: 1px solid black;
+   box-shadow: 1px 1px 4px rgba(204, 204, 204, 0.9);
+   background-color:rgba(100, 148, 237, 0.486);
+}
+
+/* css for the recolor annotations item */
+
+div#${prntid} div.recolor-active {
+   padding: 10px 30px;
+   display: block;
+}
+
+div#${prntid} div.recolor-active p.tb-header {
+   margin: 0;
+   margin-bottom: 5px;
+}
+
+div#${prntid} div.recolor-active div.annotation-recolor-button-holder {
+   display: grid;
+   grid-template-columns: 2fr 1fr;
+   column-gap: 8px;
+}
+
+div#${prntid} div.recolor-active input{
+   width: 50px;
+   height: 27px;
+}
+
+div#${prntid} div.recolor-active div.recolor-tbi-gradient {
+   margin-bottom: 1em;
+   font-size: .85em;
+}
+
+div#${prntid}.ulabel-night div.recolor-active div.recolor-tbi-gradient {
+   color: white;
+}
+
+div#${prntid} div.recolor-active div.recolor-tbi-gradient #gradient-toggle-label {
+   position: relative;
+   bottom: 2.5px;
+}
+
+div#${prntid} div.recolor-active div.recolor-tbi-gradient #gradient-toggle {
+   width: 1em;
+   height: 1em;
+}
+
+div#${prntid} div.recolor-active div.recolor-tbi-gradient #gradient-slider {
+   width: 8.6em;
+   height: 1em;
+   position: relative;
+   top: 2px;
+}
+
+div#${prntid} div.recolor-active div.recolor-tbi-gradient div.gradient-slider-value-display {
+   display: inline;
+}
+
+div#${prntid} div.recolor-active input.color-change-btn {
+   width: 90%;
+}
+
+div#${prntid} div.color-picker-border {
+   padding: 8px;
+   background-image: linear-gradient(to bottom right, red,orange,yellow,green,blue,indigo,violet);
+   border: 1px solid White;
+   border-radius: 6px;
+}
+
+div#${prntid} div.recolor-active div.color-picker-container {
+   height: 100%;
+   background-color: Black;
+}
+
+div#${prntid} div.recolor-active input.color-change-btn, div#${prntid} div.recolor-active div.color-picker-container {
+   border-radius: 6px;
+}
+
+div#${prntid} div.recolor-active div.color-picker-container input.color-change-picker {
+   width: 100%;
+   height: 100%;
+   padding: 0;
+   opacity: 0;
+}
+
+div#${prntid} div.recolor-active #color-change-yel {
+   background-color: yellow;
+   
+   border: 1px solid rgb(200, 200, 0);
+}
+
+div#${prntid} div.recolor-active #color-change-red {
+   background-color: red;
+   border: 1px solid rgb(200, 0, 0);
+}
+
+div#${prntid} div.recolor-active #color-change-cya {
+   background-color: cyan;
+   border: 1px solid rgb(0, 200, 200);
+}
+
+/* css for the keypoint slider item */
+div#${prntid} div.keypoint-slider {
+   padding: 10px 30px;
+   display: block;
+}
+
+div#${prntid} div.keypoint-slider p.tb-header {
+   margin: 0;
+   margin-bottom: 5px;
+}
+
+div#${prntid} div.keypoint-slider div.keypoint-slider-holder{
+   padding: 8px;
+   position: relative;
+   text-align: left;
+}
+
+div#${prntid} .keypoint-slider-label {
+   position: relative;
+   bottom: 3px;
+}
+
+div#${prntid} div.keypoint-slider span.increment {
+   position: absolute;
+   right: 0;
+   bottom: 0.4em;
+}
+
+div#${prntid} div.keypoint-slider a.inc {
+   margin: 0;
+}
+
+div#${prntid} div.keypoint-slider a.dec {
+   position: relative;
+   bottom: 0.07em;
+}
+
+div#${prntid}.ulabel-night .keypoint-slider-label {
+   color: white;
+}
+
 div#${prntid} div.zpcont {
    height: 90px;
    position: relative;
@@ -1943,6 +2168,13 @@ div#${prntid} div.classification {
    padding: 10px 30px;
 }
 div#${prntid} div.classification p.tb-header {
+   margin: 0;
+   margin-bottom: 5px;
+}
+div#${prntid} div.toolbox-class-counter {
+   padding: 10px 30px;
+}
+div#${prntid} div.toolbox-class-counter p.tb-header {
    margin: 0;
    margin-bottom: 5px;
 }

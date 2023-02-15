@@ -6,6 +6,16 @@ All notable changes to this project will be documented here.
 
 Nothing yet.
 
+## [0.6.0] - Febuary 1st, 2023
+
+- Massive update with lots of under the hood changes.
+- Added a toolbox item for changing annotation color.
+- Added a toolbox item for changing annotation size.
+- Added a toolbox item for filtering out annotations based on annotation confidence.
+- Added support for adding diffrent Submit buttons, such as a Reject button or Failure button.
+- Added a display for annotation's confidence on hover.
+- Added keybinds for most operations.
+
 ## [0.4.21] - January 16th, 2022
 
 - Fixed an issue with setting annotations at the frame/global level.

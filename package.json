@@ -1,7 +1,7 @@
 {
   "name": "ulabel",
   "description": "An image annotation tool.",
-  "version": "0.4.21",
+  "version": "0.6.0",
   "main": "index.js",
   "module": "src/index.js",
   "scripts": {
@@ -31,11 +31,12 @@
     "uuidv4": "^6.2.6"
   },
   "devDependencies": {
+    "@types/jquery": "^3.5.13",
     "@typescript-eslint/eslint-plugin": "^4.16.1",
     "@typescript-eslint/parser": "^4.16.1",
     "eslint": "^7.21.0",
     "express": "^4.17.1",
-    "webpack": "^5.13.0",
+    "webpack": "^5.74.0",
     "webpack-cli": "^4.3.1"
   },
   "unpkg": "dist/ulabel.js"

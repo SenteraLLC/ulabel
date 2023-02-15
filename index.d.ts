@@ -1,3 +1,5 @@
+import { Toolbox } from "./src/toolbox";
+
 export type ULabelAnnotation = {
     id: string;
     new: boolean;
@@ -10,6 +12,7 @@ export type ULabelAnnotation = {
     deprecated: boolean;
     spatial_type: ULabelSpatialType;
     spatial_payload: [number, number][];
+    class_ids: number[];
     classification_payloads: {
         class_id: number;
         confidence: number;
@@ -47,10 +50,16 @@ export type ULabelSubtask = {
     task_meta: any,
     annotation_meta: any
     read_only?: boolean;
+    annotations: { access: {}, ordering: [] }
+    inactive_opacity: number;
 }
 export type ULabelSubtasks = { [key: string]: ULabelSubtask };
 
 export class ULabel {
+    subtasks: ULabelSubtask[];
+    state: any;
+    config: any;
+    toolbox: Toolbox;
     /**
      * @link https://github.com/SenteraLLC/ulabel/blob/main/api_spec.md#ulabel-constructor
      */
@@ -59,23 +68,36 @@ export class ULabel {
         image_data: string | string[],
         username: string,
         on_submit: ULabelSubmitHandler,
-        subtasks: ULabelSubtasks,
+        publicsubtasks: ULabelSubtasks,
         task_meta?: any,
         annotation_meta?: any,
         px_per_px?: number,
         init_crop?: any,
         initial_line_size?: number,
         instructions_url?: string
-    )
-
-    /**
-     * @link https://github.com/SenteraLLC/ulabel/blob/main/api_spec.md#display-utility-functions
-     */
-    public init(callback: () => void): void;
-    public swap_frame_image(new_src: string, frame?: number): string;
-    public swap_anno_bg_color(new_bg_color: string): string;
-    public get_annotations(subtask: ULabelSubtask): ULabelAnnotation[];
-    public set_annotations(annotations: ULabelAnnotation[], subtask: ULabelSubtask);
-    public set_saved(saved: boolean);
-
+        )
+        
+        /**
+         * @link https://github.com/SenteraLLC/ulabel/blob/main/api_spec.md#display-utility-functions
+         */
+        public init(callback: () => void): void;
+        public show_initial_crop(): void;
+        public show_whole_image(): void;
+        public swap_frame_image(new_src: string, frame?: number): string;
+        public swap_anno_bg_color(new_bg_color: string): string;
+        public get_annotations(subtask: ULabelSubtask): ULabelAnnotation[];
+        public set_annotations(annotations: ULabelAnnotation[], subtask: ULabelSubtask);
+        public set_saved(saved: boolean);
+        public redraw_all_annotations(subtask: any, offset:any, spatial_only: any);
+        public show_annotation_mode(target_jq: JQuery<any>);
+        public raise_error(message: string, level?: number);
+        static process_classes(ulabel_obj: any, arg1: string, subtask_obj: any);
+        static build_id_dialogs(ulabel_obj: any);
+        
+    }
+    
+declare global {
+    interface String {
+    replaceLowerConcat(before: string, after: string, concat_string?: string): string
+    }
 }
