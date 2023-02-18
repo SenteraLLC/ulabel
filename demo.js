@@ -12,3 +12,4 @@ console.log(`http://localhost:${port}/multi-class.html`);
 console.log(`http://localhost:${port}/frames.html`);
 console.log(`http://localhost:${port}/box-roi.html`);
 console.log(`http://localhost:${port}/resume-from.html`);
+console.log(`http://localhost:${port}/row-filtering-example.html`);
