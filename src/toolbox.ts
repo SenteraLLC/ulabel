@@ -1,6 +1,7 @@
 import { ULabel, ULabelSubtask } from "..";
 import { Configuration } from "./configuration";
 import { ULabelAnnotation } from "./annotation";
+import { calculate_distance_from_line } from "./annotation_operators";
 
 const toolboxDividerDiv = "<div class=toolbox-divider></div>"
 
@@ -1089,6 +1090,83 @@ export class KeypointSliderItem extends ToolboxItem {
                 </span>
             </div>
         </div>`
+    }
+}
+
+export class FilterPointDistanceFromRow extends ToolboxItem {
+    name = "Filter Distance From Row"
+    component_name = "FilterPointDistanceFromRow"
+    default_value = 0.4
+
+    constructor(ulabel: ULabel, kwargs: {[name: string]: any}) {
+        super()
+        console.log("FilterPointDistanceFromRow constructor called")
+
+
+        // === Create event listeners for this ToolboxItem ===
+
+        // Update the slider's label to show the correct slider value
+        $(document).on("input", "#" + this.component_name + "-slider", () => this.updateSliderLabel())
+
+        // Call incrementSliderValue when the increment button is pressed
+        $(document).on("click", "#" + this.component_name + "inc-button", () => this.incrementSliderValue())
+
+        // Call decrementSliderValue when the increment button is pressed
+        $(document).on("click", "#" + this.component_name + "dec-button", () => this.decrementSliderValue())
+    }
+
+    private updateSliderLabel() {
+        // Grab the slider element
+        const slider: HTMLInputElement = document.querySelector("#" + this.component_name + "-slider")
+
+        // Grab the current value of the slider element
+        const slider_value = slider.value
+
+        // Grab the label element
+        const filter_label: HTMLLabelElement = document.querySelector("#" + this.component_name + "-label")
+
+        // Update the label's inner text to the value of the slider
+        filter_label.innerText = slider_value + "%"
+    }
+
+    /**
+     * Increments this component's slider by one.
+     */
+    private incrementSliderValue() {
+        let slider: HTMLInputElement = document.querySelector("#" + this.component_name + "-slider")
+
+        slider.value = (slider.valueAsNumber + 1).toString()
+
+        this.updateSliderLabel()
+    }
+
+    private decrementSliderValue() {
+        let slider: HTMLInputElement = document.querySelector("#" + this.component_name + "-slider")
+
+        slider.value = (slider.valueAsNumber - 1).toString()
+
+        this.updateSliderLabel()
+    }
+
+    public get_html(): string {
+        return`
+        <div class="filter-row-distance">
+            <p class="tb-header">${this.name}</p>
+            <input 
+                type="range" 
+                id="${this.component_name}-slider" 
+                class="keypoint-slider" value="${this.default_value * 100}"
+            />
+            <label 
+                for="${this.component_name}" 
+                id="${this.component_name}-label"
+                class="keypoint-slider-label">
+                ${Math.round(this.default_value * 100)}%
+            </label>
+            <button id="${this.component_name}inc-button">+</button>
+            <button id="${this.component_name}dec-button">-</button>
+        </div>
+        `
     }
 }
 

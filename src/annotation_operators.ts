@@ -21,3 +21,7 @@ export function filter_low(annotation_confidence: number, filter_value: number) 
     if (annotation_confidence < filter_value) return true
     return false
 }
+
+export function calculate_distance_from_line(point_annotation: ULabelAnnotation, line_annotation: ULabelAnnotation) {
+    console.log(point_annotation, line_annotation)
+}

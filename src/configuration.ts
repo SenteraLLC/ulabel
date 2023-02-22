@@ -1,4 +1,4 @@
-import { ModeSelectionToolboxItem, ZoomPanToolboxItem, AnnotationIDToolboxItem, ClassCounterToolboxItem, AnnotationResizeItem, RecolorActiveItem, KeypointSliderItem, SubmitButtons } from "./toolbox"
+import { ModeSelectionToolboxItem, ZoomPanToolboxItem, AnnotationIDToolboxItem, ClassCounterToolboxItem, AnnotationResizeItem, RecolorActiveItem, KeypointSliderItem, SubmitButtons, FilterPointDistanceFromRow } from "./toolbox"
 import { get_annotation_confidence, mark_deprecated, filter_low } from "./annotation_operators";
 
 enum AllowedToolboxItem {
@@ -9,7 +9,8 @@ enum AllowedToolboxItem {
     RecolorActive,      // 4
     ClassCounter,       // 5
     KeypointSlider,     // 6
-    SubmitButtons       // 7
+    SubmitButtons,      // 7
+    FilterDistance      // 8
 }
 
 export class Configuration {
@@ -21,7 +22,8 @@ export class Configuration {
         [AllowedToolboxItem.RecolorActive, RecolorActiveItem],
         [AllowedToolboxItem.ClassCounter, ClassCounterToolboxItem],
         [AllowedToolboxItem.KeypointSlider, KeypointSliderItem],
-        [AllowedToolboxItem.SubmitButtons, SubmitButtons]
+        [AllowedToolboxItem.SubmitButtons, SubmitButtons],
+        [AllowedToolboxItem.FilterDistance, FilterPointDistanceFromRow]
     ]);
     
     //Change the order of the toolbox items here to change the order they show up in the toolbox
