@@ -1,7 +1,7 @@
 import { ULabel, ULabelSubtask } from "..";
 import { Configuration } from "./configuration";
 import { ULabelAnnotation } from "./annotation";
-import { calculate_distance_from_line } from "./annotation_operators";
+import { calculate_distance_from_line, assign_all_points_distance_from_line, filter_high, mark_deprecated } from "./annotation_operators";
 
 const toolboxDividerDiv = "<div class=toolbox-divider></div>"
 
@@ -1097,24 +1097,33 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
     name = "Filter Distance From Row"
     component_name = "FilterPointDistanceFromRow"
     default_value = 0.4
+    ulabel: ULabel
 
     constructor(ulabel: ULabel, kwargs: {[name: string]: any}) {
         super()
-        console.log("FilterPointDistanceFromRow constructor called")
 
+        this.ulabel = ulabel
 
         // === Create event listeners for this ToolboxItem ===
 
-        // Update the slider's label to show the correct slider value
+        // Whenever the user directly updates the slider, update the label to show the correct value
         $(document).on("input", "#" + this.component_name + "-slider", () => this.updateSliderLabel())
 
-        // Call incrementSliderValue when the increment button is pressed
+        // Whenever the user directly updates the slider, call the filtering function
+        $(document).on("input", "#" + this.component_name + "-slider", () => this.filter())
+
+        // Whenever the user clicks on the increment button, increment the slider value
         $(document).on("click", "#" + this.component_name + "inc-button", () => this.incrementSliderValue())
 
-        // Call decrementSliderValue when the increment button is pressed
+        // Whenever the user clicks on the increment button, decrement the slider value
         $(document).on("click", "#" + this.component_name + "dec-button", () => this.decrementSliderValue())
+
+
     }
 
+    /**
+     * Updates this component's slider's label based on the slider's current value.
+     */
     private updateSliderLabel() {
         // Grab the slider element
         const slider: HTMLInputElement = document.querySelector("#" + this.component_name + "-slider")
@@ -1133,27 +1142,69 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
      * Increments this component's slider by one.
      */
     private incrementSliderValue() {
+        // Grab the slider element
         let slider: HTMLInputElement = document.querySelector("#" + this.component_name + "-slider")
 
+        // Update the slider's value
         slider.value = (slider.valueAsNumber + 1).toString()
 
+        // Update the label to be accurate
         this.updateSliderLabel()
+
+        // Call the filter function
+        this.filter()
     }
 
+    /**
+     * Decrements this component's slider by one.
+     */
     private decrementSliderValue() {
+        // Grab the slider element
         let slider: HTMLInputElement = document.querySelector("#" + this.component_name + "-slider")
 
+        // Update the slider's value
         slider.value = (slider.valueAsNumber - 1).toString()
 
+        // Update the label to be accurate
         this.updateSliderLabel()
+
+        // Call the filter function
+        this.filter()
     }
 
+    private filter() {
+        // Grab the slider element
+        let slider: HTMLInputElement = document.querySelector("#" + this.component_name + "-slider")
+
+        // Grab the slider's value
+        const filter_value = slider.valueAsNumber
+        
+        const subtasks = Object.values(this.ulabel.subtasks)
+
+        // For now we make the assumption that the first subtask is points and the second is lines
+        assign_all_points_distance_from_line(Object.values(subtasks[0].annotations.access), Object.values(subtasks[1].annotations.access))
+
+        Object.values(subtasks[0].annotations.access).forEach(function(annotation: ULabelAnnotation) {
+            const should_deprecate = filter_high(annotation.distance_from_any_line, filter_value)
+            // console.log("IMPORTANT", annotation.distance_from_any_line, filter_value, should_deprecate)
+            mark_deprecated(annotation, should_deprecate)
+        })
+        this.ulabel.redraw_all_annotations(null, null, false);
+    }
+
+    /**
+     * Returns the component's html.
+     * 
+     * @returns {String} Component's html
+     */
     public get_html(): string {
         return`
         <div class="filter-row-distance">
             <p class="tb-header">${this.name}</p>
             <input 
-                type="range" 
+                type="range"
+                min="0"
+                max="400"
                 id="${this.component_name}-slider" 
                 class="keypoint-slider" value="${this.default_value * 100}"
             />

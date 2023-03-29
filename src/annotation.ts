@@ -30,6 +30,7 @@ export class ULabelAnnotation {
         public text_payload: string = "",
         public annotation_meta: any = null,
         public human_deprecated: boolean = null,
+        public distance_from_any_line?: number
     ) {}
 
     public ensure_compatible_classification_payloads(ulabel_class_ids: [number]) {
