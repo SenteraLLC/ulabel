@@ -1179,15 +1179,21 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
         // Grab the slider's value
         const filter_value = slider.valueAsNumber
         
+        // Grab the subtasks from ulabel
         const subtasks = Object.values(this.ulabel.subtasks)
 
         // For now we make the assumption that the first subtask is points and the second is lines
         assign_all_points_distance_from_line(Object.values(subtasks[0].annotations.access), Object.values(subtasks[1].annotations.access))
 
         Object.values(subtasks[0].annotations.access).forEach(function(annotation: ULabelAnnotation) {
-            const should_deprecate = filter_high(annotation.distance_from_any_line, filter_value)
-            // console.log("IMPORTANT", annotation.distance_from_any_line, filter_value, should_deprecate)
-            mark_deprecated(annotation, should_deprecate)
+            // Make sure the annotation is not a human deprecated one
+            if (!annotation.human_deprecated) {
+                // Run the annotation through the filter
+                const should_deprecate = filter_high(annotation.distance_from_any_line, filter_value)
+
+                // Mark it deprecated
+                mark_deprecated(annotation, should_deprecate)
+            }
         })
         this.ulabel.redraw_all_annotations(null, null, false);
     }
