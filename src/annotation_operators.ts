@@ -92,18 +92,30 @@ function calculate_distance_from_point_to_line(
 export function get_distance_from_point_to_line(point_annotation: ULabelAnnotation, line_annotation: ULabelAnnotation) {
     console.log(point_annotation, line_annotation)
 
-    // Create constants for the line's endpoints' x and y value
-    const line_x1 = line_annotation.spatial_payload[0][0]
-    const line_y1 = line_annotation.spatial_payload[0][1]
-    const line_x2 = line_annotation.spatial_payload[1][0]
-    const line_y2 = line_annotation.spatial_payload[1][1]
-
     // Create constants for the point's x and y value
-    const point_x = point_annotation.spatial_payload[0][0]
-    const point_y = point_annotation.spatial_payload[0][1]
+    const point_x: number = point_annotation.spatial_payload[0][0]
+    const point_y: number = point_annotation.spatial_payload[0][1]
 
-    // Calculate the distance from the point annotation to the line annotation
-    const distance = calculate_distance_from_point_to_line(point_x, point_y, line_x1, line_y1, line_x2, line_y2)
+    // Initialize the distance from the point to the polyline
+    let distance: number
+
+    // Loop through each segment of the polyline
+    for (let idx = 0; idx < line_annotation.spatial_payload.length - 1; idx++) {
+
+        // Create constants for the segment's endpoints' x and y values
+        const line_x1: number = line_annotation.spatial_payload[idx][0]
+        const line_y1: number = line_annotation.spatial_payload[idx][1]
+        const line_x2: number = line_annotation.spatial_payload[idx + 1][0]
+        const line_y2: number = line_annotation.spatial_payload[idx + 1][1]
+
+        // Calculate the distance from the point to the line segment
+        const distance_to_segment = calculate_distance_from_point_to_line(point_x, point_y, line_x1, line_y1, line_x2, line_y2)
+
+        // Check if the distance to this segment is undefined or less than the distance to another segment
+        if (distance === undefined || distance_to_segment < distance) {
+            distance = distance_to_segment
+        }
+    }
 
     console.log(distance)
 
