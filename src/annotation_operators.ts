@@ -27,40 +27,69 @@ export function filter_high(annotation_value: number, filter_threshold: number) 
     return false
 }
 
-function pDistance(x, y, x1, y1, x2, y2) {
+/**
+ * This function calculates the distance from a point to a line segment. 
+ * 
+ * @param point_x The point's x position
+ * @param point_y The point's y position
+ * @param line_x1 The first endpoint of the line's x position
+ * @param line_y1 The first endpoint of the line's y position
+ * @param line_x2 The second endpoint of the line's x position
+ * @param line_y2 The second endpoint of the line's y position
+ * @returns The distance from the point to the line segment
+ */
+function calculate_distance_from_point_to_line(
+    point_x: number, 
+    point_y: number, 
+    line_x1: number, 
+    line_y1: number, 
+    line_x2: number, 
+    line_y2: number 
+    ): number {
 
-    var A = x - x1;
-    var B = y - y1;
-    var C = x2 - x1;
-    var D = y2 - y1;
+    let A = point_x - line_x1
+    let B = point_y - line_y1
+    let C = line_x2 - line_x1
+    let D = line_y2 - line_y1
   
-    var dot = A * C + B * D;
-    var len_sq = C * C + D * D;
-    var param = -1;
-    if (len_sq != 0) //in case of 0 length line
+    let dot = A * C + B * D
+    let len_sq = C * C + D * D
+
+    // Initialize the param variable
+    let param
+
+    // Check for a divide by 0 error in the case of 0 length line
+    if (len_sq != 0) {
         param = dot / len_sq;
+    }
+
+    let xx, yy
   
-    var xx, yy;
-  
-    if (param < 0) {
-      xx = x1;
-      yy = y1;
+    // If param is still undefined then the line should have 0 length 
+    // In which case we can set xx and yy equal to any endpoint
+    if (param === undefined) {
+        xx = line_x1
+        yy = line_y1        
+    }
+    else if (param < 0) {
+      xx = line_x1
+      yy = line_y1
     }
     else if (param > 1) {
-      xx = x2;
-      yy = y2;
+      xx = line_x2
+      yy = line_y2
     }
     else {
-      xx = x1 + param * C;
-      yy = y1 + param * D;
+      xx = line_x1 + param * C
+      yy = line_y1 + param * D
     }
   
-    var dx = x - xx;
-    var dy = y - yy;
-    return Math.sqrt(dx * dx + dy * dy);
+    let dx = point_x - xx
+    let dy = point_y - yy
+    return Math.sqrt(dx * dx + dy * dy)
   }
 
-export function calculate_distance_point_annotation_to_line_annotation(point_annotation: ULabelAnnotation, line_annotation: ULabelAnnotation) {
+export function get_distance_from_point_to_line(point_annotation: ULabelAnnotation, line_annotation: ULabelAnnotation) {
     console.log(point_annotation, line_annotation)
 
     // Create constants for the line's endpoints' x and y value
@@ -73,10 +102,8 @@ export function calculate_distance_point_annotation_to_line_annotation(point_ann
     const point_x = point_annotation.spatial_payload[0][0]
     const point_y = point_annotation.spatial_payload[0][1]
 
-    // Just trust me bro
-    // const distance = Math.abs(((line_x2 - line_x1) * (line_y1 - point_y)) - ((line_x1 - point_x) * (line_y2 - line_y1))) / Math.sqrt(((line_x2 - line_x1) ** 2) + ((line_y2 - line_y1) ** 2))
-
-    const distance = pDistance(point_x, point_y, line_x1, line_y1, line_x2, line_y2)
+    // Calculate the distance from the point annotation to the line annotation
+    const distance = calculate_distance_from_point_to_line(point_x, point_y, line_x1, line_y1, line_x2, line_y2)
 
     console.log(distance)
 
@@ -91,7 +118,7 @@ export function assign_all_points_distance_from_line(point_annotations: ULabelAn
             const current_point = point_annotations[point_idx]
             const current_line = line_annotations[line_idx]
         
-            const distance = calculate_distance_point_annotation_to_line_annotation(current_point, current_line)
+            const distance = get_distance_from_point_to_line(current_point, current_line)
 
             // Replace this property with the new distance if its the smallest distance calculated or undefined
             if (current_point["distance_from_any_line"] === undefined || current_point["distance_from_any_line"] >= distance) {                 

@@ -1,7 +1,7 @@
 import { ULabel, ULabelSubtask } from "..";
 import { Configuration } from "./configuration";
 import { ULabelAnnotation } from "./annotation";
-import { calculate_distance_point_annotation_to_line_annotation, assign_all_points_distance_from_line, filter_high, mark_deprecated } from "./annotation_operators";
+import { get_distance_from_point_to_line, assign_all_points_distance_from_line, filter_high, mark_deprecated } from "./annotation_operators";
 
 const toolboxDividerDiv = "<div class=toolbox-divider></div>"
 
