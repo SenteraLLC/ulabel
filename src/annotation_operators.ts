@@ -27,7 +27,40 @@ export function filter_high(annotation_value: number, filter_threshold: number) 
     return false
 }
 
-export function calculate_distance_from_line(point_annotation: ULabelAnnotation, line_annotation: ULabelAnnotation) {
+function pDistance(x, y, x1, y1, x2, y2) {
+
+    var A = x - x1;
+    var B = y - y1;
+    var C = x2 - x1;
+    var D = y2 - y1;
+  
+    var dot = A * C + B * D;
+    var len_sq = C * C + D * D;
+    var param = -1;
+    if (len_sq != 0) //in case of 0 length line
+        param = dot / len_sq;
+  
+    var xx, yy;
+  
+    if (param < 0) {
+      xx = x1;
+      yy = y1;
+    }
+    else if (param > 1) {
+      xx = x2;
+      yy = y2;
+    }
+    else {
+      xx = x1 + param * C;
+      yy = y1 + param * D;
+    }
+  
+    var dx = x - xx;
+    var dy = y - yy;
+    return Math.sqrt(dx * dx + dy * dy);
+  }
+
+export function calculate_distance_point_annotation_to_line_annotation(point_annotation: ULabelAnnotation, line_annotation: ULabelAnnotation) {
     console.log(point_annotation, line_annotation)
 
     // Create constants for the line's endpoints' x and y value
@@ -41,7 +74,9 @@ export function calculate_distance_from_line(point_annotation: ULabelAnnotation,
     const point_y = point_annotation.spatial_payload[0][1]
 
     // Just trust me bro
-    const distance = Math.abs(((line_x2 - line_x1) * (line_y1 - point_y)) - ((line_x1 - point_x) * (line_y2 - line_y1))) / Math.sqrt(((line_x2 - line_x1) ** 2) + ((line_y2 - line_y1) ** 2))
+    // const distance = Math.abs(((line_x2 - line_x1) * (line_y1 - point_y)) - ((line_x1 - point_x) * (line_y2 - line_y1))) / Math.sqrt(((line_x2 - line_x1) ** 2) + ((line_y2 - line_y1) ** 2))
+
+    const distance = pDistance(point_x, point_y, line_x1, line_y1, line_x2, line_y2)
 
     console.log(distance)
 
@@ -56,7 +91,7 @@ export function assign_all_points_distance_from_line(point_annotations: ULabelAn
             const current_point = point_annotations[point_idx]
             const current_line = line_annotations[line_idx]
         
-            const distance = calculate_distance_from_line(current_point, current_line)
+            const distance = calculate_distance_point_annotation_to_line_annotation(current_point, current_line)
 
             // Replace this property with the new distance if its the smallest distance calculated or undefined
             if (current_point["distance_from_any_line"] === undefined || current_point["distance_from_any_line"] >= distance) {                 
