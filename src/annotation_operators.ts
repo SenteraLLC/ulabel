@@ -90,7 +90,6 @@ function calculate_distance_from_point_to_line(
   }
 
 export function get_distance_from_point_to_line(point_annotation: ULabelAnnotation, line_annotation: ULabelAnnotation) {
-    console.log(point_annotation, line_annotation)
 
     // Create constants for the point's x and y value
     const point_x: number = point_annotation.spatial_payload[0][0]
@@ -116,8 +115,6 @@ export function get_distance_from_point_to_line(point_annotation: ULabelAnnotati
             distance = distance_to_segment
         }
     }
-
-    console.log(distance)
 
     return distance
 }

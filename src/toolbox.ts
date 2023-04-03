@@ -1,7 +1,8 @@
-import { ULabel, ULabelSubtask } from "..";
+import { ULabel, ULabelAnnotation, ULabelSubtask } from "..";
 import { Configuration } from "./configuration";
-import { ULabelAnnotation } from "./annotation";
-import { get_distance_from_point_to_line, assign_all_points_distance_from_line, filter_high, mark_deprecated } from "./annotation_operators";
+//import { ULabelAnnotation } from "./annotation";
+import { assign_all_points_distance_from_line, filter_high, mark_deprecated } from "./annotation_operators";
+import { ULabelSpatialType } from "..";
 
 const toolboxDividerDiv = "<div class=toolbox-divider></div>"
 
@@ -1117,8 +1118,6 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
 
         // Whenever the user clicks on the increment button, decrement the slider value
         $(document).on("click", "#" + this.component_name + "dec-button", () => this.decrementSliderValue())
-
-
     }
 
     /**
@@ -1172,24 +1171,49 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
         this.filter()
     }
 
-    private filter() {
+    public filter() {
         // Grab the slider element
-        let slider: HTMLInputElement = document.querySelector("#" + this.component_name + "-slider")
+        const slider: HTMLInputElement = document.querySelector("#" + this.component_name + "-slider")
 
         // Grab the slider's value
-        const filter_value = slider.valueAsNumber
+        const filter_value: number = slider.valueAsNumber
         
         // Grab the subtasks from ulabel
-        const subtasks = Object.values(this.ulabel.subtasks)
+        const subtasks: ULabelSubtask[] = Object.values(this.ulabel.subtasks)
 
-        // For now we make the assumption that the first subtask is points and the second is lines
-        assign_all_points_distance_from_line(Object.values(subtasks[0].annotations.access), Object.values(subtasks[1].annotations.access))
+        // Initialize set of all point and line annotations
+        let point_annotations: ULabelAnnotation[] = []
+        let line_annotations: ULabelAnnotation[] = []
 
-        Object.values(subtasks[0].annotations.access).forEach(function(annotation: ULabelAnnotation) {
+        // Go through all annotations and populate the set of all point annotations and all line annotations
+        for (let subtask of subtasks) {
+
+            for (let annotation_key in subtask.annotations.access) {
+                const annotation: ULabelAnnotation = subtask.annotations.access[annotation_key]
+                
+                // Check for annotation type and push the annotation into the appropriate array
+                switch(annotation.spatial_type) {
+                    case "point" as ULabelSpatialType:
+                        point_annotations.push(annotation)
+                        break
+                    case "polyline" as ULabelSpatialType:
+                        line_annotations.push(annotation)
+                        break
+                }
+            }
+        }
+
+        console.log("Point annotations", point_annotations)
+        console.log("Line annotations", line_annotations)
+
+        // Assign all of the point annotations a distance from line value
+        assign_all_points_distance_from_line(point_annotations, line_annotations)
+
+        point_annotations.forEach(function(annotation: ULabelAnnotation) {
             // Make sure the annotation is not a human deprecated one
             if (!annotation.human_deprecated) {
                 // Run the annotation through the filter
-                const should_deprecate = filter_high(annotation.distance_from_any_line, filter_value)
+                const should_deprecate: boolean = filter_high(annotation.distance_from_any_line, filter_value)
 
                 // Mark it deprecated
                 mark_deprecated(annotation, should_deprecate)
