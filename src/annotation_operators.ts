@@ -120,7 +120,6 @@ export function get_distance_from_point_to_line(point_annotation: ULabelAnnotati
 }
 
 export function assign_all_points_distance_from_line(point_annotations: ULabelAnnotation[], line_annotations: ULabelAnnotation[]) {
-    let startTime = performance.now()
 
     for (let point_idx = 0; point_idx < point_annotations.length; point_idx++) {
         for (let line_idx = 0; line_idx < line_annotations.length; line_idx++) {
@@ -135,8 +134,4 @@ export function assign_all_points_distance_from_line(point_annotations: ULabelAn
             }
         }
     }
-
-    let endTime = performance.now()
-
-    console.log(`Call to doSomething took ${endTime - startTime} milliseconds`)
 }
