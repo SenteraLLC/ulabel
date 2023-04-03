@@ -122,6 +122,9 @@ export function get_distance_from_point_to_line(point_annotation: ULabelAnnotati
 export function assign_all_points_distance_from_line(point_annotations: ULabelAnnotation[], line_annotations: ULabelAnnotation[]) {
 
     for (let point_idx = 0; point_idx < point_annotations.length; point_idx++) {
+        // Keep track of a smallest distance for each annotation
+        let smallest_distance: number
+
         for (let line_idx = 0; line_idx < line_annotations.length; line_idx++) {
             const current_point = point_annotations[point_idx]
             const current_line = line_annotations[line_idx]
@@ -129,9 +132,12 @@ export function assign_all_points_distance_from_line(point_annotations: ULabelAn
             const distance = get_distance_from_point_to_line(current_point, current_line)
 
             // Replace this property with the new distance if its the smallest distance calculated or undefined
-            if (current_point["distance_from_any_line"] === undefined || current_point["distance_from_any_line"] >= distance) {                 
-                point_annotations[point_idx]["distance_from_any_line"] = distance
+            if (smallest_distance === undefined || smallest_distance > distance) {                 
+                smallest_distance = distance
             }
         }
+
+        // Assign the smallest distance to the annotation
+        point_annotations[point_idx].distance_from_any_line = smallest_distance
     }
 }
