@@ -1,7 +1,7 @@
 import { ULabel, ULabelAnnotation, ULabelSubtask } from "..";
 import { Configuration } from "./configuration";
 //import { ULabelAnnotation } from "./annotation";
-import { assign_all_points_distance_from_line, filter_high, mark_deprecated } from "./annotation_operators";
+import { assign_points_distance_from_line, filter_high, mark_deprecated, filter_points_distance_from_line } from "./annotation_operators";
 import { ULabelSpatialType } from "..";
 
 const toolboxDividerDiv = "<div class=toolbox-divider></div>"
@@ -1111,7 +1111,7 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
         $(document).on("input", "#" + this.component_name + "-slider", () => this.updateSliderLabel())
 
         // Whenever the user directly updates the slider, call the filtering function
-        $(document).on("input", "#" + this.component_name + "-slider", () => this.filter())
+        $(document).on("input", "#" + this.component_name + "-slider", () => filter_points_distance_from_line(this.ulabel))
 
         // Whenever the user clicks on the increment button, increment the slider value
         $(document).on("click", "#" + this.component_name + "inc-button", () => this.incrementSliderValue())
@@ -1134,7 +1134,7 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
         const filter_label: HTMLLabelElement = document.querySelector("#" + this.component_name + "-label")
 
         // Update the label's inner text to the value of the slider
-        filter_label.innerText = slider_value + "%"
+        filter_label.innerText = slider_value + "px"
     }
 
     /**
@@ -1151,7 +1151,7 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
         this.updateSliderLabel()
 
         // Call the filter function
-        this.filter()
+        filter_points_distance_from_line(this.ulabel)
     }
 
     /**
@@ -1168,59 +1168,9 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
         this.updateSliderLabel()
 
         // Call the filter function
-        this.filter()
+        filter_points_distance_from_line(this.ulabel)
     }
 
-    public filter() {
-        // Grab the slider element
-        const slider: HTMLInputElement = document.querySelector("#" + this.component_name + "-slider")
-
-        // Grab the slider's value
-        const filter_value: number = slider.valueAsNumber
-        
-        // Grab the subtasks from ulabel
-        const subtasks: ULabelSubtask[] = Object.values(this.ulabel.subtasks)
-
-        // Initialize set of all point and line annotations
-        let point_annotations: ULabelAnnotation[] = []
-        let line_annotations: ULabelAnnotation[] = []
-
-        // Go through all annotations and populate the set of all point annotations and all line annotations
-        for (let subtask of subtasks) {
-
-            for (let annotation_key in subtask.annotations.access) {
-                const annotation: ULabelAnnotation = subtask.annotations.access[annotation_key]
-                
-                // Check for annotation type and push the annotation into the appropriate array
-                switch(annotation.spatial_type) {
-                    case "point" as ULabelSpatialType:
-                        point_annotations.push(annotation)
-                        break
-                    case "polyline" as ULabelSpatialType:
-                        line_annotations.push(annotation)
-                        break
-                }
-            }
-        }
-
-        console.log("Point annotations", point_annotations)
-        console.log("Line annotations", line_annotations)
-
-        // Assign all of the point annotations a distance from line value
-        assign_all_points_distance_from_line(point_annotations, line_annotations)
-
-        point_annotations.forEach(function(annotation: ULabelAnnotation) {
-            // Make sure the annotation is not a human deprecated one
-            if (!annotation.human_deprecated) {
-                // Run the annotation through the filter
-                const should_deprecate: boolean = filter_high(annotation.distance_from_any_line, filter_value)
-
-                // Mark it deprecated
-                mark_deprecated(annotation, should_deprecate)
-            }
-        })
-        this.ulabel.redraw_all_annotations(null, null, false);
-    }
 
     /**
      * Returns the component's html.
@@ -1242,7 +1192,7 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
                 for="${this.component_name}" 
                 id="${this.component_name}-label"
                 class="keypoint-slider-label">
-                ${Math.round(this.default_value * 100)}%
+                ${Math.round(this.default_value * 100)}px
             </label>
             <button id="${this.component_name}inc-button">+</button>
             <button id="${this.component_name}dec-button">-</button>

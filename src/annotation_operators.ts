@@ -1,4 +1,4 @@
-import { ULabel, ULabelAnnotation, ULabelSubtask } from "..";
+import { ULabel, ULabelAnnotation, ULabelSpatialType, ULabelSubtask } from "..";
 
 //Given an annotation returns the confidence of that annotation
 export function get_annotation_confidence(annotation) {
@@ -119,7 +119,7 @@ export function get_distance_from_point_to_line(point_annotation: ULabelAnnotati
     return distance
 }
 
-export function assign_all_points_distance_from_line(point_annotations: ULabelAnnotation[], line_annotations: ULabelAnnotation[]) {
+export function assign_points_distance_from_line(point_annotations: ULabelAnnotation[], line_annotations: ULabelAnnotation[]) {
 
     for (let point_idx = 0; point_idx < point_annotations.length; point_idx++) {
         // Keep track of a smallest distance for each annotation
@@ -140,4 +140,60 @@ export function assign_all_points_distance_from_line(point_annotations: ULabelAn
         // Assign the smallest distance to the annotation
         point_annotations[point_idx].distance_from_any_line = smallest_distance
     }
+}
+
+export function filter_points_distance_from_line(ulabel: ULabel) {
+    // Grab the slider element
+    const slider: HTMLInputElement = document.querySelector("#FilterPointDistanceFromRow-slider")
+
+    // If this function is being called then a FilterPointDistanceFromRow instance should exist in the toolbox.
+    // If a FilterPointDistanceFromRow instance exists in the toolbox, then the slider should be defined too.
+    // If for any reason it still is not, then return from this function early
+    if (slider === undefined) {
+        console.error("filter_points_distance_from_line could not find slider object")
+        return
+    }
+    
+    // Grab the slider's value
+    const filter_value: number = slider.valueAsNumber
+    
+    // Grab the subtasks from ulabel
+    const subtasks: ULabelSubtask[] = Object.values(ulabel.subtasks)
+
+    // Initialize set of all point and line annotations
+    let point_annotations: ULabelAnnotation[] = []
+    let line_annotations: ULabelAnnotation[] = []
+
+    // Go through all annotations and populate the set of all point annotations and all line annotations
+    for (let subtask of subtasks) {
+
+        for (let annotation_key in subtask.annotations.access) {
+            const annotation: ULabelAnnotation = subtask.annotations.access[annotation_key]
+            
+            // Check for annotation type and push the annotation into the appropriate array
+            switch(annotation.spatial_type) {
+                case "point" as ULabelSpatialType:
+                    point_annotations.push(annotation)
+                    break
+                case "polyline" as ULabelSpatialType:
+                    line_annotations.push(annotation)
+                    break
+            }
+        }
+    }
+
+    // Assign all of the point annotations a distance from line value
+    assign_points_distance_from_line(point_annotations, line_annotations)
+
+    point_annotations.forEach(function(annotation: ULabelAnnotation) {
+        // Make sure the annotation is not a human deprecated one
+        if (!annotation.human_deprecated) {
+            // Run the annotation through the filter
+            const should_deprecate: boolean = filter_high(annotation.distance_from_any_line, filter_value)
+
+            // Mark it deprecated
+            mark_deprecated(annotation, should_deprecate)
+        }
+    })
+    ulabel.redraw_all_annotations(null, null, false);
 }
