@@ -1181,21 +1181,25 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
         return`
         <div class="filter-row-distance">
             <p class="tb-header">${this.name}</p>
-            <input 
-                type="range"
-                min="0"
-                max="400"
-                id="${this.component_name}-slider" 
-                class="keypoint-slider" value="${this.default_value * 100}"
-            />
-            <label 
-                for="${this.component_name}" 
-                id="${this.component_name}-label"
-                class="keypoint-slider-label">
-                ${Math.round(this.default_value * 100)}px
-            </label>
-            <button id="${this.component_name}inc-button">+</button>
-            <button id="${this.component_name}dec-button">-</button>
+            <div class="filter-row-distance-container">
+                <input 
+                    type="range"
+                    min="0"
+                    max="400"
+                    id="${this.component_name}-slider" 
+                    class="keypoint-slider" value="${this.default_value * 100}"
+                />
+                <label 
+                    for="${this.component_name}" 
+                    id="${this.component_name}-label"
+                    class="keypoint-slider-label">
+                    ${Math.round(this.default_value * 100)}px
+                </label>
+                <div class="filter-row-distance-button-holder">
+                    <button id="${this.component_name}inc-button">+</button>
+                    <button id="${this.component_name}dec-button">-</button>
+                </div>
+            </div>
         </div>
         `
     }
