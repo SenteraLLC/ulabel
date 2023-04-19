@@ -7,8 +7,9 @@ import { ULabelSubtask } from '../build/subtask';
 import { GeometricUtils } from '../build/geometric_utils';
 import { get_annotation_confidence } from '../build/annotation_operators';
 import { apply_gradient } from '../build/drawing_utilities'
-import { Configuration } from '../build/configuration';
+import { Configuration, AllowedToolboxItem } from '../build/configuration';
 import { HTMLBuilder } from '../build/html_builder';
+import { filter_points_distance_from_line } from "../build/annotation_operators";
 import $ from 'jquery';
 const jQuery = $;
 window.$ = window.jQuery = require('jquery');
@@ -3375,9 +3376,9 @@ export class ULabel {
 
     move_annotation(mouse_event) {
         // Convenience
-        const actid = this.subtasks[this.state["current_subtask"]]["state"]["active_id"];
+        const active_id = this.subtasks[this.state["current_subtask"]]["state"]["active_id"];
         // TODO big performance gains with buffered canvasses
-        if (actid && (actid !== null)) {
+        if (active_id && (active_id !== null)) {
             let offset = {
                 "id": this.subtasks[this.state["current_subtask"]]["state"]["move_candidate"]["annid"],
                 "diffX": (mouse_event.clientX - this.drag_state["move"]["mouse_start"][0]) / this.state["zoom_val"],
@@ -4211,6 +4212,7 @@ export class ULabel {
             }
         }
         else { // Dragging
+            console.log(this.drag_state["active_key"])
             switch (this.drag_state["active_key"]) {
                 case "pan":
                     this.drag_repan(mouse_event);
@@ -4233,6 +4235,12 @@ export class ULabel {
                         this.move_annotation(mouse_event);
                     }
                     break;
+                }
+
+            // If the toolbox contains the FilterDistance item, then call filter_points_distance_from_line
+            // whenever an annotation is moved
+            if (this.toolbox_order.includes(AllowedToolboxItem.FilterDistance)) {
+                filter_points_distance_from_line(this)
             }
         }
     }

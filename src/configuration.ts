@@ -1,7 +1,7 @@
 import { ModeSelectionToolboxItem, ZoomPanToolboxItem, AnnotationIDToolboxItem, ClassCounterToolboxItem, AnnotationResizeItem, RecolorActiveItem, KeypointSliderItem, SubmitButtons, FilterPointDistanceFromRow } from "./toolbox"
 import { get_annotation_confidence, mark_deprecated, filter_low } from "./annotation_operators";
 
-enum AllowedToolboxItem {
+export enum AllowedToolboxItem {
     ModeSelect,         // 0
     ZoomPan,            // 1
     AnnotationResize,   // 2

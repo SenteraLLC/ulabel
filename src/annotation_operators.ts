@@ -149,7 +149,7 @@ export function filter_points_distance_from_line(ulabel: ULabel) {
     // If this function is being called then a FilterPointDistanceFromRow instance should exist in the toolbox.
     // If a FilterPointDistanceFromRow instance exists in the toolbox, then the slider should be defined too.
     // If for any reason it still is not, then return from this function early
-    if (slider === undefined) {
+    if (slider === null) {
         console.error("filter_points_distance_from_line could not find slider object")
         return
     }
@@ -173,9 +173,14 @@ export function filter_points_distance_from_line(ulabel: ULabel) {
             // Check for annotation type and push the annotation into the appropriate array
             switch(annotation.spatial_type) {
                 case "point" as ULabelSpatialType:
+                    // Add the point annotation to the set
                     point_annotations.push(annotation)
                     break
                 case "polyline" as ULabelSpatialType:
+                    // Skip over deprecated line annotations
+                    if (annotation.deprecated) continue
+
+                    // Add non-deprecated line annotations to the set
                     line_annotations.push(annotation)
                     break
             }
