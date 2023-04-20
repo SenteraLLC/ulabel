@@ -4212,7 +4212,6 @@ export class ULabel {
             }
         }
         else { // Dragging
-            console.log(this.drag_state["active_key"])
             switch (this.drag_state["active_key"]) {
                 case "pan":
                     this.drag_repan(mouse_event);
@@ -4235,12 +4234,6 @@ export class ULabel {
                         this.move_annotation(mouse_event);
                     }
                     break;
-                }
-
-            // If the toolbox contains the FilterDistance item, then call filter_points_distance_from_line
-            // whenever an annotation is moved
-            if (this.toolbox_order.includes(AllowedToolboxItem.FilterDistance)) {
-                filter_points_distance_from_line(this)
             }
         }
     }
