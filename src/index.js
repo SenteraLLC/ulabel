@@ -2194,27 +2194,42 @@ export class ULabel {
     // ================= Annotation Utilities =================
 
     undo() {
-        if (!this.subtasks[this.state["current_subtask"]]["state"]["idd_thumbnail"]) {
+        // Create constants for convenience
+        const current_subtask = this.subtasks[this.state["current_subtask"]]
+        const action_stream = current_subtask["actions"]["stream"]
+        const undone_stack = current_subtask["actions"]["undone_stack"]
+
+        // If the action_steam is empty, then there are no actions to undo
+        if (action_stream.length === 0) return
+
+        if (!current_subtask["state"]["idd_thumbnail"]) {
             this.hide_id_dialog();
         }
-        if (this.subtasks[this.state["current_subtask"]]["actions"]["stream"].length > 0) {
-            if (this.subtasks[this.state["current_subtask"]]["actions"]["stream"][this.subtasks[this.state["current_subtask"]]["actions"]["stream"].length - 1].redo_payload.finished === false) {
-                this.finish_action(this.subtasks[this.state["current_subtask"]]["actions"]["stream"][this.subtasks[this.state["current_subtask"]]["actions"]["stream"].length - 1]);
-            }
-            this.subtasks[this.state["current_subtask"]]["actions"]["undone_stack"].push(this.subtasks[this.state["current_subtask"]]["actions"]["stream"].pop());
-            let newact = this.undo_action(this.subtasks[this.state["current_subtask"]]["actions"]["undone_stack"][this.subtasks[this.state["current_subtask"]]["actions"]["undone_stack"].length - 1]);
-            if (newact != null) {
-                this.subtasks[this.state["current_subtask"]]["actions"]["undone_stack"][this.subtasks[this.state["current_subtask"]]["actions"]["undone_stack"].length - 1] = newact
-            }
+        
+        if (action_stream[action_stream.length - 1].redo_payload.finished === false) {
+            this.finish_action(action_stream[action_stream.length - 1]);
         }
-        // console.log("AFTER UNDO", this.subtasks[this.state["current_subtask"]]["actions"]["stream"], this.subtasks[this.state["current_subtask"]]["actions"]["undone_stack"]);
+        undone_stack.push(action_stream.pop());
+        let newact = this.undo_action(undone_stack[undone_stack.length - 1]);
+        if (newact != null) {
+            undone_stack[undone_stack.length - 1] = newact
+        }
+        
+        console.log("AFTER UNDO", action_stream, undone_stack);
     }
 
     redo() {
-        if (this.subtasks[this.state["current_subtask"]]["actions"]["undone_stack"].length > 0) {
-            this.redo_action(this.subtasks[this.state["current_subtask"]]["actions"]["undone_stack"].pop());
-        }
-        // console.log("AFTER REDO", this.subtasks[this.state["current_subtask"]]["actions"]["stream"], this.subtasks[this.state["current_subtask"]]["actions"]["undone_stack"]);
+        // Create constants for convenience
+        const current_subtask = this.subtasks[this.state["current_subtask"]]
+        const action_stream = current_subtask["actions"]["stream"]
+        const undone_stack = current_subtask["actions"]["undone_stack"]
+
+        // If the action_steam is empty, then there are no actions to undo
+        if (undone_stack.length === 0) return
+
+        this.redo_action(undone_stack.pop());
+        
+        console.log("AFTER REDO", action_stream, undone_stack);
     }
 
     delete_annotation(aid, redo_payload = null) {
@@ -3374,24 +3389,6 @@ export class ULabel {
         this.move_annotation(mouse_event);
     }
 
-    move_annotation(mouse_event) {
-        // Convenience
-        const active_id = this.subtasks[this.state["current_subtask"]]["state"]["active_id"];
-        // TODO big performance gains with buffered canvasses
-        if (active_id && (active_id !== null)) {
-            let offset = {
-                "id": this.subtasks[this.state["current_subtask"]]["state"]["move_candidate"]["annid"],
-                "diffX": (mouse_event.clientX - this.drag_state["move"]["mouse_start"][0]) / this.state["zoom_val"],
-                "diffY": (mouse_event.clientY - this.drag_state["move"]["mouse_start"][1]) / this.state["zoom_val"],
-                "diffZ": this.state["current_frame"] - this.drag_state["move"]["mouse_start"][2]
-            };
-            this.redraw_all_annotations(null, offset, true); // tobuffer
-            this.show_global_edit_suggestion(this.subtasks[this.state["current_subtask"]]["state"]["move_candidate"]["annid"], offset); // TODO handle offset
-            this.reposition_dialogs();
-            return;
-        }
-    }
-
     finish_annotation(mouse_event, redo_payload = null) {
         // Convenience
         let actid = null;
@@ -3565,6 +3562,24 @@ export class ULabel {
         // Set mode to no active annotation
         this.subtasks[this.state["current_subtask"]]["state"]["active_id"] = null;
         this.subtasks[this.state["current_subtask"]]["state"]["is_in_edit"] = false;
+    }
+
+    move_annotation(mouse_event) {
+        // Convenience
+        const active_id = this.subtasks[this.state["current_subtask"]]["state"]["active_id"];
+        // TODO big performance gains with buffered canvasses
+        if (active_id && (active_id !== null)) {
+            let offset = {
+                "id": this.subtasks[this.state["current_subtask"]]["state"]["move_candidate"]["annid"],
+                "diffX": (mouse_event.clientX - this.drag_state["move"]["mouse_start"][0]) / this.state["zoom_val"],
+                "diffY": (mouse_event.clientY - this.drag_state["move"]["mouse_start"][1]) / this.state["zoom_val"],
+                "diffZ": this.state["current_frame"] - this.drag_state["move"]["mouse_start"][2]
+            };
+            this.redraw_all_annotations(null, offset, true); // tobuffer
+            this.show_global_edit_suggestion(this.subtasks[this.state["current_subtask"]]["state"]["move_candidate"]["annid"], offset); // TODO handle offset
+            this.reposition_dialogs();
+            return;
+        }
     }
 
     finish_move(mouse_event) {
