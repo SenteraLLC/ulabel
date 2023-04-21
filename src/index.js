@@ -3136,55 +3136,54 @@ export class ULabel {
     }
 
     edit_annotation(mouse_event) {
-        // Convenience
-        const actid = this.subtasks[this.state["current_subtask"]]["state"]["active_id"];
+        // Convenience and readability
+        const current_subtask = this.subtasks[this.state["current_subtask"]]
+        const active_id = current_subtask["state"]["active_id"];
         // TODO big performance gains with buffered canvasses
-        if (actid && (actid !== null)) {
-            var ms_loc = [
+        if (active_id && (active_id !== null)) {
+            const mouse_location = [
                 this.get_global_mouse_x(mouse_event),
                 this.get_global_mouse_y(mouse_event)
             ];
             // Clicks are handled elsewhere
             // TODO(3d)
-            switch (this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_type"]) {
+            switch (current_subtask["annotations"]["access"][active_id]["spatial_type"]) {
                 case "bbox":
-                    this.set_with_access_string(actid, this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"]["access"], ms_loc);
-                    this.rebuild_containing_box(actid);
+                case "tbar":
+                case "polygon":
+                    this.set_with_access_string(active_id, current_subtask["state"]["edit_candidate"]["access"], mouse_location);
+                    this.rebuild_containing_box(active_id);
                     this.redraw_all_annotations(this.state["current_subtask"], null, true); // tobuffer
-                    this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"]["point"] = ms_loc;
-                    this.show_edit_suggestion(this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"], true);
-                    this.show_global_edit_suggestion(this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"]["annid"]);
+                    current_subtask["state"]["edit_candidate"]["point"] = mouse_location;
+                    this.show_edit_suggestion(current_subtask["state"]["edit_candidate"], true);
+                    this.show_global_edit_suggestion(current_subtask["state"]["edit_candidate"]["annid"]);
                     break;
                 case "bbox3":
                     // TODO(new3d) Will not always want to set 3rd val -- editing is possible within an intermediate frame or frames
-                    this.set_with_access_string(actid, this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"]["access"], [ms_loc[0], ms_loc[1], this.state["current_frame"]]);
-                    this.rebuild_containing_box(actid);
+                    this.set_with_access_string(active_id, current_subtask["state"]["edit_candidate"]["access"], [mouse_location[0], mouse_location[1], this.state["current_frame"]]);
+                    this.rebuild_containing_box(active_id);
                     this.redraw_all_annotations(null, null, true); // tobuffer
-                    this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"]["point"] = ms_loc;
-                    this.show_edit_suggestion(this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"], true);
-                    this.show_global_edit_suggestion(this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"]["annid"]);
+                    current_subtask["state"]["edit_candidate"]["point"] = mouse_location;
+                    this.show_edit_suggestion(current_subtask["state"]["edit_candidate"], true);
+                    this.show_global_edit_suggestion(current_subtask["state"]["edit_candidate"]["annid"]);
                     break;
-                case "polygon":
                 case "polyline":
-                    this.set_with_access_string(actid, this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"]["access"], ms_loc);
-                    this.rebuild_containing_box(actid);
+                    this.set_with_access_string(active_id, current_subtask["state"]["edit_candidate"]["access"], mouse_location);
+                    this.rebuild_containing_box(active_id);
                     this.redraw_all_annotations(this.state["current_subtask"], null, true); // tobuffer
-                    this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"]["point"] = ms_loc;
-                    this.show_edit_suggestion(this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"], true);
-                    this.show_global_edit_suggestion(this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"]["annid"]);
-                    // this.suggest_edits(mouse_event);
+                    current_subtask["state"]["edit_candidate"]["point"] = mouse_location;
+                    this.show_edit_suggestion(current_subtask["state"]["edit_candidate"], true);
+                    this.show_global_edit_suggestion(current_subtask["state"]["edit_candidate"]["annid"]);
+                    
+                    // If the FilterDistance ToolboxItem is present, filter annotations on annotation edit
+                    if (this.toolbox_order.includes(AllowedToolboxItem.FilterDistance)) {
+                        // Currently only supported by polyline
+                        filter_points_distance_from_line(this)
+                    }
                     break;
                 case "contour":
                     // TODO contour editing
                     this.raise_error("Annotation mode is not currently editable", ULabel.elvl_info);
-                    break;
-                case "tbar":
-                    this.set_with_access_string(actid, this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"]["access"], ms_loc);
-                    this.rebuild_containing_box(actid);
-                    this.redraw_all_annotations(this.state["current_subtask"], null, true); // tobuffer
-                    this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"]["point"] = ms_loc;
-                    this.show_edit_suggestion(this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"], true);
-                    this.show_global_edit_suggestion(this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"]["annid"]);
                     break;
                 default:
                     this.raise_error("Annotation mode is not understood", ULabel.elvl_info);
