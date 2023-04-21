@@ -1,5 +1,12 @@
 import { Toolbox } from "./src/toolbox";
 
+export type Offset = {
+    id: string;
+    diffX: number;
+    diffY: number;
+    diffZ?: number;
+}
+
 export type ULabelAnnotation = {
     id: string;
     new: boolean;

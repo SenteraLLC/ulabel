@@ -1,4 +1,4 @@
-import { ULabel, ULabelAnnotation, ULabelSpatialType, ULabelSubtask } from "..";
+import { Offset, ULabel, ULabelAnnotation, ULabelSpatialType, ULabelSubtask } from "..";
 
 //Given an annotation returns the confidence of that annotation
 export function get_annotation_confidence(annotation) {
@@ -28,7 +28,7 @@ export function filter_high(annotation_value: number, filter_threshold: number) 
 }
 
 /**
- * This function calculates the distance from a point to a line segment. 
+ * Calculates the distance from a point to a line segment. 
  * 
  * @param point_x The point's x position
  * @param point_y The point's y position
@@ -87,9 +87,9 @@ function calculate_distance_from_point_to_line(
     let dx = point_x - xx
     let dy = point_y - yy
     return Math.sqrt(dx * dx + dy * dy)
-  }
+}
 
-export function get_distance_from_point_to_line(point_annotation: ULabelAnnotation, line_annotation: ULabelAnnotation) {
+export function get_distance_from_point_to_line(point_annotation: ULabelAnnotation, line_annotation: ULabelAnnotation, offset: Offset = null) {
 
     // Create constants for the point's x and y value
     const point_x: number = point_annotation.spatial_payload[0][0]
@@ -107,8 +107,26 @@ export function get_distance_from_point_to_line(point_annotation: ULabelAnnotati
         const line_x2: number = line_annotation.spatial_payload[idx + 1][0]
         const line_y2: number = line_annotation.spatial_payload[idx + 1][1]
 
+        // Create offset variables
+        let line_offset_x: number = 0
+        let line_offset_y: number = 0
+
+        // Only apply the offset when the line annotation id matches with the offset id
+        // Check if offset !== null first to avoid an issue with reading properties of null
+        if ((offset !== null) && (line_annotation.id === offset.id)) {
+            line_offset_x = offset.diffX
+            line_offset_y = offset.diffY
+        }
+
         // Calculate the distance from the point to the line segment
-        const distance_to_segment = calculate_distance_from_point_to_line(point_x, point_y, line_x1, line_y1, line_x2, line_y2)
+        const distance_to_segment = calculate_distance_from_point_to_line(
+            point_x,
+            point_y,
+            line_x1 + line_offset_x,
+            line_y1 + line_offset_y,
+            line_x2 + line_offset_x,
+            line_y2 + line_offset_y
+        )
 
         // Check if the distance to this segment is undefined or less than the distance to another segment
         if (distance === undefined || distance_to_segment < distance) {
@@ -119,8 +137,8 @@ export function get_distance_from_point_to_line(point_annotation: ULabelAnnotati
     return distance
 }
 
-export function assign_points_distance_from_line(point_annotations: ULabelAnnotation[], line_annotations: ULabelAnnotation[]) {
-
+export function assign_points_distance_from_line(point_annotations: ULabelAnnotation[], line_annotations: ULabelAnnotation[], offset: Offset = null) {
+    // TODO: Add 3D support
     for (let point_idx = 0; point_idx < point_annotations.length; point_idx++) {
         // Keep track of a smallest distance for each annotation
         let smallest_distance: number
@@ -129,9 +147,9 @@ export function assign_points_distance_from_line(point_annotations: ULabelAnnota
             const current_point = point_annotations[point_idx]
             const current_line = line_annotations[line_idx]
         
-            const distance = get_distance_from_point_to_line(current_point, current_line)
+            const distance = get_distance_from_point_to_line(current_point, current_line, offset)
 
-            // Replace this property with the new distance if its the smallest distance calculated or undefined
+            // Replace this property with the new distance if its undefined or the smallest distance calculated
             if (smallest_distance === undefined || smallest_distance > distance) {                 
                 smallest_distance = distance
             }
@@ -142,7 +160,7 @@ export function assign_points_distance_from_line(point_annotations: ULabelAnnota
     }
 }
 
-export function filter_points_distance_from_line(ulabel: ULabel) {
+export function filter_points_distance_from_line(ulabel: ULabel, offset: Offset = null) {
     // Grab the slider element
     const slider: HTMLInputElement = document.querySelector("#FilterPointDistanceFromRow-slider")
 
@@ -188,7 +206,7 @@ export function filter_points_distance_from_line(ulabel: ULabel) {
     }
 
     // Assign all of the point annotations a distance from line value
-    assign_points_distance_from_line(point_annotations, line_annotations)
+    assign_points_distance_from_line(point_annotations, line_annotations, offset)
 
     point_annotations.forEach(function(annotation: ULabelAnnotation) {
         // Make sure the annotation is not a human deprecated one

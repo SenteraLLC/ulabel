@@ -3575,6 +3575,11 @@ export class ULabel {
                 "diffY": (mouse_event.clientY - this.drag_state["move"]["mouse_start"][1]) / this.state["zoom_val"],
                 "diffZ": this.state["current_frame"] - this.drag_state["move"]["mouse_start"][2]
             };
+
+            // Check if the FilterDistance ToolboxItem is in this ULabel instance
+            if (this.toolbox_order.includes(AllowedToolboxItem.FilterDistance)) {
+                filter_points_distance_from_line(this, offset);
+            }
             this.redraw_all_annotations(null, offset, true); // tobuffer
             this.show_global_edit_suggestion(this.subtasks[this.state["current_subtask"]]["state"]["move_candidate"]["annid"], offset); // TODO handle offset
             this.reposition_dialogs();
