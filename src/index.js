@@ -3565,22 +3565,29 @@ export class ULabel {
 
     move_annotation(mouse_event) {
         // Convenience
-        const active_id = this.subtasks[this.state["current_subtask"]]["state"]["active_id"];
+        const current_subtask = this.subtasks[this.state["current_subtask"]]
+        const active_id = current_subtask["state"]["active_id"];
+        const active_annotation = current_subtask["annotations"]["access"][active_id]
+
         // TODO big performance gains with buffered canvasses
         if (active_id && (active_id !== null)) {
             let offset = {
-                "id": this.subtasks[this.state["current_subtask"]]["state"]["move_candidate"]["annid"],
+                "id": current_subtask["state"]["move_candidate"]["annid"],
                 "diffX": (mouse_event.clientX - this.drag_state["move"]["mouse_start"][0]) / this.state["zoom_val"],
                 "diffY": (mouse_event.clientY - this.drag_state["move"]["mouse_start"][1]) / this.state["zoom_val"],
                 "diffZ": this.state["current_frame"] - this.drag_state["move"]["mouse_start"][2]
             };
 
             // Check if the FilterDistance ToolboxItem is in this ULabel instance
-            if (this.toolbox_order.includes(AllowedToolboxItem.FilterDistance)) {
+            // And that the current annotations is of type polyline
+            if (
+                this.toolbox_order.includes(AllowedToolboxItem.FilterDistance) &&
+                active_annotation["spatial_type"] === "polyline"
+            ) {
                 filter_points_distance_from_line(this, offset);
             }
             this.redraw_all_annotations(null, offset, true); // tobuffer
-            this.show_global_edit_suggestion(this.subtasks[this.state["current_subtask"]]["state"]["move_candidate"]["annid"], offset); // TODO handle offset
+            this.show_global_edit_suggestion(current_subtask["state"]["move_candidate"]["annid"], offset); // TODO handle offset
             this.reposition_dialogs();
             return;
         }
