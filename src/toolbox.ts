@@ -1,6 +1,5 @@
 import { ULabel, ULabelAnnotation, ULabelSubtask } from "..";
 import { Configuration } from "./configuration";
-//import { ULabelAnnotation } from "./annotation";
 import { assign_points_distance_from_line, filter_high, mark_deprecated, filter_points_distance_from_line } from "./annotation_operators";
 import { ULabelSpatialType } from "..";
 
