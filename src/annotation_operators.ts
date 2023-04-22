@@ -1,7 +1,13 @@
 import { Offset, ULabel, ULabelAnnotation, ULabelSpatialType, ULabelSubtask } from "..";
 
-//Given an annotation returns the confidence of that annotation
-export function get_annotation_confidence(annotation) {
+/**
+ * Returns the confidence of the passed in ULabelAnnotation.
+ * In the case of multiple classifications in the classification_payloads, returns the largest confidence value.
+ * 
+ * @param annotation ULabelAnnotation
+ * @returns The largest confidence value inside classification_payloads
+ */
+export function get_annotation_confidence(annotation: ULabelAnnotation) {
     let current_confidence = -1;
     for (let type_of_id in annotation.classification_payloads) {
         if (annotation.classification_payloads[type_of_id].confidence > current_confidence) {
@@ -11,19 +17,35 @@ export function get_annotation_confidence(annotation) {
     return current_confidence;
 }
 
-// Takes in an annotation and marks it either deprecated or not deprecated.
+/**
+ * Takes in an annotation and marks it either deprecated or not deprecated.
+ * 
+ * @param annotation ULabelAnnotation
+ * @param deprecated boolean 
+ */
 export function mark_deprecated(annotation: any, deprecated: boolean) {
     annotation.deprecated = deprecated
 }
 
-// If the annotation confidence is less than the filter value then return true, else return false
-export function filter_low(annotation_confidence: number, filter_value: number) {
-    if (annotation_confidence < filter_value) return true
+/**
+ * If the value is less than the filter then return true, else return false.
+ * 
+ * @param value Value to be compaired against the filter
+ * @param filter What the value is compared against
+ */
+export function filter_low(value: number, filter: number) {
+    if (value < filter) return true
     return false
 }
 
-export function filter_high(annotation_value: number, filter_threshold: number) {
-    if (annotation_value > filter_threshold) return true
+/**
+ * If the value is greater than the filter then return true, else return false.
+ * 
+ * @param value Value to be compaired against the filter
+ * @param filter What the value is compared against
+ */
+export function filter_high(value: number, filter: number) {
+    if (value > filter) return true
     return false
 }
 
@@ -89,7 +111,15 @@ function calculate_distance_from_point_to_line(
     return Math.sqrt(dx * dx + dy * dy)
 }
 
-export function get_distance_from_point_to_line(point_annotation: ULabelAnnotation, line_annotation: ULabelAnnotation, offset: Offset = null) {
+/**
+ * Calculates the distance from a point annotation to each segment of a polyline annotation, then returns the smallest distance.
+ * 
+ * @param point_annotation Point annotation to get the distance of
+ * @param line_annotation Line annotation the point annotation is being compared against
+ * @param offset Offset of a particular annotation in the set. Used when an annotation is being moved by the user
+ * @returns The distance from a point to a polyline
+ */
+function get_distance_from_point_to_line(point_annotation: ULabelAnnotation, line_annotation: ULabelAnnotation, offset: Offset = null) {
 
     // Create constants for the point's x and y value
     const point_x: number = point_annotation.spatial_payload[0][0]
@@ -137,16 +167,32 @@ export function get_distance_from_point_to_line(point_annotation: ULabelAnnotati
     return distance
 }
 
-export function assign_points_distance_from_line(point_annotations: ULabelAnnotation[], line_annotations: ULabelAnnotation[], offset: Offset = null) {
-    // TODO: Add 3D support
+/**
+ * Update the distance_from_any_line property on a set of point_annotations based on their distance from a set of line_annotations.
+ * 
+ * @param point_annotations The set of point annotations to be updated
+ * @param line_annotations The set of polyline annotations the points will be compared against
+ * @param offset Offset of a particular annotation in the set. Used when an annotation is being moved by the user
+ */
+export function assign_points_distance_from_line(
+    point_annotations: ULabelAnnotation[],
+    line_annotations: ULabelAnnotation[],
+    offset: Offset = null
+    ) {
+    // TODO: Add 3D support (maybe)
     for (let point_idx = 0; point_idx < point_annotations.length; point_idx++) {
-        // Keep track of a smallest distance for each annotation
+        // Grab the current point annotation
+        const current_point = point_annotations[point_idx]
+
+        // Keep track of a smallest distance for each point
         let smallest_distance: number
 
+        // Loop through each line annotation
         for (let line_idx = 0; line_idx < line_annotations.length; line_idx++) {
-            const current_point = point_annotations[point_idx]
+            // Grab the current line annotation
             const current_line = line_annotations[line_idx]
         
+            // Calculate the distance
             const distance = get_distance_from_point_to_line(current_point, current_line, offset)
 
             // Replace this property with the new distance if its undefined or the smallest distance calculated
@@ -156,10 +202,17 @@ export function assign_points_distance_from_line(point_annotations: ULabelAnnota
         }
 
         // Assign the smallest distance to the annotation
-        point_annotations[point_idx].distance_from_any_line = smallest_distance
+        current_point.distance_from_any_line = smallest_distance
     }
 }
 
+/**
+ * Using the value of the FilterPointDistanceFromRow's slider, filter all point annotations based on their distance 
+ * from a polyline annotation.
+ * 
+ * @param ulabel ULabel object
+ * @param offset Offset of a particular annotation. Used when filter is called while an annotation is being moved
+ */
 export function filter_points_distance_from_line(ulabel: ULabel, offset: Offset = null) {
     // Grab the slider element
     const slider: HTMLInputElement = document.querySelector("#FilterPointDistanceFromRow-slider")
@@ -182,9 +235,11 @@ export function filter_points_distance_from_line(ulabel: ULabel, offset: Offset 
     let point_annotations: ULabelAnnotation[] = []
     let line_annotations: ULabelAnnotation[] = []
 
-    // Go through all annotations and populate the set of all point annotations and all line annotations
+    // Go through all annotations to populate a set of all point annotations and a set of all line annotations
+    // First loop through each subtask
     for (let subtask of subtasks) {
 
+        // Then go through each annotation in the subtask
         for (let annotation_key in subtask.annotations.access) {
             const annotation: ULabelAnnotation = subtask.annotations.access[annotation_key]
             
@@ -208,15 +263,18 @@ export function filter_points_distance_from_line(ulabel: ULabel, offset: Offset 
     // Assign all of the point annotations a distance from line value
     assign_points_distance_from_line(point_annotations, line_annotations, offset)
 
+    // Loop through each point annotation and deprecate them if they don't pass the filter
     point_annotations.forEach(function(annotation: ULabelAnnotation) {
         // Make sure the annotation is not a human deprecated one
         if (!annotation.human_deprecated) {
             // Run the annotation through the filter
             const should_deprecate: boolean = filter_high(annotation.distance_from_any_line, filter_value)
 
-            // Mark it deprecated
+            // Mark the point deprecated
             mark_deprecated(annotation, should_deprecate)
         }
     })
+
+    // Redraw all annotations
     ulabel.redraw_all_annotations(null, null, false);
 }

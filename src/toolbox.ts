@@ -158,8 +158,7 @@ export class ToolboxTab {
             sel = " sel";
             val = 100;
         }
-        console.log(subtask.display_name)
-        console.log(subtask)
+        console.log(subtask.display_name, subtask)
         this.html = `
         <div class="tb-st-tab${sel}">
             <a${href} id="tb-st-switch--${subtask_key}" class="tb-st-switch">${this.subtask.display_name}</a><!--

@@ -819,10 +819,6 @@ export class ULabel {
         config_data = null,
         toolbox_order = null
     ) {
-        console.log(this)
-        console.log(toolbox_order, "Toolbox order", task_meta)
-
-
         // TODO 
         // Allow for importing spacing data -- a measure tool would be nice too
         // Much of this is hardcoded defaults, 
@@ -2214,22 +2210,17 @@ export class ULabel {
         if (newact != null) {
             undone_stack[undone_stack.length - 1] = newact
         }
-        
-        console.log("AFTER UNDO", action_stream, undone_stack);
     }
 
     redo() {
         // Create constants for convenience
         const current_subtask = this.subtasks[this.state["current_subtask"]]
-        const action_stream = current_subtask["actions"]["stream"]
         const undone_stack = current_subtask["actions"]["undone_stack"]
 
         // If the action_steam is empty, then there are no actions to undo
         if (undone_stack.length === 0) return
 
         this.redo_action(undone_stack.pop());
-        
-        console.log("AFTER REDO", action_stream, undone_stack);
     }
 
     delete_annotation(aid, redo_payload = null) {
