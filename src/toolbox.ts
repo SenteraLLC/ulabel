@@ -1,6 +1,6 @@
 import { ULabel, ULabelAnnotation, ULabelSubtask } from "..";
 import { Configuration } from "./configuration";
-import { assign_points_distance_from_line, filter_high, mark_deprecated, filter_points_distance_from_line } from "./annotation_operators";
+import { filter_low, mark_deprecated, get_annotation_confidence , filter_points_distance_from_line } from "./annotation_operators";
 import { ULabelSpatialType } from "..";
 
 const toolboxDividerDiv = "<div class=toolbox-divider></div>"
@@ -933,10 +933,22 @@ export class KeypointSliderItem extends ToolboxItem {
     constructor(ulabel: ULabel, kwargs: {[name: string]: any}) {
         super();
         this.inner_HTML = `<p class="tb-header">Keypoint Slider</p>`;
-        this.name = kwargs.name;
-        this.filter_function = kwargs.filter_function;
-        this.get_confidence = kwargs.confidence_function;
-        this.mark_deprecated = kwargs.mark_deprecated;
+
+        // Use properties in kwargs if kwargs is present
+        if (kwargs !== undefined) {
+            this.name = kwargs.name;
+            this.filter_function = kwargs.filter_function;
+            this.get_confidence = kwargs.confidence_function;
+            this.mark_deprecated = kwargs.mark_deprecated;
+        }
+        // Otherwise use defaults
+        else {
+            this.name = "Keypoint Slider";
+            this.filter_function = filter_low;
+            this.get_confidence = get_annotation_confidence;
+            this.mark_deprecated = mark_deprecated;
+            kwargs = {}
+        }
         this.slider_bar_id = this.name.replaceLowerConcat(" ", "-");
         
         //if the config has a default value override, then use that instead
@@ -1093,23 +1105,44 @@ export class KeypointSliderItem extends ToolboxItem {
 }
 
 export class FilterPointDistanceFromRow extends ToolboxItem {
-    name = "Filter Distance From Row"
-    component_name = "FilterPointDistanceFromRow"
-    default_value = 0.4
+    name: string = "Filter Distance From Row"
+    component_name: string = "FilterPointDistanceFromRow"
+    default_value: number = 300
+    increment_value: number = 5
+    multi_class_mode: boolean = false
     ulabel: ULabel
 
-    constructor(ulabel: ULabel, kwargs: {[name: string]: any}) {
+    constructor(ulabel: ULabel, kwargs: {[name: string]: any} = null) {
         super()
 
         this.ulabel = ulabel
 
+        // If kwargs were passed in then update component properties
+        if (kwargs !== null) {
+            if (typeof kwargs.name === "string") {
+                this.name = kwargs.name
+            }
+            if (typeof kwargs.component_name === "string") {
+                this.component_name = kwargs.component_name
+            }
+            if (typeof kwargs.default_value === "number") {
+                this.default_value = kwargs.default_value
+            }
+            if (typeof kwargs.increment_value === "number") {
+                this.default_value = kwargs.default_value
+            }
+            if (typeof kwargs.multi_class_mode === "boolean") {
+                this.multi_class_mode = kwargs.multi_class_mode
+            }
+        }
+
         // === Create event listeners for this ToolboxItem ===
 
-        // Whenever the user directly updates the slider, update the label to show the correct value
-        $(document).on("input", "#" + this.component_name + "-slider", () => this.updateSliderLabel())
-
-        // Whenever the user directly updates the slider, call the filtering function
-        $(document).on("input", "#" + this.component_name + "-slider", () => filter_points_distance_from_line(this.ulabel))
+        // Whenever the user directly updates the slider, call the filtering function and update the label
+        $(document).on("input", "#" + this.component_name + "-slider", () => {
+            filter_points_distance_from_line(this.ulabel)
+            this.updateSliderLabel()
+        })
 
         // Whenever the user clicks on the increment button, increment the slider value
         $(document).on("click", "#" + this.component_name + "inc-button", () => this.incrementSliderValue())
@@ -1143,7 +1176,7 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
         let slider: HTMLInputElement = document.querySelector("#" + this.component_name + "-slider")
 
         // Update the slider's value
-        slider.value = (slider.valueAsNumber + 1).toString()
+        slider.value = (slider.valueAsNumber + this.increment_value).toString()
 
         // Update the label to be accurate
         this.updateSliderLabel()
@@ -1160,7 +1193,7 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
         let slider: HTMLInputElement = document.querySelector("#" + this.component_name + "-slider")
 
         // Update the slider's value
-        slider.value = (slider.valueAsNumber - 1).toString()
+        slider.value = (slider.valueAsNumber - this.increment_value).toString()
 
         // Update the label to be accurate
         this.updateSliderLabel()
@@ -1176,22 +1209,58 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
      * @returns {String} Component's html
      */
     public get_html(): string {
+
+
+
+
+
         return`
         <div class="filter-row-distance">
             <p class="tb-header">${this.name}</p>
+            <fieldset class="filter-row-distance-options">
+                <legend>Options</legend>
+                <div>
+                    <input
+                        type="checkbox"
+                        id="${this.component_name}-multi-checkbox"
+                        class="filter-row-distance-options-checkbox"
+                    />
+                    <label
+                        for="${this.component_name}-multi-checkbox"
+                        id="${this.component_name}-multi-checkbox-label"
+                        class="filter-row-distance-label">
+                        Multi-Class Filtering
+                    </label>
+                </div>
+                <div>
+                    <input
+                        type="checkbox"
+                        id="${this.component_name}-toggle-range-display-checkbox"
+                        class="filter-row-distance-options-checkbox"
+                    />
+                    <label
+                        for="${this.component_name}-toggle-range-display-checkbox"
+                        id="${this.component_name}-toggle-range-display-checkbox-label"
+                        class="filter-row-distance-label">
+                        Show Filter Range
+                    </label>
+                </div>
+            </fieldset>
             <div class="filter-row-distance-container">
                 <input 
                     type="range"
                     min="0"
                     max="400"
+                    step="${this.increment_value}"
                     id="${this.component_name}-slider" 
-                    class="keypoint-slider" value="${this.default_value * 100}"
+                    class="" 
+                    value="${this.default_value}"
                 />
                 <label 
                     for="${this.component_name}" 
                     id="${this.component_name}-label"
-                    class="keypoint-slider-label">
-                    ${Math.round(this.default_value * 100)}px
+                    class="">
+                    ${Math.round(this.default_value)}px
                 </label>
                 <div class="filter-row-distance-button-holder">
                     <button id="${this.component_name}inc-button">+</button>

@@ -1971,15 +1971,43 @@ div#${prntid}.ulabel-night a.zbutt, div#${prntid}.ulabel-night a.wbutt {
 
 /* ===== FilterPointDistanceFromRow css ===== */
 
+div#${prntid} div.filter-row-distance {
+   margin: 0 2.5rem 0.5rem;
+}
+
 div#${prntid} div.filter-row-distance p.tb-header {
-   margin: 0.5rem 0 0.75rem;
+   margin: 0.75rem 0 0.5rem;
+}
+
+div#${prntid} div.filter-row-distance fieldset.filter-row-distance-options {
+   display: inline-block;
+   position: relative;
+   left: -4rem;
+   margin-bottom: 1rem;
+   font-size: 80%;
+}
+
+div#${prntid} div.filter-row-distance fieldset.filter-row-distance-options * {
+   text-align: left;
+}
+
+div#${prntid} div.filter-row-distance fieldset.filter-row-distance-options input[type="checkbox"] {
+   margin: 0;
+}
+
+div#${prntid} div.filter-row-distance fieldset.filter-row-distance-options label {
+   position: relative;
+   top: -0.2rem;
 }
 
 div#${prntid} div.filter-row-distance div.filter-row-distance-container {
    display: flex;
    justify-content: space-between;
    align-items: center;
-   margin: 0 2.5rem 0.5rem;
+
+}
+div#${prntid} div.filter-row-distance label {
+   font-size: smaller;
 }
 
 div#${prntid} div.filter-row-distance button {
