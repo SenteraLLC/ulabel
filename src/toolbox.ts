@@ -1,4 +1,4 @@
-import { ULabel, ULabelAnnotation, ULabelSubtask } from "..";
+import { ULabel, ULabelAnnotation, ULabelSpatialType, ULabelSubtask } from "..";
 import { Configuration } from "./configuration";
 import { filter_low, mark_deprecated, get_annotation_confidence , filter_points_distance_from_line } from "./annotation_operators";
 
@@ -1212,6 +1212,36 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
         $("#filter-multi-class-mode").toggleClass("ulabel-hidden")
     }
 
+    private findAllPolylineClasses() {
+        // Initialize potential classes
+        let potential_classes: string[] = []
+
+        // Check each subtask to see if polyline is one of its allowed modes
+        for (let subtask of this.ulabel.subtasks) {
+
+            if (subtask.allowed_modes.includes("polyline")) {
+
+                // Loop through all the classes in the subtask 
+                for (let class_idx = 0; class_idx < subtask.classes.length; class_idx++) {
+
+                    // Add them to the potential classes
+                    potential_classes.push(subtask.classes[class_idx].name)
+                }
+            }
+        }
+
+        return potential_classes
+    }
+
+    private createMultiFilterHTML() {
+        // Grab subtasks for convenience
+        const subtasks = this.ulabel.subtasks
+
+        // 
+        for (let idx = 0; idx < subtasks.length; idx++) {
+
+        }
+    }
 
     /**
      * Returns the component's html.

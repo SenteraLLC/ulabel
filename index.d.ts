@@ -49,7 +49,7 @@ export type ULabelSubmitHandler = (submitData: ULabelSubmitData) => void;
 /**
  * @link https://github.com/SenteraLLC/ulabel/blob/main/api_spec.md#subtasks
  */
-export type ULabelSpatialType = 'contour' | 'polygon' | 'bbox' | 'tbar' | 'bbox3' | 'whole-image' | 'global' | 'point';
+export type ULabelSpatialType = 'contour' | 'polygon' | 'polyline' | 'bbox' | 'tbar' | 'bbox3' | 'whole-image' | 'global' | 'point';
 
 export type ULabelSubtask = {
     display_name: string,
