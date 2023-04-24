@@ -1267,6 +1267,10 @@ div#${prntid} div.full_ulabel_container_ {
    font-family: sans-serif;
 }
 
+div#${prntid} .ulabel-hidden {
+   display: none;
+}
+
 div#${prntid} div.annbox_cls, div#${prntid} div.toolbox_cls {
    height: 100%;
 }

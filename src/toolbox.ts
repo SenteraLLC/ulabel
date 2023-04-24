@@ -1,7 +1,6 @@
 import { ULabel, ULabelAnnotation, ULabelSubtask } from "..";
 import { Configuration } from "./configuration";
 import { filter_low, mark_deprecated, get_annotation_confidence , filter_points_distance_from_line } from "./annotation_operators";
-import { ULabelSpatialType } from "..";
 
 const toolboxDividerDiv = "<div class=toolbox-divider></div>"
 
@@ -1109,7 +1108,7 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
     component_name: string = "FilterPointDistanceFromRow"
     default_value: number = 300
     increment_value: number = 5
-    multi_class_mode: boolean = false
+    multi_class_mode: boolean = true
     ulabel: ULabel
 
     constructor(ulabel: ULabel, kwargs: {[name: string]: any} = null) {
@@ -1149,6 +1148,9 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
 
         // Whenever the user clicks on the increment button, decrement the slider value
         $(document).on("click", "#" + this.component_name + "dec-button", () => this.decrementSliderValue())
+
+        // Whenever the multi-class filtering checkbox is clicked, switch the displayed filter mode
+        $(document).on("click", "#" + this.component_name + "-multi-checkbox", () => this.switchFilterMode())
     }
 
     /**
@@ -1202,6 +1204,14 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
         filter_points_distance_from_line(this.ulabel)
     }
 
+    /**
+     * Toggle which filter mode is being displayed and which one is being hidden.
+     */
+    private switchFilterMode() {
+        $("#filter-single-class-mode").toggleClass("ulabel-hidden")
+        $("#filter-multi-class-mode").toggleClass("ulabel-hidden")
+    }
+
 
     /**
      * Returns the component's html.
@@ -1209,11 +1219,6 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
      * @returns {String} Component's html
      */
     public get_html(): string {
-
-
-
-
-
         return`
         <div class="filter-row-distance">
             <p class="tb-header">${this.name}</p>
@@ -1224,6 +1229,7 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
                         type="checkbox"
                         id="${this.component_name}-multi-checkbox"
                         class="filter-row-distance-options-checkbox"
+                        ${this.multi_class_mode ? "checked" : ""}
                     />
                     <label
                         for="${this.component_name}-multi-checkbox"
@@ -1246,25 +1252,52 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
                     </label>
                 </div>
             </fieldset>
-            <div class="filter-row-distance-container">
-                <input 
-                    type="range"
-                    min="0"
-                    max="400"
-                    step="${this.increment_value}"
-                    id="${this.component_name}-slider" 
-                    class="" 
-                    value="${this.default_value}"
-                />
-                <label 
-                    for="${this.component_name}" 
-                    id="${this.component_name}-label"
-                    class="">
-                    ${Math.round(this.default_value)}px
-                </label>
-                <div class="filter-row-distance-button-holder">
-                    <button id="${this.component_name}inc-button">+</button>
-                    <button id="${this.component_name}dec-button">-</button>
+            <div id="filter-single-class-mode" class="${!this.multi_class_mode ? "" : "ulabel-hidden"}">
+                <p>Single-Class</p>
+                <div class="filter-row-distance-container">
+                    <input 
+                        type="range"
+                        min="0"
+                        max="400"
+                        step="${this.increment_value}"
+                        id="${this.component_name}-slider" 
+                        class="" 
+                        value="${this.default_value}"
+                    />
+                    <label 
+                        for="${this.component_name}" 
+                        id="${this.component_name}-label"
+                        class="">
+                        ${Math.round(this.default_value)}px
+                    </label>
+                    <div class="filter-row-distance-button-holder">
+                        <button id="${this.component_name}inc-button">+</button>
+                        <button id="${this.component_name}dec-button">-</button>
+                    </div>
+                </div>
+            </div>
+            <div id="filter-multi-class-mode" class="${this.multi_class_mode ? "" : "ulabel-hidden"}">
+                <p>Multi-Class</p>
+                <div class="filter-row-distance-container">
+                    <input 
+                        type="range"
+                        min="0"
+                        max="400"
+                        step="${this.increment_value}"
+                        id="${this.component_name}-slider" 
+                        class="" 
+                        value="${this.default_value}"
+                    />
+                    <label 
+                        for="${this.component_name}" 
+                        id="${this.component_name}-label"
+                        class="">
+                        ${Math.round(this.default_value)}px
+                    </label>
+                    <div class="filter-row-distance-button-holder">
+                        <button id="${this.component_name}inc-button">+</button>
+                        <button id="${this.component_name}dec-button">-</button>
+                    </div>
                 </div>
             </div>
         </div>
