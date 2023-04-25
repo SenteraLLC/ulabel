@@ -1212,12 +1212,19 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
         $("#filter-multi-class-mode").toggleClass("ulabel-hidden")
     }
 
+    /**
+     * Goes through all subtasks and finds all classes that polylines can be. Then returns a list of them.
+     * 
+     * @returns A list of all classes which can be polylines
+     */
     private findAllPolylineClasses() {
         // Initialize potential classes
         let potential_classes: string[] = []
 
         // Check each subtask to see if polyline is one of its allowed modes
-        for (let subtask of this.ulabel.subtasks) {
+        for (let subtask_key in this.ulabel.subtasks) {
+            // Grab the subtask
+            const subtask = this.ulabel.subtasks[subtask_key]
 
             if (subtask.allowed_modes.includes("polyline")) {
 
@@ -1229,18 +1236,58 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
                 }
             }
         }
-
         return potential_classes
     }
 
+    /**
+     * Gets all classes that polylines can be and creates a distance filter for each class.
+     * 
+     * @returns HTML for the multi-class filtering mode
+     */
     private createMultiFilterHTML() {
-        // Grab subtasks for convenience
-        const subtasks = this.ulabel.subtasks
+        // Get all potential classes
+        const classes = this.findAllPolylineClasses()
 
-        // 
-        for (let idx = 0; idx < subtasks.length; idx++) {
+        let multi_class_html = ``
 
+        // Loop through each class and create their html
+        for (let idx = 0; idx < classes.length; idx++) {
+            // Grab current class for convenience
+            const current_class = classes[idx]
+
+            // Add current classes html to multi_class_html
+            multi_class_html += `
+            <div class="filter-row-distance-container">
+                <label
+                    for="${this.component_name}-${current_class}-slider"
+                    id="${this.component_name}-${current_class}-slider-name-label"
+                    class="filter-row-distance-name-label">
+                    ${current_class}
+                </label>
+                <input 
+                    type="range"
+                    min="0"
+                    max="400"
+                    step="${this.increment_value}"
+                    id="${this.component_name}-${current_class}-slider" 
+                    class="" 
+                    value="${this.default_value}"
+                />
+                <label 
+                    for="${this.component_name}-${current_class}-slider" 
+                    id="${this.component_name}-${current_class}-slider-percent-label"
+                    class="filter-distance-percent-label">
+                    ${Math.round(this.default_value)}px
+                </label>
+                <div class="filter-row-distance-button-holder">
+                    <button id="${this.component_name}inc-button">+</button>
+                    <button id="${this.component_name}dec-button">-</button>
+                </div>
+            </div>
+            `
         }
+
+        return multi_class_html
     }
 
     /**
@@ -1249,6 +1296,11 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
      * @returns {String} Component's html
      */
     public get_html(): string {
+        // Get the multi-class filter html
+        const multi_class_html = this.createMultiFilterHTML()
+
+        console.log("multi_class_html", multi_class_html)
+
         return`
         <div class="filter-row-distance">
             <p class="tb-header">${this.name}</p>
@@ -1307,28 +1359,7 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
                 </div>
             </div>
             <div id="filter-multi-class-mode" class="${this.multi_class_mode ? "" : "ulabel-hidden"}">
-                <p>Multi-Class</p>
-                <div class="filter-row-distance-container">
-                    <input 
-                        type="range"
-                        min="0"
-                        max="400"
-                        step="${this.increment_value}"
-                        id="${this.component_name}-slider" 
-                        class="" 
-                        value="${this.default_value}"
-                    />
-                    <label 
-                        for="${this.component_name}" 
-                        id="${this.component_name}-label"
-                        class="">
-                        ${Math.round(this.default_value)}px
-                    </label>
-                    <div class="filter-row-distance-button-holder">
-                        <button id="${this.component_name}inc-button">+</button>
-                        <button id="${this.component_name}dec-button">-</button>
-                    </div>
-                </div>
+                ` + multi_class_html + `
             </div>
         </div>
         `
