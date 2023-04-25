@@ -214,8 +214,12 @@ export function assign_points_distance_from_line(
  * @param offset Offset of a particular annotation. Used when filter is called while an annotation is being moved
  */
 export function filter_points_distance_from_line(ulabel: ULabel, offset: Offset = null) {
+    return
     // Grab the slider element
     const slider: HTMLInputElement = document.querySelector("#FilterPointDistanceFromRow-slider")
+
+    // Grab the mulit-checkbox to determine what mode the filter is in
+    const checkbox: HTMLInputElement = document.querySelector("#")
 
     // If this function is being called then a FilterPointDistanceFromRow instance should exist in the toolbox.
     // If a FilterPointDistanceFromRow instance exists in the toolbox, then the slider should be defined too.
@@ -277,4 +281,31 @@ export function filter_points_distance_from_line(ulabel: ULabel, offset: Offset 
 
     // Redraw all annotations
     ulabel.redraw_all_annotations(null, null, false);
+}
+
+/**
+     * Goes through all subtasks and finds all classes that polylines can be. Then returns a list of them.
+     * 
+     * @returns A list of all classes which can be polylines
+     */
+export function findAllPolylineClasses(ulabel: ULabel) {
+    // Initialize potential classes
+    let potential_classes: string[] = []
+
+    // Check each subtask to see if polyline is one of its allowed modes
+    for (let subtask_key in ulabel.subtasks) {
+        // Grab the subtask
+        const subtask = ulabel.subtasks[subtask_key]
+
+        if (subtask.allowed_modes.includes("polyline")) {
+
+            // Loop through all the classes in the subtask 
+            for (let class_idx = 0; class_idx < subtask.classes.length; class_idx++) {
+
+                // Add them to the potential classes
+                potential_classes.push(subtask.classes[class_idx].name)
+            }
+        }
+    }
+    return potential_classes
 }
