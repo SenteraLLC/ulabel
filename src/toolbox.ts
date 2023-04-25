@@ -1138,7 +1138,7 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
         // === Create event listeners for this ToolboxItem ===
 
         // Whenever the user directly updates the slider, call the filtering function and update the label
-        $(document).on("input", "#" + this.component_name + "-slider", () => {
+        $(document).on("input", "." + this.component_name + "-slider", () => {
             filter_points_distance_from_line(this.ulabel)
             this.updateSliderLabel()
         })
@@ -1157,17 +1157,21 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
      * Updates this component's slider's label based on the slider's current value.
      */
     private updateSliderLabel() {
-        // Grab the slider element
-        const slider: HTMLInputElement = document.querySelector("#" + this.component_name + "-slider")
 
-        // Grab the current value of the slider element
-        const slider_value = slider.value
+        const sliders: NodeListOf<HTMLInputElement> = document.querySelectorAll(`.${this.component_name}-slider`)
 
-        // Grab the label element
-        const filter_label: HTMLLabelElement = document.querySelector("#" + this.component_name + "-label")
+        // Go through every slider
+        for (let idx = 0; idx < sliders.length; idx++) {
+            // Grab the slider, its value, and its id
+            const slider: HTMLInputElement = sliders[idx]
+            const slider_value: string = slider.value
+            const slider_id: string = slider.id
 
-        // Update the label's inner text to the value of the slider
-        filter_label.innerText = slider_value + "px"
+            // Grab the label element that is for the current slider and has the class filter-distance-percent-label
+            let label: HTMLLabelElement = document.querySelector(`label[for="${slider_id}"].filter-distance-percent-label`)
+
+            label.innerText = slider_value + "px"
+        }
     }
 
     /**
@@ -1257,25 +1261,25 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
 
             // Add current classes html to multi_class_html
             multi_class_html += `
+            <label
+                for="${this.component_name}-${current_class}-slider"
+                id="${this.component_name}-${current_class}-slider-name-label"
+                class="filter-row-distance-name-label">
+                ${current_class}
+            </label>
             <div class="filter-row-distance-container">
-                <label
-                    for="${this.component_name}-${current_class}-slider"
-                    id="${this.component_name}-${current_class}-slider-name-label"
-                    class="filter-row-distance-name-label">
-                    ${current_class}
-                </label>
                 <input 
                     type="range"
                     min="0"
                     max="400"
                     step="${this.increment_value}"
                     id="${this.component_name}-${current_class}-slider" 
-                    class="" 
+                    class="${this.component_name}-slider" 
                     value="${this.default_value}"
                 />
                 <label 
                     for="${this.component_name}-${current_class}-slider" 
-                    id="${this.component_name}-${current_class}-slider-percent-label"
+                    id="${this.component_name}-${current_class}-slider-px-label"
                     class="filter-distance-percent-label">
                     ${Math.round(this.default_value)}px
                 </label>
@@ -1298,8 +1302,6 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
     public get_html(): string {
         // Get the multi-class filter html
         const multi_class_html = this.createMultiFilterHTML()
-
-        console.log("multi_class_html", multi_class_html)
 
         return`
         <div class="filter-row-distance">
@@ -1335,21 +1337,20 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
                 </div>
             </fieldset>
             <div id="filter-single-class-mode" class="${!this.multi_class_mode ? "" : "ulabel-hidden"}">
-                <p>Single-Class</p>
                 <div class="filter-row-distance-container">
                     <input 
                         type="range"
                         min="0"
                         max="400"
                         step="${this.increment_value}"
-                        id="${this.component_name}-slider" 
-                        class="" 
+                        id="${this.component_name}-single-mode-slider" 
+                        class="${this.component_name}-slider" 
                         value="${this.default_value}"
                     />
                     <label 
-                        for="${this.component_name}" 
-                        id="${this.component_name}-label"
-                        class="">
+                        for="${this.component_name}-single-mode-slider" 
+                        id="${this.component_name}-single-mode-label"
+                        class="filter-distance-percent-label">
                         ${Math.round(this.default_value)}px
                     </label>
                     <div class="filter-row-distance-button-holder">

@@ -1976,7 +1976,7 @@ div#${prntid}.ulabel-night a.zbutt, div#${prntid}.ulabel-night a.wbutt {
 /* ===== FilterPointDistanceFromRow css ===== */
 
 div#${prntid} div.filter-row-distance {
-   margin: 0 2.5rem 0.5rem;
+   text-align: left;
 }
 
 div#${prntid} div.filter-row-distance p.tb-header {
@@ -1986,8 +1986,8 @@ div#${prntid} div.filter-row-distance p.tb-header {
 div#${prntid} div.filter-row-distance fieldset.filter-row-distance-options {
    display: inline-block;
    position: relative;
-   left: -4rem;
-   margin-bottom: 1rem;
+   left: 1rem;
+   margin-bottom: 0.25rem;
    font-size: 80%;
 }
 
@@ -2008,8 +2008,9 @@ div#${prntid} div.filter-row-distance div.filter-row-distance-container {
    display: flex;
    justify-content: space-between;
    align-items: center;
-
+   margin: 0 2rem 0.5rem;
 }
+
 div#${prntid} div.filter-row-distance label {
    font-size: smaller;
 }
