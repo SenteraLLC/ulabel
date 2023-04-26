@@ -1,6 +1,12 @@
 import { ULabel, ULabelAnnotation, ULabelSubtask } from "..";
 import { Configuration } from "./configuration";
-import { filter_low, mark_deprecated, get_annotation_confidence, findAllPolylineClasses, filter_points_distance_from_line } from "./annotation_operators";
+import { 
+    get_annotation_confidence, 
+    value_is_lower_than_filter, 
+    mark_deprecated, 
+    filter_points_distance_from_line,
+    findAllPolylineClasses
+} from "./annotation_operators";
 
 const toolboxDividerDiv = "<div class=toolbox-divider></div>"
 
@@ -943,7 +949,7 @@ export class KeypointSliderItem extends ToolboxItem {
         // Otherwise use defaults
         else {
             this.name = "Keypoint Slider";
-            this.filter_function = filter_low;
+            this.filter_function = value_is_lower_than_filter;
             this.get_confidence = get_annotation_confidence;
             this.mark_deprecated = mark_deprecated;
             kwargs = {}
@@ -1146,7 +1152,7 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
         // Whenever the user clicks on the increment button, increment the slider value
         $(document).on("click", "#" + this.component_name + "inc-button", () => this.incrementSliderValue())
 
-        // Whenever the user clicks on the increment button, decrement the slider value
+        // Whenever the user clicks on the decrement button, decrement the slider value
         $(document).on("click", "#" + this.component_name + "dec-button", () => this.decrementSliderValue())
 
         // Whenever the multi-class filtering checkbox is clicked, switch the displayed filter mode

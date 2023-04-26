@@ -1,5 +1,5 @@
 import { ModeSelectionToolboxItem, ZoomPanToolboxItem, AnnotationIDToolboxItem, ClassCounterToolboxItem, AnnotationResizeItem, RecolorActiveItem, KeypointSliderItem, SubmitButtons, FilterPointDistanceFromRow } from "./toolbox"
-import { get_annotation_confidence, mark_deprecated, filter_low } from "./annotation_operators";
+import { get_annotation_confidence, mark_deprecated, value_is_lower_than_filter } from "./annotation_operators";
 
 export enum AllowedToolboxItem {
     ModeSelect,         // 0
@@ -36,7 +36,7 @@ export class Configuration {
         AllowedToolboxItem.ClassCounter,
         [AllowedToolboxItem.KeypointSlider, {
             "name": "Filter Low Confidence",
-            "filter_function": filter_low, 
+            "filter_function": value_is_lower_than_filter, 
             "confidence_function": get_annotation_confidence, 
             "mark_deprecated": mark_deprecated,
             "default_value": 0.05,
