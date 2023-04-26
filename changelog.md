@@ -6,6 +6,10 @@ All notable changes to this project will be documented here.
 
 Nothing yet.
 
+## [0.6.1] - April 21st, 2023
+
+- Added the `FilterPointDistanceFromRow` `ToolboxItem`.
+
 ## [0.6.0] - Febuary 1st, 2023
 
 - Massive update with lots of under the hood changes.

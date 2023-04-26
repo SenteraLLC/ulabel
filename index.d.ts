@@ -1,5 +1,12 @@
 import { Toolbox } from "./src/toolbox";
 
+export type Offset = {
+    id: string;
+    diffX: number;
+    diffY: number;
+    diffZ?: number;
+}
+
 export type ULabelAnnotation = {
     id: string;
     new: boolean;
@@ -10,6 +17,7 @@ export type ULabelAnnotation = {
      */
     created_at: string;
     deprecated: boolean;
+    human_deprecated: boolean;
     spatial_type: ULabelSpatialType;
     spatial_payload: [number, number][];
     class_ids: number[];
@@ -29,6 +37,7 @@ export type ULabelAnnotation = {
     frame: number;
     text_payload: string;
     annotation_meta: any;
+    distance_from_any_line?: number;
 };
 export type ULabelAnnotations = { [key: string]: ULabelAnnotation[] };
 export type ULabelSubmitData = {

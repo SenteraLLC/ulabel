@@ -7,8 +7,9 @@ import { ULabelSubtask } from '../build/subtask';
 import { GeometricUtils } from '../build/geometric_utils';
 import { get_annotation_confidence } from '../build/annotation_operators';
 import { apply_gradient } from '../build/drawing_utilities'
-import { Configuration } from '../build/configuration';
+import { Configuration, AllowedToolboxItem } from '../build/configuration';
 import { HTMLBuilder } from '../build/html_builder';
+import { filter_points_distance_from_line } from "../build/annotation_operators";
 import $ from 'jquery';
 const jQuery = $;
 window.$ = window.jQuery = require('jquery');
@@ -818,10 +819,6 @@ export class ULabel {
         config_data = null,
         toolbox_order = null
     ) {
-        console.log(this)
-        console.log(toolbox_order, "Toolbox order", task_meta)
-
-
         // TODO 
         // Allow for importing spacing data -- a measure tool would be nice too
         // Much of this is hardcoded defaults, 
@@ -2193,27 +2190,37 @@ export class ULabel {
     // ================= Annotation Utilities =================
 
     undo() {
-        if (!this.subtasks[this.state["current_subtask"]]["state"]["idd_thumbnail"]) {
+        // Create constants for convenience
+        const current_subtask = this.subtasks[this.state["current_subtask"]]
+        const action_stream = current_subtask["actions"]["stream"]
+        const undone_stack = current_subtask["actions"]["undone_stack"]
+
+        // If the action_steam is empty, then there are no actions to undo
+        if (action_stream.length === 0) return
+
+        if (!current_subtask["state"]["idd_thumbnail"]) {
             this.hide_id_dialog();
         }
-        if (this.subtasks[this.state["current_subtask"]]["actions"]["stream"].length > 0) {
-            if (this.subtasks[this.state["current_subtask"]]["actions"]["stream"][this.subtasks[this.state["current_subtask"]]["actions"]["stream"].length - 1].redo_payload.finished === false) {
-                this.finish_action(this.subtasks[this.state["current_subtask"]]["actions"]["stream"][this.subtasks[this.state["current_subtask"]]["actions"]["stream"].length - 1]);
-            }
-            this.subtasks[this.state["current_subtask"]]["actions"]["undone_stack"].push(this.subtasks[this.state["current_subtask"]]["actions"]["stream"].pop());
-            let newact = this.undo_action(this.subtasks[this.state["current_subtask"]]["actions"]["undone_stack"][this.subtasks[this.state["current_subtask"]]["actions"]["undone_stack"].length - 1]);
-            if (newact != null) {
-                this.subtasks[this.state["current_subtask"]]["actions"]["undone_stack"][this.subtasks[this.state["current_subtask"]]["actions"]["undone_stack"].length - 1] = newact
-            }
+        
+        if (action_stream[action_stream.length - 1].redo_payload.finished === false) {
+            this.finish_action(action_stream[action_stream.length - 1]);
         }
-        // console.log("AFTER UNDO", this.subtasks[this.state["current_subtask"]]["actions"]["stream"], this.subtasks[this.state["current_subtask"]]["actions"]["undone_stack"]);
+        undone_stack.push(action_stream.pop());
+        let newact = this.undo_action(undone_stack[undone_stack.length - 1]);
+        if (newact != null) {
+            undone_stack[undone_stack.length - 1] = newact
+        }
     }
 
     redo() {
-        if (this.subtasks[this.state["current_subtask"]]["actions"]["undone_stack"].length > 0) {
-            this.redo_action(this.subtasks[this.state["current_subtask"]]["actions"]["undone_stack"].pop());
-        }
-        // console.log("AFTER REDO", this.subtasks[this.state["current_subtask"]]["actions"]["stream"], this.subtasks[this.state["current_subtask"]]["actions"]["undone_stack"]);
+        // Create constants for convenience
+        const current_subtask = this.subtasks[this.state["current_subtask"]]
+        const undone_stack = current_subtask["actions"]["undone_stack"]
+
+        // If the action_steam is empty, then there are no actions to undo
+        if (undone_stack.length === 0) return
+
+        this.redo_action(undone_stack.pop());
     }
 
     delete_annotation(aid, redo_payload = null) {
@@ -3120,55 +3127,54 @@ export class ULabel {
     }
 
     edit_annotation(mouse_event) {
-        // Convenience
-        const actid = this.subtasks[this.state["current_subtask"]]["state"]["active_id"];
+        // Convenience and readability
+        const current_subtask = this.subtasks[this.state["current_subtask"]]
+        const active_id = current_subtask["state"]["active_id"];
         // TODO big performance gains with buffered canvasses
-        if (actid && (actid !== null)) {
-            var ms_loc = [
+        if (active_id && (active_id !== null)) {
+            const mouse_location = [
                 this.get_global_mouse_x(mouse_event),
                 this.get_global_mouse_y(mouse_event)
             ];
             // Clicks are handled elsewhere
             // TODO(3d)
-            switch (this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_type"]) {
+            switch (current_subtask["annotations"]["access"][active_id]["spatial_type"]) {
                 case "bbox":
-                    this.set_with_access_string(actid, this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"]["access"], ms_loc);
-                    this.rebuild_containing_box(actid);
+                case "tbar":
+                case "polygon":
+                    this.set_with_access_string(active_id, current_subtask["state"]["edit_candidate"]["access"], mouse_location);
+                    this.rebuild_containing_box(active_id);
                     this.redraw_all_annotations(this.state["current_subtask"], null, true); // tobuffer
-                    this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"]["point"] = ms_loc;
-                    this.show_edit_suggestion(this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"], true);
-                    this.show_global_edit_suggestion(this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"]["annid"]);
+                    current_subtask["state"]["edit_candidate"]["point"] = mouse_location;
+                    this.show_edit_suggestion(current_subtask["state"]["edit_candidate"], true);
+                    this.show_global_edit_suggestion(current_subtask["state"]["edit_candidate"]["annid"]);
                     break;
                 case "bbox3":
                     // TODO(new3d) Will not always want to set 3rd val -- editing is possible within an intermediate frame or frames
-                    this.set_with_access_string(actid, this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"]["access"], [ms_loc[0], ms_loc[1], this.state["current_frame"]]);
-                    this.rebuild_containing_box(actid);
+                    this.set_with_access_string(active_id, current_subtask["state"]["edit_candidate"]["access"], [mouse_location[0], mouse_location[1], this.state["current_frame"]]);
+                    this.rebuild_containing_box(active_id);
                     this.redraw_all_annotations(null, null, true); // tobuffer
-                    this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"]["point"] = ms_loc;
-                    this.show_edit_suggestion(this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"], true);
-                    this.show_global_edit_suggestion(this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"]["annid"]);
+                    current_subtask["state"]["edit_candidate"]["point"] = mouse_location;
+                    this.show_edit_suggestion(current_subtask["state"]["edit_candidate"], true);
+                    this.show_global_edit_suggestion(current_subtask["state"]["edit_candidate"]["annid"]);
                     break;
-                case "polygon":
                 case "polyline":
-                    this.set_with_access_string(actid, this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"]["access"], ms_loc);
-                    this.rebuild_containing_box(actid);
+                    this.set_with_access_string(active_id, current_subtask["state"]["edit_candidate"]["access"], mouse_location);
+                    this.rebuild_containing_box(active_id);
                     this.redraw_all_annotations(this.state["current_subtask"], null, true); // tobuffer
-                    this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"]["point"] = ms_loc;
-                    this.show_edit_suggestion(this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"], true);
-                    this.show_global_edit_suggestion(this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"]["annid"]);
-                    // this.suggest_edits(mouse_event);
+                    current_subtask["state"]["edit_candidate"]["point"] = mouse_location;
+                    this.show_edit_suggestion(current_subtask["state"]["edit_candidate"], true);
+                    this.show_global_edit_suggestion(current_subtask["state"]["edit_candidate"]["annid"]);
+                    
+                    // If the FilterDistance ToolboxItem is present, filter annotations on annotation edit
+                    if (this.toolbox_order.includes(AllowedToolboxItem.FilterDistance)) {
+                        // Currently only supported by polyline
+                        filter_points_distance_from_line(this)
+                    }
                     break;
                 case "contour":
                     // TODO contour editing
                     this.raise_error("Annotation mode is not currently editable", ULabel.elvl_info);
-                    break;
-                case "tbar":
-                    this.set_with_access_string(actid, this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"]["access"], ms_loc);
-                    this.rebuild_containing_box(actid);
-                    this.redraw_all_annotations(this.state["current_subtask"], null, true); // tobuffer
-                    this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"]["point"] = ms_loc;
-                    this.show_edit_suggestion(this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"], true);
-                    this.show_global_edit_suggestion(this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"]["annid"]);
                     break;
                 default:
                     this.raise_error("Annotation mode is not understood", ULabel.elvl_info);
@@ -3373,24 +3379,6 @@ export class ULabel {
         this.move_annotation(mouse_event);
     }
 
-    move_annotation(mouse_event) {
-        // Convenience
-        const actid = this.subtasks[this.state["current_subtask"]]["state"]["active_id"];
-        // TODO big performance gains with buffered canvasses
-        if (actid && (actid !== null)) {
-            let offset = {
-                "id": this.subtasks[this.state["current_subtask"]]["state"]["move_candidate"]["annid"],
-                "diffX": (mouse_event.clientX - this.drag_state["move"]["mouse_start"][0]) / this.state["zoom_val"],
-                "diffY": (mouse_event.clientY - this.drag_state["move"]["mouse_start"][1]) / this.state["zoom_val"],
-                "diffZ": this.state["current_frame"] - this.drag_state["move"]["mouse_start"][2]
-            };
-            this.redraw_all_annotations(null, offset, true); // tobuffer
-            this.show_global_edit_suggestion(this.subtasks[this.state["current_subtask"]]["state"]["move_candidate"]["annid"], offset); // TODO handle offset
-            this.reposition_dialogs();
-            return;
-        }
-    }
-
     finish_annotation(mouse_event, redo_payload = null) {
         // Convenience
         let actid = null;
@@ -3564,6 +3552,36 @@ export class ULabel {
         // Set mode to no active annotation
         this.subtasks[this.state["current_subtask"]]["state"]["active_id"] = null;
         this.subtasks[this.state["current_subtask"]]["state"]["is_in_edit"] = false;
+    }
+
+    move_annotation(mouse_event) {
+        // Convenience
+        const current_subtask = this.subtasks[this.state["current_subtask"]]
+        const active_id = current_subtask["state"]["active_id"];
+        const active_annotation = current_subtask["annotations"]["access"][active_id]
+
+        // TODO big performance gains with buffered canvasses
+        if (active_id && (active_id !== null)) {
+            let offset = {
+                "id": current_subtask["state"]["move_candidate"]["annid"],
+                "diffX": (mouse_event.clientX - this.drag_state["move"]["mouse_start"][0]) / this.state["zoom_val"],
+                "diffY": (mouse_event.clientY - this.drag_state["move"]["mouse_start"][1]) / this.state["zoom_val"],
+                "diffZ": this.state["current_frame"] - this.drag_state["move"]["mouse_start"][2]
+            };
+
+            // Check if the FilterDistance ToolboxItem is in this ULabel instance
+            // And that the current annotations is of type polyline
+            if (
+                this.toolbox_order.includes(AllowedToolboxItem.FilterDistance) &&
+                active_annotation["spatial_type"] === "polyline"
+            ) {
+                filter_points_distance_from_line(this, offset);
+            }
+            this.redraw_all_annotations(null, offset, true); // tobuffer
+            this.show_global_edit_suggestion(current_subtask["state"]["move_candidate"]["annid"], offset); // TODO handle offset
+            this.reposition_dialogs();
+            return;
+        }
     }
 
     finish_move(mouse_event) {

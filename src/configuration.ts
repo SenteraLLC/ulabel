@@ -1,7 +1,7 @@
-import { ModeSelectionToolboxItem, ZoomPanToolboxItem, AnnotationIDToolboxItem, ClassCounterToolboxItem, AnnotationResizeItem, RecolorActiveItem, KeypointSliderItem, SubmitButtons } from "./toolbox"
-import { get_annotation_confidence, mark_deprecated, filter_low } from "./annotation_operators";
+import { ModeSelectionToolboxItem, ZoomPanToolboxItem, AnnotationIDToolboxItem, ClassCounterToolboxItem, AnnotationResizeItem, RecolorActiveItem, KeypointSliderItem, SubmitButtons, FilterPointDistanceFromRow } from "./toolbox"
+import { get_annotation_confidence, mark_deprecated, value_is_lower_than_filter } from "./annotation_operators";
 
-enum AllowedToolboxItem {
+export enum AllowedToolboxItem {
     ModeSelect,         // 0
     ZoomPan,            // 1
     AnnotationResize,   // 2
@@ -9,7 +9,8 @@ enum AllowedToolboxItem {
     RecolorActive,      // 4
     ClassCounter,       // 5
     KeypointSlider,     // 6
-    SubmitButtons       // 7
+    SubmitButtons,      // 7
+    FilterDistance      // 8
 }
 
 export class Configuration {
@@ -21,7 +22,8 @@ export class Configuration {
         [AllowedToolboxItem.RecolorActive, RecolorActiveItem],
         [AllowedToolboxItem.ClassCounter, ClassCounterToolboxItem],
         [AllowedToolboxItem.KeypointSlider, KeypointSliderItem],
-        [AllowedToolboxItem.SubmitButtons, SubmitButtons]
+        [AllowedToolboxItem.SubmitButtons, SubmitButtons],
+        [AllowedToolboxItem.FilterDistance, FilterPointDistanceFromRow]
     ]);
     
     //Change the order of the toolbox items here to change the order they show up in the toolbox
@@ -34,7 +36,7 @@ export class Configuration {
         AllowedToolboxItem.ClassCounter,
         [AllowedToolboxItem.KeypointSlider, {
             "name": "Filter Low Confidence",
-            "filter_function": filter_low, 
+            "filter_function": value_is_lower_than_filter, 
             "confidence_function": get_annotation_confidence, 
             "mark_deprecated": mark_deprecated,
             "default_value": 0.05,

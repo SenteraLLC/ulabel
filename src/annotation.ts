@@ -16,20 +16,24 @@ type ULabelContainingBox = {
 
 export class ULabelAnnotation {
     constructor(
-        public id?: string,
+        // Required properties
+        public annotation_meta: any = null,
+        public deprecated: boolean = false,
+        public human_deprecated: boolean = null,
         public is_new: boolean = true,
         public parent_id: string = null,
-        public created_by?: string,
-        public deprecated: boolean = false,
-        public spatial_type?: ULabelSpatialType,
-        public spatial_payload?: ULabelSpatialPayload,
-        public classification_payloads?: [ULabelClassificationPayload],
-        public line_size?: number,
-        public containing_box?: ULabelContainingBox,
-        public frame?: number,
         public text_payload: string = "",
-        public annotation_meta: any = null,
-        public human_deprecated: boolean = null,
+
+        // Optional properties
+        public classification_payloads?: [ULabelClassificationPayload],
+        public containing_box?: ULabelContainingBox,
+        public created_by?: string,
+        public distance_from_any_line?: number,
+        public frame?: number,
+        public line_size?: number,
+        public id?: string,
+        public spatial_payload?: ULabelSpatialPayload,
+        public spatial_type?: ULabelSpatialType
     ) {}
 
     public ensure_compatible_classification_payloads(ulabel_class_ids: [number]) {

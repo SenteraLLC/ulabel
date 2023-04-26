@@ -1,6 +1,7 @@
-import { ULabel, ULabelSubtask } from "..";
+import { ULabel, ULabelAnnotation, ULabelSubtask } from "..";
 import { Configuration } from "./configuration";
-import { ULabelAnnotation } from "./annotation";
+import { assign_points_distance_from_line, value_is_higher_than_filter, mark_deprecated, filter_points_distance_from_line } from "./annotation_operators";
+import { ULabelSpatialType } from "..";
 
 const toolboxDividerDiv = "<div class=toolbox-divider></div>"
 
@@ -156,8 +157,7 @@ export class ToolboxTab {
             sel = " sel";
             val = 100;
         }
-        console.log(subtask.display_name)
-        console.log(subtask)
+        console.log(subtask.display_name, subtask)
         this.html = `
         <div class="tb-st-tab${sel}">
             <a${href} id="tb-st-switch--${subtask_key}" class="tb-st-switch">${this.subtask.display_name}</a><!--
@@ -1089,6 +1089,117 @@ export class KeypointSliderItem extends ToolboxItem {
                 </span>
             </div>
         </div>`
+    }
+}
+
+export class FilterPointDistanceFromRow extends ToolboxItem {
+    name = "Filter Distance From Row"
+    component_name = "FilterPointDistanceFromRow"
+    default_value = 0.4
+    ulabel: ULabel
+
+    constructor(ulabel: ULabel, kwargs: {[name: string]: any}) {
+        super()
+
+        this.ulabel = ulabel
+
+        // === Create event listeners for this ToolboxItem ===
+
+        // Whenever the user directly updates the slider, update the label to show the correct value
+        $(document).on("input", "#" + this.component_name + "-slider", () => this.updateSliderLabel())
+
+        // Whenever the user directly updates the slider, call the filtering function
+        $(document).on("input", "#" + this.component_name + "-slider", () => filter_points_distance_from_line(this.ulabel))
+
+        // Whenever the user clicks on the increment button, increment the slider value
+        $(document).on("click", "#" + this.component_name + "inc-button", () => this.incrementSliderValue())
+
+        // Whenever the user clicks on the decrement button, decrement the slider value
+        $(document).on("click", "#" + this.component_name + "dec-button", () => this.decrementSliderValue())
+    }
+
+    /**
+     * Updates this component's slider's label based on the slider's current value.
+     */
+    private updateSliderLabel() {
+        // Grab the slider element
+        const slider: HTMLInputElement = document.querySelector("#" + this.component_name + "-slider")
+
+        // Grab the current value of the slider element
+        const slider_value = slider.value
+
+        // Grab the label element
+        const filter_label: HTMLLabelElement = document.querySelector("#" + this.component_name + "-label")
+
+        // Update the label's inner text to the value of the slider
+        filter_label.innerText = slider_value + "px"
+    }
+
+    /**
+     * Increments this component's slider by one.
+     */
+    private incrementSliderValue() {
+        // Grab the slider element
+        let slider: HTMLInputElement = document.querySelector("#" + this.component_name + "-slider")
+
+        // Update the slider's value
+        slider.value = (slider.valueAsNumber + 1).toString()
+
+        // Update the label to be accurate
+        this.updateSliderLabel()
+
+        // Call the filter function
+        filter_points_distance_from_line(this.ulabel)
+    }
+
+    /**
+     * Decrements this component's slider by one.
+     */
+    private decrementSliderValue() {
+        // Grab the slider element
+        let slider: HTMLInputElement = document.querySelector("#" + this.component_name + "-slider")
+
+        // Update the slider's value
+        slider.value = (slider.valueAsNumber - 1).toString()
+
+        // Update the label to be accurate
+        this.updateSliderLabel()
+
+        // Call the filter function
+        filter_points_distance_from_line(this.ulabel)
+    }
+
+
+    /**
+     * Returns the component's html.
+     * 
+     * @returns {String} Component's html
+     */
+    public get_html(): string {
+        return`
+        <div class="filter-row-distance">
+            <p class="tb-header">${this.name}</p>
+            <div class="filter-row-distance-container">
+                <input 
+                    type="range"
+                    min="0"
+                    max="400"
+                    id="${this.component_name}-slider" 
+                    class="keypoint-slider" value="${this.default_value * 100}"
+                />
+                <label 
+                    for="${this.component_name}" 
+                    id="${this.component_name}-label"
+                    class="keypoint-slider-label">
+                    ${Math.round(this.default_value * 100)}px
+                </label>
+                <div class="filter-row-distance-button-holder">
+                    <button id="${this.component_name}inc-button">+</button>
+                    <button id="${this.component_name}dec-button">-</button>
+                </div>
+            </div>
+        </div>
+        `
     }
 }
 

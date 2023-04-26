@@ -1969,6 +1969,34 @@ div#${prntid}.ulabel-night a.zbutt, div#${prntid}.ulabel-night a.wbutt {
    color: black !important;
 }
 
+/* ===== FilterPointDistanceFromRow css ===== */
+
+div#${prntid} div.filter-row-distance p.tb-header {
+   margin: 0.5rem 0 0.75rem;
+}
+
+div#${prntid} div.filter-row-distance div.filter-row-distance-container {
+   display: flex;
+   justify-content: space-between;
+   align-items: center;
+   margin: 0 2.5rem 0.5rem;
+}
+
+div#${prntid} div.filter-row-distance button {
+   width: 20px;
+   height: 20px;
+   padding: 0;
+   border: 1px solid black;
+   border-radius: 50%;
+}
+
+div#${prntid}.ulabel-night div.filter-row-distance button {
+   border: 1px solid gray;
+}
+
+div#${prntid} div.filter-row-distance button:hover {
+   background-color: #87CEEB
+}
 
 div#${prntid} div.htbmain {
    position: relative;
