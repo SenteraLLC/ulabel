@@ -34,8 +34,7 @@ export function mark_deprecated(annotation: any, deprecated: boolean) {
  * @param filter What the value is compared against
  */
 export function filter_low(value: number, filter: number) {
-    if (value < filter) return true
-    return false
+    return value < filter
 }
 
 /**
@@ -45,8 +44,7 @@ export function filter_low(value: number, filter: number) {
  * @param filter What the value is compared against
  */
 export function filter_high(value: number, filter: number) {
-    if (value > filter) return true
-    return false
+    return value > filter
 }
 
 /**
