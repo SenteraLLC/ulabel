@@ -33,7 +33,7 @@ export function mark_deprecated(annotation: any, deprecated: boolean) {
  * @param value Value to be compaired against the filter
  * @param filter What the value is compared against
  */
-export function filter_low(value: number, filter: number) {
+export function value_is_lower_than_filter(value: number, filter: number) {
     return value < filter
 }
 
@@ -43,8 +43,30 @@ export function filter_low(value: number, filter: number) {
  * @param value Value to be compaired against the filter
  * @param filter What the value is compared against
  */
-export function filter_high(value: number, filter: number) {
+export function value_is_higher_than_filter(value: number, filter: number) {
     return value > filter
+}
+
+/**
+ * Takes in a list of annotations and either deprecates or undeprecates them based on if their property is higher than the 
+ * filter value.
+ * 
+ * @param annotations List of annotations to be compared against the filter value
+ * @param property The property on the annotation to be compared against the filter. e.g. "confidence"
+ * @param filter The value all filters will be compared against
+ */
+export function filter_high(annotations: ULabelAnnotation[], property: string, filter: number) {
+    // Loop through each point annotation and deprecate them if they don't pass the filter
+    annotations.forEach(function(annotation: ULabelAnnotation) {
+        // Make sure the annotation is not a human deprecated one
+        if (!annotation.human_deprecated) {
+            // Run the annotation through the filter with the passed in property
+            const should_deprecate: boolean = value_is_higher_than_filter(annotation[property], filter)
+
+            // Mark the point deprecated
+            mark_deprecated(annotation, should_deprecate)
+        }
+    })
 }
 
 /**
@@ -262,16 +284,7 @@ export function filter_points_distance_from_line(ulabel: ULabel, offset: Offset 
     assign_points_distance_from_line(point_annotations, line_annotations, offset)
 
     // Loop through each point annotation and deprecate them if they don't pass the filter
-    point_annotations.forEach(function(annotation: ULabelAnnotation) {
-        // Make sure the annotation is not a human deprecated one
-        if (!annotation.human_deprecated) {
-            // Run the annotation through the filter
-            const should_deprecate: boolean = filter_high(annotation.distance_from_any_line, filter_value)
-
-            // Mark the point deprecated
-            mark_deprecated(annotation, should_deprecate)
-        }
-    })
+    filter_high(point_annotations, "distance_from_any_line", filter_value)
 
     // Redraw all annotations
     ulabel.redraw_all_annotations(null, null, false);

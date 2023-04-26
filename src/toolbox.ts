@@ -1,6 +1,6 @@
 import { ULabel, ULabelAnnotation, ULabelSubtask } from "..";
 import { Configuration } from "./configuration";
-import { assign_points_distance_from_line, filter_high, mark_deprecated, filter_points_distance_from_line } from "./annotation_operators";
+import { assign_points_distance_from_line, value_is_higher_than_filter, mark_deprecated, filter_points_distance_from_line } from "./annotation_operators";
 import { ULabelSpatialType } from "..";
 
 const toolboxDividerDiv = "<div class=toolbox-divider></div>"
@@ -1114,7 +1114,7 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
         // Whenever the user clicks on the increment button, increment the slider value
         $(document).on("click", "#" + this.component_name + "inc-button", () => this.incrementSliderValue())
 
-        // Whenever the user clicks on the increment button, decrement the slider value
+        // Whenever the user clicks on the decrement button, decrement the slider value
         $(document).on("click", "#" + this.component_name + "dec-button", () => this.decrementSliderValue())
     }
 
