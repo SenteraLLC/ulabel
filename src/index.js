@@ -2307,6 +2307,11 @@ export class ULabel {
                 new_id: new_id
             }
         }, redoing);
+
+        // If the annotation is a polyline and the filter distance toolboxitem is present, then filter annotations on annotation deletion
+        if (annotations[annotation_id].spatial_type === "polyline" && this.toolbox_order.includes(AllowedToolboxItem.FilterDistance)) {
+            filter_points_distance_from_line(this)
+        }
     }
 
     delete_annotation__undo(undo_payload) {
@@ -2324,6 +2329,11 @@ export class ULabel {
         }
         this.redraw_all_annotations(this.state["current_subtask"]);
         this.suggest_edits(this.state["last_move"]);
+
+        // If the filter distance toolboxitem is present, filter annotations on annotation deletion
+        if (this.toolbox_order.includes(AllowedToolboxItem.FilterDistance)) {
+            filter_points_distance_from_line(this)
+        }
     }
 
     delete_annotation__redo(redo_payload) {
