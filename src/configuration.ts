@@ -45,6 +45,7 @@ export class Configuration {
                 "decrement": "1"
             }
         }],
+        AllowedToolboxItem.FilterDistance,
         AllowedToolboxItem.SubmitButtons,
     ]
 
