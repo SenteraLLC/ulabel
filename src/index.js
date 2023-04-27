@@ -876,7 +876,12 @@ export class ULabel {
             this.config.modify_config(config_data)
         }
 
-        this.toolbox_order = toolbox_order;
+        if (toolbox_order == null) {
+            this.toolbox_order = this.config.default_toolbox_item_order;
+        }
+        else {
+            this.toolbox_order = toolbox_order;
+        }
 
 
         // Useful for the efficient redraw of nonspatial annotations
