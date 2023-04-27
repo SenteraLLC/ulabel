@@ -2223,21 +2223,26 @@ export class ULabel {
         this.redo_action(undone_stack.pop());
     }
 
-    delete_annotation(aid, redo_payload = null) {
-        let annid = aid;
-        let old_id = annid;
+    delete_annotation(annotation_id, redo_payload = null) {
+
+        let old_id = annotation_id;
         let new_id = old_id;
         let redoing = false;
+
+        // Grab constants for convenience
+        const current_subtask = this.subtasks[this.state["current_subtask"]]
+        const annotations = current_subtask["annotations"]["access"]
+
         if (redo_payload != null) {
             redoing = true;
-            annid = redo_payload.annid;
+            annotation_id = redo_payload.annid;
             old_id = redo_payload.old_id;
         }
 
-        let annotation_mode = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][old_id]["spatial_type"];
+        let annotation_mode = annotations[old_id]["spatial_type"];
 
         let deprecate_old = false;
-        if (!this.subtasks[this.state["current_subtask"]]["annotations"]["access"][old_id]["new"]) {
+        if (!annotations[old_id]["new"]) {
             // Make new id and record that you did
             deprecate_old = true;
             if (!redoing) {
@@ -2248,29 +2253,30 @@ export class ULabel {
             }
 
             // Make new annotation (copy of old)
-            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][new_id] = JSON.parse(JSON.stringify(this.subtasks[this.state["current_subtask"]]["annotations"]["access"][old_id]));
-            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][new_id]["id"] = new_id;
-            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][new_id]["created_by"] = this.config["annotator"];
-            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][new_id]["new"] = true;
-            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][new_id]["parent_id"] = old_id;
-            this.subtasks[this.state["current_subtask"]]["annotations"]["ordering"].push(new_id);
+            annotations[new_id] = JSON.parse(JSON.stringify(annotations[old_id]));
+            annotations[new_id]["id"] = new_id;
+            annotations[new_id]["created_by"] = this.config["annotator"];
+            annotations[new_id]["new"] = true;
+            annotations[new_id]["parent_id"] = old_id;
+            current_subtask["annotations"]["ordering"].push(new_id);
 
             // Set parent_id and deprecated = true
-            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][old_id]["deprecated"] = true;
-            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][old_id]["human_deprecated"] = true;
+            annotations[old_id]["deprecated"] = true;
+            annotations[old_id]["human_deprecated"] = true;
 
             // Work with new annotation from now on
-            annid = new_id;
+            annotation_id = new_id;
         }
 
-        if (this.subtasks[this.state["current_subtask"]]["state"]["active_id"] != null) {
-            this.subtasks[this.state["current_subtask"]]["state"]["active_id"] = null;
-            this.subtasks[this.state["current_subtask"]]["state"]["is_in_edit"] = false;
-            this.subtasks[this.state["current_subtask"]]["state"]["is_in_move"] = false;
-            this.subtasks[this.state["current_subtask"]]["state"]["is_in_progress"] = false;
+        if (current_subtask["state"]["active_id"] != null) {
+            current_subtask["state"]["active_id"] = null;
+            current_subtask["state"]["is_in_edit"] = false;
+            current_subtask["state"]["is_in_move"] = false;
+            current_subtask["state"]["is_in_progress"] = false;
         }
-        this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid]["deprecated"] = true;
-        this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid]["human_deprecated"] = true;
+        annotations[annotation_id]["deprecated"] = true;
+        annotations[annotation_id]["human_deprecated"] = true;
+
         this.redraw_all_annotations(this.state["current_subtask"]);
         this.hide_global_edit_suggestion();
 
@@ -2284,19 +2290,20 @@ export class ULabel {
             act_type: "delete_annotation",
             frame: frame,
             undo_payload: {
-                annid: annid,
+                annid: annotation_id,
                 deprecate_old: deprecate_old,
                 old_id: old_id,
                 new_id: new_id
             },
             redo_payload: {
-                annid: annid,
+                annid: annotation_id,
                 deprecate_old: deprecate_old,
                 old_id: old_id,
                 new_id: new_id
             }
         }, redoing);
     }
+
     delete_annotation__undo(undo_payload) {
         let actid = undo_payload.annid;
         if (undo_payload.deprecate_old) {
@@ -2313,10 +2320,10 @@ export class ULabel {
         this.redraw_all_annotations(this.state["current_subtask"]);
         this.suggest_edits(this.state["last_move"]);
     }
+
     delete_annotation__redo(redo_payload) {
         this.delete_annotation(null, redo_payload);
     }
-
 
     /**
      * Get the annotation with nearest active keypoint (e.g. corners for a bbox, endpoints for polylines) to a point
