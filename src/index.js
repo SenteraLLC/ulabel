@@ -1262,8 +1262,7 @@ export class ULabel {
 
     // Get a unique ID for new annotations
     make_new_annotation_id() {
-        var unq_str = uuidv4();
-        return unq_str;
+        return uuidv4();
     }
 
     // Get the start of a spatial payload based on mouse event and current annotation mode
@@ -3054,6 +3053,12 @@ export class ULabel {
                         }
                     }
                     this.redraw_all_annotations(this.state["current_subtask"], null, true); // tobuffer
+
+                    // If the FilterDistance ToolboxItem is present, filter points with this new polyline present
+                    if (this.toolbox_order.includes(AllowedToolboxItem.FilterDistance)) {
+                        // Currently only supported by polyline
+                        filter_points_distance_from_line(this)
+                    }
                     break;
                 case "contour":
                     if (GeometricUtils.l2_norm(ms_loc, this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"][this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"].length - 1]) * this.config["px_per_px"] > 3) {
