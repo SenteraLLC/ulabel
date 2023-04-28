@@ -2214,6 +2214,12 @@ export class ULabel {
         if (newact != null) {
             undone_stack[undone_stack.length - 1] = newact
         }
+        
+        // If the FilterDistance ToolboxItem is present, filter points
+        if (this.toolbox_order.includes(AllowedToolboxItem.FilterDistance)) {
+            // Currently only supported by polyline
+            filter_points_distance_from_line(this)
+        }
     }
 
     redo() {
@@ -2225,6 +2231,12 @@ export class ULabel {
         if (undone_stack.length === 0) return
 
         this.redo_action(undone_stack.pop());
+
+        // If the FilterDistance ToolboxItem is present, filter points
+        if (this.toolbox_order.includes(AllowedToolboxItem.FilterDistance)) {
+            // Currently only supported by polyline
+            filter_points_distance_from_line(this)
+        }
     }
 
     delete_annotation(annotation_id, redo_payload = null) {
