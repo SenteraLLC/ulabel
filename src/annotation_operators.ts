@@ -23,19 +23,19 @@ export function get_annotation_confidence(annotation: ULabelAnnotation) {
  * 
  * @param annotation ULabelAnnotation
  * @param deprecated boolean 
+ * @param deprecated_by_key 
  */
-export function mark_deprecated(annotation: any, deprecated: boolean, deprecated_by: string = "human") {
+export function mark_deprecated(annotation: any, deprecated: boolean, deprecated_by_key: string = "human") {
 
     // If annotation.deprecated_by is undefined, then set the deprecated_by property
     if (annotation.deprecated_by === undefined) {
         annotation.deprecated_by = <DeprecatedBy> {
-            [deprecated_by]: deprecated
+            [deprecated_by_key]: deprecated
         }
     }
     else { // If annotation.deprecated_by is not undefined, then just update the property
-        annotation.deprecated_by[deprecated_by] = deprecated
+        annotation.deprecated_by[deprecated_by_key] = deprecated
     }
-
 
     // Loop through each way an annotation can be deprecated
     for (const key in annotation.deprecated_by) {

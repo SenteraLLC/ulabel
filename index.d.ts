@@ -8,7 +8,7 @@ export type Offset = {
 }
 
 export type DeprecatedBy = {
-    human: boolean;
+    human?: boolean;
     confidence_filter?: boolean;
     distance_from_row?: boolean;
 }
