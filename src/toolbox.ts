@@ -1047,7 +1047,7 @@ export class KeypointSliderItem extends ToolboxItem {
             mark_deprecated(current_annotation, should_deprecate, "confidence_filter")
         }
 
-        //Update the slider bar's position, and the label's text.
+        // Update the slider bar's position, and the label's text.
         $("#" + this.slider_bar_id).val(Math.round(filter_value * 100));
         $("#" + this.slider_bar_id + "-label").text(Math.round(filter_value * 100) + "%");
 
