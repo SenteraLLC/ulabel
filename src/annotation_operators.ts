@@ -257,20 +257,27 @@ export function assign_points_distance_from_line(
  * @param ulabel ULabel object
  * @param offset Offset of a particular annotation. Used when filter is called while an annotation is being moved
  */
-export function filter_points_distance_from_line(ulabel: ULabel, offset: Offset = null) {
-    // Grab the slider element
-    const slider: HTMLInputElement = document.querySelector("#FilterPointDistanceFromRow-slider")
-
-    // If this function is being called then a FilterPointDistanceFromRow instance should exist in the toolbox.
-    // If a FilterPointDistanceFromRow instance exists in the toolbox, then the slider should be defined too.
-    // If for any reason it still is not, then return from this function early
-    if (slider === null) {
-        console.error("filter_points_distance_from_line could not find slider object")
-        return
-    }
-    
+export function filter_points_distance_from_line(ulabel: ULabel, offset: Offset = null, filter_value_override: number = null) {
     // Grab the slider's value
-    const filter_value: number = slider.valueAsNumber
+    let filter_value: number
+    if (filter_value_override !== null) {
+        // If the override exists use that value
+        // Exists so that this function can be called without accessing the dom
+        filter_value = filter_value_override
+    }
+    else {
+        // Otherwise use the slider to get the filter_value
+        const slider: HTMLInputElement = document.querySelector("#FilterPointDistanceFromRow-slider")
+
+        // If no filter_value_override and no slider exists, then throw error and return early
+        if (slider === null) {
+            console.error("filter_points_distance_from_line could not find slider object")
+            return
+        }
+
+        // Set the filter value with the slider's value
+        filter_value = slider.valueAsNumber
+    }
     
     // Grab the subtasks from ulabel
     const subtasks: ULabelSubtask[] = Object.values(ulabel.subtasks)
@@ -310,6 +317,9 @@ export function filter_points_distance_from_line(ulabel: ULabel, offset: Offset 
     // Loop through each point annotation and deprecate them if they don't pass the filter
     filter_high(point_annotations, "distance_from_any_line", filter_value, "distance_from_row")
 
-    // Redraw all annotations
-    ulabel.redraw_all_annotations(null, null, false);
+    // TODO: Make this more intelligent
+    // If the filter_value_override is present don't redraw for reasons
+    if (filter_value_override === null) {
+        ulabel.redraw_all_annotations(null, null, false);
+    }
 }

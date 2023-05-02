@@ -1100,15 +1100,27 @@ export class KeypointSliderItem extends ToolboxItem {
 }
 
 export class FilterPointDistanceFromRow extends ToolboxItem {
-    name = "Filter Distance From Row"
-    component_name = "FilterPointDistanceFromRow"
-    default_value = 0.4
+    name: string = "Filter Distance From Row"
+    component_name: string = "FilterPointDistanceFromRow"
+    default_value: number = 40
     ulabel: ULabel
+    filter_on_load: boolean = true
 
     constructor(ulabel: ULabel, kwargs: {[name: string]: any}) {
         super()
 
         this.ulabel = ulabel
+
+        // Check if kwargs is undefined before trying to access its property
+        if (kwargs !== undefined && kwargs.filter_on_load !== undefined) {
+            this.filter_on_load = kwargs.filter_on_load
+        }
+
+        if (this.filter_on_load) {
+            console.log("filter on load")
+            filter_points_distance_from_line(this.ulabel, null, this.default_value)
+        }
+        
 
         // === Create event listeners for this ToolboxItem ===
 
@@ -1192,13 +1204,13 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
                     min="0"
                     max="400"
                     id="${this.component_name}-slider" 
-                    class="keypoint-slider" value="${this.default_value * 100}"
+                    class="keypoint-slider" value="${this.default_value}"
                 />
                 <label 
                     for="${this.component_name}" 
                     id="${this.component_name}-label"
                     class="keypoint-slider-label">
-                    ${Math.round(this.default_value * 100)}px
+                    ${Math.round(this.default_value)}px
                 </label>
                 <div class="filter-row-distance-button-holder">
                     <button id="${this.component_name}inc-button">+</button>
