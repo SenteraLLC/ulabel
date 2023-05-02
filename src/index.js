@@ -634,7 +634,7 @@ export class ULabel {
                 if (
                     !("deprecated" in cand)
                 ) {
-                    cand["deprecated"] = false;
+                    mark_deprecated(cand, false)
                 }
 
                 // Throw error if no spatial type is found
@@ -3132,8 +3132,7 @@ export class ULabel {
             this.subtasks[this.state["current_subtask"]]["annotations"]["ordering"].push(new_id);
 
             // Set parent_id and deprecated = true
-            annotations[old_id]["deprecated"] = true;
-            annotations[old_id]["human_deprecated"] = true;
+            mark_deprecated(annotations[old_id], true)
 
             // Change edit candidate to new id
             this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"]["annid"] = new_id;
@@ -3379,34 +3378,36 @@ export class ULabel {
     }
 
     begin_move(mouse_event) {
+        // Convenience
+        const current_subtask = this.subtasks[this.state["current_subtask"]]
+        const annotations = current_subtask["annotations"]["access"]
 
         let deprecate_old = false;
         let old_id = this.subtasks[this.state["current_subtask"]]["state"]["move_candidate"]["annid"];
         let new_id = old_id;
         // TODO(3d)
-        if (!this.subtasks[this.state["current_subtask"]]["annotations"]["access"][old_id]["new"]) {
+        if (!annotations[old_id]["new"]) {
             // Make new id and record that you did
             deprecate_old = true;
             new_id = this.make_new_annotation_id();
 
             // Make new annotation (copy of old)
-            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][new_id] = JSON.parse(JSON.stringify(this.subtasks[this.state["current_subtask"]]["annotations"]["access"][old_id]));
-            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][new_id]["id"] = new_id;
-            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][new_id]["created_by"] = this.config["annotator"];
-            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][new_id]["new"] = true;
-            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][new_id]["parent_id"] = old_id;
-            this.subtasks[this.state["current_subtask"]]["annotations"]["ordering"].push(new_id);
+            annotations[new_id] = JSON.parse(JSON.stringify(annotations[old_id]));
+            annotations[new_id]["id"] = new_id;
+            annotations[new_id]["created_by"] = this.config["annotator"];
+            annotations[new_id]["new"] = true;
+            annotations[new_id]["parent_id"] = old_id;
+            current_subtask["annotations"]["ordering"].push(new_id);
 
             // Set parent_id and deprecated = true
-            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][old_id]["deprecated"] = true;
-            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][old_id]["human_deprecated"] = true;
+            mark_deprecated(annotations[old_id], true);
 
             // Change edit candidate to new id
-            this.subtasks[this.state["current_subtask"]]["state"]["move_candidate"]["annid"] = new_id;
+            current_subtask["state"]["move_candidate"]["annid"] = new_id;
         }
 
-        this.subtasks[this.state["current_subtask"]]["state"]["active_id"] = this.subtasks[this.state["current_subtask"]]["state"]["move_candidate"]["annid"];
-        this.subtasks[this.state["current_subtask"]]["state"]["is_in_move"] = true;
+        current_subtask["state"]["active_id"] = current_subtask["state"]["move_candidate"]["annid"];
+        current_subtask["state"]["is_in_move"] = true;
 
         // Revise start to current button center
         // TODO
@@ -3414,8 +3415,8 @@ export class ULabel {
         this.drag_state["move"]["mouse_start"][0] = mouse_event.target.pageX 
         this.drag_state["move"]["mouse_start"][1] +=
         */
-        let mc = JSON.parse(JSON.stringify(this.subtasks[this.state["current_subtask"]]["state"]["move_candidate"]));
-        let annotation_mode = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][new_id]["spatial_type"];
+        let mc = JSON.parse(JSON.stringify(current_subtask["state"]["move_candidate"]));
+        let annotation_mode = annotations[new_id]["spatial_type"];
         let frame = this.state["current_frame"];
         if (MODES_3D.includes(annotation_mode)) {
             frame = null;
@@ -3425,7 +3426,7 @@ export class ULabel {
             act_type: "move_annotation",
             frame: frame,
             undo_payload: {
-                actid: this.subtasks[this.state["current_subtask"]]["state"]["active_id"],
+                actid: current_subtask["state"]["active_id"],
                 move_candidate: mc,
                 diffX: 0,
                 diffY: 0,
@@ -3454,58 +3455,63 @@ export class ULabel {
 
     finish_annotation(mouse_event, redo_payload = null) {
         // Convenience
-        let actid = null;
+        const current_subtask = this.subtasks[this.state["current_subtask"]]
+        const annotations = current_subtask["annotations"]["access"]
+
+        // Initialize required variables
+        let active_id = null;
         let redoing = false;
+
         if (redo_payload == null) {
-            actid = this.subtasks[this.state["current_subtask"]]["state"]["active_id"];
+            active_id = current_subtask["state"]["active_id"];
         }
         else {
-            actid = redo_payload.actid;
+            active_id = redo_payload.actid;
             redoing = true;
         }
 
         // Record last point and redraw if necessary
         // TODO(3d)
         let n_kpts, start_pt, popped;
-        switch (this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_type"]) {
+        switch (annotations[active_id]["spatial_type"]) {
             case "polygon":
-                n_kpts = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"].length;
+                n_kpts = annotations[active_id]["spatial_payload"].length;
                 start_pt = [
-                    this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"][0][0],
-                    this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"][0][1]
+                    annotations[active_id]["spatial_payload"][0][0],
+                    annotations[active_id]["spatial_payload"][0][1]
                 ];
-                this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"][n_kpts - 1] = start_pt;
+                annotations[active_id]["spatial_payload"][n_kpts - 1] = start_pt;
                 this.redraw_all_annotations(this.state["current_subtask"]); // tobuffer
                 this.record_action({
                     act_type: "finish_annotation",
                     frame: this.state["current_frame"],
                     undo_payload: {
-                        actid: actid,
-                        ender_html: $("#ender_" + actid).outer_html()
+                        actid: active_id,
+                        ender_html: $("#ender_" + active_id).outer_html()
                     },
                     redo_payload: {
-                        actid: actid
+                        actid: active_id
                     }
                 }, redoing);
-                $("#ender_" + actid).remove(); // TODO remove from visible dialogs
+                $("#ender_" + active_id).remove(); // TODO remove from visible dialogs
                 break;
             case "polyline":
                 // TODO handle the case of merging with existing annotation
                 // Remove last point
-                n_kpts = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"].length;
+                n_kpts = annotations[active_id]["spatial_payload"].length;
                 if (n_kpts > 2) {
                     popped = true;
                     n_kpts -= 1;
-                    this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"].pop();
+                    annotations[active_id]["spatial_payload"].pop();
                 }
                 else {
                     popped = false;
-                    this.rebuild_containing_box(actid, false, this.state["current_subtask"]);
+                    this.rebuild_containing_box(active_id, false, this.state["current_subtask"]);
                 }
                 console.log(
                     "At finish...",
                     JSON.stringify(
-                        this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"],
+                        annotations[active_id]["spatial_payload"],
                         null, 2
                     )
                 );
@@ -3514,15 +3520,15 @@ export class ULabel {
                     act_type: "finish_annotation",
                     frame: this.state["current_frame"],
                     undo_payload: {
-                        actid: actid,
+                        actid: active_id,
                         popped: popped
                         // ender_html: $("#ender_" + actid).outer_html()
                     },
                     redo_payload: {
-                        actid: actid,
+                        actid: active_id,
                         popped: popped,
                         fin_pt: JSON.parse(JSON.stringify(
-                            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"][n_kpts - 1]
+                            annotations[active_id]["spatial_payload"][n_kpts - 1]
                         ))
                     }
                 }, redoing);
@@ -3534,7 +3540,7 @@ export class ULabel {
             case "contour":
             case "tbar":
             case "point":
-                this.record_finish(actid);
+                this.record_finish(active_id);
                 // tobuffer this is where the annotation moves to back canvas
                 break;
             default:
@@ -3547,10 +3553,10 @@ export class ULabel {
         // }
         // TODO build a dialog here when necessary -- will also need to integrate with undo
         // TODO(3d)
-        if (this.subtasks[this.state["current_subtask"]]["single_class_mode"]) {
-            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["classification_payloads"] = [
+        if (current_subtask["single_class_mode"]) {
+            annotations[active_id]["classification_payloads"] = [
                 {
-                    "class_id": this.subtasks[this.state["current_subtask"]]["class_defs"][0]["id"],
+                    "class_id": current_subtask["class_defs"][0]["id"],
                     "confidence": 1.0
                 }
             ]
@@ -3564,9 +3570,10 @@ export class ULabel {
         }
 
         // Set mode to no active annotation
-        this.subtasks[this.state["current_subtask"]]["state"]["active_id"] = null;
-        this.subtasks[this.state["current_subtask"]]["state"]["is_in_progress"] = false;
+        current_subtask["state"]["active_id"] = null;
+        current_subtask["state"]["is_in_progress"] = false;
     }
+
     finish_annotation__undo(undo_payload) {
         // This is only ever invoked for polygons and polylines
 
@@ -3698,32 +3705,43 @@ export class ULabel {
 
         this.record_finish_move(diffX, diffY, diffZ);
     }
+
     move_annotation__undo(undo_payload) {
+        // Convenience
+        const current_subtask = this.subtasks[this.state["current_subtask"]]
+        const annotations = current_subtask["annotations"]["access"]
+
         const diffX = undo_payload.diffX;
         const diffY = undo_payload.diffY;
         const diffZ = undo_payload.diffZ;
 
-        let actid = undo_payload.move_candidate["annid"];
+        let active_id = undo_payload.move_candidate["annid"];
         // TODO(3d)
         if (undo_payload.deprecate_old) {
-            actid = undo_payload.old_id;
-            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["deprecated"] = false;
-            delete this.subtasks[this.state["current_subtask"]]["annotations"]["access"][undo_payload.new_id];
-            let ind = this.subtasks[this.state["current_subtask"]]["annotations"]["ordering"].indexOf(undo_payload.new_id);
-            this.subtasks[this.state["current_subtask"]]["annotations"]["ordering"].splice(ind, 1);
+            active_id = undo_payload.old_id;
+            
+            // Mark the active annotation undeprecated
+            mark_deprecated(annotations[active_id], false)
+
+            // Delete the new annotation that is being undone
+            delete annotations[undo_payload.new_id];
+
+            // Remove the deleted annotation from the access array
+            let index = current_subtask["annotations"]["ordering"].indexOf(undo_payload.new_id);
+            current_subtask["annotations"]["ordering"].splice(index, 1);
         }
         else {
-            for (var spi = 0; spi < this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"].length; spi++) {
-                this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"][spi][0] += diffX;
-                this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"][spi][1] += diffY;
-                if (this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"][spi].length > 2) {
-                    this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"][spi][2] += diffZ;
+            for (var spi = 0; spi < annotations[active_id]["spatial_payload"].length; spi++) {
+                annotations[active_id]["spatial_payload"][spi][0] += diffX;
+                annotations[active_id]["spatial_payload"][spi][1] += diffY;
+                if (annotations[active_id]["spatial_payload"][spi].length > 2) {
+                    annotations[active_id]["spatial_payload"][spi][2] += diffZ;
                 }
             }
-            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["containing_box"]["tlx"] += diffX;
-            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["containing_box"]["brx"] += diffX;
-            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["containing_box"]["tly"] += diffY;
-            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["containing_box"]["bry"] += diffY;
+            annotations[active_id]["containing_box"]["tlx"] += diffX;
+            annotations[active_id]["containing_box"]["brx"] += diffX;
+            annotations[active_id]["containing_box"]["tly"] += diffY;
+            annotations[active_id]["containing_box"]["bry"] += diffY;
         }
 
         this.redraw_all_annotations(this.state["current_subtask"]);
@@ -3733,37 +3751,45 @@ export class ULabel {
         this.suggest_edits(this.state["last_move"]);
         this.update_frame(diffZ);
     }
+
     move_annotation__redo(redo_payload) {
+        // Convenience
+        const current_subtask = this.subtasks[this.state["current_subtask"]]
+        const annotations = current_subtask["annotations"]["access"]
+
         const diffX = redo_payload.diffX;
         const diffY = redo_payload.diffY;
         const diffZ = redo_payload.diffZ;
 
-        let actid = redo_payload.move_candidate["annid"];
+        let active_id = redo_payload.move_candidate["annid"];
         // TODO(3d)
         if (redo_payload.deprecate_old) {
-            actid = redo_payload.new_id;
-            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid] = JSON.parse(JSON.stringify(this.subtasks[this.state["current_subtask"]]["annotations"]["access"][redo_payload.old_id]));
-            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][redo_payload.new_id]["id"] = redo_payload.new_id;
-            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][redo_payload.new_id]["created_by"] = this.config["annotator"];
-            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][redo_payload.new_id]["new"] = true;
-            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][redo_payload.new_id]["parent_id"] = redo_payload.old_id;
-            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][redo_payload.old_id]["deprecated"] = true;
-            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][redo_payload.old_id]["human_deprecated"] = true;
-            this.subtasks[this.state["current_subtask"]]["annotations"]["ordering"].push(redo_payload.new_id);
+            active_id = redo_payload.new_id;
+            annotations[active_id] = JSON.parse(JSON.stringify(annotations[redo_payload.old_id]));
+            annotations[redo_payload.new_id]["id"] = redo_payload.new_id;
+            annotations[redo_payload.new_id]["created_by"] = this.config["annotator"];
+            annotations[redo_payload.new_id]["new"] = true;
+            annotations[redo_payload.new_id]["parent_id"] = redo_payload.old_id;
+
+            // Mark old annotation deprecated
+            mark_deprecated(annotations[redo_payload.old_id], true)
+
+            // Add new annotation id to ordering array
+            current_subtask["annotations"]["ordering"].push(redo_payload.new_id);
         }
 
         // TODO(3d)
-        for (var spi = 0; spi < this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"].length; spi++) {
-            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"][spi][0] += diffX;
-            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"][spi][1] += diffY;
-            if (this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"][spi].length > 2) {
-                this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"][spi][2] += diffZ;
+        for (var spi = 0; spi < annotations[active_id]["spatial_payload"].length; spi++) {
+            annotations[active_id]["spatial_payload"][spi][0] += diffX;
+            annotations[active_id]["spatial_payload"][spi][1] += diffY;
+            if (annotations[active_id]["spatial_payload"][spi].length > 2) {
+                annotations[active_id]["spatial_payload"][spi][2] += diffZ;
             }
         }
-        this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["containing_box"]["tlx"] += diffX;
-        this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["containing_box"]["brx"] += diffX;
-        this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["containing_box"]["tly"] += diffY;
-        this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["containing_box"]["bry"] += diffY;
+        annotations[active_id]["containing_box"]["tlx"] += diffX;
+        annotations[active_id]["containing_box"]["brx"] += diffX;
+        annotations[active_id]["containing_box"]["tly"] += diffY;
+        annotations[active_id]["containing_box"]["bry"] += diffY;
 
         this.redraw_all_annotations(this.state["current_subtask"]);
         this.hide_edit_suggestion();
@@ -3771,7 +3797,7 @@ export class ULabel {
         this.reposition_dialogs();
         this.suggest_edits(this.state["last_move"]);
 
-        let annotation_mode = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_type"];
+        let annotation_mode = annotations[active_id]["spatial_type"];
         let frame = this.state["current_frame"];
         if (MODES_3D.includes(annotation_mode)) {
             frame = null;
@@ -3781,7 +3807,7 @@ export class ULabel {
             act_type: "move_annotation",
             frame: frame,
             undo_payload: {
-                actid: this.subtasks[this.state["current_subtask"]]["state"]["active_id"],
+                actid: current_subtask["state"]["active_id"],
                 move_candidate: redo_payload.move_candidate,
                 diffX: -diffX,
                 diffY: -diffY,
@@ -3791,7 +3817,7 @@ export class ULabel {
                 new_id: redo_payload.new_id
             },
             redo_payload: {
-                actid: this.subtasks[this.state["current_subtask"]]["state"]["active_id"],
+                actid: current_subtask["state"]["active_id"],
                 move_candidate: redo_payload.move_candidate,
                 diffX: diffX,
                 diffY: diffY,
