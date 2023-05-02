@@ -222,7 +222,6 @@ export function assign_points_distance_from_line(
     line_annotations: ULabelAnnotation[],
     offset: Offset = null
     ) {
-        console.log("line_annotations:", line_annotations)
     // TODO: Add 3D support (maybe)
     for (let point_idx = 0; point_idx < point_annotations.length; point_idx++) {
         // Grab the current point annotation
@@ -272,8 +271,6 @@ export function filter_points_distance_from_line(ulabel: ULabel, offset: Offset 
     
     // Grab the slider's value
     const filter_value: number = slider.valueAsNumber
-
-    console.log("Problem?", ulabel.subtasks)
     
     // Grab the subtasks from ulabel
     const subtasks: ULabelSubtask[] = Object.values(ulabel.subtasks)
