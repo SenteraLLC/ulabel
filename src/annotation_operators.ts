@@ -313,19 +313,3 @@ export function filter_points_distance_from_line(ulabel: ULabel, offset: Offset 
     // Redraw all annotations
     ulabel.redraw_all_annotations(null, null, false);
 }
-
-/**
- * Given a ULabel object, it will check to see what filters are currently in the toolbox and will apply each filter.
- * 
- * @param ulabel ULabel Object
- */
-export function filter_annotations(ulabel: ULabel) {
-
-    if (ulabel.toolbox_order.includes(AllowedToolboxItem.KeypointSlider)) {
-
-    }
-
-    if (ulabel.toolbox_order.includes(AllowedToolboxItem.FilterDistance)) {
-
-    }
-}
