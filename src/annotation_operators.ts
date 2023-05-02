@@ -1,4 +1,5 @@
 import { Offset, ULabel, ULabelAnnotation, ULabelSpatialType, ULabelSubtask } from "..";
+import { AllowedToolboxItem } from "./configuration";
 
 /**
  * Returns the confidence of the passed in ULabelAnnotation.
@@ -23,8 +24,21 @@ export function get_annotation_confidence(annotation: ULabelAnnotation) {
  * @param annotation ULabelAnnotation
  * @param deprecated boolean 
  */
-export function mark_deprecated(annotation: any, deprecated: boolean) {
-    annotation.deprecated = deprecated
+export function mark_deprecated(annotation: any, deprecated: boolean, deprecated_by: string = "human") {
+    // Set the given property to the state passed in
+    annotation.deprecated_by[deprecated_by] = deprecated
+
+    // Loop through each way an annotation can be deprecated
+    for (const key in annotation.deprecated_by) {
+        // If the annotation has been deprecated by any method, then deprecate the annotation
+        if (annotation.deprecated_by[key]) {
+            annotation.deprecated = true
+            return
+        }
+    }
+
+    // If the annotation hasn't been deprecated by any property, then set deprecated to false
+    annotation.deprecated = false
 }
 
 /**
@@ -292,4 +306,20 @@ export function filter_points_distance_from_line(ulabel: ULabel, offset: Offset 
 
     // Redraw all annotations
     ulabel.redraw_all_annotations(null, null, false);
+}
+
+/**
+ * Given a ULabel object, it will check to see what filters are currently in the toolbox and will apply each filter.
+ * 
+ * @param ulabel ULabel Object
+ */
+export function filter_annotations(ulabel: ULabel) {
+
+    if (ulabel.toolbox_order.includes(AllowedToolboxItem.KeypointSlider)) {
+
+    }
+
+    if (ulabel.toolbox_order.includes(AllowedToolboxItem.FilterDistance)) {
+
+    }
 }

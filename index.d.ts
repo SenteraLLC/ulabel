@@ -7,6 +7,12 @@ export type Offset = {
     diffZ?: number;
 }
 
+type DeprecatedBy = {
+    human: boolean;
+    confidence_filter?: boolean;
+    distance_from_row?: boolean;
+}
+
 export type ULabelAnnotation = {
     id: string;
     new: boolean;
@@ -17,6 +23,7 @@ export type ULabelAnnotation = {
      */
     created_at: string;
     deprecated: boolean;
+    deprecated_by: DeprecatedBy;
     human_deprecated: boolean;
     spatial_type: ULabelSpatialType;
     spatial_payload: [number, number][];
@@ -69,6 +76,7 @@ export class ULabel {
     state: any;
     config: any;
     toolbox: Toolbox;
+    toolbox_order?: number[];
     /**
      * @link https://github.com/SenteraLLC/ulabel/blob/main/api_spec.md#ulabel-constructor
      */

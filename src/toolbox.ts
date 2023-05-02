@@ -1,7 +1,12 @@
 import { ULabel, ULabelAnnotation, ULabelSubtask } from "..";
 import { Configuration } from "./configuration";
-import { assign_points_distance_from_line, value_is_higher_than_filter, mark_deprecated, filter_points_distance_from_line } from "./annotation_operators";
-import { ULabelSpatialType } from "..";
+import { 
+    value_is_lower_than_filter, 
+    value_is_higher_than_filter, 
+    get_annotation_confidence, 
+    mark_deprecated, 
+    filter_points_distance_from_line 
+} from "./annotation_operators";
 
 const toolboxDividerDiv = "<div class=toolbox-divider></div>"
 
@@ -933,10 +938,24 @@ export class KeypointSliderItem extends ToolboxItem {
     constructor(ulabel: ULabel, kwargs: {[name: string]: any}) {
         super();
         this.inner_HTML = `<p class="tb-header">Keypoint Slider</p>`;
-        this.name = kwargs.name;
-        this.filter_function = kwargs.filter_function;
-        this.get_confidence = kwargs.confidence_function;
-        this.mark_deprecated = kwargs.mark_deprecated;
+
+        // Use properties in kwargs if kwargs is present
+        if (kwargs !== undefined) {
+            this.name = kwargs.name;
+            this.filter_function = kwargs.filter_function;
+            this.get_confidence = kwargs.confidence_function;
+            this.mark_deprecated = kwargs.mark_deprecated;
+        }
+        // Otherwise use defaults
+        else {
+            this.name = "Keypoint Slider";
+            this.filter_function = value_is_lower_than_filter;
+            this.get_confidence = get_annotation_confidence;
+            this.mark_deprecated = mark_deprecated;
+            kwargs = {}
+        }
+
+        // Create slider bar id
         this.slider_bar_id = this.name.replaceLowerConcat(" ", "-");
         
         //if the config has a default value override, then use that instead
@@ -1010,28 +1029,22 @@ export class KeypointSliderItem extends ToolboxItem {
         })
     }
 
-    public deprecate_annotations(ulabel, filter_value, redraw: boolean = true) {
+    public deprecate_annotations(ulabel: ULabel, filter_value: number, redraw: boolean = true) {
+        // Get the current subtask
+        const current_subtask = ulabel.subtasks[ulabel.state["current_subtask"]];
 
-        //get the current subtask
-        let current_subtask_key = ulabel.state["current_subtask"];
-        let current_subtask = ulabel.subtasks[current_subtask_key];
+        for (let idx in current_subtask.annotations.ordering) {
+            // Get the current annotation
+            const current_annotation: ULabelAnnotation = current_subtask.annotations.access[current_subtask.annotations.ordering[idx]]
 
-        for (let i in current_subtask.annotations.ordering) {
-            let current_annotation: ULabelAnnotation = current_subtask.annotations.access[current_subtask.annotations.ordering[i]]
+            // Get the annotation's confidence
+            const confidence: number = get_annotation_confidence(current_annotation)
 
-            //kinda a hack, but an annotation can't be human deprecated if its not deprecated
-            if (current_annotation.deprecated == false) {
-                current_annotation.human_deprecated = false
-            }
+            // Compare the confidence value against the filter value
+            const should_deprecate: boolean = value_is_higher_than_filter(confidence, filter_value)
 
-            //we don't want to change any annotations that were hand edited by the user.
-            if (current_annotation.human_deprecated) {
-                continue;
-            }
-
-            let current_confidence: number = this.get_confidence(current_annotation)
-            let deprecate: boolean = this.filter_function(current_confidence, filter_value)
-            this.mark_deprecated(current_annotation, deprecate)
+            // Mark this annotation as either deprecated or undeprecated by the confidence filter
+            mark_deprecated(current_annotation, should_deprecate, "confidence_filter")
         }
 
         //Update the slider bar's position, and the label's text.
