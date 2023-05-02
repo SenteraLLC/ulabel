@@ -2290,7 +2290,6 @@ export class ULabel {
             current_subtask["state"]["is_in_progress"] = false;
         }
         mark_deprecated(annotations[annotation_id], true)
-        annotations[annotation_id]["human_deprecated"] = true;
 
         this.redraw_all_annotations(this.state["current_subtask"]);
         this.hide_global_edit_suggestion();
@@ -2689,7 +2688,7 @@ export class ULabel {
             "created_by": this.config["annotator"],
             "created_at": ULabel.get_time(),
             "deprecated": false,
-            "human_deprecated": false,
+            "deprecated_by": {"human": false},
             "spatial_type": annotation_mode,
             "spatial_payload": null,
             "classification_payloads": JSON.parse(JSON.stringify(init_idpyld)),
@@ -2820,7 +2819,7 @@ export class ULabel {
             "created_by": this.config["annotator"],
             "created_at": ULabel.get_time(),
             "deprecated": false,
-            "human_deprecated": false,
+            "deprecated_by": {"human": false},
             "spatial_type": annotation_mode,
             "spatial_payload": init_spatial,
             "classification_payloads": JSON.parse(JSON.stringify(init_idpyld)),
