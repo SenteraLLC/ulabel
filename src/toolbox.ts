@@ -1041,7 +1041,7 @@ export class KeypointSliderItem extends ToolboxItem {
             const confidence: number = get_annotation_confidence(current_annotation)
 
             // Compare the confidence value against the filter value
-            const should_deprecate: boolean = value_is_higher_than_filter(confidence, filter_value)
+            const should_deprecate: boolean = value_is_lower_than_filter(confidence, filter_value)
 
             // Mark this annotation as either deprecated or undeprecated by the confidence filter
             mark_deprecated(current_annotation, should_deprecate, "confidence_filter")

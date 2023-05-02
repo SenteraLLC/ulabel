@@ -1,4 +1,4 @@
-import { Offset, ULabel, ULabelAnnotation, ULabelSpatialType, ULabelSubtask } from "..";
+import { Offset, ULabel, ULabelAnnotation, ULabelSpatialType, ULabelSubtask, DeprecatedBy } from "..";
 import { AllowedToolboxItem } from "./configuration";
 
 /**
@@ -25,8 +25,17 @@ export function get_annotation_confidence(annotation: ULabelAnnotation) {
  * @param deprecated boolean 
  */
 export function mark_deprecated(annotation: any, deprecated: boolean, deprecated_by: string = "human") {
-    // Set the given property to the state passed in
-    annotation.deprecated_by[deprecated_by] = deprecated
+
+    // If annotation.deprecated_by is undefined, then set the deprecated_by property
+    if (annotation.deprecated_by === undefined) {
+        annotation.deprecated_by = <DeprecatedBy> {
+            [deprecated_by]: deprecated
+        }
+    }
+    else { // If annotation.deprecated_by is not undefined, then just update the property
+        annotation.deprecated_by[deprecated_by] = deprecated
+    }
+
 
     // Loop through each way an annotation can be deprecated
     for (const key in annotation.deprecated_by) {
