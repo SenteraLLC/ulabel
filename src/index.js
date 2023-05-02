@@ -9,7 +9,7 @@ import { get_annotation_confidence } from '../build/annotation_operators';
 import { apply_gradient } from '../build/drawing_utilities'
 import { Configuration, AllowedToolboxItem } from '../build/configuration';
 import { HTMLBuilder } from '../build/html_builder';
-import { filter_points_distance_from_line } from "../build/annotation_operators";
+import { mark_deprecated, filter_points_distance_from_line } from "../build/annotation_operators";
 import $ from 'jquery';
 const jQuery = $;
 window.$ = window.jQuery = require('jquery');
@@ -2277,8 +2277,7 @@ export class ULabel {
             current_subtask["annotations"]["ordering"].push(new_id);
 
             // Set parent_id and deprecated = true
-            annotations[old_id]["deprecated"] = true;
-            annotations[old_id]["human_deprecated"] = true;
+            mark_deprecated(annotations[old_id], true)
 
             // Work with new annotation from now on
             annotation_id = new_id;
@@ -2290,7 +2289,7 @@ export class ULabel {
             current_subtask["state"]["is_in_move"] = false;
             current_subtask["state"]["is_in_progress"] = false;
         }
-        annotations[annotation_id]["deprecated"] = true;
+        mark_deprecated(annotations[annotation_id], true)
         annotations[annotation_id]["human_deprecated"] = true;
 
         this.redraw_all_annotations(this.state["current_subtask"]);
@@ -2326,24 +2325,36 @@ export class ULabel {
     }
 
     delete_annotation__undo(undo_payload) {
-        let actid = undo_payload.annid;
+        let active_id = undo_payload.annid;
+        const annotations = this.subtasks[this.state["current_subtask"]]["annotations"]
         if (undo_payload.deprecate_old) {
-            actid = undo_payload.old_id;
-            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["deprecated"] = false;
-            delete this.subtasks[this.state["current_subtask"]]["annotations"]["access"][undo_payload.new_id];
-            // remove from ordering
-            let ind = this.subtasks[this.state["current_subtask"]]["annotations"]["ordering"].indexOf(undo_payload.new_id)
-            this.subtasks[this.state["current_subtask"]]["annotations"]["ordering"].splice(ind, 1);
+            // Set the active id to the old id
+            active_id = undo_payload.old_id;
+
+            // Mark the active id undeprecated
+            mark_deprecated(annotations["access"][active_id], false);
+
+            // Delete the annotation with the new id that's being undone
+            delete annotations["access"][undo_payload.new_id];
+
+            // Remove deleted annotation from ordering
+            const index = annotations["ordering"].indexOf(undo_payload.new_id);
+            annotations["ordering"].splice(index, 1);
         }
         else {
-            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][undo_payload.annid]["deprecated"] = false;
+            // Set the annotation to be undeprecated
+            mark_deprecated(annotations["access"][undo_payload.annid], false);
         }
+
+        // Handle visuals
         this.redraw_all_annotations(this.state["current_subtask"]);
         this.suggest_edits(this.state["last_move"]);
 
-        // If the filter distance toolboxitem is present, filter annotations on annotation deletion
-        if (this.toolbox_order.includes(AllowedToolboxItem.FilterDistance)) {
-            filter_points_distance_from_line(this)
+        // If the filter distance toolboxitem is present,
+        // And if the active annotation is a polyline,
+        // Then filter annotations on annotation deletion
+        if (annotations["access"][active_id]["spatial_type"] && this.toolbox_order.includes(AllowedToolboxItem.FilterDistance)) {
+            filter_points_distance_from_line(this);
         }
     }
 

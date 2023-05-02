@@ -78,7 +78,7 @@ export function value_is_higher_than_filter(value: number, filter: number) {
  * @param property The property on the annotation to be compared against the filter. e.g. "confidence"
  * @param filter The value all filters will be compared against
  */
-export function filter_high(annotations: ULabelAnnotation[], property: string, filter: number) {
+export function filter_high(annotations: ULabelAnnotation[], property: string, filter: number, deprecated_by: string) {
     // Loop through each point annotation and deprecate them if they don't pass the filter
     annotations.forEach(function(annotation: ULabelAnnotation) {
         // Make sure the annotation is not a human deprecated one
@@ -87,7 +87,7 @@ export function filter_high(annotations: ULabelAnnotation[], property: string, f
             const should_deprecate: boolean = value_is_higher_than_filter(annotation[property], filter)
 
             // Mark the point deprecated
-            mark_deprecated(annotation, should_deprecate)
+            mark_deprecated(annotation, should_deprecate, deprecated_by)
         }
     })
 }
@@ -311,7 +311,7 @@ export function filter_points_distance_from_line(ulabel: ULabel, offset: Offset 
     assign_points_distance_from_line(point_annotations, line_annotations, offset)
 
     // Loop through each point annotation and deprecate them if they don't pass the filter
-    filter_high(point_annotations, "distance_from_any_line", filter_value)
+    filter_high(point_annotations, "distance_from_any_line", filter_value, "distance_from_row")
 
     // Redraw all annotations
     ulabel.redraw_all_annotations(null, null, false);
