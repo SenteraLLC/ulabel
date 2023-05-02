@@ -3109,42 +3109,46 @@ export class ULabel {
     }
 
     begin_edit(mouse_event) {
+        // Create constants for convenience
+        const current_subtask = this.subtasks[this.state["current_subtask"]]
+        const annotations = current_subtask["annotations"]["access"]
+
         // Handle case of editing an annotation that was not originally created by you
         let deprecate_old = false;
-        let old_id = this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"]["annid"];
+        let old_id = current_subtask["state"]["edit_candidate"]["annid"];
         let new_id = old_id;
         // TODO(3d)
-        if (!this.subtasks[this.state["current_subtask"]]["annotations"]["access"][old_id]["new"]) {
+        if (!annotations[old_id]["new"]) {
             // Make new id and record that you did
             deprecate_old = true;
             new_id = this.make_new_annotation_id();
 
             // Make new annotation (copy of old)
-            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][new_id] = JSON.parse(JSON.stringify(this.subtasks[this.state["current_subtask"]]["annotations"]["access"][old_id]));
-            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][new_id]["id"] = new_id;
-            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][new_id]["created_by"] = this.config["annotator"];
-            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][new_id]["new"] = true;
-            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][new_id]["parent_id"] = old_id;
+            annotations[new_id] = JSON.parse(JSON.stringify(annotations[old_id]));
+            annotations[new_id]["id"] = new_id;
+            annotations[new_id]["created_by"] = this.config["annotator"];
+            annotations[new_id]["new"] = true;
+            annotations[new_id]["parent_id"] = old_id;
             this.subtasks[this.state["current_subtask"]]["annotations"]["ordering"].push(new_id);
 
             // Set parent_id and deprecated = true
-            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][old_id]["deprecated"] = true;
-            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][old_id]["human_deprecated"] = true;
+            annotations[old_id]["deprecated"] = true;
+            annotations[old_id]["human_deprecated"] = true;
 
             // Change edit candidate to new id
             this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"]["annid"] = new_id;
         }
 
-        this.subtasks[this.state["current_subtask"]]["state"]["active_id"] = this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"]["annid"];
-        this.subtasks[this.state["current_subtask"]]["state"]["is_in_edit"] = true;
-        let ec = JSON.parse(JSON.stringify(this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"]));
-        let stpt = this.get_with_access_string(this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"]["annid"], ec["access"]);
+        current_subtask["state"]["active_id"] = current_subtask["state"]["edit_candidate"]["annid"];
+        current_subtask["state"]["is_in_edit"] = true;
+        let edit_candidate = JSON.parse(JSON.stringify(current_subtask["state"]["edit_candidate"]));
+        let starting_point = this.get_with_access_string(current_subtask["state"]["edit_candidate"]["annid"], edit_candidate["access"]);
         this.edit_annotation(mouse_event);
         this.suggest_edits(mouse_event);
         let gmx = this.get_global_mouse_x(mouse_event);
         let gmy = this.get_global_mouse_y(mouse_event);
 
-        let annotation_mode = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][new_id]["spatial_type"];
+        let annotation_mode = annotations[new_id]["spatial_type"];
         let frame = this.state["current_frame"];
         if (MODES_3D.includes(annotation_mode)) {
             frame = null;
@@ -3155,16 +3159,16 @@ export class ULabel {
             frame: frame,
             undo_payload: {
                 actid: this.subtasks[this.state["current_subtask"]]["state"]["active_id"],
-                edit_candidate: ec,
-                starting_x: stpt[0],
-                starting_y: stpt[1],
+                edit_candidate: edit_candidate,
+                starting_x: starting_point[0],
+                starting_y: starting_point[1],
                 deprecate_old: deprecate_old,
                 old_id: old_id,
                 new_id: new_id
             },
             redo_payload: {
                 actid: this.subtasks[this.state["current_subtask"]]["state"]["active_id"],
-                edit_candidate: ec,
+                edit_candidate: edit_candidate,
                 ending_x: gmx,
                 ending_y: gmy,
                 finished: false,
@@ -3231,63 +3235,83 @@ export class ULabel {
             }
         }
     }
+
     edit_annotation__undo(undo_payload) {
-        let actid = undo_payload.actid;
+        // Convenience
+        const current_subtask = this.subtasks[this.state["current_subtask"]]
+        const annotations = current_subtask["annotations"]["access"]
+
+        let active_id = undo_payload.actid;
         if (undo_payload.deprecate_old) {
-            actid = undo_payload.old_id;
+            active_id = undo_payload.old_id;
             // TODO(3d)
-            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["deprecated"] = false;
-            delete this.subtasks[this.state["current_subtask"]]["annotations"]["access"][undo_payload.new_id];
-            // remove from ordering
-            let ind = this.subtasks[this.state["current_subtask"]]["annotations"]["ordering"].indexOf(undo_payload.new_id)
-            this.subtasks[this.state["current_subtask"]]["annotations"]["ordering"].splice(ind, 1);
+            // Undeprecate the active annotation
+            mark_deprecated(annotations[active_id], false)
+
+            // Delete the new annotation which is being undone
+            delete annotations[undo_payload.new_id];
+
+            // Remove deleted annotation from ordering
+            const index = this.subtasks[this.state["current_subtask"]]["annotations"]["ordering"].indexOf(undo_payload.new_id)
+            this.subtasks[this.state["current_subtask"]]["annotations"]["ordering"].splice(index, 1);
         }
-        const ms_loc = [
+
+        // Get the mouse location
+        const mouse_location = [
             undo_payload.starting_x,
             undo_payload.starting_y
         ];
-        switch (this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_type"]) {
+
+        switch (annotations[active_id]["spatial_type"]) {
             case "bbox":
-                this.set_with_access_string(actid, undo_payload.edit_candidate["access"], ms_loc, true);
-                this.rebuild_containing_box(actid);
+                this.set_with_access_string(active_id, undo_payload.edit_candidate["access"], mouse_location, true);
+                this.rebuild_containing_box(active_id);
                 this.redraw_all_annotations(this.state["current_subtask"], null, true); // tobuffer
                 this.suggest_edits(this.state["last_move"]);
                 break;
             case "bbox3":
-                ms_loc.push(undo_payload.starting_frame);
-                this.set_with_access_string(actid, undo_payload.edit_candidate["access"], ms_loc, true);
-                this.rebuild_containing_box(actid);
+                mouse_location.push(undo_payload.starting_frame);
+                this.set_with_access_string(active_id, undo_payload.edit_candidate["access"], mouse_location, true);
+                this.rebuild_containing_box(active_id);
                 this.redraw_all_annotations(this.state["current_subtask"], null, true); // tobuffer
                 this.suggest_edits(this.state["last_move"]);
                 break;
             case "polygon":
             case "polyline":
-                this.set_with_access_string(actid, undo_payload.edit_candidate["access"], ms_loc, true);
-                this.rebuild_containing_box(actid);
+                this.set_with_access_string(active_id, undo_payload.edit_candidate["access"], mouse_location, true);
+                this.rebuild_containing_box(active_id);
                 this.redraw_all_annotations(this.state["current_subtask"], null, true); // tobuffer
                 this.suggest_edits(this.state["last_move"]);
                 break;
             case "tbar":
-                this.set_with_access_string(actid, undo_payload.edit_candidate["access"], ms_loc, true);
-                this.rebuild_containing_box(actid);
+                this.set_with_access_string(active_id, undo_payload.edit_candidate["access"], mouse_location, true);
+                this.rebuild_containing_box(active_id);
                 this.redraw_all_annotations(this.state["current_subtask"], null, true); // tobuffer
                 this.suggest_edits(this.state["last_move"]);
                 break;
         }
     }
+
     edit_annotation__redo(redo_payload) {
+        // Convenience
+        const current_subtask = this.subtasks[this.state["current_subtask"]]
+        const annotations = current_subtask["annotations"]["access"]
+
         let actid = redo_payload.actid;
         if (redo_payload.deprecate_old) {
             actid = redo_payload.new_id;
             // TODO(3d)
-            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid] = JSON.parse(JSON.stringify(this.subtasks[this.state["current_subtask"]]["annotations"]["access"][redo_payload.old_id]));
-            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][redo_payload.new_id]["id"] = redo_payload.new_id;
-            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][redo_payload.new_id]["created_by"] = this.config["annotator"];
-            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][redo_payload.new_id]["new"] = true;
-            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][redo_payload.new_id]["parent_id"] = redo_payload.old_id;
-            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][redo_payload.old_id]["deprecated"] = true;
-            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][redo_payload.old_id]["human_deprecated"] = true;
-            this.subtasks[this.state["current_subtask"]]["annotations"]["ordering"].push(redo_payload.new_id);
+            annotations[actid] = JSON.parse(JSON.stringify(annotations[redo_payload.old_id]));
+            annotations[redo_payload.new_id]["id"] = redo_payload.new_id;
+            annotations[redo_payload.new_id]["created_by"] = this.config["annotator"];
+            annotations[redo_payload.new_id]["new"] = true;
+            annotations[redo_payload.new_id]["parent_id"] = redo_payload.old_id;
+
+            // Mark the old annotation as deprecated
+            mark_deprecated(annotations[redo_payload.old_id], true)
+
+            // Add the new annotation to the ordering array
+            current_subtask["annotations"]["ordering"].push(redo_payload.new_id);
         }
         const ms_loc = [
             redo_payload.ending_x,
@@ -3295,7 +3319,7 @@ export class ULabel {
         ];
         const cur_loc = this.get_with_access_string(redo_payload.actid, redo_payload.edit_candidate["access"]);
         // TODO(3d)
-        switch (this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_type"]) {
+        switch (annotations[actid]["spatial_type"]) {
             case "bbox":
                 this.set_with_access_string(actid, redo_payload.edit_candidate["access"], ms_loc);
                 this.rebuild_containing_box(actid);
@@ -3324,7 +3348,7 @@ export class ULabel {
                 break;
 
         }
-        let annotation_mode = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_type"];
+        let annotation_mode = annotations[actid]["spatial_type"];
         let frame = this.state["current_frame"];
         if (MODES_3D.includes(annotation_mode)) {
             frame = null;
