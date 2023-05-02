@@ -5,7 +5,7 @@ const path = require('path');
 module.exports = {
   entry: {
     "ulabel": './src/index.js',
-    // "ulabel.min": './src/index.js'
+    "ulabel.min": './src/index.js'
   },
   output: {
     filename: '[name].js',
