@@ -978,8 +978,8 @@ export class KeypointSliderItem extends ToolboxItem {
         }
 
         if (kwargs.default_value !== undefined) {
-            // Convert from decimal between 0-1 to number between 0-100
-            this.filter_value = kwargs.default_value * 100
+            // Set the filter value to the default value
+            this.filter_value = kwargs.default_value
         }
 
         // Check the config to see if we should update the annotations with the default filter on load
