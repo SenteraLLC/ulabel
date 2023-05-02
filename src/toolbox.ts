@@ -931,6 +931,10 @@ export class KeypointSliderItem extends ToolboxItem {
     public mark_deprecated: Function;
     filter_value: number = 0;
     ulabel: ULabel;
+    keybinds: {
+        "increment": string,
+        "decrement": string
+    }
 
     // Function_array must contain three functions
     // The first function is how to filter the annotations
@@ -947,6 +951,7 @@ export class KeypointSliderItem extends ToolboxItem {
             this.filter_function = kwargs.filter_function;
             this.get_confidence = kwargs.confidence_function;
             this.mark_deprecated = kwargs.mark_deprecated;
+            this.keybinds = kwargs.keybinds
         }
         // Otherwise use defaults
         else {
@@ -954,6 +959,10 @@ export class KeypointSliderItem extends ToolboxItem {
             this.filter_function = value_is_lower_than_filter;
             this.get_confidence = get_annotation_confidence;
             this.mark_deprecated = mark_deprecated;
+            this.keybinds = {
+                "increment": "2",
+                "decrement": "1"
+            }
             kwargs = {};
         }
 
@@ -1012,12 +1021,12 @@ export class KeypointSliderItem extends ToolboxItem {
 
         // Called whenever the user uses the keybinds to change the slider value
         $(document).on("keypress", (e) => {
-            if (e.key == kwargs.keybinds.increment) {
+            if (e.key === this.keybinds.increment) {
                 let button = <HTMLAnchorElement> document.getElementsByClassName(this.name.replaceLowerConcat(" ", "-") + "-button inc")[0]
                 button.click()
             }
 
-            if (e.key == kwargs.keybinds.decrement) {
+            if (e.key === this.keybinds.decrement) {
                 let button = <HTMLAnchorElement> document.getElementsByClassName(this.name.replaceLowerConcat(" ", "-") + "-button dec")[0]
                 button.click()
             }
