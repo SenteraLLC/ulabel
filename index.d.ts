@@ -13,6 +13,11 @@ export type DeprecatedBy = {
     distance_from_row?: boolean;
 }
 
+export type DistanceFrom = {
+    any_line: number;
+    [key: string]: number // Key can be any string, but value must be number
+}
+
 export type ULabelAnnotation = {
     id: string;
     new: boolean;

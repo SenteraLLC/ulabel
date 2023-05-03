@@ -1,5 +1,5 @@
-import { Offset, ULabel, ULabelAnnotation, ULabelSpatialType, ULabelSubtask, DeprecatedBy } from "..";
-import { AllowedToolboxItem } from "./configuration";
+import { Offset, ULabel, ULabelSpatialType, ULabelSubtask, DeprecatedBy, DistanceFrom } from "..";
+import { ULabelAnnotation } from "./annotation";
 
 /**
  * Returns the confidence of the passed in ULabelAnnotation.
@@ -217,7 +217,7 @@ function get_distance_from_point_to_line(point_annotation: ULabelAnnotation, lin
  * @param line_annotations The set of polyline annotations the points will be compared against
  * @param offset Offset of a particular annotation in the set. Used when an annotation is being moved by the user
  */
-export function assign_points_distance_from_line(
+export function assign_distance_from_line(
     point_annotations: ULabelAnnotation[],
     line_annotations: ULabelAnnotation[],
     offset: Offset = null
@@ -229,7 +229,6 @@ export function assign_points_distance_from_line(
 
         // Keep track of a smallest distance for each point
         let smallest_distance: number
-
 
         // Loop through each line annotation
         for (let line_idx = 0; line_idx < line_annotations.length; line_idx++) {
@@ -248,6 +247,33 @@ export function assign_points_distance_from_line(
         // Assign the smallest distance to the annotation
         current_point.distance_from_any_line = smallest_distance
     }
+}
+
+
+export function assign_distance_from_line_multi_class(
+    point_annotations: ULabelAnnotation[],
+    line_annotations: ULabelAnnotation[],
+    offset: Offset = null) {
+    // Loop through every point and assign it a distance from line
+    point_annotations.forEach(current_point => {
+
+        // Create a DistanceFrom object to be assigned to this point
+        let distance_from: DistanceFrom
+
+        // Calculate the distance from each line and populate the distance_from accordingly
+        line_annotations.forEach(current_line => {
+
+            const line_class_id = current_line.get_class_id()
+            
+            const distance = get_distance_from_point_to_line(current_point, current_line, offset)
+
+            // If the distance from the current class is undefined, then set it
+            // Otherwise replace the value if the current distance is less than the one set
+            if (distance_from[line_class_id] === undefined || distance < distance_from[line_class_id]) {
+                distance_from[line_class_id] = distance
+            }
+        })
+    })
 }
 
 /**
@@ -312,11 +338,9 @@ export function filter_points_distance_from_line(ulabel: ULabel, offset: Offset 
     }
 
     // Assign all of the point annotations a distance from line value
-    assign_points_distance_from_line(point_annotations, line_annotations, offset)
+    assign_distance_from_line(point_annotations, line_annotations, offset)
 
     // Loop through each point annotation and deprecate them if they don't pass the filter
-    // filter_high(point_annotations, "distance_from_any_line", filter_value)
-
     filter_high(point_annotations, "distance_from_any_line", filter_value, "distance_from_row")
 
     // TODO: Make this more intelligent

@@ -1252,8 +1252,8 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
             // Add current classes html to multi_class_html
             multi_class_html += `
             <label
-                for="${this.component_name}-${current_class}-slider"
-                id="${this.component_name}-${current_class}-slider-name-label"
+                for="filter-row-distance-${current_class}"
+                id="filter-row-distance-${current_class}-name-label"
                 class="filter-row-distance-name-label">
                 ${current_class}
             </label>
@@ -1263,14 +1263,14 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
                     min="${this.filter_min}"
                     max="${this.filter_max}"
                     step="${this.increment_value}"
-                    id="${this.component_name}-${current_class}-slider" 
+                    id="filter-row-distance-${current_class}" 
                     class="filter-row-distance-slider" 
                     value="${this.default_value}"
                 />
                 <label 
-                    for="${this.component_name}-${current_class}-slider" 
-                    id="${this.component_name}-${current_class}-slider-px-label"
-                    class="filter-distance-percent-label">
+                    for="filter-row-distance-${current_class}" 
+                    id="filter-row-distance-${current_class}-px-label"
+                    class="filter-distance-px-label">
                     ${Math.round(this.default_value)}px
                 </label>
                 <div class="filter-row-distance-button-holder">
@@ -1333,12 +1333,12 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
                         min="0"
                         max="400"
                         step="${this.increment_value}"
-                        id="${this.component_name}-single-mode-slider" 
+                        id="filter-row-distance-single" 
                         class="filter-row-distance-slider" 
                         value="${this.default_value}"
                     />
                     <label 
-                        for="${this.component_name}-single-mode-slider" 
+                        for="filter-row-distance-single" 
                         id="${this.component_name}-single-mode-label"
                         class="filter-distance-percent-label">
                         ${Math.round(this.default_value)}px
