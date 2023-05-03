@@ -977,16 +977,16 @@ export class KeypointSliderItem extends ToolboxItem {
         let current_subtask_key = ulabel.state["current_subtask"];
         let current_subtask = ulabel.subtasks[current_subtask_key];
 
-        //Check to see if any of the annotations were deprecated by default
+        // Check to see if any of the annotations were deprecated by default
         this.check_for_human_deprecated(current_subtask);
 
-        //check the config to see if we should update the annotations with the default filter on load
+        // Check the config to see if we should update the annotations with the default filter on load
         if (ulabel.config.filter_annotations_on_load) {
             this.deprecate_annotations(ulabel, this.default_value, false);
         }
 
-        //The annotations are drawn for the first time after the toolbox is loaded
-        //so we don't actually have to redraw the annotations after deprecating them.
+        // The annotations are drawn for the first time after the toolbox is loaded
+        // so we don't actually have to redraw the annotations after deprecating them.
         
         $(document).on("input", "#" + this.name.replaceLowerConcat(" ", "-"), (e) => {
             let filter_value = e.currentTarget.value / 100;
@@ -1078,7 +1078,6 @@ export class KeypointSliderItem extends ToolboxItem {
                         parent_annotation.human_deprecated = true
                     }
                 }
-
             }
         }
     }
@@ -1144,7 +1143,7 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
         // === Create event listeners for this ToolboxItem ===
 
         // Whenever the user directly updates the slider, call the filtering function and update the label
-        $(document).on("input", "." + this.component_name + "-slider", () => {
+        $(document).on("input", ".filter-row-distance-slider", () => {
             filter_points_distance_from_line(this.ulabel)
             this.updateSliderLabel()
         })
@@ -1164,7 +1163,7 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
      */
     private updateSliderLabel() {
 
-        const sliders: NodeListOf<HTMLInputElement> = document.querySelectorAll(`.${this.component_name}-slider`)
+        const sliders: NodeListOf<HTMLInputElement> = document.querySelectorAll(`.filter-row-distance-slider`)
 
         // Go through every slider
         for (let idx = 0; idx < sliders.length; idx++) {
@@ -1253,7 +1252,7 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
                     max="400"
                     step="${this.increment_value}"
                     id="${this.component_name}-${current_class}-slider" 
-                    class="${this.component_name}-slider" 
+                    class="filter-row-distance-slider" 
                     value="${this.default_value}"
                 />
                 <label 
@@ -1323,7 +1322,7 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
                         max="400"
                         step="${this.increment_value}"
                         id="${this.component_name}-single-mode-slider" 
-                        class="${this.component_name}-slider" 
+                        class="filter-row-distance-slider" 
                         value="${this.default_value}"
                     />
                     <label 

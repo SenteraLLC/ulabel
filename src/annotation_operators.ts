@@ -234,23 +234,27 @@ export function assign_points_distance_from_line(
  * @param offset Offset of a particular annotation. Used when filter is called while an annotation is being moved
  */
 export function filter_points_distance_from_line(ulabel: ULabel, offset: Offset = null) {
-    return
-    // Grab the slider element
-    const slider: HTMLInputElement = document.querySelector("#FilterPointDistanceFromRow-slider")
+
+    // Grab the slider elements
+    const sliders: NodeListOf<HTMLInputElement> = document.querySelectorAll(".filter-row-distance-slider")
 
     // Grab the mulit-checkbox to determine what mode the filter is in
     const checkbox: HTMLInputElement = document.querySelector("#")
 
-    // If this function is being called then a FilterPointDistanceFromRow instance should exist in the toolbox.
-    // If a FilterPointDistanceFromRow instance exists in the toolbox, then the slider should be defined too.
-    // If for any reason it still is not, then return from this function early
-    if (slider === null) {
-        console.error("filter_points_distance_from_line could not find slider object")
+    // If there are no slider's in the toolbox then return early
+    if (sliders.length === 0) {
+        console.error("filter_points_distance_from_line could not find slider objects")
         return
     }
     
+    return
+
+    sliders.forEach(slider => {
+        
+    });
+
     // Grab the slider's value
-    const filter_value: number = slider.valueAsNumber
+    // const filter_value: number = slider.valueAsNumber
     
     // Grab the subtasks from ulabel
     const subtasks: ULabelSubtask[] = Object.values(ulabel.subtasks)
@@ -288,7 +292,7 @@ export function filter_points_distance_from_line(ulabel: ULabel, offset: Offset 
     assign_points_distance_from_line(point_annotations, line_annotations, offset)
 
     // Loop through each point annotation and deprecate them if they don't pass the filter
-    filter_high(point_annotations, "distance_from_any_line", filter_value)
+    //filter_high(point_annotations, "distance_from_any_line", filter_value)
 
     // Redraw all annotations
     ulabel.redraw_all_annotations(null, null, false);
