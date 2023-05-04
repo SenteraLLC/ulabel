@@ -2735,6 +2735,58 @@ export class ULabel {
         }, redoing);
         this.suggest_edits(this.state["last_move"]);
     }
+
+    /**
+     * Creates an annotation based on passed in parameters. Does not use mouse positions
+     * 
+     * @param {*} spatial_type 
+     * @param {*} spatial_payload 
+     */
+    create_annotation(spatial_type, spatial_payload) {
+        // Grab constants for convenience
+        const current_subtask = this.subtasks[this.state["current_subtask"]]
+        const annotation_access = current_subtask["annotations"]["access"]
+        const annotation_ordering = current_subtask["annotations"]["ordering"]
+
+        // Create a new unique id for this annotation
+        const unique_id = this.make_new_annotation_id()
+
+        // Get the frame
+        let frame = this.state["current_frame"];
+        if (MODES_3D.includes(spatial_type)) {
+            frame = null;
+        }
+
+        // Create the new annotation
+        let new_annotation = {
+            "id": unique_id,
+            "new": true,
+            "parent_id": null,
+            "created_by": this.config["annotator"],
+            "created_at": ULabel.get_time(),
+            "deprecated": false,
+            "human_deprecated": false,
+            "spatial_type": spatial_type,
+            "spatial_payload": spatial_payload,
+            "classification_payloads": JSON.parse(JSON.stringify(init_idpyld)),
+            "text_payload": ""
+        }
+
+        // Add the annotation to the subtask's set of annotations
+        annotation_access[unique_id] = new_annotation
+
+        // Add the id to the annotation ordering array
+        annotation_ordering.push(unique_id)
+
+        this.redraw_all_annotations()
+
+        console.log(annotation_ordering, annotation_access)
+    }
+
+    create_annotation__undo() {
+
+    }
+
     create_nonspatial_annotation__undo(undo_payload) {
         let ann = JSON.parse(undo_payload.ann_str);
         let unq_id = ann["id"];
