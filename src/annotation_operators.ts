@@ -250,6 +250,13 @@ export function assign_distance_from_line(
 }
 
 
+/**
+ * Assigns each point annotation a distance from each diffrent class of row. Will also update the distance from any row.
+ * 
+ * @param point_annotations Set of point annotations
+ * @param line_annotations Set of line annotations
+ * @param offset Offset of a particular annotation in the set. Used when an annotation is being moved by the user
+ */
 export function assign_distance_from_line_multi_class(
     point_annotations: ULabelAnnotation[],
     line_annotations: ULabelAnnotation[],
