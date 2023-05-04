@@ -73,6 +73,8 @@ export class Configuration {
     
     public toggle_annotation_mode_keybind: string = "u";
 
+    public create_bbox_on_initial_crop: string = "f";
+
     public static annotation_gradient_default: boolean = false;
 
     constructor(...kwargs: {[key: string]: unknown}[]) {

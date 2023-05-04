@@ -158,18 +158,21 @@ export class ULabel {
 
         $(document).on("keypress", (e) => {   
             // Check for the correct keypress
-            if (e.key == ul.config.create_point_annotation_keybind) {
 
-                // Grab current subtask
-                let current_subtask_key = ul.state["current_subtask"];
-                let current_subtask = ul.subtasks[current_subtask_key];
-                
-                // Only allow keypress to create point annotations
-                if (current_subtask.state.annotation_mode == "point") {
+            switch(e.key) {
+                case ul.config.create_point_annotation_keybind:
+                    // Grab current subtask
+                    const current_subtask = ul.subtasks[ul.state["current_subtask"]]
                     
-                    // Create an annotation based on the last mouse position
-                    ul.begin_annotation(ul.state["last_move"])
-                }
+                    // Only allow keypress to create point annotations
+                    if (current_subtask.state.annotation_mode == "point") {
+                        // Create an annotation based on the last mouse position
+                        ul.begin_annotation(ul.state["last_move"])
+                    }
+                    break;
+                case ul.config.create_bbox_on_initial_crop:
+                    console.log("create bbox annotation")
+                    ul.create_annotation("bbox", [[0,0],[1000,1000]])
             }
         })
 
@@ -2739,8 +2742,8 @@ export class ULabel {
     /**
      * Creates an annotation based on passed in parameters. Does not use mouse positions
      * 
-     * @param {*} spatial_type 
-     * @param {*} spatial_payload 
+     * @param {string} spatial_type What type of annotation to create
+     * @param {[number, number][]} spatial_payload 
      */
     create_annotation(spatial_type, spatial_payload) {
         // Grab constants for convenience
@@ -2750,6 +2753,8 @@ export class ULabel {
 
         // Create a new unique id for this annotation
         const unique_id = this.make_new_annotation_id()
+
+        const init_id_payload = this.get_init_id_payload();
 
         // Get the frame
         let frame = this.state["current_frame"];
@@ -2768,7 +2773,7 @@ export class ULabel {
             "human_deprecated": false,
             "spatial_type": spatial_type,
             "spatial_payload": spatial_payload,
-            "classification_payloads": JSON.parse(JSON.stringify(init_idpyld)),
+            "classification_payloads": JSON.parse(JSON.stringify(init_id_payload)),
             "text_payload": ""
         }
 
@@ -2821,7 +2826,7 @@ export class ULabel {
         let gmx = null;
         let gmy = null;
         let init_spatial = null;
-        let init_idpyld = null;
+        let init_id_payload = null;
 
         if (redo_payload == null) {
             unq_id = this.make_new_annotation_id();
@@ -2830,7 +2835,7 @@ export class ULabel {
             gmx = this.get_global_mouse_x(mouse_event);
             gmy = this.get_global_mouse_y(mouse_event);
             init_spatial = this.get_init_spatial(gmx, gmy, annotation_mode);
-            init_idpyld = this.get_init_id_payload();
+            init_id_payload = this.get_init_id_payload();
             this.hide_edit_suggestion();
             this.hide_global_edit_suggestion();
         }
@@ -2843,7 +2848,7 @@ export class ULabel {
             gmx = redo_payload.gmx;
             gmy = redo_payload.gmy;
             init_spatial = redo_payload.init_spatial;
-            init_idpyld = redo_payload.init_payload;
+            init_id_payload = redo_payload.init_payload;
         }
 
         // TODO(3d) 
@@ -2874,14 +2879,14 @@ export class ULabel {
             "deprecated_by": {"human": false},
             "spatial_type": annotation_mode,
             "spatial_payload": init_spatial,
-            "classification_payloads": JSON.parse(JSON.stringify(init_idpyld)),
+            "classification_payloads": JSON.parse(JSON.stringify(init_id_payload)),
             "line_size": line_size,
             "containing_box": containing_box,
             "frame": frame,
             "text_payload": ""
         };
         if (redoing) {
-            this.set_id_dialog_payload_to_init(unq_id, init_idpyld);
+            this.set_id_dialog_payload_to_init(unq_id, init_id_payload);
         }
 
         // TODO(3d)
