@@ -219,8 +219,6 @@ export class ULabel {
             ul.handle_toolbox_overflow();
         }).observe(document.getElementById(ul.config["container_id"]));
 
-    
-
         $(document).on("click", "#" + ul.config["toolbox_id"] + " .zbutt", (e) => {
             let tgt_jq = $(e.currentTarget);
             if (tgt_jq.hasClass("zin")) {
@@ -885,7 +883,6 @@ export class ULabel {
         else {
             this.toolbox_order = toolbox_order;
         }
-
 
         // Useful for the efficient redraw of nonspatial annotations
         this.tmp_nonspatial_element_ids = {};
@@ -2023,6 +2020,7 @@ export class ULabel {
         };
         this.reposition_dialogs();
     }
+
     destroy_polygon_ender(polygon_id) {
         // Create ender id
         const ender_id = "ender_" + polygon_id;
@@ -2240,6 +2238,83 @@ export class ULabel {
             // Currently only supported by polyline
             filter_points_distance_from_line(this)
         }
+    }
+
+    /**
+     * Creates an annotation based on passed in parameters. Does not use mouse positions
+     * 
+     * @param {string} spatial_type What type of annotation to create
+     * @param {[number, number][]} spatial_payload 
+     */
+    create_annotation(spatial_type, spatial_payload) {
+        // Grab constants for convenience
+        const current_subtask = this.subtasks[this.state["current_subtask"]]
+        const annotation_access = current_subtask["annotations"]["access"]
+        const annotation_ordering = current_subtask["annotations"]["ordering"]
+
+        // Create a new unique id for this annotation
+        const unique_id = this.make_new_annotation_id()
+
+        // TODO: Create the classification_payloads intelligently
+        // Get the subtask ids in order to populate the classification_payloads
+        const class_ids = current_subtask.class_ids
+
+        // Set the first element in the class ids to be the class of the created annotation
+        let classification_payloads = [
+            {
+                "class_id": class_ids[0],
+                "confidence": 1
+            }
+        ]
+
+        // Skip the first element since it was set above
+        for (let idx = 1; idx < class_ids.length; idx++) {
+            classification_payloads.push(
+                {
+                    "class_id": class_ids[idx],
+                    "confidence": 0
+                }
+            )
+        }
+
+        // Get the frame
+        let frame = this.state["current_frame"];
+        if (MODES_3D.includes(spatial_type)) {
+            frame = null;
+        }
+
+        // Create the new annotation
+        let new_annotation = {
+            "id": unique_id,
+            "new": true,
+            "parent_id": null,
+            "created_by": this.config["annotator"],
+            "created_at": ULabel.get_time(),
+            "deprecated": false,
+            "human_deprecated": false,
+            "spatial_type": spatial_type,
+            "spatial_payload": spatial_payload,
+            "classification_payloads": classification_payloads,
+            "text_payload": ""
+        }
+
+        // Add the annotation to the subtask's set of annotations
+        annotation_access[unique_id] = new_annotation
+
+        // Add the id to the annotation ordering array
+        annotation_ordering.push(unique_id)
+
+        this.redraw_all_annotations()
+
+        console.log(annotation_ordering, annotation_access)
+    }
+
+    create_annotation__undo() {
+
+    }
+
+    create_annotation__redo() {
+
     }
 
     delete_annotation(annotation_id, redo_payload = null) {
@@ -2737,59 +2812,6 @@ export class ULabel {
             },
         }, redoing);
         this.suggest_edits(this.state["last_move"]);
-    }
-
-    /**
-     * Creates an annotation based on passed in parameters. Does not use mouse positions
-     * 
-     * @param {string} spatial_type What type of annotation to create
-     * @param {[number, number][]} spatial_payload 
-     */
-    create_annotation(spatial_type, spatial_payload) {
-        // Grab constants for convenience
-        const current_subtask = this.subtasks[this.state["current_subtask"]]
-        const annotation_access = current_subtask["annotations"]["access"]
-        const annotation_ordering = current_subtask["annotations"]["ordering"]
-
-        // Create a new unique id for this annotation
-        const unique_id = this.make_new_annotation_id()
-
-        const init_id_payload = this.get_init_id_payload();
-
-        // Get the frame
-        let frame = this.state["current_frame"];
-        if (MODES_3D.includes(spatial_type)) {
-            frame = null;
-        }
-
-        // Create the new annotation
-        let new_annotation = {
-            "id": unique_id,
-            "new": true,
-            "parent_id": null,
-            "created_by": this.config["annotator"],
-            "created_at": ULabel.get_time(),
-            "deprecated": false,
-            "human_deprecated": false,
-            "spatial_type": spatial_type,
-            "spatial_payload": spatial_payload,
-            "classification_payloads": JSON.parse(JSON.stringify(init_id_payload)),
-            "text_payload": ""
-        }
-
-        // Add the annotation to the subtask's set of annotations
-        annotation_access[unique_id] = new_annotation
-
-        // Add the id to the annotation ordering array
-        annotation_ordering.push(unique_id)
-
-        this.redraw_all_annotations()
-
-        console.log(annotation_ordering, annotation_access)
-    }
-
-    create_annotation__undo() {
-
     }
 
     create_nonspatial_annotation__undo(undo_payload) {
