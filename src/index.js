@@ -171,8 +171,20 @@ export class ULabel {
                     }
                     break;
                 case ul.config.create_bbox_on_initial_crop:
-                    console.log("create bbox annotation")
-                    ul.create_annotation("bbox", [[0,0],[1000,1000]])
+
+
+                    console.log(ul.initial_crop)
+
+                    if (ul.initial_crop === undefined) {
+                        const bbox_top_left = [0,0]
+                        const bbox_bottom_right = [ul.config.image_width, ul.config.image_height]
+
+                        ul.create_annotation("bbox", [bbox_top_left, bbox_bottom_right])
+
+                        //ul.record_action()
+                    }
+
+                    // ul.create_annotation("bbox", [[0,0],[1000,1000]])
             }
         })
 
@@ -2298,23 +2310,33 @@ export class ULabel {
             "text_payload": ""
         }
 
-        // Add the annotation to the subtask's set of annotations
-        annotation_access[unique_id] = new_annotation
-
-        // Add the id to the annotation ordering array
-        annotation_ordering.push(unique_id)
-
-        this.redraw_all_annotations()
-
-        console.log(annotation_ordering, annotation_access)
+        this.record_action({
+            "act_type": "create_annotation",
+            "undo_payload": {"annotation_id": unique_id},
+            "redo_payload": {"annotation_id": unique_id}
+        })
     }
 
-    create_annotation__undo() {
+    create_annotation__undo(undo_payload) {
+        // Get the current subtask
+        const current_subtask = this.subtasks[this.state["current_subtask"]]
 
+        // Get the id from the payload
+        const annotation_id = undo_payload.annotation_id
+
+        // To undo creating an annotation, deprecate it
+        mark_deprecated(current_subtask[annotations][access][annotation_id], true)
     }
 
-    create_annotation__redo() {
+    create_annotation__redo(redo_payload) {
+        // Get the current subtask
+        const current_subtask = this.subtasks[this.state["current_subtask"]]
 
+        // Get the id from the payload
+        const annotation_id = redo_payload.annotation_id
+
+        // To redo creating an annotation, undeprecate it
+        mark_deprecated(current_subtask[annotations][access][annotation_id], false)
     }
 
     delete_annotation(annotation_id, redo_payload = null) {
@@ -2622,6 +2644,8 @@ export class ULabel {
 
         // Add to stream
         this.subtasks[this.state["current_subtask"]]["actions"]["stream"].push(action);
+
+        console.log()
     }
 
     record_finish(actid) {
@@ -2659,6 +2683,7 @@ export class ULabel {
 
     undo_action(action) {
         this.update_frame(null, action.frame);
+        console.log(action.undo_payload)
         switch (action.act_type) {
             case "begin_annotation":
                 this.begin_annotation__undo(action.undo_payload);
@@ -2680,6 +2705,9 @@ export class ULabel {
                 break;
             case "assign_annotation_id":
                 this.assign_annotation_id__undo(action.undo_payload);
+                break;
+            case "create_annotation":
+                this.create_annotation__undo(action.undo_payload);
                 break;
             case "create_nonspatial_annotation":
                 this.create_nonspatial_annotation__undo(action.undo_payload);
@@ -2713,6 +2741,9 @@ export class ULabel {
                 break;
             case "assign_annotation_id":
                 this.assign_annotation_id(null, action.redo_payload);
+                break;
+            case "create_annotation":
+                this.create_annotation__redo(action);
                 break;
             case "create_nonspatial_annotation":
                 this.create_nonspatial_annotation(action.redo_payload);
