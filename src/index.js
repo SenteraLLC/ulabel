@@ -175,13 +175,12 @@ export class ULabel {
 
                     console.log(ul.initial_crop)
 
+                    // If undefined create annotation with size of image
                     if (ul.initial_crop === undefined) {
                         const bbox_top_left = [0,0]
                         const bbox_bottom_right = [ul.config.image_width, ul.config.image_height]
 
                         ul.create_annotation("bbox", [bbox_top_left, bbox_bottom_right])
-
-                        //ul.record_action()
                     }
 
                     // ul.create_annotation("bbox", [[0,0],[1000,1000]])
@@ -2310,11 +2309,18 @@ export class ULabel {
             "text_payload": ""
         }
 
+        // Add the new annotation to the annotation access and ordering
+        annotation_access[unique_id] = new_annotation
+        annotation_ordering.push(unique_id)
+
         this.record_action({
             "act_type": "create_annotation",
             "undo_payload": {"annotation_id": unique_id},
             "redo_payload": {"annotation_id": unique_id}
         })
+
+        // Draw the new annotation to the canvas
+        this.draw_annotation_from_id(unique_id)
     }
 
     create_annotation__undo(undo_payload) {
@@ -2635,6 +2641,7 @@ export class ULabel {
     }
 
     record_action(action, is_redo = false) {
+        console.log("record action was called", action)
         this.set_saved(false);
 
         // After a new action, you can no longer redo old actions
