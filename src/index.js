@@ -2257,14 +2257,17 @@ export class ULabel {
      * @param {string} spatial_type What type of annotation to create
      * @param {[number, number][]} spatial_payload 
      */
-    create_annotation(spatial_type, spatial_payload) {
+    create_annotation(spatial_type, spatial_payload, unique_id=null) {
         // Grab constants for convenience
         const current_subtask = this.subtasks[this.state["current_subtask"]]
         const annotation_access = current_subtask["annotations"]["access"]
         const annotation_ordering = current_subtask["annotations"]["ordering"]
 
         // Create a new unique id for this annotation
-        const unique_id = this.make_new_annotation_id()
+        if (unique_id === null) {
+            // Create a unique id if one is not provided
+            unique_id = this.make_new_annotation_id()
+        }
 
         // TODO: Create the classification_payloads intelligently
         // Get the subtask ids in order to populate the classification_payloads
@@ -2302,7 +2305,7 @@ export class ULabel {
             "created_by": this.config["annotator"],
             "created_at": ULabel.get_time(),
             "deprecated": false,
-            "human_deprecated": false,
+            "deprecated_by": {"human": false},
             "spatial_type": spatial_type,
             "spatial_payload": spatial_payload,
             "classification_payloads": classification_payloads,
@@ -2313,16 +2316,30 @@ export class ULabel {
         annotation_access[unique_id] = new_annotation
         annotation_ordering.push(unique_id)
 
+        // Record the action so it can be undone and redone
         this.record_action({
             "act_type": "create_annotation",
             "undo_payload": {"annotation_id": unique_id},
-            "redo_payload": {"annotation_id": unique_id}
+            "redo_payload": {
+                "annotation_id": unique_id,
+                "spatial_payload": spatial_payload,
+                "spatial_type": spatial_type
+            }
         })
 
         // Draw the new annotation to the canvas
         this.draw_annotation_from_id(unique_id)
     }
 
+    /**
+     * Recalls create_annotation with the information inside the undo_payload.
+     * Undo_payload should be an object containing three properties.
+     * undo_payload.annotation_id: string. Technically optional. Assignes the annotation id instead of creating a new one.
+     * undo_payload.spatial_payload: [number, number][]
+     * undo_payload.spatial_type: string
+     * 
+     * @param {Object} undo_payload Payload containing the properties required to recall create_annotation
+     */
     create_annotation__undo(undo_payload) {
         // Get the current subtask
         const current_subtask = this.subtasks[this.state["current_subtask"]]
@@ -2330,19 +2347,36 @@ export class ULabel {
         // Get the id from the payload
         const annotation_id = undo_payload.annotation_id
 
-        // To undo creating an annotation, deprecate it
-        mark_deprecated(current_subtask[annotations][access][annotation_id], true)
+        // Delete the created annotation
+        delete current_subtask.annotations.access[annotation_id]
+
+        // Next delete the annotation id from the ordering array
+        // Grab the array for convenience
+        const annotation_ordering = current_subtask.annotations.ordering
+
+        // Get the index of the annotation's id
+        const annotation_index = annotation_ordering.indexOf(annotation_id)
+
+        // Remove the annotation id from the array
+        annotation_ordering.splice(annotation_index, 1) // 1 means remove only the annotation id at the annotation index
     }
 
+    /**
+     * Recalls create_annotation with the information inside the undo_payload.
+     * redo_payload should be an object containing three properties.
+     * redo_payload.annotation_id: string. Technically optional. Assignes the annotation id instead of creating a new one.
+     * redo_payload.spatial_payload: [number, number][]
+     * redo_payload.spatial_type: string
+     * 
+     * @param {Object} redo_payload Payload containing the properties required to recall create_annotation
+     */
     create_annotation__redo(redo_payload) {
-        // Get the current subtask
-        const current_subtask = this.subtasks[this.state["current_subtask"]]
-
-        // Get the id from the payload
-        const annotation_id = redo_payload.annotation_id
-
-        // To redo creating an annotation, undeprecate it
-        mark_deprecated(current_subtask[annotations][access][annotation_id], false)
+        // Recreate the annotation with the same annotation_id, spatial_type, and spatial_payload
+        this.create_annotation(
+            redo_payload.spatial_type, 
+            redo_payload.spatial_payload, 
+            redo_payload.annotation_id
+        )
     }
 
     delete_annotation(annotation_id, redo_payload = null) {
@@ -2750,7 +2784,7 @@ export class ULabel {
                 this.assign_annotation_id(null, action.redo_payload);
                 break;
             case "create_annotation":
-                this.create_annotation__redo(action);
+                this.create_annotation__redo(action.redo_payload);
                 break;
             case "create_nonspatial_annotation":
                 this.create_nonspatial_annotation(action.redo_payload);
