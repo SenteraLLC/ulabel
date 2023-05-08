@@ -160,6 +160,7 @@ export class ULabel {
             // Check for the correct keypress
 
             switch(e.key) {
+                // Create a point annotation at the mouse's current location
                 case ul.config.create_point_annotation_keybind:
                     // Grab current subtask
                     const current_subtask = ul.subtasks[ul.state["current_subtask"]]
@@ -169,21 +170,31 @@ export class ULabel {
                         // Create an annotation based on the last mouse position
                         ul.begin_annotation(ul.state["last_move"])
                     }
+
                     break;
+                // Create a bbox annotation around the initial_crop. Or the whole image if inital_crop does not exist
                 case ul.config.create_bbox_on_initial_crop:
+                    // If initial_crop is undefined, create annotation with size of image
+                    if (ul.config.initial_crop === null || ul.config.initial_crop === undefined) {
 
-
-                    console.log(ul.initial_crop)
-
-                    // If undefined create annotation with size of image
-                    if (ul.initial_crop === undefined) {
+                        // Create the coordinates for the bbox's spatial payload
                         const bbox_top_left = [0,0]
                         const bbox_bottom_right = [ul.config.image_width, ul.config.image_height]
 
                         ul.create_annotation("bbox", [bbox_top_left, bbox_bottom_right])
                     }
+                    else {// If it is defined create a bbox around the initial_crop
+                        // Convenience
+                        const initial_crop = ul.config.initial_crop
 
-                    // ul.create_annotation("bbox", [[0,0],[1000,1000]])
+                        // Create the coordinates for the bbox's spatial payload
+                        const bbox_top_left = [initial_crop.left, initial_crop.top]
+                        const bbox_bottom_right = [initial_crop.left + initial_crop.width, initial_crop.top + initial_crop.height]
+
+                        ul.create_annotation("bbox", [bbox_top_left, bbox_bottom_right])
+                    }
+
+                    break;
             }
         })
 
@@ -2675,7 +2686,6 @@ export class ULabel {
     }
 
     record_action(action, is_redo = false) {
-        console.log("record action was called", action)
         this.set_saved(false);
 
         // After a new action, you can no longer redo old actions
@@ -2685,8 +2695,6 @@ export class ULabel {
 
         // Add to stream
         this.subtasks[this.state["current_subtask"]]["actions"]["stream"].push(action);
-
-        console.log()
     }
 
     record_finish(actid) {
@@ -2724,7 +2732,6 @@ export class ULabel {
 
     undo_action(action) {
         this.update_frame(null, action.frame);
-        console.log(action.undo_payload)
         switch (action.act_type) {
             case "begin_annotation":
                 this.begin_annotation__undo(action.undo_payload);
