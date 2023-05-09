@@ -1268,7 +1268,7 @@ div#${prntid} div.full_ulabel_container_ {
 }
 
 div#${prntid} .ulabel-hidden {
-   display: none;
+   display: none !important;
 }
 
 div#${prntid} div.annbox_cls, div#${prntid} div.toolbox_cls {

@@ -1101,15 +1101,18 @@ export class KeypointSliderItem extends ToolboxItem {
 }
 
 export class FilterPointDistanceFromRow extends ToolboxItem {
-    name: string = "Filter Distance From Row"
-    component_name: string = "FilterPointDistanceFromRow"
-    filter_min: number = 0
-    filter_max: number = 400
-    default_value: number = 40
-    increment_value: number = 2
-    ulabel: ULabel
-    filter_on_load: boolean = true
-    multi_class_mode: boolean = true
+    name: string = "Filter Distance From Row" // Component name shown to users
+    component_name: string = "FilterPointDistanceFromRow" // Internal component name
+    default_value: number = 40 // Value slider is set to on page load
+    filter_min: number = 0 // Minimum value slider may be set to
+    filter_max: number = 400 // Maximum value slider may be set to
+    increment_value: number = 2 // Value slider increments by
+    filter_on_load: boolean = true // Whether or not to filter annotations on page load
+    multi_class_mode: boolean = true // Whether or not the component is currently in multi-class mode
+    show_options: boolean = true // Whether or not the options dialog will be visable
+
+    ulabel: ULabel // The ULable object. Must be passed in
+
 
     constructor(ulabel: ULabel, kwargs: {[name: string]: any} = null) {
         super()
@@ -1143,6 +1146,9 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
             }
             if (typeof kwargs.filter_on_load === "boolean") {
                 this.filter_on_load = kwargs.filter_on_load
+            }
+            if (typeof kwargs.show_options === "boolean") {
+                this.show_options = kwargs.show_options
             }
         }
 
@@ -1293,10 +1299,12 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
         // Get the multi-class filter html
         const multi_class_html = this.createMultiFilterHTML()
 
+        console.log(this.show_options, "show options")
+
         return`
         <div class="filter-row-distance">
             <p class="tb-header">${this.name}</p>
-            <fieldset class="filter-row-distance-options">
+            <fieldset class="filter-row-distance-options ${this.show_options ? "" : "ulabel-hidden"}">
                 <legend>Options</legend>
                 <div>
                     <input
