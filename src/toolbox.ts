@@ -1185,7 +1185,7 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
             const slider_id: string = slider.id
 
             // Grab the label element that is for the current slider and has the class filter-distance-percent-label
-            let label: HTMLLabelElement = document.querySelector(`label[for="${slider_id}"].filter-distance-percent-label`)
+            let label: HTMLLabelElement = document.querySelector(`label[for="${slider_id}"].filter-distance-px-label`)
 
             label.innerText = slider_value + "px"
         }
@@ -1340,7 +1340,7 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
                     <label 
                         for="filter-row-distance-single" 
                         id="${this.component_name}-single-mode-label"
-                        class="filter-distance-percent-label">
+                        class="filter-distance-px-label">
                         ${Math.round(this.default_value)}px
                     </label>
                     <div class="filter-row-distance-button-holder">
