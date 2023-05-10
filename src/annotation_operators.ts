@@ -19,6 +19,31 @@ export function get_annotation_confidence(annotation: ULabelAnnotation) {
 }
 
 /**
+ * Returns the class id of a ULabelAnnotation as a string.
+ * 
+ * @param annotation ULabelAnnotation
+ * @returns The class id of the annotation as a string
+ */
+function get_annotation_class_id(annotation: ULabelAnnotation) {
+        // Keep track of the most likely class id and its confidence
+        let id: number, confidence: number
+
+        // Go through each item in the classification payload
+        annotation.classification_payloads.forEach(current_payload => {
+            // The confidence will be undefined the first time through, so set the id and confidence for a baseline
+            // Otherwise replace the id if the conidence is higher
+
+            console.log("current_payload",current_payload)
+            if (confidence === undefined || current_payload.confidence > confidence) {
+                id = current_payload.class_id
+                confidence = current_payload.confidence
+            }
+        })
+
+        return id.toString()
+}
+
+/**
  * Takes in an annotation and marks it either deprecated or not deprecated.
  * 
  * @param annotation ULabelAnnotation
@@ -270,7 +295,7 @@ export function assign_distance_from_line_multi_class(
         // Calculate the distance from each line and populate the distance_from accordingly
         line_annotations.forEach(current_line => {
 
-            const line_class_id = current_line.get_class_id()
+            const line_class_id = get_annotation_class_id(current_line)
             
             const distance = get_distance_from_point_to_line(current_point, current_line, offset)
 

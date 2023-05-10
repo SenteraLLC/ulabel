@@ -91,28 +91,6 @@ export class ULabelAnnotation {
         }
         return ret;
     } 
-
-    /**
-     * Go through the classification payload and return the id of the class with the highest confidence
-     * 
-     * @returns id number of the annotation as a string
-     */
-    public get_class_id() {
-        // Keep track of the most likely class id and its confidence
-        let id: number, confidence: number
-
-        // Go through each item in the classification payload
-        this.classification_payloads.forEach(current_payload => {
-            // The confidence will be undefined the first time through, so set the id and confidence for a baseline
-            // Otherwise replace the id if the conidence is higher
-            if (confidence === undefined || current_payload.confidence > confidence) {
-                id = current_payload.class_id
-                confidence = current_payload.confidence
-            }
-        })
-
-        return id.toString()
-    }
 }
 
 type ULabelAnnotations = {
