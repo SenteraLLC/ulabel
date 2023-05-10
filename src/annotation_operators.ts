@@ -1,4 +1,4 @@
-import { Offset, ULabel, ULabelSpatialType, ULabelSubtask, DeprecatedBy, DistanceFrom } from "..";
+import { Offset, ULabel, ULabelSpatialType, ULabelSubtask, DeprecatedBy, DistanceFrom, FilterDistanceOverride } from "..";
 import { ULabelAnnotation } from "./annotation";
 
 /**
@@ -309,6 +309,8 @@ export function assign_distance_from_line_multi_class(
                 distance_from["any_line"] = distance
             }
         })
+
+        // Assign the distance from object to the current point
         current_point.distance_from = distance_from
         console.log(current_point.distance_from)
     })
@@ -321,26 +323,33 @@ export function assign_distance_from_line_multi_class(
  * @param ulabel ULabel object
  * @param offset Offset of a particular annotation. Used when filter is called while an annotation is being moved
  */
-export function filter_points_distance_from_line(ulabel: ULabel, offset: Offset = null, filter_value_override: number = null) {
+export function filter_points_distance_from_line(ulabel: ULabel, offset: Offset = null, override: FilterDistanceOverride = null) {
     // Grab the slider's value
-    let filter_value: number
-    if (filter_value_override !== null) {
-        // If the override exists use that value
+    let filter_value: number, multi_class_mode: boolean
+
+    // If the override exists, then use the override's values
+    if (override !== null) {
         // Exists so that this function can be called without accessing the dom
-        filter_value = filter_value_override
+        filter_value = override.filter_value
+
+        // TODO: Support Multi-Class Override
+        // Multi-class mode is currently not supported with an override
+        multi_class_mode = false
     }
     else {
-        // Otherwise use the slider to get the filter_value
+        // Otherwise access the dom to get the appropriate values
         const slider: HTMLInputElement = document.querySelector("#FilterPointDistanceFromRow-slider")
+        const multi_checkbox: HTMLInputElement = document.querySelector("#filter-slider-distance-multi-checkbox")
 
-        // If no filter_value_override and no slider exists, then throw error and return early
-        if (slider === null) {
+        // If either element was unable to be found, then throw an error and return early
+        if (slider === null || multi_checkbox === null) {
             console.error("filter_points_distance_from_line could not find slider object")
             return
         }
 
-        // Set the filter value with the slider's value
+        // Set the appropriate values
         filter_value = slider.valueAsNumber
+        multi_class_mode = multi_checkbox.checked
     }
     
     // Grab the subtasks from ulabel
@@ -375,28 +384,17 @@ export function filter_points_distance_from_line(ulabel: ULabel, offset: Offset 
         }
     }
 
-    // Get whether or not the filter is in multi-mode
-    // const checkbox: HTMLInputElement = document.querySelector("#filter-slider-distance-multi-checkbox")
-    // const multi_mode: boolean = checkbox.checked
-
+    // Calculate and assign each point a distance from line value
     assign_distance_from_line_multi_class(point_annotations, line_annotations, offset)
-    // Assign distance according to the current mode
-    // if (multi_mode) {
-    // }
-    // else {
-    //     assign_distance_from_line(point_annotations, line_annotations, offset)
-    // }
 
-    // Loop through each point annotation and deprecate them if they don't pass the filter
     filter_high(point_annotations, "distance_from_any_line", filter_value, "distance_from_row")
 
-    // TODO: Make this more intelligent
-    // If the filter_value_override is present don't redraw for reasons
-    if (filter_value_override === null) {
+    // Redraw if the override does not exist
+    // Redraw if the override.should_redraw is true
+    if (override === null || override.should_redraw) {
         ulabel.redraw_all_annotations(null, null, false);
     }
 }
-
 
 /**
  * Goes through all subtasks and finds all classes that polylines can be. Then returns a list of them.

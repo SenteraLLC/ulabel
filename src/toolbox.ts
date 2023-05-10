@@ -1,4 +1,4 @@
-import { ULabel, ULabelAnnotation, ULabelSubtask } from "..";
+import { FilterDistanceOverride, ULabel, ULabelAnnotation, ULabelSubtask } from "..";
 import { Configuration } from "./configuration";
 import { 
     get_annotation_confidence, 
@@ -1154,7 +1154,13 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
 
         // If filter_on_load is true, then filter on load
         if (this.filter_on_load) {
-            filter_points_distance_from_line(this.ulabel, null, this.default_value)
+            // Create a filter distance override, so filter distance knows how to filter without accessing the dom
+            const override: FilterDistanceOverride = {
+                "filter_value": this.default_value,
+                "should_redraw": false // Because the dom hasn't loaded yet
+            }
+
+            filter_points_distance_from_line(this.ulabel, null, override)
         }
         
 

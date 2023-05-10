@@ -18,6 +18,15 @@ export type DistanceFrom = {
     [key: string]: number // Key can be any string, but value must be number
 }
 
+/**
+ * Info needed to filter distance from row without accessing the dom. 
+ * Primarily exists so that points can be filtered before the page loads.
+ */
+export type FilterDistanceOverride = {
+    "filter_value": number,
+    "should_redraw": boolean
+}
+
 export type ULabelAnnotation = {
     id: string;
     new: boolean;
