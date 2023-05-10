@@ -1,3 +1,4 @@
+import { DistanceFrom } from "..";
 
 type ULabelSpatialType = 'contour' | 'polygon' | 'bbox' | 'tbar' | 'bbox3' | 'whole-image' | 'global' | 'point';
 type ULabelSpatialPayload = [number, number][];
@@ -29,6 +30,7 @@ export class ULabelAnnotation {
         public containing_box?: ULabelContainingBox,
         public created_by?: string,
         public distance_from_any_line?: number,
+        public distance_from?: DistanceFrom,
         public frame?: number,
         public line_size?: number,
         public id?: string,

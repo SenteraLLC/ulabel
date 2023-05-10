@@ -279,7 +279,14 @@ export function assign_distance_from_line_multi_class(
             if (distance_from[line_class_id] === undefined || distance < distance_from[line_class_id]) {
                 distance_from[line_class_id] = distance
             }
+
+            // Likewise check to see if the current distance is less than a line of any class
+            if (distance_from["any_line"] === undefined || distance < distance_from["any_line"]) {
+                distance_from["any_line"] = distance
+            }
         })
+        current_point.distance_from = distance_from
+        console.log(current_point.distance_from)
     })
 }
 
@@ -344,8 +351,17 @@ export function filter_points_distance_from_line(ulabel: ULabel, offset: Offset 
         }
     }
 
-    // Assign all of the point annotations a distance from line value
-    assign_distance_from_line(point_annotations, line_annotations, offset)
+    // Get whether or not the filter is in multi-mode
+    // const checkbox: HTMLInputElement = document.querySelector("#filter-slider-distance-multi-checkbox")
+    // const multi_mode: boolean = checkbox.checked
+
+    assign_distance_from_line_multi_class(point_annotations, line_annotations, offset)
+    // Assign distance according to the current mode
+    // if (multi_mode) {
+    // }
+    // else {
+    //     assign_distance_from_line(point_annotations, line_annotations, offset)
+    // }
 
     // Loop through each point annotation and deprecate them if they don't pass the filter
     filter_high(point_annotations, "distance_from_any_line", filter_value, "distance_from_row")
