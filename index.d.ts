@@ -38,7 +38,6 @@ export type ULabelAnnotation = {
     created_at: string;
     deprecated: boolean;
     deprecated_by: DeprecatedBy;
-    human_deprecated: boolean;
     spatial_type: ULabelSpatialType;
     spatial_payload: [number, number][];
     class_ids: number[];

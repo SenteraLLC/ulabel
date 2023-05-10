@@ -106,7 +106,7 @@ export function filter_high(annotations: ULabelAnnotation[], property: string, f
     // Loop through each point annotation and deprecate them if they don't pass the filter
     annotations.forEach(function(annotation: ULabelAnnotation) {
         // Make sure the annotation is not a human deprecated one
-        if (!annotation.human_deprecated) {
+        if (!annotation.deprecated_by["human"]) {
             // Run the annotation through the filter with the passed in property
             const should_deprecate: boolean = value_is_higher_than_filter(annotation[property], filter)
 
@@ -387,6 +387,13 @@ export function filter_points_distance_from_line(ulabel: ULabel, offset: Offset 
     // Calculate and assign each point a distance from line value
     assign_distance_from_line_multi_class(point_annotations, line_annotations, offset)
 
+    // Filter based on current mode
+    if (multi_class_mode) { // Multi class mode
+
+    }
+    else { // Single class mode
+
+    }
     filter_high(point_annotations, "distance_from_any_line", filter_value, "distance_from_row")
 
     // Redraw if the override does not exist

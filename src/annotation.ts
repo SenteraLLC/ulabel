@@ -1,4 +1,4 @@
-import { DistanceFrom } from "..";
+import { DistanceFrom, DeprecatedBy } from "..";
 
 type ULabelSpatialType = 'contour' | 'polygon' | 'bbox' | 'tbar' | 'bbox3' | 'whole-image' | 'global' | 'point';
 type ULabelSpatialPayload = [number, number][];
@@ -20,7 +20,7 @@ export class ULabelAnnotation {
         // Required properties
         public annotation_meta: any = null,
         public deprecated: boolean = false,
-        public human_deprecated: boolean = null,
+        public deprecated_by: DeprecatedBy = {"human": false},
         public is_new: boolean = true,
         public parent_id: string = null,
         public text_payload: string = "",
