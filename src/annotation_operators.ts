@@ -33,7 +33,6 @@ function get_annotation_class_id(annotation: ULabelAnnotation) {
             // The confidence will be undefined the first time through, so set the id and confidence for a baseline
             // Otherwise replace the id if the conidence is higher
 
-            console.log("current_payload",current_payload)
             if (confidence === undefined || current_payload.confidence > confidence) {
                 id = current_payload.class_id
                 confidence = current_payload.confidence
@@ -290,7 +289,7 @@ export function assign_distance_from_line_multi_class(
     point_annotations.forEach(current_point => {
 
         // Create a DistanceFrom object to be assigned to this point
-        let distance_from: DistanceFrom
+        let distance_from: DistanceFrom = {"any_line": undefined}
 
         // Calculate the distance from each line and populate the distance_from accordingly
         line_annotations.forEach(current_line => {
