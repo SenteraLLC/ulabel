@@ -338,17 +338,23 @@ export function filter_points_distance_from_line(ulabel: ULabel, offset: Offset 
     }
     else {
         // Otherwise access the dom to get the appropriate values
-        const slider: HTMLInputElement = document.querySelector("#FilterPointDistanceFromRow-slider")
+        const sliders: HTMLInputElement = document.querySelector(".filter-row-distance-slider")
         const multi_checkbox: HTMLInputElement = document.querySelector("#filter-slider-distance-multi-checkbox")
-
-        // If either element was unable to be found, then throw an error and return early
-        if (slider === null || multi_checkbox === null) {
-            console.error("filter_points_distance_from_line could not find slider object")
+        
+        // Log an error if either the slider or the multi-checkbox are unable to be found
+        if (sliders === null) {
+            console.error("filter_points_distance_from_line could not find slider objects")
+        }
+        if (multi_checkbox === null) {
+            console.error("filter_points_distance_from_line could not find multi-class checkbox object")
+        }
+        // If either one was not found, then return from the function early
+        if (sliders === null || multi_checkbox === null) {
             return
         }
-
+        
         // Set the appropriate values
-        filter_value = slider.valueAsNumber
+        //filter_value = slider.valueAsNumber
         multi_class_mode = multi_checkbox.checked
     }
     
@@ -387,14 +393,17 @@ export function filter_points_distance_from_line(ulabel: ULabel, offset: Offset 
     // Calculate and assign each point a distance from line value
     assign_distance_from_line_multi_class(point_annotations, line_annotations, offset)
 
+    point_annotations.forEach(annotation => {
+        console.log(annotation.distance_from)
+    })
     // Filter based on current mode
     if (multi_class_mode) { // Multi class mode
-
+        
     }
     else { // Single class mode
 
     }
-    filter_high(point_annotations, "distance_from_any_line", filter_value, "distance_from_row")
+    //filter_high(point_annotations, "distance_from_any_line", filter_value, "distance_from_row")
 
     // Redraw if the override does not exist
     // Redraw if the override.should_redraw is true
