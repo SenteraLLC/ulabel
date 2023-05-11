@@ -1,4 +1,4 @@
-import { Offset, ULabel, ULabelAnnotation, ULabelSpatialType, ULabelSubtask, DeprecatedBy } from "..";
+import { Offset, ULabel, ULabelAnnotation, ULabelSpatialType, ULabelSubtask, DeprecatedBy, ValidDeprecatedBy } from "..";
 import { AllowedToolboxItem } from "./configuration";
 
 /**
@@ -25,25 +25,17 @@ export function get_annotation_confidence(annotation: ULabelAnnotation) {
  * @param deprecated boolean 
  * @param deprecated_by_key 
  */
-export function mark_deprecated(annotation: any, deprecated: boolean, deprecated_by_key: string = "human") {
+export function mark_deprecated(annotation: any, deprecated: boolean, deprecated_by_key: ValidDeprecatedBy = "human") {
 
-    // If annotation.deprecated_by is undefined, then set the deprecated_by property
     if (annotation.deprecated_by === undefined) {
-        annotation.deprecated_by = <DeprecatedBy> {
-            [deprecated_by_key]: deprecated
-        }
+        annotation.deprecated_by = <DeprecatedBy> {};
     }
-    else { // If annotation.deprecated_by is not undefined, then just update the property
-        annotation.deprecated_by[deprecated_by_key] = deprecated
-    }
+    annotation.deprecated_by[deprecated_by_key] = deprecated;
 
-    // Loop through each way an annotation can be deprecated
-    for (const key in annotation.deprecated_by) {
-        // If the annotation has been deprecated by any method, then deprecate the annotation
-        if (annotation.deprecated_by[key]) {
-            annotation.deprecated = true
-            return
-        }
+    // If the annotation has been deprecated by any method, then deprecate the annotation
+    if (Object.values(annotation.deprecated_by).some(x => x)) {
+        annotation.deprecated = true
+        return
     }
 
     // If the annotation hasn't been deprecated by any property, then set deprecated to false
@@ -78,7 +70,7 @@ export function value_is_higher_than_filter(value: number, filter: number) {
  * @param property The property on the annotation to be compared against the filter. e.g. "confidence"
  * @param filter The value all filters will be compared against
  */
-export function filter_high(annotations: ULabelAnnotation[], property: string, filter: number, deprecated_by: string) {
+export function filter_high(annotations: ULabelAnnotation[], property: string, filter: number, deprecated_by_key: ValidDeprecatedBy) {
     // Loop through each point annotation and deprecate them if they don't pass the filter
     annotations.forEach(function(annotation: ULabelAnnotation) {
         // Make sure the annotation is not a human deprecated one
@@ -87,7 +79,7 @@ export function filter_high(annotations: ULabelAnnotation[], property: string, f
             const should_deprecate: boolean = value_is_higher_than_filter(annotation[property], filter)
 
             // Mark the point deprecated
-            mark_deprecated(annotation, should_deprecate, deprecated_by)
+            mark_deprecated(annotation, should_deprecate, deprecated_by_key)
         }
     })
 }
@@ -258,6 +250,10 @@ export function assign_points_distance_from_line(
  * @param offset Offset of a particular annotation. Used when filter is called while an annotation is being moved
  */
 export function filter_points_distance_from_line(ulabel: ULabel, offset: Offset = null, filter_value_override: number = null) {
+    // Define constants to be used
+    const filter_by_property: ValidDeprecatedBy = "distance_from_row"
+    const annotation_property_to_compare: string = "distance_from_any_line"
+
     // Grab the slider's value
     let filter_value: number
     if (filter_value_override !== null) {
@@ -315,7 +311,7 @@ export function filter_points_distance_from_line(ulabel: ULabel, offset: Offset 
     assign_points_distance_from_line(point_annotations, line_annotations, offset)
 
     // Loop through each point annotation and deprecate them if they don't pass the filter
-    filter_high(point_annotations, "distance_from_any_line", filter_value, "distance_from_row")
+    filter_high(point_annotations, annotation_property_to_compare, filter_value, filter_by_property)
 
     // TODO: Make this more intelligent
     // If the filter_value_override is present don't redraw for reasons
