@@ -34,17 +34,7 @@ export class Configuration {
         AllowedToolboxItem.AnnotationID,
         AllowedToolboxItem.RecolorActive,
         AllowedToolboxItem.ClassCounter,
-        [AllowedToolboxItem.KeypointSlider, {
-            "name": "Filter Low Confidence",
-            "filter_function": value_is_lower_than_filter, 
-            "confidence_function": get_annotation_confidence, 
-            "mark_deprecated": mark_deprecated,
-            "default_value": 0.05,
-            "keybinds": {
-                "increment": "2",
-                "decrement": "1"
-            }
-        }],
+        AllowedToolboxItem.KeypointSlider,
         AllowedToolboxItem.FilterDistance,
         AllowedToolboxItem.SubmitButtons,
     ]
