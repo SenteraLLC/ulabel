@@ -1,4 +1,5 @@
-import { Offset, ULabel, ULabelAnnotation, ULabelSpatialType, ULabelSubtask } from "..";
+import { Offset, ULabel, ULabelAnnotation, ULabelSpatialType, ULabelSubtask, DeprecatedBy, ValidDeprecatedBy } from "..";
+import { AllowedToolboxItem } from "./configuration";
 
 /**
  * Returns the confidence of the passed in ULabelAnnotation.
@@ -22,9 +23,23 @@ export function get_annotation_confidence(annotation: ULabelAnnotation) {
  * 
  * @param annotation ULabelAnnotation
  * @param deprecated boolean 
+ * @param deprecated_by_key 
  */
-export function mark_deprecated(annotation: any, deprecated: boolean) {
-    annotation.deprecated = deprecated
+export function mark_deprecated(annotation: any, deprecated: boolean, deprecated_by_key: ValidDeprecatedBy = "human") {
+
+    if (annotation.deprecated_by === undefined) {
+        annotation.deprecated_by = <DeprecatedBy> {};
+    }
+    annotation.deprecated_by[deprecated_by_key] = deprecated;
+
+    // If the annotation has been deprecated by any method, then deprecate the annotation
+    if (Object.values(annotation.deprecated_by).some(x => x)) {
+        annotation.deprecated = true
+        return
+    }
+
+    // If the annotation hasn't been deprecated by any property, then set deprecated to false
+    annotation.deprecated = false
 }
 
 /**
@@ -55,7 +70,7 @@ export function value_is_higher_than_filter(value: number, filter: number) {
  * @param property The property on the annotation to be compared against the filter. e.g. "confidence"
  * @param filter The value all filters will be compared against
  */
-export function filter_high(annotations: ULabelAnnotation[], property: string, filter: number) {
+export function filter_high(annotations: ULabelAnnotation[], property: string, filter: number, deprecated_by_key: ValidDeprecatedBy) {
     // Loop through each point annotation and deprecate them if they don't pass the filter
     annotations.forEach(function(annotation: ULabelAnnotation) {
         // Make sure the annotation is not a human deprecated one
@@ -64,7 +79,7 @@ export function filter_high(annotations: ULabelAnnotation[], property: string, f
             const should_deprecate: boolean = value_is_higher_than_filter(annotation[property], filter)
 
             // Mark the point deprecated
-            mark_deprecated(annotation, should_deprecate)
+            mark_deprecated(annotation, should_deprecate, deprecated_by_key)
         }
     })
 }
@@ -207,6 +222,7 @@ export function assign_points_distance_from_line(
         // Keep track of a smallest distance for each point
         let smallest_distance: number
 
+
         // Loop through each line annotation
         for (let line_idx = 0; line_idx < line_annotations.length; line_idx++) {
             // Grab the current line annotation
@@ -233,20 +249,31 @@ export function assign_points_distance_from_line(
  * @param ulabel ULabel object
  * @param offset Offset of a particular annotation. Used when filter is called while an annotation is being moved
  */
-export function filter_points_distance_from_line(ulabel: ULabel, offset: Offset = null) {
-    // Grab the slider element
-    const slider: HTMLInputElement = document.querySelector("#FilterPointDistanceFromRow-slider")
+export function filter_points_distance_from_line(ulabel: ULabel, offset: Offset = null, filter_value_override: number = null) {
+    // Define constants to be used
+    const filter_by_property: ValidDeprecatedBy = "distance_from_row"
+    const annotation_property_to_compare: string = "distance_from_any_line"
 
-    // If this function is being called then a FilterPointDistanceFromRow instance should exist in the toolbox.
-    // If a FilterPointDistanceFromRow instance exists in the toolbox, then the slider should be defined too.
-    // If for any reason it still is not, then return from this function early
-    if (slider === null) {
-        console.error("filter_points_distance_from_line could not find slider object")
-        return
-    }
-    
     // Grab the slider's value
-    const filter_value: number = slider.valueAsNumber
+    let filter_value: number
+    if (filter_value_override !== null) {
+        // If the override exists use that value
+        // Exists so that this function can be called without accessing the dom
+        filter_value = filter_value_override
+    }
+    else {
+        // Otherwise use the slider to get the filter_value
+        const slider: HTMLInputElement = document.querySelector("#FilterPointDistanceFromRow-slider")
+
+        // If no filter_value_override and no slider exists, then throw error and return early
+        if (slider === null) {
+            console.error("filter_points_distance_from_line could not find slider object")
+            return
+        }
+
+        // Set the filter value with the slider's value
+        filter_value = slider.valueAsNumber
+    }
     
     // Grab the subtasks from ulabel
     const subtasks: ULabelSubtask[] = Object.values(ulabel.subtasks)
@@ -284,8 +311,11 @@ export function filter_points_distance_from_line(ulabel: ULabel, offset: Offset 
     assign_points_distance_from_line(point_annotations, line_annotations, offset)
 
     // Loop through each point annotation and deprecate them if they don't pass the filter
-    filter_high(point_annotations, "distance_from_any_line", filter_value)
+    filter_high(point_annotations, annotation_property_to_compare, filter_value, filter_by_property)
 
-    // Redraw all annotations
-    ulabel.redraw_all_annotations(null, null, false);
+    // TODO: Make this more intelligent
+    // If the filter_value_override is present don't redraw for reasons
+    if (filter_value_override === null) {
+        ulabel.redraw_all_annotations(null, null, false);
+    }
 }
