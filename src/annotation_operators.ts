@@ -235,53 +235,13 @@ function get_distance_from_point_to_line(point_annotation: ULabelAnnotation, lin
 }
 
 /**
- * Update the distance_from_any_line property on a set of point_annotations based on their distance from a set of line_annotations.
- * 
- * @param point_annotations The set of point annotations to be updated
- * @param line_annotations The set of polyline annotations the points will be compared against
- * @param offset Offset of a particular annotation in the set. Used when an annotation is being moved by the user
- */
-export function assign_distance_from_line(
-    point_annotations: ULabelAnnotation[],
-    line_annotations: ULabelAnnotation[],
-    offset: Offset = null
-    ) {
-    // TODO: Add 3D support (maybe)
-    for (let point_idx = 0; point_idx < point_annotations.length; point_idx++) {
-        // Grab the current point annotation
-        const current_point = point_annotations[point_idx]
-
-        // Keep track of a smallest distance for each point
-        let smallest_distance: number
-
-        // Loop through each line annotation
-        for (let line_idx = 0; line_idx < line_annotations.length; line_idx++) {
-            // Grab the current line annotation
-            const current_line = line_annotations[line_idx]
-        
-            // Calculate the distance
-            const distance = get_distance_from_point_to_line(current_point, current_line, offset)
-
-            // Replace this property with the new distance if its undefined or the smallest distance calculated
-            if (smallest_distance === undefined || smallest_distance > distance) {                 
-                smallest_distance = distance
-            }
-        }
-
-        // Assign the smallest distance to the annotation
-        current_point.distance_from_any_line = smallest_distance
-    }
-}
-
-
-/**
  * Assigns each point annotation a distance from each diffrent class of row. Will also update the distance from any row.
  * 
  * @param point_annotations Set of point annotations
  * @param line_annotations Set of line annotations
  * @param offset Offset of a particular annotation in the set. Used when an annotation is being moved by the user
  */
-export function assign_distance_from_line_multi_class(
+export function assign_distance_from_line(
     point_annotations: ULabelAnnotation[],
     line_annotations: ULabelAnnotation[],
     offset: Offset = null) {
@@ -391,7 +351,7 @@ export function filter_points_distance_from_line(ulabel: ULabel, offset: Offset 
     }
 
     // Calculate and assign each point a distance from line value
-    assign_distance_from_line_multi_class(point_annotations, line_annotations, offset)
+    assign_distance_from_line(point_annotations, line_annotations, offset)
 
     point_annotations.forEach(annotation => {
         console.log(annotation.distance_from)
