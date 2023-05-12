@@ -277,6 +277,27 @@ export function assign_distance_from_line(
 }
 
 /**
+ * Handles filtering annotations when in single mode
+ * 
+ * @param point_annotations Array of point annotations to be deprecated/undeprecated
+ * @param filter_value Value the annotations are compared against
+ */
+function filter_points_distance_from_line__single(point_annotations: ULabelAnnotation[], filter_value: number) {
+    // Go through each annotation
+    point_annotations.forEach(annotation => {
+
+        // If the annotation's distance from any line is greater than the filter_value, it should be deprecated
+        const should_deprecate: boolean = annotation.distance_from["any_line"] > filter_value
+
+        mark_deprecated(annotation, should_deprecate, "distance_from_row")
+    })
+}
+
+function filter_points_distance_from_line__multi() {
+
+}
+
+/**
  * Using the value of the FilterPointDistanceFromRow's slider, filter all point annotations based on their distance 
  * from a polyline annotation.
  * 
@@ -284,40 +305,6 @@ export function assign_distance_from_line(
  * @param offset Offset of a particular annotation. Used when filter is called while an annotation is being moved
  */
 export function filter_points_distance_from_line(ulabel: ULabel, offset: Offset = null, override: FilterDistanceOverride = null) {
-    // Grab the slider's value
-    let filter_value: number, multi_class_mode: boolean
-
-    // If the override exists, then use the override's values
-    if (override !== null) {
-        // Exists so that this function can be called without accessing the dom
-        filter_value = override.filter_value
-
-        // TODO: Support Multi-Class Override
-        // Multi-class mode is currently not supported with an override
-        multi_class_mode = false
-    }
-    else {
-        // Otherwise access the dom to get the appropriate values
-        const sliders: HTMLInputElement = document.querySelector(".filter-row-distance-slider")
-        const multi_checkbox: HTMLInputElement = document.querySelector("#filter-slider-distance-multi-checkbox")
-        
-        // Log an error if either the slider or the multi-checkbox are unable to be found
-        if (sliders === null) {
-            console.error("filter_points_distance_from_line could not find slider objects")
-        }
-        if (multi_checkbox === null) {
-            console.error("filter_points_distance_from_line could not find multi-class checkbox object")
-        }
-        // If either one was not found, then return from the function early
-        if (sliders === null || multi_checkbox === null) {
-            return
-        }
-        
-        // Set the appropriate values
-        //filter_value = slider.valueAsNumber
-        multi_class_mode = multi_checkbox.checked
-    }
-    
     // Grab the subtasks from ulabel
     const subtasks: ULabelSubtask[] = Object.values(ulabel.subtasks)
 
@@ -353,17 +340,58 @@ export function filter_points_distance_from_line(ulabel: ULabel, offset: Offset 
     // Calculate and assign each point a distance from line value
     assign_distance_from_line(point_annotations, line_annotations, offset)
 
+    // Testing
     point_annotations.forEach(annotation => {
         console.log(annotation.distance_from)
     })
+
+    // Initialize multi_class mode
+    let multi_class_mode: boolean
+
+    // If the override exists set multi_class_mode to false
+    if (override !== null) {
+        // Currently multi class mode is not supported with override
+        // TODO: Support Multi-Class Override
+        multi_class_mode = false
+    }
+    else { // If the override doesn't exist, get the current mode from the dom
+        const multi_checkbox: HTMLInputElement = document.querySelector("#filter-slider-distance-multi-checkbox")
+       
+        // If the checkbox wasn't found log error
+        if (multi_checkbox === null) {
+            console.error("filter_points_distance_from_line could not find multi-class checkbox object")
+            return
+        }
+
+        multi_class_mode = multi_checkbox.checked
+    }
+
     // Filter based on current mode
     if (multi_class_mode) { // Multi class mode
         
-    }
-    else { // Single class mode
+        const sliders: HTMLInputElement = document.querySelector(".filter-row-distance-slider")
+
+
+
 
     }
-    //filter_high(point_annotations, "distance_from_any_line", filter_value, "distance_from_row")
+    else { // Single class mode
+        // Initialize filter value
+        let filter_value: number
+
+        // If the override exists, use its filter value
+        if (override !== null) {
+            filter_value = override.filter_value
+        }
+        else { // Otherwise get the filter value from the dom
+            const single_mode_slider: HTMLInputElement = document.querySelector("#filter-row-distance-single")
+
+            // Filter value will be the slider's value
+            filter_value = single_mode_slider.valueAsNumber
+        }
+
+        filter_points_distance_from_line__single(point_annotations, filter_value)
+    }
 
     // Redraw if the override does not exist
     // Redraw if the override.should_redraw is true
