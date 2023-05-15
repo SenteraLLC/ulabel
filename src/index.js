@@ -894,7 +894,7 @@ export class ULabel {
             "annotation_meta": annotation_meta
         });
 
-        //add passed in data to config
+        // Update the ulabel config object with the passed in config data
         if (config_data != null) {
             this.config.modify_config(config_data)
         }

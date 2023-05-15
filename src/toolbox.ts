@@ -1111,13 +1111,16 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
 
         this.ulabel = ulabel
 
-        // Check if kwargs is undefined before trying to access its property
-        if (kwargs !== undefined && kwargs.filter_on_load !== undefined) {
-            this.filter_on_load = kwargs.filter_on_load
+        // Make sure property isn't undefined before using
+        if (typeof this.ulabel.config.filter_row_distance_default_value !== "undefined") {
+            this.default_value = this.ulabel.config.filter_row_distance_default_value
+        }
+
+        if (typeof this.ulabel.config.filter_row_distance_on_load !== "undefined") {
+            this.filter_on_load = this.ulabel.config.filter_row_distance_on_load
         }
 
         if (this.filter_on_load) {
-            console.log("filter on load")
             filter_points_distance_from_line(this.ulabel, null, this.default_value)
         }
         
