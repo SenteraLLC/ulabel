@@ -158,18 +158,43 @@ export class ULabel {
 
         $(document).on("keypress", (e) => {   
             // Check for the correct keypress
-            if (e.key == ul.config.create_point_annotation_keybind) {
 
-                // Grab current subtask
-                let current_subtask_key = ul.state["current_subtask"];
-                let current_subtask = ul.subtasks[current_subtask_key];
-                
-                // Only allow keypress to create point annotations
-                if (current_subtask.state.annotation_mode == "point") {
+            switch(e.key) {
+                // Create a point annotation at the mouse's current location
+                case ul.config.create_point_annotation_keybind:
+                    // Grab current subtask
+                    const current_subtask = ul.subtasks[ul.state["current_subtask"]]
                     
-                    // Create an annotation based on the last mouse position
-                    ul.begin_annotation(ul.state["last_move"])
-                }
+                    // Only allow keypress to create point annotations
+                    if (current_subtask.state.annotation_mode == "point") {
+                        // Create an annotation based on the last mouse position
+                        ul.begin_annotation(ul.state["last_move"])
+                    }
+
+                    break;
+                // Create a bbox annotation around the initial_crop. Or the whole image if inital_crop does not exist
+                case ul.config.create_bbox_on_initial_crop:
+                    // If initial_crop is undefined, create annotation with size of image
+                    if (ul.config.initial_crop === null || ul.config.initial_crop === undefined) {
+
+                        // Create the coordinates for the bbox's spatial payload
+                        const bbox_top_left = [0,0]
+                        const bbox_bottom_right = [ul.config.image_width, ul.config.image_height]
+
+                        ul.create_annotation("bbox", [bbox_top_left, bbox_bottom_right])
+                    }
+                    else {// If it is defined create a bbox around the initial_crop
+                        // Convenience
+                        const initial_crop = ul.config.initial_crop
+
+                        // Create the coordinates for the bbox's spatial payload
+                        const bbox_top_left = [initial_crop.left, initial_crop.top]
+                        const bbox_bottom_right = [initial_crop.left + initial_crop.width, initial_crop.top + initial_crop.height]
+
+                        ul.create_annotation("bbox", [bbox_top_left, bbox_bottom_right])
+                    }
+
+                    break;
             }
         })
 
@@ -215,8 +240,6 @@ export class ULabel {
         new ResizeObserver(function () {
             ul.handle_toolbox_overflow();
         }).observe(document.getElementById(ul.config["container_id"]));
-
-    
 
         $(document).on("click", "#" + ul.config["toolbox_id"] + " .zbutt", (e) => {
             let tgt_jq = $(e.currentTarget);
@@ -871,7 +894,7 @@ export class ULabel {
             "annotation_meta": annotation_meta
         });
 
-        //add passed in data to config
+        // Update the ulabel config object with the passed in config data
         if (config_data != null) {
             this.config.modify_config(config_data)
         }
@@ -882,7 +905,6 @@ export class ULabel {
         else {
             this.toolbox_order = toolbox_order;
         }
-
 
         // Useful for the efficient redraw of nonspatial annotations
         this.tmp_nonspatial_element_ids = {};
@@ -2020,6 +2042,7 @@ export class ULabel {
         };
         this.reposition_dialogs();
     }
+
     destroy_polygon_ender(polygon_id) {
         // Create ender id
         const ender_id = "ender_" + polygon_id;
@@ -2237,6 +2260,134 @@ export class ULabel {
             // Currently only supported by polyline
             filter_points_distance_from_line(this)
         }
+    }
+
+    /**
+     * Creates an annotation based on passed in parameters. Does not use mouse positions
+     * 
+     * @param {string} spatial_type What type of annotation to create
+     * @param {[number, number][]} spatial_payload 
+     */
+    create_annotation(spatial_type, spatial_payload, unique_id=null) {
+        // Grab constants for convenience
+        const current_subtask = this.subtasks[this.state["current_subtask"]]
+        const annotation_access = current_subtask["annotations"]["access"]
+        const annotation_ordering = current_subtask["annotations"]["ordering"]
+
+        // Create a new unique id for this annotation
+        if (unique_id === null) {
+            // Create a unique id if one is not provided
+            unique_id = this.make_new_annotation_id()
+        }
+
+        // TODO: Create the classification_payloads intelligently
+        // Get the subtask ids in order to populate the classification_payloads
+        const class_ids = current_subtask.class_ids
+
+        // Set the first element in the class ids to be the class of the created annotation
+        let classification_payloads = [
+            {
+                "class_id": class_ids[0],
+                "confidence": 1
+            }
+        ]
+
+        // Skip the first element since it was set above
+        for (let idx = 1; idx < class_ids.length; idx++) {
+            classification_payloads.push(
+                {
+                    "class_id": class_ids[idx],
+                    "confidence": 0
+                }
+            )
+        }
+
+        // Get the frame
+        let frame = this.state["current_frame"];
+        if (MODES_3D.includes(spatial_type)) {
+            frame = null;
+        }
+
+        // Create the new annotation
+        let new_annotation = {
+            "id": unique_id,
+            "new": true,
+            "parent_id": null,
+            "created_by": this.config["annotator"],
+            "created_at": ULabel.get_time(),
+            "deprecated": false,
+            "deprecated_by": {"human": false},
+            "spatial_type": spatial_type,
+            "spatial_payload": spatial_payload,
+            "classification_payloads": classification_payloads,
+            "text_payload": ""
+        }
+
+        // Add the new annotation to the annotation access and ordering
+        annotation_access[unique_id] = new_annotation
+        annotation_ordering.push(unique_id)
+
+        // Record the action so it can be undone and redone
+        this.record_action({
+            "act_type": "create_annotation",
+            "undo_payload": {"annotation_id": unique_id},
+            "redo_payload": {
+                "annotation_id": unique_id,
+                "spatial_payload": spatial_payload,
+                "spatial_type": spatial_type
+            }
+        })
+
+        // Draw the new annotation to the canvas
+        this.draw_annotation_from_id(unique_id)
+    }
+
+    /**
+     * Recalls create_annotation with the information inside the undo_payload.
+     * Undo_payload should be an object containing three properties.
+     * undo_payload.annotation_id: string. Technically optional. Assignes the annotation id instead of creating a new one.
+     * undo_payload.spatial_payload: [number, number][]
+     * undo_payload.spatial_type: string
+     * 
+     * @param {Object} undo_payload Payload containing the properties required to recall create_annotation
+     */
+    create_annotation__undo(undo_payload) {
+        // Get the current subtask
+        const current_subtask = this.subtasks[this.state["current_subtask"]]
+
+        // Get the id from the payload
+        const annotation_id = undo_payload.annotation_id
+
+        // Delete the created annotation
+        delete current_subtask.annotations.access[annotation_id]
+
+        // Next delete the annotation id from the ordering array
+        // Grab the array for convenience
+        const annotation_ordering = current_subtask.annotations.ordering
+
+        // Get the index of the annotation's id
+        const annotation_index = annotation_ordering.indexOf(annotation_id)
+
+        // Remove the annotation id from the array
+        annotation_ordering.splice(annotation_index, 1) // 1 means remove only the annotation id at the annotation index
+    }
+
+    /**
+     * Recalls create_annotation with the information inside the undo_payload.
+     * redo_payload should be an object containing three properties.
+     * redo_payload.annotation_id: string. Technically optional. Assignes the annotation id instead of creating a new one.
+     * redo_payload.spatial_payload: [number, number][]
+     * redo_payload.spatial_type: string
+     * 
+     * @param {Object} redo_payload Payload containing the properties required to recall create_annotation
+     */
+    create_annotation__redo(redo_payload) {
+        // Recreate the annotation with the same annotation_id, spatial_type, and spatial_payload
+        this.create_annotation(
+            redo_payload.spatial_type, 
+            redo_payload.spatial_payload, 
+            redo_payload.annotation_id
+        )
     }
 
     delete_annotation(annotation_id, redo_payload = null) {
@@ -2603,6 +2754,9 @@ export class ULabel {
             case "assign_annotation_id":
                 this.assign_annotation_id__undo(action.undo_payload);
                 break;
+            case "create_annotation":
+                this.create_annotation__undo(action.undo_payload);
+                break;
             case "create_nonspatial_annotation":
                 this.create_nonspatial_annotation__undo(action.undo_payload);
                 break;
@@ -2635,6 +2789,9 @@ export class ULabel {
                 break;
             case "assign_annotation_id":
                 this.assign_annotation_id(null, action.redo_payload);
+                break;
+            case "create_annotation":
+                this.create_annotation__redo(action.redo_payload);
                 break;
             case "create_nonspatial_annotation":
                 this.create_nonspatial_annotation(action.redo_payload);
@@ -2735,6 +2892,7 @@ export class ULabel {
         }, redoing);
         this.suggest_edits(this.state["last_move"]);
     }
+
     create_nonspatial_annotation__undo(undo_payload) {
         let ann = JSON.parse(undo_payload.ann_str);
         let unq_id = ann["id"];
@@ -2769,7 +2927,7 @@ export class ULabel {
         let gmx = null;
         let gmy = null;
         let init_spatial = null;
-        let init_idpyld = null;
+        let init_id_payload = null;
 
         if (redo_payload == null) {
             unq_id = this.make_new_annotation_id();
@@ -2778,7 +2936,7 @@ export class ULabel {
             gmx = this.get_global_mouse_x(mouse_event);
             gmy = this.get_global_mouse_y(mouse_event);
             init_spatial = this.get_init_spatial(gmx, gmy, annotation_mode);
-            init_idpyld = this.get_init_id_payload();
+            init_id_payload = this.get_init_id_payload();
             this.hide_edit_suggestion();
             this.hide_global_edit_suggestion();
         }
@@ -2791,7 +2949,7 @@ export class ULabel {
             gmx = redo_payload.gmx;
             gmy = redo_payload.gmy;
             init_spatial = redo_payload.init_spatial;
-            init_idpyld = redo_payload.init_payload;
+            init_id_payload = redo_payload.init_payload;
         }
 
         // TODO(3d) 
@@ -2822,14 +2980,14 @@ export class ULabel {
             "deprecated_by": {"human": false},
             "spatial_type": annotation_mode,
             "spatial_payload": init_spatial,
-            "classification_payloads": JSON.parse(JSON.stringify(init_idpyld)),
+            "classification_payloads": JSON.parse(JSON.stringify(init_id_payload)),
             "line_size": line_size,
             "containing_box": containing_box,
             "frame": frame,
             "text_payload": ""
         };
         if (redoing) {
-            this.set_id_dialog_payload_to_init(unq_id, init_idpyld);
+            this.set_id_dialog_payload_to_init(unq_id, init_id_payload);
         }
 
         // TODO(3d)

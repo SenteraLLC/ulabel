@@ -7,6 +7,11 @@ export type Offset = {
     diffZ?: number;
 }
 
+/**
+ * Valid keys for the DeprecatedBy type
+ */
+export type ValidDeprecatedBy = "human" | "confidence_filter" | "distance_from_row";
+
 export type DeprecatedBy = {
     human?: boolean;
     confidence_filter?: boolean;

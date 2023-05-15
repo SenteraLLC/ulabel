@@ -1151,6 +1151,15 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
                 this.show_options = kwargs.show_options
             }
         }
+        
+        // Make sure property isn't undefined before using
+        if (typeof this.ulabel.config.filter_row_distance_default_value !== "undefined") {
+            this.default_value = this.ulabel.config.filter_row_distance_default_value
+        }
+
+        if (typeof this.ulabel.config.filter_row_distance_on_load !== "undefined") {
+            this.filter_on_load = this.ulabel.config.filter_row_distance_on_load
+        }
 
         // If filter_on_load is true, then filter on load
         if (this.filter_on_load) {
