@@ -56,8 +56,12 @@ export class Configuration {
     public delete_annotation_keybind: string = "d";
     
     public filter_low_confidence_default_value: number;
-    
+
     public filter_annotations_on_load: boolean = false;
+
+    public filter_row_distance_default_value: number;
+
+    public filter_row_distance_on_load: boolean = false;
     
     public switch_subtask_keybind: string = "z";
     
