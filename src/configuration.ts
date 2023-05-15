@@ -61,7 +61,7 @@ export class Configuration {
 
     public filter_row_distance_default_value: number;
 
-    public filter_row_distance_on_load: boolean = false;
+    public filter_row_distance_on_load: boolean = true;
     
     public switch_subtask_keybind: string = "z";
     

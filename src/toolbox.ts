@@ -1116,8 +1116,8 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
             this.default_value = this.ulabel.config.filter_row_distance_default_value
         }
 
-        if (typeof this.ulabel.config.filter_row_distance_on_load !== "undefined") { 
-            this.filter_on_load = this.ulabel.config.filter_annotations_on_load
+        if (typeof this.ulabel.config.filter_row_distance_on_load !== "undefined") {
+            this.filter_on_load = this.ulabel.config.filter_row_distance_on_load
         }
 
         if (this.filter_on_load) {
