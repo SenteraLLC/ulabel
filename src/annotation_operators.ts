@@ -2,7 +2,6 @@ import {
     Offset, 
     ULabel, 
     ULabelSpatialType, 
-    ULabelSubtask, 
     DeprecatedBy, 
     DistanceFrom, 
     FilterDistanceOverride, 
@@ -10,6 +9,7 @@ import {
 } from "..";
 
 import { ULabelAnnotation } from "./annotation";
+import { ULabelSubtask } from "./subtask";
 
 /**
  * Returns the confidence of the passed in ULabelAnnotation.
@@ -295,7 +295,7 @@ function filter_points_distance_from_line__single(point_annotations: ULabelAnnot
     })
 }
 
-function filter_points_distance_from_line__multi() {
+function filter_points_distance_from_line__multi(point_annotation: ULabelAnnotation[], filter_values: {[key: string]: number}) {
 
 }
 
@@ -374,9 +374,22 @@ export function filter_points_distance_from_line(ulabel: ULabel, offset: Offset 
     // Filter based on current mode
     if (multi_class_mode) { // Multi class mode
         
-        const sliders: HTMLInputElement = document.querySelector(".filter-row-distance-slider")
+        // Grab all of the class sliders
+        const sliders: NodeListOf<HTMLInputElement> = document.querySelectorAll(".filter-row-distance-class-slider")
 
+        let slider_values: {[key: string]: number} = {}
 
+        for (let idx = 0; idx < sliders.length; idx++) {
+            // Use a regex to get the string after the final - character in the slider id (Which is the class name)
+            const slider_class_name = /[^-]*$/.exec(sliders[idx].id)[0]
+
+            // Set the class name to the 
+            slider_values[slider_class_name] = sliders[idx].valueAsNumber
+        }
+
+        console.log(slider_values)
+
+        filter_points_distance_from_line__multi(point_annotations, slider_values)
 
 
     }
@@ -410,9 +423,9 @@ export function filter_points_distance_from_line(ulabel: ULabel, offset: Offset 
  * 
  * @returns A list of all classes which can be polylines
  */
-export function findAllPolylineClasses(ulabel: ULabel) {
+export function findAllPolylineClassIds(ulabel: ULabel) {
     // Initialize potential classes
-    let potential_classes: string[] = []
+    let potential_class_ids: string[] = []
 
     // Check each subtask to see if polyline is one of its allowed modes
     for (let subtask_key in ulabel.subtasks) {
@@ -422,12 +435,10 @@ export function findAllPolylineClasses(ulabel: ULabel) {
         if (subtask.allowed_modes.includes("polyline")) {
 
             // Loop through all the classes in the subtask 
-            for (let class_idx = 0; class_idx < subtask.classes.length; class_idx++) {
-
-                // Add them to the potential classes
-                potential_classes.push(subtask.classes[class_idx].name)
-            }
+            subtask.class_ids.forEach(id => {
+                potential_class_ids.push(id.toString())
+            })
         }
     }
-    return potential_classes
+    return potential_class_ids
 }

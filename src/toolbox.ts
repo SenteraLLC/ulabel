@@ -5,7 +5,7 @@ import {
     value_is_lower_than_filter, 
     mark_deprecated, 
     filter_points_distance_from_line,
-    findAllPolylineClasses,
+    findAllPolylineClassIds,
     value_is_higher_than_filter, 
 } from "./annotation_operators";
 
@@ -1151,7 +1151,7 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
                 this.show_options = kwargs.show_options
             }
         }
-        
+
         // Make sure property isn't undefined before using
         if (typeof this.ulabel.config.filter_row_distance_default_value !== "undefined") {
             this.default_value = this.ulabel.config.filter_row_distance_default_value
@@ -1261,22 +1261,22 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
      */
     private createMultiFilterHTML() {
         // Get all potential classes
-        const classes = findAllPolylineClasses(this.ulabel)
+        const class_ids = findAllPolylineClassIds(this.ulabel)
 
         let multi_class_html = ``
 
         // Loop through each class and create their html
-        for (let idx = 0; idx < classes.length; idx++) {
+        for (let idx = 0; idx < class_ids.length; idx++) {
             // Grab current class for convenience
-            const current_class = classes[idx]
+            const current_class_id = class_ids[idx]
 
             // Add current classes html to multi_class_html
             multi_class_html += `
             <label
-                for="filter-row-distance-${current_class}"
-                id="filter-row-distance-${current_class}-name-label"
+                for="filter-row-distance-${current_class_id}"
+                id="filter-row-distance-${current_class_id}-name-label"
                 class="filter-row-distance-name-label">
-                ${current_class}
+                ${current_class_id}
             </label>
             <div class="filter-row-distance-container">
                 <input 
@@ -1284,13 +1284,13 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
                     min="${this.filter_min}"
                     max="${this.filter_max}"
                     step="${this.increment_value}"
-                    id="filter-row-distance-${current_class}" 
-                    class="filter-row-distance-slider" 
+                    id="filter-row-distance-${current_class_id}" 
+                    class="filter-row-distance-slider filter-row-distance-class-slider" 
                     value="${this.default_value}"
                 />
                 <label 
-                    for="filter-row-distance-${current_class}" 
-                    id="filter-row-distance-${current_class}-px-label"
+                    for="filter-row-distance-${current_class_id}" 
+                    id="filter-row-distance-${current_class_id}-px-label"
                     class="filter-distance-px-label">
                     ${Math.round(this.default_value)}px
                 </label>

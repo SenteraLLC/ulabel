@@ -34,31 +34,5 @@ export class ULabelSubtask {
         }
         return ret;
     }
-
-    public get_classes_name_as_key() {
-        // Initialize an object to populate and return
-        let return_object: {[key: string]: string} = {}
-        
-        // Go through each class in the subtask
-        this.classes.forEach(current_class => {
-            // Add this class to the return object with the name as the key
-            return_object[current_class.name] = current_class.id.toString()
-        })
-
-        return return_object
-    }
-
-    public get_classes_id_as_key() {
-        // Initialize an object to populate and return
-        let return_object: {[key: string]: string} = {}
-        
-        // Go through each class in the subtask
-        this.classes.forEach(current_class => {
-            // Add this class to the return object with the id as the key
-            return_object[current_class.id] = current_class.name
-        })
-        
-        return return_object
-    }
 }
 //export type ULabelSubtasks = { [key: string]: ULabelSubtask };

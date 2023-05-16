@@ -77,6 +77,8 @@ export type ULabelSubmitHandler = (submitData: ULabelSubmitData) => void;
 export type ULabelSpatialType = 'contour' | 'polygon' | 'polyline' | 'bbox' | 'tbar' | 'bbox3' | 'whole-image' | 'global' | 'point';
 
 export type ULabelSubtask = {
+    actions: { stream: any[]; undone_stack: any[]; };
+    class_ids: number[];
     display_name: string,
     classes: { name: string, color: string, id: number }[],
     allowed_modes: ULabelSpatialType[],
