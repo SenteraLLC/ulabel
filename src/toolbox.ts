@@ -1190,7 +1190,11 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
         $(document).on("click", "#" + this.component_name + "dec-button", () => this.decrementSliderValue())
 
         // Whenever the multi-class filtering checkbox is clicked, switch the displayed filter mode
-        $(document).on("click", "#filter-slider-distance-multi-checkbox", () => this.switchFilterMode())
+        $(document).on("click", "#filter-slider-distance-multi-checkbox", () => {
+            this.switchFilterMode()
+            // Re-filter the points in the new mode
+            filter_points_distance_from_line(ulabel)
+        })
     }
 
     /**
