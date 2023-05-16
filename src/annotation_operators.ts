@@ -5,7 +5,7 @@ import {
     DeprecatedBy, 
     DistanceFrom, 
     FilterDistanceOverride, 
-    ValidDeprecatedBy 
+    ValidDeprecatedBy,
 } from "..";
 
 import { ULabelAnnotation } from "./annotation";

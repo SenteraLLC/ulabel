@@ -1,3 +1,5 @@
+import { ULabelAnnotation } from "./src/annotation";
+import { ULabelSubtask } from "./src/subtask";
 import { Toolbox } from "./src/toolbox";
 
 export type Offset = {
@@ -32,38 +34,38 @@ export type FilterDistanceOverride = {
     "should_redraw": boolean
 }
 
-export type ULabelAnnotation = {
-    id: string;
-    new: boolean;
-    parent_id: null | string;
-    created_by: string;
-    /**
-     * date like "2021-03-30T00:17:43.772Z"
-     */
-    created_at: string;
-    deprecated: boolean;
-    deprecated_by: DeprecatedBy;
-    spatial_type: ULabelSpatialType;
-    spatial_payload: [number, number][];
-    class_ids: number[];
-    classification_payloads: {
-        class_id: number;
-        confidence: number;
-    }[];
-    line_size: number;
-    containing_box: {
-        tlx: number;
-        tly: number;
-        brx: number;
-        bry: number;
-        tlz: number;
-        brz: number;
-    },
-    frame: number;
-    text_payload: string;
-    annotation_meta: any;
-    distance_from_any_line?: number;
-};
+// export type ULabelAnnotation = {
+//     id: string;
+//     new: boolean;
+//     parent_id: null | string;
+//     created_by: string;
+//     /**
+//      * date like "2021-03-30T00:17:43.772Z"
+//      */
+//     created_at: string;
+//     deprecated: boolean;
+//     deprecated_by: DeprecatedBy;
+//     spatial_type: ULabelSpatialType;
+//     spatial_payload: [number, number][];
+//     class_ids: number[];
+//     classification_payloads: {
+//         class_id: number;
+//         confidence: number;
+//     }[];
+//     line_size: number;
+//     containing_box: {
+//         tlx: number;
+//         tly: number;
+//         brx: number;
+//         bry: number;
+//         tlz: number;
+//         brz: number;
+//     },
+//     frame: number;
+//     text_payload: string;
+//     annotation_meta: any;
+//     distance_from_any_line?: number;
+// };
 export type ULabelAnnotations = { [key: string]: ULabelAnnotation[] };
 export type ULabelSubmitData = {
     annotations: ULabelAnnotations;
@@ -76,19 +78,19 @@ export type ULabelSubmitHandler = (submitData: ULabelSubmitData) => void;
  */
 export type ULabelSpatialType = 'contour' | 'polygon' | 'polyline' | 'bbox' | 'tbar' | 'bbox3' | 'whole-image' | 'global' | 'point';
 
-export type ULabelSubtask = {
-    actions: { stream: any[]; undone_stack: any[]; };
-    class_ids: number[];
-    display_name: string,
-    classes: { name: string, color: string, id: number }[],
-    allowed_modes: ULabelSpatialType[],
-    resume_from: ULabelAnnotation[],
-    task_meta: any,
-    annotation_meta: any
-    read_only?: boolean;
-    annotations: { access: {}, ordering: [] }
-    inactive_opacity: number;
-}
+// export type ULabelSubtask = {
+//     actions: { stream: any[]; undone_stack: any[]; };
+//     class_ids: number[];
+//     display_name: string,
+//     classes: { name: string, color: string, id: number }[],
+//     allowed_modes: ULabelSpatialType[],
+//     resume_from: ULabelAnnotation[],
+//     task_meta: any,
+//     annotation_meta: any
+//     read_only?: boolean;
+//     annotations: { access: {}, ordering: [] }
+//     inactive_opacity: number;
+// }
 export type ULabelSubtasks = { [key: string]: ULabelSubtask };
 
 export class ULabel {
@@ -112,26 +114,26 @@ export class ULabel {
         init_crop?: any,
         initial_line_size?: number,
         instructions_url?: string
-        )
+    )
         
-        /**
-         * @link https://github.com/SenteraLLC/ulabel/blob/main/api_spec.md#display-utility-functions
-         */
-        public init(callback: () => void): void;
-        public show_initial_crop(): void;
-        public show_whole_image(): void;
-        public swap_frame_image(new_src: string, frame?: number): string;
-        public swap_anno_bg_color(new_bg_color: string): string;
-        public get_annotations(subtask: ULabelSubtask): ULabelAnnotation[];
-        public set_annotations(annotations: ULabelAnnotation[], subtask: ULabelSubtask);
-        public set_saved(saved: boolean);
-        public redraw_all_annotations(subtask: any, offset:any, spatial_only: any);
-        public show_annotation_mode(target_jq: JQuery<any>);
-        public raise_error(message: string, level?: number);
-        static process_classes(ulabel_obj: any, arg1: string, subtask_obj: any);
-        static build_id_dialogs(ulabel_obj: any);
+    /**
+     * @link https://github.com/SenteraLLC/ulabel/blob/main/api_spec.md#display-utility-functions
+     */
+    public init(callback: () => void): void;
+    public show_initial_crop(): void;
+    public show_whole_image(): void;
+    public swap_frame_image(new_src: string, frame?: number): string;
+    public swap_anno_bg_color(new_bg_color: string): string;
+    public get_annotations(subtask: ULabelSubtask): ULabelAnnotation[];
+    public set_annotations(annotations: ULabelAnnotation[], subtask: ULabelSubtask);
+    public set_saved(saved: boolean);
+    public redraw_all_annotations(subtask: any, offset:any, spatial_only: any);
+    public show_annotation_mode(target_jq: JQuery<any>);
+    public raise_error(message: string, level?: number);
+    static process_classes(ulabel_obj: any, arg1: string, subtask_obj: any);
+    static build_id_dialogs(ulabel_obj: any);
         
-    }
+}
     
 declare global {
     interface String {

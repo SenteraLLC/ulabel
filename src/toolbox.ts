@@ -1,4 +1,6 @@
-import { FilterDistanceOverride, ULabel, ULabelAnnotation, ULabelSubtask } from "..";
+import { FilterDistanceOverride, ULabel } from "..";
+import { ULabelAnnotation } from "./annotation";
+import { ULabelSubtask } from "./subtask";
 import { Configuration } from "./configuration";
 import { 
     get_annotation_confidence, 
