@@ -7,7 +7,7 @@ import {
     value_is_lower_than_filter, 
     mark_deprecated, 
     filter_points_distance_from_line,
-    findAllPolylineClassIds,
+    findAllPolylineClassDefinitions,
     value_is_higher_than_filter, 
 } from "./annotation_operators";
 
@@ -1263,22 +1263,23 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
      */
     private createMultiFilterHTML() {
         // Get all potential classes
-        const class_ids = findAllPolylineClassIds(this.ulabel)
+        const class_defs = findAllPolylineClassDefinitions(this.ulabel)
 
         let multi_class_html = ``
 
         // Loop through each class and create their html
-        for (let idx = 0; idx < class_ids.length; idx++) {
+        for (let idx = 0; idx < class_defs.length; idx++) {
             // Grab current class for convenience
-            const current_class_id = class_ids[idx]
+            const current_id = class_defs[idx].id
+            const current_name = class_defs[idx].name
 
             // Add current classes html to multi_class_html
             multi_class_html += `
             <label
-                for="filter-row-distance-${current_class_id}"
-                id="filter-row-distance-${current_class_id}-name-label"
+                for="filter-row-distance-${current_id}"
+                id="filter-row-distance-${current_id}-name-label"
                 class="filter-row-distance-name-label">
-                ${current_class_id}
+                ${current_name}
             </label>
             <div class="filter-row-distance-container">
                 <input 
@@ -1286,13 +1287,13 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
                     min="${this.filter_min}"
                     max="${this.filter_max}"
                     step="${this.increment_value}"
-                    id="filter-row-distance-${current_class_id}" 
+                    id="filter-row-distance-${current_id}" 
                     class="filter-row-distance-slider filter-row-distance-class-slider" 
                     value="${this.default_value}"
                 />
                 <label 
-                    for="filter-row-distance-${current_class_id}" 
-                    id="filter-row-distance-${current_class_id}-px-label"
+                    for="filter-row-distance-${current_id}" 
+                    id="filter-row-distance-${current_id}-px-label"
                     class="filter-distance-px-label">
                     ${Math.round(this.default_value)}px
                 </label>
@@ -1315,8 +1316,6 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
     public get_html(): string {
         // Get the multi-class filter html
         const multi_class_html = this.createMultiFilterHTML()
-
-        console.log(this.show_options, "show options")
 
         return`
         <div class="filter-row-distance">

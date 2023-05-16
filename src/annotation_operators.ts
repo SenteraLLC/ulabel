@@ -6,6 +6,7 @@ import {
     DistanceFrom, 
     FilterDistanceOverride, 
     ValidDeprecatedBy,
+    ClassDefinition
 } from "..";
 
 import { ULabelAnnotation } from "./annotation";
@@ -380,7 +381,7 @@ export function filter_points_distance_from_line(ulabel: ULabel, offset: Offset 
         let slider_values: {[key: string]: number} = {}
 
         for (let idx = 0; idx < sliders.length; idx++) {
-            // Use a regex to get the string after the final - character in the slider id (Which is the class name)
+            // Use a regex to get the string after the final - character in the slider id (Which is the class id)
             const slider_class_name = /[^-]*$/.exec(sliders[idx].id)[0]
 
             // Set the class name to the 
@@ -423,9 +424,9 @@ export function filter_points_distance_from_line(ulabel: ULabel, offset: Offset 
  * 
  * @returns A list of all classes which can be polylines
  */
-export function findAllPolylineClassIds(ulabel: ULabel) {
-    // Initialize potential classes
-    let potential_class_ids: string[] = []
+export function findAllPolylineClassDefinitions(ulabel: ULabel) {
+    // Initialize potential class definitions
+    let potential_class_defs: ClassDefinition[] = []
 
     // Check each subtask to see if polyline is one of its allowed modes
     for (let subtask_key in ulabel.subtasks) {
@@ -435,10 +436,10 @@ export function findAllPolylineClassIds(ulabel: ULabel) {
         if (subtask.allowed_modes.includes("polyline")) {
 
             // Loop through all the classes in the subtask 
-            subtask.class_ids.forEach(id => {
-                potential_class_ids.push(id.toString())
+            subtask.class_defs.forEach(current_class_def => {
+                potential_class_defs.push(current_class_def)
             })
         }
     }
-    return potential_class_ids
+    return potential_class_defs
 }

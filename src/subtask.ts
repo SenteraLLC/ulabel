@@ -1,9 +1,10 @@
-import { ULabelSpatialType } from "..";
+import { ULabelSpatialType, ClassDefinition } from "..";
 import { ULabelAnnotation } from "./annotation";
 
 export class ULabelSubtask {
     public actions: { stream: any[]; undone_stack: any[]; };
     public class_ids: number[] = [];
+    public class_defs: ClassDefinition[]
     public annotations: {
         "access": {[key: string]: ULabelAnnotation},
         "ordering": string[]
