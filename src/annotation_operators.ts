@@ -275,7 +275,6 @@ export function assign_distance_from_line(
 
         // Assign the distance from object to the current point
         current_point.distance_from = distance_from
-        console.log(current_point.distance_from)
     })
 }
 
@@ -296,8 +295,20 @@ function filter_points_distance_from_line__single(point_annotations: ULabelAnnot
     })
 }
 
-function filter_points_distance_from_line__multi(point_annotation: ULabelAnnotation[], filter_values: {[key: string]: number}) {
-
+function filter_points_distance_from_line__multi(point_annotations: ULabelAnnotation[], filter_values: {[key: string]: number}) {
+    point_annotations.forEach(annotation => {
+        check_distance: {
+            for (const id in filter_values) {
+                // If the annotation is smaller than the filter value for any id it passes
+                if (annotation.distance_from[id] <= filter_values[id]) {
+                    mark_deprecated(annotation, false, "distance_from_row")
+                    break check_distance
+                }
+            }
+            // Only here if break not called
+            mark_deprecated(annotation, true, "distance_from_row")
+        }
+    })
 }
 
 /**
@@ -344,12 +355,6 @@ export function filter_points_distance_from_line(ulabel: ULabel, offset: Offset 
     // Calculate and assign each point a distance from line value
     assign_distance_from_line(point_annotations, line_annotations, offset)
 
-    // Testing
-    point_annotations.forEach(annotation => {
-        console.log(annotation.distance_from)
-    })
-
-
     // Initialize multi_class mode
     let multi_class_mode: boolean
 
@@ -389,6 +394,9 @@ export function filter_points_distance_from_line(ulabel: ULabel, offset: Offset 
         }
 
         console.log(slider_values)
+
+        // Get the polyline class definitions so that the
+        // const class_defs: ClassDefinition[] = findAllPolylineClassDefinitions(ulabel)
 
         filter_points_distance_from_line__multi(point_annotations, slider_values)
 
