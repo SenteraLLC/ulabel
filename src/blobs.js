@@ -1989,10 +1989,37 @@ div#${prntid} div.filter-row-distance fieldset.filter-row-distance-options {
    left: 1rem;
    margin-bottom: 0.25rem;
    font-size: 80%;
+   user-select: none;
 }
 
 div#${prntid} div.filter-row-distance fieldset.filter-row-distance-options * {
    text-align: left;
+}
+
+div#${prntid} div.filter-row-distance fieldset.filter-row-distance-options.ulabel-collapsed {
+   border: none;
+   padding: 0; /* Padding takes up too much space without the content */
+
+   /* Needed to prevent the element from moving when ulabel-collapsed is toggled 
+   0.75em comes from the previous padding, 2px comes from the removed border */
+   padding-left: calc(0.75em + 2px)
+}
+
+div#${prntid} div.filter-row-distance fieldset.filter-row-distance-options legend {
+   border-radius: 0.1rem;
+   padding: 0.1rem 0.3rem;
+}
+
+div#${prntid} div.filter-row-distance fieldset.filter-row-distance-options.ulabel-collapsed legend {
+   padding: 0.1rem 0.28rem;
+}
+
+div#${prntid} div.filter-row-distance fieldset.filter-row-distance-options.ulabel-collapsed :not(legend) {
+   display: none;
+}
+
+div#${prntid} div.filter-row-distance fieldset.filter-row-distance-options legend:hover {
+   background-color: rgba(128, 128, 128, 0.3)
 }
 
 div#${prntid} div.filter-row-distance fieldset.filter-row-distance-options input[type="checkbox"] {

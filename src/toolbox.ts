@@ -1112,6 +1112,7 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
     filter_on_load: boolean = true // Whether or not to filter annotations on page load
     multi_class_mode: boolean = true // Whether or not the component is currently in multi-class mode
     show_options: boolean = true // Whether or not the options dialog will be visable
+    collapse_options: boolean = false // Whether or not the options is in a collapsed state
 
     ulabel: ULabel // The ULable object. Must be passed in
 
@@ -1189,6 +1190,9 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
         // Whenever the user clicks on the decrement button, decrement the slider value
         $(document).on("click", "#" + this.component_name + "dec-button", () => this.decrementSliderValue())
 
+        // Whenever the options legend is clicked, toggle displaying the options
+        $(document).on("click", "fieldset.filter-row-distance-options > legend", () => this.toggleCollapsedOptions())
+
         // Whenever the multi-class filtering checkbox is clicked, switch the displayed filter mode
         $(document).on("click", "#filter-slider-distance-multi-checkbox", () => {
             this.switchFilterMode()
@@ -1260,6 +1264,10 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
         $("#filter-multi-class-mode").toggleClass("ulabel-hidden")
     }
 
+    private toggleCollapsedOptions() {
+        $("fieldset.filter-row-distance-options").toggleClass("ulabel-collapsed")
+    }
+
     /**
      * Gets all classes that polylines can be and creates a distance filter for each class.
      * 
@@ -1325,8 +1333,10 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
         <div class="filter-row-distance">
             <p class="tb-header">${this.name}</p>
             <fieldset class="filter-row-distance-options ${this.show_options ? "" : "ulabel-hidden"}">
-                <legend>Options</legend>
-                <div>
+                <legend>
+                    Options ˅
+                </legend>
+                <div class="filter-row-distance-option">
                     <input
                         type="checkbox"
                         id="filter-slider-distance-multi-checkbox"
@@ -1340,7 +1350,7 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
                         Multi-Class Filtering
                     </label>
                 </div>
-                <div>
+                <div class="filter-row-distance-option">
                     <input
                         type="checkbox"
                         id="${this.component_name}-toggle-range-display-checkbox"
