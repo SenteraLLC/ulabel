@@ -1175,6 +1175,14 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
             filter_points_distance_from_line(this.ulabel, null, override)
         }
         
+        // Get if the options should be collapsed from local storage
+        if (window.localStorage.getItem("filterDistanceCollapseOptions") === "true") {
+            this.collapse_options = true
+        }
+        else if (window.localStorage.getItem("filterDistanceCollapseOptions") === "false") {
+            this.collapse_options = false
+        }
+
 
         // === Create event listeners for this ToolboxItem ===
 
@@ -1266,6 +1274,8 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
 
     private toggleCollapsedOptions() {
         $("fieldset.filter-row-distance-options").toggleClass("ulabel-collapsed")
+        this.collapse_options = !this.collapse_options
+        window.localStorage.setItem("filterDistanceCollapseOptions", this.collapse_options.toString())
     }
 
     /**
@@ -1332,7 +1342,12 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
         return`
         <div class="filter-row-distance">
             <p class="tb-header">${this.name}</p>
-            <fieldset class="filter-row-distance-options ${this.show_options ? "" : "ulabel-hidden"}">
+            <fieldset 
+                class="
+                    filter-row-distance-options 
+                    ${this.show_options ? "" : "ulabel-hidden"} 
+                    ${this.collapse_options ? "ulabel-collapsed" : "" } 
+                ">
                 <legend>
                     Options ˅
                 </legend>
