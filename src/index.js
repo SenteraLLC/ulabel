@@ -1053,7 +1053,7 @@ export class ULabel {
                 )
 
                 // Append the overlay canvas to the div that holds the canvases
-                $("#" + that.config["imwrap_id"]).append(that.filter_distance_overlay.get_canvas())
+                $("#" + that.config["imwrap_id"]).append(that.filter_distance_overlay.getCanvas())
                 console.log("Overlay canvas appended?")
             }
 
