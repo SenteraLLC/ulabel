@@ -399,8 +399,6 @@ export function filter_points_distance_from_line(ulabel: ULabel, offset: Offset 
         // const class_defs: ClassDefinition[] = findAllPolylineClassDefinitions(ulabel)
 
         filter_points_distance_from_line__multi(point_annotations, slider_values)
-
-
     }
     else { // Single class mode
         // Initialize filter value

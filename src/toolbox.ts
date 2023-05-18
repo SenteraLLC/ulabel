@@ -1190,7 +1190,6 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
         $(document).on("input", ".filter-row-distance-slider", () => {
             filter_points_distance_from_line(this.ulabel)
             this.updateSliderLabel()
-            this.ulabel.filter_distance_overlay.test_draw()
         })
 
         // Whenever the user clicks on the increment button, increment the slider value
