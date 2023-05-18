@@ -1,4 +1,5 @@
 import { ULabelAnnotation } from "./src/annotation";
+import { FilterDistanceOverlay } from "./src/overlays";
 import { ULabelSubtask } from "./src/subtask";
 import { Toolbox } from "./src/toolbox";
 
@@ -62,6 +63,7 @@ export class ULabel {
     config: any;
     toolbox: Toolbox;
     toolbox_order?: number[];
+    filter_distance_overlay?: FilterDistanceOverlay
     /**
      * @link https://github.com/SenteraLLC/ulabel/blob/main/api_spec.md#ulabel-constructor
      */

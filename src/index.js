@@ -9,6 +9,7 @@ import { get_annotation_confidence } from '../build/annotation_operators';
 import { apply_gradient } from '../build/drawing_utilities'
 import { Configuration, AllowedToolboxItem } from '../build/configuration';
 import { HTMLBuilder } from '../build/html_builder';
+import { FilterDistanceOverlay} from '../build/overlays'
 import { mark_deprecated, filter_points_distance_from_line } from "../build/annotation_operators";
 import $ from 'jquery';
 const jQuery = $;
@@ -1042,6 +1043,20 @@ export class ULabel {
                     that.subtasks[st]["canvas_fid"]
                 ).getContext("2d");
             }
+
+            // If filter_distance_toolboxitem is present, add an overlay canvas
+            if (that.toolbox_order.includes(AllowedToolboxItem.FilterDistance)) {
+                // Create and assign an overlay class instance to ulabel to be able to access it
+                that.filter_distance_overlay = new FilterDistanceOverlay(
+                    that.config["image_width"] * this.config["px_per_px"],
+                    that.config["image_height"] * this.config["px_per_px"]
+                )
+
+                // Append the overlay canvas to the div that holds the canvases
+                $("#" + that.config["imwrap_id"]).append(that.filter_distance_overlay.get_canvas())
+                console.log("Overlay canvas appended?")
+            }
+
             // Get rendering context for demo canvas
             // that.state["demo_canvas_context"] = document.getElementById(
             //     that.config["canvas_did"]
