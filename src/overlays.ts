@@ -111,14 +111,16 @@ export class FilterDistanceOverlay extends ULabelOverlay {
     }
 
     /**
+     * Given the x and y values of two points, a normal vector, and a distance value, draws a parrallelogram 
+     * "parallel" to the line segment formed between the two points with a width in each direction of distance.
      * 
-     * @param x1 
-     * @param y1 
-     * @param x2 
-     * @param y2 
-     * @param normal_x 
-     * @param normal_y 
-     * @param distance 
+     * @param x1 Endpoint 1's x value
+     * @param y1 Endpoint 1's y value
+     * @param x2 Endpoint 2's x value
+     * @param y2 Endpoint 2's y value
+     * @param normal_x The normal vector's x value
+     * @param normal_y The normal vector's y value
+     * @param distance The distance in each direction around the line segment
      */
     private drawParallelogramAroundLineSegment(
         x1: number, 
@@ -142,19 +144,22 @@ export class FilterDistanceOverlay extends ULabelOverlay {
         // Tell the context to begin a new path
         this.context.beginPath()
 
-        this.context.moveTo(corner1[0], corner1[1])   
-        this.context.lineTo(corner2[0], corner2[1])   
-        this.context.lineTo(corner3[0], corner3[1])   
-        this.context.lineTo(corner4[0], corner4[1])   
+        this.context.moveTo(corner1[0], corner1[1])
+        this.context.lineTo(corner2[0], corner2[1])
+        this.context.lineTo(corner3[0], corner3[1])
+        this.context.lineTo(corner4[0], corner4[1])
 
         this.context.fill()
     }
 
     /**
      * Handles updating the overlay when the filter is in single class mode.
+     * 
+     * @param polyline_annotations Array of polyline annotations the overlay is being applied to
+     * @param distance The distance from each annotation to be shown through the overlay
+     * @param zoom_val Value to scale the coordinate system by
      */
     private updateOverlay__single(polyline_annotations: ULabelAnnotation[], distance: number, zoom_val: number): void {
-        console.log("updateOverlay__single")
 
         // Fill the entire canvas with the overlay that we'll subtract from
         this.context.globalCompositeOperation = "source-over" // Resetting default
@@ -205,6 +210,10 @@ export class FilterDistanceOverlay extends ULabelOverlay {
 
     /**
      * Handles updating the overlay when the filter is in multi class mode.
+     * 
+     * @param polyline_annotations Array of polyline annotations the overlay is being applied to
+     * @param distance The distance from each annotation to be shown through the overlay
+     * @param zoom_val Value to scale the coordinate system by
      */
     private updateOverlay__multi(polyline_annotations: ULabelAnnotation[], distance: number, zoom_val: number): void {
         console.log("updateOverlay__multi")
@@ -212,6 +221,11 @@ export class FilterDistanceOverlay extends ULabelOverlay {
 
     /**
      * Update the overlay to obscure the parts of the image that fall outside of the distance filter.
+     * 
+     * @param polyline_annotations Array of polyline annotations the overlay is being applied to
+     * @param distance The distance from each annotation to be shown through the overlay
+     * @param zoom_val Value to scale the coordinate system by
+     * @param multi_class_mode Whether or not the filter is currently in multi-class mode
      */
     public updateOverlay(
         polyline_annotations: ULabelAnnotation[], 
