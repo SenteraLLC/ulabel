@@ -8,15 +8,18 @@ class ULabelOverlay {
     canvas: HTMLCanvasElement
     context: CanvasRenderingContext2D
 
-    constructor(canvas_width, canvas_height) {
+    constructor(canvas_width: number, canvas_height: number) {
         this.createCanvas(canvas_width, canvas_height)
 
         this.context = this.canvas.getContext("2d")
     }
 
-    public createCanvas(canvas_width, canvas_height) {
+    public createCanvas(canvas_width, canvas_height): void {
         // Create the canvas element
         this.canvas = document.createElement("canvas")
+
+        // Add a class to identify created overlays
+        this.canvas.setAttribute("class", "ulabel-overlay")
 
         // Overlays should on top of everything, so give it a reasonably large z-index
         this.canvas.style.zIndex = "101"
@@ -30,11 +33,19 @@ class ULabelOverlay {
     /**
      * Clears everything drawn to the canvas. Useful for re-drawing.
      */
-    public clearCanvas() {
+    public clearCanvas(): void {
         this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
     }
 
-    public drawCircle(x_position, y_position, radius) {
+    /**
+     * Draws a circle centered at (x_position, y_position) with a radius of the passed in radius.
+     * Circle is filled in.
+     * 
+     * @param x_position x-position of the circle
+     * @param y_position y-position of the circle
+     * @param radius The radius of the circle
+     */
+    public drawCircle(x_position: number, y_position: number, radius: number): void {
         // Start the shape
         this.context.beginPath()
 
@@ -48,7 +59,12 @@ class ULabelOverlay {
         this.context.stroke()
     }
 
-    public getCanvas() {
+    /**
+     * A method to get a reference to this object's canvas
+     * 
+     * @returns A reference to this object's canvas
+     */
+    public getCanvas(): HTMLCanvasElement {
         return this.canvas
     }
 }
@@ -112,7 +128,7 @@ export class FilterDistanceOverlay extends ULabelOverlay {
         normal_x: number, 
         normal_y: number, 
         distance: number
-    ) {
+    ): void {
         // Calculate the change in x and y
         const dx = normal_x * distance
         const dy = normal_y * distance
@@ -137,7 +153,7 @@ export class FilterDistanceOverlay extends ULabelOverlay {
     /**
      * Handles updating the overlay when the filter is in single class mode.
      */
-    private updateOverlay__single(polyline_annotations: ULabelAnnotation[], distance: number, zoom_val: number) {
+    private updateOverlay__single(polyline_annotations: ULabelAnnotation[], distance: number, zoom_val: number): void {
         console.log("updateOverlay__single")
 
         // Fill the entire canvas with the overlay that we'll subtract from
@@ -190,7 +206,7 @@ export class FilterDistanceOverlay extends ULabelOverlay {
     /**
      * Handles updating the overlay when the filter is in multi class mode.
      */
-    private updateOverlay__multi(polyline_annotations: ULabelAnnotation[], distance: number, zoom_val: number) {
+    private updateOverlay__multi(polyline_annotations: ULabelAnnotation[], distance: number, zoom_val: number): void {
         console.log("updateOverlay__multi")
     }
 
@@ -199,16 +215,12 @@ export class FilterDistanceOverlay extends ULabelOverlay {
      */
     public updateOverlay(
         polyline_annotations: ULabelAnnotation[], 
-        distance: number = 50, 
+        distance: number, 
         zoom_val: number, 
-        multi_class_mode: boolean = null) {
+        multi_class_mode: boolean = null
+    ): void {
         // Clear the canvas in order to have a clean slate to re-draw from
         this.clearCanvas()
-
-
-        // TESTING
-        distance = 50
-
 
         // If the mode isn't passed in, try to get the current filtering mode from the dom
         if (multi_class_mode === null) {

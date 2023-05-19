@@ -416,13 +416,16 @@ export function filter_points_distance_from_line(ulabel: ULabel, offset: Offset 
         }
 
         filter_points_distance_from_line__single(point_annotations, filter_value)
+
+        if (ulabel.filter_distance_overlay !== undefined) {
+            ulabel.filter_distance_overlay.updateOverlay(line_annotations, filter_value * ulabel.state.zoom_val, ulabel.state.zoom_val)
+        }
     }
 
     // Redraw if the override does not exist
     // Redraw if the override.should_redraw is true
     if (override === null || override.should_redraw) {
         ulabel.redraw_all_annotations(null, null, false);
-        ulabel.filter_distance_overlay.updateOverlay(line_annotations, 50, ulabel.state.zoom_val)
     }
 }
 

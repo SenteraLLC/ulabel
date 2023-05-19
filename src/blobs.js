@@ -2144,6 +2144,15 @@ div.toolbox_inner_cls {
    overflow-y: scroll;
 }
 
+
+/* ========== Overlays ========== */
+
+/* Very Important. Annotation interaction breaks without this property when overlays are present */
+.ulabel-overlay {
+   pointer-events: none; 
+}
+
+
 /* ========== Tab Buttons ========== */
 
 div#${prntid} div.toolbox-tabs {
