@@ -54,6 +54,21 @@ export type ULabelSubmitHandler = (submitData: ULabelSubmitData) => void;
  */
 export type ULabelSpatialType = 'contour' | 'polygon' | 'polyline' | 'bbox' | 'tbar' | 'bbox3' | 'whole-image' | 'global' | 'point';
 
+export type ULabelSpatialPayload = [number, number][];
+
+export type ULabelClassificationPayload = {
+    class_id: number;
+    confidence: number;
+}
+
+export type ULabelContainingBox = {
+    tlx: number;
+    tly: number;
+    brx: number;
+    bry: number;
+    tlz: number;
+    brz: number;
+};
 
 export type ULabelSubtasks = { [key: string]: ULabelSubtask };
 

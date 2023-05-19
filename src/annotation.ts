@@ -1,19 +1,13 @@
-import { DistanceFrom, DeprecatedBy } from "..";
+import { 
+    DistanceFrom, 
+    DeprecatedBy, 
+    ULabelClassificationPayload, 
+    ULabelContainingBox, 
+    ULabelSpatialPayload, 
+    ULabelSpatialType 
+} from "..";
 
-type ULabelSpatialType = 'contour' | 'polygon' | 'bbox' | 'tbar' | 'bbox3' | 'whole-image' | 'global' | 'point';
-type ULabelSpatialPayload = [number, number][];
-type ULabelClassificationPayload = {
-    class_id: number;
-    confidence: number;
-}
-type ULabelContainingBox = {
-    tlx: number;
-    tly: number;
-    brx: number;
-    bry: number;
-    tlz: number;
-    brz: number;
-};
+
 
 export class ULabelAnnotation {
     constructor(
