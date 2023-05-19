@@ -422,7 +422,7 @@ export function filter_points_distance_from_line(ulabel: ULabel, offset: Offset 
     // Redraw if the override.should_redraw is true
     if (override === null || override.should_redraw) {
         ulabel.redraw_all_annotations(null, null, false);
-        ulabel.filter_distance_overlay.updateOverlay(line_annotations)
+        ulabel.filter_distance_overlay.updateOverlay(line_annotations, 50, ulabel.state.zoom_val)
     }
 }
 
