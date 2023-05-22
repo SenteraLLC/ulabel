@@ -312,21 +312,12 @@ function filter_points_distance_from_line__multi(point_annotations: ULabelAnnota
     })
 }
 
-/**
- * Using the value of the FilterPointDistanceFromRow's slider, filter all point annotations based on their distance 
- * from a polyline annotation.
- * 
- * @param ulabel ULabel object
- * @param offset Offset of a particular annotation. Used when filter is called while an annotation is being moved
- * @param override Used to filter annotations without calling the dom
- */
-export function filter_points_distance_from_line(ulabel: ULabel, offset: Offset = null, override: FilterDistanceOverride = null) {
-    // Grab the subtasks from ulabel
-    const subtasks: ULabelSubtask[] = Object.values(ulabel.subtasks)
-
+export function get_point_and_line_annotations(ulabel: ULabel): [ULabelAnnotation[], ULabelAnnotation[]] {
     // Initialize set of all point and line annotations
     let point_annotations: ULabelAnnotation[] = []
     let line_annotations: ULabelAnnotation[] = []
+
+    const subtasks: ULabelSubtask[] = Object.values(ulabel.subtasks)
 
     // Go through all annotations to populate a set of all point annotations and a set of all line annotations
     // First loop through each subtask
@@ -352,6 +343,27 @@ export function filter_points_distance_from_line(ulabel: ULabel, offset: Offset 
             }
         }
     }
+
+    return [point_annotations, line_annotations]
+}
+
+
+/**
+ * Using the value of the FilterPointDistanceFromRow's slider, filter all point annotations based on their distance 
+ * from a polyline annotation.
+ * 
+ * @param ulabel ULabel object
+ * @param offset Offset of a particular annotation. Used when filter is called while an annotation is being moved
+ * @param override Used to filter annotations without calling the dom
+ */
+export function filter_points_distance_from_line(ulabel: ULabel, offset: Offset = null, override: FilterDistanceOverride = null) {
+    // Grab the subtasks from ulabel
+    const subtasks: ULabelSubtask[] = Object.values(ulabel.subtasks)
+
+    // Get a set of all point and polyline annotations
+    const annotations: [ULabelAnnotation[], ULabelAnnotation[]] = get_point_and_line_annotations(ulabel)
+    const point_annotations: ULabelAnnotation[] = annotations[0]
+    const line_annotations: ULabelAnnotation[] = annotations[1]
 
     // Calculate and assign each point a distance from line value
     assign_distance_from_line(point_annotations, line_annotations, offset)

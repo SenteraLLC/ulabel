@@ -1,4 +1,4 @@
-import { FilterDistanceOverride, ULabel } from "..";
+import { DistanceOverlayInfo, FilterDistanceOverride, ULabel } from "..";
 import { ULabelAnnotation } from "./annotation";
 import { ULabelSubtask } from "./subtask";
 import { Configuration } from "./configuration";
@@ -8,7 +8,7 @@ import {
     mark_deprecated, 
     filter_points_distance_from_line,
     findAllPolylineClassDefinitions,
-    value_is_higher_than_filter, 
+    get_point_and_line_annotations, 
 } from "./annotation_operators";
 
 const toolboxDividerDiv = "<div class=toolbox-divider></div>"
@@ -1110,9 +1110,10 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
     filter_max: number = 400 // Maximum value slider may be set to
     increment_value: number = 2 // Value slider increments by
     filter_on_load: boolean = true // Whether or not to filter annotations on page load
-    multi_class_mode: boolean = true // Whether or not the component is currently in multi-class mode
+    multi_class_mode: boolean = false // Whether or not the component is currently in multi-class mode
     show_options: boolean = true // Whether or not the options dialog will be visable
     collapse_options: boolean = false // Whether or not the options is in a collapsed state
+    show_overlay: boolean = false // Whether or not the overlay will be shown
 
     ulabel: ULabel // The ULable object. Must be passed in
 
@@ -1183,6 +1184,14 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
             this.collapse_options = false
         }
 
+        // Get if the overlay should be shown from local storage
+        if (window.localStorage.getItem("filterDistanceShowOverlay") === "true") {
+            this.show_overlay = true
+        }
+        else if (window.localStorage.getItem("filterDistanceShowOverlay") === "false") {
+            this.show_overlay = false
+        }
+
 
         // === Create event listeners for this ToolboxItem ===
 
@@ -1206,6 +1215,64 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
             this.switchFilterMode()
             // Re-filter the points in the new mode
             filter_points_distance_from_line(ulabel)
+        })
+
+        $(document).on("change", "#filter-slider-distance-toggle-overlay-checkbox", (e) => {
+            // Grab the overlay
+            const overlay: HTMLCanvasElement = document.querySelector("#ulabel-filter-distance-overlay")
+
+            if (e.currentTarget.checked) {
+                // Make overlay visible
+                overlay.style.opacity = "1"
+
+                const line_annotations = get_point_and_line_annotations(this.ulabel)[1] // [0] is point annotations
+
+                // Initialize overlay info
+                let overlay_info: DistanceOverlayInfo = {
+                    "distance": undefined,
+                    "multi_class_mode": undefined,
+                    "zoom_val": undefined
+                }
+
+                // Grab checkbox
+                const multi_class_checkbox: HTMLInputElement = document.querySelector("#filter-slider-distance-multi-checkbox")
+                
+                // Populate overlay_info
+                overlay_info.multi_class_mode = multi_class_checkbox.checked
+                overlay_info.zoom_val = this.ulabel.state.zoom_val
+
+                if (overlay_info.multi_class_mode) { // Multi class mode
+                    
+                    let filter_values = {}
+
+                    // Grab all of the class sliders
+                    const sliders: NodeListOf<HTMLInputElement> = document.querySelectorAll(".filter-row-distance-class-slider")
+            
+                    for (let idx = 0; idx < sliders.length; idx++) {
+                        // Use a regex to get the string after the final - character in the slider id (Which is the class id)
+                        const slider_class_name = /[^-]*$/.exec(sliders[idx].id)[0]
+            
+                        // Use the class id as a key to store the slider's value
+                        filter_values[slider_class_name] = sliders[idx].valueAsNumber
+                    }
+            
+                    overlay_info.distance = filter_values
+                }
+                else { // Single class mode      
+                    const single_mode_slider: HTMLInputElement = document.querySelector("#filter-row-distance-single")
+        
+                    overlay_info.distance = single_mode_slider.valueAsNumber
+                }
+                
+                this.ulabel.filter_distance_overlay.updateOverlay(line_annotations, overlay_info)
+            }
+            else {
+                // Make overlay invisible
+                overlay.style.opacity = "0"
+            }
+
+            // Save it to local storage
+            window.localStorage.setItem("filterDistanceShowOverlay", e.currentTarget.checked.toString())
         })
     }
 
@@ -1370,6 +1437,7 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
                         type="checkbox"
                         id="filter-slider-distance-toggle-overlay-checkbox"
                         class="filter-row-distance-options-checkbox"
+                        ${this.show_overlay ? "checked" : ""}
                     />
                     <label
                         for="filter-slider-distance-toggle-overlay-checkbox"

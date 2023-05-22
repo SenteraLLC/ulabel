@@ -235,6 +235,8 @@ export class FilterDistanceOverlay extends ULabelOverlay {
         // Clear the canvas in order to have a clean slate to re-draw from
         this.clearCanvas()
 
+        console.log("zoom val", overlay_info.zoom_val)
+
         // Call the appropriate update_overlay method
         overlay_info.multi_class_mode ? this.updateOverlay__multi(polyline_annotations, overlay_info) : this.updateOverlay__single(polyline_annotations, overlay_info)
     }

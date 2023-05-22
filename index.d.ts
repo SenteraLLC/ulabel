@@ -38,7 +38,7 @@ export type FilterDistanceOverride = {
 export type DistanceOverlayInfo = {
     multi_class_mode: true,
     distance: {[key: string]: number},
-    zoom_val: number 
+    zoom_val: number
 } | {
     multi_class_mode: false,
     distance: number,

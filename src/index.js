@@ -5,12 +5,12 @@ Sentera Inc.
 import { ULabelAnnotation } from '../build/annotation';
 import { ULabelSubtask } from '../build/subtask';
 import { GeometricUtils } from '../build/geometric_utils';
-import { get_annotation_confidence } from '../build/annotation_operators';
+import { get_annotation_confidence, mark_deprecated, filter_points_distance_from_line, get_point_and_line_annotations } from '../build/annotation_operators';
 import { apply_gradient } from '../build/drawing_utilities'
 import { Configuration, AllowedToolboxItem } from '../build/configuration';
 import { HTMLBuilder } from '../build/html_builder';
 import { FilterDistanceOverlay} from '../build/overlays'
-import { mark_deprecated, filter_points_distance_from_line } from "../build/annotation_operators";
+
 import $ from 'jquery';
 const jQuery = $;
 window.$ = window.jQuery = require('jquery');
@@ -1054,7 +1054,6 @@ export class ULabel {
 
                 // Append the overlay canvas to the div that holds the canvases
                 $("#" + that.config["imwrap_id"]).append(that.filter_distance_overlay.getCanvas())
-                console.log("Overlay canvas appended?")
             }
 
             // Get rendering context for demo canvas
@@ -1091,6 +1090,46 @@ export class ULabel {
 
             // Draw resumed from annotations
             that.redraw_all_annotations();
+
+            // Update the overlay now that required values have been updated if the overlay exists
+            if (that.toolbox_order.includes(AllowedToolboxItem.FilterDistance)) {
+                const show_overlay_checkbox = document.querySelector("#filter-slider-distance-toggle-overlay-checkbox")
+
+                if (show_overlay_checkbox.checked) {
+                    const line_annotations = get_point_and_line_annotations(that)[1] // [0] is point annotations
+
+                    let overlay_info = {}
+
+                    // Populate overlay_info
+                    overlay_info.multi_class_mode = document.querySelector("#filter-slider-distance-multi-checkbox").checked
+                    overlay_info.zoom_val = that.state.zoom_val
+
+                    if (overlay_info.multi_mode) { // Multi class mode
+                        
+                        let filter_values = {}
+
+                        // Grab all of the class sliders
+                        const sliders = document.querySelectorAll(".filter-row-distance-class-slider")
+                
+                        for (let idx = 0; idx < sliders.length; idx++) {
+                            // Use a regex to get the string after the final - character in the slider id (Which is the class id)
+                            const slider_class_name = /[^-]*$/.exec(sliders[idx].id)[0]
+                
+                            // Use the class id as a key to store the slider's value
+                            filter_values[slider_class_name] = sliders[idx].valueAsNumber
+                        }
+                
+                        overlay_info.distance = filter_values
+                    }
+                    else { // Single class mode      
+                        const single_mode_slider = document.querySelector("#filter-row-distance-single")
+            
+                        overlay_info.distance = single_mode_slider.valueAsNumber
+                    }
+                    
+                    that.filter_distance_overlay.updateOverlay(line_annotations, overlay_info)
+                }
+            }
 
             // Call the user-provided callback
             callback();
