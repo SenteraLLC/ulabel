@@ -35,6 +35,17 @@ export type FilterDistanceOverride = {
     "should_redraw": boolean
 }
 
+export type DistanceOverlayInfo = {
+    multi_class_mode: true,
+    distance: {[key: string]: number},
+    zoom_val: number 
+} | {
+    multi_class_mode: false,
+    distance: number,
+    zoom_val: number
+}
+
+
 export type ClassDefinition = {
     "name": string,
     "id": number,

@@ -1,3 +1,4 @@
+import { DistanceOverlayInfo } from ".."
 import { ULabelAnnotation } from "./annotation"
 import { ULabelSpatialPayload2D } from "./geometric_utils"
 
@@ -159,7 +160,10 @@ export class FilterDistanceOverlay extends ULabelOverlay {
      * @param distance The distance from each annotation to be shown through the overlay
      * @param zoom_val Value to scale the coordinate system by
      */
-    private updateOverlay__single(polyline_annotations: ULabelAnnotation[], distance: number, zoom_val: number): void {
+    private updateOverlay__single(polyline_annotations: ULabelAnnotation[], overlay_info: DistanceOverlayInfo): void {
+        // Grab values from overlay_info
+        const zoom_val: number = overlay_info.zoom_val
+        const distance = <number> overlay_info.distance * zoom_val
 
         // Fill the entire canvas with the overlay that we'll subtract from
         this.context.globalCompositeOperation = "source-over" // Resetting default
@@ -215,7 +219,7 @@ export class FilterDistanceOverlay extends ULabelOverlay {
      * @param distance The distance from each annotation to be shown through the overlay
      * @param zoom_val Value to scale the coordinate system by
      */
-    private updateOverlay__multi(polyline_annotations: ULabelAnnotation[], distance: number, zoom_val: number): void {
+    private updateOverlay__multi(polyline_annotations: ULabelAnnotation[], overlay_info: DistanceOverlayInfo): void {
         console.log("updateOverlay__multi")
     }
 
@@ -227,32 +231,11 @@ export class FilterDistanceOverlay extends ULabelOverlay {
      * @param zoom_val Value to scale the coordinate system by
      * @param multi_class_mode Whether or not the filter is currently in multi-class mode
      */
-    public updateOverlay(
-        polyline_annotations: ULabelAnnotation[], 
-        distance: number, 
-        zoom_val: number, 
-        multi_class_mode: boolean = null
-    ): void {
+    public updateOverlay(polyline_annotations: ULabelAnnotation[], overlay_info: DistanceOverlayInfo): void {
         // Clear the canvas in order to have a clean slate to re-draw from
         this.clearCanvas()
 
-        // If the mode isn't passed in, try to get the current filtering mode from the dom
-        if (multi_class_mode === null) {
-            const multi_checkbox: HTMLInputElement = document.querySelector("#filter-slider-distance-multi-checkbox")
-            
-            // If the checkbox wasn't found log error
-            if (multi_checkbox === null) {
-                console.error("filter_points_distance_from_line could not find multi-class checkbox object")
-
-                // If checkbox not found single class is default
-                multi_class_mode = false
-            }
-            else {
-                multi_class_mode = multi_checkbox.checked
-            }
-        }
-
         // Call the appropriate update_overlay method
-        multi_class_mode ? this.updateOverlay__multi(polyline_annotations, distance, zoom_val) : this.updateOverlay__single(polyline_annotations, distance, zoom_val)
+        overlay_info.multi_class_mode ? this.updateOverlay__multi(polyline_annotations, overlay_info) : this.updateOverlay__single(polyline_annotations, overlay_info)
     }
 }

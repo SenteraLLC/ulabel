@@ -1359,8 +1359,8 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
                         ${this.multi_class_mode ? "checked" : ""}
                     />
                     <label
-                        for="${this.component_name}-multi-checkbox"
-                        id="${this.component_name}-multi-checkbox-label"
+                        for="filter-slider-distance-multi-checkbox"
+                        id="filter-slider-distance-multi-checkbox-label"
                         class="filter-row-distance-label">
                         Multi-Class Filtering
                     </label>
@@ -1368,12 +1368,12 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
                 <div class="filter-row-distance-option">
                     <input
                         type="checkbox"
-                        id="${this.component_name}-toggle-range-display-checkbox"
+                        id="filter-slider-distance-toggle-overlay-checkbox"
                         class="filter-row-distance-options-checkbox"
                     />
                     <label
-                        for="${this.component_name}-toggle-range-display-checkbox"
-                        id="${this.component_name}-toggle-range-display-checkbox-label"
+                        for="filter-slider-distance-toggle-overlay-checkbox"
+                        id="filter-slider-distance-toggle-overlay-checkbox-label"
                         class="filter-row-distance-label">
                         Show Filter Range
                     </label>

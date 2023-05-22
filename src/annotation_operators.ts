@@ -6,7 +6,8 @@ import {
     DistanceFrom, 
     FilterDistanceOverride, 
     ValidDeprecatedBy,
-    ClassDefinition
+    ClassDefinition,
+    DistanceOverlayInfo
 } from "..";
 
 import { ULabelAnnotation } from "./annotation";
@@ -376,33 +377,27 @@ export function filter_points_distance_from_line(ulabel: ULabel, offset: Offset 
         multi_class_mode = multi_checkbox.checked
     }
 
-
     // Filter based on current mode
+    let filter_value: number
+    let filter_values: {[key: string]: number} = {}
     if (multi_class_mode) { // Multi class mode
         
         // Grab all of the class sliders
         const sliders: NodeListOf<HTMLInputElement> = document.querySelectorAll(".filter-row-distance-class-slider")
 
-        let slider_values: {[key: string]: number} = {}
 
         for (let idx = 0; idx < sliders.length; idx++) {
             // Use a regex to get the string after the final - character in the slider id (Which is the class id)
             const slider_class_name = /[^-]*$/.exec(sliders[idx].id)[0]
 
-            // Set the class name to the 
-            slider_values[slider_class_name] = sliders[idx].valueAsNumber
+            // Use the class id as a key to store the slider's value
+            filter_values[slider_class_name] = sliders[idx].valueAsNumber
         }
 
-        console.log(slider_values)
-
-        // Get the polyline class definitions so that the
-        // const class_defs: ClassDefinition[] = findAllPolylineClassDefinitions(ulabel)
-
-        filter_points_distance_from_line__multi(point_annotations, slider_values)
+        filter_points_distance_from_line__multi(point_annotations, filter_values)
     }
     else { // Single class mode
         // Initialize filter value
-        let filter_value: number
 
         // If the override exists, use its filter value
         if (override !== null) {
@@ -416,16 +411,45 @@ export function filter_points_distance_from_line(ulabel: ULabel, offset: Offset 
         }
 
         filter_points_distance_from_line__single(point_annotations, filter_value)
-
-        if (ulabel.filter_distance_overlay !== undefined) {
-            ulabel.filter_distance_overlay.updateOverlay(line_annotations, filter_value * ulabel.state.zoom_val, ulabel.state.zoom_val)
-        }
     }
 
     // Redraw if the override does not exist
     // Redraw if the override.should_redraw is true
     if (override === null || override.should_redraw) {
         ulabel.redraw_all_annotations(null, null, false);
+    }
+
+    // Decide whether or not to show the overlay
+    const show_overlay_checkbox: HTMLInputElement = document.querySelector("#filter-slider-distance-toggle-overlay-checkbox")
+
+    //console.log(show_overlay_checkbox, "checkbox")
+
+    if (show_overlay_checkbox !== null) {
+        if (show_overlay_checkbox.checked) {
+            if (multi_class_mode) {
+                // Create overlay info for updateOverlay
+                const overlay_info: DistanceOverlayInfo = {
+                    "multi_class_mode": true,
+                    "distance": filter_values,
+                    "zoom_val": ulabel.state.zoom_val
+                }
+
+                ulabel.filter_distance_overlay.updateOverlay(line_annotations, overlay_info)
+            }
+            else {
+                // Create overlay info for updateOverlay
+                const overlay_info: DistanceOverlayInfo = {
+                    "multi_class_mode": false,
+                    "distance": filter_value,
+                    "zoom_val": ulabel.state.zoom_val
+                }
+
+                ulabel.filter_distance_overlay.updateOverlay(line_annotations, overlay_info)
+            }
+        }
+        else {
+            ulabel.filter_distance_overlay.clearCanvas()
+        }
     }
 }
 
