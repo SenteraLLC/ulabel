@@ -36,7 +36,7 @@ export function get_annotation_confidence(annotation: ULabelAnnotation) {
  * @param annotation ULabelAnnotation
  * @returns The class id of the annotation as a string
  */
-function get_annotation_class_id(annotation: ULabelAnnotation) {
+export function get_annotation_class_id(annotation: ULabelAnnotation): string {
         // Keep track of the most likely class id and its confidence
         let id: number, confidence: number
 

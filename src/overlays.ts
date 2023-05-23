@@ -1,5 +1,6 @@
 import { DistanceOverlayInfo } from ".."
 import { ULabelAnnotation } from "./annotation"
+import { get_annotation_class_id } from "./annotation_operators"
 import { ULabelSpatialPayload2D } from "./geometric_utils"
 
 /**
@@ -161,15 +162,14 @@ export class FilterDistanceOverlay extends ULabelOverlay {
      * @param zoom_val Value to scale the coordinate system by
      */
     private updateOverlay__single(polyline_annotations: ULabelAnnotation[], overlay_info: DistanceOverlayInfo): void {
+        if (overlay_info.multi_class_mode) {
+            console.error("updateOverlay__multi called in single class mode.")
+            return
+        }
+
         // Grab values from overlay_info
         const zoom_val: number = overlay_info.zoom_val
         const distance = <number> overlay_info.distance * zoom_val
-
-        // Fill the entire canvas with the overlay that we'll subtract from
-        this.context.globalCompositeOperation = "source-over" // Resetting default
-        this.context.fillStyle = "#000000" 
-        this.context.globalAlpha = 0.8 // So you can slightly see through the overlay
-        this.context.fillRect(0, 0, this.canvas.width, this.canvas.height) // Draws the overlay
 
         // Set it so that all future shapes we draw subtract from the overlay
         this.context.globalCompositeOperation = "destination-out"
@@ -220,7 +220,65 @@ export class FilterDistanceOverlay extends ULabelOverlay {
      * @param zoom_val Value to scale the coordinate system by
      */
     private updateOverlay__multi(polyline_annotations: ULabelAnnotation[], overlay_info: DistanceOverlayInfo): void {
-        console.log("updateOverlay__multi")
+        if (!overlay_info.multi_class_mode) {
+            console.error("updateOverlay__multi called in single class mode.")
+            return
+        }
+
+        // Grab the zoom_val from overlay_info
+        const zoom_val: number = overlay_info.zoom_val
+
+        // Multiply the distances by the zoom_val and store them in a new object
+        let distances: {[key: string]: number} = {}
+        for (let class_id in overlay_info.distance) {
+            distances[class_id] = overlay_info.distance[class_id] * zoom_val
+        }
+
+        // Set it so that all future shapes we draw subtract from the overlay
+        this.context.globalCompositeOperation = "destination-out"
+
+        // Reset defalut alpha
+        this.context.globalAlpha = 1
+
+        // Subtract from the overlay the parts that should be visible for each annotation
+        polyline_annotations.forEach(annotation => {
+            
+            // Get the annotation's spatial payload and class id
+            const spatial_payload: ULabelSpatialPayload2D = annotation.spatial_payload
+            const annotation_class_id: string = get_annotation_class_id(annotation)
+            
+            // Get the distance useing the annotation's class id
+            const distance: number = distances[annotation_class_id]
+
+            console.log("INFO", distances, annotation_class_id, distance)
+
+            // length - 1 because the final endpoint doesn't have another endpoint to form a pair with
+            for (let idx = 0; idx < spatial_payload.length - 1; idx++) {
+                // Look at segment endpoints in pairs
+                const endpoint_1: [number,number] = spatial_payload[idx]
+                const endpoint_2: [number,number] = spatial_payload[idx + 1]
+
+                // Scale each endpoint by the zoom_val
+                const x1: number = endpoint_1[0] * zoom_val
+                const y1: number = endpoint_1[1] * zoom_val
+                const x2: number = endpoint_2[0] * zoom_val
+                const y2: number = endpoint_2[1] * zoom_val
+
+                // Get a vector that's perpendicular to endpoint_1 and endpoint_2 and has a magnitude of 1
+                const normal_vector: [number, number] = this.claculateNormalVector(x1, y1, x2, y2)
+                const normal_x: number = normal_vector[0]
+                const normal_y: number = normal_vector[1]
+
+                // Only on the first time through draw a circle around the first endpoint
+                if (idx === 0) this.drawCircle(x1, y1, distance)
+                
+                // Draw an endpoint around the second endpoint
+                this.drawCircle(x2, y2, distance)
+
+                // Draw a parallelogram around the polyline segment
+                this.drawParallelogramAroundLineSegment(x1, y1, x2, y2, normal_x, normal_y, distance)
+            }
+        })
     }
 
     /**
@@ -234,8 +292,12 @@ export class FilterDistanceOverlay extends ULabelOverlay {
     public updateOverlay(polyline_annotations: ULabelAnnotation[], overlay_info: DistanceOverlayInfo): void {
         // Clear the canvas in order to have a clean slate to re-draw from
         this.clearCanvas()
-
-        console.log("zoom val", overlay_info.zoom_val)
+        
+        // Fill the entire canvas with the overlay that we'll subtract from
+        this.context.globalCompositeOperation = "source-over" // Resetting default
+        this.context.fillStyle = "#000000" 
+        this.context.globalAlpha = 0.8 // So you can slightly see through the overlay
+        this.context.fillRect(0, 0, this.canvas.width, this.canvas.height) // Draws the overlay
 
         // Call the appropriate update_overlay method
         overlay_info.multi_class_mode ? this.updateOverlay__multi(polyline_annotations, overlay_info) : this.updateOverlay__single(polyline_annotations, overlay_info)
