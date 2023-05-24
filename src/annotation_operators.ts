@@ -443,7 +443,8 @@ export function filter_points_distance_from_line(ulabel: ULabel, offset: Offset 
                 const overlay_info: DistanceOverlayInfo = {
                     "multi_class_mode": true,
                     "distance": filter_values,
-                    "zoom_val": ulabel.state.zoom_val
+                    "zoom_val": ulabel.state.zoom_val,
+                    "offset": offset
                 }
 
                 ulabel.filter_distance_overlay.updateOverlay(line_annotations, overlay_info)
@@ -453,7 +454,8 @@ export function filter_points_distance_from_line(ulabel: ULabel, offset: Offset 
                 const overlay_info: DistanceOverlayInfo = {
                     "multi_class_mode": false,
                     "distance": filter_value,
-                    "zoom_val": ulabel.state.zoom_val
+                    "zoom_val": ulabel.state.zoom_val,
+                    "offset": offset
                 }
 
                 ulabel.filter_distance_overlay.updateOverlay(line_annotations, overlay_info)
