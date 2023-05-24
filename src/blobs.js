@@ -2031,32 +2031,13 @@ div#${prntid} div.filter-row-distance fieldset.filter-row-distance-options label
    top: -0.2rem;
 }
 
-div#${prntid} div.filter-row-distance div.filter-row-distance-container {
-   display: flex;
-   justify-content: space-between;
-   align-items: center;
-   margin: 0 2rem 0.5rem;
+div#${prntid}.ulabel-night div.filter-row-distance fieldset,
+div#${prntid}.ulabel-night div.filter-row-distance legend,
+div#${prntid}.ulabel-night div.filter-row-distance label {
+   color: white;
 }
 
-div#${prntid} div.filter-row-distance label {
-   font-size: smaller;
-}
 
-div#${prntid} div.filter-row-distance button {
-   width: 20px;
-   height: 20px;
-   padding: 0;
-   border: 1px solid black;
-   border-radius: 50%;
-}
-
-div#${prntid}.ulabel-night div.filter-row-distance button {
-   border: 1px solid gray;
-}
-
-div#${prntid} div.filter-row-distance button:hover {
-   background-color: #87CEEB
-}
 
 div#${prntid} div.htbmain {
    position: relative;
@@ -2151,16 +2132,13 @@ div#${prntid} div.ulabel-slider-container {
    margin: 0 2rem 0.5rem;
 }
 
-div#${prntid}.ulabel-night div.ulabel-slider-container {
-   color: white;
-}
-
 div#${prntid} div.ulabel-slider-container label.ulabel-filter-row-distance-name-label {
    width: 100%; /* Ensure title takes up full width of container */
    font-size: 0.9rem;
+   align-items: center;
 }
 
-div#${prntid} div.ulabel-slider-container *:not(label.ulabel-filter-row-distance-name-label) {
+div#${prntid} div.ulabel-slider-container > *:not(label.ulabel-filter-row-distance-name-label) {
    flex: 1;
 }
 

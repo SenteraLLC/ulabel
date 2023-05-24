@@ -57,6 +57,7 @@ export type ClassDefinition = {
 export type SliderInfo = {
     default_value: string // Whole number
     id: string,
+    slider_event: Function,
 
     class?: string,
     label_units?: string,

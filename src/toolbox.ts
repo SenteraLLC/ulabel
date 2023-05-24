@@ -29,6 +29,7 @@ String.prototype.replaceLowerConcat = function(before: string, after: string, co
 class SliderHandler {
     default_value: string
     id: string
+    slider_event: Function
     class?: string
     label_units?: string = ""
     main_label: string
@@ -40,6 +41,7 @@ class SliderHandler {
     constructor(kwargs: SliderInfo) {
         this.default_value = kwargs.default_value
         this.id = kwargs.id
+        this.slider_event = kwargs.slider_event
         
         // Only check optional properties
         if (typeof kwargs.class !== "undefined") {
@@ -66,7 +68,12 @@ class SliderHandler {
         // Number for incrementing and decrementing slider value
         this.step_as_number = Number(this.step)
 
-        /* Add Event Listeners for this component*/
+        /* Add Event Listeners for this component */
+        $(document).on("input", `#${this.id}`, () => {
+            this.updateLabel()
+            this.slider_event()
+        })
+
         $(document).on("click", `#${this.id}-inc-button`, () => this.incrementSlider())
 
         $(document).on("click", `#${this.id}-dec-button`, () => this.decrementSlider())
@@ -75,6 +82,8 @@ class SliderHandler {
     private updateLabel() {
         const slider: HTMLInputElement = document.querySelector(`#${this.id}`)
         const label: HTMLLabelElement = document.querySelector(`#${this.id}-value-label`)
+        
+        // Set the label as a concatenation of the value and the units
         label.innerText = slider.value + this.label_units
     }
 
@@ -86,6 +95,8 @@ class SliderHandler {
         slider.value = (slider.valueAsNumber + this.step_as_number).toString()
 
         this.updateLabel()
+
+        this.slider_event()
     }
 
     private decrementSlider() {
@@ -96,6 +107,8 @@ class SliderHandler {
         slider.value = (slider.valueAsNumber - this.step_as_number).toString()
 
         this.updateLabel()
+
+        this.slider_event()
     }
 
     public getSliderHTML(): string {
@@ -1298,29 +1311,21 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
             this.show_overlay = false
         }
 
-
+        // Create a SliderHandler instance to take care of all the slider interactions
         this.single_class_slider_handler = new SliderHandler({
             "class": "filter-row-distance-slider",
             "default_value": this.default_value.toString(),
-            "id": "filter-row-distance-single-test",
+            "id": "filter-row-distance-single",
             "label_units": "px",
-            "main_label": "Hi Trevor! owo"
+            "main_label": "Hi Trevor! owo",
+            "slider_event": () => {filter_points_distance_from_line(ulabel)},
+            "min": this.filter_min.toString(),
+            "max": this.filter_max.toString(),
+            "step": this.increment_value.toString()
         })
 
 
         // === Create event listeners for this ToolboxItem ===
-
-        // Whenever the user directly updates the slider, call the filtering function and update the label
-        $(document).on("input", ".filter-row-distance-slider", () => {
-            filter_points_distance_from_line(this.ulabel)
-            this.updateSliderLabel()
-        })
-
-        // Whenever the user clicks on the increment button, increment the slider value
-        $(document).on("click", "#" + this.component_name + "inc-button", () => this.incrementSliderValue())
-
-        // Whenever the user clicks on the decrement button, decrement the slider value
-        $(document).on("click", "#" + this.component_name + "dec-button", () => this.decrementSliderValue())
 
         // Whenever the options legend is clicked, toggle displaying the options
         $(document).on("click", "fieldset.filter-row-distance-options > legend", () => this.toggleCollapsedOptions())
@@ -1389,61 +1394,6 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
             // Save it to local storage
             window.localStorage.setItem("filterDistanceShowOverlay", e.currentTarget.checked.toString())
         })
-    }
-
-    /**
-     * Updates this component's slider's label based on the slider's current value.
-     */
-    private updateSliderLabel() {
-
-        const sliders: NodeListOf<HTMLInputElement> = document.querySelectorAll(`.filter-row-distance-slider`)
-
-        // Go through every slider
-        for (let idx = 0; idx < sliders.length; idx++) {
-            // Grab the slider, its value, and its id
-            const slider: HTMLInputElement = sliders[idx]
-            const slider_value: string = slider.value
-            const slider_id: string = slider.id
-
-            // Grab the label element that is for the current slider and has the class filter-distance-percent-label
-            let label: HTMLLabelElement = document.querySelector(`label[for="${slider_id}"].filter-distance-px-label`)
-
-            label.innerText = slider_value + "px"
-        }
-    }
-
-    /**
-     * Increments this component's slider by one.
-     */
-    private incrementSliderValue() {
-        // Grab the slider element
-        let slider: HTMLInputElement = document.querySelector("#" + this.component_name + "-slider")
-
-        // Update the slider's value
-        slider.value = (slider.valueAsNumber + this.increment_value).toString()
-
-        // Update the label to be accurate
-        this.updateSliderLabel()
-
-        // Call the filter function
-        filter_points_distance_from_line(this.ulabel)
-    }
-
-    /**
-     * Decrements this component's slider by one.
-     */
-    private decrementSliderValue() {
-        // Grab the slider element
-        let slider: HTMLInputElement = document.querySelector("#" + this.component_name + "-slider")
-
-        // Update the slider's value
-        slider.value = (slider.valueAsNumber - this.increment_value).toString()
-
-        // Update the label to be accurate
-        this.updateSliderLabel()
-
-        // Call the filter function
-        filter_points_distance_from_line(this.ulabel)
     }
 
     /**
@@ -1563,27 +1513,6 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
                 </div>
             </fieldset>
             <div id="filter-single-class-mode" class="${!this.multi_class_mode ? "" : "ulabel-hidden"}">
-                <div class="filter-row-distance-container">
-                    <input 
-                        type="range"
-                        min="0"
-                        max="400"
-                        step="${this.increment_value}"
-                        id="filter-row-distance-single" 
-                        class="filter-row-distance-slider" 
-                        value="${this.default_value}"
-                    />
-                    <label 
-                        for="filter-row-distance-single" 
-                        id="${this.component_name}-single-mode-label"
-                        class="filter-distance-px-label">
-                        ${Math.round(this.default_value)}px
-                    </label>
-                    <div class="filter-row-distance-button-holder">
-                        <button id="${this.component_name}inc-button">+</button>
-                        <button id="${this.component_name}dec-button">-</button>
-                    </div>
-                </div>
                 ${this.single_class_slider_handler.getSliderHTML()}
             </div>
             <div id="filter-multi-class-mode" class="${this.multi_class_mode ? "" : "ulabel-hidden"}">

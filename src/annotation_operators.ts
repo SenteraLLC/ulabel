@@ -397,7 +397,6 @@ export function filter_points_distance_from_line(ulabel: ULabel, offset: Offset 
         // Grab all of the class sliders
         const sliders: NodeListOf<HTMLInputElement> = document.querySelectorAll(".filter-row-distance-class-slider")
 
-
         for (let idx = 0; idx < sliders.length; idx++) {
             // Use a regex to get the string after the final - character in the slider id (Which is the class id)
             const slider_class_name = /[^-]*$/.exec(sliders[idx].id)[0]
@@ -436,6 +435,7 @@ export function filter_points_distance_from_line(ulabel: ULabel, offset: Offset 
 
     //console.log(show_overlay_checkbox, "checkbox")
 
+    console.log("show_overlay_checkbox",show_overlay_checkbox)
     if (show_overlay_checkbox !== null) {
         if (show_overlay_checkbox.checked) {
             if (multi_class_mode) {
