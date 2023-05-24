@@ -2144,6 +2144,25 @@ div.toolbox_inner_cls {
    overflow-y: scroll;
 }
 
+/* ========== Slider Handler ========== */
+div#${prntid} div.ulabel-slider-container {
+   display: flex;
+   flex-wrap: wrap;
+   margin: 0 2rem 0.5rem;
+}
+
+div#${prntid}.ulabel-night div.ulabel-slider-container {
+   color: white;
+}
+
+div#${prntid} div.ulabel-slider-container label.ulabel-filter-row-distance-name-label {
+   width: 100%; /* Ensure title takes up full width of container */
+   font-size: 0.9rem;
+}
+
+div#${prntid} div.ulabel-slider-container *:not(label.ulabel-filter-row-distance-name-label) {
+   flex: 1;
+}
 
 /* ========== Overlays ========== */
 

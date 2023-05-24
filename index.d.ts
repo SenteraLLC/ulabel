@@ -31,8 +31,8 @@ export type DistanceFrom = {
  * Primarily exists so that points can be filtered before the page loads.
  */
 export type FilterDistanceOverride = {
-    "filter_value": number,
-    "should_redraw": boolean
+    filter_value: number,
+    should_redraw: boolean
 }
 
 export type DistanceOverlayInfo = {
@@ -49,9 +49,21 @@ export type DistanceOverlayInfo = {
 
 
 export type ClassDefinition = {
-    "name": string,
-    "id": number,
-    "color": string
+    name: string,
+    id: number,
+    color: string
+}
+
+export type SliderInfo = {
+    default_value: string // Whole number
+    id: string,
+
+    class?: string,
+    label_units?: string,
+    main_label?: string, // A label that displays above the slider
+    min?: string, // Whole number
+    max?: string, // Whole number
+    step?: string, // Whole number
 }
 
 export type ULabelAnnotations = { [key: string]: ULabelAnnotation[] };

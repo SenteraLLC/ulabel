@@ -1,4 +1,4 @@
-import { DistanceOverlayInfo, FilterDistanceOverride, ULabel } from "..";
+import { DistanceOverlayInfo, FilterDistanceOverride, SliderInfo, ULabel } from "..";
 import { ULabelAnnotation } from "./annotation";
 import { ULabelSubtask } from "./subtask";
 import { Configuration } from "./configuration";
@@ -23,6 +23,111 @@ String.prototype.replaceLowerConcat = function(before: string, after: string, co
     }
 
     return this.replaceAll(before, after).toLowerCase()
+}
+
+
+class SliderHandler {
+    default_value: string
+    id: string
+    class?: string
+    label_units?: string = ""
+    main_label: string
+    min: string = "0"
+    max: string = "100"
+    step: string = "1"
+    step_as_number: number = 1
+
+    constructor(kwargs: SliderInfo) {
+        this.default_value = kwargs.default_value
+        this.id = kwargs.id
+        
+        // Only check optional properties
+        if (typeof kwargs.class !== "undefined") {
+            this.class = kwargs.class
+        }
+        if (typeof kwargs.main_label !== "undefined") {
+            this.main_label = kwargs.main_label
+        }
+        if (typeof kwargs.label_units !== "undefined") {
+            this.label_units = kwargs.label_units
+        }
+        if (typeof kwargs.min !== "undefined") {
+            this.min = kwargs.min
+        }
+        if (typeof kwargs.max !== "undefined") {
+            this.max = kwargs.max
+        }
+        if (typeof kwargs.step !== "undefined") {
+            this.step = kwargs.step
+        }
+
+        // Useful to have as both string and number
+        // String for html creation
+        // Number for incrementing and decrementing slider value
+        this.step_as_number = Number(this.step)
+
+        /* Add Event Listeners for this component*/
+        $(document).on("click", `#${this.id}-inc-button`, () => this.incrementSlider())
+
+        $(document).on("click", `#${this.id}-dec-button`, () => this.decrementSlider())
+    }
+
+    private updateLabel() {
+        const slider: HTMLInputElement = document.querySelector(`#${this.id}`)
+        const label: HTMLLabelElement = document.querySelector(`#${this.id}-value-label`)
+        label.innerText = slider.value + this.label_units
+    }
+
+    private incrementSlider() {
+        // Get the slider element
+        const slider: HTMLInputElement = document.querySelector(`#${this.id}`)
+
+        // Add the step value then convert it back to a string
+        slider.value = (slider.valueAsNumber + this.step_as_number).toString()
+
+        this.updateLabel()
+    }
+
+    private decrementSlider() {
+        // Get the slider element
+        const slider: HTMLInputElement = document.querySelector(`#${this.id}`)
+
+        // Subtract the step value then convert it back to a string
+        slider.value = (slider.valueAsNumber - this.step_as_number).toString()
+
+        this.updateLabel()
+    }
+
+    public getSliderHTML(): string {
+        return `
+        <div class="ulabel-slider-container">
+            ${this.main_label 
+                ? `<label for="${this.id}" class="ulabel-filter-row-distance-name-label">${this.main_label}</label>` 
+                : ""
+            }
+            <input 
+                id="${this.id}"
+                class="${this.class}"
+                type="range"
+                min="${this.min}"
+                max="${this.max}"
+                step="${this.step ? this.step : "1"}"
+                value="${this.default_value}"
+            />
+            <label for="${this.id}" id="${this.id}-value-label">
+                ${this.default_value}${this.label_units ? this.label_units : ""}
+            </label>
+            <div class="ulabel-slider-button-container">
+                <button id=${this.id}-inc-button class="ulabel-slider-button" >
+                    +
+                </button>
+                <button id=${this.id}-dec-button class="ulabel-slider-button">
+                    -
+                </button>
+            </div>
+        </div>
+        `
+    }
 }
 
 
@@ -1116,6 +1221,7 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
     show_overlay: boolean = false // Whether or not the overlay will be shown
 
     ulabel: ULabel // The ULable object. Must be passed in
+    single_class_slider_handler: SliderHandler
 
 
     constructor(ulabel: ULabel, kwargs: {[name: string]: any} = null) {
@@ -1191,6 +1297,15 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
         else if (window.localStorage.getItem("filterDistanceShowOverlay") === "false") {
             this.show_overlay = false
         }
+
+
+        this.single_class_slider_handler = new SliderHandler({
+            "class": "filter-row-distance-slider",
+            "default_value": this.default_value.toString(),
+            "id": "filter-row-distance-single-test",
+            "label_units": "px",
+            "main_label": "Hi Trevor! owo"
+        })
 
 
         // === Create event listeners for this ToolboxItem ===
@@ -1469,6 +1584,7 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
                         <button id="${this.component_name}dec-button">-</button>
                     </div>
                 </div>
+                ${this.single_class_slider_handler.getSliderHTML()}
             </div>
             <div id="filter-multi-class-mode" class="${this.multi_class_mode ? "" : "ulabel-hidden"}">
                 ` + multi_class_html + `
