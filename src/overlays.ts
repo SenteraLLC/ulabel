@@ -270,11 +270,25 @@ export class FilterDistanceOverlay extends ULabelOverlay {
                 const endpoint_1: [number,number] = spatial_payload[idx]
                 const endpoint_2: [number,number] = spatial_payload[idx + 1]
 
-                // Scale each endpoint by the zoom_val
-                const x1: number = endpoint_1[0] * zoom_val
-                const y1: number = endpoint_1[1] * zoom_val
-                const x2: number = endpoint_2[0] * zoom_val
-                const y2: number = endpoint_2[1] * zoom_val
+                // Initialize each endpoint's x and y coordinate
+                let x1: number
+                let y1: number
+                let x2: number
+                let y2: number
+
+                // Check if this annotation is the one with an offset
+                if ((overlay_info.offset !== undefined && overlay_info.offset !== null) && annotation.id === overlay_info.offset.id) {
+                    x1 = (endpoint_1[0] + overlay_info.offset.diffX) * zoom_val
+                    y1 = (endpoint_1[1] + overlay_info.offset.diffY) * zoom_val
+                    x2 = (endpoint_2[0] + overlay_info.offset.diffX) * zoom_val
+                    y2 = (endpoint_2[1] + overlay_info.offset.diffY) * zoom_val
+                }
+                else {
+                    x1 = endpoint_1[0] * zoom_val
+                    y1 = endpoint_1[1] * zoom_val
+                    x2 = endpoint_2[0] * zoom_val
+                    y2 = endpoint_2[1] * zoom_val
+                }
 
                 // Get a vector that's perpendicular to endpoint_1 and endpoint_2 and has a magnitude of 1
                 const normal_vector: [number, number] = this.claculateNormalVector(x1, y1, x2, y2)
