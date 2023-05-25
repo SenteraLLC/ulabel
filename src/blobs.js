@@ -2029,6 +2029,7 @@ div#${prntid} div.filter-row-distance fieldset.filter-row-distance-options input
 div#${prntid} div.filter-row-distance fieldset.filter-row-distance-options label {
    position: relative;
    top: -0.2rem;
+   font-size: smaller;
 }
 
 div#${prntid}.ulabel-night div.filter-row-distance fieldset,

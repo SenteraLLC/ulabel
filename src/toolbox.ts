@@ -1109,7 +1109,7 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
     default_value: number = 40 // Value slider is set to on page load
     filter_min: number = 0 // Minimum value slider may be set to
     filter_max: number = 400 // Maximum value slider may be set to
-    increment_value: number = 2 // Value slider increments by
+    step_value: number = 2 // Value slider increments by
     filter_on_load: boolean = true // Whether or not to filter annotations on page load
     multi_class_mode: boolean = false // Whether or not the component is currently in multi-class mode
     show_options: boolean = true // Whether or not the options dialog will be visable
@@ -1117,7 +1117,6 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
     show_overlay: boolean = false // Whether or not the overlay will be shown
 
     ulabel: ULabel // The ULable object. Must be passed in
-    single_class_slider_handler: SliderHandler
 
 
     constructor(ulabel: ULabel, kwargs: {[name: string]: any} = null) {
@@ -1145,7 +1144,7 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
                 this.default_value = kwargs.default_value
             }
             if (typeof kwargs.increment_value === "number") {
-                this.increment_value = kwargs.increment_value
+                this.step_value = kwargs.increment_value
             }
             if (typeof kwargs.multi_class_mode === "boolean") {
                 this.multi_class_mode = kwargs.multi_class_mode
@@ -1193,19 +1192,6 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
         else if (window.localStorage.getItem("filterDistanceShowOverlay") === "false") {
             this.show_overlay = false
         }
-
-        // Create a SliderHandler instance to take care of all the slider interactions
-        this.single_class_slider_handler = new SliderHandler({
-            "class": "filter-row-distance-slider",
-            "default_value": this.default_value.toString(),
-            "id": "filter-row-distance-single",
-            "label_units": "px",
-            "main_label": "Hi Trevor! owo",
-            "slider_event": () => {filter_points_distance_from_line(ulabel)},
-            "min": this.filter_min.toString(),
-            "max": this.filter_max.toString(),
-            "step": this.increment_value.toString()
-        })
 
 
         // === Create event listeners for this ToolboxItem ===
@@ -1310,8 +1296,23 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
             const current_id = class_defs[idx].id
             const current_name = class_defs[idx].name
 
+            const multi_class_slider_instance = new SliderHandler({
+                "id": `filter-row-distance-${current_id}`,
+                "class": "filter-row-distance-slider filter-row-distance-class-slider",
+                "min": this.filter_min.toString(),
+                "max": this.filter_max.toString(),
+                "default_value": this.default_value.toString(),
+                "step": this.step_value.toString(),
+                "label_units": "px",
+                "main_label": current_name,
+                "slider_event": () => filter_points_distance_from_line(this.ulabel)
+            })
+
             // Add current classes html to multi_class_html
-            multi_class_html += `
+            multi_class_html += multi_class_slider_instance.getSliderHTML()
+            
+            /*
+            `
             <label
                 for="filter-row-distance-${current_id}"
                 id="filter-row-distance-${current_id}-name-label"
@@ -1340,6 +1341,7 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
                 </div>
             </div>
             `
+            */
         }
 
         return multi_class_html
@@ -1354,11 +1356,24 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
         // Get the multi-class filter html
         const multi_class_html = this.createMultiFilterHTML()
 
+        /* Create a SliderHandler instance to take care of creating the single class slider's html
+           and its event handlers */
+        const single_class_slider_handler = new SliderHandler({
+            "class": "filter-row-distance-slider",
+            "default_value": this.default_value.toString(),
+            "id": "filter-row-distance-single",
+            "label_units": "px",
+            "main_label": "Hi Trevor! owo",
+            "slider_event": () => {filter_points_distance_from_line(this.ulabel)},
+            "min": this.filter_min.toString(),
+            "max": this.filter_max.toString(),
+            "step": this.step_value.toString()
+        })
+
         return`
         <div class="filter-row-distance">
             <p class="tb-header">${this.name}</p>
-            <fieldset 
-                class="
+            <fieldset class="
                     filter-row-distance-options 
                     ${this.show_options ? "" : "ulabel-hidden"} 
                     ${this.collapse_options ? "ulabel-collapsed" : "" } 
@@ -1396,7 +1411,7 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
                 </div>
             </fieldset>
             <div id="filter-single-class-mode" class="${!this.multi_class_mode ? "" : "ulabel-hidden"}">
-                ${this.single_class_slider_handler.getSliderHTML()}
+                ${single_class_slider_handler.getSliderHTML()}
             </div>
             <div id="filter-multi-class-mode" class="${this.multi_class_mode ? "" : "ulabel-hidden"}">
                 ` + multi_class_html + `

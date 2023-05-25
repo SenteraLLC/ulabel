@@ -357,8 +357,6 @@ export function get_point_and_line_annotations(ulabel: ULabel): [ULabelAnnotatio
  * @param override Used to filter annotations without calling the dom
  */
 export function filter_points_distance_from_line(ulabel: ULabel, offset: Offset = null, override: FilterDistanceOverride = null) {
-    // Grab the subtasks from ulabel
-    const subtasks: ULabelSubtask[] = Object.values(ulabel.subtasks)
 
     // Get a set of all point and polyline annotations
     const annotations: [ULabelAnnotation[], ULabelAnnotation[]] = get_point_and_line_annotations(ulabel)
@@ -433,9 +431,6 @@ export function filter_points_distance_from_line(ulabel: ULabel, offset: Offset 
     // Decide whether or not to show the overlay
     const show_overlay_checkbox: HTMLInputElement = document.querySelector("#filter-slider-distance-toggle-overlay-checkbox")
 
-    //console.log(show_overlay_checkbox, "checkbox")
-
-    console.log("show_overlay_checkbox",show_overlay_checkbox)
     if (show_overlay_checkbox !== null) {
         if (show_overlay_checkbox.checked) {
             if (multi_class_mode) {
