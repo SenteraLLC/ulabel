@@ -6,7 +6,7 @@ import { ULabelAnnotation } from './annotation';
 import { VALID_HTML_COLORS } from "./colors";
 
 /**
- * Applies a linear gradient to a color channel based on its confience.
+ * Applies a linear gradient to a color channel based on its confidence.
  * 
  * @param {number} color_channel Color channel
  * @param {number} gradient_strength How strong the gradient is
