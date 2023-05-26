@@ -14,7 +14,7 @@ import { VALID_HTML_COLORS } from "./colors";
  * @param {number} maximum_confidence Maximum confidence to apply the gradient up to
  * @returns {string} A color channel in hexadecimal
  */
-function apply_gradient_on_color_channel(
+function apply_gradient_math(
     color_channel: number, 
     gradient_strength: number, // How strong the gradient is. Number between 0-1
     confidence: number,
@@ -40,6 +40,34 @@ function apply_gradient_on_color_channel(
 }
 
 /**
+ * Takes in a hex color i.e. "#D973EA", and applies a gradient to it based on a confidence value.
+ * @param color_hex 
+ * @param gradient_strength 
+ * @param confidence 
+ * @param maximum_confidence 
+ * @returns 
+ */
+function apply_gradient(
+    color_hex: string,
+    gradient_strength: number, 
+    confidence: number,
+    maximum_confidence: number
+): string {
+    // Grab individual r g b values from the hex string and convert them to decimal
+    let r = parseInt(color_hex.slice(1,3), 16)
+    let g = parseInt(color_hex.slice(3,5), 16)
+    let b = parseInt(color_hex.slice(5,7), 16)
+
+    // Apply the gradient to the rgb values
+    const r_with_gradient = apply_gradient_math(r, gradient_strength, confidence, maximum_confidence)
+    const g_with_gradient = apply_gradient_math(g, gradient_strength, confidence, maximum_confidence)
+    const b_with_gradient = apply_gradient_math(b, gradient_strength, confidence, maximum_confidence)
+
+    // Concatenate the channels together to form the hex
+    return "#" + r_with_gradient + g_with_gradient + b_with_gradient
+}
+
+/**
  * Applies a gradient to an annotation_object based on its confidence from the get_annotation_confidence function. If the confidence = 0, 
  * the color will be the gradient color. If the confience is >= maximum_confidence, the color won't be changed. The color will change 
  * linearly between 0 and maximum_confidence
@@ -57,40 +85,24 @@ export function get_gradient(
     maximum_confidence: number) {
         
     // If the gradient toggle is checked off, then don't apply a gradient
-    if ($("#gradient-toggle").prop("checked") === false) {
-        return base_color
-    }
+    if ($("#gradient-toggle").prop("checked") === false) return base_color
 
-    if (annotation_object.classification_payloads === null) {
-        return base_color
-    }
+    // Error checking
+    if (annotation_object.classification_payloads === null) return base_color
     
     // Get the annotation confidence
     const confidence = get_annotation_confidence(annotation_object)
 
     // Only apply a gradient when the confidence is less than the maximum_confidence
-    if (confidence >= maximum_confidence) {
-        return base_color
-    }
+    if (confidence >= maximum_confidence) return base_color
 
     // Convert css color keywords to hex strings
     let base_color_hex = color_to_hex(base_color)
-    
+
     // Strength of the gradient
     const gradient_strength = 0.85
-
-    // Grab individual r g b values from the hex string and convert them to decimal
-    let r = parseInt(base_color_hex.slice(1,3), 16)
-    let g = parseInt(base_color_hex.slice(3,5), 16)
-    let b = parseInt(base_color_hex.slice(5,7), 16)
-
-    // Apply the gradient to the rgb values
-    const r_with_gradient = apply_gradient_on_color_channel(r, gradient_strength, confidence, maximum_confidence)
-    const g_with_gradient = apply_gradient_on_color_channel(g, gradient_strength, confidence, maximum_confidence)
-    const b_with_gradient = apply_gradient_on_color_channel(b, gradient_strength, confidence, maximum_confidence)
-
-    // Concatenate the channels together to form the hex
-    const final_hex = "#" + r_with_gradient + g_with_gradient + b_with_gradient
+    
+    const final_hex = apply_gradient(base_color_hex, gradient_strength, confidence, maximum_confidence)
 
     // Since hex values should always be a string with length 7, if its not then return the base color just in case.
     if (final_hex.length !== 7) return base_color_hex
