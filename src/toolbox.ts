@@ -1240,38 +1240,6 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
 
             // Add current classes html to multi_class_html
             multi_class_html += multi_class_slider_instance.getSliderHTML()
-            
-            /*
-            `
-            <label
-                for="filter-row-distance-${current_id}"
-                id="filter-row-distance-${current_id}-name-label"
-                class="filter-row-distance-name-label">
-                ${current_name}
-            </label>
-            <div class="filter-row-distance-container">
-                <input 
-                    type="range"
-                    min="${this.filter_min}"
-                    max="${this.filter_max}"
-                    step="${this.increment_value}"
-                    id="filter-row-distance-${current_id}" 
-                    class="filter-row-distance-slider filter-row-distance-class-slider" 
-                    value="${this.default_value}"
-                />
-                <label 
-                    for="filter-row-distance-${current_id}" 
-                    id="filter-row-distance-${current_id}-px-label"
-                    class="filter-distance-px-label">
-                    ${Math.round(this.default_value)}px
-                </label>
-                <div class="filter-row-distance-button-holder">
-                    <button id="${this.component_name}inc-button">+</button>
-                    <button id="${this.component_name}dec-button">-</button>
-                </div>
-            </div>
-            `
-            */
         }
 
         return multi_class_html
@@ -1293,7 +1261,6 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
             "default_value": this.default_value.toString(),
             "id": "filter-row-distance-single",
             "label_units": "px",
-            "main_label": "Hi Trevor! owo",
             "slider_event": () => {filter_points_distance_from_line(this.ulabel)},
             "min": this.filter_min.toString(),
             "max": this.filter_max.toString(),

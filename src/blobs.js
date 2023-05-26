@@ -1927,6 +1927,10 @@ div#${prntid} div.ulabel-slider-container > *:not(label.ulabel-filter-row-distan
    flex: 1;
 }
 
+div#${prntid}.ulabel-night div.ulabel-slider-container label {
+   color: white;
+}
+
 div#${prntid} div.ulabel-slider-container label.ulabel-slider-value-label {
    font-size: 0.9rem;
 }
@@ -1942,10 +1946,19 @@ div#${prntid} div.ulabel-slider-container button {
    width: 25px;
    height: 25px;
    padding: 0;
+   transition: background-color 250ms;
+}
+
+div#${prntid} div.ulabel-slider-container button:hover {
+   background-color: rgba(0, 128, 255, 0.9);
+}
+
+div#${prntid}:not(.ulabel-night) div.ulabel-slider-container button:hover {
+   box-shadow: 0 0 4px 2px lightgray, 0 0 white;
 }
 
 div#${prntid}.ulabel-night div.ulabel-slider-container button {
-   color: black;
+
 }
 
 div#${prntid} div.ulabel-slider-container div.ulabel-slider-decrement-button-text {
@@ -1968,7 +1981,7 @@ div#${prntid} div.filter-row-distance fieldset.filter-row-distance-options {
    display: inline-block;
    position: relative;
    left: 1rem;
-   margin-bottom: 0.25rem;
+   margin-bottom: 0.5rem;
    font-size: 80%;
    user-select: none;
 }
@@ -1979,6 +1992,7 @@ div#${prntid} div.filter-row-distance fieldset.filter-row-distance-options * {
 
 div#${prntid} div.filter-row-distance fieldset.filter-row-distance-options.ulabel-collapsed {
    border: none;
+   margin-bottom: 0;
    padding: 0; /* Padding takes up too much space without the content */
 
    /* Needed to prevent the element from moving when ulabel-collapsed is toggled 
