@@ -1193,6 +1193,14 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
             // Save it to local storage
             window.localStorage.setItem("filterDistanceShowOverlay", e.currentTarget.checked.toString())
         })
+
+        $(document).on("keypress", (event) => {
+            if (event.key !== "p") return
+            
+            const show_overlay_checkbox: HTMLInputElement = document.querySelector("#filter-slider-distance-toggle-overlay-checkbox")
+            
+            show_overlay_checkbox.click()
+        })
     }
 
     /**
