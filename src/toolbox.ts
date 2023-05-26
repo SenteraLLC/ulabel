@@ -1,4 +1,4 @@
-import { DistanceOverlayInfo, FilterDistanceOverride, SliderInfo, ULabel } from "..";
+import { DistanceOverlayInfo, FilterDistanceConfig, FilterDistanceOverride, SliderInfo, ULabel } from "..";
 import { ULabelAnnotation } from "./annotation";
 import { ULabelSubtask } from "./subtask";
 import { Configuration } from "./configuration";
@@ -1045,46 +1045,50 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
     show_options: boolean = true // Whether or not the options dialog will be visable
     collapse_options: boolean = false // Whether or not the options is in a collapsed state
     show_overlay: boolean = false // Whether or not the overlay will be shown
+    toggle_overlay_keybind: string
 
     ulabel: ULabel // The ULable object. Must be passed in
+    config: FilterDistanceConfig // This object's config object
 
 
     constructor(ulabel: ULabel, kwargs: {[name: string]: any} = null) {
         super()
 
         this.ulabel = ulabel
+        
+        // Get this component's config from ulabel's config
+        this.config = this.ulabel.config.distance_filter_toolbox_item
 
-        // If kwargs were passed in then update component properties
-        if (kwargs !== null && kwargs !== undefined) {
-            // Make sure each property is the correct type before useing
-            // Mainly to make sure its not undefined so the user doesn't have to set every property to set one
-            if (typeof kwargs.name === "string") {
-                this.name = kwargs.name
-            }
-            if (typeof kwargs.component_name === "string") {
-                this.component_name = kwargs.component_name
-            }
-            if (typeof kwargs.filter_min === "number") {
-                this.filter_min = kwargs.filter_min
-            }
-            if (typeof kwargs.filter_max === "number") {
-                this.filter_max = kwargs.filter_max
-            }
-            if (typeof kwargs.default_value === "number") {
-                this.default_value = kwargs.default_value
-            }
-            if (typeof kwargs.increment_value === "number") {
-                this.step_value = kwargs.increment_value
-            }
-            if (typeof kwargs.multi_class_mode === "boolean") {
-                this.multi_class_mode = kwargs.multi_class_mode
-            }
-            if (typeof kwargs.filter_on_load === "boolean") {
-                this.filter_on_load = kwargs.filter_on_load
-            }
-            if (typeof kwargs.show_options === "boolean") {
-                this.show_options = kwargs.show_options
-            }
+        // If the config doesn't contain each property, then set a default
+        if (typeof this.config.name === "undefined") {
+            this.name = "Filter Distance From Row"
+        }
+        if (typeof this.config.component_name === "undefined") {
+            this.component_name = "filter-distance-from-row"
+        }
+        if (typeof this.config.filter_min === "undefined") {
+            this.filter_min = 0
+        }
+        if (typeof this.config.filter_max === "undefined") {
+            this.filter_max = 100
+        }
+        if (typeof this.config.default_value === "undefined") {
+            this.default_value = 50
+        }
+        if (typeof this.config.step_value === "undefined") {
+            this.step_value = 1
+        }
+        if (typeof this.config.multi_class_mode === "undefined") {
+            this.multi_class_mode = false
+        }
+        if (typeof this.config.filter_on_load === "undefined") {
+            this.filter_on_load = true
+        }
+        if (typeof this.config.show_options === "undefined") {
+            this.show_options = true
+        }
+        if (typeof this.config.toggle_overlay_keybind === "undefined") {
+            this.toggle_overlay_keybind = "p"
         }
 
         // Make sure property isn't undefined before using
@@ -1195,8 +1199,8 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
         })
 
         $(document).on("keypress", (event) => {
-            if (event.key !== "p") return
-            
+            if (event.key !== this.toggle_overlay_keybind) return
+
             const show_overlay_checkbox: HTMLInputElement = document.querySelector("#filter-slider-distance-toggle-overlay-checkbox")
             
             show_overlay_checkbox.click()

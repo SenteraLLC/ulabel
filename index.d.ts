@@ -67,6 +67,22 @@ export type SliderInfo = {
     step?: string, // Whole number
 }
 
+/**
+ * Config object for the FilterPointDistanceFromRow ToolboxItem.
+ */
+export type FilterDistanceConfig = {
+    name?: string,
+    component_name?: string,
+    filter_min?: number,
+    filter_max?: number,
+    default_value?: number,
+    step_value?: number,
+    multi_class_mode?: boolean,
+    filter_on_load?: boolean,
+    show_options?: boolean,
+    toggle_overlay_keybind?: string
+}
+
 export type ULabelAnnotations = { [key: string]: ULabelAnnotation[] };
 
 export type ULabelSubmitData = {

@@ -1,3 +1,4 @@
+import { FilterDistanceConfig } from "..";
 import { 
     ModeSelectionToolboxItem, 
     ZoomPanToolboxItem, 
@@ -54,6 +55,19 @@ export class Configuration {
         "annotation_size_plus": "=",   //The = Key by default
         "annotation_size_minus": "-",  //The - Key by default
         "annotation_vanish": "v"      //The v Key by default
+    }
+
+    public distance_filter_toolbox_item: FilterDistanceConfig = {
+        "name": "Filter Distance From Row",
+        "component_name": "filter-distance-from-row",
+        "filter_min": 0,
+        "filter_max": 400,
+        "default_value": 40,
+        "step_value": 2,
+        "multi_class_mode": false,
+        "filter_on_load": true,
+        "show_options": true,
+        "toggle_overlay_keybind": "p"
     }
 
     public change_zoom_keybind: string = "r";
