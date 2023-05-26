@@ -1034,18 +1034,18 @@ export class KeypointSliderItem extends ToolboxItem {
 }
 
 export class FilterPointDistanceFromRow extends ToolboxItem {
-    name: string = "Filter Distance From Row" // Component name shown to users
-    component_name: string = "FilterPointDistanceFromRow" // Internal component name
-    default_value: number = 40 // Value slider is set to on page load
-    filter_min: number = 0 // Minimum value slider may be set to
-    filter_max: number = 400 // Maximum value slider may be set to
-    step_value: number = 2 // Value slider increments by
-    filter_on_load: boolean = true // Whether or not to filter annotations on page load
-    multi_class_mode: boolean = false // Whether or not the component is currently in multi-class mode
-    show_options: boolean = true // Whether or not the options dialog will be visable
-    collapse_options: boolean = false // Whether or not the options is in a collapsed state
-    show_overlay: boolean = false // Whether or not the overlay will be shown
-    toggle_overlay_keybind: string
+    name: string // Component name shown to users
+    component_name: string // Internal component name
+    default_value: number // Value slider is set to on page load
+    filter_min: number // Minimum value slider may be set to
+    filter_max: number // Maximum value slider may be set to
+    step_value: number // Value slider increments by
+    filter_on_load: boolean // Whether or not to filter annotations on page load
+    multi_class_mode: boolean // Whether or not the component is currently in multi-class mode
+    show_options: boolean // Whether or not the options dialog will be visable
+    collapse_options: boolean// Whether or not the options is in a collapsed state
+    show_overlay: boolean // Whether or not the overlay will be shown
+    toggle_overlay_keybind: string 
 
     ulabel: ULabel // The ULable object. Must be passed in
     config: FilterDistanceConfig // This object's config object
@@ -1058,6 +1058,11 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
         
         // Get this component's config from ulabel's config
         this.config = this.ulabel.config.distance_filter_toolbox_item
+
+        // Populate this component with every property in the config
+        for (const property in this.config) {
+            this[property] = this.config[property]
+        }
 
         // If the config doesn't contain each property, then set a default
         if (typeof this.config.name === "undefined") {
