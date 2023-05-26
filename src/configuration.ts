@@ -57,6 +57,7 @@ export class Configuration {
         "annotation_vanish": "v"      //The v Key by default
     }
 
+    // Config for FilterDistanceToolboxItem
     public distance_filter_toolbox_item: FilterDistanceConfig = {
         "name": "Filter Distance From Row",
         "component_name": "filter-distance-from-row",

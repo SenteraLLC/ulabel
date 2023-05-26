@@ -1096,15 +1096,6 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
             this.toggle_overlay_keybind = "p"
         }
 
-        // Make sure property isn't undefined before using
-        if (typeof this.ulabel.config.filter_row_distance_default_value !== "undefined") {
-            this.default_value = this.ulabel.config.filter_row_distance_default_value
-        }
-
-        if (typeof this.ulabel.config.filter_row_distance_on_load !== "undefined") {
-            this.filter_on_load = this.ulabel.config.filter_row_distance_on_load
-        }
-
         // If filter_on_load is true, then filter on load
         if (this.filter_on_load) {
             // Create a filter distance override, so filter distance knows how to filter without accessing the dom
@@ -1220,22 +1211,30 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
         $("#filter-multi-class-mode").toggleClass("ulabel-hidden")
     }
 
+    /**
+     * Toggles whether or not the options should be displayed.
+     */
     private toggleCollapsedOptions() {
+        // Toggle the class which collapses the options
         $("fieldset.filter-row-distance-options").toggleClass("ulabel-collapsed")
+
+        // Toggle the state
         this.collapse_options = !this.collapse_options
+
+        // Save the state to the user's browser so it can be re-loaded in the same state
         window.localStorage.setItem("filterDistanceCollapseOptions", this.collapse_options.toString())
     }
 
     /**
      * Gets all classes that polylines can be and creates a distance filter for each class.
      * 
-     * @returns HTML for the multi-class filtering mode
+     * @returns {string} HTML for the multi-class filtering mode
      */
-    private createMultiFilterHTML() {
+    private createMultiFilterHTML(): string {
         // Get all potential classes
         const class_defs = findAllPolylineClassDefinitions(this.ulabel)
 
-        let multi_class_html = ``
+        let multi_class_html: string = ``
 
         // Loop through each class and create their html
         for (let idx = 0; idx < class_defs.length; idx++) {
@@ -1269,7 +1268,7 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
      */
     public get_html(): string {
         // Get the multi-class filter html
-        const multi_class_html = this.createMultiFilterHTML()
+        const multi_class_html: string = this.createMultiFilterHTML()
 
         /* Create a SliderHandler instance to take care of creating the single class slider's html
            and its event handlers */
