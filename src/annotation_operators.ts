@@ -21,6 +21,7 @@ import { ULabelSubtask } from "./subtask";
  * @returns The largest confidence value inside classification_payloads
  */
 export function get_annotation_confidence(annotation: ULabelAnnotation) {
+    console.log("annotation in get confidence",annotation)
     let current_confidence = -1;
     for (let type_of_id in annotation.classification_payloads) {
         if (annotation.classification_payloads[type_of_id].confidence > current_confidence) {

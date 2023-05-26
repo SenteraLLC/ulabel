@@ -1907,73 +1907,54 @@ div#${prntid} div.recolor-active #color-change-cya {
    border: 1px solid rgb(0, 200, 200);
 }
 
-/* css for the keypoint slider item */
-div#${prntid} div.keypoint-slider {
-   padding: 10px 30px;
-   display: block;
+
+/* ========== SliderHandler css ========== */
+
+div#${prntid} div.ulabel-slider-container {
+   display: flex;
+   flex-wrap: wrap;
+   align-items: center;
+   margin: 0 2rem 0.5rem;
 }
 
-div#${prntid} div.keypoint-slider p.tb-header {
-   margin: 0;
-   margin-bottom: 5px;
+div#${prntid} div.ulabel-slider-container label.ulabel-filter-row-distance-name-label {
+   width: 100%; /* Ensure title takes up full width of container */
+   font-size: 0.95rem;
+   align-items: center;
 }
 
-div#${prntid} div.keypoint-slider div.keypoint-slider-holder{
-   padding: 8px;
+div#${prntid} div.ulabel-slider-container > *:not(label.ulabel-filter-row-distance-name-label) {
+   flex: 1;
+}
+
+div#${prntid} div.ulabel-slider-container label.ulabel-slider-value-label {
+   font-size: 0.9rem;
+}
+
+div#${prntid} div.ulabel-slider-container button {
    position: relative;
-   text-align: left;
-}
-
-div#${prntid} .keypoint-slider-label {
-   position: relative;
-   bottom: 3px;
-}
-
-div#${prntid} div.keypoint-slider span.increment {
-   position: absolute;
-   right: 0;
-   bottom: 0.4em;
-}
-
-div#${prntid} div.keypoint-slider a.inc {
-   margin: 0;
-}
-
-div#${prntid} div.keypoint-slider a.dec {
-   position: relative;
-   bottom: 0.07em;
-}
-
-div#${prntid}.ulabel-night .keypoint-slider-label {
+   border: 1px solid rgba(128, 128, 128, 0.5);
+   border-radius: 50%;
+   font-size: 1.2rem;
+   font-weight: bold;
    color: white;
+   background-color: rgba(0, 128, 255, 0.7);
+   width: 25px;
+   height: 25px;
+   padding: 0;
 }
 
-div#${prntid} div.zpcont {
-   height: 90px;
+div#${prntid}.ulabel-night div.ulabel-slider-container button {
+   color: black;
+}
+
+div#${prntid} div.ulabel-slider-container div.ulabel-slider-decrement-button-text {
    position: relative;
-   background-color: white;
-}
-div#${prntid}.ulabel-night div.zpcont {
-   background-color: rgb(24, 24, 24);
-}
-div#${prntid} div.zpcont:hover, div#${prntid}.ulabel-night div.zpcont:hover {
-   background-color: rgba(0,0,0,0);
-}
-div#${prntid} div.zpcont div.lblpyldcont {
-   position: absolute;
-   top: 50%;
-   -ms-transform: translateY(-50%);
-   transform: translateY(-50%);
-}
-div#${prntid}.ulabel-night div.zpcont div.lblpyldcont {
-   color: white;
-}
-div#${prntid}.ulabel-night a.zbutt, div#${prntid}.ulabel-night a.wbutt {
-   border: 1px solid black;
-   color: black !important;
+   bottom: 1.5px;
 }
 
-/* ===== FilterPointDistanceFromRow css ===== */
+
+/* ========== FilterPointDistanceFromRow css ========== */
 
 div#${prntid} div.filter-row-distance {
    text-align: left;
@@ -2039,6 +2020,32 @@ div#${prntid}.ulabel-night div.filter-row-distance label {
 }
 
 
+
+
+div#${prntid} div.zpcont {
+   height: 90px;
+   position: relative;
+   background-color: white;
+}
+div#${prntid}.ulabel-night div.zpcont {
+   background-color: rgb(24, 24, 24);
+}
+div#${prntid} div.zpcont:hover, div#${prntid}.ulabel-night div.zpcont:hover {
+   background-color: rgba(0,0,0,0);
+}
+div#${prntid} div.zpcont div.lblpyldcont {
+   position: absolute;
+   top: 50%;
+   -ms-transform: translateY(-50%);
+   transform: translateY(-50%);
+}
+div#${prntid}.ulabel-night div.zpcont div.lblpyldcont {
+   color: white;
+}
+div#${prntid}.ulabel-night a.zbutt, div#${prntid}.ulabel-night a.wbutt {
+   border: 1px solid black;
+   color: black !important;
+}
 
 div#${prntid} div.htbmain {
    position: relative;
@@ -2126,22 +2133,6 @@ div.toolbox_inner_cls {
    overflow-y: scroll;
 }
 
-/* ========== Slider Handler ========== */
-div#${prntid} div.ulabel-slider-container {
-   display: flex;
-   flex-wrap: wrap;
-   margin: 0 2rem 0.5rem;
-}
-
-div#${prntid} div.ulabel-slider-container label.ulabel-filter-row-distance-name-label {
-   width: 100%; /* Ensure title takes up full width of container */
-   font-size: 0.9rem;
-   align-items: center;
-}
-
-div#${prntid} div.ulabel-slider-container > *:not(label.ulabel-filter-row-distance-name-label) {
-   flex: 1;
-}
 
 /* ========== Overlays ========== */
 

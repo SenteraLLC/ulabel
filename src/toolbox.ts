@@ -940,10 +940,6 @@ export class KeypointSliderItem extends ToolboxItem {
         "decrement": string
     }
 
-    // Function_array must contain three functions
-    // The first function is how to filter the annotations
-    // The second is how to get the particular confidence
-    // The third is how to mark the annotations deprecated
     constructor(ulabel: ULabel, kwargs: {[name: string]: any}) {
         super();
         this.inner_HTML = `<p class="tb-header">Keypoint Slider</p>`;
@@ -973,83 +969,32 @@ export class KeypointSliderItem extends ToolboxItem {
         // Create slider bar id
         this.slider_bar_id = this.name.replaceLowerConcat(" ", "-");
         
-        // If the config has a default value override kwargs.default_value with it
+        // If the config has a default value override the filter_value
         if (this.ulabel.config.hasOwnProperty(this.name.replaceLowerConcat(" ", "_", "_default_value"))) {
-            // Grab the new defalut value for convenience
-            const new_default_value: number = this.ulabel.config[this.name.replaceLowerConcat(" ", "_", "_default_value")];
-
-            kwargs.default_value = this.ulabel.config[this.name.replaceLowerConcat(" ", "_", "_default_value")];
-        }
-
-        if (kwargs.default_value !== undefined) {
-            // Set the filter value to the default value
-            this.filter_value = kwargs.default_value
+            // Set the filter value
+            this.filter_value = this.ulabel.config[this.name.replaceLowerConcat(" ", "_", "_default_value")];
         }
 
         // Check the config to see if we should update the annotations with the default filter on load
         if (this.ulabel.config.filter_annotations_on_load) {
-            this.deprecate_annotations(this.ulabel, this.filter_value);
+            this.filter_annotations(this.ulabel, this.filter_value);
         }
-
-
-        // ======== Event Listeners ========
-        
-        // Called when the slider element is directly edited by the user
-        $(document).on("input", "#" + this.name.replaceLowerConcat(" ", "-"), (e) => {
-            this.filter_value = e.currentTarget.value;
-            this.deprecate_annotations(ulabel, this.filter_value);
-            this.update_visuals()
-        })
-
-        // Called whenever the user clicks on the increment and decrement buttons
-        $(document).on("click", "a." + this.name.replaceLowerConcat(" ", "-") + "-button", (e) => {
-            const button_text: string = e.currentTarget.outerText
-            const slider = <HTMLInputElement> document.getElementById(this.name.replaceLowerConcat(" ", "-"))
-
-            // Use button_text to figure out what button was clicked, and update the slider value accordingly
-            switch(button_text) {
-                case "+":
-                    this.filter_value = slider.valueAsNumber + 1;
-                    break;
-                case "-":
-                    this.filter_value = slider.valueAsNumber - 1;
-                    break;
-                default:
-                    throw Error("Unknown Keypoint Slider Button Pressed");
-            }
-
-            this.deprecate_annotations(ulabel, this.filter_value);
-
-            this.update_visuals()
-        })
-
-        // Called whenever the user uses the keybinds to change the slider value
-        $(document).on("keypress", (e) => {
-            if (e.key === this.keybinds.increment) {
-                let button = <HTMLAnchorElement> document.getElementsByClassName(this.name.replaceLowerConcat(" ", "-") + "-button inc")[0]
-                button.click()
-            }
-
-            if (e.key === this.keybinds.decrement) {
-                let button = <HTMLAnchorElement> document.getElementsByClassName(this.name.replaceLowerConcat(" ", "-") + "-button dec")[0]
-                button.click()
-            }
-        })
     }
 
     /**
-     * Given the ulabel object and a filter value, goes through each annotation and decides whether or not to deprecate them.
+     * Given the ulabel object and a filter value, go through each annotation and decide whether or 
+     * not to deprecate it.
      * 
      * @param ulabel ULabel object
      * @param filter_value The number between 0-100 which annotation's confidence is compared against
      */
-    private deprecate_annotations(ulabel: ULabel, filter_value: number) {
+    private filter_annotations(ulabel: ULabel, filter_value: number) {
         // Get the current subtask
         const current_subtask = ulabel.subtasks[ulabel.state["current_subtask"]];
 
-        for (let idx in current_subtask.annotations.ordering) {
-            // Get the current annotation
-            const current_annotation: ULabelAnnotation = current_subtask.annotations.access[current_subtask.annotations.ordering[idx]]
+        for (const annotation_id in current_subtask.annotations.access) {
+            // Get the current annotation from the access object
+            const current_annotation: ULabelAnnotation = current_subtask.annotations.access[annotation_id]
 
             // Get the annotation's confidence as decimal between 0-1
             let confidence: number = this.get_confidence(current_annotation)
@@ -1061,45 +1006,30 @@ export class KeypointSliderItem extends ToolboxItem {
             const should_deprecate: boolean = this.filter_function(confidence, filter_value)
 
             // Mark this annotation as either deprecated or undeprecated by the confidence filter
-            mark_deprecated(current_annotation, should_deprecate, "confidence_filter")
+            this.mark_deprecated(current_annotation, should_deprecate, "confidence_filter")
         }
     }
 
-    /**
-     * Handles only redrawing to the screen.
-     */
-    private update_visuals() {
-        // Update the slider bar's position, and the label's text.
-        $("#" + this.slider_bar_id).val(Math.round(this.filter_value));
-        $("#" + this.slider_bar_id + "-label").text(Math.round(this.filter_value) + "%");
-
-        // Redraw the annotations
-        this.ulabel.redraw_all_annotations(null, null, false);
-    }
-
     public get_html() {
-        let component_name = this.name.replaceLowerConcat(" ", "-")
-        return`
+        // Create a SliderHandler instance to handle slider interactions
+        const slider_handler = new SliderHandler({
+            "id": this.name.replaceLowerConcat(" ", "-"),
+            "class": "keypoint-slider",
+            "default_value": Math.round(this.filter_value * 100).toString(),
+            "label_units": "%",
+            "slider_event": (slider_value: number) => {
+                // Filter the annotations, then redraw them
+                this.filter_annotations(this.ulabel, slider_value);
+                this.ulabel.redraw_all_annotations();
+            }
+        })
+
+        return `
         <div class="keypoint-slider">
             <p class="tb-header">${this.name}</p>
-            <div class="keypoint-slider-holder">
-                <input 
-                    type="range" 
-                    id="${component_name}" 
-                    class="keypoint-slider" value="${this.filter_value * 100}"
-                />
-                <label 
-                    for="${component_name}" 
-                    id="${component_name}-label"
-                    class="keypoint-slider-label">
-                    ${Math.round(this.filter_value * 100)}%
-                </label>
-                <span class="increment" >
-                    <a href="#" class="button inc keypoint-slider-increment ${component_name}-button" >+</a>
-                    <a href="#" class="button dec keypoint-slider-increment ${component_name}-button" >-</a>
-                </span>
-            </div>
-        </div>`
+            ` + slider_handler.getSliderHTML() + `
+        </div>
+        `
     }
 }
 

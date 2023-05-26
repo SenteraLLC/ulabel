@@ -318,8 +318,6 @@ export class FilterDistanceOverlay extends ULabelOverlay {
     public updateOverlay(polyline_annotations: ULabelAnnotation[], overlay_info: DistanceOverlayInfo): void {
         // Clear the canvas in order to have a clean slate to re-draw from
         this.clearCanvas()
-
-        console.log(overlay_info.distance)
         
         // Fill the entire canvas with the overlay that we'll subtract from
         this.context.globalCompositeOperation = "source-over" // Resetting default

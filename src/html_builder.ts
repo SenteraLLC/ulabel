@@ -540,10 +540,11 @@ export class SliderHandler {
         // Number for incrementing and decrementing slider value
         this.step_as_number = Number(this.step)
 
+
         /* Add Event Listeners for this component */
-        $(document).on("input", `#${this.id}`, () => {
+        $(document).on("input", `#${this.id}`, (event) => {
             this.updateLabel()
-            this.slider_event()
+            this.slider_event(event.currentTarget.valueAsNumber)
         })
 
         $(document).on("click", `#${this.id}-inc-button`, () => this.incrementSlider())
@@ -559,28 +560,46 @@ export class SliderHandler {
         label.innerText = slider.value + this.label_units
     }
 
+    /**
+     * Increment the slider's value by the step value and call the slider event with 
+     * new slider value.
+     */
     private incrementSlider() {
         // Get the slider element
         const slider: HTMLInputElement = document.querySelector(`#${this.id}`)
 
-        // Add the step value then convert it back to a string
-        slider.value = (slider.valueAsNumber + this.step_as_number).toString()
+        // Add the step value
+        const new_value = slider.valueAsNumber + this.step_as_number
 
+        // Update the slider's value
+        slider.value = new_value.toString()
+
+        // Update the label
         this.updateLabel()
 
-        this.slider_event()
+        // Call the slider event with the slider value
+        this.slider_event(slider.value)
     }
 
+    /**
+     * Decrement the slider's value by the step value and call the slider event with 
+     * new slider value.
+     */
     private decrementSlider() {
         // Get the slider element
         const slider: HTMLInputElement = document.querySelector(`#${this.id}`)
 
-        // Subtract the step value then convert it back to a string
-        slider.value = (slider.valueAsNumber - this.step_as_number).toString()
+        // Add the step value
+        const new_value = slider.valueAsNumber - this.step_as_number
 
+        // Update the slider's value
+        slider.value = new_value.toString()
+
+        // Update the label
         this.updateLabel()
 
-        this.slider_event()
+        // Call the slider event with the slider value
+        this.slider_event(slider.value)
     }
 
     public getSliderHTML(): string {
@@ -599,7 +618,7 @@ export class SliderHandler {
                 step="${this.step ? this.step : "1"}"
                 value="${this.default_value}"
             />
-            <label for="${this.id}" id="${this.id}-value-label">
+            <label for="${this.id}" id="${this.id}-value-label" class="ulabel-slider-value-label">
                 ${this.default_value}${this.label_units ? this.label_units : ""}
             </label>
             <div class="ulabel-slider-button-container">
@@ -607,7 +626,10 @@ export class SliderHandler {
                     +
                 </button>
                 <button id=${this.id}-dec-button class="ulabel-slider-button">
-                    -
+                    <!-- Create an extra div here to be able to move the - text up -->
+                    <div class="ulabel-slider-decrement-button-text">
+                        –
+                    </div>
                 </button>
             </div>
         </div>
