@@ -3,6 +3,17 @@ import { FilterDistanceOverlay } from "./src/overlays";
 import { ULabelSubtask } from "./src/subtask";
 import { Toolbox } from "./src/toolbox";
 
+export type OverlayDistances = {
+    "single": number,
+    [key: number]: number
+}
+
+export type AbstractPoint = {
+    x: number,
+    y: number,
+    z?: number
+}
+
 export type Offset = {
     id: string;
     diffX: number;
@@ -36,13 +47,7 @@ export type FilterDistanceOverride = {
 }
 
 export type DistanceOverlayInfo = {
-    multi_class_mode: true,
-    distance: {[key: string]: number},
-    zoom_val: number,
-    offset?: Offset
-} | {
-    multi_class_mode: false,
-    distance: number,
+    multi_class_mode: boolean,
     zoom_val: number,
     offset?: Offset
 }

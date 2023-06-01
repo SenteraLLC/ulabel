@@ -7,7 +7,8 @@ import {
     FilterDistanceOverride, 
     ValidDeprecatedBy,
     ClassDefinition,
-    DistanceOverlayInfo
+    DistanceOverlayInfo,
+    OverlayDistances
 } from "..";
 
 import { ULabelAnnotation } from "./annotation";
@@ -279,39 +280,6 @@ export function assign_distance_from_line(
     })
 }
 
-/**
- * Handles filtering annotations when in single mode
- * 
- * @param point_annotations Array of point annotations to be deprecated/undeprecated
- * @param filter_value Value the annotations are compared against
- */
-function filter_points_distance_from_line__single(point_annotations: ULabelAnnotation[], filter_value: number) {
-    // Go through each annotation
-    point_annotations.forEach(annotation => {
-
-        // If the annotation's distance from any line is greater than the filter_value, it should be deprecated
-        const should_deprecate: boolean = annotation.distance_from["any_line"] > filter_value
-
-        mark_deprecated(annotation, should_deprecate, "distance_from_row")
-    })
-}
-
-function filter_points_distance_from_line__multi(point_annotations: ULabelAnnotation[], filter_values: {[key: string]: number}) {
-    point_annotations.forEach(annotation => {
-        check_distance: {
-            for (const id in filter_values) {
-                // If the annotation is smaller than the filter value for any id it passes
-                if (annotation.distance_from[id] <= filter_values[id]) {
-                    mark_deprecated(annotation, false, "distance_from_row")
-                    break check_distance
-                }
-            }
-            // Only here if break not called
-            mark_deprecated(annotation, true, "distance_from_row")
-        }
-    })
-}
-
 export function get_point_and_line_annotations(ulabel: ULabel): [ULabelAnnotation[], ULabelAnnotation[]] {
     // Initialize set of all point and line annotations
     let point_annotations: ULabelAnnotation[] = []
@@ -387,43 +355,53 @@ export function filter_points_distance_from_line(ulabel: ULabel, offset: Offset 
         multi_class_mode = multi_checkbox.checked
     }
 
-    // Filter based on current mode
-    let filter_value: number
-    let filter_values: {[key: string]: number} = {}
-    if (multi_class_mode) { // Multi class mode
-        
-        // Grab all of the class sliders
-        const sliders: NodeListOf<HTMLInputElement> = document.querySelectorAll(".filter-row-distance-class-slider")
-
-        for (let idx = 0; idx < sliders.length; idx++) {
-            // Use a regex to get the string after the final - character in the slider id (Which is the class id)
-            const slider_class_name = /[^-]*$/.exec(sliders[idx].id)[0]
-
-            // Use the class id as a key to store the slider's value
-            filter_values[slider_class_name] = sliders[idx].valueAsNumber
-        }
-
-        filter_points_distance_from_line__multi(point_annotations, filter_values)
+    // Initialize an object to hold the distance points are allowed to be from each class as well as any line
+    let filter_values: OverlayDistances = {
+        "single": null
     }
-    else { // Single class mode
-        // Initialize filter value
 
-        // If the override exists, use its filter value
-        if (override !== null) {
-            filter_value = override.filter_value
-        }
-        else { // Otherwise get the filter value from the dom
-            const single_mode_slider: HTMLInputElement = document.querySelector("#filter-row-distance-single")
+    // Grab all filter-distance-sliders on the page
+    const sliders: NodeListOf<HTMLInputElement> = document.querySelectorAll(".filter-row-distance-slider")
+    console.log("overlay", ulabel.filter_distance_overlay)
 
-            // Filter value will be the slider's value
-            filter_value = single_mode_slider.valueAsNumber
-        }
+    if (sliders.length === 0) return
+    // Loop through each slider and populate filter_values
+    for (let idx = 0; idx < sliders.length; idx++) {
+        // Use a regex to get the string after the final - character in the slider id (Which is the class id or the string "single")
+        const slider_class_name = /[^-]*$/.exec(sliders[idx].id)[0]
+        console.log(slider_class_name)
+        // Use the class id as a key to store the slider's value
+        filter_values[slider_class_name] = sliders[idx].valueAsNumber
+    }
+    console.log(filter_values, "filter_valuse")
 
-        filter_points_distance_from_line__single(point_annotations, filter_value)
+    if (multi_class_mode) { // Multi-class mode
+        // Loop through each point and deprecate them if they fall outside the range of all lines
+        point_annotations.forEach(annotation => {
+            check_distance: {
+                for (const id in filter_values) {
+                    // Ignore the single class slider
+                    if (id === "single") continue
+    
+                    // If the annotation is smaller than the filter value for any id it passes
+                    if (annotation.distance_from[id] <= filter_values[id]) {
+                        mark_deprecated(annotation, false, "distance_from_row")
+                        break check_distance
+                    }
+                }
+                // Only here if break not called
+                mark_deprecated(annotation, true, "distance_from_row")
+            }
+        })
+    }
+    else { // Single-class mode
+        point_annotations.forEach(annotation => {
+            mark_deprecated(annotation, !(annotation.distance_from["any_line"] <= filter_values["single"]), "distance_from_row")
+        })
     }
 
     // Redraw if the override does not exist
-    // Redraw if the override.should_redraw is true
+    // Redraw if override.should_redraw is true
     if (override === null || override.should_redraw) {
         ulabel.redraw_all_annotations(null, null, false);
     }
@@ -431,32 +409,21 @@ export function filter_points_distance_from_line(ulabel: ULabel, offset: Offset 
     // Decide whether or not to show the overlay
     const show_overlay_checkbox: HTMLInputElement = document.querySelector("#filter-slider-distance-toggle-overlay-checkbox")
 
-    if (show_overlay_checkbox !== null) {
-        if (show_overlay_checkbox.checked) {
-            if (multi_class_mode) {
-                // Create overlay info for updateOverlay
-                const overlay_info: DistanceOverlayInfo = {
-                    "multi_class_mode": true,
-                    "distance": filter_values,
-                    "zoom_val": ulabel.state.zoom_val,
-                    "offset": offset
-                }
-
-                ulabel.filter_distance_overlay.updateOverlay(line_annotations, overlay_info)
-            }
-            else {
-                // Create overlay info for updateOverlay
-                const overlay_info: DistanceOverlayInfo = {
-                    "multi_class_mode": false,
-                    "distance": filter_value,
-                    "zoom_val": ulabel.state.zoom_val,
-                    "offset": offset
-                }
-
-                ulabel.filter_distance_overlay.updateOverlay(line_annotations, overlay_info)
-            }
+    if (show_overlay_checkbox !== null && show_overlay_checkbox.checked) {
+        // Create the info the overlay needs in order to properly draw itself
+        const overlay_info: DistanceOverlayInfo = {
+            "multi_class_mode": multi_class_mode,
+            "zoom_val": ulabel.state.zoom_val,
+            "offset": offset
         }
-        else {
+
+        // Update the filter distances, then redraw the overlay
+        ulabel.filter_distance_overlay.updateAnnotations(line_annotations)
+        ulabel.filter_distance_overlay.updateDistance(filter_values)
+        ulabel.filter_distance_overlay.drawOverlay(overlay_info)
+    }
+    else {
+        if (ulabel.filter_distance_overlay !== null || ulabel.filter_distance_overlay !== undefined) {
             ulabel.filter_distance_overlay.clearCanvas()
         }
     }

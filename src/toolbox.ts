@@ -1131,65 +1131,29 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
 
         // Whenever the multi-class filtering checkbox is clicked, switch the displayed filter mode
         $(document).on("click", "#filter-slider-distance-multi-checkbox", () => {
+            // Toggle the multi-class state
+            this.multi_class_mode = !this.multi_class_mode
+
+            // Toggle whether the single-class slider, or the multi-class sliders are visible
             this.switchFilterMode()
+            
             // Re-filter the points in the new mode
-            filter_points_distance_from_line(ulabel)
+            filter_points_distance_from_line(this.ulabel)
         })
 
         $(document).on("change", "#filter-slider-distance-toggle-overlay-checkbox", (e) => {
-            // Grab the overlay
-            const overlay: HTMLCanvasElement = document.querySelector("#ulabel-filter-distance-overlay")
-
+            // Check if the toggle is checked
             if (e.currentTarget.checked) {
-                // Make overlay visible
-                overlay.style.opacity = "1"
-
-                const line_annotations = get_point_and_line_annotations(this.ulabel)[1] // [0] is point annotations
-
-                // Initialize overlay info
-                let overlay_info: DistanceOverlayInfo = {
-                    "distance": undefined,
-                    "multi_class_mode": undefined,
-                    "zoom_val": undefined
+                const overlay_info: DistanceOverlayInfo = {
+                    "multi_class_mode": this.multi_class_mode,
+                    "zoom_val": this.ulabel.state.zoom_val
                 }
 
-                // Grab checkbox
-                const multi_class_checkbox: HTMLInputElement = document.querySelector("#filter-slider-distance-multi-checkbox")
-                
-                // Populate overlay_info
-                overlay_info.multi_class_mode = multi_class_checkbox.checked
-                overlay_info.zoom_val = this.ulabel.state.zoom_val
-
-                if (overlay_info.multi_class_mode) { // Multi class mode
-                    
-                    let filter_values = {}
-
-                    // Grab all of the class sliders
-                    const sliders: NodeListOf<HTMLInputElement> = document.querySelectorAll(".filter-row-distance-class-slider")
-            
-                    for (let idx = 0; idx < sliders.length; idx++) {
-                        // Use a regex to get the string after the final - character in the slider id (Which is the class id)
-                        const slider_class_name = /[^-]*$/.exec(sliders[idx].id)[0]
-            
-                        // Use the class id as a key to store the slider's value
-                        filter_values[slider_class_name] = sliders[idx].valueAsNumber
-                    }
-            
-                    overlay_info.distance = filter_values
-                }
-                else { // Single class mode      
-                    const single_mode_slider: HTMLInputElement = document.querySelector("#filter-row-distance-single")
-        
-                    overlay_info.distance = single_mode_slider.valueAsNumber
-                }
-                
-                this.ulabel.filter_distance_overlay.updateOverlay(line_annotations, overlay_info)
+                this.ulabel.filter_distance_overlay.drawOverlay(overlay_info)
             }
             else {
-                // Make overlay invisible
-                overlay.style.opacity = "0"
+                this.ulabel.filter_distance_overlay.clearCanvas()
             }
-
             // Save it to local storage
             window.localStorage.setItem("filterDistanceShowOverlay", e.currentTarget.checked.toString())
         })

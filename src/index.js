@@ -1046,10 +1046,14 @@ export class ULabel {
 
             // If filter_distance_toolboxitem is present, add an overlay canvas
             if (that.toolbox_order.includes(AllowedToolboxItem.FilterDistance)) {
+                // Get the set of all line annotations inside ulabel
+                const line_annotations = get_point_and_line_annotations(that)[1] // [0] is point annotations
+
                 // Create and assign an overlay class instance to ulabel to be able to access it
                 that.filter_distance_overlay = new FilterDistanceOverlay(
                     that.config["image_width"] * this.config["px_per_px"],
-                    that.config["image_height"] * this.config["px_per_px"]
+                    that.config["image_height"] * this.config["px_per_px"],
+                    line_annotations
                 )
 
                 // Append the overlay canvas to the div that holds the canvases
@@ -4905,6 +4909,57 @@ export class ULabel {
         if (this.state["last_move"] != null) {
             this.suggest_edits(this.state["last_move"]);
         }
+    }
+
+    updateDistanceOverlay() {
+        // If the overlay doesn't exist return early
+        if (this.filter_distance_overlay === undefined || this.filter_distance_overlay === null) {
+            console.warn("filter_distance_overlay does not exist. Returning early")
+            return
+        }
+
+        // Grab the overlay checkbox to check if the overlay should be displayed
+        const show_overlay_checkbox = document.querySelector("#filter-slider-distance-toggle-overlay-checkbox")
+
+        // If the show overlay checkbox is not checked, then clear the overlay and return
+        if (!show_overlay_checkbox.checked) {
+            this.filter_distance_overlay.clearCanvas()
+            return
+        }
+
+        // Get an array of all polyline annotations
+        const line_annotations = get_point_and_line_annotations(that)[1] // [0] is point annotations
+
+        let overlay_info = {}
+
+        // Populate overlay_info
+        overlay_info.multi_class_mode = document.querySelector("#filter-slider-distance-multi-checkbox").checked
+        overlay_info.zoom_val = that.state.zoom_val
+
+        if (overlay_info.multi_mode) { // Multi class mode
+            
+            let filter_values = {}
+
+            // Grab all of the class sliders
+            const sliders = document.querySelectorAll(".filter-row-distance-class-slider")
+    
+            for (let idx = 0; idx < sliders.length; idx++) {
+                // Use a regex to get the string after the final - character in the slider id (Which is the class id)
+                const slider_class_name = /[^-]*$/.exec(sliders[idx].id)[0]
+    
+                // Use the class id as a key to store the slider's value
+                filter_values[slider_class_name] = sliders[idx].valueAsNumber
+            }
+    
+            overlay_info.distance = filter_values
+        }
+        else { // Single class mode      
+            const single_mode_slider = document.querySelector("#filter-row-distance-single")
+
+            overlay_info.distance = single_mode_slider.valueAsNumber
+        }
+        
+        this.filter_distance_overlay.updateOverlay(line_annotations, overlay_info)
     }
 
     // Generic Callback Support
