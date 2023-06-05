@@ -369,7 +369,7 @@ export function filter_points_distance_from_line(ulabel: ULabel, offset: Offset 
     for (let idx = 0; idx < sliders.length; idx++) {
         // Use a regex to get the string after the final - character in the slider id (Which is the class id or the string "single")
         const slider_class_name = /[^-]*$/.exec(sliders[idx].id)[0]
-        console.log(slider_class_name)
+
         // Use the class id as a key to store the slider's value
         filter_values[slider_class_name] = sliders[idx].valueAsNumber
     }

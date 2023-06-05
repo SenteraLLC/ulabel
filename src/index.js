@@ -9,7 +9,7 @@ import { get_annotation_confidence, mark_deprecated, filter_points_distance_from
 import { apply_gradient } from '../build/drawing_utilities'
 import { Configuration, AllowedToolboxItem } from '../build/configuration';
 import { HTMLBuilder } from '../build/html_builder';
-import { FilterDistanceOverlay} from '../build/overlays'
+import { FilterDistanceOverlay } from '../build/overlays'
 
 import $ from 'jquery';
 const jQuery = $;
@@ -20,7 +20,8 @@ const { v4: uuidv4 } = require('uuid');
 import {
     COLORS,
     WHOLE_IMAGE_SVG,
-    GLOBAL_SVG} from './blobs';
+    GLOBAL_SVG
+} from './blobs';
 import { ULABEL_VERSION } from './version';
 
 jQuery.fn.outer_html = function () {
@@ -157,15 +158,15 @@ export class ULabel {
             ul.handle_mouse_move(mouse_event);
         });
 
-        $(document).on("keypress", (e) => {   
+        $(document).on("keypress", (e) => {
             // Check for the correct keypress
 
-            switch(e.key) {
+            switch (e.key) {
                 // Create a point annotation at the mouse's current location
                 case ul.config.create_point_annotation_keybind:
                     // Grab current subtask
                     const current_subtask = ul.subtasks[ul.state["current_subtask"]]
-                    
+
                     // Only allow keypress to create point annotations
                     if (current_subtask.state.annotation_mode == "point") {
                         // Create an annotation based on the last mouse position
@@ -179,7 +180,7 @@ export class ULabel {
                     if (ul.config.initial_crop === null || ul.config.initial_crop === undefined) {
 
                         // Create the coordinates for the bbox's spatial payload
-                        const bbox_top_left = [0,0]
+                        const bbox_top_left = [0, 0]
                         const bbox_bottom_right = [ul.config.image_width, ul.config.image_height]
 
                         ul.create_annotation("bbox", [bbox_top_left, bbox_bottom_right])
@@ -326,7 +327,7 @@ export class ULabel {
 
         // Keybind to switch active subtask
         $(document).on("keypress", (e) => {
-            
+
             // Ignore if in the middle of annotation
             if (ul.subtasks[ul.state["current_subtask"]]["state"]["is_in_progress"]) {
                 return;
@@ -337,23 +338,23 @@ export class ULabel {
 
                 let current_subtask = ul.state["current_subtask"];
                 let toolbox_tab_keys = [];
-    
+
                 // Put all of the toolbox tab keys in a list
-                for(let idx in ul.toolbox.tabs) {
+                for (let idx in ul.toolbox.tabs) {
                     toolbox_tab_keys.push(ul.toolbox.tabs[idx].subtask_key);
                 }
-    
+
                 // Get the index of the next subtask in line
                 let new_subtask_index = toolbox_tab_keys.indexOf(current_subtask) + 1;  // +1 gets the next subtask
-    
+
                 // If the current subtask was the last one in the array, then
                 // loop around to the first subtask
                 if (new_subtask_index == toolbox_tab_keys.length) {
                     new_subtask_index = 0;
                 }
-    
+
                 let new_subtask = toolbox_tab_keys[new_subtask_index];
-    
+
                 ul.set_subtask(new_subtask);
             }
         })
@@ -427,7 +428,7 @@ export class ULabel {
                     //delete the active annotation
                     ul.delete_annotation(ul.subtasks[ul.state["current_subtask"]]["active_annotation"])
                 }
-            }   
+            }
         })
 
         // Listener for id_dialog click interactions
@@ -1044,22 +1045,6 @@ export class ULabel {
                 ).getContext("2d");
             }
 
-            // If filter_distance_toolboxitem is present, add an overlay canvas
-            if (that.toolbox_order.includes(AllowedToolboxItem.FilterDistance)) {
-                // Get the set of all line annotations inside ulabel
-                const line_annotations = get_point_and_line_annotations(that)[1] // [0] is point annotations
-
-                // Create and assign an overlay class instance to ulabel to be able to access it
-                that.filter_distance_overlay = new FilterDistanceOverlay(
-                    that.config["image_width"] * this.config["px_per_px"],
-                    that.config["image_height"] * this.config["px_per_px"],
-                    line_annotations
-                )
-
-                // Append the overlay canvas to the div that holds the canvases
-                $("#" + that.config["imwrap_id"]).append(that.filter_distance_overlay.getCanvas())
-            }
-
             // Get rendering context for demo canvas
             // that.state["demo_canvas_context"] = document.getElementById(
             //     that.config["canvas_did"]
@@ -1097,50 +1082,64 @@ export class ULabel {
 
             // Update the overlay now that required values have been updated if the overlay exists
             if (that.toolbox_order.includes(AllowedToolboxItem.FilterDistance)) {
-                const show_overlay_checkbox = document.querySelector("#filter-slider-distance-toggle-overlay-checkbox")
-
-                if (show_overlay_checkbox.checked) {
-                    const line_annotations = get_point_and_line_annotations(that)[1] // [0] is point annotations
-
-                    let overlay_info = {}
-
-                    // Populate overlay_info
-                    overlay_info.multi_class_mode = document.querySelector("#filter-slider-distance-multi-checkbox").checked
-                    overlay_info.zoom_val = that.state.zoom_val
-
-                    if (overlay_info.multi_mode) { // Multi class mode
-                        
-                        let filter_values = {}
-
-                        // Grab all of the class sliders
-                        const sliders = document.querySelectorAll(".filter-row-distance-class-slider")
                 
-                        for (let idx = 0; idx < sliders.length; idx++) {
-                            // Use a regex to get the string after the final - character in the slider id (Which is the class id)
-                            const slider_class_name = /[^-]*$/.exec(sliders[idx].id)[0]
+                // Get the set of all line annotations inside ulabel
+                const line_annotations = get_point_and_line_annotations(that)[1] // [0] is point annotations
                 
-                            // Use the class id as a key to store the slider's value
-                            filter_values[slider_class_name] = sliders[idx].valueAsNumber
-                        }
+                // Initialize an object to hold the distance points are allowed to be from each class as well as any line
+                let filter_values = {}
+    
+                // Grab all filter-distance-sliders on the page
+                const sliders = document.querySelectorAll(".filter-row-distance-slider")
                 
-                        overlay_info.distance = filter_values
-                    }
-                    else { // Single class mode      
-                        const single_mode_slider = document.querySelector("#filter-row-distance-single")
-            
-                        overlay_info.distance = single_mode_slider.valueAsNumber
-                    }
-                    
-                    that.filter_distance_overlay.updateOverlay(line_annotations, overlay_info)
+                // Ensure at least one slider was found
+                if (sliders.length === 0) {
+                    console.error("Unable to find ulabel distance sliders while initializing filter distance overlay")
                 }
-            }
+    
+                // Loop through each slider and populate filter_values
+                for (let idx = 0; idx < sliders.length; idx++) {
+                    // Use a regex to get the string after the final - character in the slider id (Which is the class id or the string "single")
+                    const slider_class_name = /[^-]*$/.exec(sliders[idx].id)[0]
+                    console.log(slider_class_name)
+                    // Use the class id as a key to store the slider's value
+                    filter_values[slider_class_name] = sliders[idx].valueAsNumber
+                }
+    
+                // Create and assign an overlay class instance to ulabel to be able to access it
+                that.filter_distance_overlay = new FilterDistanceOverlay(
+                    this.config["image_width"] * this.config["px_per_px"],
+                    this.config["image_height"] * this.config["px_per_px"],
+                    line_annotations
+                    )
+                    
+                    console.log(JSON.stringify(this.config) ,this.config["image_width"] * this.config["px_per_px"], this.config["image_height"] * this.config["px_per_px"])
+                    
+                    // Append the overlay canvas to the div that holds the canvases
+                    $("#" + that.config["imwrap_id"]).append(that.filter_distance_overlay.getCanvas())
+                    
+                    // Get the show_overlay_checkbox to determine whether or not to show the overlay
+                    const show_overlay_checkbox = document.querySelector("#filter-slider-distance-toggle-overlay-checkbox")
+                    
+                    if (show_overlay_checkbox.checked) {
+                        // Only need to create overlay info when the overlay is being drawn
+                        let overlay_info = {}
+                        
+                        // Populate overlay_info
+                        overlay_info.multi_class_mode = document.querySelector("#filter-slider-distance-multi-checkbox").checked
+                        overlay_info.zoom_val = that.state.zoom_val
+                        
+                        that.filter_distance_overlay.drawOverlay(overlay_info)
+                    }
+                }
 
-            // Call the user-provided callback
-            callback();
-        }).catch((err) => {
-            console.log(err);
+                // Call the user-provided callback
+                callback();
+            }).catch((err) => {
+                console.log(err);
             this.raise_error("Unable to load images: " + JSON.stringify(err), ULabel.elvl_fatal);
         });
+
     }
 
     version() {
@@ -2286,7 +2285,7 @@ export class ULabel {
         if (!current_subtask["state"]["idd_thumbnail"]) {
             this.hide_id_dialog();
         }
-        
+
         if (action_stream[action_stream.length - 1].redo_payload.finished === false) {
             this.finish_action(action_stream[action_stream.length - 1]);
         }
@@ -2295,7 +2294,7 @@ export class ULabel {
         if (newact != null) {
             undone_stack[undone_stack.length - 1] = newact
         }
-        
+
         // If the FilterDistance ToolboxItem is present, filter points
         if (this.toolbox_order.includes(AllowedToolboxItem.FilterDistance)) {
             // Currently only supported by polyline
@@ -2326,7 +2325,7 @@ export class ULabel {
      * @param {string} spatial_type What type of annotation to create
      * @param {[number, number][]} spatial_payload 
      */
-    create_annotation(spatial_type, spatial_payload, unique_id=null) {
+    create_annotation(spatial_type, spatial_payload, unique_id = null) {
         // Grab constants for convenience
         const current_subtask = this.subtasks[this.state["current_subtask"]]
         const annotation_access = current_subtask["annotations"]["access"]
@@ -2374,7 +2373,7 @@ export class ULabel {
             "created_by": this.config["annotator"],
             "created_at": ULabel.get_time(),
             "deprecated": false,
-            "deprecated_by": {"human": false},
+            "deprecated_by": { "human": false },
             "spatial_type": spatial_type,
             "spatial_payload": spatial_payload,
             "classification_payloads": classification_payloads,
@@ -2388,7 +2387,7 @@ export class ULabel {
         // Record the action so it can be undone and redone
         this.record_action({
             "act_type": "create_annotation",
-            "undo_payload": {"annotation_id": unique_id},
+            "undo_payload": { "annotation_id": unique_id },
             "redo_payload": {
                 "annotation_id": unique_id,
                 "spatial_payload": spatial_payload,
@@ -2442,8 +2441,8 @@ export class ULabel {
     create_annotation__redo(redo_payload) {
         // Recreate the annotation with the same annotation_id, spatial_type, and spatial_payload
         this.create_annotation(
-            redo_payload.spatial_type, 
-            redo_payload.spatial_payload, 
+            redo_payload.spatial_type,
+            redo_payload.spatial_payload,
             redo_payload.annotation_id
         )
     }
@@ -2903,7 +2902,7 @@ export class ULabel {
             "created_by": this.config["annotator"],
             "created_at": ULabel.get_time(),
             "deprecated": false,
-            "deprecated_by": {"human": false},
+            "deprecated_by": { "human": false },
             "spatial_type": annotation_mode,
             "spatial_payload": null,
             "classification_payloads": JSON.parse(JSON.stringify(init_idpyld)),
@@ -3035,7 +3034,7 @@ export class ULabel {
             "created_by": this.config["annotator"],
             "created_at": ULabel.get_time(),
             "deprecated": false,
-            "deprecated_by": {"human": false},
+            "deprecated_by": { "human": false },
             "spatial_type": annotation_mode,
             "spatial_payload": init_spatial,
             "classification_payloads": JSON.parse(JSON.stringify(init_id_payload)),
@@ -3433,7 +3432,7 @@ export class ULabel {
                     current_subtask["state"]["edit_candidate"]["point"] = mouse_location;
                     this.show_edit_suggestion(current_subtask["state"]["edit_candidate"], true);
                     this.show_global_edit_suggestion(current_subtask["state"]["edit_candidate"]["annid"]);
-                    
+
                     // If the FilterDistance ToolboxItem is present, filter annotations on annotation edit
                     if (this.toolbox_order.includes(AllowedToolboxItem.FilterDistance)) {
                         // Currently only supported by polyline
@@ -3935,7 +3934,7 @@ export class ULabel {
         // TODO(3d)
         if (undo_payload.deprecate_old) {
             active_id = undo_payload.old_id;
-            
+
             // Mark the active annotation undeprecated
             mark_deprecated(annotations[active_id], false)
 
@@ -4111,7 +4110,7 @@ export class ULabel {
      * Find annotations where cursor is within bounding box
      * Find closest keypoints (ends of polygons/polylines etc) within a range defined by the edit handle
      * If no endpoints, search along segments with infinite range 
-     */  
+     */
     suggest_edits(mouse_event = null, nonspatial_id = null) {
         let best_candidate;
 
@@ -4937,20 +4936,20 @@ export class ULabel {
         overlay_info.zoom_val = that.state.zoom_val
 
         if (overlay_info.multi_mode) { // Multi class mode
-            
+
             let filter_values = {}
 
             // Grab all of the class sliders
             const sliders = document.querySelectorAll(".filter-row-distance-class-slider")
-    
+
             for (let idx = 0; idx < sliders.length; idx++) {
                 // Use a regex to get the string after the final - character in the slider id (Which is the class id)
                 const slider_class_name = /[^-]*$/.exec(sliders[idx].id)[0]
-    
+
                 // Use the class id as a key to store the slider's value
                 filter_values[slider_class_name] = sliders[idx].valueAsNumber
             }
-    
+
             overlay_info.distance = filter_values
         }
         else { // Single class mode      
@@ -4958,7 +4957,7 @@ export class ULabel {
 
             overlay_info.distance = single_mode_slider.valueAsNumber
         }
-        
+
         this.filter_distance_overlay.updateOverlay(line_annotations, overlay_info)
     }
 

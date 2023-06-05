@@ -73,7 +73,9 @@ class ULabelOverlay {
 
 export class FilterDistanceOverlay extends ULabelOverlay {
     polyline_annotations: ULabelAnnotation[] // Set of polyline annotations the overlay will be drawn based on
-    distances: OverlayDistances // The current distance from a line annotation
+    distances: OverlayDistances = { // The current distance from a line annotation
+        "single": null 
+    }
 
     constructor(canvas_width: number, canvas_height: number, polyline_annotations: ULabelAnnotation[]) {
         super(canvas_width, canvas_height)
@@ -244,6 +246,7 @@ export class FilterDistanceOverlay extends ULabelOverlay {
 
                 // Draw a parallelogram around the polyline segment
                 this.drawParallelogramAroundLineSegment(endpoint_1, endpoint_2, normal_vector, distance)
+                console.log("Things should be drawn")
             }
         })
     }
