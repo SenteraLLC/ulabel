@@ -1126,20 +1126,6 @@ export class ULabel {
                         "single": that.config.distance_filter_toolbox_item.default_value
                     }
                 })
-
-                // // Get the show_overlay_checkbox to determine whether or not to show the overlay
-                // const show_overlay_checkbox = document.querySelector("#filter-slider-distance-toggle-overlay-checkbox")
-
-                // if (show_overlay_checkbox.checked) {
-                //     // Only need to create overlay info when the overlay is being drawn
-                //     let overlay_info = {}
-
-                //     // Populate overlay_info
-                //     overlay_info.multi_class_mode = document.querySelector("#filter-slider-distance-multi-checkbox").checked
-                //     overlay_info.zoom_val = that.state.zoom_val
-
-                //     that.filter_distance_overlay.drawOverlay(overlay_info)
-                // }
             }
 
             // Call the user-provided callback

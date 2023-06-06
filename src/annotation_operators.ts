@@ -417,13 +417,10 @@ export function filter_points_distance_from_line(ulabel: ULabel, offset: Offset 
         })
     }
 
-    console.log("should_redraw", should_redraw)
-
     if (should_redraw) ulabel.redraw_all_annotations(null, null, false);
     
     // Ensure the overlay exists before trying to access it
     if (ulabel.filter_distance_overlay === null || ulabel.filter_distance_overlay === undefined) {
-        // Not such a big deal that we can't filter
         console.warn(`
             filter_distance_overlay currently does not exist.
             As such, unable to update distance overlay

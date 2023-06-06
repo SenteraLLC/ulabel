@@ -176,7 +176,7 @@ export class FilterDistanceOverlay extends ULabelOverlay {
      * @param zoom_val Value to scale the coordinate system by
      * @param multi_class_mode Whether or not the filter is currently in multi-class mode
      */
-    public drawOverlay(overlay_info: DistanceOverlayInfo): void {
+    public drawOverlay(kwargs: DistanceOverlayInfo): void {
         // Clear the canvas in order to have a clean slate to re-draw from
         this.clearCanvas()
         
@@ -200,7 +200,8 @@ export class FilterDistanceOverlay extends ULabelOverlay {
             const annotation_class_id: string = get_annotation_class_id(annotation)
             
             // Use the class id if in multi-class mode, otherwise use the single class distance
-            const distance: number = overlay_info.multi_class_mode ? this.distances[annotation_class_id] : this.distances["single"]
+            let distance: number = kwargs.multi_class_mode ? this.distances[annotation_class_id] : this.distances["single"]
+            distance *= kwargs.zoom_val
 
             // length - 1 because the final endpoint doesn't have another endpoint to form a pair with
             for (let idx = 0; idx < spatial_payload.length - 1; idx++) {
@@ -215,18 +216,18 @@ export class FilterDistanceOverlay extends ULabelOverlay {
                 }
 
                 // If the offset exists and the current annotation id matches the offset id, then scale the each endpoint by the offset diff
-                if ((overlay_info.offset !== undefined && overlay_info.offset !== null) && (annotation.id === overlay_info.offset.id)) {
-                    endpoint_1.x += overlay_info.offset.diffX
-                    endpoint_1.y += overlay_info.offset.diffY
-                    endpoint_2.x += overlay_info.offset.diffX
-                    endpoint_2.y += overlay_info.offset.diffY
+                if ((kwargs.offset !== undefined && kwargs.offset !== null) && (annotation.id === kwargs.offset.id)) {
+                    endpoint_1.x += kwargs.offset.diffX
+                    endpoint_1.y += kwargs.offset.diffY
+                    endpoint_2.x += kwargs.offset.diffX
+                    endpoint_2.y += kwargs.offset.diffY
                 }
 
                 // Scale each endpoint by the zoom_val
-                endpoint_1.x *= overlay_info.zoom_val
-                endpoint_1.y *= overlay_info.zoom_val
-                endpoint_2.x *= overlay_info.zoom_val
-                endpoint_2.y *= overlay_info.zoom_val
+                endpoint_1.x *= kwargs.zoom_val
+                endpoint_1.y *= kwargs.zoom_val
+                endpoint_2.x *= kwargs.zoom_val
+                endpoint_2.y *= kwargs.zoom_val
 
                 // Get a vector that's perpendicular to endpoint_1 and endpoint_2 and has a magnitude of 1
                 const normal_vector: AbstractPoint = this.claculateNormalVector(endpoint_1, endpoint_2)
