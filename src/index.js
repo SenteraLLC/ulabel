@@ -218,6 +218,14 @@ export class ULabel {
                 // Apply new zoom
                 ul.state["zoom_val"] *= (1 - dlta / 10);
                 ul.rezoom(wheel_event.clientX, wheel_event.clientY);
+
+                // If the toolbox contains the filter distance toolbox item, then update the overlay on zoom
+                if (ul.toolbox_order.includes(AllowedToolboxItem.FilterDistance)) {
+                    ul.filter_distance_overlay.drawOverlay({
+                        "zoom_val": ul.state.zoom_val,
+                        "multi_class_mode": false
+                    })
+                }
             }
             else if (fms) {
                 wheel_event.preventDefault();
@@ -1116,7 +1124,7 @@ export class ULabel {
                 that.filter_distance_overlay.updateDistance(filter_values)
 
                 // Append the overlay canvas to the div that holds the canvases
-                $("#" + that.config["imwrap_id"]).append(that.filter_distance_overlay.getCanvas())
+                $("#" + that.config["imwrap_id"]).prepend(that.filter_distance_overlay.getCanvas())
 
                 filter_points_distance_from_line(that, null, {
                     "should_redraw": that.config.distance_filter_toolbox_item.filter_on_load,
