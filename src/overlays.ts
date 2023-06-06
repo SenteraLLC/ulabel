@@ -1,4 +1,4 @@
-import { AbstractPoint, DistanceOverlayInfo, OverlayDistances } from ".."
+import { AbstractPoint, DistanceOverlayInfo, Distances } from ".."
 import { ULabelAnnotation } from "./annotation"
 import { get_annotation_class_id } from "./annotation_operators"
 import { ULabelSpatialPayload2D } from "./geometric_utils"
@@ -73,7 +73,7 @@ class ULabelOverlay {
 
 export class FilterDistanceOverlay extends ULabelOverlay {
     polyline_annotations: ULabelAnnotation[] // Set of polyline annotations the overlay will be drawn based on
-    distances: OverlayDistances = { // The current distance from a line annotation
+    distances: Distances = { // The current distance from a line annotation
         "single": null 
     }
 
@@ -246,7 +246,6 @@ export class FilterDistanceOverlay extends ULabelOverlay {
 
                 // Draw a parallelogram around the polyline segment
                 this.drawParallelogramAroundLineSegment(endpoint_1, endpoint_2, normal_vector, distance)
-                console.log("Things should be drawn")
             }
         })
     }

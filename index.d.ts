@@ -3,7 +3,7 @@ import { FilterDistanceOverlay } from "./src/overlays";
 import { ULabelSubtask } from "./src/subtask";
 import { Toolbox } from "./src/toolbox";
 
-export type OverlayDistances = {
+export type Distances = {
     "single": number,
     [key: number]: number
 }
@@ -32,18 +32,15 @@ export type DeprecatedBy = {
     distance_from_row?: boolean;
 }
 
-export type DistanceFrom = {
-    any_line: number;
-    [key: string]: number // Key can be any string, but value must be number
-}
-
 /**
  * Info needed to filter distance from row without accessing the dom. 
  * Primarily exists so that points can be filtered before the page loads.
  */
 export type FilterDistanceOverride = {
-    filter_value: number,
-    should_redraw: boolean
+    distances: Distances,
+    multi_class_mode: boolean,
+    should_redraw: boolean,
+    show_overlay: boolean
 }
 
 export type DistanceOverlayInfo = {
@@ -51,7 +48,6 @@ export type DistanceOverlayInfo = {
     zoom_val: number,
     offset?: Offset
 }
-
 
 export type ClassDefinition = {
     name: string,

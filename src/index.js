@@ -1082,64 +1082,72 @@ export class ULabel {
 
             // Update the overlay now that required values have been updated if the overlay exists
             if (that.toolbox_order.includes(AllowedToolboxItem.FilterDistance)) {
-                
+
                 // Get the set of all line annotations inside ulabel
                 const line_annotations = get_point_and_line_annotations(that)[1] // [0] is point annotations
-                
+
                 // Initialize an object to hold the distance points are allowed to be from each class as well as any line
                 let filter_values = {}
-    
+
                 // Grab all filter-distance-sliders on the page
                 const sliders = document.querySelectorAll(".filter-row-distance-slider")
-                
-                // Ensure at least one slider was found
+
+                // Check for at least one slider
                 if (sliders.length === 0) {
                     console.error("Unable to find ulabel distance sliders while initializing filter distance overlay")
                 }
-    
+
                 // Loop through each slider and populate filter_values
                 for (let idx = 0; idx < sliders.length; idx++) {
                     // Use a regex to get the string after the final - character in the slider id (Which is the class id or the string "single")
                     const slider_class_name = /[^-]*$/.exec(sliders[idx].id)[0]
-                    console.log(slider_class_name)
+
                     // Use the class id as a key to store the slider's value
                     filter_values[slider_class_name] = sliders[idx].valueAsNumber
                 }
-    
+
                 // Create and assign an overlay class instance to ulabel to be able to access it
                 that.filter_distance_overlay = new FilterDistanceOverlay(
                     this.config["image_width"] * this.config["px_per_px"],
                     this.config["image_height"] * this.config["px_per_px"],
                     line_annotations
-                    )
-                    
-                    console.log(JSON.stringify(this.config) ,this.config["image_width"] * this.config["px_per_px"], this.config["image_height"] * this.config["px_per_px"])
-                    
-                    // Append the overlay canvas to the div that holds the canvases
-                    $("#" + that.config["imwrap_id"]).append(that.filter_distance_overlay.getCanvas())
-                    
-                    // Get the show_overlay_checkbox to determine whether or not to show the overlay
-                    const show_overlay_checkbox = document.querySelector("#filter-slider-distance-toggle-overlay-checkbox")
-                    
-                    if (show_overlay_checkbox.checked) {
-                        // Only need to create overlay info when the overlay is being drawn
-                        let overlay_info = {}
-                        
-                        // Populate overlay_info
-                        overlay_info.multi_class_mode = document.querySelector("#filter-slider-distance-multi-checkbox").checked
-                        overlay_info.zoom_val = that.state.zoom_val
-                        
-                        that.filter_distance_overlay.drawOverlay(overlay_info)
-                    }
-                }
+                )
 
-                // Call the user-provided callback
-                callback();
-            }).catch((err) => {
-                console.log(err);
+                that.filter_distance_overlay.updateDistance(filter_values)
+
+                // Append the overlay canvas to the div that holds the canvases
+                $("#" + that.config["imwrap_id"]).append(that.filter_distance_overlay.getCanvas())
+
+                filter_points_distance_from_line(that, null, {
+                    "should_redraw": that.config.distance_filter_toolbox_item.filter_on_load,
+                    "multi_class_mode": false, // TODO: Support multi-class mode
+                    "show_overlay": true, // TODO: Read the local storage / read the default from the config
+                    "distances": {
+                        "single": that.config.distance_filter_toolbox_item.default_value
+                    }
+                })
+
+                // // Get the show_overlay_checkbox to determine whether or not to show the overlay
+                // const show_overlay_checkbox = document.querySelector("#filter-slider-distance-toggle-overlay-checkbox")
+
+                // if (show_overlay_checkbox.checked) {
+                //     // Only need to create overlay info when the overlay is being drawn
+                //     let overlay_info = {}
+
+                //     // Populate overlay_info
+                //     overlay_info.multi_class_mode = document.querySelector("#filter-slider-distance-multi-checkbox").checked
+                //     overlay_info.zoom_val = that.state.zoom_val
+
+                //     that.filter_distance_overlay.drawOverlay(overlay_info)
+                // }
+            }
+
+            // Call the user-provided callback
+            callback();
+        }).catch((err) => {
+            console.log(err);
             this.raise_error("Unable to load images: " + JSON.stringify(err), ULabel.elvl_fatal);
         });
-
     }
 
     version() {

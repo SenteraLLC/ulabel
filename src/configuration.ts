@@ -12,15 +12,15 @@ import {
 } from "./toolbox"
 
 export enum AllowedToolboxItem {
-    ModeSelect,         // 0
-    ZoomPan,            // 1
-    AnnotationResize,   // 2
-    AnnotationID,       // 3
-    RecolorActive,      // 4
-    ClassCounter,       // 5
-    KeypointSlider,     // 6
-    SubmitButtons,      // 7
-    FilterDistance      // 8
+    ModeSelect,       // 0
+    ZoomPan,          // 1
+    AnnotationResize, // 2
+    AnnotationID,     // 3
+    RecolorActive,    // 4
+    ClassCounter,     // 5
+    KeypointSlider,   // 6
+    SubmitButtons,    // 7
+    FilterDistance    // 8
 }
 
 export class Configuration {

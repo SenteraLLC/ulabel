@@ -7,8 +7,7 @@ import {
     value_is_lower_than_filter, 
     mark_deprecated, 
     filter_points_distance_from_line,
-    findAllPolylineClassDefinitions,
-    get_point_and_line_annotations, 
+    findAllPolylineClassDefinitions
 } from "./annotation_operators";
 import { SliderHandler } from "./html_builder";
 
@@ -1096,16 +1095,16 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
             this.toggle_overlay_keybind = "p"
         }
 
-        // If filter_on_load is true, then filter on load
-        if (this.filter_on_load) {
-            // Create a filter distance override, so filter distance knows how to filter without accessing the dom
-            const override: FilterDistanceOverride = {
-                "filter_value": this.default_value,
-                "should_redraw": false // Because the dom hasn't loaded yet
-            }
+        // // If filter_on_load is true, then filter on load
+        // if (this.filter_on_load) {
+        //     // Create a filter distance override, so filter distance knows how to filter without accessing the dom
+        //     const override: FilterDistanceOverride = {
+        //         "filter_value": this.default_value,
+        //         "should_redraw": false // Because the dom hasn't loaded yet
+        //     }
 
-            filter_points_distance_from_line(this.ulabel, null, override)
-        }
+        //     filter_points_distance_from_line(this.ulabel, null, override)
+        // }
         
         // Get if the options should be collapsed from local storage
         if (window.localStorage.getItem("filterDistanceCollapseOptions") === "true") {
@@ -1136,7 +1135,7 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
 
             // Toggle whether the single-class slider, or the multi-class sliders are visible
             this.switchFilterMode()
-            
+
             // Re-filter the points in the new mode
             filter_points_distance_from_line(this.ulabel)
         })
