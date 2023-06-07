@@ -63,7 +63,7 @@ export class Configuration {
         "component_name": "filter-distance-from-row",
         "filter_min": 0,
         "filter_max": 400,
-        "default_value": 40,
+        "default_values": {"single": 40},
         "step_value": 2,
         "multi_class_mode": false,
         "filter_on_load": true,
@@ -96,14 +96,12 @@ export class Configuration {
         this.modify_config(...kwargs)
     }
 
-    public modify_config(...kwargs: {[key: string]: unknown}[]) {
-
-        //we don't know how many arguments we'll recieve, so loop through all of the elements in kwargs
-        for (let i = 0; i < kwargs.length; i++) {
-
-            //for every key: value pair, overwrite them/add them to the config
-            for (let key in kwargs[i]) {
-                this[key] = kwargs[i][key]
+    public modify_config(...kwargs: {[key: string]: any}[]) {
+        // Loop through every elements in kwargs
+        for (let idx = 0; idx < kwargs.length; idx++) {
+            // For every key: value pair, overwrite them/add them to the config
+            for (let key in kwargs[idx]) {
+                this[key] = kwargs[idx][key]
             }
         }
     }

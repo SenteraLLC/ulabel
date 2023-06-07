@@ -910,7 +910,13 @@ export class ULabel {
 
             // Passthrough
             "task_meta": task_meta,
-            "annotation_meta": annotation_meta
+            "annotation_meta": annotation_meta,
+
+            // // Testing 
+            // "distance_filter_toolbox_item": {
+            //     "name": "Trevor owo",
+            //     "step_value": 10
+            // }
         });
 
         // Update the ulabel config object with the passed in config data
@@ -1152,11 +1158,9 @@ export class ULabel {
 
                 filter_points_distance_from_line(that, null, {
                     "should_redraw": that.config.distance_filter_toolbox_item.filter_on_load,
-                    "multi_class_mode": false, // TODO: Support multi-class mode on load
+                    "multi_class_mode": that.config.distance_filter_toolbox_item.multi_class_mode,
                     "show_overlay": show_overlay,
-                    "distances": {
-                        "single": that.config.distance_filter_toolbox_item.default_value
-                    }
+                    "distances": that.config.distance_filter_toolbox_item.default_values
                 })
             }
 

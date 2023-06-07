@@ -76,7 +76,7 @@ export type FilterDistanceConfig = {
     component_name?: string,
     filter_min?: number,
     filter_max?: number,
-    default_value?: number,
+    default_values?: Distances,
     step_value?: number,
     multi_class_mode?: boolean,
     filter_on_load?: boolean,

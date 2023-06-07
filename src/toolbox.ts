@@ -1,4 +1,4 @@
-import { DistanceOverlayInfo, FilterDistanceConfig, FilterDistanceOverride, SliderInfo, ULabel } from "..";
+import { DistanceOverlayInfo, Distances, FilterDistanceConfig, FilterDistanceOverride, SliderInfo, ULabel } from "..";
 import { ULabelAnnotation } from "./annotation";
 import { ULabelSubtask } from "./subtask";
 import { Configuration } from "./configuration";
@@ -1035,7 +1035,7 @@ export class KeypointSliderItem extends ToolboxItem {
 export class FilterPointDistanceFromRow extends ToolboxItem {
     name: string // Component name shown to users
     component_name: string // Internal component name
-    default_value: number // Value slider is set to on page load
+    default_values: Distances // Values sliders are set to on page load
     filter_min: number // Minimum value slider may be set to
     filter_max: number // Maximum value slider may be set to
     step_value: number // Value slider increments by
@@ -1058,6 +1058,8 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
         // Get this component's config from ulabel's config
         this.config = this.ulabel.config.distance_filter_toolbox_item
 
+        console.log(`Config toolbox recieved: `,  this.config)
+
         // Populate this component with every property in the config
         for (const property in this.config) {
             this[property] = this.config[property]
@@ -1076,8 +1078,8 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
         if (typeof this.config.filter_max === "undefined") {
             this.filter_max = 100
         }
-        if (typeof this.config.default_value === "undefined") {
-            this.default_value = 50
+        if (typeof this.config.default_values === "undefined") {
+            this.default_values = {"single": 50}
         }
         if (typeof this.config.step_value === "undefined") {
             this.step_value = 1
@@ -1094,17 +1096,6 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
         if (typeof this.config.toggle_overlay_keybind === "undefined") {
             this.toggle_overlay_keybind = "p"
         }
-
-        // // If filter_on_load is true, then filter on load
-        // if (this.filter_on_load) {
-        //     // Create a filter distance override, so filter distance knows how to filter without accessing the dom
-        //     const override: FilterDistanceOverride = {
-        //         "filter_value": this.default_value,
-        //         "should_redraw": false // Because the dom hasn't loaded yet
-        //     }
-
-        //     filter_points_distance_from_line(this.ulabel, null, override)
-        // }
         
         // Get if the options should be collapsed from local storage
         if (window.localStorage.getItem("filterDistanceCollapseOptions") === "true") {
@@ -1205,12 +1196,20 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
             const current_id = class_defs[idx].id
             const current_name = class_defs[idx].name
 
+            let default_value
+            if (this.default_values[current_id] !== undefined) {
+                default_value = this.default_values[current_id].toString()
+            }
+            else {
+                default_value = this.default_values["single"].toString()
+            }
+
             const multi_class_slider_instance = new SliderHandler({
                 "id": `filter-row-distance-${current_id}`,
                 "class": "filter-row-distance-slider filter-row-distance-class-slider",
                 "min": this.filter_min.toString(),
                 "max": this.filter_max.toString(),
-                "default_value": this.default_value.toString(),
+                "default_value": default_value,
                 "step": this.step_value.toString(),
                 "label_units": "px",
                 "main_label": current_name,
@@ -1237,7 +1236,7 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
            and its event handlers */
         const single_class_slider_handler = new SliderHandler({
             "class": "filter-row-distance-slider",
-            "default_value": this.default_value.toString(),
+            "default_value": this.default_values["single"].toString(),
             "id": "filter-row-distance-single",
             "label_units": "px",
             "slider_event": () => {filter_points_distance_from_line(this.ulabel)},
