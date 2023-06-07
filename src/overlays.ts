@@ -32,6 +32,11 @@ class ULabelOverlay {
         this.canvas.height = canvas_height
     }
 
+    public resize_canvas(new_width, new_height) {
+        this.canvas.width = new_width
+        this.canvas.height = new_height
+    }
+
     /**
      * Clears everything drawn to the canvas. Useful for re-drawing.
      */

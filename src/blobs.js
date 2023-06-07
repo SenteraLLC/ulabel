@@ -1914,7 +1914,7 @@ div#${prntid} div.ulabel-slider-container {
    display: flex;
    flex-wrap: wrap;
    align-items: center;
-   margin: 0 1.7rem 0.5rem;
+   margin: 0 1.5rem 0.5rem;
 }
 
 div#${prntid} div.ulabel-slider-container label.ulabel-filter-row-distance-name-label {

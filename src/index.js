@@ -219,11 +219,11 @@ export class ULabel {
                 ul.state["zoom_val"] *= (1 - dlta / 10);
                 ul.rezoom(wheel_event.clientX, wheel_event.clientY);
 
-                // If the toolbox contains the filter distance toolbox item, then update the overlay on zoom
-                if (ul.toolbox_order.includes(AllowedToolboxItem.FilterDistance)) {
+                // Only try to update the overlay if it exists
+                if (ul.filter_distance_overlay !== undefined) {
                     ul.filter_distance_overlay.drawOverlay({
                         "zoom_val": ul.state.zoom_val,
-                        "multi_class_mode": false
+                        "multi_class_mode": document.querySelector("#filter-slider-distance-multi-checkbox")
                     })
                 }
             }
@@ -260,6 +260,15 @@ export class ULabel {
                 ul.state["zoom_val"] /= 1.1;
             }
             ul.rezoom();
+
+            // Only try to update the overlay if it exists
+            if (ul.filter_distance_overlay !== undefined) {
+                ul.filter_distance_overlay.drawOverlay({
+                    "zoom_val": ul.state.zoom_val,
+                    "multi_class_mode": document.querySelector("#filter-slider-distance-multi-checkbox")
+                })
+            }
+            
         });
         $(document).on("click", "#" + ul.config["toolbox_id"] + " .pbutt", (e) => {
             let tgt_jq = $(e.currentTarget);
@@ -4734,6 +4743,11 @@ export class ULabel {
         var toresize = $("." + this.config["imgsz_class"]);
         toresize.css("width", new_width + "px");
         toresize.css("height", new_height + "px");
+
+        // Apply new size to overlay if overlay exists
+        if (this.filter_distance_overlay !== undefined) {
+            this.filter_distance_overlay.resize_canvas(new_width, new_height)
+        }
 
         // Compute and apply new position
         let new_left, new_top;
