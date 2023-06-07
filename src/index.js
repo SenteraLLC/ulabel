@@ -911,12 +911,6 @@ export class ULabel {
             // Passthrough
             "task_meta": task_meta,
             "annotation_meta": annotation_meta,
-
-            // // Testing 
-            // "distance_filter_toolbox_item": {
-            //     "name": "Trevor owo",
-            //     "step_value": 10
-            // }
         });
 
         // Update the ulabel config object with the passed in config data

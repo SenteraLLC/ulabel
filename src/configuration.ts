@@ -101,7 +101,21 @@ export class Configuration {
         for (let idx = 0; idx < kwargs.length; idx++) {
             // For every key: value pair, overwrite them/add them to the config
             for (let key in kwargs[idx]) {
-                this[key] = kwargs[idx][key]
+                if (
+                    typeof kwargs[idx][key] === 'object' &&
+                    !Array.isArray(kwargs[idx][key]) &&
+                    kwargs[idx][key] !== null &&
+                    typeof this[key] === 'object' &&
+                    !Array.isArray(this[key]) &&
+                    this[key] !== null
+                ) {
+                    const inner_object = kwargs[idx][key]
+                    for (const inner_key in inner_object) {
+                        this[key][inner_key] = inner_object[inner_key]
+                    }
+                } else {
+                    this[key] = kwargs[idx][key]
+                }
             }
         }
     }
