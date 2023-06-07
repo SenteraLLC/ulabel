@@ -1,4 +1,4 @@
-import { AbstractPoint, DistanceOverlayInfo, Distances } from ".."
+import { AbstractPoint, DistanceOverlayInfo, Distances, Offset } from ".."
 import { ULabelAnnotation } from "./annotation"
 import { get_annotation_class_id } from "./annotation_operators"
 import { ULabelSpatialPayload2D } from "./geometric_utils"
@@ -81,6 +81,8 @@ export class FilterDistanceOverlay extends ULabelOverlay {
     distances: Distances = { // The current distance from a line annotation
         "single": null 
     }
+    multi_class_mode: boolean
+    zoom_value: number // How zoomed in ulabel is
 
     constructor(canvas_width: number, canvas_height: number, polyline_annotations: ULabelAnnotation[]) {
         super(canvas_width, canvas_height)
@@ -173,6 +175,22 @@ export class FilterDistanceOverlay extends ULabelOverlay {
         }
     }
 
+    public update_mode(current_mode: "single" | "multi") {
+        if (current_mode === "multi") {
+            this.multi_class_mode = true
+        }
+        else if (current_mode === "single") {
+            this.multi_class_mode = false
+        }
+        else {
+            console.error("FilterDistanceOverlay.update_mode recieved unknown mode type")
+        }
+    }
+
+    public update_zoom_value(zoom_value: number) {
+        this.zoom_value = zoom_value
+    }
+
     /**
      * Update the overlay to obscure the parts of the image that fall outside of the distance filter.
      * 
@@ -181,7 +199,7 @@ export class FilterDistanceOverlay extends ULabelOverlay {
      * @param zoom_val Value to scale the coordinate system by
      * @param multi_class_mode Whether or not the filter is currently in multi-class mode
      */
-    public drawOverlay(kwargs: DistanceOverlayInfo): void {
+    public drawOverlay(offset: Offset = null): void {
         // Clear the canvas in order to have a clean slate to re-draw from
         this.clearCanvas()
         
@@ -205,8 +223,8 @@ export class FilterDistanceOverlay extends ULabelOverlay {
             const annotation_class_id: string = get_annotation_class_id(annotation)
             
             // Use the class id if in multi-class mode, otherwise use the single class distance
-            let distance: number = kwargs.multi_class_mode ? this.distances[annotation_class_id] : this.distances["single"]
-            distance *= kwargs.zoom_val
+            let distance: number = this.multi_class_mode ? this.distances[annotation_class_id] : this.distances["single"]
+            distance *= this.zoom_value
 
             // length - 1 because the final endpoint doesn't have another endpoint to form a pair with
             for (let idx = 0; idx < spatial_payload.length - 1; idx++) {
@@ -221,18 +239,18 @@ export class FilterDistanceOverlay extends ULabelOverlay {
                 }
 
                 // If the offset exists and the current annotation id matches the offset id, then scale the each endpoint by the offset diff
-                if ((kwargs.offset !== undefined && kwargs.offset !== null) && (annotation.id === kwargs.offset.id)) {
-                    endpoint_1.x += kwargs.offset.diffX
-                    endpoint_1.y += kwargs.offset.diffY
-                    endpoint_2.x += kwargs.offset.diffX
-                    endpoint_2.y += kwargs.offset.diffY
+                if ((offset !== undefined && offset !== null) && (annotation.id === offset.id)) {
+                    endpoint_1.x += offset.diffX
+                    endpoint_1.y += offset.diffY
+                    endpoint_2.x += offset.diffX
+                    endpoint_2.y += offset.diffY
                 }
 
                 // Scale each endpoint by the zoom_val
-                endpoint_1.x *= kwargs.zoom_val
-                endpoint_1.y *= kwargs.zoom_val
-                endpoint_2.x *= kwargs.zoom_val
-                endpoint_2.y *= kwargs.zoom_val
+                endpoint_1.x *= this.zoom_value
+                endpoint_1.y *= this.zoom_value
+                endpoint_2.x *= this.zoom_value
+                endpoint_2.y *= this.zoom_value
 
                 // Get a vector that's perpendicular to endpoint_1 and endpoint_2 and has a magnitude of 1
                 const normal_vector: AbstractPoint = this.claculateNormalVector(endpoint_1, endpoint_2)

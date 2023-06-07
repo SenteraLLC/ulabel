@@ -1127,6 +1127,8 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
             // Toggle whether the single-class slider, or the multi-class sliders are visible
             this.switchFilterMode()
 
+            this.ulabel.filter_distance_overlay.update_mode(this.multi_class_mode ? "multi" : "single")
+
             // Re-filter the points in the new mode
             filter_points_distance_from_line(this.ulabel)
         })
@@ -1134,12 +1136,7 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
         $(document).on("change", "#filter-slider-distance-toggle-overlay-checkbox", (e) => {
             // Check if the toggle is checked
             if (e.currentTarget.checked) {
-                const overlay_info: DistanceOverlayInfo = {
-                    "multi_class_mode": this.multi_class_mode,
-                    "zoom_val": this.ulabel.state.zoom_val
-                }
-
-                this.ulabel.filter_distance_overlay.drawOverlay(overlay_info)
+                this.ulabel.filter_distance_overlay.drawOverlay()
             }
             else {
                 this.ulabel.filter_distance_overlay.clearCanvas()

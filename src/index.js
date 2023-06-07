@@ -221,10 +221,8 @@ export class ULabel {
 
                 // Only try to update the overlay if it exists
                 if (ul.filter_distance_overlay !== undefined) {
-                    ul.filter_distance_overlay.drawOverlay({
-                        "zoom_val": ul.state.zoom_val,
-                        "multi_class_mode": document.querySelector("#filter-slider-distance-multi-checkbox")
-                    })
+                    ul.filter_distance_overlay.update_zoom_value(ul.state.zoom_val)
+                    ul.filter_distance_overlay.drawOverlay()
                 }
             }
             else if (fms) {
@@ -263,10 +261,8 @@ export class ULabel {
 
             // Only try to update the overlay if it exists
             if (ul.filter_distance_overlay !== undefined) {
-                ul.filter_distance_overlay.drawOverlay({
-                    "zoom_val": ul.state.zoom_val,
-                    "multi_class_mode": document.querySelector("#filter-slider-distance-multi-checkbox")
-                })
+                ul.filter_distance_overlay.update_zoom_value(ul.state.zoom_val)
+                ul.filter_distance_overlay.drawOverlay()
             }
             
         });
@@ -1219,6 +1215,11 @@ export class ULabel {
 
                 this.state["zoom_val"] = Math.min(this.get_viewport_height_ratio(height), this.get_viewport_width_ratio(width));
                 this.rezoom(lft_cntr, top_cntr, true);
+
+                if (this.filter_distance_overlay !== undefined) {
+                    this.filter_distance_overlay.update_zoom_value(this.state.zoom_val)
+                    this.filter_distance_overlay.drawOverlay()
+                }
                 return;
             }
             else {
@@ -1239,7 +1240,11 @@ export class ULabel {
 
         this.state["zoom_val"] = Math.min(this.get_viewport_height_ratio(hgt), this.get_viewport_width_ratio(wdt));
         this.rezoom(lft_cntr, top_cntr, true);
-        return;
+        
+        if (this.filter_distance_overlay !== undefined) {
+            this.filter_distance_overlay.update_zoom_value(this.state.zoom_val)
+            this.filter_distance_overlay.drawOverlay()
+        }
     }
 
     // ================== Cursor Helpers ====================

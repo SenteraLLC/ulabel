@@ -426,21 +426,17 @@ export function filter_points_distance_from_line(ulabel: ULabel, offset: Offset 
     }
     else {
         if (show_overlay) {
-            // Create the info the overlay needs in order to properly draw itself
-            const overlay_info: DistanceOverlayInfo = {
-                "multi_class_mode": multi_class_mode,
-                "zoom_val": ulabel.state.zoom_val,
-                "offset": offset
-            }
-
             // Update the filter distances, then redraw the overlay
             ulabel.filter_distance_overlay.updateAnnotations(line_annotations)
             ulabel.filter_distance_overlay.updateDistance(distances)
-            ulabel.filter_distance_overlay.drawOverlay(overlay_info)
+            ulabel.filter_distance_overlay.update_mode(multi_class_mode ? "multi" : "single")
+            ulabel.filter_distance_overlay.update_zoom_value(ulabel.state.zoom_val)
+            ulabel.filter_distance_overlay.drawOverlay(offset)
         }
-        else ulabel.filter_distance_overlay.clearCanvas()
+        else {
+            ulabel.filter_distance_overlay.clearCanvas()
+        }
     }  
-    
 }
 
 /**
