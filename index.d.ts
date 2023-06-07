@@ -81,7 +81,8 @@ export type FilterDistanceConfig = {
     multi_class_mode?: boolean,
     filter_on_load?: boolean,
     show_options?: boolean,
-    toggle_overlay_keybind?: string
+    toggle_overlay_keybind?: string,
+    show_overlay_on_load?: boolean
 }
 
 export type ULabelAnnotations = { [key: string]: ULabelAnnotation[] };

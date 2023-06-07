@@ -68,7 +68,8 @@ export class Configuration {
         "multi_class_mode": false,
         "filter_on_load": true,
         "show_options": true,
-        "toggle_overlay_keybind": "p"
+        "toggle_overlay_keybind": "p",
+        "show_overlay_on_load": false
     }
 
     public change_zoom_keybind: string = "r";

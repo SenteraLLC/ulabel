@@ -1135,10 +1135,25 @@ export class ULabel {
                 // Append the overlay canvas to the div that holds the canvases
                 $("#" + that.config["imwrap_id"]).prepend(that.filter_distance_overlay.getCanvas())
 
+                // Determine whether or not to show the overlay
+                let show_overlay
+                if (window.localStorage.getItem("filterDistanceShowOverlay") === "true") {
+                    show_overlay = true
+                }
+                else if (window.localStorage.getItem("filterDistanceShowOverlay") === "false") {
+                    show_overlay = false
+                }
+                else if (that.config.distance_filter_toolbox_itemshow_overlay_on_load !== undefined) {
+                    show_overlay = that.config.distance_filter_toolbox_itemshow_overlay_on_load
+                }
+                else {
+                    show_overlay = false // Default
+                }
+
                 filter_points_distance_from_line(that, null, {
                     "should_redraw": that.config.distance_filter_toolbox_item.filter_on_load,
-                    "multi_class_mode": false, // TODO: Support multi-class mode
-                    "show_overlay": true, // TODO: Read the local storage / read the default from the config
+                    "multi_class_mode": false, // TODO: Support multi-class mode on load
+                    "show_overlay": show_overlay,
                     "distances": {
                         "single": that.config.distance_filter_toolbox_item.default_value
                     }
