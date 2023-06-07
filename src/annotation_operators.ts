@@ -62,10 +62,10 @@ export function get_annotation_class_id(annotation: ULabelAnnotation): string {
  * @param deprecated_by_key 
  */
 export function mark_deprecated(annotation: any, deprecated: boolean, deprecated_by_key: ValidDeprecatedBy = "human") {
-
     if (annotation.deprecated_by === undefined) {
         annotation.deprecated_by = <DeprecatedBy> {};
     }
+
     annotation.deprecated_by[deprecated_by_key] = deprecated;
 
     // If the annotation has been deprecated by any method, then deprecate the annotation
@@ -73,8 +73,6 @@ export function mark_deprecated(annotation: any, deprecated: boolean, deprecated
         annotation.deprecated = true
         return
     }
-
-    console.log("annotation's deprecatedBy", annotation.deprecated_by)
 
     // If the annotation hasn't been deprecated by any property, then set deprecated to false
     annotation.deprecated = false
