@@ -32,7 +32,7 @@ class ULabelOverlay {
         this.canvas.height = canvas_height
     }
 
-    public resize_canvas(new_width, new_height) {
+    public resize_canvas(new_width, new_height): void {
         this.canvas.width = new_width
         this.canvas.height = new_height
     }
@@ -52,7 +52,7 @@ class ULabelOverlay {
      * @param y_position y-position of the circle
      * @param radius The radius of the circle
      */
-    public drawCircle(point: AbstractPoint, radius: number): void {
+    protected drawCircle(point: AbstractPoint, radius: number): void {
         // Start the shape
         this.context.beginPath()
 

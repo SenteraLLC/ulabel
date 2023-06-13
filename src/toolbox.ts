@@ -52,6 +52,8 @@ export class Toolbox {
             throw new Error("No Toolbox Items Given")
         }
 
+        this.add_styles()
+
         let toolbox_instance_list = [];
         // Go through the items in toolbox_item_order and add their instance to the toolbox instance list
         for (let i = 0; i < toolbox_item_order.length; i++) {
@@ -79,6 +81,56 @@ export class Toolbox {
         }                    
 
         return toolbox_instance_list
+    }
+
+    static add_styles() {
+        const css = `
+        #toolbox button {
+            border: 1px solid rgba(128, 128, 128, 0.5);
+            color: white;
+            background-color: rgba(0, 128, 255, 0.7);
+            transition: background-color 250ms;
+        }
+        
+        #toolbox button:hover {
+            background-color: rgba(0, 128, 255, 0.9);
+        }
+
+        #toolbox button.circle {
+            position: relative;
+            border-radius: 50%;
+            font-size: 1.2rem;
+            font-weight: bold;
+            width: 20px;
+            height: 20px;
+            padding: 0;
+        }
+
+        #toolbox button.circle:hover {
+            box-shadow: 0 0 4px 2px lightgray, 0 0 white;
+        }
+         
+        /* No shadow effect in night-mode */
+        .ulabel-night #toolbox button.circle:hover {
+            box-shadow: initial;
+        }`
+
+        // Create an id so this specific style tag can be referenced
+        const style_id = "toolbox-styles"
+
+        // Don't add the style tag if its already been added once
+        if (document.getElementById(style_id)) return
+
+        // Grab the document's head and create a style tag
+        const head = document.head || document.querySelector("head")
+        const style = document.createElement('style');
+
+        // Add the css and id to the style tag
+        style.appendChild(document.createTextNode(css));
+        style.id = style_id
+
+        // Add the style tag to the document's head
+        head.appendChild(style);
     }
 
     public setup_toolbox_html(ulabel: ULabel, frame_annotation_dialogs: any, images: any, ULABEL_VERSION: any): string {
@@ -182,6 +234,7 @@ export abstract class ToolboxItem {
     constructor() {}
 
     abstract get_html(): string;
+    protected abstract add_styles(): void; // ToolboxItems need to handle their own css
     public redraw_update(ulabel: ULabel): void {}
     public frame_update(ulabel: ULabel): void {} 
 }
@@ -192,6 +245,8 @@ export abstract class ToolboxItem {
 export class ModeSelectionToolboxItem extends ToolboxItem {
     constructor(public ulabel: ULabel) {
         super();
+
+        this.add_styles()
 
         // Buttons to change annotation mode
         $(document).on("click", "a.md-btn", (e) => {
@@ -269,6 +324,77 @@ export class ModeSelectionToolboxItem extends ToolboxItem {
         })
     }
 
+    
+    /**
+     * Create the css for this ToolboxItem and append it to the page.
+     */
+    protected add_styles() {
+        // Define the css
+        const css = `
+        #toolbox div.mode-selection {
+            padding: 10px 30px;
+         }
+         
+         #toolbox div.mode-selection p.current_mode_container {
+            margin-top: 0px;
+            margin-bottom: 5px;
+         }
+         
+         #toolbox div.mode-selection span.current_mode {
+            color: cornflowerblue;
+         }
+         
+         #toolbox div.mode-opt {
+            display: inline-block;
+         }
+         
+         #toolbox div.mode-selection a.md-btn {
+            text-align: center;
+            height: 30px;
+            width: 30px;
+            padding: 10px;
+            margin: 0 auto;
+            text-decoration: none;
+            color: black;
+            font-size: 1.2em;
+            font-family: sans-serif;
+         }
+         
+         #toolbox div.mode-selection a.md-btn svg {
+            height: 30px;
+            width: 30px;
+         }
+         
+         #toolbox div.mode-selection a.md-btn:hover {
+            background-color: rgba(255, 181, 44, 0.397);
+         }
+         
+         #toolbox div.mode-selection a.md-btn.sel {
+            background-color: rgba(100, 148, 237, 0.459);
+         }
+
+        
+        
+        
+        `
+        // Create an id so this specific style tag can be referenced
+        const style_id = "mode-selection-toolbox-item-styles"
+
+        // Don't add the style tag if its already been added once
+        if (document.getElementById(style_id)) return
+
+        // Grab the document's head and create a style tag
+        const head = document.head || document.querySelector("head")
+        const style = document.createElement('style');
+
+        // Add the css and id to the style tag
+        style.appendChild(document.createTextNode(css));
+        style.id = style_id
+
+        // Add the style tag to the document's head
+        head.appendChild(style);
+    }
+
     public get_html() {
         return `
         <div class="mode-selection">
@@ -292,6 +418,8 @@ export class ZoomPanToolboxItem extends ToolboxItem {
         super();
         this.set_frame_range(ulabel);
 
+        this.add_styles()
+
         $(document).on("click", "#recenter-button", () => {
             ulabel.show_initial_crop();
         });
@@ -308,6 +436,145 @@ export class ZoomPanToolboxItem extends ToolboxItem {
                 document.getElementById("recenter-whole-image-button").click()
             }
         })
+    }
+
+    
+    /**
+     * Create the css for this ToolboxItem and append it to the page.
+     */
+    protected add_styles() {
+        // Define the css
+        const css = `
+        #toolbox div.zoom-pan {
+            padding: 10px 30px;
+            display: grid;
+            grid-template-rows: auto auto auto;
+            grid-template-columns: 1fr 1fr;
+            grid-template-areas:
+                "zoom     pan"
+                "zoom-tip pan-tip"
+                "recenter recenter";
+        }
+         
+        #toolbox div.zoom-pan > * {
+            place-self: center;
+        }
+        
+        #toolbox div.zoom-pan button {
+            background-color: lightgray;
+        }
+        
+        #toolbox div.zoom-pan div.set-zoom {
+            grid-area: zoom;
+        }
+        
+        #toolbox div.zoom-pan div.set-pan {
+            grid-area: pan;
+        }
+        
+        #toolbox div.zoom-pan div.set-pan div.pan-container {
+            display: inline-flex;
+            align-items: center;
+        }
+        
+        #toolbox div.zoom-pan p.shortcut-tip {
+            margin: 2px 0;
+            font-size: 10px;
+        }
+        
+        #toolbox.ulabel-night div.zoom-pan:hover p.pan-shortcut-tip {
+            color: white;
+        }
+        
+        #toolbox div.zoom-pan p.zoom-shortcut-tip {
+            grid-area: zoom-tip;
+        }
+        
+        #toolbox div.zoom-pan p.pan-shortcut-tip {
+            grid-area: pan-tip;
+        }
+        
+        #toolbox div.zoom-pan span.pan-label {
+            margin-right: 10px;
+        }
+        
+        #toolbox div.zoom-pan span.pan-button-holder {
+            display: inline-grid;
+            position: relative;
+            grid-template-rows: 28px 28px;
+            grid-template-columns: 28px 28px;
+            grid-template-areas:
+                "left   top"
+                "bottom right";
+            transform: rotate(-45deg);
+            gap: 1px;
+        }
+        
+        #toolbox div.zoom-pan span.pan-button-holder > * {
+            border: 1px solid gray;
+        }
+        
+        #toolbox div.zoom-pan button.ulabel-pan:hover {
+            background-color: cornflowerblue;
+        }
+        
+        #toolbox div.zoom-pan button.ulabel-pan-left {
+            grid-area: left;
+            border-radius: 100% 0 0 0;
+        }
+        
+        #toolbox div.zoom-pan button.ulabel-pan-right {
+            grid-area: right;
+            border-radius: 0 0 100% 0;
+        }
+        
+        #toolbox div.zoom-pan button.ulabel-pan-up {
+            grid-area: top;
+            border-radius: 0 100% 0 0;
+        }
+        
+        #toolbox div.zoom-pan button.ulabel-pan-down {
+            grid-area: bottom;
+            border-radius: 0 0 0 100%;
+        }
+        
+        #toolbox div.zoom-pan span.spokes {
+            background-color: white;
+            width: 16px;
+            height: 16px;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+        }
+        
+        #toolbox.ulabel-night div.zoom-pan span.spokes {
+            background-color: black;
+        }
+
+        #toolbox div.zoom-pan div.recenter-container {
+            grid-area: recenter;
+        }
+        
+        
+        `
+        // Create an id so this specific style tag can be referenced
+        const style_id = "zoom-pan-toolbox-item-styles"
+
+        // Don't add the style tag if its already been added once
+        if (document.getElementById(style_id)) return
+
+        // Grab the document's head and create a style tag
+        const head = document.head || document.querySelector("head")
+        const style = document.createElement('style');
+
+        // Add the css and id to the style tag
+        style.appendChild(document.createTextNode(css));
+        style.id = style_id
+
+        // Add the style tag to the document's head
+        head.appendChild(style);
     }
 
     private set_frame_range(ulabel) {
@@ -352,7 +619,7 @@ export class ZoomPanToolboxItem extends ToolboxItem {
                 </div>
             </div>
             <p class="shortcut-tip pan-shortcut-tip">scrollclick+drag or ctrl+drag</p>
-            <div class="recenter-cont">
+            <div class="recenter-container">
                 <a href="#" id="recenter-button">Re-Center</a>
                 <a href="#" id="recenter-whole-image-button">Whole Image</a>
             </div>
@@ -373,6 +640,37 @@ export class AnnotationIDToolboxItem extends ToolboxItem {
     ) {
         super();
         this.set_instructions(ulabel);
+
+        this.add_styles()
+    }
+
+    
+    /**
+     * Create the css for this ToolboxItem and append it to the page.
+     */
+    protected add_styles() {
+        // Define the css
+        const css = `
+        #toolbox div.classification div.id-toolbox-app {
+            margin-bottom: 1rem;
+        }
+        `
+        // Create an id so this specific style tag can be referenced
+        const style_id = "annotation-id-toolbox-item-styles"
+
+        // Don't add the style tag if its already been added once
+        if (document.getElementById(style_id)) return
+
+        // Grab the document's head and create a style tag
+        const head = document.head || document.querySelector("head")
+        const style = document.createElement('style');
+
+        // Add the css and id to the style tag
+        style.appendChild(document.createTextNode(css));
+        style.id = style_id
+
+        // Add the style tag to the document's head
+        head.appendChild(style);
     }
 
     private set_instructions(ulabel) {
@@ -403,6 +701,33 @@ export class ClassCounterToolboxItem extends ToolboxItem {
     constructor(...args) {
         super();
         this.inner_HTML = `<p class="tb-header">Annotation Count</p>`;
+        this.add_styles()
+    }
+
+    
+    /**
+     * Create the css for this ToolboxItem and append it to the page.
+     */
+    protected add_styles() {
+        // Define the css
+        const css = ` /* ClassCounterToolboxItem currently requires no styling */ `
+        
+        // Create an id so this specific style tag can be referenced
+        const style_id = "class-counter-toolbox-item-styles"
+
+        // Don't add the style tag if its already been added once
+        if (document.getElementById(style_id)) return
+
+        // Grab the document's head and create a style tag
+        const head = document.head || document.querySelector("head")
+        const style = document.createElement('style');
+
+        // Add the css and id to the style tag
+        style.appendChild(document.createTextNode(css));
+        style.id = style_id
+
+        // Add the style tag to the document's head
+        head.appendChild(style);
     }
 
     update_toolbox_counter(subtask, toolbox_id) {
@@ -464,11 +789,10 @@ export class ClassCounterToolboxItem extends ToolboxItem {
 export class AnnotationResizeItem extends ToolboxItem {
     public cached_size: number = 1.5;
     public html: string;
-    public inner_HTML: string;
     private keybind_configuration: {[key: string]: string}
     constructor(ulabel: ULabel) {
         super();
-        this.inner_HTML = `<p class="tb-header">Annotation Count</p>`;
+
         //get default keybinds
         this.keybind_configuration = ulabel.config.default_keybinds
 
@@ -496,6 +820,8 @@ export class AnnotationResizeItem extends ToolboxItem {
                 this[cached_size_property] = DEFAULT_SIZE
             }
         }
+
+        this.add_styles()
 
         //event listener for buttons
         $(document).on("click", "a.butt-ann", (e) => {
@@ -533,7 +859,69 @@ export class AnnotationResizeItem extends ToolboxItem {
             ulabel.redraw_all_annotations(null, null, false);
         } )
     }
+
+    /**
+     * Create the css for this ToolboxItem and append it to the page.
+     */
+    protected add_styles() {
+        // Define the css
+        const css = `
+        #toolbox div.annotation-resize button:not(.circle) {
+            padding: 1rem 0.5rem;
+            border: 1px solid gray;
+            border-radius: 10px
+        }
+
+        #toolbox div.annotation-resize div.annotation-resize-button-holder {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        #toolbox div.annotation-resize span.annotation-vanish:hover,
+        #toolbox div.annotation-resize span.annotation-size:hover {
+            border-radius: 10px;
+            box-shadow: 0 0 4px 2px lightgray, 0 0 white;
+        }
+
+        #toolbox div.annotation-resize span.annotation-size {
+            display: flex;
+        }
+
+        #toolbox div.annotation-resize span.annotation-size #annotation-resize-s {
+            border-radius: 10px 0 0 10px;
+        }
+
+        #toolbox div.annotation-resize span.annotation-size #annotation-resize-l {
+            border-radius: 0 10px 10px 0;
+        }
         
+        #toolbox div.annotation-resize span.annotation-inc {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+        
+        `
+        // Create an id so this specific style tag can be referenced
+        const style_id = "resize-annotation-toolbox-item-styles"
+
+        // Don't add the style tag if its already been added once
+        if (document.getElementById(style_id)) return
+
+        // Grab the document's head and create a style tag
+        const head = document.head || document.querySelector("head")
+        const style = document.createElement('style');
+
+        // Add the css and id to the style tag
+        style.appendChild(document.createTextNode(css));
+        style.id = style_id
+
+        // Add the style tag to the document's head
+        head.appendChild(style);
+    }
 
     //recieives a string of 's', 'l', 'dec', 'inc', or 'v' depending on which button was pressed
     //also the constructor can pass in a number from the config
@@ -677,15 +1065,15 @@ export class AnnotationResizeItem extends ToolboxItem {
             <p class="tb-header">Change Annotation Size</p>
             <div class="annotation-resize-button-holder">
                 <span class="annotation-vanish">
-                    <a href="#" class="butt-ann button" id="annotation-resize-v">Vanish</a>
+                    <button class="annotation-resize-button" id="annotation-resize-v">Vanish</button>
                 </span>
                 <span class="annotation-size">
-                    <a href="#" class="butt-ann button" id="annotation-resize-s">Small</a>
-                    <a href="#" class="butt-ann button" id="annotation-resize-l">Large</a>
+                    <button class="annotation-resize-button" id="annotation-resize-s">Small</button>
+                    <button class="annotation-resize-button" id="annotation-resize-l">Large</button>
                 </span>
                 <span class="annotation-inc increment">
-                    <a href="#" class="butt-ann button inc" id="annotation-resize-inc">+</a>
-                    <a href="#" class="butt-ann button dec" id="annotation-resize-dec">-</a>
+                    <button class="annotation-resize-button circle inc" id="annotation-resize-inc">+</button>
+                    <button class="annotation-resize-button circle dec" id="annotation-resize-dec">-</button>
                 </span>
             </div>
         </div>
@@ -713,6 +1101,8 @@ export class RecolorActiveItem extends ToolboxItem {
             }
         }
         ULabel.process_classes(ulabel, ulabel.state.current_subtask, current_subtask);
+
+        this.add_styles()
 
         //event handler for the buttons
         $(document).on("click", "input.color-change-btn", (e) => {
@@ -755,6 +1145,37 @@ export class RecolorActiveItem extends ToolboxItem {
             $("div.gradient-slider-value-display").text(e.currentTarget.value + "%");
             ulabel.redraw_all_annotations(null, null, false);
         })
+    }
+
+    
+    /**
+     * Create the css for this ToolboxItem and append it to the page.
+     */
+    protected add_styles() {
+        // Define the css
+        const css = `
+        
+
+        
+        
+        
+        `
+        // Create an id so this specific style tag can be referenced
+        const style_id = "recolor-toolbox-item-styles"
+
+        // Don't add the style tag if its already been added once
+        if (document.getElementById(style_id)) return
+
+        // Grab the document's head and create a style tag
+        const head = document.head || document.querySelector("head")
+        const style = document.createElement('style');
+
+        // Add the css and id to the style tag
+        style.appendChild(document.createTextNode(css));
+        style.id = style_id
+
+        // Add the style tag to the document's head
+        head.appendChild(style);
     }
 
     public update_annotation_color(subtask, color, selected_id = null) {
@@ -972,6 +1393,39 @@ export class KeypointSliderItem extends ToolboxItem {
         if (this.ulabel.config.filter_annotations_on_load) {
             this.filter_annotations(this.ulabel, this.filter_value);
         }
+
+        this.add_styles()
+    }
+
+    
+    /**
+     * Create the css for this ToolboxItem and append it to the page.
+     */
+    protected add_styles() {
+        // Define the css
+        const css = `
+        
+
+        
+        
+        
+        `
+        // Create an id so this specific style tag can be referenced
+        const style_id = "keypoint-slider-toolbox-item-styles"
+
+        // Don't add the style tag if its already been added once
+        if (document.getElementById(style_id)) return
+
+        // Grab the document's head and create a style tag
+        const head = document.head || document.querySelector("head")
+        const style = document.createElement('style');
+
+        // Add the css and id to the style tag
+        style.appendChild(document.createTextNode(css));
+        style.id = style_id
+
+        // Add the style tag to the document's head
+        head.appendChild(style);
     }
 
     /**
@@ -1107,6 +1561,7 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
             this.show_overlay = false
         }
 
+        this.add_styles()
 
         // === Create event listeners for this ToolboxItem ===
 
@@ -1146,6 +1601,37 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
             
             show_overlay_checkbox.click()
         })
+    }
+
+    
+    /**
+     * Create the css for this ToolboxItem and append it to the page.
+     */
+    protected add_styles() {
+        // Define the css
+        const css = `
+        
+
+        
+        
+        
+        `
+        // Create an id so this specific style tag can be referenced
+        const style_id = "filter-distance-from-row-toolbox-item-styles"
+
+        // Don't add the style tag if its already been added once
+        if (document.getElementById(style_id)) return
+
+        // Grab the document's head and create a style tag
+        const head = document.head || document.querySelector("head")
+        const style = document.createElement('style');
+
+        // Add the css and id to the style tag
+        style.appendChild(document.createTextNode(css));
+        style.id = style_id
+
+        // Add the style tag to the document's head
+        head.appendChild(style);
     }
 
     /**
@@ -1296,6 +1782,8 @@ export class SubmitButtons extends ToolboxItem {
         // Grab the submit buttons from ulabel
         this.submit_buttons = ulabel.config.submit_buttons
 
+        this.add_styles()
+
         // For legacy reasons submit_buttons may be a function, in that case convert it to the right format
         if (typeof this.submit_buttons == "function") {
             this.submit_buttons = [{
@@ -1358,6 +1846,37 @@ export class SubmitButtons extends ToolboxItem {
                 }
             })
         }
+    }
+
+    
+    /**
+     * Create the css for this ToolboxItem and append it to the page.
+     */
+    protected add_styles() {
+        // Define the css
+        const css = `
+        
+
+        
+        
+        
+        `
+        // Create an id so this specific style tag can be referenced
+        const style_id = "submit-buttons-toolbox-item-styles"
+
+        // Don't add the style tag if its already been added once
+        if (document.getElementById(style_id)) return
+
+        // Grab the document's head and create a style tag
+        const head = document.head || document.querySelector("head")
+        const style = document.createElement('style');
+
+        // Add the css and id to the style tag
+        style.appendChild(document.createTextNode(css));
+        style.id = style_id
+
+        // Add the style tag to the document's head
+        head.appendChild(style);
     }
 
     get_html(): string {
