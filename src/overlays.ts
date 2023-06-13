@@ -14,6 +14,33 @@ class ULabelOverlay {
         this.createCanvas(canvas_width, canvas_height)
 
         this.context = this.canvas.getContext("2d")
+
+        this.add_styles()
+    }
+
+    private add_styles() {
+        const css = `
+        /* Very Important. Annotation interaction breaks without this property when overlays are present */
+        .ulabel-overlay {
+            pointer-events: none; 
+        }`
+
+        // Create an id so this specific style tag can be referenced
+        const style_id = "overlay-styles"
+
+        // Don't add the style tag if its already been added once
+        if (document.getElementById(style_id)) return
+
+        // Grab the document's head and create a style tag
+        const head = document.head || document.querySelector("head")
+        const style = document.createElement('style');
+
+        // Add the css and id to the style tag
+        style.appendChild(document.createTextNode(css));
+        style.id = style_id
+
+        // Add the style tag to the document's head
+        head.appendChild(style);
     }
 
     public createCanvas(canvas_width, canvas_height): void {

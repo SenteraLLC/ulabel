@@ -1943,14 +1943,6 @@ div.toolbox_inner_cls {
 }
 
 
-/* ========== Overlays ========== */
-
-/* Very Important. Annotation interaction breaks without this property when overlays are present */
-.ulabel-overlay {
-   pointer-events: none; 
-}
-
-
 /* ========== Tab Buttons ========== */
 
 div#${prntid} div.toolbox-tabs {
@@ -2059,11 +2051,6 @@ div#${prntid} a.global_sub_suggestion.reid_suggestion {
 div#${prntid} a.global_sub_suggestion.reid_suggestion:hover {
    opacity: 0; 
 }
-
-
-
-
-
 
 div#${prntid} a.tbid-opt {
    display: inline-block;
