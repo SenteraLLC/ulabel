@@ -622,10 +622,10 @@ export class SliderHandler {
                 ${this.default_value}${this.label_units ? this.label_units : ""}
             </label>
             <div class="ulabel-slider-button-container">
-                <button id=${this.id}-inc-button class="ulabel-slider-button" >
+                <button id=${this.id}-inc-button class="ulabel-slider-button circle" >
                     +
                 </button>
-                <button id=${this.id}-dec-button class="ulabel-slider-button">
+                <button id=${this.id}-dec-button class="ulabel-slider-button circle">
                     <!-- Create an extra div here to be able to move the - text up -->
                     <div class="ulabel-slider-decrement-button-text">
                         –

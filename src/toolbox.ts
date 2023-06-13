@@ -331,34 +331,28 @@ export class ZoomPanToolboxItem extends ToolboxItem {
     public get_html() {
         return `
         <div class="zoom-pan">
-            <div class="half-tb htbmain set-zoom">
-                <p class="shortcut-tip">ctrl+scroll or shift+drag</p>
-                <div class="zpcont">
-                    <div class="lblpyldcont">
-                        <span class="pzlbl htblbl">Zoom</span>
-                        <span class="zinout htbpyld">
-                            <a href="#" class="zbutt zout">-</a>
-                            <a href="#" class="zbutt zin">+</a>
-                        </span>
-                    </div>
-                </div>
-            </div><!--
-            --><div class="half-tb htbmain set-pan">
-                <p class="shortcut-tip">scrollclick+drag or ctrl+drag</p>
-                <div class="zpcont">
-                    <div class="lblpyldcont">
-                        <span class="pzlbl htblbl">Pan</span>
-                        <span class="panudlr htbpyld">
-                            <a href="#" class="pbutt left"></a>
-                            <a href="#" class="pbutt right"></a>
-                            <a href="#" class="pbutt up"></a>
-                            <a href="#" class="pbutt down"></a>
-                            <span class="spokes"></span>
-                        </span>
-                    </div>
+            <div class="set-zoom">  
+                <span>Zoom</span>
+                <span class="zoom-button-holder">
+                    <button class="ulabel-zoom-out circle">-</button>
+                    <button class="ulabel-zoom-in circle">+</button>
+                </span>
+            </div>
+            <p class="shortcut-tip zoom-shortcut-tip">ctrl+scroll or shift+drag</p>
+            <div class="set-pan">
+                <div class="pan-container">
+                    <span class="pan-label">Pan</span>
+                    <span class="pan-button-holder">
+                        <button class="ulabel-pan ulabel-pan-left"></button>
+                        <button class="ulabel-pan ulabel-pan-right"></button>
+                        <button class="ulabel-pan ulabel-pan-up"></button>
+                        <button class="ulabel-pan ulabel-pan-down"></button>
+                        <span class="spokes"></span>
+                    </span>
                 </div>
             </div>
-            <div class="recenter-cont" style="text-align: center;">
+            <p class="shortcut-tip pan-shortcut-tip">scrollclick+drag or ctrl+drag</p>
+            <div class="recenter-cont">
                 <a href="#" id="recenter-button">Re-Center</a>
                 <a href="#" id="recenter-whole-image-button">Whole Image</a>
             </div>
