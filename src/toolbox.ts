@@ -85,8 +85,29 @@ export class Toolbox {
 
     static add_styles() {
         const css = `
+        #toolbox {
+            width: 320px;
+            background-color: white;
+            overflow-y: hidden;
+            position: absolute;
+            top: 0;
+            right: 0;
+        }
+
         .ulabel-night #toolbox {
             color: white;
+        }
+
+        .ulabel-night #toolbox div.toolbox_inner_cls {
+            background-color: black;
+        }
+
+        .ulabel-night div.toolbox_cls {
+            background-color: rgb(24, 24, 24);
+        }
+
+        .ulabel-night .invert-this-svg svg {
+            filter: invert(90%);
         }
 
         #toolbox button {
@@ -94,6 +115,7 @@ export class Toolbox {
             color: white;
             background-color: rgba(0, 128, 255, 0.7);
             transition: background-color 250ms;
+            cursor: pointer;
         }
         
         #toolbox button:hover {
@@ -118,6 +140,14 @@ export class Toolbox {
         .ulabel-night #toolbox button.circle:hover {
             box-shadow: initial;
         }
+
+        #toolbox input {
+            cursor: pointer;
+        }
+
+        #toolbox label {
+            cursor: pointer;
+        }
         
         #toolbox div.toolbox-divider {
             width: 90%;
@@ -125,7 +155,7 @@ export class Toolbox {
             height: 1px;
             background-color: lightgray;
         }
-        
+
         .ulabel-night #toolbox div.toolbox-divider {
             background-color: gray;
         }`
@@ -463,7 +493,7 @@ export class ZoomPanToolboxItem extends ToolboxItem {
         #toolbox div.zoom-pan {
             padding: 10px 30px;
             display: grid;
-            grid-template-rows: auto 1rem auto;
+            grid-template-rows: auto 1.25rem auto;
             grid-template-columns: 1fr 1fr;
             grid-template-areas:
                 "zoom     pan"
@@ -591,7 +621,13 @@ export class ZoomPanToolboxItem extends ToolboxItem {
             grid-area: recenter;
         }
         
-        
+        .ulabel-night #toolbox div.zoom-pan a {
+            color: lightblue;
+        }
+
+        .ulabel-night #toolbox div.zoom-pan a:active {
+            color: white;
+        }
         `
         // Create an id so this specific style tag can be referenced
         const style_id = "zoom-pan-toolbox-item-styles"
@@ -1424,7 +1460,7 @@ export class RecolorActiveItem extends ToolboxItem {
             <p class="tb-header">Recolor Annotations</p>
             <div class="recolor-tbi-gradient">
                 <div class="gradient-toggle-container">
-                    <label for="gradient-toggle" id="gradient-toggle-label">Toggle Gradients</label>
+                    <label for="gradient-toggle" id="gradient-toggle-label">Toggle Gradients:</label>
                     <input type="checkbox" id="gradient-toggle" name="gradient-checkbox" value="gradient" ${checked_status_string}>
                 </div>
                 <div class="gradient-slider-container">
@@ -1753,6 +1789,7 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
             #toolbox div.filter-row-distance fieldset.filter-row-distance-options legend {
                 border-radius: 0.1rem;
                 padding: 0.1rem 0.3rem;
+                cursor: pointer;
             }
 
             #toolbox div.filter-row-distance fieldset.filter-row-distance-options.ulabel-collapsed legend {

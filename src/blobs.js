@@ -1508,26 +1508,6 @@ div#${prntid} div.frame_annotation_dialog div.fad_row div.fad_buttons a.fad_butt
    font-size: 22px;
 }
 
-
-/* TOOLBOX */
-div#${prntid} div.toolbox_cls {
-   width: 320px;
-   background-color: white;
-   overflow-y: hidden;
-   position: absolute;
-   top: 0;
-   right: 0;
-}
-div#${prntid}.ulabel-night div.toolbox_cls {
-   background-color: rgb(24, 24, 24);
-}
-div#${prntid}.ulabel-night div.toolbox_cls p, div#${prntid}.ulabel-night div.toolbox_cls a {
-   color: white;
-}
-div#${prntid}.ulabel-night .invert-this-svg svg {
-   filter: invert(90%);
-}
-
 div#${prntid} div.canvasses {
    position: absolute;
    top: 0; 
