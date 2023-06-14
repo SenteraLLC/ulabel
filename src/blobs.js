@@ -1587,146 +1587,6 @@ div#${prntid}.ulabel-night div.toolbox-divider {
    background-color: gray;
 }
 
-/*
-
-div#${prntid} a.button {
-   display: inline-block;  
-   margin: auto;
-   color: white;
-   background-color: rgba(100, 148, 237, 0.8);
-   border: 1px solid rgb(168, 168, 168);
-   border-radius: 11px;
-   text-decoration: none;
-   text-align: center;
-   transition: all 0.2s;
-}
-
-div#${prntid} div.annotation-resize #annotation-resize-s {
-   border-radius: 11px 0 0 11px;
-}
-
-div#${prntid} div.annotation-resize #annotation-resize-l {
-   border-radius: 0 11px 11px 0;
-   margin-left: -5px;
-}
-
-div#${prntid} a.inc {
-   line-height: 23px;
-   margin-top: -5px;
-   margin-bottom: 5px;
-}
-
-div#${prntid} a.dec {
-   line-height: 19px;
-}
-
-div#${prntid} div.annotation-resize span.annotation-size {
-   width: 115px;
-   margin: 0;
-}
-
-div#${prntid} div.annotation-resize span.annotation-inc {
-   display: inline-grid;
-   grid-template-columns: 1fr;
-   position: relative;
-   bottom: 11px;
-}
-
-div#${prntid} div.annotation-resize span.annotation-size a.butt-ann {
-   font-size: 0.9em;
-   text-shadow: 0 0.04em 0.04em rgba(0,0,0,0.45);
-   padding: 16px 9px;
-}
-
-div#${prntid} div.annotation-resize span.annotation-vanish a.butt-ann {
-   font-size: 0.9em;
-   text-shadow: 0 0.04em 0.04em rgba(0,0,0,0.45);
-   padding: 16px 8px;
-   margin: 0 2px;
-}
-
-div#${prntid} span.increment a.button {
-   width: 22px;
-   height: 22px;
-   border-radius: 17px;
-   font-size: 1.4em;
-}
-
-div#${prntid} a.button:hover {
-   border: 1px solid black;
-   box-shadow: 1px 1px 4px rgba(204, 204, 204, 0.9);
-   background-color:rgba(100, 148, 237, 0.486);
-}
-
-*/
-
-/* ========== FilterPointDistanceFromRow css ========== */
-
-div#${prntid} div.filter-row-distance {
-   text-align: left;
-}
-
-div#${prntid} p.tb-header {
-   margin: 0.75rem 0 0.5rem;
-}
-
-div#${prntid} div.filter-row-distance fieldset.filter-row-distance-options {
-   display: inline-block;
-   position: relative;
-   left: 1rem;
-   margin-bottom: 0.5rem;
-   font-size: 80%;
-   user-select: none;
-}
-
-div#${prntid} div.filter-row-distance fieldset.filter-row-distance-options * {
-   text-align: left;
-}
-
-div#${prntid} div.filter-row-distance fieldset.filter-row-distance-options.ulabel-collapsed {
-   border: none;
-   margin-bottom: 0;
-   padding: 0; /* Padding takes up too much space without the content */
-
-   /* Needed to prevent the element from moving when ulabel-collapsed is toggled 
-   0.75em comes from the previous padding, 2px comes from the removed border */
-   padding-left: calc(0.75em + 2px)
-}
-
-div#${prntid} div.filter-row-distance fieldset.filter-row-distance-options legend {
-   border-radius: 0.1rem;
-   padding: 0.1rem 0.3rem;
-}
-
-div#${prntid} div.filter-row-distance fieldset.filter-row-distance-options.ulabel-collapsed legend {
-   padding: 0.1rem 0.28rem;
-}
-
-div#${prntid} div.filter-row-distance fieldset.filter-row-distance-options.ulabel-collapsed :not(legend) {
-   display: none;
-}
-
-div#${prntid} div.filter-row-distance fieldset.filter-row-distance-options legend:hover {
-   background-color: rgba(128, 128, 128, 0.3)
-}
-
-div#${prntid} div.filter-row-distance fieldset.filter-row-distance-options input[type="checkbox"] {
-   margin: 0;
-}
-
-div#${prntid} div.filter-row-distance fieldset.filter-row-distance-options label {
-   position: relative;
-   top: -0.2rem;
-   font-size: smaller;
-}
-
-div#${prntid}.ulabel-night div.filter-row-distance fieldset,
-div#${prntid}.ulabel-night div.filter-row-distance legend,
-div#${prntid}.ulabel-night div.filter-row-distance label {
-   color: white;
-}
-
-
 
 
 div#${prntid} div.zpcont {
@@ -1734,15 +1594,14 @@ div#${prntid} div.zpcont {
    position: relative;
    background-color: white;
 }
+
 div#${prntid}.ulabel-night div.zpcont {
    background-color: rgb(24, 24, 24);
 }
+
 div#${prntid} div.zpcont:hover, div#${prntid}.ulabel-night div.zpcont:hover {
    background-color: rgba(0,0,0,0);
 }
-
-
-
 
 div#${prntid} div.linestyle {
    padding: 10px 30px;

@@ -1708,12 +1708,64 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
     protected add_styles() {
         // Define the css
         const css = `
-        
+            #toolbox div.filter-row-distance {
+                text-align: left;
+            }
 
-        
-        
-        
-        `
+            #toolbox p.tb-header {
+                margin: 0.75rem 0 0.5rem;
+            }
+
+            #toolbox div.filter-row-distance fieldset.filter-row-distance-options {
+                display: inline-block;
+                position: relative;
+                left: 1rem;
+                margin-bottom: 0.5rem;
+                font-size: 80%;
+                user-select: none;
+            }
+
+            #toolbox div.filter-row-distance fieldset.filter-row-distance-options * {
+                text-align: left;
+            }
+
+            #toolbox div.filter-row-distance fieldset.filter-row-distance-options.ulabel-collapsed {
+                border: none;
+                margin-bottom: 0;
+                padding: 0; /* Padding takes up too much space without the content */
+
+                /* Needed to prevent the element from moving when ulabel-collapsed is toggled 
+                0.75em comes from the previous padding, 2px comes from the removed border */
+                padding-left: calc(0.75em + 2px)
+            }
+
+            #toolbox div.filter-row-distance fieldset.filter-row-distance-options legend {
+                border-radius: 0.1rem;
+                padding: 0.1rem 0.3rem;
+            }
+
+            #toolbox div.filter-row-distance fieldset.filter-row-distance-options.ulabel-collapsed legend {
+                padding: 0.1rem 0.28rem;
+            }
+
+            #toolbox div.filter-row-distance fieldset.filter-row-distance-options.ulabel-collapsed :not(legend) {
+                display: none;
+            }
+
+            #toolbox div.filter-row-distance fieldset.filter-row-distance-options legend:hover {
+                background-color: rgba(128, 128, 128, 0.3)
+            }
+
+            #toolbox div.filter-row-distance fieldset.filter-row-distance-options input[type="checkbox"] {
+                margin: 0;
+            }
+
+            #toolbox div.filter-row-distance fieldset.filter-row-distance-options label {
+                position: relative;
+                top: -0.2rem;
+                font-size: smaller;
+            }`
+
         // Create an id so this specific style tag can be referenced
         const style_id = "filter-distance-from-row-toolbox-item-styles"
 
