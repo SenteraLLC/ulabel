@@ -1577,18 +1577,6 @@ div#${prntid} .ender_inner {
 
 /* ================== TOOLBOX ================== */
 
-div#${prntid} div.toolbox-divider {
-   width: 90%;
-   margin: 0 auto;
-   height: 1px;
-   background-color: lightgray;
-}
-div#${prntid}.ulabel-night div.toolbox-divider {
-   background-color: gray;
-}
-
-
-
 div#${prntid} div.zpcont {
    height: 90px;
    position: relative;

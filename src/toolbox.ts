@@ -117,6 +117,17 @@ export class Toolbox {
         /* No shadow effect in night-mode */
         .ulabel-night #toolbox button.circle:hover {
             box-shadow: initial;
+        }
+        
+        #toolbox div.toolbox-divider {
+            width: 90%;
+            margin: 0 auto;
+            height: 1px;
+            background-color: lightgray;
+        }
+        
+        .ulabel-night #toolbox div.toolbox-divider {
+            background-color: gray;
         }`
 
         // Create an id so this specific style tag can be referenced
