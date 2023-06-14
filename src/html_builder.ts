@@ -540,6 +540,7 @@ export class SliderHandler {
         // Number for incrementing and decrementing slider value
         this.step_as_number = Number(this.step)
 
+        this.add_styles()
 
         /* Add Event Listeners for this component */
         $(document).on("input", `#${this.id}`, (event) => {
@@ -550,6 +551,58 @@ export class SliderHandler {
         $(document).on("click", `#${this.id}-inc-button`, () => this.incrementSlider())
 
         $(document).on("click", `#${this.id}-dec-button`, () => this.decrementSlider())
+    }
+
+    private add_styles() {
+        const css = `
+        #toolbox div.ulabel-slider-container {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            margin: 0 1.5rem 0.5rem;
+        }
+         
+        #toolbox div.ulabel-slider-container label.ulabel-filter-row-distance-name-label {
+            width: 100%; /* Ensure title takes up full width of container */
+            font-size: 0.95rem;
+            align-items: center;
+        }
+         
+        #toolbox div.ulabel-slider-container > *:not(label.ulabel-filter-row-distance-name-label) {
+            flex: 1;
+        }
+        
+        /*  
+        .ulabel-night #toolbox div.ulabel-slider-container label {
+            color: white;
+        }
+        */
+        #toolbox div.ulabel-slider-container label.ulabel-slider-value-label {
+            font-size: 0.9rem;
+        }
+         
+         
+        #toolbox div.ulabel-slider-container div.ulabel-slider-decrement-button-text {
+            position: relative;
+            bottom: 1.5px;
+        }`
+
+        // Create an id so this specific style tag can be referenced
+        const style_id = "slider-handler-styles"
+
+        // Don't add the style tag if its already been added once
+        if (document.getElementById(style_id)) return
+
+        // Grab the document's head and create a style tag
+        const head = document.head || document.querySelector("head")
+        const style = document.createElement('style');
+
+        // Add the css and id to the style tag
+        style.appendChild(document.createTextNode(css));
+        style.id = style_id
+
+        // Add the style tag to the document's head
+        head.appendChild(style);
     }
 
     private updateLabel() {

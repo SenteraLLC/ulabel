@@ -85,6 +85,10 @@ export class Toolbox {
 
     static add_styles() {
         const css = `
+        .ulabel-night #toolbox {
+            color: white;
+        }
+
         #toolbox button {
             border: 1px solid rgba(128, 128, 128, 0.5);
             color: white;
@@ -448,7 +452,7 @@ export class ZoomPanToolboxItem extends ToolboxItem {
         #toolbox div.zoom-pan {
             padding: 10px 30px;
             display: grid;
-            grid-template-rows: auto auto auto;
+            grid-template-rows: auto 1rem auto;
             grid-template-columns: 1fr 1fr;
             grid-template-areas:
                 "zoom     pan"
@@ -462,6 +466,10 @@ export class ZoomPanToolboxItem extends ToolboxItem {
         
         #toolbox div.zoom-pan button {
             background-color: lightgray;
+        }
+
+        #toolbox div.zoom-pan button:hover {
+            background-color: rgba(0, 128, 255, 0.9);
         }
         
         #toolbox div.zoom-pan div.set-zoom {
@@ -480,6 +488,21 @@ export class ZoomPanToolboxItem extends ToolboxItem {
         #toolbox div.zoom-pan p.shortcut-tip {
             margin: 2px 0;
             font-size: 10px;
+            color: white;
+        }
+
+        #toolbox div.zoom-pan:hover p.shortcut-tip {
+            color: black;
+        }
+
+        .ulabel-night #toolbox div.zoom-pan p.shortcut-tip {
+            margin: 0;
+            font-size: 10px;
+            color: black;
+        }
+
+        .ulabel-night #toolbox div.zoom-pan:hover p.shortcut-tip {
+            color: white;
         }
         
         #toolbox.ulabel-night div.zoom-pan:hover p.pan-shortcut-tip {
@@ -549,7 +572,7 @@ export class ZoomPanToolboxItem extends ToolboxItem {
             border-radius: 50%;
         }
         
-        #toolbox.ulabel-night div.zoom-pan span.spokes {
+        .ulabel-night #toolbox div.zoom-pan span.spokes {
             background-color: black;
         }
 
@@ -628,7 +651,6 @@ export class ZoomPanToolboxItem extends ToolboxItem {
         `;
     }
 }
-
 
 /**
  * Toolbox item for selection Annotation ID.
@@ -884,6 +906,12 @@ export class AnnotationResizeItem extends ToolboxItem {
         #toolbox div.annotation-resize span.annotation-size:hover {
             border-radius: 10px;
             box-shadow: 0 0 4px 2px lightgray, 0 0 white;
+        }
+
+        /* No box-shadow in night-mode */
+        .ulabel-night #toolbox div.annotation-resize span.annotation-vanish:hover,
+        .ulabel-night #toolbox div.annotation-resize span.annotation-size:hover {
+            box-shadow: initial;
         }
 
         #toolbox div.annotation-resize span.annotation-size {
@@ -1154,12 +1182,87 @@ export class RecolorActiveItem extends ToolboxItem {
     protected add_styles() {
         // Define the css
         const css = `
-        
+        #toolbox div.recolor-active {
+            padding: 0 2rem;
+        }
 
-        
-        
-        
-        `
+        #toolbox div.recolor-active div.recolor-tbi-gradient {
+            font-size: 80%;
+        }
+
+        #toolbox div.recolor-active div.gradient-toggle-container {
+            text-align: left;
+            display: flex;
+            align-items: center;
+        }
+
+        #toolbox div.recolor-active div.gradient-slider-container {
+            display: flex;
+            align-items: center;
+        }
+
+        #toolbox div.recolor-active div.gradient-slider-container > input {
+            width: 50%;
+        }
+
+        #toolbox div.recolor-active div.annotation-recolor-button-holder {
+            margin: 0.5rem;
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            grid-template-rows: 1fr 1fr 1fr;
+            grid-template-areas:
+                "yellow picker"
+                "red    picker"
+                "cyan   picker";
+            gap: 0.25rem 0.75rem;
+        }
+
+        #toolbox div.recolor-active div.annotation-recolor-button-holder .color-change-btn {
+            height: 1.5rem;
+            border-radius: 0.5rem;
+        }
+
+        #toolbox div.recolor-active div.annotation-recolor-button-holder #color-change-yel {
+            grid-area: yellow;
+            background-color: yellow;
+            border: 1px solid rgb(200, 200, 0);
+        }
+
+        #toolbox div.recolor-active div.annotation-recolor-button-holder #color-change-red {
+            grid-area: red;
+            background-color: red;
+            border: 1px solid rgb(200, 0, 0);
+        }
+
+        #toolbox div.recolor-active div.annotation-recolor-button-holder #color-change-cya {
+            grid-area: cyan;
+            background-color: cyan;
+            border: 1px solid rgb(0, 200, 200);
+        }
+
+        #toolbox div.recolor-active div.annotation-recolor-button-holder div.color-picker-border {
+            grid-area: picker;
+            background: linear-gradient(to bottom right, red, orange, yellow, green, blue, indigo, violet);
+            border: 1px solid black;
+            border-radius: 0.5rem;
+        }
+
+        #toolbox div.recolor-active div.annotation-recolor-button-holder div.color-picker-border div.color-picker-container {
+            width: calc(100% - 8px);
+            height: calc(100% - 8px);
+            margin: 3px;
+            background-color: black;
+            border: 1px solid black;
+            border-radius: 0.5rem;
+        }
+
+        #toolbox div.recolor-active div.color-picker-container input.color-change-picker {
+            width: 100%;
+            height: 100%;
+            padding: 0;
+            opacity: 0;
+        }`
+
         // Create an id so this specific style tag can be referenced
         const style_id = "recolor-toolbox-item-styles"
 
@@ -1216,7 +1319,6 @@ export class RecolorActiveItem extends ToolboxItem {
             }
         })
 
-        //$("a.toolbox_sel_"+selected_id+":first").attr("backround-color", color);
         let colored_square_element = ".toolbox_colprev_"+selected_id;
         $(colored_square_element).attr("style","background-color: "+color);
         
@@ -1225,7 +1327,6 @@ export class RecolorActiveItem extends ToolboxItem {
             this.set_color_cookie(selected_id, color);
         }
     }
-
     
     private limit_redraw(ulabel: ULabel, wait_time: number = 100) {
 
@@ -1305,29 +1406,26 @@ export class RecolorActiveItem extends ToolboxItem {
 
         if (checked_status_bool == true) {
             checked_status_string = "checked";
-
         }
 
         return `
         <div class="recolor-active">
             <p class="tb-header">Recolor Annotations</p>
             <div class="recolor-tbi-gradient">
-                <div>
+                <div class="gradient-toggle-container">
                     <label for="gradient-toggle" id="gradient-toggle-label">Toggle Gradients</label>
                     <input type="checkbox" id="gradient-toggle" name="gradient-checkbox" value="gradient" ${checked_status_string}>
                 </div>
-                <div>
-                    <label for="gradient-slider" id="gradient-slider-label">Gradient Max</label>
+                <div class="gradient-slider-container">
+                    <label for="gradient-slider" id="gradient-slider-label">Gradient Max:</label>
                     <input type="range" id="gradient-slider" value="100">
                     <div class="gradient-slider-value-display">100%</div>
                 </div>
             </div>
             <div class="annotation-recolor-button-holder">
-                <div class="color-btn-container">
-                    <input type="button" class="color-change-btn" id="color-change-yel">
-                    <input type="button" class="color-change-btn" id="color-change-red">
-                    <input type="button" class="color-change-btn" id="color-change-cya">
-                </div>
+                <input type="button" class="color-change-btn" id="color-change-yel">
+                <input type="button" class="color-change-btn" id="color-change-red">
+                <input type="button" class="color-change-btn" id="color-change-cya">
                 <div class="color-picker-border">
                     <div class="color-picker-container" id="color-picker-container">
                         <input type="color" class="color-change-picker" id="color-change-pick">
