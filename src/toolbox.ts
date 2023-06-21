@@ -692,18 +692,21 @@ export class ZoomPanToolboxItem extends ToolboxItem {
                 switch (event.key) {
                     case "ArrowLeft":
                         annbox.scrollLeft(annbox.scrollLeft() - 20)
+                        event.preventDefault()
                         break
                     case "ArrowRight":
                         annbox.scrollLeft(annbox.scrollLeft() + 20)
+                        event.preventDefault()
                         break
                     case "ArrowUp":
                         annbox.scrollTop(annbox.scrollTop() - 20)
+                        event.preventDefault()
                         break
                     case "ArrowDown":
                         annbox.scrollTop(annbox.scrollTop() + 20)
+                        event.preventDefault()
                     default:
                 }
-                event.preventDefault()
             })
         }
 
@@ -2060,6 +2063,8 @@ export class SubmitButtons extends ToolboxItem {
 
         this.add_styles()
 
+        this.add_event_listeners()
+
         // For legacy reasons submit_buttons may be a function, in that case convert it to the right format
         if (typeof this.submit_buttons == "function") {
             this.submit_buttons = [{
@@ -2153,6 +2158,23 @@ export class SubmitButtons extends ToolboxItem {
 
         // Add the style tag to the document's head
         head.appendChild(style);
+    }
+
+    add_event_listeners(): void {
+        $(document).on("keypress", (event) => {
+            const ctrl = event.ctrlKey || event.metaKey
+            console.log(`control: ${ctrl}. key: ${event.key}`)
+            if (ctrl &&
+                (
+                    event.key === "s" ||
+                    event.key === "S" ||
+                    event.code === "KeyS"
+                )
+            ) {
+                event.preventDefault();
+                $(".submit-button")[0].click(); // Click the first submit button
+            }
+        })
     }
 
     get_html(): string {

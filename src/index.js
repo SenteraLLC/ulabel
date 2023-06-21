@@ -457,8 +457,6 @@ export class ULabel {
         document.addEventListener("keydown", (keypress_event) => {
             const shift = keypress_event.shiftKey;
             const ctrl = keypress_event.ctrlKey || keypress_event.metaKey;
-            let fms = ul.config["image_data"].frames.length > 1;
-            let annbox = $("#" + ul.config["annbox_id"]);
             if (ctrl &&
                 (
                     keypress_event.key == "z" ||
@@ -474,16 +472,6 @@ export class ULabel {
                     ul.undo();
                 }
                 return false;
-            }
-            else if (ctrl &&
-                (
-                    keypress_event.key == "s" ||
-                    keypress_event.key == "S" ||
-                    keypress_event.code == "KeyS"
-                )
-            ) {
-                keypress_event.preventDefault();
-                $(".submit-button")[0].click(); // Click the first submit button
             }
             else {
                 // console.log(keypress_event);
