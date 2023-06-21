@@ -110,6 +110,7 @@ export class FilterDistanceOverlay extends ULabelOverlay {
     }
     multi_class_mode: boolean
     zoom_value: number // How zoomed in ulabel is
+    display_overlay: boolean // Whether or not the overlay should currently be displayed
 
     constructor(canvas_width: number, canvas_height: number, polyline_annotations: ULabelAnnotation[]) {
         super(canvas_width, canvas_height)
@@ -218,6 +219,10 @@ export class FilterDistanceOverlay extends ULabelOverlay {
         this.zoom_value = zoom_value
     }
 
+    public update_display_overlay(display_overlay: boolean) {
+        this.display_overlay = display_overlay
+    }
+
     /**
      * Update the overlay to obscure the parts of the image that fall outside of the distance filter.
      * 
@@ -229,6 +234,9 @@ export class FilterDistanceOverlay extends ULabelOverlay {
     public drawOverlay(offset: Offset = null): void {
         // Clear the canvas in order to have a clean slate to re-draw from
         this.clearCanvas()
+
+        // If the overlay shouldn't be displayed then return after clearing the canvas
+        if (!this.display_overlay) return
         
         // Fill the entire canvas with the overlay that we'll subtract from
         this.context.globalCompositeOperation = "source-over" // Resetting default

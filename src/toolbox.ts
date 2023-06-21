@@ -465,24 +465,8 @@ export class ZoomPanToolboxItem extends ToolboxItem {
 
         this.add_styles()
 
-        $(document).on("click", "#recenter-button", () => {
-            ulabel.show_initial_crop();
-        });
-
-        $(document).on("click", "#recenter-whole-image-button", () => {
-            ulabel.show_whole_image();
-        });
-
-        $(document).on("keypress", (e) => {
-            if (e.key == ulabel.config.change_zoom_keybind.toLowerCase()) {
-                document.getElementById("recenter-button").click()
-            }
-            if (e.key == ulabel.config.change_zoom_keybind.toUpperCase()) {
-                document.getElementById("recenter-whole-image-button").click()
-            }
-        })
+        this.add_event_listeners()
     }
-
     
     /**
      * Create the css for this ToolboxItem and append it to the page.
@@ -647,6 +631,100 @@ export class ZoomPanToolboxItem extends ToolboxItem {
         head.appendChild(style);
     }
 
+    private add_event_listeners() {
+        const frames_exist = this.ulabel.config["image_data"].frames.length > 1
+
+        $(document).on("click", ".ulabel-zoom-button", (event) => {
+
+            if ($(event.currentTarget).hasClass("ulabel-zoom-out")) {
+                this.ulabel.state.zoom_val /= 1.1
+            }
+            else if ($(event.currentTarget).hasClass("ulabel-zoom-in")) {
+                this.ulabel.state.zoom_val *= 1.1
+            }
+
+            this.ulabel.rezoom()
+
+            // Only try to update the overlay if it exists
+            if (this.ulabel.filter_distance_overlay !== undefined) {
+                this.ulabel.filter_distance_overlay.update_zoom_value(this.ulabel.state.zoom_val)
+                this.ulabel.filter_distance_overlay.drawOverlay()
+            }
+        })
+
+        $(document).on("click", ".ulabel-pan", (event) => {
+            const annbox = $("#" + this.ulabel.config.annbox_id);
+            if ($(event.currentTarget).hasClass("ulabel-pan-up")) {
+                annbox.scrollTop(annbox.scrollTop() - 20);
+            }
+            else if ($(event.currentTarget).hasClass("ulabel-pan-down")) {
+                annbox.scrollTop(annbox.scrollTop() + 20);
+            }
+            else if ($(event.currentTarget).hasClass("ulabel-pan-left")) {
+                annbox.scrollLeft(annbox.scrollLeft() - 20);
+            }
+            else if ($(event.currentTarget).hasClass("ulabel-pan-right")) {
+                annbox.scrollLeft(annbox.scrollLeft() + 20);
+            }
+        })
+
+        // Add diffrent keypress events if frames exist
+        console.log(`frames_exist: ${frames_exist}`)
+        if (frames_exist) {
+            $(document).on("keypress", (event) => {
+                event.preventDefault()
+                switch (event.key) {
+                    case "ArrowRight":
+                    case "ArrowDown":
+                        this.ulabel.update_frame(1)
+                        break
+                    case "ArrowUp":
+                    case "ArrowLeft":
+                        this.ulabel.update_frame(-1)
+                }
+            })
+        }
+        else {
+            console.log("here")
+            $(document).on("keydown", (event) => {
+                const annbox = $("#" + this.ulabel.config.annbox_id);
+                console.log(event.key)
+                switch (event.key) {
+                    case "ArrowLeft":
+                        annbox.scrollLeft(annbox.scrollLeft() - 20)
+                        break
+                    case "ArrowRight":
+                        annbox.scrollLeft(annbox.scrollLeft() + 20)
+                        break
+                    case "ArrowUp":
+                        annbox.scrollTop(annbox.scrollTop() - 20)
+                        break
+                    case "ArrowDown":
+                        annbox.scrollTop(annbox.scrollTop() + 20)
+                    default:
+                }
+                event.preventDefault()
+            })
+        }
+
+        $(document).on("click", "#recenter-button", () => {
+            this.ulabel.show_initial_crop();
+        });
+
+        $(document).on("click", "#recenter-whole-image-button", () => {
+            this.ulabel.show_whole_image();
+        });
+
+        $(document).on("keypress", (e) => {
+            if (e.key == this.ulabel.config.change_zoom_keybind.toLowerCase()) {
+                document.getElementById("recenter-button").click()
+            }
+            if (e.key == this.ulabel.config.change_zoom_keybind.toUpperCase()) {
+                document.getElementById("recenter-whole-image-button").click()
+            }
+        })
+    }
+
     private set_frame_range(ulabel) {
         if (ulabel.config["image_data"]["frames"].length == 1) {
             this.frame_range = ``;
@@ -671,8 +749,8 @@ export class ZoomPanToolboxItem extends ToolboxItem {
             <div class="set-zoom">  
                 <span>Zoom</span>
                 <span class="zoom-button-holder">
-                    <button class="ulabel-zoom-out circle">-</button>
-                    <button class="ulabel-zoom-in circle">+</button>
+                    <button class="ulabel-zoom-button ulabel-zoom-out circle">-</button>
+                    <button class="ulabel-zoom-button ulabel-zoom-in circle">+</button>
                 </span>
             </div>
             <p class="shortcut-tip zoom-shortcut-tip">ctrl+scroll or shift+drag</p>

@@ -249,39 +249,6 @@ export class ULabel {
             ul.handle_toolbox_overflow();
         }).observe(document.getElementById(ul.config["container_id"]));
 
-        $(document).on("click", "#" + ul.config["toolbox_id"] + " .zbutt", (e) => {
-            let tgt_jq = $(e.currentTarget);
-            if (tgt_jq.hasClass("zin")) {
-                ul.state["zoom_val"] *= 1.1;
-            }
-            else if (tgt_jq.hasClass("zout")) {
-                ul.state["zoom_val"] /= 1.1;
-            }
-            ul.rezoom();
-
-            // Only try to update the overlay if it exists
-            if (ul.filter_distance_overlay !== undefined) {
-                ul.filter_distance_overlay.update_zoom_value(ul.state.zoom_val)
-                ul.filter_distance_overlay.drawOverlay()
-            }
-            
-        });
-        $(document).on("click", "#" + ul.config["toolbox_id"] + " .pbutt", (e) => {
-            let tgt_jq = $(e.currentTarget);
-            let annbox = $("#" + ul.config["annbox_id"]);
-            if (tgt_jq.hasClass("up")) {
-                annbox.scrollTop(annbox.scrollTop() - 20);
-            }
-            else if (tgt_jq.hasClass("down")) {
-                annbox.scrollTop(annbox.scrollTop() + 20);
-            }
-            else if (tgt_jq.hasClass("left")) {
-                annbox.scrollLeft(annbox.scrollLeft() - 20);
-            }
-            else if (tgt_jq.hasClass("right")) {
-                annbox.scrollLeft(annbox.scrollLeft() + 20);
-            }
-        });
         $(document).on("click", "#" + ul.config["toolbox_id"] + " .wbutt", (e) => {
             let tgt_jq = $(e.currentTarget);
             if (tgt_jq.hasClass("win")) {
@@ -292,6 +259,7 @@ export class ULabel {
             }
             ul.redraw_demo();
         });
+        
         $(document).on("click", "#" + ul.config["toolbox_id"] + " .setting a", (e) => {
             let tgt_jq = $(e.currentTarget);
             if (!e.currentTarget.hasAttribute("href")) return;
@@ -516,42 +484,6 @@ export class ULabel {
             ) {
                 keypress_event.preventDefault();
                 $(".submit-button")[0].click(); // Click the first submit button
-            }
-            else if (keypress_event.key == "l") {
-                // console.log("Listing annotations using the \"l\" key has been deprecated.");
-                // console.log(ul.annotations);
-            }
-            else if (keypress_event.key == "ArrowRight") {
-                if (fms) {
-                    ul.update_frame(1);
-                }
-                else {
-                    annbox.scrollLeft(annbox.scrollLeft() + 20);
-                }
-            }
-            else if (keypress_event.key == "ArrowDown") {
-                if (fms) {
-                    ul.update_frame(1);
-                }
-                else {
-                    annbox.scrollTop(annbox.scrollTop() + 20);
-                }
-            }
-            else if (keypress_event.key == "ArrowLeft") {
-                if (fms) {
-                    ul.update_frame(-1);
-                }
-                else {
-                    annbox.scrollLeft(annbox.scrollLeft() - 20);
-                }
-            }
-            else if (keypress_event.key == "ArrowUp") {
-                if (fms) {
-                    ul.update_frame(-1);
-                }
-                else {
-                    annbox.scrollTop(annbox.scrollTop() - 20);
-                }
             }
             else {
                 // console.log(keypress_event);
@@ -4887,9 +4819,7 @@ export class ULabel {
         this.redraw_all_annotations(subtask);
     }
 
-
     // Change frame
-
     update_frame(delta = null, new_frame = null) {
         if (this.config["image_data"]["frames"].length == 1) {
             return;

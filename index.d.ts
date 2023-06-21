@@ -154,6 +154,8 @@ export class ULabel {
     public redraw_all_annotations(subtask?: any, offset?: any, spatial_only?: any);
     public show_annotation_mode(target_jq: JQuery<any>);
     public raise_error(message: string, level?: number);
+    public rezoom(): void;
+    public update_frame(delta?: number, new_frame?: number): void;
     static process_classes(ulabel_obj: any, arg1: string, subtask_obj: any);
     static build_id_dialogs(ulabel_obj: any);
         
