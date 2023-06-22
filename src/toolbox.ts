@@ -669,7 +669,6 @@ export class ZoomPanToolboxItem extends ToolboxItem {
         })
 
         // Add diffrent keypress events if frames exist
-        console.log(`frames_exist: ${frames_exist}`)
         if (frames_exist) {
             $(document).on("keypress", (event) => {
                 event.preventDefault()
@@ -685,10 +684,8 @@ export class ZoomPanToolboxItem extends ToolboxItem {
             })
         }
         else {
-            console.log("here")
             $(document).on("keydown", (event) => {
                 const annbox = $("#" + this.ulabel.config.annbox_id);
-                console.log(event.key)
                 switch (event.key) {
                     case "ArrowLeft":
                         annbox.scrollLeft(annbox.scrollLeft() - 20)
@@ -940,19 +937,19 @@ export class AnnotationResizeItem extends ToolboxItem {
     public cached_size: number = 1.5;
     public html: string;
     private keybind_configuration: {[key: string]: string}
+    private ulabel: ULabel
+
     constructor(ulabel: ULabel) {
         super();
 
-        //get default keybinds
+        this.ulabel = ulabel
+
+        // Get default keybinds
         this.keybind_configuration = ulabel.config.default_keybinds
 
-        //grab current subtask for convinience
-        let current_subtask_key = ulabel.state["current_subtask"];
-        let current_subtask = ulabel.subtasks[current_subtask_key];
-
-        //First check for a size cookie, if one isn't found then check the config
-        //for a default annotation size. If neither are found it will use the size
-        //that the annotation was saved as.
+        // First check for a size cookie, if one isn't found then check the config
+        // for a default annotation size. If neither are found it will use the size
+        // that the annotation was saved as.
         for (let subtask in ulabel.subtasks) {
             let cached_size_property = ulabel.subtasks[subtask].display_name.replaceLowerConcat(" ", "-", "-cached-size")
             let size_cookie = this.read_size_cookie(ulabel.subtasks[subtask])
@@ -973,41 +970,37 @@ export class AnnotationResizeItem extends ToolboxItem {
 
         this.add_styles()
 
-        //event listener for buttons
-        $(document).on("click", "a.butt-ann", (e) => {
-            let button = $(e.currentTarget);
-            let current_subtask_key = ulabel.state["current_subtask"];
-            let current_subtask = ulabel.subtasks[current_subtask_key];
-            const annotation_size = button.attr("id").slice(18);
-            this.update_annotation_size(current_subtask, annotation_size);
-            ulabel.redraw_all_annotations(null, null, false);
-        })
-        //event listener for keybinds
-        $(document).on("keypress", (e) => {
-            let current_subtask_key = ulabel.state["current_subtask"];
-            let current_subtask = ulabel.subtasks[current_subtask_key];
-            switch(e.key) {
-                case this.keybind_configuration.annotation_vanish.toUpperCase():
-                    this.update_all_subtask_annotation_size(ulabel, "v");
-                    break;
-                case this.keybind_configuration.annotation_vanish:
-                    this.update_annotation_size(current_subtask, "v")
-                    break;
-                case this.keybind_configuration.annotation_size_small:
-                    this.update_annotation_size(current_subtask, "s")
-                    break;
-                case this.keybind_configuration.annotation_size_large:
-                    this.update_annotation_size(current_subtask, "l")
-                    break;
-                case this.keybind_configuration.annotation_size_minus:
-                    this.update_annotation_size(current_subtask, "dec")
-                    break;
-                case this.keybind_configuration.annotation_size_plus:
-                    this.update_annotation_size(current_subtask, "inc")
-                    break;
-            }
-            ulabel.redraw_all_annotations(null, null, false);
-        } )
+        this.add_event_listeners()
+
+        // Event listener for keybinds
+        // $(document).on("keypress", (e) => {
+        //     let current_subtask_key = ulabel.state["current_subtask"];
+        //     let current_subtask = ulabel.subtasks[current_subtask_key];
+
+        //     console.log(e.key, this.keybind_configuration.annotation_vanish)
+
+        //     switch(e.key) {
+        //         case this.keybind_configuration.annotation_vanish.toUpperCase():
+        //             this.update_all_subtask_annotation_size(ulabel, "v");
+        //             break;
+        //         case this.keybind_configuration.annotation_vanish:
+        //             this.update_annotation_size(current_subtask, "v")
+        //             break;
+        //         case this.keybind_configuration.annotation_size_small:
+        //             this.update_annotation_size(current_subtask, "s")
+        //             break;
+        //         case this.keybind_configuration.annotation_size_large:
+        //             this.update_annotation_size(current_subtask, "l")
+        //             break;
+        //         case this.keybind_configuration.annotation_size_minus:
+        //             this.update_annotation_size(current_subtask, "dec")
+        //             break;
+        //         case this.keybind_configuration.annotation_size_plus:
+        //             this.update_annotation_size(current_subtask, "inc")
+        //             break;
+        //     }
+        //     ulabel.redraw_all_annotations(null, null, false);
+        // } )
     }
 
     /**
@@ -1059,6 +1052,10 @@ export class AnnotationResizeItem extends ToolboxItem {
             flex-direction: column;
             gap: 0.25rem;
         }
+
+        #toolbox div.annotation-resize button.locked {
+            background-color: #1c2d4d;
+        }
         
         `
         // Create an id so this specific style tag can be referenced
@@ -1079,16 +1076,66 @@ export class AnnotationResizeItem extends ToolboxItem {
         head.appendChild(style);
     }
 
+    private add_event_listeners() {
+        $(document).on("click", ".annotation-resize-button", (event) => {
+            // Get the current subtask
+            const current_subtask_key = this.ulabel.state["current_subtask"];
+            const current_subtask = this.ulabel.subtasks[current_subtask_key];
+
+            // Get the clicked button
+            const button = $(event.currentTarget)
+
+            // Use the button id to get what size to resize the annotations to
+            const annotation_size = button.attr("id").slice(18);
+
+            // Update the size of all annotations in the subtask
+            this.update_annotation_size(current_subtask, annotation_size);
+
+            this.ulabel.redraw_all_annotations(null, null, false);
+        })
+
+        $(document).on("keydown", (event) => {
+            // Get the current subtask
+            const current_subtask_key = this.ulabel.state["current_subtask"];
+            const current_subtask = this.ulabel.subtasks[current_subtask_key];
+
+            switch(event.key) {
+                case this.keybind_configuration.annotation_vanish.toUpperCase():
+                    this.update_all_subtask_annotation_size(this.ulabel, "v");
+                    break;
+                case this.keybind_configuration.annotation_vanish.toLowerCase():
+                    this.update_annotation_size(current_subtask, "v")
+                    break;
+                case this.keybind_configuration.annotation_size_small:
+                    this.update_annotation_size(current_subtask, "s")
+                    break;
+                case this.keybind_configuration.annotation_size_large:
+                    this.update_annotation_size(current_subtask, "l")
+                    break;
+                case this.keybind_configuration.annotation_size_minus:
+                    this.update_annotation_size(current_subtask, "dec")
+                    break;
+                case this.keybind_configuration.annotation_size_plus:
+                    this.update_annotation_size(current_subtask, "inc")
+                    break;
+            }
+            this.ulabel.redraw_all_annotations(null, null, false);
+        })
+    }
+
     //recieives a string of 's', 'l', 'dec', 'inc', or 'v' depending on which button was pressed
     //also the constructor can pass in a number from the config
     public update_annotation_size(subtask, size) {
+        console.log(subtask, size)
+
+        if (subtask === null) return;
+
         const small_size = 1.5;
         const large_size = 5;
         const increment_size = 0.5;
         const vanish_size = 0.01;
         let subtask_cached_size = subtask.display_name.replaceLowerConcat(" ", "-", "-cached-size");
 
-        if (subtask == null) return;
         let subtask_vanished_flag = subtask.display_name.replaceLowerConcat(" ", "-", "-vanished");
         //If the annotations are currently vanished and a button other than the vanish button is
         //pressed, then we want to ignore the input
@@ -1099,21 +1146,27 @@ export class AnnotationResizeItem extends ToolboxItem {
         }
 
         if (size == "v") {
-            if (this[subtask_vanished_flag]) { 
+            if (this[subtask_vanished_flag]) {
+                // Re-apply the cashed annotation size 
                 this.loop_through_annotations(subtask, this[subtask_cached_size], "=")
-                //flip the bool state
+                
+                // Filp the state
                 this[subtask_vanished_flag] = !this[subtask_vanished_flag]
-                $("#annotation-resize-v").attr("style","background-color: "+"rgba(100, 148, 237, 0.8)");
-                return;
+
+                // Unlock the vanish button
+                $("#annotation-resize-v").removeClass("locked")
             }
-            if (!this[subtask_vanished_flag]) {
+            else {
+                // Apply the vanish size to make the annotations to small to see
                 this.loop_through_annotations(subtask, vanish_size, "=")
-                //flip the bool state
+                
+                // Filp the state
                 this[subtask_vanished_flag] = !this[subtask_vanished_flag]
-                $("#annotation-resize-v").attr("style","background-color: "+"#1c2d4d");
-                return;
+
+                // Lock the vanish button
+                $("#annotation-resize-v").addClass("locked")
             }
-            return;
+            return
         }
 
         switch(size) {
@@ -1130,7 +1183,10 @@ export class AnnotationResizeItem extends ToolboxItem {
                 break;
             case 'inc':
                 this.loop_through_annotations(subtask, increment_size, "+")
-                break;    
+                break;
+            case "v":
+            case "V":
+
             default:
                 return;
         }
@@ -2163,7 +2219,6 @@ export class SubmitButtons extends ToolboxItem {
     add_event_listeners(): void {
         $(document).on("keypress", (event) => {
             const ctrl = event.ctrlKey || event.metaKey
-            console.log(`control: ${ctrl}. key: ${event.key}`)
             if (ctrl &&
                 (
                     event.key === "s" ||
