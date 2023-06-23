@@ -348,7 +348,7 @@ export function filter_points_distance_from_line(ulabel: ULabel, offset: Offset 
         const show_overlay_checkbox: HTMLInputElement = document.querySelector("#filter-slider-distance-toggle-overlay-checkbox")
         const sliders: NodeListOf<HTMLInputElement> = document.querySelectorAll(".filter-row-distance-slider")
         
-        // Check to make sure each elemet exists before trying to use
+        // Check to make sure each element exists before trying to use
         if (multi_checkbox === null) {
             console.error("filter_points_distance_from_line could not find multi-class checkbox object")
             return_early = true
