@@ -7,9 +7,11 @@ import {
     value_is_lower_than_filter, 
     mark_deprecated, 
     filter_points_distance_from_line,
-    findAllPolylineClassDefinitions
+    findAllPolylineClassDefinitions,
+    get_point_and_line_annotations
 } from "./annotation_operators";
 import { SliderHandler } from "./html_builder";
+import { FilterDistanceOverlay } from "./overlays";
 
 const toolboxDividerDiv = "<div class=toolbox-divider></div>"
 
@@ -279,6 +281,7 @@ export abstract class ToolboxItem {
     constructor() {}
 
     abstract get_html(): string;
+    abstract get_toolbox_item_type(): string;
     protected abstract add_styles(): void; // ToolboxItems need to handle their own css
     public redraw_update(ulabel: ULabel): void {}
     public frame_update(ulabel: ULabel): void {} 
@@ -449,6 +452,10 @@ export class ModeSelectionToolboxItem extends ToolboxItem {
             </p>
         </div>
         `
+    }
+
+    public get_toolbox_item_type() {
+        return "ModeSelection"
     }
 }
 
@@ -775,6 +782,10 @@ export class ZoomPanToolboxItem extends ToolboxItem {
         </div>
         `;
     }
+
+    public get_toolbox_item_type() {
+        return "ZoomPan"
+    }
 }
 
 /**
@@ -839,6 +850,10 @@ export class AnnotationIDToolboxItem extends ToolboxItem {
             ${this.instructions}
         </div>
         `;
+    }
+
+    public get_toolbox_item_type() {
+        return "AnnotationID"
     }
 }
 
@@ -928,6 +943,10 @@ export class ClassCounterToolboxItem extends ToolboxItem {
         );
         $("#" + ulabel.config["toolbox_id"] + " div.toolbox-class-counter").html(this.inner_HTML);
     }
+
+    public get_toolbox_item_type() {
+        return "ClassCounter"
+    }
 }
 
 /**
@@ -971,36 +990,6 @@ export class AnnotationResizeItem extends ToolboxItem {
         this.add_styles()
 
         this.add_event_listeners()
-
-        // Event listener for keybinds
-        // $(document).on("keypress", (e) => {
-        //     let current_subtask_key = ulabel.state["current_subtask"];
-        //     let current_subtask = ulabel.subtasks[current_subtask_key];
-
-        //     console.log(e.key, this.keybind_configuration.annotation_vanish)
-
-        //     switch(e.key) {
-        //         case this.keybind_configuration.annotation_vanish.toUpperCase():
-        //             this.update_all_subtask_annotation_size(ulabel, "v");
-        //             break;
-        //         case this.keybind_configuration.annotation_vanish:
-        //             this.update_annotation_size(current_subtask, "v")
-        //             break;
-        //         case this.keybind_configuration.annotation_size_small:
-        //             this.update_annotation_size(current_subtask, "s")
-        //             break;
-        //         case this.keybind_configuration.annotation_size_large:
-        //             this.update_annotation_size(current_subtask, "l")
-        //             break;
-        //         case this.keybind_configuration.annotation_size_minus:
-        //             this.update_annotation_size(current_subtask, "dec")
-        //             break;
-        //         case this.keybind_configuration.annotation_size_plus:
-        //             this.update_annotation_size(current_subtask, "inc")
-        //             break;
-        //     }
-        //     ulabel.redraw_all_annotations(null, null, false);
-        // } )
     }
 
     /**
@@ -1291,6 +1280,10 @@ export class AnnotationResizeItem extends ToolboxItem {
         </div>
         `
     }
+
+    public get_toolbox_item_type() {
+        return "AnnotationResize"
+    }
 }
 
 export class RecolorActiveItem extends ToolboxItem { 
@@ -1579,7 +1572,6 @@ export class RecolorActiveItem extends ToolboxItem {
     }
 
     public get_html() {
-
         let checked_status_bool: boolean = this.read_gradient_cookie(); //true, false, or null
         let checked_status_string: string = ""
 
@@ -1618,6 +1610,10 @@ export class RecolorActiveItem extends ToolboxItem {
             </div>
         </div>
         `
+    }
+
+    public get_toolbox_item_type() {
+        return "RecolorActive"
     }
 }
 
@@ -1686,11 +1682,7 @@ export class KeypointSliderItem extends ToolboxItem {
     protected add_styles() {
         // Define the css
         const css = `
-        
-
-        
-        
-        
+        /* Component has no css?? */
         `
         // Create an id so this specific style tag can be referenced
         const style_id = "keypoint-slider-toolbox-item-styles"
@@ -1760,6 +1752,10 @@ export class KeypointSliderItem extends ToolboxItem {
         </div>
         `
     }
+
+    public get_toolbox_item_type() {
+        return "KeypointSlider"
+    }
 }
 
 export class FilterPointDistanceFromRow extends ToolboxItem {
@@ -1775,10 +1771,10 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
     collapse_options: boolean// Whether or not the options is in a collapsed state
     show_overlay: boolean // Whether or not the overlay will be shown
     toggle_overlay_keybind: string 
+    overlay: FilterDistanceOverlay
 
-    ulabel: ULabel // The ULable object. Must be passed in
+    ulabel: ULabel // The ULabel object. Must be passed in
     config: FilterDistanceConfig // This object's config object
-
 
     constructor(ulabel: ULabel, kwargs: {[name: string]: any} = null) {
         super()
@@ -1787,8 +1783,6 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
         
         // Get this component's config from ulabel's config
         this.config = this.ulabel.config.distance_filter_toolbox_item
-
-        console.log(`Config toolbox recieved: `,  this.config)
 
         // Populate this component with every property in the config
         for (const property in this.config) {
@@ -1834,55 +1828,27 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
         else if (window.localStorage.getItem("filterDistanceCollapseOptions") === "false") {
             this.collapse_options = false
         }
-
-        // Get if the overlay should be shown from local storage
+ 
+        // Create an overlay and determine whether or not it should be displayed
+        this.create_overlay()
         if (window.localStorage.getItem("filterDistanceShowOverlay") === "true") {
             this.show_overlay = true
+            this.overlay.update_display_overlay(true)
         }
         else if (window.localStorage.getItem("filterDistanceShowOverlay") === "false") {
             this.show_overlay = false
+            this.overlay.update_display_overlay(false)
+        }
+        else if (this.config.show_overlay_on_load !== undefined || this.config.show_overlay_on_load !== null) {
+            this.show_overlay = this.config.show_overlay_on_load
+        }
+        else {
+            this.show_overlay = false // Default
         }
 
         this.add_styles()
 
-        // === Create event listeners for this ToolboxItem ===
-
-        // Whenever the options legend is clicked, toggle displaying the options
-        $(document).on("click", "fieldset.filter-row-distance-options > legend", () => this.toggleCollapsedOptions())
-
-        // Whenever the multi-class filtering checkbox is clicked, switch the displayed filter mode
-        $(document).on("click", "#filter-slider-distance-multi-checkbox", () => {
-            // Toggle the multi-class state
-            this.multi_class_mode = !this.multi_class_mode
-
-            // Toggle whether the single-class slider, or the multi-class sliders are visible
-            this.switchFilterMode()
-
-            this.ulabel.filter_distance_overlay.update_mode(this.multi_class_mode ? "multi" : "single")
-
-            // Re-filter the points in the new mode
-            filter_points_distance_from_line(this.ulabel)
-        })
-
-        $(document).on("change", "#filter-slider-distance-toggle-overlay-checkbox", (e) => {
-            // Check if the toggle is checked
-            if (e.currentTarget.checked) {
-                this.ulabel.filter_distance_overlay.drawOverlay()
-            }
-            else {
-                this.ulabel.filter_distance_overlay.clearCanvas()
-            }
-            // Save it to local storage
-            window.localStorage.setItem("filterDistanceShowOverlay", e.currentTarget.checked.toString())
-        })
-
-        $(document).on("keypress", (event) => {
-            if (event.key !== this.toggle_overlay_keybind) return
-
-            const show_overlay_checkbox: HTMLInputElement = document.querySelector("#filter-slider-distance-toggle-overlay-checkbox")
-            
-            show_overlay_checkbox.click()
-        })
+        this.add_event_listeners()
     }
 
     
@@ -1969,6 +1935,44 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
         head.appendChild(style);
     }
 
+    private add_event_listeners() {
+        // Whenever the options legend is clicked, toggle displaying the options
+        $(document).on("click", "fieldset.filter-row-distance-options > legend", () => this.toggleCollapsedOptions())
+
+        // Whenever the multi-class filtering checkbox is clicked, switch the displayed filter mode
+        $(document).on("click", "#filter-slider-distance-multi-checkbox", () => {
+            // Toggle the multi-class state
+            this.multi_class_mode = !this.multi_class_mode
+
+            // Toggle whether the single-class slider, or the multi-class sliders are visible
+            this.switchFilterMode()
+
+            this.overlay.update_mode(this.multi_class_mode ? "multi" : "single")
+
+            // Re-filter the points in the new mode
+            filter_points_distance_from_line(this.ulabel)
+        })
+
+        $(document).on("change", "#filter-slider-distance-toggle-overlay-checkbox", (event) => {
+            // Update whether or not the overlay is allowed to be drawn
+            this.overlay.update_display_overlay(event.currentTarget.checked)
+
+            // Try to draw the overlay
+            this.overlay.drawOverlay()
+
+            // Save whether or not the overlay is allowed to be drawn to local storage
+            window.localStorage.setItem("filterDistanceShowOverlay", event.currentTarget.checked.toString())
+        })
+
+        $(document).on("keypress", (event) => {
+            if (event.key !== this.toggle_overlay_keybind) return
+
+            // Grab the show overlay checkbox and click it
+            const show_overlay_checkbox: HTMLInputElement = document.querySelector("#filter-slider-distance-toggle-overlay-checkbox")
+            show_overlay_checkbox.click()
+        })
+    }
+
     /**
      * Toggle which filter mode is being displayed and which one is being hidden.
      */
@@ -1989,6 +1993,46 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
 
         // Save the state to the user's browser so it can be re-loaded in the same state
         window.localStorage.setItem("filterDistanceCollapseOptions", this.collapse_options.toString())
+    }
+
+    private create_overlay() {
+        // Get only the set of all line annotations
+        const line_annotations: ULabelAnnotation[] = get_point_and_line_annotations(this.ulabel)[1]
+
+        // Initialize an object to hold the distances points are allowed to be from each class as well as any line
+        let filter_values: Distances = {"single": undefined}
+
+        // Grab all filter-distance-sliders on the page
+        const sliders: NodeListOf<HTMLInputElement> = document.querySelectorAll(".filter-row-distance-slider")
+
+        // Check for at least one slider
+        if (sliders.length === 0) {
+            console.error("Unable to find ulabel distance sliders while initializing filter distance overlay")
+        }
+
+        // Loop through each slider and populate filter_values
+        for (let idx = 0; idx < sliders.length; idx++) {
+            // Use a regex to get the string after the final - character in the slider id (Which is the class id or the string "single")
+            const slider_class_name = /[^-]*$/.exec(sliders[idx].id)[0]
+
+            // Use the class id as a key to store the slider's value
+            filter_values[slider_class_name] = sliders[idx].valueAsNumber
+        }
+
+        // Create and assign an overlay class instance to ulabel to be able to access it
+        console.log('HERE', this.ulabel.config["image_width"], this.ulabel.config["px_per_px"])
+        this.overlay = new FilterDistanceOverlay(
+            this.ulabel.config["image_width"] * this.ulabel.config["px_per_px"],
+            this.ulabel.config["image_height"] * this.ulabel.config["px_per_px"],
+            line_annotations
+        )
+
+        // Apply the generated distances to the overlay
+        this.overlay.updateDistance(filter_values)
+    }
+
+    public get_overlay() {
+        return this.overlay
     }
 
     /**
@@ -2105,6 +2149,10 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
             </div>
         </div>
         `
+    }
+
+    public get_toolbox_item_type() {
+        return "FilterDistance"
     }
 }
 
@@ -2271,6 +2319,10 @@ export class SubmitButtons extends ToolboxItem {
         }
         
         return toolboxitem_html
+    }
+
+    public get_toolbox_item_type() {
+        return "SubmitButtons"
     }
 }
 

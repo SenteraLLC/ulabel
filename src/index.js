@@ -1015,63 +1015,39 @@ export class ULabel {
 
             // Update the overlay now that required values have been updated if the overlay exists
             if (that.toolbox_order.includes(AllowedToolboxItem.FilterDistance)) {
+                that.toolbox.items.forEach((toolbox_item) => {
+                    if (toolbox_item.get_toolbox_item_type() === "FilterDistance") {
+                        // Give ulabel a referance to the filter overlay for confinience
+                        that.filter_distance_overlay = toolbox_item.get_overlay()
 
-                // Get the set of all line annotations inside ulabel
-                const line_annotations = get_point_and_line_annotations(that)[1] // [0] is point annotations
-
-                // Initialize an object to hold the distance points are allowed to be from each class as well as any line
-                let filter_values = {}
-
-                // Grab all filter-distance-sliders on the page
-                const sliders = document.querySelectorAll(".filter-row-distance-slider")
-
-                // Check for at least one slider
-                if (sliders.length === 0) {
-                    console.error("Unable to find ulabel distance sliders while initializing filter distance overlay")
-                }
-
-                // Loop through each slider and populate filter_values
-                for (let idx = 0; idx < sliders.length; idx++) {
-                    // Use a regex to get the string after the final - character in the slider id (Which is the class id or the string "single")
-                    const slider_class_name = /[^-]*$/.exec(sliders[idx].id)[0]
-
-                    // Use the class id as a key to store the slider's value
-                    filter_values[slider_class_name] = sliders[idx].valueAsNumber
-                }
-
-                // Create and assign an overlay class instance to ulabel to be able to access it
-                that.filter_distance_overlay = new FilterDistanceOverlay(
-                    this.config["image_width"] * this.config["px_per_px"],
-                    this.config["image_height"] * this.config["px_per_px"],
-                    line_annotations
-                )
-
-                that.filter_distance_overlay.updateDistance(filter_values)
-
-                // Append the overlay canvas to the div that holds the canvases
-                $("#" + that.config["imwrap_id"]).prepend(that.filter_distance_overlay.getCanvas())
-
-                // Determine whether or not to show the overlay
-                let show_overlay
-                if (window.localStorage.getItem("filterDistanceShowOverlay") === "true") {
-                    show_overlay = true
-                }
-                else if (window.localStorage.getItem("filterDistanceShowOverlay") === "false") {
-                    show_overlay = false
-                }
-                else if (that.config.distance_filter_toolbox_itemshow_overlay_on_load !== undefined) {
-                    show_overlay = that.config.distance_filter_toolbox_itemshow_overlay_on_load
-                }
-                else {
-                    show_overlay = false // Default
-                }
-
-                filter_points_distance_from_line(that, null, {
-                    "should_redraw": that.config.distance_filter_toolbox_item.filter_on_load,
-                    "multi_class_mode": that.config.distance_filter_toolbox_item.multi_class_mode,
-                    "show_overlay": show_overlay,
-                    "distances": that.config.distance_filter_toolbox_item.default_values
+                        // Image width and height is undefined when the overlay is created, so update it here
+                        that.filter_distance_overlay.resize_canvas(that.config.image_width, that.config.image_height)
+                        $("#" + that.config["imwrap_id"]).prepend(that.filter_distance_overlay.getCanvas())
+        
+                        // Determine whether or not to show the overlay
+                        let show_overlay
+                        if (window.localStorage.getItem("filterDistanceShowOverlay") === "true") {
+                            show_overlay = true
+                        }
+                        else if (window.localStorage.getItem("filterDistanceShowOverlay") === "false") {
+                            show_overlay = false
+                        }
+                        else if (that.config.distance_filter_toolbox_itemshow_overlay_on_load !== undefined) {
+                            show_overlay = that.config.distance_filter_toolbox_itemshow_overlay_on_load
+                        }
+                        else {
+                            show_overlay = false // Default
+                        }
+        
+                        filter_points_distance_from_line(that, null, {
+                            "should_redraw": that.config.distance_filter_toolbox_item.filter_on_load,
+                            "multi_class_mode": that.config.distance_filter_toolbox_item.multi_class_mode,
+                            "show_overlay": show_overlay,
+                            "distances": that.config.distance_filter_toolbox_item.default_values
+                        })
+                    }
                 })
+
             }
 
             // Call the user-provided callback
