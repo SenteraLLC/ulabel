@@ -37,7 +37,7 @@ export class Configuration {
     ]);
     
     //Change the order of the toolbox items here to change the order they show up in the toolbox
-    public default_toolbox_item_order: unknown[] = [
+    public default_toolbox_item_order: AllowedToolboxItem[] = [
         AllowedToolboxItem.ModeSelect,
         AllowedToolboxItem.ZoomPan,
         AllowedToolboxItem.AnnotationResize,

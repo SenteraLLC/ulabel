@@ -488,12 +488,10 @@ export class ULabel {
         });
     }
 
-
     static process_allowed_modes(ul, subtask_key, subtask) {
         // TODO(v1) check to make sure these are known modes
         ul.subtasks[subtask_key]["allowed_modes"] = subtask["allowed_modes"];
     }
-
 
     static process_classes(ul, subtask_key, subtask) {
         // Check to make sure allowed classes were provided
@@ -551,7 +549,6 @@ export class ULabel {
             ul.tot_num_classes++;
         }
     }
-
 
     static process_resume_from(ul, subtask_key, subtask) {
         // Initialize to no annotations
