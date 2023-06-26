@@ -6,7 +6,7 @@ All notable changes to this project will be documented here.
 
 Nothing yet.
 
-## [0.6.8] - May 26th, 2023
+## [0.6.8] - June 26th, 2023
 
 - Added `utilities.ts` to contain miscellaneous helper functions.
 - Added `is_object_and_not_array` to `utilities.ts` to help check if something is an object and neither null nor an array.
