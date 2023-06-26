@@ -2028,7 +2028,7 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
         )
 
         // Apply the generated distances to the overlay
-        this.overlay.updateDistance(filter_values)
+        this.overlay.update_distances(filter_values)
     }
 
     public get_overlay() {

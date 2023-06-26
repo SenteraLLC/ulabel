@@ -196,7 +196,7 @@ export class FilterDistanceOverlay extends ULabelOverlay {
         this.polyline_annotations = polyline_annotations
     }
 
-    public updateDistance(distances: {[key: string]: number}) {
+    public update_distances(distances: {[key: string]: number}) {
         for (let key in distances) {
             // Update this.distances's values with the values inside distances
             this.distances[key] = distances[key]
