@@ -1851,7 +1851,6 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
         this.add_event_listeners()
     }
 
-    
     /**
      * Create the css for this ToolboxItem and append it to the page.
      */

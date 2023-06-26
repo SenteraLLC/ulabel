@@ -4396,6 +4396,7 @@ export class ULabel {
             }, redoing);
         }
     }
+    
     assign_annotation_id__undo(undo_payload) {
         let actid = undo_payload.actid;
         let new_payload = JSON.parse(JSON.stringify(undo_payload.old_id_payload));
@@ -4676,7 +4677,6 @@ export class ULabel {
         annbox.css("background-color", new_bg_color);
         return ret
     }
-
 
     reset_interaction_state(subtask = null) {
         let q = [];
