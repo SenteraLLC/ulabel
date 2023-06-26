@@ -130,7 +130,7 @@ export class FilterDistanceOverlay extends ULabelOverlay {
      * @param endpoint_2
      * @returns A normal vector
      */
-    private claculateNormalVector(endpoint_1: AbstractPoint, endpoint_2: AbstractPoint): AbstractPoint {
+    private calculate_normal_vector(endpoint_1: AbstractPoint, endpoint_2: AbstractPoint): AbstractPoint {
         // Calculate the x and y of the normal vector
         let normal_x: number = endpoint_1.y - endpoint_2.y
         let normal_y: number = endpoint_2.x - endpoint_1.x
@@ -292,7 +292,7 @@ export class FilterDistanceOverlay extends ULabelOverlay {
                 endpoint_2.y *= this.zoom_value
 
                 // Get a vector that's perpendicular to endpoint_1 and endpoint_2 and has a magnitude of 1
-                const normal_vector: AbstractPoint = this.claculateNormalVector(endpoint_1, endpoint_2)
+                const normal_vector: AbstractPoint = this.calculate_normal_vector(endpoint_1, endpoint_2)
 
                 /* In the case the endpoint_1 === endpoint_2 the normal vector will be null
                    In which case draw a circle around one endpoint and skip to the next annotation. */
