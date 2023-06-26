@@ -9,7 +9,6 @@ import { get_annotation_confidence, mark_deprecated, filter_points_distance_from
 import { get_gradient } from '../build/drawing_utilities'
 import { Configuration, AllowedToolboxItem } from '../build/configuration';
 import { HTMLBuilder } from '../build/html_builder';
-import { FilterDistanceOverlay } from '../build/overlays'
 
 import $ from 'jquery';
 const jQuery = $;
@@ -4396,7 +4395,7 @@ export class ULabel {
             }, redoing);
         }
     }
-    
+
     assign_annotation_id__undo(undo_payload) {
         let actid = undo_payload.actid;
         let new_payload = JSON.parse(JSON.stringify(undo_payload.old_id_payload));
