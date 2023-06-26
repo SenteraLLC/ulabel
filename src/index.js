@@ -4833,7 +4833,7 @@ export class ULabel {
 
         // If the show overlay checkbox is not checked, then clear the overlay and return
         if (!show_overlay_checkbox.checked) {
-            this.filter_distance_overlay.clearCanvas()
+            this.filter_distance_overlay.clear_canvas()
             return
         }
 

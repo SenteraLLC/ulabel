@@ -434,7 +434,7 @@ export function filter_points_distance_from_line(ulabel: ULabel, offset: Offset 
             ulabel.filter_distance_overlay.drawOverlay(offset)
         }
         else {
-            ulabel.filter_distance_overlay.clearCanvas()
+            ulabel.filter_distance_overlay.clear_canvas()
         }
     }  
 }

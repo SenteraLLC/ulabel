@@ -67,7 +67,7 @@ class ULabelOverlay {
     /**
      * Clears everything drawn to the canvas. Useful for re-drawing.
      */
-    public clearCanvas(): void {
+    public clear_canvas(): void {
         this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
     }
 
@@ -237,7 +237,7 @@ export class FilterDistanceOverlay extends ULabelOverlay {
      */
     public drawOverlay(offset: Offset = null): void {
         // Clear the canvas in order to have a clean slate to re-draw from
-        this.clearCanvas()
+        this.clear_canvas()
 
         // If the overlay shouldn't be displayed then return after clearing the canvas
         if (!this.display_overlay) return
