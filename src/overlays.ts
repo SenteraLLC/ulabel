@@ -165,7 +165,7 @@ export class FilterDistanceOverlay extends ULabelOverlay {
      * @param normal_vector Line segment's normal vector
      * @param distance The distance in each direction around the line segment
      */
-    private drawParallelogramAroundLineSegment(
+    private draw_parallelogram_around_line_segment(
         endpoint_1: AbstractPoint,
         endpoint_2: AbstractPoint,
         normal_vector: AbstractPoint,
@@ -308,7 +308,7 @@ export class FilterDistanceOverlay extends ULabelOverlay {
                 this.draw_circle(endpoint_2, distance)
 
                 // Draw a parallelogram around the polyline segment
-                this.drawParallelogramAroundLineSegment(endpoint_1, endpoint_2, normal_vector, distance)
+                this.draw_parallelogram_around_line_segment(endpoint_1, endpoint_2, normal_vector, distance)
             }
         })
     }
