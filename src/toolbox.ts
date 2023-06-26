@@ -1784,41 +1784,31 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
         // Get this component's config from ulabel's config
         this.config = this.ulabel.config.distance_filter_toolbox_item
 
-        // Populate this component with every property in the config
-        for (const property in this.config) {
-            this[property] = this.config[property]
+        // Create a set of defaults for every config value
+        const default_values = {
+            "name": <string> "Filter Distance From Row",
+            "component_name": <string> "fitler_distance_from_row",
+            "filter_min": <number> 0,
+            "filter_max": <number> 100,
+            "default_values": <AnnotationClassDistanceData> {"single": 50},
+            "step_value": <number> 1,
+            "multi_class_mode": <boolean> false,
+            "filter_on_load": <boolean> true,
+            "show_options": <boolean> true,
+            "toggle_overlay_keybind": <string> "p"
         }
 
-        // If the config doesn't contain each property, then set a default
-        if (typeof this.config.name === "undefined") {
-            this.name = "Filter Distance From Row"
+        // Loop through every key value pair in the config
+        for (const [key, value] of Object.entries(this.config)) {
+            // If the passed in value's type !== the default value's type then use the default value
+            if (typeof value !== typeof default_values[key]) {
+                this.config[key] = default_values[key]
+            }
         }
-        if (typeof this.config.component_name === "undefined") {
-            this.component_name = "filter-distance-from-row"
-        }
-        if (typeof this.config.filter_min === "undefined") {
-            this.filter_min = 0
-        }
-        if (typeof this.config.filter_max === "undefined") {
-            this.filter_max = 100
-        }
-        if (typeof this.config.default_values === "undefined") {
-            this.default_values = {"single": 50}
-        }
-        if (typeof this.config.step_value === "undefined") {
-            this.step_value = 1
-        }
-        if (typeof this.config.multi_class_mode === "undefined") {
-            this.multi_class_mode = false
-        }
-        if (typeof this.config.filter_on_load === "undefined") {
-            this.filter_on_load = true
-        }
-        if (typeof this.config.show_options === "undefined") {
-            this.show_options = true
-        }
-        if (typeof this.config.toggle_overlay_keybind === "undefined") {
-            this.toggle_overlay_keybind = "p"
+
+        // Set the component's properties to be the same as the config's properties
+        for (const property in this.config) {
+            this[property] = this.config[property]
         }
         
         // Get if the options should be collapsed from local storage
@@ -2050,7 +2040,7 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
             const current_id = class_defs[idx].id
             const current_name = class_defs[idx].name
 
-            let default_value
+            let default_value: string
             if (this.default_values[current_id] !== undefined) {
                 default_value = this.default_values[current_id].toString()
             }
