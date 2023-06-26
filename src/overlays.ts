@@ -1,4 +1,4 @@
-import { AbstractPoint, DistanceOverlayInfo, Distances, Offset } from ".."
+import { AbstractPoint, Distances, Offset } from ".."
 import { ULabelAnnotation } from "./annotation"
 import { get_annotation_class_id } from "./annotation_operators"
 import { ULabelSpatialPayload2D } from "./geometric_utils"
