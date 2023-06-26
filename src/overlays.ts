@@ -79,7 +79,7 @@ class ULabelOverlay {
      * @param y_position y-position of the circle
      * @param radius The radius of the circle
      */
-    protected drawCircle(point: AbstractPoint, radius: number): void {
+    protected draw_circle(point: AbstractPoint, radius: number): void {
         // Start the shape
         this.context.beginPath()
 
@@ -297,15 +297,15 @@ export class FilterDistanceOverlay extends ULabelOverlay {
                 /* In the case the endpoint_1 === endpoint_2 the normal vector will be null
                    In which case draw a circle around one endpoint and skip to the next annotation. */
                 if (normal_vector === null) {
-                    this.drawCircle(endpoint_1, distance)
+                    this.draw_circle(endpoint_1, distance)
                     continue
                 }
                 
                 // Only on the first time through draw a circle around the first endpoint
-                if (idx === 0) this.drawCircle(endpoint_1, distance)
+                if (idx === 0) this.draw_circle(endpoint_1, distance)
 
                 // Draw an endpoint around the second endpoint
-                this.drawCircle(endpoint_2, distance)
+                this.draw_circle(endpoint_2, distance)
 
                 // Draw a parallelogram around the polyline segment
                 this.drawParallelogramAroundLineSegment(endpoint_1, endpoint_2, normal_vector, distance)
