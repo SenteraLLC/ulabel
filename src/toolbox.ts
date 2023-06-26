@@ -2019,7 +2019,6 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
         }
 
         // Create and assign an overlay class instance to ulabel to be able to access it
-        console.log('HERE', this.ulabel.config["image_width"], this.ulabel.config["px_per_px"])
         this.overlay = new FilterDistanceOverlay(
             this.ulabel.config["image_width"] * this.ulabel.config["px_per_px"],
             this.ulabel.config["image_height"] * this.ulabel.config["px_per_px"],

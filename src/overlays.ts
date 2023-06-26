@@ -215,6 +215,11 @@ export class FilterDistanceOverlay extends ULabelOverlay {
         }
     }
 
+    public get_mode() {
+        console.log(this.multi_class_mode)
+        return this.multi_class_mode ? "multi" : "single"
+    }
+
     public update_zoom_value(zoom_value: number) {
         this.zoom_value = zoom_value
     }

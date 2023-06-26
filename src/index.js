@@ -4411,6 +4411,15 @@ export class ULabel {
         this.assign_annotation_id();
         this.subtasks[this.state["current_subtask"]]["state"]["first_explicit_assignment"] = false;
         this.suggest_edits(this.state["last_move"]);
+
+        // TODO: Check to make sure the clicked annotation was a polyline
+        // If the filter_distance_toolbox_item exists, filter annotations if in multi_class_mode
+        if (this.filter_distance_overlay !== undefined) {
+            // Probably not good practice to get the mode from the overlay instead of the toolboxitem but this is easier
+            if (this.filter_distance_overlay.get_mode() === "multi") {
+                filter_points_distance_from_line(this)
+            }
+        }
     }
 
     // ================= Viewer/Annotation Interaction Handlers  ================= 
