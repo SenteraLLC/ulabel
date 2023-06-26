@@ -104,13 +104,13 @@ class ULabelOverlay {
 }
 
 export class FilterDistanceOverlay extends ULabelOverlay {
-    polyline_annotations: ULabelAnnotation[] // Set of polyline annotations the overlay will be drawn based on
-    distances: Distances = { // The current distance from a line annotation
+    private polyline_annotations: ULabelAnnotation[] // Set of polyline annotations the overlay will be drawn based on
+    private distances: Distances = { // The current distance from a line annotation
         "single": null 
     }
-    multi_class_mode: boolean
-    zoom_value: number // How zoomed in ulabel is
-    display_overlay: boolean // Whether or not the overlay should currently be displayed
+    private multi_class_mode: boolean
+    private zoom_value: number // How zoomed in ulabel is
+    private display_overlay: boolean // Whether or not the overlay should currently be displayed
 
     constructor(canvas_width: number, canvas_height: number, polyline_annotations: ULabelAnnotation[]) {
         super(canvas_width, canvas_height)
@@ -219,8 +219,12 @@ export class FilterDistanceOverlay extends ULabelOverlay {
         this.zoom_value = zoom_value
     }
 
-    public update_display_overlay(display_overlay: boolean) {
+    public update_display_overlay(display_overlay: boolean): void {
         this.display_overlay = display_overlay
+    }
+
+    public get_display_overlay(): boolean {
+        return this.display_overlay
     }
 
     /**

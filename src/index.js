@@ -1010,7 +1010,7 @@ export class ULabel {
             // Draw resumed from annotations
             that.redraw_all_annotations();
 
-            // Update the overlay now that required values have been updated if the overlay exists
+            // Find all toolbox items that contain overlays, add a reference to them, and add them to the document
             if (that.toolbox_order.includes(AllowedToolboxItem.FilterDistance)) {
                 that.toolbox.items.forEach((toolbox_item) => {
                     if (toolbox_item.get_toolbox_item_type() === "FilterDistance") {
@@ -1019,32 +1019,18 @@ export class ULabel {
 
                         // Image width and height is undefined when the overlay is created, so update it here
                         that.filter_distance_overlay.resize_canvas(that.config.image_width, that.config.image_height)
+
                         $("#" + that.config["imwrap_id"]).prepend(that.filter_distance_overlay.getCanvas())
-        
-                        // Determine whether or not to show the overlay
-                        let show_overlay
-                        if (window.localStorage.getItem("filterDistanceShowOverlay") === "true") {
-                            show_overlay = true
-                        }
-                        else if (window.localStorage.getItem("filterDistanceShowOverlay") === "false") {
-                            show_overlay = false
-                        }
-                        else if (that.config.distance_filter_toolbox_itemshow_overlay_on_load !== undefined) {
-                            show_overlay = that.config.distance_filter_toolbox_itemshow_overlay_on_load
-                        }
-                        else {
-                            show_overlay = false // Default
-                        }
-        
+                        
+                        // Filter the points with an override
                         filter_points_distance_from_line(that, null, {
                             "should_redraw": that.config.distance_filter_toolbox_item.filter_on_load,
                             "multi_class_mode": that.config.distance_filter_toolbox_item.multi_class_mode,
-                            "show_overlay": show_overlay,
+                            "show_overlay": that.filter_distance_overlay.get_display_overlay(),
                             "distances": that.config.distance_filter_toolbox_item.default_values
                         })
                     }
                 })
-
             }
 
             // Call the user-provided callback
