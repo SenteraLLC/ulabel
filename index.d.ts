@@ -89,11 +89,6 @@ export type FilterDistanceConfig = {
     show_overlay_on_load?: boolean
 }
 
-/**
- * Constrains a type to an object other than an array.
- */
-export type NonArrayObject = object & { length?: never }
-
 export type ULabelAnnotations = { [key: string]: ULabelAnnotation[] };
 
 export type ULabelSubmitData = {
