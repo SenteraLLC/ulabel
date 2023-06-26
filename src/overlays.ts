@@ -235,7 +235,7 @@ export class FilterDistanceOverlay extends ULabelOverlay {
      * @param zoom_val Value to scale the coordinate system by
      * @param multi_class_mode Whether or not the filter is currently in multi-class mode
      */
-    public drawOverlay(offset: Offset = null): void {
+    public draw_overlay(offset: Offset = null): void {
         // Clear the canvas in order to have a clean slate to re-draw from
         this.clear_canvas()
 

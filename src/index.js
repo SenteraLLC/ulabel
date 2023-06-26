@@ -222,7 +222,7 @@ export class ULabel {
                 // Only try to update the overlay if it exists
                 if (ul.filter_distance_overlay !== undefined) {
                     ul.filter_distance_overlay.update_zoom_value(ul.state.zoom_val)
-                    ul.filter_distance_overlay.drawOverlay()
+                    ul.filter_distance_overlay.draw_overlay()
                 }
             }
             else if (fms) {
@@ -1097,7 +1097,7 @@ export class ULabel {
 
                 if (this.filter_distance_overlay !== undefined) {
                     this.filter_distance_overlay.update_zoom_value(this.state.zoom_val)
-                    this.filter_distance_overlay.drawOverlay()
+                    this.filter_distance_overlay.draw_overlay()
                 }
                 return;
             }
@@ -1122,7 +1122,7 @@ export class ULabel {
         
         if (this.filter_distance_overlay !== undefined) {
             this.filter_distance_overlay.update_zoom_value(this.state.zoom_val)
-            this.filter_distance_overlay.drawOverlay()
+            this.filter_distance_overlay.draw_overlay()
         }
     }
 

@@ -655,7 +655,7 @@ export class ZoomPanToolboxItem extends ToolboxItem {
             // Only try to update the overlay if it exists
             if (this.ulabel.filter_distance_overlay !== undefined) {
                 this.ulabel.filter_distance_overlay.update_zoom_value(this.ulabel.state.zoom_val)
-                this.ulabel.filter_distance_overlay.drawOverlay()
+                this.ulabel.filter_distance_overlay.draw_overlay()
             }
         })
 
@@ -1958,7 +1958,7 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
             this.overlay.update_display_overlay(event.currentTarget.checked)
 
             // Try to draw the overlay
-            this.overlay.drawOverlay()
+            this.overlay.draw_overlay()
 
             // Save whether or not the overlay is allowed to be drawn to local storage
             window.localStorage.setItem("filterDistanceShowOverlay", event.currentTarget.checked.toString())
