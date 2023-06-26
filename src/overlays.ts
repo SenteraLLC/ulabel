@@ -11,7 +11,7 @@ class ULabelOverlay {
     context: CanvasRenderingContext2D
 
     constructor(canvas_width: number, canvas_height: number) {
-        this.createCanvas(canvas_width, canvas_height)
+        this.create_canvas(canvas_width, canvas_height)
 
         this.context = this.canvas.getContext("2d")
 
@@ -43,7 +43,7 @@ class ULabelOverlay {
         head.appendChild(style);
     }
 
-    public createCanvas(canvas_width, canvas_height): void {
+    public create_canvas(canvas_width, canvas_height): void {
         // Create the canvas element
         this.canvas = document.createElement("canvas")
 
