@@ -50,8 +50,8 @@ class ULabelOverlay {
         // Add a class to identify created overlays
         this.canvas.setAttribute("class", "ulabel-overlay")
 
-        // Overlays should on top of everything, so give it a reasonably large z-index
-        this.canvas.style.zIndex = "101"
+        // Set the overlay to be behind the active subtask canvas, but in front of everything else
+        this.canvas.style.zIndex = "95"
         this.canvas.style.position = "relative"
 
         // Set the width and height
