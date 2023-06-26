@@ -10,6 +10,7 @@ import {
     SubmitButtons, 
     FilterPointDistanceFromRow 
 } from "./toolbox"
+import { is_object_and_not_array } from "./utilities";
 
 export enum AllowedToolboxItem {
     ModeSelect,       // 0
@@ -101,13 +102,10 @@ export class Configuration {
         for (let idx = 0; idx < kwargs.length; idx++) {
             // For every key: value pair, overwrite them/add them to the config
             for (let key in kwargs[idx]) {
+                // If the value itself is an object, then loop through it and modify only the defined values
                 if (
-                    typeof kwargs[idx][key] === 'object' &&
-                    !Array.isArray(kwargs[idx][key]) &&
-                    kwargs[idx][key] !== null &&
-                    typeof this[key] === 'object' &&
-                    !Array.isArray(this[key]) &&
-                    this[key] !== null
+                    is_object_and_not_array(kwargs[idx][key]) &&
+                    is_object_and_not_array(this[key])
                 ) {
                     const inner_object = kwargs[idx][key]
                     for (const inner_key in inner_object) {
