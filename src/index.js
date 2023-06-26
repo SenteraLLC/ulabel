@@ -1020,7 +1020,7 @@ export class ULabel {
                         // Image width and height is undefined when the overlay is created, so update it here
                         that.filter_distance_overlay.resize_canvas(that.config.image_width, that.config.image_height)
 
-                        $("#" + that.config["imwrap_id"]).prepend(that.filter_distance_overlay.getCanvas())
+                        $("#" + that.config["imwrap_id"]).prepend(that.filter_distance_overlay.get_canvas())
                         
                         // Filter the points with an override
                         filter_points_distance_from_line(that, null, {

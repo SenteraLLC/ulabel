@@ -98,7 +98,7 @@ class ULabelOverlay {
      * 
      * @returns A reference to this object's canvas
      */
-    public getCanvas(): HTMLCanvasElement {
+    public get_canvas(): HTMLCanvasElement {
         return this.canvas
     }
 }
