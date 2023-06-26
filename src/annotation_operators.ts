@@ -3,7 +3,7 @@ import {
     ULabel, 
     ULabelSpatialType, 
     DeprecatedBy, 
-    Distances, 
+    AnnotationClassDistanceData, 
     FilterDistanceOverride, 
     ValidDeprecatedBy,
     ClassDefinition,
@@ -253,7 +253,7 @@ export function assign_distance_from_line(
     point_annotations.forEach(current_point => {
 
         // Create a DistanceFrom object to be assigned to this point
-        let distance_from: Distances = {"single": undefined}
+        let distance_from: AnnotationClassDistanceData = {"single": undefined}
 
         // Calculate the distance from each line and populate the distance_from accordingly
         line_annotations.forEach(current_line => {
@@ -334,7 +334,7 @@ export function filter_points_distance_from_line(ulabel: ULabel, offset: Offset 
     let multi_class_mode: boolean
     let show_overlay: boolean
     let should_redraw: boolean
-    let distances: Distances = { 
+    let distances: AnnotationClassDistanceData = { 
         "single": null // It gets angry if you don't initilize the single property
     }
 

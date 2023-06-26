@@ -1,5 +1,5 @@
 import { 
-    Distances, 
+    AnnotationClassDistanceData, 
     DeprecatedBy, 
     ULabelClassificationPayload, 
     ULabelContainingBox, 
@@ -24,7 +24,7 @@ export class ULabelAnnotation {
         public containing_box?: ULabelContainingBox,
         public created_by?: string,
         public distance_from_any_line?: number,
-        public distance_from?: Distances,
+        public distance_from?: AnnotationClassDistanceData,
         public frame?: number,
         public line_size?: number,
         public id?: string,

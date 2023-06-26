@@ -1,4 +1,4 @@
-import { AbstractPoint, Distances, Offset } from ".."
+import { AbstractPoint, AnnotationClassDistanceData, Offset } from ".."
 import { ULabelAnnotation } from "./annotation"
 import { get_annotation_class_id } from "./annotation_operators"
 import { ULabelSpatialPayload2D } from "./geometric_utils"
@@ -105,7 +105,7 @@ class ULabelOverlay {
 
 export class FilterDistanceOverlay extends ULabelOverlay {
     private polyline_annotations: ULabelAnnotation[] // Set of polyline annotations the overlay will be drawn based on
-    private distances: Distances = { // The current distance from a line annotation
+    private distances: AnnotationClassDistanceData = { // The current distance from a line annotation
         "single": null 
     }
     private multi_class_mode: boolean

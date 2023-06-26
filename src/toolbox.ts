@@ -1,4 +1,4 @@
-import { DistanceOverlayInfo, Distances, FilterDistanceConfig, FilterDistanceOverride, SliderInfo, ULabel } from "..";
+import { DistanceOverlayInfo, AnnotationClassDistanceData, FilterDistanceConfig, FilterDistanceOverride, SliderInfo, ULabel } from "..";
 import { ULabelAnnotation } from "./annotation";
 import { ULabelSubtask } from "./subtask";
 import { Configuration } from "./configuration";
@@ -1761,7 +1761,7 @@ export class KeypointSliderItem extends ToolboxItem {
 export class FilterPointDistanceFromRow extends ToolboxItem {
     name: string // Component name shown to users
     component_name: string // Internal component name
-    default_values: Distances // Values sliders are set to on page load
+    default_values: AnnotationClassDistanceData // Values sliders are set to on page load
     filter_min: number // Minimum value slider may be set to
     filter_max: number // Maximum value slider may be set to
     step_value: number // Value slider increments by
@@ -1999,7 +1999,7 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
         const line_annotations: ULabelAnnotation[] = get_point_and_line_annotations(this.ulabel)[1]
 
         // Initialize an object to hold the distances points are allowed to be from each class as well as any line
-        let filter_values: Distances = {"single": undefined}
+        let filter_values: AnnotationClassDistanceData = {"single": undefined}
 
         // Grab all filter-distance-sliders on the page
         const sliders: NodeListOf<HTMLInputElement> = document.querySelectorAll(".filter-row-distance-slider")

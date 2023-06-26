@@ -319,7 +319,7 @@ enum AllowedToolboxItem {
     FilterDistance    // 8
 }
 
-type Distances = {
+type AnnotationClassDistanceData = {
     "single": number,
     [key: number]?: number
 }
@@ -329,7 +329,7 @@ type FilterDistanceConfig = {
     "component_name"?: string,
     "filter_min"?: number,
     "filter_max"?: number,
-    "default_values"?: Distances,
+    "default_values"?: AnnotationClassDistanceData,
     "step_value"?: number,
     "multi_class_mode"?: boolean,
     "filter_on_load"?: boolean,
