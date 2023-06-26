@@ -192,7 +192,7 @@ export class FilterDistanceOverlay extends ULabelOverlay {
         this.context.fill()
     }
 
-    public updateAnnotations(polyline_annotations: ULabelAnnotation[]) {
+    public update_annotations(polyline_annotations: ULabelAnnotation[]) {
         this.polyline_annotations = polyline_annotations
     }
 
