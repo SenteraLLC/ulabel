@@ -1267,6 +1267,10 @@ div#${prntid} div.full_ulabel_container_ {
    font-family: sans-serif;
 }
 
+div#${prntid} .ulabel-hidden {
+   display: none !important;
+}
+
 div#${prntid} div.annbox_cls, div#${prntid} div.toolbox_cls {
    height: 100%;
 }
@@ -1504,26 +1508,6 @@ div#${prntid} div.frame_annotation_dialog div.fad_row div.fad_buttons a.fad_butt
    font-size: 22px;
 }
 
-
-/* TOOLBOX */
-div#${prntid} div.toolbox_cls {
-   width: 320px;
-   background-color: white;
-   overflow-y: hidden;
-   position: absolute;
-   top: 0;
-   right: 0;
-}
-div#${prntid}.ulabel-night div.toolbox_cls {
-   background-color: rgb(24, 24, 24);
-}
-div#${prntid}.ulabel-night div.toolbox_cls p, div#${prntid}.ulabel-night div.toolbox_cls a {
-   color: white;
-}
-div#${prntid}.ulabel-night .invert-this-svg svg {
-   filter: invert(90%);
-}
-
 div#${prntid} div.canvasses {
    position: absolute;
    top: 0; 
@@ -1573,449 +1557,24 @@ div#${prntid} .ender_inner {
 
 /* ================== TOOLBOX ================== */
 
-div#${prntid} div.toolbox-divider {
-   width: 90%;
-   margin: 0 auto;
-   height: 1px;
-   background-color: lightgray;
-}
-div#${prntid}.ulabel-night div.toolbox-divider {
-   background-color: gray;
-}
-
-
-/* === Annotation Mode === */
-div#${prntid} p.current_mode_container {
-   margin-top: 0px;
-   margin-bottom: 5px;
-}
-div#${prntid} span.current_mode {
-   color: cornflowerblue;
-}
-div#${prntid} div.mode-opt {
-   display: inline-block;
-}
-div#${prntid} a.md-btn {
-   display: block;
-   text-align: center;
-   height: 30px;
-   width: 30px;
-   padding: 10px;
-   margin: 0 auto;
-   text-decoration: none;
-   /* background-color: rgba(231, 231, 231, 1); */
-   color: black;
-   font-size: 1.2em;
-   font-family: sans-serif;
-}
-
-div#${prntid} a.md-btn svg {
-   height: 30px;
-   width: 30px;
-}
-
-div#${prntid} a.md-btn:hover {
-   background-color: rgba(255, 181, 44, 0.397);
-}
-
-div#${prntid} a.md-btn.sel {
-   background-color: rgba(100, 148, 237, 0.459);
-}
-
-/* === Pan & Zoom === */
-
-div#${prntid} div.mode-selection, div#${prntid} div.zoom-pan {
-   padding: 10px 30px;
-}
-/* div#${prntid} div.zoom-pan {
-   padding-bottom: 0;
-   padding-top: 0;
-} */
-div#${prntid} div.half-tb {
-   display: inline-block;    
-   width: 50%;
-   vertical-align: middle;
-}
-div#${prntid} span.htblbl {
-   display: inline-block;
-   /* font-weight: bold; */
-   vertical-align: middle;
-}
-div#${prntid} span.htbpyld {
-   display: inline-block;
-   vertical-align: middle;
-}
-
-div#${prntid} span.panudlr {
-   display: inline-block;
-   position: relative;
-   width: 60px;
-   height: 60px;
-   border-radius: 30px;
-}
-
-div#${prntid} a.zbutt, div#${prntid} a.wbutt {
-   display: inline-block;
-   height: 20px;
-   width: 20px;
-   background-color: lightgray;
-   vertical-align: middle;
-   text-align: center;
-   text-decoration: none;
-   color: white;
-   border-radius: 11px;
-   line-height: 20px;
-   border: 1px solid rgb(168, 168, 168);
-}
-div#${prntid} span.panudlr {
-   transform: rotate(-45deg);
-}
-div#${prntid} a.pbutt {
-   display: block;
-   position: absolute;
-   width: 28px;
-   height: 28px;
-   border-radius: 0;
-   border: 1px solid rgb(168, 168, 168);
-   background-color: lightgray;
-}
-div#${prntid} a.pbutt.up {
-   right: 0;
-   top: 0;
-   border-top-right-radius: 30px;
-}
-div#${prntid} a.pbutt.down {
-   left: 0;
-   bottom: 0;
-   border-bottom-left-radius: 30px;
-}
-div#${prntid} a.pbutt.left {
-   left: 0;
-   top: 0;
-   border-top-left-radius: 30px;
-}
-div#${prntid} a.pbutt.right {
-   right: 0;
-   bottom: 0;
-   border-bottom-right-radius: 30px;
-}
-div#${prntid} a.pbutt:hover, a.zbutt:hover, div#${prntid} a.wbutt:hover {
-   background-color: rgba(100, 148, 237, 0.486);
-}
-div#${prntid} a.pbutt:active, div#${prntid} a.zbutt:active, div#${prntid} a.wbutt:active {
-   background-color:cornflowerblue;
-}
-div#${prntid} span.spokes {
-   position: absolute;
-   left: 19px;
-   top: 19px;
-   height: 20px;
-   width: 20px;
-   background-color: white;
-   border-radius: 10px;
-   border: 1px solid gray;
-}
-div#${prntid}.ulabel-night span.spokes {
-   background-color:rgb(24, 24, 24);
-   /* border: 1px solid black; */
-}
-
-/* === Annotation Resize === */
-
-
-div#${prntid} div.annotation-resize {
-   padding: 10px 30px;
-   display: block;
-}
-
-div#${prntid} div.annotation-resize p.tb-header {
-   margin: 0;
-   margin-bottom: 10px;
-}
-
-div#${prntid} div.annotation-resize-button-holder {
-   vertical-align: middle;
-   margin: 0 auto;
-}
-
-div#${prntid} a.button {
-   display: inline-block;  
-   margin: auto;
-   color: white;
-   background-color: rgba(100, 148, 237, 0.8);
-   border: 1px solid rgb(168, 168, 168);
-   border-radius: 11px;
-   text-decoration: none;
-   text-align: center;
-   transition: all 0.2s;
-}
-
-div#${prntid} div.annotation-resize #annotation-resize-s {
-   border-radius: 11px 0 0 11px;
-}
-
-div#${prntid} div.annotation-resize #annotation-resize-l {
-   border-radius: 0 11px 11px 0;
-   margin-left: -5px;
-}
-
-div#${prntid} a.inc {
-   line-height: 23px;
-   margin-top: -5px;
-   margin-bottom: 5px;
-}
-
-div#${prntid} a.dec {
-   line-height: 19px;
-}
-
-div#${prntid} div.annotation-resize span.annotation-size {
-   width: 115px;
-   margin: 0;
-}
-
-div#${prntid} div.annotation-resize span.annotation-inc {
-   display: inline-grid;
-   grid-template-columns: 1fr;
-   position: relative;
-   bottom: 11px;
-}
-
-div#${prntid} div.annotation-resize span.annotation-size a.butt-ann {
-   font-size: 0.9em;
-   text-shadow: 0 0.04em 0.04em rgba(0,0,0,0.45);
-   padding: 16px 9px;
-}
-
-div#${prntid} div.annotation-resize span.annotation-vanish a.butt-ann {
-   font-size: 0.9em;
-   text-shadow: 0 0.04em 0.04em rgba(0,0,0,0.45);
-   padding: 16px 8px;
-   margin: 0 2px;
-}
-
-div#${prntid} span.increment a.button {
-   width: 22px;
-   height: 22px;
-   border-radius: 17px;
-   font-size: 1.4em;
-}
-
-div#${prntid} a.button:hover {
-   border: 1px solid black;
-   box-shadow: 1px 1px 4px rgba(204, 204, 204, 0.9);
-   background-color:rgba(100, 148, 237, 0.486);
-}
-
-/* css for the recolor annotations item */
-
-div#${prntid} div.recolor-active {
-   padding: 10px 30px;
-   display: block;
-}
-
-div#${prntid} div.recolor-active p.tb-header {
-   margin: 0;
-   margin-bottom: 5px;
-}
-
-div#${prntid} div.recolor-active div.annotation-recolor-button-holder {
-   display: grid;
-   grid-template-columns: 2fr 1fr;
-   column-gap: 8px;
-}
-
-div#${prntid} div.recolor-active input{
-   width: 50px;
-   height: 27px;
-}
-
-div#${prntid} div.recolor-active div.recolor-tbi-gradient {
-   margin-bottom: 1em;
-   font-size: .85em;
-}
-
-div#${prntid}.ulabel-night div.recolor-active div.recolor-tbi-gradient {
-   color: white;
-}
-
-div#${prntid} div.recolor-active div.recolor-tbi-gradient #gradient-toggle-label {
-   position: relative;
-   bottom: 2.5px;
-}
-
-div#${prntid} div.recolor-active div.recolor-tbi-gradient #gradient-toggle {
-   width: 1em;
-   height: 1em;
-}
-
-div#${prntid} div.recolor-active div.recolor-tbi-gradient #gradient-slider {
-   width: 8.6em;
-   height: 1em;
-   position: relative;
-   top: 2px;
-}
-
-div#${prntid} div.recolor-active div.recolor-tbi-gradient div.gradient-slider-value-display {
-   display: inline;
-}
-
-div#${prntid} div.recolor-active input.color-change-btn {
-   width: 90%;
-}
-
-div#${prntid} div.color-picker-border {
-   padding: 8px;
-   background-image: linear-gradient(to bottom right, red,orange,yellow,green,blue,indigo,violet);
-   border: 1px solid White;
-   border-radius: 6px;
-}
-
-div#${prntid} div.recolor-active div.color-picker-container {
-   height: 100%;
-   background-color: Black;
-}
-
-div#${prntid} div.recolor-active input.color-change-btn, div#${prntid} div.recolor-active div.color-picker-container {
-   border-radius: 6px;
-}
-
-div#${prntid} div.recolor-active div.color-picker-container input.color-change-picker {
-   width: 100%;
-   height: 100%;
-   padding: 0;
-   opacity: 0;
-}
-
-div#${prntid} div.recolor-active #color-change-yel {
-   background-color: yellow;
-   
-   border: 1px solid rgb(200, 200, 0);
-}
-
-div#${prntid} div.recolor-active #color-change-red {
-   background-color: red;
-   border: 1px solid rgb(200, 0, 0);
-}
-
-div#${prntid} div.recolor-active #color-change-cya {
-   background-color: cyan;
-   border: 1px solid rgb(0, 200, 200);
-}
-
-/* css for the keypoint slider item */
-div#${prntid} div.keypoint-slider {
-   padding: 10px 30px;
-   display: block;
-}
-
-div#${prntid} div.keypoint-slider p.tb-header {
-   margin: 0;
-   margin-bottom: 5px;
-}
-
-div#${prntid} div.keypoint-slider div.keypoint-slider-holder{
-   padding: 8px;
-   position: relative;
-   text-align: left;
-}
-
-div#${prntid} .keypoint-slider-label {
-   position: relative;
-   bottom: 3px;
-}
-
-div#${prntid} div.keypoint-slider span.increment {
-   position: absolute;
-   right: 0;
-   bottom: 0.4em;
-}
-
-div#${prntid} div.keypoint-slider a.inc {
-   margin: 0;
-}
-
-div#${prntid} div.keypoint-slider a.dec {
-   position: relative;
-   bottom: 0.07em;
-}
-
-div#${prntid}.ulabel-night .keypoint-slider-label {
-   color: white;
-}
-
 div#${prntid} div.zpcont {
    height: 90px;
    position: relative;
    background-color: white;
 }
+
 div#${prntid}.ulabel-night div.zpcont {
    background-color: rgb(24, 24, 24);
 }
+
 div#${prntid} div.zpcont:hover, div#${prntid}.ulabel-night div.zpcont:hover {
    background-color: rgba(0,0,0,0);
 }
-div#${prntid} div.zpcont div.lblpyldcont {
-   position: absolute;
-   top: 50%;
-   -ms-transform: translateY(-50%);
-   transform: translateY(-50%);
-}
-div#${prntid}.ulabel-night div.zpcont div.lblpyldcont {
-   color: white;
-}
-div#${prntid}.ulabel-night a.zbutt, div#${prntid}.ulabel-night a.wbutt {
-   border: 1px solid black;
-   color: black !important;
-}
 
-/* ===== FilterPointDistanceFromRow css ===== */
-
-div#${prntid} div.filter-row-distance p.tb-header {
-   margin: 0.5rem 0 0.75rem;
-}
-
-div#${prntid} div.filter-row-distance div.filter-row-distance-container {
-   display: flex;
-   justify-content: space-between;
-   align-items: center;
-   margin: 0 2.5rem 0.5rem;
-}
-
-div#${prntid} div.filter-row-distance button {
-   width: 20px;
-   height: 20px;
-   padding: 0;
-   border: 1px solid black;
-   border-radius: 50%;
-}
-
-div#${prntid}.ulabel-night div.filter-row-distance button {
-   border: 1px solid gray;
-}
-
-div#${prntid} div.filter-row-distance button:hover {
-   background-color: #87CEEB
-}
-
-div#${prntid} div.htbmain {
-   position: relative;
-}
-div#${prntid} p.shortcut-tip {
-   font-size: 10px;
-   text-align: left;
-   color: gray;
-   position: absolute;
-   bottom: 3px;
-   margin: 0;
-}
 div#${prntid} div.linestyle {
    padding: 10px 30px;
 }
-div#${prntid} div.linestyle p.tb-header {
-   margin: 0;
-   margin-bottom: 5px;
-}
+
 div#${prntid} canvas.demo-canvas {
    width: 120px;
    height: 40px;
@@ -2083,6 +1642,7 @@ div.toolbox_inner_cls {
    height: calc(100% - 38px);
    overflow-y: scroll;
 }
+
 
 /* ========== Tab Buttons ========== */
 
@@ -2191,20 +1751,6 @@ div#${prntid} a.global_sub_suggestion.reid_suggestion {
 }
 div#${prntid} a.global_sub_suggestion.reid_suggestion:hover {
    opacity: 0; 
-}
-div#${prntid} div.classification {
-   padding: 10px 30px;
-}
-div#${prntid} div.classification p.tb-header {
-   margin: 0;
-   margin-bottom: 5px;
-}
-div#${prntid} div.toolbox-class-counter {
-   padding: 10px 30px;
-}
-div#${prntid} div.toolbox-class-counter p.tb-header {
-   margin: 0;
-   margin-bottom: 5px;
 }
 
 div#${prntid} a.tbid-opt {

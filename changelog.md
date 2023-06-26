@@ -6,6 +6,16 @@ All notable changes to this project will be documented here.
 
 Nothing yet.
 
+## [0.6.7] - May 26th, 2023
+
+- Added multi-class support for the `FilterPointDistanceFromRow` `ToolboxItem`.
+- Added an overlay for the `FilterPointDistanceFromRow` `ToolboxItem` that shows the range of the filter.
+- Added a helper class `SliderHandler` to help with creation of new sliders and their event listeners.
+
+## [0.6.6] - June 7th, 2023
+
+- Added helper function `apply_gradient_math` that reduces duplicated code from `apply_gradient`.
+
 ## [0.6.1] - April 21st, 2023
 
 - Added the `FilterPointDistanceFromRow` `ToolboxItem`.

@@ -1,4 +1,4 @@
-import { ULabel } from "..";
+import { SliderInfo, ULabel } from "..";
 import { Toolbox, ZoomPanToolboxItem } from "./toolbox";
 import { ULABEL_VERSION } from '../src/version';
 
@@ -335,7 +335,7 @@ export class HTMLBuilder {
 
             for (let i = 0; i < class_ids.length; i++) {
 
-                let this_id: string = class_ids[i];
+                let this_id: string = class_ids[i].toString();
                 let this_color: string = ulabel.subtasks[st]["class_defs"][i]["color"];
                 let this_name: string = ulabel.subtasks[st]["class_defs"][i]["name"];
 
@@ -495,5 +495,197 @@ export class HTMLBuilder {
                 "margin-left": "-1.4em",
             });
         }
+    }
+}
+
+export class SliderHandler {
+    default_value: string
+    id: string
+    slider_event: Function
+    class?: string
+    label_units?: string = ""
+    main_label: string
+    min: string = "0"
+    max: string = "100"
+    step: string = "1"
+    step_as_number: number = 1
+
+    constructor(kwargs: SliderInfo) {
+        this.default_value = kwargs.default_value
+        this.id = kwargs.id
+        this.slider_event = kwargs.slider_event
+        
+        // Only check optional properties
+        if (typeof kwargs.class !== "undefined") {
+            this.class = kwargs.class
+        }
+        if (typeof kwargs.main_label !== "undefined") {
+            this.main_label = kwargs.main_label
+        }
+        if (typeof kwargs.label_units !== "undefined") {
+            this.label_units = kwargs.label_units
+        }
+        if (typeof kwargs.min !== "undefined") {
+            this.min = kwargs.min
+        }
+        if (typeof kwargs.max !== "undefined") {
+            this.max = kwargs.max
+        }
+        if (typeof kwargs.step !== "undefined") {
+            this.step = kwargs.step
+        }
+
+        // Useful to have as both string and number
+        // String for html creation
+        // Number for incrementing and decrementing slider value
+        this.step_as_number = Number(this.step)
+
+        this.add_styles()
+
+        /* Add Event Listeners for this component */
+        $(document).on("input", `#${this.id}`, (event) => {
+            this.updateLabel()
+            this.slider_event(event.currentTarget.valueAsNumber)
+        })
+
+        $(document).on("click", `#${this.id}-inc-button`, () => this.incrementSlider())
+
+        $(document).on("click", `#${this.id}-dec-button`, () => this.decrementSlider())
+    }
+
+    private add_styles() {
+        const css = `
+        #toolbox div.ulabel-slider-container {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            margin: 0 1.5rem 0.5rem;
+        }
+         
+        #toolbox div.ulabel-slider-container label.ulabel-filter-row-distance-name-label {
+            width: 100%; /* Ensure title takes up full width of container */
+            font-size: 0.95rem;
+            align-items: center;
+        }
+         
+        #toolbox div.ulabel-slider-container > *:not(label.ulabel-filter-row-distance-name-label) {
+            flex: 1;
+        }
+        
+        /*  
+        .ulabel-night #toolbox div.ulabel-slider-container label {
+            color: white;
+        }
+        */
+        #toolbox div.ulabel-slider-container label.ulabel-slider-value-label {
+            font-size: 0.9rem;
+        }
+         
+         
+        #toolbox div.ulabel-slider-container div.ulabel-slider-decrement-button-text {
+            position: relative;
+            bottom: 1.5px;
+        }`
+
+        // Create an id so this specific style tag can be referenced
+        const style_id = "slider-handler-styles"
+
+        // Don't add the style tag if its already been added once
+        if (document.getElementById(style_id)) return
+
+        // Grab the document's head and create a style tag
+        const head = document.head || document.querySelector("head")
+        const style = document.createElement('style');
+
+        // Add the css and id to the style tag
+        style.appendChild(document.createTextNode(css));
+        style.id = style_id
+
+        // Add the style tag to the document's head
+        head.appendChild(style);
+    }
+
+    private updateLabel() {
+        const slider: HTMLInputElement = document.querySelector(`#${this.id}`)
+        const label: HTMLLabelElement = document.querySelector(`#${this.id}-value-label`)
+        
+        // Set the label as a concatenation of the value and the units
+        label.innerText = slider.value + this.label_units
+    }
+
+    /**
+     * Increment the slider's value by the step value and call the slider event with 
+     * new slider value.
+     */
+    private incrementSlider() {
+        // Get the slider element
+        const slider: HTMLInputElement = document.querySelector(`#${this.id}`)
+
+        // Add the step value
+        const new_value = slider.valueAsNumber + this.step_as_number
+
+        // Update the slider's value
+        slider.value = new_value.toString()
+
+        // Update the label
+        this.updateLabel()
+
+        // Call the slider event with the slider value
+        this.slider_event(slider.value)
+    }
+
+    /**
+     * Decrement the slider's value by the step value and call the slider event with 
+     * new slider value.
+     */
+    private decrementSlider() {
+        // Get the slider element
+        const slider: HTMLInputElement = document.querySelector(`#${this.id}`)
+
+        // Add the step value
+        const new_value = slider.valueAsNumber - this.step_as_number
+
+        // Update the slider's value
+        slider.value = new_value.toString()
+
+        // Update the label
+        this.updateLabel()
+
+        // Call the slider event with the slider value
+        this.slider_event(slider.value)
+    }
+
+    public getSliderHTML(): string {
+        return `
+        <div class="ulabel-slider-container">
+            ${this.main_label 
+                ? `<label for="${this.id}" class="ulabel-filter-row-distance-name-label">${this.main_label}</label>` 
+                : ""
+            }
+            <input 
+                id="${this.id}"
+                class="${this.class}"
+                type="range"
+                min="${this.min}"
+                max="${this.max}"
+                step="${this.step ? this.step : "1"}"
+                value="${this.default_value}"
+            />
+            <label for="${this.id}" id="${this.id}-value-label" class="ulabel-slider-value-label">
+                ${this.default_value}${this.label_units ? this.label_units : ""}
+            </label>
+            <div class="ulabel-slider-button-container">
+                <button id=${this.id}-inc-button class="ulabel-slider-button circle" >
+                    +
+                </button>
+                <button id=${this.id}-dec-button class="ulabel-slider-button circle">
+                    <!-- Create an extra div here to be able to move the - text up -->
+                    <div class="ulabel-slider-decrement-button-text">
+                        –
+                    </div>
+                </button>
+            </div>
+        </div>
+        `
     }
 }

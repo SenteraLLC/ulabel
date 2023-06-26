@@ -1,12 +1,17 @@
-import { ULabel, ULabelAnnotation, ULabelSubtask } from "..";
+import { DistanceOverlayInfo, AnnotationClassDistanceData, FilterDistanceConfig, FilterDistanceOverride, SliderInfo, ULabel } from "..";
+import { ULabelAnnotation } from "./annotation";
+import { ULabelSubtask } from "./subtask";
 import { Configuration } from "./configuration";
 import { 
-    value_is_lower_than_filter, 
-    value_is_higher_than_filter, 
     get_annotation_confidence, 
+    value_is_lower_than_filter, 
     mark_deprecated, 
-    filter_points_distance_from_line 
+    filter_points_distance_from_line,
+    findAllPolylineClassDefinitions,
+    get_point_and_line_annotations
 } from "./annotation_operators";
+import { SliderHandler } from "./html_builder";
+import { FilterDistanceOverlay } from "./overlays";
 
 const toolboxDividerDiv = "<div class=toolbox-divider></div>"
 
@@ -49,6 +54,8 @@ export class Toolbox {
             throw new Error("No Toolbox Items Given")
         }
 
+        this.add_styles()
+
         let toolbox_instance_list = [];
         // Go through the items in toolbox_item_order and add their instance to the toolbox instance list
         for (let i = 0; i < toolbox_item_order.length; i++) {
@@ -76,6 +83,101 @@ export class Toolbox {
         }                    
 
         return toolbox_instance_list
+    }
+
+    static add_styles() {
+        const css = `
+        #toolbox {
+            width: 320px;
+            background-color: white;
+            overflow-y: hidden;
+            position: absolute;
+            top: 0;
+            right: 0;
+        }
+
+        .ulabel-night #toolbox {
+            color: white;
+        }
+
+        .ulabel-night #toolbox div.toolbox_inner_cls {
+            background-color: black;
+        }
+
+        .ulabel-night div.toolbox_cls {
+            background-color: rgb(24, 24, 24);
+        }
+
+        .ulabel-night .invert-this-svg svg {
+            filter: invert(90%);
+        }
+
+        #toolbox button {
+            border: 1px solid rgba(128, 128, 128, 0.5);
+            color: white;
+            background-color: rgba(0, 128, 255, 0.7);
+            transition: background-color 250ms;
+            cursor: pointer;
+        }
+        
+        #toolbox button:hover {
+            background-color: rgba(0, 128, 255, 0.9);
+        }
+
+        #toolbox button.circle {
+            position: relative;
+            border-radius: 50%;
+            font-size: 1.2rem;
+            font-weight: bold;
+            width: 20px;
+            height: 20px;
+            padding: 0;
+        }
+
+        #toolbox button.circle:hover {
+            box-shadow: 0 0 4px 2px lightgray, 0 0 white;
+        }
+         
+        /* No shadow effect in night-mode */
+        .ulabel-night #toolbox button.circle:hover {
+            box-shadow: initial;
+        }
+
+        #toolbox input {
+            cursor: pointer;
+        }
+
+        #toolbox label {
+            cursor: pointer;
+        }
+        
+        #toolbox div.toolbox-divider {
+            width: 90%;
+            margin: 0 auto;
+            height: 1px;
+            background-color: lightgray;
+        }
+
+        .ulabel-night #toolbox div.toolbox-divider {
+            background-color: gray;
+        }`
+
+        // Create an id so this specific style tag can be referenced
+        const style_id = "toolbox-styles"
+
+        // Don't add the style tag if its already been added once
+        if (document.getElementById(style_id)) return
+
+        // Grab the document's head and create a style tag
+        const head = document.head || document.querySelector("head")
+        const style = document.createElement('style');
+
+        // Add the css and id to the style tag
+        style.appendChild(document.createTextNode(css));
+        style.id = style_id
+
+        // Add the style tag to the document's head
+        head.appendChild(style);
     }
 
     public setup_toolbox_html(ulabel: ULabel, frame_annotation_dialogs: any, images: any, ULABEL_VERSION: any): string {
@@ -179,6 +281,8 @@ export abstract class ToolboxItem {
     constructor() {}
 
     abstract get_html(): string;
+    abstract get_toolbox_item_type(): string;
+    protected abstract add_styles(): void; // ToolboxItems need to handle their own css
     public redraw_update(ulabel: ULabel): void {}
     public frame_update(ulabel: ULabel): void {} 
 }
@@ -189,6 +293,8 @@ export abstract class ToolboxItem {
 export class ModeSelectionToolboxItem extends ToolboxItem {
     constructor(public ulabel: ULabel) {
         super();
+
+        this.add_styles()
 
         // Buttons to change annotation mode
         $(document).on("click", "a.md-btn", (e) => {
@@ -266,6 +372,77 @@ export class ModeSelectionToolboxItem extends ToolboxItem {
         })
     }
 
+    
+    /**
+     * Create the css for this ToolboxItem and append it to the page.
+     */
+    protected add_styles() {
+        // Define the css
+        const css = `
+        #toolbox div.mode-selection {
+            padding: 10px 30px;
+         }
+         
+         #toolbox div.mode-selection p.current_mode_container {
+            margin-top: 0px;
+            margin-bottom: 5px;
+         }
+         
+         #toolbox div.mode-selection span.current_mode {
+            color: cornflowerblue;
+         }
+         
+         #toolbox div.mode-opt {
+            display: inline-block;
+         }
+         
+         #toolbox div.mode-selection a.md-btn {
+            text-align: center;
+            height: 30px;
+            width: 30px;
+            padding: 10px;
+            margin: 0 auto;
+            text-decoration: none;
+            color: black;
+            font-size: 1.2em;
+            font-family: sans-serif;
+         }
+         
+         #toolbox div.mode-selection a.md-btn svg {
+            height: 30px;
+            width: 30px;
+         }
+         
+         #toolbox div.mode-selection a.md-btn:hover {
+            background-color: rgba(255, 181, 44, 0.397);
+         }
+         
+         #toolbox div.mode-selection a.md-btn.sel {
+            background-color: rgba(100, 148, 237, 0.459);
+         }
+
+        
+        
+        
+        `
+        // Create an id so this specific style tag can be referenced
+        const style_id = "mode-selection-toolbox-item-styles"
+
+        // Don't add the style tag if its already been added once
+        if (document.getElementById(style_id)) return
+
+        // Grab the document's head and create a style tag
+        const head = document.head || document.querySelector("head")
+        const style = document.createElement('style');
+
+        // Add the css and id to the style tag
+        style.appendChild(document.createTextNode(css));
+        style.id = style_id
+
+        // Add the style tag to the document's head
+        head.appendChild(style);
+    }
+
     public get_html() {
         return `
         <div class="mode-selection">
@@ -275,6 +452,10 @@ export class ModeSelectionToolboxItem extends ToolboxItem {
             </p>
         </div>
         `
+    }
+
+    public get_toolbox_item_type() {
+        return "ModeSelection"
     }
 }
 
@@ -289,19 +470,263 @@ export class ZoomPanToolboxItem extends ToolboxItem {
         super();
         this.set_frame_range(ulabel);
 
+        this.add_styles()
+
+        this.add_event_listeners()
+    }
+    
+    /**
+     * Create the css for this ToolboxItem and append it to the page.
+     */
+    protected add_styles() {
+        // Define the css
+        const css = `
+        #toolbox div.zoom-pan {
+            padding: 10px 30px;
+            display: grid;
+            grid-template-rows: auto 1.25rem auto;
+            grid-template-columns: 1fr 1fr;
+            grid-template-areas:
+                "zoom     pan"
+                "zoom-tip pan-tip"
+                "recenter recenter";
+        }
+         
+        #toolbox div.zoom-pan > * {
+            place-self: center;
+        }
+        
+        #toolbox div.zoom-pan button {
+            background-color: lightgray;
+        }
+
+        #toolbox div.zoom-pan button:hover {
+            background-color: rgba(0, 128, 255, 0.9);
+        }
+        
+        #toolbox div.zoom-pan div.set-zoom {
+            grid-area: zoom;
+        }
+        
+        #toolbox div.zoom-pan div.set-pan {
+            grid-area: pan;
+        }
+        
+        #toolbox div.zoom-pan div.set-pan div.pan-container {
+            display: inline-flex;
+            align-items: center;
+        }
+        
+        #toolbox div.zoom-pan p.shortcut-tip {
+            margin: 2px 0;
+            font-size: 10px;
+            color: white;
+        }
+
+        #toolbox div.zoom-pan:hover p.shortcut-tip {
+            color: black;
+        }
+
+        .ulabel-night #toolbox div.zoom-pan p.shortcut-tip {
+            margin: 0;
+            font-size: 10px;
+            color: black;
+        }
+
+        .ulabel-night #toolbox div.zoom-pan:hover p.shortcut-tip {
+            color: white;
+        }
+        
+        #toolbox.ulabel-night div.zoom-pan:hover p.pan-shortcut-tip {
+            color: white;
+        }
+        
+        #toolbox div.zoom-pan p.zoom-shortcut-tip {
+            grid-area: zoom-tip;
+        }
+        
+        #toolbox div.zoom-pan p.pan-shortcut-tip {
+            grid-area: pan-tip;
+        }
+        
+        #toolbox div.zoom-pan span.pan-label {
+            margin-right: 10px;
+        }
+        
+        #toolbox div.zoom-pan span.pan-button-holder {
+            display: inline-grid;
+            position: relative;
+            grid-template-rows: 28px 28px;
+            grid-template-columns: 28px 28px;
+            grid-template-areas:
+                "left   top"
+                "bottom right";
+            transform: rotate(-45deg);
+            gap: 1px;
+        }
+        
+        #toolbox div.zoom-pan span.pan-button-holder > * {
+            border: 1px solid gray;
+        }
+        
+        #toolbox div.zoom-pan button.ulabel-pan:hover {
+            background-color: cornflowerblue;
+        }
+        
+        #toolbox div.zoom-pan button.ulabel-pan-left {
+            grid-area: left;
+            border-radius: 100% 0 0 0;
+        }
+        
+        #toolbox div.zoom-pan button.ulabel-pan-right {
+            grid-area: right;
+            border-radius: 0 0 100% 0;
+        }
+        
+        #toolbox div.zoom-pan button.ulabel-pan-up {
+            grid-area: top;
+            border-radius: 0 100% 0 0;
+        }
+        
+        #toolbox div.zoom-pan button.ulabel-pan-down {
+            grid-area: bottom;
+            border-radius: 0 0 0 100%;
+        }
+        
+        #toolbox div.zoom-pan span.spokes {
+            background-color: white;
+            width: 16px;
+            height: 16px;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+        }
+        
+        .ulabel-night #toolbox div.zoom-pan span.spokes {
+            background-color: black;
+        }
+
+        #toolbox div.zoom-pan div.recenter-container {
+            grid-area: recenter;
+        }
+        
+        .ulabel-night #toolbox div.zoom-pan a {
+            color: lightblue;
+        }
+
+        .ulabel-night #toolbox div.zoom-pan a:active {
+            color: white;
+        }
+        `
+        // Create an id so this specific style tag can be referenced
+        const style_id = "zoom-pan-toolbox-item-styles"
+
+        // Don't add the style tag if its already been added once
+        if (document.getElementById(style_id)) return
+
+        // Grab the document's head and create a style tag
+        const head = document.head || document.querySelector("head")
+        const style = document.createElement('style');
+
+        // Add the css and id to the style tag
+        style.appendChild(document.createTextNode(css));
+        style.id = style_id
+
+        // Add the style tag to the document's head
+        head.appendChild(style);
+    }
+
+    private add_event_listeners() {
+        const frames_exist = this.ulabel.config["image_data"].frames.length > 1
+
+        $(document).on("click", ".ulabel-zoom-button", (event) => {
+
+            if ($(event.currentTarget).hasClass("ulabel-zoom-out")) {
+                this.ulabel.state.zoom_val /= 1.1
+            }
+            else if ($(event.currentTarget).hasClass("ulabel-zoom-in")) {
+                this.ulabel.state.zoom_val *= 1.1
+            }
+
+            this.ulabel.rezoom()
+
+            // Only try to update the overlay if it exists
+            if (this.ulabel.filter_distance_overlay !== undefined) {
+                this.ulabel.filter_distance_overlay.update_zoom_value(this.ulabel.state.zoom_val)
+                this.ulabel.filter_distance_overlay.draw_overlay()
+            }
+        })
+
+        $(document).on("click", ".ulabel-pan", (event) => {
+            const annbox = $("#" + this.ulabel.config.annbox_id);
+            if ($(event.currentTarget).hasClass("ulabel-pan-up")) {
+                annbox.scrollTop(annbox.scrollTop() - 20);
+            }
+            else if ($(event.currentTarget).hasClass("ulabel-pan-down")) {
+                annbox.scrollTop(annbox.scrollTop() + 20);
+            }
+            else if ($(event.currentTarget).hasClass("ulabel-pan-left")) {
+                annbox.scrollLeft(annbox.scrollLeft() - 20);
+            }
+            else if ($(event.currentTarget).hasClass("ulabel-pan-right")) {
+                annbox.scrollLeft(annbox.scrollLeft() + 20);
+            }
+        })
+
+        // Add diffrent keypress events if frames exist
+        if (frames_exist) {
+            $(document).on("keypress", (event) => {
+                event.preventDefault()
+                switch (event.key) {
+                    case "ArrowRight":
+                    case "ArrowDown":
+                        this.ulabel.update_frame(1)
+                        break
+                    case "ArrowUp":
+                    case "ArrowLeft":
+                        this.ulabel.update_frame(-1)
+                }
+            })
+        }
+        else {
+            $(document).on("keydown", (event) => {
+                const annbox = $("#" + this.ulabel.config.annbox_id);
+                switch (event.key) {
+                    case "ArrowLeft":
+                        annbox.scrollLeft(annbox.scrollLeft() - 20)
+                        event.preventDefault()
+                        break
+                    case "ArrowRight":
+                        annbox.scrollLeft(annbox.scrollLeft() + 20)
+                        event.preventDefault()
+                        break
+                    case "ArrowUp":
+                        annbox.scrollTop(annbox.scrollTop() - 20)
+                        event.preventDefault()
+                        break
+                    case "ArrowDown":
+                        annbox.scrollTop(annbox.scrollTop() + 20)
+                        event.preventDefault()
+                    default:
+                }
+            })
+        }
+
         $(document).on("click", "#recenter-button", () => {
-            ulabel.show_initial_crop();
+            this.ulabel.show_initial_crop();
         });
 
         $(document).on("click", "#recenter-whole-image-button", () => {
-            ulabel.show_whole_image();
+            this.ulabel.show_whole_image();
         });
 
         $(document).on("keypress", (e) => {
-            if (e.key == ulabel.config.change_zoom_keybind.toLowerCase()) {
+            if (e.key == this.ulabel.config.change_zoom_keybind.toLowerCase()) {
                 document.getElementById("recenter-button").click()
             }
-            if (e.key == ulabel.config.change_zoom_keybind.toUpperCase()) {
+            if (e.key == this.ulabel.config.change_zoom_keybind.toUpperCase()) {
                 document.getElementById("recenter-whole-image-button").click()
             }
         })
@@ -328,34 +753,28 @@ export class ZoomPanToolboxItem extends ToolboxItem {
     public get_html() {
         return `
         <div class="zoom-pan">
-            <div class="half-tb htbmain set-zoom">
-                <p class="shortcut-tip">ctrl+scroll or shift+drag</p>
-                <div class="zpcont">
-                    <div class="lblpyldcont">
-                        <span class="pzlbl htblbl">Zoom</span>
-                        <span class="zinout htbpyld">
-                            <a href="#" class="zbutt zout">-</a>
-                            <a href="#" class="zbutt zin">+</a>
-                        </span>
-                    </div>
-                </div>
-            </div><!--
-            --><div class="half-tb htbmain set-pan">
-                <p class="shortcut-tip">scrollclick+drag or ctrl+drag</p>
-                <div class="zpcont">
-                    <div class="lblpyldcont">
-                        <span class="pzlbl htblbl">Pan</span>
-                        <span class="panudlr htbpyld">
-                            <a href="#" class="pbutt left"></a>
-                            <a href="#" class="pbutt right"></a>
-                            <a href="#" class="pbutt up"></a>
-                            <a href="#" class="pbutt down"></a>
-                            <span class="spokes"></span>
-                        </span>
-                    </div>
+            <div class="set-zoom">  
+                <span>Zoom</span>
+                <span class="zoom-button-holder">
+                    <button class="ulabel-zoom-button ulabel-zoom-out circle">-</button>
+                    <button class="ulabel-zoom-button ulabel-zoom-in circle">+</button>
+                </span>
+            </div>
+            <p class="shortcut-tip zoom-shortcut-tip">ctrl+scroll or shift+drag</p>
+            <div class="set-pan">
+                <div class="pan-container">
+                    <span class="pan-label">Pan</span>
+                    <span class="pan-button-holder">
+                        <button class="ulabel-pan ulabel-pan-left"></button>
+                        <button class="ulabel-pan ulabel-pan-right"></button>
+                        <button class="ulabel-pan ulabel-pan-up"></button>
+                        <button class="ulabel-pan ulabel-pan-down"></button>
+                        <span class="spokes"></span>
+                    </span>
                 </div>
             </div>
-            <div class="recenter-cont" style="text-align: center;">
+            <p class="shortcut-tip pan-shortcut-tip">scrollclick+drag or ctrl+drag</p>
+            <div class="recenter-container">
                 <a href="#" id="recenter-button">Re-Center</a>
                 <a href="#" id="recenter-whole-image-button">Whole Image</a>
             </div>
@@ -363,8 +782,11 @@ export class ZoomPanToolboxItem extends ToolboxItem {
         </div>
         `;
     }
-}
 
+    public get_toolbox_item_type() {
+        return "ZoomPan"
+    }
+}
 
 /**
  * Toolbox item for selection Annotation ID.
@@ -376,6 +798,37 @@ export class AnnotationIDToolboxItem extends ToolboxItem {
     ) {
         super();
         this.set_instructions(ulabel);
+
+        this.add_styles()
+    }
+
+    
+    /**
+     * Create the css for this ToolboxItem and append it to the page.
+     */
+    protected add_styles() {
+        // Define the css
+        const css = `
+        #toolbox div.classification div.id-toolbox-app {
+            margin-bottom: 1rem;
+        }
+        `
+        // Create an id so this specific style tag can be referenced
+        const style_id = "annotation-id-toolbox-item-styles"
+
+        // Don't add the style tag if its already been added once
+        if (document.getElementById(style_id)) return
+
+        // Grab the document's head and create a style tag
+        const head = document.head || document.querySelector("head")
+        const style = document.createElement('style');
+
+        // Add the css and id to the style tag
+        style.appendChild(document.createTextNode(css));
+        style.id = style_id
+
+        // Add the style tag to the document's head
+        head.appendChild(style);
     }
 
     private set_instructions(ulabel) {
@@ -398,6 +851,10 @@ export class AnnotationIDToolboxItem extends ToolboxItem {
         </div>
         `;
     }
+
+    public get_toolbox_item_type() {
+        return "AnnotationID"
+    }
 }
 
 export class ClassCounterToolboxItem extends ToolboxItem {
@@ -406,6 +863,33 @@ export class ClassCounterToolboxItem extends ToolboxItem {
     constructor(...args) {
         super();
         this.inner_HTML = `<p class="tb-header">Annotation Count</p>`;
+        this.add_styles()
+    }
+
+    
+    /**
+     * Create the css for this ToolboxItem and append it to the page.
+     */
+    protected add_styles() {
+        // Define the css
+        const css = ` /* ClassCounterToolboxItem currently requires no styling */ `
+        
+        // Create an id so this specific style tag can be referenced
+        const style_id = "class-counter-toolbox-item-styles"
+
+        // Don't add the style tag if its already been added once
+        if (document.getElementById(style_id)) return
+
+        // Grab the document's head and create a style tag
+        const head = document.head || document.querySelector("head")
+        const style = document.createElement('style');
+
+        // Add the css and id to the style tag
+        style.appendChild(document.createTextNode(css));
+        style.id = style_id
+
+        // Add the style tag to the document's head
+        head.appendChild(style);
     }
 
     update_toolbox_counter(subtask, toolbox_id) {
@@ -459,6 +943,10 @@ export class ClassCounterToolboxItem extends ToolboxItem {
         );
         $("#" + ulabel.config["toolbox_id"] + " div.toolbox-class-counter").html(this.inner_HTML);
     }
+
+    public get_toolbox_item_type() {
+        return "ClassCounter"
+    }
 }
 
 /**
@@ -467,21 +955,20 @@ export class ClassCounterToolboxItem extends ToolboxItem {
 export class AnnotationResizeItem extends ToolboxItem {
     public cached_size: number = 1.5;
     public html: string;
-    public inner_HTML: string;
     private keybind_configuration: {[key: string]: string}
+    private ulabel: ULabel
+
     constructor(ulabel: ULabel) {
         super();
-        this.inner_HTML = `<p class="tb-header">Annotation Count</p>`;
-        //get default keybinds
+
+        this.ulabel = ulabel
+
+        // Get default keybinds
         this.keybind_configuration = ulabel.config.default_keybinds
 
-        //grab current subtask for convinience
-        let current_subtask_key = ulabel.state["current_subtask"];
-        let current_subtask = ulabel.subtasks[current_subtask_key];
-
-        //First check for a size cookie, if one isn't found then check the config
-        //for a default annotation size. If neither are found it will use the size
-        //that the annotation was saved as.
+        // First check for a size cookie, if one isn't found then check the config
+        // for a default annotation size. If neither are found it will use the size
+        // that the annotation was saved as.
         for (let subtask in ulabel.subtasks) {
             let cached_size_property = ulabel.subtasks[subtask].display_name.replaceLowerConcat(" ", "-", "-cached-size")
             let size_cookie = this.read_size_cookie(ulabel.subtasks[subtask])
@@ -500,24 +987,112 @@ export class AnnotationResizeItem extends ToolboxItem {
             }
         }
 
-        //event listener for buttons
-        $(document).on("click", "a.butt-ann", (e) => {
-            let button = $(e.currentTarget);
-            let current_subtask_key = ulabel.state["current_subtask"];
-            let current_subtask = ulabel.subtasks[current_subtask_key];
+        this.add_styles()
+
+        this.add_event_listeners()
+    }
+
+    /**
+     * Create the css for this ToolboxItem and append it to the page.
+     */
+    protected add_styles() {
+        // Define the css
+        const css = `
+        #toolbox div.annotation-resize button:not(.circle) {
+            padding: 1rem 0.5rem;
+            border: 1px solid gray;
+            border-radius: 10px
+        }
+
+        #toolbox div.annotation-resize div.annotation-resize-button-holder {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        #toolbox div.annotation-resize span.annotation-vanish:hover,
+        #toolbox div.annotation-resize span.annotation-size:hover {
+            border-radius: 10px;
+            box-shadow: 0 0 4px 2px lightgray, 0 0 white;
+        }
+
+        /* No box-shadow in night-mode */
+        .ulabel-night #toolbox div.annotation-resize span.annotation-vanish:hover,
+        .ulabel-night #toolbox div.annotation-resize span.annotation-size:hover {
+            box-shadow: initial;
+        }
+
+        #toolbox div.annotation-resize span.annotation-size {
+            display: flex;
+        }
+
+        #toolbox div.annotation-resize span.annotation-size #annotation-resize-s {
+            border-radius: 10px 0 0 10px;
+        }
+
+        #toolbox div.annotation-resize span.annotation-size #annotation-resize-l {
+            border-radius: 0 10px 10px 0;
+        }
+        
+        #toolbox div.annotation-resize span.annotation-inc {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        #toolbox div.annotation-resize button.locked {
+            background-color: #1c2d4d;
+        }
+        
+        `
+        // Create an id so this specific style tag can be referenced
+        const style_id = "resize-annotation-toolbox-item-styles"
+
+        // Don't add the style tag if its already been added once
+        if (document.getElementById(style_id)) return
+
+        // Grab the document's head and create a style tag
+        const head = document.head || document.querySelector("head")
+        const style = document.createElement('style');
+
+        // Add the css and id to the style tag
+        style.appendChild(document.createTextNode(css));
+        style.id = style_id
+
+        // Add the style tag to the document's head
+        head.appendChild(style);
+    }
+
+    private add_event_listeners() {
+        $(document).on("click", ".annotation-resize-button", (event) => {
+            // Get the current subtask
+            const current_subtask_key = this.ulabel.state["current_subtask"];
+            const current_subtask = this.ulabel.subtasks[current_subtask_key];
+
+            // Get the clicked button
+            const button = $(event.currentTarget)
+
+            // Use the button id to get what size to resize the annotations to
             const annotation_size = button.attr("id").slice(18);
+
+            // Update the size of all annotations in the subtask
             this.update_annotation_size(current_subtask, annotation_size);
-            ulabel.redraw_all_annotations(null, null, false);
+
+            this.ulabel.redraw_all_annotations(null, null, false);
         })
-        //event listener for keybinds
-        $(document).on("keypress", (e) => {
-            let current_subtask_key = ulabel.state["current_subtask"];
-            let current_subtask = ulabel.subtasks[current_subtask_key];
-            switch(e.key) {
+
+        $(document).on("keydown", (event) => {
+            // Get the current subtask
+            const current_subtask_key = this.ulabel.state["current_subtask"];
+            const current_subtask = this.ulabel.subtasks[current_subtask_key];
+
+            switch(event.key) {
                 case this.keybind_configuration.annotation_vanish.toUpperCase():
-                    this.update_all_subtask_annotation_size(ulabel, "v");
+                    this.update_all_subtask_annotation_size(this.ulabel, "v");
                     break;
-                case this.keybind_configuration.annotation_vanish:
+                case this.keybind_configuration.annotation_vanish.toLowerCase():
                     this.update_annotation_size(current_subtask, "v")
                     break;
                 case this.keybind_configuration.annotation_size_small:
@@ -533,21 +1108,23 @@ export class AnnotationResizeItem extends ToolboxItem {
                     this.update_annotation_size(current_subtask, "inc")
                     break;
             }
-            ulabel.redraw_all_annotations(null, null, false);
-        } )
+            this.ulabel.redraw_all_annotations(null, null, false);
+        })
     }
-        
 
     //recieives a string of 's', 'l', 'dec', 'inc', or 'v' depending on which button was pressed
     //also the constructor can pass in a number from the config
     public update_annotation_size(subtask, size) {
+        console.log(subtask, size)
+
+        if (subtask === null) return;
+
         const small_size = 1.5;
         const large_size = 5;
         const increment_size = 0.5;
         const vanish_size = 0.01;
         let subtask_cached_size = subtask.display_name.replaceLowerConcat(" ", "-", "-cached-size");
 
-        if (subtask == null) return;
         let subtask_vanished_flag = subtask.display_name.replaceLowerConcat(" ", "-", "-vanished");
         //If the annotations are currently vanished and a button other than the vanish button is
         //pressed, then we want to ignore the input
@@ -558,21 +1135,27 @@ export class AnnotationResizeItem extends ToolboxItem {
         }
 
         if (size == "v") {
-            if (this[subtask_vanished_flag]) { 
+            if (this[subtask_vanished_flag]) {
+                // Re-apply the cashed annotation size 
                 this.loop_through_annotations(subtask, this[subtask_cached_size], "=")
-                //flip the bool state
+                
+                // Filp the state
                 this[subtask_vanished_flag] = !this[subtask_vanished_flag]
-                $("#annotation-resize-v").attr("style","background-color: "+"rgba(100, 148, 237, 0.8)");
-                return;
+
+                // Unlock the vanish button
+                $("#annotation-resize-v").removeClass("locked")
             }
-            if (!this[subtask_vanished_flag]) {
+            else {
+                // Apply the vanish size to make the annotations to small to see
                 this.loop_through_annotations(subtask, vanish_size, "=")
-                //flip the bool state
+                
+                // Filp the state
                 this[subtask_vanished_flag] = !this[subtask_vanished_flag]
-                $("#annotation-resize-v").attr("style","background-color: "+"#1c2d4d");
-                return;
+
+                // Lock the vanish button
+                $("#annotation-resize-v").addClass("locked")
             }
-            return;
+            return
         }
 
         switch(size) {
@@ -589,7 +1172,10 @@ export class AnnotationResizeItem extends ToolboxItem {
                 break;
             case 'inc':
                 this.loop_through_annotations(subtask, increment_size, "+")
-                break;    
+                break;
+            case "v":
+            case "V":
+
             default:
                 return;
         }
@@ -680,19 +1266,23 @@ export class AnnotationResizeItem extends ToolboxItem {
             <p class="tb-header">Change Annotation Size</p>
             <div class="annotation-resize-button-holder">
                 <span class="annotation-vanish">
-                    <a href="#" class="butt-ann button" id="annotation-resize-v">Vanish</a>
+                    <button class="annotation-resize-button" id="annotation-resize-v">Vanish</button>
                 </span>
                 <span class="annotation-size">
-                    <a href="#" class="butt-ann button" id="annotation-resize-s">Small</a>
-                    <a href="#" class="butt-ann button" id="annotation-resize-l">Large</a>
+                    <button class="annotation-resize-button" id="annotation-resize-s">Small</button>
+                    <button class="annotation-resize-button" id="annotation-resize-l">Large</button>
                 </span>
                 <span class="annotation-inc increment">
-                    <a href="#" class="butt-ann button inc" id="annotation-resize-inc">+</a>
-                    <a href="#" class="butt-ann button dec" id="annotation-resize-dec">-</a>
+                    <button class="annotation-resize-button circle inc" id="annotation-resize-inc">+</button>
+                    <button class="annotation-resize-button circle dec" id="annotation-resize-dec">-</button>
                 </span>
             </div>
         </div>
         `
+    }
+
+    public get_toolbox_item_type() {
+        return "AnnotationResize"
     }
 }
 
@@ -716,6 +1306,8 @@ export class RecolorActiveItem extends ToolboxItem {
             }
         }
         ULabel.process_classes(ulabel, ulabel.state.current_subtask, current_subtask);
+
+        this.add_styles()
 
         //event handler for the buttons
         $(document).on("click", "input.color-change-btn", (e) => {
@@ -760,6 +1352,112 @@ export class RecolorActiveItem extends ToolboxItem {
         })
     }
 
+    
+    /**
+     * Create the css for this ToolboxItem and append it to the page.
+     */
+    protected add_styles() {
+        // Define the css
+        const css = `
+        #toolbox div.recolor-active {
+            padding: 0 2rem;
+        }
+
+        #toolbox div.recolor-active div.recolor-tbi-gradient {
+            font-size: 80%;
+        }
+
+        #toolbox div.recolor-active div.gradient-toggle-container {
+            text-align: left;
+            display: flex;
+            align-items: center;
+        }
+
+        #toolbox div.recolor-active div.gradient-slider-container {
+            display: flex;
+            align-items: center;
+        }
+
+        #toolbox div.recolor-active div.gradient-slider-container > input {
+            width: 50%;
+        }
+
+        #toolbox div.recolor-active div.annotation-recolor-button-holder {
+            margin: 0.5rem;
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            grid-template-rows: 1fr 1fr 1fr;
+            grid-template-areas:
+                "yellow picker"
+                "red    picker"
+                "cyan   picker";
+            gap: 0.25rem 0.75rem;
+        }
+
+        #toolbox div.recolor-active div.annotation-recolor-button-holder .color-change-btn {
+            height: 1.5rem;
+            border-radius: 0.5rem;
+        }
+
+        #toolbox div.recolor-active div.annotation-recolor-button-holder #color-change-yel {
+            grid-area: yellow;
+            background-color: yellow;
+            border: 1px solid rgb(200, 200, 0);
+        }
+
+        #toolbox div.recolor-active div.annotation-recolor-button-holder #color-change-red {
+            grid-area: red;
+            background-color: red;
+            border: 1px solid rgb(200, 0, 0);
+        }
+
+        #toolbox div.recolor-active div.annotation-recolor-button-holder #color-change-cya {
+            grid-area: cyan;
+            background-color: cyan;
+            border: 1px solid rgb(0, 200, 200);
+        }
+
+        #toolbox div.recolor-active div.annotation-recolor-button-holder div.color-picker-border {
+            grid-area: picker;
+            background: linear-gradient(to bottom right, red, orange, yellow, green, blue, indigo, violet);
+            border: 1px solid black;
+            border-radius: 0.5rem;
+        }
+
+        #toolbox div.recolor-active div.annotation-recolor-button-holder div.color-picker-border div.color-picker-container {
+            width: calc(100% - 8px);
+            height: calc(100% - 8px);
+            margin: 3px;
+            background-color: black;
+            border: 1px solid black;
+            border-radius: 0.5rem;
+        }
+
+        #toolbox div.recolor-active div.color-picker-container input.color-change-picker {
+            width: 100%;
+            height: 100%;
+            padding: 0;
+            opacity: 0;
+        }`
+
+        // Create an id so this specific style tag can be referenced
+        const style_id = "recolor-toolbox-item-styles"
+
+        // Don't add the style tag if its already been added once
+        if (document.getElementById(style_id)) return
+
+        // Grab the document's head and create a style tag
+        const head = document.head || document.querySelector("head")
+        const style = document.createElement('style');
+
+        // Add the css and id to the style tag
+        style.appendChild(document.createTextNode(css));
+        style.id = style_id
+
+        // Add the style tag to the document's head
+        head.appendChild(style);
+    }
+
     public update_annotation_color(subtask, color, selected_id = null) {
         let need_to_set_cookie = true
         if (selected_id !== null) {
@@ -798,7 +1496,6 @@ export class RecolorActiveItem extends ToolboxItem {
             }
         })
 
-        //$("a.toolbox_sel_"+selected_id+":first").attr("backround-color", color);
         let colored_square_element = ".toolbox_colprev_"+selected_id;
         $(colored_square_element).attr("style","background-color: "+color);
         
@@ -807,7 +1504,6 @@ export class RecolorActiveItem extends ToolboxItem {
             this.set_color_cookie(selected_id, color);
         }
     }
-
     
     private limit_redraw(ulabel: ULabel, wait_time: number = 100) {
 
@@ -876,7 +1572,6 @@ export class RecolorActiveItem extends ToolboxItem {
     }
 
     public get_html() {
-
         let checked_status_bool: boolean = this.read_gradient_cookie(); //true, false, or null
         let checked_status_string: string = ""
 
@@ -887,29 +1582,26 @@ export class RecolorActiveItem extends ToolboxItem {
 
         if (checked_status_bool == true) {
             checked_status_string = "checked";
-
         }
 
         return `
         <div class="recolor-active">
             <p class="tb-header">Recolor Annotations</p>
             <div class="recolor-tbi-gradient">
-                <div>
-                    <label for="gradient-toggle" id="gradient-toggle-label">Toggle Gradients</label>
+                <div class="gradient-toggle-container">
+                    <label for="gradient-toggle" id="gradient-toggle-label">Toggle Gradients:</label>
                     <input type="checkbox" id="gradient-toggle" name="gradient-checkbox" value="gradient" ${checked_status_string}>
                 </div>
-                <div>
-                    <label for="gradient-slider" id="gradient-slider-label">Gradient Max</label>
+                <div class="gradient-slider-container">
+                    <label for="gradient-slider" id="gradient-slider-label">Gradient Max:</label>
                     <input type="range" id="gradient-slider" value="100">
                     <div class="gradient-slider-value-display">100%</div>
                 </div>
             </div>
             <div class="annotation-recolor-button-holder">
-                <div class="color-btn-container">
-                    <input type="button" class="color-change-btn" id="color-change-yel">
-                    <input type="button" class="color-change-btn" id="color-change-red">
-                    <input type="button" class="color-change-btn" id="color-change-cya">
-                </div>
+                <input type="button" class="color-change-btn" id="color-change-yel">
+                <input type="button" class="color-change-btn" id="color-change-red">
+                <input type="button" class="color-change-btn" id="color-change-cya">
                 <div class="color-picker-border">
                     <div class="color-picker-container" id="color-picker-container">
                         <input type="color" class="color-change-picker" id="color-change-pick">
@@ -918,6 +1610,10 @@ export class RecolorActiveItem extends ToolboxItem {
             </div>
         </div>
         `
+    }
+
+    public get_toolbox_item_type() {
+        return "RecolorActive"
     }
 }
 
@@ -936,10 +1632,6 @@ export class KeypointSliderItem extends ToolboxItem {
         "decrement": string
     }
 
-    // Function_array must contain three functions
-    // The first function is how to filter the annotations
-    // The second is how to get the particular confidence
-    // The third is how to mark the annotations deprecated
     constructor(ulabel: ULabel, kwargs: {[name: string]: any}) {
         super();
         this.inner_HTML = `<p class="tb-header">Keypoint Slider</p>`;
@@ -969,83 +1661,61 @@ export class KeypointSliderItem extends ToolboxItem {
         // Create slider bar id
         this.slider_bar_id = this.name.replaceLowerConcat(" ", "-");
         
-        // If the config has a default value override kwargs.default_value with it
+        // If the config has a default value override the filter_value
         if (this.ulabel.config.hasOwnProperty(this.name.replaceLowerConcat(" ", "_", "_default_value"))) {
-            // Grab the new defalut value for convenience
-            const new_default_value: number = this.ulabel.config[this.name.replaceLowerConcat(" ", "_", "_default_value")];
-
-            kwargs.default_value = this.ulabel.config[this.name.replaceLowerConcat(" ", "_", "_default_value")];
-        }
-
-        if (kwargs.default_value !== undefined) {
-            // Set the filter value to the default value
-            this.filter_value = kwargs.default_value
+            // Set the filter value
+            this.filter_value = this.ulabel.config[this.name.replaceLowerConcat(" ", "_", "_default_value")];
         }
 
         // Check the config to see if we should update the annotations with the default filter on load
         if (this.ulabel.config.filter_annotations_on_load) {
-            this.deprecate_annotations(this.ulabel, this.filter_value);
+            this.filter_annotations(this.ulabel, this.filter_value);
         }
 
+        this.add_styles()
+    }
 
-        // ======== Event Listeners ========
-        
-        // Called when the slider element is directly edited by the user
-        $(document).on("input", "#" + this.name.replaceLowerConcat(" ", "-"), (e) => {
-            this.filter_value = e.currentTarget.value;
-            this.deprecate_annotations(ulabel, this.filter_value);
-            this.update_visuals()
-        })
+    
+    /**
+     * Create the css for this ToolboxItem and append it to the page.
+     */
+    protected add_styles() {
+        // Define the css
+        const css = `
+        /* Component has no css?? */
+        `
+        // Create an id so this specific style tag can be referenced
+        const style_id = "keypoint-slider-toolbox-item-styles"
 
-        // Called whenever the user clicks on the increment and decrement buttons
-        $(document).on("click", "a." + this.name.replaceLowerConcat(" ", "-") + "-button", (e) => {
-            const button_text: string = e.currentTarget.outerText
-            const slider = <HTMLInputElement> document.getElementById(this.name.replaceLowerConcat(" ", "-"))
+        // Don't add the style tag if its already been added once
+        if (document.getElementById(style_id)) return
 
-            // Use button_text to figure out what button was clicked, and update the slider value accordingly
-            switch(button_text) {
-                case "+":
-                    this.filter_value = slider.valueAsNumber + 1;
-                    break;
-                case "-":
-                    this.filter_value = slider.valueAsNumber - 1;
-                    break;
-                default:
-                    throw Error("Unknown Keypoint Slider Button Pressed");
-            }
+        // Grab the document's head and create a style tag
+        const head = document.head || document.querySelector("head")
+        const style = document.createElement('style');
 
-            this.deprecate_annotations(ulabel, this.filter_value);
+        // Add the css and id to the style tag
+        style.appendChild(document.createTextNode(css));
+        style.id = style_id
 
-            this.update_visuals()
-        })
-
-        // Called whenever the user uses the keybinds to change the slider value
-        $(document).on("keypress", (e) => {
-            if (e.key === this.keybinds.increment) {
-                let button = <HTMLAnchorElement> document.getElementsByClassName(this.name.replaceLowerConcat(" ", "-") + "-button inc")[0]
-                button.click()
-            }
-
-            if (e.key === this.keybinds.decrement) {
-                let button = <HTMLAnchorElement> document.getElementsByClassName(this.name.replaceLowerConcat(" ", "-") + "-button dec")[0]
-                button.click()
-            }
-        })
+        // Add the style tag to the document's head
+        head.appendChild(style);
     }
 
     /**
-     * Given the ulabel object and a filter value, goes through each annotation and decides whether or not to deprecate them.
+     * Given the ulabel object and a filter value, go through each annotation and decide whether or 
+     * not to deprecate it.
      * 
      * @param ulabel ULabel object
      * @param filter_value The number between 0-100 which annotation's confidence is compared against
      */
-    private deprecate_annotations(ulabel: ULabel, filter_value: number) {
+    private filter_annotations(ulabel: ULabel, filter_value: number) {
         // Get the current subtask
         const current_subtask = ulabel.subtasks[ulabel.state["current_subtask"]];
 
-        for (let idx in current_subtask.annotations.ordering) {
-            // Get the current annotation
-            const current_annotation: ULabelAnnotation = current_subtask.annotations.access[current_subtask.annotations.ordering[idx]]
+        for (const annotation_id in current_subtask.annotations.access) {
+            // Get the current annotation from the access object
+            const current_annotation: ULabelAnnotation = current_subtask.annotations.access[annotation_id]
 
             // Get the annotation's confidence as decimal between 0-1
             let confidence: number = this.get_confidence(current_annotation)
@@ -1057,140 +1727,345 @@ export class KeypointSliderItem extends ToolboxItem {
             const should_deprecate: boolean = this.filter_function(confidence, filter_value)
 
             // Mark this annotation as either deprecated or undeprecated by the confidence filter
-            mark_deprecated(current_annotation, should_deprecate, "confidence_filter")
+            this.mark_deprecated(current_annotation, should_deprecate, "confidence_filter")
         }
     }
 
-    /**
-     * Handles only redrawing to the screen.
-     */
-    private update_visuals() {
-        // Update the slider bar's position, and the label's text.
-        $("#" + this.slider_bar_id).val(Math.round(this.filter_value));
-        $("#" + this.slider_bar_id + "-label").text(Math.round(this.filter_value) + "%");
-
-        // Redraw the annotations
-        this.ulabel.redraw_all_annotations(null, null, false);
-    }
-
     public get_html() {
-        let component_name = this.name.replaceLowerConcat(" ", "-")
-        return`
+        // Create a SliderHandler instance to handle slider interactions
+        const slider_handler = new SliderHandler({
+            "id": this.name.replaceLowerConcat(" ", "-"),
+            "class": "keypoint-slider",
+            "default_value": Math.round(this.filter_value * 100).toString(),
+            "label_units": "%",
+            "slider_event": (slider_value: number) => {
+                // Filter the annotations, then redraw them
+                this.filter_annotations(this.ulabel, slider_value);
+                this.ulabel.redraw_all_annotations();
+            }
+        })
+
+        return `
         <div class="keypoint-slider">
             <p class="tb-header">${this.name}</p>
-            <div class="keypoint-slider-holder">
-                <input 
-                    type="range" 
-                    id="${component_name}" 
-                    class="keypoint-slider" value="${this.filter_value * 100}"
-                />
-                <label 
-                    for="${component_name}" 
-                    id="${component_name}-label"
-                    class="keypoint-slider-label">
-                    ${Math.round(this.filter_value * 100)}%
-                </label>
-                <span class="increment" >
-                    <a href="#" class="button inc keypoint-slider-increment ${component_name}-button" >+</a>
-                    <a href="#" class="button dec keypoint-slider-increment ${component_name}-button" >-</a>
-                </span>
-            </div>
-        </div>`
+            ` + slider_handler.getSliderHTML() + `
+        </div>
+        `
+    }
+
+    public get_toolbox_item_type() {
+        return "KeypointSlider"
     }
 }
 
 export class FilterPointDistanceFromRow extends ToolboxItem {
-    name: string = "Filter Distance From Row"
-    component_name: string = "FilterPointDistanceFromRow"
-    default_value: number = 40
-    ulabel: ULabel
-    filter_on_load: boolean = true
+    name: string // Component name shown to users
+    component_name: string // Internal component name
+    default_values: AnnotationClassDistanceData // Values sliders are set to on page load
+    filter_min: number // Minimum value slider may be set to
+    filter_max: number // Maximum value slider may be set to
+    step_value: number // Value slider increments by
+    filter_on_load: boolean // Whether or not to filter annotations on page load
+    multi_class_mode: boolean // Whether or not the component is currently in multi-class mode
+    show_options: boolean // Whether or not the options dialog will be visable
+    collapse_options: boolean// Whether or not the options is in a collapsed state
+    show_overlay: boolean // Whether or not the overlay will be shown
+    toggle_overlay_keybind: string 
+    overlay: FilterDistanceOverlay
 
-    constructor(ulabel: ULabel, kwargs: {[name: string]: any}) {
+    ulabel: ULabel // The ULabel object. Must be passed in
+    config: FilterDistanceConfig // This object's config object
+
+    constructor(ulabel: ULabel, kwargs: {[name: string]: any} = null) {
         super()
 
         this.ulabel = ulabel
+        
+        // Get this component's config from ulabel's config
+        this.config = this.ulabel.config.distance_filter_toolbox_item
 
-        // Make sure property isn't undefined before using
-        if (typeof this.ulabel.config.filter_row_distance_default_value !== "undefined") {
-            this.default_value = this.ulabel.config.filter_row_distance_default_value
+        // Create a set of defaults for every config value
+        const default_values = {
+            "name": <string> "Filter Distance From Row",
+            "component_name": <string> "fitler_distance_from_row",
+            "filter_min": <number> 0,
+            "filter_max": <number> 100,
+            "default_values": <AnnotationClassDistanceData> {"single": 50},
+            "step_value": <number> 1,
+            "multi_class_mode": <boolean> false,
+            "filter_on_load": <boolean> true,
+            "show_options": <boolean> true,
+            "toggle_overlay_keybind": <string> "p"
         }
 
-        if (typeof this.ulabel.config.filter_row_distance_on_load !== "undefined") {
-            this.filter_on_load = this.ulabel.config.filter_row_distance_on_load
+        // Loop through every key value pair in the config
+        for (const [key, value] of Object.entries(this.config)) {
+            // If the passed in value's type !== the default value's type then use the default value
+            if (typeof value !== typeof default_values[key]) {
+                this.config[key] = default_values[key]
+            }
         }
 
-        if (this.filter_on_load) {
-            filter_points_distance_from_line(this.ulabel, null, this.default_value)
+        // Set the component's properties to be the same as the config's properties
+        for (const property in this.config) {
+            this[property] = this.config[property]
         }
         
+        // Get if the options should be collapsed from local storage
+        if (window.localStorage.getItem("filterDistanceCollapseOptions") === "true") {
+            this.collapse_options = true
+        }
+        else if (window.localStorage.getItem("filterDistanceCollapseOptions") === "false") {
+            this.collapse_options = false
+        }
+ 
+        // Create an overlay and determine whether or not it should be displayed
+        this.create_overlay()
+        if (window.localStorage.getItem("filterDistanceShowOverlay") === "true") {
+            this.show_overlay = true
+            this.overlay.update_display_overlay(true)
+        }
+        else if (window.localStorage.getItem("filterDistanceShowOverlay") === "false") {
+            this.show_overlay = false
+            this.overlay.update_display_overlay(false)
+        }
+        else if (this.config.show_overlay_on_load !== undefined || this.config.show_overlay_on_load !== null) {
+            this.show_overlay = this.config.show_overlay_on_load
+        }
+        else {
+            this.show_overlay = false // Default
+        }
 
-        // === Create event listeners for this ToolboxItem ===
+        this.add_styles()
 
-        // Whenever the user directly updates the slider, update the label to show the correct value
-        $(document).on("input", "#" + this.component_name + "-slider", () => this.updateSliderLabel())
-
-        // Whenever the user directly updates the slider, call the filtering function
-        $(document).on("input", "#" + this.component_name + "-slider", () => filter_points_distance_from_line(this.ulabel))
-
-        // Whenever the user clicks on the increment button, increment the slider value
-        $(document).on("click", "#" + this.component_name + "inc-button", () => this.incrementSliderValue())
-
-        // Whenever the user clicks on the decrement button, decrement the slider value
-        $(document).on("click", "#" + this.component_name + "dec-button", () => this.decrementSliderValue())
+        this.add_event_listeners()
     }
 
     /**
-     * Updates this component's slider's label based on the slider's current value.
+     * Create the css for this ToolboxItem and append it to the page.
      */
-    private updateSliderLabel() {
-        // Grab the slider element
-        const slider: HTMLInputElement = document.querySelector("#" + this.component_name + "-slider")
+    protected add_styles() {
+        // Define the css
+        const css = `
+            #toolbox div.filter-row-distance {
+                text-align: left;
+            }
 
-        // Grab the current value of the slider element
-        const slider_value = slider.value
+            #toolbox p.tb-header {
+                margin: 0.75rem 0 0.5rem;
+            }
 
-        // Grab the label element
-        const filter_label: HTMLLabelElement = document.querySelector("#" + this.component_name + "-label")
+            #toolbox div.filter-row-distance fieldset.filter-row-distance-options {
+                display: inline-block;
+                position: relative;
+                left: 1rem;
+                margin-bottom: 0.5rem;
+                font-size: 80%;
+                user-select: none;
+            }
 
-        // Update the label's inner text to the value of the slider
-        filter_label.innerText = slider_value + "px"
+            #toolbox div.filter-row-distance fieldset.filter-row-distance-options * {
+                text-align: left;
+            }
+
+            #toolbox div.filter-row-distance fieldset.filter-row-distance-options.ulabel-collapsed {
+                border: none;
+                margin-bottom: 0;
+                padding: 0; /* Padding takes up too much space without the content */
+
+                /* Needed to prevent the element from moving when ulabel-collapsed is toggled 
+                0.75em comes from the previous padding, 2px comes from the removed border */
+                padding-left: calc(0.75em + 2px)
+            }
+
+            #toolbox div.filter-row-distance fieldset.filter-row-distance-options legend {
+                border-radius: 0.1rem;
+                padding: 0.1rem 0.3rem;
+                cursor: pointer;
+            }
+
+            #toolbox div.filter-row-distance fieldset.filter-row-distance-options.ulabel-collapsed legend {
+                padding: 0.1rem 0.28rem;
+            }
+
+            #toolbox div.filter-row-distance fieldset.filter-row-distance-options.ulabel-collapsed :not(legend) {
+                display: none;
+            }
+
+            #toolbox div.filter-row-distance fieldset.filter-row-distance-options legend:hover {
+                background-color: rgba(128, 128, 128, 0.3)
+            }
+
+            #toolbox div.filter-row-distance fieldset.filter-row-distance-options input[type="checkbox"] {
+                margin: 0;
+            }
+
+            #toolbox div.filter-row-distance fieldset.filter-row-distance-options label {
+                position: relative;
+                top: -0.2rem;
+                font-size: smaller;
+            }`
+
+        // Create an id so this specific style tag can be referenced
+        const style_id = "filter-distance-from-row-toolbox-item-styles"
+
+        // Don't add the style tag if its already been added once
+        if (document.getElementById(style_id)) return
+
+        // Grab the document's head and create a style tag
+        const head = document.head || document.querySelector("head")
+        const style = document.createElement('style');
+
+        // Add the css and id to the style tag
+        style.appendChild(document.createTextNode(css));
+        style.id = style_id
+
+        // Add the style tag to the document's head
+        head.appendChild(style);
+    }
+
+    private add_event_listeners() {
+        // Whenever the options legend is clicked, toggle displaying the options
+        $(document).on("click", "fieldset.filter-row-distance-options > legend", () => this.toggleCollapsedOptions())
+
+        // Whenever the multi-class filtering checkbox is clicked, switch the displayed filter mode
+        $(document).on("click", "#filter-slider-distance-multi-checkbox", () => {
+            // Toggle the multi-class state
+            this.multi_class_mode = !this.multi_class_mode
+
+            // Toggle whether the single-class slider, or the multi-class sliders are visible
+            this.switchFilterMode()
+
+            this.overlay.update_mode(this.multi_class_mode ? "multi" : "single")
+
+            // Re-filter the points in the new mode
+            filter_points_distance_from_line(this.ulabel)
+        })
+
+        $(document).on("change", "#filter-slider-distance-toggle-overlay-checkbox", (event) => {
+            // Update whether or not the overlay is allowed to be drawn
+            this.overlay.update_display_overlay(event.currentTarget.checked)
+
+            // Try to draw the overlay
+            this.overlay.draw_overlay()
+
+            // Save whether or not the overlay is allowed to be drawn to local storage
+            window.localStorage.setItem("filterDistanceShowOverlay", event.currentTarget.checked.toString())
+        })
+
+        $(document).on("keypress", (event) => {
+            if (event.key !== this.toggle_overlay_keybind) return
+
+            // Grab the show overlay checkbox and click it
+            const show_overlay_checkbox: HTMLInputElement = document.querySelector("#filter-slider-distance-toggle-overlay-checkbox")
+            show_overlay_checkbox.click()
+        })
     }
 
     /**
-     * Increments this component's slider by one.
+     * Toggle which filter mode is being displayed and which one is being hidden.
      */
-    private incrementSliderValue() {
-        // Grab the slider element
-        let slider: HTMLInputElement = document.querySelector("#" + this.component_name + "-slider")
-
-        // Update the slider's value
-        slider.value = (slider.valueAsNumber + 1).toString()
-
-        // Update the label to be accurate
-        this.updateSliderLabel()
-
-        // Call the filter function
-        filter_points_distance_from_line(this.ulabel)
+    private switchFilterMode() {
+        $("#filter-single-class-mode").toggleClass("ulabel-hidden")
+        $("#filter-multi-class-mode").toggleClass("ulabel-hidden")
     }
 
     /**
-     * Decrements this component's slider by one.
+     * Toggles whether or not the options should be displayed.
      */
-    private decrementSliderValue() {
-        // Grab the slider element
-        let slider: HTMLInputElement = document.querySelector("#" + this.component_name + "-slider")
+    private toggleCollapsedOptions() {
+        // Toggle the class which collapses the options
+        $("fieldset.filter-row-distance-options").toggleClass("ulabel-collapsed")
 
-        // Update the slider's value
-        slider.value = (slider.valueAsNumber - 1).toString()
+        // Toggle the state
+        this.collapse_options = !this.collapse_options
 
-        // Update the label to be accurate
-        this.updateSliderLabel()
-
-        // Call the filter function
-        filter_points_distance_from_line(this.ulabel)
+        // Save the state to the user's browser so it can be re-loaded in the same state
+        window.localStorage.setItem("filterDistanceCollapseOptions", this.collapse_options.toString())
     }
 
+    private create_overlay() {
+        // Get only the set of all line annotations
+        const line_annotations: ULabelAnnotation[] = get_point_and_line_annotations(this.ulabel)[1]
+
+        // Initialize an object to hold the distances points are allowed to be from each class as well as any line
+        let filter_values: AnnotationClassDistanceData = {"single": undefined}
+
+        // Grab all filter-distance-sliders on the page
+        const sliders: NodeListOf<HTMLInputElement> = document.querySelectorAll(".filter-row-distance-slider")
+
+        // Check for at least one slider
+        if (sliders.length === 0) {
+            console.error("Unable to find ulabel distance sliders while initializing filter distance overlay")
+        }
+
+        // Loop through each slider and populate filter_values
+        for (let idx = 0; idx < sliders.length; idx++) {
+            // Use a regex to get the string after the final - character in the slider id (Which is the class id or the string "single")
+            const slider_class_name = /[^-]*$/.exec(sliders[idx].id)[0]
+
+            // Use the class id as a key to store the slider's value
+            filter_values[slider_class_name] = sliders[idx].valueAsNumber
+        }
+
+        // Create and assign an overlay class instance to ulabel to be able to access it
+        this.overlay = new FilterDistanceOverlay(
+            this.ulabel.config["image_width"] * this.ulabel.config["px_per_px"],
+            this.ulabel.config["image_height"] * this.ulabel.config["px_per_px"],
+            line_annotations
+        )
+
+        // Apply the generated distances to the overlay
+        this.overlay.update_distances(filter_values)
+    }
+
+    public get_overlay() {
+        return this.overlay
+    }
+
+    /**
+     * Gets all classes that polylines can be and creates a distance filter for each class.
+     * 
+     * @returns {string} HTML for the multi-class filtering mode
+     */
+    private createMultiFilterHTML(): string {
+        // Get all potential classes
+        const class_defs = findAllPolylineClassDefinitions(this.ulabel)
+
+        let multi_class_html: string = ``
+
+        // Loop through each class and create their html
+        for (let idx = 0; idx < class_defs.length; idx++) {
+            // Grab current class for convenience
+            const current_id = class_defs[idx].id
+            const current_name = class_defs[idx].name
+
+            let default_value: string
+            if (this.default_values[current_id] !== undefined) {
+                default_value = this.default_values[current_id].toString()
+            }
+            else {
+                default_value = this.default_values["single"].toString()
+            }
+
+            const multi_class_slider_instance = new SliderHandler({
+                "id": `filter-row-distance-${current_id}`,
+                "class": "filter-row-distance-slider filter-row-distance-class-slider",
+                "min": this.filter_min.toString(),
+                "max": this.filter_max.toString(),
+                "default_value": default_value,
+                "step": this.step_value.toString(),
+                "label_units": "px",
+                "main_label": current_name,
+                "slider_event": () => filter_points_distance_from_line(this.ulabel)
+            })
+
+            // Add current classes html to multi_class_html
+            multi_class_html += multi_class_slider_instance.getSliderHTML()
+        }
+
+        return multi_class_html
+    }
 
     /**
      * Returns the component's html.
@@ -1198,30 +2073,74 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
      * @returns {String} Component's html
      */
     public get_html(): string {
+        // Get the multi-class filter html
+        const multi_class_html: string = this.createMultiFilterHTML()
+
+        /* Create a SliderHandler instance to take care of creating the single class slider's html
+           and its event handlers */
+        const single_class_slider_handler = new SliderHandler({
+            "class": "filter-row-distance-slider",
+            "default_value": this.default_values["single"].toString(),
+            "id": "filter-row-distance-single",
+            "label_units": "px",
+            "slider_event": () => {filter_points_distance_from_line(this.ulabel)},
+            "min": this.filter_min.toString(),
+            "max": this.filter_max.toString(),
+            "step": this.step_value.toString()
+        })
+
         return`
         <div class="filter-row-distance">
             <p class="tb-header">${this.name}</p>
-            <div class="filter-row-distance-container">
-                <input 
-                    type="range"
-                    min="0"
-                    max="400"
-                    id="${this.component_name}-slider" 
-                    class="keypoint-slider" value="${this.default_value}"
-                />
-                <label 
-                    for="${this.component_name}" 
-                    id="${this.component_name}-label"
-                    class="keypoint-slider-label">
-                    ${Math.round(this.default_value)}px
-                </label>
-                <div class="filter-row-distance-button-holder">
-                    <button id="${this.component_name}inc-button">+</button>
-                    <button id="${this.component_name}dec-button">-</button>
+            <fieldset class="
+                    filter-row-distance-options 
+                    ${this.show_options ? "" : "ulabel-hidden"} 
+                    ${this.collapse_options ? "ulabel-collapsed" : "" } 
+                ">
+                <legend>
+                    Options ˅
+                </legend>
+                <div class="filter-row-distance-option">
+                    <input
+                        type="checkbox"
+                        id="filter-slider-distance-multi-checkbox"
+                        class="filter-row-distance-options-checkbox"
+                        ${this.multi_class_mode ? "checked" : ""}
+                    />
+                    <label
+                        for="filter-slider-distance-multi-checkbox"
+                        id="filter-slider-distance-multi-checkbox-label"
+                        class="filter-row-distance-label">
+                        Multi-Class Filtering
+                    </label>
                 </div>
+                <div class="filter-row-distance-option">
+                    <input
+                        type="checkbox"
+                        id="filter-slider-distance-toggle-overlay-checkbox"
+                        class="filter-row-distance-options-checkbox"
+                        ${this.show_overlay ? "checked" : ""}
+                    />
+                    <label
+                        for="filter-slider-distance-toggle-overlay-checkbox"
+                        id="filter-slider-distance-toggle-overlay-checkbox-label"
+                        class="filter-row-distance-label">
+                        Show Filter Range
+                    </label>
+                </div>
+            </fieldset>
+            <div id="filter-single-class-mode" class="${!this.multi_class_mode ? "" : "ulabel-hidden"}">
+                ${single_class_slider_handler.getSliderHTML()}
+            </div>
+            <div id="filter-multi-class-mode" class="${this.multi_class_mode ? "" : "ulabel-hidden"}">
+                ` + multi_class_html + `
             </div>
         </div>
         `
+    }
+
+    public get_toolbox_item_type() {
+        return "FilterDistance"
     }
 }
 
@@ -1233,6 +2152,10 @@ export class SubmitButtons extends ToolboxItem {
     
         // Grab the submit buttons from ulabel
         this.submit_buttons = ulabel.config.submit_buttons
+
+        this.add_styles()
+
+        this.add_event_listeners()
 
         // For legacy reasons submit_buttons may be a function, in that case convert it to the right format
         if (typeof this.submit_buttons == "function") {
@@ -1298,6 +2221,53 @@ export class SubmitButtons extends ToolboxItem {
         }
     }
 
+    
+    /**
+     * Create the css for this ToolboxItem and append it to the page.
+     */
+    protected add_styles() {
+        // Define the css
+        const css = `
+        
+
+        
+        
+        
+        `
+        // Create an id so this specific style tag can be referenced
+        const style_id = "submit-buttons-toolbox-item-styles"
+
+        // Don't add the style tag if its already been added once
+        if (document.getElementById(style_id)) return
+
+        // Grab the document's head and create a style tag
+        const head = document.head || document.querySelector("head")
+        const style = document.createElement('style');
+
+        // Add the css and id to the style tag
+        style.appendChild(document.createTextNode(css));
+        style.id = style_id
+
+        // Add the style tag to the document's head
+        head.appendChild(style);
+    }
+
+    add_event_listeners(): void {
+        $(document).on("keypress", (event) => {
+            const ctrl = event.ctrlKey || event.metaKey
+            if (ctrl &&
+                (
+                    event.key === "s" ||
+                    event.key === "S" ||
+                    event.code === "KeyS"
+                )
+            ) {
+                event.preventDefault();
+                $(".submit-button")[0].click(); // Click the first submit button
+            }
+        })
+    }
+
     get_html(): string {
         let toolboxitem_html = ``
 
@@ -1337,6 +2307,10 @@ export class SubmitButtons extends ToolboxItem {
         }
         
         return toolboxitem_html
+    }
+
+    public get_toolbox_item_type() {
+        return "SubmitButtons"
     }
 }
 

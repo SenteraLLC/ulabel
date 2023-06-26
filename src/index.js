@@ -5,11 +5,11 @@ Sentera Inc.
 import { ULabelAnnotation } from '../build/annotation';
 import { ULabelSubtask } from '../build/subtask';
 import { GeometricUtils } from '../build/geometric_utils';
-import { get_annotation_confidence } from '../build/annotation_operators';
+import { get_annotation_confidence, mark_deprecated, filter_points_distance_from_line, get_point_and_line_annotations } from '../build/annotation_operators';
 import { get_gradient } from '../build/drawing_utilities'
 import { Configuration, AllowedToolboxItem } from '../build/configuration';
 import { HTMLBuilder } from '../build/html_builder';
-import { mark_deprecated, filter_points_distance_from_line } from "../build/annotation_operators";
+
 import $ from 'jquery';
 const jQuery = $;
 window.$ = window.jQuery = require('jquery');
@@ -19,7 +19,8 @@ const { v4: uuidv4 } = require('uuid');
 import {
     COLORS,
     WHOLE_IMAGE_SVG,
-    GLOBAL_SVG} from './blobs';
+    GLOBAL_SVG
+} from './blobs';
 import { ULABEL_VERSION } from './version';
 
 jQuery.fn.outer_html = function () {
@@ -156,15 +157,15 @@ export class ULabel {
             ul.handle_mouse_move(mouse_event);
         });
 
-        $(document).on("keypress", (e) => {   
+        $(document).on("keypress", (e) => {
             // Check for the correct keypress
 
-            switch(e.key) {
+            switch (e.key) {
                 // Create a point annotation at the mouse's current location
                 case ul.config.create_point_annotation_keybind:
                     // Grab current subtask
                     const current_subtask = ul.subtasks[ul.state["current_subtask"]]
-                    
+
                     // Only allow keypress to create point annotations
                     if (current_subtask.state.annotation_mode == "point") {
                         // Create an annotation based on the last mouse position
@@ -178,7 +179,7 @@ export class ULabel {
                     if (ul.config.initial_crop === null || ul.config.initial_crop === undefined) {
 
                         // Create the coordinates for the bbox's spatial payload
-                        const bbox_top_left = [0,0]
+                        const bbox_top_left = [0, 0]
                         const bbox_bottom_right = [ul.config.image_width, ul.config.image_height]
 
                         ul.create_annotation("bbox", [bbox_top_left, bbox_bottom_right])
@@ -216,6 +217,12 @@ export class ULabel {
                 // Apply new zoom
                 ul.state["zoom_val"] *= (1 - dlta / 10);
                 ul.rezoom(wheel_event.clientX, wheel_event.clientY);
+
+                // Only try to update the overlay if it exists
+                if (ul.filter_distance_overlay !== undefined) {
+                    ul.filter_distance_overlay.update_zoom_value(ul.state.zoom_val)
+                    ul.filter_distance_overlay.draw_overlay()
+                }
             }
             else if (fms) {
                 wheel_event.preventDefault();
@@ -241,32 +248,6 @@ export class ULabel {
             ul.handle_toolbox_overflow();
         }).observe(document.getElementById(ul.config["container_id"]));
 
-        $(document).on("click", "#" + ul.config["toolbox_id"] + " .zbutt", (e) => {
-            let tgt_jq = $(e.currentTarget);
-            if (tgt_jq.hasClass("zin")) {
-                ul.state["zoom_val"] *= 1.1;
-            }
-            else if (tgt_jq.hasClass("zout")) {
-                ul.state["zoom_val"] /= 1.1;
-            }
-            ul.rezoom();
-        });
-        $(document).on("click", "#" + ul.config["toolbox_id"] + " .pbutt", (e) => {
-            let tgt_jq = $(e.currentTarget);
-            let annbox = $("#" + ul.config["annbox_id"]);
-            if (tgt_jq.hasClass("up")) {
-                annbox.scrollTop(annbox.scrollTop() - 20);
-            }
-            else if (tgt_jq.hasClass("down")) {
-                annbox.scrollTop(annbox.scrollTop() + 20);
-            }
-            else if (tgt_jq.hasClass("left")) {
-                annbox.scrollLeft(annbox.scrollLeft() - 20);
-            }
-            else if (tgt_jq.hasClass("right")) {
-                annbox.scrollLeft(annbox.scrollLeft() + 20);
-            }
-        });
         $(document).on("click", "#" + ul.config["toolbox_id"] + " .wbutt", (e) => {
             let tgt_jq = $(e.currentTarget);
             if (tgt_jq.hasClass("win")) {
@@ -277,6 +258,7 @@ export class ULabel {
             }
             ul.redraw_demo();
         });
+        
         $(document).on("click", "#" + ul.config["toolbox_id"] + " .setting a", (e) => {
             let tgt_jq = $(e.currentTarget);
             if (!e.currentTarget.hasAttribute("href")) return;
@@ -325,7 +307,7 @@ export class ULabel {
 
         // Keybind to switch active subtask
         $(document).on("keypress", (e) => {
-            
+
             // Ignore if in the middle of annotation
             if (ul.subtasks[ul.state["current_subtask"]]["state"]["is_in_progress"]) {
                 return;
@@ -336,23 +318,23 @@ export class ULabel {
 
                 let current_subtask = ul.state["current_subtask"];
                 let toolbox_tab_keys = [];
-    
+
                 // Put all of the toolbox tab keys in a list
-                for(let idx in ul.toolbox.tabs) {
+                for (let idx in ul.toolbox.tabs) {
                     toolbox_tab_keys.push(ul.toolbox.tabs[idx].subtask_key);
                 }
-    
+
                 // Get the index of the next subtask in line
                 let new_subtask_index = toolbox_tab_keys.indexOf(current_subtask) + 1;  // +1 gets the next subtask
-    
+
                 // If the current subtask was the last one in the array, then
                 // loop around to the first subtask
                 if (new_subtask_index == toolbox_tab_keys.length) {
                     new_subtask_index = 0;
                 }
-    
+
                 let new_subtask = toolbox_tab_keys[new_subtask_index];
-    
+
                 ul.set_subtask(new_subtask);
             }
         })
@@ -426,7 +408,7 @@ export class ULabel {
                     //delete the active annotation
                     ul.delete_annotation(ul.subtasks[ul.state["current_subtask"]]["active_annotation"])
                 }
-            }   
+            }
         })
 
         // Listener for id_dialog click interactions
@@ -474,8 +456,6 @@ export class ULabel {
         document.addEventListener("keydown", (keypress_event) => {
             const shift = keypress_event.shiftKey;
             const ctrl = keypress_event.ctrlKey || keypress_event.metaKey;
-            let fms = ul.config["image_data"].frames.length > 1;
-            let annbox = $("#" + ul.config["annbox_id"]);
             if (ctrl &&
                 (
                     keypress_event.key == "z" ||
@@ -492,52 +472,6 @@ export class ULabel {
                 }
                 return false;
             }
-            else if (ctrl &&
-                (
-                    keypress_event.key == "s" ||
-                    keypress_event.key == "S" ||
-                    keypress_event.code == "KeyS"
-                )
-            ) {
-                keypress_event.preventDefault();
-                $(".submit-button")[0].click(); // Click the first submit button
-            }
-            else if (keypress_event.key == "l") {
-                // console.log("Listing annotations using the \"l\" key has been deprecated.");
-                // console.log(ul.annotations);
-            }
-            else if (keypress_event.key == "ArrowRight") {
-                if (fms) {
-                    ul.update_frame(1);
-                }
-                else {
-                    annbox.scrollLeft(annbox.scrollLeft() + 20);
-                }
-            }
-            else if (keypress_event.key == "ArrowDown") {
-                if (fms) {
-                    ul.update_frame(1);
-                }
-                else {
-                    annbox.scrollTop(annbox.scrollTop() + 20);
-                }
-            }
-            else if (keypress_event.key == "ArrowLeft") {
-                if (fms) {
-                    ul.update_frame(-1);
-                }
-                else {
-                    annbox.scrollLeft(annbox.scrollLeft() - 20);
-                }
-            }
-            else if (keypress_event.key == "ArrowUp") {
-                if (fms) {
-                    ul.update_frame(-1);
-                }
-                else {
-                    annbox.scrollTop(annbox.scrollTop() - 20);
-                }
-            }
             else {
                 // console.log(keypress_event);
             }
@@ -553,12 +487,10 @@ export class ULabel {
         });
     }
 
-
     static process_allowed_modes(ul, subtask_key, subtask) {
         // TODO(v1) check to make sure these are known modes
         ul.subtasks[subtask_key]["allowed_modes"] = subtask["allowed_modes"];
     }
-
 
     static process_classes(ul, subtask_key, subtask) {
         // Check to make sure allowed classes were provided
@@ -616,7 +548,6 @@ export class ULabel {
             ul.tot_num_classes++;
         }
     }
-
 
     static process_resume_from(ul, subtask_key, subtask) {
         // Initialize to no annotations
@@ -891,7 +822,7 @@ export class ULabel {
 
             // Passthrough
             "task_meta": task_meta,
-            "annotation_meta": annotation_meta
+            "annotation_meta": annotation_meta,
         });
 
         // Update the ulabel config object with the passed in config data
@@ -1042,6 +973,7 @@ export class ULabel {
                     that.subtasks[st]["canvas_fid"]
                 ).getContext("2d");
             }
+
             // Get rendering context for demo canvas
             // that.state["demo_canvas_context"] = document.getElementById(
             //     that.config["canvas_did"]
@@ -1076,6 +1008,29 @@ export class ULabel {
 
             // Draw resumed from annotations
             that.redraw_all_annotations();
+
+            // Find all toolbox items that contain overlays, add a reference to them, and add them to the document
+            if (that.toolbox_order.includes(AllowedToolboxItem.FilterDistance)) {
+                that.toolbox.items.forEach((toolbox_item) => {
+                    if (toolbox_item.get_toolbox_item_type() === "FilterDistance") {
+                        // Give ulabel a referance to the filter overlay for confinience
+                        that.filter_distance_overlay = toolbox_item.get_overlay()
+
+                        // Image width and height is undefined when the overlay is created, so update it here
+                        that.filter_distance_overlay.resize_canvas(that.config.image_width, that.config.image_height)
+
+                        $("#" + that.config["imwrap_id"]).prepend(that.filter_distance_overlay.get_canvas())
+                        
+                        // Filter the points with an override
+                        filter_points_distance_from_line(that, null, {
+                            "should_redraw": that.config.distance_filter_toolbox_item.filter_on_load,
+                            "multi_class_mode": that.config.distance_filter_toolbox_item.multi_class_mode,
+                            "show_overlay": that.filter_distance_overlay.get_display_overlay(),
+                            "distances": that.config.distance_filter_toolbox_item.default_values
+                        })
+                    }
+                })
+            }
 
             // Call the user-provided callback
             callback();
@@ -1138,6 +1093,11 @@ export class ULabel {
 
                 this.state["zoom_val"] = Math.min(this.get_viewport_height_ratio(height), this.get_viewport_width_ratio(width));
                 this.rezoom(lft_cntr, top_cntr, true);
+
+                if (this.filter_distance_overlay !== undefined) {
+                    this.filter_distance_overlay.update_zoom_value(this.state.zoom_val)
+                    this.filter_distance_overlay.draw_overlay()
+                }
                 return;
             }
             else {
@@ -1158,7 +1118,11 @@ export class ULabel {
 
         this.state["zoom_val"] = Math.min(this.get_viewport_height_ratio(hgt), this.get_viewport_width_ratio(wdt));
         this.rezoom(lft_cntr, top_cntr, true);
-        return;
+        
+        if (this.filter_distance_overlay !== undefined) {
+            this.filter_distance_overlay.update_zoom_value(this.state.zoom_val)
+            this.filter_distance_overlay.draw_overlay()
+        }
     }
 
     // ================== Cursor Helpers ====================
@@ -2228,7 +2192,7 @@ export class ULabel {
         if (!current_subtask["state"]["idd_thumbnail"]) {
             this.hide_id_dialog();
         }
-        
+
         if (action_stream[action_stream.length - 1].redo_payload.finished === false) {
             this.finish_action(action_stream[action_stream.length - 1]);
         }
@@ -2237,7 +2201,7 @@ export class ULabel {
         if (newact != null) {
             undone_stack[undone_stack.length - 1] = newact
         }
-        
+
         // If the FilterDistance ToolboxItem is present, filter points
         if (this.toolbox_order.includes(AllowedToolboxItem.FilterDistance)) {
             // Currently only supported by polyline
@@ -2268,7 +2232,7 @@ export class ULabel {
      * @param {string} spatial_type What type of annotation to create
      * @param {[number, number][]} spatial_payload 
      */
-    create_annotation(spatial_type, spatial_payload, unique_id=null) {
+    create_annotation(spatial_type, spatial_payload, unique_id = null) {
         // Grab constants for convenience
         const current_subtask = this.subtasks[this.state["current_subtask"]]
         const annotation_access = current_subtask["annotations"]["access"]
@@ -2316,7 +2280,7 @@ export class ULabel {
             "created_by": this.config["annotator"],
             "created_at": ULabel.get_time(),
             "deprecated": false,
-            "deprecated_by": {"human": false},
+            "deprecated_by": { "human": false },
             "spatial_type": spatial_type,
             "spatial_payload": spatial_payload,
             "classification_payloads": classification_payloads,
@@ -2330,7 +2294,7 @@ export class ULabel {
         // Record the action so it can be undone and redone
         this.record_action({
             "act_type": "create_annotation",
-            "undo_payload": {"annotation_id": unique_id},
+            "undo_payload": { "annotation_id": unique_id },
             "redo_payload": {
                 "annotation_id": unique_id,
                 "spatial_payload": spatial_payload,
@@ -2384,8 +2348,8 @@ export class ULabel {
     create_annotation__redo(redo_payload) {
         // Recreate the annotation with the same annotation_id, spatial_type, and spatial_payload
         this.create_annotation(
-            redo_payload.spatial_type, 
-            redo_payload.spatial_payload, 
+            redo_payload.spatial_type,
+            redo_payload.spatial_payload,
             redo_payload.annotation_id
         )
     }
@@ -2845,7 +2809,7 @@ export class ULabel {
             "created_by": this.config["annotator"],
             "created_at": ULabel.get_time(),
             "deprecated": false,
-            "deprecated_by": {"human": false},
+            "deprecated_by": { "human": false },
             "spatial_type": annotation_mode,
             "spatial_payload": null,
             "classification_payloads": JSON.parse(JSON.stringify(init_idpyld)),
@@ -2977,7 +2941,7 @@ export class ULabel {
             "created_by": this.config["annotator"],
             "created_at": ULabel.get_time(),
             "deprecated": false,
-            "deprecated_by": {"human": false},
+            "deprecated_by": { "human": false },
             "spatial_type": annotation_mode,
             "spatial_payload": init_spatial,
             "classification_payloads": JSON.parse(JSON.stringify(init_id_payload)),
@@ -3375,7 +3339,7 @@ export class ULabel {
                     current_subtask["state"]["edit_candidate"]["point"] = mouse_location;
                     this.show_edit_suggestion(current_subtask["state"]["edit_candidate"], true);
                     this.show_global_edit_suggestion(current_subtask["state"]["edit_candidate"]["annid"]);
-                    
+
                     // If the FilterDistance ToolboxItem is present, filter annotations on annotation edit
                     if (this.toolbox_order.includes(AllowedToolboxItem.FilterDistance)) {
                         // Currently only supported by polyline
@@ -3877,7 +3841,7 @@ export class ULabel {
         // TODO(3d)
         if (undo_payload.deprecate_old) {
             active_id = undo_payload.old_id;
-            
+
             // Mark the active annotation undeprecated
             mark_deprecated(annotations[active_id], false)
 
@@ -4053,7 +4017,7 @@ export class ULabel {
      * Find annotations where cursor is within bounding box
      * Find closest keypoints (ends of polygons/polylines etc) within a range defined by the edit handle
      * If no endpoints, search along segments with infinite range 
-     */  
+     */
     suggest_edits(mouse_event = null, nonspatial_id = null) {
         let best_candidate;
 
@@ -4431,6 +4395,7 @@ export class ULabel {
             }, redoing);
         }
     }
+
     assign_annotation_id__undo(undo_payload) {
         let actid = undo_payload.actid;
         let new_payload = JSON.parse(JSON.stringify(undo_payload.old_id_payload));
@@ -4446,6 +4411,15 @@ export class ULabel {
         this.assign_annotation_id();
         this.subtasks[this.state["current_subtask"]]["state"]["first_explicit_assignment"] = false;
         this.suggest_edits(this.state["last_move"]);
+
+        // TODO: Check to make sure the clicked annotation was a polyline
+        // If the filter_distance_toolbox_item exists, filter annotations if in multi_class_mode
+        if (this.filter_distance_overlay !== undefined) {
+            // Probably not good practice to get the mode from the overlay instead of the toolboxitem but this is easier
+            if (this.filter_distance_overlay.get_mode() === "multi") {
+                filter_points_distance_from_line(this)
+            }
+        }
     }
 
     // ================= Viewer/Annotation Interaction Handlers  ================= 
@@ -4676,6 +4650,11 @@ export class ULabel {
         toresize.css("width", new_width + "px");
         toresize.css("height", new_height + "px");
 
+        // Apply new size to overlay if overlay exists
+        if (this.filter_distance_overlay !== undefined) {
+            this.filter_distance_overlay.resize_canvas(new_width, new_height)
+        }
+
         // Compute and apply new position
         let new_left, new_top;
         if (abs) {
@@ -4706,7 +4685,6 @@ export class ULabel {
         annbox.css("background-color", new_bg_color);
         return ret
     }
-
 
     reset_interaction_state(subtask = null) {
         let q = [];
@@ -4796,9 +4774,7 @@ export class ULabel {
         this.redraw_all_annotations(subtask);
     }
 
-
     // Change frame
-
     update_frame(delta = null, new_frame = null) {
         if (this.config["image_data"]["frames"].length == 1) {
             return;

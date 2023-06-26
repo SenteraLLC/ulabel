@@ -1,3 +1,4 @@
+import { FilterDistanceConfig } from "..";
 import { 
     ModeSelectionToolboxItem, 
     ZoomPanToolboxItem, 
@@ -11,15 +12,15 @@ import {
 } from "./toolbox"
 
 export enum AllowedToolboxItem {
-    ModeSelect,         // 0
-    ZoomPan,            // 1
-    AnnotationResize,   // 2
-    AnnotationID,       // 3
-    RecolorActive,      // 4
-    ClassCounter,       // 5
-    KeypointSlider,     // 6
-    SubmitButtons,      // 7
-    FilterDistance      // 8
+    ModeSelect,       // 0
+    ZoomPan,          // 1
+    AnnotationResize, // 2
+    AnnotationID,     // 3
+    RecolorActive,    // 4
+    ClassCounter,     // 5
+    KeypointSlider,   // 6
+    SubmitButtons,    // 7
+    FilterDistance    // 8
 }
 
 export class Configuration {
@@ -36,7 +37,7 @@ export class Configuration {
     ]);
     
     //Change the order of the toolbox items here to change the order they show up in the toolbox
-    public default_toolbox_item_order: unknown[] = [
+    public default_toolbox_item_order: AllowedToolboxItem[] = [
         AllowedToolboxItem.ModeSelect,
         AllowedToolboxItem.ZoomPan,
         AllowedToolboxItem.AnnotationResize,
@@ -56,6 +57,21 @@ export class Configuration {
         "annotation_vanish": "v"      //The v Key by default
     }
 
+    // Config for FilterDistanceToolboxItem
+    public distance_filter_toolbox_item: FilterDistanceConfig = {
+        "name": "Filter Distance From Row",
+        "component_name": "filter-distance-from-row",
+        "filter_min": 0,
+        "filter_max": 400,
+        "default_values": {"single": 40},
+        "step_value": 2,
+        "multi_class_mode": false,
+        "filter_on_load": true,
+        "show_options": true,
+        "toggle_overlay_keybind": "p",
+        "show_overlay_on_load": false
+    }
+
     public change_zoom_keybind: string = "r";
 
     public create_point_annotation_keybind: string = "c";
@@ -67,10 +83,6 @@ export class Configuration {
     public filter_low_confidence_default_value: number;
 
     public filter_annotations_on_load: boolean = false;
-
-    public filter_row_distance_default_value: number;
-
-    public filter_row_distance_on_load: boolean = true;
     
     public switch_subtask_keybind: string = "z";
     
@@ -84,14 +96,26 @@ export class Configuration {
         this.modify_config(...kwargs)
     }
 
-    public modify_config(...kwargs: {[key: string]: unknown}[]) {
-
-        //we don't know how many arguments we'll recieve, so loop through all of the elements in kwargs
-        for (let i = 0; i < kwargs.length; i++) {
-
-            //for every key: value pair, overwrite them/add them to the config
-            for (let key in kwargs[i]) {
-                this[key] = kwargs[i][key]
+    public modify_config(...kwargs: {[key: string]: any}[]) {
+        // Loop through every elements in kwargs
+        for (let idx = 0; idx < kwargs.length; idx++) {
+            // For every key: value pair, overwrite them/add them to the config
+            for (let key in kwargs[idx]) {
+                if (
+                    typeof kwargs[idx][key] === 'object' &&
+                    !Array.isArray(kwargs[idx][key]) &&
+                    kwargs[idx][key] !== null &&
+                    typeof this[key] === 'object' &&
+                    !Array.isArray(this[key]) &&
+                    this[key] !== null
+                ) {
+                    const inner_object = kwargs[idx][key]
+                    for (const inner_key in inner_object) {
+                        this[key][inner_key] = inner_object[inner_key]
+                    }
+                } else {
+                    this[key] = kwargs[idx][key]
+                }
             }
         }
     }

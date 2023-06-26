@@ -40,6 +40,8 @@ class ULabel(
     init_crop=null         // object
     initial_line_size=4    // number
     instructions_url=null  // string
+    config_data=null       // Configuration Object
+    toolbox_order=null     // AllowedToolboxItem[] 
 )
 ```
 
@@ -263,6 +265,80 @@ The line width with which new annotations are drawn initially. Units are pixels 
 ### `instructions_url`
 
 URL to a page that gives annotation instructions.
+
+### `config_data`
+
+*object* -- An object to configure much of ULabel's behaviors.
+
+```javascript
+{
+    default_toolbox_item_order: AllowedToolboxItem[],
+
+    default_keybinds = {
+        "annotation_size_small": string,
+        "annotation_size_large": string,
+        "annotation_size_plus": string,
+        "annotation_size_minus": string,
+        "annotation_vanish": string
+    },
+
+    distance_filter_toolbox_item: FilterDistanceConfig,
+
+    change_zoom_keybind: string,
+
+    create_point_annotation_keybind: string,
+
+    default_annotation_size: number,
+    
+    delete_annotation_keybind: string,
+    
+    filter_low_confidence_default_value: number,
+
+    filter_annotations_on_load: boolean,
+    
+    switch_subtask_keybind: string,
+    
+    toggle_annotation_mode_keybind: string,
+
+    create_bbox_on_initial_crop: string,
+
+    annotation_gradient_default: boolean
+}
+```
+With the following custom definitions.
+```Javascript
+enum AllowedToolboxItem {
+    ModeSelect,       // 0
+    ZoomPan,          // 1
+    AnnotationResize, // 2
+    AnnotationID,     // 3
+    RecolorActive,    // 4
+    ClassCounter,     // 5
+    KeypointSlider,   // 6
+    SubmitButtons,    // 7
+    FilterDistance    // 8
+}
+
+type AnnotationClassDistanceData = {
+    "single": number,
+    [key: number]?: number
+}
+
+type FilterDistanceConfig = {
+    "name"?: string,
+    "component_name"?: string,
+    "filter_min"?: number,
+    "filter_max"?: number,
+    "default_values"?: AnnotationClassDistanceData,
+    "step_value"?: number,
+    "multi_class_mode"?: boolean,
+    "filter_on_load"?: boolean,
+    "show_options"?: boolean,
+    "toggle_overlay_keybind"?: string,
+    "show_overlay_on_load"?: boolean
+}
+```
+Where all `config_data` properties are optional.
 
 ## Display Utility Functions
 

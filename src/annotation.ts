@@ -1,25 +1,20 @@
+import { 
+    AnnotationClassDistanceData, 
+    DeprecatedBy, 
+    ULabelClassificationPayload, 
+    ULabelContainingBox, 
+    ULabelSpatialPayload, 
+    ULabelSpatialType 
+} from "..";
 
-type ULabelSpatialType = 'contour' | 'polygon' | 'bbox' | 'tbar' | 'bbox3' | 'whole-image' | 'global' | 'point';
-type ULabelSpatialPayload = [number, number][];
-type ULabelClassificationPayload = {
-    class_id: number;
-    confidence: number;
-}
-type ULabelContainingBox = {
-    tlx: number;
-    tly: number;
-    brx: number;
-    bry: number;
-    tlz: number;
-    brz: number;
-};
+
 
 export class ULabelAnnotation {
     constructor(
         // Required properties
         public annotation_meta: any = null,
         public deprecated: boolean = false,
-        public human_deprecated: boolean = null,
+        public deprecated_by: DeprecatedBy = {"human": false},
         public is_new: boolean = true,
         public parent_id: string = null,
         public text_payload: string = "",
@@ -29,6 +24,7 @@ export class ULabelAnnotation {
         public containing_box?: ULabelContainingBox,
         public created_by?: string,
         public distance_from_any_line?: number,
+        public distance_from?: AnnotationClassDistanceData,
         public frame?: number,
         public line_size?: number,
         public id?: string,
@@ -89,7 +85,6 @@ export class ULabelAnnotation {
         }
         return ret;
     } 
-
 }
 
 type ULabelAnnotations = {
