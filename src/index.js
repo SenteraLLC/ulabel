@@ -756,23 +756,66 @@ export class ULabel {
         });
     }
 
+    static handle_deprecated_arguments() {
+        return {
+            "container_id": arguments[0],  // Required
+            "image_data": arguments[1],    // Required
+            "username": arguments[2],      // Required
+            "submit_butons": arguments[3], // Required
+            "subtasks": arguments[4],      // Required
+            "task_meta": arguments[5] ?? null,       // Use default if optional argument is undefined
+            "annotation_meta": arguments[6] ?? null, // Use default if optional argument is undefined
+            "px_per_px": arguments[7] ?? 1,          // Use default if optional argument is undefined
+            "initial_crop": arguments[8] ?? null,    // Use default if optional argument is undefined
+            "initial_line_size": arguments[9] ?? 4,  // Use default if optional argument is undefined
+            "config_data": arguments[10] ?? null,    // Use default if optional argument is undefined
+            "toolbox_order": arguments[11] ?? null   // Use default if optional argument is undefined
+        }
+    }
+
     // ================= Construction/Initialization =================
 
-    constructor(
-        container_id,
-        image_data,
-        username,
-        submit_buttons,
-        subtasks,
-        task_meta = null,
-        annotation_meta = null,
-        px_per_px = 1,
-        initial_crop = null, //{top: #, left: #, height: #, width: #,}
-        initial_line_size = 4,
-        instructions_url = null,
-        config_data = null,
-        toolbox_order = null
-    ) {
+    constructor(kwargs) {
+        // Ensure arguments were recieved
+        if (arguments.length === 0) {
+            console.error("ULabel was given no arguments")
+        }
+        // The old constructor took in up to 11 arguments, so if more than 1 argument is present convert them to the new format
+        else if (arguments.length > 1) {
+            kwargs = ULabel.handle_deprecated_arguments(...arguments)
+        }
+
+        // Declare a list of required properties
+        const required_properties = [
+            "container_id",
+            "image_data",
+            "username",
+            "submit_buttons",
+            "subtasks"
+        ]
+        
+        // Ensure kwargs has all required properties
+        for (const property of required_properties) {
+            if (kwargs[property] == undefined) { // == also checks for null
+                console.error(`ULabel did not recieve required property ${property}`)
+            }
+        }
+
+        // Assign each value to a constant. Assign defaults for optional properties
+        const container_id      = kwargs["container_id"]
+        const image_data        = kwargs["image_data"]
+        const username          = kwargs["username"]
+        const submit_buttons    = kwargs["submit_buttons"]
+        const subtasks          = kwargs["subtasks"]
+        const task_meta         = kwargs["task_meta"] ?? null
+        const annotation_meta   = kwargs["annotation_meta"] ?? null
+        const px_per_px         = kwargs["px_per_px"] ?? 1
+        const initial_crop      = kwargs["initial_crop"] ?? null // {top: #, left: #, height: #, width: #,}
+        const initial_line_size = kwargs["initial_line_size"] ?? 4 ?? null
+        const instructions_url  = kwargs["instructions_url"] ?? null
+        const config_data       = kwargs["config_data"] ?? null
+        const toolbox_order     = kwargs["toolbox_order"] ?? null
+
         // TODO 
         // Allow for importing spacing data -- a measure tool would be nice too
         // Much of this is hardcoded defaults, 
