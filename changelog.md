@@ -6,6 +6,12 @@ All notable changes to this project will be documented here.
 
 Nothing yet.
 
+## [0.6.9] - June 28th, 2023
+
+- Updated ULabel's constructor to use keyword arguments instead of 11 arguments that must be passed in in the correct order.
+  - This was frustrating because most default arguments use their default option and JavaScript doesn't allow you to ommit 
+    optional arguments if you want to modify a later argument.
+
 ## [0.6.8] - June 26th, 2023
 
 - Added `utilities.ts` to contain miscellaneous helper functions.

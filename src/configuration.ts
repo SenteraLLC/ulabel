@@ -37,7 +37,7 @@ export class Configuration {
         [AllowedToolboxItem.FilterDistance, FilterPointDistanceFromRow]
     ]);
     
-    // Default toolbox order used when the user doensn't specify one
+    // Default toolbox order used when the user doesn't specify one
     public default_toolbox_item_order: AllowedToolboxItem[] = [
         AllowedToolboxItem.ModeSelect,
         AllowedToolboxItem.ZoomPan,

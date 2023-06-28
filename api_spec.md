@@ -28,21 +28,21 @@ ulabel.init(() => {/* behavior on ready */})
 The constructor is used to specify the configuration for an "annotation session". It has the following interface
 
 ```javascript
-class ULabel(
-    container_id,          // string
-    image_data,            // string OR array
-    username,              // string
-    on_submit,             // async (obj) => {} OR object
-    subtasks,              // object
-    task_meta=null,        // object
-    annotation_meta=null,  // object
-    px_per_px=1,           // number
-    init_crop=null         // object
-    initial_line_size=4    // number
-    instructions_url=null  // string
-    config_data=null       // Configuration Object
-    toolbox_order=null     // AllowedToolboxItem[] 
-)
+class ULabel({
+    container_id: string,
+    image_data: string | array,
+    username: string,
+    on_submit: function | object,
+    subtasks: object,
+    task_meta: object,
+    annotation_meta: object,
+    px_per_px: number,
+    init_crop: object,
+    initial_line_size: number,
+    instructions_url: string,
+    config_data: object,
+    toolbox_order: AllowedToolboxItem[]
+})
 ```
 
 ### `container_id`
