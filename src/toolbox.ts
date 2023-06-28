@@ -1115,8 +1115,6 @@ export class AnnotationResizeItem extends ToolboxItem {
     //recieives a string of 's', 'l', 'dec', 'inc', or 'v' depending on which button was pressed
     //also the constructor can pass in a number from the config
     public update_annotation_size(subtask, size) {
-        console.log(subtask, size)
-
         if (subtask === null) return;
 
         const small_size = 1.5;
