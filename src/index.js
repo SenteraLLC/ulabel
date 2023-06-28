@@ -797,7 +797,7 @@ export class ULabel {
         // Ensure kwargs has all required properties
         for (const property of required_properties) {
             if (kwargs[property] == undefined) { // == also checks for null
-                console.error(`ULabel did not recieve required property ${property}`)
+                console.error(`ULabel did not receive required property ${property}`)
             }
         }
 
