@@ -82,21 +82,17 @@
                 };
 
                 // Initial ULabel configuration
-                let ulabel = new ULabel(
-                    "container",
-                    [
+                let ulabel = new ULabel({
+                    "container_id": "container",
+                    "image_data": [
                         "https://ulabel.s3.us-east-2.amazonaws.com/cs-demo-0.png", 
                         "https://ulabel.s3.us-east-2.amazonaws.com/cs-demo-1.png", 
                         "https://ulabel.s3.us-east-2.amazonaws.com/cs-demo-2.png"
                     ],
-                    "DemoUser",
-                    on_submit,
-                    subtasks,
-                    null,
-                    null,
-                    1,
-                    null
-                );
+                    "username": "DemoUser",
+                    "submit_buttons": on_submit,
+                    "subtasks": subtasks
+                });
                 // Wait for ULabel instance to finish initialization
                 ulabel.init(function() {
                     // ULabel is now ready for use

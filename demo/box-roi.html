@@ -126,24 +126,19 @@
                 };
 
                 // Initial ULabel configuration
-                let ulabel = new ULabel(
-                    "container", 
-                    "https://ulabel.s3.us-east-2.amazonaws.com/cs-demo-0.png", 
-                    "DemoUser",
-                    on_submit,
-                    subtasks,
-                    null,
-                    null,
-                    1,
-                    {
-                      "top": roibox[0][1],
-                      "left": roibox[0][0],
-                      "height": roibox[1][1] - roibox[0][1],
-                      "width": roibox[1][0] - roibox[0][0]
-                    },
-                    4,
-                    null
-                );
+                let ulabel = new ULabel({
+                    "container_id": "container",
+                    "image_data": "https://ulabel.s3.us-east-2.amazonaws.com/cs-demo-0.png",
+                    "username": "DemoUser",
+                    "submit_buttons": on_submit,
+                    "subtasks": subtasks,
+                    "initial_crop": {
+                        "top": roibox[0][1],
+                        "left": roibox[0][0],
+                        "height": roibox[1][1] - roibox[0][1],
+                        "width": roibox[1][0] - roibox[0][0]
+                    }
+                });
                 // Wait for ULabel instance to finish initialization
                 ulabel.init(function() {
                     // ULabel is now ready for use
