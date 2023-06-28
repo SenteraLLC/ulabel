@@ -757,6 +757,12 @@ export class ULabel {
     }
 
     static handle_deprecated_arguments() {
+        // Warn users that this method is deprecated
+        console.error(
+            `Passing in each argument as a seperate parameter to ULabel is now deprecated \n
+            Please pass in an object with keyword arguments instead`
+        )
+
         return {
             "container_id": arguments[0],  // Required
             "image_data": arguments[1],    // Required
