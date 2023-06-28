@@ -817,7 +817,7 @@ export class ULabel {
         const annotation_meta   = kwargs["annotation_meta"] ?? null
         const px_per_px         = kwargs["px_per_px"] ?? 1
         const initial_crop      = kwargs["initial_crop"] ?? null // {top: #, left: #, height: #, width: #,}
-        const initial_line_size = kwargs["initial_line_size"] ?? 4 ?? null
+        const initial_line_size = kwargs["initial_line_size"] ?? 4
         const instructions_url  = kwargs["instructions_url"] ?? null
         const config_data       = kwargs["config_data"] ?? null
         const toolbox_order     = kwargs["toolbox_order"] ?? null
