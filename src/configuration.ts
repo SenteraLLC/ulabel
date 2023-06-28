@@ -37,7 +37,7 @@ export class Configuration {
         [AllowedToolboxItem.FilterDistance, FilterPointDistanceFromRow]
     ]);
     
-    //Change the order of the toolbox items here to change the order they show up in the toolbox
+    // Default toolbox order used when the user doensn't specify one
     public default_toolbox_item_order: AllowedToolboxItem[] = [
         AllowedToolboxItem.ModeSelect,
         AllowedToolboxItem.ZoomPan,
@@ -46,7 +46,6 @@ export class Configuration {
         AllowedToolboxItem.RecolorActive,
         AllowedToolboxItem.ClassCounter,
         AllowedToolboxItem.KeypointSlider,
-        AllowedToolboxItem.FilterDistance,
         AllowedToolboxItem.SubmitButtons,
     ]
 
