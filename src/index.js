@@ -1802,7 +1802,6 @@ export class ULabel {
         }
     }
 
-
     draw_nonspatial_annotation(annotation_object, svg_obj, subtask = null) {
         if (subtask == null) {
             subtask = this.state["current_subtask"];
@@ -1840,10 +1839,8 @@ export class ULabel {
         }
     }
 
-
     draw_whole_image_annotation(annotation_object, subtask = null) {
         this.draw_nonspatial_annotation(annotation_object, WHOLE_IMAGE_SVG, subtask);
-
     }
 
     draw_global_annotation(annotation_object, subtask = null) {
@@ -1858,7 +1855,6 @@ export class ULabel {
         this.tmp_nonspatial_element_ids[subtask] = [];
     }
 
-
     draw_annotation(annotation_object, cvs_ctx = "front_context", demo = false, offset = null, subtask = null) {
         // DEBUG left here for refactor reference, but I don't think it's needed moving forward
         //    there may be a use case for drawing depreacted annotations 
@@ -1866,39 +1862,39 @@ export class ULabel {
         if (annotation_object["deprecated"]) return;
 
         // Get actual context from context key and subtask
-        let ctx = null;
-        if (subtask == "demo") {
+        let context = null;
+        if (subtask === "demo") {
             // Must be demo
             if (cvs_ctx != "demo_canvas_context") {
                 throw new Error("Error drawing demo annotation.")
             }
-            ctx = this.state["demo_canvas_context"];
+            context = this.state["demo_canvas_context"];
         }
         else {
-            ctx = this.subtasks[subtask]["state"][cvs_ctx];
+            context = this.subtasks[subtask]["state"][cvs_ctx];
         }
 
         // Dispatch to annotation type's drawing function
         switch (annotation_object["spatial_type"]) {
             case "bbox":
-                this.draw_bounding_box(annotation_object, ctx, demo, offset, subtask);
+                this.draw_bounding_box(annotation_object, context, demo, offset, subtask);
                 break;
             case "point":
-                this.draw_point(annotation_object, ctx, demo, offset, subtask);
+                this.draw_point(annotation_object, context, demo, offset, subtask);
                 break;
             case "bbox3":
                 // TODO(new3d)
-                this.draw_bbox3(annotation_object, ctx, demo, offset, subtask);
+                this.draw_bbox3(annotation_object, context, demo, offset, subtask);
                 break;
             case "polygon":
             case "polyline":
-                this.draw_polygon(annotation_object, ctx, demo, offset, subtask);
+                this.draw_polygon(annotation_object, context, demo, offset, subtask);
                 break;
             case "contour":
-                this.draw_contour(annotation_object, ctx, demo, offset, subtask);
+                this.draw_contour(annotation_object, context, demo, offset, subtask);
                 break;
             case "tbar":
-                this.draw_tbar(annotation_object, ctx, demo, offset, subtask);
+                this.draw_tbar(annotation_object, context, demo, offset, subtask);
                 break;
             case "whole-image":
                 this.draw_whole_image_annotation(annotation_object, subtask);
