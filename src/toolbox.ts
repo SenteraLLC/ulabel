@@ -1092,24 +1092,29 @@ export class AnnotationResizeItem extends ToolboxItem {
             switch(event.key) {
                 case this.keybind_configuration.annotation_vanish.toUpperCase():
                     this.update_all_subtask_annotation_size(this.ulabel, "v");
+                    this.ulabel.redraw_all_annotations(null, null, false);
                     break;
                 case this.keybind_configuration.annotation_vanish.toLowerCase():
                     this.update_annotation_size(current_subtask, "v")
+                    this.ulabel.redraw_all_annotations(null, null, false);
                     break;
                 case this.keybind_configuration.annotation_size_small:
                     this.update_annotation_size(current_subtask, "s")
+                    this.ulabel.redraw_all_annotations(null, null, false);
                     break;
                 case this.keybind_configuration.annotation_size_large:
                     this.update_annotation_size(current_subtask, "l")
+                    this.ulabel.redraw_all_annotations(null, null, false);
                     break;
                 case this.keybind_configuration.annotation_size_minus:
                     this.update_annotation_size(current_subtask, "dec")
+                    this.ulabel.redraw_all_annotations(null, null, false);
                     break;
                 case this.keybind_configuration.annotation_size_plus:
                     this.update_annotation_size(current_subtask, "inc")
+                    this.ulabel.redraw_all_annotations(null, null, false);
                     break;
             }
-            this.ulabel.redraw_all_annotations(null, null, false);
         })
     }
 
@@ -2056,7 +2061,7 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
                 "step": this.step_value.toString(),
                 "label_units": "px",
                 "main_label": current_name,
-                "slider_event": () => time_function(filter_points_distance_from_line)(this.ulabel)
+                "slider_event": () => time_function(filter_points_distance_from_line, "filter_points_distance_from_line: ")(this.ulabel)
             })
 
             // Add current classes html to multi_class_html
@@ -2082,7 +2087,7 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
             "default_value": this.default_values["single"].toString(),
             "id": "filter-row-distance-single",
             "label_units": "px",
-            "slider_event": () => time_function(filter_points_distance_from_line)(this.ulabel),
+            "slider_event": () => time_function(filter_points_distance_from_line, "filter_points_distance_from_line: ")(this.ulabel),
             "min": this.filter_min.toString(),
             "max": this.filter_max.toString(),
             "step": this.step_value.toString()

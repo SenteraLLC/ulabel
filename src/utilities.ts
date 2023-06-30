@@ -23,11 +23,12 @@ export function is_object_and_not_array(object: unknown): boolean {
  * @param function_name String to be added to the beginning of the log. Useful for stating which function was wrapped.
  * @returns 
  */
-export function time_function(original_function: Function, function_name: string = ""): Function {
+export function time_function(original_function: Function, function_name: string = "", log_all: boolean = false): Function {
     function replacement_method(...args: any[]) {
-        const time_before = Date.now()
+        const time_before: number = Date.now()
         const result = original_function(...args)
-        console.log(`${function_name} took ${Date.now() - time_before}ms to complete.`)
+        const total_time: number = Date.now() - time_before
+        if (log_all || total_time > 2) console.log(`${function_name} took ${total_time}ms to complete.`)
         return result
     }
     return replacement_method

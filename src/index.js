@@ -203,6 +203,8 @@ export class ULabel {
         document.getElementById(ul.config["annbox_id"]).onwheel = function (wheel_event) {
             let fms = ul.config["image_data"].frames.length > 1;
             if (wheel_event.ctrlKey || wheel_event.shiftKey || wheel_event.metaKey) {
+                const before_time = Date.now()
+
                 // Prevent scroll-zoom
                 wheel_event.preventDefault();
 
@@ -221,8 +223,12 @@ export class ULabel {
                 // Only try to update the overlay if it exists
                 if (ul.filter_distance_overlay !== undefined) {
                     ul.filter_distance_overlay.update_zoom_value(ul.state.zoom_val)
+                    const inner_before_time = Date.now()
                     ul.filter_distance_overlay.draw_overlay()
+                    console.log(`Draw_overlay took ${Date.now() - inner_before_time}`)
                 }
+
+                console.log(`zooming took ${Date.now() - before_time}ms`)
             }
             else if (fms) {
                 wheel_event.preventDefault();
@@ -314,7 +320,7 @@ export class ULabel {
             }
 
             // Check for the right keypress
-            if (e.key == ul.config.switch_subtask_keybind) {
+            if (e.key === ul.config.switch_subtask_keybind) {
 
                 let current_subtask = ul.state["current_subtask"];
                 let toolbox_tab_keys = [];
@@ -1959,6 +1965,9 @@ export class ULabel {
 
     redraw_all_annotations(subtask = null, offset = null, spatial_only = false) {
         // TODO(3d)
+        console.log("")
+        console.log("redraw called")
+        console.log("")
         if (subtask == null) {
             for (const st in this.subtasks) {
                 this.redraw_all_annotations_in_subtask(st, offset, spatial_only);
