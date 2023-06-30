@@ -227,8 +227,6 @@ export class ULabel {
                     ul.filter_distance_overlay.draw_overlay()
                     console.log(`Draw_overlay took ${Date.now() - inner_before_time}`)
                 }
-
-                console.log(`zooming took ${Date.now() - before_time}ms`)
             }
             else if (fms) {
                 wheel_event.preventDefault();

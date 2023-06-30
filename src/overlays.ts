@@ -68,7 +68,16 @@ class ULabelOverlay {
      * Clears everything drawn to the canvas. Useful for re-drawing.
      */
     public clear_canvas(): void {
-        this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        // Grab the annotation box
+        const annotation_box = document.querySelector("#annbox")
+
+        // Only clear what's currently visible
+        const x = annotation_box.scrollLeft
+        const y = annotation_box.scrollTop
+        const width = annotation_box.clientWidth // this.zoom_value
+        const height = annotation_box.clientHeight // this.zoom_value
+
+        this.context.clearRect(x, y, width, height);
     }
 
     /**
@@ -305,7 +314,7 @@ export class FilterDistanceOverlay extends ULabelOverlay {
                     this.draw_circle(endpoint_1, distance)
                     continue
                 }
-                
+
                 // Only on the first time through draw a circle around the first endpoint
                 if (idx === 0) this.draw_circle(endpoint_1, distance)
 
