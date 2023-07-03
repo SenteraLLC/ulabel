@@ -2012,7 +2012,8 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
         this.overlay = new FilterDistanceOverlay(
             this.ulabel.config["image_width"] * this.ulabel.config["px_per_px"],
             this.ulabel.config["image_height"] * this.ulabel.config["px_per_px"],
-            line_annotations
+            line_annotations,
+            this.ulabel.config["px_per_px"]
         )
 
         // Apply the generated distances to the overlay

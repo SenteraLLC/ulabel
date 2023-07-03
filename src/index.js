@@ -1094,7 +1094,10 @@ export class ULabel {
                     this.filter_distance_overlay = toolbox_item.get_overlay()
         
                     // Image width and height is undefined when the overlay is created, so update it here
-                    this.filter_distance_overlay.set_canvas_size(this.config.image_width, this.config.image_height)
+                    this.filter_distance_overlay.set_canvas_size(
+                        this.config.image_width * this.config.px_per_px, 
+                        this.config.image_height * this.config.px_per_px
+                    )
         
                     $("#" + this.config["imwrap_id"]).prepend(this.filter_distance_overlay.get_canvas())
                     
