@@ -11,7 +11,6 @@ import {
 
 import { ULabelAnnotation } from "./annotation";
 import { ULabelSubtask } from "./subtask";
-import { time_function } from "./utilities";
 
 /**
  * Returns the confidence of the passed in ULabelAnnotation.
@@ -387,7 +386,7 @@ export function filter_points_distance_from_line(ulabel: ULabel, offset: Offset 
     }
 
     // Calculate and assign each point a distance from line value
-    time_function(assign_distance_from_line, "assign_distance_from_line: ")(point_annotations, line_annotations, offset)
+    assign_distance_from_line(point_annotations, line_annotations, offset)
 
     // Filter each point based on current mode, distances, and its distance_from property
     if (multi_class_mode) { // Multi-class mode
@@ -437,9 +436,7 @@ export function filter_points_distance_from_line(ulabel: ULabel, offset: Offset 
         ulabel.filter_distance_overlay.update_display_overlay(show_overlay)
 
         // Then redraw the overlay
-        const time_before = Date.now()
         ulabel.filter_distance_overlay.draw_overlay(offset)
-        console.log(`draw_overlay took ${Date.now() - time_before}ms`)
     }  
 }
 

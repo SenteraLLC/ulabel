@@ -12,7 +12,6 @@ import {
 } from "./annotation_operators";
 import { SliderHandler } from "./html_builder";
 import { FilterDistanceOverlay } from "./overlays";
-import { time_function } from "./utilities";
 
 const toolboxDividerDiv = "<div class=toolbox-divider></div>"
 
@@ -2061,7 +2060,7 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
                 "step": this.step_value.toString(),
                 "label_units": "px",
                 "main_label": current_name,
-                "slider_event": () => time_function(filter_points_distance_from_line, "filter_points_distance_from_line: ")(this.ulabel)
+                "slider_event": () => filter_points_distance_from_line(this.ulabel)
             })
 
             // Add current classes html to multi_class_html
@@ -2087,7 +2086,7 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
             "default_value": this.default_values["single"].toString(),
             "id": "filter-row-distance-single",
             "label_units": "px",
-            "slider_event": () => time_function(filter_points_distance_from_line, "filter_points_distance_from_line: ")(this.ulabel),
+            "slider_event": () => filter_points_distance_from_line(this.ulabel),
             "min": this.filter_min.toString(),
             "max": this.filter_max.toString(),
             "step": this.step_value.toString()

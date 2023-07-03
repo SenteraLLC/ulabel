@@ -28,7 +28,7 @@ export function time_function(original_function: Function, function_name: string
         const time_before: number = Date.now()
         const result = original_function(...args)
         const total_time: number = Date.now() - time_before
-        if (log_all || total_time > 2) console.log(`${original_function.name} ${function_name} took ${total_time}ms to complete.`)
+        if (log_all || total_time > 2) console.log(`${function_name} took ${total_time}ms to complete.`)
         return result
     }
     return replacement_method
