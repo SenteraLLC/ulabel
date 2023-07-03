@@ -795,7 +795,7 @@ export class ULabel {
             kwargs = ULabel.handle_deprecated_arguments(...arguments)
         }
 
-        // Declare a list of required properties
+        // Declare a list of required properties to error check against
         const required_properties = [
             "container_id",
             "image_data",
@@ -1049,6 +1049,8 @@ export class ULabel {
             // Set the canvas elements in the correct stacking order given current subtask
             that.set_subtask(that.state["current_subtask"]);
 
+            that.create_overlays()
+
             // Indicate that the object is now init!
             that.is_init = true;
             $(`div#${this.config["container_id"]}`).css("display", "block");
@@ -1062,29 +1064,6 @@ export class ULabel {
             // Draw resumed from annotations
             that.redraw_all_annotations();
 
-            // Find all toolbox items that contain overlays, add a reference to them, and add them to the document
-            if (that.toolbox_order.includes(AllowedToolboxItem.FilterDistance)) {
-                that.toolbox.items.forEach((toolbox_item) => {
-                    if (toolbox_item.get_toolbox_item_type() === "FilterDistance") {
-                        // Give ulabel a referance to the filter overlay for confinience
-                        that.filter_distance_overlay = toolbox_item.get_overlay()
-
-                        // Image width and height is undefined when the overlay is created, so update it here
-                        that.filter_distance_overlay.resize_canvas(that.config.image_width, that.config.image_height)
-
-                        $("#" + that.config["imwrap_id"]).prepend(that.filter_distance_overlay.get_canvas())
-                        
-                        // Filter the points with an override
-                        filter_points_distance_from_line(that, null, {
-                            "should_redraw": that.config.distance_filter_toolbox_item.filter_on_load,
-                            "multi_class_mode": that.config.distance_filter_toolbox_item.multi_class_mode,
-                            "show_overlay": that.filter_distance_overlay.get_display_overlay(),
-                            "distances": that.config.distance_filter_toolbox_item.default_values
-                        })
-                    }
-                })
-            }
-
             // Call the user-provided callback
             callback();
         }).catch((err) => {
@@ -1095,6 +1074,47 @@ export class ULabel {
 
     version() {
         return ULabel.version();
+    }
+
+    /**
+     * Find all toolbox items that contain overlays, add a reference to them, and add them to the document
+     * Currently only FilterDistance has an overlay to check for
+     */
+    create_overlays() {
+        // Create an array that states which ToolboxItems want to create an overlay. Currently only one, but may be expanded
+        const possible_overlays = [
+            "FilterDistance"
+        ]
+
+        for (const toolbox_item of this.toolbox.items) {
+            // Store current toolbox name in a constant for convenience
+            const toolbox_name = toolbox_item.get_toolbox_item_type()
+
+            // If the current toolboxitem is not included in possible_overlays then continue
+            if (!possible_overlays.includes(toolbox_name)) continue
+
+            switch(toolbox_name) {
+                case "FilterDistance":
+                    // Give ulabel a referance to the filter overlay for confinience
+                    this.filter_distance_overlay = toolbox_item.get_overlay()
+        
+                    // Image width and height is undefined when the overlay is created, so update it here
+                    this.filter_distance_overlay.set_canvas_size(this.config.image_width, this.config.image_height)
+        
+                    $("#" + this.config["imwrap_id"]).prepend(this.filter_distance_overlay.get_canvas())
+                    
+                    // Filter the points with an override
+                    filter_points_distance_from_line(this, null, {
+                        "should_redraw": this.config.distance_filter_toolbox_item.filter_on_load,
+                        "multi_class_mode": this.config.distance_filter_toolbox_item.multi_class_mode,
+                        "show_overlay": this.filter_distance_overlay.get_display_overlay(),
+                        "distances": this.config.distance_filter_toolbox_item.default_values
+                    })
+                    break
+                default:
+                    console.warn(`Toolbox item ${toolbox_name} is associated with an overlay, yet no overlay logic exists.`)
+            }
+        }
     }
 
     handle_toolbox_overflow() {
@@ -1164,13 +1184,15 @@ export class ULabel {
     // Shows the whole image in the viewport
     show_whole_image() {
         // Grab values from config
-        let wdt = this.config["image_width"];
-        let hgt = this.config["image_height"];
-        let lft_cntr = 0;
-        let top_cntr = 0;
+        const width = this.config["image_width"];
+        const height = this.config["image_height"];
+        const top_left_corner_x = 0;
+        const top_left_corner_y = 0;
 
-        this.state["zoom_val"] = Math.min(this.get_viewport_height_ratio(hgt), this.get_viewport_width_ratio(wdt));
-        this.rezoom(lft_cntr, top_cntr, true);
+        // Calculate minimum zoom value required to show the whole image
+        this.state["zoom_val"] = Math.min(this.get_viewport_height_ratio(height), this.get_viewport_width_ratio(width));
+
+        this.rezoom(top_left_corner_x, top_left_corner_y, true);
         
         if (this.filter_distance_overlay !== undefined) {
             this.filter_distance_overlay.update_zoom_value(this.state.zoom_val)
@@ -3062,6 +3084,7 @@ export class ULabel {
             this.suggest_edits(this.state["last_move"]);
         }
     }
+
     begin_annotation__undo(undo_payload) {
         // Parse necessary data
         let ann = JSON.parse(undo_payload.ann_str);
@@ -3275,6 +3298,7 @@ export class ULabel {
             }
         }
     }
+
     continue_annotation__undo(undo_payload) {
         // TODO(3d)
         this.subtasks[this.state["current_subtask"]]["annotations"]["access"][undo_payload.actid]["spatial_payload"].pop();
@@ -4703,9 +4727,7 @@ export class ULabel {
         toresize.css("height", new_height + "px");
 
         // Apply new size to overlay if overlay exists
-        if (this.filter_distance_overlay !== undefined) {
-            this.filter_distance_overlay.resize_canvas(new_width, new_height)
-        }
+        this.filter_distance_overlay?.resize_canvas(new_width, new_height)
 
         // Compute and apply new position
         let new_left, new_top;

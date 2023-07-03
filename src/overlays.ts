@@ -59,25 +59,45 @@ class ULabelOverlay {
         this.canvas.height = canvas_height
     }
 
-    public resize_canvas(new_width, new_height): void {
+    /**
+     * Resets the true size of the canvas. Should be set to the size of the underlying image.
+     * 
+     * @param new_width Width of the canvas
+     * @param new_height Height of the cavas
+     */
+    public set_canvas_size(new_width: number, new_height: number) {
         this.canvas.width = new_width
         this.canvas.height = new_height
+    }
+
+    /**
+     * Uses css to resize the canvas. Called when ulabel is zoomed. Much faster than resizing the actual canvas size.
+     * 
+     * @param new_width Width of the canvas
+     * @param new_height Height of the canvas
+     */
+    public resize_canvas(new_width: number, new_height: number): void {
+        this.canvas.style.width = new_width + "px"
+        this.canvas.style.height = new_height + "px"
     }
 
     /**
      * Clears everything drawn to the canvas. Useful for re-drawing.
      */
     public clear_canvas(): void {
-        // Grab the annotation box
-        const annotation_box = document.querySelector("#annbox")
+        // // Grab the annotation box
+        // const annotation_box = document.querySelector("#annbox")
 
-        // Only clear what's currently visible
-        const x = annotation_box.scrollLeft
-        const y = annotation_box.scrollTop
-        const width = annotation_box.clientWidth // this.zoom_value
-        const height = annotation_box.clientHeight // this.zoom_value
+        // // Only clear what's currently visible
+        // const x = annotation_box.scrollLeft
+        // const y = annotation_box.scrollTop
+        // const width = annotation_box.clientWidth // this.zoom_value
+        // const height = annotation_box.clientHeight // this.zoom_value
 
-        this.context.clearRect(x, y, width, height);
+        // this.context.clearRect(x, y, width, height);
+
+        // Clear everything
+        this.context.clearRect(0, 0, this.canvas.width, this.canvas.height)
     }
 
     /**
@@ -118,7 +138,7 @@ export class FilterDistanceOverlay extends ULabelOverlay {
         "single": null 
     }
     private multi_class_mode: boolean
-    private zoom_value: number // How zoomed in ulabel is
+    private zoom_value: number = 1 // How zoomed in ulabel is
     private display_overlay: boolean // Whether or not the overlay should currently be displayed
 
     constructor(canvas_width: number, canvas_height: number, polyline_annotations: ULabelAnnotation[]) {
@@ -230,7 +250,7 @@ export class FilterDistanceOverlay extends ULabelOverlay {
     }
 
     public update_zoom_value(zoom_value: number) {
-        this.zoom_value = zoom_value
+        // this.zoom_value = zoom_value
     }
 
     public update_display_overlay(display_overlay: boolean): void {
