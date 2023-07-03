@@ -653,10 +653,7 @@ export class ZoomPanToolboxItem extends ToolboxItem {
             this.ulabel.rezoom()
 
             // Only try to update the overlay if it exists
-            if (this.ulabel.filter_distance_overlay !== undefined) {
-                this.ulabel.filter_distance_overlay.update_zoom_value(this.ulabel.state.zoom_val)
-                this.ulabel.filter_distance_overlay.draw_overlay()
-            }
+            this.ulabel.filter_distance_overlay?.draw_overlay()
         })
 
         $(document).on("click", ".ulabel-pan", (event) => {

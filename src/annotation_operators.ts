@@ -432,7 +432,6 @@ export function filter_points_distance_from_line(ulabel: ULabel, offset: Offset 
         ulabel.filter_distance_overlay.update_annotations(line_annotations)
         ulabel.filter_distance_overlay.update_distances(distances)
         ulabel.filter_distance_overlay.update_mode(multi_class_mode ? "multi" : "single")
-        ulabel.filter_distance_overlay.update_zoom_value(ulabel.state.zoom_val)
         ulabel.filter_distance_overlay.update_display_overlay(show_overlay)
 
         // Then redraw the overlay

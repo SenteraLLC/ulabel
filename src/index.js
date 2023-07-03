@@ -221,12 +221,7 @@ export class ULabel {
                 ul.rezoom(wheel_event.clientX, wheel_event.clientY);
 
                 // Only try to update the overlay if it exists
-                if (ul.filter_distance_overlay !== undefined) {
-                    ul.filter_distance_overlay.update_zoom_value(ul.state.zoom_val)
-                    const inner_before_time = Date.now()
-                    ul.filter_distance_overlay.draw_overlay()
-                    console.log(`Draw_overlay took ${Date.now() - inner_before_time}`)
-                }
+                ul.filter_distance_overlay?.draw_overlay()
             }
             else if (fms) {
                 wheel_event.preventDefault();
@@ -1167,10 +1162,9 @@ export class ULabel {
                 this.state["zoom_val"] = Math.min(this.get_viewport_height_ratio(height), this.get_viewport_width_ratio(width));
                 this.rezoom(lft_cntr, top_cntr, true);
 
-                if (this.filter_distance_overlay !== undefined) {
-                    this.filter_distance_overlay.update_zoom_value(this.state.zoom_val)
-                    this.filter_distance_overlay.draw_overlay()
-                }
+                // Redraw the filter_distance_overlay if it exists
+                this.filter_distance_overlay?.draw_overlay()
+                
                 return;
             }
             else {
@@ -1194,10 +1188,7 @@ export class ULabel {
 
         this.rezoom(top_left_corner_x, top_left_corner_y, true);
         
-        if (this.filter_distance_overlay !== undefined) {
-            this.filter_distance_overlay.update_zoom_value(this.state.zoom_val)
-            this.filter_distance_overlay.draw_overlay()
-        }
+        this.filter_distance_overlay?.draw_overlay()
     }
 
     // ================== Cursor Helpers ====================

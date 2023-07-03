@@ -71,7 +71,7 @@ class ULabelOverlay {
     }
 
     /**
-     * Uses css to resize the canvas. Called when ulabel is zoomed. Much faster than resizing the actual canvas size.
+     * Uses css to resize the canvas. Called when ulabel is rezoomed. Much faster than resizing the actual canvas size.
      * 
      * @param new_width Width of the canvas
      * @param new_height Height of the canvas
@@ -85,17 +85,6 @@ class ULabelOverlay {
      * Clears everything drawn to the canvas. Useful for re-drawing.
      */
     public clear_canvas(): void {
-        // // Grab the annotation box
-        // const annotation_box = document.querySelector("#annbox")
-
-        // // Only clear what's currently visible
-        // const x = annotation_box.scrollLeft
-        // const y = annotation_box.scrollTop
-        // const width = annotation_box.clientWidth // this.zoom_value
-        // const height = annotation_box.clientHeight // this.zoom_value
-
-        // this.context.clearRect(x, y, width, height);
-
         // Clear everything
         this.context.clearRect(0, 0, this.canvas.width, this.canvas.height)
     }
@@ -138,7 +127,6 @@ export class FilterDistanceOverlay extends ULabelOverlay {
         "single": null 
     }
     private multi_class_mode: boolean
-    private zoom_value: number = 1 // How zoomed in ulabel is
     private display_overlay: boolean // Whether or not the overlay should currently be displayed
 
     constructor(canvas_width: number, canvas_height: number, polyline_annotations: ULabelAnnotation[]) {
@@ -249,10 +237,6 @@ export class FilterDistanceOverlay extends ULabelOverlay {
         return this.multi_class_mode ? "multi" : "single"
     }
 
-    public update_zoom_value(zoom_value: number) {
-        // this.zoom_value = zoom_value
-    }
-
     public update_display_overlay(display_overlay: boolean): void {
         this.display_overlay = display_overlay
     }
@@ -264,10 +248,7 @@ export class FilterDistanceOverlay extends ULabelOverlay {
     /**
      * Update the overlay to obscure the parts of the image that fall outside of the distance filter.
      * 
-     * @param polyline_annotations Array of polyline annotations the overlay is being applied to
-     * @param distance The distance from each annotation to be shown through the overlay
-     * @param zoom_val Value to scale the coordinate system by
-     * @param multi_class_mode Whether or not the filter is currently in multi-class mode
+     * @param offset Used when an annotation is currently being moved. Offset to be added to the annotation with the matching id to the id inside of the Offset object
      */
     public draw_overlay(offset: Offset = null): void {
         // Clear the canvas in order to have a clean slate to re-draw from
@@ -296,8 +277,7 @@ export class FilterDistanceOverlay extends ULabelOverlay {
             const annotation_class_id: string = get_annotation_class_id(annotation)
             
             // Use the class id if in multi-class mode, otherwise use the single class distance
-            let distance: number = this.multi_class_mode ? this.distances[annotation_class_id] : this.distances["single"]
-            distance *= this.zoom_value
+            const distance: number = this.multi_class_mode ? this.distances[annotation_class_id] : this.distances["single"]
 
             // length - 1 because the final endpoint doesn't have another endpoint to form a pair with
             for (let idx = 0; idx < spatial_payload.length - 1; idx++) {
@@ -318,12 +298,6 @@ export class FilterDistanceOverlay extends ULabelOverlay {
                     endpoint_2.x += offset.diffX
                     endpoint_2.y += offset.diffY
                 }
-
-                // Scale each endpoint by the zoom_val
-                endpoint_1.x *= this.zoom_value
-                endpoint_1.y *= this.zoom_value
-                endpoint_2.x *= this.zoom_value
-                endpoint_2.y *= this.zoom_value
 
                 // Get a vector that's perpendicular to endpoint_1 and endpoint_2 and has a magnitude of 1
                 const normal_vector: AbstractPoint = this.calculate_normal_vector(endpoint_1, endpoint_2)
