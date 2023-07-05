@@ -1979,9 +1979,6 @@ export class ULabel {
 
     redraw_all_annotations(subtask = null, offset = null, spatial_only = false) {
         // TODO(3d)
-        console.log("")
-        console.log("redraw called")
-        console.log("")
         if (subtask == null) {
             for (const st in this.subtasks) {
                 this.redraw_all_annotations_in_subtask(st, offset, spatial_only);
