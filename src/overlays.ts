@@ -9,11 +9,14 @@ import { ULabelSpatialPayload2D } from "./geometric_utils"
 class ULabelOverlay {
     canvas: HTMLCanvasElement
     context: CanvasRenderingContext2D
+    protected px_per_px: number // Resolution compared to the 
 
-    constructor(canvas_width: number, canvas_height: number) {
+    constructor(canvas_width: number, canvas_height: number, px_per_px: number) {
         this.create_canvas(canvas_width, canvas_height)
 
         this.context = this.canvas.getContext("2d")
+
+        this.px_per_px = px_per_px
 
         this.add_styles()
     }
@@ -59,16 +62,34 @@ class ULabelOverlay {
         this.canvas.height = canvas_height
     }
 
-    public resize_canvas(new_width, new_height): void {
+    /**
+     * Resets the true size of the canvas. Should be set to the size of the underlying image.
+     * 
+     * @param new_width Width of the canvas
+     * @param new_height Height of the cavas
+     */
+    public set_canvas_size(new_width: number, new_height: number) {
         this.canvas.width = new_width
         this.canvas.height = new_height
+    }
+
+    /**
+     * Uses css to resize the canvas. Called when ulabel is rezoomed. Much faster than resizing the actual canvas size.
+     * 
+     * @param new_width Width of the canvas
+     * @param new_height Height of the canvas
+     */
+    public resize_canvas(new_width: number, new_height: number): void {
+        this.canvas.style.width = new_width + "px"
+        this.canvas.style.height = new_height + "px"
     }
 
     /**
      * Clears everything drawn to the canvas. Useful for re-drawing.
      */
     public clear_canvas(): void {
-        this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        // Clear everything
+        this.context.clearRect(0, 0, this.canvas.width, this.canvas.height)
     }
 
     /**
@@ -83,8 +104,8 @@ class ULabelOverlay {
         // Start the shape
         this.context.beginPath()
 
-        // Draw the outline of a circle around the x and y positions with a radius of radius
-        this.context.arc(point.x, point.y, radius, 0, 2 * Math.PI)
+        // Draw the outline of a circle around the x and y positions with a radius of radius scaled by px_per_px
+        this.context.arc(point.x, point.y, radius * this.px_per_px, 0, 2 * Math.PI)
 
         // Fill the circle
         this.context.fill()
@@ -109,11 +130,10 @@ export class FilterDistanceOverlay extends ULabelOverlay {
         "single": null 
     }
     private multi_class_mode: boolean
-    private zoom_value: number // How zoomed in ulabel is
     private display_overlay: boolean // Whether or not the overlay should currently be displayed
 
-    constructor(canvas_width: number, canvas_height: number, polyline_annotations: ULabelAnnotation[]) {
-        super(canvas_width, canvas_height)
+    constructor(canvas_width: number, canvas_height: number, polyline_annotations: ULabelAnnotation[], px_per_px: number) {
+        super(canvas_width, canvas_height, px_per_px)
 
         // Set the canvas id so it can be referenced easily outside this class
         this.canvas.setAttribute("id","ulabel-filter-distance-overlay")
@@ -172,8 +192,8 @@ export class FilterDistanceOverlay extends ULabelOverlay {
         distance: number
     ): void {
         // Calculate the change in x and y
-        const dx = normal_vector.x * distance
-        const dy = normal_vector.y * distance
+        const dx = normal_vector.x * distance * this.px_per_px
+        const dy = normal_vector.y * distance * this.px_per_px
 
         // Calculate the 4 corners of the parallelogram
         const corner1: [number, number] = [endpoint_1.x - dx, endpoint_1.y - dy]
@@ -220,10 +240,6 @@ export class FilterDistanceOverlay extends ULabelOverlay {
         return this.multi_class_mode ? "multi" : "single"
     }
 
-    public update_zoom_value(zoom_value: number) {
-        this.zoom_value = zoom_value
-    }
-
     public update_display_overlay(display_overlay: boolean): void {
         this.display_overlay = display_overlay
     }
@@ -235,10 +251,7 @@ export class FilterDistanceOverlay extends ULabelOverlay {
     /**
      * Update the overlay to obscure the parts of the image that fall outside of the distance filter.
      * 
-     * @param polyline_annotations Array of polyline annotations the overlay is being applied to
-     * @param distance The distance from each annotation to be shown through the overlay
-     * @param zoom_val Value to scale the coordinate system by
-     * @param multi_class_mode Whether or not the filter is currently in multi-class mode
+     * @param offset Used when an annotation is currently being moved. Offset to be added to the annotation with the matching id to the id inside of the Offset object
      */
     public draw_overlay(offset: Offset = null): void {
         // Clear the canvas in order to have a clean slate to re-draw from
@@ -267,34 +280,27 @@ export class FilterDistanceOverlay extends ULabelOverlay {
             const annotation_class_id: string = get_annotation_class_id(annotation)
             
             // Use the class id if in multi-class mode, otherwise use the single class distance
-            let distance: number = this.multi_class_mode ? this.distances[annotation_class_id] : this.distances["single"]
-            distance *= this.zoom_value
+            const distance: number = this.multi_class_mode ? this.distances[annotation_class_id] : this.distances["single"]
 
             // length - 1 because the final endpoint doesn't have another endpoint to form a pair with
             for (let idx = 0; idx < spatial_payload.length - 1; idx++) {
                 // Look at segment endpoints in pairs
                 let endpoint_1: AbstractPoint = {
-                    "x": spatial_payload[idx][0],
-                    "y": spatial_payload[idx][1]
+                    "x": spatial_payload[idx][0] * this.px_per_px,
+                    "y": spatial_payload[idx][1] * this.px_per_px
                 }
                 let endpoint_2: AbstractPoint = {
-                    "x": spatial_payload[idx + 1][0],
-                    "y": spatial_payload[idx + 1][1]
+                    "x": spatial_payload[idx + 1][0] * this.px_per_px,
+                    "y": spatial_payload[idx + 1][1] * this.px_per_px
                 }
 
                 // If the offset exists and the current annotation id matches the offset id, then scale the each endpoint by the offset diff
                 if ((offset !== undefined && offset !== null) && (annotation.id === offset.id)) {
-                    endpoint_1.x += offset.diffX
-                    endpoint_1.y += offset.diffY
-                    endpoint_2.x += offset.diffX
-                    endpoint_2.y += offset.diffY
+                    endpoint_1.x += (offset.diffX * this.px_per_px)
+                    endpoint_1.y += (offset.diffY * this.px_per_px)
+                    endpoint_2.x += (offset.diffX * this.px_per_px)
+                    endpoint_2.y += (offset.diffY * this.px_per_px)
                 }
-
-                // Scale each endpoint by the zoom_val
-                endpoint_1.x *= this.zoom_value
-                endpoint_1.y *= this.zoom_value
-                endpoint_2.x *= this.zoom_value
-                endpoint_2.y *= this.zoom_value
 
                 // Get a vector that's perpendicular to endpoint_1 and endpoint_2 and has a magnitude of 1
                 const normal_vector: AbstractPoint = this.calculate_normal_vector(endpoint_1, endpoint_2)
@@ -305,7 +311,7 @@ export class FilterDistanceOverlay extends ULabelOverlay {
                     this.draw_circle(endpoint_1, distance)
                     continue
                 }
-                
+
                 // Only on the first time through draw a circle around the first endpoint
                 if (idx === 0) this.draw_circle(endpoint_1, distance)
 

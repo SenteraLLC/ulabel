@@ -6,8 +6,7 @@ import {
     AnnotationClassDistanceData, 
     FilterDistanceOverride, 
     ValidDeprecatedBy,
-    ClassDefinition,
-    DistanceOverlayInfo
+    ClassDefinition
 } from "..";
 
 import { ULabelAnnotation } from "./annotation";
@@ -415,7 +414,11 @@ export function filter_points_distance_from_line(ulabel: ULabel, offset: Offset 
         })
     }
 
-    if (should_redraw) ulabel.redraw_all_annotations(null, null, false);
+    if (should_redraw){
+        const before_time = Date.now()
+        ulabel.redraw_all_annotations(null, null, false);
+        console.log(`redraw_all_annotations took ${Date.now() - before_time}ms`)
+    } 
     
     // Ensure the overlay exists before trying to access it
     if (ulabel.filter_distance_overlay === null || ulabel.filter_distance_overlay === undefined) {
@@ -429,7 +432,6 @@ export function filter_points_distance_from_line(ulabel: ULabel, offset: Offset 
         ulabel.filter_distance_overlay.update_annotations(line_annotations)
         ulabel.filter_distance_overlay.update_distances(distances)
         ulabel.filter_distance_overlay.update_mode(multi_class_mode ? "multi" : "single")
-        ulabel.filter_distance_overlay.update_zoom_value(ulabel.state.zoom_val)
         ulabel.filter_distance_overlay.update_display_overlay(show_overlay)
 
         // Then redraw the overlay

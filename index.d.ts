@@ -164,7 +164,7 @@ export class ULabel {
     static build_id_dialogs(ulabel_obj: any);
         
 }
-    
+
 declare global {
     interface String {
     replaceLowerConcat(before: string, after: string, concat_string?: string): string

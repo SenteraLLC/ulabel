@@ -1,4 +1,4 @@
-import { DistanceOverlayInfo, AnnotationClassDistanceData, FilterDistanceConfig, FilterDistanceOverride, SliderInfo, ULabel } from "..";
+import { AnnotationClassDistanceData, FilterDistanceConfig, ULabel } from "..";
 import { ULabelAnnotation } from "./annotation";
 import { ULabelSubtask } from "./subtask";
 import { Configuration } from "./configuration";
@@ -12,6 +12,15 @@ import {
 } from "./annotation_operators";
 import { SliderHandler } from "./html_builder";
 import { FilterDistanceOverlay } from "./overlays";
+
+// For ResizeToolboxItem
+enum ValidResizeValues {
+    VANISH = "v",
+    SMALL = "s",
+    LARGE = "l",
+    INCREMENT = "inc",
+    DECREMENT = "dec"
+}
 
 const toolboxDividerDiv = "<div class=toolbox-divider></div>"
 
@@ -653,10 +662,7 @@ export class ZoomPanToolboxItem extends ToolboxItem {
             this.ulabel.rezoom()
 
             // Only try to update the overlay if it exists
-            if (this.ulabel.filter_distance_overlay !== undefined) {
-                this.ulabel.filter_distance_overlay.update_zoom_value(this.ulabel.state.zoom_val)
-                this.ulabel.filter_distance_overlay.draw_overlay()
-            }
+            this.ulabel.filter_distance_overlay?.draw_overlay()
         })
 
         $(document).on("click", ".ulabel-pan", (event) => {
@@ -1075,7 +1081,7 @@ export class AnnotationResizeItem extends ToolboxItem {
             const button = $(event.currentTarget)
 
             // Use the button id to get what size to resize the annotations to
-            const annotation_size = button.attr("id").slice(18);
+            const annotation_size = <ValidResizeValues> button.attr("id").slice(18);
 
             // Update the size of all annotations in the subtask
             this.update_annotation_size(current_subtask, annotation_size);
@@ -1090,31 +1096,42 @@ export class AnnotationResizeItem extends ToolboxItem {
 
             switch(event.key) {
                 case this.keybind_configuration.annotation_vanish.toUpperCase():
-                    this.update_all_subtask_annotation_size(this.ulabel, "v");
-                    break;
+                    this.update_all_subtask_annotation_size(this.ulabel, ValidResizeValues.VANISH)
+                    break
                 case this.keybind_configuration.annotation_vanish.toLowerCase():
-                    this.update_annotation_size(current_subtask, "v")
-                    break;
+                    this.update_annotation_size(current_subtask, ValidResizeValues.VANISH)
+                    break
                 case this.keybind_configuration.annotation_size_small:
-                    this.update_annotation_size(current_subtask, "s")
-                    break;
+                    this.update_annotation_size(current_subtask, ValidResizeValues.SMALL)
+                    break
                 case this.keybind_configuration.annotation_size_large:
-                    this.update_annotation_size(current_subtask, "l")
-                    break;
+                    this.update_annotation_size(current_subtask, ValidResizeValues.LARGE)
+                    break
                 case this.keybind_configuration.annotation_size_minus:
-                    this.update_annotation_size(current_subtask, "dec")
-                    break;
+                    this.update_annotation_size(current_subtask, ValidResizeValues.DECREMENT)
+                    break
                 case this.keybind_configuration.annotation_size_plus:
-                    this.update_annotation_size(current_subtask, "inc")
-                    break;
+                    this.update_annotation_size(current_subtask, ValidResizeValues.INCREMENT)
+                    break
+                default:
+                    // Return if no valid keybind was pressed
+                    return
             }
-            this.ulabel.redraw_all_annotations(null, null, false);
+            
+            // If the sizes were updated resize the annotations
+            this.ulabel.redraw_all_annotations(null, null, false)
         })
     }
 
-    //recieives a string of 's', 'l', 'dec', 'inc', or 'v' depending on which button was pressed
-    //also the constructor can pass in a number from the config
-    public update_annotation_size(subtask, size) {
+    /**
+     * Takes in either a number or a ValidResizeValues.value. If given a number it will resize all annotations in the subtask to 
+     * be that size. The ValidResizeValues will either set the size of all annotations to set values or increment/decrement the 
+     * current size of the annotations.
+     * 
+     * @param subtask Subtask which holds the annotations to act on
+     * @param size How to resize the annotations
+     */
+    public update_annotation_size(subtask: ULabelSubtask, size: number | ValidResizeValues): void {
         if (subtask === null) return;
 
         const small_size = 1.5;
@@ -1128,54 +1145,52 @@ export class AnnotationResizeItem extends ToolboxItem {
         //pressed, then we want to ignore the input
         if (this[subtask_vanished_flag] && size !== "v") return;
 
+        // If a number was passed in, set all annotations to be the size of the number
         if (typeof(size) === "number") {
             this.loop_through_annotations(subtask, size, "=");
-        }
-
-        if (size == "v") {
-            if (this[subtask_vanished_flag]) {
-                // Re-apply the cashed annotation size 
-                this.loop_through_annotations(subtask, this[subtask_cached_size], "=")
-                
-                // Filp the state
-                this[subtask_vanished_flag] = !this[subtask_vanished_flag]
-
-                // Unlock the vanish button
-                $("#annotation-resize-v").removeClass("locked")
-            }
-            else {
-                // Apply the vanish size to make the annotations to small to see
-                this.loop_through_annotations(subtask, vanish_size, "=")
-                
-                // Filp the state
-                this[subtask_vanished_flag] = !this[subtask_vanished_flag]
-
-                // Lock the vanish button
-                $("#annotation-resize-v").addClass("locked")
-            }
             return
         }
 
+        // Otherwise handle each ValidResizeValues case here
         switch(size) {
-            case 's':
+            case ValidResizeValues.SMALL:
                 this.loop_through_annotations(subtask, small_size, "=")
                 this[subtask_cached_size] = small_size
                 break;           
-            case 'l':
+            case ValidResizeValues.LARGE:
                 this.loop_through_annotations(subtask, large_size, "=")
                 this[subtask_cached_size] = large_size
                 break;
-            case 'dec':
+            case ValidResizeValues.DECREMENT:
                 this.loop_through_annotations(subtask, increment_size, "-")
                 break;
-            case 'inc':
+            case ValidResizeValues.INCREMENT:
                 this.loop_through_annotations(subtask, increment_size, "+")
                 break;
-            case "v":
-            case "V":
-
+            case ValidResizeValues.VANISH:
+                if (this[subtask_vanished_flag]) {
+                    // Re-apply the cashed annotation size 
+                    this.loop_through_annotations(subtask, this[subtask_cached_size], "=")
+                    
+                    // Filp the state
+                    this[subtask_vanished_flag] = !this[subtask_vanished_flag]
+    
+                    // Unlock the vanish button
+                    $("#annotation-resize-v").removeClass("locked")
+                }
+                else {
+                    // Apply the vanish size to make the annotations to small to see
+                    this.loop_through_annotations(subtask, vanish_size, "=")
+                    
+                    // Filp the state
+                    this[subtask_vanished_flag] = !this[subtask_vanished_flag]
+    
+                    // Lock the vanish button
+                    $("#annotation-resize-v").addClass("locked")
+                }
+                break
             default:
-                return;
+                console.error("update_annotation_size called with unknown size");
         }
     }
     //loops through all annotations in a subtask to change their line size
@@ -2010,7 +2025,8 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
         this.overlay = new FilterDistanceOverlay(
             this.ulabel.config["image_width"] * this.ulabel.config["px_per_px"],
             this.ulabel.config["image_height"] * this.ulabel.config["px_per_px"],
-            line_annotations
+            line_annotations,
+            this.ulabel.config["px_per_px"]
         )
 
         // Apply the generated distances to the overlay
@@ -2081,7 +2097,7 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
             "default_value": this.default_values["single"].toString(),
             "id": "filter-row-distance-single",
             "label_units": "px",
-            "slider_event": () => {filter_points_distance_from_line(this.ulabel)},
+            "slider_event": () => filter_points_distance_from_line(this.ulabel),
             "min": this.filter_min.toString(),
             "max": this.filter_max.toString(),
             "step": this.step_value.toString()
