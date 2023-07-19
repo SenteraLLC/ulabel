@@ -6,6 +6,10 @@ All notable changes to this project will be documented here.
 
 Nothing yet.
 
+## [0.6.12] - July 19th, 2023
+
+- Fixed the package entrypoints in `package.json` to point to the correct files. This should fix the issue where the package was not being imported correctly.
+
 ## [0.6.11] - July 19th, 2023
 
 - Fixed a bug that prevented custom submit buttons from being used with the legacy constructor arguments.
