@@ -2,8 +2,8 @@
   "name": "ulabel",
   "description": "An image annotation tool.",
   "version": "0.6.10",
-  "main": "index.js",
-  "module": "src/index.js",
+  "main": "dist/ulabel.js",
+  "module": "dist/ulabel.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "demo": "node demo.js",

@@ -3,12 +3,12 @@ Uncertain Labeling Tool
 Sentera Inc.
 */
 import { ULabelAnnotation } from './annotation';
-import { ULabelSubtask } from '../subtask';
+import { ULabelSubtask } from './subtask';
 import { GeometricUtils } from './geometric_utils';
 import { get_annotation_confidence, mark_deprecated, filter_points_distance_from_line } from './annotation_operators';
 import { get_gradient } from './drawing_utilities'
 import { Configuration, AllowedToolboxItem } from './configuration';
-import { HTMLBuilder } from '../html_builder';
+import { HTMLBuilder } from './html_builder';
 
 import $ from 'jquery';
 const jQuery = $;
