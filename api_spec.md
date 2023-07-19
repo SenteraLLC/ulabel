@@ -32,7 +32,7 @@ class ULabel({
     container_id: string,
     image_data: string | array,
     username: string,
-    on_submit: function | object,
+    submit_buttons: function | object[],
     subtasks: object,
     task_meta: object,
     annotation_meta: object,
