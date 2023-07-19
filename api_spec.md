@@ -61,11 +61,19 @@ In the case of a multi-frame annotation job, an array of URLs may be given. Note
 
 *string* -- This is intended to be a unique ID for the user performing annotations. It will be assigned to each annotation that this user creates during the session.
 
-### `on_submit`
+### `submit_buttons`
 
-*async (obj) => {}* OR *object* -- Appearance and behavior of the "submit" button.
+A single async function may be provided for a submit button.
 
-Objects must be provided in the form of
+```javascript
+async function (obj) => {/* Your on submit behavior here */}
+```
+
+If the hook alone is provided, the name will default to `"Submit"` and the button's color will be orange.
+
+If either more than one submit button or more button customization is desired, then `submit_buttons` must be an array of `submit_button` objects. It may be an array of length 1 if only 1 button is desired but you want to change the text or color of the button.
+
+`submit_button` Objects must be provided in the form of
 
 ```javascript
 {
@@ -78,13 +86,12 @@ Objects must be provided in the form of
         // If behavior is to leave this page, use this.set_saved(true) to avoid warning to user
 
         // If submit is unsuccessful and annotations edits should not be treated as "saved", return false
-    }
+    },
+    color?: "Arbitrary Color" // e.g. "#639", "#3AB890", "rgb(200, 0, 170)", "hsl(0, 100%, 50%)"
 }
 ```
 
-Alternatively, the hook alone can be provided, and the name will default to `"Submit"`.
-
-The argument to the hook is an object with the format
+The argument to the hook is an object with the format:
 
 ```javascript
 {
@@ -97,9 +104,9 @@ The argument to the hook is an object with the format
 }
 ```
 
-Where `<subtask n>` refers t the nth key in the object provided as the `subtasks` argument to the constructor.
+Where `<subtask n>` refers to the nth key in the object provided as the `subtasks` argument to the constructor.
 
-As you can see, each subtask will have a corresponding list of annotation objects. Each annotation object has the following format
+As you can see, each subtask will have a corresponding list of annotation objects. Each annotation object has the following format:
 
 ```javascript
 {
