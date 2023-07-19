@@ -7,8 +7,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "demo": "node demo.js",
-    "build": "tsc --build && webpack --mode production",
-    "build-dev": "tsc --build && webpack --mode development"
+    "build": "webpack --mode production",
+    "build-dev": "webpack --mode development"
   },
   "repository": {
     "type": "git",
