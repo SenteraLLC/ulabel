@@ -763,11 +763,11 @@ export class ULabel {
         `)
 
         return {
-            "container_id": arguments[0],  // Required
-            "image_data": arguments[1],    // Required
-            "username": arguments[2],      // Required
-            "submit_butons": arguments[3], // Required
-            "subtasks": arguments[4],      // Required
+            "container_id": arguments[0],   // Required
+            "image_data": arguments[1],     // Required
+            "username": arguments[2],       // Required
+            "submit_buttons": arguments[3], // Required
+            "subtasks": arguments[4],       // Required
             "task_meta": arguments[5] ?? null,       // Use default if optional argument is undefined
             "annotation_meta": arguments[6] ?? null, // Use default if optional argument is undefined
             "px_per_px": arguments[7] ?? 1,          // Use default if optional argument is undefined
