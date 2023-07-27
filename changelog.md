@@ -6,6 +6,10 @@ All notable changes to this project will be documented here.
 
 Nothing yet.
 
+## [0.6.13] - July 27th, 2023
+
+- Added the "Tag It" github job which will automatically tag the git version after a pr into main.
+
 ## [0.6.12] - July 19th, 2023
 
 - Fixed the package entrypoints in `package.json` to point to the correct files. This should fix the issue where the package was not being imported correctly.
