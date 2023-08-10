@@ -1239,7 +1239,7 @@ export class ULabel {
      * TODO: Un-deprecated the dynamic line size toolbox item.
      */
     update_cursor() {
-        // let color = this.get_annotation_color(null, true);
+        // let color = this.get_non_spatial_annotation_color(null, true);
         // let thr_width = this.get_line_size() * this.state["zoom_val"]
         // let width = Math.max(Math.min(thr_width, 64), 6);
         // let cursor_svg = `<svg version="1.1" xmlns="http://www.w3.org/2000/svg" width="${width}px" height="${width}px" viewBox="0 0 ${width} ${width}">
@@ -1547,7 +1547,7 @@ export class ULabel {
         return get_gradient(annotation, color, get_annotation_confidence, $("#gradient-slider").val() / 100)
     }
 
-    get_annotation_color(clf_payload, demo = false, subtask = null) {
+    get_non_spatial_annotation_color(clf_payload, demo = false, subtask = null) {
         if (this.config["allow_soft_id"]) {
             // not currently supported;
             return this.config["default_annotation_color"];
@@ -1900,7 +1900,7 @@ export class ULabel {
                         <a href="#" id="delete__${annotation_object["id"]}" class="fad_button delete">&#215;</a>
                     </div>
                 </div><!--
-                --><div id="icon__${annotation_object["id"]}" class="fad_type_icon invert-this-svg" style="background-color: ${this.get_annotation_color(annotation_object["classification_payloads"], false, subtask)};">
+                --><div id="icon__${annotation_object["id"]}" class="fad_type_icon invert-this-svg" style="background-color: ${this.get_non_spatial_annotation_color(annotation_object["classification_payloads"], false, subtask)};">
                     ${svg_obj}
                 </div>
             </div>
@@ -1908,7 +1908,7 @@ export class ULabel {
         }
         else {
             $(`textarea#note__${annotation_object["id"]}`).val(annotation_object["text_payload"]);
-            $(`div#icon__${annotation_object["id"]}`).css("background-color", this.get_annotation_color(annotation_object["classification_payloads"], false, subtask));
+            $(`div#icon__${annotation_object["id"]}`).css("background-color", this.get_non_spatial_annotation_color(annotation_object["classification_payloads"], false, subtask));
         }
     }
 
