@@ -571,8 +571,9 @@ export class ULabel {
             subtask.class_defs.push(modifed_class_definition)
             subtask.class_ids.push(modifed_class_definition.id)
 
-            // Also save the id on the ULabel object
+            // Also save the id and color_info on the ULabel object
             ul.valid_class_ids.push(modifed_class_definition.id)
+            ul.color_info[modifed_class_definition.id] = modifed_class_definition.color
         }
     }
 
@@ -941,6 +942,7 @@ export class ULabel {
 
         // Populate these in an external "static" function
         this.subtasks = {};
+        this.color_info = {}
         ULabel.initialize_subtasks(this, subtasks);
 
         // Create object for dragging interaction state
