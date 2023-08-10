@@ -1542,7 +1542,9 @@ export class ULabel {
             return this.config.default_annotation_color
         }
 
-        return color
+        // Return the color after applying a gradient to it based on its confidence
+        // If gradients are disabled, get_gradient will return the passed in color
+        return get_gradient(annotation, color, get_annotation_confidence, $("#gradient-slider").val() / 100)
     }
 
     get_annotation_color(clf_payload, demo = false, subtask = null) {
@@ -1751,8 +1753,8 @@ export class ULabel {
 
 
         // Prep for bbox drawing
-        let base_color = this.get_annotation_color2(annotation_object)
-        let color = get_gradient(annotation_object, base_color, get_annotation_confidence, $("#gradient-slider").val() / 100)
+        let color = this.get_annotation_color2(annotation_object)
+        // let color = get_gradient(annotation_object, base_color, get_annotation_confidence, $("#gradient-slider").val() / 100)
         ctx.fillStyle = color;
         ctx.strokeStyle = color;
         ctx.lineJoin = "round";
