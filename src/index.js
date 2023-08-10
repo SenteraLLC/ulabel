@@ -1531,7 +1531,7 @@ export class ULabel {
         }
     }
 
-    get_annotation_color2(annotation) {
+    get_annotation_color(annotation) {
         // Use the annotation's class id to get the color of the annotation
         const class_id = get_annotation_class_id(annotation)
         const color = this.color_info[class_id]
@@ -1613,7 +1613,7 @@ export class ULabel {
         }
 
         // Prep for bbox drawing
-        const color = this.get_annotation_color2(annotation_object)
+        const color = this.get_annotation_color(annotation_object)
         ctx.fillStyle = color;
         ctx.strokeStyle = color;
         ctx.lineJoin = "round";
@@ -1652,7 +1652,7 @@ export class ULabel {
         }
 
         // Prep for bbox drawing
-        const color = this.get_annotation_color2(annotation_object)
+        const color = this.get_annotation_color(annotation_object)
         ctx.fillStyle = color;
         ctx.strokeStyle = color;
         ctx.lineJoin = "round";
@@ -1706,7 +1706,7 @@ export class ULabel {
         }
 
         // Prep for bbox drawing
-        const color = this.get_annotation_color2(annotation_object)
+        const color = this.get_annotation_color(annotation_object)
         ctx.fillStyle = color;
         ctx.strokeStyle = color;
         ctx.lineJoin = "round";
@@ -1750,7 +1750,7 @@ export class ULabel {
 
 
         // Prep for bbox drawing
-        const color = this.get_annotation_color2(annotation_object)
+        const color = this.get_annotation_color(annotation_object)
         ctx.fillStyle = color;
         ctx.strokeStyle = color;
         ctx.lineJoin = "round";
@@ -1788,7 +1788,7 @@ export class ULabel {
 
 
         // Prep for bbox drawing
-        const color = this.get_annotation_color2(annotation_object)
+        const color = this.get_annotation_color(annotation_object)
         ctx.fillStyle = color;
         ctx.strokeStyle = color;
         ctx.lineJoin = "round";
@@ -1825,7 +1825,7 @@ export class ULabel {
         }
 
         // Prep for tbar drawing
-        const color = this.get_annotation_color2(annotation_object)
+        const color = this.get_annotation_color(annotation_object)
         ctx.fillStyle = color;
         ctx.strokeStyle = color;
         ctx.lineJoin = "round";
