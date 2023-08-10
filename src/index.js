@@ -1195,25 +1195,29 @@ export class ULabel {
     }
 
     // ================== Cursor Helpers ====================
+    /**
+     * Deprecated when dynamic line size toolbox item was removed. 
+     * TODO: Un-deprecated the dynamic line size toolbox item.
+     */
     update_cursor() {
-        let color = this.get_annotation_color(null, true);
-        let thr_width = this.get_line_size() * this.state["zoom_val"]
-        let width = Math.max(Math.min(thr_width, 64), 6);
-        let cursor_svg = `<svg version="1.1" xmlns="http://www.w3.org/2000/svg" width="${width}px" height="${width}px" viewBox="0 0 ${width} ${width}">
-            <circle cx="${width / 2}" cy="${width / 2}" r="${width / 2}" opacity="0.8" stroke="white" fill="${color}" />
-        </svg>`;
+        // let color = this.get_annotation_color(null, true);
+        // let thr_width = this.get_line_size() * this.state["zoom_val"]
+        // let width = Math.max(Math.min(thr_width, 64), 6);
+        // let cursor_svg = `<svg version="1.1" xmlns="http://www.w3.org/2000/svg" width="${width}px" height="${width}px" viewBox="0 0 ${width} ${width}">
+        //     <circle cx="${width / 2}" cy="${width / 2}" r="${width / 2}" opacity="0.8" stroke="white" fill="${color}" />
+        // </svg>`;
 
-        let bk_width = Math.max(Math.min(thr_width, 32), 6);
-        let bk_cursor_svg = `<svg version="1.1" xmlns="http://www.w3.org/2000/svg" width="${bk_width}px" height="${bk_width}px" viewBox="0 0 ${bk_width} ${bk_width}">
-            <circle cx="${bk_width / 2}" cy="${bk_width / 2}" r="${bk_width / 2}" opacity="0.8" stroke="${color}" fill="${color}" />
-        </svg>`;
+        // let bk_width = Math.max(Math.min(thr_width, 32), 6);
+        // let bk_cursor_svg = `<svg version="1.1" xmlns="http://www.w3.org/2000/svg" width="${bk_width}px" height="${bk_width}px" viewBox="0 0 ${bk_width} ${bk_width}">
+        //     <circle cx="${bk_width / 2}" cy="${bk_width / 2}" r="${bk_width / 2}" opacity="0.8" stroke="${color}" fill="${color}" />
+        // </svg>`;
 
-        let cursor_b64 = btoa(cursor_svg);
-        let bk_cursor_b64 = btoa(bk_cursor_svg);
-        $("#" + this.config["annbox_id"]).css(
-            "cursor",
-            `url(data:image/svg+xml;base64,${cursor_b64}) ${width / 2} ${width / 2}, url(data:image/svg+xml;base64,${bk_cursor_b64}) ${bk_width / 2} ${bk_width / 2}, auto`
-        );
+        // let cursor_b64 = btoa(cursor_svg);
+        // let bk_cursor_b64 = btoa(bk_cursor_svg);
+        // $("#" + this.config["annbox_id"]).css(
+        //     "cursor",
+        //     `url(data:image/svg+xml;base64,${cursor_b64}) ${width / 2} ${width / 2}, url(data:image/svg+xml;base64,${bk_cursor_b64}) ${bk_width / 2} ${bk_width / 2}, auto`
+        // );
     }
 
     // ================== Subtask Helpers ===================
