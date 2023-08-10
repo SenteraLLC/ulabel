@@ -1613,8 +1613,7 @@ export class ULabel {
         }
 
         // Prep for bbox drawing
-        let base_color = this.get_annotation_color(annotation_object["classification_payloads"], false, subtask);
-        let color = get_gradient(annotation_object, base_color, get_annotation_confidence, $("#gradient-slider").val() / 100)
+        const color = this.get_annotation_color2(annotation_object)
         ctx.fillStyle = color;
         ctx.strokeStyle = color;
         ctx.lineJoin = "round";
@@ -1653,8 +1652,7 @@ export class ULabel {
         }
 
         // Prep for bbox drawing
-        let base_color = this.get_annotation_color(annotation_object["classification_payloads"], false, subtask);
-        let color = get_gradient(annotation_object, base_color, get_annotation_confidence, $("#gradient-slider").val() / 100)
+        const color = this.get_annotation_color2(annotation_object)
         ctx.fillStyle = color;
         ctx.strokeStyle = color;
         ctx.lineJoin = "round";
@@ -1708,8 +1706,7 @@ export class ULabel {
         }
 
         // Prep for bbox drawing
-        let base_color = this.get_annotation_color(annotation_object["classification_payloads"], false, subtask);
-        let color = get_gradient(annotation_object, base_color, get_annotation_confidence, $("#gradient-slider").val() / 100)
+        const color = this.get_annotation_color2(annotation_object)
         ctx.fillStyle = color;
         ctx.strokeStyle = color;
         ctx.lineJoin = "round";
@@ -1753,8 +1750,7 @@ export class ULabel {
 
 
         // Prep for bbox drawing
-        let color = this.get_annotation_color2(annotation_object)
-        // let color = get_gradient(annotation_object, base_color, get_annotation_confidence, $("#gradient-slider").val() / 100)
+        const color = this.get_annotation_color2(annotation_object)
         ctx.fillStyle = color;
         ctx.strokeStyle = color;
         ctx.lineJoin = "round";
@@ -1792,8 +1788,7 @@ export class ULabel {
 
 
         // Prep for bbox drawing
-        let base_color = this.get_annotation_color(annotation_object["classification_payloads"], demo, subtask);
-        let color = get_gradient(annotation_object, base_color, get_annotation_confidence, $("#gradient-slider").val() / 100)
+        const color = this.get_annotation_color2(annotation_object)
         ctx.fillStyle = color;
         ctx.strokeStyle = color;
         ctx.lineJoin = "round";
@@ -1830,8 +1825,7 @@ export class ULabel {
         }
 
         // Prep for tbar drawing
-        let base_color = this.get_annotation_color(annotation_object["classification_payloads"], demo, subtask);
-        let color = get_gradient(annotation_object, base_color, get_annotation_confidence, $("#gradient-slider").val() / 100)
+        const color = this.get_annotation_color2(annotation_object)
         ctx.fillStyle = color;
         ctx.strokeStyle = color;
         ctx.lineJoin = "round";
