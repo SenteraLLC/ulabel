@@ -491,26 +491,26 @@ export class ULabel {
         ul.subtasks[subtask_key]["allowed_modes"] = subtask["allowed_modes"];
     }
 
-    static process_classes(ul, subtask_key, subtask) {
+    static process_classes(ul, subtask_key, raw_subtask_json) {
         // Check to make sure allowed classes were provided
-        if (!("classes" in subtask)) {
+        if (!("classes" in raw_subtask_json)) {
             throw new Error(`classes not specified for subtask "${subtask_key}"`);
         }
-        if (typeof subtask["classes"] != 'object' || subtask["classes"].length == undefined || subtask["classes"].length == 0) {
+        if (typeof raw_subtask_json["classes"] != 'object' || raw_subtask_json["classes"].length == undefined || raw_subtask_json["classes"].length == 0) {
             throw new Error(`classes has an invalid value for subtask "${subtask_key}"`);
         }
 
         // Set to single class mode if applicable
-        ul.subtasks[subtask_key]["single_class_mode"] = (subtask["classes"].length == 1);
+        ul.subtasks[subtask_key]["single_class_mode"] = (raw_subtask_json["classes"].length == 1);
 
         // Populate allowed classes vars
         // TODO might be nice to recognize duplicate classes and assign same color... idk
         // TODO better handling of default class ids would definitely be a good idea
         ul.subtasks[subtask_key]["class_defs"] = [];
         ul.subtasks[subtask_key]["class_ids"] = [];
-        for (let i = 0; i < subtask["classes"].length; i++) {
-            if (typeof subtask["classes"][i] == "string") {
-                let name = subtask["classes"][i];
+        for (let i = 0; i < raw_subtask_json["classes"].length; i++) {
+            if (typeof raw_subtask_json["classes"][i] == "string") {
+                let name = raw_subtask_json["classes"][i];
                 ul.subtasks[subtask_key]["class_defs"].push({
                     "name": name,
                     "color": COLORS[ul.tot_num_classes],
@@ -518,7 +518,7 @@ export class ULabel {
                 });
                 ul.subtasks[subtask_key]["class_ids"].push(ul.tot_num_classes);
             }
-            else if (typeof subtask["classes"][i] == 'object') {
+            else if (typeof raw_subtask_json["classes"][i] == 'object') {
                 // Start with default object
                 let repl = {
                     "name": `Class ${ul.tot_num_classes}`,
@@ -527,14 +527,14 @@ export class ULabel {
                 };
 
                 // Populate with what we have
-                if ("name" in subtask["classes"][i]) {
-                    repl["name"] = subtask["classes"][i]["name"];
+                if ("name" in raw_subtask_json["classes"][i]) {
+                    repl["name"] = raw_subtask_json["classes"][i]["name"];
                 }
-                if ("color" in subtask["classes"][i]) {
-                    repl["color"] = subtask["classes"][i]["color"];
+                if ("color" in raw_subtask_json["classes"][i]) {
+                    repl["color"] = raw_subtask_json["classes"][i]["color"];
                 }
-                if ("id" in subtask["classes"][i]) {
-                    repl["id"] = subtask["classes"][i]["id"];
+                if ("id" in raw_subtask_json["classes"][i]) {
+                    repl["id"] = raw_subtask_json["classes"][i]["id"];
                 }
 
                 // Push finished product to list
@@ -542,7 +542,7 @@ export class ULabel {
                 ul.subtasks[subtask_key]["class_ids"].push(repl["id"]);
             }
             else {
-                throw new Error(`Entry in classes not understood: ${subtask["classes"][i]}`);
+                throw new Error(`Entry in classes not understood: ${raw_subtask_json["classes"][i]}`);
             }
             ul.tot_num_classes++;
         }
@@ -644,17 +644,19 @@ export class ULabel {
 
     static initialize_subtasks(ul, stcs) {
         let first_non_ro = null;
+
+        // Initialize a place on the ulabel object to hold annotation color information
+        ul.color_info = {}
+
+        // Perform initialization tasks on each subtask individually
         for (const subtask_key in stcs) {
             // For convenience, make a raw subtask var
             let raw_subtask = stcs[subtask_key];
             ul.subtasks[subtask_key] = ULabelSubtask.from_json(subtask_key, raw_subtask);
 
-
-
             if (first_non_ro == null && !ul.subtasks[subtask_key]["read_only"]) {
                 first_non_ro = subtask_key;
             }
-
 
             // Process allowed_modes
             // They are placed in ul.subtasks[subtask_key]["allowed_modes"]
