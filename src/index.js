@@ -496,29 +496,33 @@ export class ULabel {
         if (!("classes" in raw_subtask_json)) {
             throw new Error(`classes not specified for subtask "${subtask_key}"`);
         }
-        if (typeof raw_subtask_json["classes"] != 'object' || raw_subtask_json["classes"].length == undefined || raw_subtask_json["classes"].length == 0) {
+        if (typeof raw_subtask_json.classes != 'object' || raw_subtask_json.classes.length == undefined || raw_subtask_json.classes.length == 0) {
             throw new Error(`classes has an invalid value for subtask "${subtask_key}"`);
         }
 
+        // Create a constant to hold the actual ULabelSubtask
+        // The raw subtask is used for reading values that are constant inside this method, the actual subtask is for writing values
+        const subtask = ul.subtasks[subtask_key]
+
         // Set to single class mode if applicable
-        ul.subtasks[subtask_key]["single_class_mode"] = (raw_subtask_json["classes"].length == 1);
+        subtask.single_class_mode = (raw_subtask_json.classes.length == 1);
 
         // Populate allowed classes vars
         // TODO might be nice to recognize duplicate classes and assign same color... idk
         // TODO better handling of default class ids would definitely be a good idea
-        ul.subtasks[subtask_key]["class_defs"] = [];
-        ul.subtasks[subtask_key]["class_ids"] = [];
-        for (let i = 0; i < raw_subtask_json["classes"].length; i++) {
-            if (typeof raw_subtask_json["classes"][i] == "string") {
-                let name = raw_subtask_json["classes"][i];
-                ul.subtasks[subtask_key]["class_defs"].push({
+        subtask.class_defs = [];
+        subtask.class_ids = [];
+        for (let i = 0; i < raw_subtask_json.classes.length; i++) {
+            if (typeof raw_subtask_json.classes[i] === "string") {
+                let name = raw_subtask_json.classes[i];
+                subtask.class_defs.push({
                     "name": name,
                     "color": COLORS[ul.tot_num_classes],
                     "id": ul.tot_num_classes
                 });
-                ul.subtasks[subtask_key]["class_ids"].push(ul.tot_num_classes);
+                subtask.class_ids.push(ul.tot_num_classes);
             }
-            else if (typeof raw_subtask_json["classes"][i] == 'object') {
+            else if (typeof raw_subtask_json.classes[i] === 'object') {
                 // Start with default object
                 let repl = {
                     "name": `Class ${ul.tot_num_classes}`,
@@ -527,22 +531,22 @@ export class ULabel {
                 };
 
                 // Populate with what we have
-                if ("name" in raw_subtask_json["classes"][i]) {
-                    repl["name"] = raw_subtask_json["classes"][i]["name"];
+                if ("name" in raw_subtask_json.classes[i]) {
+                    repl.name = raw_subtask_json.classes[i].name
                 }
-                if ("color" in raw_subtask_json["classes"][i]) {
-                    repl["color"] = raw_subtask_json["classes"][i]["color"];
+                if ("color" in raw_subtask_json.classes[i]) {
+                    repl.color = raw_subtask_json.classes[i].color
                 }
-                if ("id" in raw_subtask_json["classes"][i]) {
-                    repl["id"] = raw_subtask_json["classes"][i]["id"];
+                if ("id" in raw_subtask_json.classes[i]) {
+                    repl.id = raw_subtask_json.classes[i].id
                 }
 
                 // Push finished product to list
-                ul.subtasks[subtask_key]["class_defs"].push(repl);
-                ul.subtasks[subtask_key]["class_ids"].push(repl["id"]);
+                subtask.class_defs.push(repl);
+                subtask.class_ids.push(repl["id"]);
             }
             else {
-                throw new Error(`Entry in classes not understood: ${raw_subtask_json["classes"][i]}`);
+                throw new Error(`Entry in classes not understood: ${raw_subtask_json.classes[i]}`);
             }
             ul.tot_num_classes++;
         }
