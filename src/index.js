@@ -505,7 +505,7 @@ export class ULabel {
         }
     }
 
-    static process_classes(ul, subtask_key, raw_subtask_json) {
+    static process_classes(ulabel, subtask_key, raw_subtask_json) {
         // Check to make sure allowed classes were provided
         if (!("classes" in raw_subtask_json)) {
             throw new Error(`classes not specified for subtask "${subtask_key}"`);
@@ -516,7 +516,7 @@ export class ULabel {
 
         // Create a constant to hold the actual ULabelSubtask
         // The raw subtask is used for reading values that are constant inside this method, the actual subtask is for writing values
-        const subtask = ul.subtasks[subtask_key]
+        const subtask = ulabel.subtasks[subtask_key]
 
         // Set to single class mode if applicable
         subtask.single_class_mode = (raw_subtask_json.classes.length == 1);
@@ -537,8 +537,8 @@ export class ULabel {
                 case "string":
                     modifed_class_definition = {
                         "name": class_definition, // When class_definition is a string, that string is the class name
-                        "id": ULabel.create_unused_class_id(ul), // Create an id that's unused by another class
-                        "color": COLORS[ul.valid_class_ids.length] // Arbitrary yet unique color
+                        "id": ULabel.create_unused_class_id(ulabel), // Create an id that's unused by another class
+                        "color": COLORS[ulabel.valid_class_ids.length] // Arbitrary yet unique color
                     }
                     break
                 case "object":
@@ -546,15 +546,15 @@ export class ULabel {
                     const name = class_definition.name ?? `Class ${valid_class_ids.length}`
 
                     // Only create an id if one wasn't provided
-                    const id = class_definition.id ?? ULabel.create_unused_class_id(ul)
+                    const id = class_definition.id ?? ULabel.create_unused_class_id(ulabel)
 
-                    if (ul.valid_class_ids.includes(id)) {
+                    if (ulabel.valid_class_ids.includes(id)) {
                         console.warn(`Duplicate class id ${id} detected. This is not supported and may result in unintended side-effects.
                         This may be caused by mixing string and object class definitions, or by assigning the same id to two or more object class definitions.`)
                     }
 
                     // Use generic color only if color not provided
-                    const color = class_definition.color ?? COLORS[ul.valid_class_ids.length]
+                    const color = class_definition.color ?? COLORS[ulabel.valid_class_ids.length]
 
                     modifed_class_definition = {
                         "name": name,
@@ -572,8 +572,8 @@ export class ULabel {
             subtask.class_ids.push(modifed_class_definition.id)
 
             // Also save the id and color_info on the ULabel object
-            ul.valid_class_ids.push(modifed_class_definition.id)
-            ul.color_info[modifed_class_definition.id] = modifed_class_definition.color
+            ulabel.valid_class_ids.push(modifed_class_definition.id)
+            ulabel.color_info[modifed_class_definition.id] = modifed_class_definition.color
         }
     }
 
