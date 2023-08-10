@@ -496,14 +496,14 @@ export class ULabel {
         ul.subtasks[subtask_key]["allowed_modes"] = subtask["allowed_modes"];
     }
 
-    static create_unused_class_id(ul) {
+    static create_unused_class_id(ulabel) {
         // More likely to be valid than always starting at 0
-        current_id = ul.valid_class_ids.length
+        current_id = ulabel.valid_class_ids.length
 
         // Loop until a valid id is found
         while (true) {
             // If the current id is not currently being used, then return it
-            if (!ul.valid_class_ids.includes(current_id)) return current_id
+            if (!ulabel.valid_class_ids.includes(current_id)) return current_id
 
             // If the id was being used, then increment the id and try again
             current_id++
