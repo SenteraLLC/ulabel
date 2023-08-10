@@ -125,6 +125,8 @@ export class ULabel {
     state: any;
     config: any;
     toolbox: Toolbox;
+    color_info: {[key: number]: string}
+    valid_class_ids: number[];
     toolbox_order?: number[];
     filter_distance_overlay?: FilterDistanceOverlay
     /**

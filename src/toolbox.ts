@@ -1300,8 +1300,13 @@ export class AnnotationResizeItem extends ToolboxItem {
 }
 
 export class RecolorActiveItem2 extends ToolboxItem {
+    private ulabel: ULabel
+
     constructor(ulabel: ULabel) {
         super()
+
+        // Save ulabel to this object
+        this.ulabel = ulabel
 
         // Read local storage to see if any colors have been saved
         this.read_local_storage()
@@ -1312,7 +1317,19 @@ export class RecolorActiveItem2 extends ToolboxItem {
     }
 
     private read_local_storage(): void {
+        // Loop through every valid id and see if a color has been saved for it in local storage
+        for (const class_id of this.ulabel.valid_class_ids) {
 
+            // Get the color from local storage based on the current class id
+            const color = localStorage.getItem(`RecolorActiveItem-${class_id}`)
+
+            // Update the color
+            this.update_color(class_id, color)
+        }
+    }
+
+    private update_color(class_id: number | string, color: string): void {
+        this.ulabel.color_info[class_id] = color
     }
 
     protected add_styles(): void {
