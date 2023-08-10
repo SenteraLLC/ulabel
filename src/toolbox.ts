@@ -1299,6 +1299,41 @@ export class AnnotationResizeItem extends ToolboxItem {
     }
 }
 
+export class RecolorActiveItem2 extends ToolboxItem {
+    constructor(ulabel: ULabel) {
+        super()
+
+        // Read local storage to see if any colors have been saved
+        this.read_local_storage()
+    }
+
+    private save_local_storage(class_id: number | string, color: string): void {
+        localStorage.setItem(`RecolorActiveItem-${class_id}`, color)
+    }
+
+    private read_local_storage(): void {
+
+    }
+
+    protected add_styles(): void {
+        
+    }
+
+    private add_event_listeners(): void {
+
+    }
+
+    public get_html(): string {
+        return `
+        
+        `
+    }
+
+    public get_toolbox_item_type(): string {
+        return "RecolorActive"
+    }
+}
+
 export class RecolorActiveItem extends ToolboxItem { 
     public html: string;
     public inner_HTML: string;
