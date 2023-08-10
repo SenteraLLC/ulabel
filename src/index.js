@@ -5,10 +5,15 @@ Sentera Inc.
 import { ULabelAnnotation } from '../build/annotation';
 import { ULabelSubtask } from '../build/subtask';
 import { GeometricUtils } from '../build/geometric_utils';
-import { get_annotation_confidence, mark_deprecated, filter_points_distance_from_line } from '../build/annotation_operators';
-import { get_gradient } from '../build/drawing_utilities'
 import { Configuration, AllowedToolboxItem } from '../build/configuration';
 import { HTMLBuilder } from '../build/html_builder';
+import { get_gradient } from '../build/drawing_utilities'
+import { 
+    filter_points_distance_from_line, 
+    get_annotation_class_id, 
+    get_annotation_confidence, 
+    mark_deprecated 
+} from '../build/annotation_operators';
 
 import $ from 'jquery';
 const jQuery = $;
@@ -1526,6 +1531,20 @@ export class ULabel {
         }
     }
 
+    get_annotation_color2(annotation) {
+        // Use the annotation's class id to get the color of the annotation
+        const class_id = get_annotation_class_id(annotation)
+        const color = this.color_info[class_id]
+
+        // Log an error and return a default color if the color is undefined
+        if (color === undefined) {
+            console.error(`get_annotation_color encountered error while getting annotation color with class id ${class_id}`)
+            return this.config.default_annotation_color
+        }
+
+        return color
+    }
+
     get_annotation_color(clf_payload, demo = false, subtask = null) {
         if (this.config["allow_soft_id"]) {
             // not currently supported;
@@ -1732,7 +1751,7 @@ export class ULabel {
 
 
         // Prep for bbox drawing
-        let base_color = this.get_annotation_color(annotation_object["classification_payloads"], demo, subtask);
+        let base_color = this.get_annotation_color2(annotation_object)
         let color = get_gradient(annotation_object, base_color, get_annotation_confidence, $("#gradient-slider").val() / 100)
         ctx.fillStyle = color;
         ctx.strokeStyle = color;
