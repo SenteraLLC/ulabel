@@ -491,6 +491,20 @@ export class ULabel {
         ul.subtasks[subtask_key]["allowed_modes"] = subtask["allowed_modes"];
     }
 
+    static create_unused_class_id(ul) {
+        // More likely to be valid than always starting at 0
+        current_id = ul.valid_class_ids.length
+
+        // Loop until a valid id is found
+        while (true) {
+            // If the current id is not currently being used, then return it
+            if (!ul.valid_class_ids.includes(current_id)) return current_id
+
+            // If the id was being used, then increment the id and try again
+            current_id++
+        }
+    }
+
     static process_classes(ul, subtask_key, raw_subtask_json) {
         // Check to make sure allowed classes were provided
         if (!("classes" in raw_subtask_json)) {
@@ -512,43 +526,48 @@ export class ULabel {
         // TODO better handling of default class ids would definitely be a good idea
         subtask.class_defs = [];
         subtask.class_ids = [];
-        for (let i = 0; i < raw_subtask_json.classes.length; i++) {
-            if (typeof raw_subtask_json.classes[i] === "string") {
-                let name = raw_subtask_json.classes[i];
-                subtask.class_defs.push({
-                    "name": name,
-                    "color": COLORS[ul.tot_num_classes],
-                    "id": ul.tot_num_classes
-                });
-                subtask.class_ids.push(ul.tot_num_classes);
-            }
-            else if (typeof raw_subtask_json.classes[i] === 'object') {
-                // Start with default object
-                let repl = {
-                    "name": `Class ${ul.tot_num_classes}`,
-                    "color": COLORS[ul.tot_num_classes],
-                    "id": ul.tot_num_classes
-                };
 
-                // Populate with what we have
-                if ("name" in raw_subtask_json.classes[i]) {
-                    repl.name = raw_subtask_json.classes[i].name
-                }
-                if ("color" in raw_subtask_json.classes[i]) {
-                    repl.color = raw_subtask_json.classes[i].color
-                }
-                if ("id" in raw_subtask_json.classes[i]) {
-                    repl.id = raw_subtask_json.classes[i].id
-                }
+        // Loop through each class_definition allowed inside this subtask
+        for (const class_definition of raw_subtask_json.classes) {
 
-                // Push finished product to list
-                subtask.class_defs.push(repl);
-                subtask.class_ids.push(repl["id"]);
+            // Create a class definition based on the provided class_definition that will be saved to the subtask
+            let modifed_class_definition = {}
+
+            switch (typeof class_definition) {
+                case "string":
+                    modifed_class_definition = {
+                        "name": class_definition, // When class_definition is a string, that string is the class name
+                        "id": ULabel.create_unused_class_id(ul), // Create an id that's unused by another class
+                        "color": COLORS[ul.valid_class_ids.length] // Arbitrary yet unique color
+                    }
+                    break
+                case "object":
+                    // If no name is provided, give a generic name based on the total number of currently initialized classes
+                    const name = class_definition.name ?? `Class ${valid_class_ids.length}`
+
+                    // Only create an id if one wasn't provided
+                    const id = class_definition.id ?? ULabel.create_unused_class_id(ul)
+
+                    // Use generic color only if color not provided
+                    const color = class_definition.color ?? COLORS[ul.valid_class_ids.length]
+
+                    modifed_class_definition = {
+                        "name": name,
+                        "id": id,
+                        "color": color
+                    }
+                    break
+                default:
+                    throw new Error(`Entry in classes not understood: ${class_definition}
+                    ${class_definition} must either be a string or an object.`)
             }
-            else {
-                throw new Error(`Entry in classes not understood: ${raw_subtask_json.classes[i]}`);
-            }
-            ul.tot_num_classes++;
+
+            // Save the class definitions and ids on the subtask
+            subtask.class_defs.push(modifed_class_definition)
+            subtask.class_ids.push(modifed_class_definition.id)
+
+            // Also save the id on the ULabel object
+            ul.valid_class_ids.push(modifed_class_definition.id)
         }
     }
 
@@ -651,6 +670,9 @@ export class ULabel {
 
         // Initialize a place on the ulabel object to hold annotation color information
         ul.color_info = {}
+
+        // Initialize a place on the ulabel object to hold all classification ids
+        ul.valid_class_ids = []
 
         // Perform initialization tasks on each subtask individually
         for (const subtask_key in stcs) {
@@ -914,7 +936,6 @@ export class ULabel {
 
         // Populate these in an external "static" function
         this.subtasks = {};
-        this.tot_num_classes = 0;
         ULabel.initialize_subtasks(this, subtasks);
 
         // Create object for dragging interaction state
