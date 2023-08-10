@@ -548,6 +548,11 @@ export class ULabel {
                     // Only create an id if one wasn't provided
                     const id = class_definition.id ?? ULabel.create_unused_class_id(ul)
 
+                    if (ul.valid_class_ids.includes(id)) {
+                        console.warn(`Duplicate class id ${id} detected. This is not supported and may result in unintended side-effects.
+                        This may be caused by mixing string and object class definitions, or by assigning the same id to two or more object class definitions.`)
+                    }
+
                     // Use generic color only if color not provided
                     const color = class_definition.color ?? COLORS[ul.valid_class_ids.length]
 
