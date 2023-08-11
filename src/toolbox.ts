@@ -1305,6 +1305,8 @@ export class RecolorActiveItem2 extends ToolboxItem {
     constructor(ulabel: ULabel) {
         super()
 
+        this.add_styles()
+
         // Save ulabel to this object
         this.ulabel = ulabel
 
@@ -1333,7 +1335,105 @@ export class RecolorActiveItem2 extends ToolboxItem {
     }
 
     protected add_styles(): void {
-        
+        // Define the css
+        const css = `
+        #toolbox div.recolor-active {
+            padding: 0 2rem;
+        }
+
+        #toolbox div.recolor-active div.recolor-tbi-gradient {
+            font-size: 80%;
+        }
+
+        #toolbox div.recolor-active div.gradient-toggle-container {
+            text-align: left;
+            display: flex;
+            align-items: center;
+        }
+
+        #toolbox div.recolor-active div.gradient-slider-container {
+            display: flex;
+            align-items: center;
+        }
+
+        #toolbox div.recolor-active div.gradient-slider-container > input {
+            width: 50%;
+        }
+
+        #toolbox div.recolor-active div.annotation-recolor-button-holder {
+            margin: 0.5rem;
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            grid-template-rows: 1fr 1fr 1fr;
+            grid-template-areas:
+                "yellow picker"
+                "red    picker"
+                "cyan   picker";
+            gap: 0.25rem 0.75rem;
+        }
+
+        #toolbox div.recolor-active div.annotation-recolor-button-holder .color-change-btn {
+            height: 1.5rem;
+            border-radius: 0.5rem;
+        }
+
+        #toolbox div.recolor-active div.annotation-recolor-button-holder #color-change-yel {
+            grid-area: yellow;
+            background-color: yellow;
+            border: 1px solid rgb(200, 200, 0);
+        }
+
+        #toolbox div.recolor-active div.annotation-recolor-button-holder #color-change-red {
+            grid-area: red;
+            background-color: red;
+            border: 1px solid rgb(200, 0, 0);
+        }
+
+        #toolbox div.recolor-active div.annotation-recolor-button-holder #color-change-cya {
+            grid-area: cyan;
+            background-color: cyan;
+            border: 1px solid rgb(0, 200, 200);
+        }
+
+        #toolbox div.recolor-active div.annotation-recolor-button-holder div.color-picker-border {
+            grid-area: picker;
+            background: linear-gradient(to bottom right, red, orange, yellow, green, blue, indigo, violet);
+            border: 1px solid black;
+            border-radius: 0.5rem;
+        }
+
+        #toolbox div.recolor-active div.annotation-recolor-button-holder div.color-picker-border div.color-picker-container {
+            width: calc(100% - 8px);
+            height: calc(100% - 8px);
+            margin: 3px;
+            background-color: black;
+            border: 1px solid black;
+            border-radius: 0.5rem;
+        }
+
+        #toolbox div.recolor-active div.color-picker-container input.color-change-picker {
+            width: 100%;
+            height: 100%;
+            padding: 0;
+            opacity: 0;
+        }`
+
+        // Create an id so this specific style tag can be referenced
+        const style_id = "recolor-toolbox-item-styles"
+
+        // Don't add the style tag if its already been added once
+        if (document.getElementById(style_id)) return
+
+        // Grab the document's head and create a style tag
+        const head = document.head || document.querySelector("head")
+        const style = document.createElement('style');
+
+        // Add the css and id to the style tag
+        style.appendChild(document.createTextNode(css));
+        style.id = style_id
+
+        // Add the style tag to the document's head
+        head.appendChild(style);
     }
 
     private add_event_listeners(): void {
