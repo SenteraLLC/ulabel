@@ -1299,7 +1299,7 @@ export class AnnotationResizeItem extends ToolboxItem {
     }
 }
 
-export class RecolorActiveItem2 extends ToolboxItem {
+export class RecolorActiveItem extends ToolboxItem {
     private ulabel: ULabel
 
     constructor(ulabel: ULabel) {
@@ -1325,8 +1325,8 @@ export class RecolorActiveItem2 extends ToolboxItem {
             // Get the color from local storage based on the current class id
             const color = localStorage.getItem(`RecolorActiveItem-${class_id}`)
 
-            // Update the color
-            this.update_color(class_id, color)
+            // Update the color if its not null
+            if (color !== null) this.update_color(class_id, color)
         }
     }
 
@@ -1476,7 +1476,7 @@ export class RecolorActiveItem2 extends ToolboxItem {
     }
 }
 
-export class RecolorActiveItem extends ToolboxItem { 
+export class RecolorActiveItem2 extends ToolboxItem { 
     public html: string;
     public inner_HTML: string;
     private most_recent_draw: number = Date.now()
