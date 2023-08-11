@@ -1341,8 +1341,33 @@ export class RecolorActiveItem2 extends ToolboxItem {
     }
 
     public get_html(): string {
+        let TODO: boolean = false
+
         return `
-        
+        <div class="recolor-active">
+            <p class="tb-header">Recolor Annotations</p>
+            <div class="recolor-tbi-gradient">
+                <div class="gradient-toggle-container">
+                    <label for="gradient-toggle" id="gradient-toggle-label">Toggle Gradients:</label>
+                    <input type="checkbox" id="gradient-toggle" name="gradient-checkbox" value="gradient" ${TODO}>
+                </div>
+                <div class="gradient-slider-container">
+                    <label for="gradient-slider" id="gradient-slider-label">Gradient Max:</label>
+                    <input type="range" id="gradient-slider" value="100">
+                    <div class="gradient-slider-value-display">100%</div>
+                </div>
+            </div>
+            <div class="annotation-recolor-button-holder">
+                <input type="button" class="color-change-btn" id="color-change-yel">
+                <input type="button" class="color-change-btn" id="color-change-red">
+                <input type="button" class="color-change-btn" id="color-change-cya">
+                <div class="color-picker-border">
+                    <div class="color-picker-container" id="color-picker-container">
+                        <input type="color" class="color-change-picker" id="color-change-pick">
+                    </div>
+                </div>
+            </div>
+        </div>
         `
     }
 
