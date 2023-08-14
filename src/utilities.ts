@@ -2,6 +2,9 @@
  * File for storing useful utilities that are not strictly ULabel related.
  */
 
+import { ULabel } from ".."
+import { ULabelSubtask } from "./subtask"
+
 /**
  * Checks if something is an object, not an array, and not null
  * 
@@ -32,4 +35,15 @@ export function time_function(original_function: Function, function_name: string
         return result
     }
     return replacement_method
+}
+
+export function get_active_class_id(ulabel: ULabel): number {
+    // Grab the current subtask from the ulabel object
+    const current_subtask_key: string = ulabel.state.current_subtask
+    const current_subtask: ULabelSubtask = ulabel.subtasks[current_subtask_key]
+
+    // Active class id is stored in a weird way, it can be acessed by looping through the state's id_payload and finding a payload with > 0 confidence
+    for (const payload of current_subtask.state.id_payload) {
+        if (payload.confidence > 0) return payload.class_id
+    }
 }
