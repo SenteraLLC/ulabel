@@ -1336,6 +1336,7 @@ export class RecolorActiveItem extends ToolboxItem {
 
     private update_color(class_id: number | string, color: string): void {
         this.ulabel.color_info[class_id] = color
+        this.save_local_storage(class_id, color)
     }
 
     protected add_styles(): void {
