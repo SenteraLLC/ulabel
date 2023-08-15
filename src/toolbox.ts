@@ -1380,7 +1380,7 @@ export class RecolorActiveItem extends ToolboxItem {
             border-radius: 0.5rem;
         }
 
-        #toolbox div.recolor-active div.annotation-recolor-button-holder #color-change-yel {
+        #toolbox div.recolor-active div.annotation-recolor-button-holder #color-change-yellow {
             grid-area: yellow;
             background-color: yellow;
             border: 1px solid rgb(200, 200, 0);
@@ -1392,7 +1392,7 @@ export class RecolorActiveItem extends ToolboxItem {
             border: 1px solid rgb(200, 0, 0);
         }
 
-        #toolbox div.recolor-active div.annotation-recolor-button-holder #color-change-cya {
+        #toolbox div.recolor-active div.annotation-recolor-button-holder #color-change-cyan {
             grid-area: cyan;
             background-color: cyan;
             border: 1px solid rgb(0, 200, 200);
