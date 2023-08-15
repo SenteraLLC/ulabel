@@ -1302,6 +1302,7 @@ export class AnnotationResizeItem extends ToolboxItem {
 
 export class RecolorActiveItem extends ToolboxItem {
     private ulabel: ULabel
+    private most_recent_redraw_time: number = 0
 
     constructor(ulabel: ULabel) {
         super()
@@ -1440,20 +1441,57 @@ export class RecolorActiveItem extends ToolboxItem {
     }
 
     private add_event_listeners(): void {
+        // Listener for the static color change buttons
         $(document).on("click", ".color-change-btn", (event) => {
             // Grab the color of what button was clicked
-            const color = event.target.id.slice(13)
+            const color: string = event.target.id.slice(13)
 
             // Get the currently selected class id
-            const active_class_id = get_active_class_id(this.ulabel)
+            const active_class_id: number = get_active_class_id(this.ulabel)
 
             // Overwrite the color info with the new color
-            this.ulabel.color_info[active_class_id] = color
+            this.update_color(active_class_id, color)
 
-            // Only need to redraw the annotations in the subtask we updated
-            const current_subtask_key: string = this.ulabel.state.current_subtask
-            this.ulabel.redraw_all_annotations(current_subtask_key)
+            // Redraw the annotations with the new color
+            // Since this is a listener for a button, no limit needs to be imposed on the redrawing
+            this.redraw(0)
         })
+
+        // Listener for the color picker
+        $(document).on("input", "input.color-change-picker", (event) => {
+            // Get the selected color from the event
+            let color: string = event.currentTarget.value
+
+            // Get the currently selected class id
+            const active_class_id: number = get_active_class_id(this.ulabel)
+
+            // Update the color for this class
+            this.update_color(active_class_id, color)
+            
+            // Grab the color picker container and update its background to the selected color
+            let color_picker_container = <HTMLDivElement> document.getElementById("color-picker-container")
+            color_picker_container.style.backgroundColor = color
+
+            // Redraw the annotations with the new color
+            this.redraw()
+        })
+    }
+
+    /**
+     * Redraw all annotations in the current subtask. Limits how frequently annotations can be redrawn for performance reasons.
+     * 
+     * @param wait_time Number of milliseconds that must pass since the previous redraw before drawing is allowed again
+     */
+    private redraw(wait_time: number = 100): void {
+        // If less than the wait time has passed since since the most recent redraw, then return without drawing
+        if (Date.now() - this.most_recent_redraw_time < wait_time) return
+
+        // Only need to redraw the annotations in the subtask we updated
+        const current_subtask_key: string = this.ulabel.state.current_subtask
+        this.ulabel.redraw_all_annotations(current_subtask_key)
+
+        // Update the most_recent_redraw_time
+        this.most_recent_redraw_time = Date.now()
     }
 
     public get_html(): string {
