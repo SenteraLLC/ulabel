@@ -1330,13 +1330,17 @@ export class RecolorActiveItem extends ToolboxItem {
             const color = localStorage.getItem(`RecolorActiveItem-${class_id}`)
 
             // Update the color if its not null
-            if (color !== null) this.update_color(class_id, color)
+            // Additionally no need to save the color to local storage since we got it from reading local storage
+            if (color !== null) this.update_color(class_id, color, false)
         }
     }
 
-    private update_color(class_id: number | string, color: string): void {
+    private update_color(class_id: number | string, color: string, need_to_save: boolean = true): void {
+        // Update the color_info appropriately
         this.ulabel.color_info[class_id] = color
-        this.save_local_storage(class_id, color)
+
+        // Save the color to local storage if appropriate
+        if (need_to_save) this.save_local_storage(class_id, color)
     }
 
     protected add_styles(): void {
