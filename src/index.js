@@ -820,6 +820,8 @@ export class ULabel {
     // ================= Construction/Initialization =================
 
     constructor(kwargs) {
+        this.begining_time = Date.now()
+
         // Ensure arguments were recieved
         if (arguments.length === 0) {
             console.error("ULabel was given no arguments")
@@ -1104,6 +1106,8 @@ export class ULabel {
             console.log(err);
             this.raise_error("Unable to load images: " + JSON.stringify(err), ULabel.elvl_fatal);
         });
+
+        console.log(`Time taken to construct and initialize: ${Date.now() - this.begining_time}`)
     }
 
     version() {
@@ -2031,6 +2035,7 @@ export class ULabel {
     }
 
     redraw_all_annotations(subtask = null, offset = null, spatial_only = false) {
+        console.log("Redraw_all_annotations")
         // TODO(3d)
         if (subtask == null) {
             for (const st in this.subtasks) {

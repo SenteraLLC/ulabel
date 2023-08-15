@@ -42,8 +42,20 @@ export function get_active_class_id(ulabel: ULabel): number {
     const current_subtask_key: string = ulabel.state.current_subtask
     const current_subtask: ULabelSubtask = ulabel.subtasks[current_subtask_key]
 
-    // Active class id is stored in a weird way, it can be acessed by looping through the state's id_payload and finding a payload with > 0 confidence
+    // If in single_class_mode return the only valid class id
+    if (current_subtask.single_class_mode) return current_subtask.class_ids[0]
+
+    // If the current subtask has more than one valid class id, loop through the id_payloads
     for (const payload of current_subtask.state.id_payload) {
-        if (payload.confidence > 0) return payload.class_id
+        // If the payload is a number then the user hasn't selected a class yet, so the first class id is the current one
+        if (typeof payload === "number") return current_subtask.class_ids[0]
+
+        // If the payload is an object then return its id if its confidence is > 0
+        if (payload.confidence > 0) {
+            console.log(`payload: ${payload}`)
+            return payload.class_id
+        }
     }
+    console.error(`get_active_class_id was unable to determine an active class id.
+    current_subtask: ${JSON.stringify(current_subtask)}`)
 }

@@ -415,9 +415,7 @@ export function filter_points_distance_from_line(ulabel: ULabel, offset: Offset 
     }
 
     if (should_redraw){
-        const before_time = Date.now()
-        ulabel.redraw_all_annotations(null, null, false);
-        console.log(`redraw_all_annotations took ${Date.now() - before_time}ms`)
+        ulabel.redraw_all_annotations(null, null, false)
     } 
     
     // Ensure the overlay exists before trying to access it

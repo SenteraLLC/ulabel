@@ -12,6 +12,7 @@ import {
 } from "./annotation_operators";
 import { SliderHandler } from "./html_builder";
 import { FilterDistanceOverlay } from "./overlays";
+import { get_active_class_id } from "./utilities";
 
 // For ResizeToolboxItem
 enum ValidResizeValues {
@@ -1305,10 +1306,12 @@ export class RecolorActiveItem extends ToolboxItem {
     constructor(ulabel: ULabel) {
         super()
 
-        this.add_styles()
-
         // Save ulabel to this object
         this.ulabel = ulabel
+
+        // Add styles and event listeners for this component
+        this.add_styles()
+        this.add_event_listeners()
 
         // Read local storage to see if any colors have been saved
         this.read_local_storage()
@@ -1437,7 +1440,20 @@ export class RecolorActiveItem extends ToolboxItem {
     }
 
     private add_event_listeners(): void {
+        $(document).on("click", ".color-change-btn", (event) => {
+            // Grab the color of what button was clicked
+            const color = event.target.id.slice(13)
 
+            // Get the currently selected class id
+            const active_class_id = get_active_class_id(this.ulabel)
+
+            // Overwrite the color info with the new color
+            this.ulabel.color_info[active_class_id] = color
+
+            // Only need to redraw the annotations in the subtask we updated
+            const current_subtask_key: string = this.ulabel.state.current_subtask
+            this.ulabel.redraw_all_annotations(current_subtask_key)
+        })
     }
 
     public get_html(): string {
@@ -1458,9 +1474,9 @@ export class RecolorActiveItem extends ToolboxItem {
                 </div>
             </div>
             <div class="annotation-recolor-button-holder">
-                <input type="button" class="color-change-btn" id="color-change-yel">
+                <input type="button" class="color-change-btn" id="color-change-yellow">
                 <input type="button" class="color-change-btn" id="color-change-red">
-                <input type="button" class="color-change-btn" id="color-change-cya">
+                <input type="button" class="color-change-btn" id="color-change-cyan">
                 <div class="color-picker-border">
                     <div class="color-picker-container" id="color-picker-container">
                         <input type="color" class="color-change-picker" id="color-change-pick">

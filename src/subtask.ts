@@ -9,6 +9,7 @@ export class ULabelSubtask {
         "access": {[key: string]: ULabelAnnotation},
         "ordering": string[]
     }
+    public single_class_mode: boolean
     public state: {
         active_id: string,
         annotation_mode: string,
@@ -16,7 +17,7 @@ export class ULabelSubtask {
         edit_candidate: unknown, // TODO: figure out what type this is
         first_explicit_assignment: boolean,
         front_context: CanvasRenderingContext2D,
-        id_payload: {
+        id_payload: number[] | {
             class_id: number,
             confidence: number
         }[],
