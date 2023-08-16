@@ -1300,6 +1300,9 @@ export class AnnotationResizeItem extends ToolboxItem {
     }
 }
 
+/**
+ * ToolboxItem for recoloring annotations and applying gradients to annotations based on confidence.
+ */
 export class RecolorActiveItem extends ToolboxItem {
     private ulabel: ULabel
     private config: RecolorActiveConfig
