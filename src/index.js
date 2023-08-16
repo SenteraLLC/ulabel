@@ -817,6 +817,15 @@ export class ULabel {
         }
     }
 
+    /** 
+     * Code to be called after ULabel has finished initializing.
+    */
+    static after_init(ulabel) {
+        for (const toolbox_item of ulabel.toolbox.items) {
+            toolbox_item.after_init()
+        }
+    }
+
     // ================= Construction/Initialization =================
 
     constructor(kwargs) {
@@ -1106,6 +1115,9 @@ export class ULabel {
             console.log(err);
             this.raise_error("Unable to load images: " + JSON.stringify(err), ULabel.elvl_fatal);
         });
+
+        // Final code to be called after the object is initialized
+        ULabel.after_init(this)
 
         console.log(`Time taken to construct and initialize: ${Date.now() - this.begining_time}`)
     }

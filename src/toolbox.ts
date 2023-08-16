@@ -290,9 +290,26 @@ export class ToolboxTab {
 export abstract class ToolboxItem {
     constructor() {}
 
+    /**
+     * Returns this toolbox item's html.
+     */
     abstract get_html(): string;
+
+    /**
+     * Returns a unique string for each toolbox item.
+     */
     abstract get_toolbox_item_type(): string;
-    protected abstract add_styles(): void; // ToolboxItems need to handle their own css
+
+    /**
+     * Code called after all of ULabel's constructor and initialization code is called.
+     */
+    abstract after_init(): void;
+
+    /**
+     * ToolboxItems need to handle their own css.
+     */
+    protected abstract add_styles(): void; 
+
     public redraw_update(ulabel: ULabel): void {}
     public frame_update(ulabel: ULabel): void {} 
 }
@@ -462,6 +479,10 @@ export class ModeSelectionToolboxItem extends ToolboxItem {
             </p>
         </div>
         `
+    }
+
+    public after_init() {
+        // This toolbox item doesn't need to do anything after initialization
     }
 
     public get_toolbox_item_type() {
@@ -790,6 +811,10 @@ export class ZoomPanToolboxItem extends ToolboxItem {
         `;
     }
 
+    public after_init() {
+        // This toolbox item doesn't need to do anything after initialization
+    }
+
     public get_toolbox_item_type() {
         return "ZoomPan"
     }
@@ -857,6 +882,10 @@ export class AnnotationIDToolboxItem extends ToolboxItem {
             ${this.instructions}
         </div>
         `;
+    }
+
+    public after_init() {
+        // This toolbox item doesn't need to do anything after initialization
     }
 
     public get_toolbox_item_type() {
@@ -941,6 +970,10 @@ export class ClassCounterToolboxItem extends ToolboxItem {
     public get_html() {
         return `
         <div class="toolbox-class-counter">` + this.inner_HTML + `</div>`;
+    }
+
+    public after_init() {
+        // This toolbox item doesn't need to do anything after initialization
     }
 
     public redraw_update(ulabel: ULabel) {
@@ -1295,6 +1328,10 @@ export class AnnotationResizeItem extends ToolboxItem {
         `
     }
 
+    public after_init() {
+        // This toolbox item doesn't need to do anything after initialization
+    }
+
     public get_toolbox_item_type() {
         return "AnnotationResize"
     }
@@ -1331,7 +1368,7 @@ export class RecolorActiveItem extends ToolboxItem {
         localStorage.setItem(`RecolorActiveItem-${class_id}`, color)
     }
 
-    private save_local_storage_gradient(gradient_status: boolean) {
+    private save_local_storage_gradient(gradient_status: boolean): void {
         localStorage.setItem("RecolorActiveItem-Gradient", gradient_status.toString())
     }
 
@@ -1352,8 +1389,12 @@ export class RecolorActiveItem extends ToolboxItem {
     }
 
     private update_color(class_id: number | string, color: string, need_to_save: boolean = true): void {
-        // Update the color_info appropriately
+        // Update the color_info for annotations appropriately
         this.ulabel.color_info[class_id] = color
+
+        // Update the color in the AnnotationId button for this class
+        const button_color_square = <HTMLDivElement> document.querySelector(`#toolbox_sel_${class_id} > div`)
+        if (button_color_square) button_color_square.style.backgroundColor = color
 
         // Save the color to local storage if appropriate
         if (need_to_save) this.save_local_storage_color(class_id, color)
@@ -1567,6 +1608,10 @@ export class RecolorActiveItem extends ToolboxItem {
             </div>
         </div>
         `
+    }
+
+    public after_init() {
+        // This toolbox item doesn't need to do anything after initialization
     }
 
     public get_toolbox_item_type(): string {
@@ -1900,6 +1945,10 @@ export class RecolorActiveItem2 extends ToolboxItem {
         `
     }
 
+    public after_init() {
+        // This toolbox item doesn't need to do anything after initialization
+    }
+
     public get_toolbox_item_type() {
         return "RecolorActive"
     }
@@ -2039,6 +2088,10 @@ export class KeypointSliderItem extends ToolboxItem {
             ` + slider_handler.getSliderHTML() + `
         </div>
         `
+    }
+
+    public after_init() {
+        // This toolbox item doesn't need to do anything after initialization
     }
 
     public get_toolbox_item_type() {
@@ -2428,6 +2481,10 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
         `
     }
 
+    public after_init() {
+        // This toolbox item doesn't need to do anything after initialization
+    }
+
     public get_toolbox_item_type() {
         return "FilterDistance"
     }
@@ -2596,6 +2653,10 @@ export class SubmitButtons extends ToolboxItem {
         }
         
         return toolboxitem_html
+    }
+
+    public after_init() {
+        // This toolbox item doesn't need to do anything after initialization
     }
 
     public get_toolbox_item_type() {
