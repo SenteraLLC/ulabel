@@ -1303,6 +1303,7 @@ export class AnnotationResizeItem extends ToolboxItem {
 export class RecolorActiveItem extends ToolboxItem {
     private ulabel: ULabel
     private most_recent_redraw_time: number = 0
+    private gradient_turned_on: boolean
 
     constructor(ulabel: ULabel) {
         super()
@@ -1318,8 +1319,12 @@ export class RecolorActiveItem extends ToolboxItem {
         this.read_local_storage()
     }
 
-    private save_local_storage(class_id: number | string, color: string): void {
+    private save_local_storage_color(class_id: number | string, color: string): void {
         localStorage.setItem(`RecolorActiveItem-${class_id}`, color)
+    }
+
+    private save_local_storage_gradient(gradient_status: boolean) {
+        localStorage.setItem("RecolorActiveItem-Gradient", gradient_status.toString())
     }
 
     private read_local_storage(): void {
@@ -1333,6 +1338,9 @@ export class RecolorActiveItem extends ToolboxItem {
             // Additionally no need to save the color to local storage since we got it from reading local storage
             if (color !== null) this.update_color(class_id, color, false)
         }
+
+        // Then read whether or not the gradient should be on by default
+        this.gradient_turned_on = localStorage.getItem("RecolorActiveItem-Gradient") === "true"
     }
 
     private update_color(class_id: number | string, color: string, need_to_save: boolean = true): void {
@@ -1340,7 +1348,7 @@ export class RecolorActiveItem extends ToolboxItem {
         this.ulabel.color_info[class_id] = color
 
         // Save the color to local storage if appropriate
-        if (need_to_save) this.save_local_storage(class_id, color)
+        if (need_to_save) this.save_local_storage_color(class_id, color)
     }
 
     protected add_styles(): void {
@@ -1480,6 +1488,15 @@ export class RecolorActiveItem extends ToolboxItem {
             // Redraw the annotations with the new color
             this.redraw()
         })
+
+        // Event listener for the gradient toggle
+        $(document).on("input", "#gradient-toggle", (event) => {
+            // Redraw all annotations, not just those in the active subtask because all subtasks can be effected by the gradient
+            this.ulabel.redraw_all_annotations(null, null, false);
+
+            // Save whether or not the toggle is checked so when the page is reloaded it can remain in the same state
+            this.save_local_storage_gradient(event.target.checked) 
+        })
     }
 
     /**
@@ -1500,15 +1517,13 @@ export class RecolorActiveItem extends ToolboxItem {
     }
 
     public get_html(): string {
-        let TODO: boolean = false
-
         return `
         <div class="recolor-active">
             <p class="tb-header">Recolor Annotations</p>
             <div class="recolor-tbi-gradient">
                 <div class="gradient-toggle-container">
                     <label for="gradient-toggle" id="gradient-toggle-label">Toggle Gradients:</label>
-                    <input type="checkbox" id="gradient-toggle" name="gradient-checkbox" value="gradient" ${TODO}>
+                    <input type="checkbox" id="gradient-toggle" name="gradient-checkbox" value="gradient" ${this.gradient_turned_on ? "checked" : ""}>
                 </div>
                 <div class="gradient-slider-container">
                     <label for="gradient-slider" id="gradient-slider-label">Gradient Max:</label>
