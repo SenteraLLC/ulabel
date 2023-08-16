@@ -1492,10 +1492,19 @@ export class RecolorActiveItem extends ToolboxItem {
         // Event listener for the gradient toggle
         $(document).on("input", "#gradient-toggle", (event) => {
             // Redraw all annotations, not just those in the active subtask because all subtasks can be effected by the gradient
-            this.ulabel.redraw_all_annotations(null, null, false);
+            this.redraw(0)
 
             // Save whether or not the toggle is checked so when the page is reloaded it can remain in the same state
             this.save_local_storage_gradient(event.target.checked) 
+        })
+
+        // Event listener for the gradient max value slider
+        $(document).on("input", "#gradient-slider", (event) => {
+            // Update the slider's label so the user knows exactly which value is selected
+            $("div.gradient-slider-value-display").text(event.currentTarget.value + "%");
+
+            // Redraw all annotations because other subtasks can be effected by the gradient slider
+            this.redraw(100, true)
         })
     }
 
@@ -1503,14 +1512,21 @@ export class RecolorActiveItem extends ToolboxItem {
      * Redraw all annotations in the current subtask. Limits how frequently annotations can be redrawn for performance reasons.
      * 
      * @param wait_time Number of milliseconds that must pass since the previous redraw before drawing is allowed again
+     * @param redraw_all_annotations False by default. If true, redraws all subtasks. Otherwise only redraws current subtask
      */
-    private redraw(wait_time: number = 100): void {
+    private redraw(wait_time: number = 100, redraw_all_annotations: boolean = false): void {
         // If less than the wait time has passed since since the most recent redraw, then return without drawing
         if (Date.now() - this.most_recent_redraw_time < wait_time) return
 
-        // Only need to redraw the annotations in the subtask we updated
-        const current_subtask_key: string = this.ulabel.state.current_subtask
-        this.ulabel.redraw_all_annotations(current_subtask_key)
+        if (redraw_all_annotations) {
+            // Redraw all annotations
+            this.ulabel.redraw_all_annotations()
+        }
+        else {
+            // Otherwise only redraw the annotations in the subtask we updated
+            const current_subtask_key: string = this.ulabel.state.current_subtask
+            this.ulabel.redraw_all_annotations(current_subtask_key)
+        }
 
         // Update the most_recent_redraw_time
         this.most_recent_redraw_time = Date.now()
