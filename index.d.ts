@@ -72,6 +72,10 @@ export type SliderInfo = {
     step?: string, // Whole number
 }
 
+export type RecolorActiveConfig = {
+    gradient_turned_on: boolean
+}
+
 /**
  * Config object for the FilterPointDistanceFromRow ToolboxItem.
  */

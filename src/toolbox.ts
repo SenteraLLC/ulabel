@@ -1,4 +1,4 @@
-import { AnnotationClassDistanceData, FilterDistanceConfig, ULabel } from "..";
+import { AnnotationClassDistanceData, FilterDistanceConfig, RecolorActiveConfig, ULabel } from "..";
 import { ULabelAnnotation } from "./annotation";
 import { ULabelSubtask } from "./subtask";
 import { Configuration } from "./configuration";
@@ -1302,14 +1302,16 @@ export class AnnotationResizeItem extends ToolboxItem {
 
 export class RecolorActiveItem extends ToolboxItem {
     private ulabel: ULabel
+    private config: RecolorActiveConfig
     private most_recent_redraw_time: number = 0
     private gradient_turned_on: boolean
 
     constructor(ulabel: ULabel) {
         super()
 
-        // Save ulabel to this object
+        // Save ulabel to this object and grab this component's config from the main config
         this.ulabel = ulabel
+        this.config = this.ulabel.config.recolor_active_toolbox_item
 
         // Add styles and event listeners for this component
         this.add_styles()
@@ -1317,6 +1319,9 @@ export class RecolorActiveItem extends ToolboxItem {
 
         // Read local storage to see if any colors have been saved
         this.read_local_storage()
+
+        // Use the config's default only if a value wasn't found inside local storage
+        this.gradient_turned_on ??= this.config.gradient_turned_on
     }
 
     private save_local_storage_color(class_id: number | string, color: string): void {
@@ -1857,7 +1862,7 @@ export class RecolorActiveItem2 extends ToolboxItem {
 
         //null means no cookie, so grab the default from configuration
         if (checked_status_bool == null) {
-            checked_status_bool = Configuration.annotation_gradient_default;
+            // checked_status_bool = Configuration.annotation_gradient_default;
         }
 
         if (checked_status_bool == true) {
