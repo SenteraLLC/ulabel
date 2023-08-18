@@ -336,7 +336,8 @@ export class HTMLBuilder {
             for (let i = 0; i < class_ids.length; i++) {
 
                 let this_id: string = class_ids[i].toString();
-                let this_color: string = ulabel.subtasks[st]["class_defs"][i]["color"];
+                let this_color: string = ulabel.color_info[this_id]
+                // let this_color: string = ulabel.subtasks[st]["class_defs"][i]["color"];
                 let this_name: string = ulabel.subtasks[st]["class_defs"][i]["name"];
 
                 let sel: string = "";
