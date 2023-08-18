@@ -252,17 +252,6 @@ export class ULabel {
             ul.handle_toolbox_overflow();
         }).observe(document.getElementById(ul.config["container_id"]));
 
-        $(document).on("click", "#" + ul.config["toolbox_id"] + " .wbutt", (e) => {
-            let tgt_jq = $(e.currentTarget);
-            if (tgt_jq.hasClass("win")) {
-                ul.state["line_size"] *= 1.1;
-            }
-            else if (tgt_jq.hasClass("wout")) {
-                ul.state["line_size"] /= 1.1;
-            }
-            ul.redraw_demo();
-        });
-        
         $(document).on("click", "#" + ul.config["toolbox_id"] + " .setting a", (e) => {
             let tgt_jq = $(e.currentTarget);
             if (!e.currentTarget.hasAttribute("href")) return;
