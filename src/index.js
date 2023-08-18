@@ -252,24 +252,6 @@ export class ULabel {
             ul.handle_toolbox_overflow();
         }).observe(document.getElementById(ul.config["container_id"]));
 
-        $(document).on("click", "#" + ul.config["toolbox_id"] + " .setting a", (e) => {
-            let tgt_jq = $(e.currentTarget);
-            if (!e.currentTarget.hasAttribute("href")) return;
-            if (tgt_jq.hasClass("fixed-setting")) {
-                $("#" + ul.config["toolbox_id"] + " .setting a.fixed-setting").removeAttr("href");
-                $("#" + ul.config["toolbox_id"] + " .setting a.dyn-setting").attr("href", "#");
-                ul.state["line_size"] = ul.state["line_size"] * ul.state["zoom_val"];
-                ul.state["size_mode"] = "fixed";
-            }
-            else if (tgt_jq.hasClass("dyn-setting")) {
-                $("#" + ul.config["toolbox_id"] + " .setting a.dyn-setting").removeAttr("href");
-                $("#" + ul.config["toolbox_id"] + " .setting a.fixed-setting").attr("href", "#");
-                ul.state["line_size"] = ul.get_line_size();
-                ul.state["size_mode"] = "dynamic";
-            }
-            ul.redraw_demo();
-        });
-
         // Listener for soft id toolbox buttons
         $(document).on("click", "#" + ul.config["toolbox_id"] + ' a.tbid-opt', (e) => {
             let tgt_jq = $(e.currentTarget);
