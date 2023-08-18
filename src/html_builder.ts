@@ -233,7 +233,7 @@ export class HTMLBuilder {
         class_ids, 
         inner_rad, 
         outer_rad, 
-        class_defs
+        color_info
     ) {
         // TODO noconflict
         let dialog_html: string = `
@@ -265,7 +265,7 @@ export class HTMLBuilder {
             let off_frnt = 2 * Math.PI * rad_frnt * cum_prop;
 
             let ths_id = class_ids[i];
-            let ths_col = class_defs[i]["color"];
+            let ths_col = color_info[ths_id]
             // TODO should names also go on the id dialog?
             // let ths_nam = class_defs[i]["name"];
             dialog_html += `
@@ -315,17 +315,18 @@ export class HTMLBuilder {
         for (const st in ulabel.subtasks) {
             const idd_id = ulabel.subtasks[st]["state"]["idd_id"];
             const idd_id_front = ulabel.subtasks[st]["state"]["idd_id_front"];
+            const color_info = ulabel.color_info
 
             let subtask_dialog_container_jq = $("#dialogs__" + st);
             let front_subtask_dialog_container_jq = $("#front_dialogs__" + st);
 
             let dialog_html_v2 = HTMLBuilder.get_idd_string(
                 idd_id, width, center_coord, cl_opacity, ulabel.subtasks[st]["class_ids"],
-                inner_rad, outer_rad, ulabel.subtasks[st]["class_defs"]
+                inner_rad, outer_rad, color_info
             );
             let front_dialog_html_v2 = HTMLBuilder.get_idd_string(
                 idd_id_front, width, center_coord, cl_opacity, ulabel.subtasks[st]["class_ids"],
-                inner_rad, outer_rad, ulabel.subtasks[st]["class_defs"]
+                inner_rad, outer_rad, color_info
             );
 
             // TODO noconflict
