@@ -6,14 +6,20 @@ import { ULabelAnnotation } from '../build/annotation';
 import { ULabelSubtask } from '../build/subtask';
 import { GeometricUtils } from '../build/geometric_utils';
 import { Configuration, AllowedToolboxItem } from '../build/configuration';
-import { HTMLBuilder } from '../build/html_builder';
 import { get_gradient } from '../build/drawing_utilities'
-import { 
-    filter_points_distance_from_line, 
-    get_annotation_class_id, 
-    get_annotation_confidence, 
-    mark_deprecated 
+import {
+    filter_points_distance_from_line,
+    get_annotation_class_id,
+    get_annotation_confidence,
+    mark_deprecated
 } from '../build/annotation_operators';
+import {
+    add_style_to_document,
+    prep_window_html,
+    build_id_dialogs,
+    build_edit_suggestion,
+    build_confidence_dialog 
+} from '../build/html_builder';
 
 import $ from 'jquery';
 const jQuery = $;
@@ -987,13 +993,13 @@ export class ULabel {
 
     init(callback) {
         // Add stylesheet
-        HTMLBuilder.add_style_to_document(this);
+        add_style_to_document(this);
 
         let that = this;
         that.state["current_subtask"] = Object.keys(that.subtasks)[0];
 
         // Place image element
-        HTMLBuilder.prep_window_html(this, this.toolbox_order);
+        prep_window_html(this, this.toolbox_order);
 
         // Detect night cookie
         if (ULabel.has_night_mode_cookie()) {
@@ -1049,13 +1055,13 @@ export class ULabel {
             // ).getContext("2d");
 
             // Add the ID dialogs' HTML to the document
-            HTMLBuilder.build_id_dialogs(that);
+            build_id_dialogs(that);
 
             // Add the HTML for the edit suggestion to the window
-            HTMLBuilder.build_edit_suggestion(that);
+            build_edit_suggestion(that);
 
             // Add dialog to show annotation confidence
-            HTMLBuilder.build_confidence_dialog(that);
+            build_confidence_dialog(that);
 
             // Create listers to manipulate and export this object
             ULabel.create_listeners(that);
