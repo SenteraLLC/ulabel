@@ -32,23 +32,15 @@
                 let subtasks = {
                     "car_detection": {
                         "display_name": "Car Detection",
-                        "classes": [
-                            {
-                                "name": "Sedan",
-                                "color": "blue",
-                                "id": 10
-                            },
-                            {
-                                "name": "SUV",
-                                "color": "green",
-                                "id": 11
-                            },
-                            {
-                                "name": "Truck",
-                                "color": "orange",
-                                "id": 12
-                            },
-                        ],
+                        "classes": ["class 1", "class 2", "class 3", "class 4"],
+                        "allowed_modes": ["bbox", "polygon", "contour", "polyline"],
+                        "resume_from": null,
+                        "task_meta": null,
+                        "annotation_meta": null
+                    },
+                    "cra": {
+                        "display_name": "Car Detection",
+                        "classes": ["class52", "class 6", "class 7", "class 8", "class 9"],
                         "allowed_modes": ["bbox", "polygon", "contour", "polyline"],
                         "resume_from": null,
                         "task_meta": null,

@@ -315,7 +315,7 @@ function get_idd_string(
         <a class="id-dialog-clickable-indicator" href="#"></a>`
 
     // Build the svg html and add it to the div
-    dialog_html += build_class_change_svg(class_ids, color_info, idd_id, {"width": width, inner_radius: inner_rad})
+    dialog_html += build_class_change_svg(class_ids, color_info, idd_id, {"width": width, "inner_radius": inner_rad, "opacity": cl_opacity})
 
     // Create a centcirc div at the end and close off the div
     dialog_html += '<div class="centcirc"></div></div>';
