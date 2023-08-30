@@ -302,11 +302,9 @@ function build_class_change_svg(
 function get_idd_string(
     idd_id, 
     width, 
-    center_coord, 
     cl_opacity, 
     class_ids, 
     inner_rad, 
-    outer_rad, 
     color_info
 ) {
     // TODO noconflict
@@ -337,8 +335,6 @@ export function build_id_dialogs(ulabel: ULabel) {
     const cl_opacity: number = 0.4;
     let tbid: string = ulabel.config.toolbox_id;
 
-    const center_coord: number = width / 2;
-
     for (const st in ulabel.subtasks) {
         const idd_id = ulabel.subtasks[st]["state"]["idd_id"];
         const idd_id_front = ulabel.subtasks[st]["state"]["idd_id_front"];
@@ -348,12 +344,12 @@ export function build_id_dialogs(ulabel: ULabel) {
         let front_subtask_dialog_container_jq = $("#front_dialogs__" + st);
 
         let dialog_html_v2 = get_idd_string(
-            idd_id, width, center_coord, cl_opacity, ulabel.subtasks[st]["class_ids"],
-            inner_rad, outer_rad, color_info
+            idd_id, width, cl_opacity, ulabel.subtasks[st]["class_ids"],
+            inner_rad, color_info
         );
         let front_dialog_html_v2 = get_idd_string(
-            idd_id_front, width, center_coord, cl_opacity, ulabel.subtasks[st]["class_ids"],
-            inner_rad, outer_rad, color_info
+            idd_id_front, width, cl_opacity, ulabel.subtasks[st]["class_ids"],
+            inner_rad, color_info
         );
 
         // TODO noconflict
