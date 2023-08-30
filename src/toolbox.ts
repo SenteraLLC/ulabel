@@ -10,7 +10,7 @@ import {
     findAllPolylineClassDefinitions,
     get_point_and_line_annotations
 } from "./annotation_operators";
-import { SliderHandler } from "./html_builder";
+import { SliderHandler, build_id_dialogs } from "./html_builder";
 import { FilterDistanceOverlay } from "./overlays";
 import { get_active_class_id } from "./utilities";
 
@@ -1388,6 +1388,13 @@ export class RecolorActiveItem extends ToolboxItem {
         this.gradient_turned_on = localStorage.getItem("RecolorActiveItem-Gradient") === "true"
     }
 
+    private replace_color_pie(): void {
+        const current_subtask = this.ulabel.state.current_subtask
+        let svg = document.querySelector(`#id_dialog__${current_subtask} > svg`)
+
+        console.log(svg)
+    }
+
     private update_color(class_id: number | string, color: string, need_to_save: boolean = true): void {
         // Update the color_info for annotations appropriately
         this.ulabel.color_info[class_id] = color
@@ -1395,6 +1402,9 @@ export class RecolorActiveItem extends ToolboxItem {
         // Update the color in the AnnotationId button for this class
         const button_color_square = <HTMLDivElement> document.querySelector(`#toolbox_sel_${class_id} > div`)
         if (button_color_square) button_color_square.style.backgroundColor = color
+
+        // Update the id update pie
+        this.replace_color_pie()
 
         // Save the color to local storage if appropriate
         if (need_to_save) this.save_local_storage_color(class_id, color)

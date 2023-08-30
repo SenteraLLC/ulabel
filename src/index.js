@@ -140,8 +140,6 @@ export class ULabel {
             }
         });
 
-        // Clicks
-        // TODO
 
         // ================= Mouse Events in the Annotation Container ================= 
 
@@ -474,8 +472,8 @@ export class ULabel {
     }
 
     static create_unused_class_id(ulabel) {
-        // More likely to be valid than always starting at 0
-        current_id = ulabel.valid_class_ids.length
+        // More likely to be valid than always starting at 0, but use 0 if valid_class_ids is undefined
+        let current_id = ulabel.valid_class_ids ? ulabel.valid_class_ids.length : 0
 
         // Loop until a valid id is found
         while (true) {
@@ -545,8 +543,8 @@ export class ULabel {
                     }
                     break
                 default:
-                    throw new Error(`Entry in classes not understood: ${class_definition}
-                    ${class_definition} must either be a string or an object.`)
+                    console.log(raw_subtask_json.classes)
+                    throw new Error(`Entry in classes not understood: ${class_definition}\n${class_definition} must either be a string or an object.`)
             }
 
             // Save the class definitions and ids on the subtask
@@ -4427,11 +4425,12 @@ export class ULabel {
     }
 
     handle_id_dialog_hover(mouse_event) {
+        // Grab current subtask
+        const current_subtask = this.subtasks[this.state.current_subtask]
+
         // Determine which dialog
-        let front = false;
-        if (this.subtasks[this.state["current_subtask"]]["state"]["idd_which"] == "front") {
-            front = true;
-        }
+        let front = current_subtask.state.idd_which === "front"
+
         let pos_evt = this.lookup_id_dialog_mouse_pos(mouse_event, front);
         if (pos_evt != null) {
             if (!this.config["allow_soft_id"]) {

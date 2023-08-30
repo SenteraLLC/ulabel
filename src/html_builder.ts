@@ -224,6 +224,81 @@ export function prep_window_html(ulabel: ULabel, toolbox_item_order: unknown[] =
     }
 }
 
+function build_class_change_svg(
+    class_ids: number[],
+    color_info: {[id: number]: string},
+    id_dialog_id: string,
+    extra_info: {
+        width?: number,
+        inner_radius?: number,
+        opacity?: number
+    } = {}
+): string {
+    // Use defaults if custom values aren't used
+    const width = extra_info.width ?? 500
+    const inner_radius: number = extra_info.inner_radius ?? 0.3
+    const opacity: number = extra_info.opacity ?? 0.4
+
+    // Define constants independent of which id is being processed
+    const outer_radius: number = 0.5 * width
+    const center_coordinate: number = width / 2 // X and Y will always be the same, so just use a single number to store X and Y coordinate
+    const proportion: number = 1 / class_ids.length // Proportion of the circle each section will take up
+    const proportion_gap: number = 1 - proportion // Proportion of the circle not taken up by an individual section
+
+    const back_radius: number = inner_radius + (outer_radius - inner_radius) / 2
+    const back_stroke: number = 2 * Math.PI * back_radius * proportion
+    const back_stroke_width: number = outer_radius - inner_radius
+    const back_gap: number = 2 * Math.PI * back_radius * proportion_gap
+
+    const front_radius: number = inner_radius + proportion * (outer_radius - inner_radius) / 2
+    const front_stroke: number = 2 * Math.PI * front_radius * proportion
+    const front_stroke_width: number = proportion * (outer_radius - inner_radius)
+    const front_gap: number = 2 * Math.PI * front_radius * proportion_gap
+
+    // Create the beginning of the svg where the height always equals the width
+    let svg: string = `<svg width="${width}" height="${width}">`
+
+    // Build each id's section of the class change pie
+    for (let idx: number = 0; idx < class_ids.length; idx++) {
+        // Grab the current id being used
+        const current_id: number = class_ids[idx]
+
+        // Get the current id's color from color info
+        const current_color: string = color_info[current_id]
+
+        // Define constants dependent on the current index
+        const cumulative_proportion: number = idx * proportion
+        const back_offset: number = 2 * Math.PI * back_radius * cumulative_proportion
+        const front_offset = 2 * Math.PI * front_radius * cumulative_proportion;
+
+        // TODO: Should names also go on the id dialog?
+
+        svg += `
+        <circle
+            r="${back_radius}" cx="${center_coordinate}" cy="${center_coordinate}" 
+            stroke="${current_color}" 
+            fill-opacity="0"
+            stroke-opacity="${opacity}"
+            stroke-width="${back_stroke_width}"; 
+            stroke-dasharray="${back_stroke} ${back_gap}" 
+            stroke-dashoffset="${back_offset}" />
+        <circle
+            id="${id_dialog_id}__circ_${current_id}"
+            r="${front_radius}" cx="${center_coordinate}" cy="${center_coordinate}"
+            fill-opacity="0"
+            stroke="${current_color}" 
+            stroke-opacity="1.0"
+            stroke-width="${front_stroke_width}" 
+            stroke-dasharray="${front_stroke} ${front_gap}" 
+            stroke-dashoffset="${front_offset}" /> `
+    }
+
+    // Finally close the svg
+    svg += "</svg>"
+
+    return svg
+}
+
 function get_idd_string(
     idd_id, 
     width, 
@@ -237,60 +312,13 @@ function get_idd_string(
     // TODO noconflict
     let dialog_html: string = `
     <div id="${idd_id}" class="id_dialog" style="width: ${width}px; height: ${width}px;">
-        <a class="id-dialog-clickable-indicator" href="#"></a>
-        <svg width="${width}" height="${width}">
-    `;
+        <a class="id-dialog-clickable-indicator" href="#"></a>`
 
-    for (let i = 0; i < class_ids.length; i++) {
+    // Build the svg html and add it to the div
+    dialog_html += build_class_change_svg(class_ids, color_info, idd_id, {"width": width, inner_radius: inner_rad})
 
-        let srt_prop = 1 / class_ids.length;
-
-        let cum_prop = i / class_ids.length;
-        let srk_prop = 1 / class_ids.length;
-        let gap_prop = 1.0 - srk_prop;
-
-        let rad_back = inner_rad + 1.0 * (outer_rad - inner_rad) / 2;
-        let rad_frnt = inner_rad + srt_prop * (outer_rad - inner_rad) / 2;
-
-        let wdt_back = 1.0 * (outer_rad - inner_rad);
-        let wdt_frnt = srt_prop * (outer_rad - inner_rad);
-
-        let srk_back = 2 * Math.PI * rad_back * srk_prop;
-        let gap_back = 2 * Math.PI * rad_back * gap_prop;
-        let off_back = 2 * Math.PI * rad_back * cum_prop;
-
-        let srk_frnt = 2 * Math.PI * rad_frnt * srk_prop;
-        let gap_frnt = 2 * Math.PI * rad_frnt * gap_prop;
-        let off_frnt = 2 * Math.PI * rad_frnt * cum_prop;
-
-        let ths_id = class_ids[i];
-        let ths_col = color_info[ths_id]
-        // TODO should names also go on the id dialog?
-        // let ths_nam = class_defs[i]["name"];
-        dialog_html += `
-        <circle
-            r="${rad_back}" cx="${center_coord}" cy="${center_coord}" 
-            stroke="${ths_col}" 
-            fill-opacity="0"
-            stroke-opacity="${cl_opacity}"
-            stroke-width="${wdt_back}"; 
-            stroke-dasharray="${srk_back} ${gap_back}" 
-            stroke-dashoffset="${off_back}" />
-        <circle
-            id="${idd_id}__circ_${ths_id}"
-            r="${rad_frnt}" cx="${center_coord}" cy="${center_coord}"
-            fill-opacity="0"
-            stroke="${ths_col}" 
-            stroke-opacity="1.0"
-            stroke-width="${wdt_frnt}" 
-            stroke-dasharray="${srk_frnt} ${gap_frnt}" 
-            stroke-dashoffset="${off_frnt}" />
-        `;
-    }
-    dialog_html += `
-        </svg>
-        <div class="centcirc"></div>
-    </div>`;
+    // Create a centcirc div at the end and close off the div
+    dialog_html += '<div class="centcirc"></div></div>';
 
     return dialog_html;
 }
