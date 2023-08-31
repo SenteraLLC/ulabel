@@ -185,7 +185,7 @@ export function prep_window_html(ulabel: ULabel, toolbox_item_order: unknown[] =
     }
 
     // Check if initial_crop exists and has the appropriate properties
-    let check_initial_crop: Function = function(initial_crop) {
+    let initial_crop_is_valid: Function = function(initial_crop) {
 
         // If initial_crop doesn't exist, return false
         if (initial_crop == null) return false;
@@ -210,7 +210,7 @@ export function prep_window_html(ulabel: ULabel, toolbox_item_order: unknown[] =
     if (contains_zoom_pan(ulabel.toolbox.items)) {
 
         // Make sure the initial_crop exists and contains the necessary properties
-        if (check_initial_crop(ulabel.config.initial_crop)) {
+        if (initial_crop_is_valid(ulabel.config.initial_crop)) {
 
             // Grab the initial crop button and rename it
             let initial_crop_button = document.getElementById("recenter-button");
