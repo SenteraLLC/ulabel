@@ -1,7 +1,6 @@
-import { AnnotationClassDistanceData, FilterDistanceConfig, ULabel } from "..";
+import { AnnotationClassDistanceData, FilterDistanceConfig, RecolorActiveConfig, ULabel } from "..";
 import { ULabelAnnotation } from "./annotation";
 import { ULabelSubtask } from "./subtask";
-import { Configuration } from "./configuration";
 import { 
     get_annotation_confidence, 
     value_is_lower_than_filter, 
@@ -10,8 +9,9 @@ import {
     findAllPolylineClassDefinitions,
     get_point_and_line_annotations
 } from "./annotation_operators";
-import { SliderHandler } from "./html_builder";
+import { SliderHandler, get_idd_string } from "./html_builder";
 import { FilterDistanceOverlay } from "./overlays";
+import { get_active_class_id } from "./utilities";
 
 // For ResizeToolboxItem
 enum ValidResizeValues {
@@ -289,9 +289,26 @@ export class ToolboxTab {
 export abstract class ToolboxItem {
     constructor() {}
 
+    /**
+     * Returns this toolbox item's html.
+     */
     abstract get_html(): string;
+
+    /**
+     * Returns a unique string for each toolbox item.
+     */
     abstract get_toolbox_item_type(): string;
-    protected abstract add_styles(): void; // ToolboxItems need to handle their own css
+
+    /**
+     * Code called after all of ULabel's constructor and initialization code is called.
+     */
+    abstract after_init(): void;
+
+    /**
+     * ToolboxItems need to handle their own css.
+     */
+    protected abstract add_styles(): void; 
+
     public redraw_update(ulabel: ULabel): void {}
     public frame_update(ulabel: ULabel): void {} 
 }
@@ -461,6 +478,10 @@ export class ModeSelectionToolboxItem extends ToolboxItem {
             </p>
         </div>
         `
+    }
+
+    public after_init() {
+        // This toolbox item doesn't need to do anything after initialization
     }
 
     public get_toolbox_item_type() {
@@ -789,6 +810,10 @@ export class ZoomPanToolboxItem extends ToolboxItem {
         `;
     }
 
+    public after_init() {
+        // This toolbox item doesn't need to do anything after initialization
+    }
+
     public get_toolbox_item_type() {
         return "ZoomPan"
     }
@@ -856,6 +881,10 @@ export class AnnotationIDToolboxItem extends ToolboxItem {
             ${this.instructions}
         </div>
         `;
+    }
+
+    public after_init() {
+        // This toolbox item doesn't need to do anything after initialization
     }
 
     public get_toolbox_item_type() {
@@ -940,6 +969,10 @@ export class ClassCounterToolboxItem extends ToolboxItem {
     public get_html() {
         return `
         <div class="toolbox-class-counter">` + this.inner_HTML + `</div>`;
+    }
+
+    public after_init() {
+        // This toolbox item doesn't need to do anything after initialization
     }
 
     public redraw_update(ulabel: ULabel) {
@@ -1294,82 +1327,131 @@ export class AnnotationResizeItem extends ToolboxItem {
         `
     }
 
+    public after_init() {
+        // This toolbox item doesn't need to do anything after initialization
+    }
+
     public get_toolbox_item_type() {
         return "AnnotationResize"
     }
 }
 
-export class RecolorActiveItem extends ToolboxItem { 
-    public html: string;
-    public inner_HTML: string;
-    private most_recent_draw: number = Date.now()
+/**
+ * ToolboxItem for recoloring annotations and applying gradients to annotations based on confidence.
+ */
+export class RecolorActiveItem extends ToolboxItem {
+    private ulabel: ULabel
+    private config: RecolorActiveConfig
+    private most_recent_redraw_time: number = 0
+    private gradient_turned_on: boolean
+
     constructor(ulabel: ULabel) {
-        super();
-        this.inner_HTML = `<p class="tb-header">Recolor Annotations</p>`;
-        
-        let current_subtask_key = ulabel.state["current_subtask"];
-        let current_subtask = ulabel.subtasks[current_subtask_key];
+        super()
 
-        //loop through all the types of annotations and check to see it there's
-        //a color cookie corresponding to that class id
-        for (let i = 0; i < current_subtask.classes.length; i++) {
-            let cookie_color = this.read_color_cookie(current_subtask.classes[i].id)
-            if (cookie_color !== null) {
-                this.update_annotation_color(current_subtask, cookie_color, current_subtask.classes[i].id)
-            }
-        }
-        ULabel.process_classes(ulabel, ulabel.state.current_subtask, current_subtask);
+        // Save ulabel to this object and grab this component's config from the main config
+        this.ulabel = ulabel
+        this.config = this.ulabel.config.recolor_active_toolbox_item
 
+        // Add styles and event listeners for this component
         this.add_styles()
+        this.add_event_listeners()
 
-        //event handler for the buttons
-        $(document).on("click", "input.color-change-btn", (e) => {
-            let button = $(e.currentTarget);
-            var current_subtask_key = ulabel.state["current_subtask"];
-            var current_subtask = ulabel.subtasks[current_subtask_key];
+        // Read local storage to see if any colors have been saved
+        this.read_local_storage()
 
-            //slice 13,16 to grab the part of the id that specifies color
-            const color_from_id = button.attr("id").slice(13,16);
-            this.update_annotation_color(current_subtask, color_from_id);
+        // Use the config's default only if a value wasn't found inside local storage
+        this.gradient_turned_on ??= this.config.gradient_turned_on
+    }
 
-            ULabel.process_classes(ulabel, ulabel.state.current_subtask, current_subtask);
+    private save_local_storage_color(class_id: number | string, color: string): void {
+        localStorage.setItem(`RecolorActiveItem-${class_id}`, color)
+    }
 
-            ulabel.redraw_all_annotations(null, null, false);
-        })
-        $(document).on("input", "input.color-change-picker", (e) => {
-            //Gets the current subtask
-            var current_subtask_key = ulabel.state["current_subtask"];
-            var current_subtask = ulabel.subtasks[current_subtask_key];
+    private save_local_storage_gradient(gradient_status: boolean): void {
+        localStorage.setItem("RecolorActiveItem-Gradient", gradient_status.toString())
+    }
 
-            //Gets the hex value from the color picker
-            let hex = e.currentTarget.value;
+    private read_local_storage(): void {
+        // Loop through every valid id and see if a color has been saved for it in local storage
+        for (const class_id of this.ulabel.valid_class_ids) {
 
-            this.update_annotation_color(current_subtask, hex);
-            
-            //somewhat janky way to update the color on the color picker 
-            //to allow for more css options
-            let color_picker_container = document.getElementById("color-picker-container");
-            color_picker_container.style.backgroundColor = hex;
+            // Get the color from local storage based on the current class id
+            const color = localStorage.getItem(`RecolorActiveItem-${class_id}`)
 
-            ULabel.process_classes(ulabel, ulabel.state.current_subtask, current_subtask);
+            // Update the color if its not null
+            // Additionally no need to save the color to local storage since we got it from reading local storage
+            if (color !== null) this.update_color(class_id, color, false)
+        }
 
-            this.limit_redraw(ulabel);
-        })
-        $(document).on("input", "#gradient-toggle", (e) => {
-            ulabel.redraw_all_annotations(null, null, false);
-            this.set_gradient_cookie($("#gradient-toggle").prop("checked"));  
-        })
-        $(document).on("input", "#gradient-slider", (e) => {
-            $("div.gradient-slider-value-display").text(e.currentTarget.value + "%");
-            ulabel.redraw_all_annotations(null, null, false);
+        // Then read whether or not the gradient should be on by default
+        this.gradient_turned_on = localStorage.getItem("RecolorActiveItem-Gradient") === "true"
+    }
+
+    private replace_color_pie(): void {
+        // Only the current subtask's color can be changed, so only the current subtask needs to be updated
+        const current_subtask_key: string = this.ulabel.state.current_subtask
+        const current_subtask: ULabelSubtask = this.ulabel.subtasks[current_subtask_key]
+
+        // Get the back and front id dialog's ids
+        const id_dialog_id: string = current_subtask.state.idd_id
+        const front_id_dialog_id = this.ulabel.subtasks[current_subtask_key].state.idd_id_front
+
+        // Need the width and inner radius of the pie to re-build it
+        const width: number = this.ulabel.config.outer_diameter
+        const inner_radius = this.ulabel.config.inner_prop * width / 2
+
+        const color_info = this.ulabel.color_info
+
+        // Grab the dialogs and their containers
+        let subtask_dialog_container_jq = $("#dialogs__" + current_subtask_key);
+        let id_dialog_container = $(`#id_dialog__${current_subtask_key}`)
+        let front_subtask_dialog_container_jq = $("#front_dialogs__" + current_subtask_key);
+        let front_id_dialog_container = $(`#id_front_dialog__${current_subtask_key}`)
+
+        // Build the html
+        let dialog_html_v2 = get_idd_string(
+            id_dialog_id, width, this.ulabel.subtasks[current_subtask_key].class_ids,
+            inner_radius, color_info
+        );
+        let front_dialog_html_v2 = get_idd_string(
+            front_id_dialog_id, width, this.ulabel.subtasks[current_subtask_key].class_ids,
+            inner_radius, color_info
+        );
+
+        // Remove the old pies
+        id_dialog_container.remove()
+        front_id_dialog_container.remove()
+
+        // Add dialog to the document inside their containers
+        front_subtask_dialog_container_jq.append(front_dialog_html_v2);
+        subtask_dialog_container_jq.append(dialog_html_v2);
+
+        // Re-add the event listener for changing the opacity on hover
+        // Set that = this because this references the element inside the event listener instead of the toolbox item
+        let that = this
+        $(".id_dialog").on("mousemove", function (mouse_event) {
+            if (!that.ulabel.subtasks[current_subtask_key].state.idd_thumbnail) {
+                that.ulabel.handle_id_dialog_hover(mouse_event);
+            }
         })
     }
 
-    
-    /**
-     * Create the css for this ToolboxItem and append it to the page.
-     */
-    protected add_styles() {
+    private update_color(class_id: number | string, color: string, need_to_save: boolean = true): void {
+        // Update the color_info for annotations appropriately
+        this.ulabel.color_info[class_id] = color
+
+        // Update the color in the AnnotationId button for this class
+        const button_color_square = <HTMLDivElement> document.querySelector(`#toolbox_sel_${class_id} > div`)
+        if (button_color_square) button_color_square.style.backgroundColor = color
+
+        // Update the id update pie
+        this.replace_color_pie()
+
+        // Save the color to local storage if appropriate
+        if (need_to_save) this.save_local_storage_color(class_id, color)
+    }
+
+    protected add_styles(): void {
         // Define the css
         const css = `
         #toolbox div.recolor-active {
@@ -1412,7 +1494,7 @@ export class RecolorActiveItem extends ToolboxItem {
             border-radius: 0.5rem;
         }
 
-        #toolbox div.recolor-active div.annotation-recolor-button-holder #color-change-yel {
+        #toolbox div.recolor-active div.annotation-recolor-button-holder #color-change-yellow {
             grid-area: yellow;
             background-color: yellow;
             border: 1px solid rgb(200, 200, 0);
@@ -1424,7 +1506,7 @@ export class RecolorActiveItem extends ToolboxItem {
             border: 1px solid rgb(200, 0, 0);
         }
 
-        #toolbox div.recolor-active div.annotation-recolor-button-holder #color-change-cya {
+        #toolbox div.recolor-active div.annotation-recolor-button-holder #color-change-cyan {
             grid-area: cyan;
             background-color: cyan;
             border: 1px solid rgb(0, 200, 200);
@@ -1471,139 +1553,93 @@ export class RecolorActiveItem extends ToolboxItem {
         head.appendChild(style);
     }
 
-    public update_annotation_color(subtask, color, selected_id = null) {
-        let need_to_set_cookie = true
-        if (selected_id !== null) {
-            need_to_set_cookie = false
-        }
-        
-        //check for the three special cases, otherwise assume color is a hex value
-        if (color == "yel") {
-            color ="#FFFF00";
-        }
-        if (color == "red") {
-            color ="#FF0000";
-        }
-        if (color == "cya") {
-            color ="#00FFFF";
-        }
+    private add_event_listeners(): void {
+        // Listener for the static color change buttons
+        $(document).on("click", ".color-change-btn", (event) => {
+            // Grab the color of what button was clicked
+            const color: string = event.target.id.slice(13)
 
-        if (selected_id == null) {
-            subtask.state.id_payload.forEach(item => {              
-                if (item.confidence == 1) {
-                    selected_id = item.class_id;
-                }  
-            });
-        }
+            // Get the currently selected class id
+            const active_class_id: number = get_active_class_id(this.ulabel)
 
-        //if the selected id is still null, then that means that no id was passed
-        //in or had a confidence of 1. Therefore the default is having the first 
-        //annotation id selected, so we'll default to that
-        if (selected_id == null) {
-            selected_id = subtask.classes[0].id;
-        }
+            // Overwrite the color info with the new color
+            this.update_color(active_class_id, color)
 
-        subtask.classes.forEach(item => {
-            if (item.id === selected_id) {
-                item.color = color;
-            }
+            // Redraw the annotations with the new color
+            // Since this is a listener for a button, no limit needs to be imposed on the redrawing
+            this.redraw(0)
         })
 
-        let colored_square_element = ".toolbox_colprev_"+selected_id;
-        $(colored_square_element).attr("style","background-color: "+color);
-        
-        //Finally set a cookie to remember color preference if needed
-        if (need_to_set_cookie) {
-            this.set_color_cookie(selected_id, color);
-        }
-    }
-    
-    private limit_redraw(ulabel: ULabel, wait_time: number = 100) {
+        // Listener for the color picker
+        $(document).on("input", "input.color-change-picker", (event) => {
+            // Get the selected color from the event
+            let color: string = event.currentTarget.value
 
-        //Compare most recent draw time to now and only draw if  
-        //more than wait_time milliseconds have passed. 
-        if (Date.now() - this.most_recent_draw > wait_time) {
+            // Get the currently selected class id
+            const active_class_id: number = get_active_class_id(this.ulabel)
 
-            //update most recent draw to now
-            this.most_recent_draw = Date.now();
+            // Update the color for this class
+            this.update_color(active_class_id, color)
+            
+            // Grab the color picker container and update its background to the selected color
+            let color_picker_container = <HTMLDivElement> document.getElementById("color-picker-container")
+            color_picker_container.style.backgroundColor = color
 
-            //redraw annotations
-            ulabel.redraw_all_annotations(null, null, false);
-        }
-    }
+            // Redraw the annotations with the new color
+            this.redraw()
+        })
 
-    private set_color_cookie(annotation_id, cookie_value) {
-        let d = new Date();
-        d.setTime(d.getTime() + (10000 * 24 * 60 * 60 * 1000));
-        document.cookie = "color" + annotation_id + "=" + cookie_value + ";" + d.toUTCString() + ";path=/";
-    }
+        // Event listener for the gradient toggle
+        $(document).on("input", "#gradient-toggle", (event) => {
+            // Redraw all annotations, not just those in the active subtask because all subtasks can be effected by the gradient
+            this.redraw(0)
 
-    private read_color_cookie(annotation_id) {
-        let cookie_name = "color" + annotation_id + "=";       
+            // Save whether or not the toggle is checked so when the page is reloaded it can remain in the same state
+            this.save_local_storage_gradient(event.target.checked) 
+        })
 
-        let cookie_array = document.cookie.split(";");
+        // Event listener for the gradient max value slider
+        $(document).on("input", "#gradient-slider", (event) => {
+            // Update the slider's label so the user knows exactly which value is selected
+            $("div.gradient-slider-value-display").text(event.currentTarget.value + "%");
 
-        for (let i = 0; i < cookie_array.length; i++) {
-            let current_cookie = cookie_array[i];
-
-            //while there's whitespace at the front of the cookie, loop through and remove it
-            while (current_cookie.charAt(0) == " ") {
-                current_cookie = current_cookie.substring(1);
-            }
-            if (current_cookie.indexOf(cookie_name) == 0) {
-                return current_cookie.substring(cookie_name.length, current_cookie.length)
-            }
-        }
-        return null
+            // Redraw all annotations because other subtasks can be effected by the gradient slider
+            this.redraw(100, true)
+        })
     }
 
-    private set_gradient_cookie(gradient_status) {
-        let d = new Date();
-        d.setTime(d.getTime() + (10000 * 24 * 60 * 60 * 1000));
-        document.cookie = "gradient=" + gradient_status + ";" + d.toUTCString() + ";path=/";
+    /**
+     * Redraw all annotations in the current subtask. Limits how frequently annotations can be redrawn for performance reasons.
+     * 
+     * @param wait_time Number of milliseconds that must pass since the previous redraw before drawing is allowed again
+     * @param redraw_all_annotations False by default. If true, redraws all subtasks. Otherwise only redraws current subtask
+     */
+    private redraw(wait_time: number = 100, redraw_all_annotations: boolean = false): void {
+        // If less than the wait time has passed since since the most recent redraw, then return without drawing
+        if (Date.now() - this.most_recent_redraw_time < wait_time) return
+
+        if (redraw_all_annotations) {
+            // Redraw all annotations
+            this.ulabel.redraw_all_annotations()
+        }
+        else {
+            // Otherwise only redraw the annotations in the subtask we updated
+            const current_subtask_key: string = this.ulabel.state.current_subtask
+            this.ulabel.redraw_all_annotations(current_subtask_key)
+        }
+
+        // Update the most_recent_redraw_time
+        this.most_recent_redraw_time = Date.now()
     }
 
-    private read_gradient_cookie() {
-        let cookie_name = "gradient=";       
-
-        let cookie_array = document.cookie.split(";");
-
-        for (let i = 0; i < cookie_array.length; i++) {
-            let current_cookie = cookie_array[i];
-
-            //while there's whitespace at the front of the cookie, loop through and remove it
-            while (current_cookie.charAt(0) == " ") {
-                current_cookie = current_cookie.substring(1);
-            }
-
-            if (current_cookie.indexOf(cookie_name) == 0) {
-                return (current_cookie.substring(cookie_name.length, current_cookie.length) == "true")
-            }
-        }
-
-        return null
-    }
-
-    public get_html() {
-        let checked_status_bool: boolean = this.read_gradient_cookie(); //true, false, or null
-        let checked_status_string: string = ""
-
-        //null means no cookie, so grab the default from configuration
-        if (checked_status_bool == null) {
-            checked_status_bool = Configuration.annotation_gradient_default;
-        }
-
-        if (checked_status_bool == true) {
-            checked_status_string = "checked";
-        }
-
+    public get_html(): string {
         return `
         <div class="recolor-active">
             <p class="tb-header">Recolor Annotations</p>
             <div class="recolor-tbi-gradient">
                 <div class="gradient-toggle-container">
                     <label for="gradient-toggle" id="gradient-toggle-label">Toggle Gradients:</label>
-                    <input type="checkbox" id="gradient-toggle" name="gradient-checkbox" value="gradient" ${checked_status_string}>
+                    <input type="checkbox" id="gradient-toggle" name="gradient-checkbox" value="gradient" ${this.gradient_turned_on ? "checked" : ""}>
                 </div>
                 <div class="gradient-slider-container">
                     <label for="gradient-slider" id="gradient-slider-label">Gradient Max:</label>
@@ -1612,9 +1648,9 @@ export class RecolorActiveItem extends ToolboxItem {
                 </div>
             </div>
             <div class="annotation-recolor-button-holder">
-                <input type="button" class="color-change-btn" id="color-change-yel">
+                <input type="button" class="color-change-btn" id="color-change-yellow">
                 <input type="button" class="color-change-btn" id="color-change-red">
-                <input type="button" class="color-change-btn" id="color-change-cya">
+                <input type="button" class="color-change-btn" id="color-change-cyan">
                 <div class="color-picker-border">
                     <div class="color-picker-container" id="color-picker-container">
                         <input type="color" class="color-change-picker" id="color-change-pick">
@@ -1625,7 +1661,11 @@ export class RecolorActiveItem extends ToolboxItem {
         `
     }
 
-    public get_toolbox_item_type() {
+    public after_init() {
+        // This toolbox item doesn't need to do anything after initialization
+    }
+
+    public get_toolbox_item_type(): string {
         return "RecolorActive"
     }
 }
@@ -1764,6 +1804,10 @@ export class KeypointSliderItem extends ToolboxItem {
             ` + slider_handler.getSliderHTML() + `
         </div>
         `
+    }
+
+    public after_init() {
+        // This toolbox item doesn't need to do anything after initialization
     }
 
     public get_toolbox_item_type() {
@@ -2153,6 +2197,10 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
         `
     }
 
+    public after_init() {
+        // This toolbox item doesn't need to do anything after initialization
+    }
+
     public get_toolbox_item_type() {
         return "FilterDistance"
     }
@@ -2321,6 +2369,10 @@ export class SubmitButtons extends ToolboxItem {
         }
         
         return toolboxitem_html
+    }
+
+    public after_init() {
+        // This toolbox item doesn't need to do anything after initialization
     }
 
     public get_toolbox_item_type() {

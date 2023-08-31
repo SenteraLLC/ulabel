@@ -2,6 +2,9 @@
  * File for storing useful utilities that are not strictly ULabel related.
  */
 
+import { ULabel } from ".."
+import { ULabelSubtask } from "./subtask"
+
 /**
  * Checks if something is an object, not an array, and not null
  * 
@@ -32,4 +35,27 @@ export function time_function(original_function: Function, function_name: string
         return result
     }
     return replacement_method
+}
+
+export function get_active_class_id(ulabel: ULabel): number {
+    // Grab the current subtask from the ulabel object
+    const current_subtask_key: string = ulabel.state.current_subtask
+    const current_subtask: ULabelSubtask = ulabel.subtasks[current_subtask_key]
+
+    // If in single_class_mode return the only valid class id
+    if (current_subtask.single_class_mode) return current_subtask.class_ids[0]
+
+    // If the current subtask has more than one valid class id, loop through the id_payloads
+    for (const payload of current_subtask.state.id_payload) {
+        // If the payload is a number then the user hasn't selected a class yet, so the first class id is the current one
+        if (typeof payload === "number") return current_subtask.class_ids[0]
+
+        // If the payload is an object then return its id if its confidence is > 0
+        if (payload.confidence > 0) {
+            console.log(`payload: ${payload}`)
+            return payload.class_id
+        }
+    }
+    console.error(`get_active_class_id was unable to determine an active class id.
+    current_subtask: ${JSON.stringify(current_subtask)}`)
 }

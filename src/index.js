@@ -5,10 +5,21 @@ Sentera Inc.
 import { ULabelAnnotation } from '../build/annotation';
 import { ULabelSubtask } from '../build/subtask';
 import { GeometricUtils } from '../build/geometric_utils';
-import { get_annotation_confidence, mark_deprecated, filter_points_distance_from_line } from '../build/annotation_operators';
-import { get_gradient } from '../build/drawing_utilities'
 import { Configuration, AllowedToolboxItem } from '../build/configuration';
-import { HTMLBuilder } from '../build/html_builder';
+import { get_gradient } from '../build/drawing_utilities'
+import {
+    filter_points_distance_from_line,
+    get_annotation_class_id,
+    get_annotation_confidence,
+    mark_deprecated
+} from '../build/annotation_operators';
+import {
+    add_style_to_document,
+    prep_window_html,
+    build_id_dialogs,
+    build_edit_suggestion,
+    build_confidence_dialog 
+} from '../build/html_builder';
 
 import $ from 'jquery';
 const jQuery = $;
@@ -129,8 +140,6 @@ export class ULabel {
             }
         });
 
-        // Clicks
-        // TODO
 
         // ================= Mouse Events in the Annotation Container ================= 
 
@@ -246,35 +255,6 @@ export class ULabel {
         new ResizeObserver(function () {
             ul.handle_toolbox_overflow();
         }).observe(document.getElementById(ul.config["container_id"]));
-
-        $(document).on("click", "#" + ul.config["toolbox_id"] + " .wbutt", (e) => {
-            let tgt_jq = $(e.currentTarget);
-            if (tgt_jq.hasClass("win")) {
-                ul.state["line_size"] *= 1.1;
-            }
-            else if (tgt_jq.hasClass("wout")) {
-                ul.state["line_size"] /= 1.1;
-            }
-            ul.redraw_demo();
-        });
-        
-        $(document).on("click", "#" + ul.config["toolbox_id"] + " .setting a", (e) => {
-            let tgt_jq = $(e.currentTarget);
-            if (!e.currentTarget.hasAttribute("href")) return;
-            if (tgt_jq.hasClass("fixed-setting")) {
-                $("#" + ul.config["toolbox_id"] + " .setting a.fixed-setting").removeAttr("href");
-                $("#" + ul.config["toolbox_id"] + " .setting a.dyn-setting").attr("href", "#");
-                ul.state["line_size"] = ul.state["line_size"] * ul.state["zoom_val"];
-                ul.state["size_mode"] = "fixed";
-            }
-            else if (tgt_jq.hasClass("dyn-setting")) {
-                $("#" + ul.config["toolbox_id"] + " .setting a.dyn-setting").removeAttr("href");
-                $("#" + ul.config["toolbox_id"] + " .setting a.fixed-setting").attr("href", "#");
-                ul.state["line_size"] = ul.get_line_size();
-                ul.state["size_mode"] = "dynamic";
-            }
-            ul.redraw_demo();
-        });
 
         // Listener for soft id toolbox buttons
         $(document).on("click", "#" + ul.config["toolbox_id"] + ' a.tbid-opt', (e) => {
@@ -491,60 +471,89 @@ export class ULabel {
         ul.subtasks[subtask_key]["allowed_modes"] = subtask["allowed_modes"];
     }
 
-    static process_classes(ul, subtask_key, subtask) {
+    static create_unused_class_id(ulabel) {
+        // More likely to be valid than always starting at 0, but use 0 if valid_class_ids is undefined
+        let current_id = ulabel.valid_class_ids ? ulabel.valid_class_ids.length : 0
+
+        // Loop until a valid id is found
+        while (true) {
+            // If the current id is not currently being used, then return it
+            if (!ulabel.valid_class_ids.includes(current_id)) return current_id
+
+            // If the id was being used, then increment the id and try again
+            current_id++
+        }
+    }
+
+    static process_classes(ulabel, subtask_key, raw_subtask_json) {
         // Check to make sure allowed classes were provided
-        if (!("classes" in subtask)) {
+        if (!("classes" in raw_subtask_json)) {
             throw new Error(`classes not specified for subtask "${subtask_key}"`);
         }
-        if (typeof subtask["classes"] != 'object' || subtask["classes"].length == undefined || subtask["classes"].length == 0) {
+        if (typeof raw_subtask_json.classes != 'object' || raw_subtask_json.classes.length == undefined || raw_subtask_json.classes.length == 0) {
             throw new Error(`classes has an invalid value for subtask "${subtask_key}"`);
         }
 
+        // Create a constant to hold the actual ULabelSubtask
+        // The raw subtask is used for reading values that are constant inside this method, the actual subtask is for writing values
+        const subtask = ulabel.subtasks[subtask_key]
+
         // Set to single class mode if applicable
-        ul.subtasks[subtask_key]["single_class_mode"] = (subtask["classes"].length == 1);
+        subtask.single_class_mode = (raw_subtask_json.classes.length == 1);
 
         // Populate allowed classes vars
         // TODO might be nice to recognize duplicate classes and assign same color... idk
         // TODO better handling of default class ids would definitely be a good idea
-        ul.subtasks[subtask_key]["class_defs"] = [];
-        ul.subtasks[subtask_key]["class_ids"] = [];
-        for (let i = 0; i < subtask["classes"].length; i++) {
-            if (typeof subtask["classes"][i] == "string") {
-                let name = subtask["classes"][i];
-                ul.subtasks[subtask_key]["class_defs"].push({
-                    "name": name,
-                    "color": COLORS[ul.tot_num_classes],
-                    "id": ul.tot_num_classes
-                });
-                ul.subtasks[subtask_key]["class_ids"].push(ul.tot_num_classes);
-            }
-            else if (typeof subtask["classes"][i] == 'object') {
-                // Start with default object
-                let repl = {
-                    "name": `Class ${ul.tot_num_classes}`,
-                    "color": COLORS[ul.tot_num_classes],
-                    "id": ul.tot_num_classes
-                };
+        subtask.class_defs = [];
+        subtask.class_ids = [];
 
-                // Populate with what we have
-                if ("name" in subtask["classes"][i]) {
-                    repl["name"] = subtask["classes"][i]["name"];
-                }
-                if ("color" in subtask["classes"][i]) {
-                    repl["color"] = subtask["classes"][i]["color"];
-                }
-                if ("id" in subtask["classes"][i]) {
-                    repl["id"] = subtask["classes"][i]["id"];
-                }
+        // Loop through each class_definition allowed inside this subtask
+        for (const class_definition of raw_subtask_json.classes) {
 
-                // Push finished product to list
-                ul.subtasks[subtask_key]["class_defs"].push(repl);
-                ul.subtasks[subtask_key]["class_ids"].push(repl["id"]);
+            // Create a class definition based on the provided class_definition that will be saved to the subtask
+            let modifed_class_definition = {}
+
+            switch (typeof class_definition) {
+                case "string":
+                    modifed_class_definition = {
+                        "name": class_definition, // When class_definition is a string, that string is the class name
+                        "id": ULabel.create_unused_class_id(ulabel), // Create an id that's unused by another class
+                        "color": COLORS[ulabel.valid_class_ids.length] // Arbitrary yet unique color
+                    }
+                    break
+                case "object":
+                    // If no name is provided, give a generic name based on the total number of currently initialized classes
+                    const name = class_definition.name ?? `Class ${valid_class_ids.length}`
+
+                    // Only create an id if one wasn't provided
+                    const id = class_definition.id ?? ULabel.create_unused_class_id(ulabel)
+
+                    if (ulabel.valid_class_ids.includes(id)) {
+                        console.warn(`Duplicate class id ${id} detected. This is not supported and may result in unintended side-effects.
+                        This may be caused by mixing string and object class definitions, or by assigning the same id to two or more object class definitions.`)
+                    }
+
+                    // Use generic color only if color not provided
+                    const color = class_definition.color ?? COLORS[ulabel.valid_class_ids.length]
+
+                    modifed_class_definition = {
+                        "name": name,
+                        "id": id,
+                        "color": color
+                    }
+                    break
+                default:
+                    console.log(raw_subtask_json.classes)
+                    throw new Error(`Entry in classes not understood: ${class_definition}\n${class_definition} must either be a string or an object.`)
             }
-            else {
-                throw new Error(`Entry in classes not understood: ${subtask["classes"][i]}`);
-            }
-            ul.tot_num_classes++;
+
+            // Save the class definitions and ids on the subtask
+            subtask.class_defs.push(modifed_class_definition)
+            subtask.class_ids.push(modifed_class_definition.id)
+
+            // Also save the id and color_info on the ULabel object
+            ulabel.valid_class_ids.push(modifed_class_definition.id)
+            ulabel.color_info[modifed_class_definition.id] = modifed_class_definition.color
         }
     }
 
@@ -644,17 +653,22 @@ export class ULabel {
 
     static initialize_subtasks(ul, stcs) {
         let first_non_ro = null;
+
+        // Initialize a place on the ulabel object to hold annotation color information
+        ul.color_info = {}
+
+        // Initialize a place on the ulabel object to hold all classification ids
+        ul.valid_class_ids = []
+
+        // Perform initialization tasks on each subtask individually
         for (const subtask_key in stcs) {
             // For convenience, make a raw subtask var
             let raw_subtask = stcs[subtask_key];
             ul.subtasks[subtask_key] = ULabelSubtask.from_json(subtask_key, raw_subtask);
 
-
-
             if (first_non_ro == null && !ul.subtasks[subtask_key]["read_only"]) {
                 first_non_ro = subtask_key;
             }
-
 
             // Process allowed_modes
             // They are placed in ul.subtasks[subtask_key]["allowed_modes"]
@@ -778,9 +792,20 @@ export class ULabel {
         }
     }
 
+    /** 
+     * Code to be called after ULabel has finished initializing.
+    */
+    static after_init(ulabel) {
+        for (const toolbox_item of ulabel.toolbox.items) {
+            toolbox_item.after_init()
+        }
+    }
+
     // ================= Construction/Initialization =================
 
     constructor(kwargs) {
+        this.begining_time = Date.now()
+
         // Ensure arguments were recieved
         if (arguments.length === 0) {
             console.error("ULabel was given no arguments")
@@ -908,7 +933,7 @@ export class ULabel {
 
         // Populate these in an external "static" function
         this.subtasks = {};
-        this.tot_num_classes = 0;
+        this.color_info = {}
         ULabel.initialize_subtasks(this, subtasks);
 
         // Create object for dragging interaction state
@@ -966,13 +991,13 @@ export class ULabel {
 
     init(callback) {
         // Add stylesheet
-        HTMLBuilder.add_style_to_document(this);
+        add_style_to_document(this);
 
         let that = this;
         that.state["current_subtask"] = Object.keys(that.subtasks)[0];
 
         // Place image element
-        HTMLBuilder.prep_window_html(this, this.toolbox_order);
+        prep_window_html(this, this.toolbox_order);
 
         // Detect night cookie
         if (ULabel.has_night_mode_cookie()) {
@@ -1028,13 +1053,13 @@ export class ULabel {
             // ).getContext("2d");
 
             // Add the ID dialogs' HTML to the document
-            HTMLBuilder.build_id_dialogs(that);
+            build_id_dialogs(that);
 
             // Add the HTML for the edit suggestion to the window
-            HTMLBuilder.build_edit_suggestion(that);
+            build_edit_suggestion(that);
 
             // Add dialog to show annotation confidence
-            HTMLBuilder.build_confidence_dialog(that);
+            build_confidence_dialog(that);
 
             // Create listers to manipulate and export this object
             ULabel.create_listeners(that);
@@ -1065,6 +1090,11 @@ export class ULabel {
             console.log(err);
             this.raise_error("Unable to load images: " + JSON.stringify(err), ULabel.elvl_fatal);
         });
+
+        // Final code to be called after the object is initialized
+        ULabel.after_init(this)
+
+        console.log(`Time taken to construct and initialize: ${Date.now() - this.begining_time}`)
     }
 
     version() {
@@ -1195,25 +1225,29 @@ export class ULabel {
     }
 
     // ================== Cursor Helpers ====================
+    /**
+     * Deprecated when dynamic line size toolbox item was removed. 
+     * TODO: Un-deprecated the dynamic line size toolbox item.
+     */
     update_cursor() {
-        let color = this.get_annotation_color(null, true);
-        let thr_width = this.get_line_size() * this.state["zoom_val"]
-        let width = Math.max(Math.min(thr_width, 64), 6);
-        let cursor_svg = `<svg version="1.1" xmlns="http://www.w3.org/2000/svg" width="${width}px" height="${width}px" viewBox="0 0 ${width} ${width}">
-            <circle cx="${width / 2}" cy="${width / 2}" r="${width / 2}" opacity="0.8" stroke="white" fill="${color}" />
-        </svg>`;
+        // let color = this.get_non_spatial_annotation_color(null, true);
+        // let thr_width = this.get_line_size() * this.state["zoom_val"]
+        // let width = Math.max(Math.min(thr_width, 64), 6);
+        // let cursor_svg = `<svg version="1.1" xmlns="http://www.w3.org/2000/svg" width="${width}px" height="${width}px" viewBox="0 0 ${width} ${width}">
+        //     <circle cx="${width / 2}" cy="${width / 2}" r="${width / 2}" opacity="0.8" stroke="white" fill="${color}" />
+        // </svg>`;
 
-        let bk_width = Math.max(Math.min(thr_width, 32), 6);
-        let bk_cursor_svg = `<svg version="1.1" xmlns="http://www.w3.org/2000/svg" width="${bk_width}px" height="${bk_width}px" viewBox="0 0 ${bk_width} ${bk_width}">
-            <circle cx="${bk_width / 2}" cy="${bk_width / 2}" r="${bk_width / 2}" opacity="0.8" stroke="${color}" fill="${color}" />
-        </svg>`;
+        // let bk_width = Math.max(Math.min(thr_width, 32), 6);
+        // let bk_cursor_svg = `<svg version="1.1" xmlns="http://www.w3.org/2000/svg" width="${bk_width}px" height="${bk_width}px" viewBox="0 0 ${bk_width} ${bk_width}">
+        //     <circle cx="${bk_width / 2}" cy="${bk_width / 2}" r="${bk_width / 2}" opacity="0.8" stroke="${color}" fill="${color}" />
+        // </svg>`;
 
-        let cursor_b64 = btoa(cursor_svg);
-        let bk_cursor_b64 = btoa(bk_cursor_svg);
-        $("#" + this.config["annbox_id"]).css(
-            "cursor",
-            `url(data:image/svg+xml;base64,${cursor_b64}) ${width / 2} ${width / 2}, url(data:image/svg+xml;base64,${bk_cursor_b64}) ${bk_width / 2} ${bk_width / 2}, auto`
-        );
+        // let cursor_b64 = btoa(cursor_svg);
+        // let bk_cursor_b64 = btoa(bk_cursor_svg);
+        // $("#" + this.config["annbox_id"]).css(
+        //     "cursor",
+        //     `url(data:image/svg+xml;base64,${cursor_b64}) ${width / 2} ${width / 2}, url(data:image/svg+xml;base64,${bk_cursor_b64}) ${bk_width / 2} ${bk_width / 2}, auto`
+        // );
     }
 
     // ================== Subtask Helpers ===================
@@ -1488,7 +1522,23 @@ export class ULabel {
         }
     }
 
-    get_annotation_color(clf_payload, demo = false, subtask = null) {
+    get_annotation_color(annotation) {
+        // Use the annotation's class id to get the color of the annotation
+        const class_id = get_annotation_class_id(annotation)
+        const color = this.color_info[class_id]
+
+        // Log an error and return a default color if the color is undefined
+        if (color === undefined) {
+            console.error(`get_annotation_color encountered error while getting annotation color with class id ${class_id}`)
+            return this.config.default_annotation_color
+        }
+
+        // Return the color after applying a gradient to it based on its confidence
+        // If gradients are disabled, get_gradient will return the passed in color
+        return get_gradient(annotation, color, get_annotation_confidence, $("#gradient-slider").val() / 100)
+    }
+
+    get_non_spatial_annotation_color(clf_payload, demo = false, subtask = null) {
         if (this.config["allow_soft_id"]) {
             // not currently supported;
             return this.config["default_annotation_color"];
@@ -1554,8 +1604,7 @@ export class ULabel {
         }
 
         // Prep for bbox drawing
-        let base_color = this.get_annotation_color(annotation_object["classification_payloads"], false, subtask);
-        let color = get_gradient(annotation_object, base_color, get_annotation_confidence, $("#gradient-slider").val() / 100)
+        const color = this.get_annotation_color(annotation_object)
         ctx.fillStyle = color;
         ctx.strokeStyle = color;
         ctx.lineJoin = "round";
@@ -1594,8 +1643,7 @@ export class ULabel {
         }
 
         // Prep for bbox drawing
-        let base_color = this.get_annotation_color(annotation_object["classification_payloads"], false, subtask);
-        let color = get_gradient(annotation_object, base_color, get_annotation_confidence, $("#gradient-slider").val() / 100)
+        const color = this.get_annotation_color(annotation_object)
         ctx.fillStyle = color;
         ctx.strokeStyle = color;
         ctx.lineJoin = "round";
@@ -1649,8 +1697,7 @@ export class ULabel {
         }
 
         // Prep for bbox drawing
-        let base_color = this.get_annotation_color(annotation_object["classification_payloads"], false, subtask);
-        let color = get_gradient(annotation_object, base_color, get_annotation_confidence, $("#gradient-slider").val() / 100)
+        const color = this.get_annotation_color(annotation_object)
         ctx.fillStyle = color;
         ctx.strokeStyle = color;
         ctx.lineJoin = "round";
@@ -1694,8 +1741,7 @@ export class ULabel {
 
 
         // Prep for bbox drawing
-        let base_color = this.get_annotation_color(annotation_object["classification_payloads"], demo, subtask);
-        let color = get_gradient(annotation_object, base_color, get_annotation_confidence, $("#gradient-slider").val() / 100)
+        const color = this.get_annotation_color(annotation_object)
         ctx.fillStyle = color;
         ctx.strokeStyle = color;
         ctx.lineJoin = "round";
@@ -1733,8 +1779,7 @@ export class ULabel {
 
 
         // Prep for bbox drawing
-        let base_color = this.get_annotation_color(annotation_object["classification_payloads"], demo, subtask);
-        let color = get_gradient(annotation_object, base_color, get_annotation_confidence, $("#gradient-slider").val() / 100)
+        const color = this.get_annotation_color(annotation_object)
         ctx.fillStyle = color;
         ctx.strokeStyle = color;
         ctx.lineJoin = "round";
@@ -1771,8 +1816,7 @@ export class ULabel {
         }
 
         // Prep for tbar drawing
-        let base_color = this.get_annotation_color(annotation_object["classification_payloads"], demo, subtask);
-        let color = get_gradient(annotation_object, base_color, get_annotation_confidence, $("#gradient-slider").val() / 100)
+        const color = this.get_annotation_color(annotation_object)
         ctx.fillStyle = color;
         ctx.strokeStyle = color;
         ctx.lineJoin = "round";
@@ -1847,7 +1891,7 @@ export class ULabel {
                         <a href="#" id="delete__${annotation_object["id"]}" class="fad_button delete">&#215;</a>
                     </div>
                 </div><!--
-                --><div id="icon__${annotation_object["id"]}" class="fad_type_icon invert-this-svg" style="background-color: ${this.get_annotation_color(annotation_object["classification_payloads"], false, subtask)};">
+                --><div id="icon__${annotation_object["id"]}" class="fad_type_icon invert-this-svg" style="background-color: ${this.get_non_spatial_annotation_color(annotation_object["classification_payloads"], false, subtask)};">
                     ${svg_obj}
                 </div>
             </div>
@@ -1855,7 +1899,7 @@ export class ULabel {
         }
         else {
             $(`textarea#note__${annotation_object["id"]}`).val(annotation_object["text_payload"]);
-            $(`div#icon__${annotation_object["id"]}`).css("background-color", this.get_annotation_color(annotation_object["classification_payloads"], false, subtask));
+            $(`div#icon__${annotation_object["id"]}`).css("background-color", this.get_non_spatial_annotation_color(annotation_object["classification_payloads"], false, subtask));
         }
     }
 
@@ -1978,6 +2022,7 @@ export class ULabel {
     }
 
     redraw_all_annotations(subtask = null, offset = null, spatial_only = false) {
+        console.log("Redraw_all_annotations")
         // TODO(3d)
         if (subtask == null) {
             for (const st in this.subtasks) {
@@ -4380,11 +4425,13 @@ export class ULabel {
     }
 
     handle_id_dialog_hover(mouse_event) {
+        console.log("Id_dialog_hover")
+        // Grab current subtask
+        const current_subtask = this.subtasks[this.state.current_subtask]
+
         // Determine which dialog
-        let front = false;
-        if (this.subtasks[this.state["current_subtask"]]["state"]["idd_which"] == "front") {
-            front = true;
-        }
+        let front = current_subtask.state.idd_which === "front"
+
         let pos_evt = this.lookup_id_dialog_mouse_pos(mouse_event, front);
         if (pos_evt != null) {
             if (!this.config["allow_soft_id"]) {

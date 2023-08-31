@@ -22,5 +22,3 @@
  *
  * Date: 2022-12-20T21:28Z
  */
-
-/*! For license information please see ulabel.js.LICENSE.txt */

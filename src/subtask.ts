@@ -9,6 +9,30 @@ export class ULabelSubtask {
         "access": {[key: string]: ULabelAnnotation},
         "ordering": string[]
     }
+    public single_class_mode: boolean
+    public state: {
+        active_id: string,
+        annotation_mode: string,
+        back_context: CanvasRenderingContext2D,
+        edit_candidate: unknown, // TODO: figure out what type this is
+        first_explicit_assignment: boolean,
+        front_context: CanvasRenderingContext2D,
+        id_payload: number[] | {
+            class_id: number,
+            confidence: number
+        }[],
+        idd_associated_annotation: unknown // TODO: figure out what type this is
+        idd_id: string,
+        idd_id_front: string,
+        idd_thumbnail: boolean,
+        idd_visible: boolean,
+        is_in_edit: boolean,
+        is_in_move: boolean,
+        is_in_progress: boolean,
+        move_candidate: unknown, // TODO: figure out what type this is.  Probably ULabelAnnotation idk for sure tho
+        visible_dialogs: {}
+    }
+
     constructor(
         public display_name: string,
         public classes: { name: string, color: string, id: number }[],

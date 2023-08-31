@@ -1,4 +1,4 @@
-import { FilterDistanceConfig } from "..";
+import { FilterDistanceConfig, RecolorActiveConfig } from "..";
 import { 
     ModeSelectionToolboxItem, 
     ZoomPanToolboxItem, 
@@ -57,6 +57,11 @@ export class Configuration {
         "annotation_vanish": "v"      //The v Key by default
     }
 
+    // Config for RecolorActiveItem
+    public recolor_active_toolbox_item: RecolorActiveConfig = {
+        gradient_turned_on: false
+    }
+
     // Config for FilterDistanceToolboxItem
     public distance_filter_toolbox_item: FilterDistanceConfig = {
         "name": "Filter Distance From Row",
@@ -89,8 +94,6 @@ export class Configuration {
     public toggle_annotation_mode_keybind: string = "u";
 
     public create_bbox_on_initial_crop: string = "f";
-
-    public static annotation_gradient_default: boolean = false;
 
     constructor(...kwargs: {[key: string]: unknown}[]) {
         this.modify_config(...kwargs)
