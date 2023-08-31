@@ -1,7 +1,6 @@
 import { AnnotationClassDistanceData, FilterDistanceConfig, RecolorActiveConfig, ULabel } from "..";
 import { ULabelAnnotation } from "./annotation";
 import { ULabelSubtask } from "./subtask";
-import { Configuration } from "./configuration";
 import { 
     get_annotation_confidence, 
     value_is_lower_than_filter, 
@@ -10,7 +9,7 @@ import {
     findAllPolylineClassDefinitions,
     get_point_and_line_annotations
 } from "./annotation_operators";
-import { SliderHandler, build_class_change_svg, build_id_dialogs, get_idd_string } from "./html_builder";
+import { SliderHandler, get_idd_string } from "./html_builder";
 import { FilterDistanceOverlay } from "./overlays";
 import { get_active_class_id } from "./utilities";
 
