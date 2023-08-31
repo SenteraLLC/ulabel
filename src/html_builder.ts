@@ -302,11 +302,11 @@ export function build_class_change_svg(
 }
 
 export function get_idd_string(
-    idd_id, 
-    width, 
-    class_ids, 
-    inner_rad, 
-    color_info
+    idd_id: string, 
+    width: number, 
+    class_ids: number[], 
+    inner_rad: number, 
+    color_info: {[key: number]: string}
 ) {
     // TODO noconflict
     let dialog_html: string = `
@@ -330,33 +330,30 @@ export function build_id_dialogs(ulabel: ULabel) {
     const width = ulabel.config.outer_diameter;
     // TODO real names here!
     const inner_rad: number = ulabel.config.inner_prop * width / 2;
-    const inner_diam: number = inner_rad * 2;
     const outer_rad: number = 0.5 * width;
-    const inner_top: number = outer_rad - inner_rad;
-    const inner_lft: number = outer_rad - inner_rad;
 
     let tbid: string = ulabel.config.toolbox_id;
 
     for (const st in ulabel.subtasks) {
-        const idd_id = ulabel.subtasks[st]["state"]["idd_id"];
-        const idd_id_front = ulabel.subtasks[st]["state"]["idd_id_front"];
-        const color_info = ulabel.color_info
+        const idd_id: string = ulabel.subtasks[st]["state"]["idd_id"];
+        const idd_id_front: string = ulabel.subtasks[st]["state"]["idd_id_front"];
+        const color_info: {[key: number]: string} = ulabel.color_info
 
         let subtask_dialog_container_jq = $("#dialogs__" + st);
         let front_subtask_dialog_container_jq = $("#front_dialogs__" + st);
 
-        let dialog_html_v2 = get_idd_string(
+        let dialog_html_v2: string = get_idd_string(
             idd_id, width, ulabel.subtasks[st]["class_ids"],
             inner_rad, color_info
         );
-        let front_dialog_html_v2 = get_idd_string(
+        let front_dialog_html_v2: string = get_idd_string(
             idd_id_front, width, ulabel.subtasks[st]["class_ids"],
             inner_rad, color_info
         );
 
         // TODO noconflict
         let toolbox_html: string = `<div id="tb-id-app--${st}" class="tb-id-app">`;
-        const class_ids = ulabel.subtasks[st]["class_ids"];
+        const class_ids: number[] = ulabel.subtasks[st]["class_ids"];
 
 
         for (let i = 0; i < class_ids.length; i++) {
@@ -411,16 +408,6 @@ export function build_id_dialogs(ulabel: ULabel) {
         "width": `${width}px`,
         "border-radius": `${outer_rad}px`,
     });
-    // let ccirc = $("#" + ulabel.config["container_id"] + " div.centcirc");
-    // ccirc.css({
-    //     "position": "absolute",
-    //     "top": `${inner_top}px`,
-    //     "left": `${inner_lft}px`,
-    //     "width": `${inner_diam}px`,
-    //     "height": `${inner_diam}px`,
-    //     "background-color": "black",
-    //     "border-radius": `${inner_rad}px`
-    // });
 }
 
 export function build_edit_suggestion(ulabel: ULabel) {
