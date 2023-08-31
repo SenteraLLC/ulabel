@@ -1423,7 +1423,7 @@ export class RecolorActiveItem extends ToolboxItem {
         front_id_dialog_container.remove()
 
         // Add dialog to the document inside their containers
-        front_subtask_dialog_container_jq.append(front_dialog_html_v2); // TODO(new3d) MOVE THIS TO GLOB BOX -- superimpose atop thee anchor already there when needed, no remove and add back
+        front_subtask_dialog_container_jq.append(front_dialog_html_v2);
         subtask_dialog_container_jq.append(dialog_html_v2);
 
         // Re-add the event listener for changing the opacity on hover
