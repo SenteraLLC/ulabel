@@ -1427,6 +1427,7 @@ export class RecolorActiveItem extends ToolboxItem {
         subtask_dialog_container_jq.append(dialog_html_v2);
 
         // Re-add the event listener for changing the opacity on hover
+        // Set that = this because this references the element inside the event listener instead of the toolbox item
         let that = this
         $(".id_dialog").on("mousemove", function (mouse_event) {
             if (!that.ulabel.subtasks[current_subtask_key].state.idd_thumbnail) {
