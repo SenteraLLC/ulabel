@@ -273,8 +273,6 @@ export function build_class_change_svg(
 
         // TODO: Should names also go on the id dialog?
 
-        console.log(`front radius: ${front_radius}\nback radius: ${back_radius}`)
-
         svg += `
         <circle
             r="${back_radius}" cx="${center_coordinate}" cy="${center_coordinate}" 
