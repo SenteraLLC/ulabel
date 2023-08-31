@@ -383,7 +383,7 @@ export function build_id_dialogs(ulabel: ULabel) {
         </div>`;
 
         // Add dialog to the document
-        front_subtask_dialog_container_jq.append(front_dialog_html_v2); // TODO(new3d) MOVE THIS TO GLOB BOX -- superimpose atop thee anchor already there when needed, no remove and add back
+        front_subtask_dialog_container_jq.append(front_dialog_html_v2);
         subtask_dialog_container_jq.append(dialog_html_v2);
 
         // Wait to add full toolbox
