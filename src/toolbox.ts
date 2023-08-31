@@ -1389,49 +1389,51 @@ export class RecolorActiveItem extends ToolboxItem {
     }
 
     private replace_color_pie(): void {
-
+        // Only the current subtask's color can be changed, so only the current subtask needs to be updated
         const current_subtask_key: string = this.ulabel.state.current_subtask
         const current_subtask: ULabelSubtask = this.ulabel.subtasks[current_subtask_key]
 
+        // Get the back and front id dialog's ids
         const id_dialog_id: string = current_subtask.state.idd_id
-        const idd_id_front = this.ulabel.subtasks[current_subtask_key]["state"]["idd_id_front"];
+        const front_id_dialog_id = this.ulabel.subtasks[current_subtask_key].state.idd_id_front
 
+        // Need the width and inner radius of the pie to re-build it
         const width: number = this.ulabel.config.outer_diameter
-        const inner_rad = this.ulabel.config.inner_prop * width / 2
+        const inner_radius = this.ulabel.config.inner_prop * width / 2
 
         const color_info = this.ulabel.color_info
 
+        // Grab the dialogs and their containers
         let subtask_dialog_container_jq = $("#dialogs__" + current_subtask_key);
         let id_dialog_container = $(`#id_dialog__${current_subtask_key}`)
         let front_subtask_dialog_container_jq = $("#front_dialogs__" + current_subtask_key);
         let front_id_dialog_container = $(`#id_front_dialog__${current_subtask_key}`)
 
+        // Build the html
         let dialog_html_v2 = get_idd_string(
-            id_dialog_id, width, this.ulabel.subtasks[current_subtask_key]["class_ids"],
-            inner_rad, color_info
+            id_dialog_id, width, this.ulabel.subtasks[current_subtask_key].class_ids,
+            inner_radius, color_info
         );
         let front_dialog_html_v2 = get_idd_string(
-            idd_id_front, width, this.ulabel.subtasks[current_subtask_key]["class_ids"],
-            inner_rad, color_info
+            front_id_dialog_id, width, this.ulabel.subtasks[current_subtask_key].class_ids,
+            inner_radius, color_info
         );
 
+        // Remove the old pies
         id_dialog_container.remove()
         front_id_dialog_container.remove()
 
-        // Add dialog to the document
+        // Add dialog to the document inside their containers
         front_subtask_dialog_container_jq.append(front_dialog_html_v2); // TODO(new3d) MOVE THIS TO GLOB BOX -- superimpose atop thee anchor already there when needed, no remove and add back
         subtask_dialog_container_jq.append(dialog_html_v2);
 
-        
         // Re-add the event listener for changing the opacity on hover
-        let iddg = $(".id_dialog");
         let that = this
-        iddg.on("mousemove", function (mouse_event) {
-            let crst = that.ulabel.state["current_subtask"];
-            if (!that.ulabel.subtasks[crst]["state"]["idd_thumbnail"]) {
+        $(".id_dialog").on("mousemove", function (mouse_event) {
+            if (!that.ulabel.subtasks[current_subtask_key].state.idd_thumbnail) {
                 that.ulabel.handle_id_dialog_hover(mouse_event);
             }
-        });
+        })
     }
 
     private update_color(class_id: number | string, color: string, need_to_save: boolean = true): void {
