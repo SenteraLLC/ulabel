@@ -6,6 +6,10 @@ All notable changes to this project will be documented here.
 
 Nothing yet.
 
+## [0.6.14] - August 31st, 2023
+
+- Fix class ID sort order requirement.
+
 ## [0.6.13] - July 27th, 2023
 
 - Added the "Tag It" github job which will automatically tag the git version after a pr into main.
