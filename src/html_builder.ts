@@ -16,7 +16,9 @@ import {
 } from '../src/blobs';
 
 
-
+/**
+ * Creates a style document, populates it with the styles in get_init_style, and appends it to the page.
+ */
 export function add_style_to_document(ulabel: ULabel) {
     let head: HTMLHeadElement = document.head || document.getElementsByTagName('head')[0];
     let style: HTMLStyleElement = document.createElement('style');
@@ -25,7 +27,17 @@ export function add_style_to_document(ulabel: ULabel) {
     style.appendChild(document.createTextNode(get_init_style(ulabel.config["container_id"])));
 }
 
-function get_md_button(md_key, md_name, svg_blob, cur_md, subtasks) {
+/**
+ * Creates a mode button that when clicked switches the current annotation type.
+ * 
+ * @param md_key Key for which button is being constructed. Valid Keys: bbox, point, polygon, tbar, polyline, contour, bbox3, whole-image, global
+ * @param md_name Mode name which shows when selected.
+ * @param svg_blob svg which shows up on the button
+ * @param cur_md Current annotation mode
+ * @param subtasks ULabel's Subtasks object 
+ * @returns html for a mode button
+ */
+function get_md_button(md_key, md_name, svg_blob, cur_md, subtasks): string {
     let sel: string = "";
     let href: string = ` href="#"`;
     if (cur_md == md_key) {
@@ -46,7 +58,12 @@ function get_md_button(md_key, md_name, svg_blob, cur_md, subtasks) {
     </div>`;
 }
 
-function get_images_html(ulabel: ULabel) {
+/**
+ * Loads image data from ULabel's config and returns html string for image data.
+ * 
+ * @returns html for image data
+ */
+function get_images_html(ulabel: ULabel): string {
     let images_html: string = "";
 
     let display: string;
@@ -64,7 +81,12 @@ function get_images_html(ulabel: ULabel) {
     return images_html;
 }
 
-function get_frame_annotation_dialogs(ulabel: ULabel) {
+/**
+ * Constructs html string for whole-image and global dialogs.
+ * 
+ * @returns html for whole-image and global dialogs
+ */
+function get_frame_annotation_dialogs(ulabel: ULabel): string {
     let frame_annotation_dialog: string = "";
     let tot: number = 0;
     for (const st_key in ulabel.subtasks) {
@@ -112,7 +134,7 @@ function get_frame_annotation_dialogs(ulabel: ULabel) {
     return frame_annotation_dialog;
 }
 
-export function prep_window_html(ulabel: ULabel, toolbox_item_order: unknown[] = null) {
+export function prep_window_html(ulabel: ULabel, toolbox_item_order: unknown[] = null): boolean | void {
     // Bring image and annotation scaffolding in
     // TODO multi-image with spacing etc.
 
@@ -224,6 +246,15 @@ export function prep_window_html(ulabel: ULabel, toolbox_item_order: unknown[] =
     }
 }
 
+/**
+ * Builds the svg used to change the class of an annotation.
+ * 
+ * @param class_ids Array of all class ids in the subtask
+ * @param color_info Color info used to know which color each id is
+ * @param id_dialog_id id of the id dialog
+ * @param extra_info Optional parameters. Width - size of svg. inner_radius - size of inner black circle. opacity - opacity of unselected pie section
+ * @returns 
+ */
 export function build_class_change_svg(
     class_ids: number[],
     color_info: {[id: number]: string},
@@ -299,6 +330,16 @@ export function build_class_change_svg(
     return svg
 }
 
+/**
+ * Builds and returns html string for the id dialog.
+ * 
+ * @param idd_id id of the id dialog
+ * @param width Size of the id dialog
+ * @param class_ids Array of class ids in the subtask
+ * @param inner_rad Radius of the black inner circle
+ * @param color_info Color info used to know which color each id is
+ * @returns 
+ */
 export function get_idd_string(
     idd_id: string, 
     width: number, 
@@ -322,6 +363,9 @@ export function get_idd_string(
     return dialog_html;
 }
 
+/**
+ * Builds the id dialog for each subtask and appends them to the page.
+ */
 export function build_id_dialogs(ulabel: ULabel) {
     let full_toolbox_html: string = `<div class="toolbox-id-app-payload">`;
 
@@ -461,6 +505,9 @@ export function build_edit_suggestion(ulabel: ULabel) {
     }
 }
 
+/**
+ * Builds the dialog that displays the annotation's confidence and appends it to the page.
+ */
 export function build_confidence_dialog(ulabel: ULabel) {
     for (const stkey in ulabel.subtasks) {
         let local_id = `annotation_confidence__${stkey}`;
@@ -509,6 +556,9 @@ export function build_confidence_dialog(ulabel: ULabel) {
     }
 }
 
+/**
+ * Class that allows for creation of sliders. Handles event listeners for increment and decrement buttons, and displaying the value of the slider.
+ */
 export class SliderHandler {
     default_value: string
     id: string
