@@ -224,7 +224,7 @@ export function prep_window_html(ulabel: ULabel, toolbox_item_order: unknown[] =
     }
 }
 
-function build_class_change_svg(
+export function build_class_change_svg(
     class_ids: number[],
     color_info: {[id: number]: string},
     id_dialog_id: string,
@@ -273,13 +273,15 @@ function build_class_change_svg(
 
         // TODO: Should names also go on the id dialog?
 
+        console.log(`front radius: ${front_radius}\nback radius: ${back_radius}`)
+
         svg += `
         <circle
             r="${back_radius}" cx="${center_coordinate}" cy="${center_coordinate}" 
             stroke="${current_color}" 
             fill-opacity="0"
             stroke-opacity="${opacity}"
-            stroke-width="${back_stroke_width}"; 
+            stroke-width="${back_stroke_width}" 
             stroke-dasharray="${back_stroke} ${back_gap}" 
             stroke-dashoffset="${back_offset}" />
         <circle
@@ -299,10 +301,9 @@ function build_class_change_svg(
     return svg
 }
 
-function get_idd_string(
+export function get_idd_string(
     idd_id, 
     width, 
-    cl_opacity, 
     class_ids, 
     inner_rad, 
     color_info
@@ -313,10 +314,12 @@ function get_idd_string(
         <a class="id-dialog-clickable-indicator" href="#"></a>`
 
     // Build the svg html and add it to the div
-    dialog_html += build_class_change_svg(class_ids, color_info, idd_id, {"width": width, "inner_radius": inner_rad, "opacity": cl_opacity})
+    dialog_html += build_class_change_svg(class_ids, color_info, idd_id, {"width": width, "inner_radius": inner_rad})
+
+    const outer_radius = 0.5 * width
 
     // Create a centcirc div at the end and close off the div
-    dialog_html += '<div class="centcirc"></div></div>';
+    dialog_html += `<div class="centcirc" style="position: absolute; top: ${outer_radius - inner_rad}px; left:${outer_radius - inner_rad}px; width: ${2 * inner_rad}px; height: ${2 * inner_rad}px; background-color: black; border-radius: ${inner_rad}px;" ></div></div>`;
 
     return dialog_html;
 }
@@ -332,7 +335,6 @@ export function build_id_dialogs(ulabel: ULabel) {
     const inner_top: number = outer_rad - inner_rad;
     const inner_lft: number = outer_rad - inner_rad;
 
-    const cl_opacity: number = 0.4;
     let tbid: string = ulabel.config.toolbox_id;
 
     for (const st in ulabel.subtasks) {
@@ -344,11 +346,11 @@ export function build_id_dialogs(ulabel: ULabel) {
         let front_subtask_dialog_container_jq = $("#front_dialogs__" + st);
 
         let dialog_html_v2 = get_idd_string(
-            idd_id, width, cl_opacity, ulabel.subtasks[st]["class_ids"],
+            idd_id, width, ulabel.subtasks[st]["class_ids"],
             inner_rad, color_info
         );
         let front_dialog_html_v2 = get_idd_string(
-            idd_id_front, width, cl_opacity, ulabel.subtasks[st]["class_ids"],
+            idd_id_front, width, ulabel.subtasks[st]["class_ids"],
             inner_rad, color_info
         );
 
@@ -409,16 +411,16 @@ export function build_id_dialogs(ulabel: ULabel) {
         "width": `${width}px`,
         "border-radius": `${outer_rad}px`,
     });
-    let ccirc = $("#" + ulabel.config["container_id"] + " div.centcirc");
-    ccirc.css({
-        "position": "absolute",
-        "top": `${inner_top}px`,
-        "left": `${inner_lft}px`,
-        "width": `${inner_diam}px`,
-        "height": `${inner_diam}px`,
-        "background-color": "black",
-        "border-radius": `${inner_rad}px`
-    });
+    // let ccirc = $("#" + ulabel.config["container_id"] + " div.centcirc");
+    // ccirc.css({
+    //     "position": "absolute",
+    //     "top": `${inner_top}px`,
+    //     "left": `${inner_lft}px`,
+    //     "width": `${inner_diam}px`,
+    //     "height": `${inner_diam}px`,
+    //     "background-color": "black",
+    //     "border-radius": `${inner_rad}px`
+    // });
 }
 
 export function build_edit_suggestion(ulabel: ULabel) {

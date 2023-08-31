@@ -4425,6 +4425,7 @@ export class ULabel {
     }
 
     handle_id_dialog_hover(mouse_event) {
+        console.log("Id_dialog_hover")
         // Grab current subtask
         const current_subtask = this.subtasks[this.state.current_subtask]
 

@@ -166,6 +166,7 @@ export class ULabel {
     public raise_error(message: string, level?: number);
     public rezoom(): void;
     public update_frame(delta?: number, new_frame?: number): void;
+    public handle_id_dialog_hover(event: any): void;
     static process_classes(ulabel_obj: any, arg1: string, subtask_obj: any);
     static build_id_dialogs(ulabel_obj: any);
         

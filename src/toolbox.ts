@@ -10,7 +10,7 @@ import {
     findAllPolylineClassDefinitions,
     get_point_and_line_annotations
 } from "./annotation_operators";
-import { SliderHandler, build_id_dialogs } from "./html_builder";
+import { SliderHandler, build_class_change_svg, build_id_dialogs, get_idd_string } from "./html_builder";
 import { FilterDistanceOverlay } from "./overlays";
 import { get_active_class_id } from "./utilities";
 
@@ -1389,10 +1389,49 @@ export class RecolorActiveItem extends ToolboxItem {
     }
 
     private replace_color_pie(): void {
-        const current_subtask = this.ulabel.state.current_subtask
-        let svg = document.querySelector(`#id_dialog__${current_subtask} > svg`)
 
-        console.log(svg)
+        const current_subtask_key: string = this.ulabel.state.current_subtask
+        const current_subtask: ULabelSubtask = this.ulabel.subtasks[current_subtask_key]
+
+        const id_dialog_id: string = current_subtask.state.idd_id
+        const idd_id_front = this.ulabel.subtasks[current_subtask_key]["state"]["idd_id_front"];
+
+        const width: number = this.ulabel.config.outer_diameter
+        const inner_rad = this.ulabel.config.inner_prop * width / 2
+
+        const color_info = this.ulabel.color_info
+
+        let subtask_dialog_container_jq = $("#dialogs__" + current_subtask_key);
+        let id_dialog_container = $(`#id_dialog__${current_subtask_key}`)
+        let front_subtask_dialog_container_jq = $("#front_dialogs__" + current_subtask_key);
+        let front_id_dialog_container = $(`#id_front_dialog__${current_subtask_key}`)
+
+        let dialog_html_v2 = get_idd_string(
+            id_dialog_id, width, this.ulabel.subtasks[current_subtask_key]["class_ids"],
+            inner_rad, color_info
+        );
+        let front_dialog_html_v2 = get_idd_string(
+            idd_id_front, width, this.ulabel.subtasks[current_subtask_key]["class_ids"],
+            inner_rad, color_info
+        );
+
+        id_dialog_container.remove()
+        front_id_dialog_container.remove()
+
+        // Add dialog to the document
+        front_subtask_dialog_container_jq.append(front_dialog_html_v2); // TODO(new3d) MOVE THIS TO GLOB BOX -- superimpose atop thee anchor already there when needed, no remove and add back
+        subtask_dialog_container_jq.append(dialog_html_v2);
+
+        
+        // Re-add the event listener for changing the opacity on hover
+        let iddg = $(".id_dialog");
+        let that = this
+        iddg.on("mousemove", function (mouse_event) {
+            let crst = that.ulabel.state["current_subtask"];
+            if (!that.ulabel.subtasks[crst]["state"]["idd_thumbnail"]) {
+                that.ulabel.handle_id_dialog_hover(mouse_event);
+            }
+        });
     }
 
     private update_color(class_id: number | string, color: string, need_to_save: boolean = true): void {
