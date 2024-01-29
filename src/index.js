@@ -4635,8 +4635,6 @@ export class ULabel {
                     this.begin_annotation(mouse_event);
                 }
 
-                // // Mark that the user is clicking and dragging
-                // this.subtasks[this.state["current_subtask"]]["state"]["is_click_dragging"] = true;
                 break;
             case "edit":
                 this.begin_edit(mouse_event);
@@ -4699,8 +4697,6 @@ export class ULabel {
                 break;
         }
 
-        // end click-and-drag
-        // this.subtasks[this.state["current_subtask"]]["state"]["is_click_dragging"] = false;
         this.drag_state["active_key"] = null;
         this.drag_state["release_button"] = null;
     }
