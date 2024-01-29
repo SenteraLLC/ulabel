@@ -972,7 +972,7 @@ export class ULabel {
                 "mouse_start": null, // Screen coordinates where the current mouse drag started
                 "offset_start": null, // Scroll values where the current mouse drag started
                 "zoom_val_start": null // zoom_val when the dragging interaction started
-            }
+            },
         };
 
         for (const st in this.subtasks) {
@@ -3220,7 +3220,7 @@ export class ULabel {
         let gmx = null;
         let gmy = null;
         let frm = this.state["current_frame"];
-        let is_click_dragging = this.subtasks[this.state["current_subtask"]]["state"]["is_click_dragging"];
+        let is_click_dragging = this.drag_state["active_key"] != null;
         if (redo_payload == null) {
             actid = this.subtasks[this.state["current_subtask"]]["state"]["active_id"];
             gmx = this.get_global_mouse_x(mouse_event);
@@ -4635,8 +4635,8 @@ export class ULabel {
                     this.begin_annotation(mouse_event);
                 }
 
-                // Mark that the user is clicking and dragging
-                this.subtasks[this.state["current_subtask"]]["state"]["is_click_dragging"] = true;
+                // // Mark that the user is clicking and dragging
+                // this.subtasks[this.state["current_subtask"]]["state"]["is_click_dragging"] = true;
                 break;
             case "edit":
                 this.begin_edit(mouse_event);
@@ -4700,7 +4700,7 @@ export class ULabel {
         }
 
         // end click-and-drag
-        this.subtasks[this.state["current_subtask"]]["state"]["is_click_dragging"] = false;
+        // this.subtasks[this.state["current_subtask"]]["state"]["is_click_dragging"] = false;
         this.drag_state["active_key"] = null;
         this.drag_state["release_button"] = null;
     }
