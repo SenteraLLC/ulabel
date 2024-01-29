@@ -2022,7 +2022,6 @@ export class ULabel {
     }
 
     redraw_all_annotations(subtask = null, offset = null, spatial_only = false) {
-        console.log("Redraw_all_annotations")
         // TODO(3d)
         if (subtask == null) {
             for (const st in this.subtasks) {
@@ -3221,12 +3220,12 @@ export class ULabel {
         let gmx = null;
         let gmy = null;
         let frm = this.state["current_frame"];
+        let is_click_dragging = this.subtasks[this.state["current_subtask"]]["state"]["is_click_dragging"];
         if (redo_payload == null) {
             actid = this.subtasks[this.state["current_subtask"]]["state"]["active_id"];
             gmx = this.get_global_mouse_x(mouse_event);
             gmy = this.get_global_mouse_y(mouse_event);
-        }
-        else {
+        } else {
             mouse_event = redo_payload.mouse_event;
             isclick = redo_payload.isclick;
             actid = redo_payload.actid;
@@ -3282,7 +3281,7 @@ export class ULabel {
 
                     // If this mouse event is a click, add a new member to the list of keypoints 
                     //    ender clicks are filtered before they get here
-                    if (isclick) {
+                    if (isclick || is_click_dragging) {
                         this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"].push(ms_loc);
                         this.update_containing_box(ms_loc, actid);
 
@@ -3307,7 +3306,7 @@ export class ULabel {
                             this.continue_annotation(this.state["last_move"]);
                         }
                     }
-                    this.redraw_all_annotations(this.state["current_subtask"], null, true); // tobuffer
+                    this.redraw_all_annotations(this.state["current_subtask"], null, true); // TODO: buffer
 
                     // If the FilterDistance ToolboxItem is present, filter points with this new polyline present
                     if (this.toolbox_order.includes(AllowedToolboxItem.FilterDistance)) {
@@ -4632,8 +4631,12 @@ export class ULabel {
             case "annotation":
                 annmd = this.subtasks[this.state["current_subtask"]]["state"]["annotation_mode"];
                 if (annmd != "polygon" && annmd != "polyline" && !NONSPATIAL_MODES.includes(annmd)) {
+                    // To avoid immediately closing polygons and polylines, we create them on mouseup.
                     this.begin_annotation(mouse_event);
                 }
+
+                // Mark that the user is clicking and dragging
+                this.subtasks[this.state["current_subtask"]]["state"]["is_click_dragging"] = true;
                 break;
             case "edit":
                 this.begin_edit(mouse_event);
@@ -4669,14 +4672,12 @@ export class ULabel {
                             this.continue_annotation(mouse_event, true);
                         }
                     }
-                }
-                else {
-                    if (
-                        (this.subtasks[this.state["current_subtask"]]["state"]["annotation_mode"] == "polygon") ||
-                        (this.subtasks[this.state["current_subtask"]]["state"]["annotation_mode"] == "polyline")
-                    ) {
-                        this.begin_annotation(mouse_event);
-                    }
+                } else if (
+                    (this.subtasks[this.state["current_subtask"]]["state"]["annotation_mode"] == "polygon") ||
+                    (this.subtasks[this.state["current_subtask"]]["state"]["annotation_mode"] == "polyline")
+                ) {
+                    // To avoid immediately closing polygons and polylines, we create them on mouseup.
+                    this.begin_annotation(mouse_event);
                 }
                 break;
             case "right":
@@ -4698,6 +4699,8 @@ export class ULabel {
                 break;
         }
 
+        // end click-and-drag
+        this.subtasks[this.state["current_subtask"]]["state"]["is_click_dragging"] = false;
         this.drag_state["active_key"] = null;
         this.drag_state["release_button"] = null;
     }
