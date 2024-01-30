@@ -168,19 +168,16 @@ export class ULabel {
 
         $(document).on("keypress", (e) => {
             // Check for the correct keypress
-
+            // Grab current subtask
+            const current_subtask = ul.subtasks[ul.state["current_subtask"]]
             switch (e.key) {
                 // Create a point annotation at the mouse's current location
                 case ul.config.create_point_annotation_keybind:
-                    // Grab current subtask
-                    const current_subtask = ul.subtasks[ul.state["current_subtask"]]
-
                     // Only allow keypress to create point annotations
                     if (current_subtask.state.annotation_mode == "point") {
                         // Create an annotation based on the last mouse position
                         ul.begin_annotation(ul.state["last_move"])
                     }
-
                     break;
                 // Create a bbox annotation around the initial_crop. Or the whole image if inital_crop does not exist
                 case ul.config.create_bbox_on_initial_crop:
@@ -706,6 +703,7 @@ export class ULabel {
                 "is_in_progress": false,
                 "is_in_edit": false,
                 "is_in_move": false,
+                "starting_complex_polygon": false, 
                 "edit_candidate": null,
                 "move_candidate": null,
 
@@ -2167,6 +2165,20 @@ export class ULabel {
         this.reposition_dialogs();
     }
 
+    // Move a polygon ender to the mouse location
+    move_polygon_ender(gmx, gmy, polygon_id) {
+        // Create ender id
+        const ender_id = "ender_" + polygon_id;
+        
+        // Add to list of visible dialogs
+        this.subtasks[this.state["current_subtask"]]["state"]["visible_dialogs"][ender_id] = {
+            "left": gmx / this.config["image_width"],
+            "top": gmy / this.config["image_height"],
+            "pin": "center"
+        };
+        this.reposition_dialogs();
+    }
+
     show_edit_suggestion(nearest_point, currently_exists) {
         let esid = "edit_suggestion__" + this.state["current_subtask"];
         var esjq = $("#" + esid);
@@ -3371,6 +3383,9 @@ export class ULabel {
                         else { // Else, just redirect line to mouse position
                             active_spatial_payload[n_kpts - 1] = ms_loc;
                         }
+                    } else if (this.subtasks[this.state["current_subtask"]]["state"]["starting_complex_polygon"]) {
+                        // When waiting to start a complex polygon, move the ender to the mouse position
+                        this.move_polygon_ender(gmx, gmy, actid);
                     }
                         
 
@@ -3380,10 +3395,12 @@ export class ULabel {
                     if (isclick || is_click_dragging) {
                         if (n_kpts == 0) {
                             // If no keypoints, then we create an ender at the mouse position
-                            this.create_polygon_ender(gmx, gmy, actid);
+                            // this.create_polygon_ender(gmx, gmy, actid);
                             // we'll need to add this point twice, once for the actual point
                             // and once for rendering future lines.
                             active_spatial_payload.push(ms_loc);
+                            // mark that we've successfully started our complex polygon
+                            this.subtasks[this.state["current_subtask"]]["state"]["starting_complex_polygon"] = false;
                         } else if (n_kpts > 1){
                             // the last point in the active spatial payload is the current mouse position for rendering purposes,
                             // so we check against the second to last point
@@ -3461,10 +3478,10 @@ export class ULabel {
         // Get the last point in the active spatial payload
         active_spatial_payload.pop();
         // If the active spatial payload has *one* point remaining, check if this is a complex layer.
-        // if it is, delete the point and the polygon ender
+        // if it is, delete the point and start moving the polygon ender
         if (active_spatial_payload.length == 1 && spatial_payload[0].length > 1) {
             active_spatial_payload.pop();
-            this.destroy_polygon_ender(undo_payload.actid);
+            this.subtasks[this.state["current_subtask"]]["state"]["starting_complex_polygon"] = true;
         }
         this.rebuild_containing_box(undo_payload.actid, true);
         this.continue_annotation(this.state["last_move"]);
@@ -3854,6 +3871,8 @@ export class ULabel {
                 if (mouse_event.shiftKey) {
                     // Prep the next part of the polygon
                     spatial_payload.push([]);
+                    // mark that we are starting complex polygon
+                    this.subtasks[this.state["current_subtask"]]["state"]["starting_complex_polygon"] = true;
                 } else {
                     this.record_action({
                         act_type: "finish_annotation",
@@ -3866,9 +3885,10 @@ export class ULabel {
                             actid: active_id
                         }
                     }, redoing);
+                    this.destroy_polygon_ender(active_id);
                 }
                 this.redraw_all_annotations(this.state["current_subtask"]); // TODO: buffer
-                this.destroy_polygon_ender(active_id);
+                
                 break;
             case "polyline":
                 // TODO handle the case of merging with existing annotation
@@ -4768,8 +4788,7 @@ export class ULabel {
                 ) {
                     this.continue_annotation(mouse_event);
                 }
-            }
-            else { // Nothing in progress. Maybe show editable queues
+            } else { // Nothing in progress. Maybe show editable queues
                 this.suggest_edits(mouse_event);
             }
         }
@@ -4861,15 +4880,17 @@ export class ULabel {
                         (annotation_mode != "polyline")
                     ) {
                         this.finish_annotation(mouse_event);
-                    }
-                    else {
+                    } else {
                         if (
-                            (mouse_event.target.id == "ender_" + active_id) ||
-                            (mouse_event.target.id == "ender_" + active_id + "_inner")
+                            !this.subtasks[this.state["current_subtask"]]["state"]["starting_complex_polygon"] &&
+                            (
+                                (mouse_event.target.id == "ender_" + active_id) ||
+                                (mouse_event.target.id == "ender_" + active_id + "_inner")
+                            )
                         ) {
                             this.finish_annotation(mouse_event);
-                        }
-                        else {
+                        } else {
+                            // If not at the ender OR if we're placing the start of a new complex polygon, continue
                             this.continue_annotation(mouse_event, true);
                         }
                     }
