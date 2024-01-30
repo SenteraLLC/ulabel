@@ -3460,6 +3460,12 @@ export class ULabel {
         }
         // Get the last point in the active spatial payload
         active_spatial_payload.pop();
+        // If the active spatial payload has *one* point remaining, check if this is a complex layer.
+        // if it is, delete the point and the polygon ender
+        if (active_spatial_payload.length == 1 && spatial_payload[0].length > 1) {
+            active_spatial_payload.pop();
+            this.destroy_polygon_ender(undo_payload.actid);
+        }
         this.rebuild_containing_box(undo_payload.actid, true);
         this.continue_annotation(this.state["last_move"]);
     }
