@@ -28,6 +28,7 @@
   },
   "homepage": "https://github.com/SenteraLLC/ulabel",
   "dependencies": {
+    "@turf/turf": "^6.5.0",
     "jquery": "^3.5.1",
     "uuidv4": "^6.2.6"
   },

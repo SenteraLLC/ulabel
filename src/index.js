@@ -1801,15 +1801,42 @@ export class ULabel {
             if (spatial_type == "polygon") {
                 active_spatial_payload = spatial_payload[i];
             }
-            // Draw the box
+            // Draw the borders
             const pts = active_spatial_payload;
             if (pts.length > 0) {
                 ctx.beginPath();
                 ctx.moveTo((pts[0][0] + diffX) * px_per_px, (pts[0][1] + diffY) * px_per_px);
-                for (var pti = 1; pti < pts.length; pti++) {
+                for (let pti = 1; pti < pts.length; pti++) {
                     ctx.lineTo((pts[pti][0] + diffX) * px_per_px, (pts[pti][1] + diffY) * px_per_px);
                 }
                 ctx.stroke();
+            }
+
+            // If polygon is closed, fill it
+            if (spatial_type == "polygon" && GeometricUtils.is_polygon_closed(active_spatial_payload)) {
+                ctx.closePath();
+                ctx.globalAlpha = 0.2;
+                ctx.fill();
+                ctx.globalAlpha = 1.0;
+            }           
+        }
+
+        // For polygons, go back through and unfill the intersectoions of all the polygons
+        if (spatial_type == "polygon" && spatial_payload.length > 1) {
+            let intersections = GeometricUtils.get_polygon_intersections(spatial_payload);
+            for (let intersection of intersections) {
+                if (intersection.length < 3) {
+                    continue;
+                }
+                // Clear out the intersection
+                ctx.globalCompositeOperation = 'destination-out';
+                ctx.beginPath();
+                ctx.moveTo((intersection[0][0] + diffX) * px_per_px, (intersection[0][1] + diffY) * px_per_px);
+                for (let pti = 1; pti < intersection.length; pti++) {
+                    ctx.lineTo((intersection[pti][0] + diffX) * px_per_px, (intersection[pti][1] + diffY) * px_per_px);
+                }
+                ctx.closePath();
+                ctx.fill();
             }
         }
     }
