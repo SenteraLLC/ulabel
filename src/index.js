@@ -201,7 +201,7 @@ export class ULabel {
                         ul.create_annotation("bbox", [bbox_top_left, bbox_bottom_right])
                     }
 
-                    break;
+                    break; 
             }
         })
 
@@ -449,7 +449,20 @@ export class ULabel {
                 return false;
             }
             else {
-                // console.log(keypress_event);
+                const current_subtask = ul.subtasks[ul.state["current_subtask"]]
+                switch (keypress_event.key) {
+                    case "Escape":
+                        if (current_subtask.state.starting_complex_polygon) {
+                            // Set the starting_complex_polygon state to false
+                            current_subtask.state.starting_complex_polygon = false
+                            // Remove the placeholder annotation
+                            current_subtask.annotations.access[current_subtask["state"]["active_id"]]["spatial_payload"].pop()
+                            // Finish the annotation
+                            ul.finish_annotation(null)
+                        }
+
+                        break;
+                }
             }
         });
 
@@ -3468,8 +3481,9 @@ export class ULabel {
 
     continue_annotation__undo(undo_payload) {
         // TODO(3d)
-        let spatial_payload = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][undo_payload.actid]["spatial_payload"];
-        const spatial_type = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][undo_payload.actid]["spatial_type"];
+        const current_subtask = this.subtasks[this.state["current_subtask"]]
+        let spatial_payload = current_subtask["annotations"]["access"][undo_payload.actid]["spatial_payload"];
+        const spatial_type = current_subtask["annotations"]["access"][undo_payload.actid]["spatial_type"];
         let active_spatial_payload = spatial_payload;
         if (spatial_type == "polygon") {
             // For polygons, the active spatial payload is the last array of points in the spatial payload
@@ -3477,11 +3491,24 @@ export class ULabel {
         }
         // Get the last point in the active spatial payload
         active_spatial_payload.pop();
-        // If the active spatial payload has *one* point remaining, check if this is a complex layer.
-        // if it is, delete the point and start moving the polygon ender
-        if (active_spatial_payload.length == 1 && spatial_payload[0].length > 1) {
-            active_spatial_payload.pop();
-            this.subtasks[this.state["current_subtask"]]["state"]["starting_complex_polygon"] = true;
+        
+        // Logic for dealing with complex layers
+        if (spatial_payload[0].length > 1) {
+            // If the active spatial payload has *one* point remaining, delete the point and start moving the polygon ender
+            if (active_spatial_payload.length == 1) {
+                active_spatial_payload.pop();
+                current_subtask["state"]["starting_complex_polygon"] = true;
+            } else if (active_spatial_payload.length == 0) {
+                // If the user has undone all points in the active spatial payload, return to the previous layer
+                // Set the starting_complex_polygon state to false
+                current_subtask["state"]["starting_complex_polygon"] = false
+                // Remove the placeholder annotation
+                spatial_payload.pop();
+                active_spatial_payload = spatial_payload.at(-1);
+                // move the polygon ender
+                let last_pt = active_spatial_payload.at(-1);
+                this.move_polygon_ender(last_pt[0], last_pt[1], current_subtask["state"]["active_id"]);
+            }
         }
         this.rebuild_containing_box(undo_payload.actid, true);
         this.continue_annotation(this.state["last_move"]);
@@ -3868,7 +3895,7 @@ export class ULabel {
 
                 // If the shiftKey is held, we wait for the next click, which is handled in end_drag().
                 // When no shift key is held, we can finish the annotation
-                if (mouse_event.shiftKey) {
+                if (mouse_event != null && mouse_event.shiftKey) {
                     // Prep the next part of the polygon
                     spatial_payload.push([]);
                     // mark that we are starting complex polygon
@@ -3965,7 +3992,7 @@ export class ULabel {
         }
 
         // Set mode to no active annotation, unless shift key is held for a polygon
-        if (mouse_event.shiftKey && annotations[active_id]["spatial_type"] == "polygon") {
+        if (mouse_event != null && mouse_event.shiftKey && annotations[active_id]["spatial_type"] == "polygon") {
             console.log("Continuing complex polygon...");
         } else {
             current_subtask["state"]["active_id"] = null;
@@ -4009,6 +4036,9 @@ export class ULabel {
         this.redraw_all_annotations(this.state["current_subtask"]);
         if (undo_payload.ender_html) {
             $("#dialogs__" + this.state["current_subtask"]).append(undo_payload.ender_html);
+            // make sure the ender is at the location of the first point
+            let first_pt = active_spatial_payload[0];
+            this.move_polygon_ender(first_pt[0], first_pt[1], undo_payload.actid);
         }
         this.hide_edit_suggestion();
         this.hide_global_edit_suggestion();
