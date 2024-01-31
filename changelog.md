@@ -6,6 +6,16 @@ All notable changes to this project will be documented here.
 
 Nothing yet.
 
+## [0.7.0] - January 31st, 2024
+
+- Added click-and-drag functionality when drawing polygons or polylines.
+- Changed polygon representation from that of a simple polygon to a complex polygon. This allows for polygons to contain holes and/or multiple disjoint regions.
+- Hold `shift` when closing a polygon to continue annotating a new region or hole.
+- Hold `shift` when moving the cursor inside a polygon to begin annotating a new region or hole.
+- Press `Escape` or `crtl+z` to cancel the start of a new region or hole.
+- Added fill to polygons by default, excluding any holes in the polygon.
+- Added check to ensure that deprecated simple polygons are auto converted to complex polygons when loaded by ULabel.
+
 ## [0.6.14] - August 31st, 2023
 
 - Fix class ID sort order requirement.
