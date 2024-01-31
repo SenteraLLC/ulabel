@@ -453,12 +453,8 @@ export class ULabel {
                 switch (keypress_event.key) {
                     case "Escape":
                         if (current_subtask.state.starting_complex_polygon) {
-                            // Set the starting_complex_polygon state to false
-                            current_subtask.state.starting_complex_polygon = false
-                            // Remove the placeholder annotation
-                            current_subtask.annotations.access[current_subtask["state"]["active_id"]]["spatial_payload"].pop()
-                            // Finish the annotation
-                            ul.finish_annotation(null)
+                            // Use the undo function to cancel the complex polygon
+                            ul.undo()
                         }
 
                         break;
@@ -2209,6 +2205,12 @@ export class ULabel {
     move_polygon_ender(gmx, gmy, polygon_id) {
         // Create ender id
         const ender_id = "ender_" + polygon_id;
+
+        // create ender if it doesn't exist
+        if (!($("#" + ender_id).length)) {
+            this.create_polygon_ender(gmx, gmy, polygon_id);
+            return;
+        }
         
         // Add to list of visible dialogs
         this.subtasks[this.state["current_subtask"]]["state"]["visible_dialogs"][ender_id] = {
@@ -2956,6 +2958,9 @@ export class ULabel {
             case "create_nonspatial_annotation":
                 this.create_nonspatial_annotation__undo(action.undo_payload);
                 break;
+            case "start_complex_polygon":
+                this.start_complex_polygon__undo(action.undo_payload);
+                break;
             default:
                 console.log("Undo error :(");
                 break;
@@ -2991,6 +2996,9 @@ export class ULabel {
                 break;
             case "create_nonspatial_annotation":
                 this.create_nonspatial_annotation(action.redo_payload);
+                break;
+            case "start_complex_polygon":
+                this.start_complex_polygon(null, action.redo_payload);
                 break;
             default:
                 console.log("Redo error :(");
@@ -3541,6 +3549,56 @@ export class ULabel {
         this.continue_annotation(this.state["last_move"]);
     }
 
+    start_complex_polygon(unfinished_annotation = false, redo_payload = null) {
+        const current_subtask = this.subtasks[this.state["current_subtask"]]
+        let active_id = null;
+        let redoing = false;
+        if (redo_payload == null) {
+            active_id = current_subtask["state"]["active_id"];
+        } else {
+            active_id = redo_payload.actid;
+            redoing = true;
+        }
+
+        // Prep the next part of the polygon
+        current_subtask["annotations"]["access"][active_id]["spatial_payload"].push([]);
+        // mark that we are starting complex polygon
+        current_subtask["state"]["starting_complex_polygon"] = true;
+        // mark in progress
+        current_subtask["state"]["is_in_progress"] = true;
+        
+        this.record_action({
+            act_type: "start_complex_polygon",
+            frame: this.state["current_frame"],
+            undo_payload: {
+                actid: active_id,
+                unfinished_annotation: unfinished_annotation
+            },
+            redo_payload: {
+                actid: active_id
+            }
+        }, redoing);
+    }
+
+    start_complex_polygon__undo(undo_payload) {
+        const current_subtask = this.subtasks[this.state["current_subtask"]]
+        // Set the starting_complex_polygon state to false
+        current_subtask["state"]["starting_complex_polygon"] = false
+        // Remove the placeholder annotation
+        current_subtask["annotations"]["access"][undo_payload.actid]["spatial_payload"].pop()
+        // Finish the annotation if needed
+        if (undo_payload.unfinished_annotation) {
+            this.finish_annotation(null);
+        } else {
+            // Remove the polygon ender
+            this.destroy_polygon_ender(undo_payload.actid);
+
+            // Mark that we're done here
+            current_subtask["state"]["active_id"] = null;
+            current_subtask["state"]["is_in_progress"] = false;
+        }
+    }
+
     begin_edit(mouse_event) {
         // Create constants for convenience
         const current_subtask = this.subtasks[this.state["current_subtask"]]
@@ -3923,10 +3981,7 @@ export class ULabel {
                 // If the shiftKey is held, we wait for the next click, which is handled in end_drag().
                 // When no shift key is held, we can finish the annotation
                 if (mouse_event != null && mouse_event.shiftKey) {
-                    // Prep the next part of the polygon
-                    spatial_payload.push([]);
-                    // mark that we are starting complex polygon
-                    this.subtasks[this.state["current_subtask"]]["state"]["starting_complex_polygon"] = true;
+                    this.start_complex_polygon(true);
                 } else {
                     this.record_action({
                         act_type: "finish_annotation",
@@ -4019,7 +4074,7 @@ export class ULabel {
         }
 
         // Set mode to no active annotation, unless shift key is held for a polygon
-        if (mouse_event != null && mouse_event.shiftKey && annotations[active_id]["spatial_type"] == "polygon") {
+        if (current_subtask["state"]["starting_complex_polygon"]) {
             console.log("Continuing complex polygon...");
         } else {
             current_subtask["state"]["active_id"] = null;
@@ -4062,7 +4117,10 @@ export class ULabel {
         this.subtasks[this.state["current_subtask"]]["state"]["active_id"] = undo_payload.actid;
         this.redraw_all_annotations(this.state["current_subtask"]);
         if (undo_payload.ender_html) {
-            $("#dialogs__" + this.state["current_subtask"]).append(undo_payload.ender_html);
+            // create if ender isn't already there
+            if ($("#dialogs__" + this.state["current_subtask"]).find("#ender_" + undo_payload.actid).length == 0) {
+                $("#dialogs__" + this.state["current_subtask"]).append(undo_payload.ender_html);
+            }
             // make sure the ender is at the location of the first point
             let first_pt = active_spatial_payload[0];
             this.move_polygon_ender(first_pt[0], first_pt[1], undo_payload.actid);
@@ -4830,21 +4888,32 @@ export class ULabel {
     }
 
     handle_mouse_move(mouse_event) {
+        const annotation_mode = this.subtasks[this.state["current_subtask"]]["state"]["annotation_mode"];
+        const idd_visible = this.subtasks[this.state["current_subtask"]]["state"]["idd_visible"];
+        const idd_thumbnail = this.subtasks[this.state["current_subtask"]]["state"]["idd_thumbnail"];
+        const edit_candidate = this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"];
+        const annotations = this.subtasks[this.state["current_subtask"]]["annotations"]["access"];
         this.state["last_move"] = mouse_event;
         // If the ID dialog is visible, let it's own handler take care of this
         // If not dragging...
         if (this.drag_state["active_key"] == null) {
-            if (this.subtasks[this.state["current_subtask"]]["state"]["idd_visible"] && !this.subtasks[this.state["current_subtask"]]["state"]["idd_thumbnail"]) {
+            if (idd_visible && !idd_thumbnail) {
                 return;
             }
             // If polygon is in progress, redirect last segment
             if (this.subtasks[this.state["current_subtask"]]["state"]["is_in_progress"]) {
                 if (
-                    (this.subtasks[this.state["current_subtask"]]["state"]["annotation_mode"] == "polygon") ||
-                    (this.subtasks[this.state["current_subtask"]]["state"]["annotation_mode"] == "polyline")
+                    (annotation_mode == "polygon") ||
+                    (annotation_mode == "polyline")
                 ) {
                     this.continue_annotation(mouse_event);
                 }
+            } else if (mouse_event.shiftKey && annotation_mode == "polygon" && edit_candidate != null) {
+                // If shift key is held while hovering a polygon, we want to start a new complex payload
+
+                // set annotation as active, in_progress, and starting_complex_polygon
+                this.subtasks[this.state["current_subtask"]]["state"]["active_id"] = edit_candidate["annid"];
+                this.start_complex_polygon();
             } else { // Nothing in progress. Maybe show editable queues
                 this.suggest_edits(mouse_event);
             }
@@ -4858,17 +4927,17 @@ export class ULabel {
                     this.drag_rezoom(mouse_event);
                     break;
                 case "annotation":
-                    if (!this.subtasks[this.state["current_subtask"]]["state"]["idd_visible"] || this.subtasks[this.state["current_subtask"]]["state"]["idd_thumbnail"]) {
+                    if (!idd_visible || idd_thumbnail) {
                         this.continue_annotation(mouse_event);
                     }
                     break;
                 case "edit":
-                    if (!this.subtasks[this.state["current_subtask"]]["state"]["idd_visible"] || this.subtasks[this.state["current_subtask"]]["state"]["idd_thumbnail"]) {
+                    if (!idd_visible || idd_thumbnail) {
                         this.edit_annotation(mouse_event);
                     }
                     break;
                 case "move":
-                    if (!this.subtasks[this.state["current_subtask"]]["state"]["idd_visible"] || this.subtasks[this.state["current_subtask"]]["state"]["idd_thumbnail"]) {
+                    if (!idd_visible || idd_thumbnail) {
                         this.move_annotation(mouse_event);
                     }
                     break;
