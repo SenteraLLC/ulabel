@@ -30,7 +30,7 @@ export class GeometricUtils {
         const b = (p1[0] - p2[0]);
 
         // If the points are the same, no line can be inferred. Return null
-        if ((a == 0) && (b == 0)) return null;
+        if ((a === 0) && (b === 0)) return null;
 
         const c = p1[1]*(p2[0] - p1[0]) - p1[0]*(p2[1] - p1[1]);
         return {
@@ -45,7 +45,7 @@ export class GeometricUtils {
     //   as the distance away
     public static get_nearest_point_on_segment(ref_x: number, ref_y: number, eq: object, kp1: Array<number>, kp2: Array<number>): object {
         //check to make sure eq exists
-        if (eq == null) return null
+        if (eq === null) return null
 
         // For convenience
         const a = eq["a"];
@@ -103,7 +103,7 @@ export class GeometricUtils {
                 // Distance is measured with l2 norm
                 let kpdst = Math.sqrt(Math.pow(kp[0] - ref_x, 2) + Math.pow(kp[1] - ref_y, 2));
                 // If this a minimum distance so far, store it
-                if (ret["distance"] == null || kpdst < ret["distance"]) {
+                if (ret["distance"] === null || kpdst < ret["distance"]) {
                     ret["access"] = kpi;
                     ret["distance"] = kpdst;
                     ret["point"] = poly_pts[kpi];
@@ -117,7 +117,7 @@ export class GeometricUtils {
                 let kp2 = poly_pts[kpi+1];
                 let eq = GeometricUtils.get_line_equation_through_points(kp1, kp2);
                 let nr = GeometricUtils.get_nearest_point_on_segment(ref_x, ref_y, eq, kp1, kp2);
-                if ((nr != null) && (nr["dst"] < dstmax) && (ret["distance"] == null || nr["dst"] < ret["distance"])) {
+                if ((nr != null) && (nr["dst"] < dstmax) && (ret["distance"] === null || nr["dst"] < ret["distance"])) {
                     ret["access"] = "" + (kpi + nr["prop"]);
                     ret["distance"] = nr["dst"];
                     ret["point"] = GeometricUtils.interpolate_poly_segment(poly_pts, kpi, nr["prop"]);
@@ -154,8 +154,7 @@ export class GeometricUtils {
         
         // Find intersection
         let intersection = turf.intersect(poly1_turf, poly2_turf);
-        
-        if (intersection == null) {
+        if (intersection === null) {
             return null;
         } else {
             // Convert back to ULabelSpatialPayload2D
@@ -169,7 +168,7 @@ export class GeometricUtils {
         let ret = false;
         if (poly.length > 2) {
             try {
-                return poly[0][0] == poly.at(-1)[0] && poly[0][1] == poly.at(-1)[1];
+                return poly[0][0] === poly.at(-1)[0] && poly[0][1] === poly.at(-1)[1];
             } catch (e) {}
         }
         return ret;
@@ -185,7 +184,7 @@ export class GeometricUtils {
             for (let bbj = 0; bbj < 2; bbj++) {
                 let kp = [spatial_payload[bbi][0], spatial_payload[bbj][1]];
                 let kpdst = Math.sqrt(Math.pow(kp[0] - ref_x, 2) + Math.pow(kp[1] - ref_y, 2));
-                if (kpdst < dstmax && (ret["distance"] == null || kpdst < ret["distance"])) {
+                if (kpdst < dstmax && (ret["distance"] === null || kpdst < ret["distance"])) {
                     ret["access"] = `${bbi}${bbj}`;
                     ret["distance"] = kpdst;
                     ret["point"] = kp;
@@ -205,7 +204,7 @@ export class GeometricUtils {
             for (let bbj = 0; bbj < 2; bbj++) {
                 let kp = [spatial_payload[bbi][0], spatial_payload[bbj][1]];
                 let kpdst = Math.sqrt(Math.pow(kp[0] - ref_x, 2) + Math.pow(kp[1] - ref_y, 2));
-                if (kpdst < dstmax && (ret["distance"] == null || kpdst < ret["distance"])) {
+                if (kpdst < dstmax && (ret["distance"] === null || kpdst < ret["distance"])) {
                     ret["access"] = `${bbi}${bbj}`;
                     ret["distance"] = kpdst;
                     ret["point"] = kp;
@@ -225,10 +224,10 @@ export class GeometricUtils {
             max = tmp;
         }
 
-        if (frame == min) {
+        if (frame === min) {
             ret["access"] += "" + min_k;
         }
-        else if (frame == max) {
+        else if (frame === max) {
             ret["access"] += "" + max_k;
         }
         return ret;
@@ -244,7 +243,7 @@ export class GeometricUtils {
         for (let tbi = 0; tbi < 2; tbi++) {
             let kp = [spatial_payload[tbi][0], spatial_payload[tbi][1]];
             let kpdst = Math.sqrt(Math.pow(kp[0] - ref_x, 2) + Math.pow(kp[1] - ref_y, 2));
-            if (kpdst < dstmax && (ret["distance"] == null || kpdst < ret["distance"])) {
+            if (kpdst < dstmax && (ret["distance"] === null || kpdst < ret["distance"])) {
                 ret["access"] = `${tbi}${tbi}`;
                 ret["distance"] = kpdst;
                 ret["point"] = kp;
