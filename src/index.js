@@ -1816,7 +1816,7 @@ export class ULabel {
             }           
         }
 
-        // For polygons, go back through and unfill the intersectoions of all the polygons
+        // For polygons, go back through and unfill the intersections of all the polygons
         if (spatial_type === "polygon" && spatial_payload.length > 1) {
             let intersections = GeometricUtils.get_polygon_intersections(spatial_payload);
             for (let intersection of intersections) {
