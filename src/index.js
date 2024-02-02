@@ -5045,11 +5045,11 @@ export class ULabel {
         // TODO handle this drag end
         const annotation_mode = this.subtasks[this.state["current_subtask"]]["state"]["annotation_mode"];
         const active_id = this.subtasks[this.state["current_subtask"]]["state"]["active_id"];
-        let spatial_payload = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][active_id]["spatial_payload"];
-        let n_points, active_spatial_payload;
+        let spatial_payload, n_points, active_spatial_payload;
         switch (this.drag_state["active_key"]) {
             case "annotation":
                 if (active_id != null) {
+                    spatial_payload = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][active_id]["spatial_payload"]
                     if (
                         (annotation_mode != "polygon") &&
                         (annotation_mode != "polyline")
