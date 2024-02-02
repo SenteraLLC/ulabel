@@ -2608,6 +2608,7 @@ export class ULabel {
             current_subtask["state"]["is_in_edit"] = false;
             current_subtask["state"]["is_in_move"] = false;
             current_subtask["state"]["is_in_progress"] = false;
+            current_subtask["state"]["starting_complex_polygon"] = false;
         }
         mark_deprecated(annotations[annotation_id], true)
 
@@ -2640,6 +2641,11 @@ export class ULabel {
         // If the annotation is a polyline and the filter distance toolboxitem is present, then filter annotations on annotation deletion
         if (annotations[annotation_id].spatial_type === "polyline" && this.toolbox_order.includes(AllowedToolboxItem.FilterDistance)) {
             filter_points_distance_from_line(this)
+        }
+
+        // Ensure there are no lingering enders
+        if (annotation_mode === "polygon" || annotation_mode === "polyline") {
+            this.destroy_polygon_ender(annotation_id);
         }
     }
 
@@ -3549,6 +3555,10 @@ export class ULabel {
     }
 
     start_complex_polygon(unfinished_annotation = false, redo_payload = null) {
+        // Turn off any edit suggestions or id dialogs
+        this.hide_edit_suggestion();
+        this.hide_global_edit_suggestion();
+
         const current_subtask = this.subtasks[this.state["current_subtask"]]
         let active_id = null;
         let redoing = false;
@@ -4466,63 +4476,69 @@ export class ULabel {
      * If no endpoints, search along segments with infinite range 
      */
     suggest_edits(mouse_event = null, nonspatial_id = null) {
-        let best_candidate;
-
-        if (nonspatial_id === null) {
-            if (mouse_event === null) {
-                mouse_event = this.state["last_move"];
-            }
-
-            const dst_thresh = this.config["edit_handle_size"] / 2;
-            const global_x = this.get_global_mouse_x(mouse_event);
-            const global_y = this.get_global_mouse_y(mouse_event);
-
-            if ($(mouse_event.target).hasClass("gedit-target")) return;
-
-            const edit_candidates = this.get_edit_candidates(
-                global_x,
-                global_y,
-                dst_thresh
-            );
-
-            if (edit_candidates["best"] === null) {
-                this.hide_global_edit_suggestion();
-                this.hide_edit_suggestion();
-                this.subtasks[this.state["current_subtask"]]["state"]["move_candidate"] = null;
-                this.subtasks[this.state["current_subtask"]]["active_annotation"] = null;
-                return;
-            }
-
-            // Look for an existing point that's close enough to suggest editing it
-            const nearest_active_keypoint = this.get_nearest_active_keypoint(global_x, global_y, dst_thresh, edit_candidates["candidate_ids"]);
-            if (nearest_active_keypoint != null && nearest_active_keypoint.point != null) {
-                this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"] = nearest_active_keypoint;
-                this.show_edit_suggestion(nearest_active_keypoint, true);
-                edit_candidates["best"] = nearest_active_keypoint;
-            }
-            else { // If none are found, look for a point along a segment that's close enough
-                const nearest_segment_point = this.get_nearest_segment_point(global_x, global_y, Infinity, edit_candidates["candidate_ids"]);
-                if (nearest_segment_point != null && nearest_segment_point.point != null) {
-                    this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"] = nearest_segment_point;
-                    this.show_edit_suggestion(nearest_segment_point, false);
-                    edit_candidates["best"] = nearest_segment_point;
-                }
-                else {
-                    this.hide_edit_suggestion();
-                }
-            }
-
-            // Show global edit dialogs for "best" candidate
-            this.subtasks[this.state["current_subtask"]]["state"]["move_candidate"] = edit_candidates["best"];
-            best_candidate = edit_candidates["best"]["annid"];
-        }
-        else {
+        // don't show edits when potentially trying to draw a hole
+        if (this.subtasks[this.state["current_subtask"]]["state"]["starting_complex_polygon"]) {
             this.hide_global_edit_suggestion();
             this.hide_edit_suggestion();
-            best_candidate = nonspatial_id;
+        } else {
+            let best_candidate;
+
+            if (nonspatial_id === null) {
+                if (mouse_event === null) {
+                    mouse_event = this.state["last_move"];
+                }
+
+                const dst_thresh = this.config["edit_handle_size"] / 2;
+                const global_x = this.get_global_mouse_x(mouse_event);
+                const global_y = this.get_global_mouse_y(mouse_event);
+
+                if ($(mouse_event.target).hasClass("gedit-target")) return;
+
+                const edit_candidates = this.get_edit_candidates(
+                    global_x,
+                    global_y,
+                    dst_thresh
+                );
+
+                if (edit_candidates["best"] === null) {
+                    this.hide_global_edit_suggestion();
+                    this.hide_edit_suggestion();
+                    this.subtasks[this.state["current_subtask"]]["state"]["move_candidate"] = null;
+                    this.subtasks[this.state["current_subtask"]]["active_annotation"] = null;
+                    return;
+                }
+
+                // Look for an existing point that's close enough to suggest editing it
+                const nearest_active_keypoint = this.get_nearest_active_keypoint(global_x, global_y, dst_thresh, edit_candidates["candidate_ids"]);
+                if (nearest_active_keypoint != null && nearest_active_keypoint.point != null) {
+                    this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"] = nearest_active_keypoint;
+                    this.show_edit_suggestion(nearest_active_keypoint, true);
+                    edit_candidates["best"] = nearest_active_keypoint;
+                }
+                else { // If none are found, look for a point along a segment that's close enough
+                    const nearest_segment_point = this.get_nearest_segment_point(global_x, global_y, Infinity, edit_candidates["candidate_ids"]);
+                    if (nearest_segment_point != null && nearest_segment_point.point != null) {
+                        this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"] = nearest_segment_point;
+                        this.show_edit_suggestion(nearest_segment_point, false);
+                        edit_candidates["best"] = nearest_segment_point;
+                    }
+                    else {
+                        this.hide_edit_suggestion();
+                    }
+                }
+
+                // Show global edit dialogs for "best" candidate
+                this.subtasks[this.state["current_subtask"]]["state"]["move_candidate"] = edit_candidates["best"];
+                best_candidate = edit_candidates["best"]["annid"];
+            }
+            else {
+                this.hide_global_edit_suggestion();
+                this.hide_edit_suggestion();
+                best_candidate = nonspatial_id;
+            }
+            this.show_global_edit_suggestion(best_candidate, null, nonspatial_id);
+            this.subtasks[this.state["current_subtask"]]["active_annotation"] = best_candidate
         }
-        this.show_global_edit_suggestion(best_candidate, null, nonspatial_id);
-        this.subtasks[this.state["current_subtask"]]["active_annotation"] = best_candidate
     }
 
 
