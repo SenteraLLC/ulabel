@@ -2966,6 +2966,9 @@ export class ULabel {
             case "start_complex_polygon":
                 this.start_complex_polygon__undo(action.undo_payload);
                 break;
+            case "finish_complex_polygon":
+                this.finish_complex_polygon__undo(action.undo_payload);
+                break;
             default:
                 console.log("Undo error :(");
                 break;
@@ -2974,6 +2977,7 @@ export class ULabel {
 
     redo_action(action) {
         this.update_frame(null, action.frame);
+        console.log("redoing action", action.act_type)
         switch (action.act_type) {
             case "begin_annotation":
                 this.begin_annotation(null, action.redo_payload);
@@ -2982,6 +2986,7 @@ export class ULabel {
                 this.continue_annotation(null, null, action.redo_payload);
                 break;
             case "finish_annotation":
+            case "finish_complex_polygon":
                 this.finish_annotation(null, action.redo_payload);
                 break;
             case "edit_annotation":
@@ -3472,13 +3477,12 @@ export class ULabel {
                             let frame = this.state["current_frame"];
 
                             // Only an undoable action if placing a polygon keypoint
-                            // TODO: undo and redoing of complex polygons
                             this.record_action({
                                 act_type: "continue_annotation",
                                 frame: frame,
                                 redo_payload: {
                                     mouse_event: mouse_event,
-                                    isclick: isclick,
+                                    isclick: isclick || is_click_dragging,
                                     actid: actid,
                                     gmx: gmx,
                                     gmy: gmy
@@ -3566,7 +3570,13 @@ export class ULabel {
             active_id = current_subtask["state"]["active_id"];
         } else {
             active_id = redo_payload.actid;
+            current_subtask["state"]["active_id"] = active_id;
             redoing = true;
+
+            // Add back the ender
+            let gmx = this.get_global_mouse_x(this.state["last_move"]);
+            let gmy = this.get_global_mouse_y(this.state["last_move"]); 
+            this.create_polygon_ender(gmx, gmy, active_id);
         }
 
         // Prep the next part of the polygon
@@ -3605,6 +3615,29 @@ export class ULabel {
             // Mark that we're done here
             current_subtask["state"]["active_id"] = null;
             current_subtask["state"]["is_in_progress"] = false;
+        }
+    }
+
+    finish_complex_polygon__undo(undo_payload) {
+        // When undoing a complex polygon, for convenience we will undo each continue_annotation action
+        // until we get back to the start_complex_polygon action
+        const current_subtask = this.subtasks[this.state["current_subtask"]]
+        
+        // First, undo the finish_annotation
+        this.finish_annotation__undo(undo_payload);
+        // Then, loop throught the action stream until we find the start_complex_polygon action
+        while (current_subtask["actions"]["stream"].length > 0) {
+            let action = current_subtask["actions"]["stream"].pop();
+            if (action.act_type === "start_complex_polygon") {
+                // replace the action
+                current_subtask["actions"]["stream"].push(action);
+                break;
+            } else {
+                // add to undo stack
+                current_subtask["actions"]["undone_stack"].push(action);
+                // undo the action
+                this.undo_action(action);
+            }
         }
     }
 
@@ -3975,7 +4008,7 @@ export class ULabel {
 
         // Record last point and redraw if necessary
         // TODO(3d)
-        let n_kpts, start_pt, popped;
+        let n_kpts, start_pt, popped, act_type;
         switch (annotations[active_id]["spatial_type"]) {
             case "polygon":
                 // For polygons, the active spatial payload is the last array of points in the spatial payload
@@ -3992,8 +4025,10 @@ export class ULabel {
                 if (mouse_event != null && mouse_event.shiftKey) {
                     this.start_complex_polygon(true);
                 } else {
+                    // when completing a complex layer of a polygon, we record the action accordingly
+                    act_type = spatial_payload.length > 1 ? "finish_complex_polygon" : "finish_annotation";
                     this.record_action({
-                        act_type: "finish_annotation",
+                        act_type: act_type,
                         frame: this.state["current_frame"],
                         undo_payload: {
                             actid: active_id,
@@ -4907,7 +4942,6 @@ export class ULabel {
         const idd_visible = this.subtasks[this.state["current_subtask"]]["state"]["idd_visible"];
         const idd_thumbnail = this.subtasks[this.state["current_subtask"]]["state"]["idd_thumbnail"];
         const edit_candidate = this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"];
-        const annotations = this.subtasks[this.state["current_subtask"]]["annotations"]["access"];
         this.state["last_move"] = mouse_event;
         // If the ID dialog is visible, let it's own handler take care of this
         // If not dragging...
@@ -4923,7 +4957,7 @@ export class ULabel {
                 ) {
                     this.continue_annotation(mouse_event);
                 }
-            } else if (mouse_event.shiftKey && annotation_mode === "polygon" && edit_candidate != null) {
+            } else if (mouse_event.shiftKey && annotation_mode === "polygon" && idd_visible && edit_candidate != null) {
                 // If shift key is held while hovering a polygon, we want to start a new complex payload
 
                 // set annotation as active, in_progress, and starting_complex_polygon
