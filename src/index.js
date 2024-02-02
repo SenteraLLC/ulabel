@@ -1531,8 +1531,7 @@ export class ULabel {
                     else {
                         active_spatial_payload[acint] = val;
                     }
-                }
-                else {
+                } else {
                     if (undoing === true) {
                         active_spatial_payload.splice(bas + 1, 1);
                     }
@@ -1541,10 +1540,10 @@ export class ULabel {
                     }
                     else {
                         var newpt = GeometricUtils.interpolate_poly_segment(
-                            active_spatial_payload.at(-1),
+                            active_spatial_payload,
                             bas, dif
                         );
-                        active_spatial_payload.at(-1).splice(bas + 1, 0, newpt);
+                        active_spatial_payload.splice(bas + 1, 0, newpt);
                     }
                 }
                 break;
