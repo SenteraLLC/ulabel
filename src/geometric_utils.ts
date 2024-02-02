@@ -7,7 +7,7 @@ export class GeometricUtils {
     public static l2_norm(pt1: Array<number>, pt2: Array<number>): number {
         let ndim = pt1.length;
         let sq = 0;
-        for(let i = 0; i < ndim; i++) {
+        for (let i = 0; i < ndim; i++) {
             sq += (pt1[i] - pt2[i]) * (pt1[i] - pt2[i]);
         }
         return Math.sqrt(sq);
@@ -129,7 +129,7 @@ export class GeometricUtils {
 
     // Return a list of polygons that define all intersections between a list of polygons
     public static get_polygon_intersections(polygons: ULabelSpatialPayload2D[]): ULabelSpatialPayload2D[] {
-        let ret = [];
+        let ret: ULabelSpatialPayload2D[] = [];
         for (let i = 0; i < polygons.length; i++) {
             for (let j = i+1; j < polygons.length; j++) {
                 let poly1 = polygons[i];
@@ -148,15 +148,17 @@ export class GeometricUtils {
 
     // Return the intersection of two polygons
     public static get_polygon_intersection_single(poly1: ULabelSpatialPayload2D, poly2: ULabelSpatialPayload2D): ULabelSpatialPayload2D {
-        // convert to turf polygons
+        // Convert to turf polygons
         let poly1_turf = turf.polygon([poly1]);
         let poly2_turf = turf.polygon([poly2]);
-        // find intersection
+        
+        // Find intersection
         let intersection = turf.intersect(poly1_turf, poly2_turf);
+        
         if (intersection == null) {
             return null;
         } else {
-            // convert back to ULabelSpatialPayload2D
+            // Convert back to ULabelSpatialPayload2D
             return intersection.geometry.coordinates[0];
         }
     }

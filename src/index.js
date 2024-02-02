@@ -1817,7 +1817,7 @@ export class ULabel {
             }           
         }
 
-        // For polygons, go back through and unfill the intersectoions of all the polygons
+        // For polygons, go back through and unfill the intersections of all the polygons
         if (spatial_type == "polygon" && spatial_payload.length > 1) {
             let intersections = GeometricUtils.get_polygon_intersections(spatial_payload);
             for (let intersection of intersections) {
@@ -2206,7 +2206,7 @@ export class ULabel {
         // Create ender id
         const ender_id = "ender_" + polygon_id;
 
-        // create ender if it doesn't exist
+        // Create ender if it doesn't exist
         if (!($("#" + ender_id).length)) {
             this.create_polygon_ender(gmx, gmy, polygon_id);
             return;

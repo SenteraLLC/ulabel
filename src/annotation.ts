@@ -28,7 +28,7 @@ export class ULabelAnnotation {
         public frame?: number,
         public line_size?: number,
         public id?: string,
-        // polygons use complex spatial payloads
+        // Polygons use complex spatial payloads
         public spatial_payload?: any,
         public spatial_type?: ULabelSpatialType
     ) {}
@@ -79,9 +79,9 @@ export class ULabelAnnotation {
 
     // ensure polygon spatial_payloads are updated to support complex polygons
     public ensure_compatible_spatial_payloads() {
-        if(this.spatial_type === "polygon") {
+        if (this.spatial_type === "polygon") {
             // Check that spatial_payload[0][0] is an array
-            if(!Array.isArray(this.spatial_payload[0][0])) {
+            if (!Array.isArray(this.spatial_payload[0][0])) {
                 this.spatial_payload = [this.spatial_payload];
             }
         }
