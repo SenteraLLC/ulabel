@@ -5,9 +5,9 @@ export type ULabelSpatialPayload3D = [number, number, number][]
 
 export class GeometricUtils {
     public static l2_norm(pt1: Array<number>, pt2: Array<number>): number {
-        let ndim = pt1.length;
-        let sq = 0;
-        for (let i = 0; i < ndim; i++) {
+        let ndim: number = pt1.length;
+        let sq: number = 0;
+        for (let i: number = 0; i < ndim; i++) {
             sq += (pt1[i] - pt2[i]) * (pt1[i] - pt2[i]);
         }
         return Math.sqrt(sq);
@@ -15,8 +15,8 @@ export class GeometricUtils {
 
     // Get the point at a certain proportion of the segment between two points in a polygon
     public static interpolate_poly_segment(pts: [number, number][], i: number, prop: number): Array<number> {
-        const pt1 = pts[i%pts.length];
-        const pt2 = pts[(i + 1)%pts.length];
+        const pt1: [number, number] = pts[i%pts.length];
+        const pt2: [number, number] = pts[(i + 1)%pts.length];
         return [
             pt1[0]*(1.0 - prop) + pt2[0]*prop,
             pt1[1]*(1.0 - prop) + pt2[1]*prop
@@ -26,13 +26,13 @@ export class GeometricUtils {
     // Given two points, return the line that goes through them in the form of
     //    ax + by + c = 0
     public static get_line_equation_through_points(p1: Array<number>, p2: Array<number>): object {
-        const a = (p2[1] - p1[1]);
-        const b = (p1[0] - p2[0]);
+        const a: number = (p2[1] - p1[1]);
+        const b: number = (p1[0] - p2[0]);
 
         // If the points are the same, no line can be inferred. Return null
         if ((a === 0) && (b === 0)) return null;
 
-        const c = p1[1]*(p2[0] - p1[0]) - p1[0]*(p2[1] - p1[1]);
+        const c: number = p1[1]*(p2[0] - p1[0]) - p1[0]*(p2[1] - p1[1]);
         return {
             "a": a,
             "b": b,
@@ -48,20 +48,20 @@ export class GeometricUtils {
         if (eq === null) return null
 
         // For convenience
-        const a = eq["a"];
-        const b = eq["b"];
-        const c = eq["c"];
+        const a: number = eq["a"];
+        const b: number = eq["b"];
+        const c: number = eq["c"];
     
         // Where is that point on the line, exactly?
-        let nrx = (b*(b*ref_x - a*ref_y) - a*c)/(a*a + b*b);
-        let nry = (a*(a*ref_y - b*ref_x) - b*c)/(a*a + b*b);
+        let nrx: number = (b*(b*ref_x - a*ref_y) - a*c)/(a*a + b*b);
+        let nry: number = (a*(a*ref_y - b*ref_x) - b*c)/(a*a + b*b);
     
         // Where along the segment is that point?
-        let xprop = 0.0;
+        let xprop: number = 0.0;
         if (kp2[0] != kp1[0]) {
             xprop = (nrx - kp1[0])/(kp2[0] - kp1[0]);
         }
-        let yprop = 0.0;
+        let yprop: number = 0.0;
         if (kp2[1] != kp1[1]) {
             yprop = (nry - kp1[1])/(kp2[1] - kp1[1]);
         }
@@ -72,11 +72,11 @@ export class GeometricUtils {
         }
 
         // Distance from point to line
-        let dst = Math.abs(a*ref_x + b*ref_y + c)/Math.sqrt(a*a + b*b);
+        let dst: number = Math.abs(a*ref_x + b*ref_y + c)/Math.sqrt(a*a + b*b);
         
         // Proportion of the length of segment from p1 to the nearest point
-        const seg_length = Math.sqrt((kp2[0] - kp1[0])*(kp2[0] - kp1[0]) + (kp2[1] - kp1[1])*(kp2[1] - kp1[1]));
-        const kprop = Math.sqrt((nrx - kp1[0])*(nrx - kp1[0]) + (nry - kp1[1])*(nry - kp1[1]))/seg_length;
+        const seg_length: number = Math.sqrt((kp2[0] - kp1[0])*(kp2[0] - kp1[0]) + (kp2[1] - kp1[1])*(kp2[1] - kp1[1]));
+        const kprop: number = Math.sqrt((nrx - kp1[0])*(nrx - kp1[0]) + (nry - kp1[1])*(nry - kp1[1]))/seg_length;
 
         // return object with info about the point
         return {
@@ -87,10 +87,10 @@ export class GeometricUtils {
 
     // Return the point on a polygon that's closest to a reference along with its distance
     public static get_nearest_point_on_polygon(ref_x: number, ref_y: number, spatial_payload: ULabelSpatialPayload2D, dstmax: number = Infinity, include_segments: boolean = false): object {
-        const poly_pts = spatial_payload;
+        const poly_pts: ULabelSpatialPayload2D = spatial_payload;
 
         // Initialize return value to null object
-        let ret = {
+        let ret: Object = {
             "access": null,
             "distance": null,
             "point": null
@@ -98,10 +98,10 @@ export class GeometricUtils {
         if (!include_segments) {
             // Look through polygon points one by one 
             //    no need to look at last, it's the same as first
-            for (let kpi = 0; kpi < poly_pts.length; kpi++) {
-                let kp = poly_pts[kpi];
+            for (let kpi: number = 0; kpi < poly_pts.length; kpi++) {
+                let kp: [number, number] = poly_pts[kpi];
                 // Distance is measured with l2 norm
-                let kpdst = Math.sqrt(Math.pow(kp[0] - ref_x, 2) + Math.pow(kp[1] - ref_y, 2));
+                let kpdst: number = Math.sqrt(Math.pow(kp[0] - ref_x, 2) + Math.pow(kp[1] - ref_y, 2));
                 // If this a minimum distance so far, store it
                 if (ret["distance"] === null || kpdst < ret["distance"]) {
                     ret["access"] = kpi;
@@ -112,11 +112,11 @@ export class GeometricUtils {
             return ret;
         }
         else {
-            for (let kpi = 0; kpi < poly_pts.length-1; kpi++) {
-                let kp1 = poly_pts[kpi];
-                let kp2 = poly_pts[kpi+1];
-                let eq = GeometricUtils.get_line_equation_through_points(kp1, kp2);
-                let nr = GeometricUtils.get_nearest_point_on_segment(ref_x, ref_y, eq, kp1, kp2);
+            for (let kpi: number = 0; kpi < poly_pts.length-1; kpi++) {
+                let kp1: [number, number] = poly_pts[kpi];
+                let kp2: [number, number] = poly_pts[kpi+1];
+                let eq: Object = GeometricUtils.get_line_equation_through_points(kp1, kp2);
+                let nr: Object = GeometricUtils.get_nearest_point_on_segment(ref_x, ref_y, eq, kp1, kp2);
                 if ((nr != null) && (nr["dst"] < dstmax) && (ret["distance"] === null || nr["dst"] < ret["distance"])) {
                     ret["access"] = "" + (kpi + nr["prop"]);
                     ret["distance"] = nr["dst"];
@@ -130,13 +130,13 @@ export class GeometricUtils {
     // Return a list of polygons that define all intersections between a list of polygons
     public static get_polygon_intersections(polygons: ULabelSpatialPayload2D[]): ULabelSpatialPayload2D[] {
         let ret: ULabelSpatialPayload2D[] = [];
-        for (let i = 0; i < polygons.length; i++) {
-            for (let j = i+1; j < polygons.length; j++) {
-                let poly1 = polygons[i];
-                let poly2 = polygons[j];
+        for (let i: number = 0; i < polygons.length; i++) {
+            for (let j: number = i+1; j < polygons.length; j++) {
+                let poly1: ULabelSpatialPayload2D = polygons[i];
+                let poly2: ULabelSpatialPayload2D = polygons[j];
                 // Ensure both polygons are closed
                 if (GeometricUtils.is_polygon_closed(poly1) && GeometricUtils.is_polygon_closed(poly2)) {
-                    let intersection = GeometricUtils.get_polygon_intersection_single(poly1, poly2);
+                    let intersection: ULabelSpatialPayload2D = GeometricUtils.get_polygon_intersection_single(poly1, poly2);
                     if (intersection != null) {
                         ret.push(intersection);
                     }
@@ -165,7 +165,7 @@ export class GeometricUtils {
 
     // Check if polygon is closed, i.e. first and last points are the same and there are at least 3 points
     public static is_polygon_closed(poly: ULabelSpatialPayload2D): boolean {
-        let ret = false;
+        let ret: boolean = false;
         if (poly.length > 2) {
             try {
                 return poly[0][0] === poly.at(-1)[0] && poly[0][1] === poly.at(-1)[1];
@@ -175,15 +175,15 @@ export class GeometricUtils {
     }
 
     public static get_nearest_point_on_bounding_box(ref_x: number, ref_y: number, spatial_payload: ULabelSpatialPayload2D, dstmax: number = Infinity): object {
-        let ret = {
+        let ret: Object = {
             "access": null,
             "distance": null,
             "point": null
         };
-        for (let bbi = 0; bbi < 2; bbi++) {
-            for (let bbj = 0; bbj < 2; bbj++) {
-                let kp = [spatial_payload[bbi][0], spatial_payload[bbj][1]];
-                let kpdst = Math.sqrt(Math.pow(kp[0] - ref_x, 2) + Math.pow(kp[1] - ref_y, 2));
+        for (let bbi: number = 0; bbi < 2; bbi++) {
+            for (let bbj: number = 0; bbj < 2; bbj++) {
+                let kp: [number, number] = [spatial_payload[bbi][0], spatial_payload[bbj][1]];
+                let kpdst: number = Math.sqrt(Math.pow(kp[0] - ref_x, 2) + Math.pow(kp[1] - ref_y, 2));
                 if (kpdst < dstmax && (ret["distance"] === null || kpdst < ret["distance"])) {
                     ret["access"] = `${bbi}${bbj}`;
                     ret["distance"] = kpdst;
@@ -195,15 +195,15 @@ export class GeometricUtils {
     }
   
     public static get_nearest_point_on_bbox3(ref_x: number, ref_y: number, frame: number, spatial_payload: ULabelSpatialPayload3D, dstmax=Infinity): object {
-        let ret = {
+        let ret: Object = {
             "access": null,
             "distance": null,
             "point": null
         };
-        for (let bbi = 0; bbi < 2; bbi++) {
-            for (let bbj = 0; bbj < 2; bbj++) {
-                let kp = [spatial_payload[bbi][0], spatial_payload[bbj][1]];
-                let kpdst = Math.sqrt(Math.pow(kp[0] - ref_x, 2) + Math.pow(kp[1] - ref_y, 2));
+        for (let bbi: number = 0; bbi < 2; bbi++) {
+            for (let bbj: number = 0; bbj < 2; bbj++) {
+                let kp: [number, number] = [spatial_payload[bbi][0], spatial_payload[bbj][1]];
+                let kpdst: number = Math.sqrt(Math.pow(kp[0] - ref_x, 2) + Math.pow(kp[1] - ref_y, 2));
                 if (kpdst < dstmax && (ret["distance"] === null || kpdst < ret["distance"])) {
                     ret["access"] = `${bbi}${bbj}`;
                     ret["distance"] = kpdst;
@@ -211,12 +211,12 @@ export class GeometricUtils {
                 }
             }
         }
-        let min_k = 0;
-        let min = spatial_payload[0][2];
-        let max_k = 1;
-        let max = spatial_payload[1][2];
+        let min_k: number = 0;
+        let min: number = spatial_payload[0][2];
+        let max_k: number = 1;
+        let max: number = spatial_payload[1][2];
         if (max < min) {
-            let tmp = min_k;
+            let tmp: number = min_k;
             min_k = max_k;
             max_k = tmp;
             tmp = min;
@@ -235,14 +235,14 @@ export class GeometricUtils {
 
     public static get_nearest_point_on_tbar(ref_x: number, ref_y: number, spatial_payload: ULabelSpatialPayload2D, dstmax=Infinity): object {
         // TODO intelligently test against three grabbable points
-        let ret = {
+        let ret: Object = {
             "access": null,
             "distance": null,
             "point": null
         };
-        for (let tbi = 0; tbi < 2; tbi++) {
-            let kp = [spatial_payload[tbi][0], spatial_payload[tbi][1]];
-            let kpdst = Math.sqrt(Math.pow(kp[0] - ref_x, 2) + Math.pow(kp[1] - ref_y, 2));
+        for (let tbi: number = 0; tbi < 2; tbi++) {
+            let kp: [number, number] = [spatial_payload[tbi][0], spatial_payload[tbi][1]];
+            let kpdst: number = Math.sqrt(Math.pow(kp[0] - ref_x, 2) + Math.pow(kp[1] - ref_y, 2));
             if (kpdst < dstmax && (ret["distance"] === null || kpdst < ret["distance"])) {
                 ret["access"] = `${tbi}${tbi}`;
                 ret["distance"] = kpdst;
