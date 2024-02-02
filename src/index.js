@@ -4021,13 +4021,13 @@ export class ULabel {
                     popped = false;
                     this.rebuild_containing_box(active_id, false, this.state["current_subtask"]);
                 }
-                console.log(
-                    "At finish...",
-                    JSON.stringify(
-                        annotations[active_id]["spatial_payload"],
-                        null, 2
-                    )
-                );
+                // console.log(
+                //     "At finish...",
+                //     JSON.stringify(
+                //         annotations[active_id]["spatial_payload"],
+                //         null, 2
+                //     )
+                // );
                 this.redraw_all_annotations(this.state["current_subtask"]); // tobuffer
                 this.record_action({
                     act_type: "finish_annotation",
@@ -4991,11 +4991,9 @@ export class ULabel {
         switch (drag_key) {
             case "annotation":
                 annmd = this.subtasks[this.state["current_subtask"]]["state"]["annotation_mode"];
-                if (annmd != "polygon" && annmd != "polyline" && !NONSPATIAL_MODES.includes(annmd)) {
-                    // To avoid immediately closing polygons and polylines, we create them on mouseup.
+                if (!NONSPATIAL_MODES.includes(annmd) && !this.subtasks[this.state["current_subtask"]]["state"]["is_in_progress"]) {
                     this.begin_annotation(mouse_event);
                 }
-
                 break;
             case "edit":
                 this.begin_edit(mouse_event);
@@ -5013,6 +5011,8 @@ export class ULabel {
         // TODO handle this drag end
         const annotation_mode = this.subtasks[this.state["current_subtask"]]["state"]["annotation_mode"];
         const active_id = this.subtasks[this.state["current_subtask"]]["state"]["active_id"];
+        let spatial_payload = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][active_id]["spatial_payload"];
+        let n_points, active_spatial_payload;
         switch (this.drag_state["active_key"]) {
             case "annotation":
                 if (active_id != null) {
@@ -5022,8 +5022,14 @@ export class ULabel {
                     ) {
                         this.finish_annotation(mouse_event);
                     } else {
+                        active_spatial_payload = spatial_payload.at(-1);
+                        n_points = active_spatial_payload.length;
                         if (
+                            // We can finish a polygon by clicking on the ender
+                            // however, we don't want this to trigger immediately after starting an annotation
+                            // so we check that the polygon has more than 2 points
                             !this.subtasks[this.state["current_subtask"]]["state"]["starting_complex_polygon"] &&
+                            n_points > 2 &&
                             (
                                 (mouse_event.target.id === "ender_" + active_id) ||
                                 (mouse_event.target.id === "ender_" + active_id + "_inner")
@@ -5035,12 +5041,6 @@ export class ULabel {
                             this.continue_annotation(mouse_event, true);
                         }
                     }
-                } else if (
-                    (annotation_mode === "polygon") ||
-                    (annotation_mode === "polyline")
-                ) {
-                    // To avoid immediately closing polygons and polylines, we create/continue them on mouseup.
-                    this.begin_annotation(mouse_event);
                 }
                 break;
             case "right":
