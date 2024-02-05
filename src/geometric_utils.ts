@@ -90,7 +90,11 @@ export class GeometricUtils {
         const poly_pts: ULabelSpatialPayload2D = spatial_payload;
 
         // Initialize return value to null object
-        let ret: Object = {
+        let ret: {
+            "access": number,
+            "distance": number,
+            "point": [number, number]
+        } = {
             "access": null,
             "distance": null,
             "point": null
