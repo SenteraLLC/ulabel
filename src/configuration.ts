@@ -95,6 +95,8 @@ export class Configuration {
 
     public create_bbox_on_initial_crop: string = "f";
 
+    public toggle_brush_mode_keybind: string = "g"
+
     constructor(...kwargs: {[key: string]: unknown}[]) {
         this.modify_config(...kwargs)
     }

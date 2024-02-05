@@ -202,6 +202,12 @@ export class ULabel {
                     }
 
                     break; 
+                // Change to brush mode (for now, polygon only)
+                case ul.config.toggle_brush_mode_keybind:
+                    if (current_subtask.state.annotation_mode === "polygon") {
+                        ul.toggle_brush_mode(ul.state["last_move"])
+                    }
+                    break;
             }
         })
 
@@ -713,6 +719,7 @@ export class ULabel {
                 "is_in_edit": false,
                 "is_in_move": false,
                 "starting_complex_polygon": false, 
+                "is_in_brush_mode": false,
                 "edit_candidate": null,
                 "move_candidate": null,
 
@@ -888,6 +895,7 @@ export class ULabel {
             "demo_height": 40,
             "polygon_ender_size": 30,
             "edit_handle_size": 30,
+            "brush_size": 30,
 
             // Behavior on special interactions
             // "done_callback": fin_on_submit_hook,
@@ -2213,6 +2221,53 @@ export class ULabel {
         
         // Add to list of visible dialogs
         this.subtasks[this.state["current_subtask"]]["state"]["visible_dialogs"][ender_id] = {
+            "left": gmx / this.config["image_width"],
+            "top": gmy / this.config["image_height"],
+            "pin": "center"
+        };
+        this.reposition_dialogs();
+    }
+
+    toggle_brush_mode(mouse_event) {
+        let is_in_brush_mode = this.subtasks[this.state["current_subtask"]]["state"]["is_in_brush_mode"];
+        is_in_brush_mode = !is_in_brush_mode;
+        console.log("brush mode:", is_in_brush_mode);
+        if (is_in_brush_mode) {
+            let gmx = this.get_global_mouse_x(mouse_event);
+            let gmy = this.get_global_mouse_y(mouse_event);
+            this.create_brush_circle(gmx, gmy);
+        }
+    }
+
+    create_brush_circle(gmx, gmy) {
+        // Create brush circle id
+        const brush_circle_id = "brush_circle";
+
+        // Build brush circle html
+        const brush_circle_html = `
+        <a href="#" id="${brush_circle_id}" class="ender_outer">
+            <span id="${brush_circle_id}_inner" class="ender_inner"></span>
+        </a>`;
+        $("#dialogs__" + this.state["current_subtask"]).append(brush_circle_html);
+        $("#" + brush_circle_id).css({
+            "width": this.config["brush_size"] + "px",
+            "height": this.config["brush_size"] + "px",
+            "border-radius": this.config["brush_size"] / 2 + "px"
+        });
+        $("#" + brush_circle_id + "_inner").css({
+            "width": this.config["brush_size"] / 5 + "px",
+            "height": this.config["brush_size"] / 5 + "px",
+            "border-radius": this.config["brush_size"] / 10 + "px",
+            "top": 2 * this.config["brush_size"] / 5 + "px",
+            "left": 2 * this.config["brush_size"] / 5 + "px"
+        });
+        $("#" + brush_circle_id).css({
+            "left": gmx + "px",
+            "top": gmy + "px"
+        });
+
+        // Add this id to the list of dialogs with managed positions
+        this.subtasks[this.state["current_subtask"]]["state"]["visible_dialogs"][brush_circle_id] = {
             "left": gmx / this.config["image_width"],
             "top": gmy / this.config["image_height"],
             "pin": "center"
