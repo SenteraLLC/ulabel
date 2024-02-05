@@ -577,9 +577,9 @@ export class ULabel {
                 // Mark as not new
                 cand["new"] = false;
 
-                // Set to default line size if there is none
+                // Set to default line size if there is none, check for null and undefined using ==
                 if (
-                    (!("line_size" in cand)) || (cand["line_size"] === null)
+                    (!("line_size" in cand)) || (cand["line_size"] == null)
                 ) {
                     cand["line_size"] = ul.state["line_size"];
                 }
@@ -2054,7 +2054,8 @@ export class ULabel {
             subtask = this.state["current_subtask"];
         }
         let frame = this.subtasks[subtask]["annotations"]["access"][id]["frame"];
-        if (frame === null || frame === "undefined" || frame === this.state["current_frame"]) {
+        // Keep `==` here, we want to catch null and undefined
+        if (frame == null || frame == "undefined" || frame == this.state["current_frame"]) {
             this.draw_annotation(this.subtasks[subtask]["annotations"]["access"][id], cvs_ctx, false, offset, subtask);
         }
     }
