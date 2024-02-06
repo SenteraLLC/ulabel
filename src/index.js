@@ -1518,6 +1518,7 @@ export class ULabel {
                     active_index = parseInt(access_str[0], 10);
                     active_spatial_payload = spatial_payload.at(active_index);
                     access_str = access_str[1];
+                    this.remove_polygon_fills_cache(annid);
                 }
                 var bas = parseInt(access_str, 10);
                 var dif = parseFloat(access_str) - bas;
@@ -1817,8 +1818,15 @@ export class ULabel {
         }
 
         // For polygons, go back through and unfill the holes in all the polygons
+        let polygon_fills;
         if (spatial_type === "polygon" && spatial_payload.length > 1) {
-            let polygon_fills = GeometricUtils.get_polygon_fills(spatial_payload);
+            // used cached polygon fills if they exist
+            if ("polygon_fills" in annotation_object) {
+                polygon_fills = annotation_object["polygon_fills"] 
+            } else {
+                polygon_fills = GeometricUtils.get_polygon_fills(spatial_payload);
+            }
+
             for (let polygon_fill of polygon_fills) {
                 if (polygon_fill.spatial_payload.length < 3) {
                     continue;
@@ -1839,6 +1847,9 @@ export class ULabel {
                 ctx.closePath();
                 ctx.fill();
             }
+
+            // To speed up repeated drawing, save the polygon fills
+            annotation_object["polygon_fills"] = polygon_fills;
         }
 
         // Reset globals
@@ -2249,6 +2260,13 @@ export class ULabel {
             "pin": "center"
         };
         this.reposition_dialogs();
+    }
+
+    remove_polygon_fills_cache(annotation_id) {
+        const annotation = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annotation_id];
+        if ("polygon_fills" in annotation) {
+            delete annotation["polygon_fills"];
+        }
     }
 
     show_edit_suggestion(nearest_point, currently_exists) {
@@ -3305,6 +3323,7 @@ export class ULabel {
         // TODO(3d)
         if (this.subtasks[this.state["current_subtask"]]["annotations"]["access"][unq_id]["spatial_type"] === "polygon") {
             this.destroy_polygon_ender(unq_id);
+            this.remove_polygon_fills_cache(unq_id);
         }
         else if (this.subtasks[this.state["current_subtask"]]["annotations"]["access"][unq_id]["spatial_type"] === "polyline") {
             // Destroy enders/linkers for polyline
@@ -3454,6 +3473,8 @@ export class ULabel {
                     if (spatial_type === "polygon") {
                         // for polygons, the active spatial payload is the last array of points in the spatial payload
                         active_spatial_payload = spatial_payload.at(-1);
+                        // remove cached polygon fills
+                        this.remove_polygon_fills_cache(actid);
                     }
                     // Store number of keypoints for easy access
                     n_kpts = active_spatial_payload.length;
@@ -3563,6 +3584,8 @@ export class ULabel {
         if (spatial_type === "polygon") {
             // For polygons, the active spatial payload is the last array of points in the spatial payload
             active_spatial_payload = spatial_payload.at(-1);
+            // remove cached polygon fills
+            this.remove_polygon_fills_cache(undo_payload.actid);
         }
         // Get the last point in the active spatial payload
         active_spatial_payload.pop();
@@ -3616,6 +3639,8 @@ export class ULabel {
         current_subtask["state"]["starting_complex_polygon"] = true;
         // mark in progress
         current_subtask["state"]["is_in_progress"] = true;
+        // remove cached polygon fills
+        this.remove_polygon_fills_cache(active_id);
         
         this.record_action({
             act_type: "start_complex_polygon",
@@ -3646,6 +3671,7 @@ export class ULabel {
             // Mark that we're done here
             current_subtask["state"]["active_id"] = null;
             current_subtask["state"]["is_in_progress"] = false;
+            this.remove_polygon_fills_cache(undo_payload.actid);
         }
     }
 
@@ -3670,6 +3696,7 @@ export class ULabel {
                 this.undo_action(action);
             }
         }
+        this.remove_polygon_fills_cache(undo_payload.actid);
     }
 
     begin_edit(mouse_event) {
@@ -3760,6 +3787,7 @@ export class ULabel {
                 case "polygon":
                     this.set_with_access_string(active_id, current_subtask["state"]["edit_candidate"]["access"], mouse_location);
                     this.rebuild_containing_box(active_id);
+                    this.remove_polygon_fills_cache(active_id);
                     this.redraw_all_annotations(this.state["current_subtask"], null, true); // tobuffer
                     current_subtask["state"]["edit_candidate"]["point"] = mouse_location;
                     this.show_edit_suggestion(current_subtask["state"]["edit_candidate"], true);
@@ -3824,8 +3852,8 @@ export class ULabel {
             undo_payload.starting_x,
             undo_payload.starting_y
         ];
-
-        switch (annotations[active_id]["spatial_type"]) {
+        const spatial_type = annotations[active_id]["spatial_type"]
+        switch (spatial_type) {
             case "bbox":
                 this.set_with_access_string(active_id, undo_payload.edit_candidate["access"], mouse_location, true);
                 this.rebuild_containing_box(active_id);
@@ -3841,6 +3869,10 @@ export class ULabel {
                 break;
             case "polygon":
             case "polyline":
+                if (spatial_type === "polygon") {
+                    // remove cached polygon fills
+                    this.remove_polygon_fills_cache(active_id);
+                }
                 this.set_with_access_string(active_id, undo_payload.edit_candidate["access"], mouse_location, true);
                 this.rebuild_containing_box(active_id);
                 this.redraw_all_annotations(this.state["current_subtask"], null, true); // tobuffer
@@ -3882,7 +3914,8 @@ export class ULabel {
         ];
         const cur_loc = this.get_with_access_string(redo_payload.actid, redo_payload.edit_candidate["access"]);
         // TODO(3d)
-        switch (annotations[actid]["spatial_type"]) {
+        const spatial_type = annotations[actid]["spatial_type"]
+        switch (spatial_type) {
             case "bbox":
                 this.set_with_access_string(actid, redo_payload.edit_candidate["access"], ms_loc);
                 this.rebuild_containing_box(actid);
@@ -3898,6 +3931,10 @@ export class ULabel {
                 break;
             case "polygon":
             case "polyline":
+                if (spatial_type === "polygon") {
+                    // remove cached polygon fills
+                    this.remove_polygon_fills_cache(actid);
+                }
                 this.set_with_access_string(actid, redo_payload.edit_candidate["access"], ms_loc, false);
                 this.rebuild_containing_box(actid);
                 this.redraw_all_annotations(this.state["current_subtask"], null, true); // tobuffer
@@ -4071,6 +4108,7 @@ export class ULabel {
                     }, redoing);
                     this.destroy_polygon_ender(active_id);
                 }
+                this.remove_polygon_fills_cache(active_id);
                 this.redraw_all_annotations(this.state["current_subtask"]); // TODO: buffer
                 
                 break;
@@ -4167,6 +4205,8 @@ export class ULabel {
         if (spatial_type === "polygon") {
             // For polygons, the active spatial payload is the last array of points in the spatial payload
             active_spatial_payload = spatial_payload.at(-1);
+            // remove cached polygon fills
+            this.remove_polygon_fills_cache(undo_payload.actid);
         }
         let n_kpts = active_spatial_payload.length;
         if (spatial_type === "polyline" && undo_payload.popped) {
@@ -4210,6 +4250,9 @@ export class ULabel {
         let actid = this.subtasks[this.state["current_subtask"]]["state"]["active_id"];
         switch (this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_type"]) {
             case "polygon":
+                this.remove_polygon_fills_cache(actid);
+                this.record_finish_edit(actid);
+                break;
             case "polyline":
             case "bbox":
             case "bbox3":
@@ -4299,6 +4342,8 @@ export class ULabel {
 
         switch (spatial_type) {
             case "polygon":
+                this.remove_polygon_fills_cache(active_id);
+                break;
             case "polyline":
             case "bbox":
             case "bbox3":
@@ -4356,6 +4401,7 @@ export class ULabel {
                 // for polygons, we need to move the points in each part of the spatial payload
                 if (spatial_type === "polygon") {
                     active_spatial_payload = spatial_payload[i];
+                    this.remove_polygon_fills_cache(active_id);
                 }
 
 
@@ -4419,6 +4465,7 @@ export class ULabel {
             // for polygons, we need to move the points in each part of the spatial payload
             if (spatial_type === "polygon") {
                 active_spatial_payload = spatial_payload[i];
+                this.remove_polygon_fills_cache(active_id);
             }
         
             // TODO(3d)
