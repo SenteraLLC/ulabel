@@ -1816,24 +1816,54 @@ export class ULabel {
             }           
         }
 
-        // For polygons, go back through and unfill the intersections of all the polygons
+        // For polygons, go back through and unfill the holes in all the polygons
         if (spatial_type === "polygon" && spatial_payload.length > 1) {
-            let intersections = GeometricUtils.get_polygon_intersections(spatial_payload);
-            for (let intersection of intersections) {
-                if (intersection.length < 3) {
+            let polygon_fills = GeometricUtils.get_polygon_fills(spatial_payload);
+            for (let polygon_fill of polygon_fills) {
+                if (polygon_fill.spatial_payload.length < 3) {
                     continue;
                 }
-                // Clear out the intersection
-                ctx.globalCompositeOperation = 'destination-out';
+                // Clear out the intersection if a hole, else fill it in
+                if (polygon_fill.is_hole) {
+                    ctx.globalCompositeOperation =  'destination-out';
+                    ctx.globalAlpha = 1.0;
+                } else {
+                    ctx.globalCompositeOperation = 'source-over';
+                    ctx.globalAlpha = 0.2;
+                }
                 ctx.beginPath();
-                ctx.moveTo((intersection[0][0] + diffX) * px_per_px, (intersection[0][1] + diffY) * px_per_px);
-                for (let pti = 1; pti < intersection.length; pti++) {
-                    ctx.lineTo((intersection[pti][0] + diffX) * px_per_px, (intersection[pti][1] + diffY) * px_per_px);
+                ctx.moveTo((polygon_fill.spatial_payload[0][0] + diffX) * px_per_px, (polygon_fill.spatial_payload[0][1] + diffY) * px_per_px);
+                for (let pti = 1; pti < polygon_fill.spatial_payload.length; pti++) {
+                    ctx.lineTo((polygon_fill.spatial_payload[pti][0] + diffX) * px_per_px, (polygon_fill.spatial_payload[pti][1] + diffY) * px_per_px);
                 }
                 ctx.closePath();
                 ctx.fill();
             }
         }
+
+        // Reset globals
+        ctx.globalCompositeOperation = "source-over";
+        ctx.globalAlpha = 1.0;
+
+        // Lastly, re-draw all of the polygons' borders
+        if (spatial_type === "polygon") {
+            for (let i = 0; i < n_iters; i++) {
+                active_spatial_payload = spatial_payload[i];
+                
+                // Draw the borders
+                const pts = active_spatial_payload;
+                if (pts.length > 0) {
+                    ctx.beginPath();
+                    ctx.moveTo((pts[0][0] + diffX) * px_per_px, (pts[0][1] + diffY) * px_per_px);
+                    for (let pti = 1; pti < pts.length; pti++) {
+                        ctx.lineTo((pts[pti][0] + diffX) * px_per_px, (pts[pti][1] + diffY) * px_per_px);
+                    }
+                    ctx.stroke();
+                }
+            }
+        }
+
+
     }
 
     draw_contour(annotation_object, ctx, demo = false, offset = null, subtask = null) {

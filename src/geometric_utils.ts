@@ -2,10 +2,11 @@ const turf = require('@turf/turf');
 
 export type Point2D = [number, number]
 export type Point3D = [number, number, number]
+export type LineSegment2D = [Point2D, Point2D]
 export type ULabelSpatialPayload2D = Point2D[]
 export type ULabelSpatialPayload3D = Point3D[]
 export type PointAccessObject = {
-    "access": String | number, // access string or number that acts as the index of the point in the original spatial payload
+    "access": String | number, // Access string or number that acts as the index of the point in the original spatial payload
     "distance": number,
     "point": Point2D
 }
@@ -13,6 +14,11 @@ export type LineEquation = {
     "a": number,
     "b": number,
     "c": number
+}
+export type PolygonFill = {
+    "spatial_payload": ULabelSpatialPayload2D,
+    "is_hole": boolean
+    "n_polys_containing": number
 }
 
 export class GeometricUtils {
@@ -33,6 +39,11 @@ export class GeometricUtils {
             pt1[0]*(1.0 - prop) + pt2[0]*prop,
             pt1[1]*(1.0 - prop) + pt2[1]*prop
         ];
+    }
+
+    // Check if two points are equal
+    public static points_are_equal(pt1: Point2D, pt2: Point2D): boolean {
+        return (pt1[0] === pt2[0]) && (pt1[1] === pt2[1]);
     }
 
     // Given two points, return the line that goes through them in the form of
@@ -97,11 +108,51 @@ export class GeometricUtils {
         const seg_length: number = Math.sqrt((kp2[0] - kp1[0])*(kp2[0] - kp1[0]) + (kp2[1] - kp1[1])*(kp2[1] - kp1[1]));
         const kprop: number = Math.sqrt((nrx - kp1[0])*(nrx - kp1[0]) + (nry - kp1[1])*(nry - kp1[1]))/seg_length;
 
-        // return object with info about the point
+        // Return object with info about the point
         return {
             "dst": dst,
             "prop": kprop
         };
+    }
+
+    // Check if two line segments intersect
+    public static line_segments_intersect(line1: LineSegment2D, line2: LineSegment2D): boolean {
+        let x1: number, y1: number, x2: number, y2: number, x3: number, y3: number, x4: number, y4: number;
+        [[x1, y1], [x2, y2]] = line1;
+        [[x3, y3], [x4, y4]] = line2;
+        const dx1: number = x2 - x1;
+        const dy1: number = y2 - y1;
+        const dx2: number = x4 - x3;
+        const dy2: number = y4 - y3;
+        const d: number = dx1*dy2 - dy1*dx2;
+        if (d === 0) return false;
+        const dx3: number = x1 - x3;
+        const dy3: number = y1 - y3;
+        const t: number = (dx3*dy2 - dy3*dx2)/d;
+        if (t < 0 || t > 1) return false;
+        const u: number = (dx3*dy1 - dy3*dx1)/d;
+        if (u < 0 || u > 1) return false;
+    }
+
+    // Check if two line segments are equal
+    public static line_segments_are_equal(line1: LineSegment2D, line2: LineSegment2D): boolean {
+        return (
+            (line1[0][0] === line2[0][0]) &&
+            (line1[0][1] === line2[0][1]) &&
+            (line1[1][0] === line2[1][0]) &&
+            (line1[1][1] === line2[1][1])
+        );
+    }
+
+    // Check if two line segments are on the same line
+    public static line_segments_are_on_same_line(line1: LineSegment2D, line2: LineSegment2D): boolean {
+        const eq1: LineEquation = GeometricUtils.get_line_equation_through_points(line1[0], line1[1]);
+        const eq2: LineEquation = GeometricUtils.get_line_equation_through_points(line2[0], line2[1]);
+        return (
+            (eq1["a"] === eq2["a"]) &&
+            (eq1["b"] === eq2["b"]) &&
+            (eq1["c"] === eq2["c"])
+        );
     }
 
     // Return the point on a polygon that's closest to a reference along with its distance
@@ -153,6 +204,36 @@ export class GeometricUtils {
         }
     }
 
+    // Determine the polygon intersections that should be considered filled or holes
+    public static get_polygon_fills(polygons: ULabelSpatialPayload2D[]): PolygonFill[] {
+        let ret: PolygonFill[] = [];
+        
+        // Continue getting intersections until there are no more
+        let intersections: ULabelSpatialPayload2D[] = GeometricUtils.get_polygon_intersections(polygons);
+        // An intersection is a hole if it's inside an even number of polygons (including itself)
+        for (let i: number = 0; i < intersections.length; i++) {
+            let intersection: ULabelSpatialPayload2D = intersections[i];
+            let is_hole: boolean = true;
+            let n_polys_containing: number = 0;
+            // Shrink the intersection so as to not be inclusive of the boundary
+            let shrunk_intersection: ULabelSpatialPayload2D = GeometricUtils.scale_polygon(intersection, 0.95);
+            for (let j: number = 0; j < polygons.length; j++) {
+                let poly: ULabelSpatialPayload2D = polygons[j];
+                // check if the polygon and intersection are equal or if the shrunken intersection is within the polygon
+                if (GeometricUtils.polygons_are_equal(poly, intersection) || GeometricUtils.polygon_is_within_polygon(shrunk_intersection, poly)) {
+                    is_hole = !is_hole;
+                    n_polys_containing++;
+                }
+            }
+            ret.push({
+                "spatial_payload": intersection,
+                "is_hole": is_hole,
+                "n_polys_containing": n_polys_containing
+            });
+        }
+        return ret;
+    }
+
     // Return a list of polygons that define all intersections between a list of polygons
     public static get_polygon_intersections(polygons: ULabelSpatialPayload2D[]): ULabelSpatialPayload2D[] {
         let ret: ULabelSpatialPayload2D[] = [];
@@ -163,8 +244,18 @@ export class GeometricUtils {
                 // Ensure both polygons are closed
                 if (GeometricUtils.is_polygon_closed(poly1) && GeometricUtils.is_polygon_closed(poly2)) {
                     let intersection: ULabelSpatialPayload2D = GeometricUtils.get_polygon_intersection_single(poly1, poly2);
-                    if (intersection != null) {
-                        ret.push(intersection);
+                    if (intersection != null) {       
+                        // Don't add duplicate intersections
+                        let is_duplicate: boolean = false;
+                        for (let k: number = 0; k < ret.length; k++) {
+                           if (GeometricUtils.polygons_are_equal(ret[k], intersection)) {
+                               is_duplicate = true;
+                               break;
+                           }
+                        }
+                        if (!is_duplicate) {
+                            ret.push(intersection);
+                        }
                     }
                 }
             }
@@ -175,29 +266,156 @@ export class GeometricUtils {
     // Return the intersection of two polygons
     public static get_polygon_intersection_single(poly1: ULabelSpatialPayload2D, poly2: ULabelSpatialPayload2D): ULabelSpatialPayload2D {
         // Convert to turf polygons
-        let poly1_turf = turf.polygon([poly1]);
-        let poly2_turf = turf.polygon([poly2]);
-        
-        // Find intersection
-        let intersection = turf.intersect(poly1_turf, poly2_turf);
-        if (intersection === null) {
+        try {
+            let poly1_turf = turf.polygon([poly1]);
+            let poly2_turf = turf.polygon([poly2]);
+            
+            // Find intersection
+            let intersection = turf.intersect(poly1_turf, poly2_turf);
+            if (intersection === null) {
+                return null;
+            } else {
+                // Convert back to ULabelSpatialPayload2D
+                return intersection.geometry.coordinates[0];
+            }
+        } catch (e) {
             return null;
-        } else {
-            // Convert back to ULabelSpatialPayload2D
-            return intersection.geometry.coordinates[0];
         }
     }
-
 
     // Check if polygon is closed, i.e. first and last points are the same and there are at least 3 points
     public static is_polygon_closed(poly: ULabelSpatialPayload2D): boolean {
         let ret: boolean = false;
         if (poly.length > 2) {
             try {
-                return poly[0][0] === poly.at(-1)[0] && poly[0][1] === poly.at(-1)[1];
+                ret = poly[0][0] === poly.at(-1)[0] && poly[0][1] === poly.at(-1)[1];
             } catch (e) {}
         }
         return ret;
+    }
+
+    // Check if two polygons are equal
+    public static polygons_are_equal(poly1: ULabelSpatialPayload2D, poly2: ULabelSpatialPayload2D): boolean {
+        // Check if the polygons have the same number of points
+        if (poly1.length !== poly2.length) {
+            return false;
+        }
+        // Check that each point in poly1 is in poly2
+        for (let i: number = 0; i < poly1.length; i++) {
+            let found: boolean = false;
+            for (let j: number = 0; j < poly2.length; j++) {
+                if (poly1[i][0] === poly2[j][0] && poly1[i][1] === poly2[j][1]) {
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    // Check if two polygons share an edge, ie if they contain an identical line segment
+    public static polygons_share_edge(poly1: ULabelSpatialPayload2D, poly2: ULabelSpatialPayload2D): boolean {
+        for (let i: number = 0; i < poly1.length-1; i++) {
+            let line1: LineSegment2D = [poly1[i], poly1[i+1]];
+            // skip if the points are the same
+            if (GeometricUtils.points_are_equal(line1[0], line1[1])) {
+                continue;
+            }
+            for (let j: number = 0; j < poly2.length-1; j++) {
+                let line2: LineSegment2D = [poly2[j], poly2[j+1]];
+                // skip if the points are the same
+                if (GeometricUtils.points_are_equal(line2[0], line2[1])) {
+                    continue;
+                }
+                if (GeometricUtils.line_segments_are_on_same_line(line1, line2)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+
+    }
+
+    // Scale a polygon about a center point, or the centroid if no center is provided
+    public static scale_polygon(poly: ULabelSpatialPayload2D, scale, center: Point2D = null): ULabelSpatialPayload2D {
+        let ret: ULabelSpatialPayload2D = [];
+        if (center === null) {
+            // use the centroid
+            center = GeometricUtils.get_centroid_of_polygon(poly);
+        }
+
+        for (let i: number = 0; i < poly.length; i++) {
+            let pt: Point2D = poly[i];
+            let new_x: number = center[0] + (pt[0] - center[0])*scale;
+            let new_y: number = center[1] + (pt[1] - center[1])*scale;
+            ret.push([new_x, new_y]);
+        }
+        return ret;
+    }
+
+    // Get the centroid of a polygon
+    public static get_centroid_of_polygon(poly: ULabelSpatialPayload2D): Point2D {
+        let x: number = 0;
+        let y: number = 0;
+        for (let i: number = 0; i < poly.length; i++) {
+            x += poly[i][0];
+            y += poly[i][1];
+        }
+        return [x/poly.length, y/poly.length];
+    }
+
+    // Check if poly1 is completely within poly2 by checking if any line segment of poly1 intersects with poly2
+    public static polygon_is_within_polygon(poly1: ULabelSpatialPayload2D, poly2: ULabelSpatialPayload2D): boolean {
+        if (GeometricUtils.is_polygon_closed(poly1) && GeometricUtils.is_polygon_closed(poly2)) {
+            return turf.booleanWithin(turf.polygon([poly1]), turf.polygon([poly2]));
+
+            // // First, check that all points of poly1 are within poly2
+            // for (let i: number = 0; i < poly1.length; i++) {
+            //     if (!GeometricUtils.point_is_within_polygon(poly1[i], poly2)) {
+            //     // if (!turf.booleanPointInPolygon(poly1[i], turf.polygon([poly2]))) {
+            //         console.log("point not in polygon", poly1[i])
+            //         console.log("polygon", poly2)
+            //         return false;
+            //     }
+            // }
+            
+            // // To handle convex and concave polygons, we check to see if any line segment of poly1 intersects with poly2
+            // for (let i: number = 0; i < poly1.length-1; i++) {
+            //     let line: LineSegment2D = [poly1[i], poly1[i+1]];
+            //     for (let j: number = 0; j < poly2.length-1; j++) {
+            //         let line2: LineSegment2D = [poly2[j], poly2[j+1]];
+            //         if (GeometricUtils.line_segments_intersect(line, line2)) {
+            //             console.log("line segment intersects")
+            //             return false;
+            //         }
+            //     }
+            // }
+            // return true;
+        } else {
+            return false;
+        }
+    }
+
+    // Check if a point is within a polygon
+    public static point_is_within_polygon(point: Point2D, poly: ULabelSpatialPayload2D): boolean {
+        // https://stackoverflow.com/questions/42457842/calculate-if-point-coordinates-is-inside-polygon-with-concave-and-convex-angles?rq=3
+        let is_within: boolean = false;
+        let test_x: number, test_y: number, p1_x: number, p1_y: number, p2_x: number, p2_y: number; 
+        [test_x, test_y] = point;
+
+        for (let i: number = 0; i < poly.length-1; i++) {
+            [p1_x, p1_y] = poly[i];
+            [p2_x, p2_y] = poly[i+1];
+            if ((p1_y<test_y && p2_y>=test_y) || (p2_y<test_y && p1_y>=test_y)) { // This edge is crossing the horizontal ray of testpoint
+                if ((p1_x+(test_y-p1_y)/(p2_y-p1_y)*(p2_x-p1_x)) < test_x) { // Checking special cases (holes, self-crossings, self-overlapping, horizontal edges, etc.)
+                    is_within = !is_within;
+                }
+            }
+        }
+        return is_within
     }
 
     public static get_nearest_point_on_bounding_box(ref_x: number, ref_y: number, spatial_payload: ULabelSpatialPayload2D, dstmax: number = Infinity): PointAccessObject {
