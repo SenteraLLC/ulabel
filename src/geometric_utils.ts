@@ -1,4 +1,5 @@
 const turf = require('@turf/turf');
+const polygonClipping = require('polygon-clipping');
 
 export type Point2D = [number, number]
 export type Point3D = [number, number, number]
@@ -153,6 +154,22 @@ export class GeometricUtils {
             (eq1["b"] === eq2["b"]) &&
             (eq1["c"] === eq2["c"])
         );
+    }
+
+    // Merge parts of poly2 into poly1 if possible by finding their intersection. Returns a new poly1 and poly2, or null on failure.
+    public static merge_polygons_at_intersection(poly1: ULabelSpatialPayload2D, poly2: ULabelSpatialPayload2D): ULabelSpatialPayload2D[] {
+        // Find the intersection, if it exists
+        let intersection: ULabelSpatialPayload2D = GeometricUtils.get_polygon_intersection_single(poly1, poly2);
+        // If there's no intersection, return null
+        if (intersection === null) {
+            return null;
+        }
+        // If there is an intersection, add the non-intersecting parts of poly2 to poly1
+        let non_intersection: ULabelSpatialPayload2D[] = polygonClipping.difference([poly2], [intersection]);
+        console.log("non_intersection", non_intersection)
+        let new_poly = polygonClipping.union([poly1], non_intersection);
+        console.log("new_poly", new_poly)
+        return [new_poly[0][0], intersection];
     }
 
     // Return the point on a polygon that's closest to a reference along with its distance
@@ -371,29 +388,6 @@ export class GeometricUtils {
     public static polygon_is_within_polygon(poly1: ULabelSpatialPayload2D, poly2: ULabelSpatialPayload2D): boolean {
         if (GeometricUtils.is_polygon_closed(poly1) && GeometricUtils.is_polygon_closed(poly2)) {
             return turf.booleanWithin(turf.polygon([poly1]), turf.polygon([poly2]));
-
-            // // First, check that all points of poly1 are within poly2
-            // for (let i: number = 0; i < poly1.length; i++) {
-            //     if (!GeometricUtils.point_is_within_polygon(poly1[i], poly2)) {
-            //     // if (!turf.booleanPointInPolygon(poly1[i], turf.polygon([poly2]))) {
-            //         console.log("point not in polygon", poly1[i])
-            //         console.log("polygon", poly2)
-            //         return false;
-            //     }
-            // }
-            
-            // // To handle convex and concave polygons, we check to see if any line segment of poly1 intersects with poly2
-            // for (let i: number = 0; i < poly1.length-1; i++) {
-            //     let line: LineSegment2D = [poly1[i], poly1[i+1]];
-            //     for (let j: number = 0; j < poly2.length-1; j++) {
-            //         let line2: LineSegment2D = [poly2[j], poly2[j+1]];
-            //         if (GeometricUtils.line_segments_intersect(line, line2)) {
-            //             console.log("line segment intersects")
-            //             return false;
-            //         }
-            //     }
-            // }
-            // return true;
         } else {
             return false;
         }

@@ -30,6 +30,7 @@
   "dependencies": {
     "@turf/turf": "^6.5.0",
     "jquery": "^3.5.1",
+    "polygon-clipping": "^0.15.7",
     "uuidv4": "^6.2.6"
   },
   "devDependencies": {

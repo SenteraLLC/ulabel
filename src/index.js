@@ -635,8 +635,13 @@ export class ULabel {
                     cand["annotation_meta"] = {};
                 }
 
-                // Ensure that spatial type is allowed
-                // TODO do I really want to do this?
+                // TODO: util to deduce holes from spatial payload if not provided
+                if (
+                    !("spatial_payload_holes" in cand)
+                ) {
+                    cand["spatial_payload_holes"] = [false];
+                }
+
 
                 // Ensure that classification payloads are compatible with config
                 cand.ensure_compatible_classification_payloads(ul.subtasks[subtask_key]["class_ids"])
@@ -1808,71 +1813,77 @@ export class ULabel {
                 ctx.stroke();
             }
 
-            // If polygon is closed, fill it
+            // If polygon is closed, fill it or draw a hole
             if (spatial_type === "polygon" && GeometricUtils.is_polygon_closed(active_spatial_payload)) {
+                if (annotation_object["spatial_payload_holes"][i]) {
+                    ctx.globalCompositeOperation =  'destination-out';
+                } else {
+                    ctx.globalAlpha = 0.2;
+                }
                 ctx.closePath();
-                ctx.globalAlpha = 0.2;
                 ctx.fill();
+                // Reset globals
+                ctx.globalCompositeOperation = "source-over";
                 ctx.globalAlpha = 1.0;
             }           
         }
 
         // For polygons, go back through and unfill the holes in all the polygons
-        let polygon_fills;
-        if (spatial_type === "polygon" && spatial_payload.length > 1) {
-            // used cached polygon fills if they exist
-            if ("polygon_fills" in annotation_object) {
-                polygon_fills = annotation_object["polygon_fills"] 
-            } else {
-                polygon_fills = GeometricUtils.get_polygon_fills(spatial_payload);
-            }
+        // let polygon_fills;
+        // if (spatial_type === "polygon" && spatial_payload.length > 1) {
+        //     // used cached polygon fills if they exist
+        //     if ("polygon_fills" in annotation_object) {
+        //         polygon_fills = annotation_object["polygon_fills"] 
+        //     } else {
+        //         polygon_fills = GeometricUtils.get_polygon_fills(spatial_payload);
+        //     }
 
-            for (let polygon_fill of polygon_fills) {
-                if (polygon_fill.spatial_payload.length < 3) {
-                    continue;
-                }
-                // Clear out the intersection if a hole, else fill it in
-                if (polygon_fill.is_hole) {
-                    ctx.globalCompositeOperation =  'destination-out';
-                    ctx.globalAlpha = 1.0;
-                } else {
-                    ctx.globalCompositeOperation = 'source-over';
-                    ctx.globalAlpha = 0.2;
-                }
-                ctx.beginPath();
-                ctx.moveTo((polygon_fill.spatial_payload[0][0] + diffX) * px_per_px, (polygon_fill.spatial_payload[0][1] + diffY) * px_per_px);
-                for (let pti = 1; pti < polygon_fill.spatial_payload.length; pti++) {
-                    ctx.lineTo((polygon_fill.spatial_payload[pti][0] + diffX) * px_per_px, (polygon_fill.spatial_payload[pti][1] + diffY) * px_per_px);
-                }
-                ctx.closePath();
-                ctx.fill();
-            }
+        //     for (let polygon_fill of polygon_fills) {
+        //         if (polygon_fill.spatial_payload.length < 3) {
+        //             continue;
+        //         }
+        //         // Clear out the intersection if a hole, else fill it in
+        //         if (polygon_fill.is_hole) {
+        //             ctx.globalCompositeOperation =  'destination-out';
+        //             ctx.globalAlpha = 1.0;
+        //         } else {
+        //             ctx.globalCompositeOperation = 'source-over';
+        //             ctx.globalAlpha = 0.2;
+        //         }
+        //         ctx.beginPath();
+        //         ctx.moveTo((polygon_fill.spatial_payload[0][0] + diffX) * px_per_px, (polygon_fill.spatial_payload[0][1] + diffY) * px_per_px);
+        //         for (let pti = 1; pti < polygon_fill.spatial_payload.length; pti++) {
+        //             ctx.lineTo((polygon_fill.spatial_payload[pti][0] + diffX) * px_per_px, (polygon_fill.spatial_payload[pti][1] + diffY) * px_per_px);
+        //         }
+        //         ctx.closePath();
+        //         ctx.fill();
+        //     }
 
-            // To speed up repeated drawing, save the polygon fills
-            annotation_object["polygon_fills"] = polygon_fills;
-        }
+        //     // To speed up repeated drawing, save the polygon fills
+        //     annotation_object["polygon_fills"] = polygon_fills;
+        // }
 
-        // Reset globals
-        ctx.globalCompositeOperation = "source-over";
-        ctx.globalAlpha = 1.0;
+        // // Reset globals
+        // ctx.globalCompositeOperation = "source-over";
+        // ctx.globalAlpha = 1.0;
 
-        // Lastly, re-draw all of the polygons' borders
-        if (spatial_type === "polygon") {
-            for (let i = 0; i < n_iters; i++) {
-                active_spatial_payload = spatial_payload[i];
+        // // Lastly, re-draw all of the polygons' borders
+        // if (spatial_type === "polygon") {
+        //     for (let i = 0; i < n_iters; i++) {
+        //         active_spatial_payload = spatial_payload[i];
                 
-                // Draw the borders
-                const pts = active_spatial_payload;
-                if (pts.length > 0) {
-                    ctx.beginPath();
-                    ctx.moveTo((pts[0][0] + diffX) * px_per_px, (pts[0][1] + diffY) * px_per_px);
-                    for (let pti = 1; pti < pts.length; pti++) {
-                        ctx.lineTo((pts[pti][0] + diffX) * px_per_px, (pts[pti][1] + diffY) * px_per_px);
-                    }
-                    ctx.stroke();
-                }
-            }
-        }
+        //         // Draw the borders
+        //         const pts = active_spatial_payload;
+        //         if (pts.length > 0) {
+        //             ctx.beginPath();
+        //             ctx.moveTo((pts[0][0] + diffX) * px_per_px, (pts[0][1] + diffY) * px_per_px);
+        //             for (let pti = 1; pti < pts.length; pti++) {
+        //                 ctx.lineTo((pts[pti][0] + diffX) * px_per_px, (pts[pti][1] + diffY) * px_per_px);
+        //             }
+        //             ctx.stroke();
+        //         }
+        //     }
+        // }
 
 
     }
@@ -2269,6 +2280,78 @@ export class ULabel {
         }
     }
 
+    // Check if the newest complex layer can merge with each previous layer
+    merge_polygon_complex_layer(annotation_id, layer_idx = null) {
+        const annotation = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annotation_id];
+        if (annotation["spatial_type"] === "polygon" && annotation["spatial_payload"].length > 1) {
+            if (layer_idx === null) {
+                // Start with the newest layer
+                layer_idx = annotation["spatial_payload"].length - 1;
+            }
+            // console.log("layer_idx", layer_idx);
+            let spatial_payload = annotation["spatial_payload"];
+            // console.log(JSON.parse(JSON.stringify(spatial_payload)));
+            // Array<bool> where a true is present if that index of the spatial_payload is a hole
+            // Doesn't include a value for the last layer yet
+            let spatial_payload_holes = annotation["spatial_payload_holes"];
+            // console.log(JSON.parse(JSON.stringify(spatial_payload_holes)));
+            
+            // get the desired layer
+            let layer = spatial_payload[layer_idx];
+            let layer_is_hole = false;
+            // After merging with a previous layer, we'll check if that layer can merge with any of its previous layers
+            let next_layer_idxs = [];
+            // loop through all previous layers, starting from the last
+            for (let i = layer_idx - 1; i >= 0; i--) {
+                let prev_layer = spatial_payload[i];
+                // Try and merge the layers
+                let ret = GeometricUtils.merge_polygons_at_intersection(prev_layer, layer);
+                // null means the two layers don't intersect
+                if (ret === null) {
+                    continue;
+                }
+                // If they do intersect, then replace our layers with the result
+                [prev_layer, layer] = ret;
+                spatial_payload[i] = prev_layer;
+                if (i > 0) {
+                    next_layer_idxs.push(i);
+                }
+                // The last layer is a hole if the layer it merged into is not a hole
+                layer_is_hole = !spatial_payload_holes[i];
+
+                // if our last layer is completely inside the previous layer, then we're done
+                if (GeometricUtils.polygon_is_within_polygon(layer, prev_layer)) {
+                    // console.log("Completely within previous layer");
+                    break;
+                }
+            }
+
+            // If the layer still exists, then add it back to the spatial payload
+            if (layer.length > 0) {
+                spatial_payload[layer_idx] = layer;
+                if (layer_idx < spatial_payload_holes.length) {
+                    spatial_payload_holes[layer_idx] = layer_is_hole;
+                } else {
+                    spatial_payload_holes.push(layer_is_hole);
+                }
+            } else {
+                // If the layer is empty, then remove it from the spatial payload
+                spatial_payload.splice(layer_idx, 1);
+                if (layer_idx < spatial_payload_holes.length) {
+                    spatial_payload_holes.splice(layer_idx, 1);
+                }
+            }
+
+            // console.log(spatial_payload);
+            // console.log(spatial_payload_holes);
+
+            // console.log("next_layer_idxs", next_layer_idxs);
+            for (let idx of next_layer_idxs) {
+                this.merge_polygon_complex_layer(annotation_id, idx);
+            }
+        }
+    }
+
     show_edit_suggestion(nearest_point, currently_exists) {
         let esid = "edit_suggestion__" + this.state["current_subtask"];
         var esjq = $("#" + esid);
@@ -2539,6 +2622,9 @@ export class ULabel {
             "spatial_payload": spatial_payload,
             "classification_payloads": classification_payloads,
             "text_payload": ""
+        }
+        if (spatial_type === "polygon") {
+            new_annotation["spatial_payload_holes"] = [false];
         }
 
         // Add the new annotation to the annotation access and ordering
@@ -3249,6 +3335,10 @@ export class ULabel {
             "frame": frame,
             "text_payload": ""
         };
+        if (annotation_mode === "polygon") {
+            // First layer is always a fill, not a hole
+            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][unq_id]["spatial_payload_holes"] = [false];
+        }
         if (redoing) {
             this.set_id_dialog_payload_to_init(unq_id, init_id_payload);
         }
@@ -4107,6 +4197,7 @@ export class ULabel {
                         }
                     }, redoing);
                     this.destroy_polygon_ender(active_id);
+                    this.merge_polygon_complex_layer(active_id);
                 }
                 this.remove_polygon_fills_cache(active_id);
                 this.redraw_all_annotations(this.state["current_subtask"]); // TODO: buffer
