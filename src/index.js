@@ -4378,6 +4378,12 @@ export class ULabel {
                 // Get the idx of the edited layer and try and merge it
                 layer_idx = parseInt(access_str[0], 10)
                 this.merge_polygon_complex_layer(actid, layer_idx);
+                // Check if any other layers need to be merged
+                for (let i = 0; i < this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"].length; i++) {
+                    if (i !== layer_idx) {
+                        this.merge_polygon_complex_layer(actid, i);
+                    }
+                }
                 break;
             case "polyline":
             case "bbox":
