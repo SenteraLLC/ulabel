@@ -4181,6 +4181,9 @@ export class ULabel {
                 // If the shiftKey is held, we wait for the next click, which is handled in end_drag().
                 // When no shift key is held, we can finish the annotation
                 if (mouse_event != null && mouse_event.shiftKey) {
+                    // Render merged layers
+                    this.merge_polygon_complex_layer(active_id);
+                    // Start a new complex layer
                     this.start_complex_polygon(true);
                 } else {
                     // when completing a complex layer of a polygon, we record the action accordingly

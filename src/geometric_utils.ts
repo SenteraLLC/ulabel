@@ -166,9 +166,9 @@ export class GeometricUtils {
         }
         // If there is an intersection, add the non-intersecting parts of poly2 to poly1
         let non_intersection: ULabelSpatialPayload2D[] = polygonClipping.difference([poly2], [intersection]);
-        console.log("non_intersection", non_intersection)
+        // console.log("non_intersection", non_intersection)
         let new_poly = polygonClipping.union([poly1], non_intersection);
-        console.log("new_poly", new_poly)
+        // console.log("new_poly", new_poly)
         return [new_poly[0][0], intersection];
     }
 
