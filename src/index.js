@@ -2280,7 +2280,7 @@ export class ULabel {
         }
     }
 
-    // Check if the newest complex layer can merge with each previous layer
+    // Check if the newest complex layer can merge with each previous layer.
     merge_polygon_complex_layer(annotation_id, layer_idx = null, recursive_call = false, redoing = false) {
         const annotation = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annotation_id];
         if (annotation["spatial_type"] === "polygon" && annotation["spatial_payload"].length > 1) {
@@ -2356,6 +2356,8 @@ export class ULabel {
                         layer_idx: layer_idx,
                     }
                 }, redoing);
+                this.rebuild_containing_box(annotation_id);
+                this.redraw_all_annotations(this.state["current_subtask"])
             }
         }
     }
@@ -2363,6 +2365,8 @@ export class ULabel {
     // Undo the merging of layers by replacing the annotation with the undo payload
     merge_polygon_complex_layer__undo(undo_payload) {
         this.replace_annotation(undo_payload["actid"], undo_payload["annotation"]);
+        this.rebuild_containing_box(undo_payload["actid"]);
+        this.redraw_all_annotations(this.state["current_subtask"]);
     }
 
     // Replace an entire annotation with a new one. Generally used for undo/redo.
@@ -3890,6 +3894,7 @@ export class ULabel {
         // Convenience and readability
         const current_subtask = this.subtasks[this.state["current_subtask"]]
         const active_id = current_subtask["state"]["active_id"];
+        const access_str = current_subtask["state"]["edit_candidate"]["access"];
         // TODO big performance gains with buffered canvasses
         if (active_id && (active_id !== null)) {
             const mouse_location = [
@@ -3902,7 +3907,7 @@ export class ULabel {
                 case "bbox":
                 case "tbar":
                 case "polygon":
-                    this.set_with_access_string(active_id, current_subtask["state"]["edit_candidate"]["access"], mouse_location);
+                    this.set_with_access_string(active_id, access_str, mouse_location);
                     this.rebuild_containing_box(active_id);
                     this.remove_polygon_fills_cache(active_id);
                     this.redraw_all_annotations(this.state["current_subtask"], null, true); // tobuffer
@@ -3912,7 +3917,7 @@ export class ULabel {
                     break;
                 case "bbox3":
                     // TODO(new3d) Will not always want to set 3rd val -- editing is possible within an intermediate frame or frames
-                    this.set_with_access_string(active_id, current_subtask["state"]["edit_candidate"]["access"], [mouse_location[0], mouse_location[1], this.state["current_frame"]]);
+                    this.set_with_access_string(active_id, access_str, [mouse_location[0], mouse_location[1], this.state["current_frame"]]);
                     this.rebuild_containing_box(active_id);
                     this.redraw_all_annotations(null, null, true); // tobuffer
                     current_subtask["state"]["edit_candidate"]["point"] = mouse_location;
@@ -3920,7 +3925,7 @@ export class ULabel {
                     this.show_global_edit_suggestion(current_subtask["state"]["edit_candidate"]["annid"]);
                     break;
                 case "polyline":
-                    this.set_with_access_string(active_id, current_subtask["state"]["edit_candidate"]["access"], mouse_location);
+                    this.set_with_access_string(active_id, access_str, mouse_location);
                     this.rebuild_containing_box(active_id);
                     this.redraw_all_annotations(this.state["current_subtask"], null, true); // tobuffer
                     current_subtask["state"]["edit_candidate"]["point"] = mouse_location;
@@ -4229,10 +4234,9 @@ export class ULabel {
                         }
                     }, redoing);
                     this.destroy_polygon_ender(active_id);
+                    // Render merged layers. Also handles rebuilding containing box and redrawing
                     this.merge_polygon_complex_layer(active_id);
                 }
-                this.remove_polygon_fills_cache(active_id);
-                this.redraw_all_annotations(this.state["current_subtask"]); // TODO: buffer
                 
                 break;
             case "polyline":
@@ -4365,10 +4369,15 @@ export class ULabel {
     finish_edit() {
         // Record last point and redraw if necessary
         let actid = this.subtasks[this.state["current_subtask"]]["state"]["active_id"];
+        const access_str = this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"]["access"];
+        let layer_idx;
         switch (this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_type"]) {
             case "polygon":
                 this.remove_polygon_fills_cache(actid);
                 this.record_finish_edit(actid);
+                // Get the idx of the edited layer and try and merge it
+                layer_idx = parseInt(access_str[0], 10)
+                this.merge_polygon_complex_layer(actid, layer_idx);
                 break;
             case "polyline":
             case "bbox":
