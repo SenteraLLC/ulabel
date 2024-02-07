@@ -2281,20 +2281,18 @@ export class ULabel {
     }
 
     // Check if the newest complex layer can merge with each previous layer
-    merge_polygon_complex_layer(annotation_id, layer_idx = null) {
+    merge_polygon_complex_layer(annotation_id, layer_idx = null, recursive_call = false, redoing = false) {
         const annotation = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annotation_id];
         if (annotation["spatial_type"] === "polygon" && annotation["spatial_payload"].length > 1) {
+            let undo_annotation_payload = JSON.parse(JSON.stringify(annotation));
             if (layer_idx === null) {
                 // Start with the newest layer
                 layer_idx = annotation["spatial_payload"].length - 1;
             }
-            // console.log("layer_idx", layer_idx);
             let spatial_payload = annotation["spatial_payload"];
-            // console.log(JSON.parse(JSON.stringify(spatial_payload)));
             // Array<bool> where a true is present if that index of the spatial_payload is a hole
             // Doesn't include a value for the last layer yet
             let spatial_payload_holes = annotation["spatial_payload_holes"];
-            // console.log(JSON.parse(JSON.stringify(spatial_payload_holes)));
             
             // get the desired layer
             let layer = spatial_payload[layer_idx];
@@ -2321,7 +2319,6 @@ export class ULabel {
 
                 // if our last layer is completely inside the previous layer, then we're done
                 if (GeometricUtils.polygon_is_within_polygon(layer, prev_layer)) {
-                    // console.log("Completely within previous layer");
                     break;
                 }
             }
@@ -2342,14 +2339,30 @@ export class ULabel {
                 }
             }
 
-            // console.log(spatial_payload);
-            // console.log(spatial_payload_holes);
-
-            // console.log("next_layer_idxs", next_layer_idxs);
             for (let idx of next_layer_idxs) {
-                this.merge_polygon_complex_layer(annotation_id, idx);
+                this.merge_polygon_complex_layer(annotation_id, idx, true);
+            }
+
+            if (!recursive_call) {
+                this.record_action({
+                    act_type: "merge_polygon_complex_layer",
+                    frame: this.state["current_frame"],
+                    undo_payload: {
+                        actid: annotation_id,
+                        annotation: undo_annotation_payload,
+                    },
+                    redo_payload: {
+                        actid: annotation_id,
+                        layer_idx: layer_idx,
+                    }
+                }, redoing);
             }
         }
+    }
+
+    // Undo the merging of layers by replacing the annotation with the undo payload
+    merge_polygon_complex_layer__undo(undo_payload) {
+        this.replace_annotation(undo_payload["actid"], undo_payload["annotation"]);
     }
 
     // Replace an entire annotation with a new one. Generally used for undo/redo.
@@ -3109,6 +3122,12 @@ export class ULabel {
             case "finish_complex_polygon":
                 this.finish_complex_polygon__undo(action.undo_payload);
                 break;
+            case "merge_polygon_complex_layer":
+                this.merge_polygon_complex_layer__undo(action.undo_payload);
+                // As this action was original performed internally, the user
+                // expects ctrl+z to the previous action as well
+                this.undo();
+                break;
             default:
                 console.log("Undo error :(");
                 break;
@@ -3149,6 +3168,9 @@ export class ULabel {
                 break;
             case "start_complex_polygon":
                 this.start_complex_polygon(null, action.redo_payload);
+                break;
+            case "merge_polygon_complex_layer":
+                this.merge_polygon_complex_layer(action.redo_payload.actid, action.redo_payload.layer_id, false, true);
                 break;
             default:
                 console.log("Redo error :(");
@@ -3775,9 +3797,6 @@ export class ULabel {
         // until we get back to the start_complex_polygon action
         const current_subtask = this.subtasks[this.state["current_subtask"]]
 
-        // Since polygon merges may have significantly altered payloads, we just replace the annotation
-        this.replace_annotation(undo_payload.actid, undo_payload.annotation);
-
         // Undo the finish_annotation
         this.finish_annotation__undo(undo_payload);
         
@@ -4175,7 +4194,7 @@ export class ULabel {
 
         // Record last point and redraw if necessary
         // TODO(3d)
-        let n_kpts, start_pt, popped, act_type, undo_annotation_payload;
+        let n_kpts, start_pt, popped, act_type;
         switch (annotation["spatial_type"]) {
             case "polygon":
                 // For polygons, the active spatial payload is the last array of points in the spatial payload
