@@ -583,9 +583,9 @@ export class ULabel {
                 // Mark as not new
                 cand["new"] = false;
 
-                // Set to default line size if there is none
+                // Set to default line size if there is none, check for null and undefined using ==
                 if (
-                    (!("line_size" in cand)) || (cand["line_size"] === null)
+                    (!("line_size" in cand)) || (cand["line_size"] == null)
                 ) {
                     cand["line_size"] = ul.state["line_size"];
                 }
@@ -641,8 +641,13 @@ export class ULabel {
                     cand["annotation_meta"] = {};
                 }
 
-                // Ensure that spatial type is allowed
-                // TODO do I really want to do this?
+                // TODO: util to deduce holes from spatial payload if not provided
+                if (
+                    !("spatial_payload_holes" in cand)
+                ) {
+                    cand["spatial_payload_holes"] = [false];
+                }
+
 
                 // Ensure that classification payloads are compatible with config
                 cand.ensure_compatible_classification_payloads(ul.subtasks[subtask_key]["class_ids"])
@@ -1815,32 +1820,19 @@ export class ULabel {
                 ctx.stroke();
             }
 
-            // If polygon is closed, fill it
+            // If polygon is closed, fill it or draw a hole
             if (spatial_type === "polygon" && GeometricUtils.is_polygon_closed(active_spatial_payload)) {
+                if (annotation_object["spatial_payload_holes"][i]) {
+                    ctx.globalCompositeOperation =  'destination-out';
+                } else {
+                    ctx.globalAlpha = 0.2;
+                }
                 ctx.closePath();
-                ctx.globalAlpha = 0.2;
                 ctx.fill();
+                // Reset globals
+                ctx.globalCompositeOperation = "source-over";
                 ctx.globalAlpha = 1.0;
             }           
-        }
-
-        // For polygons, go back through and unfill the intersectoions of all the polygons
-        if (spatial_type === "polygon" && spatial_payload.length > 1) {
-            let intersections = GeometricUtils.get_polygon_intersections(spatial_payload);
-            for (let intersection of intersections) {
-                if (intersection.length < 3) {
-                    continue;
-                }
-                // Clear out the intersection
-                ctx.globalCompositeOperation = 'destination-out';
-                ctx.beginPath();
-                ctx.moveTo((intersection[0][0] + diffX) * px_per_px, (intersection[0][1] + diffY) * px_per_px);
-                for (let pti = 1; pti < intersection.length; pti++) {
-                    ctx.lineTo((intersection[pti][0] + diffX) * px_per_px, (intersection[pti][1] + diffY) * px_per_px);
-                }
-                ctx.closePath();
-                ctx.fill();
-            }
         }
     }
 
@@ -2062,7 +2054,8 @@ export class ULabel {
             subtask = this.state["current_subtask"];
         }
         let frame = this.subtasks[subtask]["annotations"]["access"][id]["frame"];
-        if (frame === null || frame === "undefined" || frame === this.state["current_frame"]) {
+        // Keep `==` here, we want to catch null and undefined
+        if (frame == null || frame == "undefined" || frame == this.state["current_frame"]) {
             this.draw_annotation(this.subtasks[subtask]["annotations"]["access"][id], cvs_ctx, false, offset, subtask);
         }
     }
@@ -2273,6 +2266,99 @@ export class ULabel {
             "pin": "center"
         };
         this.reposition_dialogs();
+
+    // Check if the newest complex layer can merge with each previous layer.
+    merge_polygon_complex_layer(annotation_id, layer_idx = null, recursive_call = false, redoing = false) {
+        const annotation = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annotation_id];
+        if (annotation["spatial_type"] === "polygon" && annotation["spatial_payload"].length > 1) {
+            let undo_annotation_payload = JSON.parse(JSON.stringify(annotation));
+            if (layer_idx === null) {
+                // Start with the newest layer
+                layer_idx = annotation["spatial_payload"].length - 1;
+            }
+            let spatial_payload = annotation["spatial_payload"];
+            // Array<bool> where a true is present if that index of the spatial_payload is a hole
+            // Doesn't include a value for the last layer yet
+            let spatial_payload_holes = annotation["spatial_payload_holes"];
+            
+            // get the desired layer
+            let layer = spatial_payload[layer_idx];
+            let layer_is_hole = false;
+            // After merging with a previous layer, we'll check if that layer can merge with any of its previous layers
+            let next_layer_idxs = [];
+            // loop through all previous layers, starting from the last
+            for (let i = layer_idx - 1; i >= 0; i--) {
+                let prev_layer = spatial_payload[i];
+                // Try and merge the layers
+                let ret = GeometricUtils.merge_polygons_at_intersection(prev_layer, layer);
+                // null means the two layers don't intersect
+                if (ret === null) {
+                    continue;
+                }
+                // If they do intersect, then replace our layers with the result
+                [prev_layer, layer] = ret;
+                spatial_payload[i] = prev_layer;
+                if (i > 0) {
+                    next_layer_idxs.push(i);
+                }
+                // The last layer is a hole if the layer it merged into is not a hole
+                layer_is_hole = !spatial_payload_holes[i];
+
+                // if our last layer is completely inside the previous layer, then we're done
+                if (GeometricUtils.polygon_is_within_polygon(layer, prev_layer)) {
+                    break;
+                }
+            }
+
+            // If the layer still exists, then add it back to the spatial payload
+            if (layer.length > 0) {
+                spatial_payload[layer_idx] = layer;
+                if (layer_idx < spatial_payload_holes.length) {
+                    spatial_payload_holes[layer_idx] = layer_is_hole;
+                } else {
+                    spatial_payload_holes.push(layer_is_hole);
+                }
+            } else {
+                // If the layer is empty, then remove it from the spatial payload
+                spatial_payload.splice(layer_idx, 1);
+                if (layer_idx < spatial_payload_holes.length) {
+                    spatial_payload_holes.splice(layer_idx, 1);
+                }
+            }
+
+            for (let idx of next_layer_idxs) {
+                this.merge_polygon_complex_layer(annotation_id, idx, true);
+            }
+
+            if (!recursive_call) {
+                this.record_action({
+                    act_type: "merge_polygon_complex_layer",
+                    frame: this.state["current_frame"],
+                    undo_payload: {
+                        actid: annotation_id,
+                        annotation: undo_annotation_payload,
+                    },
+                    redo_payload: {
+                        actid: annotation_id,
+                        layer_idx: layer_idx,
+                    }
+                }, redoing);
+                this.rebuild_containing_box(annotation_id);
+                this.redraw_all_annotations(this.state["current_subtask"])
+            }
+        }
+    }
+
+    // Undo the merging of layers by replacing the annotation with the undo payload
+    merge_polygon_complex_layer__undo(undo_payload) {
+        this.replace_annotation(undo_payload["actid"], undo_payload["annotation"]);
+        this.rebuild_containing_box(undo_payload["actid"]);
+        this.redraw_all_annotations(this.state["current_subtask"]);
+    }
+
+    // Replace an entire annotation with a new one. Generally used for undo/redo.
+    replace_annotation(annotation_id, annotation) {
+        this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annotation_id] = JSON.parse(JSON.stringify(annotation));
     }
 
     show_edit_suggestion(nearest_point, currently_exists) {
@@ -2545,6 +2631,9 @@ export class ULabel {
             "spatial_payload": spatial_payload,
             "classification_payloads": classification_payloads,
             "text_payload": ""
+        }
+        if (spatial_type === "polygon") {
+            new_annotation["spatial_payload_holes"] = [false];
         }
 
         // Add the new annotation to the annotation access and ordering
@@ -3024,6 +3113,12 @@ export class ULabel {
             case "finish_complex_polygon":
                 this.finish_complex_polygon__undo(action.undo_payload);
                 break;
+            case "merge_polygon_complex_layer":
+                this.merge_polygon_complex_layer__undo(action.undo_payload);
+                // As this action was original performed internally, the user
+                // expects ctrl+z to the previous action as well
+                this.undo();
+                break;
             default:
                 console.log("Undo error :(");
                 break;
@@ -3064,6 +3159,9 @@ export class ULabel {
                 break;
             case "start_complex_polygon":
                 this.start_complex_polygon(null, action.redo_payload);
+                break;
+            case "merge_polygon_complex_layer":
+                this.merge_polygon_complex_layer(action.redo_payload.actid, action.redo_payload.layer_id, false, true);
                 break;
             default:
                 console.log("Redo error :(");
@@ -3255,6 +3353,10 @@ export class ULabel {
             "frame": frame,
             "text_payload": ""
         };
+        if (annotation_mode === "polygon") {
+            // First layer is always a fill, not a hole
+            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][unq_id]["spatial_payload_holes"] = [false];
+        }
         if (redoing) {
             this.set_id_dialog_payload_to_init(unq_id, init_id_payload);
         }
@@ -3677,9 +3779,10 @@ export class ULabel {
         // When undoing a complex polygon, for convenience we will undo each continue_annotation action
         // until we get back to the start_complex_polygon action
         const current_subtask = this.subtasks[this.state["current_subtask"]]
-        
-        // First, undo the finish_annotation
+
+        // Undo the finish_annotation
         this.finish_annotation__undo(undo_payload);
+        
         // Then, loop throught the action stream until we find the start_complex_polygon action
         while (current_subtask["actions"]["stream"].length > 0) {
             let action = current_subtask["actions"]["stream"].pop();
@@ -3693,7 +3796,7 @@ export class ULabel {
                 // undo the action
                 this.undo_action(action);
             }
-        }
+        }        
     }
 
     begin_edit(mouse_event) {
@@ -3770,6 +3873,7 @@ export class ULabel {
         // Convenience and readability
         const current_subtask = this.subtasks[this.state["current_subtask"]]
         const active_id = current_subtask["state"]["active_id"];
+        const access_str = current_subtask["state"]["edit_candidate"]["access"];
         // TODO big performance gains with buffered canvasses
         if (active_id && (active_id !== null)) {
             const mouse_location = [
@@ -3782,7 +3886,7 @@ export class ULabel {
                 case "bbox":
                 case "tbar":
                 case "polygon":
-                    this.set_with_access_string(active_id, current_subtask["state"]["edit_candidate"]["access"], mouse_location);
+                    this.set_with_access_string(active_id, access_str, mouse_location);
                     this.rebuild_containing_box(active_id);
                     this.redraw_all_annotations(this.state["current_subtask"], null, true); // tobuffer
                     current_subtask["state"]["edit_candidate"]["point"] = mouse_location;
@@ -3791,7 +3895,7 @@ export class ULabel {
                     break;
                 case "bbox3":
                     // TODO(new3d) Will not always want to set 3rd val -- editing is possible within an intermediate frame or frames
-                    this.set_with_access_string(active_id, current_subtask["state"]["edit_candidate"]["access"], [mouse_location[0], mouse_location[1], this.state["current_frame"]]);
+                    this.set_with_access_string(active_id, access_str, [mouse_location[0], mouse_location[1], this.state["current_frame"]]);
                     this.rebuild_containing_box(active_id);
                     this.redraw_all_annotations(null, null, true); // tobuffer
                     current_subtask["state"]["edit_candidate"]["point"] = mouse_location;
@@ -3799,7 +3903,7 @@ export class ULabel {
                     this.show_global_edit_suggestion(current_subtask["state"]["edit_candidate"]["annid"]);
                     break;
                 case "polyline":
-                    this.set_with_access_string(active_id, current_subtask["state"]["edit_candidate"]["access"], mouse_location);
+                    this.set_with_access_string(active_id, access_str, mouse_location);
                     this.rebuild_containing_box(active_id);
                     this.redraw_all_annotations(this.state["current_subtask"], null, true); // tobuffer
                     current_subtask["state"]["edit_candidate"]["point"] = mouse_location;
@@ -3848,8 +3952,8 @@ export class ULabel {
             undo_payload.starting_x,
             undo_payload.starting_y
         ];
-
-        switch (annotations[active_id]["spatial_type"]) {
+        const spatial_type = annotations[active_id]["spatial_type"]
+        switch (spatial_type) {
             case "bbox":
                 this.set_with_access_string(active_id, undo_payload.edit_candidate["access"], mouse_location, true);
                 this.rebuild_containing_box(active_id);
@@ -3906,7 +4010,8 @@ export class ULabel {
         ];
         const cur_loc = this.get_with_access_string(redo_payload.actid, redo_payload.edit_candidate["access"]);
         // TODO(3d)
-        switch (annotations[actid]["spatial_type"]) {
+        const spatial_type = annotations[actid]["spatial_type"]
+        switch (spatial_type) {
             case "bbox":
                 this.set_with_access_string(actid, redo_payload.edit_candidate["access"], ms_loc);
                 this.rebuild_containing_box(actid);
@@ -4058,13 +4163,14 @@ export class ULabel {
             redoing = true;
         }
 
-        let spatial_payload = annotations[active_id]["spatial_payload"];
+        let annotation = annotations[active_id];
+        let spatial_payload = annotation["spatial_payload"];
         let active_spatial_payload = spatial_payload;
 
         // Record last point and redraw if necessary
         // TODO(3d)
         let n_kpts, start_pt, popped, act_type;
-        switch (annotations[active_id]["spatial_type"]) {
+        switch (annotation["spatial_type"]) {
             case "polygon":
                 // For polygons, the active spatial payload is the last array of points in the spatial payload
                 active_spatial_payload = spatial_payload.at(-1);
@@ -4078,6 +4184,9 @@ export class ULabel {
                 // If the shiftKey is held, we wait for the next click, which is handled in end_drag().
                 // When no shift key is held, we can finish the annotation
                 if (mouse_event != null && mouse_event.shiftKey) {
+                    // Render merged layers
+                    this.merge_polygon_complex_layer(active_id);
+                    // Start a new complex layer
                     this.start_complex_polygon(true);
                 } else {
                     // when completing a complex layer of a polygon, we record the action accordingly
@@ -4087,37 +4196,33 @@ export class ULabel {
                         frame: this.state["current_frame"],
                         undo_payload: {
                             actid: active_id,
-                            ender_html: $("#ender_" + active_id).outer_html()
+                            ender_html: $("#ender_" + active_id).outer_html(),
+                            annotation: JSON.parse(JSON.stringify(annotation)),
                         },
                         redo_payload: {
                             actid: active_id
                         }
                     }, redoing);
                     this.destroy_polygon_ender(active_id);
+                    // Render merged layers. Also handles rebuilding containing box and redrawing
+                    this.merge_polygon_complex_layer(active_id);
                 }
-                this.redraw_all_annotations(this.state["current_subtask"]); // TODO: buffer
                 
                 break;
             case "polyline":
                 // TODO handle the case of merging with existing annotation
                 // Remove last point
-                n_kpts = annotations[active_id]["spatial_payload"].length;
+                n_kpts = spatial_payload.length;
                 if (n_kpts > 2) {
                     popped = true;
                     n_kpts -= 1;
-                    annotations[active_id]["spatial_payload"].pop();
+                    spatial_payload.pop();
                 }
                 else {
                     popped = false;
                     this.rebuild_containing_box(active_id, false, this.state["current_subtask"]);
                 }
-                // console.log(
-                //     "At finish...",
-                //     JSON.stringify(
-                //         annotations[active_id]["spatial_payload"],
-                //         null, 2
-                //     )
-                // );
+
                 this.redraw_all_annotations(this.state["current_subtask"]); // tobuffer
                 this.record_action({
                     act_type: "finish_annotation",
@@ -4131,7 +4236,7 @@ export class ULabel {
                         actid: active_id,
                         popped: popped,
                         fin_pt: JSON.parse(JSON.stringify(
-                            annotations[active_id]["spatial_payload"][n_kpts - 1]
+                            spatial_payload[n_kpts - 1]
                         ))
                     }
                 }, redoing);
@@ -4157,7 +4262,7 @@ export class ULabel {
         // TODO build a dialog here when necessary -- will also need to integrate with undo
         // TODO(3d)
         if (current_subtask["single_class_mode"]) {
-            annotations[active_id]["classification_payloads"] = [
+            annotation["classification_payloads"] = [
                 {
                     "class_id": current_subtask["class_defs"][0]["id"],
                     "confidence": 1.0
@@ -4232,8 +4337,21 @@ export class ULabel {
     finish_edit() {
         // Record last point and redraw if necessary
         let actid = this.subtasks[this.state["current_subtask"]]["state"]["active_id"];
+        const access_str = this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"]["access"];
+        let layer_idx;
         switch (this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_type"]) {
             case "polygon":
+                this.record_finish_edit(actid);
+                // Get the idx of the edited layer and try and merge it
+                layer_idx = parseInt(access_str[0], 10)
+                this.merge_polygon_complex_layer(actid, layer_idx);
+                // Check if any other layers need to be merged
+                for (let i = 0; i < this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"].length; i++) {
+                    if (i !== layer_idx) {
+                        this.merge_polygon_complex_layer(actid, i);
+                    }
+                }
+                break;
             case "polyline":
             case "bbox":
             case "bbox3":

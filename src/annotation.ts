@@ -3,7 +3,6 @@ import {
     DeprecatedBy, 
     ULabelClassificationPayload, 
     ULabelContainingBox, 
-    ULabelSpatialPayload, 
     ULabelSpatialType 
 } from "..";
 
@@ -30,7 +29,9 @@ export class ULabelAnnotation {
         public id?: string,
         // Polygons use complex spatial payloads
         public spatial_payload?: any,
-        public spatial_type?: ULabelSpatialType
+        public spatial_type?: ULabelSpatialType,
+        // Polygons track if each layer is a hole or fill
+        public spatial_payload_holes?: boolean[]
     ) {}
 
     public ensure_compatible_classification_payloads(ulabel_class_ids: [number]) {
