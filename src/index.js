@@ -2352,6 +2352,11 @@ export class ULabel {
         }
     }
 
+    // Replace an entire annotation with a new one. Generally used for undo/redo.
+    replace_annotation(annotation_id, annotation) {
+        this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annotation_id] = JSON.parse(JSON.stringify(annotation));
+    }
+
     show_edit_suggestion(nearest_point, currently_exists) {
         let esid = "edit_suggestion__" + this.state["current_subtask"];
         var esjq = $("#" + esid);
@@ -3769,9 +3774,13 @@ export class ULabel {
         // When undoing a complex polygon, for convenience we will undo each continue_annotation action
         // until we get back to the start_complex_polygon action
         const current_subtask = this.subtasks[this.state["current_subtask"]]
-        
-        // First, undo the finish_annotation
+
+        // Since polygon merges may have significantly altered payloads, we just replace the annotation
+        this.replace_annotation(undo_payload.actid, undo_payload.annotation);
+
+        // Undo the finish_annotation
         this.finish_annotation__undo(undo_payload);
+        
         // Then, loop throught the action stream until we find the start_complex_polygon action
         while (current_subtask["actions"]["stream"].length > 0) {
             let action = current_subtask["actions"]["stream"].pop();
@@ -3785,8 +3794,7 @@ export class ULabel {
                 // undo the action
                 this.undo_action(action);
             }
-        }
-        this.remove_polygon_fills_cache(undo_payload.actid);
+        }        
     }
 
     begin_edit(mouse_event) {
@@ -4161,13 +4169,14 @@ export class ULabel {
             redoing = true;
         }
 
-        let spatial_payload = annotations[active_id]["spatial_payload"];
+        let annotation = annotations[active_id];
+        let spatial_payload = annotation["spatial_payload"];
         let active_spatial_payload = spatial_payload;
 
         // Record last point and redraw if necessary
         // TODO(3d)
-        let n_kpts, start_pt, popped, act_type;
-        switch (annotations[active_id]["spatial_type"]) {
+        let n_kpts, start_pt, popped, act_type, undo_annotation_payload;
+        switch (annotation["spatial_type"]) {
             case "polygon":
                 // For polygons, the active spatial payload is the last array of points in the spatial payload
                 active_spatial_payload = spatial_payload.at(-1);
@@ -4193,7 +4202,8 @@ export class ULabel {
                         frame: this.state["current_frame"],
                         undo_payload: {
                             actid: active_id,
-                            ender_html: $("#ender_" + active_id).outer_html()
+                            ender_html: $("#ender_" + active_id).outer_html(),
+                            annotation: JSON.parse(JSON.stringify(annotation)),
                         },
                         redo_payload: {
                             actid: active_id
@@ -4209,23 +4219,17 @@ export class ULabel {
             case "polyline":
                 // TODO handle the case of merging with existing annotation
                 // Remove last point
-                n_kpts = annotations[active_id]["spatial_payload"].length;
+                n_kpts = spatial_payload.length;
                 if (n_kpts > 2) {
                     popped = true;
                     n_kpts -= 1;
-                    annotations[active_id]["spatial_payload"].pop();
+                    spatial_payload.pop();
                 }
                 else {
                     popped = false;
                     this.rebuild_containing_box(active_id, false, this.state["current_subtask"]);
                 }
-                // console.log(
-                //     "At finish...",
-                //     JSON.stringify(
-                //         annotations[active_id]["spatial_payload"],
-                //         null, 2
-                //     )
-                // );
+
                 this.redraw_all_annotations(this.state["current_subtask"]); // tobuffer
                 this.record_action({
                     act_type: "finish_annotation",
@@ -4239,7 +4243,7 @@ export class ULabel {
                         actid: active_id,
                         popped: popped,
                         fin_pt: JSON.parse(JSON.stringify(
-                            annotations[active_id]["spatial_payload"][n_kpts - 1]
+                            spatial_payload[n_kpts - 1]
                         ))
                     }
                 }, redoing);
@@ -4265,7 +4269,7 @@ export class ULabel {
         // TODO build a dialog here when necessary -- will also need to integrate with undo
         // TODO(3d)
         if (current_subtask["single_class_mode"]) {
-            annotations[active_id]["classification_payloads"] = [
+            annotation["classification_payloads"] = [
                 {
                     "class_id": current_subtask["class_defs"][0]["id"],
                     "confidence": 1.0
