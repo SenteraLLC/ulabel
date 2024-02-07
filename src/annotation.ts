@@ -3,7 +3,6 @@ import {
     DeprecatedBy, 
     ULabelClassificationPayload, 
     ULabelContainingBox, 
-    ULabelSpatialPayload, 
     ULabelSpatialType 
 } from "..";
 

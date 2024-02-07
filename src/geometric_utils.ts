@@ -16,11 +16,6 @@ export type LineEquation = {
     "b": number,
     "c": number
 }
-export type PolygonFill = {
-    "spatial_payload": ULabelSpatialPayload2D,
-    "is_hole": boolean
-    "n_polys_containing": number
-}
 
 export class GeometricUtils {
     public static l2_norm(pt1: Point2D, pt2: Point2D): number {
@@ -166,9 +161,7 @@ export class GeometricUtils {
         }
         // If there is an intersection, add the non-intersecting parts of poly2 to poly1
         let non_intersection: ULabelSpatialPayload2D[] = polygonClipping.difference([poly2], [intersection]);
-        // console.log("non_intersection", non_intersection)
-        let new_poly = polygonClipping.union([poly1], non_intersection);
-        // console.log("new_poly", new_poly)
+        let new_poly: [ULabelSpatialPayload2D[]] = polygonClipping.union([poly1], non_intersection);
         return [new_poly[0][0], intersection];
     }
 
@@ -219,36 +212,6 @@ export class GeometricUtils {
             }
             return ret;
         }
-    }
-
-    // Determine the polygon intersections that should be considered filled or holes
-    public static get_polygon_fills(polygons: ULabelSpatialPayload2D[]): PolygonFill[] {
-        let ret: PolygonFill[] = [];
-        
-        // Continue getting intersections until there are no more
-        let intersections: ULabelSpatialPayload2D[] = GeometricUtils.get_polygon_intersections(polygons);
-        // An intersection is a hole if it's inside an even number of polygons (including itself)
-        for (let i: number = 0; i < intersections.length; i++) {
-            let intersection: ULabelSpatialPayload2D = intersections[i];
-            let is_hole: boolean = true;
-            let n_polys_containing: number = 0;
-            // Shrink the intersection so as to not be inclusive of the boundary
-            let shrunk_intersection: ULabelSpatialPayload2D = GeometricUtils.scale_polygon(intersection, 0.95);
-            for (let j: number = 0; j < polygons.length; j++) {
-                let poly: ULabelSpatialPayload2D = polygons[j];
-                // check if the polygon and intersection are equal or if the shrunken intersection is within the polygon
-                if (GeometricUtils.polygons_are_equal(poly, intersection) || GeometricUtils.polygon_is_within_polygon(shrunk_intersection, poly)) {
-                    is_hole = !is_hole;
-                    n_polys_containing++;
-                }
-            }
-            ret.push({
-                "spatial_payload": intersection,
-                "is_hole": is_hole,
-                "n_polys_containing": n_polys_containing
-            });
-        }
-        return ret;
     }
 
     // Return a list of polygons that define all intersections between a list of polygons
