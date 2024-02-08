@@ -97,6 +97,10 @@ export class Configuration {
 
     public toggle_brush_mode_keybind: string = "g"
 
+    public increase_brush_size_keybind: string = "="
+
+    public decrease_brush_size_keybind: string = "-"
+
     constructor(...kwargs: {[key: string]: unknown}[]) {
         this.modify_config(...kwargs)
     }

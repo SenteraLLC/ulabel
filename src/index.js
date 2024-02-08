@@ -207,6 +207,14 @@ export class ULabel {
                         ul.toggle_brush_mode(ul.state["last_move"])
                     }
                     break;
+                // Increase brush size by 10%
+                case ul.config.increase_brush_size_keybind:
+                    ul.change_brush_size(1.1)
+                    break;
+                // Decrease brush size by 10%
+                case ul.config.decrease_brush_size_keybind:
+                    ul.change_brush_size(0.9)
+                    break;
             }
         })
 
@@ -2304,6 +2312,30 @@ export class ULabel {
         $("#" + brush_circle_id).remove();
         delete this.subtasks[this.state["current_subtask"]]["state"]["visible_dialogs"][brush_circle_id];
         this.reposition_dialogs();
+    }
+
+    // Change the brush size by a scale factor
+    change_brush_size(scale_factor) {
+        if (this.subtasks[this.state["current_subtask"]]["state"]["is_in_brush_mode"]) {
+            this.config["brush_size"] *= scale_factor;
+
+            // Get brush circle id
+            const brush_circle_id = "brush_circle";
+
+            // Update the brush circle
+            $("#" + brush_circle_id).css({
+                "width": this.config["brush_size"] + "px",
+                "height": this.config["brush_size"] + "px",
+                "border-radius": this.config["brush_size"] / 2 + "px"
+            });
+            $("#" + brush_circle_id + "_inner").css({
+                "width": this.config["brush_size"] / 5 + "px",
+                "height": this.config["brush_size"] / 5 + "px",
+                "border-radius": this.config["brush_size"] / 10 + "px",
+                "top": 2 * this.config["brush_size"] / 5 + "px",
+                "left": 2 * this.config["brush_size"] / 5 + "px"
+            });
+        }
     }
 
     // Create a polygon spatial payload at the brush circle location
