@@ -167,7 +167,18 @@ export class GeometricUtils {
 
     // Merge two simple polygons into one. Result is a complex polygon ULabelSpatialPayload2D[], with any holes preserved.
     public static merge_polygons(complex_poly1: ULabelSpatialPayload2D[], complex_poly2: ULabelSpatialPayload2D[]): ULabelSpatialPayload2D[] {
+        complex_poly1 = GeometricUtils.ensure_valid_turf_complex_polygon(complex_poly1);
+        complex_poly2 = GeometricUtils.ensure_valid_turf_complex_polygon(complex_poly2);
         return turf.union(turf.polygon(complex_poly1), turf.polygon(complex_poly2)).geometry.coordinates;
+    }
+
+    // Make sure each layer of a complex polygon is valid, ie that it starts and ends at the same point
+    // turf likes the first and last point to reference the same point array in memory
+    public static ensure_valid_turf_complex_polygon(complex_poly: ULabelSpatialPayload2D[]): ULabelSpatialPayload2D[] {
+        for (let layer of complex_poly) {
+            layer[layer.length-1] = layer[0];
+        }
+        return complex_poly;
     }
 
     // Return the point on a polygon that's closest to a reference along with its distance
@@ -266,6 +277,12 @@ export class GeometricUtils {
         } catch (e) {
             return null;
         }
+    }
+
+    public static complex_polygons_intersect(complex_poly1: ULabelSpatialPayload2D[], complex_poly2: ULabelSpatialPayload2D[]): boolean {
+        complex_poly1 = GeometricUtils.ensure_valid_turf_complex_polygon(complex_poly1);
+        complex_poly2 = GeometricUtils.ensure_valid_turf_complex_polygon(complex_poly2);
+        return turf.booleanOverlap(turf.polygon(complex_poly1), turf.polygon(complex_poly2));
     }
 
     // Check if polygon is closed, i.e. first and last points are the same and there are at least 3 points

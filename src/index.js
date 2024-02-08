@@ -2243,6 +2243,11 @@ export class ULabel {
     toggle_brush_mode(mouse_event) {
         this.subtasks[this.state["current_subtask"]]["state"]["is_in_brush_mode"] = !this.subtasks[this.state["current_subtask"]]["state"]["is_in_brush_mode"];
         if (this.subtasks[this.state["current_subtask"]]["state"]["is_in_brush_mode"]) {
+            // Hide edit/id dialogs
+            this.hide_edit_suggestion();
+            this.hide_global_edit_suggestion();
+            this.hide_id_dialog();
+            // Show brush circle
             let gmx = this.get_global_mouse_x(mouse_event);
             let gmy = this.get_global_mouse_y(mouse_event);
             this.create_brush_circle(gmx, gmy);
@@ -3487,7 +3492,7 @@ export class ULabel {
                 gmx: gmx,
                 gmy: gmy,
                 init_spatial: JSON.parse(JSON.stringify(init_spatial)),
-                finished: redoing || annotation_mode === "point", // Did I mean != here???
+                finished: redoing || annotation_mode === "point",
                 init_payload: JSON.parse(JSON.stringify(this.subtasks[this.state["current_subtask"]]["state"]["id_payload"]))
             },
             undo_payload: {
@@ -3895,11 +3900,36 @@ export class ULabel {
     }
 
     // Start annotating or erasing with the brush
-    begin_brush(mouse_event) {        
-        // TODO: edit annotation if within brush circle
-        console.log("start brushing")
-        // Start the annotation
-        this.begin_annotation(mouse_event);
+    begin_brush(mouse_event) {  
+        // First, we check if there is an annotation touching the brush      
+        let brush_cand_active_id = null;
+        const global_x = this.get_global_mouse_x(mouse_event);
+        const global_y = this.get_global_mouse_y(mouse_event);
+        let brush_polygon = this.get_brush_circle_spatial_payload(global_x, global_y);
+        // Loop through all annotations in the ordering until we find a polygon that intersects with the brush
+        for (let i = this.subtasks[this.state["current_subtask"]]["annotations"]["ordering"].length - 1; i >= 0; i--) {
+            let active_id = this.subtasks[this.state["current_subtask"]]["annotations"]["ordering"][i];
+            let annotation = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][active_id];
+            // Only polygons
+            if (annotation["spatial_type"] === "polygon") {
+                if (GeometricUtils.complex_polygons_intersect(annotation["spatial_payload"], brush_polygon)) {
+                    brush_cand_active_id = active_id;
+                    break;
+                }
+            }
+        }
+
+        if (brush_cand_active_id !== null) {
+            // Set annotation as in progress
+            this.subtasks[this.state["current_subtask"]]["state"]["active_id"] = brush_cand_active_id;
+            this.subtasks[this.state["current_subtask"]]["state"]["is_in_progress"] = true;
+            this.continue_brush(mouse_event);
+        } else {
+            // Start a new annotation
+            this.begin_annotation(mouse_event);
+        }
+
+        
     }
 
     continue_brush(mouse_event) {
@@ -4546,12 +4576,19 @@ export class ULabel {
             if (spatial_type === "polygon") {
                 active_spatial_payload = spatial_payload[i];
             }
+            
+            // If first and last point reference the same point array in memory, we don't want to add the diff twice
+            let n_points = active_spatial_payload.length;
+            if (active_spatial_payload[0] === active_spatial_payload[n_points - 1]) {
+                n_points -= 1;
+            }
 
-            // TODO(3d)
-            for (let spi = 0; spi < active_spatial_payload.length; spi++) {
+            // Move the points
+            for (let spi = 0; spi < n_points; spi++) {
                 active_spatial_payload[spi][0] += diffX;
                 active_spatial_payload[spi][1] += diffY;
             }
+
             if (MODES_3D.includes(spatial_type)) {
                 for (let spi = 0; spi < active_spatial_payload.length; spi++) {
                     active_spatial_payload[spi][2] += diffZ;
@@ -4810,7 +4847,7 @@ export class ULabel {
      */
     suggest_edits(mouse_event = null, nonspatial_id = null) {
         // don't show edits when potentially trying to draw a hole
-        if (this.subtasks[this.state["current_subtask"]]["state"]["starting_complex_polygon"]) {
+        if (this.subtasks[this.state["current_subtask"]]["state"]["starting_complex_polygon"] || this.subtasks[this.state["current_subtask"]]["state"]["is_in_brush_mode"]) {
             this.hide_global_edit_suggestion();
             this.hide_edit_suggestion();
         } else {
