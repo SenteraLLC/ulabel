@@ -663,6 +663,12 @@ export class ULabel {
                     cand["spatial_payload_holes"] = [false];
                 }
 
+                if (
+                    !("spatial_payload_child_indices" in cand)
+                ) {
+                    cand["spatial_payload_child_indices"] = [[]];
+                }
+
 
                 // Ensure that classification payloads are compatible with config
                 cand.ensure_compatible_classification_payloads(ul.subtasks[subtask_key]["class_ids"])
@@ -2390,6 +2396,12 @@ export class ULabel {
             // Doesn't include a value for the last layer yet
             let spatial_payload_holes = annotation["spatial_payload_holes"];
             
+            // Make sure that spatial_payload_child_indices is at least as long as spatial_payload - 1
+            let spatial_payload_child_indices = annotation["spatial_payload_child_indices"];
+            while (annotation["spatial_payload_child_indices"].length < spatial_payload.length - 1) {
+                spatial_payload_child_indices.push([]);
+            }
+
             // get the desired layer
             let layer = spatial_payload[layer_idx];
             let layer_is_hole = false;
@@ -2415,6 +2427,10 @@ export class ULabel {
 
                 // if our last layer is completely inside the previous layer, then we're done
                 if (GeometricUtils.simple_polygon_is_within_simple_polygon(layer, prev_layer)) {
+                    // Add layer_idx as a child of i if (a) it is a hole and (b) it's not already there
+                    if (layer_is_hole && !spatial_payload_child_indices[i].includes(layer_idx)) {
+                        spatial_payload_child_indices[i].push(layer_idx);
+                    }
                     break;
                 }
             }
@@ -2440,6 +2456,10 @@ export class ULabel {
             }
 
             if (!recursive_call) {
+                console.log("spatial_payload", JSON.parse(JSON.stringify(annotation["spatial_payload"])));
+                console.log("spatial_payload_holes", JSON.parse(JSON.stringify(annotation["spatial_payload_holes"])));
+                console.log("child indices", JSON.parse(JSON.stringify(annotation["spatial_payload_child_indices"])));
+
                 this.record_action({
                     act_type: "merge_polygon_complex_layer",
                     frame: this.state["current_frame"],
@@ -2747,6 +2767,7 @@ export class ULabel {
         }
         if (spatial_type === "polygon") {
             new_annotation["spatial_payload_holes"] = [false];
+            new_annotation["spatial_payload_child_indices"] = [[]];
         }
 
         // Add the new annotation to the annotation access and ordering
@@ -3469,6 +3490,7 @@ export class ULabel {
         if (annotation_mode === "polygon") {
             // First layer is always a fill, not a hole
             this.subtasks[this.state["current_subtask"]]["annotations"]["access"][unq_id]["spatial_payload_holes"] = [false];
+            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][unq_id]["spatial_payload_child_indices"] = [[]];
         }
         if (redoing) {
             this.set_id_dialog_payload_to_init(unq_id, init_id_payload);
@@ -3913,6 +3935,27 @@ export class ULabel {
         }        
     }
 
+    // Split a ULabel complex polygon into a turf polygon + a seperate simple polygon for each fill
+    split_complex_polygon() {
+
+    }
+
+    // Remove any child indices that are not longer in the spatial_payload
+    verify_complex_polygon_child_indices(active_id) {
+        // Get annotation
+        const annotation = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][active_id];
+        // Get the spatial payload
+        const spatial_payload = annotation["spatial_payload"];
+        for (let child_indices of annotation["spatial_payload_child_indices"]) {
+            for (let i of child_indices) {
+                if (i >= spatial_payload.length) {
+                    child_indices.splice(child_indices.indexOf(i), 1);
+                }
+            }
+        }
+        console.log("verified spatial_payload_child_indices", annotation["spatial_payload_child_indices"]);
+    }
+
     // Start annotating or erasing with the brush
     begin_brush(mouse_event) {  
         // First, we check if there is an annotation touching the brush      
@@ -3975,9 +4018,12 @@ export class ULabel {
                 // Merge the brush with the annotation
                 merged_polygon = GeometricUtils.merge_polygons(annotation["spatial_payload"], brush_polygon);
             }
+            console.log("spatial_payload", JSON.parse(JSON.stringify(annotation["spatial_payload"])));
+            console.log("merged_poly", JSON.parse(JSON.stringify(merged_polygon)));
             annotation["spatial_payload"] = merged_polygon;
             // Check for holes and draw
             this.merge_polygon_complex_layer(active_id);
+            this.verify_complex_polygon_child_indices(active_id);
         }
     }
 
@@ -4524,6 +4570,8 @@ export class ULabel {
         switch (this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_type"]) {
             case "polygon":
                 this.record_finish_edit(actid);
+                // Reset spatial_payload_child_indices
+                this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload_child_indices"] = [];
                 // Get the idx of the edited layer and try and merge it
                 layer_idx = parseInt(access_str[0], 10)
                 this.merge_polygon_complex_layer(actid, layer_idx);
