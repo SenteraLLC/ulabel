@@ -2222,8 +2222,8 @@ export class ULabel {
     }
 
     toggle_brush_mode(mouse_event) {
+        this.subtasks[this.state["current_subtask"]]["state"]["is_in_brush_mode"] = !this.subtasks[this.state["current_subtask"]]["state"]["is_in_brush_mode"];
         let is_in_brush_mode = this.subtasks[this.state["current_subtask"]]["state"]["is_in_brush_mode"];
-        is_in_brush_mode = !is_in_brush_mode;
         console.log("brush mode:", is_in_brush_mode);
         if (is_in_brush_mode) {
             let gmx = this.get_global_mouse_x(mouse_event);
@@ -2266,6 +2266,7 @@ export class ULabel {
             "pin": "center"
         };
         this.reposition_dialogs();
+    }
 
     // Check if the newest complex layer can merge with each previous layer.
     merge_polygon_complex_layer(annotation_id, layer_idx = null, recursive_call = false, redoing = false) {
