@@ -165,6 +165,10 @@ export class GeometricUtils {
         return [new_poly[0][0], intersection];
     }
 
+    public static merge_polygons(poly1: ULabelSpatialPayload2D, poly2: ULabelSpatialPayload2D): ULabelSpatialPayload2D {
+        return polygonClipping.union([poly1], [poly2])[0][0];
+    }
+
     // Return the point on a polygon that's closest to a reference along with its distance
     public static get_nearest_point_on_polygon(
         ref_x: number, 

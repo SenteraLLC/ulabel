@@ -106,15 +106,14 @@ export class ULabel {
                         return "zoom";
                     }
                     return "annotation";
-                }
-                else if ($(mouse_event.target).hasClass("editable")) {
+                } else if (mouse_event.target.id === "brush_circle_inner") {
+                    return "brush";
+                } else if ($(mouse_event.target).hasClass("editable")) {
                     return "edit";
-                }
-                else if ($(mouse_event.target).hasClass("movable")) {
+                } else if ($(mouse_event.target).hasClass("movable")) {
                     mouse_event.preventDefault();
                     return "move";
-                }
-                else {
+                } else {
                     console.log("Unable to assign a drag key to click target:", mouse_event.target.id);
                     return null;
                 }
@@ -458,11 +457,14 @@ export class ULabel {
                 const current_subtask = ul.subtasks[ul.state["current_subtask"]]
                 switch (keypress_event.key) {
                     case "Escape":
+                        // If in brush mode, cancel the brush
+                        if (current_subtask.state.is_in_brush_mode) {
+                            ul.toggle_brush_mode();
+                        }
                         if (current_subtask.state.starting_complex_polygon) {
                             // Use the undo function to cancel the complex polygon
                             ul.undo()
                         }
-
                         break;
                 }
             }
@@ -968,6 +970,11 @@ export class ULabel {
                 "offset_start": null, // Scroll values where the current mouse drag started
                 "zoom_val_start": null // zoom_val when the dragging interaction started
             },
+            "brush": {
+                "mouse_start": null, // Screen coordinates where the current mouse drag started
+                "offset_start": null, // Scroll values where the current mouse drag started
+                "zoom_val_start": null // zoom_val when the dragging interaction started
+            },
             "edit": {
                 "mouse_start": null, // Screen coordinates where the current mouse drag started
                 "offset_start": null, // Scroll values where the current mouse drag started
@@ -1390,6 +1397,10 @@ export class ULabel {
                     [gmx, gmy]
                 ];
             case "polygon":
+                // Get brush spatial payload if in brush mode
+                if (this.subtasks[this.state["current_subtask"]]["state"]["is_in_brush_mode"]) {
+                    return [this.get_brush_circle_spatial_payload(gmx, gmy)];
+                }
                 return [[
                     [gmx, gmy],
                     [gmx, gmy]
@@ -2293,6 +2304,21 @@ export class ULabel {
         $("#" + brush_circle_id).remove();
         delete this.subtasks[this.state["current_subtask"]]["state"]["visible_dialogs"][brush_circle_id];
         this.reposition_dialogs();
+    }
+
+    // Create a polygon spatial payload at the brush circle location
+    get_brush_circle_spatial_payload(gmx, gmy) {
+        // Convert to image space
+        let imx = gmx / this.config["px_per_px"];
+        let imy = gmy / this.config["px_per_px"];
+
+        // Create a spatial payload around the entire radius of the brush circle
+        let spatial_payload = [];
+        for (let i = 0; i < 360; i += 10) {
+            let rad = i * Math.PI / 180;
+            spatial_payload.push([imx + this.config["brush_size"] / 2 * Math.cos(rad), imy + this.config["brush_size"] / 2 * Math.sin(rad)]);
+        }
+        return spatial_payload;
     }
 
     // Check if the newest complex layer can merge with each previous layer.
@@ -3395,7 +3421,8 @@ export class ULabel {
         this.subtasks[this.state["current_subtask"]]["annotations"]["ordering"].push(unq_id);
 
         // If a polygon was just started, we need to add a clickable to end the shape
-        if (annotation_mode === "polygon") {
+        // Don't create ender when in brush mode
+        if (annotation_mode === "polygon" && !this.subtasks[this.state["current_subtask"]]["state"]["is_in_brush_mode"]) {
             this.create_polygon_ender(gmx, gmy, unq_id);
         }
         else if (annotation_mode === "polyline") {
@@ -3825,6 +3852,38 @@ export class ULabel {
                 this.undo_action(action);
             }
         }        
+    }
+
+    // Start annotating or erasing with the brush
+    begin_brush(mouse_event) {        
+        // TODO: edit annotation if within brush circle
+        console.log("start brushing")
+        // Start the annotation
+        this.begin_annotation(mouse_event);
+    }
+
+    continue_brush(mouse_event) {
+        // Get global mouse position
+        let gmx = this.get_global_mouse_x(mouse_event);
+        let gmy = this.get_global_mouse_y(mouse_event);
+
+        // Move the brush
+        this.move_brush_circle(gmx, gmy);
+
+        // Merge the brush with the annotation
+        let brush_polygon = this.get_brush_circle_spatial_payload(gmx, gmy);
+
+        // Get the current annotation
+        const current_subtask = this.subtasks[this.state["current_subtask"]];
+        const active_id = current_subtask["state"]["active_id"];
+        const annotation = current_subtask["annotations"]["access"][active_id];
+        let spatial_payload = annotation["spatial_payload"];
+        let active_spatial_payload = spatial_payload.at(-1);
+
+        // Merge the brush with the annotation
+        let merged_polygon = GeometricUtils.merge_polygons(active_spatial_payload, brush_polygon);
+        spatial_payload[spatial_payload.length - 1] = merged_polygon;
+        this.redraw_all_annotations(this.state["current_subtask"], null, true);
     }
 
     begin_edit(mouse_event) {
@@ -5126,6 +5185,7 @@ export class ULabel {
 
     handle_mouse_down(mouse_event) {
         const drag_key = ULabel.get_drag_key_start(mouse_event, this);
+        console.log("drag_key", drag_key)
         if (drag_key != null) {
             // Don't start new drag while id_dialog is visible
             if (this.subtasks[this.state["current_subtask"]]["state"]["idd_visible"] && !this.subtasks[this.state["current_subtask"]]["state"]["idd_thumbnail"]) {
@@ -5186,6 +5246,9 @@ export class ULabel {
                         this.continue_annotation(mouse_event);
                     }
                     break;
+                case "brush":
+                    this.continue_brush(mouse_event);
+                    break;
                 case "edit":
                     if (!idd_visible || idd_thumbnail) {
                         this.edit_annotation(mouse_event);
@@ -5235,6 +5298,9 @@ export class ULabel {
                     this.begin_annotation(mouse_event);
                 }
                 break;
+            case "brush":
+                this.begin_brush(mouse_event);
+                break;
             case "edit":
                 this.begin_edit(mouse_event);
                 break;
@@ -5281,6 +5347,11 @@ export class ULabel {
                             this.continue_annotation(mouse_event, true);
                         }
                     }
+                }
+                break;
+            case "brush":
+                if (active_id != null) {
+                    this.finish_annotation(mouse_event);
                 }
                 break;
             case "right":
