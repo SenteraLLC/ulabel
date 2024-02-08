@@ -207,6 +207,11 @@ export class ULabel {
                         ul.toggle_brush_mode(ul.state["last_move"])
                     }
                     break;
+                case ul.config.toggle_erase_mode_keybind:
+                    if (current_subtask.state.is_in_brush_mode) {
+                        ul.toggle_erase_mode()
+                    }
+                    break;
                 // Increase brush size by 10%
                 case ul.config.increase_brush_size_keybind:
                     ul.change_brush_size(1.1)
@@ -735,6 +740,7 @@ export class ULabel {
                 "is_in_move": false,
                 "starting_complex_polygon": false, 
                 "is_in_brush_mode": false,
+                "is_in_erase_mode": false,
                 "edit_candidate": null,
                 "move_candidate": null,
 
@@ -2256,6 +2262,14 @@ export class ULabel {
         }
     }
 
+    toggle_erase_mode() {
+        // Only toggle if we're in brush mode
+        if (this.subtasks[this.state["current_subtask"]]["state"]["is_in_brush_mode"]) {
+            this.subtasks[this.state["current_subtask"]]["state"]["is_in_erase_mode"] = !this.subtasks[this.state["current_subtask"]]["state"]["is_in_erase_mode"];
+            console.log("Erase mode: " + this.subtasks[this.state["current_subtask"]]["state"]["is_in_erase_mode"]);
+        }
+    }
+
     create_brush_circle(gmx, gmy) {
         // Create brush circle id
         const brush_circle_id = "brush_circle";
@@ -2400,7 +2414,7 @@ export class ULabel {
                 layer_is_hole = !spatial_payload_holes[i];
 
                 // if our last layer is completely inside the previous layer, then we're done
-                if (GeometricUtils.polygon_is_within_polygon(layer, prev_layer)) {
+                if (GeometricUtils.simple_polygon_is_within_simple_polygon(layer, prev_layer)) {
                     break;
                 }
             }
@@ -3912,7 +3926,11 @@ export class ULabel {
             let annotation = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][active_id];
             // Only polygons
             if (annotation["spatial_type"] === "polygon") {
-                if (GeometricUtils.complex_polygons_intersect(annotation["spatial_payload"], brush_polygon)) {
+                // Check if the brush intersects with or is within the annotation
+                if (
+                    GeometricUtils.complex_polygons_intersect(annotation["spatial_payload"], brush_polygon) ||
+                    GeometricUtils.complex_polygon_is_within_complex_polygon(brush_polygon, annotation["spatial_payload"])
+                ) {
                     brush_cand_active_id = active_id;
                     break;
                 }
@@ -3924,12 +3942,13 @@ export class ULabel {
             this.subtasks[this.state["current_subtask"]]["state"]["active_id"] = brush_cand_active_id;
             this.subtasks[this.state["current_subtask"]]["state"]["is_in_progress"] = true;
             this.continue_brush(mouse_event);
-        } else {
-            // Start a new annotation
+        } else if (!this.subtasks[this.state["current_subtask"]]["state"]["is_in_erase_mode"]) {
+            // Start a new annotation if not in erase mode
             this.begin_annotation(mouse_event);
+        } else {
+            // Move the brush
+            this.move_brush_circle(global_x, global_y);
         }
-
-        
     }
 
     continue_brush(mouse_event) {
@@ -3940,18 +3959,26 @@ export class ULabel {
         // Move the brush
         this.move_brush_circle(gmx, gmy);
 
-        // Merge the brush with the annotation
-        let brush_polygon = this.get_brush_circle_spatial_payload(gmx, gmy);
-
-        // Get the current annotation
         const current_subtask = this.subtasks[this.state["current_subtask"]];
         const active_id = current_subtask["state"]["active_id"];
-        const annotation = current_subtask["annotations"]["access"][active_id];
-        // Merge the brush with the annotation
-        let merged_polygon = GeometricUtils.merge_polygons(annotation["spatial_payload"], brush_polygon);
-        annotation["spatial_payload"] = merged_polygon;
-        // Check for holes and draw
-        this.merge_polygon_complex_layer(active_id);
+        if (active_id !== null) {
+            // Merge the brush with the annotation
+            let brush_polygon = this.get_brush_circle_spatial_payload(gmx, gmy);
+
+            // Get the current annotation
+            const annotation = current_subtask["annotations"]["access"][active_id];
+            let merged_polygon;
+            if (current_subtask["state"]["is_in_erase_mode"]) {
+                // Erase the brush from the annotation
+                merged_polygon = GeometricUtils.subtract_polygons(annotation["spatial_payload"], brush_polygon);
+            } else {
+                // Merge the brush with the annotation
+                merged_polygon = GeometricUtils.merge_polygons(annotation["spatial_payload"], brush_polygon);
+            }
+            annotation["spatial_payload"] = merged_polygon;
+            // Check for holes and draw
+            this.merge_polygon_complex_layer(active_id);
+        }
     }
 
     begin_edit(mouse_event) {
@@ -5321,7 +5348,13 @@ export class ULabel {
                     }
                     break;
                 case "brush":
-                    this.continue_brush(mouse_event);
+                    // If currently brushing, continue
+                    if (this.subtasks[this.state["current_subtask"]]["state"]["is_in_progress"]) {
+                        this.continue_brush(mouse_event);
+                    } else {
+                        // If not, see if we should start
+                        this.begin_brush(mouse_event);
+                    }
                     break;
                 case "edit":
                     if (!idd_visible || idd_thumbnail) {

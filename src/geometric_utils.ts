@@ -172,6 +172,13 @@ export class GeometricUtils {
         return turf.union(turf.polygon(complex_poly1), turf.polygon(complex_poly2)).geometry.coordinates;
     }
 
+    // Subtract poly2 from poly1. Result is a complex polygon ULabelSpatialPayload2D[], with any holes preserved.
+    public static subtract_polygons(complex_poly1: ULabelSpatialPayload2D[], complex_poly2: ULabelSpatialPayload2D[]): ULabelSpatialPayload2D[] {
+        complex_poly1 = GeometricUtils.ensure_valid_turf_complex_polygon(complex_poly1);
+        complex_poly2 = GeometricUtils.ensure_valid_turf_complex_polygon(complex_poly2);
+        return turf.difference(turf.polygon(complex_poly1), turf.polygon(complex_poly2)).geometry.coordinates;
+    }
+
     // Make sure each layer of a complex polygon is valid, ie that it starts and ends at the same point
     // turf likes the first and last point to reference the same point array in memory
     public static ensure_valid_turf_complex_polygon(complex_poly: ULabelSpatialPayload2D[]): ULabelSpatialPayload2D[] {
@@ -369,13 +376,20 @@ export class GeometricUtils {
         return [x/poly.length, y/poly.length];
     }
 
-    // Check if poly1 is completely within poly2 by checking if any line segment of poly1 intersects with poly2
-    public static polygon_is_within_polygon(poly1: ULabelSpatialPayload2D, poly2: ULabelSpatialPayload2D): boolean {
+    // Check if poly1 is completely within poly2
+    public static simple_polygon_is_within_simple_polygon(poly1: ULabelSpatialPayload2D, poly2: ULabelSpatialPayload2D): boolean {
         if (GeometricUtils.is_polygon_closed(poly1) && GeometricUtils.is_polygon_closed(poly2)) {
             return turf.booleanWithin(turf.polygon([poly1]), turf.polygon([poly2]));
         } else {
             return false;
         }
+    }
+
+    // Check if complex_poly1 is completely within complex_poly2
+    public static complex_polygon_is_within_complex_polygon(complex_poly1: ULabelSpatialPayload2D[], complex_poly2: ULabelSpatialPayload2D[]): boolean {
+        complex_poly1 = GeometricUtils.ensure_valid_turf_complex_polygon(complex_poly1);
+        complex_poly2 = GeometricUtils.ensure_valid_turf_complex_polygon(complex_poly2);
+        return turf.booleanWithin(turf.polygon(complex_poly1), turf.polygon(complex_poly2));
     }
 
     // Check if a point is within a polygon

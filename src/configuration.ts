@@ -97,6 +97,8 @@ export class Configuration {
 
     public toggle_brush_mode_keybind: string = "g"
 
+    public toggle_erase_mode_keybind: string = "e"
+
     public increase_brush_size_keybind: string = "="
 
     public decrease_brush_size_keybind: string = "-"
