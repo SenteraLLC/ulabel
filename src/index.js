@@ -1407,7 +1407,7 @@ export class ULabel {
             case "polygon":
                 // Get brush spatial payload if in brush mode
                 if (this.subtasks[this.state["current_subtask"]]["state"]["is_in_brush_mode"]) {
-                    return [this.get_brush_circle_spatial_payload(gmx, gmy)];
+                    return this.get_brush_circle_spatial_payload(gmx, gmy);
                 }
                 return [[
                     [gmx, gmy],
@@ -2338,7 +2338,7 @@ export class ULabel {
         }
     }
 
-    // Create a polygon spatial payload at the brush circle location
+    // Create a complex polygon spatial payload at the brush circle location
     get_brush_circle_spatial_payload(gmx, gmy) {
         // Convert to image space
         let imx = gmx / this.config["px_per_px"];
@@ -2350,7 +2350,11 @@ export class ULabel {
             let rad = i * Math.PI / 180;
             spatial_payload.push([imx + this.config["brush_size"] / 2 * Math.cos(rad), imy + this.config["brush_size"] / 2 * Math.sin(rad)]);
         }
-        return spatial_payload;
+        // Ensure that first and last points are the same
+        if (spatial_payload.length > 0) {
+            spatial_payload[spatial_payload.length - 1] = spatial_payload[0];
+        }
+        return [spatial_payload];
     }
 
     // Check if the newest complex layer can merge with each previous layer.
@@ -2429,9 +2433,13 @@ export class ULabel {
                         layer_idx: layer_idx,
                     }
                 }, redoing);
-                this.rebuild_containing_box(annotation_id);
-                this.redraw_all_annotations(this.state["current_subtask"])
+                
             }
+        } 
+        // No matter what, the caller expects the annotation to be redrawn
+        if (!recursive_call) {
+            this.rebuild_containing_box(annotation_id);
+            this.redraw_all_annotations(this.state["current_subtask"])
         }
     }
 
@@ -3909,13 +3917,11 @@ export class ULabel {
         const current_subtask = this.subtasks[this.state["current_subtask"]];
         const active_id = current_subtask["state"]["active_id"];
         const annotation = current_subtask["annotations"]["access"][active_id];
-        let spatial_payload = annotation["spatial_payload"];
-        let active_spatial_payload = spatial_payload.at(-1);
-
         // Merge the brush with the annotation
-        let merged_polygon = GeometricUtils.merge_polygons(active_spatial_payload, brush_polygon);
-        spatial_payload[spatial_payload.length - 1] = merged_polygon;
-        this.redraw_all_annotations(this.state["current_subtask"], null, true);
+        let merged_polygon = GeometricUtils.merge_polygons(annotation["spatial_payload"], brush_polygon);
+        annotation["spatial_payload"] = merged_polygon;
+        // Check for holes and draw
+        this.merge_polygon_complex_layer(active_id);
     }
 
     begin_edit(mouse_event) {
@@ -5217,7 +5223,6 @@ export class ULabel {
 
     handle_mouse_down(mouse_event) {
         const drag_key = ULabel.get_drag_key_start(mouse_event, this);
-        console.log("drag_key", drag_key)
         if (drag_key != null) {
             // Don't start new drag while id_dialog is visible
             if (this.subtasks[this.state["current_subtask"]]["state"]["idd_visible"] && !this.subtasks[this.state["current_subtask"]]["state"]["idd_thumbnail"]) {

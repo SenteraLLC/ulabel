@@ -165,8 +165,9 @@ export class GeometricUtils {
         return [new_poly[0][0], intersection];
     }
 
-    public static merge_polygons(poly1: ULabelSpatialPayload2D, poly2: ULabelSpatialPayload2D): ULabelSpatialPayload2D {
-        return polygonClipping.union([poly1], [poly2])[0][0];
+    // Merge two simple polygons into one. Result is a complex polygon ULabelSpatialPayload2D[], with any holes preserved.
+    public static merge_polygons(complex_poly1: ULabelSpatialPayload2D[], complex_poly2: ULabelSpatialPayload2D[]): ULabelSpatialPayload2D[] {
+        return turf.union(turf.polygon(complex_poly1), turf.polygon(complex_poly2)).geometry.coordinates;
     }
 
     // Return the point on a polygon that's closest to a reference along with its distance
