@@ -2223,12 +2223,12 @@ export class ULabel {
 
     toggle_brush_mode(mouse_event) {
         this.subtasks[this.state["current_subtask"]]["state"]["is_in_brush_mode"] = !this.subtasks[this.state["current_subtask"]]["state"]["is_in_brush_mode"];
-        let is_in_brush_mode = this.subtasks[this.state["current_subtask"]]["state"]["is_in_brush_mode"];
-        console.log("brush mode:", is_in_brush_mode);
-        if (is_in_brush_mode) {
+        if (this.subtasks[this.state["current_subtask"]]["state"]["is_in_brush_mode"]) {
             let gmx = this.get_global_mouse_x(mouse_event);
             let gmy = this.get_global_mouse_y(mouse_event);
             this.create_brush_circle(gmx, gmy);
+        } else {
+            this.destroy_brush_circle();
         }
     }
 
@@ -2265,6 +2265,33 @@ export class ULabel {
             "top": gmy / this.config["image_height"],
             "pin": "center"
         };
+        this.reposition_dialogs();
+    }
+
+    move_brush_circle(gmx, gmy) {
+        // Create brush circle id
+        const brush_circle_id = "brush_circle";
+
+        // Create brush circle if it doesn't exist
+        if (!($("#" + brush_circle_id).length)) {
+            this.create_brush_circle(gmx, gmy);
+            return;
+        }
+
+        // Add to list of visible dialogs
+        this.subtasks[this.state["current_subtask"]]["state"]["visible_dialogs"][brush_circle_id] = {
+            "left": gmx / this.config["image_width"],
+            "top": gmy / this.config["image_height"],
+            "pin": "center"
+        };
+        this.reposition_dialogs();
+    }
+
+    destroy_brush_circle() {
+        // Get brush circle id
+        const brush_circle_id = "brush_circle";
+        $("#" + brush_circle_id).remove();
+        delete this.subtasks[this.state["current_subtask"]]["state"]["visible_dialogs"][brush_circle_id];
         this.reposition_dialogs();
     }
 
@@ -5131,6 +5158,11 @@ export class ULabel {
                 ) {
                     this.continue_annotation(mouse_event);
                 }
+            } else if (this.subtasks[this.state["current_subtask"]]["state"]["is_in_brush_mode"]) {
+                // If brush mode is in progress, move the brush
+                let gmx = this.get_global_mouse_x(mouse_event);
+                let gmy = this.get_global_mouse_y(mouse_event);
+                this.move_brush_circle(gmx, gmy);
             } else if (mouse_event.shiftKey && annotation_mode === "polygon" && idd_visible && edit_candidate != null) {
                 // If shift key is held while hovering a polygon, we want to start a new complex payload
 
