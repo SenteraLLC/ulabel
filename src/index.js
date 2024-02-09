@@ -4098,6 +4098,12 @@ export class ULabel {
                 }
                 console.log("spatial_payload", JSON.parse(JSON.stringify(annotation["spatial_payload"])));
                 console.log("merged_poly", JSON.parse(JSON.stringify(new_spatial_payload)));
+                
+                if (new_spatial_payload.length === 0) {
+                    // Delete the annotation before overwriting payload
+                    this.delete_annotation(active_id);
+                } 
+                
                 annotation["spatial_payload"] = new_spatial_payload;
                 if (verify_all_layers) {
                     console.log("verify_all_layers");
