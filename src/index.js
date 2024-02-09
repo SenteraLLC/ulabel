@@ -4007,14 +4007,21 @@ export class ULabel {
             let annotation = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][active_id];
             // Only polygons
             if (annotation["spatial_type"] === "polygon") {
-                // Check if the brush intersects with or is within the annotation
-                if (
-                    GeometricUtils.complex_polygons_intersect(annotation["spatial_payload"], brush_polygon) ||
-                    GeometricUtils.complex_polygon_is_within_complex_polygon(brush_polygon, annotation["spatial_payload"])
-                ) {
-                    brush_cand_active_id = active_id;
-                    break;
+                // Split into fills + their associated holes
+                let split_polygons = this.split_complex_polygon(active_id);
+                // Check if the brush intersects with or is within any layer
+                for (let split_polygon of split_polygons) {
+                    if (
+                        GeometricUtils.complex_polygons_intersect(split_polygon, brush_polygon) ||
+                        GeometricUtils.complex_polygon_is_within_complex_polygon(brush_polygon, split_polygon)
+                    ) {
+                        brush_cand_active_id = active_id;
+                        break;
+                    }
                 }
+            }
+            if (brush_cand_active_id !== null) {
+                break;
             }
         }
 
