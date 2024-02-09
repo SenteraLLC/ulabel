@@ -965,6 +965,7 @@ export class ULabel {
 
             // Global annotation state (subtasks also maintain an annotation state)
             "current_subtask": null,
+            "last_brush_stroke": null,
             "line_size": initial_line_size,
             "size_mode": "fixed",
 
@@ -3941,6 +3942,7 @@ export class ULabel {
 
     // Split a ULabel complex polygon seperate turf polygons for each fill
     split_complex_polygon(active_id) {
+        this.verify_complex_polygon_child_indices(active_id);
         // Get annotation
         const annotation = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][active_id];
         const spatial_payload = annotation["spatial_payload"];
@@ -4041,69 +4043,84 @@ export class ULabel {
 
     continue_brush(mouse_event) {
         // Get global mouse position
-        let gmx = this.get_global_mouse_x(mouse_event);
-        let gmy = this.get_global_mouse_y(mouse_event);
+        const gmx = this.get_global_mouse_x(mouse_event);
+        const gmy = this.get_global_mouse_y(mouse_event);
 
         // Move the brush
         this.move_brush_circle(gmx, gmy);
 
-        const current_subtask = this.subtasks[this.state["current_subtask"]];
-        const active_id = current_subtask["state"]["active_id"];
-        if (active_id !== null) {
-            // Merge the brush with the annotation
-            let brush_polygon = this.get_brush_circle_spatial_payload(gmx, gmy);
+        // Check if current mouse is far enough from last brush point
+        let continue_brush = true;
+        const min_brush_distance = this.config["brush_size"] / 2;
+        if (this.state["last_brush_stroke"] !== null) {
+            let [last_gmx, last_gmy] = this.state["last_brush_stroke"]
+            if (Math.abs(gmx - last_gmx) < min_brush_distance && Math.abs(gmy - last_gmy) < min_brush_distance) {
+                continue_brush = false;
+            }
+        }
+        if (continue_brush) {
+            // Save the last brush stroke
+            this.state["last_brush_stroke"] = [gmx, gmy];
+            const current_subtask = this.subtasks[this.state["current_subtask"]];
+            const active_id = current_subtask["state"]["active_id"];
+            if (active_id !== null) {
+                // Merge the brush with the annotation
+                let brush_polygon = this.get_brush_circle_spatial_payload(gmx, gmy);
 
-            // Get the current annotation
-            const annotation = current_subtask["annotations"]["access"][active_id];
-            // Split the annotation into separate polygons for each fill
-            let split_polygons = this.split_complex_polygon(active_id);
-            console.log("split_polygons", split_polygons);
-            let new_spatial_payload = [];
-            let verify_all_layers = false;
-            for (let split_polygon of split_polygons) {
-                let merged_polygon;
-                if (current_subtask["state"]["is_in_erase_mode"]) {
-                    // Erase the brush from the annotation
-                    merged_polygon = GeometricUtils.subtract_polygons(split_polygon, brush_polygon);
-                } else {
-                    // Merge the brush with the annotation
-                    merged_polygon = GeometricUtils.merge_polygons(split_polygon, brush_polygon);
-                }
-                if (merged_polygon !== null) {
-                    // Check if we created a new fill or hole
-                    if (merged_polygon.length > split_polygon.length) {
-                        // If so, we need to verify all layers
+                // Get the current annotation
+                const annotation = current_subtask["annotations"]["access"][active_id];
+                // Split the annotation into separate polygons for each fill
+                let split_polygons = this.split_complex_polygon(active_id);
+                console.log("split_polygons", split_polygons);
+                let new_spatial_payload = [];
+                let verify_all_layers = false;
+                for (let split_polygon of split_polygons) {
+                    let merged_polygon;
+                    if (current_subtask["state"]["is_in_erase_mode"]) {
+                        // Erase the brush from the annotation
+                        merged_polygon = GeometricUtils.subtract_polygons(split_polygon, brush_polygon);
+                    } else {
+                        // Merge the brush with the annotation
+                        merged_polygon = GeometricUtils.merge_polygons(split_polygon, brush_polygon);
+                    }
+                    if (merged_polygon !== null) {
+                        // Check if we created a new fill or hole
+                        if (merged_polygon.length > split_polygon.length) {
+                            // If so, we need to verify all layers
+                            verify_all_layers = true;
+                        }
+                        // Extend the new spatial payload
+                        new_spatial_payload = new_spatial_payload.concat(merged_polygon);
+                    } else {
+                        // we lost a layer, so we need to verify all layers
                         verify_all_layers = true;
                     }
-                    // Extend the new spatial payload
-                    new_spatial_payload = new_spatial_payload.concat(merged_polygon);
-                } else {
-                    // we lost a layer, so we need to verify all layers
-                    verify_all_layers = true;
-                }
-            }
-            console.log("spatial_payload", JSON.parse(JSON.stringify(annotation["spatial_payload"])));
-            console.log("merged_poly", JSON.parse(JSON.stringify(new_spatial_payload)));
-            annotation["spatial_payload"] = new_spatial_payload;
-            if (verify_all_layers) {
-                console.log("verify_all_layers");
-                // Reset the child indices and holes
-                annotation["spatial_payload_holes"] = [false];
-                annotation["spatial_payload_child_indices"] = [[]];
-                // merge_polygon_complex_layer will verify all layers
-                // We can start at layer 1 since layer 0 is always a fill
-                for (let layer_idx = 1; layer_idx < new_spatial_payload.length; layer_idx++) {
-                    this.merge_polygon_complex_layer(active_id, layer_idx);
                 }
                 console.log("spatial_payload", JSON.parse(JSON.stringify(annotation["spatial_payload"])));
-                console.log("child_indices", JSON.parse(JSON.stringify(annotation["spatial_payload_child_indices"])));
-            } else {
-                // Check for holes and draw
-                this.merge_polygon_complex_layer(active_id);
-                this.verify_complex_polygon_child_indices(active_id);
+                console.log("merged_poly", JSON.parse(JSON.stringify(new_spatial_payload)));
+                annotation["spatial_payload"] = new_spatial_payload;
+                if (verify_all_layers) {
+                    console.log("verify_all_layers");
+                    // Reset the child indices and holes
+                    annotation["spatial_payload_holes"] = [false];
+                    annotation["spatial_payload_child_indices"] = [[]];
+                    // merge_polygon_complex_layer will verify all layers
+                    // We can start at layer 1 since layer 0 is always a fill
+                    for (let layer_idx = 1; layer_idx < new_spatial_payload.length; layer_idx++) {
+                        this.merge_polygon_complex_layer(active_id, layer_idx);
+                    }
+                    console.log("spatial_payload", JSON.parse(JSON.stringify(annotation["spatial_payload"])));
+                    console.log("child_indices", JSON.parse(JSON.stringify(annotation["spatial_payload_child_indices"])));
+                } else {
+                    // Check for holes and draw
+                    this.merge_polygon_complex_layer(active_id);
+                    this.verify_complex_polygon_child_indices(active_id);
+                }
             }
         }
     }
+
+
 
     begin_edit(mouse_event) {
         // Create constants for convenience
@@ -4582,6 +4599,9 @@ export class ULabel {
                 // this.show_id_dialog(this.get_global_mouse_x(mouse_event), this.get_global_mouse_y(mouse_event), actid);
             }
         }
+
+        // Reset last brush stroke
+        this.state["last_brush_stroke"] = null;
 
         // Set mode to no active annotation, unless shift key is held for a polygon
         if (current_subtask["state"]["starting_complex_polygon"]) {
