@@ -227,7 +227,6 @@ export class ULabel {
         document.getElementById(ul.config["annbox_id"]).onwheel = function (wheel_event) {
             let fms = ul.config["image_data"].frames.length > 1;
             if (wheel_event.ctrlKey || wheel_event.shiftKey || wheel_event.metaKey) {
-                const before_time = Date.now()
 
                 // Prevent scroll-zoom
                 wheel_event.preventDefault();
@@ -364,7 +363,7 @@ export class ULabel {
         });
 
         //Whenever the mouse makes the dialogs show up, update the displayed annotation confidence.
-        $(document).on("mouseenter", "div.global_edit_suggestion", (e) => {
+        $(document).on("mouseenter", "div.global_edit_suggestion", () => {
             //Grab the currently active annotation
             let active_annotation = ul.subtasks[ul.state["current_subtask"]]["active_annotation"]
 
@@ -1664,7 +1663,7 @@ export class ULabel {
 
     // ================= Drawing Functions =================
 
-    draw_bounding_box(annotation_object, ctx, demo = false, offset = null, subtask = null) {
+    draw_bounding_box(annotation_object, ctx, demo = false, offset = null) {
         const px_per_px = this.config["px_per_px"];
         let diffX = 0;
         let diffY = 0;
@@ -1703,7 +1702,7 @@ export class ULabel {
         ctx.stroke();
     }
 
-    draw_point(annotation_object, ctx, demo = false, offset = null, subtask = null) {
+    draw_point(annotation_object, ctx, demo = false, offset = null) {
         const px_per_px = this.config["px_per_px"];
         let diffX = 0;
         let diffY = 0;
@@ -1742,7 +1741,7 @@ export class ULabel {
         ctx.stroke();
     }
 
-    draw_bbox3(annotation_object, ctx, demo = false, offset = null, subtask = null) {
+    draw_bbox3(annotation_object, ctx, demo = false, offset = null) {
         const px_per_px = this.config["px_per_px"];
         let diffX = 0;
         let diffY = 0;
@@ -1799,7 +1798,7 @@ export class ULabel {
         }
     }
 
-    draw_polygon(annotation_object, ctx, demo = false, offset = null, subtask = null) {
+    draw_polygon(annotation_object, ctx, demo = false, offset = null) {
         const px_per_px = this.config["px_per_px"];
         let diffX = 0;
         let diffY = 0;
@@ -1868,7 +1867,7 @@ export class ULabel {
         }
     }
 
-    draw_contour(annotation_object, ctx, demo = false, offset = null, subtask = null) {
+    draw_contour(annotation_object, ctx, demo = false, offset = null) {
         const px_per_px = this.config["px_per_px"];
         let diffX = 0;
         let diffY = 0;
@@ -1906,7 +1905,7 @@ export class ULabel {
         ctx.stroke();
     }
 
-    draw_tbar(annotation_object, ctx, demo = false, offset = null, subtask = null) {
+    draw_tbar(annotation_object, ctx, demo = false, offset = null) {
         const px_per_px = this.config["px_per_px"];
         let diffX = 0;
         let diffY = 0;
@@ -2049,24 +2048,24 @@ export class ULabel {
         // Dispatch to annotation type's drawing function
         switch (annotation_object["spatial_type"]) {
             case "bbox":
-                this.draw_bounding_box(annotation_object, context, demo, offset, subtask);
+                this.draw_bounding_box(annotation_object, context, demo, offset);
                 break;
             case "point":
-                this.draw_point(annotation_object, context, demo, offset, subtask);
+                this.draw_point(annotation_object, context, demo, offset);
                 break;
             case "bbox3":
                 // TODO(new3d)
-                this.draw_bbox3(annotation_object, context, demo, offset, subtask);
+                this.draw_bbox3(annotation_object, context, demo, offset);
                 break;
             case "polygon":
             case "polyline":
-                this.draw_polygon(annotation_object, context, demo, offset, subtask);
+                this.draw_polygon(annotation_object, context, demo, offset);
                 break;
             case "contour":
-                this.draw_contour(annotation_object, context, demo, offset, subtask);
+                this.draw_contour(annotation_object, context, demo, offset);
                 break;
             case "tbar":
-                this.draw_tbar(annotation_object, context, demo, offset, subtask);
+                this.draw_tbar(annotation_object, context, demo, offset);
                 break;
             case "whole-image":
                 this.draw_whole_image_annotation(annotation_object, subtask);
@@ -2751,9 +2750,8 @@ export class ULabel {
         }
 
         // Get the frame
-        let frame = this.state["current_frame"];
         if (MODES_3D.includes(spatial_type)) {
-            frame = null;
+            this.state["current_frame"] = null;
         }
 
         // Create the new annotation
@@ -3167,7 +3165,7 @@ export class ULabel {
 
     // Action Stream Events
 
-    set_saved(saved, in_progress = false) {
+    set_saved(saved) {
         this.state["edited"] = !saved;
     }
 
@@ -3948,8 +3946,6 @@ export class ULabel {
         const spatial_payload = annotation["spatial_payload"];
         const spatial_payload_holes = annotation["spatial_payload_holes"];
         const spatial_payload_child_indices = annotation["spatial_payload_child_indices"];
-        console.log("holes", spatial_payload_holes);
-        console.log("child_indices", spatial_payload_child_indices);
         let split_polygons = [];
         for (let idx = 0; idx < spatial_payload.length; idx++) {
             // Check that this is a fill and not a hole
@@ -4029,11 +4025,15 @@ export class ULabel {
 
         if (brush_cand_active_id !== null) {
             // Set annotation as in progress
+            console.log("brush_cand_active_id", brush_cand_active_id);
+            console.log("annotation", JSON.parse(JSON.stringify(this.subtasks[this.state["current_subtask"]]["annotations"]["access"][brush_cand_active_id])));
             this.subtasks[this.state["current_subtask"]]["state"]["active_id"] = brush_cand_active_id;
             this.subtasks[this.state["current_subtask"]]["state"]["is_in_progress"] = true;
             this.continue_brush(mouse_event);
         } else if (!this.subtasks[this.state["current_subtask"]]["state"]["is_in_erase_mode"]) {
             // Start a new annotation if not in erase mode
+            console.log("begin_annotation");
+            console.log(this.subtasks[this.state["current_subtask"]]["state"]["is_in_erase_mode"]);
             this.begin_annotation(mouse_event);
         } else {
             // Move the brush
