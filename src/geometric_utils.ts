@@ -167,16 +167,40 @@ export class GeometricUtils {
 
     // Merge two simple polygons into one. Result is a complex polygon ULabelSpatialPayload2D[], with any holes preserved.
     public static merge_polygons(complex_poly1: ULabelSpatialPayload2D[], complex_poly2: ULabelSpatialPayload2D[]): ULabelSpatialPayload2D[] {
+        let ret: ULabelSpatialPayload2D[] = [];
         complex_poly1 = GeometricUtils.ensure_valid_turf_complex_polygon(complex_poly1);
         complex_poly2 = GeometricUtils.ensure_valid_turf_complex_polygon(complex_poly2);
-        return turf.union(turf.polygon(complex_poly1), turf.polygon(complex_poly2)).geometry.coordinates;
+        ret = turf.union(turf.polygon(complex_poly1), turf.polygon(complex_poly2)).geometry.coordinates;
+        // When the two polygons have no intersection, turf.union returns a quad nested list instead of a triple nested list
+        // So we can just return complex_poly1
+        if (ret[0][0][0][0] === undefined) {
+            return ret;
+        } else {
+            return complex_poly1;
+        }
     }
 
     // Subtract poly2 from poly1. Result is a complex polygon ULabelSpatialPayload2D[], with any holes preserved.
     public static subtract_polygons(complex_poly1: ULabelSpatialPayload2D[], complex_poly2: ULabelSpatialPayload2D[]): ULabelSpatialPayload2D[] {
+        let ret: ULabelSpatialPayload2D[];
         complex_poly1 = GeometricUtils.ensure_valid_turf_complex_polygon(complex_poly1);
         complex_poly2 = GeometricUtils.ensure_valid_turf_complex_polygon(complex_poly2);
-        return turf.difference(turf.polygon(complex_poly1), turf.polygon(complex_poly2)).geometry.coordinates;
+        let temp = turf.difference(turf.polygon(complex_poly1), turf.polygon(complex_poly2));
+        // when temp is null, return
+        if (temp === null) {
+            return null;
+        } else {
+            temp = temp.geometry.coordinates;
+        }
+
+        // When turf.difference creates a fill, it adds it as a new polygon, ie [complex_poly, fill] instead of just complex_poly
+        // so we need to append the fill to the complex_poly and return that when turf returns a quad nested list instead of a triple nested list
+        if (temp[0][0][0][0] === undefined) {
+            ret = temp;
+        } else {
+            ret = temp[0].concat(temp[1]);
+        }
+        return ret;
     }
 
     // Make sure each layer of a complex polygon is valid, ie that it starts and ends at the same point

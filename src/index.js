@@ -2259,6 +2259,10 @@ export class ULabel {
             this.hide_edit_suggestion();
             this.hide_global_edit_suggestion();
             this.hide_id_dialog();
+            // If in starting_complex_polygon mode, end it by undoing
+            if (this.subtasks[this.state["current_subtask"]]["state"]["starting_complex_polygon"]) {
+                this.undo()
+            }
             // Show brush circle
             let gmx = this.get_global_mouse_x(mouse_event);
             let gmy = this.get_global_mouse_y(mouse_event);
@@ -2456,9 +2460,9 @@ export class ULabel {
             }
 
             if (!recursive_call) {
-                console.log("spatial_payload", JSON.parse(JSON.stringify(annotation["spatial_payload"])));
-                console.log("spatial_payload_holes", JSON.parse(JSON.stringify(annotation["spatial_payload_holes"])));
-                console.log("child indices", JSON.parse(JSON.stringify(annotation["spatial_payload_child_indices"])));
+                // console.log("spatial_payload", JSON.parse(JSON.stringify(annotation["spatial_payload"])));
+                // console.log("spatial_payload_holes", JSON.parse(JSON.stringify(annotation["spatial_payload_holes"])));
+                // console.log("child indices", JSON.parse(JSON.stringify(annotation["spatial_payload_child_indices"])));
 
                 this.record_action({
                     act_type: "merge_polygon_complex_layer",
@@ -3935,17 +3939,48 @@ export class ULabel {
         }        
     }
 
-    // Split a ULabel complex polygon into a turf polygon + a seperate simple polygon for each fill
-    split_complex_polygon() {
-
+    // Split a ULabel complex polygon seperate turf polygons for each fill
+    split_complex_polygon(active_id) {
+        // Get annotation
+        const annotation = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][active_id];
+        const spatial_payload = annotation["spatial_payload"];
+        const spatial_payload_holes = annotation["spatial_payload_holes"];
+        const spatial_payload_child_indices = annotation["spatial_payload_child_indices"];
+        console.log("holes", spatial_payload_holes);
+        console.log("child_indices", spatial_payload_child_indices);
+        let split_polygons = [];
+        for (let idx = 0; idx < spatial_payload.length; idx++) {
+            // Check that this is a fill and not a hole
+            if (!spatial_payload_holes[idx]) {
+                // Start with the fill itself
+                let split_polygon = [spatial_payload[idx]];
+                // Check that we track its children
+                if (idx < spatial_payload_child_indices.length) {
+                    // Get the child indices
+                    let child_indices_arr = spatial_payload_child_indices[idx];
+                    if (child_indices_arr.length > 0) {
+                        for (const child_idx of child_indices_arr) {
+                            // Add the holes
+                            split_polygon.push(spatial_payload[child_idx]);
+                        }
+                    }
+                }
+                split_polygons.push(split_polygon);
+            }
+        }
+        return split_polygons;
     }
 
-    // Remove any child indices that are not longer in the spatial_payload
+    // Remove any child indices and spatial_payload_holes that are not longer in the spatial_payload
     verify_complex_polygon_child_indices(active_id) {
         // Get annotation
         const annotation = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][active_id];
         // Get the spatial payload
         const spatial_payload = annotation["spatial_payload"];
+        // Verify length
+        while (annotation["spatial_payload_child_indices"].length > spatial_payload.length) {
+            annotation["spatial_payload_child_indices"].pop();
+        }
         for (let child_indices of annotation["spatial_payload_child_indices"]) {
             for (let i of child_indices) {
                 if (i >= spatial_payload.length) {
@@ -3953,7 +3988,10 @@ export class ULabel {
                 }
             }
         }
-        console.log("verified spatial_payload_child_indices", annotation["spatial_payload_child_indices"]);
+        // Verify length of spatial_payload_holes
+        while (annotation["spatial_payload_holes"].length > spatial_payload.length) {
+            annotation["spatial_payload_holes"].pop();
+        }
     }
 
     // Start annotating or erasing with the brush
@@ -4010,20 +4048,53 @@ export class ULabel {
 
             // Get the current annotation
             const annotation = current_subtask["annotations"]["access"][active_id];
-            let merged_polygon;
-            if (current_subtask["state"]["is_in_erase_mode"]) {
-                // Erase the brush from the annotation
-                merged_polygon = GeometricUtils.subtract_polygons(annotation["spatial_payload"], brush_polygon);
-            } else {
-                // Merge the brush with the annotation
-                merged_polygon = GeometricUtils.merge_polygons(annotation["spatial_payload"], brush_polygon);
+            // Split the annotation into separate polygons for each fill
+            let split_polygons = this.split_complex_polygon(active_id);
+            console.log("split_polygons", split_polygons);
+            let new_spatial_payload = [];
+            let verify_all_layers = false;
+            for (let split_polygon of split_polygons) {
+                let merged_polygon;
+                if (current_subtask["state"]["is_in_erase_mode"]) {
+                    // Erase the brush from the annotation
+                    merged_polygon = GeometricUtils.subtract_polygons(split_polygon, brush_polygon);
+                } else {
+                    // Merge the brush with the annotation
+                    merged_polygon = GeometricUtils.merge_polygons(split_polygon, brush_polygon);
+                }
+                if (merged_polygon !== null) {
+                    // Check if we created a new fill or hole
+                    if (merged_polygon.length > split_polygon.length) {
+                        // If so, we need to verify all layers
+                        verify_all_layers = true;
+                    }
+                    // Extend the new spatial payload
+                    new_spatial_payload = new_spatial_payload.concat(merged_polygon);
+                } else {
+                    // we lost a layer, so we need to verify all layers
+                    verify_all_layers = true;
+                }
             }
             console.log("spatial_payload", JSON.parse(JSON.stringify(annotation["spatial_payload"])));
-            console.log("merged_poly", JSON.parse(JSON.stringify(merged_polygon)));
-            annotation["spatial_payload"] = merged_polygon;
-            // Check for holes and draw
-            this.merge_polygon_complex_layer(active_id);
-            this.verify_complex_polygon_child_indices(active_id);
+            console.log("merged_poly", JSON.parse(JSON.stringify(new_spatial_payload)));
+            annotation["spatial_payload"] = new_spatial_payload;
+            if (verify_all_layers) {
+                console.log("verify_all_layers");
+                // Reset the child indices and holes
+                annotation["spatial_payload_holes"] = [false];
+                annotation["spatial_payload_child_indices"] = [[]];
+                // merge_polygon_complex_layer will verify all layers
+                // We can start at layer 1 since layer 0 is always a fill
+                for (let layer_idx = 1; layer_idx < new_spatial_payload.length; layer_idx++) {
+                    this.merge_polygon_complex_layer(active_id, layer_idx);
+                }
+                console.log("spatial_payload", JSON.parse(JSON.stringify(annotation["spatial_payload"])));
+                console.log("child_indices", JSON.parse(JSON.stringify(annotation["spatial_payload_child_indices"])));
+            } else {
+                // Check for holes and draw
+                this.merge_polygon_complex_layer(active_id);
+                this.verify_complex_polygon_child_indices(active_id);
+            }
         }
     }
 
