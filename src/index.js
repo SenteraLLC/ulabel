@@ -4003,8 +4003,8 @@ export class ULabel {
         for (let i = this.subtasks[this.state["current_subtask"]]["annotations"]["ordering"].length - 1; i >= 0; i--) {
             let active_id = this.subtasks[this.state["current_subtask"]]["annotations"]["ordering"][i];
             let annotation = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][active_id];
-            // Only polygons
-            if (annotation["spatial_type"] === "polygon") {
+            // Only undeprecated polygons
+            if (!annotation["deprecated"] && annotation["spatial_type"] === "polygon") {
                 // Split into fills + their associated holes
                 let split_polygons = this.split_complex_polygon(active_id);
                 // Check if the brush intersects with or is within any layer
@@ -4025,15 +4025,11 @@ export class ULabel {
 
         if (brush_cand_active_id !== null) {
             // Set annotation as in progress
-            console.log("brush_cand_active_id", brush_cand_active_id);
-            console.log("annotation", JSON.parse(JSON.stringify(this.subtasks[this.state["current_subtask"]]["annotations"]["access"][brush_cand_active_id])));
             this.subtasks[this.state["current_subtask"]]["state"]["active_id"] = brush_cand_active_id;
             this.subtasks[this.state["current_subtask"]]["state"]["is_in_progress"] = true;
             this.continue_brush(mouse_event);
         } else if (!this.subtasks[this.state["current_subtask"]]["state"]["is_in_erase_mode"]) {
             // Start a new annotation if not in erase mode
-            console.log("begin_annotation");
-            console.log(this.subtasks[this.state["current_subtask"]]["state"]["is_in_erase_mode"]);
             this.begin_annotation(mouse_event);
         } else {
             // Move the brush
