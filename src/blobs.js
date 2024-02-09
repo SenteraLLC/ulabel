@@ -1554,6 +1554,16 @@ div#${prntid} .ender_inner {
    background-color: black;
    border-radius: 10px;
 }
+div#${prntid} .brush {
+   display: block;
+   position: absolute;
+   width: 50px;
+   height: 50px;
+   background-color: white;
+   opacity: 0.4;
+   border-radius: 25px;
+   z-index: 0;
+}
 
 /* ================== TOOLBOX ================== */
 

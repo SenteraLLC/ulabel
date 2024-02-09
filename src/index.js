@@ -106,7 +106,7 @@ export class ULabel {
                         return "zoom";
                     }
                     return "annotation";
-                } else if (mouse_event.target.id === "brush_circle_inner") {
+                } else if (mouse_event.target.id === "brush_circle") {
                     return "brush";
                 } else if ($(mouse_event.target).hasClass("editable")) {
                     return "edit";
@@ -2277,34 +2277,31 @@ export class ULabel {
         if (this.subtasks[this.state["current_subtask"]]["state"]["is_in_brush_mode"]) {
             this.subtasks[this.state["current_subtask"]]["state"]["is_in_erase_mode"] = !this.subtasks[this.state["current_subtask"]]["state"]["is_in_erase_mode"];
             console.log("Erase mode: " + this.subtasks[this.state["current_subtask"]]["state"]["is_in_erase_mode"]);
+
+            // Update brush circle color
+            const brush_circle_id = "brush_circle";
+            $("#" + brush_circle_id).css({
+                "background-color": this.subtasks[this.state["current_subtask"]]["state"]["is_in_erase_mode"] ? "red" : "white",
+            });
         }
     }
 
+    // Create a brush circle at the mouse location
     create_brush_circle(gmx, gmy) {
         // Create brush circle id
         const brush_circle_id = "brush_circle";
 
         // Build brush circle html
         const brush_circle_html = `
-        <a href="#" id="${brush_circle_id}" class="ender_outer">
-            <span id="${brush_circle_id}_inner" class="ender_inner"></span>
-        </a>`;
+        <a href="#" id="${brush_circle_id}" class="brush"></a>`;
         $("#dialogs__" + this.state["current_subtask"]).append(brush_circle_html);
         $("#" + brush_circle_id).css({
             "width": this.config["brush_size"] + "px",
             "height": this.config["brush_size"] + "px",
-            "border-radius": this.config["brush_size"] / 2 + "px"
-        });
-        $("#" + brush_circle_id + "_inner").css({
-            "width": this.config["brush_size"] / 5 + "px",
-            "height": this.config["brush_size"] / 5 + "px",
-            "border-radius": this.config["brush_size"] / 10 + "px",
-            "top": 2 * this.config["brush_size"] / 5 + "px",
-            "left": 2 * this.config["brush_size"] / 5 + "px"
-        });
-        $("#" + brush_circle_id).css({
+            "border-radius": this.config["brush_size"] / 2 + "px",
+            "background-color": this.subtasks[this.state["current_subtask"]]["state"]["is_in_erase_mode"] ? "red" : "white",
             "left": gmx + "px",
-            "top": gmy + "px"
+            "top": gmy + "px",
         });
 
         // Add this id to the list of dialogs with managed positions
@@ -2316,6 +2313,7 @@ export class ULabel {
         this.reposition_dialogs();
     }
 
+    // Move the brush circle to the mouse location
     move_brush_circle(gmx, gmy) {
         // Create brush circle id
         const brush_circle_id = "brush_circle";
@@ -2335,6 +2333,7 @@ export class ULabel {
         this.reposition_dialogs();
     }
 
+    // Destroy the brush circle
     destroy_brush_circle() {
         // Get brush circle id
         const brush_circle_id = "brush_circle";
@@ -2357,13 +2356,6 @@ export class ULabel {
                 "height": this.config["brush_size"] + "px",
                 "border-radius": this.config["brush_size"] / 2 + "px"
             });
-            $("#" + brush_circle_id + "_inner").css({
-                "width": this.config["brush_size"] / 5 + "px",
-                "height": this.config["brush_size"] / 5 + "px",
-                "border-radius": this.config["brush_size"] / 10 + "px",
-                "top": 2 * this.config["brush_size"] / 5 + "px",
-                "left": 2 * this.config["brush_size"] / 5 + "px"
-            });
         }
     }
 
@@ -2377,7 +2369,7 @@ export class ULabel {
         let spatial_payload = [];
         for (let i = 0; i < 360; i += 10) {
             let rad = i * Math.PI / 180;
-            spatial_payload.push([imx + this.config["brush_size"] / 2 * Math.cos(rad), imy + this.config["brush_size"] / 2 * Math.sin(rad)]);
+            spatial_payload.push([imx + this.config["brush_size"] * Math.cos(rad), imy + this.config["brush_size"] * Math.sin(rad)]);
         }
         // Ensure that first and last points are the same
         if (spatial_payload.length > 0) {
