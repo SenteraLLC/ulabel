@@ -2276,7 +2276,6 @@ export class ULabel {
         // Only toggle if we're in brush mode
         if (this.subtasks[this.state["current_subtask"]]["state"]["is_in_brush_mode"]) {
             this.subtasks[this.state["current_subtask"]]["state"]["is_in_erase_mode"] = !this.subtasks[this.state["current_subtask"]]["state"]["is_in_erase_mode"];
-            console.log("Erase mode: " + this.subtasks[this.state["current_subtask"]]["state"]["is_in_erase_mode"]);
 
             // Update brush circle color
             const brush_circle_id = "brush_circle";
@@ -2452,10 +2451,6 @@ export class ULabel {
             }
 
             if (!recursive_call) {
-                // console.log("spatial_payload", JSON.parse(JSON.stringify(annotation["spatial_payload"])));
-                // console.log("spatial_payload_holes", JSON.parse(JSON.stringify(annotation["spatial_payload_holes"])));
-                // console.log("child indices", JSON.parse(JSON.stringify(annotation["spatial_payload_child_indices"])));
-
                 this.record_action({
                     act_type: "merge_polygon_complex_layer",
                     frame: this.state["current_frame"],
@@ -4059,7 +4054,6 @@ export class ULabel {
                 const annotation = current_subtask["annotations"]["access"][active_id];
                 // Split the annotation into separate polygons for each fill
                 let split_polygons = this.split_complex_polygon(active_id);
-                console.log("split_polygons", split_polygons);
                 let new_spatial_payload = [];
                 let verify_all_layers = false;
 
@@ -4108,9 +4102,6 @@ export class ULabel {
                     }                   
                 }
                 
-                console.log("spatial_payload", JSON.parse(JSON.stringify(annotation["spatial_payload"])));
-                console.log("merged_poly", JSON.parse(JSON.stringify(new_spatial_payload)));
-                
                 if (new_spatial_payload.length === 0) {
                     // Delete the annotation before overwriting payload
                     this.delete_annotation(active_id);
@@ -4118,7 +4109,6 @@ export class ULabel {
                 
                 annotation["spatial_payload"] = new_spatial_payload;
                 if (verify_all_layers) {
-                    console.log("verify_all_layers");
                     // Reset the child indices and holes
                     annotation["spatial_payload_holes"] = [false];
                     annotation["spatial_payload_child_indices"] = [[]];
@@ -4127,8 +4117,6 @@ export class ULabel {
                     for (let layer_idx = 1; layer_idx < new_spatial_payload.length; layer_idx++) {
                         this.merge_polygon_complex_layer(active_id, layer_idx);
                     }
-                    console.log("spatial_payload", JSON.parse(JSON.stringify(annotation["spatial_payload"])));
-                    console.log("child_indices", JSON.parse(JSON.stringify(annotation["spatial_payload_child_indices"])));
                 } else {
                     // Check for holes and draw
                     this.merge_polygon_complex_layer(active_id);
