@@ -1816,6 +1816,8 @@ export class ULabel {
             line_size = this.get_line_size(demo);
         }
 
+        // Hack to turn off fills during vanish
+        let is_in_vanish_mode = line_size <= 0.01;
 
         // Prep for bbox drawing
         const color = this.get_annotation_color(annotation_object)
@@ -1851,8 +1853,8 @@ export class ULabel {
                 ctx.stroke();
             }
 
-            // If polygon is closed, fill it or draw a hole
-            if (spatial_type === "polygon" && GeometricUtils.is_polygon_closed(active_spatial_payload)) {
+            // If not in vanish mode and polygon is closed, fill it or draw a hole
+            if (!is_in_vanish_mode && spatial_type === "polygon" && GeometricUtils.is_polygon_closed(active_spatial_payload)) {
                 if (annotation_object["spatial_payload_holes"][i]) {
                     ctx.globalCompositeOperation =  'destination-out';
                 } else {
@@ -4559,6 +4561,10 @@ export class ULabel {
                 // For polygons, the active spatial payload is the last array of points in the spatial payload
                 active_spatial_payload = spatial_payload.at(-1);
                 n_kpts = active_spatial_payload.length;
+                if (n_kpts < 4) {
+                    console.error("Canceled polygon with insufficient points:", n_kpts);
+                    return;
+                }
                 start_pt = [
                     active_spatial_payload[0][0],
                     active_spatial_payload[0][1]
