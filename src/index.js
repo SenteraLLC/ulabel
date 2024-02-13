@@ -4062,28 +4062,52 @@ export class ULabel {
                 console.log("split_polygons", split_polygons);
                 let new_spatial_payload = [];
                 let verify_all_layers = false;
-                for (let split_polygon of split_polygons) {
-                    let merged_polygon;
-                    if (current_subtask["state"]["is_in_erase_mode"]) {
+
+                if (current_subtask["state"]["is_in_erase_mode"]) {
+                    for (let split_polygon of split_polygons) {
+                        let merged_polygon;
                         // Erase the brush from the annotation
                         merged_polygon = GeometricUtils.subtract_polygons(split_polygon, brush_polygon);
-                    } else {
-                        // Merge the brush with the annotation
-                        merged_polygon = GeometricUtils.merge_polygons(split_polygon, brush_polygon);
-                    }
-                    if (merged_polygon !== null) {
-                        // Check if we created a new fill or hole
-                        if (merged_polygon.length > split_polygon.length) {
-                            // If so, we need to verify all layers
+                        if (merged_polygon !== null) {
+                            // Check if we created a new fill or hole
+                            if (merged_polygon.length > split_polygon.length) {
+                                // If so, we need to verify all layers
+                                verify_all_layers = true;
+                            }
+                            // Extend the new spatial payload
+                            new_spatial_payload = new_spatial_payload.concat(merged_polygon);
+                        } else {
+                            // we lost a layer, so we need to verify all layers
                             verify_all_layers = true;
                         }
-                        // Extend the new spatial payload
-                        new_spatial_payload = new_spatial_payload.concat(merged_polygon);
-                    } else {
-                        // we lost a layer, so we need to verify all layers
-                        verify_all_layers = true;
                     }
+                } else {
+                    // Merge the brush with all intersecting layers
+                    let merged_polygon = brush_polygon;
+                    let n_merges = 0;
+                    for (let split_polygon of split_polygons) {
+                        // Check that the fill (first layer) of the split polygon intersects with our merged polygon
+                        // or if the split polygon as a whole intersects with our merged polygon
+                        // or if any hole in the split polygon is within our merged polygon (handles really small holes)
+                        if (
+                            GeometricUtils.complex_polygons_intersect([split_polygon[0]], merged_polygon) ||
+                            GeometricUtils.complex_polygons_intersect(split_polygon, merged_polygon) ||
+                            GeometricUtils.any_complex_polygon_hole_is_within_complex_polygon(split_polygon, merged_polygon)
+                        ) {
+                            n_merges += 1;
+                            // Merge the split polygon with the current merged polygon
+                            merged_polygon = GeometricUtils.merge_polygons(split_polygon, merged_polygon);
+                        } else {
+                            // If the split doesn't intersect our active merge, just add it back to the new spatial payload
+                            new_spatial_payload = new_spatial_payload.concat(split_polygon);
+                        }
+                    }
+                    // Add the merged polygon to the new spatial payload
+                    if (n_merges > 0) {
+                        new_spatial_payload = new_spatial_payload.concat(merged_polygon);
+                    }                   
                 }
+                
                 console.log("spatial_payload", JSON.parse(JSON.stringify(annotation["spatial_payload"])));
                 console.log("merged_poly", JSON.parse(JSON.stringify(new_spatial_payload)));
                 

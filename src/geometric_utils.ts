@@ -416,6 +416,19 @@ export class GeometricUtils {
         return turf.booleanWithin(turf.polygon(complex_poly1), turf.polygon(complex_poly2));
     }
 
+    // Check if any hole of complex_poly1 is completely within complex_poly2
+    public static any_complex_polygon_hole_is_within_complex_polygon(complex_poly1: ULabelSpatialPayload2D[], complex_poly2: ULabelSpatialPayload2D[]): boolean {
+        complex_poly1 = GeometricUtils.ensure_valid_turf_complex_polygon(complex_poly1);
+        complex_poly2 = GeometricUtils.ensure_valid_turf_complex_polygon(complex_poly2);
+        // Start at 1 to skip the outer polygon
+        for (let i = 1; i < complex_poly1.length; i++) {
+            if (turf.booleanWithin(turf.polygon([complex_poly1[i]]), turf.polygon(complex_poly2))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     // Check if a point is within a polygon
     public static point_is_within_polygon(point: Point2D, poly: ULabelSpatialPayload2D): boolean {
         // https://stackoverflow.com/questions/42457842/calculate-if-point-coordinates-is-inside-polygon-with-concave-and-convex-angles?rq=3
