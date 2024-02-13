@@ -4100,16 +4100,8 @@ export class ULabel {
                         // Erase the brush from the annotation
                         merged_polygon = GeometricUtils.subtract_polygons(split_polygon, brush_polygon);
                         if (merged_polygon !== null) {
-                            // Check if we created a new fill or hole
-                            if (merged_polygon.length > split_polygon.length) {
-                                // If so, we need to verify all layers
-                                verify_all_layers = true;
-                            }
                             // Extend the new spatial payload
                             new_spatial_payload = new_spatial_payload.concat(merged_polygon);
-                        } else {
-                            // we lost a layer, so we need to verify all layers
-                            verify_all_layers = true;
                         }
                     }
                 } else {
@@ -4137,13 +4129,17 @@ export class ULabel {
                     if (n_merges > 0) {
                         new_spatial_payload = new_spatial_payload.concat(merged_polygon);
                         verify_all_layers = true;
+                    } else {
+                        return;
                     }                   
                 }
                 
                 if (new_spatial_payload.length === 0) {
                     // Delete the annotation before overwriting payload
                     this.delete_annotation(active_id);
-                } 
+                } else if (new_spatial_payload.length !== annotation["spatial_payload"].length) {
+                    verify_all_layers = true;
+                }
                 
                 annotation["spatial_payload"] = new_spatial_payload;
                 if (verify_all_layers) {
