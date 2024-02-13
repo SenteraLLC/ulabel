@@ -2378,7 +2378,7 @@ export class ULabel {
     }
 
     // Check if the newest complex layer can merge with each previous layer.
-    merge_polygon_complex_layer(annotation_id, layer_idx = null, recursive_call = false, redoing = false) {
+    merge_polygon_complex_layer(annotation_id, layer_idx = null, recursive_call = false, redoing = false, redraw = true) {
         const annotation = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annotation_id];
         if (annotation["spatial_type"] === "polygon" && annotation["spatial_payload"].length > 1) {
             let undo_annotation_payload = JSON.parse(JSON.stringify(annotation));
@@ -2466,8 +2466,8 @@ export class ULabel {
                 
             }
         } 
-        // No matter what, the caller expects the annotation to be redrawn
-        if (!recursive_call) {
+        // Redraw when caller expects the annotation to be redrawn
+        if (!recursive_call && redraw) {
             this.rebuild_containing_box(annotation_id);
             this.redraw_all_annotations(this.state["current_subtask"])
         }
@@ -4136,6 +4136,7 @@ export class ULabel {
                     // Add the merged polygon to the new spatial payload
                     if (n_merges > 0) {
                         new_spatial_payload = new_spatial_payload.concat(merged_polygon);
+                        verify_all_layers = true;
                     }                   
                 }
                 
@@ -4152,8 +4153,10 @@ export class ULabel {
                     // merge_polygon_complex_layer will verify all layers
                     // We can start at layer 1 since layer 0 is always a fill
                     for (let layer_idx = 1; layer_idx < new_spatial_payload.length; layer_idx++) {
-                        this.merge_polygon_complex_layer(active_id, layer_idx);
+                        this.merge_polygon_complex_layer(active_id, layer_idx, false, false, false);
                     }
+                    this.rebuild_containing_box(active_id);
+                    this.redraw_all_annotations(this.state["current_subtask"]);
                 } else {
                     // Check for holes and draw
                     this.merge_polygon_complex_layer(active_id);
