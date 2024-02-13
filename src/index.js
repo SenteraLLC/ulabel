@@ -3241,7 +3241,15 @@ export class ULabel {
                 this.merge_polygon_complex_layer__undo(action.undo_payload);
                 // As this action was original performed internally, the user
                 // expects ctrl+z to the previous action as well
-                this.undo();
+                if (action.internal_undo === undefined) {
+                    this.undo();
+                }
+                break;
+            case "begin_brush":
+                this.begin_brush__undo(action.undo_payload);
+                break;
+            case "finish_brush":
+                this.finish_brush__undo();
                 break;
             default:
                 console.log("Undo error :(");
@@ -3912,6 +3920,7 @@ export class ULabel {
         // Then, loop throught the action stream until we find the start_complex_polygon action
         while (current_subtask["actions"]["stream"].length > 0) {
             let action = current_subtask["actions"]["stream"].pop();
+            action.internal_undo = true;
             if (action.act_type === "start_complex_polygon") {
                 // replace the action
                 current_subtask["actions"]["stream"].push(action);
@@ -4009,11 +4018,24 @@ export class ULabel {
                 break;
             }
         }
-
+        
         if (brush_cand_active_id !== null) {
             // Set annotation as in progress
             this.subtasks[this.state["current_subtask"]]["state"]["active_id"] = brush_cand_active_id;
             this.subtasks[this.state["current_subtask"]]["state"]["is_in_progress"] = true;
+            // Record for potential undo/redo
+            this.record_action({
+                act_type: "begin_brush",
+                frame: this.state["current_frame"],
+                undo_payload: {
+                    actid: brush_cand_active_id,
+                    annotation: JSON.parse(JSON.stringify(this.subtasks[this.state["current_subtask"]]["annotations"]["access"][brush_cand_active_id])),
+                },
+                redo_payload: {
+                    actid: brush_cand_active_id,
+                    mouse_event: mouse_event
+                }
+            });
             this.continue_brush(mouse_event);
         } else if (!this.subtasks[this.state["current_subtask"]]["state"]["is_in_erase_mode"]) {
             // Start a new annotation if not in erase mode
@@ -4021,6 +4043,21 @@ export class ULabel {
         } else {
             // Move the brush
             this.move_brush_circle(global_x, global_y);
+        }
+    }
+
+    // Reset the annotation
+    begin_brush__undo(undo_payload) {
+        if (undo_payload.actid !== null) {
+            // Reset the annotation
+            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][undo_payload.actid] = undo_payload.annotation;
+            // Redraw all
+            this.redraw_all_annotations(this.state["current_subtask"]);
+        }
+
+        // If in brush mode, toggle it off
+        if (this.subtasks[this.state["current_subtask"]]["state"]["is_in_brush_mode"]) {
+            this.toggle_brush_mode();
         }
     }
 
@@ -4124,6 +4161,25 @@ export class ULabel {
                 }
             }
         }
+    }
+
+    finish_brush__undo() {
+        // When undoing a brush, for convenience we will undo each continue_brush action
+        // until we get back to the begin_brush or begin_annotation action
+        const current_subtask = this.subtasks[this.state["current_subtask"]]
+        
+        // Then, loop throught the action stream until we find the begin_brush or begin_annotation action
+        while (current_subtask["actions"]["stream"].length > 0) {
+            let action = current_subtask["actions"]["stream"].pop();
+            action.internal_undo = true;
+            // undo the action
+            this.undo_action(action);
+            if (action.act_type === "begin_brush" || action.act_type === "begin_annotation") {
+                // we're done
+                break;
+            }
+        }        
+
     }
 
 
@@ -4518,8 +4574,13 @@ export class ULabel {
                     // Start a new complex layer
                     this.start_complex_polygon(true);
                 } else {
-                    // when completing a complex layer of a polygon, we record the action accordingly
-                    act_type = spatial_payload.length > 1 ? "finish_complex_polygon" : "finish_annotation";
+                    // If in brush mode, we finish the brush
+                    if (current_subtask["state"]["is_in_brush_mode"]) {
+                        act_type = "finish_brush";
+                    } else {
+                        // When completing a complex layer of a polygon, we record the action accordingly
+                        act_type = spatial_payload.length > 1 ? "finish_complex_polygon" : "finish_annotation";
+                    }
                     this.record_action({
                         act_type: act_type,
                         frame: this.state["current_frame"],
