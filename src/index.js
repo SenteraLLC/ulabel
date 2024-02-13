@@ -4123,6 +4123,10 @@ export class ULabel {
                 // For polygons, the active spatial payload is the last array of points in the spatial payload
                 active_spatial_payload = spatial_payload.at(-1);
                 n_kpts = active_spatial_payload.length;
+                if (n_kpts < 4) {
+                    console.error("Canceled polygon with insufficient points:", n_kpts);
+                    return;
+                }
                 start_pt = [
                     active_spatial_payload[0][0],
                     active_spatial_payload[0][1]
