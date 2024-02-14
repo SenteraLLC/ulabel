@@ -4094,7 +4094,6 @@ export class ULabel {
                 // Split the annotation into separate polygons for each fill
                 let split_polygons = this.split_complex_polygon(active_id);
                 let new_spatial_payload = [];
-                let verify_all_layers = false;
 
                 if (current_subtask["state"]["is_in_erase_mode"]) {
                     for (let split_polygon of split_polygons) {
@@ -4130,7 +4129,6 @@ export class ULabel {
                     // Add the merged polygon to the new spatial payload
                     if (n_merges > 0) {
                         new_spatial_payload = new_spatial_payload.concat(merged_polygon);
-                        verify_all_layers = true;
                     } else {
                         return;
                     }                   
@@ -4139,27 +4137,18 @@ export class ULabel {
                 if (new_spatial_payload.length === 0) {
                     // Delete the annotation before overwriting payload
                     this.delete_annotation(active_id);
-                } else if (new_spatial_payload.length !== annotation["spatial_payload"].length) {
-                    verify_all_layers = true;
                 }
-                
                 annotation["spatial_payload"] = new_spatial_payload;
-                if (verify_all_layers) {
-                    // Reset the child indices and holes
-                    annotation["spatial_payload_holes"] = [false];
-                    annotation["spatial_payload_child_indices"] = [[]];
-                    // merge_polygon_complex_layer will verify all layers
-                    // We can start at layer 1 since layer 0 is always a fill
-                    for (let layer_idx = 1; layer_idx < new_spatial_payload.length; layer_idx++) {
-                        this.merge_polygon_complex_layer(active_id, layer_idx, false, false, false);
-                    }
-                    this.rebuild_containing_box(active_id);
-                    this.redraw_all_annotations(this.state["current_subtask"]);
-                } else {
-                    // Check for holes and draw
-                    this.merge_polygon_complex_layer(active_id);
-                    this.verify_complex_polygon_child_indices(active_id);
+                // Reset the child indices and holes
+                annotation["spatial_payload_holes"] = [false];
+                annotation["spatial_payload_child_indices"] = [[]];
+                // merge_polygon_complex_layer will verify all layers
+                // We can start at layer 1 since layer 0 is always a fill
+                for (let layer_idx = 1; layer_idx < new_spatial_payload.length; layer_idx++) {
+                    this.merge_polygon_complex_layer(active_id, layer_idx, false, false, false);
                 }
+                this.rebuild_containing_box(active_id);
+                this.redraw_all_annotations(this.state["current_subtask"]);
             }
         }
     }
