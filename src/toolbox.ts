@@ -336,6 +336,13 @@ export class ModeSelectionToolboxItem extends ToolboxItem {
             let new_mode = target_jq.attr("id").split("--")[1];
             ulabel.subtasks[current_subtask]["state"]["annotation_mode"] = new_mode;
 
+            // Show the BrushToolboxItem when polygon mode is selected
+            if (new_mode === "polygon") {
+                BrushToolboxItem.show_brush_toolbox_item();
+            } else {
+                BrushToolboxItem.hide_brush_toolbox_item();
+            }
+
             // Reset the previously selected mode button
             $("a.md-btn.sel").attr("href", "#");
             $("a.md-btn.sel").removeClass("sel");
@@ -628,8 +635,21 @@ export class BrushToolboxItem extends ToolboxItem {
         `
     }
 
+    public static show_brush_toolbox_item() {
+        // Remove hidden class from the brush toolbox item
+        $(".brush").removeClass("ulabel-hidden")
+    }
+
+    public static hide_brush_toolbox_item() {
+        // Add hidden class to the brush toolbox item
+        $(".brush").addClass("ulabel-hidden")
+    }
+
     public after_init() {
-        // This toolbox item doesn't need to do anything after initialization
+        // Only show BrushToolboxItem if the current mode is polygon
+        if (this.ulabel.subtasks[this.ulabel.state["current_subtask"]].state["annotation_mode"] !== "polygon") {
+            BrushToolboxItem.hide_brush_toolbox_item()
+        }
     }
 
     public get_toolbox_item_type() {
