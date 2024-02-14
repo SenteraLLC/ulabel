@@ -85,6 +85,11 @@ export class ULabelAnnotation {
             if (!Array.isArray(this.spatial_payload[0][0])) {
                 this.spatial_payload = [this.spatial_payload];
             }
+
+            // Add spatial_payload_holes if not present
+            if (this.spatial_payload_holes === undefined) {
+                this.spatial_payload_holes = [false];
+            }
         }
     }
 
