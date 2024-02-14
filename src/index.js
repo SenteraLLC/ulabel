@@ -3851,6 +3851,45 @@ export class ULabel {
         this.continue_annotation(this.state["last_move"]);
     }
 
+    // Undo the last continue_annotation actions until we get to the start
+    reset_last_complex_polygon_layer() {
+        const current_subtask = this.subtasks[this.state["current_subtask"]];
+        console.log(current_subtask["actions"]["stream"]);
+        let i = current_subtask["actions"]["stream"].length - 1;
+        for (i; i > 0; i--) {
+            let action = current_subtask["actions"]["stream"][i];
+            console.log(action.act_type);
+            action.internal_undo = true;
+            if (action.act_type !== "continue_annotation" && action.act_type !== "merge_polygon_complex_layer") {
+                // done
+                break;
+            }
+            // add to undo stack
+            current_subtask["actions"]["undone_stack"].push(action);
+            // undo the action
+            this.undo_action(action);
+        }
+        console.log(i);
+        // remove all actions after i
+        current_subtask["actions"]["stream"] = current_subtask["actions"]["stream"].slice(0, i + 1);
+
+        // while (current_subtask["actions"]["stream"].length > 0) {
+        //     let action = current_subtask["actions"]["stream"].pop();
+        //     console.log(action.act_type);
+        //     action.internal_undo = true;
+        //     if (action.act_type !== "continue_annotation" && action.act_type !== "merge_polygon_complex_layer") {
+        //         // replace the action
+        //         current_subtask["actions"]["stream"].push(action);
+        //         break;
+        //     }
+
+        //     // add to undo stack
+        //     current_subtask["actions"]["undone_stack"].push(action);
+        //     // undo the action
+        //     this.undo_action(action);
+        // }
+    }
+
     start_complex_polygon(unfinished_annotation = false, redo_payload = null) {
         // Turn off any edit suggestions or id dialogs
         this.hide_edit_suggestion();
@@ -4171,8 +4210,6 @@ export class ULabel {
         }        
 
     }
-
-
 
     begin_edit(mouse_event) {
         // Create constants for convenience
@@ -4552,6 +4589,12 @@ export class ULabel {
                 n_kpts = active_spatial_payload.length;
                 if (n_kpts < 4) {
                     console.error("Canceled polygon with insufficient points:", n_kpts);
+                    return;
+                }
+                if (GeometricUtils.simple_polygon_self_intersects(active_spatial_payload)) {
+                    console.error("Canceled polygon with self-intersections");
+                    // Start the layer over
+                    this.reset_last_complex_polygon_layer(active_id);
                     return;
                 }
                 start_pt = [

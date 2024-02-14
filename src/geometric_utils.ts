@@ -212,6 +212,16 @@ export class GeometricUtils {
         return complex_poly;
     }
 
+    // Check if a simple polygon self-intersects
+    public static simple_polygon_self_intersects(poly: ULabelSpatialPayload2D): boolean {
+        return polygonClipping.union([poly], []).length > 1;
+    }
+
+    // Use polygon-clipping to split a polygon at its self-intersections
+    public static split_simple_polygon_by_self_intersections(poly: ULabelSpatialPayload2D): ULabelSpatialPayload2D[] {
+        return polygonClipping.union([poly], []);
+    }
+
     // Return the point on a polygon that's closest to a reference along with its distance
     public static get_nearest_point_on_polygon(
         ref_x: number, 
