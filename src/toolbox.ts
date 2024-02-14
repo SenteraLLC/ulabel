@@ -490,6 +490,60 @@ export class ModeSelectionToolboxItem extends ToolboxItem {
 }
 
 /**
+ * Toolbox item for resizing all annotations
+ */
+export class BrushToolboxItem extends ToolboxItem {
+    public html: string;
+    private ulabel: ULabel
+
+    constructor(ulabel: ULabel) {
+        super();
+
+        this.ulabel = ulabel
+
+        this.add_styles()
+
+        this.add_event_listeners()
+    }
+
+    /**
+     * Create the css for this ToolboxItem and append it to the page.
+     */
+    protected add_styles() {
+        // Define the css
+    }
+
+    private add_event_listeners() {
+
+    }
+    
+    public get_html() {
+        return `
+        <div class="annotation-resize">
+            <p class="tb-header">Brush Tool</p>
+            <div class="annotation-resize-button-holder">
+                <span class="annotation-vanish">
+                    <button class="annotation-resize-button" id="annotation-resize-v">Brush</button>
+                </span>
+                <span class="annotation-inc increment">
+                    <button class="annotation-resize-button circle inc" id="annotation-resize-inc">+</button>
+                    <button class="annotation-resize-button circle dec" id="annotation-resize-dec">-</button>
+                </span>
+            </div>
+        </div>
+        `
+    }
+
+    public after_init() {
+        // This toolbox item doesn't need to do anything after initialization
+    }
+
+    public get_toolbox_item_type() {
+        return "Brush"
+    }
+}
+
+/**
  * Toolbox item for zooming and panning.
  */
 export class ZoomPanToolboxItem extends ToolboxItem {
