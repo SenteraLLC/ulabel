@@ -511,6 +511,42 @@ export class BrushToolboxItem extends ToolboxItem {
      */
     protected add_styles() {
         // Define the css
+        // Define the css
+        const css = `
+        #toolbox div.brush button:not(.circle) {
+            padding: 1rem 0.5rem;
+            border: 1px solid gray;
+            border-radius: 10px
+        }
+
+        #toolbox div.brush div.brush-button-holder {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        #toolbox div.brush span.brush-mode {
+            display: flex;
+        }        
+        `
+        // Create an id so this specific style tag can be referenced
+        const style_id = "brush-toolbox-item-styles"
+
+        // Don't add the style tag if its already been added once
+        if (document.getElementById(style_id)) return
+
+        // Grab the document's head and create a style tag
+        const head = document.head || document.querySelector("head")
+        const style = document.createElement('style');
+
+        // Add the css and id to the style tag
+        style.appendChild(document.createTextNode(css));
+        style.id = style_id
+
+        // Add the style tag to the document's head
+        head.appendChild(style);
     }
 
     private add_event_listeners() {
@@ -519,15 +555,16 @@ export class BrushToolboxItem extends ToolboxItem {
     
     public get_html() {
         return `
-        <div class="annotation-resize">
+        <div class="brush">
             <p class="tb-header">Brush Tool</p>
-            <div class="annotation-resize-button-holder">
-                <span class="annotation-vanish">
-                    <button class="annotation-resize-button" id="annotation-resize-v">Brush</button>
+            <div class="brush-button-holder">
+                <span class="brush-mode">
+                    <button class="brush-button" id="brush-mode">Brush</button>
+                    <button class="brush-button" id="erase-mode">Erase</button>
                 </span>
-                <span class="annotation-inc increment">
-                    <button class="annotation-resize-button circle inc" id="annotation-resize-inc">+</button>
-                    <button class="annotation-resize-button circle dec" id="annotation-resize-dec">-</button>
+                <span class="brush-inc increment">
+                    <button class="brush-button circle inc" id="brush-inc">+</button>
+                    <button class="brush-button circle dec" id="brush-dec">-</button>
                 </span>
             </div>
         </div>

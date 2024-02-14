@@ -1554,7 +1554,7 @@ div#${prntid} .ender_inner {
    background-color: black;
    border-radius: 10px;
 }
-div#${prntid} .brush {
+div#${prntid} .brush_circle {
    display: block;
    position: absolute;
    width: 50px;

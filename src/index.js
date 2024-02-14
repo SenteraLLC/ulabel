@@ -2294,7 +2294,7 @@ export class ULabel {
 
         // Build brush circle html
         const brush_circle_html = `
-        <a href="#" id="${brush_circle_id}" class="brush"></a>`;
+        <a href="#" id="${brush_circle_id}" class="brush_circle"></a>`;
         $("#dialogs__" + this.state["current_subtask"]).append(brush_circle_html);
         $("#" + brush_circle_id).css({
             "width": (this.config["brush_size"]*this.state["zoom_val"]) + "px",
