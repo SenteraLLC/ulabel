@@ -615,7 +615,7 @@ export class BrushToolboxItem extends ToolboxItem {
                     this.ulabel.change_brush_size(1.1);
                     break
                 case "brush-dec":
-                    this.ulabel.change_brush_size(0.9);
+                    this.ulabel.change_brush_size(1/1.1);
                     break
             }
         })

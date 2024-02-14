@@ -218,7 +218,7 @@ export class ULabel {
                     break;
                 // Decrease brush size by 10%
                 case ul.config.decrease_brush_size_keybind:
-                    ul.change_brush_size(0.9)
+                    ul.change_brush_size(1/1.1)
                     break;
             }
         })
