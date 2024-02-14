@@ -550,7 +550,64 @@ export class BrushToolboxItem extends ToolboxItem {
     }
 
     private add_event_listeners() {
+        $(document).on("click", ".brush-button", (event) => {
+            // Get the current subtask
+            const current_subtask_key = this.ulabel.state["current_subtask"];
+            const current_subtask = this.ulabel.subtasks[current_subtask_key];
+            const is_in_brush_mode = current_subtask.state["is_in_brush_mode"];
+            const is_in_erase_mode = current_subtask.state["is_in_erase_mode"];
 
+            // Get the clicked button
+            const button = $(event.currentTarget)
+
+            // Use the button id to get what size to resize the annotations to
+            const button_id: string = button.attr("id");
+
+            switch (button_id) {
+                case "brush-mode":
+                    if (is_in_brush_mode) {
+                        // When in erase mode, turn it off
+                        if (is_in_erase_mode) {
+                            this.ulabel.toggle_erase_mode();
+                        } else {
+                            // Otherwise, turn off brush mode
+                            this.ulabel.toggle_brush_mode(event);
+                        }
+                    } else {
+                        // Turn on brush mode
+                        this.ulabel.toggle_brush_mode(event);
+                        // And if erase mode is on, turn it off
+                        if (is_in_erase_mode) {
+                            this.ulabel.toggle_erase_mode();
+                        }
+                    }
+                    break
+                case "erase-mode":
+                    if (is_in_brush_mode) {
+                        // When not in erase mode, turn it on
+                        if (!is_in_erase_mode) {
+                            this.ulabel.toggle_erase_mode();
+                        } else {
+                            // Otherwise, turn off brush mode
+                            this.ulabel.toggle_brush_mode(event);
+                        }
+                    } else {
+                        // Turn on brush mode
+                        this.ulabel.toggle_brush_mode(event);
+                        // And if erase mode is not on, turn it on
+                        if (!is_in_erase_mode) {
+                            this.ulabel.toggle_erase_mode();
+                        }
+                    }
+                    break
+                case "brush-inc":
+                    this.ulabel.change_brush_size(1.1);
+                    break
+                case "brush-dec":
+                    this.ulabel.change_brush_size(0.9);
+                    break
+            }
+        })
     }
     
     public get_html() {
