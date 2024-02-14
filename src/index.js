@@ -921,7 +921,7 @@ export class ULabel {
             "demo_height": 40,
             "polygon_ender_size": 30,
             "edit_handle_size": 30,
-            "brush_size": 30,
+            "brush_size": 60, // radius in pixels
 
             // Behavior on special interactions
             // "done_callback": fin_on_submit_hook,
