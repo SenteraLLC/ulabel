@@ -2297,9 +2297,9 @@ export class ULabel {
         <a href="#" id="${brush_circle_id}" class="brush"></a>`;
         $("#dialogs__" + this.state["current_subtask"]).append(brush_circle_html);
         $("#" + brush_circle_id).css({
-            "width": this.config["brush_size"] + "px",
-            "height": this.config["brush_size"] + "px",
-            "border-radius": this.config["brush_size"] / 2 + "px",
+            "width": (this.config["brush_size"]*this.state["zoom_val"]) + "px",
+            "height": (this.config["brush_size"]*this.state["zoom_val"]) + "px",
+            "border-radius": (this.config["brush_size"]*this.state["zoom_val"])*2 + "px",
             "background-color": this.subtasks[this.state["current_subtask"]]["state"]["is_in_erase_mode"] ? "red" : "white",
             "left": gmx + "px",
             "top": gmy + "px",
@@ -2324,6 +2324,9 @@ export class ULabel {
             this.create_brush_circle(gmx, gmy);
             return;
         }
+
+        // Use this function to recalculate current zoom
+        this.change_brush_size(1);
 
         // Add to list of visible dialogs
         this.subtasks[this.state["current_subtask"]]["state"]["visible_dialogs"][brush_circle_id] = {
@@ -2353,9 +2356,9 @@ export class ULabel {
 
             // Update the brush circle
             $("#" + brush_circle_id).css({
-                "width": this.config["brush_size"] + "px",
-                "height": this.config["brush_size"] + "px",
-                "border-radius": this.config["brush_size"] / 2 + "px"
+                "width": (this.config["brush_size"]*this.state["zoom_val"]) + "px",
+                "height": (this.config["brush_size"]*this.state["zoom_val"]) + "px",
+                "border-radius": (this.config["brush_size"]*this.state["zoom_val"]) + "px"
             });
         }
     }
@@ -2368,9 +2371,10 @@ export class ULabel {
 
         // Create a spatial payload around the entire radius of the brush circle
         let spatial_payload = [];
+        let radius = this.config["brush_size"] / 2;
         for (let i = 0; i < 360; i += 10) {
             let rad = i * Math.PI / 180;
-            spatial_payload.push([imx + this.config["brush_size"] * Math.cos(rad), imy + this.config["brush_size"] * Math.sin(rad)]);
+            spatial_payload.push([imx + (radius * Math.cos(rad)), imy + (radius * Math.sin(rad))]);
         }
         // Ensure that first and last points are the same
         if (spatial_payload.length > 0) {
@@ -4073,7 +4077,7 @@ export class ULabel {
 
         // Check if current mouse is far enough from last brush point
         let continue_brush = true;
-        const min_brush_distance = this.config["brush_size"] / 2;
+        const min_brush_distance = this.config["brush_size"] / 8;
         if (this.state["last_brush_stroke"] !== null) {
             let [last_gmx, last_gmy] = this.state["last_brush_stroke"]
             if (Math.abs(gmx - last_gmx) < min_brush_distance && Math.abs(gmy - last_gmy) < min_brush_distance) {
