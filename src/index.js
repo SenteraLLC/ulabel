@@ -4817,7 +4817,7 @@ export class ULabel {
             
             // If first and last point reference the same point array in memory, we don't want to add the diff twice
             let n_points = active_spatial_payload.length;
-            if (active_spatial_payload[0] === active_spatial_payload[n_points - 1]) {
+            if (spatial_type === "polygon" && active_spatial_payload[0] === active_spatial_payload[n_points - 1]) {
                 n_points -= 1;
             }
 
