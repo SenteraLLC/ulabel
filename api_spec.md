@@ -11,6 +11,7 @@ This should eventually be replaced with a more comprehensive approach to documen
 - Hold `shift` when closing a polygon to continue annotating a new region or hole.
 - Hold `shift` when moving the cursor inside a polygon to begin annotating a new region or hole.
 - Press `Escape` or `crtl+z` to cancel the start of a new region or hole.
+- Press `Escape` to exit brush/erase mode.
 
 ## ULabel Constructor
 
@@ -313,6 +314,14 @@ URL to a page that gives annotation instructions.
     create_bbox_on_initial_crop: string,
 
     annotation_gradient_default: boolean
+
+    toggle_brush_mode_keybind: string
+
+    toggle_erase_mode_keybind: string
+
+    increase_brush_size_keybind: string
+
+    decrease_brush_size_keybind: string
 }
 ```
 With the following custom definitions.
@@ -326,7 +335,8 @@ enum AllowedToolboxItem {
     ClassCounter,     // 5
     KeypointSlider,   // 6
     SubmitButtons,    // 7
-    FilterDistance    // 8
+    FilterDistance,   // 8
+    Brush             // 9
 }
 
 type AnnotationClassDistanceData = {
