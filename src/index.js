@@ -2591,6 +2591,8 @@ export class ULabel {
                         // save the unmodified annotation for undo
                         modified_annotations[annid] = JSON.parse(JSON.stringify(annotation));
                         annotation["spatial_payload"] = new_spatial_payload;
+                        // update containing box
+                        this.rebuild_containing_box(annid);
                     }
                     break;
                 // TODO: handle other spatial types
