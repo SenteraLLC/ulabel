@@ -446,6 +446,18 @@ export class GeometricUtils {
         return turf.booleanPointInPolygon(turf.point(point), turf.polygon([poly]));
     }
 
+    // Convert a bbox to a simple polygon by adding the last point
+    public static bbox_to_simple_polygon(bbox: ULabelSpatialPayload2D): ULabelSpatialPayload2D {
+        // bbox is just two points, so we need to add the other two as well as the final point
+        return [
+            bbox[0], 
+            [bbox[1][0], bbox[0][1]], 
+            bbox[1], 
+            [bbox[0][0], bbox[1][1]], 
+            bbox[0]
+        ];
+    }
+
     public static get_nearest_point_on_bounding_box(ref_x: number, ref_y: number, spatial_payload: ULabelSpatialPayload2D, dstmax: number = Infinity): PointAccessObject {
         let ret: PointAccessObject = {
             "access": null,

@@ -1418,6 +1418,7 @@ export class ULabel {
             case "contour":
             case "tbar":
             case "delete_polygon":
+            case "delete_bbox":
                 return [
                     [gmx, gmy],
                     [gmx, gmy]
@@ -2056,6 +2057,7 @@ export class ULabel {
         // Dispatch to annotation type's drawing function
         switch (annotation_object["spatial_type"]) {
             case "bbox":
+            case "delete_bbox":
                 this.draw_bounding_box(annotation_object, context, demo, offset);
                 break;
             case "point":
@@ -2635,6 +2637,17 @@ export class ULabel {
         }
         // Redraw
         this.redraw_all_annotations(this.state["current_subtask"]);
+    }
+
+    // Convert bbox to polygon and then delete annotations in polygon
+    delete_annotations_in_bbox(delete_annid) {
+        const delete_annotation = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][delete_annid];
+        const delete_bbox = delete_annotation["spatial_payload"];
+        const delete_polygon = GeometricUtils.bbox_to_simple_polygon(delete_bbox);
+        delete_annotation["spatial_payload"] = delete_polygon;
+        delete_annotation["spatial_type"] = "delete_polygon";
+        // All the deleteion work is done in delete_annotations_in_polygon
+        this.delete_annotations_in_polygon(delete_annid);
     }
 
     // Remove all recorded events associated with a specific annotation id
@@ -3899,6 +3912,7 @@ export class ULabel {
 
             switch (spatial_type) {
                 case "bbox":
+                case "delete_bbox":
                     spatial_payload[1] = ms_loc;
                     this.rebuild_containing_box(actid);
                     this.redraw_all_annotations(this.state["current_subtask"], null, true); // tobuffer
@@ -4836,6 +4850,10 @@ export class ULabel {
                 }, redoing);
                 // TODO remove all enders/mergers for this polyline
                 // $("#ender_" + actid).remove(); // TODO remove from visible dialogs
+                break;
+            case "delete_bbox":
+                this.record_finish(active_id);
+                this.delete_annotations_in_bbox(active_id);
                 break;
             case "bbox":
             case "bbox3":
