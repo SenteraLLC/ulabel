@@ -19,7 +19,7 @@ export type LineEquation = {
 
 export class GeometricUtils {
     // Tolerance in px for simplifying turf shapes
-    public static TURF_SIMPLIFY_TOLERANCE_PX: number = 5;
+    public static TURF_SIMPLIFY_TOLERANCE_PX: number = 2;
 
     public static l2_norm(pt1: Point2D, pt2: Point2D): number {
         let ndim: number = pt1.length;
