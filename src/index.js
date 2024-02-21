@@ -1417,6 +1417,7 @@ export class ULabel {
                     [gmx, gmy]
                 ];
             case "polygon":
+            case "delete":
                 // Get brush spatial payload if in brush mode
                 if (this.subtasks[this.state["current_subtask"]]["state"]["is_in_brush_mode"]) {
                     return this.get_brush_circle_spatial_payload(gmx, gmy);
@@ -2061,6 +2062,7 @@ export class ULabel {
                 break;
             case "polygon":
             case "polyline":
+            case "delete":
                 this.draw_polygon(annotation_object, context, demo, offset);
                 break;
             case "contour":
@@ -3556,7 +3558,7 @@ export class ULabel {
 
         // If a polygon was just started, we need to add a clickable to end the shape
         // Don't create ender when in brush mode
-        if (annotation_mode === "polygon" && !this.subtasks[this.state["current_subtask"]]["state"]["is_in_brush_mode"]) {
+        if ((annotation_mode === "polygon" || annotation_mode === "delete")&& !this.subtasks[this.state["current_subtask"]]["state"]["is_in_brush_mode"]) {
             this.create_polygon_ender(gmx, gmy, unq_id);
         }
         else if (annotation_mode === "polyline") {
@@ -3590,7 +3592,7 @@ export class ULabel {
             },
         }, redoing);
         if (redoing) {
-            if (annotation_mode === "polygon" || annotation_mode === "polyline") {
+            if (annotation_mode === "polygon" || annotation_mode === "polyline" || annotation_mode === "delete") {
                 this.continue_annotation(this.state["last_move"]);
             }
             else {
@@ -3618,10 +3620,11 @@ export class ULabel {
 
         // Destroy ender
         // TODO(3d)
-        if (this.subtasks[this.state["current_subtask"]]["annotations"]["access"][unq_id]["spatial_type"] === "polygon") {
+        const spatial_type = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][unq_id]["spatial_type"];
+        if (spatial_type === "polygon" || spatial_type === "delete") {
             this.destroy_polygon_ender(unq_id);
         }
-        else if (this.subtasks[this.state["current_subtask"]]["annotations"]["access"][unq_id]["spatial_type"] === "polyline") {
+        else if (spatial_type === "polyline") {
             // Destroy enders/linkers for polyline
             // TODO 
         }
@@ -3766,6 +3769,7 @@ export class ULabel {
                     break;
                 case "polygon":
                 case "polyline":
+                case "delete":
                     if (spatial_type === "polygon") {
                         // for polygons, the active spatial payload is the last array of points in the spatial payload
                         active_spatial_payload = spatial_payload.at(-1);
@@ -4640,6 +4644,35 @@ export class ULabel {
                     this.destroy_polygon_ender(active_id);
                 }
 
+                break;
+            case "delete":
+                n_kpts = active_spatial_payload.length;
+                if (n_kpts < 4) {
+                    console.error("Canceled delete with insufficient points:", n_kpts);
+                    return;
+                }
+                start_pt = [
+                    active_spatial_payload[0][0],
+                    active_spatial_payload[0][1]
+                ];
+                active_spatial_payload[n_kpts - 1] = start_pt;
+
+                this.record_action({
+                    act_type: "finish_annotation",
+                    frame: this.state["current_frame"],
+                    undo_payload: {
+                        actid: active_id,
+                        ender_html: $("#ender_" + active_id).outer_html(),
+                        annotation: JSON.parse(JSON.stringify(annotation)),
+                    },
+                    redo_payload: {
+                        actid: active_id
+                    }
+                }, redoing);
+                // TODO: delete all annotations within the delete polygon
+                // TODO: delete the whole thing, or just contained portions?
+                this.destroy_polygon_ender(active_id);
+                this.redraw_all_annotations(this.state["current_subtask"]); 
                 break;
             case "polyline":
                 // TODO handle the case of merging with existing annotation
@@ -5570,7 +5603,8 @@ export class ULabel {
             if (this.subtasks[this.state["current_subtask"]]["state"]["is_in_progress"]) {
                 if (
                     (annotation_mode === "polygon") ||
-                    (annotation_mode === "polyline")
+                    (annotation_mode === "polyline") ||
+                    (annotation_mode === "delete")
                 ) {
                     this.continue_annotation(mouse_event);
                 }
@@ -5686,12 +5720,13 @@ export class ULabel {
                     spatial_payload = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][active_id]["spatial_payload"]
                     if (
                         (annotation_mode != "polygon") &&
-                        (annotation_mode != "polyline")
+                        (annotation_mode != "polyline") &&
+                        (annotation_mode != "delete")
                     ) {
                         this.finish_annotation(mouse_event);
-                    } else {
+                    } else if (annotation_mode === "polygon" || annotation_mode === "delete") {
                         active_spatial_payload = spatial_payload.at(-1);
-                        n_points = active_spatial_payload.length;
+                        n_points = annotation_mode === "polygon" ? active_spatial_payload.length : spatial_payload.length;
                         if (
                             // We can finish a polygon by clicking on the ender
                             // however, we don't want this to trigger immediately after starting an annotation
