@@ -2263,7 +2263,7 @@ export class ULabel {
             this.hide_id_dialog();
             // If in starting_complex_polygon mode, end it by undoing
             if (this.subtasks[this.state["current_subtask"]]["state"]["starting_complex_polygon"]) {
-                this.undo()
+                this.undo(true);
             }
             // Show brush circle
             let gmx = this.get_global_mouse_x(mouse_event);
@@ -2513,6 +2513,13 @@ export class ULabel {
         }, redoing);
     }
 
+    // Undo the simplification of a layer by replacing the annotation with the undo payload
+    simplify_polygon_complex_layer__undo(undo_payload) {
+        this.replace_annotation(undo_payload["actid"], undo_payload["annotation"]);
+        this.rebuild_containing_box(undo_payload["actid"]);
+        this.redraw_all_annotations(this.state["current_subtask"]);
+    }
+
     // Replace an entire annotation with a new one. Generally used for undo/redo.
     replace_annotation(annotation_id, annotation) {
         this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annotation_id] = JSON.parse(JSON.stringify(annotation));
@@ -2683,7 +2690,7 @@ export class ULabel {
 
     // ================= Annotation Utilities =================
 
-    undo() {
+    undo(is_internal_undo = false) {
         // Create constants for convenience
         const current_subtask = this.subtasks[this.state["current_subtask"]]
         const action_stream = current_subtask["actions"]["stream"]
@@ -2700,7 +2707,11 @@ export class ULabel {
             this.finish_action(action_stream[action_stream.length - 1]);
         }
         undone_stack.push(action_stream.pop());
-        let newact = this.undo_action(undone_stack[undone_stack.length - 1]);
+        
+        // set internal undo status
+        let undo_candidate = undone_stack[undone_stack.length - 1];
+        undo_candidate.is_internal_undo = is_internal_undo;
+        let newact = this.undo_action(undo_candidate);
         if (newact != null) {
             undone_stack[undone_stack.length - 1] = newact
         }
@@ -3272,9 +3283,17 @@ export class ULabel {
                 break;
             case "merge_polygon_complex_layer":
                 this.merge_polygon_complex_layer__undo(action.undo_payload);
-                // As this action was original performed internally, the user
-                // expects ctrl+z to the previous action as well
-                if (action.internal_undo === undefined) {
+                // If the undo was triggered by the user, they
+                // expect ctrl+z to undo the previous action as well
+                if (!action.is_internal_undo) {
+                    this.undo();
+                }
+                break;
+            case "simplify_polygon_complex_layer":
+                this.simplify_polygon_complex_layer__undo(action.undo_payload);
+                // If the undo was triggered by the user, they
+                // expect ctrl+z to undo the previous action as well
+                if (!action.is_internal_undo) {
                     this.undo();
                 }
                 break;
@@ -3956,7 +3975,7 @@ export class ULabel {
         // Then, loop throught the action stream until we find the start_complex_polygon action
         while (current_subtask["actions"]["stream"].length > 0) {
             let action = current_subtask["actions"]["stream"].pop();
-            action.internal_undo = true;
+            action.is_internal_undo = true;
             if (action.act_type === "start_complex_polygon") {
                 // replace the action
                 current_subtask["actions"]["stream"].push(action);
@@ -4195,7 +4214,7 @@ export class ULabel {
         // Then, loop throught the action stream until we find the begin_brush or begin_annotation action
         while (current_subtask["actions"]["stream"].length > 0) {
             let action = current_subtask["actions"]["stream"].pop();
-            action.internal_undo = true;
+            action.is_internal_undo = true;
             // undo the action
             this.undo_action(action);
             if (action.act_type === "begin_brush" || action.act_type === "begin_annotation") {
@@ -4595,12 +4614,11 @@ export class ULabel {
                 ];
                 active_spatial_payload[n_kpts - 1] = start_pt;
 
-                // Simplify the polygon
-                this.simplify_polygon_complex_layer(active_id, active_idx);
-
                 // If the shiftKey is held, we wait for the next click, which is handled in end_drag().
                 // When no shift key is held, we can finish the annotation
                 if (mouse_event != null && mouse_event.shiftKey) {
+                    // Simplify the polygon
+                    this.simplify_polygon_complex_layer(active_id, active_idx);
                     // Render merged layers
                     this.merge_polygon_complex_layer(active_id);
                     // Start a new complex layer
@@ -4626,6 +4644,8 @@ export class ULabel {
                         }
                     }, redoing);
                     this.destroy_polygon_ender(active_id);
+                    // Simplify the polygon
+                    this.simplify_polygon_complex_layer(active_id, active_idx);
                     // Render merged layers. Also handles rebuilding containing box and redrawing
                     this.merge_polygon_complex_layer(active_id);
                 }
