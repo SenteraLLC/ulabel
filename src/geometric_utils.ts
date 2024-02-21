@@ -154,6 +154,7 @@ export class GeometricUtils {
         );
     }
 
+    // Reduce the number of points in a polyline
     public static turf_simplify_polyline(poly: ULabelSpatialPayload2D, tolerance: number = GeometricUtils.TURF_SIMPLIFY_TOLERANCE_PX): ULabelSpatialPayload2D {
         return turf.simplify(turf.lineString(poly), {"tolerance": tolerance}).geometry.coordinates;
     }
@@ -441,22 +442,8 @@ export class GeometricUtils {
     }
 
     // Check if a point is within a polygon
-    public static point_is_within_polygon(point: Point2D, poly: ULabelSpatialPayload2D): boolean {
-        // https://stackoverflow.com/questions/42457842/calculate-if-point-coordinates-is-inside-polygon-with-concave-and-convex-angles?rq=3
-        let is_within: boolean = false;
-        let test_x: number, test_y: number, p1_x: number, p1_y: number, p2_x: number, p2_y: number; 
-        [test_x, test_y] = point;
-
-        for (let i: number = 0; i < poly.length-1; i++) {
-            [p1_x, p1_y] = poly[i];
-            [p2_x, p2_y] = poly[i+1];
-            if ((p1_y<test_y && p2_y>=test_y) || (p2_y<test_y && p1_y>=test_y)) { // This edge is crossing the horizontal ray of testpoint
-                if ((p1_x+(test_y-p1_y)/(p2_y-p1_y)*(p2_x-p1_x)) < test_x) { // Checking special cases (holes, self-crossings, self-overlapping, horizontal edges, etc.)
-                    is_within = !is_within;
-                }
-            }
-        }
-        return is_within
+    public static point_is_within_simple_polygon(point: Point2D, poly: ULabelSpatialPayload2D): boolean {
+        return turf.booleanPointInPolygon(turf.point(point), turf.polygon([poly]));
     }
 
     public static get_nearest_point_on_bounding_box(ref_x: number, ref_y: number, spatial_payload: ULabelSpatialPayload2D, dstmax: number = Infinity): PointAccessObject {

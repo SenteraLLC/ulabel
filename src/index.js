@@ -1412,12 +1412,12 @@ export class ULabel {
             case "polyline":
             case "contour":
             case "tbar":
+            case "delete_polygon":
                 return [
                     [gmx, gmy],
                     [gmx, gmy]
                 ];
             case "polygon":
-            case "delete":
                 // Get brush spatial payload if in brush mode
                 if (this.subtasks[this.state["current_subtask"]]["state"]["is_in_brush_mode"]) {
                     return this.get_brush_circle_spatial_payload(gmx, gmy);
@@ -2062,7 +2062,7 @@ export class ULabel {
                 break;
             case "polygon":
             case "polyline":
-            case "delete":
+            case "delete_polygon":
                 this.draw_polygon(annotation_object, context, demo, offset);
                 break;
             case "contour":
@@ -2519,6 +2519,79 @@ export class ULabel {
     simplify_polygon_complex_layer__undo(undo_payload) {
         this.replace_annotation(undo_payload["actid"], undo_payload["annotation"]);
         this.rebuild_containing_box(undo_payload["actid"]);
+        this.redraw_all_annotations(this.state["current_subtask"]);
+    }
+
+    // Delete all annotations that are completely within a delete annotation (a simple polygon).
+    delete_annotations_in_polygon(delete_annid, redoing = false) {
+        // Get the delete annotation
+        const delete_annotation = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][delete_annid];
+        // Get and simplify the delete polygon
+        // const delete_polygon = GeometricUtils.turf_simplify_complex_polygon([delete_annotation["spatial_payload"]])[0];
+        const delete_polygon = delete_annotation["spatial_payload"];
+        // Deprecate the delete annotation
+        delete_annotation["deprecated"] = true;
+        // Get the list of annotations
+        const annotations = this.subtasks[this.state["current_subtask"]]["annotations"]["access"];
+        // Loop through all annotations
+        for (let [annid, annotation] of Object.entries(annotations)) {
+            // Skip deprecated annotations
+            if (annotation["deprecated"]) {
+                continue;
+            }
+            // Skip non-spatial annotations
+            const spatial_type = annotation["spatial_type"];
+            if (NONSPATIAL_MODES.includes(spatial_type)) {
+                continue;
+            }
+            
+            // Check if the annotation is within the delete polygon
+            let split_polygons, new_spatial_payload;
+            switch (spatial_type) {
+                case "point":
+                    if (GeometricUtils.point_is_within_simple_polygon(annotation["spatial_payload"][0], delete_polygon)) {
+                        annotation["deprecated"] = true;
+                    }
+                    break;
+                case "polygon":
+                    // Separate the polygon into layers
+                    split_polygons = this.split_complex_polygon(annid);
+                    new_spatial_payload  = [];
+                    for (let split_polygon of split_polygons) {
+                        let merged_polygon;
+                        // Erase the delete polygon from the annotation
+                        merged_polygon = GeometricUtils.subtract_polygons(split_polygon, [delete_polygon]);
+                        if (merged_polygon !== null) {
+                            // Extend the new spatial payload
+                            new_spatial_payload = new_spatial_payload.concat(merged_polygon);
+                        }
+                    }
+                    if (new_spatial_payload.length === 0) {
+                        annotation["deprecated"] = true;
+                    } else {
+                        annotation["spatial_payload"] = new_spatial_payload;
+                    }
+                    break;
+                // TODO: handle other spatial types
+            }
+
+        }
+
+        // Record the delete annotation
+        this.record_action({
+            act_type: "delete_annotations_in_polygon",
+            frame: this.state["current_frame"],
+            undo_payload: {
+                actid: delete_annid,
+                annotation: delete_annotation,
+            },
+            redo_payload: {
+                actid: delete_annid,
+            }
+        }, redoing);
+        // Destroy the polygon ender
+        this.destroy_polygon_ender(delete_annid);
+        // Redraw
         this.redraw_all_annotations(this.state["current_subtask"]);
     }
 
@@ -3558,7 +3631,7 @@ export class ULabel {
 
         // If a polygon was just started, we need to add a clickable to end the shape
         // Don't create ender when in brush mode
-        if ((annotation_mode === "polygon" || annotation_mode === "delete")&& !this.subtasks[this.state["current_subtask"]]["state"]["is_in_brush_mode"]) {
+        if ((annotation_mode === "polygon" || annotation_mode === "delete_polygon")&& !this.subtasks[this.state["current_subtask"]]["state"]["is_in_brush_mode"]) {
             this.create_polygon_ender(gmx, gmy, unq_id);
         }
         else if (annotation_mode === "polyline") {
@@ -3592,7 +3665,7 @@ export class ULabel {
             },
         }, redoing);
         if (redoing) {
-            if (annotation_mode === "polygon" || annotation_mode === "polyline" || annotation_mode === "delete") {
+            if (annotation_mode === "polygon" || annotation_mode === "polyline" || annotation_mode === "delete_polygon") {
                 this.continue_annotation(this.state["last_move"]);
             }
             else {
@@ -3621,7 +3694,7 @@ export class ULabel {
         // Destroy ender
         // TODO(3d)
         const spatial_type = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][unq_id]["spatial_type"];
-        if (spatial_type === "polygon" || spatial_type === "delete") {
+        if (spatial_type === "polygon" || spatial_type === "delete_polygon") {
             this.destroy_polygon_ender(unq_id);
         }
         else if (spatial_type === "polyline") {
@@ -3769,7 +3842,7 @@ export class ULabel {
                     break;
                 case "polygon":
                 case "polyline":
-                case "delete":
+                case "delete_polygon":
                     if (spatial_type === "polygon") {
                         // for polygons, the active spatial payload is the last array of points in the spatial payload
                         active_spatial_payload = spatial_payload.at(-1);
@@ -4645,7 +4718,7 @@ export class ULabel {
                 }
 
                 break;
-            case "delete":
+            case "delete_polygon":
                 n_kpts = active_spatial_payload.length;
                 if (n_kpts < 4) {
                     console.error("Canceled delete with insufficient points:", n_kpts);
@@ -4656,23 +4729,7 @@ export class ULabel {
                     active_spatial_payload[0][1]
                 ];
                 active_spatial_payload[n_kpts - 1] = start_pt;
-
-                this.record_action({
-                    act_type: "finish_annotation",
-                    frame: this.state["current_frame"],
-                    undo_payload: {
-                        actid: active_id,
-                        ender_html: $("#ender_" + active_id).outer_html(),
-                        annotation: JSON.parse(JSON.stringify(annotation)),
-                    },
-                    redo_payload: {
-                        actid: active_id
-                    }
-                }, redoing);
-                // TODO: delete all annotations within the delete polygon
-                // TODO: delete the whole thing, or just contained portions?
-                this.destroy_polygon_ender(active_id);
-                this.redraw_all_annotations(this.state["current_subtask"]); 
+                this.delete_annotations_in_polygon(active_id);
                 break;
             case "polyline":
                 // TODO handle the case of merging with existing annotation
@@ -5604,7 +5661,7 @@ export class ULabel {
                 if (
                     (annotation_mode === "polygon") ||
                     (annotation_mode === "polyline") ||
-                    (annotation_mode === "delete")
+                    (annotation_mode === "delete_polygon")
                 ) {
                     this.continue_annotation(mouse_event);
                 }
@@ -5721,10 +5778,10 @@ export class ULabel {
                     if (
                         (annotation_mode != "polygon") &&
                         (annotation_mode != "polyline") &&
-                        (annotation_mode != "delete")
+                        (annotation_mode != "delete_polygon")
                     ) {
                         this.finish_annotation(mouse_event);
-                    } else if (annotation_mode === "polygon" || annotation_mode === "delete") {
+                    } else if (annotation_mode === "polygon" || annotation_mode === "delete_polygon") {
                         active_spatial_payload = spatial_payload.at(-1);
                         n_points = annotation_mode === "polygon" ? active_spatial_payload.length : spatial_payload.length;
                         if (

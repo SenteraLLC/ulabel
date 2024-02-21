@@ -168,7 +168,7 @@ export function prep_window_html(ulabel: ULabel, toolbox_item_order: unknown[] =
         get_md_button("bbox", "Bounding Box", BBOX_SVG, curmd, ulabel.subtasks),
         get_md_button("point", "Point", POINT_SVG, curmd, ulabel.subtasks),
         get_md_button("polygon", "Polygon", POLYGON_SVG, curmd, ulabel.subtasks),
-        get_md_button("delete", "Delete", POLYGON_SVG, curmd, ulabel.subtasks),
+        get_md_button("delete_polygon", "Delete", POLYGON_SVG, curmd, ulabel.subtasks),
         get_md_button("tbar", "T-Bar", TBAR_SVG, curmd, ulabel.subtasks),
         get_md_button("polyline", "Polyline", POLYLINE_SVG, curmd, ulabel.subtasks),
         get_md_button("contour", "Contour", CONTOUR_SVG, curmd, ulabel.subtasks),
