@@ -3342,7 +3342,7 @@ export class ULabel {
                 this.create_nonspatial_annotation(action.redo_payload);
                 break;
             case "start_complex_polygon":
-                this.start_complex_polygon(null, action.redo_payload);
+                this.start_complex_polygon(action.redo_payload);
                 break;
             case "merge_polygon_complex_layer":
                 this.merge_polygon_complex_layer(action.redo_payload.actid, action.redo_payload.layer_id, false, true);
@@ -3904,7 +3904,7 @@ export class ULabel {
         this.continue_annotation(this.state["last_move"]);
     }
 
-    start_complex_polygon(unfinished_annotation = false, redo_payload = null) {
+    start_complex_polygon(redo_payload = null) {
         // Turn off any edit suggestions or id dialogs
         this.hide_edit_suggestion();
         this.hide_global_edit_suggestion();
@@ -3937,7 +3937,6 @@ export class ULabel {
             frame: this.state["current_frame"],
             undo_payload: {
                 actid: active_id,
-                unfinished_annotation: unfinished_annotation
             },
             redo_payload: {
                 actid: active_id
@@ -3951,17 +3950,11 @@ export class ULabel {
         current_subtask["state"]["starting_complex_polygon"] = false
         // Remove the placeholder annotation
         current_subtask["annotations"]["access"][undo_payload.actid]["spatial_payload"].pop()
-        // Finish the annotation if needed
-        if (undo_payload.unfinished_annotation) {
-            this.finish_annotation(null);
-        } else {
-            // Remove the polygon ender
-            this.destroy_polygon_ender(undo_payload.actid);
-
-            // Mark that we're done here
-            current_subtask["state"]["active_id"] = null;
-            current_subtask["state"]["is_in_progress"] = false;
-        }
+        // Remove the polygon ender
+        this.destroy_polygon_ender(undo_payload.actid);
+        // Mark that we're done here
+        current_subtask["state"]["active_id"] = null;
+        current_subtask["state"]["is_in_progress"] = false;
     }
 
     finish_complex_polygon__undo(undo_payload) {
@@ -4614,42 +4607,39 @@ export class ULabel {
                 ];
                 active_spatial_payload[n_kpts - 1] = start_pt;
 
-                // If the shiftKey is held, we wait for the next click, which is handled in end_drag().
-                // When no shift key is held, we can finish the annotation
-                if (mouse_event != null && mouse_event.shiftKey) {
-                    // Simplify the polygon
-                    this.simplify_polygon_complex_layer(active_id, active_idx);
-                    // Render merged layers
-                    this.merge_polygon_complex_layer(active_id);
-                    // Start a new complex layer
-                    this.start_complex_polygon(true);
+                // If in brush mode, we finish the brush
+                if (current_subtask["state"]["is_in_brush_mode"]) {
+                    act_type = "finish_brush";
                 } else {
-                    // If in brush mode, we finish the brush
-                    if (current_subtask["state"]["is_in_brush_mode"]) {
-                        act_type = "finish_brush";
-                    } else {
-                        // When completing a complex layer of a polygon, we record the action accordingly
-                        act_type = spatial_payload.length > 1 ? "finish_complex_polygon" : "finish_annotation";
-                    }
-                    this.record_action({
-                        act_type: act_type,
-                        frame: this.state["current_frame"],
-                        undo_payload: {
-                            actid: active_id,
-                            ender_html: $("#ender_" + active_id).outer_html(),
-                            annotation: JSON.parse(JSON.stringify(annotation)),
-                        },
-                        redo_payload: {
-                            actid: active_id
-                        }
-                    }, redoing);
-                    this.destroy_polygon_ender(active_id);
-                    // Simplify the polygon
-                    this.simplify_polygon_complex_layer(active_id, active_idx);
-                    // Render merged layers. Also handles rebuilding containing box and redrawing
-                    this.merge_polygon_complex_layer(active_id);
+                    // When completing a complex layer of a polygon, we record the action accordingly
+                    act_type = spatial_payload.length > 1 ? "finish_complex_polygon" : "finish_annotation";
                 }
+                this.record_action({
+                    act_type: act_type,
+                    frame: this.state["current_frame"],
+                    undo_payload: {
+                        actid: active_id,
+                        ender_html: $("#ender_" + active_id).outer_html(),
+                        annotation: JSON.parse(JSON.stringify(annotation)),
+                    },
+                    redo_payload: {
+                        actid: active_id
+                    }
+                }, redoing);
+
+                // Simplify the polygon
+                this.simplify_polygon_complex_layer(active_id, active_idx);
+                // Render merged layers. Also handles rebuilding containing box and redrawing
+                this.merge_polygon_complex_layer(active_id);
                 
+                // When shift key is held, we start a new complex layer
+                if (mouse_event != null && mouse_event.shiftKey) {
+                    // Start a new complex layer
+                    this.start_complex_polygon();
+                } else {
+                    this.destroy_polygon_ender(active_id);
+                }
+
                 break;
             case "polyline":
                 // TODO handle the case of merging with existing annotation
