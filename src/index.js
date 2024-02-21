@@ -2486,6 +2486,33 @@ export class ULabel {
         this.redraw_all_annotations(this.state["current_subtask"]);
     }
 
+    // Simplify a single layer of a complex polygon. Modifies the annotation directly.
+    simplify_polygon_complex_layer(annotation_id, active_idx, redoing = false) {
+        // Get the annotation
+        const annotation = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annotation_id];
+        // Save the annotation for undo
+        let undo_annotation_payload = JSON.parse(JSON.stringify(annotation));
+        // Get the layer
+        let layer = annotation["spatial_payload"][active_idx];
+        // layer is a list of points, so we need to wrap it in a list
+        // Replace the layer with the simplified layer
+        annotation["spatial_payload"][active_idx] = GeometricUtils.turf_simplify_complex_polygon([layer])[0];
+
+        // Record the action
+        this.record_action({
+            act_type: "simplify_polygon_complex_layer",
+            frame: this.state["current_frame"],
+            undo_payload: {
+                actid: annotation_id,
+                annotation: undo_annotation_payload,
+            },
+            redo_payload: {
+                actid: annotation_id,
+                active_idx: active_idx,
+            }
+        }, redoing);
+    }
+
     // Replace an entire annotation with a new one. Generally used for undo/redo.
     replace_annotation(annotation_id, annotation) {
         this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annotation_id] = JSON.parse(JSON.stringify(annotation));
@@ -3300,6 +3327,9 @@ export class ULabel {
                 break;
             case "merge_polygon_complex_layer":
                 this.merge_polygon_complex_layer(action.redo_payload.actid, action.redo_payload.layer_id, false, true);
+                break;
+            case "simplify_polygon_complex_layer":
+                this.simplify_polygon_complex_layer(action.redo_payload.actid, action.redo_payload.active_idx, true);
                 break;
             default:
                 console.log("Redo error :(");
@@ -4548,11 +4578,12 @@ export class ULabel {
 
         // Record last point and redraw if necessary
         // TODO(3d)
-        let n_kpts, start_pt, popped, act_type;
+        let n_kpts, start_pt, popped, act_type, active_idx;
         switch (annotation["spatial_type"]) {
             case "polygon":
                 // For polygons, the active spatial payload is the last array of points in the spatial payload
-                active_spatial_payload = spatial_payload.at(-1);
+                active_idx = spatial_payload.length - 1;
+                active_spatial_payload = spatial_payload[active_idx];
                 n_kpts = active_spatial_payload.length;
                 if (n_kpts < 4) {
                     console.error("Canceled polygon with insufficient points:", n_kpts);
@@ -4563,6 +4594,9 @@ export class ULabel {
                     active_spatial_payload[0][1]
                 ];
                 active_spatial_payload[n_kpts - 1] = start_pt;
+
+                // Simplify the polygon
+                this.simplify_polygon_complex_layer(active_id, active_idx);
 
                 // If the shiftKey is held, we wait for the next click, which is handled in end_drag().
                 // When no shift key is held, we can finish the annotation

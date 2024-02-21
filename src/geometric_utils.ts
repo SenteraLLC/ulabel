@@ -18,6 +18,9 @@ export type LineEquation = {
 }
 
 export class GeometricUtils {
+    // Tolerance in px for simplifying turf shapes
+    public static TURF_SIMPLIFY_TOLERANCE_PX: number = 5;
+
     public static l2_norm(pt1: Point2D, pt2: Point2D): number {
         let ndim: number = pt1.length;
         let sq: number = 0;
@@ -151,6 +154,10 @@ export class GeometricUtils {
         );
     }
 
+    public static turf_simplify_polyline(poly: ULabelSpatialPayload2D, tolerance: number = GeometricUtils.TURF_SIMPLIFY_TOLERANCE_PX): ULabelSpatialPayload2D {
+        return turf.simplify(turf.lineString(poly), {"tolerance": tolerance}).geometry.coordinates;
+    }
+
     // Merge parts of poly2 into poly1 if possible by finding their intersection. Returns a new poly1 and poly2, or null on failure.
     public static merge_polygons_at_intersection(poly1: ULabelSpatialPayload2D, poly2: ULabelSpatialPayload2D): ULabelSpatialPayload2D[] {
         // Find the intersection, if it exists
@@ -174,7 +181,7 @@ export class GeometricUtils {
         // When the two polygons have no intersection, turf.union returns a quad nested list instead of a triple nested list
         // So we can just return complex_poly1
         if (ret[0][0][0][0] === undefined) {
-            return ret;
+            return GeometricUtils.turf_simplify_complex_polygon(ret);
         } else {
             return complex_poly1;
         }
@@ -200,7 +207,7 @@ export class GeometricUtils {
         } else {
             ret = temp[0].concat(temp[1]);
         }
-        return ret;
+        return GeometricUtils.turf_simplify_complex_polygon(ret);
     }
 
     // Make sure each layer of a complex polygon is valid, ie that it starts and ends at the same point
@@ -398,6 +405,10 @@ export class GeometricUtils {
             y += poly[i][1];
         }
         return [x/poly.length, y/poly.length];
+    }
+
+    public static turf_simplify_complex_polygon(poly: ULabelSpatialPayload2D[], tolerance: number = GeometricUtils.TURF_SIMPLIFY_TOLERANCE_PX): ULabelSpatialPayload2D[] {
+        return turf.simplify(turf.polygon(poly), {"tolerance": tolerance}).geometry.coordinates;
     }
 
     // Check if poly1 is completely within poly2
