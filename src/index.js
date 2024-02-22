@@ -2592,6 +2592,7 @@ export class ULabel {
                             }
                             break;
                         case "polyline":
+                        case "contour":
                             new_spatial_payload = GeometricUtils.subtract_simple_polygon_from_polyline(annotation["spatial_payload"], delete_polygon);
                             break;
                     }
