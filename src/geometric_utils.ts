@@ -161,6 +161,43 @@ export class GeometricUtils {
         return turf.simplify(turf.lineString(poly), {"tolerance": tolerance}).geometry.coordinates;
     }
 
+    // Subtract a polygon from a polyline
+    public static subtract_simple_polygon_from_polyline(polyline: ULabelSpatialPayload2D, polygon: ULabelSpatialPayload2D): ULabelSpatialPayload2D {
+        let turf_polyline = turf.lineString(polyline);
+        let turf_polygon = turf.polygon([polygon]);
+
+        // Use the lineSplit function to split the line at the polygon's vertices
+        let split = turf.lineSplit(turf_polyline, turf_polygon);
+        
+        if (split.features === undefined || split.features.length === 0) {
+            // If there are no splits, the polyline is either completely inside or outside the polygon
+            // If the first point of the polyline is inside the polygon, return null
+            if (GeometricUtils.point_is_within_simple_polygon(polyline[0], polygon)) {
+                return [];
+            } else {
+                return polyline;
+            }
+        }
+
+        // Discard the parts of the line that are inside the polygon
+        let remaining_splits = turf.featureCollection(
+            split.features.filter((feature) => {
+                // If the point at the middle of the lineString is inside the polygon, discard it
+                let middle_pt_idx = Math.floor(feature.geometry.coordinates.length / 2);
+                return !GeometricUtils.point_is_within_simple_polygon(feature.geometry.coordinates[middle_pt_idx], polygon);
+            })
+        );
+
+        // Sort the remaining splits by length
+        remaining_splits.features.sort((a, b) => {
+            return turf.length(b) - turf.length(a);
+        });
+
+        // Return the longest remaining split
+        // TODO: split into multiple polylines?
+        return remaining_splits.features[0].geometry.coordinates;
+    }
+
     // Merge parts of poly2 into poly1 if possible by finding their intersection. Returns a new poly1 and poly2, or null on failure.
     public static merge_polygons_at_intersection(poly1: ULabelSpatialPayload2D, poly2: ULabelSpatialPayload2D): ULabelSpatialPayload2D[] {
         // Find the intersection, if it exists

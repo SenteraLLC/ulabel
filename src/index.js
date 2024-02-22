@@ -2565,24 +2565,35 @@ export class ULabel {
             // Check if the annotation is within the delete polygon
             let split_polygons, new_spatial_payload, simple_polygon;
             switch (spatial_type) {
+                // Check if the point is within the delete polygon
                 case "point":
                     if (GeometricUtils.point_is_within_simple_polygon(annotation["spatial_payload"][0], delete_polygon)) {
                         annotation["deprecated"] = true;
                         deprecated_ids.push(annid);
                     }
                     break;
+                // Subtract the delete polygon from the annotation
                 case "polygon":
-                    // Separate the polygon into layers
-                    split_polygons = this.split_complex_polygon(annid);
+                case "polyline":
+                case "contour":
                     new_spatial_payload  = [];
-                    for (let split_polygon of split_polygons) {
-                        let merged_polygon;
-                        // Erase the delete polygon from the annotation
-                        merged_polygon = GeometricUtils.subtract_polygons(split_polygon, [delete_polygon]);
-                        if (merged_polygon !== null) {
-                            // Extend the new spatial payload
-                            new_spatial_payload = new_spatial_payload.concat(merged_polygon);
-                        }
+                    switch (spatial_type) {
+                        case "polygon":
+                            // Separate the polygon into layers
+                            split_polygons = this.split_complex_polygon(annid);
+                            for (let split_polygon of split_polygons) {
+                                let merged_polygon;
+                                // Erase the delete polygon from the annotation
+                                merged_polygon = GeometricUtils.subtract_polygons(split_polygon, [delete_polygon]);
+                                if (merged_polygon !== null) {
+                                    // Extend the new spatial payload
+                                    new_spatial_payload = new_spatial_payload.concat(merged_polygon);
+                                }
+                            }
+                            break;
+                        case "polyline":
+                            new_spatial_payload = GeometricUtils.subtract_simple_polygon_from_polyline(annotation["spatial_payload"], delete_polygon);
+                            break;
                     }
                     if (new_spatial_payload.length === 0) {
                         annotation["deprecated"] = true;
@@ -2595,6 +2606,7 @@ export class ULabel {
                         this.rebuild_containing_box(annid);
                     }
                     break;
+                // Convert to a simple polygon and check if it is within the delete polygon
                 case "bbox":
                 case "tbar":
                     // Convert to a simple polygon
