@@ -2563,7 +2563,7 @@ export class ULabel {
             }
             
             // Check if the annotation is within the delete polygon
-            let split_polygons, new_spatial_payload;
+            let split_polygons, new_spatial_payload, simple_polygon;
             switch (spatial_type) {
                 case "point":
                     if (GeometricUtils.point_is_within_simple_polygon(annotation["spatial_payload"][0], delete_polygon)) {
@@ -2595,6 +2595,27 @@ export class ULabel {
                         this.rebuild_containing_box(annid);
                     }
                     break;
+                case "bbox":
+                case "tbar":
+                    // Convert to a simple polygon
+                    switch (spatial_type) {
+                        case "bbox":
+                            simple_polygon = GeometricUtils.bbox_to_simple_polygon(annotation["spatial_payload"]);
+                            break;
+                        case "tbar":
+                            simple_polygon = GeometricUtils.tbar_to_simple_polygon(annotation["spatial_payload"]);
+                            break;
+                    }
+                    // Check if the polygon falls within the delete polygon or intersects it
+                    if (
+                        GeometricUtils.simple_polygon_is_within_simple_polygon(simple_polygon, delete_polygon) ||
+                        GeometricUtils.complex_polygons_intersect([simple_polygon], [delete_polygon])
+                    ) {
+                        annotation["deprecated"] = true;
+                        deprecated_ids.push(annid);
+                    }
+                    break;
+
                 // TODO: handle other spatial types
             }
         }

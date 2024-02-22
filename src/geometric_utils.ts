@@ -1,3 +1,5 @@
+import { center } from "@turf/turf";
+
 const turf = require('@turf/turf');
 const polygonClipping = require('polygon-clipping');
 
@@ -534,5 +536,37 @@ export class GeometricUtils {
             }
         }
         return ret;        
+    }
+
+    // Convert a tbar to a simple polygon
+    public static tbar_to_simple_polygon(spatial_payload: ULabelSpatialPayload2D): ULabelSpatialPayload2D {
+        // A tbar spatial_payload is just two points that define the middle line. To represent it as a polygon,
+        // we must calculate the endpoints of the perpendicular line at the end of the tbar.
+        const center_start_point: Point2D = spatial_payload[0];
+        const center_end_point: Point2D = spatial_payload[1]; 
+        let halflen = Math.sqrt(
+            (center_start_point[0] - center_end_point[0]) * (center_start_point[0] - center_end_point[0]) + (center_start_point[1] - center_end_point[1]) * (center_start_point[1] - center_end_point[1])
+        ) / 2;
+        let theta = Math.atan((center_end_point[1] - center_start_point[1]) / (center_end_point[0] - center_start_point[0]));
+        let perpendicular_endpoint_1: Point2D = [
+            center_start_point[0] + halflen * Math.sin(theta),
+            center_start_point[1] - halflen * Math.cos(theta)
+        ];
+        let perpendicular_endpoint_2: Point2D = [
+            center_start_point[0] - halflen * Math.sin(theta),
+            center_start_point[1] + halflen * Math.cos(theta)
+        ];
+
+        // Now we make a polygon that starts at the start of the tbar, and goes out and back to each other endpoint
+        return [
+            center_start_point,
+            perpendicular_endpoint_1,
+            center_end_point,
+            perpendicular_endpoint_2,
+            center_start_point,
+            center_end_point,
+            // End back at the start
+            center_start_point,
+        ];
     }
 }
