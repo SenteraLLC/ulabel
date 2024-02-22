@@ -2556,9 +2556,9 @@ export class ULabel {
             if (annotation["deprecated"]) {
                 continue;
             }
-            // Skip non-spatial annotations
+            // Skip non-spatial annotations and 3D annotations
             const spatial_type = annotation["spatial_type"];
-            if (NONSPATIAL_MODES.includes(spatial_type)) {
+            if (NONSPATIAL_MODES.includes(spatial_type) || MODES_3D.includes(spatial_type)) {
                 continue;
             }
             
