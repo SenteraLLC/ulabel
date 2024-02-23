@@ -553,6 +553,12 @@ export class ULabel {
                 case "object":
                     // If no name is provided, give a generic name based on the total number of currently initialized classes
                     name = class_definition.name ?? `Class ${ulabel.valid_class_ids.length}`
+                    
+                    // Skip classes with the reserved DELETE_CLASS_ID
+                    if (class_definition.id === DELETE_CLASS_ID) {
+                        console.warn(`Class id ${DELETE_CLASS_ID} is reserved for delete mode and cannot be used for class definitions`);
+                        continue;
+                    }
 
                     // Only create an id if one wasn't provided
                     id = class_definition.id ?? ULabel.create_unused_class_id(ulabel)
