@@ -4,9 +4,11 @@ import { ULABEL_VERSION } from '../src/version';
 
 import {
     BBOX_SVG,
+    DELETE_BBOX_SVG,
     BBOX3_SVG,
     POINT_SVG,
     POLYGON_SVG,
+    DELETE_POLYGON_SVG,
     CONTOUR_SVG,
     TBAR_SVG,
     POLYLINE_SVG,
@@ -174,8 +176,8 @@ export function prep_window_html(ulabel: ULabel, toolbox_item_order: unknown[] =
         get_md_button("bbox3", "Bounding Cube", BBOX3_SVG, curmd, ulabel.subtasks),
         get_md_button("whole-image", "Whole Frame", WHOLE_IMAGE_SVG, curmd, ulabel.subtasks),
         get_md_button("global", "Global", GLOBAL_SVG, curmd, ulabel.subtasks),
-        get_md_button("delete_polygon", "Delete", POLYGON_SVG, curmd, ulabel.subtasks),
-        get_md_button("delete_bbox", "Delete", BBOX_SVG, curmd, ulabel.subtasks),
+        get_md_button("delete_polygon", "Delete", DELETE_POLYGON_SVG, curmd, ulabel.subtasks),
+        get_md_button("delete_bbox", "Delete", DELETE_BBOX_SVG, curmd, ulabel.subtasks),
     ];
 
     // Append but don't wait
