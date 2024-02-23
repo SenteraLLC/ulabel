@@ -40,6 +40,9 @@ jQuery.fn.outer_html = function () {
 
 const MODES_3D = ["global", "bbox3"];
 const NONSPATIAL_MODES = ["whole-image", "global"];
+// Modes used to draw an area in the which to delete all annotations
+const DELETE_MODES = ["delete_polygon", "delete_bbox"]
+const DELETE_CLASS_ID = -1;
 
 export class ULabel {
 
@@ -581,6 +584,19 @@ export class ULabel {
             ulabel.valid_class_ids.push(modifed_class_definition.id)
             ulabel.color_info[modifed_class_definition.id] = modifed_class_definition.color
         }
+
+        // If the subtask has any DELETE_MODE enabled, add a class definition for it
+        if (subtask.allowed_modes.some(mode => DELETE_MODES.includes(mode))) {
+            subtask.class_defs.push({
+                "name": "Delete",
+                "id": DELETE_CLASS_ID,
+                // Default to crimson
+                "color": COLORS[1]
+            })
+            subtask.class_ids.push(DELETE_CLASS_ID)
+            ulabel.valid_class_ids.push(DELETE_CLASS_ID)
+            ulabel.color_info[DELETE_CLASS_ID] = COLORS[1]
+        }
     }
 
     static process_resume_from(ul, subtask_key, subtask) {
@@ -735,6 +751,7 @@ export class ULabel {
                 "idd_associated_annotation": null,
                 "idd_thumbnail": false,
                 "id_payload": id_payload,
+                "delete_mode_id_payload": [{"class_id": -1, "confidence": 1}],
                 "first_explicit_assignment": false,
 
                 // Annotation state
@@ -1328,6 +1345,9 @@ export class ULabel {
         $("div.tb-id-app").css("display", "none");
         $("div#tb-id-app--" + this.state["current_subtask"]).css("display", "block");
 
+        // Hide/show delete class
+        this.toggle_delete_class_id_in_toolbox();
+
         // Adjust tab buttons in toolbox
         $("a#tb-st-switch--" + old_st).attr("href", "#");
         $("a#tb-st-switch--" + old_st).parent().removeClass("sel");
@@ -1384,6 +1404,38 @@ export class ULabel {
         else {
             $("div.frame_annotation_dialog").removeClass("active");
         }
+    }
+
+    toggle_delete_class_id_in_toolbox() {
+        // Check if a DELETE_MODE is active
+        let show_delete = DELETE_MODES.includes(this.subtasks[this.state["current_subtask"]]["state"]["annotation_mode"]);
+        if (show_delete) {
+            // Show the delete class id in the toolbox
+            $("a#toolbox_sel_" + DELETE_CLASS_ID).css("display", "inline-block"); 
+            // Select the delete class id in the toolbox by clicking it
+            $("a#toolbox_sel_" + DELETE_CLASS_ID).click();        
+        } else {
+            // Hide the delete class id in the toolbox
+            $("a#toolbox_sel_" + DELETE_CLASS_ID).css("display", "none");
+            // If the delete class id is selected, select the first class id in the toolbox
+            if ($("a#toolbox_sel_" + DELETE_CLASS_ID).hasClass("sel")) {
+                $("a.tbid-opt").first().click();
+            }
+        }
+
+        // For all other class ids, show or hide them in the toolbox
+        for (const class_id of this.subtasks[this.state["current_subtask"]]["class_ids"]) {
+            // Skip the delete class id
+            if (class_id === DELETE_CLASS_ID) continue;
+
+            // Show or hide the class id in the toolbox
+            if (show_delete) {
+                $("a#toolbox_sel_" + class_id).css("display", "none");
+            } else {
+                $("a#toolbox_sel_" + class_id).css("display", "inline-block");
+            }
+        }
+
     }
 
     // Draw demo annotation in demo canvas
@@ -1444,8 +1496,11 @@ export class ULabel {
         }
     }
 
-    get_init_id_payload() {
+    get_init_id_payload(spatial_type = null) {
         this.set_id_dialog_payload_to_init(null);
+        if (DELETE_MODES.includes(spatial_type)) {
+            // Use special id payload for delete modes
+        }
         return JSON.parse(JSON.stringify(this.subtasks[this.state["current_subtask"]]["state"]["id_payload"]));
     }
 
@@ -5583,7 +5638,7 @@ export class ULabel {
         const outer_rad = 0.5 * this.config["outer_diameter"];
         let class_ids = this.subtasks[this.state["current_subtask"]]["class_ids"];
         for (var i = 0; i < class_ids.length; i++) {
-
+            // Skip 
             let srt_prop = this.subtasks[this.state["current_subtask"]]["state"]["id_payload"][i]["confidence"];
 
             let cum_prop = i / class_ids.length;
@@ -5628,8 +5683,7 @@ export class ULabel {
     update_id_toolbox_display() {
         if (this.config["allow_soft_id"]) {
             // Not supported yet
-        }
-        else {
+        } else {
             let pfx = "div#tb-id-app--" + this.state["current_subtask"];
             let class_ids = this.subtasks[this.state["current_subtask"]]["class_ids"];
             for (var i = 0; i < class_ids.length; i++) {

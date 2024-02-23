@@ -173,6 +173,7 @@ export class ULabel {
     public handle_id_dialog_hover(event: any): void;
     public toggle_erase_mode(): void;
     public toggle_brush_mode(mouse_event: any): void;
+    public toggle_delete_class_id_in_toolbox(): void;
     public change_brush_size(scale_factor: number): void;
     static process_classes(ulabel_obj: any, arg1: string, subtask_obj: any);
     static build_id_dialogs(ulabel_obj: any);
