@@ -1,5 +1,3 @@
-import { center } from "@turf/turf";
-
 const turf = require('@turf/turf');
 const polygonClipping = require('polygon-clipping');
 

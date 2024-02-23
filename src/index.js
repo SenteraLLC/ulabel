@@ -5910,7 +5910,7 @@ export class ULabel {
                         (annotation_mode != "delete_polygon")
                     ) {
                         this.finish_annotation(mouse_event);
-                    } else if (annotation_mode === "polygon" || annotation_mode === "delete_polygon") {
+                    } else {
                         active_spatial_payload = spatial_payload.at(-1);
                         n_points = annotation_mode === "polygon" ? active_spatial_payload.length : spatial_payload.length;
                         if (
