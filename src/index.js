@@ -2556,6 +2556,19 @@ export class ULabel {
         this.redraw_all_annotations(this.state["current_subtask"]);
     }
 
+    // Call merge_polygon_complex_layer on all layers of a polygon
+    verify_all_polygon_complex_layers(annotation_id) {
+        const annotation = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annotation_id];
+        // Reset the child indices and holes
+        annotation["spatial_payload_holes"] = [false];
+        annotation["spatial_payload_child_indices"] = [[]];
+        // merge_polygon_complex_layer will verify all layers
+        // We can start at layer 1 since layer 0 is always a fill
+        for (let layer_idx = 1; layer_idx < annotation["spatial_payload"].length; layer_idx++) {
+            this.merge_polygon_complex_layer(annotation_id, layer_idx, false, false, false);
+        }
+    }
+
     // Simplify a single layer of a complex polygon. Modifies the annotation directly.
     simplify_polygon_complex_layer(annotation_id, active_idx, redoing = false) {
         // Get the annotation
@@ -2664,6 +2677,9 @@ export class ULabel {
                         // save the unmodified annotation for undo
                         modified_annotations[annid] = JSON.parse(JSON.stringify(annotation));
                         annotation["spatial_payload"] = new_spatial_payload;
+                        if (spatial_type === "polygon") {
+                            this.verify_all_polygon_complex_layers(annid);
+                        }
                         // update containing box
                         this.rebuild_containing_box(annid);
                     }
