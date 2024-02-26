@@ -4461,14 +4461,7 @@ export class ULabel {
                     this.delete_annotation(active_id);
                 }
                 annotation["spatial_payload"] = new_spatial_payload;
-                // Reset the child indices and holes
-                annotation["spatial_payload_holes"] = [false];
-                annotation["spatial_payload_child_indices"] = [[]];
-                // merge_polygon_complex_layer will verify all layers
-                // We can start at layer 1 since layer 0 is always a fill
-                for (let layer_idx = 1; layer_idx < new_spatial_payload.length; layer_idx++) {
-                    this.merge_polygon_complex_layer(active_id, layer_idx, false, false, false);
-                }
+                this.verify_all_polygon_complex_layers(active_id);
                 this.rebuild_containing_box(active_id);
                 this.redraw_all_annotations(this.state["current_subtask"]);
             }
