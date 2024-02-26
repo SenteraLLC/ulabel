@@ -111,16 +111,6 @@ export class GeometricUtils {
         };
     }
 
-    // Check if two line segments are equal
-    public static line_segments_are_equal(line1: LineSegment2D, line2: LineSegment2D): boolean {
-        return (
-            (line1[0][0] === line2[0][0]) &&
-            (line1[0][1] === line2[0][1]) &&
-            (line1[1][0] === line2[1][0]) &&
-            (line1[1][1] === line2[1][1])
-        );
-    }
-
     // Check if two line segments are on the same line
     public static line_segments_are_on_same_line(line1: LineSegment2D, line2: LineSegment2D): boolean {
         const eq1: LineEquation = GeometricUtils.get_line_equation_through_points(line1[0], line1[1]);
@@ -224,28 +214,6 @@ export class GeometricUtils {
             } catch (e) {}
         }
         return ret;
-    }
-
-    // Check if two polygons are equal
-    public static polygons_are_equal(poly1: ULabelSpatialPayload2D, poly2: ULabelSpatialPayload2D): boolean {
-        // Check if the polygons have the same number of points
-        if (poly1.length !== poly2.length) {
-            return false;
-        }
-        // Check that each point in poly1 is in poly2
-        for (let i: number = 0; i < poly1.length; i++) {
-            let found: boolean = false;
-            for (let j: number = 0; j < poly2.length; j++) {
-                if (poly1[i][0] === poly2[j][0] && poly1[i][1] === poly2[j][1]) {
-                    found = true;
-                    break;
-                }
-            }
-            if (!found) {
-                return false;
-            }
-        }
-        return true;
     }
 
     // Check if poly1 is completely within poly2 by checking if any line segment of poly1 intersects with poly2
