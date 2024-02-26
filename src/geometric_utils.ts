@@ -111,25 +111,6 @@ export class GeometricUtils {
         };
     }
 
-    // Check if two line segments intersect
-    public static line_segments_intersect(line1: LineSegment2D, line2: LineSegment2D): boolean {
-        let x1: number, y1: number, x2: number, y2: number, x3: number, y3: number, x4: number, y4: number;
-        [[x1, y1], [x2, y2]] = line1;
-        [[x3, y3], [x4, y4]] = line2;
-        const dx1: number = x2 - x1;
-        const dy1: number = y2 - y1;
-        const dx2: number = x4 - x3;
-        const dy2: number = y4 - y3;
-        const d: number = dx1*dy2 - dy1*dx2;
-        if (d === 0) return false;
-        const dx3: number = x1 - x3;
-        const dy3: number = y1 - y3;
-        const t: number = (dx3*dy2 - dy3*dx2)/d;
-        if (t < 0 || t > 1) return false;
-        const u: number = (dx3*dy1 - dy3*dx1)/d;
-        if (u < 0 || u > 1) return false;
-    }
-
     // Check if two line segments are equal
     public static line_segments_are_equal(line1: LineSegment2D, line2: LineSegment2D): boolean {
         return (
@@ -214,35 +195,6 @@ export class GeometricUtils {
         }
     }
 
-    // Return a list of polygons that define all intersections between a list of polygons
-    public static get_polygon_intersections(polygons: ULabelSpatialPayload2D[]): ULabelSpatialPayload2D[] {
-        let ret: ULabelSpatialPayload2D[] = [];
-        for (let i: number = 0; i < polygons.length; i++) {
-            for (let j: number = i+1; j < polygons.length; j++) {
-                let poly1: ULabelSpatialPayload2D = polygons[i];
-                let poly2: ULabelSpatialPayload2D = polygons[j];
-                // Ensure both polygons are closed
-                if (GeometricUtils.is_polygon_closed(poly1) && GeometricUtils.is_polygon_closed(poly2)) {
-                    let intersection: ULabelSpatialPayload2D = GeometricUtils.get_polygon_intersection_single(poly1, poly2);
-                    if (intersection != null) {       
-                        // Don't add duplicate intersections
-                        let is_duplicate: boolean = false;
-                        for (let k: number = 0; k < ret.length; k++) {
-                           if (GeometricUtils.polygons_are_equal(ret[k], intersection)) {
-                               is_duplicate = true;
-                               break;
-                           }
-                        }
-                        if (!is_duplicate) {
-                            ret.push(intersection);
-                        }
-                    }
-                }
-            }
-        }
-        return ret;
-    }
-
     // Return the intersection of two polygons
     public static get_polygon_intersection_single(poly1: ULabelSpatialPayload2D, poly2: ULabelSpatialPayload2D): ULabelSpatialPayload2D {
         // Convert to turf polygons
@@ -294,57 +246,6 @@ export class GeometricUtils {
             }
         }
         return true;
-    }
-
-    // Check if two polygons share an edge, ie if they contain an identical line segment
-    public static polygons_share_edge(poly1: ULabelSpatialPayload2D, poly2: ULabelSpatialPayload2D): boolean {
-        for (let i: number = 0; i < poly1.length-1; i++) {
-            let line1: LineSegment2D = [poly1[i], poly1[i+1]];
-            // skip if the points are the same
-            if (GeometricUtils.points_are_equal(line1[0], line1[1])) {
-                continue;
-            }
-            for (let j: number = 0; j < poly2.length-1; j++) {
-                let line2: LineSegment2D = [poly2[j], poly2[j+1]];
-                // skip if the points are the same
-                if (GeometricUtils.points_are_equal(line2[0], line2[1])) {
-                    continue;
-                }
-                if (GeometricUtils.line_segments_are_on_same_line(line1, line2)) {
-                    return true;
-                }
-            }
-        }
-        return false;
-
-    }
-
-    // Scale a polygon about a center point, or the centroid if no center is provided
-    public static scale_polygon(poly: ULabelSpatialPayload2D, scale, center: Point2D = null): ULabelSpatialPayload2D {
-        let ret: ULabelSpatialPayload2D = [];
-        if (center === null) {
-            // use the centroid
-            center = GeometricUtils.get_centroid_of_polygon(poly);
-        }
-
-        for (let i: number = 0; i < poly.length; i++) {
-            let pt: Point2D = poly[i];
-            let new_x: number = center[0] + (pt[0] - center[0])*scale;
-            let new_y: number = center[1] + (pt[1] - center[1])*scale;
-            ret.push([new_x, new_y]);
-        }
-        return ret;
-    }
-
-    // Get the centroid of a polygon
-    public static get_centroid_of_polygon(poly: ULabelSpatialPayload2D): Point2D {
-        let x: number = 0;
-        let y: number = 0;
-        for (let i: number = 0; i < poly.length; i++) {
-            x += poly[i][0];
-            y += poly[i][1];
-        }
-        return [x/poly.length, y/poly.length];
     }
 
     // Check if poly1 is completely within poly2 by checking if any line segment of poly1 intersects with poly2
