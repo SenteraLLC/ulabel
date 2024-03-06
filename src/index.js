@@ -677,20 +677,6 @@ export class ULabel {
                     cand["annotation_meta"] = {};
                 }
 
-                // TODO: util to deduce holes from spatial payload if not provided
-                if (
-                    !("spatial_payload_holes" in cand)
-                ) {
-                    cand["spatial_payload_holes"] = [false];
-                }
-
-                if (
-                    !("spatial_payload_child_indices" in cand)
-                ) {
-                    cand["spatial_payload_child_indices"] = [[]];
-                }
-
-
                 // Ensure that classification payloads are compatible with config
                 cand.ensure_compatible_classification_payloads(ul.subtasks[subtask_key]["class_ids"])
 
@@ -706,6 +692,14 @@ export class ULabel {
                 // Push to ordering and add to access
                 ul.subtasks[subtask_key]["annotations"]["ordering"].push(cand["id"]);
                 ul.subtasks[subtask_key]["annotations"]["access"][subtask["resume_from"][i]["id"]] = JSON.parse(JSON.stringify(cand));
+
+                if (cand["spatial_type"] === "polygon") {
+                    ul.state.current_subtask = subtask_key;
+                    // For polygons, verify all layers
+                    ul.verify_all_polygon_complex_layers(cand["id"]);
+                    // update containing box
+                    ul.rebuild_containing_box(cand["id"]);
+                }
             }
         }
     }
@@ -2557,7 +2551,7 @@ export class ULabel {
     }
 
     // Call merge_polygon_complex_layer on all layers of a polygon
-    verify_all_polygon_complex_layers(annotation_id) {
+    verify_all_polygon_complex_layers(annotation_id, redraw = false) {
         const annotation = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annotation_id];
         // Reset the child indices and holes
         annotation["spatial_payload_holes"] = [false];
@@ -2565,7 +2559,7 @@ export class ULabel {
         // merge_polygon_complex_layer will verify all layers
         // We can start at layer 1 since layer 0 is always a fill
         for (let layer_idx = 1; layer_idx < annotation["spatial_payload"].length; layer_idx++) {
-            this.merge_polygon_complex_layer(annotation_id, layer_idx, false, false, false);
+            this.merge_polygon_complex_layer(annotation_id, layer_idx, false, false, redraw);
         }
     }
 

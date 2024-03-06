@@ -88,15 +88,15 @@ export class ULabelAnnotation {
                 this.spatial_payload = [this.spatial_payload];
             }
 
-            // Add spatial_payload_holes if not present
-            if (this.spatial_payload_holes === undefined) {
+            // Default fields if not provided 
+            if (
+                this.spatial_payload_holes === undefined ||
+                this.spatial_payload_child_indices === undefined
+            ) {
                 this.spatial_payload_holes = [false];
-            }
-
-            // Add spatial_payload_child_indices if not present
-            if (this.spatial_payload_child_indices === undefined) {
                 this.spatial_payload_child_indices = [[]];
             }
+
         }
     }
 
