@@ -4092,7 +4092,6 @@ export class ULabel {
             frm = redo_payload.frame;
         }
 
-        // TODO big performance gains with buffered canvasses
         if (actid && (actid)) {
             const ms_loc = [
                 gmx,
@@ -4111,7 +4110,6 @@ export class ULabel {
                 case "delete_bbox":
                     spatial_payload[1] = ms_loc;
                     this.rebuild_containing_box(actid);
-                    this.redraw_all_annotations(this.state["current_subtask"], null, true); // tobuffer
                     break;
                 case "bbox3":
                     spatial_payload[1] = [
@@ -4120,7 +4118,6 @@ export class ULabel {
                         frm
                     ];
                     this.rebuild_containing_box(actid);
-                    this.redraw_all_annotations(this.state["current_subtask"], null, true); // tobuffer
                     break;
                 case "polygon":
                 case "polyline":
@@ -4201,7 +4198,6 @@ export class ULabel {
                             }
                         }
                     }
-                    this.redraw_all_annotations(this.state["current_subtask"], null, true); // TODO: buffer
 
                     // If the FilterDistance ToolboxItem is present, filter points with this new polyline present
                     if (this.toolbox_order.includes(AllowedToolboxItem.FilterDistance)) {
@@ -4213,18 +4209,17 @@ export class ULabel {
                     if (GeometricUtils.l2_norm(ms_loc, spatial_payload.at(-1)) * this.config["px_per_px"] > 3) {
                         spatial_payload.push(ms_loc);
                         this.update_containing_box(ms_loc, actid);
-                        this.redraw_all_annotations(this.state["current_subtask"], null, true); // TODO tobuffer, no need to redraw here, can just draw over
                     }
                     break;
                 case "tbar":
                     spatial_payload[1] = ms_loc;
                     this.rebuild_containing_box(actid);
-                    this.redraw_all_annotations(this.state["current_subtask"], null, true); // tobuffer
                     break;
                 default:
                     this.raise_error(`Annotation mode is not understood: ${spatial_type}`, ULabel.elvl_info);
                     break;
             }
+            this.redraw_annotation(actid);
         }
     }
 
@@ -4647,7 +4642,6 @@ export class ULabel {
         const current_subtask = this.subtasks[this.state["current_subtask"]]
         const active_id = current_subtask["state"]["active_id"];
         const access_str = current_subtask["state"]["edit_candidate"]["access"];
-        // TODO big performance gains with buffered canvasses
         if (active_id && (active_id !== null)) {
             const mouse_location = [
                 this.get_global_mouse_x(mouse_event),
@@ -4661,7 +4655,7 @@ export class ULabel {
                 case "polygon":
                     this.set_with_access_string(active_id, access_str, mouse_location);
                     this.rebuild_containing_box(active_id);
-                    this.redraw_all_annotations(this.state["current_subtask"], null, true); // tobuffer
+                    this.redraw_annotation(active_id);
                     current_subtask["state"]["edit_candidate"]["point"] = mouse_location;
                     this.show_edit_suggestion(current_subtask["state"]["edit_candidate"], true);
                     this.show_global_edit_suggestion(current_subtask["state"]["edit_candidate"]["annid"]);
@@ -4670,7 +4664,7 @@ export class ULabel {
                     // TODO(new3d) Will not always want to set 3rd val -- editing is possible within an intermediate frame or frames
                     this.set_with_access_string(active_id, access_str, [mouse_location[0], mouse_location[1], this.state["current_frame"]]);
                     this.rebuild_containing_box(active_id);
-                    this.redraw_all_annotations(null, null, true); // tobuffer
+                    this.redraw_annotation(active_id);
                     current_subtask["state"]["edit_candidate"]["point"] = mouse_location;
                     this.show_edit_suggestion(current_subtask["state"]["edit_candidate"], true);
                     this.show_global_edit_suggestion(current_subtask["state"]["edit_candidate"]["annid"]);
@@ -4678,7 +4672,7 @@ export class ULabel {
                 case "polyline":
                     this.set_with_access_string(active_id, access_str, mouse_location);
                     this.rebuild_containing_box(active_id);
-                    this.redraw_all_annotations(this.state["current_subtask"], null, true); // tobuffer
+                    this.redraw_annotation(active_id);
                     current_subtask["state"]["edit_candidate"]["point"] = mouse_location;
                     this.show_edit_suggestion(current_subtask["state"]["edit_candidate"], true);
                     this.show_global_edit_suggestion(current_subtask["state"]["edit_candidate"]["annid"]);
@@ -4713,6 +4707,7 @@ export class ULabel {
             mark_deprecated(annotations[active_id], false)
 
             // Delete the new annotation which is being undone
+            this.destroy_annotation_context(undo_payload.new_id);
             delete annotations[undo_payload.new_id];
 
             // Remove deleted annotation from ordering
@@ -4725,35 +4720,11 @@ export class ULabel {
             undo_payload.starting_x,
             undo_payload.starting_y
         ];
-        const spatial_type = annotations[active_id]["spatial_type"]
-        switch (spatial_type) {
-            case "bbox":
-                this.set_with_access_string(active_id, undo_payload.edit_candidate["access"], mouse_location, true);
-                this.rebuild_containing_box(active_id);
-                this.redraw_all_annotations(this.state["current_subtask"], null, true); // tobuffer
-                this.suggest_edits(this.state["last_move"]);
-                break;
-            case "bbox3":
-                mouse_location.push(undo_payload.starting_frame);
-                this.set_with_access_string(active_id, undo_payload.edit_candidate["access"], mouse_location, true);
-                this.rebuild_containing_box(active_id);
-                this.redraw_all_annotations(this.state["current_subtask"], null, true); // tobuffer
-                this.suggest_edits(this.state["last_move"]);
-                break;
-            case "polygon":
-            case "polyline":
-                this.set_with_access_string(active_id, undo_payload.edit_candidate["access"], mouse_location, true);
-                this.rebuild_containing_box(active_id);
-                this.redraw_all_annotations(this.state["current_subtask"], null, true); // tobuffer
-                this.suggest_edits(this.state["last_move"]);
-                break;
-            case "tbar":
-                this.set_with_access_string(active_id, undo_payload.edit_candidate["access"], mouse_location, true);
-                this.rebuild_containing_box(active_id);
-                this.redraw_all_annotations(this.state["current_subtask"], null, true); // tobuffer
-                this.suggest_edits(this.state["last_move"]);
-                break;
-        }
+
+        this.set_with_access_string(active_id, undo_payload.edit_candidate["access"], mouse_location, true);
+        this.rebuild_containing_box(active_id);
+        this.redraw_annotation(active_id);
+        this.suggest_edits(this.state["last_move"]);
     }
 
     edit_annotation__redo(redo_payload) {
@@ -4765,14 +4736,19 @@ export class ULabel {
         if (redo_payload.deprecate_old) {
             actid = redo_payload.new_id;
             // TODO(3d)
-            annotations[actid] = JSON.parse(JSON.stringify(annotations[redo_payload.old_id]));
+            annotations[redo_payload.new_id] = JSON.parse(JSON.stringify(annotations[redo_payload.old_id]));
             annotations[redo_payload.new_id]["id"] = redo_payload.new_id;
             annotations[redo_payload.new_id]["created_by"] = this.config["annotator"];
             annotations[redo_payload.new_id]["new"] = true;
             annotations[redo_payload.new_id]["parent_id"] = redo_payload.old_id;
+            if (!NONSPATIAL_MODES.includes(annotations[redo_payload.new_id]["spatial_type"])) {
+                annotations[redo_payload.new_id]["canvas_id"] = this.get_init_canvas_context_id(redo_payload.new_id);
+            }
 
             // Mark the old annotation as deprecated
             mark_deprecated(annotations[redo_payload.old_id], true)
+            // Redraw old annotation
+            this.redraw_annotation(redo_payload.old_id);
 
             // Add the new annotation to the ordering array
             current_subtask["annotations"]["ordering"].push(redo_payload.new_id);
@@ -4788,27 +4764,27 @@ export class ULabel {
             case "bbox":
                 this.set_with_access_string(actid, redo_payload.edit_candidate["access"], ms_loc);
                 this.rebuild_containing_box(actid);
-                this.redraw_all_annotations(this.state["current_subtask"], null, true); // tobuffer
+                this.redraw_annotation(actid);
                 this.suggest_edits(this.state["last_move"]);
                 break;
             case "bbox3":
                 ms_loc.push(redo_payload.ending_frame);
                 this.set_with_access_string(actid, redo_payload.edit_candidate["access"], ms_loc);
                 this.rebuild_containing_box(actid);
-                this.redraw_all_annotations(this.state["current_subtask"], null, true); // tobuffer
+                this.redraw_annotation(actid);
                 this.suggest_edits(this.state["last_move"]);
                 break;
             case "polygon":
             case "polyline":
                 this.set_with_access_string(actid, redo_payload.edit_candidate["access"], ms_loc, false);
                 this.rebuild_containing_box(actid);
-                this.redraw_all_annotations(this.state["current_subtask"], null, true); // tobuffer
+                this.redraw_annotation(actid);
                 this.suggest_edits(this.state["last_move"]);
                 break;
             case "tbar":
                 this.set_with_access_string(actid, redo_payload.edit_candidate["access"], ms_loc, false);
                 this.rebuild_containing_box(actid);
-                this.redraw_all_annotations(this.state["current_subtask"], null, true); // tobuffer
+                this.redraw_annotation(actid);
                 this.suggest_edits(this.state["last_move"]);
                 break;
 
