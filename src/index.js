@@ -2613,7 +2613,7 @@ export class ULabel {
         // Redraw when caller expects the annotation to be redrawn
         if (!recursive_call && redraw) {
             this.rebuild_containing_box(annotation_id);
-            this.redraw_all_annotations(this.state["current_subtask"])
+            this.redraw_annotation(annotation_id);
         }
     }
 
@@ -4453,8 +4453,8 @@ export class ULabel {
         if (undo_payload.actid !== null) {
             // Reset the annotation
             this.subtasks[this.state["current_subtask"]]["annotations"]["access"][undo_payload.actid] = undo_payload.annotation;
-            // Redraw all
-            this.redraw_all_annotations(this.state["current_subtask"]);
+            // Redraw annotation
+            this.redraw_annotation(undo_payload.actid);
         }
 
         // If in brush mode, toggle it off
@@ -4541,7 +4541,7 @@ export class ULabel {
                 annotation["spatial_payload"] = new_spatial_payload;
                 this.verify_all_polygon_complex_layers(active_id);
                 this.rebuild_containing_box(active_id);
-                this.redraw_all_annotations(this.state["current_subtask"]);
+                this.redraw_annotation(active_id);
             }
         }
     }
