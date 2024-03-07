@@ -3228,10 +3228,13 @@ export class ULabel {
             annotations[new_id]["created_by"] = this.config["annotator"];
             annotations[new_id]["new"] = true;
             annotations[new_id]["parent_id"] = old_id;
+            annotations[new_id]["canvas_id"] = this.get_init_canvas_context_id(new_id);
             current_subtask["annotations"]["ordering"].push(new_id);
 
             // Set parent_id and deprecated = true
             mark_deprecated(annotations[old_id], true)
+            // Redraw the old annotation
+            this.redraw_annotation(old_id);
 
             // Work with new annotation from now on
             annotation_id = new_id;
@@ -3245,8 +3248,7 @@ export class ULabel {
             current_subtask["state"]["starting_complex_polygon"] = false;
         }
         mark_deprecated(annotations[annotation_id], true)
-
-        this.redraw_all_annotations(this.state["current_subtask"]);
+        this.redraw_annotation(annotation_id);
         this.hide_global_edit_suggestion();
 
         let frame = this.state["current_frame"];
@@ -3306,7 +3308,7 @@ export class ULabel {
         }
 
         // Handle visuals
-        this.redraw_all_annotations(this.state["current_subtask"]);
+        this.redraw_annotation(active_id);
         this.suggest_edits(this.state["last_move"]);
 
         // If the filter distance toolboxitem is present,
