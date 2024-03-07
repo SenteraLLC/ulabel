@@ -4621,10 +4621,15 @@ export class ULabel {
             annotations[new_id]["created_by"] = this.config["annotator"];
             annotations[new_id]["new"] = true;
             annotations[new_id]["parent_id"] = old_id;
+            if (!NONSPATIAL_MODES.includes(annotations[new_id]["spatial_type"])) {
+                annotations[new_id]["canvas_id"] = this.get_init_canvas_context_id(new_id);
+            }
             this.subtasks[this.state["current_subtask"]]["annotations"]["ordering"].push(new_id);
 
             // Set parent_id and deprecated = true
             mark_deprecated(annotations[old_id], true)
+            // Redraw the old annotation
+            this.redraw_annotation(old_id);
 
             // Change edit candidate to new id
             this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"]["annid"] = new_id;
@@ -4872,10 +4877,15 @@ export class ULabel {
             annotations[new_id]["created_by"] = this.config["annotator"];
             annotations[new_id]["new"] = true;
             annotations[new_id]["parent_id"] = old_id;
+            if (!NONSPATIAL_MODES.includes(annotations[new_id]["spatial_type"])) {
+                annotations[new_id]["canvas_id"] = this.get_init_canvas_context_id(new_id);
+            }
             current_subtask["annotations"]["ordering"].push(new_id);
 
             // Set parent_id and deprecated = true
             mark_deprecated(annotations[old_id], true);
+            // Redraw the old annotation
+            this.redraw_annotation(old_id);
 
             // Change edit candidate to new id
             current_subtask["state"]["move_candidate"]["annid"] = new_id;
@@ -5029,7 +5039,7 @@ export class ULabel {
                     this.rebuild_containing_box(active_id, false, this.state["current_subtask"]);
                 }
 
-                this.redraw_all_annotations(this.state["current_subtask"]); // tobuffer
+                this.redraw_annotation(active_id);
                 this.record_action({
                     act_type: "finish_annotation",
                     frame: this.state["current_frame"],
@@ -5135,7 +5145,7 @@ export class ULabel {
         // Note that undoing a finish should not change containing box
         this.subtasks[this.state["current_subtask"]]["state"]["is_in_progress"] = true;
         this.subtasks[this.state["current_subtask"]]["state"]["active_id"] = undo_payload.actid;
-        this.redraw_all_annotations(this.state["current_subtask"]);
+        this.redraw_annotation(undo_payload.actid);
         if (undo_payload.ender_html) {
             // create if ender isn't already there
             if ($("#dialogs__" + this.state["current_subtask"]).find("#ender_" + undo_payload.actid).length === 0) {
@@ -5212,7 +5222,7 @@ export class ULabel {
             ) {
                 filter_points_distance_from_line(this, offset);
             }
-            this.redraw_all_annotations(null, offset, true); // tobuffer
+            this.redraw_annotation(active_id, null, offset);
             this.show_global_edit_suggestion(current_subtask["state"]["move_candidate"]["annid"], offset); // TODO handle offset
             this.reposition_dialogs();
             return;
@@ -5281,7 +5291,7 @@ export class ULabel {
         this.subtasks[this.state["current_subtask"]]["state"]["active_id"] = null;
         this.subtasks[this.state["current_subtask"]]["state"]["is_in_move"] = false;
 
-        this.redraw_all_annotations(this.state["current_subtask"]);
+        this.redraw_annotation(active_id);
 
         this.record_finish_move(diffX, diffY, diffZ);
     }
@@ -5304,13 +5314,13 @@ export class ULabel {
             mark_deprecated(annotations[active_id], false)
 
             // Delete the new annotation that is being undone
+            this.destroy_annotation_context(undo_payload.new_id);
             delete annotations[undo_payload.new_id];
 
             // Remove the deleted annotation from the access array
             let index = current_subtask["annotations"]["ordering"].indexOf(undo_payload.new_id);
             current_subtask["annotations"]["ordering"].splice(index, 1);
-        }
-        else {
+        } else {
             const spatial_type = annotations[active_id]["spatial_type"];
             let spatial_payload = annotations[active_id]["spatial_payload"];
             let active_spatial_payload = spatial_payload;
@@ -5340,7 +5350,7 @@ export class ULabel {
             annotations[active_id]["containing_box"]["bry"] += diffY;
         }
 
-        this.redraw_all_annotations(this.state["current_subtask"]);
+        this.redraw_annotation(active_id);
         this.hide_edit_suggestion();
         this.hide_global_edit_suggestion();
         this.reposition_dialogs();
@@ -5366,9 +5376,14 @@ export class ULabel {
             annotations[redo_payload.new_id]["created_by"] = this.config["annotator"];
             annotations[redo_payload.new_id]["new"] = true;
             annotations[redo_payload.new_id]["parent_id"] = redo_payload.old_id;
+            if (!NONSPATIAL_MODES.includes(annotations[redo_payload.new_id]["spatial_type"])) {
+                annotations[redo_payload.new_id]["canvas_id"] = this.get_init_canvas_context_id(redo_payload.new_id);
+            }
 
             // Mark old annotation deprecated
             mark_deprecated(annotations[redo_payload.old_id], true)
+            // Redraw the old annotation
+            this.redraw_annotation(redo_payload.old_id);
 
             // Add new annotation id to ordering array
             current_subtask["annotations"]["ordering"].push(redo_payload.new_id);
@@ -5403,7 +5418,7 @@ export class ULabel {
         annotations[active_id]["containing_box"]["tly"] += diffY;
         annotations[active_id]["containing_box"]["bry"] += diffY;
 
-        this.redraw_all_annotations(this.state["current_subtask"]);
+        this.redraw_annotation(active_id);
         this.hide_edit_suggestion();
         this.hide_global_edit_suggestion();
         this.reposition_dialogs();
