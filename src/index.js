@@ -2668,7 +2668,7 @@ export class ULabel {
     simplify_polygon_complex_layer__undo(undo_payload) {
         this.replace_annotation(undo_payload["actid"], undo_payload["annotation"]);
         this.rebuild_containing_box(undo_payload["actid"]);
-        this.redraw_all_annotations(this.state["current_subtask"]);
+        this.redraw_annotation(undo_payload["actid"]);
     }
 
     // Delete all annotations that are completely within a delete annotation (a simple polygon).
@@ -2703,15 +2703,20 @@ export class ULabel {
             if (NONSPATIAL_MODES.includes(spatial_type) || MODES_3D.includes(spatial_type)) {
                 continue;
             }
+
+            // Save the original annotation for easy access
+            let og_annotation = JSON.parse(JSON.stringify(annotation));
             
             // Check if the annotation is within the delete polygon
             let split_polygons, new_spatial_payload, simple_polygon;
+            let needs_redraw = false;
             switch (spatial_type) {
                 // Check if the point is within the delete polygon
                 case "point":
                     if (GeometricUtils.point_is_within_simple_polygon(annotation["spatial_payload"][0], delete_polygon)) {
                         annotation["deprecated"] = true;
                         deprecated_ids.push(annid);
+                        needs_redraw = true;
                     }
                     break;
                 // Subtract the delete polygon from the annotation
@@ -2741,15 +2746,25 @@ export class ULabel {
                     if (new_spatial_payload.length === 0) {
                         annotation["deprecated"] = true;
                         deprecated_ids.push(annid);
+                        needs_redraw = true;
                     } else {
-                        // save the unmodified annotation for undo
-                        modified_annotations[annid] = JSON.parse(JSON.stringify(annotation));
+                        // First, we assume that the annotation changed
                         annotation["spatial_payload"] = new_spatial_payload;
                         if (spatial_type === "polygon") {
                             this.verify_all_polygon_complex_layers(annid);
                         }
-                        // update containing box
+                        // Update containing box
                         this.rebuild_containing_box(annid);
+
+                        // Then to verify the change, we compare containing boxes
+                        if (this.containing_boxes_are_equal(og_annotation["containing_box"], annotation["containing_box"])) {
+                            // If the containing box is the same, then we revert the change
+                            annotation = JSON.parse(JSON.stringify(og_annotation));
+                        } else {
+                            // save the unmodified annotation for undo
+                            modified_annotations[annid] = JSON.parse(JSON.stringify(og_annotation));
+                            needs_redraw = true;
+                        }
                     }
                     break;
                 // Convert to a simple polygon and check if it is within the delete polygon
@@ -2771,10 +2786,15 @@ export class ULabel {
                     ) {
                         annotation["deprecated"] = true;
                         deprecated_ids.push(annid);
+                        needs_redraw = true;
                     }
                     break;
 
                 // TODO: handle other spatial types
+            }
+            // Redraw if needed
+            if (needs_redraw) {
+                this.redraw_annotation(annid);
             }
         }
 
@@ -2792,14 +2812,15 @@ export class ULabel {
                 delete_annotation: JSON.parse(JSON.stringify(delete_annotation)),
             }
         }, redoing);
-        // Destroy the polygon ender
-        this.destroy_polygon_ender(delete_annid);
-        // Remove the delete annotation from access and ordering
-        delete this.subtasks[this.state["current_subtask"]]["annotations"]["access"][delete_annid];
-        this.subtasks[this.state["current_subtask"]]["annotations"]["ordering"] = this.subtasks[this.state["current_subtask"]]["annotations"]["ordering"].filter((value) => value !== delete_annid);
+        if (!redoing) {
+            // Destroy the polygon ender
+            this.destroy_polygon_ender(delete_annid);
+            // Remove the delete annotation from access and ordering, and delete its canvas context
+            this.destroy_annotation_context(delete_annid);
+            delete this.subtasks[this.state["current_subtask"]]["annotations"]["access"][delete_annid];
+            this.subtasks[this.state["current_subtask"]]["annotations"]["ordering"] = this.subtasks[this.state["current_subtask"]]["annotations"]["ordering"].filter((value) => value !== delete_annid);
+        }
         this.remove_recorded_events_for_annotation(delete_annid);
-        // Redraw
-        this.redraw_all_annotations(this.state["current_subtask"]);
     }
 
     // Undo the deletion of annotations by replacing the annotations with the undo payload
@@ -2810,14 +2831,16 @@ export class ULabel {
         for (let annid of undo_payload["deprecated_ids"]) {
             // Undeprecate the annotation
             annotations[annid]["deprecated"] = false;
+            // Redraw the annotation
+            this.redraw_annotation(annid);
         }
         // Loop through all modified annotations
         for (let [annid, annotation] of Object.entries(undo_payload["modified_annotations"])) {
             // Replace the annotation with the undo payload
             annotations[annid] = annotation;
+            // Redraw the annotation
+            this.redraw_annotation(annid);
         }
-        // Redraw
-        this.redraw_all_annotations(this.state["current_subtask"]);
     }
 
     // Convert bbox to polygon and then delete annotations in polygon
@@ -4068,6 +4091,16 @@ export class ULabel {
             this.subtasks[subtask]["annotations"]["access"][actid]["containing_box"]["bry"] += 3 * line_size;
         }
         // TODO modification here for T-Bar would be nice too
+    }
+
+    // Check that two containing boxes are equal
+    containing_boxes_are_equal(containing_box1, containing_box2) {
+        return (
+            containing_box1["tlx"] === containing_box2["tlx"] &&
+            containing_box1["tly"] === containing_box2["tly"] &&
+            containing_box1["brx"] === containing_box2["brx"] &&
+            containing_box1["bry"] === containing_box2["bry"]
+        )
     }
 
     continue_annotation(mouse_event, isclick = false, redo_payload = null) {
