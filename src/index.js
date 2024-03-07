@@ -3115,7 +3115,8 @@ export class ULabel {
             "spatial_type": spatial_type,
             "spatial_payload": spatial_payload,
             "classification_payloads": classification_payloads,
-            "text_payload": ""
+            "text_payload": "",
+            "canvas_id": this.get_init_canvas_context_id(unique_id)
         }
         if (spatial_type === "polygon") {
             new_annotation["spatial_payload_holes"] = [false];
@@ -3156,6 +3157,9 @@ export class ULabel {
 
         // Get the id from the payload
         const annotation_id = undo_payload.annotation_id
+
+        // Destory the canvas context
+        this.destroy_annotation_context(annotation_id)
 
         // Delete the created annotation
         delete current_subtask.annotations.access[annotation_id]
