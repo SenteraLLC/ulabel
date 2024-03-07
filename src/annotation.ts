@@ -97,6 +97,13 @@ export class ULabelAnnotation {
                 this.spatial_payload_child_indices = [[]];
             }
 
+            // Ensure that the last point of each polygon is the same as the first
+            for (let i = 0; i < this.spatial_payload.length; i++) {
+                let polygon = this.spatial_payload[i];
+                if (polygon[0][0] !== polygon[polygon.length - 1][0] || polygon[0][1] !== polygon[polygon.length - 1][1]) {
+                    polygon.push([polygon[0][0], polygon[0][1]]);
+                }
+            }
         }
     }
 
