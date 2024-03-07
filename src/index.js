@@ -1883,6 +1883,10 @@ export class ULabel {
 
         // Erase when in erase mode
         const operation = erase_mode ? "destination-out" : "source-over";
+        // We need a slightly larger line size when erasing because the canvas adds some anti-aliasing
+        if (erase_mode) {
+            line_size = line_size + 2;
+        }
 
         // Prep for bbox drawing
         const color = this.get_annotation_color(annotation_object)
@@ -1918,19 +1922,25 @@ export class ULabel {
                 ctx.stroke();
             }
 
-            // If not in vanish mode and polygon is closed, fill it or draw a hole
-            if (!is_in_vanish_mode && spatial_type === "polygon" && GeometricUtils.is_polygon_closed(active_spatial_payload)) {
-                if (annotation_object["spatial_payload_holes"][i]) {
-                    ctx.globalCompositeOperation =  'destination-out';
-                } else {
-                    ctx.globalAlpha = 0.2;
-                }
-                ctx.closePath();
-                ctx.fill();
-                // Reset globals
-                ctx.globalCompositeOperation = operation;
-                ctx.globalAlpha = 1.0;
-            }           
+            if (spatial_type === "polygon" && GeometricUtils.is_polygon_closed(active_spatial_payload)) {
+                // When called with erase mode, we want to clear the polygon
+                if (erase_mode) {
+                    ctx.closePath();
+                    ctx.fill();
+                } else if (!is_in_vanish_mode) {
+                    // If not in vanish mode and polygon is closed, fill it or draw a hole
+                    if (annotation_object["spatial_payload_holes"][i]) {
+                        ctx.globalCompositeOperation =  'destination-out';
+                    } else {
+                        ctx.globalAlpha = 0.2;
+                    }
+                    ctx.closePath();
+                    ctx.fill();
+                    // Reset globals
+                    ctx.globalCompositeOperation = operation;
+                    ctx.globalAlpha = 1.0;
+                }         
+            }  
         }
     }
 
@@ -2224,6 +2234,7 @@ export class ULabel {
         }
         // Erase the annotation
         this.draw_annotation_from_id(annotation_id, "front_context", offset, subtask, true);
+        this.toolbox.redraw_update_items(this);
     }
 
     // ================= On-Canvas HTML Dialog Utilities =================
@@ -3187,6 +3198,8 @@ export class ULabel {
 
             // Set parent_id and deprecated = true
             mark_deprecated(annotations[old_id], true)
+            // Erase the annotation
+            this.erase_annotation(old_id);
 
             // Work with new annotation from now on
             annotation_id = new_id;
@@ -3200,7 +3213,6 @@ export class ULabel {
             current_subtask["state"]["starting_complex_polygon"] = false;
         }
         mark_deprecated(annotations[annotation_id], true)
-
         this.erase_annotation(annotation_id);
         this.hide_global_edit_suggestion();
 
@@ -5813,10 +5825,12 @@ export class ULabel {
 
     assign_annotation_id__undo(undo_payload) {
         let actid = undo_payload.actid;
+        // Erase annotation
+        this.erase_annotation(actid);
         let new_payload = JSON.parse(JSON.stringify(undo_payload.old_id_payload));
         // TODO(3d)
         this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["classification_payloads"] = JSON.parse(JSON.stringify(new_payload));
-        this.redraw_annotation(actid);
+        this.draw_annotation_from_id(actid);
         this.suggest_edits();
     }
 
