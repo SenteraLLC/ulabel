@@ -769,6 +769,7 @@ export class ULabel {
                 // Rendering context
                 "front_context": null,
                 "back_context": null,
+                "annotation_contexts": [],
 
                 // Generic dialogs
                 "visible_dialogs": {}
@@ -1504,6 +1505,30 @@ export class ULabel {
         return JSON.parse(JSON.stringify(this.subtasks[this.state["current_subtask"]]["state"]["id_payload"]));
     }
 
+    // Create a new canvas for an individual annotation and return its context
+    get_init_canvas_context_id(annotation_id, subtask = null) {
+        if (subtask === null) {
+            subtask = this.state["current_subtask"];
+        }
+        const canvas_id = `canvas__${annotation_id}`;
+        // Add canvas to the "cancasses__${subtask}" div
+        $("#canvasses__" + subtask).append(`
+            <canvas 
+                id="${canvas_id}" 
+                class="${this.config["canvas_class"]} ${this.config["imgsz_class"]} canvas_cls" 
+                height=${this.config["image_height"] * this.config["px_per_px"]} 
+                width=${this.config["image_width"] * this.config["px_per_px"]}></canvas>
+        `);
+        // Adjust style of the canvas to fit the zoom
+        $("#" + canvas_id).css("height", `${this.config["image_height"] * this.state["zoom_val"]}px`);
+        $("#" + canvas_id).css("width", `${this.config["image_width"] * this.state["zoom_val"]}px`);
+
+        // Add the canvas context to the state
+        this.subtasks[subtask]["state"]["annotation_contexts"][annotation_id] = document.getElementById(canvas_id).getContext("2d");
+
+        return canvas_id;
+    }
+
     // ================= Access string utilities =================
 
     // Access a point in a spatial payload using access string
@@ -2090,7 +2115,7 @@ export class ULabel {
         this.tmp_nonspatial_element_ids[subtask] = [];
     }
 
-    draw_annotation(annotation_object, cvs_ctx = "front_context", demo = false, offset = null, subtask = null) {
+    draw_annotation(annotation_object, demo = false, offset = null, subtask = null) {
         // DEBUG left here for refactor reference, but I don't think it's needed moving forward
         //    there may be a use case for drawing depreacted annotations 
         // Don't draw if deprecated
@@ -2100,13 +2125,13 @@ export class ULabel {
         let context = null;
         if (subtask === "demo") {
             // Must be demo
-            if (cvs_ctx != "demo_canvas_context") {
+            if (annotation_object["canvas_id"] != "demo_canvas_context") {
                 throw new Error("Error drawing demo annotation.")
             }
             context = this.state["demo_canvas_context"];
         }
         else {
-            context = this.subtasks[subtask]["state"][cvs_ctx];
+            context = this.subtasks[subtask]["state"]["annotation_contexts"][annotation_object["id"]];
         }
 
         // Dispatch to annotation type's drawing function
@@ -2145,7 +2170,7 @@ export class ULabel {
         }
     }
 
-    draw_annotation_from_id(id, cvs_ctx = "front_context", offset = null, subtask = null) {
+    draw_annotation_from_id(id, offset = null, subtask = null) {
         if (subtask === null) {
             // Should never be here tbh
             subtask = this.state["current_subtask"];
@@ -2153,12 +2178,12 @@ export class ULabel {
         let frame = this.subtasks[subtask]["annotations"]["access"][id]["frame"];
         // Keep `==` here, we want to catch null and undefined
         if (frame == null || frame == "undefined" || frame == this.state["current_frame"]) {
-            this.draw_annotation(this.subtasks[subtask]["annotations"]["access"][id], cvs_ctx, false, offset, subtask);
+            this.draw_annotation(this.subtasks[subtask]["annotations"]["access"][id], false, offset, subtask);
         }
     }
 
     // Draws the first n annotations on record
-    draw_n_annotations(n, cvs_ctx = "front_context", offset = null, subtask = null, spatial_only = false) {
+    draw_n_annotations(n, offset = null, subtask = null, spatial_only = false) {
         if (subtask === null) {
             // Should never be here tbh
             subtask = this.state["current_subtask"];
@@ -2169,10 +2194,10 @@ export class ULabel {
                 continue;
             }
             if (offset != null && offset["id"] === annid) {
-                this.draw_annotation_from_id(annid, cvs_ctx, offset, subtask);
+                this.draw_annotation_from_id(annid, offset, subtask);
             }
             else {
-                this.draw_annotation_from_id(annid, cvs_ctx, null, subtask);
+                this.draw_annotation_from_id(annid, null, subtask);
             }
         }
     }
@@ -2187,7 +2212,7 @@ export class ULabel {
         }
 
         // Draw them all again
-        this.draw_n_annotations(this.subtasks[subtask]["annotations"]["ordering"].length, "front_context", offset, subtask, spatial_only);
+        this.draw_n_annotations(this.subtasks[subtask]["annotations"]["ordering"].length, offset, subtask, spatial_only);
 
         if (!spatial_only) {
             this.handle_nonspatial_redraw_end(subtask);
@@ -3748,6 +3773,9 @@ export class ULabel {
         let gmy = null;
         let init_spatial = null;
         let init_id_payload = null;
+        let canvas_id = null;
+
+        const subtask = this.state["current_subtask"] 
 
         if (redo_payload === null) {
             unq_id = this.make_new_annotation_id();
@@ -3757,6 +3785,7 @@ export class ULabel {
             gmy = this.get_global_mouse_y(mouse_event);
             init_spatial = this.get_init_spatial(gmx, gmy, annotation_mode);
             init_id_payload = this.get_init_id_payload();
+            canvas_id = this.get_init_canvas_context_id(unq_id, subtask);
             this.hide_edit_suggestion();
             this.hide_global_edit_suggestion();
         }
@@ -3790,7 +3819,7 @@ export class ULabel {
         }
 
         // Add this annotation to annotations object
-        this.subtasks[this.state["current_subtask"]]["annotations"]["access"][unq_id] = {
+        this.subtasks[subtask]["annotations"]["access"][unq_id] = {
             "id": unq_id,
             "new": true,
             "parent_id": null,
@@ -3804,12 +3833,13 @@ export class ULabel {
             "line_size": line_size,
             "containing_box": containing_box,
             "frame": frame,
+            "canvas_id": canvas_id,
             "text_payload": ""
         };
         if (annotation_mode === "polygon") {
             // First layer is always a fill, not a hole
-            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][unq_id]["spatial_payload_holes"] = [false];
-            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][unq_id]["spatial_payload_child_indices"] = [[]];
+            this.subtasks[subtask]["annotations"]["access"][unq_id]["spatial_payload_holes"] = [false];
+            this.subtasks[subtask]["annotations"]["access"][unq_id]["spatial_payload_child_indices"] = [[]];
         }
         if (redoing) {
             this.set_id_dialog_payload_to_init(unq_id, init_id_payload);
@@ -3817,12 +3847,12 @@ export class ULabel {
 
         // TODO(3d)
         // Load annotation_meta into annotation
-        this.subtasks[this.state["current_subtask"]]["annotations"]["access"][unq_id]["annotation_meta"] = this.config["annotation_meta"];
-        this.subtasks[this.state["current_subtask"]]["annotations"]["ordering"].push(unq_id);
+        this.subtasks[subtask]["annotations"]["access"][unq_id]["annotation_meta"] = this.config["annotation_meta"];
+        this.subtasks[subtask]["annotations"]["ordering"].push(unq_id);
 
         // If a polygon was just started, we need to add a clickable to end the shape
         // Don't create ender when in brush mode
-        if ((annotation_mode === "polygon" || annotation_mode === "delete_polygon")&& !this.subtasks[this.state["current_subtask"]]["state"]["is_in_brush_mode"]) {
+        if ((annotation_mode === "polygon" || annotation_mode === "delete_polygon")&& !this.subtasks[subtask]["state"]["is_in_brush_mode"]) {
             this.create_polygon_ender(gmx, gmy, unq_id);
         }
         else if (annotation_mode === "polyline") {
@@ -3832,8 +3862,8 @@ export class ULabel {
 
         // Draw annotation, and set state to annotation in progress
         this.draw_annotation_from_id(unq_id);
-        this.subtasks[this.state["current_subtask"]]["state"]["active_id"] = unq_id;
-        this.subtasks[this.state["current_subtask"]]["state"]["is_in_progress"] = true;
+        this.subtasks[subtask]["state"]["active_id"] = unq_id;
+        this.subtasks[subtask]["state"]["is_in_progress"] = true;
 
         // Record for potential undo/redo
         this.record_action({
@@ -3848,12 +3878,12 @@ export class ULabel {
                 gmy: gmy,
                 init_spatial: JSON.parse(JSON.stringify(init_spatial)),
                 finished: redoing || annotation_mode === "point",
-                init_payload: JSON.parse(JSON.stringify(this.subtasks[this.state["current_subtask"]]["state"]["id_payload"]))
+                init_payload: JSON.parse(JSON.stringify(this.subtasks[subtask]["state"]["id_payload"]))
             },
             undo_payload: {
                 // TODO(3d)
                 actid: unq_id,
-                ann_str: JSON.stringify(this.subtasks[this.state["current_subtask"]]["annotations"]["access"][unq_id])
+                ann_str: JSON.stringify(this.subtasks[subtask]["annotations"]["access"][unq_id])
             },
         }, redoing);
         if (redoing) {
