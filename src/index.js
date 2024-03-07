@@ -397,13 +397,16 @@ export class ULabel {
         });
         $(document).on("keypress", (e) => {
 
-            //check the key pressed against the delete annotation keybind in the config
+            // Check the key pressed against the delete annotation keybind in the config
             if (e.key === ul.config.delete_annotation_keybind) {
 
-                //check the active_annotation to make sure its not null
-                if (ul.subtasks[ul.state["current_subtask"]]["active_annotation"] != null) {
+                // Check the active_annotation to make sure its not null and isn't nonspatial
+                if (
+                    ul.subtasks[ul.state["current_subtask"]]["active_annotation"] != null &&
+                    !NONSPATIAL_MODES.includes(ul.subtasks[ul.state["current_subtask"]]["state"]["annotation_mode"])
+                ) {
 
-                    //delete the active annotation
+                    // Delete the active annotation
                     ul.delete_annotation(ul.subtasks[ul.state["current_subtask"]]["active_annotation"])
                 }
             }
@@ -2146,7 +2149,11 @@ export class ULabel {
             }
             context = this.state["demo_canvas_context"];
         }
-        else {
+        else if (NONSPATIAL_MODES.includes(annotation_object["spatial_type"])) {
+            // Draw nonspatial annotations on the front context
+            context = this.subtasks[subtask]["state"]["front_context"];
+        } else {
+            // Draw spatial annotations on their own canvas
             context = this.subtasks[subtask]["state"]["annotation_contexts"][annotation_object["id"]];
         }
 
@@ -2199,18 +2206,21 @@ export class ULabel {
     }
 
     // Draws the first n annotations on record
-    redraw_n_annotations(n, offset = null, subtask = null, spatial_only = false) {
+    redraw_n_annotations(n, offset = null, subtask = null, nonspatial_only = false) {
         if (subtask === null) {
-            // Should never be here tbh
             subtask = this.state["current_subtask"];
         }
+        
         for (var i = 0; i < n; i++) {
             let annid = this.subtasks[subtask]["annotations"]["ordering"][i];
-            if (spatial_only && NONSPATIAL_MODES.includes(this.subtasks[subtask]["annotations"]["access"][annid]["spatial_type"])) {
+            // Skip spatial annotations to save on time if we only need to redraw nonspatial annotations on the front context
+            let is_spatial = !NONSPATIAL_MODES.includes(this.subtasks[subtask]["annotations"]["access"][annid]["spatial_type"]);
+            if (nonspatial_only && is_spatial) {
                 continue;
+            } else if (is_spatial) {
+                // Clear the annotation's canvas
+                this.clear_annotation_canvas(annid, subtask);
             }
-            // Clear the annotation's canvas
-            this.clear_annotation_canvas(annid, subtask);
             // Draw the annotation
             if (offset != null && offset["id"] === annid) {
                 this.draw_annotation_from_id(annid, offset, subtask);
@@ -2220,32 +2230,24 @@ export class ULabel {
         }
     }
 
-    redraw_all_annotations_in_subtask(subtask, offset = null, spatial_only = false) {
+    redraw_all_annotations_in_subtask(subtask, offset = null, nonspatial_only = false) {
         // Clear the canvas
-        this.subtasks[subtask]["state"]["front_context"].clearRect(0, 0, this.config["image_width"] * this.config["px_per_px"], this.config["image_height"] * this.config["px_per_px"]);
-
-        if (!spatial_only) {
-            this.register_nonspatial_redraw_start(subtask);
-        }
-
-        // Draw them all again
-        this.redraw_n_annotations(this.subtasks[subtask]["annotations"]["ordering"].length, offset, subtask, spatial_only);
-
-        if (!spatial_only) {
-            this.handle_nonspatial_redraw_end(subtask);
-        }
-
+        this.clear_front_canvas();
+        this.register_nonspatial_redraw_start(subtask);
+        // Handle redraw of each annotation
+        this.redraw_n_annotations(this.subtasks[subtask]["annotations"]["ordering"].length, offset, subtask, nonspatial_only);
+        this.handle_nonspatial_redraw_end(subtask);
     }
 
-    redraw_all_annotations(subtask = null, offset = null, spatial_only = false) {
+    redraw_all_annotations(subtask = null, offset = null, nonspatial_only = false) {
         // TODO(3d)
         if (subtask === null) {
             for (const st in this.subtasks) {
-                this.redraw_all_annotations_in_subtask(st, offset, spatial_only);
+                this.redraw_all_annotations_in_subtask(st, offset, nonspatial_only);
             }
         }
         else {
-            this.redraw_all_annotations_in_subtask(subtask, offset, spatial_only);
+            this.redraw_all_annotations_in_subtask(subtask, offset, nonspatial_only);
         }
 
         /*
@@ -2261,8 +2263,15 @@ export class ULabel {
         if (subtask === null) {
             subtask = this.state["current_subtask"];
         }
-        this.clear_annotation_canvas(annotation_id, subtask);
-        this.draw_annotation_from_id(annotation_id, offset, subtask);
+        // Check if the annotation is spatial
+        let is_spatial = !NONSPATIAL_MODES.includes(this.subtasks[subtask]["annotations"]["access"][annotation_id]["spatial_type"]);
+        if (is_spatial) {
+            this.clear_annotation_canvas(annotation_id, subtask);
+            this.draw_annotation_from_id(annotation_id, offset, subtask);
+        } else {
+            // Nonspatial annotations are drawn on the front context
+            this.redraw_all_annotations_in_subtask(subtask, offset, true);
+        }
         this.toolbox.redraw_update_items(this);
     }
 
@@ -2271,6 +2280,13 @@ export class ULabel {
             subtask = this.state["current_subtask"];
         }
         this.subtasks[subtask]["state"]["annotation_contexts"][annotation_id].clearRect(0, 0, this.config["image_width"] * this.config["px_per_px"], this.config["image_height"] * this.config["px_per_px"]);
+    }
+
+    clear_front_canvas(subtask = null) {
+        if (subtask === null) {
+            subtask = this.state["current_subtask"];
+        }
+        this.subtasks[subtask]["state"]["front_context"].clearRect(0, 0, this.config["image_width"] * this.config["px_per_px"], this.config["image_height"] * this.config["px_per_px"]);
     }
 
     // ================= On-Canvas HTML Dialog Utilities =================
@@ -3210,6 +3226,7 @@ export class ULabel {
         }
 
         let annotation_mode = annotations[old_id]["spatial_type"];
+        let is_spatial = !NONSPATIAL_MODES.includes(annotation_mode);
 
         let deprecate_old = false;
         if (!annotations[old_id]["new"]) {
@@ -3228,7 +3245,9 @@ export class ULabel {
             annotations[new_id]["created_by"] = this.config["annotator"];
             annotations[new_id]["new"] = true;
             annotations[new_id]["parent_id"] = old_id;
-            annotations[new_id]["canvas_id"] = this.get_init_canvas_context_id(new_id);
+            if (is_spatial) {
+                annotations[new_id]["canvas_id"] = this.get_init_canvas_context_id(new_id);
+            }
             current_subtask["annotations"]["ordering"].push(new_id);
 
             // Set parent_id and deprecated = true
@@ -3751,7 +3770,7 @@ export class ULabel {
         ann_str = JSON.stringify(this.subtasks[this.state["current_subtask"]]["annotations"]["access"][unq_id]);
 
         // Draw new annotation
-        this.redraw_all_annotations(this.state["current_subtask"], null);
+        this.draw_annotation_from_id(unq_id);
 
         let frame = this.state["current_frame"];
         if (MODES_3D.includes(annotation_mode)) {
@@ -3797,8 +3816,8 @@ export class ULabel {
             console.log("We may have a problem... undo replication");
         }
 
-        // Delete from view
-        this.redraw_all_annotations(this.state["current_subtask"], null);
+        // Render the change (have to redraw all non-spatial since they all live on the front canvas)
+        this.redraw_all_annotations(this.state["current_subtask"], null, true);
         this.suggest_edits(this.state["last_move"]);
     }
 
