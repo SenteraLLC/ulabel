@@ -698,6 +698,9 @@ export class ULabel {
                 ul.subtasks[subtask_key]["annotations"]["ordering"].push(cand["id"]);
                 ul.subtasks[subtask_key]["annotations"]["access"][subtask["resume_from"][i]["id"]] = JSON.parse(JSON.stringify(cand));
 
+                // Create annotation canvas
+                cand["canvas_id"] = ul.get_init_canvas_context_id(cand["id"]);
+
                 if (cand["spatial_type"] === "polygon") {
                     ul.state.current_subtask = subtask_key;
                     // For polygons, verify all layers
@@ -2621,7 +2624,7 @@ export class ULabel {
     merge_polygon_complex_layer__undo(undo_payload) {
         this.replace_annotation(undo_payload["actid"], undo_payload["annotation"]);
         this.rebuild_containing_box(undo_payload["actid"]);
-        this.redraw_all_annotations(this.state["current_subtask"]);
+        this.redraw_annotation(undo_payload["actid"]);
     }
 
     // Call merge_polygon_complex_layer on all layers of a polygon
@@ -4003,7 +4006,7 @@ export class ULabel {
             // TODO 
         }
 
-        // Destroy the annotation's canvas
+        // Destroy the annotation's canvas, thus removing it from the screen
         this.destroy_annotation_context(unq_id);
 
         // Remove from ordering
@@ -4023,8 +4026,6 @@ export class ULabel {
             console.log("We may have a problem... undo replication");
         }
 
-        // Delete from view
-        this.redraw_all_annotations(this.state["current_subtask"]);
         this.suggest_edits(this.state["last_move"]);
     }
 
@@ -5875,7 +5876,7 @@ export class ULabel {
         else {
             this.suggest_edits();
         }
-        this.redraw_all_annotations(this.state["current_subtask"]);
+        this.redraw_annotation(actid);
 
         // Explicit changes are undoable
         // First assignments are treated as though they were done all along
@@ -5912,7 +5913,7 @@ export class ULabel {
         let new_payload = JSON.parse(JSON.stringify(undo_payload.old_id_payload));
         // TODO(3d)
         this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["classification_payloads"] = JSON.parse(JSON.stringify(new_payload));
-        this.redraw_all_annotations(this.state["current_subtask"]);
+        this.redraw_annotation(actid);
         this.suggest_edits();
     }
 
