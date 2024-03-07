@@ -30,7 +30,9 @@ const { v4: uuidv4 } = require('uuid');
 import {
     COLORS,
     WHOLE_IMAGE_SVG,
-    GLOBAL_SVG
+    GLOBAL_SVG,
+    FRONT_Z_INDEX,
+    BACK_Z_INDEX,
 } from './blobs';
 import { ULABEL_VERSION } from './version';
 
@@ -1331,8 +1333,8 @@ export class ULabel {
         this.state["current_subtask"] = st_key;
 
         // Bring new set of canvasses out to front
-        $("div.canvasses").css("z-index", 75);
-        $("div#canvasses__" + this.state["current_subtask"]).css("z-index", 100);
+        $("div.canvasses").css("z-index", BACK_Z_INDEX);
+        $("div#canvasses__" + this.state["current_subtask"]).css("z-index", FRONT_Z_INDEX);
 
         // Show appropriate set of dialogs
         $("div.dialogs_container").css("display", "none");
@@ -1515,18 +1517,32 @@ export class ULabel {
         $("#canvasses__" + subtask).append(`
             <canvas 
                 id="${canvas_id}" 
-                class="${this.config["canvas_class"]} ${this.config["imgsz_class"]} canvas_cls" 
+                class="${this.config["canvas_class"]} ${this.config["imgsz_class"]} canvas_cls annotation_canvas" 
                 height=${this.config["image_height"] * this.config["px_per_px"]} 
                 width=${this.config["image_width"] * this.config["px_per_px"]}></canvas>
         `);
         // Adjust style of the canvas to fit the zoom
         $("#" + canvas_id).css("height", `${this.config["image_height"] * this.state["zoom_val"]}px`);
         $("#" + canvas_id).css("width", `${this.config["image_width"] * this.state["zoom_val"]}px`);
+        // Make sure the front context stays in front
+        $("#" + canvas_id).css("z-index", BACK_Z_INDEX);
 
         // Add the canvas context to the state
         this.subtasks[subtask]["state"]["annotation_contexts"][annotation_id] = document.getElementById(canvas_id).getContext("2d");
 
         return canvas_id;
+    }
+
+    // Remove a canvas from the document and the state
+    destroy_annotation_context(annotation_id, subtask = null) {
+        if (subtask === null) {
+            subtask = this.state["current_subtask"];
+        }
+        
+        // Remove the canvas context from the state
+        delete this.subtasks[subtask]["state"]["annotation_contexts"][annotation_id];
+        // Remove the canvas from the document
+        $("#" + this.subtasks[subtask]["annotations"]["access"][annotation_id]["canvas_id"]).remove();
     }
 
     // ================= Access string utilities =================
@@ -2183,7 +2199,7 @@ export class ULabel {
     }
 
     // Draws the first n annotations on record
-    draw_n_annotations(n, offset = null, subtask = null, spatial_only = false) {
+    redraw_n_annotations(n, offset = null, subtask = null, spatial_only = false) {
         if (subtask === null) {
             // Should never be here tbh
             subtask = this.state["current_subtask"];
@@ -2193,15 +2209,16 @@ export class ULabel {
             if (spatial_only && NONSPATIAL_MODES.includes(this.subtasks[subtask]["annotations"]["access"][annid]["spatial_type"])) {
                 continue;
             }
+            // Clear the annotation's canvas
+            this.clear_annotation_canvas(annid, subtask);
+            // Draw the annotation
             if (offset != null && offset["id"] === annid) {
                 this.draw_annotation_from_id(annid, offset, subtask);
-            }
-            else {
+            } else {
                 this.draw_annotation_from_id(annid, null, subtask);
             }
         }
     }
-
 
     redraw_all_annotations_in_subtask(subtask, offset = null, spatial_only = false) {
         // Clear the canvas
@@ -2212,7 +2229,7 @@ export class ULabel {
         }
 
         // Draw them all again
-        this.draw_n_annotations(this.subtasks[subtask]["annotations"]["ordering"].length, offset, subtask, spatial_only);
+        this.redraw_n_annotations(this.subtasks[subtask]["annotations"]["ordering"].length, offset, subtask, spatial_only);
 
         if (!spatial_only) {
             this.handle_nonspatial_redraw_end(subtask);
@@ -2238,6 +2255,22 @@ export class ULabel {
         and a different batch run on redraw, a batch for subtask switch etc.
         */
         this.toolbox.redraw_update_items(this);
+    }
+
+    redraw_annotation(annotation_id, subtask = null, offset = null) {
+        if (subtask === null) {
+            subtask = this.state["current_subtask"];
+        }
+        this.clear_annotation_canvas(annotation_id, subtask);
+        this.draw_annotation_from_id(annotation_id, offset, subtask);
+        this.toolbox.redraw_update_items(this);
+    }
+
+    clear_annotation_canvas(annotation_id, subtask = null) {
+        if (subtask === null) {
+            subtask = this.state["current_subtask"];
+        }
+        this.subtasks[subtask]["state"]["annotation_contexts"][annotation_id].clearRect(0, 0, this.config["image_width"] * this.config["px_per_px"], this.config["image_height"] * this.config["px_per_px"]);
     }
 
     // ================= On-Canvas HTML Dialog Utilities =================
@@ -3773,7 +3806,6 @@ export class ULabel {
         let gmy = null;
         let init_spatial = null;
         let init_id_payload = null;
-        let canvas_id = null;
 
         const subtask = this.state["current_subtask"] 
 
@@ -3785,11 +3817,9 @@ export class ULabel {
             gmy = this.get_global_mouse_y(mouse_event);
             init_spatial = this.get_init_spatial(gmx, gmy, annotation_mode);
             init_id_payload = this.get_init_id_payload();
-            canvas_id = this.get_init_canvas_context_id(unq_id, subtask);
             this.hide_edit_suggestion();
             this.hide_global_edit_suggestion();
-        }
-        else {
+        } else {
             unq_id = redo_payload.unq_id;
             line_size = redo_payload.line_size;
             mouse_event = redo_payload.mouse_event;
@@ -3800,6 +3830,8 @@ export class ULabel {
             init_spatial = redo_payload.init_spatial;
             init_id_payload = redo_payload.init_payload;
         }
+
+        let canvas_id = this.get_init_canvas_context_id(unq_id, subtask);
 
         // TODO(3d) 
         let containing_box = {
@@ -3918,11 +3950,13 @@ export class ULabel {
         const spatial_type = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][unq_id]["spatial_type"];
         if (spatial_type === "polygon" || spatial_type === "delete_polygon") {
             this.destroy_polygon_ender(unq_id);
-        }
-        else if (spatial_type === "polyline") {
+        } else if (spatial_type === "polyline") {
             // Destroy enders/linkers for polyline
             // TODO 
         }
+
+        // Destroy the annotation's canvas
+        this.destroy_annotation_context(unq_id);
 
         // Remove from ordering
         // TODO(3d)
