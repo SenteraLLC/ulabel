@@ -698,13 +698,12 @@ export class ULabel {
                 ul.subtasks[subtask_key]["annotations"]["ordering"].push(cand["id"]);
                 ul.subtasks[subtask_key]["annotations"]["access"][subtask["resume_from"][i]["id"]] = JSON.parse(JSON.stringify(cand));
 
-                // Create annotation canvas
-                cand["canvas_id"] = ul.get_init_canvas_context_id(cand["id"]);
-
                 if (cand["spatial_type"] === "polygon") {
                     ul.state.current_subtask = subtask_key;
                     // For polygons, verify all layers
                     ul.verify_all_polygon_complex_layers(cand["id"]);
+                    // Clear action stream, since the above action should not be undoable
+                    ul.remove_recorded_events_for_annotation(cand["id"]);
                     // update containing box
                     ul.rebuild_containing_box(cand["id"]);
                 }
@@ -788,6 +787,19 @@ export class ULabel {
         }
     }
 
+    static initialize_annotation_canvases(ul) {
+        // Create the canvas for each annotation
+        for (const subtask_key in ul.subtasks) {
+            const subtask = ul.subtasks[subtask_key]
+            for (const annotation_id in subtask.annotations.access) {
+                let annotation = subtask.annotations.access[annotation_id]
+                if (!NONSPATIAL_MODES.includes(annotation.spatial_type)) {
+                    annotation["canvas_id"] = ul.get_init_canvas_context_id(annotation_id, subtask_key)
+                }
+            }
+        }
+    }
+
     static expand_image_data(ul, raw_img_dat) {
         if (typeof raw_img_dat === "string") {
             return {
@@ -862,6 +874,7 @@ export class ULabel {
      * Code to be called after ULabel has finished initializing.
     */
     static after_init(ulabel) {
+        // Perform the after_init method for each toolbox item
         for (const toolbox_item of ulabel.toolbox.items) {
             toolbox_item.after_init()
         }
@@ -1124,6 +1137,9 @@ export class ULabel {
             // that.state["demo_canvas_context"] = document.getElementById(
             //     that.config["canvas_did"]
             // ).getContext("2d");
+
+            // Create the annotation canvases for the resume_from annotations
+            ULabel.initialize_annotation_canvases(that);
 
             // Add the ID dialogs' HTML to the document
             build_id_dialogs(that);
@@ -3615,6 +3631,8 @@ export class ULabel {
     }
 
     undo_action(action) {
+        console.log(action.act_type);
+        console.log(action.undo_payload);
         this.update_frame(null, action.frame);
         switch (action.act_type) {
             case "begin_annotation":
