@@ -5,6 +5,7 @@ import {
     ULabelContainingBox, 
     ULabelSpatialType 
 } from "..";
+import { GeometricUtils } from "./geometric_utils";
 
 
 
@@ -27,6 +28,7 @@ export class ULabelAnnotation {
         public frame?: number,
         public line_size?: number,
         public id?: string,
+        public canvas_id?: string,
         // Polygons use complex spatial payloads
         public spatial_payload?: any,
         public spatial_type?: ULabelSpatialType,
@@ -103,6 +105,12 @@ export class ULabelAnnotation {
                 if (polygon[0][0] !== polygon[polygon.length - 1][0] || polygon[0][1] !== polygon[polygon.length - 1][1]) {
                     polygon.push([polygon[0][0], polygon[0][1]]);
                 }
+            }
+
+            // Simplify each layer of the polygon
+            for (let i = 0; i < this.spatial_payload.length; i++) {
+                let layer = this.spatial_payload[i];
+                this.spatial_payload[i] = GeometricUtils.turf_simplify_complex_polygon([layer])[0];
             }
         }
     }

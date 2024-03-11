@@ -699,13 +699,22 @@ export class ULabel {
                 ul.subtasks[subtask_key]["annotations"]["access"][subtask["resume_from"][i]["id"]] = JSON.parse(JSON.stringify(cand));
 
                 if (cand["spatial_type"] === "polygon") {
-                    ul.state.current_subtask = subtask_key;
-                    // For polygons, verify all layers
-                    ul.verify_all_polygon_complex_layers(cand["id"]);
-                    // Clear action stream, since the above action should not be undoable
-                    ul.remove_recorded_events_for_annotation(cand["id"]);
-                    // update containing box
-                    ul.rebuild_containing_box(cand["id"]);
+                    // If missing any of `spatial_payload_holes` or `spatial_payload_child_indices`,
+                    // or if they don't match the length of `spatial_payload`, then rebuild them
+                    if (
+                        !("spatial_payload_holes" in cand) ||
+                        !("spatial_payload_child_indices" in cand) ||
+                        cand["spatial_payload_holes"].length !== cand["spatial_payload"].length ||
+                        cand["spatial_payload_child_indices"].length !== cand["spatial_payload"].length
+                    ) {
+                        ul.state.current_subtask = subtask_key;
+                        // For polygons, verify all layers
+                        ul.verify_all_polygon_complex_layers(cand["id"]);
+                        // Clear action stream, since the above action should not be undoable
+                        ul.remove_recorded_events_for_annotation(cand["id"]);
+                        // update containing box
+                        ul.rebuild_containing_box(cand["id"]);
+                    }
                 }
             }
         }
@@ -787,15 +796,20 @@ export class ULabel {
         }
     }
 
-    static initialize_annotation_canvases(ul) {
+    static initialize_annotation_canvases(ul, subtask_key = null) {
+        if (subtask_key === null) {
+            for (const subtask_key in ul.subtasks) {
+                ULabel.initialize_annotation_canvases(ul, subtask_key)
+            }
+            return
+        }
+
         // Create the canvas for each annotation
-        for (const subtask_key in ul.subtasks) {
-            const subtask = ul.subtasks[subtask_key]
-            for (const annotation_id in subtask.annotations.access) {
-                let annotation = subtask.annotations.access[annotation_id]
-                if (!NONSPATIAL_MODES.includes(annotation.spatial_type)) {
-                    annotation["canvas_id"] = ul.get_init_canvas_context_id(annotation_id, subtask_key)
-                }
+        const subtask = ul.subtasks[subtask_key]
+        for (const annotation_id in subtask.annotations.access) {
+            let annotation = subtask.annotations.access[annotation_id]
+            if (!NONSPATIAL_MODES.includes(annotation.spatial_type)) {
+                annotation["canvas_id"] = ul.get_init_canvas_context_id(annotation_id, subtask_key)
             }
         }
     }
@@ -3631,8 +3645,6 @@ export class ULabel {
     }
 
     undo_action(action) {
-        console.log(action.act_type);
-        console.log(action.undo_payload);
         this.update_frame(null, action.frame);
         switch (action.act_type) {
             case "begin_annotation":
@@ -6319,23 +6331,26 @@ export class ULabel {
         }
         return JSON.parse(JSON.stringify(ret));
     }
+
     set_annotations(new_annotations, subtask) {
         // Undo/redo won't work through a get/set
         this.reset_interaction_state();
         this.subtasks[subtask]["actions"]["stream"] = [];
         this.subtasks[subtask]["actions"]["undo_stack"] = [];
+
+        // Remove canvases for spatial annotations
+        for (let i = 0; i < this.subtasks[subtask]["annotations"]["ordering"].length; i++) {
+            // If a spatial annotation, delete the canvas
+            let id = this.subtasks[subtask]["annotations"]["ordering"][i];
+            if (!NONSPATIAL_MODES.includes(this.subtasks[subtask]["annotations"]["access"][id]["spatial_type"])) {
+                this.destroy_annotation_context(id);
+            }
+        }
         let newanns = JSON.parse(JSON.stringify(new_annotations));
-        let new_ordering = [];
-        let new_access = {};
-        for (let i = 0; i < newanns.length; i++) {
-            new_ordering.push(newanns[i]["id"]);
-            new_access[newanns[i]["id"]] = newanns[i];
-        }
-        this.subtasks[subtask]["annotations"]["ordering"] = new_ordering;
-        this.subtasks[subtask]["annotations"]["access"] = new_access;
-        for (let i = 0; i < new_ordering.length; i++) {
-            this.rebuild_containing_box(new_ordering[i], false, subtask);
-        }
+        // Set new annotations and initialize canvases
+        ULabel.process_resume_from(this, subtask, {"resume_from": newanns});
+        ULabel.initialize_annotation_canvases(this, subtask);
+        // Redraw all annotations to render them
         this.redraw_all_annotations(subtask);
     }
 
