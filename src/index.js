@@ -2789,15 +2789,18 @@ export class ULabel {
                         // Update containing box
                         this.rebuild_containing_box(annid);
 
-                        // Then to verify the change, we compare containing boxes
-                        if (this.containing_boxes_are_equal(og_annotation["containing_box"], annotation["containing_box"])) {
-                            // If the containing box is the same, then we revert the change
-                            annotation = JSON.parse(JSON.stringify(og_annotation));
-                        } else {
-                            // save the unmodified annotation for undo
-                            modified_annotations[annid] = JSON.parse(JSON.stringify(og_annotation));
-                            needs_redraw = true;
-                        }
+                        // TODO: need a more robust check for whether the annotation changed
+                        // // Then to verify the change, we compare containing boxes
+                        // if (this.containing_boxes_are_equal(og_annotation["containing_box"], annotation["containing_box"])) {
+                        //     // If the containing box is the same, then we revert the change
+                        //     annotation = JSON.parse(JSON.stringify(og_annotation));
+                        // } else {
+                        //     // save the unmodified annotation for undo
+                        //     modified_annotations[annid] = JSON.parse(JSON.stringify(og_annotation));
+                        //     needs_redraw = true;
+                        // }
+                        modified_annotations[annid] = JSON.parse(JSON.stringify(og_annotation));
+                        needs_redraw = true;
                     }
                     break;
                 // Convert to a simple polygon and check if it is within the delete polygon
