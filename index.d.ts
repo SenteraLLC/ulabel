@@ -171,7 +171,7 @@ export class ULabel {
     public rezoom(): void;
     public update_frame(delta?: number, new_frame?: number): void;
     public handle_id_dialog_hover(event: any): void;
-    public toggle_erase_mode(): void;
+    public toggle_erase_mode(mouse_event: any): void;
     public toggle_brush_mode(mouse_event: any): void;
     public toggle_delete_class_id_in_toolbox(): void;
     public change_brush_size(scale_factor: number): void;

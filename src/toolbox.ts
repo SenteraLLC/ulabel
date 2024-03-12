@@ -577,40 +577,10 @@ export class BrushToolboxItem extends ToolboxItem {
 
             switch (button_id) {
                 case "brush-mode":
-                    if (is_in_brush_mode) {
-                        // When in erase mode, turn it off
-                        if (is_in_erase_mode) {
-                            this.ulabel.toggle_erase_mode();
-                        } else {
-                            // Otherwise, turn off brush mode
-                            this.ulabel.toggle_brush_mode(event);
-                        }
-                    } else {
-                        // Turn on brush mode
-                        this.ulabel.toggle_brush_mode(event);
-                        // And if erase mode is on, turn it off
-                        if (is_in_erase_mode) {
-                            this.ulabel.toggle_erase_mode();
-                        }
-                    }
+                    this.ulabel.toggle_brush_mode(event);
                     break
                 case "erase-mode":
-                    if (is_in_brush_mode) {
-                        // When not in erase mode, turn it on
-                        if (!is_in_erase_mode) {
-                            this.ulabel.toggle_erase_mode();
-                        } else {
-                            // Otherwise, turn off brush mode
-                            this.ulabel.toggle_brush_mode(event);
-                        }
-                    } else {
-                        // Turn on brush mode
-                        this.ulabel.toggle_brush_mode(event);
-                        // And if erase mode is not on, turn it on
-                        if (!is_in_erase_mode) {
-                            this.ulabel.toggle_erase_mode();
-                        }
-                    }
+                    this.ulabel.toggle_erase_mode(event);
                     break
                 case "brush-inc":
                     this.ulabel.change_brush_size(1.1);
