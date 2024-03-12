@@ -6,6 +6,12 @@ All notable changes to this project will be documented here.
 
 Nothing yet.
 
+## [0.10.0] - March 12th, 2024
+
+- Refactor of how annotations are drawn on the canvas. This change should make the drawing of annotations more efficient and less prone to lagging, especially when working with a large number of annotations or annotations with many vertices.
+- Minor improvements to how `resume_from` errors are handled in the case of incorreclty formatted `polygon` annotations.
+
+
 ## [0.9.0] - February 23th, 2024
 
 Added `DELETE_MODES = ["delete_polygon", "delete_bbox"]`, additional annotation modes for deleting annotations by drawing a polygon or bounding box around them.

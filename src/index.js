@@ -3382,7 +3382,6 @@ export class ULabel {
             frame = null;
         }
 
-        // TODO add this action to the undo stack
         this.record_action({
             act_type: "delete_annotation",
             frame: frame,
@@ -5146,7 +5145,6 @@ export class ULabel {
             case "tbar":
             case "point":
                 this.record_finish(active_id);
-                // tobuffer this is where the annotation moves to back canvas
                 break;
             default:
                 break;
@@ -5265,7 +5263,6 @@ export class ULabel {
                 break;
             case "contour":
             case "point":
-                // tobuffer this is where the annotation moves to back canvas
                 break;
             default:
                 break;
@@ -5282,7 +5279,6 @@ export class ULabel {
         const active_id = current_subtask["state"]["active_id"];
         const active_annotation = current_subtask["annotations"]["access"][active_id]
 
-        // TODO big performance gains with buffered canvasses
         if (active_id && (active_id !== null)) {
             let offset = {
                 "id": current_subtask["state"]["move_candidate"]["annid"],
@@ -5359,7 +5355,6 @@ export class ULabel {
             case "contour":
             case "tbar":
             case "point":
-                // tobuffer this is where the annotation moves to back canvas
                 break;
             default:
                 break;
