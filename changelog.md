@@ -16,9 +16,10 @@ Added `DELETE_MODES = ["delete_polygon", "delete_bbox"]`, additional annotation 
 
 Added a brush/erase tool for working with polygon annotations.
 - Press `g` to toggle brush mode. This refers to a state in which click-dragging will place (or erase, if in erase mode) a circle at the cursor location to either augment an existing polygon or create a new one.
-- Press `e` while in brush mode to toggle erase mode (indicated by the color of the brush circle: red for erase). When click-dragging in erase mode, the area in a circle around the cursor will be removed from an existing polygon. Can be used to create holes, isolated fills, or even delete annotations.
+- Press `e` to toggle erase mode (indicated by the color of the brush circle: red for erase). When click-dragging in erase mode, the area in a circle around the cursor will be removed from an existing polygon. Can be used to create holes, isolated fills, or even delete annotations.
 - Press `=` while in brush mode to increment the brush circle size by 10%
 - Press `-` while in brush mode to decrement the brush circle size by 10%
+- Hold `Alt` and scroll while in brush mode to increment/decrement the brush circle size
 - Press `Escape` while in brush mode to exit brush mode and return to normal annotation mode
 - Also added a `BrushToolboxItem` with buttons to perform the same function as the configurable keybinds listed above. 
 
