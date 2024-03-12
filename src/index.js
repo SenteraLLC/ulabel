@@ -666,6 +666,11 @@ export class ULabel {
                 ) {
                     alert(`Error: Attempted to import annotation without a spatial payload (id: ${cand["id"]})`);
                     throw `Error: Attempted to import annotation without a spatial payload (id: ${cand["id"]})"`;
+                } else if (
+                    cand["spatial_type"] === "polygon" && cand["spatial_payload"].length < 1
+                ) {
+                    console.warn(`[WARNING]: Skipping attempted import of polygon annotation without any points (id: ${cand["id"]})`);
+                    continue;
                 }
 
                 // Set frame to zero if not provided
