@@ -203,22 +203,19 @@ export class ULabel {
                     break; 
                 // Change to brush mode (for now, polygon only)
                 case ul.config.toggle_brush_mode_keybind:
-                    if (current_subtask.state.annotation_mode === "polygon") {
-                        ul.toggle_brush_mode(ul.state["last_move"])
-                    }
+                    ul.toggle_brush_mode(ul.state["last_move"]);
                     break;
+                // Change to erase mode (will also set the is_in_brush_mode state)
                 case ul.config.toggle_erase_mode_keybind:
-                    if (current_subtask.state.is_in_brush_mode) {
-                        ul.toggle_erase_mode()
-                    }
+                    ul.toggle_erase_mode(ul.state["last_move"]);
                     break;
                 // Increase brush size by 10%
                 case ul.config.increase_brush_size_keybind:
-                    ul.change_brush_size(1.1)
+                    ul.change_brush_size(1.1);
                     break;
                 // Decrease brush size by 10%
                 case ul.config.decrease_brush_size_keybind:
-                    ul.change_brush_size(1/1.1)
+                    ul.change_brush_size(1/1.1);
                     break;
             }
         })
@@ -1381,6 +1378,23 @@ export class ULabel {
         }
     }
 
+    /**
+     * Set a new annotation mode
+     * 
+     * @param {string} annotation_mode Annotation mode to set
+     * @returns {boolean} - True if the annotation mode was successfully set, false otherwise
+     */
+    set_and_update_annotation_mode(annotation_mode) {
+        // Ensure new mode is allowed
+        if (!this.subtasks[this.state["current_subtask"]]["allowed_modes"].includes(annotation_mode)) {
+            console.warn(`Annotation mode ${annotation_mode} is not allowed for subtask ${this.state["current_subtask"]}`);
+            return false;
+        }
+        // Set the new mode via the toolbox
+        document.getElementById("md-btn--" + annotation_mode).click();
+        return true;
+    }
+
     // Draw demo annotation in demo canvas
     redraw_demo() {
         // this.state["demo_canvas_context"].clearRect(0, 0, this.config["demo_width"] * this.config["px_per_px"], this.config["demo_height"] * this.config["px_per_px"]);
@@ -2255,35 +2269,59 @@ export class ULabel {
     }
 
     toggle_brush_mode(mouse_event) {
-        this.subtasks[this.state["current_subtask"]]["state"]["is_in_brush_mode"] = !this.subtasks[this.state["current_subtask"]]["state"]["is_in_brush_mode"];
-        if (this.subtasks[this.state["current_subtask"]]["state"]["is_in_brush_mode"]) {
-            // Hide edit/id dialogs
-            this.hide_edit_suggestion();
-            this.hide_global_edit_suggestion();
-            this.hide_id_dialog();
-            // If in starting_complex_polygon mode, end it by undoing
-            if (this.subtasks[this.state["current_subtask"]]["state"]["starting_complex_polygon"]) {
-                this.undo(true);
+        // Try and switch to polygon annotation if not already in it
+        const current_subtask = this.state["current_subtask"];
+        let is_in_polygon_mode = this.subtasks[current_subtask]["state"]["annotation_mode"] === "polygon";
+        // Try and switch to polygon mode if not already in it
+        if (!is_in_polygon_mode) {
+            is_in_polygon_mode = this.set_and_update_annotation_mode("polygon");
+        }
+        // If we're in polygon mode, toggle brush mode
+        if (is_in_polygon_mode) {
+            // If in erase mode, turn it off
+            if (this.subtasks[current_subtask]["state"]["is_in_erase_mode"]) {
+                this.toggle_erase_mode();
             }
-            // Show brush circle
-            let gmx = this.get_global_mouse_x(mouse_event);
-            let gmy = this.get_global_mouse_y(mouse_event);
-            this.create_brush_circle(gmx, gmy);
-        } else {
-            this.destroy_brush_circle();
+            // Toggle brush mode
+            this.subtasks[current_subtask]["state"]["is_in_brush_mode"] = !this.subtasks[current_subtask]["state"]["is_in_brush_mode"];
+            if (this.subtasks[current_subtask]["state"]["is_in_brush_mode"]) {
+                // Hide edit/id dialogs
+                this.hide_edit_suggestion();
+                this.hide_global_edit_suggestion();
+                this.hide_id_dialog();
+                // If in starting_complex_polygon mode, end it by undoing
+                if (this.subtasks[current_subtask]["state"]["starting_complex_polygon"]) {
+                    this.undo(true);
+                }
+                // Show brush circle
+                let gmx = this.get_global_mouse_x(mouse_event);
+                let gmy = this.get_global_mouse_y(mouse_event);
+                this.create_brush_circle(gmx, gmy);
+            } else {
+                this.destroy_brush_circle();
+            }
         }
     }
 
-    toggle_erase_mode() {
-        // Only toggle if we're in brush mode
-        if (this.subtasks[this.state["current_subtask"]]["state"]["is_in_brush_mode"]) {
-            this.subtasks[this.state["current_subtask"]]["state"]["is_in_erase_mode"] = !this.subtasks[this.state["current_subtask"]]["state"]["is_in_erase_mode"];
+    toggle_erase_mode(mouse_event) {
+        const current_subtask = this.state["current_subtask"];
+        // If not in brush mode, turn it on
+        if (!this.subtasks[current_subtask]["state"]["is_in_brush_mode"]) {
+            this.toggle_brush_mode(mouse_event);
+        }
 
-            // Update brush circle color
-            const brush_circle_id = "brush_circle";
-            $("#" + brush_circle_id).css({
-                "background-color": this.subtasks[this.state["current_subtask"]]["state"]["is_in_erase_mode"] ? "red" : "white",
-            });
+        // Toggle erase mode
+        this.subtasks[current_subtask]["state"]["is_in_erase_mode"] = !this.subtasks[current_subtask]["state"]["is_in_erase_mode"];
+
+        // Update brush circle color
+        const brush_circle_id = "brush_circle";
+        $("#" + brush_circle_id).css({
+            "background-color": this.subtasks[current_subtask]["state"]["is_in_erase_mode"] ? "red" : "white",
+        });
+
+        // When turning off erase mode, also turn off brush mode
+        if (this.subtasks[current_subtask]["state"]["is_in_brush_mode"] && !this.subtasks[current_subtask]["state"]["is_in_erase_mode"]) {
+            this.toggle_brush_mode();
         }
     }
 
@@ -4101,11 +4139,6 @@ export class ULabel {
             this.subtasks[this.state["current_subtask"]]["annotations"]["access"][undo_payload.actid] = undo_payload.annotation;
             // Redraw all
             this.redraw_all_annotations(this.state["current_subtask"]);
-        }
-
-        // If in brush mode, toggle it off
-        if (this.subtasks[this.state["current_subtask"]]["state"]["is_in_brush_mode"]) {
-            this.toggle_brush_mode();
         }
     }
 
