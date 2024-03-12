@@ -242,15 +242,19 @@ export class ULabel {
 
                 // Only try to update the overlay if it exists
                 ul.filter_distance_overlay?.draw_overlay()
-            }
-            else if (fms) {
+            } else if (wheel_event.altKey) {
+                // When in brush mode, change the brush size
+                if (ul.subtasks[ul.state["current_subtask"]]["state"]["is_in_brush_mode"]) {
+                    wheel_event.preventDefault();
+                    ul.change_brush_size(wheel_event.deltaY > 0 ? 1.1 : 1 / 1.1);
+                }
+            } else if (fms) {
                 wheel_event.preventDefault();
 
                 // Get direction of wheel
                 const dlta = Math.sign(wheel_event.deltaY);
                 ul.update_frame(dlta);
-            }
-            else {
+            } else {
                 // Don't scroll if id dialog is visible
                 if (ul.subtasks[ul.state["current_subtask"]]["state"]["idd_visible"] && !ul.subtasks[ul.state["current_subtask"]]["state"]["idd_thumbnail"]) {
                     wheel_event.preventDefault();
