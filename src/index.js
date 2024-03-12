@@ -466,8 +466,10 @@ export class ULabel {
                 const current_subtask = ul.subtasks[ul.state["current_subtask"]]
                 switch (keypress_event.key) {
                     case "Escape":
-                        // If in brush mode, cancel the brush
-                        if (current_subtask.state.is_in_brush_mode) {
+                        // If in erase or brush mode, cancel the brush
+                        if (current_subtask.state.is_in_erase_mode) {
+                            ul.toggle_erase_mode();
+                        } else if (current_subtask.state.is_in_brush_mode) {
                             ul.toggle_brush_mode();
                         }
                         if (current_subtask.state.starting_complex_polygon) {
@@ -4666,7 +4668,7 @@ export class ULabel {
                 this.merge_polygon_complex_layer(active_id);
                 
                 // When shift key is held, we start a new complex layer
-                if (mouse_event != null && mouse_event.shiftKey) {
+                if (!current_subtask["state"]["is_in_brush_mode"] && mouse_event != null && mouse_event.shiftKey) {
                     // Start a new complex layer
                     this.start_complex_polygon();
                 } else {
