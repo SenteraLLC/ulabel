@@ -88,14 +88,21 @@ export class ULabelAnnotation {
                 this.spatial_payload = [this.spatial_payload];
             }
 
-            // Add spatial_payload_holes if not present
-            if (this.spatial_payload_holes === undefined) {
+            // Default fields if not provided 
+            if (
+                this.spatial_payload_holes === undefined ||
+                this.spatial_payload_child_indices === undefined
+            ) {
                 this.spatial_payload_holes = [false];
+                this.spatial_payload_child_indices = [[]];
             }
 
-            // Add spatial_payload_child_indices if not present
-            if (this.spatial_payload_child_indices === undefined) {
-                this.spatial_payload_child_indices = [[]];
+            // Ensure that the last point of each polygon is the same as the first
+            for (let i = 0; i < this.spatial_payload.length; i++) {
+                let polygon = this.spatial_payload[i];
+                if (polygon[0][0] !== polygon[polygon.length - 1][0] || polygon[0][1] !== polygon[polygon.length - 1][1]) {
+                    polygon.push([polygon[0][0], polygon[0][1]]);
+                }
             }
         }
     }

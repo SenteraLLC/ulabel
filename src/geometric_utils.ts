@@ -125,8 +125,46 @@ export class GeometricUtils {
         );
     }
 
+    // Reduce the number of points in a polyline
     public static turf_simplify_polyline(poly: ULabelSpatialPayload2D, tolerance: number = GeometricUtils.TURF_SIMPLIFY_TOLERANCE_PX): ULabelSpatialPayload2D {
         return turf.simplify(turf.lineString(poly), {"tolerance": tolerance}).geometry.coordinates;
+    }
+
+    // Subtract a polygon from a polyline
+    public static subtract_simple_polygon_from_polyline(polyline: ULabelSpatialPayload2D, polygon: ULabelSpatialPayload2D): ULabelSpatialPayload2D {
+        let turf_polyline = turf.lineString(polyline);
+        let turf_polygon = turf.polygon([polygon]);
+
+        // Use the lineSplit function to split the line at the polygon's vertices
+        let split = turf.lineSplit(turf_polyline, turf_polygon);
+        
+        if (split.features === undefined || split.features.length === 0) {
+            // If there are no splits, the polyline is either completely inside or outside the polygon
+            // If the first point of the polyline is inside the polygon, return null
+            if (GeometricUtils.point_is_within_simple_polygon(polyline[0], polygon)) {
+                return [];
+            } else {
+                return polyline;
+            }
+        }
+
+        // Discard the parts of the line that are inside the polygon
+        let remaining_splits = turf.featureCollection(
+            split.features.filter((feature) => {
+                // If the point at the middle of the lineString is inside the polygon, discard it
+                let middle_pt_idx = Math.floor(feature.geometry.coordinates.length / 2);
+                return !GeometricUtils.point_is_within_simple_polygon(feature.geometry.coordinates[middle_pt_idx], polygon);
+            })
+        );
+
+        // Sort the remaining splits by length
+        remaining_splits.features.sort((a, b) => {
+            return turf.length(b) - turf.length(a);
+        });
+
+        // Return the longest remaining split
+        // TODO: split into multiple polylines?
+        return remaining_splits.features[0].geometry.coordinates;
     }
 
     // Merge parts of poly2 into poly1 if possible by finding their intersection. Returns a new poly1 and poly2, or null on failure.
@@ -383,22 +421,20 @@ export class GeometricUtils {
     }
 
     // Check if a point is within a polygon
-    public static point_is_within_polygon(point: Point2D, poly: ULabelSpatialPayload2D): boolean {
-        // https://stackoverflow.com/questions/42457842/calculate-if-point-coordinates-is-inside-polygon-with-concave-and-convex-angles?rq=3
-        let is_within: boolean = false;
-        let test_x: number, test_y: number, p1_x: number, p1_y: number, p2_x: number, p2_y: number; 
-        [test_x, test_y] = point;
+    public static point_is_within_simple_polygon(point: Point2D, poly: ULabelSpatialPayload2D): boolean {
+        return turf.booleanPointInPolygon(turf.point(point), turf.polygon([poly]));
+    }
 
-        for (let i: number = 0; i < poly.length-1; i++) {
-            [p1_x, p1_y] = poly[i];
-            [p2_x, p2_y] = poly[i+1];
-            if ((p1_y<test_y && p2_y>=test_y) || (p2_y<test_y && p1_y>=test_y)) { // This edge is crossing the horizontal ray of testpoint
-                if ((p1_x+(test_y-p1_y)/(p2_y-p1_y)*(p2_x-p1_x)) < test_x) { // Checking special cases (holes, self-crossings, self-overlapping, horizontal edges, etc.)
-                    is_within = !is_within;
-                }
-            }
-        }
-        return is_within
+    // Convert a bbox to a simple polygon by adding the last point
+    public static bbox_to_simple_polygon(bbox: ULabelSpatialPayload2D): ULabelSpatialPayload2D {
+        // bbox is just two points, so we need to add the other two as well as the final point
+        return [
+            bbox[0], 
+            [bbox[1][0], bbox[0][1]], 
+            bbox[1], 
+            [bbox[0][0], bbox[1][1]], 
+            bbox[0]
+        ];
     }
 
     public static get_nearest_point_on_bounding_box(ref_x: number, ref_y: number, spatial_payload: ULabelSpatialPayload2D, dstmax: number = Infinity): PointAccessObject {
@@ -477,5 +513,37 @@ export class GeometricUtils {
             }
         }
         return ret;        
+    }
+
+    // Convert a tbar to a simple polygon
+    public static tbar_to_simple_polygon(spatial_payload: ULabelSpatialPayload2D): ULabelSpatialPayload2D {
+        // A tbar spatial_payload is just two points that define the middle line. To represent it as a polygon,
+        // we must calculate the endpoints of the perpendicular line at the end of the tbar.
+        const center_start_point: Point2D = spatial_payload[0];
+        const center_end_point: Point2D = spatial_payload[1]; 
+        let halflen = Math.sqrt(
+            (center_start_point[0] - center_end_point[0]) * (center_start_point[0] - center_end_point[0]) + (center_start_point[1] - center_end_point[1]) * (center_start_point[1] - center_end_point[1])
+        ) / 2;
+        let theta = Math.atan((center_end_point[1] - center_start_point[1]) / (center_end_point[0] - center_start_point[0]));
+        let perpendicular_endpoint_1: Point2D = [
+            center_start_point[0] + halflen * Math.sin(theta),
+            center_start_point[1] - halflen * Math.cos(theta)
+        ];
+        let perpendicular_endpoint_2: Point2D = [
+            center_start_point[0] - halflen * Math.sin(theta),
+            center_start_point[1] + halflen * Math.cos(theta)
+        ];
+
+        // Now we make a polygon that starts at the start of the tbar, and goes out and back to each other endpoint
+        return [
+            center_start_point,
+            perpendicular_endpoint_1,
+            center_end_point,
+            perpendicular_endpoint_2,
+            center_start_point,
+            center_end_point,
+            // End back at the start
+            center_start_point,
+        ];
     }
 }

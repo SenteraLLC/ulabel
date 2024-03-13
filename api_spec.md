@@ -237,6 +237,8 @@ The full list of `"allowed_modes"` that are currently supported is:
 - `"whole-image"`: A label to be applied to an entire frame
 - `"global"`: A label to be applied to the entire series of frames
 - `"point"`: A keypoint within a single frame
+- `"delete_polygon"`: Allows drawing a polygon around an area, and all annotations within that area will be deleted
+- `"delete_bbox"`: Allows drawing a bounding box around an area, and all annotations within that area will be deleted
 
 The list of modes currently **under construction** is:
 

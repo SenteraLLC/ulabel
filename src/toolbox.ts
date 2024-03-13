@@ -356,6 +356,7 @@ export class ModeSelectionToolboxItem extends ToolboxItem {
             target_jq.removeAttr("href");
 
             ulabel.show_annotation_mode(target_jq);
+            ulabel.toggle_delete_class_id_in_toolbox();
         });
 
         $(document).on("keypress", (e) => {

@@ -6,6 +6,12 @@ All notable changes to this project will be documented here.
 
 Nothing yet.
 
+## [0.9.0] - February 23th, 2024
+
+Added `DELETE_MODES = ["delete_polygon", "delete_bbox"]`, additional annotation modes for deleting annotations by drawing a polygon or bounding box around them.
+- `"delete_polygon"`: Allows drawing a polygon around an area, and all annotations within that area will be deleted
+- `"delete_bbox"`: Allows drawing a bounding box around an area, and all annotations within that area will be deleted
+
 ## [0.8.0] - February 15th, 2024
 
 Added a brush/erase tool for working with polygon annotations.
