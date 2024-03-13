@@ -8,6 +8,9 @@ This should eventually be replaced with a more comprehensive approach to documen
 - `ctrl+shift+z` or `cmd+shift+z`: Redo
 - `ctrl+scroll` or `shift+scroll` or `cmd+scroll`: Zoom -- up for in, down for out
 - `scrollclick+drag` or `ctrl+drag`: Pan
+- Hold `shift` when closing a polygon to continue annotating a new region or hole.
+- Hold `shift` when moving the cursor inside a polygon to begin annotating a new region or hole.
+- Press `Escape` or `crtl+z` to cancel the start of a new region or hole.
 
 ## ULabel Constructor
 
@@ -227,7 +230,7 @@ The full list of `"allowed_modes"` that are currently supported is:
 
 - `"bbox"`: A simple single-frame bounding box
 - `"bbox3"`: A bounding box that can extend through multiple frames
-- `"polygon"`: A simple series of points that must define a closed polygon
+- `"polygon"`: A series of points that define a simple or complex polygon
 - `"tbar"`: Two lines defining a "T" shape
 - `"contour"`: A freehand line
 - `"whole-image"`: A label to be applied to an entire frame

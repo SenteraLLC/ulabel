@@ -1,14 +1,15 @@
 {
   "name": "ulabel",
   "description": "An image annotation tool.",
-  "version": "0.6.14",
+  "version": "0.7.0",
   "main": "dist/ulabel.js",
   "module": "dist/ulabel.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "demo": "node demo.js",
-    "build": "webpack --mode production",
-    "build-dev": "webpack --mode development"
+    "build": "tsc && webpack --mode production",
+    "build-dev": "tsc && webpack --mode development",
+    "build-and-demo": "npm run build && npm run demo"
   },
   "repository": {
     "type": "git",
@@ -27,7 +28,9 @@
   },
   "homepage": "https://github.com/SenteraLLC/ulabel",
   "dependencies": {
+    "@turf/turf": "^6.5.0",
     "jquery": "^3.5.1",
+    "polygon-clipping": "^0.15.7",
     "uuidv4": "^6.2.6"
   },
   "devDependencies": {

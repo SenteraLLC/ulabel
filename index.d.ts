@@ -106,7 +106,11 @@ export type ULabelSubmitHandler = (submitData: ULabelSubmitData) => void;
  */
 export type ULabelSpatialType = 'contour' | 'polygon' | 'polyline' | 'bbox' | 'tbar' | 'bbox3' | 'whole-image' | 'global' | 'point';
 
+// A 2D spatial payload is a list of 2D points
 export type ULabelSpatialPayload = [number, number][];
+
+// A Complex spatial payload is a list of ULableSpatialPayloads
+export type ULabelComplexSpatialPayload = ULabelSpatialPayload[];
 
 export type ULabelClassificationPayload = {
     class_id: number;
