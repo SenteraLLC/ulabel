@@ -5,6 +5,7 @@ import {
     ULabelContainingBox, 
     ULabelSpatialType 
 } from "..";
+import { GeometricUtils } from "./geometric_utils";
 
 
 
@@ -27,6 +28,7 @@ export class ULabelAnnotation {
         public frame?: number,
         public line_size?: number,
         public id?: string,
+        public canvas_id?: string,
         // Polygons use complex spatial payloads
         public spatial_payload?: any,
         public spatial_type?: ULabelSpatialType,
@@ -83,8 +85,8 @@ export class ULabelAnnotation {
     // ensure polygon spatial_payloads are updated to support complex polygons
     public ensure_compatible_spatial_payloads() {
         if (this.spatial_type === "polygon") {
-            // Check that spatial_payload[0][0] is an array
-            if (!Array.isArray(this.spatial_payload[0][0])) {
+            // Check that spatial_payload[0][0] is an array and not a number
+            if (!Array.isArray(this.spatial_payload[0][0]) && typeof this.spatial_payload[0][0] === "number") {
                 this.spatial_payload = [this.spatial_payload];
             }
 
@@ -93,16 +95,51 @@ export class ULabelAnnotation {
                 this.spatial_payload_holes === undefined ||
                 this.spatial_payload_child_indices === undefined
             ) {
+                // These will be populated later, during `process_resume_from`
                 this.spatial_payload_holes = [false];
                 this.spatial_payload_child_indices = [[]];
             }
 
-            // Ensure that the last point of each polygon is the same as the first
+            let indices_to_remove = [];
+            // Simplify each layer of the polygon
             for (let i = 0; i < this.spatial_payload.length; i++) {
-                let polygon = this.spatial_payload[i];
-                if (polygon[0][0] !== polygon[polygon.length - 1][0] || polygon[0][1] !== polygon[polygon.length - 1][1]) {
-                    polygon.push([polygon[0][0], polygon[0][1]]);
+                let layer = this.spatial_payload[i];
+                // Ensure that the layer is an array
+                if (!Array.isArray(layer[0])) {
+                    console.log(`Layer ${i} points of id ${this.id} are not arrays. Removing layer.`);
+                    indices_to_remove.push(i);
+                    continue;
                 }
+
+                // Ensure that the layer has at least 4 points (3 unique points + 1 duplicate to close the polygon)
+                if (layer.length === 3) {
+                    // If the last point is NOT the same as the first, add the first point to the end
+                    if (layer[0][0] !== layer[2][0] || layer[0][1] !== layer[2][1]) {
+                        layer.push([layer[0][0], layer[0][1]]);
+                    }
+                }
+                if (layer.length < 4) {
+                    console.log(`Layer ${i} of id ${this.id} has fewer than 4 points. Removing layer.`)
+                    indices_to_remove.push(i);
+                    continue;
+                } 
+
+                // If the last point is NOT the same as the first, add the first point to the end
+                if (layer[0][0] !== layer[layer.length - 1][0] || layer[0][1] !== layer[layer.length - 1][1]) {
+                    layer.push([layer[0][0], layer[0][1]]);
+                }
+                try {
+                    this.spatial_payload[i] = GeometricUtils.turf_simplify_complex_polygon([layer])[0];
+                } catch (error) {
+                    console.log(`Error simplifying polygon layer ${i} of id ${this.id}. Removing layer.`);
+                    console.warn(error);
+                    indices_to_remove.push(i);
+                }
+            }
+
+            // Remove layers that are too small
+            for (let idx of indices_to_remove) {
+                this.spatial_payload.splice(idx, 1);
             }
         }
     }
