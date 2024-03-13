@@ -18,6 +18,9 @@ export type LineEquation = {
 }
 
 export class GeometricUtils {
+    // Tolerance in px for simplifying turf shapes
+    public static TURF_SIMPLIFY_TOLERANCE_PX: number = 2;
+
     public static l2_norm(pt1: Point2D, pt2: Point2D): number {
         let ndim: number = pt1.length;
         let sq: number = 0;
@@ -122,6 +125,10 @@ export class GeometricUtils {
         );
     }
 
+    public static turf_simplify_polyline(poly: ULabelSpatialPayload2D, tolerance: number = GeometricUtils.TURF_SIMPLIFY_TOLERANCE_PX): ULabelSpatialPayload2D {
+        return turf.simplify(turf.lineString(poly), {"tolerance": tolerance}).geometry.coordinates;
+    }
+
     // Merge parts of poly2 into poly1 if possible by finding their intersection. Returns a new poly1 and poly2, or null on failure.
     public static merge_polygons_at_intersection(poly1: ULabelSpatialPayload2D, poly2: ULabelSpatialPayload2D): ULabelSpatialPayload2D[] {
         // Find the intersection, if it exists
@@ -134,6 +141,53 @@ export class GeometricUtils {
         let non_intersection: ULabelSpatialPayload2D[] = polygonClipping.difference([poly2], [intersection]);
         let new_poly: [ULabelSpatialPayload2D[]] = polygonClipping.union([poly1], non_intersection);
         return [new_poly[0][0], intersection];
+    }
+
+    // Merge two simple polygons into one. Result is a complex polygon ULabelSpatialPayload2D[], with any holes preserved.
+    public static merge_polygons(complex_poly1: ULabelSpatialPayload2D[], complex_poly2: ULabelSpatialPayload2D[]): ULabelSpatialPayload2D[] {
+        let ret: ULabelSpatialPayload2D[] = [];
+        complex_poly1 = GeometricUtils.ensure_valid_turf_complex_polygon(complex_poly1);
+        complex_poly2 = GeometricUtils.ensure_valid_turf_complex_polygon(complex_poly2);
+        ret = turf.union(turf.polygon(complex_poly1), turf.polygon(complex_poly2)).geometry.coordinates;
+        // When the two polygons have no intersection, turf.union returns a quad nested list instead of a triple nested list
+        // So we can just return complex_poly1
+        if (ret[0][0][0][0] === undefined) {
+            return GeometricUtils.turf_simplify_complex_polygon(ret);
+        } else {
+            return complex_poly1;
+        }
+    }
+
+    // Subtract poly2 from poly1. Result is a complex polygon ULabelSpatialPayload2D[], with any holes preserved.
+    public static subtract_polygons(complex_poly1: ULabelSpatialPayload2D[], complex_poly2: ULabelSpatialPayload2D[]): ULabelSpatialPayload2D[] {
+        let ret: ULabelSpatialPayload2D[];
+        complex_poly1 = GeometricUtils.ensure_valid_turf_complex_polygon(complex_poly1);
+        complex_poly2 = GeometricUtils.ensure_valid_turf_complex_polygon(complex_poly2);
+        let temp = turf.difference(turf.polygon(complex_poly1), turf.polygon(complex_poly2));
+        // when temp is null, return
+        if (temp === null) {
+            return null;
+        } else {
+            temp = temp.geometry.coordinates;
+        }
+
+        // When turf.difference creates a fill, it adds it as a new polygon, ie [complex_poly, fill] instead of just complex_poly
+        // so we need to append the fill to the complex_poly and return that when turf returns a quad nested list instead of a triple nested list
+        if (temp[0][0][0][0] === undefined) {
+            ret = temp;
+        } else {
+            ret = temp[0].concat(temp[1]);
+        }
+        return GeometricUtils.turf_simplify_complex_polygon(ret);
+    }
+
+    // Make sure each layer of a complex polygon is valid, ie that it starts and ends at the same point
+    // turf likes the first and last point to reference the same point array in memory
+    public static ensure_valid_turf_complex_polygon(complex_poly: ULabelSpatialPayload2D[]): ULabelSpatialPayload2D[] {
+        for (let layer of complex_poly) {
+            layer[layer.length-1] = layer[0];
+        }
+        return complex_poly;
     }
 
     // Return the point on a polygon that's closest to a reference along with its distance
@@ -205,6 +259,12 @@ export class GeometricUtils {
         }
     }
 
+    public static complex_polygons_intersect(complex_poly1: ULabelSpatialPayload2D[], complex_poly2: ULabelSpatialPayload2D[]): boolean {
+        complex_poly1 = GeometricUtils.ensure_valid_turf_complex_polygon(complex_poly1);
+        complex_poly2 = GeometricUtils.ensure_valid_turf_complex_polygon(complex_poly2);
+        return turf.booleanOverlap(turf.polygon(complex_poly1), turf.polygon(complex_poly2));
+    }
+
     // Check if polygon is closed, i.e. first and last points are the same and there are at least 3 points
     public static is_polygon_closed(poly: ULabelSpatialPayload2D): boolean {
         let ret: boolean = false;
@@ -216,13 +276,110 @@ export class GeometricUtils {
         return ret;
     }
 
-    // Check if poly1 is completely within poly2 by checking if any line segment of poly1 intersects with poly2
-    public static polygon_is_within_polygon(poly1: ULabelSpatialPayload2D, poly2: ULabelSpatialPayload2D): boolean {
+    // Check if two polygons are equal
+    public static polygons_are_equal(poly1: ULabelSpatialPayload2D, poly2: ULabelSpatialPayload2D): boolean {
+        // Check if the polygons have the same number of points
+        if (poly1.length !== poly2.length) {
+            return false;
+        }
+        // Check that each point in poly1 is in poly2
+        for (let i: number = 0; i < poly1.length; i++) {
+            let found: boolean = false;
+            for (let j: number = 0; j < poly2.length; j++) {
+                if (poly1[i][0] === poly2[j][0] && poly1[i][1] === poly2[j][1]) {
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    // Check if two polygons share an edge, ie if they contain an identical line segment
+    public static polygons_share_edge(poly1: ULabelSpatialPayload2D, poly2: ULabelSpatialPayload2D): boolean {
+        for (let i: number = 0; i < poly1.length-1; i++) {
+            let line1: LineSegment2D = [poly1[i], poly1[i+1]];
+            // skip if the points are the same
+            if (GeometricUtils.points_are_equal(line1[0], line1[1])) {
+                continue;
+            }
+            for (let j: number = 0; j < poly2.length-1; j++) {
+                let line2: LineSegment2D = [poly2[j], poly2[j+1]];
+                // skip if the points are the same
+                if (GeometricUtils.points_are_equal(line2[0], line2[1])) {
+                    continue;
+                }
+                if (GeometricUtils.line_segments_are_on_same_line(line1, line2)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+
+    }
+
+    // Scale a polygon about a center point, or the centroid if no center is provided
+    public static scale_polygon(poly: ULabelSpatialPayload2D, scale, center: Point2D = null): ULabelSpatialPayload2D {
+        let ret: ULabelSpatialPayload2D = [];
+        if (center === null) {
+            // use the centroid
+            center = GeometricUtils.get_centroid_of_polygon(poly);
+        }
+
+        for (let i: number = 0; i < poly.length; i++) {
+            let pt: Point2D = poly[i];
+            let new_x: number = center[0] + (pt[0] - center[0])*scale;
+            let new_y: number = center[1] + (pt[1] - center[1])*scale;
+            ret.push([new_x, new_y]);
+        }
+        return ret;
+    }
+
+    // Get the centroid of a polygon
+    public static get_centroid_of_polygon(poly: ULabelSpatialPayload2D): Point2D {
+        let x: number = 0;
+        let y: number = 0;
+        for (let i: number = 0; i < poly.length; i++) {
+            x += poly[i][0];
+            y += poly[i][1];
+        }
+        return [x/poly.length, y/poly.length];
+    }
+
+    public static turf_simplify_complex_polygon(poly: ULabelSpatialPayload2D[], tolerance: number = GeometricUtils.TURF_SIMPLIFY_TOLERANCE_PX): ULabelSpatialPayload2D[] {
+        return turf.simplify(turf.polygon(poly), {"tolerance": tolerance}).geometry.coordinates;
+    }
+
+    // Check if poly1 is completely within poly2
+    public static simple_polygon_is_within_simple_polygon(poly1: ULabelSpatialPayload2D, poly2: ULabelSpatialPayload2D): boolean {
         if (GeometricUtils.is_polygon_closed(poly1) && GeometricUtils.is_polygon_closed(poly2)) {
             return turf.booleanWithin(turf.polygon([poly1]), turf.polygon([poly2]));
         } else {
             return false;
         }
+    }
+
+    // Check if complex_poly1 is completely within complex_poly2
+    public static complex_polygon_is_within_complex_polygon(complex_poly1: ULabelSpatialPayload2D[], complex_poly2: ULabelSpatialPayload2D[]): boolean {
+        complex_poly1 = GeometricUtils.ensure_valid_turf_complex_polygon(complex_poly1);
+        complex_poly2 = GeometricUtils.ensure_valid_turf_complex_polygon(complex_poly2);
+        return turf.booleanWithin(turf.polygon(complex_poly1), turf.polygon(complex_poly2));
+    }
+
+    // Check if any hole of complex_poly1 is completely within complex_poly2
+    public static any_complex_polygon_hole_is_within_complex_polygon(complex_poly1: ULabelSpatialPayload2D[], complex_poly2: ULabelSpatialPayload2D[]): boolean {
+        complex_poly1 = GeometricUtils.ensure_valid_turf_complex_polygon(complex_poly1);
+        complex_poly2 = GeometricUtils.ensure_valid_turf_complex_polygon(complex_poly2);
+        // Start at 1 to skip the outer polygon
+        for (let i = 1; i < complex_poly1.length; i++) {
+            if (turf.booleanWithin(turf.polygon([complex_poly1[i]]), turf.polygon(complex_poly2))) {
+                return true;
+            }
+        }
+        return false;
     }
 
     // Check if a point is within a polygon

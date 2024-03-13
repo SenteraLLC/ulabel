@@ -336,6 +336,17 @@ export class ModeSelectionToolboxItem extends ToolboxItem {
             let new_mode = target_jq.attr("id").split("--")[1];
             ulabel.subtasks[current_subtask]["state"]["annotation_mode"] = new_mode;
 
+            // Show the BrushToolboxItem when polygon mode is selected
+            if (new_mode === "polygon") {
+                BrushToolboxItem.show_brush_toolbox_item();
+            } else {
+                BrushToolboxItem.hide_brush_toolbox_item();
+                // Turn off brush mode if it's on
+                if (ulabel.subtasks[current_subtask]["state"]["is_in_brush_mode"]) {
+                    ulabel.toggle_brush_mode(e);
+                }
+            }
+
             // Reset the previously selected mode button
             $("a.md-btn.sel").attr("href", "#");
             $("a.md-btn.sel").removeClass("sel");
@@ -486,6 +497,137 @@ export class ModeSelectionToolboxItem extends ToolboxItem {
 
     public get_toolbox_item_type() {
         return "ModeSelection"
+    }
+}
+
+/**
+ * Toolbox item for resizing all annotations
+ */
+export class BrushToolboxItem extends ToolboxItem {
+    public html: string;
+    private ulabel: ULabel
+
+    constructor(ulabel: ULabel) {
+        super();
+
+        this.ulabel = ulabel
+
+        this.add_styles()
+
+        this.add_event_listeners()
+    }
+
+    /**
+     * Create the css for this ToolboxItem and append it to the page.
+     */
+    protected add_styles() {
+        // Define the css
+        // Define the css
+        const css = `
+        #toolbox div.brush button:not(.circle) {
+            padding: 1rem 0.5rem;
+            border: 1px solid gray;
+            border-radius: 10px
+        }
+
+        #toolbox div.brush div.brush-button-holder {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        #toolbox div.brush span.brush-mode {
+            display: flex;
+        }        
+        `
+        // Create an id so this specific style tag can be referenced
+        const style_id = "brush-toolbox-item-styles"
+
+        // Don't add the style tag if its already been added once
+        if (document.getElementById(style_id)) return
+
+        // Grab the document's head and create a style tag
+        const head = document.head || document.querySelector("head")
+        const style = document.createElement('style');
+
+        // Add the css and id to the style tag
+        style.appendChild(document.createTextNode(css));
+        style.id = style_id
+
+        // Add the style tag to the document's head
+        head.appendChild(style);
+    }
+
+    private add_event_listeners() {
+        $(document).on("click", ".brush-button", (event) => {
+            // Get the current subtask
+            const current_subtask_key = this.ulabel.state["current_subtask"];
+            const current_subtask = this.ulabel.subtasks[current_subtask_key];
+            const is_in_brush_mode = current_subtask.state["is_in_brush_mode"];
+            const is_in_erase_mode = current_subtask.state["is_in_erase_mode"];
+
+            // Get the clicked button
+            const button = $(event.currentTarget)
+
+            // Use the button id to get what size to resize the annotations to
+            const button_id: string = button.attr("id");
+
+            switch (button_id) {
+                case "brush-mode":
+                    this.ulabel.toggle_brush_mode(event);
+                    break
+                case "erase-mode":
+                    this.ulabel.toggle_erase_mode(event);
+                    break
+                case "brush-inc":
+                    this.ulabel.change_brush_size(1.1);
+                    break
+                case "brush-dec":
+                    this.ulabel.change_brush_size(1/1.1);
+                    break
+            }
+        })
+    }
+    
+    public get_html() {
+        return `
+        <div class="brush">
+            <p class="tb-header">Brush Tool</p>
+            <div class="brush-button-holder">
+                <span class="brush-mode">
+                    <button class="brush-button" id="brush-mode">Brush</button>
+                    <button class="brush-button" id="erase-mode">Erase</button>
+                </span>
+                <span class="brush-inc increment">
+                    <button class="brush-button circle inc" id="brush-inc">+</button>
+                    <button class="brush-button circle dec" id="brush-dec">-</button>
+                </span>
+            </div>
+        </div>
+        `
+    }
+
+    public static show_brush_toolbox_item() {
+        // Remove hidden class from the brush toolbox item
+        $(".brush").removeClass("ulabel-hidden")
+    }
+
+    public static hide_brush_toolbox_item() {
+        // Add hidden class to the brush toolbox item
+        $(".brush").addClass("ulabel-hidden")
+    }
+
+    public after_init() {
+        // Only show BrushToolboxItem if the current mode is polygon
+        if (this.ulabel.subtasks[this.ulabel.state["current_subtask"]].state["annotation_mode"] !== "polygon") {
+            BrushToolboxItem.hide_brush_toolbox_item()
+        }
+    }
+
+    public get_toolbox_item_type() {
+        return "Brush"
     }
 }
 
@@ -1166,6 +1308,9 @@ export class AnnotationResizeItem extends ToolboxItem {
      */
     public update_annotation_size(subtask: ULabelSubtask, size: number | ValidResizeValues): void {
         if (subtask === null) return;
+
+        // If in brush mode, the keybind was probably meant for the brush
+        if (subtask.state.is_in_brush_mode) return;
 
         const small_size = 1.5;
         const large_size = 5;

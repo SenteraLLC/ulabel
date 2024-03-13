@@ -106,15 +106,14 @@ export class ULabel {
                         return "zoom";
                     }
                     return "annotation";
-                }
-                else if ($(mouse_event.target).hasClass("editable")) {
+                } else if (mouse_event.target.id === "brush_circle") {
+                    return "brush";
+                } else if ($(mouse_event.target).hasClass("editable")) {
                     return "edit";
-                }
-                else if ($(mouse_event.target).hasClass("movable")) {
+                } else if ($(mouse_event.target).hasClass("movable")) {
                     mouse_event.preventDefault();
                     return "move";
-                }
-                else {
+                } else {
                     console.log("Unable to assign a drag key to click target:", mouse_event.target.id);
                     return null;
                 }
@@ -202,6 +201,22 @@ export class ULabel {
                     }
 
                     break; 
+                // Change to brush mode (for now, polygon only)
+                case ul.config.toggle_brush_mode_keybind:
+                    ul.toggle_brush_mode(ul.state["last_move"]);
+                    break;
+                // Change to erase mode (will also set the is_in_brush_mode state)
+                case ul.config.toggle_erase_mode_keybind:
+                    ul.toggle_erase_mode(ul.state["last_move"]);
+                    break;
+                // Increase brush size by 10%
+                case ul.config.increase_brush_size_keybind:
+                    ul.change_brush_size(1.1);
+                    break;
+                // Decrease brush size by 10%
+                case ul.config.decrease_brush_size_keybind:
+                    ul.change_brush_size(1/1.1);
+                    break;
             }
         })
 
@@ -209,7 +224,6 @@ export class ULabel {
         document.getElementById(ul.config["annbox_id"]).onwheel = function (wheel_event) {
             let fms = ul.config["image_data"].frames.length > 1;
             if (wheel_event.ctrlKey || wheel_event.shiftKey || wheel_event.metaKey) {
-                const before_time = Date.now()
 
                 // Prevent scroll-zoom
                 wheel_event.preventDefault();
@@ -228,15 +242,19 @@ export class ULabel {
 
                 // Only try to update the overlay if it exists
                 ul.filter_distance_overlay?.draw_overlay()
-            }
-            else if (fms) {
+            } else if (wheel_event.altKey) {
+                // When in brush mode, change the brush size
+                if (ul.subtasks[ul.state["current_subtask"]]["state"]["is_in_brush_mode"]) {
+                    wheel_event.preventDefault();
+                    ul.change_brush_size(wheel_event.deltaY < 0 ? 1.1 : 1 / 1.1);
+                }
+            } else if (fms) {
                 wheel_event.preventDefault();
 
                 // Get direction of wheel
                 const dlta = Math.sign(wheel_event.deltaY);
                 ul.update_frame(dlta);
-            }
-            else {
+            } else {
                 // Don't scroll if id dialog is visible
                 if (ul.subtasks[ul.state["current_subtask"]]["state"]["idd_visible"] && !ul.subtasks[ul.state["current_subtask"]]["state"]["idd_thumbnail"]) {
                     wheel_event.preventDefault();
@@ -346,7 +364,7 @@ export class ULabel {
         });
 
         //Whenever the mouse makes the dialogs show up, update the displayed annotation confidence.
-        $(document).on("mouseenter", "div.global_edit_suggestion", (e) => {
+        $(document).on("mouseenter", "div.global_edit_suggestion", () => {
             //Grab the currently active annotation
             let active_annotation = ul.subtasks[ul.state["current_subtask"]]["active_annotation"]
 
@@ -452,11 +470,16 @@ export class ULabel {
                 const current_subtask = ul.subtasks[ul.state["current_subtask"]]
                 switch (keypress_event.key) {
                     case "Escape":
+                        // If in erase or brush mode, cancel the brush
+                        if (current_subtask.state.is_in_erase_mode) {
+                            ul.toggle_erase_mode();
+                        } else if (current_subtask.state.is_in_brush_mode) {
+                            ul.toggle_brush_mode();
+                        }
                         if (current_subtask.state.starting_complex_polygon) {
                             // Use the undo function to cancel the complex polygon
                             ul.undo()
                         }
-
                         break;
                 }
             }
@@ -642,6 +665,12 @@ export class ULabel {
                     cand["spatial_payload_holes"] = [false];
                 }
 
+                if (
+                    !("spatial_payload_child_indices" in cand)
+                ) {
+                    cand["spatial_payload_child_indices"] = [[]];
+                }
+
 
                 // Ensure that classification payloads are compatible with config
                 cand.ensure_compatible_classification_payloads(ul.subtasks[subtask_key]["class_ids"])
@@ -718,6 +747,8 @@ export class ULabel {
                 "is_in_edit": false,
                 "is_in_move": false,
                 "starting_complex_polygon": false, 
+                "is_in_brush_mode": false,
+                "is_in_erase_mode": false,
                 "edit_candidate": null,
                 "move_candidate": null,
 
@@ -893,6 +924,7 @@ export class ULabel {
             "demo_height": 40,
             "polygon_ender_size": 30,
             "edit_handle_size": 30,
+            "brush_size": 60, // radius in pixels
 
             // Behavior on special interactions
             // "done_callback": fin_on_submit_hook,
@@ -935,6 +967,7 @@ export class ULabel {
 
             // Global annotation state (subtasks also maintain an annotation state)
             "current_subtask": null,
+            "last_brush_stroke": null,
             "line_size": initial_line_size,
             "size_mode": "fixed",
 
@@ -956,6 +989,11 @@ export class ULabel {
             "active_key": null,
             "release_button": null,
             "annotation": {
+                "mouse_start": null, // Screen coordinates where the current mouse drag started
+                "offset_start": null, // Scroll values where the current mouse drag started
+                "zoom_val_start": null // zoom_val when the dragging interaction started
+            },
+            "brush": {
                 "mouse_start": null, // Screen coordinates where the current mouse drag started
                 "offset_start": null, // Scroll values where the current mouse drag started
                 "zoom_val_start": null // zoom_val when the dragging interaction started
@@ -1346,6 +1384,23 @@ export class ULabel {
         }
     }
 
+    /**
+     * Set a new annotation mode
+     * 
+     * @param {string} annotation_mode Annotation mode to set
+     * @returns {boolean} - True if the annotation mode was successfully set, false otherwise
+     */
+    set_and_update_annotation_mode(annotation_mode) {
+        // Ensure new mode is allowed
+        if (!this.subtasks[this.state["current_subtask"]]["allowed_modes"].includes(annotation_mode)) {
+            console.warn(`Annotation mode ${annotation_mode} is not allowed for subtask ${this.state["current_subtask"]}`);
+            return false;
+        }
+        // Set the new mode via the toolbox
+        document.getElementById("md-btn--" + annotation_mode).click();
+        return true;
+    }
+
     // Draw demo annotation in demo canvas
     redraw_demo() {
         // this.state["demo_canvas_context"].clearRect(0, 0, this.config["demo_width"] * this.config["px_per_px"], this.config["demo_height"] * this.config["px_per_px"]);
@@ -1382,6 +1437,10 @@ export class ULabel {
                     [gmx, gmy]
                 ];
             case "polygon":
+                // Get brush spatial payload if in brush mode
+                if (this.subtasks[this.state["current_subtask"]]["state"]["is_in_brush_mode"]) {
+                    return this.get_brush_circle_spatial_payload(gmx, gmy);
+                }
                 return [[
                     [gmx, gmy],
                     [gmx, gmy]
@@ -1624,7 +1683,7 @@ export class ULabel {
 
     // ================= Drawing Functions =================
 
-    draw_bounding_box(annotation_object, ctx, demo = false, offset = null, subtask = null) {
+    draw_bounding_box(annotation_object, ctx, demo = false, offset = null) {
         const px_per_px = this.config["px_per_px"];
         let diffX = 0;
         let diffY = 0;
@@ -1663,7 +1722,7 @@ export class ULabel {
         ctx.stroke();
     }
 
-    draw_point(annotation_object, ctx, demo = false, offset = null, subtask = null) {
+    draw_point(annotation_object, ctx, demo = false, offset = null) {
         const px_per_px = this.config["px_per_px"];
         let diffX = 0;
         let diffY = 0;
@@ -1702,7 +1761,7 @@ export class ULabel {
         ctx.stroke();
     }
 
-    draw_bbox3(annotation_object, ctx, demo = false, offset = null, subtask = null) {
+    draw_bbox3(annotation_object, ctx, demo = false, offset = null) {
         const px_per_px = this.config["px_per_px"];
         let diffX = 0;
         let diffY = 0;
@@ -1759,7 +1818,7 @@ export class ULabel {
         }
     }
 
-    draw_polygon(annotation_object, ctx, demo = false, offset = null, subtask = null) {
+    draw_polygon(annotation_object, ctx, demo = false, offset = null) {
         const px_per_px = this.config["px_per_px"];
         let diffX = 0;
         let diffY = 0;
@@ -1830,7 +1889,7 @@ export class ULabel {
         }
     }
 
-    draw_contour(annotation_object, ctx, demo = false, offset = null, subtask = null) {
+    draw_contour(annotation_object, ctx, demo = false, offset = null) {
         const px_per_px = this.config["px_per_px"];
         let diffX = 0;
         let diffY = 0;
@@ -1868,7 +1927,7 @@ export class ULabel {
         ctx.stroke();
     }
 
-    draw_tbar(annotation_object, ctx, demo = false, offset = null, subtask = null) {
+    draw_tbar(annotation_object, ctx, demo = false, offset = null) {
         const px_per_px = this.config["px_per_px"];
         let diffX = 0;
         let diffY = 0;
@@ -2011,24 +2070,24 @@ export class ULabel {
         // Dispatch to annotation type's drawing function
         switch (annotation_object["spatial_type"]) {
             case "bbox":
-                this.draw_bounding_box(annotation_object, context, demo, offset, subtask);
+                this.draw_bounding_box(annotation_object, context, demo, offset);
                 break;
             case "point":
-                this.draw_point(annotation_object, context, demo, offset, subtask);
+                this.draw_point(annotation_object, context, demo, offset);
                 break;
             case "bbox3":
                 // TODO(new3d)
-                this.draw_bbox3(annotation_object, context, demo, offset, subtask);
+                this.draw_bbox3(annotation_object, context, demo, offset);
                 break;
             case "polygon":
             case "polyline":
-                this.draw_polygon(annotation_object, context, demo, offset, subtask);
+                this.draw_polygon(annotation_object, context, demo, offset);
                 break;
             case "contour":
-                this.draw_contour(annotation_object, context, demo, offset, subtask);
+                this.draw_contour(annotation_object, context, demo, offset);
                 break;
             case "tbar":
-                this.draw_tbar(annotation_object, context, demo, offset, subtask);
+                this.draw_tbar(annotation_object, context, demo, offset);
                 break;
             case "whole-image":
                 this.draw_whole_image_annotation(annotation_object, subtask);
@@ -2215,8 +2274,161 @@ export class ULabel {
         this.reposition_dialogs();
     }
 
+    toggle_brush_mode(mouse_event) {
+        // Try and switch to polygon annotation if not already in it
+        const current_subtask = this.state["current_subtask"];
+        let is_in_polygon_mode = this.subtasks[current_subtask]["state"]["annotation_mode"] === "polygon";
+        // Try and switch to polygon mode if not already in it
+        if (!is_in_polygon_mode) {
+            is_in_polygon_mode = this.set_and_update_annotation_mode("polygon");
+        }
+        // If we're in polygon mode, toggle brush mode
+        if (is_in_polygon_mode) {
+            // If in erase mode, turn it off
+            if (this.subtasks[current_subtask]["state"]["is_in_erase_mode"]) {
+                this.toggle_erase_mode();
+            }
+            // Toggle brush mode
+            this.subtasks[current_subtask]["state"]["is_in_brush_mode"] = !this.subtasks[current_subtask]["state"]["is_in_brush_mode"];
+            if (this.subtasks[current_subtask]["state"]["is_in_brush_mode"]) {
+                // Hide edit/id dialogs
+                this.hide_edit_suggestion();
+                this.hide_global_edit_suggestion();
+                this.hide_id_dialog();
+                // If in starting_complex_polygon mode, end it by undoing
+                if (this.subtasks[current_subtask]["state"]["starting_complex_polygon"]) {
+                    this.undo(true);
+                }
+                // Show brush circle
+                let gmx = this.get_global_mouse_x(mouse_event);
+                let gmy = this.get_global_mouse_y(mouse_event);
+                this.create_brush_circle(gmx, gmy);
+            } else {
+                this.destroy_brush_circle();
+            }
+        }
+    }
+
+    toggle_erase_mode(mouse_event) {
+        const current_subtask = this.state["current_subtask"];
+        // If not in brush mode, turn it on
+        if (!this.subtasks[current_subtask]["state"]["is_in_brush_mode"]) {
+            this.toggle_brush_mode(mouse_event);
+        }
+
+        // Toggle erase mode
+        this.subtasks[current_subtask]["state"]["is_in_erase_mode"] = !this.subtasks[current_subtask]["state"]["is_in_erase_mode"];
+
+        // Update brush circle color
+        const brush_circle_id = "brush_circle";
+        $("#" + brush_circle_id).css({
+            "background-color": this.subtasks[current_subtask]["state"]["is_in_erase_mode"] ? "red" : "white",
+        });
+
+        // When turning off erase mode, also turn off brush mode
+        if (this.subtasks[current_subtask]["state"]["is_in_brush_mode"] && !this.subtasks[current_subtask]["state"]["is_in_erase_mode"]) {
+            this.toggle_brush_mode();
+        }
+    }
+
+    // Create a brush circle at the mouse location
+    create_brush_circle(gmx, gmy) {
+        // Create brush circle id
+        const brush_circle_id = "brush_circle";
+
+        // Build brush circle html
+        const brush_circle_html = `
+        <a href="#" id="${brush_circle_id}" class="brush_circle"></a>`;
+        $("#dialogs__" + this.state["current_subtask"]).append(brush_circle_html);
+        $("#" + brush_circle_id).css({
+            "width": (this.config["brush_size"]*this.state["zoom_val"]) + "px",
+            "height": (this.config["brush_size"]*this.state["zoom_val"]) + "px",
+            "border-radius": (this.config["brush_size"]*this.state["zoom_val"])*2 + "px",
+            "background-color": this.subtasks[this.state["current_subtask"]]["state"]["is_in_erase_mode"] ? "red" : "white",
+            "left": gmx + "px",
+            "top": gmy + "px",
+        });
+
+        // Add this id to the list of dialogs with managed positions
+        this.subtasks[this.state["current_subtask"]]["state"]["visible_dialogs"][brush_circle_id] = {
+            "left": gmx / this.config["image_width"],
+            "top": gmy / this.config["image_height"],
+            "pin": "center"
+        };
+        this.reposition_dialogs();
+    }
+
+    // Move the brush circle to the mouse location
+    move_brush_circle(gmx, gmy) {
+        // Create brush circle id
+        const brush_circle_id = "brush_circle";
+
+        // Create brush circle if it doesn't exist
+        if (!($("#" + brush_circle_id).length)) {
+            this.create_brush_circle(gmx, gmy);
+            return;
+        }
+
+        // Use this function to recalculate current zoom
+        this.change_brush_size(1);
+
+        // Add to list of visible dialogs
+        this.subtasks[this.state["current_subtask"]]["state"]["visible_dialogs"][brush_circle_id] = {
+            "left": gmx / this.config["image_width"],
+            "top": gmy / this.config["image_height"],
+            "pin": "center"
+        };
+        this.reposition_dialogs();
+    }
+
+    // Destroy the brush circle
+    destroy_brush_circle() {
+        // Get brush circle id
+        const brush_circle_id = "brush_circle";
+        $("#" + brush_circle_id).remove();
+        delete this.subtasks[this.state["current_subtask"]]["state"]["visible_dialogs"][brush_circle_id];
+        this.reposition_dialogs();
+    }
+
+    // Change the brush size by a scale factor
+    change_brush_size(scale_factor) {
+        if (this.subtasks[this.state["current_subtask"]]["state"]["is_in_brush_mode"]) {
+            this.config["brush_size"] *= scale_factor;
+
+            // Get brush circle id
+            const brush_circle_id = "brush_circle";
+
+            // Update the brush circle
+            $("#" + brush_circle_id).css({
+                "width": (this.config["brush_size"]*this.state["zoom_val"]) + "px",
+                "height": (this.config["brush_size"]*this.state["zoom_val"]) + "px",
+                "border-radius": (this.config["brush_size"]*this.state["zoom_val"]) + "px"
+            });
+        }
+    }
+
+    // Create a complex polygon spatial payload at the brush circle location
+    get_brush_circle_spatial_payload(gmx, gmy) {
+        // Convert to image space
+        let imx = gmx / this.config["px_per_px"];
+        let imy = gmy / this.config["px_per_px"];
+
+        // Create a spatial payload around the entire radius of the brush circle
+        let spatial_payload = [];
+        let radius = this.config["brush_size"] / 2;
+        for (let i = 0; i < 360; i += 10) {
+            let rad = i * Math.PI / 180;
+            spatial_payload.push([imx + (radius * Math.cos(rad)), imy + (radius * Math.sin(rad))]);
+        }
+        // Ensure that first and last points are the same
+        if (spatial_payload.length > 0) {
+            spatial_payload[spatial_payload.length - 1] = spatial_payload[0];
+        }
+        return [spatial_payload];
+    }
+
     // Check if the newest complex layer can merge with each previous layer.
-    merge_polygon_complex_layer(annotation_id, layer_idx = null, recursive_call = false, redoing = false) {
+    merge_polygon_complex_layer(annotation_id, layer_idx = null, recursive_call = false, redoing = false, redraw = true) {
         const annotation = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annotation_id];
         if (annotation["spatial_type"] === "polygon" && annotation["spatial_payload"].length > 1) {
             let undo_annotation_payload = JSON.parse(JSON.stringify(annotation));
@@ -2229,6 +2441,12 @@ export class ULabel {
             // Doesn't include a value for the last layer yet
             let spatial_payload_holes = annotation["spatial_payload_holes"];
             
+            // Make sure that spatial_payload_child_indices is at least as long as spatial_payload - 1
+            let spatial_payload_child_indices = annotation["spatial_payload_child_indices"];
+            while (annotation["spatial_payload_child_indices"].length < spatial_payload.length - 1) {
+                spatial_payload_child_indices.push([]);
+            }
+
             // get the desired layer
             let layer = spatial_payload[layer_idx];
             let layer_is_hole = false;
@@ -2253,7 +2471,11 @@ export class ULabel {
                 layer_is_hole = !spatial_payload_holes[i];
 
                 // if our last layer is completely inside the previous layer, then we're done
-                if (GeometricUtils.polygon_is_within_polygon(layer, prev_layer)) {
+                if (GeometricUtils.simple_polygon_is_within_simple_polygon(layer, prev_layer)) {
+                    // Add layer_idx as a child of i if (a) it is a hole and (b) it's not already there
+                    if (layer_is_hole && !spatial_payload_child_indices[i].includes(layer_idx)) {
+                        spatial_payload_child_indices[i].push(layer_idx);
+                    }
                     break;
                 }
             }
@@ -2291,14 +2513,52 @@ export class ULabel {
                         layer_idx: layer_idx,
                     }
                 }, redoing);
-                this.rebuild_containing_box(annotation_id);
-                this.redraw_all_annotations(this.state["current_subtask"])
+                
             }
+        } 
+        // Redraw when caller expects the annotation to be redrawn
+        if (!recursive_call && redraw) {
+            this.rebuild_containing_box(annotation_id);
+            this.redraw_all_annotations(this.state["current_subtask"])
         }
     }
 
     // Undo the merging of layers by replacing the annotation with the undo payload
     merge_polygon_complex_layer__undo(undo_payload) {
+        this.replace_annotation(undo_payload["actid"], undo_payload["annotation"]);
+        this.rebuild_containing_box(undo_payload["actid"]);
+        this.redraw_all_annotations(this.state["current_subtask"]);
+    }
+
+    // Simplify a single layer of a complex polygon. Modifies the annotation directly.
+    simplify_polygon_complex_layer(annotation_id, active_idx, redoing = false) {
+        // Get the annotation
+        const annotation = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annotation_id];
+        // Save the annotation for undo
+        let undo_annotation_payload = JSON.parse(JSON.stringify(annotation));
+        // Get the layer
+        let layer = annotation["spatial_payload"][active_idx];
+        // layer is a list of points, so we need to wrap it in a list
+        // Replace the layer with the simplified layer
+        annotation["spatial_payload"][active_idx] = GeometricUtils.turf_simplify_complex_polygon([layer])[0];
+
+        // Record the action
+        this.record_action({
+            act_type: "simplify_polygon_complex_layer",
+            frame: this.state["current_frame"],
+            undo_payload: {
+                actid: annotation_id,
+                annotation: undo_annotation_payload,
+            },
+            redo_payload: {
+                actid: annotation_id,
+                active_idx: active_idx,
+            }
+        }, redoing);
+    }
+
+    // Undo the simplification of a layer by replacing the annotation with the undo payload
+    simplify_polygon_complex_layer__undo(undo_payload) {
         this.replace_annotation(undo_payload["actid"], undo_payload["annotation"]);
         this.rebuild_containing_box(undo_payload["actid"]);
         this.redraw_all_annotations(this.state["current_subtask"]);
@@ -2474,7 +2734,7 @@ export class ULabel {
 
     // ================= Annotation Utilities =================
 
-    undo() {
+    undo(is_internal_undo = false) {
         // Create constants for convenience
         const current_subtask = this.subtasks[this.state["current_subtask"]]
         const action_stream = current_subtask["actions"]["stream"]
@@ -2491,7 +2751,11 @@ export class ULabel {
             this.finish_action(action_stream[action_stream.length - 1]);
         }
         undone_stack.push(action_stream.pop());
-        let newact = this.undo_action(undone_stack[undone_stack.length - 1]);
+        
+        // set internal undo status
+        let undo_candidate = undone_stack[undone_stack.length - 1];
+        undo_candidate.is_internal_undo = is_internal_undo;
+        let newact = this.undo_action(undo_candidate);
         if (newact != null) {
             undone_stack[undone_stack.length - 1] = newact
         }
@@ -2561,9 +2825,8 @@ export class ULabel {
         }
 
         // Get the frame
-        let frame = this.state["current_frame"];
         if (MODES_3D.includes(spatial_type)) {
-            frame = null;
+            this.state["current_frame"] = null;
         }
 
         // Create the new annotation
@@ -2582,6 +2845,7 @@ export class ULabel {
         }
         if (spatial_type === "polygon") {
             new_annotation["spatial_payload_holes"] = [false];
+            new_annotation["spatial_payload_child_indices"] = [[]];
         }
 
         // Add the new annotation to the annotation access and ordering
@@ -2976,7 +3240,7 @@ export class ULabel {
 
     // Action Stream Events
 
-    set_saved(saved, in_progress = false) {
+    set_saved(saved) {
         this.state["edited"] = !saved;
     }
 
@@ -3063,9 +3327,25 @@ export class ULabel {
                 break;
             case "merge_polygon_complex_layer":
                 this.merge_polygon_complex_layer__undo(action.undo_payload);
-                // As this action was original performed internally, the user
-                // expects ctrl+z to the previous action as well
-                this.undo();
+                // If the undo was triggered by the user, they
+                // expect ctrl+z to undo the previous action as well
+                if (!action.is_internal_undo) {
+                    this.undo();
+                }
+                break;
+            case "simplify_polygon_complex_layer":
+                this.simplify_polygon_complex_layer__undo(action.undo_payload);
+                // If the undo was triggered by the user, they
+                // expect ctrl+z to undo the previous action as well
+                if (!action.is_internal_undo) {
+                    this.undo();
+                }
+                break;
+            case "begin_brush":
+                this.begin_brush__undo(action.undo_payload);
+                break;
+            case "finish_brush":
+                this.finish_brush__undo();
                 break;
             default:
                 console.log("Undo error :(");
@@ -3106,10 +3386,13 @@ export class ULabel {
                 this.create_nonspatial_annotation(action.redo_payload);
                 break;
             case "start_complex_polygon":
-                this.start_complex_polygon(null, action.redo_payload);
+                this.start_complex_polygon(action.redo_payload);
                 break;
             case "merge_polygon_complex_layer":
                 this.merge_polygon_complex_layer(action.redo_payload.actid, action.redo_payload.layer_id, false, true);
+                break;
+            case "simplify_polygon_complex_layer":
+                this.simplify_polygon_complex_layer(action.redo_payload.actid, action.redo_payload.active_idx, true);
                 break;
             default:
                 console.log("Redo error :(");
@@ -3304,6 +3587,7 @@ export class ULabel {
         if (annotation_mode === "polygon") {
             // First layer is always a fill, not a hole
             this.subtasks[this.state["current_subtask"]]["annotations"]["access"][unq_id]["spatial_payload_holes"] = [false];
+            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][unq_id]["spatial_payload_child_indices"] = [[]];
         }
         if (redoing) {
             this.set_id_dialog_payload_to_init(unq_id, init_id_payload);
@@ -3315,7 +3599,8 @@ export class ULabel {
         this.subtasks[this.state["current_subtask"]]["annotations"]["ordering"].push(unq_id);
 
         // If a polygon was just started, we need to add a clickable to end the shape
-        if (annotation_mode === "polygon") {
+        // Don't create ender when in brush mode
+        if (annotation_mode === "polygon" && !this.subtasks[this.state["current_subtask"]]["state"]["is_in_brush_mode"]) {
             this.create_polygon_ender(gmx, gmy, unq_id);
         }
         else if (annotation_mode === "polyline") {
@@ -3340,7 +3625,7 @@ export class ULabel {
                 gmx: gmx,
                 gmy: gmy,
                 init_spatial: JSON.parse(JSON.stringify(init_spatial)),
-                finished: redoing || annotation_mode === "point", // Did I mean != here???
+                finished: redoing || annotation_mode === "point",
                 init_payload: JSON.parse(JSON.stringify(this.subtasks[this.state["current_subtask"]]["state"]["id_payload"]))
             },
             undo_payload: {
@@ -3663,7 +3948,7 @@ export class ULabel {
         this.continue_annotation(this.state["last_move"]);
     }
 
-    start_complex_polygon(unfinished_annotation = false, redo_payload = null) {
+    start_complex_polygon(redo_payload = null) {
         // Turn off any edit suggestions or id dialogs
         this.hide_edit_suggestion();
         this.hide_global_edit_suggestion();
@@ -3696,7 +3981,6 @@ export class ULabel {
             frame: this.state["current_frame"],
             undo_payload: {
                 actid: active_id,
-                unfinished_annotation: unfinished_annotation
             },
             redo_payload: {
                 actid: active_id
@@ -3710,17 +3994,11 @@ export class ULabel {
         current_subtask["state"]["starting_complex_polygon"] = false
         // Remove the placeholder annotation
         current_subtask["annotations"]["access"][undo_payload.actid]["spatial_payload"].pop()
-        // Finish the annotation if needed
-        if (undo_payload.unfinished_annotation) {
-            this.finish_annotation(null);
-        } else {
-            // Remove the polygon ender
-            this.destroy_polygon_ender(undo_payload.actid);
-
-            // Mark that we're done here
-            current_subtask["state"]["active_id"] = null;
-            current_subtask["state"]["is_in_progress"] = false;
-        }
+        // Remove the polygon ender
+        this.destroy_polygon_ender(undo_payload.actid);
+        // Mark that we're done here
+        current_subtask["state"]["active_id"] = null;
+        current_subtask["state"]["is_in_progress"] = false;
     }
 
     finish_complex_polygon__undo(undo_payload) {
@@ -3734,6 +4012,7 @@ export class ULabel {
         // Then, loop throught the action stream until we find the start_complex_polygon action
         while (current_subtask["actions"]["stream"].length > 0) {
             let action = current_subtask["actions"]["stream"].pop();
+            action.is_internal_undo = true;
             if (action.act_type === "start_complex_polygon") {
                 // replace the action
                 current_subtask["actions"]["stream"].push(action);
@@ -3746,6 +4025,239 @@ export class ULabel {
             }
         }        
     }
+
+    // Split a ULabel complex polygon seperate turf polygons for each fill
+    split_complex_polygon(active_id) {
+        this.verify_complex_polygon_child_indices(active_id);
+        // Get annotation
+        const annotation = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][active_id];
+        const spatial_payload = annotation["spatial_payload"];
+        const spatial_payload_holes = annotation["spatial_payload_holes"];
+        const spatial_payload_child_indices = annotation["spatial_payload_child_indices"];
+        let split_polygons = [];
+        for (let idx = 0; idx < spatial_payload.length; idx++) {
+            // Check that this is a fill and not a hole
+            if (!spatial_payload_holes[idx]) {
+                // Start with the fill itself
+                let split_polygon = [spatial_payload[idx]];
+                // Check that we track its children
+                if (idx < spatial_payload_child_indices.length) {
+                    // Get the child indices
+                    let child_indices_arr = spatial_payload_child_indices[idx];
+                    if (child_indices_arr.length > 0) {
+                        for (const child_idx of child_indices_arr) {
+                            // Add the holes
+                            split_polygon.push(spatial_payload[child_idx]);
+                        }
+                    }
+                }
+                split_polygons.push(split_polygon);
+            }
+        }
+        return split_polygons;
+    }
+
+    // Remove any child indices and spatial_payload_holes that are not longer in the spatial_payload
+    verify_complex_polygon_child_indices(active_id) {
+        // Get annotation
+        const annotation = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][active_id];
+        // Get the spatial payload
+        const spatial_payload = annotation["spatial_payload"];
+        // Verify length
+        while (annotation["spatial_payload_child_indices"].length > spatial_payload.length) {
+            annotation["spatial_payload_child_indices"].pop();
+        }
+        for (let child_indices of annotation["spatial_payload_child_indices"]) {
+            for (let i of child_indices) {
+                if (i >= spatial_payload.length) {
+                    child_indices.splice(child_indices.indexOf(i), 1);
+                }
+            }
+        }
+        // Verify length of spatial_payload_holes
+        while (annotation["spatial_payload_holes"].length > spatial_payload.length) {
+            annotation["spatial_payload_holes"].pop();
+        }
+    }
+
+    // Start annotating or erasing with the brush
+    begin_brush(mouse_event) {  
+        // First, we check if there is an annotation touching the brush      
+        let brush_cand_active_id = null;
+        const global_x = this.get_global_mouse_x(mouse_event);
+        const global_y = this.get_global_mouse_y(mouse_event);
+        let brush_polygon = this.get_brush_circle_spatial_payload(global_x, global_y);
+        // Loop through all annotations in the ordering until we find a polygon that intersects with the brush
+        for (let i = this.subtasks[this.state["current_subtask"]]["annotations"]["ordering"].length - 1; i >= 0; i--) {
+            let active_id = this.subtasks[this.state["current_subtask"]]["annotations"]["ordering"][i];
+            let annotation = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][active_id];
+            // Only undeprecated polygons
+            if (!annotation["deprecated"] && annotation["spatial_type"] === "polygon") {
+                // Split into fills + their associated holes
+                let split_polygons = this.split_complex_polygon(active_id);
+                // Check if the brush intersects with or is within any layer
+                for (let split_polygon of split_polygons) {
+                    if (
+                        GeometricUtils.complex_polygons_intersect(split_polygon, brush_polygon) ||
+                        GeometricUtils.complex_polygon_is_within_complex_polygon(brush_polygon, split_polygon)
+                    ) {
+                        brush_cand_active_id = active_id;
+                        break;
+                    }
+                }
+            }
+            if (brush_cand_active_id !== null) {
+                break;
+            }
+        }
+        
+        if (brush_cand_active_id !== null) {
+            // Set annotation as in progress
+            this.subtasks[this.state["current_subtask"]]["state"]["active_id"] = brush_cand_active_id;
+            this.subtasks[this.state["current_subtask"]]["state"]["is_in_progress"] = true;
+            // Record for potential undo/redo
+            this.record_action({
+                act_type: "begin_brush",
+                frame: this.state["current_frame"],
+                undo_payload: {
+                    actid: brush_cand_active_id,
+                    annotation: JSON.parse(JSON.stringify(this.subtasks[this.state["current_subtask"]]["annotations"]["access"][brush_cand_active_id])),
+                },
+                redo_payload: {
+                    actid: brush_cand_active_id,
+                    mouse_event: mouse_event
+                }
+            });
+            this.continue_brush(mouse_event);
+        } else if (!this.subtasks[this.state["current_subtask"]]["state"]["is_in_erase_mode"]) {
+            // Start a new annotation if not in erase mode
+            this.begin_annotation(mouse_event);
+        } else {
+            // Move the brush
+            this.move_brush_circle(global_x, global_y);
+        }
+    }
+
+    // Reset the annotation
+    begin_brush__undo(undo_payload) {
+        if (undo_payload.actid !== null) {
+            // Reset the annotation
+            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][undo_payload.actid] = undo_payload.annotation;
+            // Redraw all
+            this.redraw_all_annotations(this.state["current_subtask"]);
+        }
+    }
+
+    continue_brush(mouse_event) {
+        // Get global mouse position
+        const gmx = this.get_global_mouse_x(mouse_event);
+        const gmy = this.get_global_mouse_y(mouse_event);
+
+        // Move the brush
+        this.move_brush_circle(gmx, gmy);
+
+        // Check if current mouse is far enough from last brush point
+        let continue_brush = true;
+        const min_brush_distance = this.config["brush_size"] / 8;
+        if (this.state["last_brush_stroke"] !== null) {
+            let [last_gmx, last_gmy] = this.state["last_brush_stroke"]
+            if (Math.abs(gmx - last_gmx) < min_brush_distance && Math.abs(gmy - last_gmy) < min_brush_distance) {
+                continue_brush = false;
+            }
+        }
+        if (continue_brush) {
+            // Save the last brush stroke
+            this.state["last_brush_stroke"] = [gmx, gmy];
+            const current_subtask = this.subtasks[this.state["current_subtask"]];
+            const active_id = current_subtask["state"]["active_id"];
+            if (active_id !== null) {
+                // Merge the brush with the annotation
+                let brush_polygon = this.get_brush_circle_spatial_payload(gmx, gmy);
+
+                // Get the current annotation
+                const annotation = current_subtask["annotations"]["access"][active_id];
+                // Split the annotation into separate polygons for each fill
+                let split_polygons = this.split_complex_polygon(active_id);
+                let new_spatial_payload = [];
+
+                if (current_subtask["state"]["is_in_erase_mode"]) {
+                    for (let split_polygon of split_polygons) {
+                        let merged_polygon;
+                        // Erase the brush from the annotation
+                        merged_polygon = GeometricUtils.subtract_polygons(split_polygon, brush_polygon);
+                        if (merged_polygon !== null) {
+                            // Extend the new spatial payload
+                            new_spatial_payload = new_spatial_payload.concat(merged_polygon);
+                        }
+                    }
+                } else {
+                    // Merge the brush with all intersecting layers
+                    let merged_polygon = brush_polygon;
+                    let n_merges = 0;
+                    for (let split_polygon of split_polygons) {
+                        // Check that the fill (first layer) of the split polygon intersects with our merged polygon
+                        // or if the split polygon as a whole intersects with our merged polygon
+                        // or if any hole in the split polygon is within our merged polygon (handles really small holes)
+                        if (
+                            GeometricUtils.complex_polygons_intersect([split_polygon[0]], merged_polygon) ||
+                            GeometricUtils.complex_polygons_intersect(split_polygon, merged_polygon) ||
+                            GeometricUtils.any_complex_polygon_hole_is_within_complex_polygon(split_polygon, merged_polygon)
+                        ) {
+                            n_merges += 1;
+                            // Merge the split polygon with the current merged polygon
+                            merged_polygon = GeometricUtils.merge_polygons(split_polygon, merged_polygon);
+                        } else {
+                            // If the split doesn't intersect our active merge, just add it back to the new spatial payload
+                            new_spatial_payload = new_spatial_payload.concat(split_polygon);
+                        }
+                    }
+                    // Add the merged polygon to the new spatial payload
+                    if (n_merges > 0) {
+                        new_spatial_payload = new_spatial_payload.concat(merged_polygon);
+                    } else {
+                        return;
+                    }                   
+                }
+                
+                if (new_spatial_payload.length === 0) {
+                    // Delete the annotation before overwriting payload
+                    this.delete_annotation(active_id);
+                }
+                annotation["spatial_payload"] = new_spatial_payload;
+                // Reset the child indices and holes
+                annotation["spatial_payload_holes"] = [false];
+                annotation["spatial_payload_child_indices"] = [[]];
+                // merge_polygon_complex_layer will verify all layers
+                // We can start at layer 1 since layer 0 is always a fill
+                for (let layer_idx = 1; layer_idx < new_spatial_payload.length; layer_idx++) {
+                    this.merge_polygon_complex_layer(active_id, layer_idx, false, false, false);
+                }
+                this.rebuild_containing_box(active_id);
+                this.redraw_all_annotations(this.state["current_subtask"]);
+            }
+        }
+    }
+
+    finish_brush__undo() {
+        // When undoing a brush, for convenience we will undo each continue_brush action
+        // until we get back to the begin_brush or begin_annotation action
+        const current_subtask = this.subtasks[this.state["current_subtask"]]
+        
+        // Then, loop throught the action stream until we find the begin_brush or begin_annotation action
+        while (current_subtask["actions"]["stream"].length > 0) {
+            let action = current_subtask["actions"]["stream"].pop();
+            action.is_internal_undo = true;
+            // undo the action
+            this.undo_action(action);
+            if (action.act_type === "begin_brush" || action.act_type === "begin_annotation") {
+                // we're done
+                break;
+            }
+        }        
+
+    }
+
+
 
     begin_edit(mouse_event) {
         // Create constants for convenience
@@ -4117,11 +4629,12 @@ export class ULabel {
 
         // Record last point and redraw if necessary
         // TODO(3d)
-        let n_kpts, start_pt, popped, act_type;
+        let n_kpts, start_pt, popped, act_type, active_idx;
         switch (annotation["spatial_type"]) {
             case "polygon":
                 // For polygons, the active spatial payload is the last array of points in the spatial payload
-                active_spatial_payload = spatial_payload.at(-1);
+                active_idx = spatial_payload.length - 1;
+                active_spatial_payload = spatial_payload[active_idx];
                 n_kpts = active_spatial_payload.length;
                 if (n_kpts < 4) {
                     console.error("Canceled polygon with insufficient points:", n_kpts);
@@ -4133,33 +4646,39 @@ export class ULabel {
                 ];
                 active_spatial_payload[n_kpts - 1] = start_pt;
 
-                // If the shiftKey is held, we wait for the next click, which is handled in end_drag().
-                // When no shift key is held, we can finish the annotation
-                if (mouse_event != null && mouse_event.shiftKey) {
-                    // Render merged layers
-                    this.merge_polygon_complex_layer(active_id);
-                    // Start a new complex layer
-                    this.start_complex_polygon(true);
+                // If in brush mode, we finish the brush
+                if (current_subtask["state"]["is_in_brush_mode"]) {
+                    act_type = "finish_brush";
                 } else {
-                    // when completing a complex layer of a polygon, we record the action accordingly
+                    // When completing a complex layer of a polygon, we record the action accordingly
                     act_type = spatial_payload.length > 1 ? "finish_complex_polygon" : "finish_annotation";
-                    this.record_action({
-                        act_type: act_type,
-                        frame: this.state["current_frame"],
-                        undo_payload: {
-                            actid: active_id,
-                            ender_html: $("#ender_" + active_id).outer_html(),
-                            annotation: JSON.parse(JSON.stringify(annotation)),
-                        },
-                        redo_payload: {
-                            actid: active_id
-                        }
-                    }, redoing);
-                    this.destroy_polygon_ender(active_id);
-                    // Render merged layers. Also handles rebuilding containing box and redrawing
-                    this.merge_polygon_complex_layer(active_id);
                 }
+                this.record_action({
+                    act_type: act_type,
+                    frame: this.state["current_frame"],
+                    undo_payload: {
+                        actid: active_id,
+                        ender_html: $("#ender_" + active_id).outer_html(),
+                        annotation: JSON.parse(JSON.stringify(annotation)),
+                    },
+                    redo_payload: {
+                        actid: active_id
+                    }
+                }, redoing);
+
+                // Simplify the polygon
+                this.simplify_polygon_complex_layer(active_id, active_idx);
+                // Render merged layers. Also handles rebuilding containing box and redrawing
+                this.merge_polygon_complex_layer(active_id);
                 
+                // When shift key is held, we start a new complex layer
+                if (!current_subtask["state"]["is_in_brush_mode"] && mouse_event != null && mouse_event.shiftKey) {
+                    // Start a new complex layer
+                    this.start_complex_polygon();
+                } else {
+                    this.destroy_polygon_ender(active_id);
+                }
+
                 break;
             case "polyline":
                 // TODO handle the case of merging with existing annotation
@@ -4229,6 +4748,9 @@ export class ULabel {
             }
         }
 
+        // Reset last brush stroke
+        this.state["last_brush_stroke"] = null;
+
         // Set mode to no active annotation, unless shift key is held for a polygon
         if (current_subtask["state"]["starting_complex_polygon"]) {
             console.log("Continuing complex polygon...");
@@ -4294,6 +4816,8 @@ export class ULabel {
         switch (this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_type"]) {
             case "polygon":
                 this.record_finish_edit(actid);
+                // Reset spatial_payload_child_indices
+                this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload_child_indices"] = [];
                 // Get the idx of the edited layer and try and merge it
                 layer_idx = parseInt(access_str[0], 10)
                 this.merge_polygon_complex_layer(actid, layer_idx);
@@ -4373,12 +4897,19 @@ export class ULabel {
             if (spatial_type === "polygon") {
                 active_spatial_payload = spatial_payload[i];
             }
+            
+            // If first and last point reference the same point array in memory, we don't want to add the diff twice
+            let n_points = active_spatial_payload.length;
+            if (spatial_type === "polygon" && active_spatial_payload[0] === active_spatial_payload[n_points - 1]) {
+                n_points -= 1;
+            }
 
-            // TODO(3d)
-            for (let spi = 0; spi < active_spatial_payload.length; spi++) {
+            // Move the points
+            for (let spi = 0; spi < n_points; spi++) {
                 active_spatial_payload[spi][0] += diffX;
                 active_spatial_payload[spi][1] += diffY;
             }
+
             if (MODES_3D.includes(spatial_type)) {
                 for (let spi = 0; spi < active_spatial_payload.length; spi++) {
                     active_spatial_payload[spi][2] += diffZ;
@@ -4637,7 +5168,7 @@ export class ULabel {
      */
     suggest_edits(mouse_event = null, nonspatial_id = null) {
         // don't show edits when potentially trying to draw a hole
-        if (this.subtasks[this.state["current_subtask"]]["state"]["starting_complex_polygon"]) {
+        if (this.subtasks[this.state["current_subtask"]]["state"]["starting_complex_polygon"] || this.subtasks[this.state["current_subtask"]]["state"]["is_in_brush_mode"]) {
             this.hide_global_edit_suggestion();
             this.hide_edit_suggestion();
         } else {
@@ -5082,6 +5613,11 @@ export class ULabel {
                 ) {
                     this.continue_annotation(mouse_event);
                 }
+            } else if (this.subtasks[this.state["current_subtask"]]["state"]["is_in_brush_mode"]) {
+                // If brush mode is in progress, move the brush
+                let gmx = this.get_global_mouse_x(mouse_event);
+                let gmy = this.get_global_mouse_y(mouse_event);
+                this.move_brush_circle(gmx, gmy);
             } else if (mouse_event.shiftKey && annotation_mode === "polygon" && idd_visible && edit_candidate != null) {
                 // If shift key is held while hovering a polygon, we want to start a new complex payload
 
@@ -5103,6 +5639,15 @@ export class ULabel {
                 case "annotation":
                     if (!idd_visible || idd_thumbnail) {
                         this.continue_annotation(mouse_event);
+                    }
+                    break;
+                case "brush":
+                    // If currently brushing, continue
+                    if (this.subtasks[this.state["current_subtask"]]["state"]["is_in_progress"]) {
+                        this.continue_brush(mouse_event);
+                    } else {
+                        // If not, see if we should start
+                        this.begin_brush(mouse_event);
                     }
                     break;
                 case "edit":
@@ -5154,6 +5699,9 @@ export class ULabel {
                     this.begin_annotation(mouse_event);
                 }
                 break;
+            case "brush":
+                this.begin_brush(mouse_event);
+                break;
             case "edit":
                 this.begin_edit(mouse_event);
                 break;
@@ -5200,6 +5748,11 @@ export class ULabel {
                             this.continue_annotation(mouse_event, true);
                         }
                     }
+                }
+                break;
+            case "brush":
+                if (active_id != null) {
+                    this.finish_annotation(mouse_event);
                 }
                 break;
             case "right":

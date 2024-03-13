@@ -8,7 +8,8 @@ import {
     RecolorActiveItem, 
     KeypointSliderItem, 
     SubmitButtons, 
-    FilterPointDistanceFromRow 
+    FilterPointDistanceFromRow, 
+    BrushToolboxItem
 } from "./toolbox"
 import { is_object_and_not_array } from "./utilities";
 
@@ -21,7 +22,8 @@ export enum AllowedToolboxItem {
     ClassCounter,     // 5
     KeypointSlider,   // 6
     SubmitButtons,    // 7
-    FilterDistance    // 8
+    FilterDistance,   // 8
+    Brush,            // 9
 }
 
 export class Configuration {
@@ -34,12 +36,14 @@ export class Configuration {
         [AllowedToolboxItem.ClassCounter, ClassCounterToolboxItem],
         [AllowedToolboxItem.KeypointSlider, KeypointSliderItem],
         [AllowedToolboxItem.SubmitButtons, SubmitButtons],
-        [AllowedToolboxItem.FilterDistance, FilterPointDistanceFromRow]
+        [AllowedToolboxItem.FilterDistance, FilterPointDistanceFromRow],
+        [AllowedToolboxItem.Brush, BrushToolboxItem],
     ]);
     
     // Default toolbox order used when the user doesn't specify one
     public default_toolbox_item_order: AllowedToolboxItem[] = [
         AllowedToolboxItem.ModeSelect,
+        AllowedToolboxItem.Brush,
         AllowedToolboxItem.ZoomPan,
         AllowedToolboxItem.AnnotationResize,
         AllowedToolboxItem.AnnotationID,
@@ -94,6 +98,14 @@ export class Configuration {
     public toggle_annotation_mode_keybind: string = "u";
 
     public create_bbox_on_initial_crop: string = "f";
+
+    public toggle_brush_mode_keybind: string = "g"
+
+    public toggle_erase_mode_keybind: string = "e"
+
+    public increase_brush_size_keybind: string = "="
+
+    public decrease_brush_size_keybind: string = "-"
 
     constructor(...kwargs: {[key: string]: unknown}[]) {
         this.modify_config(...kwargs)
