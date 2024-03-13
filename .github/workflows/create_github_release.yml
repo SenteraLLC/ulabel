@@ -1,0 +1,70 @@
+name: Create GitHub Release
+
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - main
+
+jobs:
+  release:
+    name: Create GitHub Release
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+
+    steps:
+      - name: Check if PR was merged
+        run: |
+          if [ "${{ github.event.pull_request.merged }}" != "true" ]; then
+            echo "PR was not merged, skipping."
+            exit 78
+          fi
+
+      - name: Checkout code
+        uses: actions/checkout@v3.1.0
+        with:
+          fetch-depth: 0
+
+      - name: Define TAG
+        run: |
+          export VERSION=$(cat package.json | jq '.version' | tr -d '"')
+          echo "TAG=v$VERSION" >> $GITHUB_ENV
+
+      - name: Check if tag exists
+        id: check_tag
+        uses: actions/github-script@v6
+        with:
+          result-encoding: string
+          script: |
+            const tag = process.env.TAG;
+            const { owner, repo } = context.repo;
+            try {
+              await github.rest.git.getRef({
+                owner,
+                repo,
+                ref: `tags/${tag}`,
+              });
+              // If the API call doesn't throw an error, the tag exists
+              return true;
+            } catch (error) {
+              // If the API call throws an error, the tag doesn't exist
+              return false;
+            }
+        env:
+          TAG: ${{ env.TAG }}
+
+      - name: Create Release and Tag
+        uses: actions/github-script@v6
+        with:
+          result-encoding: string
+          retries: 3
+          script: |
+            github.rest.repos.createRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag_name: process.env.TAG,
+              target_commitish: context.sha,
+              name: process.env.TAG,
+              generate_release_notes: true
+            })

@@ -114,35 +114,6 @@ export class GeometricUtils {
         };
     }
 
-    // Check if two line segments intersect
-    public static line_segments_intersect(line1: LineSegment2D, line2: LineSegment2D): boolean {
-        let x1: number, y1: number, x2: number, y2: number, x3: number, y3: number, x4: number, y4: number;
-        [[x1, y1], [x2, y2]] = line1;
-        [[x3, y3], [x4, y4]] = line2;
-        const dx1: number = x2 - x1;
-        const dy1: number = y2 - y1;
-        const dx2: number = x4 - x3;
-        const dy2: number = y4 - y3;
-        const d: number = dx1*dy2 - dy1*dx2;
-        if (d === 0) return false;
-        const dx3: number = x1 - x3;
-        const dy3: number = y1 - y3;
-        const t: number = (dx3*dy2 - dy3*dx2)/d;
-        if (t < 0 || t > 1) return false;
-        const u: number = (dx3*dy1 - dy3*dx1)/d;
-        if (u < 0 || u > 1) return false;
-    }
-
-    // Check if two line segments are equal
-    public static line_segments_are_equal(line1: LineSegment2D, line2: LineSegment2D): boolean {
-        return (
-            (line1[0][0] === line2[0][0]) &&
-            (line1[0][1] === line2[0][1]) &&
-            (line1[1][0] === line2[1][0]) &&
-            (line1[1][1] === line2[1][1])
-        );
-    }
-
     // Check if two line segments are on the same line
     public static line_segments_are_on_same_line(line1: LineSegment2D, line2: LineSegment2D): boolean {
         const eq1: LineEquation = GeometricUtils.get_line_equation_through_points(line1[0], line1[1]);
@@ -266,35 +237,6 @@ export class GeometricUtils {
             }
             return ret;
         }
-    }
-
-    // Return a list of polygons that define all intersections between a list of polygons
-    public static get_polygon_intersections(polygons: ULabelSpatialPayload2D[]): ULabelSpatialPayload2D[] {
-        let ret: ULabelSpatialPayload2D[] = [];
-        for (let i: number = 0; i < polygons.length; i++) {
-            for (let j: number = i+1; j < polygons.length; j++) {
-                let poly1: ULabelSpatialPayload2D = polygons[i];
-                let poly2: ULabelSpatialPayload2D = polygons[j];
-                // Ensure both polygons are closed
-                if (GeometricUtils.is_polygon_closed(poly1) && GeometricUtils.is_polygon_closed(poly2)) {
-                    let intersection: ULabelSpatialPayload2D = GeometricUtils.get_polygon_intersection_single(poly1, poly2);
-                    if (intersection != null) {       
-                        // Don't add duplicate intersections
-                        let is_duplicate: boolean = false;
-                        for (let k: number = 0; k < ret.length; k++) {
-                           if (GeometricUtils.polygons_are_equal(ret[k], intersection)) {
-                               is_duplicate = true;
-                               break;
-                           }
-                        }
-                        if (!is_duplicate) {
-                            ret.push(intersection);
-                        }
-                    }
-                }
-            }
-        }
-        return ret;
     }
 
     // Return the intersection of two polygons
