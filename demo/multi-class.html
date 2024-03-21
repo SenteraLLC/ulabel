@@ -82,7 +82,10 @@
                 "container_id": "container",
                 "image_data": "https://ulabel.s3.us-east-2.amazonaws.com/cs-demo-0.png",
                 "username": "DemoUser",
-                "submit_buttons": on_submit,
+                "submit_buttons": [{
+                    "name": "Submit",
+                    "hook": on_submit,
+                }],
                 "subtasks": subtasks
             });
             // Wait for ULabel instance to finish initialization
