@@ -2499,7 +2499,9 @@ export class SubmitButtons extends ToolboxItem {
             id="${this.submit_buttons[idx].name.replaceLowerConcat(" ", "-")}" 
             class="submit-button" 
             style="
-                display: block;
+                display: flex;
+                justify-content: center;
+                align-items: center;
                 height: 1.2em;
                 width: 6em;
                 font-size: 1.5em;
