@@ -6,6 +6,11 @@ All notable changes to this project will be documented here.
 
 Nothing yet.
 
+## [0.9.2] - March 21th, 2024
+- Small fixes to `submit_buttons` in the toolbox. 
+  - Added optional `set_saved` argument for each `submit_button` to allow for the page to unload without warning if the button is clicked.
+  - Changed default button css to better center the text.
+
 ## [0.9.1] - March 12th, 2024
 
 - Refactor of how annotations are drawn on the canvas. This change should make the drawing of annotations more efficient and less prone to lagging, especially when working with a large number of annotations or annotations with many vertices.

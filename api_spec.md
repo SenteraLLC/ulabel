@@ -81,7 +81,7 @@ If either more than one submit button or more button customization is desired, t
 
 ```javascript
 {
-    name: "<Arbitrary Button Name>",
+    name: "<Arbitrary Button Name>", // The button has a set height and width, so the name should be short
     hook: async function (annotations) {
         // Define submit behavior here
 
@@ -92,6 +92,7 @@ If either more than one submit button or more button customization is desired, t
         // If submit is unsuccessful and annotations edits should not be treated as "saved", return false
     },
     color?: "Arbitrary Color" // e.g. "#639", "#3AB890", "rgb(200, 0, 170)", "hsl(0, 100%, 50%)"
+    set_saved?: boolean // If true, will call ulabel.set_saved(true) before the hook is called, thus avoiding the "unsaved changes" warning
 }
 ```
 
