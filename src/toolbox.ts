@@ -2353,7 +2353,7 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
 }
 
 export class SubmitButtons extends ToolboxItem {
-    private submit_buttons: {name: string, hook: Function, color?: string}[] | Function;
+    private submit_buttons: {name: string, hook: Function, color?: string, set_saved?: boolean}[] | Function;
 
     constructor(ulabel: ULabel) {
         super();
@@ -2413,6 +2413,11 @@ export class SubmitButtons extends ToolboxItem {
                             ]
                         );
                     }
+                }
+
+                // set set_saved if it was provided
+                if (this.submit_buttons[idx].set_saved !== undefined) {
+                    ulabel.set_saved(this.submit_buttons[idx].set_saved);
                 }
                 
                 await this.submit_buttons[idx].hook(submit_payload);
@@ -2494,7 +2499,9 @@ export class SubmitButtons extends ToolboxItem {
             id="${this.submit_buttons[idx].name.replaceLowerConcat(" ", "-")}" 
             class="submit-button" 
             style="
-                display: block;
+                display: flex;
+                justify-content: center;
+                align-items: center;
                 height: 1.2em;
                 width: 6em;
                 font-size: 1.5em;
