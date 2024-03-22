@@ -341,6 +341,10 @@ export class ModeSelectionToolboxItem extends ToolboxItem {
                 BrushToolboxItem.show_brush_toolbox_item();
             } else {
                 BrushToolboxItem.hide_brush_toolbox_item();
+                // Turn off erase mode if it's on
+                if (ulabel.subtasks[current_subtask]["state"]["is_in_erase_mode"]) {
+                    ulabel.toggle_erase_mode(e);
+                }
                 // Turn off brush mode if it's on
                 if (ulabel.subtasks[current_subtask]["state"]["is_in_brush_mode"]) {
                     ulabel.toggle_brush_mode(e);
