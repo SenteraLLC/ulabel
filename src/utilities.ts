@@ -4,6 +4,7 @@
 
 import { ULabel } from ".."
 import { ULabelSubtask } from "./subtask"
+import { DELETE_CLASS_ID, DELETE_MODES } from "./annotation"
 
 /**
  * Checks if something is an object, not an array, and not null
@@ -44,6 +45,9 @@ export function get_active_class_id(ulabel: ULabel): number {
 
     // If in single_class_mode return the only valid class id
     if (current_subtask.single_class_mode) return current_subtask.class_ids[0]
+
+    // If currently in a delete mode, return the DELETE_CLASS_ID
+    if (DELETE_MODES.includes(current_subtask.state.annotation_mode)) return DELETE_CLASS_ID
 
     // If the current subtask has more than one valid class id, loop through the id_payloads
     for (const payload of current_subtask.state.id_payload) {

@@ -1,7 +1,7 @@
 import { SliderInfo, ULabel } from "..";
 import { Toolbox, ZoomPanToolboxItem } from "./toolbox";
 import { ULABEL_VERSION } from '../src/version';
-
+import { DELETE_CLASS_ID } from "./annotation";
 import {
     BBOX_SVG,
     DELETE_BBOX_SVG,
@@ -399,8 +399,11 @@ export function build_id_dialogs(ulabel: ULabel) {
 
         // TODO noconflict
         let toolbox_html: string = `<div id="tb-id-app--${st}" class="tb-id-app">`;
-        const class_ids: number[] = ulabel.subtasks[st]["class_ids"];
-
+        let class_ids: number[] = JSON.parse(JSON.stringify(ulabel.subtasks[st]["class_ids"]));
+        // Add the reserved DELETE_CLASS_ID if it is present in the class_defs
+        if (ulabel.subtasks[st]["class_defs"].at(-1)["id"] === DELETE_CLASS_ID) {
+            class_ids.push(DELETE_CLASS_ID);
+        }
 
         for (let i = 0; i < class_ids.length; i++) {
 

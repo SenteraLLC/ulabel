@@ -6,7 +6,13 @@ All notable changes to this project will be documented here.
 
 Nothing yet.
 
-## [0.9.2] - March 21th, 2024
+## [0.9.3] - March 22nd, 2024
+- Fix bug where erase mode could perist when changing annotation mode
+- When user provides an `initial_line_size`, use that as the default size for new annotations, independent of zoom
+  - When this argument is not provided, the behavior is unchanged from before (the size of new annotations will still scale with the zoom level).
+- Fix bug where the `DELETE_CLASS_ID` would show up as an option in the id dialog for polygons and bounding boxes
+
+## [0.9.2] - March 21st, 2024
 - Small fixes to `submit_buttons` in the toolbox. 
   - Added optional `set_saved` argument for each `submit_button` to allow for the page to unload without warning if the button is clicked.
   - Changed default button css to better center the text.

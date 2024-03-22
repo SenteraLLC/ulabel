@@ -7,7 +7,9 @@ import {
 } from "..";
 import { GeometricUtils } from "./geometric_utils";
 
-
+// Modes used to draw an area in the which to delete all annotations
+export const DELETE_MODES = ["delete_polygon", "delete_bbox"]
+export const DELETE_CLASS_ID = -1;
 
 export class ULabelAnnotation {
     constructor(
@@ -20,7 +22,7 @@ export class ULabelAnnotation {
         public text_payload: string = "",
 
         // Optional properties
-        public classification_payloads?: [ULabelClassificationPayload],
+        public classification_payloads?:ULabelClassificationPayload[],
         public containing_box?: ULabelContainingBox,
         public created_by?: string,
         public distance_from_any_line?: number,
@@ -43,9 +45,15 @@ export class ULabelAnnotation {
         let j: number;
         let conf_not_found_j = null;
         let remaining_confidence = 1.0;
+
+        // Filter out any classification payloads items that use the DELETE_CLASS_ID
+        this.classification_payloads = this.classification_payloads.filter((payload) => {
+            return payload.class_id !== DELETE_CLASS_ID;
+        });
+
         for (j = 0; j < this.classification_payloads.length;j++) {
             let this_id = this.classification_payloads[j].class_id;
-            if(!ulabel_class_ids.includes(this_id)) {
+            if (!ulabel_class_ids.includes(this_id)) {
                 alert(`Found class id ${this_id} in "resume_from" data but not in "allowed_classes"`);
                 throw `Found class id ${this_id} in "resume_from" data but not in "allowed_classes"`;
             }

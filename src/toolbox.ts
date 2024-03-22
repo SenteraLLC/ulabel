@@ -341,6 +341,10 @@ export class ModeSelectionToolboxItem extends ToolboxItem {
                 BrushToolboxItem.show_brush_toolbox_item();
             } else {
                 BrushToolboxItem.hide_brush_toolbox_item();
+                // Turn off erase mode if it's on
+                if (ulabel.subtasks[current_subtask]["state"]["is_in_erase_mode"]) {
+                    ulabel.toggle_erase_mode(e);
+                }
                 // Turn off brush mode if it's on
                 if (ulabel.subtasks[current_subtask]["state"]["is_in_brush_mode"]) {
                     ulabel.toggle_brush_mode(e);
@@ -1014,6 +1018,12 @@ export class AnnotationIDToolboxItem extends ToolboxItem {
         }
     }
 
+    /**
+     * Get the html skeleton for this ToolboxItem. The actual ID selection items will be added 
+     * in html_builder.ts in the function build_id_dialogs()
+     * 
+     * @returns html string
+     */
     public get_html() {
         return `
         <div class="classification">
@@ -1155,16 +1165,16 @@ export class AnnotationResizeItem extends ToolboxItem {
             let cached_size_property = ulabel.subtasks[subtask].display_name.replaceLowerConcat(" ", "-", "-cached-size")
             let size_cookie = this.read_size_cookie(ulabel.subtasks[subtask])
             if ((size_cookie != null) && size_cookie != "NaN") {
-                this.update_annotation_size(ulabel.subtasks[subtask], Number(size_cookie));
+                this.update_annotation_size(ulabel, ulabel.subtasks[subtask], Number(size_cookie));
                 this[cached_size_property] = Number(size_cookie)
             }
             else if (ulabel.config.default_annotation_size != undefined) {          
-                this.update_annotation_size(ulabel.subtasks[subtask], ulabel.config.default_annotation_size);
+                this.update_annotation_size(ulabel, ulabel.subtasks[subtask], ulabel.config.default_annotation_size);
                 this[cached_size_property] = ulabel.config.default_annotation_size
             } 
             else {
                 const DEFAULT_SIZE = 5
-                this.update_annotation_size(ulabel.subtasks[subtask], DEFAULT_SIZE)
+                this.update_annotation_size(ulabel, ulabel.subtasks[subtask], DEFAULT_SIZE)
                 this[cached_size_property] = DEFAULT_SIZE
             }
         }
@@ -1260,7 +1270,7 @@ export class AnnotationResizeItem extends ToolboxItem {
             const annotation_size = <ValidResizeValues> button.attr("id").slice(18);
 
             // Update the size of all annotations in the subtask
-            this.update_annotation_size(current_subtask, annotation_size);
+            this.update_annotation_size(this.ulabel, current_subtask, annotation_size);
 
             this.ulabel.redraw_all_annotations(null, null, false);
         })
@@ -1275,19 +1285,19 @@ export class AnnotationResizeItem extends ToolboxItem {
                     this.update_all_subtask_annotation_size(this.ulabel, ValidResizeValues.VANISH)
                     break
                 case this.keybind_configuration.annotation_vanish.toLowerCase():
-                    this.update_annotation_size(current_subtask, ValidResizeValues.VANISH)
+                    this.update_annotation_size(this.ulabel, current_subtask, ValidResizeValues.VANISH)
                     break
                 case this.keybind_configuration.annotation_size_small:
-                    this.update_annotation_size(current_subtask, ValidResizeValues.SMALL)
+                    this.update_annotation_size(this.ulabel, current_subtask, ValidResizeValues.SMALL)
                     break
                 case this.keybind_configuration.annotation_size_large:
-                    this.update_annotation_size(current_subtask, ValidResizeValues.LARGE)
+                    this.update_annotation_size(this.ulabel, current_subtask, ValidResizeValues.LARGE)
                     break
                 case this.keybind_configuration.annotation_size_minus:
-                    this.update_annotation_size(current_subtask, ValidResizeValues.DECREMENT)
+                    this.update_annotation_size(this.ulabel, current_subtask, ValidResizeValues.DECREMENT)
                     break
                 case this.keybind_configuration.annotation_size_plus:
-                    this.update_annotation_size(current_subtask, ValidResizeValues.INCREMENT)
+                    this.update_annotation_size(this.ulabel, current_subtask, ValidResizeValues.INCREMENT)
                     break
                 default:
                     // Return if no valid keybind was pressed
@@ -1307,7 +1317,7 @@ export class AnnotationResizeItem extends ToolboxItem {
      * @param subtask Subtask which holds the annotations to act on
      * @param size How to resize the annotations
      */
-    public update_annotation_size(subtask: ULabelSubtask, size: number | ValidResizeValues): void {
+    public update_annotation_size(ulabel: ULabel, subtask: ULabelSubtask, size: number | ValidResizeValues): void {
         if (subtask === null) return;
 
         // If in brush mode, the keybind was probably meant for the brush
@@ -1371,6 +1381,11 @@ export class AnnotationResizeItem extends ToolboxItem {
             default:
                 console.error("update_annotation_size called with unknown size");
         }
+
+        // Store the new size as the default if we should be tracking it
+        if (ulabel.state.line_size !== null) {
+            ulabel.state.line_size = this[subtask_cached_size];
+        }
     }
     //loops through all annotations in a subtask to change their line size
     public loop_through_annotations(subtask, size, operation) {
@@ -1416,7 +1431,7 @@ export class AnnotationResizeItem extends ToolboxItem {
     //Loop through all subtasks and apply a size to them all
     public update_all_subtask_annotation_size(ulabel, size) {
         for (let subtask in ulabel.subtasks) {
-            this.update_annotation_size(ulabel.subtasks[subtask], size)
+            this.update_annotation_size(ulabel, ulabel.subtasks[subtask], size)
         }
     }
 
