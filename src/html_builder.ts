@@ -401,7 +401,7 @@ export function build_id_dialogs(ulabel: ULabel) {
         let toolbox_html: string = `<div id="tb-id-app--${st}" class="tb-id-app">`;
         let class_ids: number[] = JSON.parse(JSON.stringify(ulabel.subtasks[st]["class_ids"]));
         // Add the reserved DELETE_CLASS_ID if it is present in the class_defs
-        if (ulabel.subtasks[st]["class_defs"].at(-1)["id"] == DELETE_CLASS_ID) {
+        if (ulabel.subtasks[st]["class_defs"].at(-1)["id"] === DELETE_CLASS_ID) {
             class_ids.push(DELETE_CLASS_ID);
         }
 

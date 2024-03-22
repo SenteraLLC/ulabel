@@ -3639,8 +3639,7 @@ export class ULabel {
                     line_size *= this.state["zoom_val"];
                 }
                 return line_size;
-            }
-            else {
+            } else {
                 if (this.state["size_mode"] === "fixed") {
                     line_size /= this.state["zoom_val"];
                 }
