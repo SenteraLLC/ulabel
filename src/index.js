@@ -787,6 +787,7 @@ export class ULabel {
                 "starting_complex_polygon": false, 
                 "is_in_brush_mode": false,
                 "is_in_erase_mode": false,
+                "line_size": ul.subtasks[subtask_key]["default_line_size"],
                 "edit_candidate": null,
                 "move_candidate": null,
 
@@ -886,7 +887,7 @@ export class ULabel {
             "annotation_meta": arguments[6] ?? null, // Use default if optional argument is undefined
             "px_per_px": arguments[7] ?? 1,          // Use default if optional argument is undefined
             "initial_crop": arguments[8] ?? null,    // Use default if optional argument is undefined
-            "initial_line_size": arguments[9] ?? 4,  // Use default if optional argument is undefined
+            "initial_line_size": arguments[9] ?? null,  // Use default if optional argument is undefined
             "config_data": arguments[10] ?? null,    // Use default if optional argument is undefined
             "toolbox_order": arguments[11] ?? null   // Use default if optional argument is undefined
         }
@@ -942,7 +943,7 @@ export class ULabel {
         const annotation_meta   = kwargs["annotation_meta"] ?? null
         const px_per_px         = kwargs["px_per_px"] ?? 1
         const initial_crop      = kwargs["initial_crop"] ?? null // {top: #, left: #, height: #, width: #,}
-        const initial_line_size = kwargs["initial_line_size"] ?? 4
+        const initial_line_size = kwargs["initial_line_size"] ?? null
         const instructions_url  = kwargs["instructions_url"] ?? null
         const config_data       = kwargs["config_data"] ?? null
         const toolbox_order     = kwargs["toolbox_order"] ?? null
@@ -1877,8 +1878,7 @@ export class ULabel {
         let line_size = null;
         if ("line_size" in annotation_object) {
             line_size = annotation_object["line_size"];
-        }
-        else {
+        } else {
             line_size = this.get_line_size(demo);
         }
 
@@ -3628,18 +3628,26 @@ export class ULabel {
     }
 
     get_line_size(demo = false) {
-        let line_size = this.state["line_size"] * this.config["px_per_px"];
-        if (demo) {
-            if (this.state["size_mode"] === "dynamic") {
-                line_size *= this.state["zoom_val"];
+        // If the user did not specify an initial_line_size, then this.state["line_size"] will be null. 
+        // This indicates that we will scale the line size based on the zoom level 
+        if (this.state["line_size"] === null) {
+            // 4 is the legacy default line size
+            let line_size = 4 * this.config["px_per_px"];
+            if (demo) {
+                if (this.state["size_mode"] === "dynamic") {
+                    line_size *= this.state["zoom_val"];
+                }
+                return line_size;
             }
-            return line_size;
-        }
-        else {
-            if (this.state["size_mode"] === "fixed") {
-                line_size /= this.state["zoom_val"];
+            else {
+                if (this.state["size_mode"] === "fixed") {
+                    line_size /= this.state["zoom_val"];
+                }
+                return line_size;
             }
-            return line_size;
+        } else {
+            // Default to the user-specified line size
+            return this.state["line_size"] * this.config["px_per_px"]; 
         }
     }
 

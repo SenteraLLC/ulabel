@@ -274,7 +274,7 @@ In some cases, you may want the annotations to render at a higher or lower resol
 
 ### `initial_line_size`
 
-The line width with which new annotations are drawn initially. Units are pixels in the underlying image.
+The line width with which new annotations are drawn initially. Units are pixels in the underlying image. When this value is not included, the default value of `4` is used and scaled by the current zoom value when a new annotation is drawn. When an `initial_line_size` is included, it is used as the line width for new annotations regardless of the current zoom value.
 
 ### `instructions_url`
 
