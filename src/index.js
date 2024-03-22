@@ -2,7 +2,7 @@
 Uncertain Labeling Tool
 Sentera Inc.
 */
-import { ULabelAnnotation, DELETE_CLASS_ID } from '../build/annotation';
+import { ULabelAnnotation, DELETE_CLASS_ID, DELETE_MODES } from '../build/annotation';
 import { ULabelSubtask } from '../build/subtask';
 import { GeometricUtils } from '../build/geometric_utils';
 import { Configuration, AllowedToolboxItem } from '../build/configuration';
@@ -42,9 +42,6 @@ jQuery.fn.outer_html = function () {
 
 const MODES_3D = ["global", "bbox3"];
 const NONSPATIAL_MODES = ["whole-image", "global"];
-// Modes used to draw an area in the which to delete all annotations
-const DELETE_MODES = ["delete_polygon", "delete_bbox"]
-
 
 export class ULabel {
 
@@ -607,7 +604,6 @@ export class ULabel {
                 // Default to crimson
                 "color": COLORS[1]
             })
-            // subtask.class_ids.push(DELETE_CLASS_ID)
             ulabel.valid_class_ids.push(DELETE_CLASS_ID)
             ulabel.color_info[DELETE_CLASS_ID] = COLORS[1]
         }

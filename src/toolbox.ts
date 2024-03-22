@@ -1018,6 +1018,12 @@ export class AnnotationIDToolboxItem extends ToolboxItem {
         }
     }
 
+    /**
+     * Get the html skeleton for this ToolboxItem. The actual ID selection items will be added 
+     * in html_builder.ts in the function build_id_dialogs()
+     * 
+     * @returns html string
+     */
     public get_html() {
         return `
         <div class="classification">

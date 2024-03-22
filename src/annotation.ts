@@ -7,6 +7,8 @@ import {
 } from "..";
 import { GeometricUtils } from "./geometric_utils";
 
+// Modes used to draw an area in the which to delete all annotations
+export const DELETE_MODES = ["delete_polygon", "delete_bbox"]
 export const DELETE_CLASS_ID = -1;
 
 export class ULabelAnnotation {
