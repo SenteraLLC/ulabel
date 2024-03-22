@@ -2,7 +2,7 @@
 Uncertain Labeling Tool
 Sentera Inc.
 */
-import { ULabelAnnotation } from '../build/annotation';
+import { ULabelAnnotation, DELETE_CLASS_ID } from '../build/annotation';
 import { ULabelSubtask } from '../build/subtask';
 import { GeometricUtils } from '../build/geometric_utils';
 import { Configuration, AllowedToolboxItem } from '../build/configuration';
@@ -44,7 +44,7 @@ const MODES_3D = ["global", "bbox3"];
 const NONSPATIAL_MODES = ["whole-image", "global"];
 // Modes used to draw an area in the which to delete all annotations
 const DELETE_MODES = ["delete_polygon", "delete_bbox"]
-const DELETE_CLASS_ID = -1;
+
 
 export class ULabel {
 
@@ -607,7 +607,7 @@ export class ULabel {
                 // Default to crimson
                 "color": COLORS[1]
             })
-            subtask.class_ids.push(DELETE_CLASS_ID)
+            // subtask.class_ids.push(DELETE_CLASS_ID)
             ulabel.valid_class_ids.push(DELETE_CLASS_ID)
             ulabel.color_info[DELETE_CLASS_ID] = COLORS[1]
         }
@@ -1564,8 +1564,13 @@ export class ULabel {
         this.set_id_dialog_payload_to_init(null);
         if (DELETE_MODES.includes(spatial_type)) {
             // Use special id payload for delete modes
+            return [{
+                "class_id": DELETE_CLASS_ID,
+                "confidence": 1.0,
+            }]
+        } else {
+            return JSON.parse(JSON.stringify(this.subtasks[this.state["current_subtask"]]["state"]["id_payload"]));
         }
-        return JSON.parse(JSON.stringify(this.subtasks[this.state["current_subtask"]]["state"]["id_payload"]));
     }
 
     // Create a new canvas for an individual annotation and return its context
@@ -3955,7 +3960,7 @@ export class ULabel {
             gmx = this.get_global_mouse_x(mouse_event);
             gmy = this.get_global_mouse_y(mouse_event);
             init_spatial = this.get_init_spatial(gmx, gmy, annotation_mode);
-            init_id_payload = this.get_init_id_payload();
+            init_id_payload = this.get_init_id_payload(annotation_mode);
             this.hide_edit_suggestion();
             this.hide_global_edit_suggestion();
         } else {
