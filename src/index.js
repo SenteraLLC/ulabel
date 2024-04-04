@@ -3745,9 +3745,6 @@ export class ULabel {
             case "start_complex_polygon":
                 this.start_complex_polygon__undo(action.undo_payload);
                 break;
-            case "finish_complex_polygon":
-                this.finish_complex_polygon__undo(action.undo_payload);
-                break;
             case "merge_polygon_complex_layer":
                 this.merge_polygon_complex_layer__undo(action.undo_payload);
                 // If the undo was triggered by the user, they
@@ -3790,7 +3787,6 @@ export class ULabel {
                 this.continue_annotation(null, null, action.redo_payload);
                 break;
             case "finish_annotation":
-            case "finish_complex_polygon":
                 this.finish_annotation(null, action.redo_payload);
                 break;
             case "edit_annotation":
@@ -4444,31 +4440,8 @@ export class ULabel {
         // Mark that we're done here
         current_subtask["state"]["active_id"] = null;
         current_subtask["state"]["is_in_progress"] = false;
-    }
-
-    finish_complex_polygon__undo(undo_payload) {
-        // When undoing a complex polygon, for convenience we will undo each continue_annotation action
-        // until we get back to the start_complex_polygon action
-        const current_subtask = this.subtasks[this.state["current_subtask"]]
-
-        // Undo the finish_annotation
-        this.finish_annotation__undo(undo_payload);
-        
-        // Then, loop throught the action stream until we find the start_complex_polygon action
-        while (current_subtask["actions"]["stream"].length > 0) {
-            let action = current_subtask["actions"]["stream"].pop();
-            action.is_internal_undo = true;
-            if (action.act_type === "start_complex_polygon") {
-                // replace the action
-                current_subtask["actions"]["stream"].push(action);
-                break;
-            } else {
-                // add to undo stack
-                current_subtask["actions"]["undone_stack"].push(action);
-                // undo the action
-                this.undo_action(action);
-            }
-        }        
+        // Redraw the annotation
+        this.redraw_annotation(undo_payload.actid);
     }
 
     // Split a ULabel complex polygon seperate turf polygons for each fill
@@ -5130,8 +5103,7 @@ export class ULabel {
                 if (current_subtask["state"]["is_in_brush_mode"]) {
                     act_type = "finish_brush";
                 } else {
-                    // When completing a complex layer of a polygon, we record the action accordingly
-                    act_type = spatial_payload.length > 1 ? "finish_complex_polygon" : "finish_annotation";
+                    act_type = "finish_annotation";
                 }
                 this.record_action({
                     act_type: act_type,
@@ -5256,55 +5228,29 @@ export class ULabel {
         }
     }
 
-    finish_annotation__undo(undo_payload) {
+    finish_annotation__undo() {
         // This is only ever invoked for polygons and polylines
+        // When undoing a finish annotation, for convenience we will undo each continue_annotation action
+        const current_subtask = this.subtasks[this.state["current_subtask"]]
 
-        // TODO(3d)
-        const spatial_type = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][undo_payload.actid]["spatial_type"];
-        // Forcably set the annotation mode to the spatial type
-        this.set_annotation_mode(spatial_type);
-
-        let spatial_payload = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][undo_payload.actid]["spatial_payload"];
-        let active_spatial_payload = spatial_payload;
-        if (spatial_type === "polygon") {
-            // For polygons, the active spatial payload is the last array of points in the spatial payload
-            active_spatial_payload = spatial_payload.at(-1);
-        }
-        let n_kpts = active_spatial_payload.length;
-        if (spatial_type === "polyline" && undo_payload.popped) {
-            let new_pt = JSON.parse(JSON.stringify(
-                active_spatial_payload[n_kpts - 1]
-            ));
-            active_spatial_payload.push(new_pt);
-            n_kpts += 1;
-        }
-        if (!NONSPATIAL_MODES.includes(spatial_type)) {
-            let pt = [
-                this.get_global_mouse_x(this.state["last_move"]),
-                this.get_global_mouse_y(this.state["last_move"]),
-            ];
-            if (MODES_3D.includes(spatial_type)) {
-                pt.push(this.state["current_frame"])
+        // Loop throught the action stream until we find the start_complex_polygon action or begin_annotation action
+        while (current_subtask["actions"]["stream"].length > 0) {
+            let action = current_subtask["actions"]["stream"].pop();
+            action.is_internal_undo = true;
+            if (action.act_type === "start_complex_polygon" || action.act_type === "begin_annotation") {
+                // add to undo stack
+                current_subtask["actions"]["undone_stack"].push(action);
+                // undo the action
+                this.undo_action(action);
+                // now we're done
+                break;
+            } else {
+                // add to undo stack
+                current_subtask["actions"]["undone_stack"].push(action);
+                // undo the action
+                this.undo_action(action);
             }
-            active_spatial_payload[n_kpts - 1] = pt;
         }
-
-        // Note that undoing a finish should not change containing box
-        this.subtasks[this.state["current_subtask"]]["state"]["is_in_progress"] = true;
-        this.subtasks[this.state["current_subtask"]]["state"]["active_id"] = undo_payload.actid;
-        this.redraw_annotation(undo_payload.actid);
-        if (undo_payload.ender_html) {
-            // create if ender isn't already there
-            if ($("#dialogs__" + this.state["current_subtask"]).find("#ender_" + undo_payload.actid).length === 0) {
-                $("#dialogs__" + this.state["current_subtask"]).append(undo_payload.ender_html);
-            }
-            // make sure the ender is at the location of the first point
-            let first_pt = active_spatial_payload[0];
-            this.move_polygon_ender(first_pt[0], first_pt[1], undo_payload.actid);
-        }
-        this.hide_edit_suggestion();
-        this.hide_global_edit_suggestion();
-        this.reposition_dialogs();
     }
 
     finish_edit() {
