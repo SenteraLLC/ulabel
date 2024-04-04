@@ -3787,7 +3787,7 @@ export class ULabel {
                 this.continue_annotation(null, null, action.redo_payload);
                 break;
             case "finish_annotation":
-                this.finish_annotation(null, action.redo_payload);
+                this.finish_annotation__redo(action.redo_payload);
                 break;
             case "edit_annotation":
                 this.edit_annotation__redo(action.redo_payload);
@@ -5059,23 +5059,13 @@ export class ULabel {
         }
     }
 
-    finish_annotation(mouse_event, redo_payload = null) {
+    finish_annotation(mouse_event) {
         // Convenience
         const current_subtask = this.subtasks[this.state["current_subtask"]]
         const annotations = current_subtask["annotations"]["access"]
 
         // Initialize required variables
-        let active_id = null;
-        let redoing = false;
-
-        if (redo_payload === null) {
-            active_id = current_subtask["state"]["active_id"];
-        }
-        else {
-            active_id = redo_payload.actid;
-            redoing = true;
-        }
-
+        let active_id = current_subtask["state"]["active_id"];
         let annotation = annotations[active_id];
         let spatial_payload = annotation["spatial_payload"];
         let active_spatial_payload = spatial_payload;
@@ -5110,13 +5100,12 @@ export class ULabel {
                     frame: this.state["current_frame"],
                     undo_payload: {
                         actid: active_id,
-                        ender_html: $("#ender_" + active_id).outer_html(),
-                        annotation: JSON.parse(JSON.stringify(annotation)),
                     },
                     redo_payload: {
-                        actid: active_id
+                        actid: active_id,
+                        annotation: JSON.parse(JSON.stringify(annotation)),
                     }
-                }, redoing);
+                });
 
                 // Simplify the polygon
                 this.simplify_polygon_complex_layer(active_id, active_idx);
@@ -5166,18 +5155,16 @@ export class ULabel {
                     undo_payload: {
                         actid: active_id,
                         popped: popped
-                        // ender_html: $("#ender_" + actid).outer_html()
                     },
                     redo_payload: {
                         actid: active_id,
                         popped: popped,
                         fin_pt: JSON.parse(JSON.stringify(
                             spatial_payload[n_kpts - 1]
-                        ))
+                        )),
+                        annotation: JSON.parse(JSON.stringify(annotation)),
                     }
-                }, redoing);
-                // TODO remove all enders/mergers for this polyline
-                // $("#ender_" + actid).remove(); // TODO remove from visible dialogs
+                });
                 break;
             case "delete_bbox":
                 this.record_finish(active_id);
@@ -5208,13 +5195,6 @@ export class ULabel {
                 }
             ]
         }
-        else {
-            if (!redoing) {
-                // Uncommenting would show id dialog after every annotation finishes. Currently this is not desired
-                // this.subtasks[this.state["current_subtask"]]["state"]["first_explicit_assignment"] = true;
-                // this.show_id_dialog(this.get_global_mouse_x(mouse_event), this.get_global_mouse_y(mouse_event), actid);
-            }
-        }
 
         // Reset last brush stroke
         this.state["last_brush_stroke"] = null;
@@ -5230,27 +5210,36 @@ export class ULabel {
 
     finish_annotation__undo() {
         // This is only ever invoked for polygons and polylines
-        // When undoing a finish annotation, for convenience we will undo each continue_annotation action
+        // When undoing a finished annotation, for convenience we will undo each continue_annotation action
         const current_subtask = this.subtasks[this.state["current_subtask"]]
 
-        // Loop throught the action stream until we find the start_complex_polygon action or begin_annotation action
+        // Loop through the action stream until we find the start_complex_polygon action or begin_annotation action
         while (current_subtask["actions"]["stream"].length > 0) {
             let action = current_subtask["actions"]["stream"].pop();
             action.is_internal_undo = true;
             if (action.act_type === "start_complex_polygon" || action.act_type === "begin_annotation") {
-                // add to undo stack
-                current_subtask["actions"]["undone_stack"].push(action);
                 // undo the action
                 this.undo_action(action);
                 // now we're done
                 break;
             } else {
-                // add to undo stack
-                current_subtask["actions"]["undone_stack"].push(action);
                 // undo the action
                 this.undo_action(action);
             }
         }
+    }
+
+    finish_annotation__redo(redo_payload) {
+        // Copy the annotation from the redo payload
+        let annotation = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][redo_payload.actid]
+        annotation = redo_payload.annotation;
+        // Get a new canvas context for the annotation
+        annotation["canvas_id"] = this.get_init_canvas_context_id(redo_payload.actid);
+        // Add annotation back to ordering and access
+        this.subtasks[this.state["current_subtask"]]["annotations"]["ordering"].push(redo_payload.actid);
+        this.subtasks[this.state["current_subtask"]]["annotations"]["access"][redo_payload.actid] = annotation;
+        // Redraw the annotation
+        this.redraw_annotation(redo_payload.actid);
     }
 
     finish_edit() {
