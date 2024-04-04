@@ -5057,6 +5057,7 @@ export class ULabel {
                 undo_payload: {
                     annid: annid,
                     suggest_edits: false,
+                    drag_state: JSON.parse(JSON.stringify(this.drag_state)),
                 },
                 redo_payload: {
                     annid: annid,
@@ -5077,8 +5078,12 @@ export class ULabel {
             // Get the first point of the last layer
             let first_pt = annotation["spatial_payload"].at(-1)[0];
             this.create_polygon_ender(first_pt[0], first_pt[1], undo_payload.annid);
+        } else if (annotation["spatial_type"] === "bbox" || annotation["spatial_type"] === "tbar") {
+            // Reset the drag mode to cause mouse moves to move the annotation
+            this.drag_state = undo_payload.drag_state;
+            // Move to the current mouse location
+            this.continue_annotation(this.state["last_move"]);
         }
-        // TODO: handle resuming bbox/tbar
     }
 
     finish_annotation(mouse_event, redo_payload = null) {
