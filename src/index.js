@@ -481,9 +481,9 @@ export class ULabel {
                         } else if (current_subtask.state.is_in_brush_mode) {
                             ul.toggle_brush_mode();
                         }
-                        if (current_subtask.state.starting_complex_polygon) {
-                            // Use the undo function to cancel the complex polygon
-                            ul.undo()
+                        // If in the middle of drawing an annotation, cancel the annotation
+                        if (current_subtask.state.is_in_progress) {
+                            ul.cancel_annotation();
                         }
                         break;
                 }
@@ -3148,6 +3148,7 @@ export class ULabel {
         if (action_stream[action_stream.length - 1].redo_payload.finished === false) {
             this.finish_action(action_stream[action_stream.length - 1]);
         }
+
         undone_stack.push(action_stream.pop());
         
         // set internal undo status
@@ -3317,7 +3318,7 @@ export class ULabel {
         )
     }
 
-    delete_annotation(annotation_id, redo_payload = null) {
+    delete_annotation(annotation_id, redo_payload = null, record_action = true) {
 
         let old_id = annotation_id;
         let new_id = old_id;
@@ -3383,22 +3384,26 @@ export class ULabel {
             frame = null;
         }
 
-        this.record_action({
-            act_type: "delete_annotation",
-            frame: frame,
-            undo_payload: {
-                annid: annotation_id,
-                deprecate_old: deprecate_old,
-                old_id: old_id,
-                new_id: new_id
-            },
-            redo_payload: {
-                annid: annotation_id,
-                deprecate_old: deprecate_old,
-                old_id: old_id,
-                new_id: new_id
-            }
-        }, redoing);
+        if (record_action) {
+            this.record_action({
+                act_type: "delete_annotation",
+                frame: frame,
+                undo_payload: {
+                    annid: annotation_id,
+                    deprecate_old: deprecate_old,
+                    old_id: old_id,
+                    new_id: new_id,
+                    suggest_edits: true,
+                },
+                redo_payload: {
+                    annid: annotation_id,
+                    deprecate_old: deprecate_old,
+                    old_id: old_id,
+                    new_id: new_id,
+                    suggest_edits: true,
+                }
+            }, redoing);
+        }
 
         // If the annotation is a polyline and the filter distance toolboxitem is present, then filter annotations on annotation deletion
         if (annotations[annotation_id].spatial_type === "polyline" && this.toolbox_order.includes(AllowedToolboxItem.FilterDistance)) {
@@ -3435,7 +3440,9 @@ export class ULabel {
 
         // Handle visuals
         this.redraw_annotation(active_id);
-        this.suggest_edits(this.state["last_move"]);
+        if (undo_payload.suggest_edits) {
+            this.suggest_edits(this.state["last_move"]);
+        }
 
         // If the filter distance toolboxitem is present,
         // And if the active annotation is a polyline,
@@ -3723,6 +3730,9 @@ export class ULabel {
             case "delete_annotation":
                 this.delete_annotation__undo(action.undo_payload);
                 break;
+            case "cancel_annotation":
+                this.cancel_annotation__undo(action.undo_payload);
+                break;
             case "assign_annotation_id":
                 this.assign_annotation_id__undo(action.undo_payload);
                 break;
@@ -3791,6 +3801,9 @@ export class ULabel {
                 break;
             case "delete_annotation":
                 this.delete_annotation__redo(action.redo_payload);
+                break;
+            case "cancel_annotation":
+                this.cancel_annotation(action.redo_payload);
                 break;
             case "assign_annotation_id":
                 this.assign_annotation_id(null, action.redo_payload);
@@ -4023,7 +4036,7 @@ export class ULabel {
 
         // If a polygon was just started, we need to add a clickable to end the shape
         // Don't create ender when in brush mode
-        if ((annotation_mode === "polygon" || annotation_mode === "delete_polygon")&& !this.subtasks[subtask]["state"]["is_in_brush_mode"]) {
+        if ((annotation_mode === "polygon" || annotation_mode === "delete_polygon") && !this.subtasks[subtask]["state"]["is_in_brush_mode"]) {
             this.create_polygon_ender(gmx, gmy, unq_id);
         }
         else if (annotation_mode === "polyline") {
@@ -5020,6 +5033,52 @@ export class ULabel {
         $(".edit_suggestion").css("display", "none");
 
         this.move_annotation(mouse_event);
+    }
+
+    // Cancel the annotation currently in progress
+    cancel_annotation(redo_payload = null) {
+        let annid;
+        if (redo_payload === null) {
+            // Get the active id
+            annid = this.subtasks[this.state["current_subtask"]]["state"]["active_id"];
+        } else {
+            annid = redo_payload.annid;
+        }
+
+        if (annid !== null) {
+            // Delete the annotation, without recording the delete action
+            // This will also clear is_in_progress and other states
+            this.delete_annotation(annid, null, false);
+
+            // Record the cancel action
+            this.record_action({
+                act_type: "cancel_annotation",
+                frame: this.state["current_frame"],
+                undo_payload: {
+                    annid: annid,
+                    suggest_edits: false,
+                },
+                redo_payload: {
+                    annid: annid,
+                }
+            }, redo_payload !== null);
+        }
+    }
+
+    cancel_annotation__undo(undo_payload) {
+        // Mark that the annotation is in progress again
+        this.subtasks[this.state["current_subtask"]]["state"]["active_id"] = undo_payload.annid;
+        this.subtasks[this.state["current_subtask"]]["state"]["is_in_progress"] = true;
+        // Restore the annotation
+        this.delete_annotation__undo(undo_payload);
+        // If a polygon/delete polygon, show the ender
+        const annotation = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][undo_payload.annid];
+        if (annotation["spatial_type"] === "polygon" || annotation["spatial_type"] === "delete_polygon") {
+            // Get the first point of the last layer
+            let first_pt = annotation["spatial_payload"].at(-1)[0];
+            this.create_polygon_ender(first_pt[0], first_pt[1], undo_payload.annid);
+        }
+        // TODO: handle resuming bbox/tbar
     }
 
     finish_annotation(mouse_event, redo_payload = null) {
