@@ -1320,9 +1320,6 @@ export class AnnotationResizeItem extends ToolboxItem {
     public update_annotation_size(ulabel: ULabel, subtask: ULabelSubtask, size: number | ValidResizeValues): void {
         if (subtask === null) return;
 
-        // If in brush mode, the keybind was probably meant for the brush
-        if (subtask.state.is_in_brush_mode) return;
-
         const small_size = 1.5;
         const large_size = 5;
         const increment_size = 0.5;
