@@ -480,9 +480,11 @@ export class ULabel {
                             ul.toggle_erase_mode();
                         } else if (current_subtask.state.is_in_brush_mode) {
                             ul.toggle_brush_mode();
-                        }
-                        // If in the middle of drawing an annotation, cancel the annotation
-                        if (current_subtask.state.is_in_progress) {
+                        } else if (current_subtask.state.starting_complex_polygon) {
+                            // If starting a complex polygon, undo
+                            ul.undo();
+                        } else if (current_subtask.state.is_in_progress) {
+                            // If in the middle of drawing an annotation, cancel the annotation
                             ul.cancel_annotation();
                         }
                         break;
@@ -4441,6 +4443,7 @@ export class ULabel {
         current_subtask["state"]["active_id"] = null;
         current_subtask["state"]["is_in_progress"] = false;
         // Redraw the annotation
+        this.rebuild_containing_box(undo_payload.actid);
         this.redraw_annotation(undo_payload.actid);
     }
 
@@ -5018,10 +5021,24 @@ export class ULabel {
             annid = redo_payload.annid;
         }
 
+        let is_complex_layer = false;
         if (annid !== null) {
-            // Delete the annotation, without recording the delete action
-            // This will also clear is_in_progress and other states
-            this.delete_annotation(annid, null, false);
+            const annotation = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid];
+            const og_annotation = JSON.parse(JSON.stringify(annotation));
+            const spatial_type = annotation["spatial_type"];
+            // When drawing a complex layer, we will only delete the last layer
+            if (
+                (spatial_type === "polygon" || spatial_type === "delete_polygon") &&
+                annotation["spatial_payload"].length > 1
+            ) {
+                is_complex_layer = true;
+                // Reuse the logic for undoing the start of a complex polygon
+                this.start_complex_polygon__undo({actid: annid}); 
+            } else {
+                // Delete the annotation, without recording the delete action
+                // This will also clear is_in_progress and other states
+                this.delete_annotation(annid, null, false);
+            }
 
             // Record the cancel action
             this.record_action({
@@ -5031,6 +5048,8 @@ export class ULabel {
                     annid: annid,
                     suggest_edits: false,
                     drag_state: JSON.parse(JSON.stringify(this.drag_state)),
+                    is_complex_layer: is_complex_layer,
+                    annotation: og_annotation,
                 },
                 redo_payload: {
                     annid: annid,
@@ -5043,10 +5062,20 @@ export class ULabel {
         // Mark that the annotation is in progress again
         this.subtasks[this.state["current_subtask"]]["state"]["active_id"] = undo_payload.annid;
         this.subtasks[this.state["current_subtask"]]["state"]["is_in_progress"] = true;
-        // Restore the annotation
-        this.delete_annotation__undo(undo_payload);
+
+        if (undo_payload.is_complex_layer) {
+            // Restore the removed layer
+            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][undo_payload.annid] = JSON.parse(JSON.stringify(undo_payload.annotation));
+            // Redraw the annotation
+            this.redraw_annotation(undo_payload.annid);
+        } else {
+            // Undeprecate the annotation
+            this.delete_annotation__undo(undo_payload);
+        }
+
+        let annotation = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][undo_payload.annid];
+        console.log("Restored annotation:", annotation);
         // If a polygon/delete polygon, show the ender
-        const annotation = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][undo_payload.annid];
         if (annotation["spatial_type"] === "polygon" || annotation["spatial_type"] === "delete_polygon") {
             // Get the first point of the last layer
             let first_pt = annotation["spatial_payload"].at(-1)[0];
