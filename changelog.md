@@ -6,7 +6,7 @@ All notable changes to this project will be documented here.
 
 Nothing yet.
 
-## [0.9.3] - April 4th, 2024
+## [0.9.4] - April 4th, 2024
 - Fix bug where vanish mode was disabled during brush/erase mode
 - Align `undo` behavior for polygons and polylines with that of other annotations (once complete, the undo will delete the entire annotation rather than undoing only the last point)
 - `Escape` keybind to cancel an in-progress annotation
