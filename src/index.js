@@ -250,7 +250,7 @@ export class ULabel {
                 const dlta = Math.sign(wheel_event.deltaY);
 
                 // Apply new zoom
-                ul.state["zoom_val"] *= (1 - dlta / 10);
+                ul.state["zoom_val"] *= (1 - dlta / 5);
                 ul.rezoom(wheel_event.clientX, wheel_event.clientY);
 
                 // Only try to update the overlay if it exists
