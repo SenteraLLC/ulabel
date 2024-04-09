@@ -6,7 +6,8 @@ This should eventually be replaced with a more comprehensive approach to documen
 
 - `ctrl+z` or `cmd+z`: Undo
 - `ctrl+shift+z` or `cmd+shift+z`: Redo
-- `ctrl+scroll` or `shift+scroll` or `cmd+scroll`: Zoom -- up for in, down for out
+- `scroll`: Zoom -- up for in, down for out
+- `ctrl+scroll` or `shift+scroll` or `cmd+scroll`: Change frame -- down for next, up for previous
 - `scrollclick+drag` or `ctrl+drag`: Pan
 - Hold `shift` when closing a polygon to continue annotating a new region or hole.
 - Hold `shift` when moving the cursor inside a polygon to begin annotating a new region or hole.
@@ -185,17 +186,20 @@ Every annotation session requires at least one subtask. Each subtask has its own
             {
                 "name": "Sedan",
                 "color": "blue",
-                "id": 10
+                "id": 10,
+                "keybind": "1"
             },
             {
                 "name": "SUV",
                 "color": "green",
-                "id": 11
+                "id": 11,
+                "keybind": "2"
             },
             {
                 "name": "Truck",
                 "color": "orange",
-                "id": 12
+                "id": 12,
+                "keybind": "3"
             },
         ],
         "allowed_modes": ["bbox", "polygon", "contour", "bbox3"],
@@ -227,6 +231,7 @@ Every annotation session requires at least one subtask. Each subtask has its own
     }
 }
 ```
+The `"keybind"` argument allows the user to select the class of an existing annotation by hovering over it and pressing the corresponding key.
 
 The full list of `"allowed_modes"` that are currently supported is:
 
