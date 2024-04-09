@@ -221,11 +221,13 @@ export class ULabel {
                 default:
                     // When hovering an annotation, check if the key pressed is a keybind for a class
                     if (current_subtask.state.move_candidate !== null && current_subtask.state.move_candidate !== undefined) {
-                        for (const class_def of current_subtask.class_defs) {
+                        const target_id = JSON.parse(JSON.stringify(current_subtask.state.move_candidate["annid"]));
+                        for (let i = 0; i < current_subtask.class_defs.length; i++) {
+                            const class_def = current_subtask.class_defs[i];
                             if (class_def.keybind !== null && e.key === class_def.keybind) {
                                 // Set the active class to the class with the matching keybind
-                                ul.state["idd_associated_annotation"] = JSON.parse(JSON.stringify(current_subtask.state.move_candidate["annid"]));
-                                ul.handle_id_dialog_click(ul.state["last_move"], class_def.id)
+                                ul.handle_id_dialog_click(ul.state["last_move"], target_id, i);
+                                return;
                             }
                         }
                     }
@@ -3763,7 +3765,6 @@ export class ULabel {
 
     redo_action(action) {
         this.update_frame(null, action.frame);
-        console.log("redoing action", action.act_type)
         switch (action.act_type) {
             case "begin_annotation":
                 this.begin_annotation(null, action.redo_payload);
@@ -3787,7 +3788,7 @@ export class ULabel {
                 this.cancel_annotation(action.redo_payload);
                 break;
             case "assign_annotation_id":
-                this.assign_annotation_id(null, null, action.redo_payload);
+                this.assign_annotation_id(null, action.redo_payload);
                 break;
             case "create_annotation":
                 this.create_annotation__redo(action.redo_payload);
@@ -5057,7 +5058,6 @@ export class ULabel {
         }
 
         let annotation = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][undo_payload.annid];
-        console.log("Restored annotation:", annotation);
         // If a polygon/delete polygon, show the ender
         if (annotation["spatial_type"] === "polygon" || annotation["spatial_type"] === "delete_polygon") {
             // Get the first point of the last layer
@@ -5913,15 +5913,17 @@ export class ULabel {
         }
     }
 
-    handle_id_dialog_hover(mouse_event) {
+    handle_id_dialog_hover(mouse_event, pos_evt = null) {
         // Grab current subtask
         const current_subtask = this.subtasks[this.state.current_subtask]
 
         // Determine which dialog
         let front = current_subtask.state.idd_which === "front"
+        if (pos_evt === null) {
+            pos_evt = this.lookup_id_dialog_mouse_pos(mouse_event, front);
+        }
 
-        let pos_evt = this.lookup_id_dialog_mouse_pos(mouse_event, front);
-        if (pos_evt != null) {
+        if (pos_evt !== null) {
             if (!this.config["allow_soft_id"]) {
                 pos_evt.dist_prop = 1.0;
             }
@@ -5932,7 +5934,7 @@ export class ULabel {
         }
     }
 
-    assign_annotation_id(actid = null, new_class_id = null, redo_payload = null) {
+    assign_annotation_id(actid = null, redo_payload = null) {
         let new_payload = null;
         let old_payload = null;
         let redoing = false;
@@ -5940,16 +5942,6 @@ export class ULabel {
         if (redo_payload === null) {
             if (actid === null) {
                 actid = this.subtasks[this.state["current_subtask"]]["state"]["idd_associated_annotation"];
-            }
-            if (new_class_id !== null) {
-                // Update the id_payload by setting the confidence of the new_class_id to 1 and the rest to 0
-                for (let payload of this.subtasks[this.state["current_subtask"]]["state"]["id_payload"]) {
-                    if (payload["class_id"] === new_class_id) {
-                        payload["confidence"] = 1;
-                    } else {
-                        payload["confidence"] = 0;
-                    }
-                }
             }
             old_payload = JSON.parse(JSON.stringify(
                 this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["classification_payloads"]
@@ -6016,12 +6008,21 @@ export class ULabel {
         this.suggest_edits();
     }
 
-    handle_id_dialog_click(mouse_event, new_class_id = null) {
-        this.handle_id_dialog_hover(mouse_event);
+    handle_id_dialog_click(mouse_event, annotation_id = null, new_class_idx = null) {
+        let pos_evt = null;
+        if (new_class_idx !== null) {
+            pos_evt = {class_ind: new_class_idx, dist_prop: 1.0};
+        }
+        this.handle_id_dialog_hover(mouse_event, pos_evt);
         // TODO need to differentiate between first click and a reassign -- potentially with global state
-        this.assign_annotation_id(null, new_class_id);
+        this.assign_annotation_id(annotation_id);
         this.subtasks[this.state["current_subtask"]]["state"]["first_explicit_assignment"] = false;
         this.suggest_edits(this.state["last_move"]);
+
+        // Ensure that the id dialog is visible again
+        if (annotation_id !== null && !this.subtasks[this.state["current_subtask"]]["state"]["idd_visible"]) {
+            this.show_global_edit_suggestion(annotation_id);
+        }
 
         // TODO: Check to make sure the clicked annotation was a polyline
         // If the filter_distance_toolbox_item exists, filter annotations if in multi_class_mode
