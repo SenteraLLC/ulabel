@@ -6,6 +6,13 @@ All notable changes to this project will be documented here.
 
 Nothing yet.
 
+## [0.10.0] - April 9th, 2024
+- Add optional `keybind` argument for each class in the `classes` array to allow for custom keybinds for each class.
+- Double the zoom sensitivity
+- Change the default scroll wheel behavior to zoom in/out on the cursor location instead of scroll up/down.
+  - When frames are present, `ctrl+scroll` or `shift+scroll` or `cmd+scroll` will now scroll through the frames.
+- Fix `create_bbox_on_initial_crop` to only work when in `bbox` mode, and make it start as the active class.
+
 ## [0.9.4] - April 4th, 2024
 - Fix bug where vanish mode was disabled during brush/erase mode
 - Align `undo` behavior for polygons and polylines with that of other annotations (once complete, the undo will delete the entire annotation rather than undoing only the last point)
