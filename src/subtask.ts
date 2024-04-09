@@ -38,7 +38,7 @@ export class ULabelSubtask {
 
     constructor(
         public display_name: string,
-        public classes: { name: string, color: string, id: number }[],
+        public classes: { name: string, color: string, id: number, keybind: string}[],
         public allowed_modes: ULabelSpatialType[],
         public resume_from: ULabelAnnotation[],
         public task_meta: any,

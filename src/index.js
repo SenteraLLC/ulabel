@@ -201,7 +201,6 @@ export class ULabel {
                         // Create the annotation
                         ul.create_annotation(current_subtask.state.annotation_mode, [bbox_top_left, bbox_bottom_right])
                     }
-
                     break; 
                 // Change to brush mode (for now, polygon only)
                 case ul.config.toggle_brush_mode_keybind:
@@ -218,6 +217,18 @@ export class ULabel {
                 // Decrease brush size by 10%
                 case ul.config.decrease_brush_size_keybind:
                     ul.change_brush_size(1/1.1);
+                    break;
+                default:
+                    // When hovering an annotation, check if the key pressed is a keybind for a class
+                    if (current_subtask.state.move_candidate !== null && current_subtask.state.move_candidate !== undefined) {
+                        for (const class_def of current_subtask.class_defs) {
+                            if (class_def.keybind !== null && e.key === class_def.keybind) {
+                                // Set the active class to the class with the matching keybind
+                                ul.state["idd_associated_annotation"] = JSON.parse(JSON.stringify(current_subtask.state.move_candidate["annid"]));
+                                ul.handle_id_dialog_click(ul.state["last_move"], class_def.id)
+                            }
+                        }
+                    }
                     break;
             }
         })
@@ -548,7 +559,7 @@ export class ULabel {
 
             // Create a class definition based on the provided class_definition that will be saved to the subtask
             let modifed_class_definition = {}
-            let name, id, color;
+            let name, id, color, keybind;
             switch (typeof class_definition) {
                 case "string":
                     modifed_class_definition = {
@@ -578,10 +589,14 @@ export class ULabel {
                     // Use generic color only if color not provided
                     color = class_definition.color ?? COLORS[ulabel.valid_class_ids.length]
 
+                    // Save the keybind if it exists, otherwise default to null
+                    keybind = class_definition.keybind ?? null
+
                     modifed_class_definition = {
                         "name": name,
                         "id": id,
-                        "color": color
+                        "color": color,
+                        "keybind": keybind
                     }
                     break
                 default:
@@ -604,7 +619,8 @@ export class ULabel {
                 "name": "Delete",
                 "id": DELETE_CLASS_ID,
                 // Default to crimson
-                "color": COLORS[1]
+                "color": COLORS[1],
+                "keybind": null
             })
             ulabel.valid_class_ids.push(DELETE_CLASS_ID)
             ulabel.color_info[DELETE_CLASS_ID] = COLORS[1]
@@ -3782,7 +3798,7 @@ export class ULabel {
                 this.cancel_annotation(action.redo_payload);
                 break;
             case "assign_annotation_id":
-                this.assign_annotation_id(null, action.redo_payload);
+                this.assign_annotation_id(null, null, action.redo_payload);
                 break;
             case "create_annotation":
                 this.create_annotation__redo(action.redo_payload);
@@ -5927,7 +5943,7 @@ export class ULabel {
         }
     }
 
-    assign_annotation_id(actid = null, redo_payload = null) {
+    assign_annotation_id(actid = null, new_class_id = null, redo_payload = null) {
         let new_payload = null;
         let old_payload = null;
         let redoing = false;
@@ -5936,14 +5952,23 @@ export class ULabel {
             if (actid === null) {
                 actid = this.subtasks[this.state["current_subtask"]]["state"]["idd_associated_annotation"];
             }
+            if (new_class_id !== null) {
+                // Update the id_payload by setting the confidence of the new_class_id to 1 and the rest to 0
+                for (let payload of this.subtasks[this.state["current_subtask"]]["state"]["id_payload"]) {
+                    if (payload["class_id"] === new_class_id) {
+                        payload["confidence"] = 1;
+                    } else {
+                        payload["confidence"] = 0;
+                    }
+                }
+            }
             old_payload = JSON.parse(JSON.stringify(
                 this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["classification_payloads"]
             ));
             new_payload = JSON.parse(JSON.stringify(
                 this.subtasks[this.state["current_subtask"]]["state"]["id_payload"]
             ));
-        }
-        else {
+        } else {
             redoing = true;
             old_payload = JSON.parse(JSON.stringify(redo_payload.old_id_payload));
             new_payload = JSON.parse(JSON.stringify(redo_payload.new_id_payload));
@@ -6002,10 +6027,10 @@ export class ULabel {
         this.suggest_edits();
     }
 
-    handle_id_dialog_click(mouse_event) {
+    handle_id_dialog_click(mouse_event, new_class_id = null) {
         this.handle_id_dialog_hover(mouse_event);
         // TODO need to differentiate between first click and a reassign -- potentially with global state
-        this.assign_annotation_id();
+        this.assign_annotation_id(null, new_class_id);
         this.subtasks[this.state["current_subtask"]]["state"]["first_explicit_assignment"] = false;
         this.suggest_edits(this.state["last_move"]);
 
