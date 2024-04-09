@@ -182,24 +182,24 @@ export class ULabel {
                     break;
                 // Create a bbox annotation around the initial_crop. Or the whole image if inital_crop does not exist
                 case ul.config.create_bbox_on_initial_crop:
-                    // If initial_crop is undefined, create annotation with size of image
-                    if (ul.config.initial_crop === null || ul.config.initial_crop === undefined) {
-
+                    if (current_subtask.state.annotation_mode === "bbox") {
+                        // Default to an annotation with size of image
                         // Create the coordinates for the bbox's spatial payload
-                        const bbox_top_left = [0, 0]
-                        const bbox_bottom_right = [ul.config.image_width, ul.config.image_height]
+                        let bbox_top_left = [0, 0];
+                        let bbox_bottom_right = [ul.config.image_width, ul.config.image_height]; 
 
-                        ul.create_annotation("bbox", [bbox_top_left, bbox_bottom_right])
-                    }
-                    else {// If it is defined create a bbox around the initial_crop
-                        // Convenience
-                        const initial_crop = ul.config.initial_crop
+                        // If an initial crop exists, use that instead
+                        if (ul.config.initial_crop !== null && ul.config.initial_crop !== undefined) {
+                            // Convenience
+                            const initial_crop = ul.config.initial_crop
 
-                        // Create the coordinates for the bbox's spatial payload
-                        const bbox_top_left = [initial_crop.left, initial_crop.top]
-                        const bbox_bottom_right = [initial_crop.left + initial_crop.width, initial_crop.top + initial_crop.height]
+                            // Create the coordinates for the bbox's spatial payload
+                            bbox_top_left = [initial_crop.left, initial_crop.top]
+                            bbox_bottom_right = [initial_crop.left + initial_crop.width, initial_crop.top + initial_crop.height]
+                        }
 
-                        ul.create_annotation("bbox", [bbox_top_left, bbox_bottom_right])
+                        // Create the annotation
+                        ul.create_annotation(current_subtask.state.annotation_mode, [bbox_top_left, bbox_bottom_right])
                     }
 
                     break; 
@@ -3203,28 +3203,6 @@ export class ULabel {
             unique_id = this.make_new_annotation_id()
         }
 
-        // TODO: Create the classification_payloads intelligently
-        // Get the subtask ids in order to populate the classification_payloads
-        const class_ids = current_subtask.class_ids
-
-        // Set the first element in the class ids to be the class of the created annotation
-        let classification_payloads = [
-            {
-                "class_id": class_ids[0],
-                "confidence": 1
-            }
-        ]
-
-        // Skip the first element since it was set above
-        for (let idx = 1; idx < class_ids.length; idx++) {
-            classification_payloads.push(
-                {
-                    "class_id": class_ids[idx],
-                    "confidence": 0
-                }
-            )
-        }
-
         // Get the frame
         if (MODES_3D.includes(spatial_type)) {
             this.state["current_frame"] = null;
@@ -3241,7 +3219,7 @@ export class ULabel {
             "deprecated_by": { "human": false },
             "spatial_type": spatial_type,
             "spatial_payload": spatial_payload,
-            "classification_payloads": classification_payloads,
+            "classification_payloads": this.get_init_id_payload(spatial_type),
             "text_payload": "",
             "canvas_id": this.get_init_canvas_context_id(unique_id)
         }
