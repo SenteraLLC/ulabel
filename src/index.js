@@ -6025,6 +6025,7 @@ export class ULabel {
     }
 
     handle_id_dialog_click(mouse_event, annotation_id = null, new_class_idx = null) {
+        const current_subtask = this.subtasks[this.state["current_subtask"]]
         let pos_evt = null;
         if (new_class_idx !== null) {
             pos_evt = {class_ind: new_class_idx, dist_prop: 1.0};
@@ -6032,14 +6033,15 @@ export class ULabel {
         this.handle_id_dialog_hover(mouse_event, pos_evt);
         // TODO need to differentiate between first click and a reassign -- potentially with global state
         this.assign_annotation_id(annotation_id);
-        this.subtasks[this.state["current_subtask"]]["state"]["first_explicit_assignment"] = false;
+        current_subtask["state"]["first_explicit_assignment"] = false;
         this.suggest_edits(this.state["last_move"]);
 
         // Ensure that the id dialog is visible again
         if (
             annotation_id !== null &&
-            !this.subtasks[this.state["current_subtask"]]["state"]["is_in_progress"] &&
-            !this.subtasks[this.state["current_subtask"]]["state"]["idd_visible"]
+            !current_subtask["state"]["is_in_progress"] &&
+            !current_subtask["state"]["is_in_brush_mode"] &&
+            !current_subtask["state"]["idd_visible"]
         ) {
             this.show_global_edit_suggestion(annotation_id);
         }
