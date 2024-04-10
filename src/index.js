@@ -100,7 +100,9 @@ export class ULabel {
         }
         switch (mouse_event.button) {
             case 0:
-                if (mouse_event.target.id === ul.subtasks[ul.state["current_subtask"]]["canvas_fid"]) {
+                if (mouse_event.target.id === "brush_circle") {
+                    return "brush";
+                } else if (mouse_event.target.id === ul.subtasks[ul.state["current_subtask"]]["canvas_fid"]) {
                     if (mouse_event.ctrlKey || mouse_event.metaKey) {
                         return "pan";
                     }
@@ -108,8 +110,6 @@ export class ULabel {
                         return "zoom";
                     }
                     return "annotation";
-                } else if (mouse_event.target.id === "brush_circle") {
-                    return "brush";
                 } else if ($(mouse_event.target).hasClass("editable")) {
                     return "edit";
                 } else if ($(mouse_event.target).hasClass("movable")) {
@@ -2539,7 +2539,7 @@ export class ULabel {
 
         // Build brush circle html
         const brush_circle_html = `
-        <a href="#" id="${brush_circle_id}" class="brush_circle"></a>`;
+        <a id="${brush_circle_id}" class="brush_circle"></a>`;
         $("#dialogs__" + this.state["current_subtask"]).append(brush_circle_html);
         $("#" + brush_circle_id).css({
             "width": (this.config["brush_size"]*this.state["zoom_val"]) + "px",
