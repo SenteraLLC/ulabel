@@ -232,13 +232,14 @@ export class ULabel {
                                     target_id = JSON.parse(JSON.stringify(current_subtask.state.move_candidate["annid"]));
                                 }
 
-                                if (target_id !== null) {
+                                if (target_id === null) {
+                                    // Set the active class to the class with the matching keybind
+                                    ul.update_id_toolbox_display(i);
+                                } else {
                                     // Set the annotation's class to the class with the matching keybind
                                     ul.handle_id_dialog_click(ul.state["last_move"], target_id, i);
                                 }
-
-                                // Set the active class to the class with the matching keybind
-                                ul.update_id_toolbox_display(i);                            
+                                                            
                                 return;
                             }
                         }
@@ -5629,7 +5630,11 @@ export class ULabel {
      */
     suggest_edits(mouse_event = null, nonspatial_id = null) {
         // don't show edits when potentially trying to draw a hole
-        if (this.subtasks[this.state["current_subtask"]]["state"]["starting_complex_polygon"] || this.subtasks[this.state["current_subtask"]]["state"]["is_in_brush_mode"]) {
+        if (
+            this.subtasks[this.state["current_subtask"]]["state"]["is_in_progress"] ||
+            this.subtasks[this.state["current_subtask"]]["state"]["starting_complex_polygon"] || 
+            this.subtasks[this.state["current_subtask"]]["state"]["is_in_brush_mode"]
+        ) {
             this.hide_global_edit_suggestion();
             this.hide_edit_suggestion();
         } else {
@@ -6031,7 +6036,11 @@ export class ULabel {
         this.suggest_edits(this.state["last_move"]);
 
         // Ensure that the id dialog is visible again
-        if (annotation_id !== null && !this.subtasks[this.state["current_subtask"]]["state"]["idd_visible"]) {
+        if (
+            annotation_id !== null &&
+            !this.subtasks[this.state["current_subtask"]]["state"]["is_in_progress"] &&
+            !this.subtasks[this.state["current_subtask"]]["state"]["idd_visible"]
+        ) {
             this.show_global_edit_suggestion(annotation_id);
         }
 
