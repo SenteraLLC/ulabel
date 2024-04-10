@@ -4171,6 +4171,9 @@ export class ULabel {
         }
         
         let init_pt = spatial_payload[0];
+        if (init_pt === undefined) {
+            return;
+        }
 
         this.subtasks[subtask]["annotations"]["access"][actid]["containing_box"] = {
             "tlx": init_pt[0],

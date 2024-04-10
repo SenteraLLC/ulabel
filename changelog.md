@@ -6,6 +6,9 @@ All notable changes to this project will be documented here.
 
 Nothing yet.
 
+## [0.10.1] - April 10th, 2024
+- Fix bug where using the erase tool to completely erase a polygon would sometimes cause an error.
+
 ## [0.10.0] - April 9th, 2024
 - Add optional `keybind` argument for each class in the `classes` array to allow for custom keybinds for each class.
 - Double the zoom sensitivity
