@@ -15,6 +15,7 @@ Nothing yet.
 - Fix longstanding bug where the `Annotation ID` toolbox item would not update the annotation ID unless explicitly clicked.
 - Fix bug where panning during brush mode would open a new tab.
 - Fix bug where panning was disabled when actively drawing an annotation
+- Fix rare bug where undoing an annotation would cause future annotations to never finish.
 
 ## [0.9.4] - April 4th, 2024
 - Fix bug where vanish mode was disabled during brush/erase mode
