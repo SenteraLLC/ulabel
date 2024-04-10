@@ -12,6 +12,7 @@ Nothing yet.
 - Change the default scroll wheel behavior to zoom in/out on the cursor location instead of scroll up/down.
   - When frames are present, `ctrl+scroll` or `shift+scroll` or `cmd+scroll` will now scroll through the frames.
 - Fix `create_bbox_on_initial_crop` to only work when in `bbox` mode, and make it start as the active class.
+- Fix longstanding bug where the `Annotation ID` toolbox item would not update the annotation ID unless explicitly clicked.
 
 ## [0.9.4] - April 4th, 2024
 - Fix bug where vanish mode was disabled during brush/erase mode

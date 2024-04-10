@@ -231,7 +231,7 @@ Every annotation session requires at least one subtask. Each subtask has its own
     }
 }
 ```
-The `"keybind"` argument allows the user to select the class of an existing annotation by hovering over it and pressing the corresponding key.
+The `"keybind"` argument allows the user to select a class for existing annotations (when hovered), for new annotations, or for annotations that are actively being drawn.
 
 The full list of `"allowed_modes"` that are currently supported is:
 

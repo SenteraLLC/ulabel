@@ -238,7 +238,7 @@ export class ULabel {
                                 }
 
                                 // Set the active class to the class with the matching keybind
-                                ul.update_id_toolbox_display();                            
+                                ul.update_id_toolbox_display(i);                            
                                 return;
                             }
                         }
@@ -5905,14 +5905,20 @@ export class ULabel {
         this.redraw_demo();
     }
     // Toolbox Annotation ID Update
-    update_id_toolbox_display() {
+    update_id_toolbox_display(new_class_idx = null) {
         if (this.config["allow_soft_id"]) {
             // Not supported yet
         } else {
             let class_ids = this.subtasks[this.state["current_subtask"]]["class_ids"];
             for (var i = 0; i < class_ids.length; i++) {
-                if (this.subtasks[this.state["current_subtask"]]["state"]["id_payload"][i]["confidence"] > 0.5) {
+                // If no new class index is provided, select the class with the highest confidence
+                if (new_class_idx === null && this.subtasks[this.state["current_subtask"]]["state"]["id_payload"][i]["confidence"] > 0.5) {
+                    new_class_idx = i;
+                }
+                // Select the desired class by clicking on the toolbox selector
+                if (i === new_class_idx) {
                     $(`#toolbox_sel_${class_ids[i]}`).click();
+                    return;
                 }
             }
         }
