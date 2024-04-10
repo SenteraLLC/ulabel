@@ -4501,15 +4501,16 @@ export class ULabel {
 
     // Start annotating or erasing with the brush
     begin_brush(mouse_event) {  
+        const current_subtask = this.subtasks[this.state["current_subtask"]];
         // First, we check if there is an annotation touching the brush      
         let brush_cand_active_id = null;
         const global_x = this.get_global_mouse_x(mouse_event);
         const global_y = this.get_global_mouse_y(mouse_event);
         let brush_polygon = this.get_brush_circle_spatial_payload(global_x, global_y);
         // Loop through all annotations in the ordering until we find a polygon that intersects with the brush
-        for (let i = this.subtasks[this.state["current_subtask"]]["annotations"]["ordering"].length - 1; i >= 0; i--) {
-            let active_id = this.subtasks[this.state["current_subtask"]]["annotations"]["ordering"][i];
-            let annotation = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][active_id];
+        for (let i = current_subtask["annotations"]["ordering"].length - 1; i >= 0; i--) {
+            let active_id = current_subtask["annotations"]["ordering"][i];
+            let annotation = current_subtask["annotations"]["access"][active_id];
             // Only undeprecated polygons
             if (!annotation["deprecated"] && annotation["spatial_type"] === "polygon") {
                 // Split into fills + their associated holes
@@ -4532,15 +4533,18 @@ export class ULabel {
         
         if (brush_cand_active_id !== null) {
             // Set annotation as in progress
-            this.subtasks[this.state["current_subtask"]]["state"]["active_id"] = brush_cand_active_id;
-            this.subtasks[this.state["current_subtask"]]["state"]["is_in_progress"] = true;
+            current_subtask["state"]["active_id"] = brush_cand_active_id;
+            current_subtask["state"]["is_in_progress"] = true;
+            // Update the id_payload
+            current_subtask["state"]["id_payload"] = JSON.parse(JSON.stringify(current_subtask["annotations"]["access"][brush_cand_active_id]["classification_payloads"]));
+            this.update_id_toolbox_display();
             // Record for potential undo/redo
             this.record_action({
                 act_type: "begin_brush",
                 frame: this.state["current_frame"],
                 undo_payload: {
                     actid: brush_cand_active_id,
-                    annotation: JSON.parse(JSON.stringify(this.subtasks[this.state["current_subtask"]]["annotations"]["access"][brush_cand_active_id])),
+                    annotation: JSON.parse(JSON.stringify(current_subtask["annotations"]["access"][brush_cand_active_id])),
                 },
                 redo_payload: {
                     actid: brush_cand_active_id,
@@ -4548,7 +4552,7 @@ export class ULabel {
                 }
             });
             this.continue_brush(mouse_event);
-        } else if (!this.subtasks[this.state["current_subtask"]]["state"]["is_in_erase_mode"]) {
+        } else if (!current_subtask["state"]["is_in_erase_mode"]) {
             // Start a new annotation if not in erase mode
             this.begin_annotation(mouse_event);
         } else {
