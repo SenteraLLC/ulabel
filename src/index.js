@@ -93,7 +93,9 @@ export class ULabel {
     */
     static get_drag_key_start(mouse_event, ul) {
         if (ul.subtasks[ul.state["current_subtask"]]["state"]["active_id"] != null) {
-            if (mouse_event.button === 2) {
+            if (mouse_event.button === 1) {
+                return "pan";
+            } else if (mouse_event.button === 2) {
                 return "right";
             }
             return "annotation";
@@ -4370,7 +4372,7 @@ export class ULabel {
         active_spatial_payload.pop();
         
         // Logic for dealing with complex layers
-        if (spatial_payload[0].length > 1) {
+        if (spatial_type === "polygon" && spatial_payload[0].length > 1) {
             // If the active spatial payload has *one* point remaining, delete the point and start moving the polygon ender
             if (active_spatial_payload.length === 1) {
                 active_spatial_payload.pop();
@@ -5104,7 +5106,7 @@ export class ULabel {
 
         // Record last point and redraw if necessary
         // TODO(3d)
-        let n_kpts, start_pt, popped, act_type, active_idx;
+        let n_kpts, start_pt, act_type, active_idx;
         switch (annotation["spatial_type"]) {
             case "polygon":
                 // For polygons, the active spatial payload is the last array of points in the spatial payload
@@ -5171,12 +5173,9 @@ export class ULabel {
                 // Remove last point
                 n_kpts = spatial_payload.length;
                 if (n_kpts > 2) {
-                    popped = true;
-                    n_kpts -= 1;
                     spatial_payload.pop();
                 }
                 else {
-                    popped = false;
                     this.rebuild_containing_box(active_id, false, this.state["current_subtask"]);
                 }
 
@@ -5186,14 +5185,9 @@ export class ULabel {
                     frame: this.state["current_frame"],
                     undo_payload: {
                         actid: active_id,
-                        popped: popped
                     },
                     redo_payload: {
                         actid: active_id,
-                        popped: popped,
-                        fin_pt: JSON.parse(JSON.stringify(
-                            spatial_payload[n_kpts - 1]
-                        )),
                         annotation: JSON.parse(JSON.stringify(annotation)),
                     }
                 });

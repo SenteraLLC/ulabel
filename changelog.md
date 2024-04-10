@@ -14,6 +14,7 @@ Nothing yet.
 - Fix `create_bbox_on_initial_crop` to only work when in `bbox` mode, and make it start as the active class.
 - Fix longstanding bug where the `Annotation ID` toolbox item would not update the annotation ID unless explicitly clicked.
 - Fix bug where panning during brush mode would open a new tab.
+- Fix bug where panning was disabled when actively drawing an annotation
 
 ## [0.9.4] - April 4th, 2024
 - Fix bug where vanish mode was disabled during brush/erase mode
