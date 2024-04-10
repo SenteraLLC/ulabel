@@ -2494,6 +2494,8 @@ export class ULabel {
                 this.hide_edit_suggestion();
                 this.hide_global_edit_suggestion();
                 this.hide_id_dialog();
+                // Clear any move candidates
+                this.subtasks[current_subtask]["state"]["move_candidate"] = null;
                 // If in starting_complex_polygon mode, end it by undoing
                 if (this.subtasks[current_subtask]["state"]["starting_complex_polygon"]) {
                     this.undo(true);
