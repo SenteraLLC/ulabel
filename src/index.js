@@ -93,14 +93,18 @@ export class ULabel {
     */
     static get_drag_key_start(mouse_event, ul) {
         if (ul.subtasks[ul.state["current_subtask"]]["state"]["active_id"] != null) {
-            if (mouse_event.button === 2) {
+            if (mouse_event.button === 1) {
+                return "pan";
+            } else if (mouse_event.button === 2) {
                 return "right";
             }
             return "annotation";
         }
         switch (mouse_event.button) {
             case 0:
-                if (mouse_event.target.id === ul.subtasks[ul.state["current_subtask"]]["canvas_fid"]) {
+                if (mouse_event.target.id === "brush_circle") {
+                    return "brush";
+                } else if (mouse_event.target.id === ul.subtasks[ul.state["current_subtask"]]["canvas_fid"]) {
                     if (mouse_event.ctrlKey || mouse_event.metaKey) {
                         return "pan";
                     }
@@ -108,8 +112,6 @@ export class ULabel {
                         return "zoom";
                     }
                     return "annotation";
-                } else if (mouse_event.target.id === "brush_circle") {
-                    return "brush";
                 } else if ($(mouse_event.target).hasClass("editable")) {
                     return "edit";
                 } else if ($(mouse_event.target).hasClass("movable")) {
@@ -182,26 +184,25 @@ export class ULabel {
                     break;
                 // Create a bbox annotation around the initial_crop. Or the whole image if inital_crop does not exist
                 case ul.config.create_bbox_on_initial_crop:
-                    // If initial_crop is undefined, create annotation with size of image
-                    if (ul.config.initial_crop === null || ul.config.initial_crop === undefined) {
-
+                    if (current_subtask.state.annotation_mode === "bbox") {
+                        // Default to an annotation with size of image
                         // Create the coordinates for the bbox's spatial payload
-                        const bbox_top_left = [0, 0]
-                        const bbox_bottom_right = [ul.config.image_width, ul.config.image_height]
+                        let bbox_top_left = [0, 0];
+                        let bbox_bottom_right = [ul.config.image_width, ul.config.image_height]; 
 
-                        ul.create_annotation("bbox", [bbox_top_left, bbox_bottom_right])
+                        // If an initial crop exists, use that instead
+                        if (ul.config.initial_crop !== null && ul.config.initial_crop !== undefined) {
+                            // Convenience
+                            const initial_crop = ul.config.initial_crop
+
+                            // Create the coordinates for the bbox's spatial payload
+                            bbox_top_left = [initial_crop.left, initial_crop.top]
+                            bbox_bottom_right = [initial_crop.left + initial_crop.width, initial_crop.top + initial_crop.height]
+                        }
+
+                        // Create the annotation
+                        ul.create_annotation(current_subtask.state.annotation_mode, [bbox_top_left, bbox_bottom_right])
                     }
-                    else {// If it is defined create a bbox around the initial_crop
-                        // Convenience
-                        const initial_crop = ul.config.initial_crop
-
-                        // Create the coordinates for the bbox's spatial payload
-                        const bbox_top_left = [initial_crop.left, initial_crop.top]
-                        const bbox_bottom_right = [initial_crop.left + initial_crop.width, initial_crop.top + initial_crop.height]
-
-                        ul.create_annotation("bbox", [bbox_top_left, bbox_bottom_right])
-                    }
-
                     break; 
                 // Change to brush mode (for now, polygon only)
                 case ul.config.toggle_brush_mode_keybind:
@@ -219,18 +220,53 @@ export class ULabel {
                 case ul.config.decrease_brush_size_keybind:
                     ul.change_brush_size(1/1.1);
                     break;
+                default:
+                    if (!DELETE_MODES.includes(current_subtask.state.spatial_type)) {
+                        // Check for class keybinds
+                        for (let i = 0; i < current_subtask.class_defs.length; i++) {
+                            const class_def = current_subtask.class_defs[i];
+                            if (class_def.keybind !== null && e.key === class_def.keybind) {
+                                // Get the active or hovered annotation id
+                                let target_id = null;
+                                if (current_subtask.state.active_id !== null) {
+                                    target_id = JSON.parse(JSON.stringify(current_subtask.state.active_id));
+                                } else if (current_subtask.state.move_candidate !== null) {
+                                    target_id = JSON.parse(JSON.stringify(current_subtask.state.move_candidate["annid"]));
+                                }
+
+                                if (target_id === null) {
+                                    // Set the active class to the class with the matching keybind
+                                    ul.update_id_toolbox_display(i);
+                                } else {
+                                    // Set the annotation's class to the class with the matching keybind
+                                    ul.handle_id_dialog_click(ul.state["last_move"], target_id, i);
+                                }
+                                                            
+                                return;
+                            }
+                        }
+                    }
+                    
+                    break;
             }
         })
 
         // Detection ctrl+scroll
         document.getElementById(ul.config["annbox_id"]).onwheel = function (wheel_event) {
+            // Prevent scroll-zoom
+            wheel_event.preventDefault();
             let fms = ul.config["image_data"].frames.length > 1;
-            if (wheel_event.ctrlKey || wheel_event.shiftKey || wheel_event.metaKey) {
-
-                // Prevent scroll-zoom
-                wheel_event.preventDefault();
-
-                // Don't rezoom if id dialog is visible
+            if (wheel_event.altKey) {
+                // When in brush mode, change the brush size
+                if (ul.subtasks[ul.state["current_subtask"]]["state"]["is_in_brush_mode"]) {
+                    ul.change_brush_size(wheel_event.deltaY < 0 ? 1.1 : 1 / 1.1);
+                }
+            } else if (fms && (wheel_event.ctrlKey || wheel_event.shiftKey || wheel_event.metaKey)) {
+                // Get direction of wheel
+                const dlta = Math.sign(wheel_event.deltaY);
+                ul.update_frame(dlta);
+            } else {
+                // Don't scroll if id dialog is visible
                 if (ul.subtasks[ul.state["current_subtask"]]["state"]["idd_visible"] && !ul.subtasks[ul.state["current_subtask"]]["state"]["idd_thumbnail"]) {
                     return;
                 }
@@ -239,29 +275,11 @@ export class ULabel {
                 const dlta = Math.sign(wheel_event.deltaY);
 
                 // Apply new zoom
-                ul.state["zoom_val"] *= (1 - dlta / 10);
+                ul.state["zoom_val"] *= (1 - dlta / 5);
                 ul.rezoom(wheel_event.clientX, wheel_event.clientY);
 
                 // Only try to update the overlay if it exists
                 ul.filter_distance_overlay?.draw_overlay()
-            } else if (wheel_event.altKey) {
-                // When in brush mode, change the brush size
-                if (ul.subtasks[ul.state["current_subtask"]]["state"]["is_in_brush_mode"]) {
-                    wheel_event.preventDefault();
-                    ul.change_brush_size(wheel_event.deltaY < 0 ? 1.1 : 1 / 1.1);
-                }
-            } else if (fms) {
-                wheel_event.preventDefault();
-
-                // Get direction of wheel
-                const dlta = Math.sign(wheel_event.deltaY);
-                ul.update_frame(dlta);
-            } else {
-                // Don't scroll if id dialog is visible
-                if (ul.subtasks[ul.state["current_subtask"]]["state"]["idd_visible"] && !ul.subtasks[ul.state["current_subtask"]]["state"]["idd_thumbnail"]) {
-                    wheel_event.preventDefault();
-                    return;
-                }
             }
         };
 
@@ -548,7 +566,7 @@ export class ULabel {
 
             // Create a class definition based on the provided class_definition that will be saved to the subtask
             let modifed_class_definition = {}
-            let name, id, color;
+            let name, id, color, keybind;
             switch (typeof class_definition) {
                 case "string":
                     modifed_class_definition = {
@@ -578,10 +596,14 @@ export class ULabel {
                     // Use generic color only if color not provided
                     color = class_definition.color ?? COLORS[ulabel.valid_class_ids.length]
 
+                    // Save the keybind if it exists, otherwise default to null
+                    keybind = class_definition.keybind ?? null
+
                     modifed_class_definition = {
                         "name": name,
                         "id": id,
-                        "color": color
+                        "color": color,
+                        "keybind": keybind
                     }
                     break
                 default:
@@ -604,7 +626,8 @@ export class ULabel {
                 "name": "Delete",
                 "id": DELETE_CLASS_ID,
                 // Default to crimson
-                "color": COLORS[1]
+                "color": COLORS[1],
+                "keybind": null
             })
             ulabel.valid_class_ids.push(DELETE_CLASS_ID)
             ulabel.color_info[DELETE_CLASS_ID] = COLORS[1]
@@ -2473,6 +2496,8 @@ export class ULabel {
                 this.hide_edit_suggestion();
                 this.hide_global_edit_suggestion();
                 this.hide_id_dialog();
+                // Clear any move candidates
+                this.subtasks[current_subtask]["state"]["move_candidate"] = null;
                 // If in starting_complex_polygon mode, end it by undoing
                 if (this.subtasks[current_subtask]["state"]["starting_complex_polygon"]) {
                     this.undo(true);
@@ -2516,7 +2541,7 @@ export class ULabel {
 
         // Build brush circle html
         const brush_circle_html = `
-        <a href="#" id="${brush_circle_id}" class="brush_circle"></a>`;
+        <a id="${brush_circle_id}" class="brush_circle"></a>`;
         $("#dialogs__" + this.state["current_subtask"]).append(brush_circle_html);
         $("#" + brush_circle_id).css({
             "width": (this.config["brush_size"]*this.state["zoom_val"]) + "px",
@@ -3203,28 +3228,6 @@ export class ULabel {
             unique_id = this.make_new_annotation_id()
         }
 
-        // TODO: Create the classification_payloads intelligently
-        // Get the subtask ids in order to populate the classification_payloads
-        const class_ids = current_subtask.class_ids
-
-        // Set the first element in the class ids to be the class of the created annotation
-        let classification_payloads = [
-            {
-                "class_id": class_ids[0],
-                "confidence": 1
-            }
-        ]
-
-        // Skip the first element since it was set above
-        for (let idx = 1; idx < class_ids.length; idx++) {
-            classification_payloads.push(
-                {
-                    "class_id": class_ids[idx],
-                    "confidence": 0
-                }
-            )
-        }
-
         // Get the frame
         if (MODES_3D.includes(spatial_type)) {
             this.state["current_frame"] = null;
@@ -3241,7 +3244,7 @@ export class ULabel {
             "deprecated_by": { "human": false },
             "spatial_type": spatial_type,
             "spatial_payload": spatial_payload,
-            "classification_payloads": classification_payloads,
+            "classification_payloads": this.get_init_id_payload(spatial_type),
             "text_payload": "",
             "canvas_id": this.get_init_canvas_context_id(unique_id)
         }
@@ -3780,7 +3783,6 @@ export class ULabel {
 
     redo_action(action) {
         this.update_frame(null, action.frame);
-        console.log("redoing action", action.act_type)
         switch (action.act_type) {
             case "begin_annotation":
                 this.begin_annotation(null, action.redo_payload);
@@ -4370,7 +4372,7 @@ export class ULabel {
         active_spatial_payload.pop();
         
         // Logic for dealing with complex layers
-        if (spatial_payload[0].length > 1) {
+        if (spatial_type === "polygon" && spatial_payload[0].length > 1) {
             // If the active spatial payload has *one* point remaining, delete the point and start moving the polygon ender
             if (active_spatial_payload.length === 1) {
                 active_spatial_payload.pop();
@@ -4503,15 +4505,16 @@ export class ULabel {
 
     // Start annotating or erasing with the brush
     begin_brush(mouse_event) {  
+        const current_subtask = this.subtasks[this.state["current_subtask"]];
         // First, we check if there is an annotation touching the brush      
         let brush_cand_active_id = null;
         const global_x = this.get_global_mouse_x(mouse_event);
         const global_y = this.get_global_mouse_y(mouse_event);
         let brush_polygon = this.get_brush_circle_spatial_payload(global_x, global_y);
         // Loop through all annotations in the ordering until we find a polygon that intersects with the brush
-        for (let i = this.subtasks[this.state["current_subtask"]]["annotations"]["ordering"].length - 1; i >= 0; i--) {
-            let active_id = this.subtasks[this.state["current_subtask"]]["annotations"]["ordering"][i];
-            let annotation = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][active_id];
+        for (let i = current_subtask["annotations"]["ordering"].length - 1; i >= 0; i--) {
+            let active_id = current_subtask["annotations"]["ordering"][i];
+            let annotation = current_subtask["annotations"]["access"][active_id];
             // Only undeprecated polygons
             if (!annotation["deprecated"] && annotation["spatial_type"] === "polygon") {
                 // Split into fills + their associated holes
@@ -4534,15 +4537,18 @@ export class ULabel {
         
         if (brush_cand_active_id !== null) {
             // Set annotation as in progress
-            this.subtasks[this.state["current_subtask"]]["state"]["active_id"] = brush_cand_active_id;
-            this.subtasks[this.state["current_subtask"]]["state"]["is_in_progress"] = true;
+            current_subtask["state"]["active_id"] = brush_cand_active_id;
+            current_subtask["state"]["is_in_progress"] = true;
+            // Update the id_payload
+            current_subtask["state"]["id_payload"] = JSON.parse(JSON.stringify(current_subtask["annotations"]["access"][brush_cand_active_id]["classification_payloads"]));
+            this.update_id_toolbox_display();
             // Record for potential undo/redo
             this.record_action({
                 act_type: "begin_brush",
                 frame: this.state["current_frame"],
                 undo_payload: {
                     actid: brush_cand_active_id,
-                    annotation: JSON.parse(JSON.stringify(this.subtasks[this.state["current_subtask"]]["annotations"]["access"][brush_cand_active_id])),
+                    annotation: JSON.parse(JSON.stringify(current_subtask["annotations"]["access"][brush_cand_active_id])),
                 },
                 redo_payload: {
                     actid: brush_cand_active_id,
@@ -4550,7 +4556,7 @@ export class ULabel {
                 }
             });
             this.continue_brush(mouse_event);
-        } else if (!this.subtasks[this.state["current_subtask"]]["state"]["is_in_erase_mode"]) {
+        } else if (!current_subtask["state"]["is_in_erase_mode"]) {
             // Start a new annotation if not in erase mode
             this.begin_annotation(mouse_event);
         } else {
@@ -5074,7 +5080,6 @@ export class ULabel {
         }
 
         let annotation = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][undo_payload.annid];
-        console.log("Restored annotation:", annotation);
         // If a polygon/delete polygon, show the ender
         if (annotation["spatial_type"] === "polygon" || annotation["spatial_type"] === "delete_polygon") {
             // Get the first point of the last layer
@@ -5101,7 +5106,7 @@ export class ULabel {
 
         // Record last point and redraw if necessary
         // TODO(3d)
-        let n_kpts, start_pt, popped, act_type, active_idx;
+        let n_kpts, start_pt, act_type, active_idx;
         switch (annotation["spatial_type"]) {
             case "polygon":
                 // For polygons, the active spatial payload is the last array of points in the spatial payload
@@ -5168,12 +5173,9 @@ export class ULabel {
                 // Remove last point
                 n_kpts = spatial_payload.length;
                 if (n_kpts > 2) {
-                    popped = true;
-                    n_kpts -= 1;
                     spatial_payload.pop();
                 }
                 else {
-                    popped = false;
                     this.rebuild_containing_box(active_id, false, this.state["current_subtask"]);
                 }
 
@@ -5183,14 +5185,9 @@ export class ULabel {
                     frame: this.state["current_frame"],
                     undo_payload: {
                         actid: active_id,
-                        popped: popped
                     },
                     redo_payload: {
                         actid: active_id,
-                        popped: popped,
-                        fin_pt: JSON.parse(JSON.stringify(
-                            spatial_payload[n_kpts - 1]
-                        )),
                         annotation: JSON.parse(JSON.stringify(annotation)),
                     }
                 });
@@ -5633,7 +5630,11 @@ export class ULabel {
      */
     suggest_edits(mouse_event = null, nonspatial_id = null) {
         // don't show edits when potentially trying to draw a hole
-        if (this.subtasks[this.state["current_subtask"]]["state"]["starting_complex_polygon"] || this.subtasks[this.state["current_subtask"]]["state"]["is_in_brush_mode"]) {
+        if (
+            this.subtasks[this.state["current_subtask"]]["state"]["is_in_progress"] ||
+            this.subtasks[this.state["current_subtask"]]["state"]["starting_complex_polygon"] || 
+            this.subtasks[this.state["current_subtask"]]["state"]["is_in_brush_mode"]
+        ) {
             this.hide_global_edit_suggestion();
             this.hide_edit_suggestion();
         } else {
@@ -5809,8 +5810,7 @@ export class ULabel {
                     "class_id": class_ids[i],
                     "confidence": dist_prop
                 };
-            }
-            else {
+            } else {
                 this.subtasks[this.state["current_subtask"]]["state"]["id_payload"][i] = {
                     "class_id": class_ids[i],
                     "confidence": (1 - dist_prop) / (class_ids.length - 1)
@@ -5910,35 +5910,36 @@ export class ULabel {
         this.redraw_demo();
     }
     // Toolbox Annotation ID Update
-    update_id_toolbox_display() {
+    update_id_toolbox_display(new_class_idx = null) {
         if (this.config["allow_soft_id"]) {
             // Not supported yet
         } else {
-            let pfx = "div#tb-id-app--" + this.state["current_subtask"];
             let class_ids = this.subtasks[this.state["current_subtask"]]["class_ids"];
             for (var i = 0; i < class_ids.length; i++) {
-                let cls = class_ids[i];
-                if (this.subtasks[this.state["current_subtask"]]["state"]["id_payload"][i]["confidence"] > 0.5) {
-                    if (!($(pfx + " #" + this.config["toolbox_id"] + " a#toolbox_sel_" + cls).hasClass("sel"))) {
-                        $(pfx + " #" + this.config["toolbox_id"] + " a.tbid-opt.sel").attr("href", "#");
-                        $(pfx + " #" + this.config["toolbox_id"] + " a.tbid-opt.sel").removeClass("sel");
-                        $(pfx + " #" + this.config["toolbox_id"] + " a#toolbox_sel_" + cls).addClass("sel");
-                        $(pfx + " #" + this.config["toolbox_id"] + " a#toolbox_sel_" + cls).removeAttr("href");
-                    }
+                // If no new class index is provided, select the class with the highest confidence
+                if (new_class_idx === null && this.subtasks[this.state["current_subtask"]]["state"]["id_payload"][i]["confidence"] > 0.5) {
+                    new_class_idx = i;
+                }
+                // Select the desired class by clicking on the toolbox selector
+                if (i === new_class_idx) {
+                    $(`#toolbox_sel_${class_ids[i]}`).click();
+                    return;
                 }
             }
         }
     }
 
-    handle_id_dialog_hover(mouse_event) {
+    handle_id_dialog_hover(mouse_event, pos_evt = null) {
         // Grab current subtask
         const current_subtask = this.subtasks[this.state.current_subtask]
 
         // Determine which dialog
         let front = current_subtask.state.idd_which === "front"
+        if (pos_evt === null) {
+            pos_evt = this.lookup_id_dialog_mouse_pos(mouse_event, front);
+        }
 
-        let pos_evt = this.lookup_id_dialog_mouse_pos(mouse_event, front);
-        if (pos_evt != null) {
+        if (pos_evt !== null) {
             if (!this.config["allow_soft_id"]) {
                 pos_evt.dist_prop = 1.0;
             }
@@ -5964,8 +5965,7 @@ export class ULabel {
             new_payload = JSON.parse(JSON.stringify(
                 this.subtasks[this.state["current_subtask"]]["state"]["id_payload"]
             ));
-        }
-        else {
+        } else {
             redoing = true;
             old_payload = JSON.parse(JSON.stringify(redo_payload.old_id_payload));
             new_payload = JSON.parse(JSON.stringify(redo_payload.new_id_payload));
@@ -6024,12 +6024,27 @@ export class ULabel {
         this.suggest_edits();
     }
 
-    handle_id_dialog_click(mouse_event) {
-        this.handle_id_dialog_hover(mouse_event);
+    handle_id_dialog_click(mouse_event, annotation_id = null, new_class_idx = null) {
+        const current_subtask = this.subtasks[this.state["current_subtask"]]
+        let pos_evt = null;
+        if (new_class_idx !== null) {
+            pos_evt = {class_ind: new_class_idx, dist_prop: 1.0};
+        }
+        this.handle_id_dialog_hover(mouse_event, pos_evt);
         // TODO need to differentiate between first click and a reassign -- potentially with global state
-        this.assign_annotation_id();
-        this.subtasks[this.state["current_subtask"]]["state"]["first_explicit_assignment"] = false;
+        this.assign_annotation_id(annotation_id);
+        current_subtask["state"]["first_explicit_assignment"] = false;
         this.suggest_edits(this.state["last_move"]);
+
+        // Ensure that the id dialog is visible again
+        if (
+            annotation_id !== null &&
+            !current_subtask["state"]["is_in_progress"] &&
+            !current_subtask["state"]["is_in_brush_mode"] &&
+            !current_subtask["state"]["idd_visible"]
+        ) {
+            this.show_global_edit_suggestion(annotation_id);
+        }
 
         // TODO: Check to make sure the clicked annotation was a polyline
         // If the filter_distance_toolbox_item exists, filter annotations if in multi_class_mode

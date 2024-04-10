@@ -38,17 +38,20 @@
                         {
                             "name": "Sedan",
                             "color": "blue",
-                            "id": 10
+                            "id": 10,
+                            "keybind": "1",
                         },
                         {
                             "name": "SUV",
                             "color": "green",
-                            "id": 11
+                            "id": 11,
+                            "keybind": "2",
                         },
                         {
                             "name": "Truck",
                             "color": "orange",
-                            "id": 12
+                            "id": 12,
+                            "keybind": "3",
                         },
                     ],
                     "allowed_modes": ["bbox", "polygon", "contour", "polyline", "point", "tbar", "delete_polygon", "delete_bbox"],
@@ -88,6 +91,10 @@
                 }],
                 "subtasks": subtasks,
                 "initial_line_size": 2,
+                "config_data": {
+                    "toggle_brush_mode_keybind": "f",
+                    "create_bbox_on_initial_crop": "|",
+                }
             });
             // Wait for ULabel instance to finish initialization
             ulabel.init(function () {
