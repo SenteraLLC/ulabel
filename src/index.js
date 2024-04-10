@@ -219,18 +219,31 @@ export class ULabel {
                     ul.change_brush_size(1/1.1);
                     break;
                 default:
-                    // When hovering an annotation, check if the key pressed is a keybind for a class
-                    if (current_subtask.state.move_candidate !== null && current_subtask.state.move_candidate !== undefined) {
-                        const target_id = JSON.parse(JSON.stringify(current_subtask.state.move_candidate["annid"]));
+                    if (!DELETE_MODES.includes(current_subtask.state.spatial_type)) {
+                        // Check for class keybinds
                         for (let i = 0; i < current_subtask.class_defs.length; i++) {
                             const class_def = current_subtask.class_defs[i];
                             if (class_def.keybind !== null && e.key === class_def.keybind) {
+                                // Get the active or hovered annotation id
+                                let target_id = null;
+                                if (current_subtask.state.active_id !== null) {
+                                    target_id = JSON.parse(JSON.stringify(current_subtask.state.active_id));
+                                } else if (current_subtask.state.move_candidate !== null) {
+                                    target_id = JSON.parse(JSON.stringify(current_subtask.state.move_candidate["annid"]));
+                                }
+
+                                if (target_id !== null) {
+                                    // Set the annotation's class to the class with the matching keybind
+                                    ul.handle_id_dialog_click(ul.state["last_move"], target_id, i);
+                                }
+
                                 // Set the active class to the class with the matching keybind
-                                ul.handle_id_dialog_click(ul.state["last_move"], target_id, i);
+                                ul.update_id_toolbox_display();                            
                                 return;
                             }
                         }
                     }
+                    
                     break;
             }
         })
@@ -5792,8 +5805,7 @@ export class ULabel {
                     "class_id": class_ids[i],
                     "confidence": dist_prop
                 };
-            }
-            else {
+            } else {
                 this.subtasks[this.state["current_subtask"]]["state"]["id_payload"][i] = {
                     "class_id": class_ids[i],
                     "confidence": (1 - dist_prop) / (class_ids.length - 1)
@@ -5897,17 +5909,10 @@ export class ULabel {
         if (this.config["allow_soft_id"]) {
             // Not supported yet
         } else {
-            let pfx = "div#tb-id-app--" + this.state["current_subtask"];
             let class_ids = this.subtasks[this.state["current_subtask"]]["class_ids"];
             for (var i = 0; i < class_ids.length; i++) {
-                let cls = class_ids[i];
                 if (this.subtasks[this.state["current_subtask"]]["state"]["id_payload"][i]["confidence"] > 0.5) {
-                    if (!($(pfx + " #" + this.config["toolbox_id"] + " a#toolbox_sel_" + cls).hasClass("sel"))) {
-                        $(pfx + " #" + this.config["toolbox_id"] + " a.tbid-opt.sel").attr("href", "#");
-                        $(pfx + " #" + this.config["toolbox_id"] + " a.tbid-opt.sel").removeClass("sel");
-                        $(pfx + " #" + this.config["toolbox_id"] + " a#toolbox_sel_" + cls).addClass("sel");
-                        $(pfx + " #" + this.config["toolbox_id"] + " a#toolbox_sel_" + cls).removeAttr("href");
-                    }
+                    $(`#toolbox_sel_${class_ids[i]}`).click();
                 }
             }
         }
