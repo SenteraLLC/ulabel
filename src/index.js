@@ -5618,11 +5618,16 @@ export class ULabel {
                     case "polygon":
                         // Check if the mouse is within the polygon
                         if (GeometricUtils.point_is_within_polygon_annotation([gblx, gbly], annotation)) {
-                            // If so, then this should be the only candidate
-                            ret["candidate_ids"] = [annotation_id];
-                            ret["best"] = {
-                                "annid": annotation_id
-                            };
+                            found_perfect_match = true;
+                        }
+                        break;
+                    case "bbox":
+                        if (
+                            gblx >= cbox["tlx"] &&
+                            gblx <= cbox["brx"] &&
+                            gbly >= cbox["tly"] &&
+                            gbly <= cbox["bry"]
+                        ) {
                             found_perfect_match = true;
                         }
                         break;
@@ -5639,7 +5644,12 @@ export class ULabel {
                 if (!found_perfect_match) {
                     ret["candidate_ids"].push(annotation_id);
                 } else {
-                    console.log("Found perfect match!")
+                    console.log("Found perfect match!");
+                    // This should be the only candidate
+                    ret["candidate_ids"] = [annotation_id];
+                    ret["best"] = {
+                        "annid": annotation_id
+                    };
                     break;
                 }
             }
