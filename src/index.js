@@ -5622,6 +5622,7 @@ export class ULabel {
                         }
                         break;
                     case "bbox":
+                    case "point":
                         if (
                             gblx >= cbox["tlx"] &&
                             gblx <= cbox["brx"] &&
@@ -5641,10 +5642,10 @@ export class ULabel {
                         }
                         break;
                 }
+
                 if (!found_perfect_match) {
                     ret["candidate_ids"].push(annotation_id);
                 } else {
-                    console.log("Found perfect match!");
                     // This should be the only candidate
                     ret["candidate_ids"] = [annotation_id];
                     ret["best"] = {
