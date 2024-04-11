@@ -8,6 +8,10 @@ Nothing yet.
 
 ## [0.10.3] - April 11th, 2024
 - Improvements to hitboxes for polygons, points, and bboxes. The cursor must now be actually inside the annotation before showing the edit dialogs.
+- Fix duplicate keybinds for increase/decrease of line size and brush size
+  - `[` and `]` now decrement/increment line size
+  - `alt+scroll` still decrements/increments brush size
+  - `-` and `=` still decrements/increments line size
 
 ## [0.10.2] - April 10th, 2024
 - Fix bug where using the erase tool to completely erase a polygon would sometimes cause an error.
