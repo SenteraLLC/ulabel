@@ -5617,7 +5617,7 @@ export class ULabel {
                 switch (spatial_type) {
                     case "polygon":
                         // Check if the mouse is within the polygon
-                        if (GeometricUtils.point_is_within_complex_polygon([gblx, gbly], annotation["spatial_payload"])) {
+                        if (GeometricUtils.point_is_within_polygon_annotation([gblx, gbly], annotation)) {
                             // If so, then this should be the only candidate
                             ret["candidate_ids"] = [annotation_id];
                             ret["best"] = {
