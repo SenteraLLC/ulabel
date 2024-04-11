@@ -5581,21 +5581,22 @@ export class ULabel {
         };
         let minsize = Infinity;
         // TODO(3d)
-        for (var edi = 0; edi < this.subtasks[this.state["current_subtask"]]["annotations"]["ordering"].length; edi++) {
-            let id = this.subtasks[this.state["current_subtask"]]["annotations"]["ordering"][edi];
-            if (this.subtasks[this.state["current_subtask"]]["annotations"]["access"][id]["deprecated"]) continue;
-            let cbox = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][id]["containing_box"];
-            let frame = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][id]["frame"];
+        for (let edi = 0; edi < this.subtasks[this.state["current_subtask"]]["annotations"]["ordering"].length; edi++) {
+            const annotation_id = this.subtasks[this.state["current_subtask"]]["annotations"]["ordering"][edi];
+            let annotation = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annotation_id];
+            if (annotation["deprecated"]) continue;
+            let cbox = annotation["containing_box"];
+            let frame = annotation["frame"];
+            const spatial_type = annotation["spatial_type"];
             if (cbox) {
                 cbox["tlz"] = this.state["current_frame"];
                 cbox["brz"] = this.state["current_frame"];
                 if (frame != null) {
                     cbox["tlz"] = frame;
                     cbox["brz"] = frame;
-                }
-                else {
-                    if (this.subtasks[this.state["current_subtask"]]["annotations"]["access"][id]["spatial_type"] === "bbox3") {
-                        let pts = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][id]["spatial_payload"];
+                } else {
+                    if (spatial_type === "bbox3") {
+                        let pts = annotation["spatial_payload"];
                         cbox["tlz"] = Math.min(pts[0][2], pts[1][2]);
                         cbox["brz"] = Math.max(pts[0][2], pts[1][2]);
                     }
@@ -5611,13 +5612,35 @@ export class ULabel {
                 (this.state["current_frame"] >= cbox["tlz"]) &&
                 (this.state["current_frame"] <= cbox["brz"])
             ) {
-                ret["candidate_ids"].push(id);
-                let boxsize = (cbox["brx"] - cbox["tlx"]) * (cbox["bry"] - cbox["tly"]);
-                if (boxsize < minsize) {
-                    minsize = boxsize;
-                    ret["best"] = {
-                        "annid": id
-                    };
+                let found_perfect_match = false;
+                let boxsize;
+                switch (spatial_type) {
+                    case "polygon":
+                        // Check if the mouse is within the polygon
+                        if (GeometricUtils.point_is_within_complex_polygon([gblx, gbly], annotation["spatial_payload"])) {
+                            // If so, then this should be the only candidate
+                            ret["candidate_ids"] = [annotation_id];
+                            ret["best"] = {
+                                "annid": annotation_id
+                            };
+                            found_perfect_match = true;
+                        }
+                        break;
+                    default:
+                        boxsize = (cbox["brx"] - cbox["tlx"]) * (cbox["bry"] - cbox["tly"]);
+                        if (boxsize < minsize) {
+                            minsize = boxsize;
+                            ret["best"] = {
+                                "annid": annotation_id
+                            };
+                        }
+                        break;
+                }
+                if (!found_perfect_match) {
+                    ret["candidate_ids"].push(annotation_id);
+                } else {
+                    console.log("Found perfect match!")
+                    break;
                 }
             }
         }

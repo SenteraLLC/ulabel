@@ -425,6 +425,12 @@ export class GeometricUtils {
         return turf.booleanPointInPolygon(turf.point(point), turf.polygon([poly]));
     }
 
+    // Check if a point is within a complex polygon
+    public static point_is_within_complex_polygon(point: Point2D, complex_poly: ULabelSpatialPayload2D[]): boolean {
+        GeometricUtils.ensure_valid_turf_complex_polygon(complex_poly);
+        return turf.booleanPointInPolygon(turf.point(point), turf.polygon(complex_poly));
+    }
+
     // Convert a bbox to a simple polygon by adding the last point
     public static bbox_to_simple_polygon(bbox: ULabelSpatialPayload2D): ULabelSpatialPayload2D {
         // bbox is just two points, so we need to add the other two as well as the final point
