@@ -6,6 +6,9 @@ All notable changes to this project will be documented here.
 
 Nothing yet.
 
+## [0.10.3] - April 11th, 2024
+- Improvements to hitboxes for polygons, points, and bboxes. The cursor must now be actually inside the annotation before showing the edit dialogs.
+
 ## [0.10.2] - April 10th, 2024
 - Fix bug where using the erase tool to completely erase a polygon would sometimes cause an error.
 - Fix npm publishing error from 0.10.1
