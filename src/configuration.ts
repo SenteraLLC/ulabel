@@ -103,9 +103,9 @@ export class Configuration {
 
     public toggle_erase_mode_keybind: string = "e"
 
-    public increase_brush_size_keybind: string = "="
+    public increase_brush_size_keybind: string = "]"
 
-    public decrease_brush_size_keybind: string = "-"
+    public decrease_brush_size_keybind: string = "["
 
     constructor(...kwargs: {[key: string]: unknown}[]) {
         this.modify_config(...kwargs)

@@ -425,6 +425,20 @@ export class GeometricUtils {
         return turf.booleanPointInPolygon(turf.point(point), turf.polygon([poly]));
     }
 
+    // Check if a point is within a ulabel complex polygon
+    public static point_is_within_polygon_annotation(point: Point2D, annotation_object: object): boolean {
+        // Check if a point is within any of the filled regions (non-holes)
+        for (let i = 0; i < annotation_object["spatial_payload"].length; i++) {
+            if (
+                annotation_object["spatial_payload_holes"][i] === false &&
+                GeometricUtils.point_is_within_simple_polygon(point, annotation_object["spatial_payload"][i])
+            ) {
+                return true;
+            }
+        }
+        return false;        
+    }
+
     // Convert a bbox to a simple polygon by adding the last point
     public static bbox_to_simple_polygon(bbox: ULabelSpatialPayload2D): ULabelSpatialPayload2D {
         // bbox is just two points, so we need to add the other two as well as the final point
