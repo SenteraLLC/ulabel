@@ -7,9 +7,9 @@ All notable changes to this project will be documented here.
 Nothing yet.
 
 ## [0.10.3] - April 11th, 2024
-- Improvements to hitboxes for polygons, points, and bboxes. The cursor must now be actually inside the annotation before showing the edit dialogs.
+- Improvements to hitboxes for polygons, points, and bboxes. The cursor must now actually be inside the annotation before showing the edit dialogs.
 - Fix duplicate keybinds for increase/decrease of line size and brush size
-  - `[` and `]` now decrement/increment line size
+  - `[` and `]` now decrement/increment brush size
   - `alt+scroll` still decrements/increments brush size
   - `-` and `=` still decrements/increments line size
 
