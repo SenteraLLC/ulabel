@@ -2054,7 +2054,28 @@ export class ULabel {
                 // Reset globals
                 ctx.globalCompositeOperation = "source-over";
                 ctx.globalAlpha = 1.0;
-            }           
+            }
+            
+        }
+
+        if (spatial_type === "polygon" && this.subtasks[this.state["current_subtask"]]["state"]["is_in_progress"]) {
+            // Clear the lines that fall within the polygon ender
+            // Use the first point of the last layer
+            const ender_center_pt = spatial_payload.at(-1)[0];
+            console.log(ender_center_pt);
+            console.log(spatial_payload);
+            ctx.globalCompositeOperation =  'destination-out';
+            ctx.beginPath();
+            ctx.arc(
+                ender_center_pt[0], // x
+                ender_center_pt[1], // y
+                this.config["polygon_ender_size"] / 2, // radius
+                0,          // start angle
+                2 * Math.PI // end angle
+            );
+            ctx.fill();
+            // Reset globals
+            ctx.globalCompositeOperation = "source-over";
         }
     }
 
@@ -2424,18 +2445,19 @@ export class ULabel {
             <span id="${ender_id}_inner" class="ender_inner"></span>
         </a>
         `;
+        const polygon_ender_size = this.config["polygon_ender_size"]*this.state["zoom_val"];
         $("#dialogs__" + this.state["current_subtask"]).append(ender_html);
         $("#" + ender_id).css({
-            "width": this.config["polygon_ender_size"] + "px",
-            "height": this.config["polygon_ender_size"] + "px",
-            "border-radius": this.config["polygon_ender_size"] / 2 + "px"
+            "width": polygon_ender_size + "px",
+            "height": polygon_ender_size + "px",
+            "border-radius": polygon_ender_size / 2 + "px"
         });
         $("#" + ender_id + "_inner").css({
-            "width": this.config["polygon_ender_size"] / 5 + "px",
-            "height": this.config["polygon_ender_size"] / 5 + "px",
-            "border-radius": this.config["polygon_ender_size"] / 10 + "px",
-            "top": 2 * this.config["polygon_ender_size"] / 5 + "px",
-            "left": 2 * this.config["polygon_ender_size"] / 5 + "px"
+            "width": polygon_ender_size / 5 + "px",
+            "height": polygon_ender_size / 5 + "px",
+            "border-radius": polygon_ender_size / 10 + "px",
+            "top": 2 * polygon_ender_size / 5 + "px",
+            "left": 2 * polygon_ender_size / 5 + "px"
         });
 
         // Add this id to the list of dialogs with managed positions
@@ -2474,6 +2496,36 @@ export class ULabel {
         };
         this.reposition_dialogs();
     }
+
+    resize_active_polygon_ender() {
+        // Check if there is an active polygon annotation
+        const current_subtask = this.state["current_subtask"];
+        const active_id = this.subtasks[current_subtask]["state"]["active_id"];
+        if (active_id === null) {
+            return;
+        }
+        // Check that this is a polygon
+        const active_annotation = this.subtasks[current_subtask]["annotations"]["access"][active_id];
+        if (active_annotation["spatial_type"] !== "polygon") {
+            return;
+        }
+        // Get the ender and resize it with the current zoom
+        const ender_id = "ender_" + active_id;
+        const polygon_ender_size = this.config["polygon_ender_size"]*this.state["zoom_val"];
+        $("#" + ender_id).css({
+            "width": polygon_ender_size + "px",
+            "height": polygon_ender_size + "px",
+            "border-radius": polygon_ender_size / 2 + "px"
+        });
+        $("#" + ender_id + "_inner").css({
+            "width": polygon_ender_size / 5 + "px",
+            "height": polygon_ender_size / 5 + "px",
+            "border-radius": polygon_ender_size / 10 + "px",
+            "top": 2 * polygon_ender_size / 5 + "px",
+            "left": 2 * polygon_ender_size / 5 + "px"
+        });
+    }
+
 
     toggle_brush_mode(mouse_event) {
         // Try and switch to polygon annotation if not already in it
@@ -6360,6 +6412,9 @@ export class ULabel {
 
         // Apply new size to overlay if overlay exists
         this.filter_distance_overlay?.resize_canvas(new_width, new_height)
+
+        // Apply new size to an active polygon ender
+        this.resize_active_polygon_ender();
 
         // Compute and apply new position
         let new_left, new_top;
