@@ -1755,7 +1755,8 @@ div#${prntid} .ender_outer {
    position: absolute;
    width: 50px;
    height: 50px;
-   background-color: white;
+   background-color: transparent;
+   box-shadow: 0 0 0 2px white;
    border-radius: 25px;
    z-index: ${FRONT_Z_INDEX};
 }
@@ -1766,7 +1767,7 @@ div#${prntid} .ender_inner {
    top: 20px;
    width: 10px;
    height: 10px;
-   background-color: black;
+   background-color: transparent;
    border-radius: 10px;
 }
 div#${prntid} .brush_circle {

@@ -1002,7 +1002,7 @@ export class ULabel {
             "image_height": null,
             "demo_width": 120,
             "demo_height": 40,
-            "polygon_ender_size": 30,
+            "polygon_ender_size": 15,
             "edit_handle_size": 30,
             "brush_size": 60, // radius in pixels
 
