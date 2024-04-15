@@ -2454,7 +2454,9 @@ export class ULabel {
         $("#" + ender_id).css({
             "width": polygon_ender_size + "px",
             "height": polygon_ender_size + "px",
-            "border-radius": polygon_ender_size / 2 + "px"
+            "border-radius": polygon_ender_size / 2 + "px",
+            // Get the color of the active class
+            "box-shadow": "0 0 0 2px " + this.get_annotation_color(this.subtasks[this.state["current_subtask"]]["annotations"]["access"][polygon_id]),
         });
         $("#" + ender_id + "_inner").css({
             "width": polygon_ender_size / 5 + "px",
@@ -2527,6 +2529,26 @@ export class ULabel {
             "border-radius": polygon_ender_size / 10 + "px",
             "top": 2 * polygon_ender_size / 5 + "px",
             "left": 2 * polygon_ender_size / 5 + "px"
+        });
+    }
+
+    recolor_active_polygon_ender() {
+        // Check if there is an active polygon annotation
+        const current_subtask = this.state["current_subtask"];
+        const active_id = this.subtasks[current_subtask]["state"]["active_id"];
+        if (active_id === null) {
+            return;
+        }
+        // Check that this is a polygon
+        // Check that this is a polygon
+        const active_annotation = this.subtasks[current_subtask]["annotations"]["access"][active_id];
+        if (active_annotation["spatial_type"] !== "polygon") {
+            return;
+        }
+        // Get the ender and recolor it
+        const ender_id = "ender_" + active_id;
+        $("#" + ender_id).css({
+            "box-shadow": "0 0 0 2px " + this.get_annotation_color(active_annotation),
         });
     }
 
@@ -6077,6 +6099,7 @@ export class ULabel {
             this.suggest_edits();
         }
         this.redraw_annotation(actid);
+        this.recolor_active_polygon_ender(actid);
 
         // Explicit changes are undoable
         // First assignments are treated as though they were done all along
@@ -6114,6 +6137,7 @@ export class ULabel {
         // TODO(3d)
         this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["classification_payloads"] = JSON.parse(JSON.stringify(new_payload));
         this.redraw_annotation(actid);
+        this.recolor_active_polygon_ender();
         this.suggest_edits();
     }
 
