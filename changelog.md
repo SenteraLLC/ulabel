@@ -6,6 +6,10 @@ All notable changes to this project will be documented here.
 
 Nothing yet.
 
+## [0.10.4] - April 15th, 2024
+- Change polygon ender icon to be smaller, partially transparent, and scaled with zoom.
+- Color polygon ender and the brush circle based on the active class color.
+
 ## [0.10.3] - April 11th, 2024
 - Improvements to hitboxes for polygons, points, and bboxes. The cursor must now actually be inside the annotation before showing the edit dialogs.
 - Fix duplicate keybinds for increase/decrease of line size and brush size
