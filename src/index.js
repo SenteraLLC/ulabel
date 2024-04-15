@@ -2027,6 +2027,7 @@ export class ULabel {
         let n_iters = spatial_type === "polygon" ? spatial_payload.length : 1;
 
         // Draw all polygons/polylines
+        let layer_is_closed = false;
         for (let i = 0; i < n_iters; i++) {
             if (spatial_type === "polygon") {
                 active_spatial_payload = spatial_payload[i];
@@ -2043,7 +2044,8 @@ export class ULabel {
             }
 
             // If not in vanish mode and polygon is closed, fill it or draw a hole
-            if (!is_in_vanish_mode && spatial_type === "polygon" && GeometricUtils.is_polygon_closed(active_spatial_payload)) {
+            layer_is_closed = GeometricUtils.is_polygon_closed(active_spatial_payload);
+            if (!is_in_vanish_mode && spatial_type === "polygon" && layer_is_closed) {
                 if (annotation_object["spatial_payload_holes"][i]) {
                     ctx.globalCompositeOperation =  'destination-out';
                 } else {
@@ -2058,12 +2060,14 @@ export class ULabel {
             
         }
 
-        if (spatial_type === "polygon" && this.subtasks[this.state["current_subtask"]]["state"]["is_in_progress"]) {
+        if (
+            spatial_type === "polygon" && 
+            !layer_is_closed && 
+            this.subtasks[this.state["current_subtask"]]["state"]["is_in_progress"]
+        ) {
             // Clear the lines that fall within the polygon ender
             // Use the first point of the last layer
             const ender_center_pt = spatial_payload.at(-1)[0];
-            console.log(ender_center_pt);
-            console.log(spatial_payload);
             ctx.globalCompositeOperation =  'destination-out';
             ctx.beginPath();
             ctx.arc(
