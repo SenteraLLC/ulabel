@@ -153,6 +153,8 @@ export class ULabel {
             ul.handle_mouse_down(mouse_event);
         });
 
+        document.addEventListener("auxclick", ul.handle_aux_click);
+
         // Detect and record mouseup
         $(window).mouseup(function (mouse_event) {
             ul.handle_mouse_up(mouse_event);
@@ -6300,6 +6302,11 @@ export class ULabel {
         if (mouse_event.button === this.drag_state["release_button"]) {
             this.end_drag(mouse_event);
         }
+    }
+
+    handle_aux_click(mouse_event) {
+        // Prevent default
+        mouse_event.preventDefault();
     }
 
     // Start dragging to pan around image
