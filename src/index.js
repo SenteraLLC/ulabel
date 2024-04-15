@@ -2682,8 +2682,12 @@ export class ULabel {
         ) {
             // Get brush circle id
             const brush_circle_id = "brush_circle";
+            const active_id = this.subtasks[this.state["current_subtask"]]["state"]["active_id"];
             $("#" + brush_circle_id).css({
-                "background-color": this.get_active_class_color(),
+                // Use annotation id if available, else use active class color
+                "background-color": active_id !== null 
+                    ? this.get_annotation_color(this.subtasks[this.state["current_subtask"]]["annotations"]["access"][active_id])
+                    : this.get_active_class_color(),
             });
         }
     }
@@ -4649,6 +4653,8 @@ export class ULabel {
             // Update the id_payload
             current_subtask["state"]["id_payload"] = JSON.parse(JSON.stringify(current_subtask["annotations"]["access"][brush_cand_active_id]["classification_payloads"]));
             this.update_id_toolbox_display();
+            // Recolor the brush
+            this.recolor_brush_circle();
             // Record for potential undo/redo
             this.record_action({
                 act_type: "begin_brush",
