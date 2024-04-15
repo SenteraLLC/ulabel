@@ -237,6 +237,8 @@ export class ULabel {
                                 if (target_id === null) {
                                     // Set the active class to the class with the matching keybind
                                     ul.update_id_toolbox_display(i);
+                                    // Recolor the brush circle
+                                    ul.recolor_brush_circle();
                                 } else {
                                     // Set the annotation's class to the class with the matching keybind
                                     ul.handle_id_dialog_click(ul.state["last_move"], target_id, i);
@@ -1805,6 +1807,15 @@ export class ULabel {
         return get_gradient(annotation, color, get_annotation_confidence, $("#gradient-slider").val() / 100)
     }
 
+    get_active_class_color() {
+        const color = this.color_info[this.get_active_class_id()];
+        if (color === undefined) {
+            console.error(`get_active_class_color() encountered error while getting active class color.`)
+            return this.config.default_annotation_color
+        }
+        return color
+    }
+
     get_non_spatial_annotation_color(clf_payload, demo = false, subtask = null) {
         if (this.config["allow_soft_id"]) {
             // not currently supported;
@@ -2540,7 +2551,6 @@ export class ULabel {
             return;
         }
         // Check that this is a polygon
-        // Check that this is a polygon
         const active_annotation = this.subtasks[current_subtask]["annotations"]["access"][active_id];
         if (active_annotation["spatial_type"] !== "polygon") {
             return;
@@ -2625,7 +2635,7 @@ export class ULabel {
             "width": (this.config["brush_size"]*this.state["zoom_val"]) + "px",
             "height": (this.config["brush_size"]*this.state["zoom_val"]) + "px",
             "border-radius": (this.config["brush_size"]*this.state["zoom_val"])*2 + "px",
-            "background-color": this.subtasks[this.state["current_subtask"]]["state"]["is_in_erase_mode"] ? "red" : "white",
+            "background-color": this.subtasks[this.state["current_subtask"]]["state"]["is_in_erase_mode"] ? "red" : this.get_active_class_color(),
             "left": gmx + "px",
             "top": gmy + "px",
         });
@@ -2660,6 +2670,20 @@ export class ULabel {
             "pin": "center"
         };
         this.reposition_dialogs();
+    }
+
+    recolor_brush_circle() {
+        // Only allow when not in erase mode
+        if (
+            this.subtasks[this.state["current_subtask"]]["state"]["is_in_brush_mode"] &&
+            !this.subtasks[this.state["current_subtask"]]["state"]["is_in_erase_mode"]
+        ) {
+            // Get brush circle id
+            const brush_circle_id = "brush_circle";
+            $("#" + brush_circle_id).css({
+                "background-color": this.get_active_class_color(),
+            });
+        }
     }
 
     // Destroy the brush circle
@@ -5934,9 +5958,20 @@ export class ULabel {
         }
     }
 
+    // Grab the active class id from the toolbox
+    get_active_class_id() {
+        const pfx = "div#tb-id-app--" + this.state["current_subtask"];
+        const idarr = $(pfx + " a.tbid-opt.sel").attr("id").split("_");
+        return parseInt(idarr[idarr.length - 1]);
+    }
+
+    get_active_class_id_idx() {
+        const class_ids = this.subtasks[this.state["current_subtask"]]["class_ids"];
+        return class_ids.indexOf(this.get_active_class_id());
+    }
+
     set_id_dialog_payload_to_init(annid, pyld = null) {
         // TODO(3D)
-        let crst = this.state["current_subtask"];
         if (pyld != null) {
             this.subtasks[this.state["current_subtask"]]["state"]["id_payload"] = JSON.parse(JSON.stringify(pyld));
             this.update_id_toolbox_display();
@@ -5951,11 +5986,9 @@ export class ULabel {
             }
             // TODO currently assumes soft
             if (!this.config["allow_soft_id"]) {
-                let dist_prop = 1.0;
-                let class_ids = this.subtasks[crst]["class_ids"];
-                let pfx = "div#tb-id-app--" + this.state["current_subtask"];
-                let idarr = $(pfx + " a.tbid-opt.sel").attr("id").split("_");
-                let class_ind = class_ids.indexOf(parseInt(idarr[idarr.length - 1]));
+                const dist_prop = 1.0;
+                const class_ids = this.subtasks[this.state["current_subtask"]]["class_ids"];
+                const class_ind = this.get_active_class_id_idx();
                 // Recompute and render opaque pie slices
                 for (var i = 0; i < class_ids.length; i++) {
                     if (i === class_ind) {
@@ -6100,6 +6133,7 @@ export class ULabel {
         }
         this.redraw_annotation(actid);
         this.recolor_active_polygon_ender(actid);
+        this.recolor_brush_circle();
 
         // Explicit changes are undoable
         // First assignments are treated as though they were done all along
@@ -6138,6 +6172,7 @@ export class ULabel {
         this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["classification_payloads"] = JSON.parse(JSON.stringify(new_payload));
         this.redraw_annotation(actid);
         this.recolor_active_polygon_ender();
+        this.recolor_brush_circle();
         this.suggest_edits();
     }
 
