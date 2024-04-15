@@ -153,6 +153,8 @@ export class ULabel {
             ul.handle_mouse_down(mouse_event);
         });
 
+        document.addEventListener("auxclick", ul.handle_aux_click);
+
         // Detect and record mouseup
         $(window).mouseup(function (mouse_event) {
             ul.handle_mouse_up(mouse_event);
@@ -237,6 +239,8 @@ export class ULabel {
                                 if (target_id === null) {
                                     // Set the active class to the class with the matching keybind
                                     ul.update_id_toolbox_display(i);
+                                    // Recolor the brush circle
+                                    ul.recolor_brush_circle();
                                 } else {
                                     // Set the annotation's class to the class with the matching keybind
                                     ul.handle_id_dialog_click(ul.state["last_move"], target_id, i);
@@ -1002,7 +1006,7 @@ export class ULabel {
             "image_height": null,
             "demo_width": 120,
             "demo_height": 40,
-            "polygon_ender_size": 30,
+            "polygon_ender_size": 15,
             "edit_handle_size": 30,
             "brush_size": 60, // radius in pixels
 
@@ -1805,6 +1809,15 @@ export class ULabel {
         return get_gradient(annotation, color, get_annotation_confidence, $("#gradient-slider").val() / 100)
     }
 
+    get_active_class_color() {
+        const color = this.color_info[this.get_active_class_id()];
+        if (color === undefined) {
+            console.error(`get_active_class_color() encountered error while getting active class color.`)
+            return this.config.default_annotation_color
+        }
+        return color
+    }
+
     get_non_spatial_annotation_color(clf_payload, demo = false, subtask = null) {
         if (this.config["allow_soft_id"]) {
             // not currently supported;
@@ -2027,6 +2040,7 @@ export class ULabel {
         let n_iters = spatial_type === "polygon" ? spatial_payload.length : 1;
 
         // Draw all polygons/polylines
+        let layer_is_closed = false;
         for (let i = 0; i < n_iters; i++) {
             if (spatial_type === "polygon") {
                 active_spatial_payload = spatial_payload[i];
@@ -2043,7 +2057,8 @@ export class ULabel {
             }
 
             // If not in vanish mode and polygon is closed, fill it or draw a hole
-            if (!is_in_vanish_mode && spatial_type === "polygon" && GeometricUtils.is_polygon_closed(active_spatial_payload)) {
+            layer_is_closed = GeometricUtils.is_polygon_closed(active_spatial_payload);
+            if (!is_in_vanish_mode && spatial_type === "polygon" && layer_is_closed) {
                 if (annotation_object["spatial_payload_holes"][i]) {
                     ctx.globalCompositeOperation =  'destination-out';
                 } else {
@@ -2054,7 +2069,30 @@ export class ULabel {
                 // Reset globals
                 ctx.globalCompositeOperation = "source-over";
                 ctx.globalAlpha = 1.0;
-            }           
+            }
+            
+        }
+
+        if (
+            spatial_type === "polygon" && 
+            !layer_is_closed && 
+            this.subtasks[this.state["current_subtask"]]["state"]["is_in_progress"]
+        ) {
+            // Clear the lines that fall within the polygon ender
+            // Use the first point of the last layer
+            const ender_center_pt = spatial_payload.at(-1)[0];
+            ctx.globalCompositeOperation =  'destination-out';
+            ctx.beginPath();
+            ctx.arc(
+                ender_center_pt[0], // x
+                ender_center_pt[1], // y
+                this.config["polygon_ender_size"] / 2, // radius
+                0,          // start angle
+                2 * Math.PI // end angle
+            );
+            ctx.fill();
+            // Reset globals
+            ctx.globalCompositeOperation = "source-over";
         }
     }
 
@@ -2424,18 +2462,21 @@ export class ULabel {
             <span id="${ender_id}_inner" class="ender_inner"></span>
         </a>
         `;
+        const polygon_ender_size = this.config["polygon_ender_size"]*this.state["zoom_val"];
         $("#dialogs__" + this.state["current_subtask"]).append(ender_html);
         $("#" + ender_id).css({
-            "width": this.config["polygon_ender_size"] + "px",
-            "height": this.config["polygon_ender_size"] + "px",
-            "border-radius": this.config["polygon_ender_size"] / 2 + "px"
+            "width": polygon_ender_size + "px",
+            "height": polygon_ender_size + "px",
+            "border-radius": polygon_ender_size / 2 + "px",
+            // Get the color of the active class
+            "box-shadow": "0 0 0 2px " + this.get_annotation_color(this.subtasks[this.state["current_subtask"]]["annotations"]["access"][polygon_id]),
         });
         $("#" + ender_id + "_inner").css({
-            "width": this.config["polygon_ender_size"] / 5 + "px",
-            "height": this.config["polygon_ender_size"] / 5 + "px",
-            "border-radius": this.config["polygon_ender_size"] / 10 + "px",
-            "top": 2 * this.config["polygon_ender_size"] / 5 + "px",
-            "left": 2 * this.config["polygon_ender_size"] / 5 + "px"
+            "width": polygon_ender_size / 5 + "px",
+            "height": polygon_ender_size / 5 + "px",
+            "border-radius": polygon_ender_size / 10 + "px",
+            "top": 2 * polygon_ender_size / 5 + "px",
+            "left": 2 * polygon_ender_size / 5 + "px"
         });
 
         // Add this id to the list of dialogs with managed positions
@@ -2474,6 +2515,55 @@ export class ULabel {
         };
         this.reposition_dialogs();
     }
+
+    resize_active_polygon_ender() {
+        // Check if there is an active polygon annotation
+        const current_subtask = this.state["current_subtask"];
+        const active_id = this.subtasks[current_subtask]["state"]["active_id"];
+        if (active_id === null) {
+            return;
+        }
+        // Check that this is a polygon
+        const active_annotation = this.subtasks[current_subtask]["annotations"]["access"][active_id];
+        if (active_annotation["spatial_type"] !== "polygon") {
+            return;
+        }
+        // Get the ender and resize it with the current zoom
+        const ender_id = "ender_" + active_id;
+        const polygon_ender_size = this.config["polygon_ender_size"]*this.state["zoom_val"];
+        $("#" + ender_id).css({
+            "width": polygon_ender_size + "px",
+            "height": polygon_ender_size + "px",
+            "border-radius": polygon_ender_size / 2 + "px"
+        });
+        $("#" + ender_id + "_inner").css({
+            "width": polygon_ender_size / 5 + "px",
+            "height": polygon_ender_size / 5 + "px",
+            "border-radius": polygon_ender_size / 10 + "px",
+            "top": 2 * polygon_ender_size / 5 + "px",
+            "left": 2 * polygon_ender_size / 5 + "px"
+        });
+    }
+
+    recolor_active_polygon_ender() {
+        // Check if there is an active polygon annotation
+        const current_subtask = this.state["current_subtask"];
+        const active_id = this.subtasks[current_subtask]["state"]["active_id"];
+        if (active_id === null) {
+            return;
+        }
+        // Check that this is a polygon
+        const active_annotation = this.subtasks[current_subtask]["annotations"]["access"][active_id];
+        if (active_annotation["spatial_type"] !== "polygon") {
+            return;
+        }
+        // Get the ender and recolor it
+        const ender_id = "ender_" + active_id;
+        $("#" + ender_id).css({
+            "box-shadow": "0 0 0 2px " + this.get_annotation_color(active_annotation),
+        });
+    }
+
 
     toggle_brush_mode(mouse_event) {
         // Try and switch to polygon annotation if not already in it
@@ -2547,7 +2637,7 @@ export class ULabel {
             "width": (this.config["brush_size"]*this.state["zoom_val"]) + "px",
             "height": (this.config["brush_size"]*this.state["zoom_val"]) + "px",
             "border-radius": (this.config["brush_size"]*this.state["zoom_val"])*2 + "px",
-            "background-color": this.subtasks[this.state["current_subtask"]]["state"]["is_in_erase_mode"] ? "red" : "white",
+            "background-color": this.subtasks[this.state["current_subtask"]]["state"]["is_in_erase_mode"] ? "red" : this.get_active_class_color(),
             "left": gmx + "px",
             "top": gmy + "px",
         });
@@ -2582,6 +2672,24 @@ export class ULabel {
             "pin": "center"
         };
         this.reposition_dialogs();
+    }
+
+    recolor_brush_circle() {
+        // Only allow when not in erase mode
+        if (
+            this.subtasks[this.state["current_subtask"]]["state"]["is_in_brush_mode"] &&
+            !this.subtasks[this.state["current_subtask"]]["state"]["is_in_erase_mode"]
+        ) {
+            // Get brush circle id
+            const brush_circle_id = "brush_circle";
+            const active_id = this.subtasks[this.state["current_subtask"]]["state"]["active_id"];
+            $("#" + brush_circle_id).css({
+                // Use annotation id if available, else use active class color
+                "background-color": active_id !== null 
+                    ? this.get_annotation_color(this.subtasks[this.state["current_subtask"]]["annotations"]["access"][active_id])
+                    : this.get_active_class_color(),
+            });
+        }
     }
 
     // Destroy the brush circle
@@ -4545,6 +4653,8 @@ export class ULabel {
             // Update the id_payload
             current_subtask["state"]["id_payload"] = JSON.parse(JSON.stringify(current_subtask["annotations"]["access"][brush_cand_active_id]["classification_payloads"]));
             this.update_id_toolbox_display();
+            // Recolor the brush
+            this.recolor_brush_circle();
             // Record for potential undo/redo
             this.record_action({
                 act_type: "begin_brush",
@@ -5856,9 +5966,20 @@ export class ULabel {
         }
     }
 
+    // Grab the active class id from the toolbox
+    get_active_class_id() {
+        const pfx = "div#tb-id-app--" + this.state["current_subtask"];
+        const idarr = $(pfx + " a.tbid-opt.sel").attr("id").split("_");
+        return parseInt(idarr[idarr.length - 1]);
+    }
+
+    get_active_class_id_idx() {
+        const class_ids = this.subtasks[this.state["current_subtask"]]["class_ids"];
+        return class_ids.indexOf(this.get_active_class_id());
+    }
+
     set_id_dialog_payload_to_init(annid, pyld = null) {
         // TODO(3D)
-        let crst = this.state["current_subtask"];
         if (pyld != null) {
             this.subtasks[this.state["current_subtask"]]["state"]["id_payload"] = JSON.parse(JSON.stringify(pyld));
             this.update_id_toolbox_display();
@@ -5873,11 +5994,9 @@ export class ULabel {
             }
             // TODO currently assumes soft
             if (!this.config["allow_soft_id"]) {
-                let dist_prop = 1.0;
-                let class_ids = this.subtasks[crst]["class_ids"];
-                let pfx = "div#tb-id-app--" + this.state["current_subtask"];
-                let idarr = $(pfx + " a.tbid-opt.sel").attr("id").split("_");
-                let class_ind = class_ids.indexOf(parseInt(idarr[idarr.length - 1]));
+                const dist_prop = 1.0;
+                const class_ids = this.subtasks[this.state["current_subtask"]]["class_ids"];
+                const class_ind = this.get_active_class_id_idx();
                 // Recompute and render opaque pie slices
                 for (var i = 0; i < class_ids.length; i++) {
                     if (i === class_ind) {
@@ -6021,6 +6140,8 @@ export class ULabel {
             this.suggest_edits();
         }
         this.redraw_annotation(actid);
+        this.recolor_active_polygon_ender(actid);
+        this.recolor_brush_circle();
 
         // Explicit changes are undoable
         // First assignments are treated as though they were done all along
@@ -6058,6 +6179,8 @@ export class ULabel {
         // TODO(3d)
         this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["classification_payloads"] = JSON.parse(JSON.stringify(new_payload));
         this.redraw_annotation(actid);
+        this.recolor_active_polygon_ender();
+        this.recolor_brush_circle();
         this.suggest_edits();
     }
 
@@ -6185,6 +6308,11 @@ export class ULabel {
         if (mouse_event.button === this.drag_state["release_button"]) {
             this.end_drag(mouse_event);
         }
+    }
+
+    handle_aux_click(mouse_event) {
+        // Prevent default
+        mouse_event.preventDefault();
     }
 
     // Start dragging to pan around image
@@ -6360,6 +6488,9 @@ export class ULabel {
 
         // Apply new size to overlay if overlay exists
         this.filter_distance_overlay?.resize_canvas(new_width, new_height)
+
+        // Apply new size to an active polygon ender
+        this.resize_active_polygon_ender();
 
         // Compute and apply new position
         let new_left, new_top;
