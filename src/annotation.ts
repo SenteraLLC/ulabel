@@ -173,6 +173,7 @@ export class ULabelAnnotation {
         if (ret.ensure_compatible_spatial_payloads()) {
             return ret;
         }
+        // Return null if the spatial payload is not compatible
         return null;
     } 
 }
