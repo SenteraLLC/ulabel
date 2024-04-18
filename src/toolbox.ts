@@ -1,5 +1,5 @@
 import { AnnotationClassDistanceData, FilterDistanceConfig, RecolorActiveConfig, ULabel } from "..";
-import { ULabelAnnotation } from "./annotation";
+import { ULabelAnnotation, NONSPATIAL_MODES } from "./annotation";
 import { ULabelSubtask } from "./subtask";
 import { 
     get_annotation_confidence, 
@@ -2419,11 +2419,16 @@ export class SubmitButtons extends ToolboxItem {
 
                     // Add all of the annotations in that subtask
                     for (let i = 0; i < ulabel.subtasks[stkey]["annotations"]["ordering"].length; i++) {
-                        submit_payload["annotations"][stkey].push(
-                            ulabel.subtasks[stkey]["annotations"]["access"][
-                            ulabel.subtasks[stkey]["annotations"]["ordering"][i]
-                            ]
-                        );
+                        // Skip spatial annotations that have an empty spatial payload
+                        let annotation = ulabel.subtasks[stkey]["annotations"]["access"][ulabel.subtasks[stkey]["annotations"]["ordering"][i]];
+                        if (
+                            NONSPATIAL_MODES.includes(annotation.spatial_type) ||
+                            annotation.spatial_payload.length === 0
+                        ) {
+                            continue;
+                        }
+
+                        submit_payload["annotations"][stkey].push(annotation);
                     }
                 }
 
