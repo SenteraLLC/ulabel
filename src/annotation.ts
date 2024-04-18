@@ -156,10 +156,10 @@ export class ULabelAnnotation {
             for (let idx of indices_to_remove) {
                 this.spatial_payload.splice(idx, 1);
             }
-
-            // Return true if we successfully made it here
-            return true;
         }
+
+        // Return true if we successfully made it here
+        return true;
     }
 
     public static from_json(json_block: any): ULabelAnnotation {

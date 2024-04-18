@@ -6,6 +6,9 @@ All notable changes to this project will be documented here.
 
 Nothing yet.
 
+## [0.10.6] - April 18th, 2024
+- Fix bug introduced in 0.10.5 that caused non-polygon annotations not to load. 
+
 ## [0.10.5] - April 18th, 2024
 - Fix bug where annotations could be saved with empty spatial payloads, which would cause an error when loading the annotations. 
 
