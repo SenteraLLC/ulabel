@@ -10,6 +10,8 @@ import { GeometricUtils } from "./geometric_utils";
 // Modes used to draw an area in the which to delete all annotations
 export const DELETE_MODES = ["delete_polygon", "delete_bbox"]
 export const DELETE_CLASS_ID = -1;
+export const MODES_3D = ["global", "bbox3"];
+export const NONSPATIAL_MODES = ["whole-image", "global"];
 
 export class ULabelAnnotation {
     constructor(
@@ -93,6 +95,11 @@ export class ULabelAnnotation {
     // ensure polygon spatial_payloads are updated to support complex polygons
     public ensure_compatible_spatial_payloads() {
         if (this.spatial_type === "polygon") {
+            // Catch empty spatial payloads
+            if (this.spatial_payload === undefined || this.spatial_payload.length === 0) {
+                console.warn(`Empty spatial payload for polygon id ${this.id}. Skipping annotation.`);
+                return false;
+            }
             // Check that spatial_payload[0][0] is an array and not a number
             if (!Array.isArray(this.spatial_payload[0][0]) && typeof this.spatial_payload[0][0] === "number") {
                 this.spatial_payload = [this.spatial_payload];
@@ -149,6 +156,9 @@ export class ULabelAnnotation {
             for (let idx of indices_to_remove) {
                 this.spatial_payload.splice(idx, 1);
             }
+
+            // Return true if we successfully made it here
+            return true;
         }
     }
 
@@ -160,8 +170,11 @@ export class ULabelAnnotation {
             ret.is_new = json_block["new"]
         }
         // Convert deprecated spatial payloads if necessary
-        ret.ensure_compatible_spatial_payloads();
-        return ret;
+        if (ret.ensure_compatible_spatial_payloads()) {
+            return ret;
+        }
+        // Return null if the spatial payload is not compatible
+        return null;
     } 
 }
 

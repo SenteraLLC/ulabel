@@ -2,7 +2,13 @@
 Uncertain Labeling Tool
 Sentera Inc.
 */
-import { ULabelAnnotation, DELETE_CLASS_ID, DELETE_MODES } from '../build/annotation';
+import { 
+    ULabelAnnotation, 
+    DELETE_CLASS_ID, 
+    DELETE_MODES,
+    NONSPATIAL_MODES,
+    MODES_3D,
+} from '../build/annotation';
 import { ULabelSubtask } from '../build/subtask';
 import { GeometricUtils } from '../build/geometric_utils';
 import { Configuration, AllowedToolboxItem } from '../build/configuration';
@@ -40,8 +46,7 @@ jQuery.fn.outer_html = function () {
     return jQuery('<div />').append(this.eq(0).clone()).html();
 };
 
-const MODES_3D = ["global", "bbox3"];
-const NONSPATIAL_MODES = ["whole-image", "global"];
+
 
 export class ULabel {
 
@@ -648,6 +653,9 @@ export class ULabel {
             for (var i = 0; i < subtask["resume_from"].length; i++) {
                 // Get copy of annotation to import for modification before incorporation
                 let cand = ULabelAnnotation.from_json(JSON.parse(JSON.stringify(subtask["resume_from"][i])));
+                if (cand === null) {
+                    continue;
+                }
 
                 // Mark as not new
                 cand["new"] = false;

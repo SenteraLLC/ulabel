@@ -6,6 +6,9 @@ All notable changes to this project will be documented here.
 
 Nothing yet.
 
+## [0.10.5] - April 18th, 2024
+- Fix bug where annotations could be saved with empty spatial payloads, which would cause an error when loading the annotations. 
+
 ## [0.10.4] - April 15th, 2024
 - Change polygon ender icon to be smaller, partially transparent, and scaled with zoom.
 - Color polygon ender and the brush circle based on the active class color.
