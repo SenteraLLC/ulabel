@@ -6,6 +6,9 @@ All notable changes to this project will be documented here.
 
 Nothing yet.
 
+## [0.10.7] - April 29th, 2024
+- Enable the `"change_zoom_keybind"` to function even when the `ZoomPanToolboxItem` isn't present.
+
 ## [0.10.6] - April 18th, 2024
 - Fix bug introduced in 0.10.5 that caused non-polygon annotations not to load. 
 
