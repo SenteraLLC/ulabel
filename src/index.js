@@ -227,6 +227,12 @@ export class ULabel {
                 case ul.config.decrease_brush_size_keybind:
                     ul.change_brush_size(1/1.1);
                     break;
+                case ul.config.change_zoom_keybind.toLowerCase():
+                    ul.show_initial_crop();
+                    break;
+                case ul.config.change_zoom_keybind.toUpperCase():
+                    ul.show_whole_image();
+                    break;
                 default:
                     if (!DELETE_MODES.includes(current_subtask.state.spatial_type)) {
                         // Check for class keybinds
