@@ -566,7 +566,7 @@ export class BrushToolboxItem extends ToolboxItem {
     }
 
     private add_event_listeners() {
-        $(document).on("click", ".brush-button", (event) => {
+        $(document).on("click.ulabel", ".brush-button", (event) => {
             // Get the current subtask
             const current_subtask_key = this.ulabel.state["current_subtask"];
             const current_subtask = this.ulabel.subtasks[current_subtask_key];
@@ -818,7 +818,7 @@ export class ZoomPanToolboxItem extends ToolboxItem {
     private add_event_listeners() {
         const frames_exist = this.ulabel.config["image_data"].frames.length > 1
 
-        $(document).on("click", ".ulabel-zoom-button", (event) => {
+        $(document).on("click.ulabel", ".ulabel-zoom-button", (event) => {
 
             if ($(event.currentTarget).hasClass("ulabel-zoom-out")) {
                 this.ulabel.state.zoom_val /= 1.1
@@ -833,7 +833,7 @@ export class ZoomPanToolboxItem extends ToolboxItem {
             this.ulabel.filter_distance_overlay?.draw_overlay()
         })
 
-        $(document).on("click", ".ulabel-pan", (event) => {
+        $(document).on("click.ulabel", ".ulabel-pan", (event) => {
             const annbox = $("#" + this.ulabel.config.annbox_id);
             if ($(event.currentTarget).hasClass("ulabel-pan-up")) {
                 annbox.scrollTop(annbox.scrollTop() - 20);
@@ -851,7 +851,7 @@ export class ZoomPanToolboxItem extends ToolboxItem {
 
         // Add diffrent keypress events if frames exist
         if (frames_exist) {
-            $(document).on("keypress", (event) => {
+            $(document).on("keypress.ulabel", (event) => {
                 event.preventDefault()
                 switch (event.key) {
                     case "ArrowRight":
@@ -865,7 +865,7 @@ export class ZoomPanToolboxItem extends ToolboxItem {
             })
         }
         else {
-            $(document).on("keydown", (event) => {
+            $(document).on("keydown.ulabel", (event) => {
                 const annbox = $("#" + this.ulabel.config.annbox_id);
                 switch (event.key) {
                     case "ArrowLeft":
@@ -888,15 +888,15 @@ export class ZoomPanToolboxItem extends ToolboxItem {
             })
         }
 
-        $(document).on("click", "#recenter-button", () => {
+        $(document).on("click.ulabel", "#recenter-button", () => {
             this.ulabel.show_initial_crop();
         });
 
-        $(document).on("click", "#recenter-whole-image-button", () => {
+        $(document).on("click.ulabel", "#recenter-whole-image-button", () => {
             this.ulabel.show_whole_image();
         });
 
-        $(document).on("keypress", (e) => {
+        $(document).on("keypress.ulabel", (e) => {
             if (e.key == this.ulabel.config.change_zoom_keybind.toLowerCase()) {
                 document.getElementById("recenter-button").click()
             }
@@ -1258,7 +1258,7 @@ export class AnnotationResizeItem extends ToolboxItem {
     }
 
     private add_event_listeners() {
-        $(document).on("click", ".annotation-resize-button", (event) => {
+        $(document).on("click.ulabel", ".annotation-resize-button", (event) => {
             // Get the current subtask
             const current_subtask_key = this.ulabel.state["current_subtask"];
             const current_subtask = this.ulabel.subtasks[current_subtask_key];
@@ -1275,7 +1275,7 @@ export class AnnotationResizeItem extends ToolboxItem {
             this.ulabel.redraw_all_annotations(null, null, false);
         })
 
-        $(document).on("keydown", (event) => {
+        $(document).on("keydown.ulabel", (event) => {
             // Get the current subtask
             const current_subtask_key = this.ulabel.state["current_subtask"];
             const current_subtask = this.ulabel.subtasks[current_subtask_key];
@@ -1713,7 +1713,7 @@ export class RecolorActiveItem extends ToolboxItem {
 
     private add_event_listeners(): void {
         // Listener for the static color change buttons
-        $(document).on("click", ".color-change-btn", (event) => {
+        $(document).on("click.ulabel", ".color-change-btn", (event) => {
             // Grab the color of what button was clicked
             const color: string = event.target.id.slice(13)
 
@@ -1729,7 +1729,7 @@ export class RecolorActiveItem extends ToolboxItem {
         })
 
         // Listener for the color picker
-        $(document).on("input", "input.color-change-picker", (event) => {
+        $(document).on("input.ulabel", "input.color-change-picker", (event) => {
             // Get the selected color from the event
             let color: string = event.currentTarget.value
 
@@ -1748,7 +1748,7 @@ export class RecolorActiveItem extends ToolboxItem {
         })
 
         // Event listener for the gradient toggle
-        $(document).on("input", "#gradient-toggle", (event) => {
+        $(document).on("input.ulabel", "#gradient-toggle", (event) => {
             // Redraw all annotations, not just those in the active subtask because all subtasks can be effected by the gradient
             this.redraw(0)
 
@@ -1757,7 +1757,7 @@ export class RecolorActiveItem extends ToolboxItem {
         })
 
         // Event listener for the gradient max value slider
-        $(document).on("input", "#gradient-slider", (event) => {
+        $(document).on("input.ulabel", "#gradient-slider", (event) => {
             // Update the slider's label so the user knows exactly which value is selected
             $("div.gradient-slider-value-display").text(event.currentTarget.value + "%");
 
@@ -2141,10 +2141,10 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
 
     private add_event_listeners() {
         // Whenever the options legend is clicked, toggle displaying the options
-        $(document).on("click", "fieldset.filter-row-distance-options > legend", () => this.toggleCollapsedOptions())
+        $(document).on("click.ulabel", "fieldset.filter-row-distance-options > legend", () => this.toggleCollapsedOptions())
 
         // Whenever the multi-class filtering checkbox is clicked, switch the displayed filter mode
-        $(document).on("click", "#filter-slider-distance-multi-checkbox", () => {
+        $(document).on("click.ulabel", "#filter-slider-distance-multi-checkbox", () => {
             // Toggle the multi-class state
             this.multi_class_mode = !this.multi_class_mode
 
@@ -2157,7 +2157,7 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
             filter_points_distance_from_line(this.ulabel)
         })
 
-        $(document).on("change", "#filter-slider-distance-toggle-overlay-checkbox", (event) => {
+        $(document).on("change.ulabel", "#filter-slider-distance-toggle-overlay-checkbox", (event) => {
             // Update whether or not the overlay is allowed to be drawn
             this.overlay.update_display_overlay(event.currentTarget.checked)
 
@@ -2168,7 +2168,7 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
             window.localStorage.setItem("filterDistanceShowOverlay", event.currentTarget.checked.toString())
         })
 
-        $(document).on("keypress", (event) => {
+        $(document).on("keypress.ulabel", (event) => {
             if (event.key !== this.toggle_overlay_keybind) return
 
             // Grab the show overlay checkbox and click it
@@ -2483,7 +2483,7 @@ export class SubmitButtons extends ToolboxItem {
     }
 
     add_event_listeners(): void {
-        $(document).on("keypress", (event) => {
+        $(document).on("keypress.ulabel", (event) => {
             const ctrl = event.ctrlKey || event.metaKey
             if (ctrl &&
                 (

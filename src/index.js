@@ -132,8 +132,32 @@ export class ULabel {
                 return null;
         }
     }
+     
+    /**
+     * Removes every ulabel event listener from the page.
+     */
+    remove_listeners() {
+        // Remove jquery event listeners
+        $(document).off(".ulabel") // Unbind all events in the ulabel namespace from document
+        $(window).off(".ulabel") // Unbind all events in the ulabel namespace from window
+        $(".id_dialog").off(".ulabel") // Unbind all events in the ulabel namespace from .id_dialog
+        $("#" + this.config["annbox_id"]) // Unbind all events in the ulabel namespace from the annotation box
+
+        // Remove vanilla js eventlisteners through an abort
+        this?.abort_controller.abort()
+
+        // Go through each resize observer and disconnect them
+        if (this.resize_observers != null) {
+            this.resize_observers.forEach(observer => {
+                console.log(observer)
+                observer.disconnect()
+            })
+        }
+    }
 
     static create_listeners(ul) {
+        // Grab the abort controller signal, used to remove vanilla js event listeners
+        const signal = ul.abort_controller.signal
 
         // ================= Mouse Events in the ID Dialog ================= 
 
@@ -141,7 +165,7 @@ export class ULabel {
 
         // Hover interactions
 
-        iddg.on("mousemove", function (mouse_event) {
+        iddg.on("mousemove.ulabel", function (mouse_event) {
             let crst = ul.state["current_subtask"];
             if (!ul.subtasks[crst]["state"]["idd_thumbnail"]) {
                 ul.handle_id_dialog_hover(mouse_event);
@@ -158,14 +182,14 @@ export class ULabel {
             ul.handle_mouse_down(mouse_event);
         });
 
-        document.addEventListener("auxclick", ul.handle_aux_click);
+        document.addEventListener("auxclick", ul.handle_aux_click, {"signal": signal});
 
         // Detect and record mouseup
         $(window).mouseup(function (mouse_event) {
             ul.handle_mouse_up(mouse_event);
         });
 
-        $(window).on("click", (e) => {
+        $(window).on("click.ulabel", (e) => {
             if (e.shiftKey) {
                 e.preventDefault();
             }
@@ -176,7 +200,7 @@ export class ULabel {
             ul.handle_mouse_move(mouse_event);
         });
 
-        $(document).on("keypress", (e) => {
+        $(document).on("keypress.ulabel", (e) => {
             // Check for the correct keypress
             // Grab current subtask
             const current_subtask = ul.subtasks[ul.state["current_subtask"]]
@@ -261,7 +285,8 @@ export class ULabel {
         })
 
         // Detection ctrl+scroll
-        document.getElementById(ul.config["annbox_id"]).onwheel = function (wheel_event) {
+        document.getElementById(ul.config["annbox_id"]).addEventListener("wheel", function (wheel_event) {
+            console.log("Wheel event!")
             // Prevent scroll-zoom
             wheel_event.preventDefault();
             let fms = ul.config["image_data"].frames.length > 1;
@@ -290,18 +315,33 @@ export class ULabel {
                 // Only try to update the overlay if it exists
                 ul.filter_distance_overlay?.draw_overlay()
             }
-        };
+        }, {"signal": signal});
 
-        // TODO better understand which browsers support this (new Chrome does)
-        new ResizeObserver(function () {
+        // Create a resize observer to reposition dialogs
+        let dialog_resize_observer = new ResizeObserver(function () {
             ul.reposition_dialogs();
-        }).observe(document.getElementById(ul.config["imwrap_id"]));
-        new ResizeObserver(function () {
+        })
+
+        // Observe the changes on the imwrap_id element
+        dialog_resize_observer.observe(document.getElementById(ul.config["imwrap_id"]))
+
+        // Store a reference
+        ul.resize_observers.push(dialog_resize_observer)
+
+        // Create a resize observer to handle toolbox overflow
+        let tb_overflow_resize_observer = new ResizeObserver(function () {
             ul.handle_toolbox_overflow();
-        }).observe(document.getElementById(ul.config["container_id"]));
+            console.log("tb_overflow_resize_observer is observing")
+        })
+
+        // Observe the changes on the ulabel container
+        tb_overflow_resize_observer.observe(document.getElementById(ul.config["container_id"]))
+
+        // Store a reference
+        ul.resize_observers.push(tb_overflow_resize_observer)
 
         // Listener for soft id toolbox buttons
-        $(document).on("click", "#" + ul.config["toolbox_id"] + ' a.tbid-opt', (e) => {
+        $(document).on("click.ulabel", "#" + ul.config["toolbox_id"] + ' a.tbid-opt', (e) => {
             let tgt_jq = $(e.currentTarget);
             let pfx = "div#tb-id-app--" + ul.state["current_subtask"];
             let crst = ul.state["current_subtask"];
@@ -317,7 +357,7 @@ export class ULabel {
             }
         });
 
-        $(document).on("click", "a.tb-st-switch[href]", (e) => {
+        $(document).on("click.ulabel", "a.tb-st-switch[href]", (e) => {
             let switch_to = $(e.target).attr("id").split("--")[1];
 
             // Ignore if in the middle of annotation
@@ -329,7 +369,7 @@ export class ULabel {
         });
 
         // Keybind to switch active subtask
-        $(document).on("keypress", (e) => {
+        $(document).on("keypress.ulabel", (e) => {
 
             // Ignore if in the middle of annotation
             if (ul.subtasks[ul.state["current_subtask"]]["state"]["is_in_progress"]) {
@@ -362,42 +402,41 @@ export class ULabel {
             }
         })
 
-        $(document).on("input", "input.frame_input", () => {
+        $(document).on("input.ulabel", "input.frame_input", () => {
             ul.update_frame();
         });
 
-
-        $(document).on("input", "span.tb-st-range input", () => {
+        $(document).on("input.ulabel", "span.tb-st-range input", () => {
             ul.readjust_subtask_opacities();
         });
 
-        $(document).on("click", "div.fad_row.add a.add-glob-button", () => {
+        $(document).on("click.ulabel", "div.fad_row.add a.add-glob-button", () => {
             ul.create_nonspatial_annotation();
         });
-        $(document).on("focus", "textarea.nonspatial_note", () => {
+        $(document).on("focus.ulabel", "textarea.nonspatial_note", () => {
             $("div.frame_annotation_dialog.active").addClass("permopen");
         });
-        $(document).on("focusout", "textarea.nonspatial_note", () => {
+        $(document).on("focusout.ulabel", "textarea.nonspatial_note", () => {
             $("div.frame_annotation_dialog.permopen").removeClass("permopen");
         });
-        $(document).on("input", "textarea.nonspatial_note", (e) => {
+        $(document).on("input.ulabel", "textarea.nonspatial_note", (e) => {
             // Update annotation's text field
             ul.subtasks[ul.state["current_subtask"]]["annotations"]["access"][e.target.id.substring("note__".length)]["text_payload"] = e.target.value;
         });
-        $(document).on("click", "a.fad_button.delete", (e) => {
+        $(document).on("click.ulabel", "a.fad_button.delete", (e) => {
             ul.delete_annotation(e.target.id.substring("delete__".length));
         });
-        $(document).on("click", "a.fad_button.reclf", (e) => {
+        $(document).on("click.ulabel", "a.fad_button.reclf", (e) => {
             // Show idd
             ul.show_id_dialog(e.pageX, e.pageY, e.target.id.substring("reclf__".length), false, true);
         });
 
-        //Whenever the mouse makes the dialogs show up, update the displayed annotation confidence.
-        $(document).on("mouseenter", "div.global_edit_suggestion", () => {
-            //Grab the currently active annotation
+        // Whenever the mouse makes the dialogs show up, update the displayed annotation confidence.
+        $(document).on("mouseenter.ulabel", "div.global_edit_suggestion", () => {
+            // Grab the currently active annotation
             let active_annotation = ul.subtasks[ul.state["current_subtask"]]["active_annotation"]
 
-            //Loop through the classification payload to get the active annotation's confidence
+            // Loop through the classification payload to get the active annotation's confidence
             let confidence = 0;
             for (let idx in ul.subtasks[ul.state["current_subtask"]].annotations.access[active_annotation].classification_payloads) {
                 let loop_confidence = ul.subtasks[ul.state["current_subtask"]].annotations.access[active_annotation].classification_payloads[idx].confidence
@@ -406,21 +445,21 @@ export class ULabel {
                 }
             }
 
-            //Update the display dialog with the annotation's confidence
+            // Update the display dialog with the annotation's confidence
             $(".annotation-confidence-value").text(confidence)
         })
-        $(document).on("mouseenter", "div.fad_annotation_rows div.fad_row", (e) => {
+        $(document).on("mouseenter.ulabel", "div.fad_annotation_rows div.fad_row", (e) => {
             // Show thumbnail for idd
             ul.suggest_edits(null, $(e.currentTarget).attr("id").substring("row__".length));
         });
-        $(document).on("mouseleave", "div.fad_annotation_rows div.fad_row", () => {
+        $(document).on("mouseleave.ulabel", "div.fad_annotation_rows div.fad_row", () => {
             // Show thumbnail for idd
             if (ul.subtasks[ul.state["current_subtask"]]["state"]["idd_visible"] && !ul.subtasks[ul.state["current_subtask"]]["state"]["idd_thumbnail"]) {
                 return;
             }
             ul.suggest_edits(null);
         });
-        $(document).on("keypress", (e) => {
+        $(document).on("keypress.ulabel", (e) => {
 
             // Check the key pressed against the delete annotation keybind in the config
             if (e.key === ul.config.delete_annotation_keybind) {
@@ -438,7 +477,7 @@ export class ULabel {
         })
 
         // Listener for id_dialog click interactions
-        $(document).on("click", "#" + ul.config["container_id"] + " a.id-dialog-clickable-indicator", (e) => {
+        $(document).on("click.ulabel", "#" + ul.config["container_id"] + " a.id-dialog-clickable-indicator", (e) => {
             let crst = ul.state["current_subtask"];
             if (!ul.subtasks[crst]["state"]["idd_thumbnail"]) {
                 ul.handle_id_dialog_click(e);
@@ -447,7 +486,7 @@ export class ULabel {
                 // It's always covered up as a thumbnail. See below
             }
         });
-        $(document).on("click", ".global_edit_suggestion a.reid_suggestion", (e) => {
+        $(document).on("click.ulabel", ".global_edit_suggestion a.reid_suggestion", (e) => {
             let crst = ul.state["current_subtask"];
             let annid = ul.subtasks[crst]["state"]["idd_associated_annotation"];
             ul.hide_global_edit_suggestion();
@@ -459,13 +498,13 @@ export class ULabel {
             );
         });
 
-        $(document).on("click", "#" + ul.config["annbox_id"] + " .delete_suggestion", () => {
+        $(document).on("click.ulabel", "#" + ul.config["annbox_id"] + " .delete_suggestion", () => {
             let crst = ul.state["current_subtask"];
             ul.delete_annotation(ul.subtasks[crst]["state"]["move_candidate"]["annid"]);
         })
 
         // Button to save annotations
-        $(document).on("click", "#" + ul.config["toolbox_id"] + " a.night-button", function () {
+        $(document).on("click.ulabel", "#" + ul.config["toolbox_id"] + " a.night-button", function () {
             if ($("#" + ul.config["container_id"]).hasClass("ulabel-night")) {
                 $("#" + ul.config["container_id"]).removeClass("ulabel-night");
                 // Destroy any night cookie
@@ -517,7 +556,7 @@ export class ULabel {
                         break;
                 }
             }
-        });
+        }, {"signal": signal});
 
         window.addEventListener("beforeunload", function (e) {
             var confirmationMessage = '';
@@ -526,7 +565,7 @@ export class ULabel {
                 (e || window.event).returnValue = confirmationMessage; //Gecko + IE
                 return confirmationMessage; //Gecko + Webkit, Safari, Chrome etc.
             }
-        });
+        }, {"signal": signal});
     }
 
     static process_allowed_modes(ul, subtask_key, subtask) {
@@ -1067,6 +1106,12 @@ export class ULabel {
             "demo_canvas_context": null,
             "edited": false
         };
+
+        // Create an abort controller so it's possible to remove event listeners
+        this.abort_controller = new AbortController()
+
+        // Create a place on ulabel to store resize observer objects
+        this.resize_observers = []
 
         // Populate these in an external "static" function
         this.subtasks = {};
