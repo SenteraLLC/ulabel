@@ -9,6 +9,7 @@ Nothing yet.
 ## [0.10.7] - April 29th, 2024
 - Enable the `"change_zoom_keybind"` to function even when the `ZoomPanToolboxItem` isn't present.
 - Fix bug where using "`set_annotations`" would cause some loaded annotations to not generate edit dialogs.
+- Fix bug where clicking the `Annotation ID` toolbox item would not update the brush color.
 
 ## [0.10.6] - April 18th, 2024
 - Fix bug introduced in 0.10.5 that caused non-polygon annotations not to load. 
