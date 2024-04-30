@@ -759,9 +759,12 @@ export class ULabel {
                         ul.verify_all_polygon_complex_layers(cand["id"]);
                         // Clear action stream, since the above action should not be undoable
                         ul.remove_recorded_events_for_annotation(cand["id"]);
-                        // update containing box
-                        ul.rebuild_containing_box(cand["id"]);
                     }
+                }
+
+                // Update the containing box for all spatial types
+                if (!NONSPATIAL_MODES.includes(cand["spatial_type"])) {
+                    ul.rebuild_containing_box(cand["id"], false, subtask_key);
                 }
             }
         }
