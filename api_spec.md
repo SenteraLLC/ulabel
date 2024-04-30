@@ -392,6 +392,10 @@ Display utilities are provided for a constructed `ULabel` object.
 
 *(bool) => void* -- Allows js script implementing the ULabel class to set saved status, e.g., during callback.
 
+### `remove_listeners()`
+
+*() => void* -- Deletes all ULabel event listeners from the page.
+
 ## Generic Callbacks
 
 Callbacks can be provided by calling `.on(fn, callback)` on a `ULabel` object.
