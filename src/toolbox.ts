@@ -1587,7 +1587,7 @@ export class RecolorActiveItem extends ToolboxItem {
         // Re-add the event listener for changing the opacity on hover
         // Set that = this because this references the element inside the event listener instead of the toolbox item
         let that = this
-        $(".id_dialog").on("mousemove", function (mouse_event) {
+        $(".id_dialog").on("mousemove.ulabel", function (mouse_event) {
             if (!that.ulabel.subtasks[current_subtask_key].state.idd_thumbnail) {
                 that.ulabel.handle_id_dialog_hover(mouse_event);
             }
@@ -2388,7 +2388,7 @@ export class SubmitButtons extends ToolboxItem {
         for (let idx in this.submit_buttons) {
 
             // Create a unique event listener for each submit button in the submit buttons array.
-            $(document).on("click", "#" + this.submit_buttons[idx].name.replaceLowerConcat(" ", "-"), async (e) => {
+            $(document).on("click.ulabel", "#" + this.submit_buttons[idx].name.replaceLowerConcat(" ", "-"), async (e) => {
                 // Grab the button
                 const button: HTMLButtonElement = <HTMLButtonElement> document.getElementById(this.submit_buttons[idx].name.replaceLowerConcat(" ", "-"));
                 
