@@ -286,7 +286,6 @@ export class ULabel {
 
         // Detection ctrl+scroll
         document.getElementById(ul.config["annbox_id"]).addEventListener("wheel", function (wheel_event) {
-            console.log("Wheel event!")
             // Prevent scroll-zoom
             wheel_event.preventDefault();
             let fms = ul.config["image_data"].frames.length > 1;
@@ -331,7 +330,6 @@ export class ULabel {
         // Create a resize observer to handle toolbox overflow
         let tb_overflow_resize_observer = new ResizeObserver(function () {
             ul.handle_toolbox_overflow();
-            console.log("tb_overflow_resize_observer is observing")
         })
 
         // Observe the changes on the ulabel container
