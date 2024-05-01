@@ -240,7 +240,7 @@ export class ULabel {
                             const class_def = current_subtask.class_defs[i];
                             if (class_def.keybind !== null && e.key === class_def.keybind) {
                                 // Click the class button
-                                $(`#tb-id-app--${ul.state["current_subtask"]} a.tbid-opt`).eq(i).click();                            
+                                $(`#tb-id-app--${ul.state["current_subtask"]} a.tbid-opt`).eq(i).trigger("click");                            
                                 return;
                             }
                         }
@@ -294,8 +294,8 @@ export class ULabel {
         $(document).on("click", "#" + ul.config["toolbox_id"] + ' a.tbid-opt', (e) => {
             let tgt_jq = $(e.currentTarget);
             let pfx = "div#tb-id-app--" + ul.state["current_subtask"];
-            let subtask_key = ul.state["current_subtask"];
-            let current_subtask = ul.subtasks[subtask_key];
+            const subtask_key = ul.state["current_subtask"];
+            const current_subtask = ul.subtasks[subtask_key];
             if (tgt_jq.attr("href") === "#") {
                 $(pfx + " a.tbid-opt.sel").attr("href", "#");
                 $(pfx + " a.tbid-opt.sel").removeClass("sel");
