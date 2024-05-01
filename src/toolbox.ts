@@ -323,7 +323,7 @@ export class ModeSelectionToolboxItem extends ToolboxItem {
         this.add_styles()
 
         // Buttons to change annotation mode
-        $(document).on("click", "a.md-btn", (e) => {
+        $(document).on("click.ulabel", "a.md-btn", (e) => {
             
             // Grab the current target and the current subtask
             let target_jq = $(e.currentTarget);
@@ -363,7 +363,7 @@ export class ModeSelectionToolboxItem extends ToolboxItem {
             ulabel.toggle_delete_class_id_in_toolbox();
         });
 
-        $(document).on("keypress", (e) => {
+        $(document).on("keypress.ulabel", (e) => {
 
             // If creation of a new annotation is in progress, don't change the mode
             let current_subtask = ulabel.state["current_subtask"];
