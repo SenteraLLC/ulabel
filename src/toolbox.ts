@@ -570,8 +570,6 @@ export class BrushToolboxItem extends ToolboxItem {
             // Get the current subtask
             const current_subtask_key = this.ulabel.state["current_subtask"];
             const current_subtask = this.ulabel.subtasks[current_subtask_key];
-            const is_in_brush_mode = current_subtask.state["is_in_brush_mode"];
-            const is_in_erase_mode = current_subtask.state["is_in_erase_mode"];
 
             // Get the clicked button
             const button = $(event.currentTarget)
@@ -895,15 +893,6 @@ export class ZoomPanToolboxItem extends ToolboxItem {
         $(document).on("click", "#recenter-whole-image-button", () => {
             this.ulabel.show_whole_image();
         });
-
-        $(document).on("keypress", (e) => {
-            if (e.key == this.ulabel.config.change_zoom_keybind.toLowerCase()) {
-                document.getElementById("recenter-button").click()
-            }
-            if (e.key == this.ulabel.config.change_zoom_keybind.toUpperCase()) {
-                document.getElementById("recenter-whole-image-button").click()
-            }
-        })
     }
 
     private set_frame_range(ulabel) {
@@ -1009,7 +998,7 @@ export class AnnotationIDToolboxItem extends ToolboxItem {
         head.appendChild(style);
     }
 
-    private set_instructions(ulabel) {
+    private set_instructions(ulabel: ULabel) {
         this.instructions = "";
         if (ulabel.config["instructions_url"] != null) {
             this.instructions = `
