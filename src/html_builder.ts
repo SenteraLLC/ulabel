@@ -611,14 +611,14 @@ export class SliderHandler {
         this.add_styles()
 
         /* Add Event Listeners for this component */
-        $(document).on("input", `#${this.id}`, (event) => {
+        $(document).on("input.ulabel", `#${this.id}`, (event) => {
             this.updateLabel()
             this.slider_event(event.currentTarget.valueAsNumber)
         })
 
-        $(document).on("click", `#${this.id}-inc-button`, () => this.incrementSlider())
+        $(document).on("click.ulabel", `#${this.id}-inc-button`, () => this.incrementSlider())
 
-        $(document).on("click", `#${this.id}-dec-button`, () => this.decrementSlider())
+        $(document).on("click.ulabel", `#${this.id}-dec-button`, () => this.decrementSlider())
     }
 
     private add_styles() {
