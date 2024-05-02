@@ -149,7 +149,6 @@ export class ULabel {
         // Go through each resize observer and disconnect them
         if (this.resize_observers != null) {
             this.resize_observers.forEach(observer => {
-                console.log(observer)
                 observer.disconnect()
             })
         }
