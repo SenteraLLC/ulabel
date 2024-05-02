@@ -250,30 +250,20 @@ export class ULabel {
                 case ul.config.decrease_brush_size_keybind:
                     ul.change_brush_size(1/1.1);
                     break;
+                case ul.config.change_zoom_keybind.toLowerCase():
+                    ul.show_initial_crop();
+                    break;
+                case ul.config.change_zoom_keybind.toUpperCase():
+                    ul.show_whole_image();
+                    break;
                 default:
                     if (!DELETE_MODES.includes(current_subtask.state.spatial_type)) {
                         // Check for class keybinds
                         for (let i = 0; i < current_subtask.class_defs.length; i++) {
                             const class_def = current_subtask.class_defs[i];
                             if (class_def.keybind !== null && e.key === class_def.keybind) {
-                                // Get the active or hovered annotation id
-                                let target_id = null;
-                                if (current_subtask.state.active_id !== null) {
-                                    target_id = JSON.parse(JSON.stringify(current_subtask.state.active_id));
-                                } else if (current_subtask.state.move_candidate !== null) {
-                                    target_id = JSON.parse(JSON.stringify(current_subtask.state.move_candidate["annid"]));
-                                }
-
-                                if (target_id === null) {
-                                    // Set the active class to the class with the matching keybind
-                                    ul.update_id_toolbox_display(i);
-                                    // Recolor the brush circle
-                                    ul.recolor_brush_circle();
-                                } else {
-                                    // Set the annotation's class to the class with the matching keybind
-                                    ul.handle_id_dialog_click(ul.state["last_move"], target_id, i);
-                                }
-                                                            
+                                // Click the class button
+                                $(`#tb-id-app--${ul.state["current_subtask"]} a.tbid-opt`).eq(i).trigger("click");                            
                                 return;
                             }
                         }
@@ -341,7 +331,8 @@ export class ULabel {
         $(document).on("click.ulabel", "#" + ul.config["toolbox_id"] + ' a.tbid-opt', (e) => {
             let tgt_jq = $(e.currentTarget);
             let pfx = "div#tb-id-app--" + ul.state["current_subtask"];
-            let crst = ul.state["current_subtask"];
+            const subtask_key = ul.state["current_subtask"];
+            const current_subtask = ul.subtasks[subtask_key];
             if (tgt_jq.attr("href") === "#") {
                 $(pfx + " a.tbid-opt.sel").attr("href", "#");
                 $(pfx + " a.tbid-opt.sel").removeClass("sel");
@@ -349,8 +340,25 @@ export class ULabel {
                 tgt_jq.removeAttr("href");
                 let idarr = tgt_jq.attr("id").split("_");
                 let rawid = parseInt(idarr[idarr.length - 1]);
-                ul.set_id_dialog_payload_nopin(ul.subtasks[crst]["class_ids"].indexOf(rawid), 1.0);
+                ul.set_id_dialog_payload_nopin(current_subtask["class_ids"].indexOf(rawid), 1.0);
                 ul.update_id_dialog_display();
+
+                // Get the active annotation, if any
+                let target_id = null;
+                if (current_subtask.state.active_id !== null) {
+                    target_id = JSON.parse(JSON.stringify(current_subtask.state.active_id));
+                } else if (current_subtask.state.move_candidate !== null) {
+                    target_id = JSON.parse(JSON.stringify(current_subtask.state.move_candidate["annid"]));
+                }
+
+                // Update the class of the active annotation
+                if (target_id !== null) {
+                    // Set the annotation's class to the selected class
+                    ul.handle_id_dialog_click(ul.state["last_move"], target_id, ul.get_active_class_id_idx());
+                } else {
+                    // If there is not active annotation, still update the brush circle if in brush mode
+                    ul.recolor_brush_circle();
+                }
             }
         });
 
@@ -789,9 +797,12 @@ export class ULabel {
                         ul.verify_all_polygon_complex_layers(cand["id"]);
                         // Clear action stream, since the above action should not be undoable
                         ul.remove_recorded_events_for_annotation(cand["id"]);
-                        // update containing box
-                        ul.rebuild_containing_box(cand["id"]);
                     }
+                }
+
+                // Update the containing box for all spatial types
+                if (!NONSPATIAL_MODES.includes(cand["spatial_type"])) {
+                    ul.rebuild_containing_box(cand["id"], false, subtask_key);
                 }
             }
         }
@@ -2126,7 +2137,8 @@ export class ULabel {
         if (
             spatial_type === "polygon" && 
             !layer_is_closed && 
-            this.subtasks[this.state["current_subtask"]]["state"]["is_in_progress"]
+            this.subtasks[this.state["current_subtask"]]["state"]["is_in_progress"] &&
+            !this.subtasks[this.state["current_subtask"]]["state"]["starting_complex_polygon"]
         ) {
             // Clear the lines that fall within the polygon ender
             // Use the first point of the last layer
@@ -6190,7 +6202,7 @@ export class ULabel {
             this.suggest_edits();
         }
         this.redraw_annotation(actid);
-        this.recolor_active_polygon_ender(actid);
+        this.recolor_active_polygon_ender();
         this.recolor_brush_circle();
 
         // Explicit changes are undoable
