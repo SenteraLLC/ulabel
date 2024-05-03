@@ -6164,7 +6164,6 @@ export class ULabel {
             // TODO This assumes no pins
             this.set_id_dialog_payload_nopin(pos_evt.class_ind, pos_evt.dist_prop);
             this.update_id_dialog_display(front);
-            this.update_id_toolbox_display()
         }
     }
 
@@ -6248,11 +6247,12 @@ export class ULabel {
 
     handle_id_dialog_click(mouse_event, annotation_id = null, new_class_idx = null) {
         const current_subtask = this.subtasks[this.state["current_subtask"]]
-        let pos_evt = null;
+
+        // Handle explicitly setting the class
         if (new_class_idx !== null) {
-            pos_evt = {class_ind: new_class_idx, dist_prop: 1.0};
+            const pos_evt = {class_ind: new_class_idx, dist_prop: 1.0};
+            this.handle_id_dialog_hover(mouse_event, pos_evt);
         }
-        this.handle_id_dialog_hover(mouse_event, pos_evt);
         // TODO need to differentiate between first click and a reassign -- potentially with global state
         this.assign_annotation_id(annotation_id);
         current_subtask["state"]["first_explicit_assignment"] = false;

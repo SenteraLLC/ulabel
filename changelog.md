@@ -8,6 +8,7 @@ Nothing yet.
 
 ## [0.10.8] - May 2nd, 2024
 - Create method to remove all ULabel event listeners. This is handy for single page applications when the page is not reloaded after navigating away from a ULabel page.
+- Fix bug where hovering over an id dialog would set the class, instead of waiting for a click.
 
 ## [0.10.7] - April 29th, 2024
 - Enable the `"change_zoom_keybind"` to function even when the `ZoomPanToolboxItem` isn't present.
