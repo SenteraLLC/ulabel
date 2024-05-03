@@ -3304,9 +3304,6 @@ export class ULabel {
         // Configure the dialog to show the current information for this ann
         this.set_id_dialog_payload_to_init(active_ann);
         this.update_id_dialog_display(nonspatial);
-        if (!thumbnail) {
-            this.update_id_toolbox_display();
-        }
 
         // Show the dialog
         idd.css("display", "block");
@@ -4317,7 +4314,6 @@ export class ULabel {
         else if (ms_loc[1] > this.subtasks[subtask]["annotations"]["access"][actid]["containing_box"]["bry"]) {
             this.subtasks[subtask]["annotations"]["access"][actid]["containing_box"]["bry"] = ms_loc[1];
         }
-        // console.log(ms_loc, this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["containing_box"]);
     }
 
     rebuild_containing_box(actid, ignore_final = false, subtask = null) {
