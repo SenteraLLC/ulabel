@@ -184,8 +184,8 @@ export class ULabel {
         document.addEventListener("auxclick", ul.handle_aux_click, {"signal": signal});
 
         // Detect and record mouseup
-        $(window).mouseup(function (mouse_event) {
-            ul.handle_mouse_up(mouse_event);
+        $(document).on("mouseup.ulabel", (e) => {
+            ul.handle_mouse_up(e);
         });
 
         $(window).on("click.ulabel", (e) => {
