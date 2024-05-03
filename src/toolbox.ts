@@ -2486,8 +2486,7 @@ export class SubmitButtons extends ToolboxItem {
             if (ctrl &&
                 (
                     event.key === "s" ||
-                    event.key === "S" ||
-                    event.code === "KeyS"
+                    event.key === "S"
                 )
             ) {
                 event.preventDefault();
