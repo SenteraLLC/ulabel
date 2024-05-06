@@ -10,6 +10,7 @@ Nothing yet.
 - Create method to remove all ULabel event listeners. This is handy for single page applications when the page is not reloaded after navigating away from a ULabel page.
 - Fix bug where hovering over an id dialog would set the class, instead of waiting for a click.
 - Fix bug where using the brush tool on an existing annotation would unexpectedly change its class.
+- Fix bug where clicking a class' keybind when hovering over an annotation would not update the annotation's class if the new class was already selected in the toolbox.
 - Fix very rare case where `delete` modes were being exported on submit.
 - Changing id of a hovered annotation via the id dialog will no longer also change the active toolbox class id.
 
