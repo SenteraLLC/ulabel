@@ -6130,20 +6130,26 @@ export class ULabel {
         } else {
             let class_ids = this.subtasks[this.state["current_subtask"]]["class_ids"];
             if (new_class_idx === null) {
-                let max_conf = 0.0;
-                for (var i = 0; i < class_ids.length; i++) {
+                let id_payload = this.subtasks[this.state["current_subtask"]]["state"]["id_payload"];
+                // Get the id payload with the highest confidence
+                let max_conf = 0;
+                let new_class_id = null;
+                for (var i = 0; i < id_payload.length; i++) {
                     // Select the class with the highest confidence
-                    if (this.subtasks[this.state["current_subtask"]]["state"]["id_payload"][i]["confidence"] > max_conf) {
-                        max_conf = this.subtasks[this.state["current_subtask"]]["state"]["id_payload"][i]["confidence"];
-                        new_class_idx = i;
+                    if (id_payload[i]["confidence"] > max_conf) {
+                        max_conf = id_payload[i]["confidence"];
+                        new_class_id = id_payload[i]["class_id"];
+                        if (max_conf === 1.0) {
+                            break;
+                        }
                     }
                 }
+                // Get the index of the new class
+                new_class_idx = class_ids.indexOf(new_class_id);
             }
 
             // Select the desired class by clicking on the toolbox selector
-            if (i === new_class_idx) {
-                $(`#toolbox_sel_${class_ids[i]}`).click();
-            }
+            $(`#toolbox_sel_${class_ids[new_class_idx]}`).trigger("click");
         }
     }
 
