@@ -262,8 +262,25 @@ export class ULabel {
                         for (let i = 0; i < current_subtask.class_defs.length; i++) {
                             const class_def = current_subtask.class_defs[i];
                             if (class_def.keybind !== null && e.key === class_def.keybind) {
-                                // Click the class button
-                                $(`#tb-id-app--${ul.state["current_subtask"]} a.tbid-opt`).eq(i).trigger("click");                            
+                                let class_button = $(`#tb-id-app--${ul.state["current_subtask"]} a.tbid-opt`).eq(i);
+                                if (class_button.hasClass("sel")) {
+                                    // If the class button is already selected, check if there is an active annotation
+                                    // Get the active annotation, if any
+                                    let target_id = null;
+                                    if (current_subtask.state.active_id !== null) {
+                                        target_id = JSON.parse(JSON.stringify(current_subtask.state.active_id));
+                                    } else if (current_subtask.state.move_candidate !== null) {
+                                        target_id = JSON.parse(JSON.stringify(current_subtask.state.move_candidate["annid"]));
+                                    }
+                                    // Update the class of the active annotation
+                                    if (target_id !== null) {
+                                        // Set the annotation's class to the selected class
+                                        ul.handle_id_dialog_click(ul.state["last_move"], target_id, ul.get_active_class_id_idx());
+                                    }
+                                } else {
+                                    // Click the class button if not already selected
+                                    class_button.trigger("click");
+                                }                                        
                                 return;
                             }
                         }
