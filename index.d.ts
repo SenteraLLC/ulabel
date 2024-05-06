@@ -175,6 +175,7 @@ export class ULabel {
     public toggle_brush_mode(mouse_event: any): void;
     public toggle_delete_class_id_in_toolbox(): void;
     public change_brush_size(scale_factor: number): void;
+    public remove_listeners(): void;
     static process_classes(ulabel_obj: any, arg1: string, subtask_obj: any);
     static build_id_dialogs(ulabel_obj: any);
         

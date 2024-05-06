@@ -184,8 +184,8 @@ export class ULabel {
         document.addEventListener("auxclick", ul.handle_aux_click, {"signal": signal});
 
         // Detect and record mouseup
-        $(window).mouseup(function (mouse_event) {
-            ul.handle_mouse_up(mouse_event);
+        $(document).on("mouseup.ulabel", (e) => {
+            ul.handle_mouse_up(e);
         });
 
         $(window).on("click.ulabel", (e) => {
@@ -262,8 +262,25 @@ export class ULabel {
                         for (let i = 0; i < current_subtask.class_defs.length; i++) {
                             const class_def = current_subtask.class_defs[i];
                             if (class_def.keybind !== null && e.key === class_def.keybind) {
-                                // Click the class button
-                                $(`#tb-id-app--${ul.state["current_subtask"]} a.tbid-opt`).eq(i).trigger("click");                            
+                                let class_button = $(`#tb-id-app--${ul.state["current_subtask"]} a.tbid-opt`).eq(i);
+                                if (class_button.hasClass("sel")) {
+                                    // If the class button is already selected, check if there is an active annotation
+                                    // Get the active annotation, if any
+                                    let target_id = null;
+                                    if (current_subtask.state.active_id !== null) {
+                                        target_id = JSON.parse(JSON.stringify(current_subtask.state.active_id));
+                                    } else if (current_subtask.state.move_candidate !== null) {
+                                        target_id = JSON.parse(JSON.stringify(current_subtask.state.move_candidate["annid"]));
+                                    }
+                                    // Update the class of the active annotation
+                                    if (target_id !== null) {
+                                        // Set the annotation's class to the selected class
+                                        ul.handle_id_dialog_click(ul.state["last_move"], target_id, ul.get_active_class_id_idx());
+                                    }
+                                } else {
+                                    // Click the class button if not already selected
+                                    class_button.trigger("click");
+                                }                                        
                                 return;
                             }
                         }
@@ -3304,9 +3321,6 @@ export class ULabel {
         // Configure the dialog to show the current information for this ann
         this.set_id_dialog_payload_to_init(active_ann);
         this.update_id_dialog_display(nonspatial);
-        if (!thumbnail) {
-            this.update_id_toolbox_display();
-        }
 
         // Show the dialog
         idd.css("display", "block");
@@ -4317,7 +4331,6 @@ export class ULabel {
         else if (ms_loc[1] > this.subtasks[subtask]["annotations"]["access"][actid]["containing_box"]["bry"]) {
             this.subtasks[subtask]["annotations"]["access"][actid]["containing_box"]["bry"] = ms_loc[1];
         }
-        // console.log(ms_loc, this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["containing_box"]);
     }
 
     rebuild_containing_box(actid, ignore_final = false, subtask = null) {
@@ -6133,17 +6146,27 @@ export class ULabel {
             // Not supported yet
         } else {
             let class_ids = this.subtasks[this.state["current_subtask"]]["class_ids"];
-            for (var i = 0; i < class_ids.length; i++) {
-                // If no new class index is provided, select the class with the highest confidence
-                if (new_class_idx === null && this.subtasks[this.state["current_subtask"]]["state"]["id_payload"][i]["confidence"] > 0.5) {
-                    new_class_idx = i;
+            if (new_class_idx === null) {
+                let id_payload = this.subtasks[this.state["current_subtask"]]["state"]["id_payload"];
+                // Get the id payload with the highest confidence
+                let max_conf = 0;
+                let new_class_id = null;
+                for (var i = 0; i < id_payload.length; i++) {
+                    // Select the class with the highest confidence
+                    if (id_payload[i]["confidence"] > max_conf) {
+                        max_conf = id_payload[i]["confidence"];
+                        new_class_id = id_payload[i]["class_id"];
+                        if (max_conf === 1.0) {
+                            break;
+                        }
+                    }
                 }
-                // Select the desired class by clicking on the toolbox selector
-                if (i === new_class_idx) {
-                    $(`#toolbox_sel_${class_ids[i]}`).click();
-                    return;
-                }
+                // Get the index of the new class
+                new_class_idx = class_ids.indexOf(new_class_id);
             }
+
+            // Select the desired class by clicking on the toolbox selector
+            $(`#toolbox_sel_${class_ids[new_class_idx]}`).trigger("click");
         }
     }
 
@@ -6164,7 +6187,6 @@ export class ULabel {
             // TODO This assumes no pins
             this.set_id_dialog_payload_nopin(pos_evt.class_ind, pos_evt.dist_prop);
             this.update_id_dialog_display(front);
-            this.update_id_toolbox_display()
         }
     }
 
@@ -6248,11 +6270,12 @@ export class ULabel {
 
     handle_id_dialog_click(mouse_event, annotation_id = null, new_class_idx = null) {
         const current_subtask = this.subtasks[this.state["current_subtask"]]
-        let pos_evt = null;
+
+        // Handle explicitly setting the class
         if (new_class_idx !== null) {
-            pos_evt = {class_ind: new_class_idx, dist_prop: 1.0};
+            const pos_evt = {class_ind: new_class_idx, dist_prop: 1.0};
+            this.handle_id_dialog_hover(mouse_event, pos_evt);
         }
-        this.handle_id_dialog_hover(mouse_event, pos_evt);
         // TODO need to differentiate between first click and a reassign -- potentially with global state
         this.assign_annotation_id(annotation_id);
         current_subtask["state"]["first_explicit_assignment"] = false;

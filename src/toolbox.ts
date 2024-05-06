@@ -1,5 +1,5 @@
 import { AnnotationClassDistanceData, FilterDistanceConfig, RecolorActiveConfig, ULabel } from "..";
-import { ULabelAnnotation, NONSPATIAL_MODES } from "./annotation";
+import { ULabelAnnotation, NONSPATIAL_MODES, DELETE_MODES } from "./annotation";
 import { ULabelSubtask } from "./subtask";
 import { 
     get_annotation_confidence, 
@@ -2417,8 +2417,15 @@ export class SubmitButtons extends ToolboxItem {
 
                     // Add all of the annotations in that subtask
                     for (let i = 0; i < ulabel.subtasks[stkey]["annotations"]["ordering"].length; i++) {
-                        // Skip spatial annotations that have an empty spatial payload
                         let annotation = ulabel.subtasks[stkey]["annotations"]["access"][ulabel.subtasks[stkey]["annotations"]["ordering"][i]];
+                        // Skip any delete modes
+                        if (
+                            DELETE_MODES.includes(annotation.spatial_type)
+                        ) {
+                            continue;
+                        }
+
+                        // Skip spatial annotations that have an empty spatial payload
                         if (
                             NONSPATIAL_MODES.includes(annotation.spatial_type) ||
                             annotation.spatial_payload.length === 0
@@ -2486,8 +2493,7 @@ export class SubmitButtons extends ToolboxItem {
             if (ctrl &&
                 (
                     event.key === "s" ||
-                    event.key === "S" ||
-                    event.code === "KeyS"
+                    event.key === "S"
                 )
             ) {
                 event.preventDefault();
