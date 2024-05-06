@@ -6129,16 +6129,20 @@ export class ULabel {
             // Not supported yet
         } else {
             let class_ids = this.subtasks[this.state["current_subtask"]]["class_ids"];
-            for (var i = 0; i < class_ids.length; i++) {
-                // If no new class index is provided, select the class with the highest confidence
-                if (new_class_idx === null && this.subtasks[this.state["current_subtask"]]["state"]["id_payload"][i]["confidence"] > 0.5) {
-                    new_class_idx = i;
+            if (new_class_idx === null) {
+                let max_conf = 0.0;
+                for (var i = 0; i < class_ids.length; i++) {
+                    // Select the class with the highest confidence
+                    if (this.subtasks[this.state["current_subtask"]]["state"]["id_payload"][i]["confidence"] > max_conf) {
+                        max_conf = this.subtasks[this.state["current_subtask"]]["state"]["id_payload"][i]["confidence"];
+                        new_class_idx = i;
+                    }
                 }
-                // Select the desired class by clicking on the toolbox selector
-                if (i === new_class_idx) {
-                    $(`#toolbox_sel_${class_ids[i]}`).click();
-                    return;
-                }
+            }
+
+            // Select the desired class by clicking on the toolbox selector
+            if (i === new_class_idx) {
+                $(`#toolbox_sel_${class_ids[i]}`).click();
             }
         }
     }
