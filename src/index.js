@@ -708,7 +708,7 @@ export class ULabel {
                 if (
                     (!("line_size" in cand)) || (cand["line_size"] == null)
                 ) {
-                    cand["line_size"] = ul.state["line_size"];
+                    cand["line_size"] = ul.get_line_size();
                 }
 
                 // Add created by attribute if there is none
