@@ -6300,7 +6300,8 @@ export class ULabel {
         const current_subtask = this.subtasks[this.state["current_subtask"]]
         const active_annotation_id = current_subtask["active_annotation"]
         const active_annotation = current_subtask["annotations"]["access"][active_annotation_id]
-        const aacp = active_annotation["classification_payloads"] // aacp stands for active annotation classification payloads
+        /** The active annotation's classification payloads. */
+        const aacp = active_annotation["classification_payloads"]
 
         // Keep track of highest payload confidence
         let confidence = 0
