@@ -3491,7 +3491,6 @@ export class ULabel {
     }
 
     delete_annotation(annotation_id, redo_payload = null, record_action = true) {
-
         let old_id = annotation_id;
         let new_id = old_id;
         let redoing = false;
@@ -3510,7 +3509,7 @@ export class ULabel {
         let is_spatial = !NONSPATIAL_MODES.includes(annotation_mode);
 
         let deprecate_old = false;
-        if (!annotations[old_id]["new"]) {
+        if (!annotations[old_id]["new"] && !DELETE_MODES.includes(annotation_mode)) {
             // Make new id and record that you did
             deprecate_old = true;
             if (!redoing) {
@@ -3583,7 +3582,7 @@ export class ULabel {
         }
 
         // Ensure there are no lingering enders
-        if (annotation_mode === "polygon" || annotation_mode === "polyline") {
+        if (annotation_mode === "polygon" || annotation_mode === "polyline" || annotation_mode === "delete_polygon") {
             this.destroy_polygon_ender(annotation_id);
         }
     }
@@ -5205,8 +5204,7 @@ export class ULabel {
             const spatial_type = annotation["spatial_type"];
             // When drawing a complex layer, we will only delete the last layer
             if (
-                (spatial_type === "polygon" || spatial_type === "delete_polygon") &&
-                annotation["spatial_payload"].length > 1
+                spatial_type === "polygon" && annotation["spatial_payload"].length > 1
             ) {
                 is_complex_layer = true;
                 // Reuse the logic for undoing the start of a complex polygon
@@ -5252,9 +5250,13 @@ export class ULabel {
 
         let annotation = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][undo_payload.annid];
         // If a polygon/delete polygon, show the ender
-        if (annotation["spatial_type"] === "polygon" || annotation["spatial_type"] === "delete_polygon") {
-            // Get the first point of the last layer
+        if (annotation["spatial_type"] === "polygon") {
+            // Get the first point of the last layer for a polygon
             let first_pt = annotation["spatial_payload"].at(-1)[0];
+            this.create_polygon_ender(first_pt[0], first_pt[1], undo_payload.annid);
+        } else if (annotation["spatial_type"] === "delete_polygon") {
+            // Get the first point of a delete polygon
+            let first_pt = annotation["spatial_payload"][0];
             this.create_polygon_ender(first_pt[0], first_pt[1], undo_payload.annid);
         } else if (annotation["spatial_type"] === "bbox" || annotation["spatial_type"] === "tbar") {
             // Reset the drag mode to cause mouse moves to move the annotation
