@@ -5258,7 +5258,7 @@ export class ULabel {
             // Get the first point of a delete polygon
             let first_pt = annotation["spatial_payload"][0];
             this.create_polygon_ender(first_pt[0], first_pt[1], undo_payload.annid);
-        } else if (annotation["spatial_type"] === "bbox" || annotation["spatial_type"] === "tbar") {
+        } else if (annotation["spatial_type"] === "bbox" || annotation["spatial_type"] === "delete_bbox" || annotation["spatial_type"] === "tbar") {
             // Reset the drag mode to cause mouse moves to move the annotation
             this.drag_state = undo_payload.drag_state;
             // Move to the current mouse location
