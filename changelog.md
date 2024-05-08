@@ -6,6 +6,9 @@ All notable changes to this project will be documented here.
 
 Nothing yet.
 
+## [0.10.9] - May 8th, 2024
+- Fix bug where confidence dialog didn't update properly.
+
 ## [0.10.8] - May 2nd, 2024
 - Create method to remove all ULabel event listeners. This is handy for single page applications when the page is not reloaded after navigating away from a ULabel page.
 - Fix bug where hovering over an id dialog would set the class, instead of waiting for a click.
