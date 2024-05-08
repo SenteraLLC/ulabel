@@ -453,23 +453,6 @@ export class ULabel {
             ul.show_id_dialog(e.pageX, e.pageY, e.target.id.substring("reclf__".length), false, true);
         });
 
-        // Whenever the mouse makes the dialogs show up, update the displayed annotation confidence.
-        $(document).on("mouseenter.ulabel", "div.global_edit_suggestion", () => {
-            // Grab the currently active annotation
-            let active_annotation = ul.subtasks[ul.state["current_subtask"]]["active_annotation"]
-
-            // Loop through the classification payload to get the active annotation's confidence
-            let confidence = 0;
-            for (let idx in ul.subtasks[ul.state["current_subtask"]].annotations.access[active_annotation].classification_payloads) {
-                let loop_confidence = ul.subtasks[ul.state["current_subtask"]].annotations.access[active_annotation].classification_payloads[idx].confidence
-                if (loop_confidence > confidence) {
-                    confidence = loop_confidence
-                }
-            }
-
-            // Update the display dialog with the annotation's confidence
-            $(".annotation-confidence-value").text(confidence)
-        })
         $(document).on("mouseenter.ulabel", "div.fad_annotation_rows div.fad_row", (e) => {
             // Show thumbnail for idd
             ul.suggest_edits(null, $(e.currentTarget).attr("id").substring("row__".length));
@@ -725,7 +708,7 @@ export class ULabel {
                 if (
                     (!("line_size" in cand)) || (cand["line_size"] == null)
                 ) {
-                    cand["line_size"] = ul.state["line_size"];
+                    cand["line_size"] = ul.get_line_size();
                 }
 
                 // Add created by attribute if there is none
@@ -5917,6 +5900,9 @@ export class ULabel {
             }
             this.show_global_edit_suggestion(best_candidate, null, nonspatial_id);
             this.subtasks[this.state["current_subtask"]]["active_annotation"] = best_candidate
+
+            // Must be called after active_annotation is updated
+            this.update_confidence_dialog(best_candidate)
         }
     }
 
@@ -6299,6 +6285,27 @@ export class ULabel {
                 filter_points_distance_from_line(this)
             }
         }
+    }
+
+    // Update the displayed annotation confidence
+    update_confidence_dialog() {
+        // Whenever the mouse makes the dialogs show up, update the displayed annotation confidence.
+        const current_subtask = this.subtasks[this.state["current_subtask"]]
+        const active_annotation_id = current_subtask["active_annotation"]
+        const active_annotation = current_subtask["annotations"]["access"][active_annotation_id]
+        /** The active annotation's classification payloads. */
+        const aacp = active_annotation["classification_payloads"]
+
+        // Keep track of highest payload confidence
+        let confidence = 0
+        aacp.forEach((payload) => {
+            if (payload.confidence > confidence) {
+                confidence = payload.confidence
+            }
+        })
+
+        // Update the display dialog with the annotation's confidence
+        $(".annotation-confidence-value").text(confidence)
     }
 
     // ================= Viewer/Annotation Interaction Handlers  ================= 
