@@ -8,6 +8,7 @@ Nothing yet.
 
 ## [0.10.9] - May 8th, 2024
 - Fix bug where confidence dialog didn't update properly.
+- Fix bug introduced in 0.10.3 where dialogs don't show up for points annotations.
 
 ## [0.10.8] - May 2nd, 2024
 - Create method to remove all ULabel event listeners. This is handy for single page applications when the page is not reloaded after navigating away from a ULabel page.
