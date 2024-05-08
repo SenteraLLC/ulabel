@@ -5790,6 +5790,7 @@ export class ULabel {
                         }
                         break;
                     case "bbox":
+                    case "point":
                         if (
                             gblx >= cbox["tlx"] &&
                             gblx <= cbox["brx"] &&
@@ -5798,14 +5799,6 @@ export class ULabel {
                         ) {
                             found_perfect_match = true;
                         }
-                        break;
-                    case "point":
-                        const threshold = 50
-                        found_perfect_match = GeometricUtils.points_are_close(
-                            [gblx, gbly],
-                            [cbox["tlx"], cbox["tly"]],
-                            threshold
-                        )
                         break;
                     default:
                         boxsize = (cbox["brx"] - cbox["tlx"]) * (cbox["bry"] - cbox["tly"]);

@@ -45,13 +45,6 @@ export class GeometricUtils {
         return (pt1[0] === pt2[0]) && (pt1[1] === pt2[1]);
     }
 
-    // Return true if the two points are within the threshold of each other
-    public static points_are_close(pt1: Point2D, pt2: Point2D, threshold: number): boolean {
-        const distance = Math.sqrt(((pt2[0] - pt1[0]) ** 2) + ((pt2[1] - pt1[1]) ** 2))
-
-        return ((threshold - distance) >= 0)
-    }
-
     // Given two points, return the line that goes through them in the form of
     //    ax + by + c = 0
     public static get_line_equation_through_points(p1: Point2D, p2: Point2D): LineEquation {
