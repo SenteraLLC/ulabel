@@ -6,6 +6,10 @@ All notable changes to this project will be documented here.
 
 Nothing yet.
 
+## [0.10.10] - May 9th, 2024
+- Fix bug where using `Escape` to cancel delete modes would sometimes create unexpected annotations
+- Fix bug where undoing a cancelation of a delete mode did not allow for continuing with the delete mode annotation
+
 ## [0.10.9] - May 8th, 2024
 - Fix bug where confidence dialog didn't update properly.
 - Fix bug introduced in 0.10.3 where dialogs don't show up for points annotations.
