@@ -345,14 +345,16 @@ export class ULabel {
         ul.resize_observers.push(tb_overflow_resize_observer)
 
         // Listener for soft id toolbox buttons
-        $(document).on("click.ulabel", "#" + ul.config["toolbox_id"] + ' a.tbid-opt', (e) => {
+        $(document).on("click.ulabel", "#" + ul.config["toolbox_id"] + " a.tbid-opt", (e) => {
             let tgt_jq = $(e.currentTarget);
             let pfx = "div#tb-id-app--" + ul.state["current_subtask"];
             const subtask_key = ul.state["current_subtask"];
             const current_subtask = ul.subtasks[subtask_key];
             if (tgt_jq.attr("href") === "#") {
-                $(pfx + " a.tbid-opt.sel").attr("href", "#");
-                $(pfx + " a.tbid-opt.sel").removeClass("sel");
+                let current_id_button = $(pfx + " a.tbid-opt.sel");
+                current_id_button.attr("href", "#");
+                current_id_button.removeClass("sel");
+                let old_id = parseInt(current_id_button.attr("id").split("_").at(-1));
                 tgt_jq.addClass("sel");
                 tgt_jq.removeAttr("href");
                 let idarr = tgt_jq.attr("id").split("_");
@@ -360,21 +362,30 @@ export class ULabel {
                 ul.set_id_dialog_payload_nopin(current_subtask["class_ids"].indexOf(rawid), 1.0);
                 ul.update_id_dialog_display();
 
-                // Get the active annotation, if any
-                let target_id = null;
-                if (current_subtask.state.active_id !== null) {
-                    target_id = JSON.parse(JSON.stringify(current_subtask.state.active_id));
-                } else if (current_subtask.state.move_candidate !== null) {
-                    target_id = JSON.parse(JSON.stringify(current_subtask.state.move_candidate["annid"]));
+                // Update the class of the active annotation, except when toggling on the delete class
+                if (rawid !== DELETE_CLASS_ID) {
+                    // Get the active annotation, if any
+                    let target_id = null;
+                    if (current_subtask.state.active_id !== null) {
+                        target_id = JSON.parse(JSON.stringify(current_subtask.state.active_id));
+                    } else if (current_subtask.state.move_candidate !== null) {
+                        target_id = JSON.parse(JSON.stringify(current_subtask.state.move_candidate["annid"]));
+                    }
+
+                    // Update the class of the active annotation
+                    if (target_id !== null) {
+                        // Set the annotation's class to the selected class
+                        ul.handle_id_dialog_click(ul.state["last_move"], target_id, ul.get_active_class_id_idx());
+                    } else {
+                        // If there is not active annotation, still update the brush circle if in brush mode
+                        ul.recolor_brush_circle();
+                    }
                 }
 
-                // Update the class of the active annotation
-                if (target_id !== null) {
-                    // Set the annotation's class to the selected class
-                    ul.handle_id_dialog_click(ul.state["last_move"], target_id, ul.get_active_class_id_idx());
-                } else {
-                    // If there is not active annotation, still update the brush circle if in brush mode
-                    ul.recolor_brush_circle();
+                // If toggling off a delete class while still in delete mode, re-toggle the delete class
+                // This occurs when using a keybind to change a hovered annotation's class while in delete mode
+                if (old_id === DELETE_CLASS_ID && DELETE_MODES.includes(current_subtask.state.annotation_mode)) {
+                    $("#toolbox_sel_" + DELETE_CLASS_ID).trigger("click");
                 }
             }
         });
