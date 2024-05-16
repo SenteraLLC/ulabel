@@ -1541,19 +1541,38 @@ export class ULabel {
     }
 
     toggle_delete_class_id_in_toolbox() {
+        const current_subtask = this.subtasks[this.state["current_subtask"]]
         // Check if a DELETE_MODE is active
-        let show_delete = DELETE_MODES.includes(this.subtasks[this.state["current_subtask"]]["state"]["annotation_mode"]);
+        let show_delete = DELETE_MODES.includes(current_subtask["state"]["annotation_mode"]);
         if (show_delete) {
             // Show the delete class id in the toolbox
             $("a#toolbox_sel_" + DELETE_CLASS_ID).css("display", "inline-block"); 
             // Select the delete class id in the toolbox by clicking it
-            $("a#toolbox_sel_" + DELETE_CLASS_ID).click();        
+            $("a#toolbox_sel_" + DELETE_CLASS_ID).trigger("click");        
         } else {
             // Hide the delete class id in the toolbox
             $("a#toolbox_sel_" + DELETE_CLASS_ID).css("display", "none");
             // If the delete class id is selected, select the first class id in the toolbox
             if ($("a#toolbox_sel_" + DELETE_CLASS_ID).hasClass("sel")) {
-                $("a.tbid-opt").first().click();
+                // Check if we are hovering an annotation
+                let target_id = null;
+                if (current_subtask.state.active_id !== null) {
+                    target_id = JSON.parse(JSON.stringify(current_subtask.state.active_id));
+                } else if (current_subtask.state.move_candidate !== null) {
+                    target_id = JSON.parse(JSON.stringify(current_subtask.state.move_candidate["annid"]));
+                }
+                // If we are not hovering an annotation, select default to the first class
+                if (target_id === null) {
+                    $("a.tbid-opt").first().trigger("click");
+                } else {
+                    // If we are hovering an annotation, select the class id of the annotation
+                    // which is the class with the highest confidence
+                    const classification_payloads = current_subtask.annotations.access[target_id].classification_payloads;
+                    const target_class_id = classification_payloads.reduce((acc, curr) => {
+                        return curr.confidence > acc.confidence ? curr : acc;
+                    })["class_id"];
+                    $("a#toolbox_sel_" + target_class_id).trigger("click");
+                }
             }
         }
 
