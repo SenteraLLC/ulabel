@@ -9,6 +9,7 @@ Nothing yet.
 ## [0.10.11] - May 16th, 2024
 - Fix bug where using the `toggle_annotation_mode_keybind` to switch to/from a delete mode would unexpectedly change the class of the hovered annotation.
 - Fix bug where pressing a class keybind when using a delete mode would deselect the delete class.
+- Fix bug where using `set_annotations()` with multiple subtasks would fail.
 
 ## [0.10.10] - May 9th, 2024
 - Fix bug where using `Escape` to cancel delete modes would sometimes create unexpected annotations

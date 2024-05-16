@@ -6727,7 +6727,7 @@ export class ULabel {
             // If a spatial annotation, delete the canvas
             let id = this.subtasks[subtask]["annotations"]["ordering"][i];
             if (!NONSPATIAL_MODES.includes(this.subtasks[subtask]["annotations"]["access"][id]["spatial_type"])) {
-                this.destroy_annotation_context(id);
+                this.destroy_annotation_context(id, subtask);
             }
         }
         let newanns = JSON.parse(JSON.stringify(new_annotations));
