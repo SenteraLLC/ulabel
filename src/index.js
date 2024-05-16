@@ -351,10 +351,10 @@ export class ULabel {
             const subtask_key = ul.state["current_subtask"];
             const current_subtask = ul.subtasks[subtask_key];
             if (tgt_jq.attr("href") === "#") {
-                let current_id_button = $(pfx + " a.tbid-opt.sel");
+                const current_id_button = $(pfx + " a.tbid-opt.sel");
                 current_id_button.attr("href", "#");
                 current_id_button.removeClass("sel");
-                let old_id = parseInt(current_id_button.attr("id").split("_").at(-1));
+                const old_id = parseInt(current_id_button.attr("id").split("_").at(-1));
                 tgt_jq.addClass("sel");
                 tgt_jq.removeAttr("href");
                 let idarr = tgt_jq.attr("id").split("_");
