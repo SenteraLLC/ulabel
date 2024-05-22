@@ -3163,11 +3163,12 @@ export class ULabel {
         let new_action_stream = [];
         for (let action of this.subtasks[this.state["current_subtask"]]["actions"]["stream"]) {
             // Check that action has an undo_payload
-            if (action.undo_payload) {
+            const undo_payload = JSON.parse(action.undo_payload)
+            if (undo_payload) {
                 // Check all values in the undo_payload, and skip if any of them are the annotation_id
                 let skip = false;
-                for (let key in action.undo_payload) {
-                    if (action.undo_payload[key] === annotation_id) {
+                for (let key in undo_payload) {
+                    if (undo_payload[key] === annotation_id) {
                         skip = true;
                         break;
                     }
@@ -3360,7 +3361,7 @@ export class ULabel {
             this.hide_id_dialog();
         }
 
-        if (action_stream[action_stream.length - 1].redo_payload.finished === false) {
+        if (JSON.parse(action_stream[action_stream.length - 1].redo_payload).finished === false) {
             this.finish_action(action_stream[action_stream.length - 1]);
         }
 
@@ -3864,6 +3865,10 @@ export class ULabel {
             this.subtasks[this.state["current_subtask"]]["actions"]["undone_stack"] = [];
         }
 
+        // Stringify the undo/redo payloads
+        action.undo_payload = JSON.stringify(action.undo_payload);
+        action.redo_payload = JSON.stringify(action.redo_payload);
+
         // Add to stream
         this.subtasks[this.state["current_subtask"]]["actions"]["stream"].push(action);
     }
@@ -3871,74 +3876,87 @@ export class ULabel {
     record_finish(actid) {
         // TODO(3d) 
         let i = this.subtasks[this.state["current_subtask"]]["actions"]["stream"].length - 1;
-        this.subtasks[this.state["current_subtask"]]["actions"]["stream"][i].redo_payload.init_spatial = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"];
-        this.subtasks[this.state["current_subtask"]]["actions"]["stream"][i].redo_payload.finished = true;
+        // Parse payload, edit, and then stringify
+        let redo_payload = JSON.parse(this.subtasks[this.state["current_subtask"]]["actions"]["stream"][i].redo_payload);
+        redo_payload.init_spatial = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"];
+        redo_payload.finished = true;
+        this.subtasks[this.state["current_subtask"]]["actions"]["stream"][i].redo_payload = JSON.stringify(redo_payload);
     }
 
     record_finish_edit(actid) {
         // TODO(3d) 
         let i = this.subtasks[this.state["current_subtask"]]["actions"]["stream"].length - 1;
+        // Parse payload, edit, and then stringify
+        let redo_payload = JSON.parse(this.subtasks[this.state["current_subtask"]]["actions"]["stream"][i].redo_payload);
         let fin_pt = this.get_with_access_string(
             actid,
-            this.subtasks[this.state["current_subtask"]]["actions"]["stream"][i].redo_payload.edit_candidate["access"],
+            redo_payload.edit_candidate["access"],
             true
         );
-        this.subtasks[this.state["current_subtask"]]["actions"]["stream"][i].redo_payload.ending_x = fin_pt[0];
-        this.subtasks[this.state["current_subtask"]]["actions"]["stream"][i].redo_payload.ending_y = fin_pt[1];
-        this.subtasks[this.state["current_subtask"]]["actions"]["stream"][i].redo_payload.ending_frame = this.state["current_frame"];
-        this.subtasks[this.state["current_subtask"]]["actions"]["stream"][i].redo_payload.finished = true;
+        redo_payload.ending_x = fin_pt[0];
+        redo_payload.ending_y = fin_pt[1];
+        redo_payload.ending_frame = this.state["current_frame"];
+        redo_payload.finished = true;
+        this.subtasks[this.state["current_subtask"]]["actions"]["stream"][i].redo_payload = JSON.stringify(redo_payload);
     }
 
     record_finish_move(diffX, diffY, diffZ = 0) {
         // TODO(3d) 
         let i = this.subtasks[this.state["current_subtask"]]["actions"]["stream"].length - 1;
-        this.subtasks[this.state["current_subtask"]]["actions"]["stream"][i].redo_payload.diffX = diffX;
-        this.subtasks[this.state["current_subtask"]]["actions"]["stream"][i].redo_payload.diffY = diffY;
-        this.subtasks[this.state["current_subtask"]]["actions"]["stream"][i].redo_payload.diffZ = diffZ;
-        this.subtasks[this.state["current_subtask"]]["actions"]["stream"][i].undo_payload.diffX = -diffX;
-        this.subtasks[this.state["current_subtask"]]["actions"]["stream"][i].undo_payload.diffY = -diffY;
-        this.subtasks[this.state["current_subtask"]]["actions"]["stream"][i].undo_payload.diffZ = -diffZ;
-        this.subtasks[this.state["current_subtask"]]["actions"]["stream"][i].redo_payload.finished = true;
+        // Parse payloads, edit, and then stringify
+        let redo_payload = JSON.parse(this.subtasks[this.state["current_subtask"]]["actions"]["stream"][i].redo_payload);
+        let undo_payload = JSON.parse(this.subtasks[this.state["current_subtask"]]["actions"]["stream"][i].undo_payload);
+        redo_payload.diffX = diffX;
+        redo_payload.diffY = diffY;
+        redo_payload.diffZ = diffZ;
+        undo_payload.diffX = -diffX;
+        undo_payload.diffY = -diffY;
+        undo_payload.diffZ = -diffZ;
+        redo_payload.finished = true;
+        this.subtasks[this.state["current_subtask"]]["actions"]["stream"][i].redo_payload = JSON.stringify(redo_payload);
+        this.subtasks[this.state["current_subtask"]]["actions"]["stream"][i].undo_payload = JSON.stringify(undo_payload);
     }
 
     undo_action(action) {
         this.update_frame(null, action.frame);
+        const undo_payload = JSON.parse(action.undo_payload);
+        console.log("undo: ", action.act_type)
         switch (action.act_type) {
             case "begin_annotation":
-                this.begin_annotation__undo(action.undo_payload);
+                this.begin_annotation__undo(undo_payload);
                 break;
             case "continue_annotation":
-                this.continue_annotation__undo(action.undo_payload);
+                this.continue_annotation__undo(undo_payload);
                 break;
             case "finish_annotation":
-                this.finish_annotation__undo(action.undo_payload);
+                this.finish_annotation__undo(undo_payload);
                 break;
             case "edit_annotation":
-                this.edit_annotation__undo(action.undo_payload);
+                this.edit_annotation__undo(undo_payload);
                 break;
             case "move_annotation":
-                this.move_annotation__undo(action.undo_payload);
+                this.move_annotation__undo(undo_payload);
                 break;
             case "delete_annotation":
-                this.delete_annotation__undo(action.undo_payload);
+                this.delete_annotation__undo(undo_payload);
                 break;
             case "cancel_annotation":
-                this.cancel_annotation__undo(action.undo_payload);
+                this.cancel_annotation__undo(undo_payload);
                 break;
             case "assign_annotation_id":
-                this.assign_annotation_id__undo(action.undo_payload);
+                this.assign_annotation_id__undo(undo_payload);
                 break;
             case "create_annotation":
-                this.create_annotation__undo(action.undo_payload);
+                this.create_annotation__undo(undo_payload);
                 break;
             case "create_nonspatial_annotation":
-                this.create_nonspatial_annotation__undo(action.undo_payload);
+                this.create_nonspatial_annotation__undo(undo_payload);
                 break;
             case "start_complex_polygon":
-                this.start_complex_polygon__undo(action.undo_payload);
+                this.start_complex_polygon__undo(undo_payload);
                 break;
             case "merge_polygon_complex_layer":
-                this.merge_polygon_complex_layer__undo(action.undo_payload);
+                this.merge_polygon_complex_layer__undo(undo_payload);
                 // If the undo was triggered by the user, they
                 // expect ctrl+z to undo the previous action as well
                 if (!action.is_internal_undo) {
@@ -3946,7 +3964,7 @@ export class ULabel {
                 }
                 break;
             case "simplify_polygon_complex_layer":
-                this.simplify_polygon_complex_layer__undo(action.undo_payload);
+                this.simplify_polygon_complex_layer__undo(undo_payload);
                 // If the undo was triggered by the user, they
                 // expect ctrl+z to undo the previous action as well
                 if (!action.is_internal_undo) {
@@ -3954,10 +3972,10 @@ export class ULabel {
                 }
                 break;
             case "delete_annotations_in_polygon":
-                this.delete_annotations_in_polygon__undo(action.undo_payload);
+                this.delete_annotations_in_polygon__undo(undo_payload);
                 break;
             case "begin_brush":
-                this.begin_brush__undo(action.undo_payload);
+                this.begin_brush__undo(undo_payload);
                 break;
             case "finish_brush":
                 this.finish_brush__undo();
@@ -3970,48 +3988,53 @@ export class ULabel {
 
     redo_action(action) {
         this.update_frame(null, action.frame);
+        const redo_payload = JSON.parse(action.redo_payload);
+        console.log("redo: ", action.act_type)
         switch (action.act_type) {
             case "begin_annotation":
-                this.begin_annotation(null, action.redo_payload);
+                this.begin_annotation(null, redo_payload);
                 break;
             case "continue_annotation":
-                this.continue_annotation(null, null, action.redo_payload);
+                this.continue_annotation(null, null, redo_payload);
                 break;
             case "finish_annotation":
-                this.finish_annotation__redo(action.redo_payload);
+            case "finish_brush":
+                this.finish_annotation__redo(redo_payload);
                 break;
             case "edit_annotation":
-                this.edit_annotation__redo(action.redo_payload);
+                this.edit_annotation__redo(redo_payload);
                 break;
             case "move_annotation":
-                this.move_annotation__redo(action.redo_payload);
+                this.move_annotation__redo(redo_payload);
                 break;
             case "delete_annotation":
-                this.delete_annotation__redo(action.redo_payload);
+                this.delete_annotation__redo(redo_payload);
                 break;
             case "cancel_annotation":
-                this.cancel_annotation(action.redo_payload);
+                this.cancel_annotation(redo_payload);
                 break;
             case "assign_annotation_id":
-                this.assign_annotation_id(null, action.redo_payload);
+                this.assign_annotation_id(null, redo_payload);
                 break;
             case "create_annotation":
-                this.create_annotation__redo(action.redo_payload);
+                this.create_annotation__redo(redo_payload);
                 break;
             case "create_nonspatial_annotation":
-                this.create_nonspatial_annotation(action.redo_payload);
+                this.create_nonspatial_annotation(redo_payload);
                 break;
             case "start_complex_polygon":
-                this.start_complex_polygon(action.redo_payload);
+                this.start_complex_polygon(redo_payload);
                 break;
             case "merge_polygon_complex_layer":
-                this.merge_polygon_complex_layer(action.redo_payload.actid, action.redo_payload.layer_id, false, true);
+                this.merge_polygon_complex_layer(redo_payload.actid, redo_payload.layer_id, false, true);
                 break;
             case "simplify_polygon_complex_layer":
-                this.simplify_polygon_complex_layer(action.redo_payload.actid, action.redo_payload.active_idx, true);
+                this.simplify_polygon_complex_layer(redo_payload.actid, redo_payload.active_idx, true);
+                // Since this is an internal operation, user expects redo of the next action
+                this.redo();
                 break;
             case "delete_annotations_in_polygon":
-                this.delete_annotations_in_polygon(null, action.redo_payload);
+                this.delete_annotations_in_polygon(null, redo_payload);
                 break;
             default:
                 console.log("Redo error :(");
@@ -4868,8 +4891,6 @@ export class ULabel {
 
     }
 
-
-
     begin_edit(mouse_event) {
         // Create constants for convenience
         const current_subtask = this.subtasks[this.state["current_subtask"]]
@@ -5447,6 +5468,8 @@ export class ULabel {
                 this.undo_action(action);
             }
         }
+
+        // If the annotation still exists, remove it
     }
 
     finish_annotation__redo(redo_payload) {
@@ -6243,9 +6266,10 @@ export class ULabel {
             let n = this.subtasks[this.state["current_subtask"]]["actions"]["stream"].length;
             for (var i = 0; i < n; i++) {
                 if (this.subtasks[this.state["current_subtask"]]["actions"]["stream"][n - i - 1].act_type === "begin_annotation") {
-                    this.subtasks[this.state["current_subtask"]]["actions"]["stream"][n - i - 1].redo_payload.init_payload = JSON.parse(JSON.stringify(
-                        new_payload
-                    ));
+                    // Parse the payload, edit, and then stringify
+                    let redo_payload = JSON.parse(this.subtasks[this.state["current_subtask"]]["actions"]["stream"][n - i - 1].redo_payload);
+                    redo_payload.init_payload = new_payload;
+                    this.subtasks[this.state["current_subtask"]]["actions"]["stream"][n - i - 1].redo_payload = JSON.stringify(redo_payload);
                     break;
                 }
             }
