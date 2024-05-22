@@ -3977,8 +3977,8 @@ export class ULabel {
             case "begin_brush":
                 this.begin_brush__undo(undo_payload);
                 break;
-            case "finish_brush":
-                this.finish_brush__undo(undo_payload);
+            case "finish_modify_annotation":
+                this.finish_modify_annotation__undo(undo_payload);
                 break;
             default:
                 console.log("Undo error :(");
@@ -4035,8 +4035,8 @@ export class ULabel {
             case "delete_annotations_in_polygon":
                 this.delete_annotations_in_polygon(null, redo_payload);
                 break;
-            case "finish_brush":
-                this.finish_brush__redo(redo_payload);
+            case "finish_modify_annotation":
+                this.finish_modify_annotation__redo(redo_payload);
                 break;
             default:
                 console.log("Redo error :(");
@@ -4618,6 +4618,7 @@ export class ULabel {
             this.create_polygon_ender(gmx, gmy, active_id);
         }
 
+        const og_annotation = JSON.parse(JSON.stringify(current_subtask["annotations"]["access"][active_id]));
         // Prep the next part of the polygon
         current_subtask["annotations"]["access"][active_id]["spatial_payload"].push([]);
         // mark that we are starting complex polygon
@@ -4630,6 +4631,7 @@ export class ULabel {
             frame: this.state["current_frame"],
             undo_payload: {
                 actid: active_id,
+                annotation: og_annotation
             },
             redo_payload: {
                 actid: active_id
@@ -4860,17 +4862,17 @@ export class ULabel {
         }
     }
 
-    finish_brush__undo(undo_payload) {
+    finish_modify_annotation__undo(undo_payload) {
         // Replace the annotation with the old annotation
         this.subtasks[this.state["current_subtask"]]["annotations"]["access"][undo_payload.actid] = undo_payload.annotation;
         // Redraw the annotation
         this.redraw_annotation(undo_payload.actid);
     }
 
-    finish_brush__redo(redo_payload) {
+    finish_modify_annotation__redo(redo_payload) {
         // Record the action
         this.record_action({
-            act_type: "finish_brush",
+            act_type: "finish_modify_annotation",
             frame: this.state["current_frame"],
             undo_payload: {
                 actid: redo_payload.actid,
@@ -5344,15 +5346,6 @@ export class ULabel {
                 this.simplify_polygon_complex_layer(active_id, active_idx);
                 // Render merged layers. Also handles rebuilding containing box and redrawing
                 this.merge_polygon_complex_layer(active_id);
-                
-                // When shift key is held, we start a new complex layer
-                if (!current_subtask["state"]["is_in_brush_mode"] && mouse_event != null && mouse_event.shiftKey) {
-                    // Start a new complex layer
-                    this.start_complex_polygon();
-                } else {
-                    this.destroy_polygon_ender(active_id);
-                }
-
                 break;
             case "delete_polygon":
                 n_kpts = active_spatial_payload.length;
@@ -5395,6 +5388,57 @@ export class ULabel {
                 break;
         }
 
+        if (record_action) {
+            // Same payload for undo and redo
+            let undo_payload = {
+                actid: active_id,
+            }
+            let redo_payload = {
+                actid: active_id,
+            }
+
+            // Once we've finished a polygon or polyline, undoing will
+            // remove the entire completed annotation rather that undoing each point.
+            // Loop through the action stream until and remove every recorded action
+            // until we find the start_complex_polygon, begin_brush, or begin_annotation action
+            while (current_subtask["actions"]["stream"].length > 0) {
+                // Pop the action to remove it from the stream
+                let action = current_subtask["actions"]["stream"].pop();
+                console.log("removing: ", action.act_type);
+                if (action.act_type === "begin_annotation") {
+                    // Now we're done
+                    break;
+                } else if (action.act_type === "begin_brush" || action.act_type === "start_complex_polygon") {
+                    // Save the previous state of the annotation for undoing
+                    act_type = "finish_modify_annotation";
+                    undo_payload = JSON.parse(action.undo_payload);
+                    redo_payload.annotation = annotation;
+                    break;
+                }
+            }
+            
+            // Record the finish_annotation or finish_modify_annotation action
+            this.record_action({
+                act_type: act_type,
+                frame: this.state["current_frame"],
+                undo_payload: undo_payload,
+                redo_payload: redo_payload,
+            });
+
+            // When shift key is held, we start a new complex layer
+            if (
+                annotation["spatial_type"] === "polygon" &&
+                !current_subtask["state"]["is_in_brush_mode"] && 
+                mouse_event != null && 
+                mouse_event.shiftKey
+            ) {
+                // Start a new complex layer
+                this.start_complex_polygon();
+            } else {
+                this.destroy_polygon_ender(active_id);
+            }
+        }
+
         // TODO build a dialog here when necessary -- will also need to integrate with undo
         // TODO(3d)
         if (current_subtask["single_class_mode"]) {
@@ -5415,45 +5459,6 @@ export class ULabel {
         } else {
             current_subtask["state"]["active_id"] = null;
             current_subtask["state"]["is_in_progress"] = false;
-        }
-
-        if (record_action) {
-            // Same payload for undo and redo
-            let undo_payload = {
-                actid: active_id,
-            }
-            let redo_payload = {
-                actid: active_id,
-            }
-
-            // Once we've finished a polygon or polyline, undoing will
-            // remove the entire completed annotation rather that undoing each point.
-            // Loop through the action stream until and remove every recorded action
-            // until we find the start_complex_polygon, begin_brush, or begin_annotation action
-            while (current_subtask["actions"]["stream"].length > 0) {
-                // Pop the action to remove it from the stream
-                let action = current_subtask["actions"]["stream"].pop();
-                console.log("removing: ", action.act_type);
-                if (action.act_type === "start_complex_polygon" || action.act_type === "begin_annotation") {
-                    // Now we're done
-                    break;
-                } else if (action.act_type === "begin_brush") {
-                    // If we brushed onto an existing annotation, we need to save the previous state of the
-                    // annotation before the brush for undoing
-                    act_type = "finish_brush";
-                    undo_payload = JSON.parse(action.undo_payload);
-                    redo_payload.annotation = annotation;
-                    break;
-                }
-            }
-            
-            // Record the finish_annotation or finish_brush action
-            this.record_action({
-                act_type: act_type,
-                frame: this.state["current_frame"],
-                undo_payload: undo_payload,
-                redo_payload: redo_payload,
-            });
         }
     }
 
