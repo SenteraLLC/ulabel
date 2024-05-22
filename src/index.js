@@ -4301,17 +4301,18 @@ export class ULabel {
     }
 
     begin_annotation__undo(undo_payload) {
+        const current_subtask = this.subtasks[this.state["current_subtask"]];
         // Parse necessary data
         let ann = JSON.parse(undo_payload.ann_str);
         let unq_id = ann["id"];
 
         // Set annotation state not in progress, nullify active id
-        this.subtasks[this.state["current_subtask"]]["state"]["is_in_progress"] = false;
-        this.subtasks[this.state["current_subtask"]]["state"]["active_id"] = null;
+        current_subtask["state"]["is_in_progress"] = false;
+        current_subtask["state"]["active_id"] = null;
 
         // Destroy ender
         // TODO(3d)
-        const spatial_type = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][unq_id]["spatial_type"];
+        const spatial_type = current_subtask["annotations"]["access"][unq_id]["spatial_type"];
         if (spatial_type === "polygon" || spatial_type === "delete_polygon") {
             this.destroy_polygon_ender(unq_id);
         } else if (spatial_type === "polyline") {
@@ -4323,21 +4324,10 @@ export class ULabel {
         this.destroy_annotation_context(unq_id);
 
         // Remove from ordering
-        // TODO(3d)
-        let end_ann = this.subtasks[this.state["current_subtask"]]["annotations"]["ordering"].pop();
-        if (end_ann != unq_id) {
-            console.log("We may have a problem... undo replication");
-            console.log(end_ann, unq_id);
-        }
+        current_subtask["annotations"]["ordering"] = current_subtask["annotations"]["ordering"].filter((id) => id !== unq_id);
 
         // Remove from access
-        // TODO(3d)
-        if (unq_id in this.subtasks[this.state["current_subtask"]]["annotations"]["access"]) {
-            delete this.subtasks[this.state["current_subtask"]]["annotations"]["access"][unq_id];
-        }
-        else {
-            console.log("We may have a problem... undo replication");
-        }
+        delete current_subtask["annotations"]["access"][unq_id];
 
         this.suggest_edits(this.state["last_move"]);
     }
