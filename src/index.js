@@ -268,9 +268,9 @@ export class ULabel {
                                     // Get the active annotation, if any
                                     let target_id = null;
                                     if (current_subtask.state.active_id !== null) {
-                                        target_id = JSON.parse(JSON.stringify(current_subtask.state.active_id));
+                                        target_id = current_subtask.state.active_id;
                                     } else if (current_subtask.state.move_candidate !== null) {
-                                        target_id = JSON.parse(JSON.stringify(current_subtask.state.move_candidate["annid"]));
+                                        target_id = current_subtask.state.move_candidate["annid"];
                                     }
                                     // Update the class of the active annotation
                                     if (target_id !== null) {
@@ -367,9 +367,9 @@ export class ULabel {
                     // Get the active annotation, if any
                     let target_id = null;
                     if (current_subtask.state.active_id !== null) {
-                        target_id = JSON.parse(JSON.stringify(current_subtask.state.active_id));
+                        target_id = current_subtask.state.active_id;
                     } else if (current_subtask.state.move_candidate !== null) {
-                        target_id = JSON.parse(JSON.stringify(current_subtask.state.move_candidate["annid"]));
+                        target_id = current_subtask.state.move_candidate["annid"];
                     }
 
                     // Update the class of the active annotation
@@ -792,7 +792,7 @@ export class ULabel {
 
                 // Push to ordering and add to access
                 ul.subtasks[subtask_key]["annotations"]["ordering"].push(cand["id"]);
-                ul.subtasks[subtask_key]["annotations"]["access"][subtask["resume_from"][i]["id"]] = JSON.parse(JSON.stringify(cand));
+                ul.subtasks[subtask_key]["annotations"]["access"][subtask["resume_from"][i]["id"]] = cand;
 
                 if (cand["spatial_type"] === "polygon") {
                     // If missing any of `spatial_payload_holes` or `spatial_payload_child_indices`,
@@ -1568,9 +1568,9 @@ export class ULabel {
                 // Check if we are hovering an annotation
                 let target_id = null;
                 if (current_subtask.state.active_id !== null) {
-                    target_id = JSON.parse(JSON.stringify(current_subtask.state.active_id));
+                    target_id = current_subtask.state.active_id;
                 } else if (current_subtask.state.move_candidate !== null) {
-                    target_id = JSON.parse(JSON.stringify(current_subtask.state.move_candidate["annid"]));
+                    target_id = current_subtask.state.move_candidate["annid"];
                 }
                 // If we are not hovering an annotation, select default to the first class
                 if (target_id === null) {
@@ -1745,7 +1745,7 @@ export class ULabel {
                 bbox_pts = spatial_payload;
                 return [bbox_pts[bbi][0], bbox_pts[bbj][1]];
             case "point":
-                return JSON.parse(JSON.stringify(spatial_payload));
+                return spatial_payload;
             case "bbox3":
                 // TODO(3d)
                 bbi = parseInt(access_str[0], 10);
@@ -3066,15 +3066,6 @@ export class ULabel {
                         this.rebuild_containing_box(annid);
 
                         // TODO: need a more robust check for whether the annotation changed
-                        // // Then to verify the change, we compare containing boxes
-                        // if (this.containing_boxes_are_equal(og_annotation["containing_box"], annotation["containing_box"])) {
-                        //     // If the containing box is the same, then we revert the change
-                        //     annotation = JSON.parse(JSON.stringify(og_annotation));
-                        // } else {
-                        //     // save the unmodified annotation for undo
-                        //     modified_annotations[annid] = JSON.parse(JSON.stringify(og_annotation));
-                        //     needs_redraw = true;
-                        // }
                         modified_annotations[annid] = JSON.parse(JSON.stringify(og_annotation));
                         needs_redraw = true;
                     }
@@ -3191,7 +3182,7 @@ export class ULabel {
 
     // Replace an entire annotation with a new one. Generally used for undo/redo.
     replace_annotation(annotation_id, annotation) {
-        this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annotation_id] = JSON.parse(JSON.stringify(annotation));
+        this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annotation_id] = annotation;
     }
 
     show_edit_suggestion(nearest_point, currently_exists) {
@@ -4209,7 +4200,7 @@ export class ULabel {
             "deprecated_by": { "human": false },
             "spatial_type": annotation_mode,
             "spatial_payload": init_spatial,
-            "classification_payloads": JSON.parse(JSON.stringify(init_id_payload)),
+            "classification_payloads": init_id_payload,
             "line_size": line_size,
             "containing_box": containing_box,
             "frame": frame,
@@ -6279,7 +6270,7 @@ export class ULabel {
         let actid = undo_payload.actid;
         let new_payload = JSON.parse(JSON.stringify(undo_payload.old_id_payload));
         // TODO(3d)
-        this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["classification_payloads"] = JSON.parse(JSON.stringify(new_payload));
+        this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["classification_payloads"] = new_payload;
         this.redraw_annotation(actid);
         this.recolor_active_polygon_ender();
         this.recolor_brush_circle();
