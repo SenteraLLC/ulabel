@@ -4106,7 +4106,6 @@ export class ULabel {
         };
 
         let undo_frame = this.state["current_frame"];
-        let ann_str;
 
         this.subtasks[this.state["current_subtask"]]["annotations"]["access"][unq_id] = new_annotation;
         if (redoing) {
@@ -4114,7 +4113,6 @@ export class ULabel {
         }
         this.subtasks[this.state["current_subtask"]]["annotations"]["access"][unq_id]["annotation_meta"] = this.config["annotation_meta"];
         this.subtasks[this.state["current_subtask"]]["annotations"]["ordering"].push(unq_id);
-        ann_str = JSON.stringify(this.subtasks[this.state["current_subtask"]]["annotations"]["access"][unq_id]);
 
         // Draw new annotation
         this.draw_annotation_from_id(unq_id);
@@ -4133,10 +4131,10 @@ export class ULabel {
                 annotation_mode: annotation_mode,
                 init_spatial: null,
                 finished: true,
-                init_payload: JSON.parse(JSON.stringify(this.subtasks[this.state["current_subtask"]]["state"]["id_payload"]))
+                init_payload: this.subtasks[this.state["current_subtask"]]["state"]["id_payload"]
             },
             undo_payload: {
-                ann_str: ann_str,
+                unq_id: unq_id,
                 frame: undo_frame
             },
         }, redoing);
@@ -4144,22 +4142,17 @@ export class ULabel {
     }
 
     create_nonspatial_annotation__undo(undo_payload) {
-        let ann = JSON.parse(undo_payload.ann_str);
-        let unq_id = ann["id"];
+        const end_ann = this.subtasks[this.state["current_subtask"]]["annotations"]["ordering"].pop();
 
-        let end_ann;
-        end_ann = this.subtasks[this.state["current_subtask"]]["annotations"]["ordering"].pop();
-
-        if (end_ann != unq_id) {
+        if (end_ann !== undo_payload.unq_id) {
             console.log("We may have a problem... undo replication");
-            console.log(end_ann, unq_id);
+            console.log(end_ann, undo_payload.unq_id);
         }
 
         // Remove from access
-        if (unq_id in this.subtasks[this.state["current_subtask"]]["annotations"]["access"]) {
-            delete this.subtasks[this.state["current_subtask"]]["annotations"]["access"][unq_id];
-        }
-        else {
+        if (undo_payload.unq_id in this.subtasks[this.state["current_subtask"]]["annotations"]["access"]) {
+            delete this.subtasks[this.state["current_subtask"]]["annotations"]["access"][undo_payload.unq_id];
+        } else {
             console.log("We may have a problem... undo replication");
         }
 
@@ -6755,9 +6748,8 @@ export class ULabel {
                 this.destroy_annotation_context(id, subtask);
             }
         }
-        let newanns = JSON.parse(JSON.stringify(new_annotations));
         // Set new annotations and initialize canvases
-        ULabel.process_resume_from(this, subtask, {"resume_from": newanns});
+        ULabel.process_resume_from(this, subtask, {"resume_from": new_annotations});
         ULabel.initialize_annotation_canvases(this, subtask);
         // Redraw all annotations to render them
         this.redraw_all_annotations(subtask);
