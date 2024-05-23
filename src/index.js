@@ -2834,7 +2834,7 @@ export class ULabel {
     merge_polygon_complex_layer(annotation_id, layer_idx = null, recursive_call = false, redoing = false, redraw = true) {
         const annotation = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annotation_id];
         if (annotation["spatial_type"] === "polygon" && annotation["spatial_payload"].length > 1) {
-            let undo_annotation_payload = JSON.parse(JSON.stringify(annotation));
+            const og_polygon_spatial_data = ULabelAnnotation.get_polygon_spatial_data(annotation, true);
             if (layer_idx === null) {
                 // Start with the newest layer
                 layer_idx = annotation["spatial_payload"].length - 1;
@@ -2909,7 +2909,7 @@ export class ULabel {
                     frame: this.state["current_frame"],
                     undo_payload: {
                         actid: annotation_id,
-                        annotation: undo_annotation_payload,
+                        og_polygon_spatial_data: og_polygon_spatial_data,
                     },
                     redo_payload: {
                         actid: annotation_id,
@@ -2928,7 +2928,7 @@ export class ULabel {
 
     // Undo the merging of layers by replacing the annotation with the undo payload
     merge_polygon_complex_layer__undo(undo_payload) {
-        this.replace_annotation(undo_payload["actid"], undo_payload["annotation"]);
+        this.replace_polygon_spatial_data(undo_payload["actid"], undo_payload["og_polygon_spatial_data"]);
         this.rebuild_containing_box(undo_payload["actid"]);
         this.redraw_annotation(undo_payload["actid"]);
     }
@@ -2951,9 +2951,9 @@ export class ULabel {
         // Get the annotation
         const annotation = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annotation_id];
         // Save the annotation for undo
-        let undo_annotation_payload = JSON.parse(JSON.stringify(annotation));
+        const og_polygon_spatial_data = ULabelAnnotation.get_polygon_spatial_data(annotation, true);
         // Get the layer
-        let layer = annotation["spatial_payload"][active_idx];
+        const layer = annotation["spatial_payload"][active_idx];
         // layer is a list of points, so we need to wrap it in a list
         // Replace the layer with the simplified layer
         annotation["spatial_payload"][active_idx] = GeometricUtils.turf_simplify_complex_polygon([layer])[0];
@@ -2964,7 +2964,7 @@ export class ULabel {
             frame: this.state["current_frame"],
             undo_payload: {
                 actid: annotation_id,
-                annotation: undo_annotation_payload,
+                og_polygon_spatial_data: og_polygon_spatial_data,
             },
             redo_payload: {
                 actid: annotation_id,
@@ -2975,7 +2975,7 @@ export class ULabel {
 
     // Undo the simplification of a layer by replacing the annotation with the undo payload
     simplify_polygon_complex_layer__undo(undo_payload) {
-        this.replace_annotation(undo_payload["actid"], undo_payload["annotation"]);
+        this.replace_polygon_spatial_data(undo_payload["actid"], undo_payload["og_polygon_spatial_data"]);
         this.rebuild_containing_box(undo_payload["actid"]);
         this.redraw_annotation(undo_payload["actid"]);
     }
@@ -2983,18 +2983,18 @@ export class ULabel {
     // Delete all annotations that are completely within a delete annotation (a simple polygon).
     delete_annotations_in_polygon(delete_annid, redo_payload = null) {
         let redoing = false;
-        let delete_annotation;
+        let delete_annotation, delete_polygon;
         if (redo_payload !== null) {
             redoing = true;
-            delete_annid = redo_payload["actid"];
-            delete_annotation = redo_payload["delete_annotation"];
+            delete_polygon = redo_payload["delete_polygon"];
         } else {
             // Get the delete annotation
             delete_annotation = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][delete_annid];
+            delete_polygon = delete_annotation["spatial_payload"];
+            // Deprecate the delete annotation
+            delete_annotation["deprecated"] = true;
         }
-        const delete_polygon = delete_annotation["spatial_payload"];
-        // Deprecate the delete annotation
-        delete_annotation["deprecated"] = true;
+        
         // Get the list of annotations
         const annotations = this.subtasks[this.state["current_subtask"]]["annotations"]["access"];
         // Track the ids of deprecated annotations for undo
@@ -3111,8 +3111,7 @@ export class ULabel {
                 modified_annotations: modified_annotations,
             },
             redo_payload: {
-                actid: delete_annid,
-                delete_annotation: JSON.parse(JSON.stringify(delete_annotation)),
+                delete_polygon: delete_polygon,
             }
         }, redoing);
         if (!redoing) {
@@ -3122,8 +3121,8 @@ export class ULabel {
             this.destroy_annotation_context(delete_annid);
             delete this.subtasks[this.state["current_subtask"]]["annotations"]["access"][delete_annid];
             this.subtasks[this.state["current_subtask"]]["annotations"]["ordering"] = this.subtasks[this.state["current_subtask"]]["annotations"]["ordering"].filter((value) => value !== delete_annid);
+            this.remove_recorded_events_for_annotation(delete_annid);
         }
-        this.remove_recorded_events_for_annotation(delete_annid);
     }
 
     // Undo the deletion of annotations by replacing the annotations with the undo payload
@@ -3153,7 +3152,7 @@ export class ULabel {
         const delete_polygon = GeometricUtils.bbox_to_simple_polygon(delete_bbox);
         delete_annotation["spatial_payload"] = delete_polygon;
         delete_annotation["spatial_type"] = "delete_polygon";
-        // All the deleteion work is done in delete_annotations_in_polygon
+        // All the deletion work is done in delete_annotations_in_polygon
         this.delete_annotations_in_polygon(delete_annid);
     }
 
@@ -3184,6 +3183,15 @@ export class ULabel {
     // Replace an entire annotation with a new one. Generally used for undo/redo.
     replace_annotation(annotation_id, annotation) {
         this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annotation_id] = annotation;
+    }
+
+    // Replace the spatial data of a polygon annotation with new spatial data. Generally used for undo/redo.
+    replace_polygon_spatial_data(annotation_id, new_spatial_data) {
+        const annotation = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annotation_id];
+        annotation["spatial_payload"] = new_spatial_data["spatial_payload"];
+        annotation["spatial_payload_holes"] = new_spatial_data["spatial_payload_holes"];
+        annotation["spatial_payload_child_indices"] = new_spatial_data["spatial_payload_child_indices"];
+        annotation["containing_box"] = new_spatial_data["containing_box"];
     }
 
     show_edit_suggestion(nearest_point, currently_exists) {
@@ -4272,14 +4280,13 @@ export class ULabel {
                 annotation_mode: annotation_mode,
                 gmx: gmx,
                 gmy: gmy,
-                init_spatial: JSON.parse(JSON.stringify(init_spatial)),
+                init_spatial: init_spatial,
                 finished: redoing || annotation_mode === "point",
-                init_payload: JSON.parse(JSON.stringify(this.subtasks[subtask]["state"]["id_payload"]))
+                init_payload: this.subtasks[subtask]["state"]["id_payload"]
             },
             undo_payload: {
                 // TODO(3d)
                 actid: unq_id,
-                ann_str: JSON.stringify(this.subtasks[subtask]["annotations"]["access"][unq_id])
             },
         }, redoing);
         if (redoing) {
@@ -4303,8 +4310,7 @@ export class ULabel {
     begin_annotation__undo(undo_payload) {
         const current_subtask = this.subtasks[this.state["current_subtask"]];
         // Parse necessary data
-        let ann = JSON.parse(undo_payload.ann_str);
-        let unq_id = ann["id"];
+        const unq_id = undo_payload.actid;
 
         // Set annotation state not in progress, nullify active id
         current_subtask["state"]["is_in_progress"] = false;
@@ -4618,7 +4624,7 @@ export class ULabel {
             this.create_polygon_ender(gmx, gmy, active_id);
         }
 
-        const og_annotation = JSON.parse(JSON.stringify(current_subtask["annotations"]["access"][active_id]));
+        const polygon_spatial_data = ULabelAnnotation.get_polygon_spatial_data(current_subtask["annotations"]["access"][active_id], true);
         // Prep the next part of the polygon
         current_subtask["annotations"]["access"][active_id]["spatial_payload"].push([]);
         // mark that we are starting complex polygon
@@ -4631,7 +4637,7 @@ export class ULabel {
             frame: this.state["current_frame"],
             undo_payload: {
                 actid: active_id,
-                annotation: og_annotation
+                polygon_spatial_data: polygon_spatial_data
             },
             redo_payload: {
                 actid: active_id
@@ -4756,7 +4762,7 @@ export class ULabel {
                 frame: this.state["current_frame"],
                 undo_payload: {
                     actid: brush_cand_active_id,
-                    annotation: current_subtask["annotations"]["access"][brush_cand_active_id],
+                    polygon_spatial_data: ULabelAnnotation.get_polygon_spatial_data(current_subtask["annotations"]["access"][brush_cand_active_id])
                 },
             });
             this.continue_brush(mouse_event);
@@ -4863,10 +4869,12 @@ export class ULabel {
     }
 
     finish_modify_annotation__undo(undo_payload) {
-        // Replace the annotation with the old annotation
-        this.subtasks[this.state["current_subtask"]]["annotations"]["access"][undo_payload.actid] = undo_payload.annotation;
+        // Replace the polygon spatial data
+        this.replace_polygon_spatial_data(undo_payload.actid, undo_payload.polygon_spatial_data);
         // Redraw the annotation
         this.redraw_annotation(undo_payload.actid);
+        // Update dialogs
+        this.suggest_edits(this.state["last_move"]);
     }
 
     finish_modify_annotation__redo(redo_payload) {
@@ -4876,18 +4884,20 @@ export class ULabel {
             frame: this.state["current_frame"],
             undo_payload: {
                 actid: redo_payload.actid,
-                annotation: this.subtasks[this.state["current_subtask"]]["annotations"]["access"][redo_payload.actid],
+                polygon_spatial_data: ULabelAnnotation.get_polygon_spatial_data(this.subtasks[this.state["current_subtask"]]["annotations"]["access"][redo_payload.actid]),
             },
             redo_payload: {
                 actid: redo_payload.actid,
-                annotation: redo_payload.annotation,
+                polygon_spatial_data: redo_payload.polygon_spatial_data,
             }
         }, true);
 
-        // Replace the annotation with the new annotation
-        this.subtasks[this.state["current_subtask"]]["annotations"]["access"][redo_payload.actid] = redo_payload.annotation;
+        // Replace the polygon spatial data
+        this.replace_polygon_spatial_data(redo_payload.actid, redo_payload.polygon_spatial_data);
         // Redraw the annotation
         this.redraw_annotation(redo_payload.actid);
+        // Update dialogs
+        this.suggest_edits(this.state["last_move"]);
     }
 
     begin_edit(mouse_event) {
@@ -4927,7 +4937,7 @@ export class ULabel {
 
         current_subtask["state"]["active_id"] = current_subtask["state"]["edit_candidate"]["annid"];
         current_subtask["state"]["is_in_edit"] = true;
-        let edit_candidate = JSON.parse(JSON.stringify(current_subtask["state"]["edit_candidate"]));
+        const edit_candidate = current_subtask["state"]["edit_candidate"];
         let starting_point = this.get_with_access_string(current_subtask["state"]["edit_candidate"]["annid"], edit_candidate["access"]);
         this.edit_annotation(mouse_event);
         this.suggest_edits(mouse_event);
@@ -5127,7 +5137,7 @@ export class ULabel {
             frame: frame,
             undo_payload: {
                 actid: redo_payload.actid,
-                edit_candidate: JSON.parse(JSON.stringify(redo_payload.edit_candidate)),
+                edit_candidate: redo_payload.edit_candidate,
                 starting_x: cur_loc[0],
                 starting_y: cur_loc[1],
                 deprecate_old: redo_payload.deprecate_old,
@@ -5136,7 +5146,7 @@ export class ULabel {
             },
             redo_payload: {
                 actid: redo_payload.actid,
-                edit_candidate: JSON.parse(JSON.stringify(redo_payload.edit_candidate)),
+                edit_candidate: redo_payload.edit_candidate,
                 ending_x: redo_payload.ending_x,
                 ending_y: redo_payload.ending_y,
                 finished: true,
@@ -5190,8 +5200,8 @@ export class ULabel {
         this.drag_state["move"]["mouse_start"][0] = mouse_event.target.pageX 
         this.drag_state["move"]["mouse_start"][1] +=
         */
-        let mc = JSON.parse(JSON.stringify(current_subtask["state"]["move_candidate"]));
-        let annotation_mode = annotations[new_id]["spatial_type"];
+        const move_candidate = current_subtask["state"]["move_candidate"];
+        const annotation_mode = annotations[new_id]["spatial_type"];
         let frame = this.state["current_frame"];
         if (MODES_3D.includes(annotation_mode)) {
             frame = null;
@@ -5202,7 +5212,7 @@ export class ULabel {
             frame: frame,
             undo_payload: {
                 actid: current_subtask["state"]["active_id"],
-                move_candidate: mc,
+                move_candidate: move_candidate,
                 diffX: 0,
                 diffY: 0,
                 diffZ: 0,
@@ -5212,7 +5222,7 @@ export class ULabel {
             },
             redo_payload: {
                 actid: this.subtasks[this.state["current_subtask"]]["state"]["active_id"],
-                move_candidate: mc,
+                move_candidate: move_candidate,
                 diffX: 0,
                 diffY: 0,
                 diffZ: 0,
@@ -5241,7 +5251,22 @@ export class ULabel {
         let is_complex_layer = false;
         if (annid !== null) {
             const annotation = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid];
-            const og_annotation = JSON.parse(JSON.stringify(annotation));
+            // Record the cancel action
+            this.record_action({
+                act_type: "cancel_annotation",
+                frame: this.state["current_frame"],
+                undo_payload: {
+                    annid: annid,
+                    suggest_edits: false,
+                    drag_state: this.drag_state,
+                    is_complex_layer: is_complex_layer,
+                    annotation: annotation,
+                },
+                redo_payload: {
+                    annid: annid,
+                }
+            }, redo_payload !== null);
+
             const spatial_type = annotation["spatial_type"];
             // When drawing a complex layer, we will only delete the last layer
             if (
@@ -5255,22 +5280,6 @@ export class ULabel {
                 // This will also clear is_in_progress and other states
                 this.delete_annotation(annid, null, false);
             }
-
-            // Record the cancel action
-            this.record_action({
-                act_type: "cancel_annotation",
-                frame: this.state["current_frame"],
-                undo_payload: {
-                    annid: annid,
-                    suggest_edits: false,
-                    drag_state: JSON.parse(JSON.stringify(this.drag_state)),
-                    is_complex_layer: is_complex_layer,
-                    annotation: og_annotation,
-                },
-                redo_payload: {
-                    annid: annid,
-                }
-            }, redo_payload !== null);
         }
     }
 
@@ -5281,7 +5290,7 @@ export class ULabel {
 
         if (undo_payload.is_complex_layer) {
             // Restore the removed layer
-            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][undo_payload.annid] = JSON.parse(JSON.stringify(undo_payload.annotation));
+            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][undo_payload.annid] = undo_payload.annotation;
             // Redraw the annotation
             this.redraw_annotation(undo_payload.annid);
         } else {
@@ -5412,7 +5421,7 @@ export class ULabel {
                     // Save the previous state of the annotation for undoing
                     act_type = "finish_modify_annotation";
                     undo_payload = JSON.parse(action.undo_payload);
-                    redo_payload.annotation = annotation;
+                    redo_payload.polygon_spatial_data = ULabelAnnotation.get_polygon_spatial_data(annotations[active_id]);
                     break;
                 }
             }
@@ -5467,6 +5476,8 @@ export class ULabel {
         mark_deprecated(this.subtasks[this.state["current_subtask"]]["annotations"]["access"][undo_payload.actid], true);
         // Redraw the annotation
         this.redraw_annotation(undo_payload.actid);
+        // Update dialogs
+        this.suggest_edits(this.state["last_move"]);
     }
 
     finish_annotation__redo(redo_payload) {
@@ -5474,7 +5485,7 @@ export class ULabel {
         mark_deprecated(this.subtasks[this.state["current_subtask"]]["annotations"]["access"][redo_payload.actid], false);
         // Redraw the annotation
         this.redraw_annotation(redo_payload.actid);
-
+        // Record the action
         this.record_action({
             act_type: "finish_annotation",
             frame: this.state["current_frame"],
@@ -5485,6 +5496,8 @@ export class ULabel {
                 actid: redo_payload.actid,
             }
         }, true);
+        // Update dialogs
+        this.suggest_edits(this.state["last_move"]);
     }
 
     finish_edit() {
@@ -6225,24 +6238,19 @@ export class ULabel {
     }
 
     assign_annotation_id(actid = null, redo_payload = null) {
-        let new_payload = null;
-        let old_payload = null;
+        let new_payload, old_payload;
         let redoing = false;
         // TODO(3d)
         if (redo_payload === null) {
             if (actid === null) {
                 actid = this.subtasks[this.state["current_subtask"]]["state"]["idd_associated_annotation"];
             }
-            old_payload = JSON.parse(JSON.stringify(
-                this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["classification_payloads"]
-            ));
-            new_payload = JSON.parse(JSON.stringify(
-                this.subtasks[this.state["current_subtask"]]["state"]["id_payload"]
-            ));
+            old_payload = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["classification_payloads"];
+            new_payload = this.subtasks[this.state["current_subtask"]]["state"]["id_payload"];
         } else {
             redoing = true;
-            old_payload = JSON.parse(JSON.stringify(redo_payload.old_id_payload));
-            new_payload = JSON.parse(JSON.stringify(redo_payload.new_id_payload));
+            old_payload = redo_payload.old_id_payload;
+            new_payload = redo_payload.new_id_payload;
             actid = redo_payload.actid;
         }
 
@@ -6281,12 +6289,12 @@ export class ULabel {
                 act_type: "assign_annotation_id",
                 undo_payload: {
                     actid: actid,
-                    old_id_payload: JSON.parse(JSON.stringify(old_payload))
+                    old_id_payload: old_payload
                 },
                 redo_payload: {
                     actid: actid,
-                    old_id_payload: JSON.parse(JSON.stringify(old_payload)),
-                    new_id_payload: JSON.parse(JSON.stringify(new_payload))
+                    old_id_payload: old_payload,
+                    new_id_payload: new_payload
                 }
             }, redoing);
         }
@@ -6294,7 +6302,7 @@ export class ULabel {
 
     assign_annotation_id__undo(undo_payload) {
         let actid = undo_payload.actid;
-        let new_payload = JSON.parse(JSON.stringify(undo_payload.old_id_payload));
+        let new_payload = undo_payload.old_id_payload;
         // TODO(3d)
         this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["classification_payloads"] = new_payload;
         this.redraw_annotation(actid);
