@@ -1690,8 +1690,13 @@ export class ULabel {
         }
     }
 
-    // Find the next available annotation context and return its ID
-    // If all contexts are in use, create a new one
+    /**
+     * Find the next available annotation context and return its ID.
+     * If all annotation contexts are in use, create a new canvas and return it's id.
+     * 
+     * @param {string} subtask subtask name
+     * @returns {string} The ID of an available canvas
+     */
     get_next_available_canvas_id(subtask = null) {
         if (subtask === null) {
             subtask = this.state["current_subtask"];
@@ -1707,7 +1712,12 @@ export class ULabel {
         return this.create_annotation_canvas(subtask);
     }
 
-    // Create a new canvas and return its ID
+    /**
+     * Create a new canvas and return its ID
+     * 
+     * @param {string} subtask name
+     * @returns {string} The ID of a new canvas
+     */
     create_annotation_canvas(subtask) {
         const canvas_id = `canvas__${this.make_new_annotation_id()}`;
 
@@ -1734,7 +1744,13 @@ export class ULabel {
         return canvas_id;
     }
 
-    // Create a new canvas for an individual annotation and return its context
+    /**
+     * Get the ID of the next available canvas context and add the annotation ID to it.
+     * 
+     * @param {string} annotation_id annotation ID
+     * @param {string} subtask subtask name
+     * @returns {string} The ID of the canvas context
+     */
     get_init_canvas_context_id(annotation_id, subtask = null) {
         if (subtask === null) {
             subtask = this.state["current_subtask"];
@@ -2463,6 +2479,15 @@ export class ULabel {
         }
     }
 
+
+    /**
+     * Redraw all annotations in a given annotation context
+     * 
+     * @param {string} canvas_id ID of the canvas to redraw annotations in
+     * @param {string} subtask subtask name
+     * @param {number} offset used to offset annotations, usually while rendering a move
+     * @param {Array<string>} annotation_ids_to_offset  list of annotation ids to offset
+     */
     redraw_all_annotations_in_annotation_context(canvas_id, subtask, offset = null, annotation_ids_to_offset = null) {
         // Clear the canvas
         this.clear_annotation_canvas(canvas_id, subtask);
@@ -2496,6 +2521,13 @@ export class ULabel {
         this.handle_nonspatial_redraw_end(subtask);
     }
 
+    /**
+     * Redraw all annotations in a given subtask, or all subtasks if subtask is null
+     * 
+     * @param {string} subtask subtask name
+     * @param {number} offset used to offset annotations, usually while rendering a move 
+     * @param {boolean} nonspatial_only if true, only redraw nonspatial annotations 
+     */
     redraw_all_annotations(subtask = null, offset = null, nonspatial_only = false) {
         // TODO(3d)
         if (subtask === null) {
@@ -2516,6 +2548,13 @@ export class ULabel {
         this.toolbox.redraw_update_items(this);
     }
 
+    /**
+     * Redraw an annotation, given its id
+     * 
+     * @param {string} annotation_id ID of the annotation to redraw
+     * @param {string} subtask subtask name
+     * @param {number} offset used to offset annotations, usually while rendering a move
+     */
     redraw_annotation(annotation_id, subtask = null, offset = null) {
         if (subtask === null) {
             subtask = this.state["current_subtask"];
@@ -2533,7 +2572,13 @@ export class ULabel {
         this.toolbox.redraw_update_items(this);
     }
 
-    // Find each unique annotation context and redraw all annotations in each context
+    /**
+     * Find each unique annotation context and redraw all annotations in each context
+     * 
+     * @param {Array<string>} annotation_ids IDs of annotations to redraw
+     * @param {string} subtask subtask name  
+     * @param {number} offset used to offset annotations, usually while rendering a move 
+     */
     redraw_multiple_spatial_annotations(annotation_ids, subtask = null, offset = null) {
         if (subtask === null) {
             subtask = this.state["current_subtask"];
@@ -3249,12 +3294,22 @@ export class ULabel {
         this.subtasks[this.state["current_subtask"]]["actions"]["stream"] = new_action_stream;
     }
 
-    // Replace an entire annotation with a new one. Generally used for undo/redo.
+    /**
+     * Replace an entire annotation with a new one. Generally used for undo/redo.
+     * 
+     * @param {string} annotation_id The id of the annotation to replace
+     * @param {object} new_annotation The new annotation to replace the old one
+     */
     replace_annotation(annotation_id, annotation) {
         this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annotation_id] = annotation;
     }
 
-    // Replace the spatial data of a polygon annotation with new spatial data. Generally used for undo/redo.
+    /**
+     * Replace the spatial data of a polygon annotation with new spatial data. Generally used for undo/redo.
+     * 
+     * @param {string} annotation_id The id of the annotation to replace
+     * @param {object} new_spatial_data The new spatial data to replace the old one
+     */
     replace_polygon_spatial_data(annotation_id, new_spatial_data) {
         const annotation = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annotation_id];
         annotation["spatial_payload"] = new_spatial_data["spatial_payload"];
@@ -4928,6 +4983,11 @@ export class ULabel {
         }
     }
 
+    /**
+     * Undo an annotation modification, for example a brush stroke
+     * 
+     * @param {object} undo_payload {actid: string, annotation: object}
+     */
     finish_modify_annotation__undo(undo_payload) {
         // Replace the polygon spatial data
         this.replace_polygon_spatial_data(undo_payload.actid, undo_payload.polygon_spatial_data);
@@ -4937,6 +4997,11 @@ export class ULabel {
         this.suggest_edits(this.state["last_move"]);
     }
 
+    /**
+     * Redo an annotation modification, for example a brush stroke
+     * 
+     * @param {object} redo_payload {actid: string, polygon_spatial_data: object}
+     */
     finish_modify_annotation__redo(redo_payload) {
         // Record the action
         this.record_action({
