@@ -1741,7 +1741,6 @@ export class ULabel {
         }
         // Get the next available canvas id
         const canvas_id = this.get_next_available_canvas_id(subtask);
-        console.log("next available canvas id", canvas_id);
         // Add the annotation id to the canvas context
         this.subtasks[subtask]["state"]["annotation_contexts"][canvas_id]["annotation_ids"].push(annotation_id);
 
@@ -2490,7 +2489,6 @@ export class ULabel {
     }
 
     redraw_all_annotations_in_annotation_context(canvas_id, subtask, offset = null, annotation_ids_to_offset = null) {
-        console.log("redraw_all_annotations_in_annotation_context", canvas_id)
         // Clear the canvas
         this.clear_annotation_canvas(canvas_id, subtask);
         // Handle redraw of each annotation in the context
@@ -4024,7 +4022,6 @@ export class ULabel {
     undo_action(action) {
         this.update_frame(null, action.frame);
         const undo_payload = JSON.parse(action.undo_payload);
-        console.log("undo: ", action.act_type)
         switch (action.act_type) {
             case "begin_annotation":
                 this.begin_annotation__undo(undo_payload);
@@ -4093,7 +4090,6 @@ export class ULabel {
     redo_action(action) {
         this.update_frame(null, action.frame);
         const redo_payload = JSON.parse(action.redo_payload);
-        console.log("redo: ", action.act_type)
         switch (action.act_type) {
             case "begin_annotation":
                 this.begin_annotation(null, redo_payload);
@@ -5502,7 +5498,6 @@ export class ULabel {
             while (current_subtask["actions"]["stream"].length > 0) {
                 // Pop the action to remove it from the stream
                 let action = current_subtask["actions"]["stream"].pop();
-                console.log("removing: ", action.act_type);
                 if (action.act_type === "begin_annotation") {
                     // Now we're done
                     break;
