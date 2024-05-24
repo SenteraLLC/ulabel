@@ -1708,7 +1708,7 @@ export class ULabel {
     }
 
     // Create a new canvas and return its ID
-    create_annotation_canvas(subtask = null) {
+    create_annotation_canvas(subtask) {
         const canvas_id = `canvas__${this.make_new_annotation_id()}`;
 
         // Add canvas to the "canvasses__${subtask}" div
@@ -2460,31 +2460,6 @@ export class ULabel {
         // Keep `==` here, we want to catch null and undefined
         if (frame == null || frame == "undefined" || frame == this.state["current_frame"]) {
             this.draw_annotation(this.subtasks[subtask]["annotations"]["access"][id], false, offset, subtask);
-        }
-    }
-
-    // Draws the first n annotations on record
-    redraw_n_annotations(n, offset = null, subtask = null, nonspatial_only = false) {
-        if (subtask === null) {
-            subtask = this.state["current_subtask"];
-        }
-        
-        for (var i = 0; i < n; i++) {
-            let annid = this.subtasks[subtask]["annotations"]["ordering"][i];
-            // Skip spatial annotations to save on time if we only need to redraw nonspatial annotations on the front context
-            let is_spatial = !NONSPATIAL_MODES.includes(this.subtasks[subtask]["annotations"]["access"][annid]["spatial_type"]);
-            if (nonspatial_only && is_spatial) {
-                continue;
-            } else if (is_spatial) {
-                // Clear the annotation's canvas
-                this.clear_annotation_canvas(annid, subtask);
-            }
-            // Draw the annotation
-            if (offset != null && offset["id"] === annid) {
-                this.draw_annotation_from_id(annid, offset, subtask);
-            } else {
-                this.draw_annotation_from_id(annid, null, subtask);
-            }
         }
     }
 
