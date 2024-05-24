@@ -1412,7 +1412,9 @@ export class AnnotationResizeItem extends ToolboxItem {
             }
         }
 
-        this.set_size_cookie(subtask.annotations.access[subtask.annotations.ordering[0]].line_size, subtask);
+        if (subtask.annotations.ordering.length > 0) {
+            this.set_size_cookie(subtask.annotations.access[subtask.annotations.ordering[0]].line_size, subtask);
+        }
     }
 
     //Loop through all subtasks and apply a size to them all

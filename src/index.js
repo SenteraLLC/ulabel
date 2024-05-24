@@ -8,6 +8,7 @@ import {
     DELETE_MODES,
     NONSPATIAL_MODES,
     MODES_3D,
+    N_ANNOS_PER_CANVAS,
 } from '../build/annotation';
 import { ULabelSubtask } from '../build/subtask';
 import { GeometricUtils } from '../build/geometric_utils';
@@ -885,7 +886,7 @@ export class ULabel {
                 // Rendering context
                 "front_context": null,
                 "back_context": null,
-                "annotation_contexts": [],
+                "annotation_contexts": {}, // {canvas_id: {context: ctx, annotation_ids: []}, ...}
 
                 // Generic dialogs
                 "visible_dialogs": {}
@@ -1689,13 +1690,28 @@ export class ULabel {
         }
     }
 
-    // Create a new canvas for an individual annotation and return its context
-    get_init_canvas_context_id(annotation_id, subtask = null) {
+    // Find the next available annotation context and return its ID
+    // If all contexts are in use, create a new one
+    get_next_available_canvas_id(subtask = null) {
         if (subtask === null) {
             subtask = this.state["current_subtask"];
         }
-        const canvas_id = `canvas__${annotation_id}`;
-        // Add canvas to the "cancasses__${subtask}" div
+        const canvas_ids = Object.keys(this.subtasks[subtask]["state"]["annotation_contexts"])
+        for (let i = 0; i < canvas_ids.length; i++) {
+            // If the canvas has less than N_ANNOS_PER_CANVAS annotations, return its ID
+            if (this.subtasks[subtask]["state"]["annotation_contexts"][canvas_ids[i]]["annotation_ids"].length < N_ANNOS_PER_CANVAS) {
+                return canvas_ids[i];
+            }
+        }
+        // If no canvas has less than N_ANNOS_PER_CANVAS annotations, create a new canvas
+        return this.create_annotation_canvas(subtask);
+    }
+
+    // Create a new canvas and return its ID
+    create_annotation_canvas(subtask = null) {
+        const canvas_id = `canvas__${this.make_new_annotation_id()}`;
+
+        // Add canvas to the "canvasses__${subtask}" div
         $("#canvasses__" + subtask).append(`
             <canvas 
                 id="${canvas_id}" 
@@ -1710,7 +1726,24 @@ export class ULabel {
         $("#" + canvas_id).css("z-index", BACK_Z_INDEX);
 
         // Add the canvas context to the state
-        this.subtasks[subtask]["state"]["annotation_contexts"][annotation_id] = document.getElementById(canvas_id).getContext("2d");
+        this.subtasks[subtask]["state"]["annotation_contexts"][canvas_id] = {
+            "annotation_ids": [],
+            "context": document.getElementById(canvas_id).getContext("2d")
+        };
+
+        return canvas_id;
+    }
+
+    // Create a new canvas for an individual annotation and return its context
+    get_init_canvas_context_id(annotation_id, subtask = null) {
+        if (subtask === null) {
+            subtask = this.state["current_subtask"];
+        }
+        // Get the next available canvas id
+        const canvas_id = this.get_next_available_canvas_id(subtask);
+        console.log("next available canvas id", canvas_id);
+        // Add the annotation id to the canvas context
+        this.subtasks[subtask]["state"]["annotation_contexts"][canvas_id]["annotation_ids"].push(annotation_id);
 
         return canvas_id;
     }
@@ -1720,11 +1753,24 @@ export class ULabel {
         if (subtask === null) {
             subtask = this.state["current_subtask"];
         }
-        
-        // Remove the canvas context from the state
-        delete this.subtasks[subtask]["state"]["annotation_contexts"][annotation_id];
-        // Remove the canvas from the document
-        $("#" + this.subtasks[subtask]["annotations"]["access"][annotation_id]["canvas_id"]).remove();
+
+        // Remove the annotation_id from the canvas context list
+        const canvas_id = this.subtasks[subtask]["annotations"]["access"][annotation_id]["canvas_id"];
+        const canvas_context = this.subtasks[subtask]["state"]["annotation_contexts"][canvas_id];
+        const annotation_ids = canvas_context["annotation_ids"];
+        const idx = annotation_ids.indexOf(annotation_id);
+        if (idx > -1) {
+            annotation_ids.splice(idx, 1);
+        }
+
+        if (annotation_ids.length === 0) {
+            // If the canvas is empty, remove it from the document and the state
+            $("#" + canvas_id).remove();
+            delete this.subtasks[subtask]["state"]["annotation_contexts"][canvas_id];
+        } else {
+            // Otherwise, redraw the remaining annotations
+            this.redraw_all_annotations_in_annotation_context(canvas_id, subtask);
+        }
     }
 
     // ================= Access string utilities =================
@@ -2367,7 +2413,7 @@ export class ULabel {
             context = this.subtasks[subtask]["state"]["front_context"];
         } else {
             // Draw spatial annotations on their own canvas
-            context = this.subtasks[subtask]["state"]["annotation_contexts"][annotation_object["id"]];
+            context = this.subtasks[subtask]["state"]["annotation_contexts"][annotation_object["canvas_id"]]["context"];
         }
 
         // Dispatch to annotation type's drawing function
@@ -2443,12 +2489,37 @@ export class ULabel {
         }
     }
 
+    redraw_all_annotations_in_annotation_context(canvas_id, subtask, offset = null, annotation_ids_to_offset = null) {
+        console.log("redraw_all_annotations_in_annotation_context", canvas_id)
+        // Clear the canvas
+        this.clear_annotation_canvas(canvas_id, subtask);
+        // Handle redraw of each annotation in the context
+        for (const annid of this.subtasks[subtask]["state"]["annotation_contexts"][canvas_id]["annotation_ids"]) {
+            // Only draw with offset if the annotation is in the list of annotations to offset, or if the list is null
+            if (annotation_ids_to_offset === null || annotation_ids_to_offset.includes(annid)) {
+                this.draw_annotation_from_id(annid, offset, subtask);
+            } else {
+                this.draw_annotation_from_id(annid, null, subtask);
+            }
+        }
+    }
+
     redraw_all_annotations_in_subtask(subtask, offset = null, nonspatial_only = false) {
         // Clear the canvas
         this.clear_front_canvas();
         this.register_nonspatial_redraw_start(subtask);
-        // Handle redraw of each annotation
-        this.redraw_n_annotations(this.subtasks[subtask]["annotations"]["ordering"].length, offset, subtask, nonspatial_only);
+        // Handle redrawing of nonspatial annotations
+        for (const annid of this.subtasks[subtask]["annotations"]["ordering"]) {
+            if (NONSPATIAL_MODES.includes(this.subtasks[subtask]["annotations"]["access"][annid]["spatial_type"])) {
+                this.draw_annotation(this.subtasks[subtask]["annotations"]["access"][annid], false, offset, subtask);
+            }
+        }
+        // Handle redraw of each annotation context
+        if (!nonspatial_only) {
+            for (const canvas_id in this.subtasks[subtask]["state"]["annotation_contexts"]) {
+                this.redraw_all_annotations_in_annotation_context(canvas_id, subtask, offset);
+            }
+        }
         this.handle_nonspatial_redraw_end(subtask);
     }
 
@@ -2479,8 +2550,9 @@ export class ULabel {
         // Check if the annotation is spatial
         let is_spatial = !NONSPATIAL_MODES.includes(this.subtasks[subtask]["annotations"]["access"][annotation_id]["spatial_type"]);
         if (is_spatial) {
-            this.clear_annotation_canvas(annotation_id, subtask);
-            this.draw_annotation_from_id(annotation_id, offset, subtask);
+            // Clear and redraw all annotations on the canvas where the annotation is drawn
+            const canvas_id = this.subtasks[subtask]["annotations"]["access"][annotation_id]["canvas_id"];
+            this.redraw_all_annotations_in_annotation_context(canvas_id, subtask, offset, [annotation_id]);
         } else {
             // Nonspatial annotations are drawn on the front context
             this.redraw_all_annotations_in_subtask(subtask, offset, true);
@@ -2488,11 +2560,31 @@ export class ULabel {
         this.toolbox.redraw_update_items(this);
     }
 
-    clear_annotation_canvas(annotation_id, subtask = null) {
+    // Find each unique annotation context and redraw all annotations in each context
+    redraw_multiple_spatial_annotations(annotation_ids, subtask = null, offset = null) {
         if (subtask === null) {
             subtask = this.state["current_subtask"];
         }
-        this.subtasks[subtask]["state"]["annotation_contexts"][annotation_id].clearRect(0, 0, this.config["image_width"] * this.config["px_per_px"], this.config["image_height"] * this.config["px_per_px"]);
+
+        // Find all unique annotation contexts
+        let unique_contexts = new Set();
+        for (const annid of annotation_ids) {
+            unique_contexts.add(this.subtasks[subtask]["annotations"]["access"][annid]["canvas_id"]);
+        }
+
+        // Redraw all annotations in each unique context
+        for (const canvas_id of unique_contexts) {
+            this.redraw_all_annotations_in_annotation_context(canvas_id, subtask, offset);
+        }
+
+        this.toolbox.redraw_update_items(this);
+    }
+
+    clear_annotation_canvas(canvas_id, subtask = null) {
+        if (subtask === null) {
+            subtask = this.state["current_subtask"];
+        }
+        this.subtasks[subtask]["state"]["annotation_contexts"][canvas_id]["context"].clearRect(0, 0, this.config["image_width"] * this.config["px_per_px"], this.config["image_height"] * this.config["px_per_px"]);
     }
 
     clear_front_canvas(subtask = null) {
@@ -3128,21 +3220,25 @@ export class ULabel {
     // Undo the deletion of annotations by replacing the annotations with the undo payload
     delete_annotations_in_polygon__undo(undo_payload) {
         // Get the list of annotations
-        const annotations = this.subtasks[this.state["current_subtask"]]["annotations"]["access"];
+        const subtask = this.state["current_subtask"];
+        const annotations = this.subtasks[subtask]["annotations"]["access"];
         // Loop through all deprecated annotations
+        let annotation_ids_to_redraw = [];
         for (let annid of undo_payload["deprecated_ids"]) {
             // Undeprecate the annotation
             annotations[annid]["deprecated"] = false;
             // Redraw the annotation
-            this.redraw_annotation(annid);
+            annotation_ids_to_redraw.push(annid);
         }
         // Loop through all modified annotations
         for (let [annid, annotation] of Object.entries(undo_payload["modified_annotations"])) {
             // Replace the annotation with the undo payload
             annotations[annid] = annotation;
             // Redraw the annotation
-            this.redraw_annotation(annid);
+            annotation_ids_to_redraw.push(annid);
         }
+        // Redraw annotations
+        this.redraw_multiple_spatial_annotations(annotation_ids_to_redraw, subtask);
     }
 
     // Convert bbox to polygon and then delete annotations in polygon
