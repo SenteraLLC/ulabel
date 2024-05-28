@@ -6,6 +6,10 @@ All notable changes to this project will be documented here.
 
 Nothing yet.
 
+## [0.10.12] - May 24th, 2024
+- Fix broken undo/redo behavior for polygons.
+- General improvements aimed at reducing memory usage and improving performance.
+
 ## [0.10.11] - May 16th, 2024
 - Fix bug where using the `toggle_annotation_mode_keybind` to switch to/from a delete mode would unexpectedly change the class of the hovered annotation.
 - Fix bug where pressing a class keybind when using a delete mode would deselect the delete class.

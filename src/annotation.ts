@@ -12,6 +12,14 @@ export const DELETE_MODES = ["delete_polygon", "delete_bbox"]
 export const DELETE_CLASS_ID = -1;
 export const MODES_3D = ["global", "bbox3"];
 export const NONSPATIAL_MODES = ["whole-image", "global"];
+export const N_ANNOS_PER_CANVAS = 100;
+
+export type PolygonSpatialData = {
+    spatial_payload: [number[]][],
+    spatial_payload_holes: boolean[],
+    spatial_payload_child_indices: number[][],
+    containing_box: ULabelContainingBox,
+}
 
 export class ULabelAnnotation {
     constructor(
@@ -39,7 +47,7 @@ export class ULabelAnnotation {
         // Polygons track if each layer is a hole or fill
         public spatial_payload_holes?: boolean[],
         // Track what holes belong to what fill, ie if spatial_payload[0] is a fill with a hole at spatial_payload[1], spatial_payload_child_indices[0] = [1]
-        public spatial_payload_child_indices?: [number[]],
+        public spatial_payload_child_indices?: number[][],
     ) {}
 
     public ensure_compatible_classification_payloads(ulabel_class_ids: [number]) {
@@ -175,7 +183,33 @@ export class ULabelAnnotation {
         }
         // Return null if the spatial payload is not compatible
         return null;
-    } 
+    }
+    
+    /**
+     * Get the polygon spatial data from an annotation.
+     * 
+     * @param {ULabelAnnotation} annotation  polygon annotation
+     * @param {boolean} deep_copy whether to return a deep copy
+     * @returns {PolygonSpatialData} polygon spatial data
+     */
+    public static get_polygon_spatial_data(annotation: ULabelAnnotation, deep_copy: boolean = false): PolygonSpatialData {
+        // Check if the annotation is a polygon
+        if (annotation.spatial_type !== "polygon") {
+            throw new Error("Annotation is not a polygon");
+        }
+        // Return the data, initializing the arrays if they are undefined
+        const ret = {
+            spatial_payload: annotation.spatial_payload,
+            containing_box: annotation.containing_box ? annotation.containing_box : null,
+            spatial_payload_holes: annotation.spatial_payload_holes ? annotation.spatial_payload_holes : [false],
+            spatial_payload_child_indices: annotation.spatial_payload_child_indices ? annotation.spatial_payload_child_indices : [[]],
+        }
+        if (deep_copy) {
+            return JSON.parse(JSON.stringify(ret));
+        } else {
+            return ret;
+        }
+    }
 }
 
 type ULabelAnnotations = {

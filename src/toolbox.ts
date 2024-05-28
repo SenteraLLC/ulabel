@@ -1270,7 +1270,7 @@ export class AnnotationResizeItem extends ToolboxItem {
             // Update the size of all annotations in the subtask
             this.update_annotation_size(this.ulabel, current_subtask, annotation_size);
 
-            this.ulabel.redraw_all_annotations(null, null, false);
+            this.ulabel.redraw_all_annotations(current_subtask_key, null, false);
         })
 
         $(document).on("keydown.ulabel", (event) => {
@@ -1323,10 +1323,10 @@ export class AnnotationResizeItem extends ToolboxItem {
         const increment_size = 0.5;
         const vanish_size = 0.01;
         let subtask_cached_size = subtask.display_name.replaceLowerConcat(" ", "-", "-cached-size");
-
         let subtask_vanished_flag = subtask.display_name.replaceLowerConcat(" ", "-", "-vanished");
-        //If the annotations are currently vanished and a button other than the vanish button is
-        //pressed, then we want to ignore the input
+
+        // If the annotations are currently vanished and a button other than the vanish button is
+        // pressed, then we want to ignore the input
         if (this[subtask_vanished_flag] && size !== "v") return;
 
         // If a number was passed in, set all annotations to be the size of the number
@@ -1347,9 +1347,15 @@ export class AnnotationResizeItem extends ToolboxItem {
                 break;
             case ValidResizeValues.DECREMENT:
                 this.loop_through_annotations(subtask, increment_size, "-")
+                if (this[subtask_cached_size] - increment_size > vanish_size) {
+                    this[subtask_cached_size] -= increment_size;
+                } else {
+                    this[subtask_cached_size] = vanish_size;
+                }
                 break;
             case ValidResizeValues.INCREMENT:
                 this.loop_through_annotations(subtask, increment_size, "+")
+                this[subtask_cached_size] += increment_size;
                 break;
             case ValidResizeValues.VANISH:
                 if (this[subtask_vanished_flag]) {
@@ -1361,8 +1367,7 @@ export class AnnotationResizeItem extends ToolboxItem {
     
                     // Unlock the vanish button
                     $("#annotation-resize-v").removeClass("locked")
-                }
-                else {
+                } else {
                     // Apply the vanish size to make the annotations to small to see
                     this.loop_through_annotations(subtask, vanish_size, "=")
                     
@@ -1382,45 +1387,34 @@ export class AnnotationResizeItem extends ToolboxItem {
             ulabel.state.line_size = this[subtask_cached_size];
         }
     }
-    //loops through all annotations in a subtask to change their line size
-    public loop_through_annotations(subtask, size, operation) {
-        let subtask_cached_size = subtask.display_name.replaceLowerConcat(" ", "-", "-cached-size");
-        if (operation == "=") {
-            for (const annotation_id in subtask.annotations.access) {
-                subtask.annotations.access[annotation_id].line_size = size;
-            }
 
-            // Don't set the vanished size as a cookie
-            if (size == 0.01) return;
+    // Loop through all annotations in a subtask and change their line size
+    public loop_through_annotations(subtask: ULabelSubtask, size: number, operation: "=" | "+" | "-") {        
+        for (const annotation_id in subtask.annotations.access) {
+            switch (operation) {
+                case "=":
+                    subtask.annotations.access[annotation_id].line_size = size;
+                    break;
+                case "+":
+                    subtask.annotations.access[annotation_id].line_size += size;
+                    break;
+                case "-":
+                    // Check to make sure annotation line size won't go 0 or negative. 
+                    // If it would, set it equal to a small positive number
+                    if (subtask.annotations.access[annotation_id].line_size - size <= 0.01) {
+                        subtask.annotations.access[annotation_id].line_size = 0.01
+                    } else {
+                        subtask.annotations.access[annotation_id].line_size -= size;
+                    }
+                    break;
+                default:
+                    throw Error("Invalid Operation given to loop_through_annotations")
+            }
+        }
 
-            this.set_size_cookie(size, subtask);
-            return;
+        if (subtask.annotations.ordering.length > 0) {
+            this.set_size_cookie(subtask.annotations.access[subtask.annotations.ordering[0]].line_size, subtask);
         }
-        if (operation == "+") {
-            for (const annotation_id in subtask.annotations.access) {
-                subtask.annotations.access[annotation_id].line_size += size;
-                //temporary solution
-                this[subtask_cached_size] = subtask.annotations.access[annotation_id].line_size
-            }
-            this.set_size_cookie(subtask.annotations.access[subtask.annotations.ordering[0]].line_size, subtask)
-            return;
-        }
-        if (operation == "-") {
-            for (const annotation_id in subtask.annotations.access) {
-                //Check to make sure annotation line size won't go 0 or negative. If it would
-                //set it equal to a small positive number
-                if (subtask.annotations.access[annotation_id].line_size - size <= 0.01) {
-                    subtask.annotations.access[annotation_id].line_size = 0.01
-                } else {
-                    subtask.annotations.access[annotation_id].line_size -= size;
-                }
-                //temporary solution
-                this[subtask_cached_size] = subtask.annotations.access[annotation_id].line_size
-            }
-            this.set_size_cookie(subtask.annotations.access[subtask.annotations.ordering[0]].line_size, subtask)
-            return;
-        }
-        throw Error("Invalid Operation given to loop_through_annotations")
     }
 
     //Loop through all subtasks and apply a size to them all
