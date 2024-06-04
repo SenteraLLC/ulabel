@@ -32,7 +32,7 @@ export function add_style_to_document(ulabel: ULabel) {
 /**
  * Creates a mode button that when clicked switches the current annotation type.
  * 
- * @param md_key Key for which button is being constructed. Valid Keys: bbox, point, polygon, tbar, polyline, contour, bbox3, whole-image, global
+ * @param md_key Key for which button is being constructed. Valid Keys: bbox, point, polygon, tbar, polyline, contour, bbox3, whole-image, global, delete_polygon, delete_bbox, comment
  * @param md_name Mode name which shows when selected.
  * @param svg_blob svg which shows up on the button
  * @param cur_md Current annotation mode
@@ -178,6 +178,8 @@ export function prep_window_html(ulabel: ULabel, toolbox_item_order: unknown[] =
         get_md_button("global", "Global", GLOBAL_SVG, curmd, ulabel.subtasks),
         get_md_button("delete_polygon", "Delete", DELETE_POLYGON_SVG, curmd, ulabel.subtasks),
         get_md_button("delete_bbox", "Delete", DELETE_BBOX_SVG, curmd, ulabel.subtasks),
+        // TODO: uq comment icon
+        get_md_button("comment", "Comment", BBOX_SVG, curmd, ulabel.subtasks),
     ];
 
     // Append but don't wait

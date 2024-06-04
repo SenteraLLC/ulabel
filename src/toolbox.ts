@@ -1,5 +1,5 @@
 import { AnnotationClassDistanceData, FilterDistanceConfig, RecolorActiveConfig, ULabel } from "..";
-import { ULabelAnnotation, NONSPATIAL_MODES, DELETE_MODES } from "./annotation";
+import { ULabelAnnotation, NONSPATIAL_MODES, DELETE_MODES, LEGACY_DEFAULT_LINE_SIZE } from "./annotation";
 import { ULabelSubtask } from "./subtask";
 import { 
     get_annotation_confidence, 
@@ -14,13 +14,18 @@ import { FilterDistanceOverlay } from "./overlays";
 import { get_active_class_id } from "./utilities";
 
 // For ResizeToolboxItem
-enum ValidResizeValues {
+export enum ValidResizeValues {
     VANISH = "v",
     SMALL = "s",
     LARGE = "l",
     INCREMENT = "inc",
     DECREMENT = "dec"
 }
+
+const SMALL_SIZE = 1.5;
+const LARGE_SIZE = 5;
+const INCREMENT_SIZE = 0.5;
+const VANISH_SIZE = 0.01;
 
 const toolboxDividerDiv = "<div class=toolbox-divider></div>"
 
@@ -83,7 +88,6 @@ export class Toolbox {
             }
 
             let toolbox_item_class = ulabel.config.toolbox_map.get(toolbox_key);
-
             if (args == null) {
                 toolbox_instance_list.push(new toolbox_item_class(ulabel))
             } else {
@@ -273,7 +277,6 @@ export class ToolboxTab {
             sel = " sel";
             val = 100;
         }
-        console.log(subtask.display_name, subtask)
         this.html = `
         <div class="tb-st-tab${sel}">
             <a${href} id="tb-st-switch--${subtask_key}" class="tb-st-switch">${this.subtask.display_name}</a><!--
@@ -362,56 +365,6 @@ export class ModeSelectionToolboxItem extends ToolboxItem {
             ulabel.show_annotation_mode(target_jq);
             ulabel.toggle_delete_class_id_in_toolbox();
         });
-
-        $(document).on("keypress.ulabel", (e) => {
-
-            // If creation of a new annotation is in progress, don't change the mode
-            let current_subtask = ulabel.state["current_subtask"];
-            if (ulabel.subtasks[current_subtask]["state"]["is_in_progress"]) return;
-
-            // Check if the correct key was pressed
-            if (e.key == ulabel.config.toggle_annotation_mode_keybind) {
-
-                let mode_button_array: HTMLElement[] = []
-
-                // Loop through all of the mode buttons
-                for (let idx in Array.from(document.getElementsByClassName("md-btn"))) {
-    
-                    // Grab mode button
-                    let mode_button = <HTMLElement> document.getElementsByClassName("md-btn")[idx]
-
-                    // Continue without adding it to the array if its display is none
-                    if (mode_button.style.display == "none") {
-                        continue
-                    }
-                    mode_button_array.push(mode_button)                  
-                } 
-
-                // Grab the currently selected mode button
-                let selected_mode_button = <HTMLAnchorElement> Array.from(document.getElementsByClassName("md-btn sel"))[0] // There's only ever going to be one element in this array, so grab the first one
-
-                let new_button_index: number
-
-                // Loop through all of the mode select buttons that are currently displayed 
-                // to find which one is the currently selected button.  Once its found add 1
-                // to get the index of the next mode select button. If the new button index
-                // is the same as the array's length, then loop back and set the new button
-                // to 0.
-                for (let idx in mode_button_array) {
-                    if (mode_button_array[idx] === selected_mode_button) {
-                        new_button_index = Number(idx) + 1
-                        if (new_button_index == mode_button_array.length) {
-                            new_button_index = 0
-                        }
-                    }
-                }
-
-                // Grab the button for the mode we want to switch to
-                let new_selected_button = mode_button_array[new_button_index]
-
-                new_selected_button.click()
-            }
-        })
     }
 
     
@@ -502,6 +455,51 @@ export class ModeSelectionToolboxItem extends ToolboxItem {
 
     public get_toolbox_item_type() {
         return "ModeSelection"
+    }
+
+    public static toggle_annotation_mode(ulabel: ULabel) {
+        // If creation of a new annotation is in progress, don't change the mode
+        const subtask_key = ulabel.state["current_subtask"];
+        if (ulabel.subtasks[subtask_key]["state"]["is_in_progress"]) return;
+
+        let mode_button_array: HTMLElement[] = []
+
+        // Loop through all of the mode buttons
+        for (let idx in Array.from(document.getElementsByClassName("md-btn"))) {
+
+            // Grab mode button
+            let mode_button = <HTMLElement> document.getElementsByClassName("md-btn")[idx]
+
+            // Continue without adding it to the array if its display is none
+            if (mode_button.style.display == "none") {
+                continue
+            }
+            mode_button_array.push(mode_button)                  
+        } 
+
+        // Grab the currently selected mode button
+        let selected_mode_button = <HTMLAnchorElement> Array.from(document.getElementsByClassName("md-btn sel"))[0] // There's only ever going to be one element in this array, so grab the first one
+
+        let new_button_index: number
+
+        // Loop through all of the mode select buttons that are currently displayed 
+        // to find which one is the currently selected button.  Once its found add 1
+        // to get the index of the next mode select button. If the new button index
+        // is the same as the array's length, then loop back and set the new button
+        // to 0.
+        for (let idx in mode_button_array) {
+            if (mode_button_array[idx] === selected_mode_button) {
+                new_button_index = Number(idx) + 1
+                if (new_button_index == mode_button_array.length) {
+                    new_button_index = 0
+                }
+            }
+        }
+
+        // Grab the button for the mode we want to switch to
+        let new_selected_button = mode_button_array[new_button_index]
+
+        new_selected_button.click()
     }
 }
 
@@ -893,15 +891,6 @@ export class ZoomPanToolboxItem extends ToolboxItem {
         $(document).on("click.ulabel", "#recenter-whole-image-button", () => {
             this.ulabel.show_whole_image();
         });
-
-        $(document).on("keypress.ulabel", (e) => {
-            if (e.key == this.ulabel.config.change_zoom_keybind.toLowerCase()) {
-                document.getElementById("recenter-button").click()
-            }
-            if (e.key == this.ulabel.config.change_zoom_keybind.toUpperCase()) {
-                document.getElementById("recenter-whole-image-button").click()
-            }
-        })
     }
 
     private set_frame_range(ulabel) {
@@ -1143,9 +1132,7 @@ export class ClassCounterToolboxItem extends ToolboxItem {
  * Toolbox item for resizing all annotations
  */
 export class AnnotationResizeItem extends ToolboxItem {
-    public cached_size: number = 1.5;
     public html: string;
-    private keybind_configuration: {[key: string]: string}
     private ulabel: ULabel
 
     constructor(ulabel: ULabel) {
@@ -1153,28 +1140,32 @@ export class AnnotationResizeItem extends ToolboxItem {
 
         this.ulabel = ulabel
 
-        // Get default keybinds
-        this.keybind_configuration = ulabel.config.default_keybinds
-
         // First check for a size cookie, if one isn't found then check the config
         // for a default annotation size. If neither are found it will use the size
         // that the annotation was saved as.
-        for (let subtask in ulabel.subtasks) {
-            let cached_size_property = ulabel.subtasks[subtask].display_name.replaceLowerConcat(" ", "-", "-cached-size")
-            let size_cookie = this.read_size_cookie(ulabel.subtasks[subtask])
-            if ((size_cookie != null) && size_cookie != "NaN") {
-                this.update_annotation_size(ulabel, ulabel.subtasks[subtask], Number(size_cookie));
-                this[cached_size_property] = Number(size_cookie)
+        for (let subtask_key in ulabel.subtasks) {
+            let subtask = ulabel.subtasks[subtask_key];
+            let subtask_cached_size = AnnotationResizeItem.get_subtask_cached_size(subtask);
+            
+            let init_size: number = LEGACY_DEFAULT_LINE_SIZE;
+            // The user specified `initial_line_size` in the ULabel constructor takes
+            // precedence over the cached size and the default size.
+            if (ulabel.state.line_size !== null) {          
+                init_size = ulabel.state.line_size;
+            } else if (subtask_cached_size !== null) {
+                init_size = subtask_cached_size;
             }
-            else if (ulabel.config.default_annotation_size != undefined) {          
-                this.update_annotation_size(ulabel, ulabel.subtasks[subtask], ulabel.config.default_annotation_size);
-                this[cached_size_property] = ulabel.config.default_annotation_size
-            } 
-            else {
-                const DEFAULT_SIZE = 5
-                this.update_annotation_size(ulabel, ulabel.subtasks[subtask], DEFAULT_SIZE)
-                this[cached_size_property] = DEFAULT_SIZE
+            
+            // If the size is set to vanish, set the vanished flag to true
+            // And cache the legacy default size so we see something when unvanishing
+            if (init_size === VANISH_SIZE) {
+                AnnotationResizeItem.set_subtask_vanished_flag(subtask, true);
+                init_size = LEGACY_DEFAULT_LINE_SIZE;
             }
+
+            // Initialize the size of all annotations in th e subtask
+            AnnotationResizeItem.set_subtask_cached_size(subtask, init_size);
+            AnnotationResizeItem.update_annotation_size(ulabel, subtask, init_size, false);
         }
 
         this.add_styles()
@@ -1268,43 +1259,56 @@ export class AnnotationResizeItem extends ToolboxItem {
             const annotation_size = <ValidResizeValues> button.attr("id").slice(18);
 
             // Update the size of all annotations in the subtask
-            this.update_annotation_size(this.ulabel, current_subtask, annotation_size);
-
-            this.ulabel.redraw_all_annotations(current_subtask_key, null, false);
+            AnnotationResizeItem.update_annotation_size(this.ulabel, current_subtask, annotation_size);
         })
+    }
 
-        $(document).on("keydown.ulabel", (event) => {
-            // Get the current subtask
-            const current_subtask_key = this.ulabel.state["current_subtask"];
-            const current_subtask = this.ulabel.subtasks[current_subtask_key];
+    /**
+     * Get the cached size of the annotations for a subtask
+     * 
+     * @param {ULabelSubtask} subtask Subtask to get the cached size for 
+     * @returns {number} The cached size of the annotations for the subtask
+     */
+    public static get_subtask_cached_size(subtask: ULabelSubtask): number {
+        const ret = Number(window.localStorage.getItem(subtask.display_name.replaceLowerConcat(" ", "-", "-cached-size")));
+        return ret;
+    }   
 
-            switch(event.key) {
-                case this.keybind_configuration.annotation_vanish.toUpperCase():
-                    this.update_all_subtask_annotation_size(this.ulabel, ValidResizeValues.VANISH)
-                    break
-                case this.keybind_configuration.annotation_vanish.toLowerCase():
-                    this.update_annotation_size(this.ulabel, current_subtask, ValidResizeValues.VANISH)
-                    break
-                case this.keybind_configuration.annotation_size_small:
-                    this.update_annotation_size(this.ulabel, current_subtask, ValidResizeValues.SMALL)
-                    break
-                case this.keybind_configuration.annotation_size_large:
-                    this.update_annotation_size(this.ulabel, current_subtask, ValidResizeValues.LARGE)
-                    break
-                case this.keybind_configuration.annotation_size_minus:
-                    this.update_annotation_size(this.ulabel, current_subtask, ValidResizeValues.DECREMENT)
-                    break
-                case this.keybind_configuration.annotation_size_plus:
-                    this.update_annotation_size(this.ulabel, current_subtask, ValidResizeValues.INCREMENT)
-                    break
-                default:
-                    // Return if no valid keybind was pressed
-                    return
-            }
-            
-            // If the sizes were updated resize the annotations
-            this.ulabel.redraw_all_annotations(null, null, false)
-        })
+    /**
+     * Set the size of the annotations for a subtask
+     * 
+     * @param {ULabelSubtask} subtask Subtask to set the size for
+     * @param {number} size Size to set the annotations to
+     */
+    public static set_subtask_cached_size(subtask: ULabelSubtask, size: number) {
+        window.localStorage.setItem(subtask.display_name.replaceLowerConcat(" ", "-", "-cached-size"), size.toString());
+    }
+
+    /**
+     * Get the vanished flag for a subtask
+     * 
+     * @param {ULabelSubtask} subtask Subtask to read the size cookie for
+     * @returns {boolean} The vanished flag for the subtask
+     */
+    public static get_subtask_vanished_flag(subtask: ULabelSubtask): boolean {
+        return JSON.parse(window.localStorage.getItem(subtask.display_name.replaceLowerConcat(" ", "-", "-vanished")));
+    }
+
+    /**
+     * Set the vanished flag for a subtask and update the vanish button
+     * 
+     * @param {ULabelSubtask} subtask Subtask to set the vanished flag for
+     * @param {boolean} flag New value of the vanished flag
+     */
+    public static set_subtask_vanished_flag(subtask: ULabelSubtask, flag: boolean) {
+        window.localStorage.setItem(subtask.display_name.replaceLowerConcat(" ", "-", "-vanished"), flag.toString());
+
+        // Lock/unlock the vanish button
+        if (flag) {
+            $("#annotation-resize-v").addClass("locked");
+        } else {
+            $("#annotation-resize-v").removeClass("locked");
+        }
     }
 
     /**
@@ -1312,84 +1316,87 @@ export class AnnotationResizeItem extends ToolboxItem {
      * be that size. The ValidResizeValues will either set the size of all annotations to set values or increment/decrement the 
      * current size of the annotations.
      * 
-     * @param subtask Subtask which holds the annotations to act on
-     * @param size How to resize the annotations
+     * @param {ULabel} ulabel ULabel
+     * @param {ULabelSubtask} subtask Subtask which holds the annotations to act on
+     * @param {number | ValidResizeValues} size How to resize the annotations
+     * @param {boolean} redraw Whether or not to redraw the annotations after resizing
      */
-    public update_annotation_size(ulabel: ULabel, subtask: ULabelSubtask, size: number | ValidResizeValues): void {
+    public static update_annotation_size(ulabel: ULabel, subtask: ULabelSubtask, size: number | ValidResizeValues, redraw: boolean = true): void {
         if (subtask === null) return;
 
-        const small_size = 1.5;
-        const large_size = 5;
-        const increment_size = 0.5;
-        const vanish_size = 0.01;
-        let subtask_cached_size = subtask.display_name.replaceLowerConcat(" ", "-", "-cached-size");
-        let subtask_vanished_flag = subtask.display_name.replaceLowerConcat(" ", "-", "-vanished");
+        let subtask_cached_size = AnnotationResizeItem.get_subtask_cached_size(subtask);
+        const subtask_vanished_flag = AnnotationResizeItem.get_subtask_vanished_flag(subtask);
 
         // If the annotations are currently vanished and a button other than the vanish button is
         // pressed, then we want to ignore the input
-        if (this[subtask_vanished_flag] && size !== "v") return;
+        if (subtask_vanished_flag && size !== "v") return;
 
         // If a number was passed in, set all annotations to be the size of the number
         if (typeof(size) === "number") {
-            this.loop_through_annotations(subtask, size, "=");
-            return
-        }
-
-        // Otherwise handle each ValidResizeValues case here
-        switch(size) {
-            case ValidResizeValues.SMALL:
-                this.loop_through_annotations(subtask, small_size, "=")
-                this[subtask_cached_size] = small_size
-                break;           
-            case ValidResizeValues.LARGE:
-                this.loop_through_annotations(subtask, large_size, "=")
-                this[subtask_cached_size] = large_size
-                break;
-            case ValidResizeValues.DECREMENT:
-                this.loop_through_annotations(subtask, increment_size, "-")
-                if (this[subtask_cached_size] - increment_size > vanish_size) {
-                    this[subtask_cached_size] -= increment_size;
-                } else {
-                    this[subtask_cached_size] = vanish_size;
-                }
-                break;
-            case ValidResizeValues.INCREMENT:
-                this.loop_through_annotations(subtask, increment_size, "+")
-                this[subtask_cached_size] += increment_size;
-                break;
-            case ValidResizeValues.VANISH:
-                if (this[subtask_vanished_flag]) {
-                    // Re-apply the cashed annotation size 
-                    this.loop_through_annotations(subtask, this[subtask_cached_size], "=")
-                    
+            AnnotationResizeItem.loop_through_annotations(subtask, size, "=");
+        } else {
+            // Otherwise handle each ValidResizeValues case here   
+            switch (size) {
+                case ValidResizeValues.SMALL:
+                    AnnotationResizeItem.loop_through_annotations(subtask, SMALL_SIZE, "=");
+                    AnnotationResizeItem.set_subtask_cached_size(subtask, SMALL_SIZE);
+                    break;           
+                case ValidResizeValues.LARGE:
+                    AnnotationResizeItem.loop_through_annotations(subtask, LARGE_SIZE, "=");
+                    AnnotationResizeItem.set_subtask_cached_size(subtask, LARGE_SIZE);
+                    break;
+                case ValidResizeValues.DECREMENT:
+                    AnnotationResizeItem.loop_through_annotations(subtask, INCREMENT_SIZE, "-");
+                    // Check to make sure the annotation line size won't go 0 or negative
+                    if (subtask_cached_size - INCREMENT_SIZE > VANISH_SIZE) {
+                        subtask_cached_size -= INCREMENT_SIZE;
+                    } else {
+                        subtask_cached_size = VANISH_SIZE;
+                    }
+                    // Cache the new size
+                    AnnotationResizeItem.set_subtask_cached_size(subtask, subtask_cached_size);
+                    break;
+                case ValidResizeValues.INCREMENT:
+                    AnnotationResizeItem.loop_through_annotations(subtask, INCREMENT_SIZE, "+")
+                    AnnotationResizeItem.set_subtask_cached_size(subtask, subtask_cached_size + INCREMENT_SIZE);
+                    break;
+                case ValidResizeValues.VANISH:
+                    if (subtask_vanished_flag) {
+                        // Re-apply the cashed annotation size 
+                        AnnotationResizeItem.loop_through_annotations(subtask, subtask_cached_size, "=");
+                    } else {
+                        // Apply the vanish size to make the annotations too small to see
+                        AnnotationResizeItem.loop_through_annotations(subtask, VANISH_SIZE, "=")
+                    }
                     // Filp the state
-                    this[subtask_vanished_flag] = !this[subtask_vanished_flag]
-    
-                    // Unlock the vanish button
-                    $("#annotation-resize-v").removeClass("locked")
-                } else {
-                    // Apply the vanish size to make the annotations to small to see
-                    this.loop_through_annotations(subtask, vanish_size, "=")
-                    
-                    // Filp the state
-                    this[subtask_vanished_flag] = !this[subtask_vanished_flag]
-    
-                    // Lock the vanish button
-                    $("#annotation-resize-v").addClass("locked")
-                }
-                break
-            default:
-                console.error("update_annotation_size called with unknown size");
+                    AnnotationResizeItem.set_subtask_vanished_flag(subtask, !subtask_vanished_flag);
+                    break;
+                default:
+                    console.error("update_annotation_size called with unknown size");
+            }
         }
 
         // Store the new size as the default if we should be tracking it
-        if (ulabel.state.line_size !== null) {
-            ulabel.state.line_size = this[subtask_cached_size];
+        // and if `subtask` is the active subtask
+        const current_subtask = ulabel.subtasks[ulabel.state.current_subtask];
+        if (ulabel.state.line_size !== null && current_subtask.display_name === subtask.display_name) {
+            ulabel.state.line_size = AnnotationResizeItem.get_subtask_cached_size(subtask);
+        }
+
+        // If the sizes were updated, resize the annotations
+        if (redraw) {
+            ulabel.redraw_all_annotations(null, null, false);
         }
     }
 
-    // Loop through all annotations in a subtask and change their line size
-    public loop_through_annotations(subtask: ULabelSubtask, size: number, operation: "=" | "+" | "-") {        
+    /**
+     * Loop through all annotations in a subtask and change their line size
+     *
+     * @param {ULabelSubtask} subtask Subtask to loop through
+     * @param {number} size Size used to change the annotation line size
+     * @param {string} operation Operation to perform on the annotation line size 
+     */ 
+    public static loop_through_annotations(subtask: ULabelSubtask, size: number, operation: "=" | "+" | "-") {        
         for (const annotation_id in subtask.annotations.access) {
             switch (operation) {
                 case "=":
@@ -1411,49 +1418,18 @@ export class AnnotationResizeItem extends ToolboxItem {
                     throw Error("Invalid Operation given to loop_through_annotations")
             }
         }
-
-        if (subtask.annotations.ordering.length > 0) {
-            this.set_size_cookie(subtask.annotations.access[subtask.annotations.ordering[0]].line_size, subtask);
-        }
     }
 
-    //Loop through all subtasks and apply a size to them all
-    public update_all_subtask_annotation_size(ulabel, size) {
+    /**
+     * Loop through all subtasks and apply a size to them all
+     * 
+     * @param ulabel ULabel
+     * @param size number | ValidResizeValues
+     */
+    public static update_all_subtask_annotation_size(ulabel: ULabel, size: number | ValidResizeValues) {
         for (let subtask in ulabel.subtasks) {
-            this.update_annotation_size(ulabel, ulabel.subtasks[subtask], size)
+            AnnotationResizeItem.update_annotation_size(ulabel, ulabel.subtasks[subtask], size)
         }
-    }
-
-    private set_size_cookie(cookie_value, subtask) {
-        let d = new Date();
-        d.setTime(d.getTime() + (10000 * 24 * 60 * 60 * 1000));
-
-        let subtask_name = subtask.display_name.replaceLowerConcat(" ", "_");
-
-        document.cookie = subtask_name + "_size=" + cookie_value + ";" + d.toUTCString() + ";path=/";
-    }
-
-    private read_size_cookie(subtask) {
-        let subtask_name = subtask.display_name.replaceLowerConcat(" ", "_");
-
-        let cookie_name = subtask_name + "_size=";       
-
-        let cookie_array = document.cookie.split(";");
-
-        for (let i = 0; i < cookie_array.length; i++) {
-            let current_cookie = cookie_array[i];
-
-            //while there's whitespace at the front of the cookie, loop through and remove it
-            while (current_cookie.charAt(0) == " ") {
-                current_cookie = current_cookie.substring(1);
-            }
-
-            if (current_cookie.indexOf(cookie_name) == 0) {
-                return current_cookie.substring(cookie_name.length, current_cookie.length)
-            }
-        }
-
-        return null
     }
     
     public get_html() {

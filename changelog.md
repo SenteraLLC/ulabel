@@ -6,6 +6,13 @@ All notable changes to this project will be documented here.
 
 Nothing yet.
 
+## [0.11.0] - TODO: DATE
+- Fix bug where typing in text boxes would sometimes trigger keybinds.
+  - This fix included a refactor of some keypress events by combining them into a single event listener.
+- Deprecated the `default_keybinds` argument in the configuration object. Each of the keybinds previously set by `default_keybinds` can now be set individually. See `api_spec.md` for details.
+- Deprecated the `default_annotation_size` argument in the configuration object. Use the `initial_line_size` argument instead. See `api_spec.md` for details.
+- Removed cookie previously used to track subtask line size. Now the subtask line size is stored in local storage, and the `initial_line_size` argument takes precedence over the stored value.
+
 ## [0.10.12] - May 24th, 2024
 - Fix broken undo/redo behavior for polygons.
 - General improvements aimed at reducing memory usage and improving performance.

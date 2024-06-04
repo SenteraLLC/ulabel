@@ -293,21 +293,21 @@ URL to a page that gives annotation instructions.
 {
     default_toolbox_item_order: AllowedToolboxItem[],
 
-    default_keybinds = {
-        "annotation_size_small": string,
-        "annotation_size_large": string,
-        "annotation_size_plus": string,
-        "annotation_size_minus": string,
-        "annotation_vanish": string
-    },
-
     distance_filter_toolbox_item: FilterDistanceConfig,
+
+    annotation_size_small_keybind: string,
+
+    annotation_size_large_keybind: string,
+
+    annotation_size_plus_keybind: string,
+
+    annotation_size_minus_keybind: string,
+
+    annotation_vanish_keybind: string,
 
     change_zoom_keybind: string,
 
     create_point_annotation_keybind: string,
-
-    default_annotation_size: number,
     
     delete_annotation_keybind: string,
     

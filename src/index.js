@@ -7,9 +7,12 @@ import {
     DELETE_CLASS_ID, 
     DELETE_MODES,
     NONSPATIAL_MODES,
+    TEXT_MODES,
     MODES_3D,
     N_ANNOS_PER_CANVAS,
+    LEGACY_DEFAULT_LINE_SIZE,
 } from '../build/annotation';
+import { AnnotationResizeItem, ValidResizeValues } from '../build/toolbox';
 import { ULabelSubtask } from '../build/subtask';
 import { GeometricUtils } from '../build/geometric_utils';
 import { Configuration, AllowedToolboxItem } from '../build/configuration';
@@ -42,6 +45,7 @@ import {
     BACK_Z_INDEX,
 } from './blobs';
 import { ULABEL_VERSION } from './version';
+import { ModeSelectionToolboxItem } from '../build/toolbox';
 
 jQuery.fn.outer_html = function () {
     return jQuery('<div />').append(this.eq(0).clone()).html();
@@ -201,10 +205,78 @@ export class ULabel {
         });
 
         $(document).on("keypress.ulabel", (e) => {
-            // Check for the correct keypress
             // Grab current subtask
-            const current_subtask = ul.subtasks[ul.state["current_subtask"]]
+            const subtask_key = ul.state["current_subtask"];
+            const current_subtask = ul.subtasks[subtask_key];
+            let toolbox_tab_keys = [];
+            let new_subtask_index;
+
+            // Ignore if in the middle of an annotation that allows text input
+            // to prevent accidental keypresses when typing text
+            if (TEXT_MODES.includes(current_subtask.state.annotation_mode)) {
+                return;
+            }
+
+            // Check for the correct keypress
             switch (e.key) {
+                case ul.config.annotation_vanish_keybind.toUpperCase():
+                    AnnotationResizeItem.update_all_subtask_annotation_size(ul, ValidResizeValues.VANISH)
+                    break
+                case ul.config.annotation_vanish_keybind.toLowerCase():
+                    AnnotationResizeItem.update_annotation_size(ul, current_subtask, ValidResizeValues.VANISH)
+                    break
+                case ul.config.annotation_size_small_keybind:
+                    AnnotationResizeItem.update_annotation_size(ul, current_subtask, ValidResizeValues.SMALL)
+                    break
+                case ul.config.annotation_size_large_keybind:
+                    AnnotationResizeItem.update_annotation_size(ul, current_subtask, ValidResizeValues.LARGE)
+                    break
+                case ul.config.annotation_size_minus_keybind:
+                    AnnotationResizeItem.update_annotation_size(ul, current_subtask, ValidResizeValues.DECREMENT)
+                    break
+                case ul.config.annotation_size_plus_keybind:
+                    AnnotationResizeItem.update_annotation_size(ul, current_subtask, ValidResizeValues.INCREMENT)
+                    break;
+                // Toggle annotation mode
+                case ul.config.toggle_annotation_mode_keybind:
+                    ModeSelectionToolboxItem.toggle_annotation_mode(ul);
+                    break;
+                // Keybind to switch active subtask
+                case ul.config.switch_subtask_keybind:
+                    // Don't switch if an annotation is in progress
+                    if (current_subtask.state.is_in_progress) {
+                        return;
+                    }
+
+                    // Put all of the toolbox tab keys in a list
+                    for (let idx in ul.toolbox.tabs) {
+                        toolbox_tab_keys.push(ul.toolbox.tabs[idx].subtask_key);
+                    }
+
+                    // Get the index of the next subtask in line
+                    new_subtask_index = toolbox_tab_keys.indexOf(subtask_key) + 1;  // +1 gets the next subtask
+
+                    // If the current subtask was the last one in the array, then
+                    // loop around to the first subtask
+                    if (new_subtask_index === toolbox_tab_keys.length) {
+                        new_subtask_index = 0;
+                    }
+
+                    // Set the new subtask
+                    ul.set_subtask(toolbox_tab_keys[new_subtask_index]);
+                    break;
+                // Delete annotation keybind
+                case ul.config.delete_annotation_keybind:
+                    // Check the active_annotation to make sure its not null and isn't nonspatial
+                    if (
+                        current_subtask["active_annotation"] != null &&
+                        !NONSPATIAL_MODES.includes(current_subtask["state"]["annotation_mode"])
+                    ) {
+
+                        // Delete the active annotation
+                        ul.delete_annotation(current_subtask["active_annotation"])
+                    }
+                    break;
                 // Create a point annotation at the mouse's current location
                 case ul.config.create_point_annotation_keybind:
                     // Only allow keypress to create point annotations
@@ -402,40 +474,6 @@ export class ULabel {
             ul.set_subtask(switch_to);
         });
 
-        // Keybind to switch active subtask
-        $(document).on("keypress.ulabel", (e) => {
-
-            // Ignore if in the middle of annotation
-            if (ul.subtasks[ul.state["current_subtask"]]["state"]["is_in_progress"]) {
-                return;
-            }
-
-            // Check for the right keypress
-            if (e.key === ul.config.switch_subtask_keybind) {
-
-                let current_subtask = ul.state["current_subtask"];
-                let toolbox_tab_keys = [];
-
-                // Put all of the toolbox tab keys in a list
-                for (let idx in ul.toolbox.tabs) {
-                    toolbox_tab_keys.push(ul.toolbox.tabs[idx].subtask_key);
-                }
-
-                // Get the index of the next subtask in line
-                let new_subtask_index = toolbox_tab_keys.indexOf(current_subtask) + 1;  // +1 gets the next subtask
-
-                // If the current subtask was the last one in the array, then
-                // loop around to the first subtask
-                if (new_subtask_index === toolbox_tab_keys.length) {
-                    new_subtask_index = 0;
-                }
-
-                let new_subtask = toolbox_tab_keys[new_subtask_index];
-
-                ul.set_subtask(new_subtask);
-            }
-        })
-
         $(document).on("input.ulabel", "input.frame_input", () => {
             ul.update_frame();
         });
@@ -476,22 +514,6 @@ export class ULabel {
             }
             ul.suggest_edits(null);
         });
-        $(document).on("keypress.ulabel", (e) => {
-
-            // Check the key pressed against the delete annotation keybind in the config
-            if (e.key === ul.config.delete_annotation_keybind) {
-
-                // Check the active_annotation to make sure its not null and isn't nonspatial
-                if (
-                    ul.subtasks[ul.state["current_subtask"]]["active_annotation"] != null &&
-                    !NONSPATIAL_MODES.includes(ul.subtasks[ul.state["current_subtask"]]["state"]["annotation_mode"])
-                ) {
-
-                    // Delete the active annotation
-                    ul.delete_annotation(ul.subtasks[ul.state["current_subtask"]]["active_annotation"])
-                }
-            }
-        })
 
         // Listener for id_dialog click interactions
         $(document).on("click.ulabel", "#" + ul.config["container_id"] + " a.id-dialog-clickable-indicator", (e) => {
@@ -879,7 +901,6 @@ export class ULabel {
                 "starting_complex_polygon": false, 
                 "is_in_brush_mode": false,
                 "is_in_erase_mode": false,
-                "line_size": ul.subtasks[subtask_key]["default_line_size"],
                 "edit_candidate": null,
                 "move_candidate": null,
 
@@ -1652,6 +1673,7 @@ export class ULabel {
             case "tbar":
             case "delete_polygon":
             case "delete_bbox":
+            case "comment":
                 return [
                     [gmx, gmy],
                     [gmx, gmy]
@@ -1801,6 +1823,7 @@ export class ULabel {
 
         switch (spatial_type) {
             case "bbox":
+            case "comment":
                 bbi = parseInt(access_str[0], 10);
                 bbj = parseInt(access_str[1], 10);
                 bbox_pts = spatial_payload;
@@ -1873,6 +1896,7 @@ export class ULabel {
 
         switch (spatial_type) {
             case "bbox":
+            case "comment":
                 bbi = parseInt(access_str[0], 10);
                 bbj = parseInt(access_str[1], 10);
                 spatial_payload[bbi][0] = val[0];
@@ -2435,6 +2459,7 @@ export class ULabel {
         switch (annotation_object["spatial_type"]) {
             case "bbox":
             case "delete_bbox":
+            case "comment":
                 this.draw_bounding_box(annotation_object, context, demo, offset);
                 break;
             case "point":
@@ -2504,7 +2529,7 @@ export class ULabel {
 
     redraw_all_annotations_in_subtask(subtask, offset = null, nonspatial_only = false) {
         // Clear the canvas
-        this.clear_front_canvas();
+        this.clear_front_canvas(subtask);
         this.register_nonspatial_redraw_start(subtask);
         // Handle redrawing of nonspatial annotations
         for (const annid of this.subtasks[subtask]["annotations"]["ordering"]) {
@@ -3183,9 +3208,11 @@ export class ULabel {
                 // Convert to a simple polygon and check if it is within the delete polygon
                 case "bbox":
                 case "tbar":
+                case "comment":
                     // Convert to a simple polygon
                     switch (spatial_type) {
                         case "bbox":
+                        case "comment":
                             simple_polygon = GeometricUtils.bbox_to_simple_polygon(annotation["spatial_payload"]);
                             break;
                         case "tbar":
@@ -3810,6 +3837,7 @@ export class ULabel {
             let active_spatial_payload = spatial_payload;
             switch (spatial_type) {
                 case "bbox":
+                case "comment":
                     npi = GeometricUtils.get_nearest_point_on_bounding_box(
                         global_x, global_y,
                         spatial_payload,
@@ -3920,6 +3948,7 @@ export class ULabel {
                 case "bbox":
                 case "bbox3":
                 case "point":
+                case "comment":
                     // Can't propose new bounding box or keypoint points
                     break;
                 case "polygon":
@@ -3964,8 +3993,8 @@ export class ULabel {
         // If the user did not specify an initial_line_size, then this.state["line_size"] will be null. 
         // This indicates that we will scale the line size based on the zoom level 
         if (this.state["line_size"] === null) {
-            // 4 is the legacy default line size
-            let line_size = 4 * this.config["px_per_px"];
+            // Use the legacy default line size
+            let line_size = LEGACY_DEFAULT_LINE_SIZE * this.config["px_per_px"];
             if (demo) {
                 if (this.state["size_mode"] === "dynamic") {
                     line_size *= this.state["zoom_val"];
@@ -3979,7 +4008,7 @@ export class ULabel {
             }
         } else {
             // Default to the user-specified line size
-            return this.state["line_size"] * this.config["px_per_px"]; 
+            return this.state["line_size"]; 
         }
     }
 
@@ -4568,6 +4597,7 @@ export class ULabel {
             switch (spatial_type) {
                 case "bbox":
                 case "delete_bbox":
+                case "comment":
                     spatial_payload[1] = ms_loc;
                     this.rebuild_containing_box(actid);
                     break;
@@ -5116,6 +5146,7 @@ export class ULabel {
                 case "bbox":
                 case "tbar":
                 case "polygon":
+                case "comment":
                     this.set_with_access_string(active_id, access_str, mouse_location);
                     this.rebuild_containing_box(active_id);
                     this.redraw_annotation(active_id);
@@ -5225,6 +5256,7 @@ export class ULabel {
         const spatial_type = annotations[actid]["spatial_type"]
         switch (spatial_type) {
             case "bbox":
+            case "comment":
                 this.set_with_access_string(actid, redo_payload.edit_candidate["access"], ms_loc);
                 this.rebuild_containing_box(actid);
                 this.redraw_annotation(actid);
@@ -5433,7 +5465,7 @@ export class ULabel {
             // Get the first point of a delete polygon
             let first_pt = annotation["spatial_payload"][0];
             this.create_polygon_ender(first_pt[0], first_pt[1], undo_payload.annid);
-        } else if (annotation["spatial_type"] === "bbox" || annotation["spatial_type"] === "delete_bbox" || annotation["spatial_type"] === "tbar") {
+        } else if (annotation["spatial_type"] === "bbox" || annotation["spatial_type"] === "delete_bbox" || annotation["spatial_type"] === "tbar" || annotation["spatial_type"] === "comment") {
             // Reset the drag mode to cause mouse moves to move the annotation
             this.drag_state = undo_payload.drag_state;
             // Move to the current mouse location
@@ -5516,6 +5548,7 @@ export class ULabel {
             case "contour":
             case "tbar":
             case "point":
+            case "comment":
                 this.record_finish(active_id);
                 break;
             default:
@@ -5648,6 +5681,7 @@ export class ULabel {
             case "bbox":
             case "bbox3":
             case "tbar":
+            case "comment":
                 this.record_finish_edit(actid);
                 break;
             case "contour":
@@ -5744,6 +5778,7 @@ export class ULabel {
             case "contour":
             case "tbar":
             case "point":
+            case "comment":
                 break;
             default:
                 break;
@@ -5976,6 +6011,7 @@ export class ULabel {
                         break;
                     case "bbox":
                     case "point":
+                    case "comment":
                         if (
                             gblx >= cbox["tlx"] &&
                             gblx <= cbox["brx"] &&

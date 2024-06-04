@@ -53,14 +53,6 @@ export class Configuration {
         AllowedToolboxItem.SubmitButtons,
     ]
 
-    public default_keybinds = {
-        "annotation_size_small": "s", //The s Key by default
-        "annotation_size_large": "l", //The l Key by default
-        "annotation_size_plus": "=",   //The = Key by default
-        "annotation_size_minus": "-",  //The - Key by default
-        "annotation_vanish": "v"      //The v Key by default
-    }
-
     // Config for RecolorActiveItem
     public recolor_active_toolbox_item: RecolorActiveConfig = {
         gradient_turned_on: false
@@ -81,12 +73,20 @@ export class Configuration {
         "show_overlay_on_load": false
     }
 
+    public annotation_size_small_keybind: string = "s";
+
+    public annotation_size_large_keybind: string = "l";
+
+    public annotation_size_plus_keybind: string = "=";
+
+    public annotation_size_minus_keybind: string = "-";
+
+    public annotation_vanish_keybind: string = "v";
+
     public change_zoom_keybind: string = "r";
 
     public create_point_annotation_keybind: string = "c";
-    
-    public default_annotation_size: number = 6;
-    
+        
     public delete_annotation_keybind: string = "d";
     
     public filter_low_confidence_default_value: number;

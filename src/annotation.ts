@@ -12,7 +12,9 @@ export const DELETE_MODES = ["delete_polygon", "delete_bbox"]
 export const DELETE_CLASS_ID = -1;
 export const MODES_3D = ["global", "bbox3"];
 export const NONSPATIAL_MODES = ["whole-image", "global"];
+export const TEXT_MODES = ["whole-image", "global", "comment"];
 export const N_ANNOS_PER_CANVAS = 100;
+export const LEGACY_DEFAULT_LINE_SIZE = 4;
 
 export type PolygonSpatialData = {
     spatial_payload: [number[]][],
