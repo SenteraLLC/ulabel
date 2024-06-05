@@ -32,6 +32,7 @@ export class ULabelSubtask {
         starting_complex_polygon: boolean, 
         is_in_brush_mode: boolean,
         is_in_erase_mode: boolean,
+        is_vanished: boolean,
         move_candidate: unknown, // TODO: figure out what type this is.  Probably ULabelAnnotation idk for sure tho
         visible_dialogs: {}
     }

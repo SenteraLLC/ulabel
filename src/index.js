@@ -12,7 +12,12 @@ import {
     N_ANNOS_PER_CANVAS,
     LEGACY_DEFAULT_LINE_SIZE,
 } from '../build/annotation';
-import { AnnotationResizeItem, ValidResizeValues } from '../build/toolbox';
+import { 
+    AnnotationResizeItem, 
+    SMALL_ANNOTATION_SIZE, 
+    LARGE_ANNOTATION_SIZE, 
+    INCREMENT_ANNOTATION_SIZE 
+} from '../build/toolbox';
 import { ULabelSubtask } from '../build/subtask';
 import { GeometricUtils } from '../build/geometric_utils';
 import { Configuration, AllowedToolboxItem } from '../build/configuration';
@@ -220,22 +225,27 @@ export class ULabel {
             // Check for the correct keypress
             switch (e.key) {
                 case ul.config.annotation_vanish_keybind.toUpperCase():
-                    AnnotationResizeItem.update_all_subtask_annotation_size(ul, ValidResizeValues.VANISH)
-                    break
+                    // Toggle vanish for all subtasks
+                    // TODO: track a global vanish state?
+                    for (let subtask_key in ul.subtasks) {
+                        let subtask = ul.subtasks[subtask_key];
+                        AnnotationResizeItem.set_subtask_vanished(ul, subtask_key, !subtask.state.is_vanished);
+                    }
+                    break;
                 case ul.config.annotation_vanish_keybind.toLowerCase():
-                    AnnotationResizeItem.update_annotation_size(ul, current_subtask, ValidResizeValues.VANISH)
-                    break
+                    AnnotationResizeItem.set_subtask_vanished(ul, subtask_key, !current_subtask.state.is_vanished);
+                    break;
                 case ul.config.annotation_size_small_keybind:
-                    AnnotationResizeItem.update_annotation_size(ul, current_subtask, ValidResizeValues.SMALL)
-                    break
+                    AnnotationResizeItem.update_annotation_size(ul, subtask_key, SMALL_ANNOTATION_SIZE);
+                    break;
                 case ul.config.annotation_size_large_keybind:
-                    AnnotationResizeItem.update_annotation_size(ul, current_subtask, ValidResizeValues.LARGE)
-                    break
+                    AnnotationResizeItem.update_annotation_size(ul, subtask_key, LARGE_ANNOTATION_SIZE);
+                    break;
                 case ul.config.annotation_size_minus_keybind:
-                    AnnotationResizeItem.update_annotation_size(ul, current_subtask, ValidResizeValues.DECREMENT)
-                    break
+                    AnnotationResizeItem.update_annotation_size(ul, subtask_key, -INCREMENT_ANNOTATION_SIZE, true);
+                    break;
                 case ul.config.annotation_size_plus_keybind:
-                    AnnotationResizeItem.update_annotation_size(ul, current_subtask, ValidResizeValues.INCREMENT)
+                    AnnotationResizeItem.update_annotation_size(ul, subtask_key, INCREMENT_ANNOTATION_SIZE, true);
                     break;
                 // Toggle annotation mode
                 case ul.config.toggle_annotation_mode_keybind:
@@ -901,6 +911,7 @@ export class ULabel {
                 "starting_complex_polygon": false, 
                 "is_in_brush_mode": false,
                 "is_in_erase_mode": false,
+                "is_vanished": false,
                 "edit_candidate": null,
                 "move_candidate": null,
 
@@ -2516,6 +2527,10 @@ export class ULabel {
     redraw_all_annotations_in_annotation_context(canvas_id, subtask, offset = null, annotation_ids_to_offset = null) {
         // Clear the canvas
         this.clear_annotation_canvas(canvas_id, subtask);
+
+        // If subtask is_vanished, don't draw anything
+        if (this.subtasks[subtask]["state"]["is_vanished"]) return;
+
         // Handle redraw of each annotation in the context
         for (const annid of this.subtasks[subtask]["state"]["annotation_contexts"][canvas_id]["annotation_ids"]) {
             // Only draw with offset if the annotation is in the list of annotations to offset, or if the list is null

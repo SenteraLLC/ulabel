@@ -11,7 +11,8 @@ Nothing yet.
   - This fix included a refactor of some keypress events by combining them into a single event listener.
 - Deprecated the `default_keybinds` argument in the configuration object. Each of the keybinds previously set by `default_keybinds` can now be set individually. See `api_spec.md` for details.
 - Deprecated the `default_annotation_size` argument in the configuration object. Use the `initial_line_size` argument instead. See `api_spec.md` for details.
-- Removed cookie previously used to track subtask line size. Now the subtask line size is stored in local storage, and the `initial_line_size` argument takes precedence over the stored value.
+- Removed cookie previously used to track subtask line size. New jobs will always default to the `initial_line_size` argument if provided.
+- Rework `vanish` mode to truly vanish annotations rather than just drawing them really really small.
 
 ## [0.10.12] - May 24th, 2024
 - Fix broken undo/redo behavior for polygons.
