@@ -1283,6 +1283,10 @@ export class AnnotationResizeItem extends ToolboxItem {
 
         // Redraw the annotations
         ulabel.redraw_all_annotations(subtask_key, null, false);
+
+        // Hide dialogs
+        ulabel.hide_global_edit_suggestion();
+        ulabel.hide_edit_suggestion();
     }
 
     /**

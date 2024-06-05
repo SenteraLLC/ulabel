@@ -6070,11 +6070,13 @@ export class ULabel {
      * If no endpoints, search along segments with infinite range 
      */
     suggest_edits(mouse_event = null, nonspatial_id = null) {
-        // don't show edits when potentially trying to draw a hole
+        const current_subtask = this.subtasks[this.state["current_subtask"]];
+        // Hide edit dialogs when in certain states
         if (
-            this.subtasks[this.state["current_subtask"]]["state"]["is_in_progress"] ||
-            this.subtasks[this.state["current_subtask"]]["state"]["starting_complex_polygon"] || 
-            this.subtasks[this.state["current_subtask"]]["state"]["is_in_brush_mode"]
+            current_subtask["state"]["is_vanished"] ||
+            current_subtask["state"]["is_in_progress"] ||
+            current_subtask["state"]["starting_complex_polygon"] || 
+            current_subtask["state"]["is_in_brush_mode"]
         ) {
             this.hide_global_edit_suggestion();
             this.hide_edit_suggestion();
@@ -6101,22 +6103,22 @@ export class ULabel {
                 if (edit_candidates["best"] === null) {
                     this.hide_global_edit_suggestion();
                     this.hide_edit_suggestion();
-                    this.subtasks[this.state["current_subtask"]]["state"]["move_candidate"] = null;
-                    this.subtasks[this.state["current_subtask"]]["active_annotation"] = null;
+                    current_subtask["state"]["move_candidate"] = null;
+                    current_subtask["active_annotation"] = null;
                     return;
                 }
 
                 // Look for an existing point that's close enough to suggest editing it
                 const nearest_active_keypoint = this.get_nearest_active_keypoint(global_x, global_y, dst_thresh, edit_candidates["candidate_ids"]);
                 if (nearest_active_keypoint != null && nearest_active_keypoint.point != null) {
-                    this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"] = nearest_active_keypoint;
+                    current_subtask["state"]["edit_candidate"] = nearest_active_keypoint;
                     this.show_edit_suggestion(nearest_active_keypoint, true);
                     edit_candidates["best"] = nearest_active_keypoint;
                 }
                 else { // If none are found, look for a point along a segment that's close enough
                     const nearest_segment_point = this.get_nearest_segment_point(global_x, global_y, Infinity, edit_candidates["candidate_ids"]);
                     if (nearest_segment_point != null && nearest_segment_point.point != null) {
-                        this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"] = nearest_segment_point;
+                        current_subtask["state"]["edit_candidate"] = nearest_segment_point;
                         this.show_edit_suggestion(nearest_segment_point, false);
                         edit_candidates["best"] = nearest_segment_point;
                     }
@@ -6126,7 +6128,7 @@ export class ULabel {
                 }
 
                 // Show global edit dialogs for "best" candidate
-                this.subtasks[this.state["current_subtask"]]["state"]["move_candidate"] = edit_candidates["best"];
+                current_subtask["state"]["move_candidate"] = edit_candidates["best"];
                 best_candidate = edit_candidates["best"]["annid"];
             }
             else {
@@ -6135,7 +6137,7 @@ export class ULabel {
                 best_candidate = nonspatial_id;
             }
             this.show_global_edit_suggestion(best_candidate, null, nonspatial_id);
-            this.subtasks[this.state["current_subtask"]]["active_annotation"] = best_candidate
+            current_subtask["active_annotation"] = best_candidate
 
             // Must be called after active_annotation is updated
             this.update_confidence_dialog(best_candidate)
