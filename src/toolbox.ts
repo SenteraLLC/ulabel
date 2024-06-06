@@ -12,6 +12,7 @@ import {
 import { SliderHandler, get_idd_string } from "./html_builder";
 import { FilterDistanceOverlay } from "./overlays";
 import { get_active_class_id } from "./utilities";
+import { hide_comment_window } from "./comment";
 
 // For ResizeToolboxItem
 enum ValidResizeValues {
@@ -362,6 +363,7 @@ export class ModeSelectionToolboxItem extends ToolboxItem {
             target_jq.addClass("sel");
             target_jq.removeAttr("href");
 
+            hide_comment_window(ulabel);
             ulabel.show_annotation_mode(target_jq);
             ulabel.toggle_delete_class_id_in_toolbox();
         });

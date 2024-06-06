@@ -7,7 +7,6 @@ import {
     DELETE_CLASS_ID, 
     DELETE_MODES,
     NONSPATIAL_MODES,
-    TEXT_MODES,
     MODES_3D,
     N_ANNOS_PER_CANVAS,
     LEGACY_DEFAULT_LINE_SIZE,
@@ -223,9 +222,7 @@ export class ULabel {
 
             // Ignore if in the middle of an annotation that allows text input
             // to prevent accidental keypresses when typing text
-            if (TEXT_MODES.includes(current_subtask.state.annotation_mode)) {
-                return;
-            }
+            if (ul.state["active_comment_id"] !== null || $("div.frame_annotation_dialog.active").hasClass("permopen")) return;
 
             // Check for the correct keypress
             switch (e.key) {
@@ -507,8 +504,13 @@ export class ULabel {
             $("div.frame_annotation_dialog.permopen").removeClass("permopen");
         });
         $(document).on("input.ulabel", "textarea.nonspatial_note", (e) => {
-            // Update annotation's text field
-            ul.subtasks[ul.state["current_subtask"]]["annotations"]["access"][e.target.id.substring("note__".length)]["text_payload"] = e.target.value;
+            if (ul.state["active_comment_id"] !== null) {
+                // Comment annotation type
+                ul.subtasks[ul.state["current_subtask"]]["annotations"]["access"][ul.state["active_comment_id"]]["text_payload"] = e.target.value;
+            } else {
+                // Non-spatial annotations
+                ul.subtasks[ul.state["current_subtask"]]["annotations"]["access"][e.target.id.substring("note__".length)]["text_payload"] = e.target.value;
+            }
         });
         $(document).on("click.ulabel", "a.fad_button.delete", (e) => {
             ul.delete_annotation(e.target.id.substring("delete__".length));
@@ -1582,12 +1584,12 @@ export class ULabel {
         let new_name = el.attr("amdname");
         $("#" + this.config["toolbox_id"] + " .current_mode").html(new_name);
         $(`div.frame_annotation_dialog:not(.fad_st__${this.state["current_subtask"]})`).removeClass("active");
-        if (["whole-image", "global"].includes(this.subtasks[this.state["current_subtask"]]["state"]["annotation_mode"])) {
-            $(`div.frame_annotation_dialog.fad_st__${this.state["current_subtask"]}`).addClass("active");
-        }
-        else {
-            $("div.frame_annotation_dialog").removeClass("active");
-        }
+        // Mark nonspatial modes as active
+        const annotation_mode = this.subtasks[this.state["current_subtask"]]["state"]["annotation_mode"];
+        if (NONSPATIAL_MODES.includes(annotation_mode)) {
+            return $(`div.frame_annotation_dialog.fad_st__${this.state["current_subtask"]}`).addClass("active");
+        } 
+        $("div.frame_annotation_dialog").removeClass("active");
     }
 
     toggle_delete_class_id_in_toolbox() {

@@ -53,6 +53,7 @@ export function show_comment_window(ulabel: ULabel, annotation: ULabelAnnotation
     // Show the comment window
     // A text area for the comment 
     const coordinates = get_comment_window_coordinates(ulabel, annotation);
+    // TODO: multiple text payloads in a thread
     $(`
         <div id=comment_window_${annotation.id}>
             <textarea class="nonspatial_note" placeholder="Notes...">${annotation.text_payload}</textarea>
