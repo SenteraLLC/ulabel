@@ -38,6 +38,7 @@ import {
 import {
     get_comment_center_point,
     show_comment_window,
+    hide_comment_window,
 } from "../build/comment";
 
 import $ from 'jquery';
@@ -1160,6 +1161,7 @@ export class ULabel {
 
             // Renderings state
             "demo_canvas_context": null,
+            "comment_window_id": null,
             "edited": false
         };
 
@@ -4347,6 +4349,9 @@ export class ULabel {
     }
 
     begin_annotation(mouse_event, redo_payload = null) {
+        // Hide the comment window if it's open
+        hide_comment_window(this);
+
         // Give the new annotation a unique ID
         let unq_id = null;
         let line_size = null;
@@ -5519,11 +5524,12 @@ export class ULabel {
         let active_spatial_payload = spatial_payload;
         let record_action = false;
         let act_type = "finish_annotation";
+        const spatial_type = annotation["spatial_type"];
 
         // Record last point and redraw if necessary
         // TODO(3d)
         let n_kpts, start_pt, active_idx;
-        switch (annotation["spatial_type"]) {
+        switch (spatial_type) {
             case "polygon":
                 // For polygons, the active spatial payload is the last array of points in the spatial payload
                 active_idx = spatial_payload.length - 1;
@@ -5659,6 +5665,9 @@ export class ULabel {
         // Set mode to no active annotation, unless shift key is held for a polygon
         if (current_subtask["state"]["starting_complex_polygon"]) {
             console.log("Continuing complex polygon...");
+        } else if (spatial_type === "comment") {
+            // The spatial portion is no longer in progress, but the id is still active until the comment window closes
+            current_subtask["state"]["is_in_progress"] = false;
         } else {
             current_subtask["state"]["active_id"] = null;
             current_subtask["state"]["is_in_progress"] = false;

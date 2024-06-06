@@ -166,6 +166,7 @@ export class ULabel {
     public set_annotations(annotations: ULabelAnnotation[], subtask: ULabelSubtask);
     public set_saved(saved: boolean);
     public redraw_all_annotations(subtask?: any, offset?: any, spatial_only?: any);
+    public redraw_annotation(annotation_id: string, subtask?: string, offset?: any): void;
     public show_annotation_mode(target_jq: JQuery<any>);
     public raise_error(message: string, level?: number);
     public rezoom(): void;
