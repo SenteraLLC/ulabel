@@ -35,6 +35,10 @@ import {
     build_edit_suggestion,
     build_confidence_dialog 
 } from '../build/html_builder';
+import {
+    getCommentCenterPoint,
+    showCommentWindow,
+} from "../build/comment";
 
 import $ from 'jquery';
 const jQuery = $;
@@ -2092,6 +2096,19 @@ export class ULabel {
         ctx.stroke();
     }
 
+    draw_comment(annotation_objext, ctx, demo = false, offset = null) {
+        if (this.subtasks[this.state["current_subtask"]]["state"]["active_id"] === annotation_objext["id"]) {
+            // When the annotation is active, show the bounding box
+            this.draw_bounding_box(annotation_objext, ctx, demo, offset);
+        } else {
+            // When the annotation is not active, draw a point at the center of the bounding box
+            // TODO: draw some kind of comment icon
+            let point_annotation_object = JSON.parse(JSON.stringify(annotation_objext));
+            point_annotation_object["spatial_payload"] = [getCommentCenterPoint(annotation_objext)];
+            this.draw_point(point_annotation_object, ctx, demo, offset);
+        }
+    }
+
     draw_point(annotation_object, ctx, demo = false, offset = null) {
         const px_per_px = this.config["px_per_px"];
         let diffX = 0;
@@ -2470,8 +2487,10 @@ export class ULabel {
         switch (annotation_object["spatial_type"]) {
             case "bbox":
             case "delete_bbox":
-            case "comment":
                 this.draw_bounding_box(annotation_object, context, demo, offset);
+                break;
+            case "comment":
+                this.draw_comment(annotation_object, context, demo, offset);
                 break;
             case "point":
                 this.draw_point(annotation_object, context, demo, offset);

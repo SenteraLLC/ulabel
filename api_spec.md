@@ -245,6 +245,7 @@ The full list of `"allowed_modes"` that are currently supported is:
 - `"point"`: A keypoint within a single frame
 - `"delete_polygon"`: Allows drawing a polygon around an area, and all annotations within that area will be deleted
 - `"delete_bbox"`: Allows drawing a bounding box around an area, and all annotations within that area will be deleted
+- `"comment"`: Allows drawing a bounding box around an area, and a comment can be added to that area
 
 The list of modes currently **under construction** is:
 

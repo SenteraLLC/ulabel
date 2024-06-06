@@ -104,7 +104,7 @@ export type ULabelSubmitHandler = (submitData: ULabelSubmitData) => void;
 /**
  * @link https://github.com/SenteraLLC/ulabel/blob/main/api_spec.md#subtasks
  */
-export type ULabelSpatialType = 'contour' | 'polygon' | 'polyline' | 'bbox' | 'tbar' | 'bbox3' | 'whole-image' | 'global' | 'point';
+export type ULabelSpatialType = 'contour' | 'polygon' | 'polyline' | 'bbox' | 'tbar' | 'bbox3' | 'whole-image' | 'global' | 'point' | 'comment' | 'delete_polygon' | 'delete_bbox';
 
 // A 2D spatial payload is a list of 2D points
 export type ULabelSpatialPayload = [number, number][];

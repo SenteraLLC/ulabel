@@ -1,5 +1,5 @@
 import { AnnotationClassDistanceData, FilterDistanceConfig, RecolorActiveConfig, ULabel } from "..";
-import { ULabelAnnotation, NONSPATIAL_MODES, DELETE_MODES, LEGACY_DEFAULT_LINE_SIZE } from "./annotation";
+import { ULabelAnnotation, NONSPATIAL_MODES, DELETE_MODES } from "./annotation";
 import { ULabelSubtask } from "./subtask";
 import { 
     get_annotation_confidence, 
