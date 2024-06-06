@@ -36,8 +36,8 @@ import {
     build_confidence_dialog 
 } from '../build/html_builder';
 import {
-    getCommentCenterPoint,
-    showCommentWindow,
+    get_comment_center_point,
+    show_comment_window,
 } from "../build/comment";
 
 import $ from 'jquery';
@@ -2104,7 +2104,7 @@ export class ULabel {
             // When the annotation is not active, draw a point at the center of the bounding box
             // TODO: draw some kind of comment icon
             let point_annotation_object = JSON.parse(JSON.stringify(annotation_objext));
-            point_annotation_object["spatial_payload"] = [getCommentCenterPoint(annotation_objext)];
+            point_annotation_object["spatial_payload"] = [get_comment_center_point(annotation_objext)];
             this.draw_point(point_annotation_object, ctx, demo, offset);
         }
     }
@@ -5577,12 +5577,15 @@ export class ULabel {
                 this.record_finish(active_id);
                 this.delete_annotations_in_bbox(active_id);
                 break;
+            case "comment":
+                this.record_finish(active_id);
+                show_comment_window(this, annotation);
+                break;
             case "bbox":
             case "bbox3":
             case "contour":
             case "tbar":
             case "point":
-            case "comment":
                 this.record_finish(active_id);
                 break;
             default:
@@ -6183,6 +6186,20 @@ export class ULabel {
     }
 
     // ================= Mouse event interpreters =================
+
+    /**
+     * Translate an annbox x-y point into global left-top coordinates
+     * 
+     * @param {Array<number>} point [x, y] 
+     */
+    get_global_coords_from_annbox_point(point) {
+        const scale = this.get_empirical_scale();
+        const annbox = $("#" + this.config["annbox_id"]);
+        return [
+            point[0] * scale + annbox.offset().left - annbox.scrollLeft(),
+            point[1] * scale + annbox.offset().top - annbox.scrollTop()
+        ];
+    } 
 
     // Get the mouse position on the screen
     get_global_mouse_x(mouse_event) {
