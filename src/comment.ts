@@ -26,10 +26,11 @@ export function get_comment_center_point(annotation: ULabelAnnotation): Array<nu
  * @returns { { left: number, top: number } } Coordinates (left, top) of the comment window
  */
 export function get_comment_window_coordinates(ulabel: ULabel, annotation: ULabelAnnotation): { left: number, top: number } {    
-    // The annotation spatial payload is a bbox [[x1, y1], [x2, y2]] where x1, y1 is the top left corner and x2, y2 is the bottom right corner
-    // We want to place the comment window at the top right corner of the bbox
-    const top_right_corner = [annotation.spatial_payload[1][0], annotation.spatial_payload[0][1]];
-    const coordinates = ulabel.get_global_coords_from_annbox_point(top_right_corner);
+    // The annotation spatial payload is a bbox [[x1, y1], [x2, y2]]
+    // We want to place the comment window at the top right corner of the bbox, so the greatest x and the smallest y
+    const x = Math.max(annotation.spatial_payload[0][0], annotation.spatial_payload[1][0]);
+    const y = Math.min(annotation.spatial_payload[0][1], annotation.spatial_payload[1][1]);
+    const coordinates = ulabel.get_global_coords_from_annbox_point([x, y]);
     return {
         left: coordinates[0],
         top: coordinates[1]
@@ -43,7 +44,6 @@ export function get_comment_window_coordinates(ulabel: ULabel, annotation: ULabe
  * @param {ULabelAnnotation} annotation Comment annotation
  */
 export function show_comment_window(ulabel: ULabel, annotation: ULabelAnnotation): void {
-    // TODO: ulabel state to only allow one comment window at a time
     // Hide any existing comment window
     hide_comment_window(ulabel);
 
@@ -53,9 +53,8 @@ export function show_comment_window(ulabel: ULabel, annotation: ULabelAnnotation
     // Show the comment window
     // A text area for the comment 
     const coordinates = get_comment_window_coordinates(ulabel, annotation);
-    const comment_window_id = `comment_window_${annotation.id}`;
     $(`
-        <div id=${comment_window_id}>
+        <div id=comment_window_${annotation.id}>
             <textarea class="nonspatial_note" placeholder="Notes...">${annotation.text_payload}</textarea>
         </div>
     `).css({
@@ -66,7 +65,7 @@ export function show_comment_window(ulabel: ULabel, annotation: ULabelAnnotation
     }).appendTo("#" + ulabel.config["container_id"]);
 
     // Save the comment window id in the state
-    ulabel.state.comment_window_id = comment_window_id;
+    ulabel.state.active_comment_id = annotation.id;
     // Redraw annotation
     ulabel.redraw_annotation(annotation.id);
 }
@@ -77,10 +76,10 @@ export function show_comment_window(ulabel: ULabel, annotation: ULabelAnnotation
  * @param {ULabel} ulabel ULabel instance
  */
 export function hide_comment_window(ulabel: ULabel): void {
-    if (ulabel.state.comment_window_id !== null) {
+    if (ulabel.state.active_comment_id !== null) {
         // Hide the comment window
-        $(`#${ulabel.state.comment_window_id}`).remove();
+        $(`#comment_window_${ulabel.state.active_comment_id}`).remove();
         // Clear the state
-        ulabel.state.comment_window_id = null;
+        ulabel.state.active_comment_id = null;
     }
 }

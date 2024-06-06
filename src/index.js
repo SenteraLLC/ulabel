@@ -1161,7 +1161,7 @@ export class ULabel {
 
             // Renderings state
             "demo_canvas_context": null,
-            "comment_window_id": null,
+            "active_comment_id": null,
             "edited": false
         };
 
@@ -2099,7 +2099,10 @@ export class ULabel {
     }
 
     draw_comment(annotation_objext, ctx, demo = false, offset = null) {
-        if (this.subtasks[this.state["current_subtask"]]["state"]["active_id"] === annotation_objext["id"]) {
+        if (
+            this.subtasks[this.state["current_subtask"]]["state"]["active_id"] === annotation_objext["id"] ||
+            this.state["active_comment_id"] === annotation_objext["id"]
+        ) {
             // When the annotation is active, show the bounding box
             this.draw_bounding_box(annotation_objext, ctx, demo, offset);
         } else {
@@ -4349,9 +4352,6 @@ export class ULabel {
     }
 
     begin_annotation(mouse_event, redo_payload = null) {
-        // Hide the comment window if it's open
-        hide_comment_window(this);
-
         // Give the new annotation a unique ID
         let unq_id = null;
         let line_size = null;
@@ -5665,9 +5665,6 @@ export class ULabel {
         // Set mode to no active annotation, unless shift key is held for a polygon
         if (current_subtask["state"]["starting_complex_polygon"]) {
             console.log("Continuing complex polygon...");
-        } else if (spatial_type === "comment") {
-            // The spatial portion is no longer in progress, but the id is still active until the comment window closes
-            current_subtask["state"]["is_in_progress"] = false;
         } else {
             current_subtask["state"]["active_id"] = null;
             current_subtask["state"]["is_in_progress"] = false;
@@ -6596,6 +6593,9 @@ export class ULabel {
             if (this.subtasks[this.state["current_subtask"]]["state"]["idd_visible"] && !this.subtasks[this.state["current_subtask"]]["state"]["idd_thumbnail"]) {
                 return;
             }
+            // Close any open comment window
+            hide_comment_window(this);
+            // Handle the drag
             mouse_event.preventDefault();
             if (this.drag_state["active_key"] === null) {
                 this.start_drag(drag_key, mouse_event.button, mouse_event);
