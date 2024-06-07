@@ -6,6 +6,9 @@ All notable changes to this project will be documented here.
 
 Nothing yet.
 
+## [0.10.13] - June 7th, 2024
+- Fix various bugs relating to the annotation count not updating as expected.
+
 ## [0.10.12] - May 24th, 2024
 - Fix broken undo/redo behavior for polygons.
 - General improvements aimed at reducing memory usage and improving performance.

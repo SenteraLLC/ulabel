@@ -1294,6 +1294,9 @@ export class ULabel {
             // Draw resumed from annotations
             that.redraw_all_annotations();
 
+            // Update class counter
+            that.toolbox.redraw_update_items(that);
+
             // Call the user-provided callback
             callback();
         }).catch((err) => {
@@ -2538,14 +2541,6 @@ export class ULabel {
         else {
             this.redraw_all_annotations_in_subtask(subtask, offset, nonspatial_only);
         }
-
-        /*
-        TODO:
-        some update scheduling to make binding easier
-        i.e. a batch of functions run on adding, removing annotations
-        and a different batch run on redraw, a batch for subtask switch etc.
-        */
-        this.toolbox.redraw_update_items(this);
     }
 
     /**
@@ -2569,7 +2564,6 @@ export class ULabel {
             // Nonspatial annotations are drawn on the front context
             this.redraw_all_annotations_in_subtask(subtask, offset, true);
         }
-        this.toolbox.redraw_update_items(this);
     }
 
     /**
@@ -2594,8 +2588,6 @@ export class ULabel {
         for (const canvas_id of unique_contexts) {
             this.redraw_all_annotations_in_annotation_context(canvas_id, subtask, offset);
         }
-
-        this.toolbox.redraw_update_items(this);
     }
 
     clear_annotation_canvas(canvas_id, subtask = null) {
@@ -3208,6 +3200,7 @@ export class ULabel {
             // Redraw if needed
             if (needs_redraw) {
                 this.redraw_annotation(annid);
+                this.toolbox.redraw_update_items(this);
             }
         }
 
@@ -3257,6 +3250,8 @@ export class ULabel {
         }
         // Redraw annotations
         this.redraw_multiple_spatial_annotations(annotation_ids_to_redraw, subtask);
+        // Update class counter
+        this.toolbox.redraw_update_items(this);
     }
 
     // Convert bbox to polygon and then delete annotations in polygon
@@ -3739,6 +3734,9 @@ export class ULabel {
         if (annotation_mode === "polygon" || annotation_mode === "polyline" || annotation_mode === "delete_polygon") {
             this.destroy_polygon_ender(annotation_id);
         }
+
+        // Update class counter
+        this.toolbox.redraw_update_items(this);
     }
 
     delete_annotation__undo(undo_payload) {
@@ -3775,6 +3773,9 @@ export class ULabel {
         if (annotations["access"][active_id]["spatial_type"] && this.toolbox_order.includes(AllowedToolboxItem.FilterDistance)) {
             filter_points_distance_from_line(this);
         }
+
+        // Update class counter
+        this.toolbox.redraw_update_items(this);
     }
 
     delete_annotation__redo(redo_payload) {
@@ -4450,6 +4451,9 @@ export class ULabel {
         // Remove from access
         delete current_subtask["annotations"]["access"][unq_id];
 
+        // Update class counter
+        this.toolbox.redraw_update_items(this);
+
         this.suggest_edits(this.state["last_move"]);
     }
 
@@ -4662,7 +4666,8 @@ export class ULabel {
                     // If the FilterDistance ToolboxItem is present, filter points with this new polyline present
                     if (this.toolbox_order.includes(AllowedToolboxItem.FilterDistance)) {
                         // Currently only supported by polyline
-                        filter_points_distance_from_line(this)
+                        filter_points_distance_from_line(this);
+                        this.toolbox.redraw_update_items(this);
                     }
                     break;
                 case "contour":
@@ -5144,6 +5149,7 @@ export class ULabel {
                     if (this.toolbox_order.includes(AllowedToolboxItem.FilterDistance)) {
                         // Currently only supported by polyline
                         filter_points_distance_from_line(this)
+                        this.toolbox.redraw_update_items(this);
                     }
                     break;
                 case "contour":
@@ -5593,6 +5599,8 @@ export class ULabel {
             current_subtask["state"]["active_id"] = null;
             current_subtask["state"]["is_in_progress"] = false;
         }
+
+        this.toolbox.redraw_update_items(this);
     }
 
     finish_annotation__undo(undo_payload) {
@@ -5602,6 +5610,8 @@ export class ULabel {
         this.redraw_annotation(undo_payload.actid);
         // Update dialogs
         this.suggest_edits(this.state["last_move"]);
+        // Update toolbox counter
+        this.toolbox.redraw_update_items(this);
     }
 
     finish_annotation__redo(redo_payload) {
@@ -5622,6 +5632,8 @@ export class ULabel {
         }, true);
         // Update dialogs
         this.suggest_edits(this.state["last_move"]);
+        // Update toolbox counter
+        this.toolbox.redraw_update_items(this);
     }
 
     finish_edit() {
@@ -5683,6 +5695,7 @@ export class ULabel {
                 active_annotation["spatial_type"] === "polyline"
             ) {
                 filter_points_distance_from_line(this, offset);
+                this.toolbox.redraw_update_items(this);
             }
             this.redraw_annotation(active_id, null, offset);
             this.show_global_edit_suggestion(current_subtask["state"]["move_candidate"]["annid"], offset); // TODO handle offset
@@ -6466,6 +6479,9 @@ export class ULabel {
                 filter_points_distance_from_line(this)
             }
         }
+
+        // Update class counter in toolbox
+        this.toolbox.redraw_update_items(this);
     }
 
     // Update the displayed annotation confidence
