@@ -1078,25 +1078,30 @@ export class ClassCounterToolboxItem extends ToolboxItem {
         head.appendChild(style);
     }
 
-    update_toolbox_counter(subtask, toolbox_id) {
+    /**
+     * Update the Class Counter with the current number of active annotations.
+     * 
+     * @param {ULabelSubtask} subtask Subtask to update the counter for.
+     */
+    update_toolbox_counter(subtask: ULabelSubtask): void {
         if (subtask == null) {
             return;
         }
-        let class_ids = subtask.class_ids;
+        const class_ids = subtask.class_ids;
         let i: number, j: number;
         let class_counts = {};
-        for (i = 0;i < class_ids.length;i++) {
+        for (i = 0; i < class_ids.length; i++) {
             class_counts[class_ids[i]] = 0;
         }
         let annotations = subtask.annotations.access;
         let annotation_ids = subtask.annotations.ordering;
         var current_annotation: ULabelAnnotation, current_payload;
-        for (i = 0;i < annotation_ids.length;i++) {
+        for (i = 0; i < annotation_ids.length; i++) {
             current_annotation = annotations[annotation_ids[i]];
-            if (current_annotation.deprecated == false) {
-                for(j = 0;j < current_annotation.classification_payloads.length;j++) {
+            if (current_annotation.deprecated === false) {
+                for (j = 0; j < current_annotation.classification_payloads.length; j++) {
                     current_payload = current_annotation.classification_payloads[j];
-                    if(current_payload.confidence > 0.0) {
+                    if (current_payload.confidence > 0.0) {
                         class_counts[current_payload.class_id] += 1;
                         break;
                     }
@@ -1105,10 +1110,10 @@ export class ClassCounterToolboxItem extends ToolboxItem {
         }
         let f_string = "";
         let class_name: string, class_count: number;
-        for(i = 0;i<class_ids.length;i++) {
+        for (i = 0; i < class_ids.length; i++) {
             class_name = subtask.class_defs[i].name;
             // MF-Tassels Hack
-            if(class_name.includes("OVERWRITE")) {
+            if (class_name.includes("OVERWRITE")) {
                 continue;
             }
             class_count = class_counts[subtask.class_defs[i].id];
@@ -1129,7 +1134,6 @@ export class ClassCounterToolboxItem extends ToolboxItem {
     public redraw_update(ulabel: ULabel) {
         this.update_toolbox_counter(
             ulabel.subtasks[ulabel.state["current_subtask"]],
-            ulabel.config["toolbox_id"]
         );
         $("#" + ulabel.config["toolbox_id"] + " div.toolbox-class-counter").html(this.inner_HTML);
     }
@@ -1945,6 +1949,8 @@ export class KeypointSliderItem extends ToolboxItem {
                 // Filter the annotations, then redraw them
                 this.filter_annotations(this.ulabel, slider_value);
                 this.ulabel.redraw_all_annotations();
+                // Update class counter
+                this.ulabel.toolbox.redraw_update_items(this.ulabel);
             }
         })
 
