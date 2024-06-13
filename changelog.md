@@ -6,6 +6,9 @@ All notable changes to this project will be documented here.
 
 Nothing yet.
 
+## [0.10.14] - June 12th, 2024
+- Fix bug where very rarely, certain polygon annotations created outside of ULabel would cause ULabel to fail when processing resume_from.
+
 ## [0.10.13] - June 7th, 2024
 - Fix various bugs relating to the annotation count not updating as expected.
 
