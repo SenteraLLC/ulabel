@@ -6900,6 +6900,8 @@ export class ULabel {
         ULabel.initialize_annotation_canvases(this, subtask);
         // Redraw all annotations to render them
         this.redraw_all_annotations(subtask);
+        // Update class counter in toolbox
+        this.toolbox.redraw_update_items(this);
     }
 
     // Change frame
