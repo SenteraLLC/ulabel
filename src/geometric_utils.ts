@@ -176,9 +176,14 @@ export class GeometricUtils {
             return null;
         }
         // If there is an intersection, add the non-intersecting parts of poly2 to poly1
-        let non_intersection: ULabelSpatialPayload2D[] = polygonClipping.difference([poly2], [intersection]);
-        let new_poly: [ULabelSpatialPayload2D[]] = polygonClipping.union([poly1], non_intersection);
-        return [new_poly[0][0], intersection];
+        try {
+            let non_intersection: ULabelSpatialPayload2D[] = polygonClipping.difference([poly2], [intersection]);
+            let new_poly: [ULabelSpatialPayload2D[]] = polygonClipping.union([poly1], non_intersection);
+            return [new_poly[0][0], intersection];
+        } catch (e) {
+            console.warn("Failed to merge polygons at intersection: ", e);
+            return null;
+        }
     }
 
     // Merge two simple polygons into one. Result is a complex polygon ULabelSpatialPayload2D[], with any holes preserved.
