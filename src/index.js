@@ -517,7 +517,10 @@ export class ULabel {
         });
         $(document).on("click.ulabel", "a.fad_button.reclf", (e) => {
             // Show idd
-            ul.show_id_dialog(e.pageX, e.pageY, e.target.id.substring("reclf__".length), false, true);
+            const annid = e.target.id.substring("reclf__".length);
+            if (!ul.is_single_class_mode(annid)) {
+                ul.show_id_dialog(e.pageX, e.pageY, annid, false, true);
+            }
         });
 
         $(document).on("mouseenter.ulabel", "div.fad_annotation_rows div.fad_row", (e) => {
@@ -545,13 +548,17 @@ export class ULabel {
         $(document).on("click.ulabel", ".global_edit_suggestion a.reid_suggestion", (e) => {
             let crst = ul.state["current_subtask"];
             let annid = ul.subtasks[crst]["state"]["idd_associated_annotation"];
-            ul.hide_global_edit_suggestion();
-            ul.show_id_dialog(
-                ul.get_global_mouse_x(e),
-                ul.get_global_mouse_y(e),
-                annid,
-                false
-            );
+            if (annid !== null) {
+                ul.hide_global_edit_suggestion();
+                if (!ul.is_single_class_mode(annid)) {
+                    ul.show_id_dialog(
+                        ul.get_global_mouse_x(e),
+                        ul.get_global_mouse_y(e),
+                        annid,
+                        false
+                    );
+                }
+            }
         });
 
         $(document).on("click.ulabel", "#" + ul.config["annbox_id"] + " .delete_suggestion", () => {
@@ -2100,19 +2107,51 @@ export class ULabel {
         ctx.stroke();
     }
 
-    draw_comment(annotation_objext, ctx, demo = false, offset = null) {
+    draw_comment(annotation_object, ctx, demo = false, offset = null) {
         if (
-            this.subtasks[this.state["current_subtask"]]["state"]["active_id"] === annotation_objext["id"] ||
-            this.state["active_comment_id"] === annotation_objext["id"]
+            this.subtasks[this.state["current_subtask"]]["state"]["active_id"] === annotation_object["id"] ||
+            this.state["active_comment_id"] === annotation_object["id"]
         ) {
             // When the annotation is active, show the bounding box
-            this.draw_bounding_box(annotation_objext, ctx, demo, offset);
+            this.draw_bounding_box(annotation_object, ctx, demo, offset);
         } else {
-            // When the annotation is not active, draw a point at the center of the bounding box
-            // TODO: draw some kind of comment icon
-            let point_annotation_object = JSON.parse(JSON.stringify(annotation_objext));
-            point_annotation_object["spatial_payload"] = [get_comment_center_point(annotation_objext)];
-            this.draw_point(point_annotation_object, ctx, demo, offset);
+            // When the annotation is not active, draw a speech bubble icon around the center point of the comment
+            const [center_x, center_y] = get_comment_center_point(annotation_object);
+            // Dimensions of the speech bubble in pixels
+            const BUBBLE_WIDTH = 8;
+            const BUBBLE_HEIGHT = 8;
+            const ARC_RADIUS = 2;
+            const TAIL_HEIGHT = 5;
+            const TAIL_WIDTH = 5;
+            ctx.beginPath();
+            // Starting point (top-left)
+            ctx.moveTo(center_x - BUBBLE_WIDTH, center_y - BUBBLE_HEIGHT);
+            // Top line
+            ctx.lineTo(center_x + BUBBLE_WIDTH, center_y - BUBBLE_HEIGHT);
+            // Right arc
+            ctx.quadraticCurveTo(center_x + BUBBLE_WIDTH + ARC_RADIUS, center_y - BUBBLE_HEIGHT, center_x + BUBBLE_WIDTH + ARC_RADIUS, center_y - BUBBLE_HEIGHT + ARC_RADIUS);
+            // Right line
+            ctx.lineTo(center_x + BUBBLE_WIDTH + ARC_RADIUS, center_y + TAIL_HEIGHT);
+            // Bottom right arc
+            ctx.quadraticCurveTo(center_x + BUBBLE_WIDTH + ARC_RADIUS, center_y + BUBBLE_HEIGHT, center_x + BUBBLE_WIDTH, center_y + BUBBLE_HEIGHT);
+            // Tail
+            ctx.lineTo(center_x + TAIL_WIDTH, center_y + BUBBLE_HEIGHT);
+            ctx.lineTo(center_x, center_y + BUBBLE_HEIGHT + TAIL_HEIGHT);
+            ctx.lineTo(center_x - TAIL_WIDTH, center_y + BUBBLE_HEIGHT);
+            // Bottom left arc
+            ctx.lineTo(center_x - BUBBLE_WIDTH - ARC_RADIUS, center_y + BUBBLE_HEIGHT);
+            ctx.quadraticCurveTo(center_x - BUBBLE_WIDTH - ARC_RADIUS * 2, center_y + BUBBLE_HEIGHT, center_x - BUBBLE_WIDTH - ARC_RADIUS * 2, center_y + TAIL_HEIGHT);
+            // Left line
+            ctx.lineTo(center_x - BUBBLE_WIDTH - ARC_RADIUS * 2, center_y - BUBBLE_HEIGHT + ARC_RADIUS);
+            // Top left arc
+            ctx.quadraticCurveTo(center_x - BUBBLE_WIDTH - ARC_RADIUS * 2, center_y - BUBBLE_HEIGHT, center_x - BUBBLE_WIDTH, center_y - BUBBLE_HEIGHT);
+            ctx.closePath();
+            // Fill the bubble
+            ctx.fillStyle = "white";
+            ctx.fill();
+            // Stroke the bubble border
+            ctx.strokeStyle = "black";
+            ctx.stroke();
         }
     }
 
@@ -3386,6 +3425,23 @@ export class ULabel {
         annotation["containing_box"] = new_spatial_data["containing_box"];
     }
 
+    /**
+     * Determine if the current state is in single class mode
+     * 
+     * @returns {boolean} True if the current subtask is in single class mode and not in comment mode
+     */
+    is_single_class_mode(annid = null) {
+        // Get the spatial type of the annotation, if provided
+        if (annid !== null) {
+            let current_spatial_type = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid]["spatial_type"];
+            // If the annotation is a comment, then we are in single class mode
+            if (current_spatial_type === "comment") {
+                return true;
+            }
+        }
+        return this.subtasks[this.state["current_subtask"]]["single_class_mode"];
+    }
+
     show_edit_suggestion(nearest_point, currently_exists) {
         let esid = "edit_suggestion__" + this.state["current_subtask"];
         var esjq = $("#" + esid);
@@ -3436,7 +3492,7 @@ export class ULabel {
 
 
         // let placeholder = $("#global_edit_suggestion a.reid_suggestion");
-        if (!this.subtasks[this.state["current_subtask"]]["single_class_mode"]) {
+        if (!this.is_single_class_mode(annid)) {
             this.show_id_dialog(idd_x, idd_y, annid, true, nonspatial_id != null);
         }
     }
