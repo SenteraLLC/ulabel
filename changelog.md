@@ -6,6 +6,10 @@ All notable changes to this project will be documented here.
 
 Nothing yet.
 
+## [0.10.16] - Sept 17th, 2024
+- Catch a couple event listeners that were not being removed by `remove_listeners()`.
+- Suppress rare error from `handle_toolbox_overflow()`.
+
 ## [0.10.15] - June 13th, 2024
 - Correctly update class counter after calling `set_annotations()`.
 
