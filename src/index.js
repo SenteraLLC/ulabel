@@ -182,7 +182,7 @@ export class ULabel {
             ul.handle_mouse_down(mouse_event);
         });
 
-        document.addEventListener("auxclick", ul.handle_aux_click, {"signal": signal});
+        document.addEventListener("auxclick.ulabel", ul.handle_aux_click, {"signal": signal});
 
         // Detect and record mouseup
         $(document).on("mouseup.ulabel", (e) => {
@@ -535,7 +535,7 @@ export class ULabel {
         })
 
         // Keyboard only events
-        document.addEventListener("keydown", (keypress_event) => {
+        document.addEventListener("keydown.ulabel", (keypress_event) => {
             const shift = keypress_event.shiftKey;
             const ctrl = keypress_event.ctrlKey || keypress_event.metaKey;
             if (ctrl &&
@@ -575,10 +575,10 @@ export class ULabel {
             }
         }, {"signal": signal});
 
-        window.addEventListener("beforeunload", function (e) {
+        window.addEventListener("beforeunload.ulabel", function (e) {
             var confirmationMessage = '';
             if (ul.state["edited"]) {
-                confirmationMessage = 'You have made unsave changes. Are you sure you would like to leave?';
+                confirmationMessage = 'You have made unsaved changes. Are you sure you would like to leave?';
                 (e || window.event).returnValue = confirmationMessage; //Gecko + IE
                 return confirmationMessage; //Gecko + Webkit, Safari, Chrome etc.
             }
