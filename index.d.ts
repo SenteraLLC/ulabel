@@ -149,7 +149,7 @@ export class ULabel {
         task_meta?: any,
         annotation_meta?: any,
         px_per_px?: number,
-        init_crop?: any,
+        initial_crop?: any,
         initial_line_size?: number,
         instructions_url?: string
     )
