@@ -2203,11 +2203,6 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
         // Grab all filter-distance-sliders on the page
         const sliders: NodeListOf<HTMLInputElement> = document.querySelectorAll(".filter-row-distance-slider")
 
-        // Check for at least one slider
-        if (sliders.length === 0) {
-            console.error("Unable to find ulabel distance sliders while initializing filter distance overlay")
-        }
-
         // Loop through each slider and populate filter_values
         for (let idx = 0; idx < sliders.length; idx++) {
             // Use a regex to get the string after the final - character in the slider id (Which is the class id or the string "single")
