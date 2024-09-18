@@ -1,4 +1,10 @@
-import { AnnotationClassDistanceData, FilterDistanceConfig, RecolorActiveConfig, ULabel } from "..";
+import { 
+    AnnotationClassDistanceData, 
+    FilterDistanceConfig, 
+    RecolorActiveConfig, 
+    ULabel,
+    ULabelSubmitButtons, 
+} from "..";
 import { ULabelAnnotation, NONSPATIAL_MODES, DELETE_MODES } from "./annotation";
 import { ULabelSubtask } from "./subtask";
 import { 
@@ -2354,7 +2360,7 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
 }
 
 export class SubmitButtons extends ToolboxItem {
-    private submit_buttons: {name: string, hook: Function, color?: string, set_saved?: boolean}[] | Function;
+    private submit_buttons: ULabelSubmitButtons;
 
     constructor(ulabel: ULabel) {
         super();
@@ -2428,7 +2434,7 @@ export class SubmitButtons extends ToolboxItem {
                     }
                 }
 
-                // set set_saved if it was provided
+                // Set set_saved if it was provided
                 if (this.submit_buttons[idx].set_saved !== undefined) {
                     ulabel.set_saved(this.submit_buttons[idx].set_saved);
                 }
@@ -2452,30 +2458,7 @@ export class SubmitButtons extends ToolboxItem {
      * Create the css for this ToolboxItem and append it to the page.
      */
     protected add_styles() {
-        // Define the css
-        const css = `
-        
-
-        
-        
-        
-        `
-        // Create an id so this specific style tag can be referenced
-        const style_id = "submit-buttons-toolbox-item-styles"
-
-        // Don't add the style tag if its already been added once
-        if (document.getElementById(style_id)) return
-
-        // Grab the document's head and create a style tag
-        const head = document.head || document.querySelector("head")
-        const style = document.createElement('style');
-
-        // Add the css and id to the style tag
-        style.appendChild(document.createTextNode(css));
-        style.id = style_id
-
-        // Add the style tag to the document's head
-        head.appendChild(style);
+        // Styles defined in get_html()
     }
 
     add_event_listeners(): void {
@@ -2506,6 +2489,12 @@ export class SubmitButtons extends ToolboxItem {
                 button_color = "rgba(255, 166, 0, 0.739)"
             }
 
+            // Get the size scale
+            let size_factor = 1
+            if (this.submit_buttons[idx].size_factor !== undefined) {
+                size_factor = this.submit_buttons[idx].size_factor
+            }
+
             toolboxitem_html += `
             <button 
             id="${this.submit_buttons[idx].name.replaceLowerConcat(" ", "-")}" 
@@ -2514,18 +2503,18 @@ export class SubmitButtons extends ToolboxItem {
                 display: flex;
                 justify-content: center;
                 align-items: center;
-                height: 1.2em;
-                width: 6em;
-                font-size: 1.5em;
+                height: ${1.2 * size_factor}em;
+                width: ${6 * size_factor}em;
+                font-size: ${1.5 * size_factor}em;
                 color: white;
                 background-color: ${button_color}; 
                 margin-left: auto;
                 margin-right: auto;
-                margin-top: 0.5em;
-                margin-bottom: 0.5em;
-                padding: 1em;
-                border: 1px solid ${button_color};
-                border-radius: 0.5em;
+                margin-top: ${0.5 * size_factor}em;
+                margin-bottom: ${0.5 * size_factor}em;
+                padding: ${1 * size_factor}em;
+                border: ${1 * size_factor}px solid ${button_color};
+                border-radius: ${0.5 * size_factor}em;
                 cursor: pointer;
             ">
                 ${this.submit_buttons[idx].name}

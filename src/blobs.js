@@ -2150,24 +2150,10 @@ div#${prntid}.ulabel-night div.toolbox-refs a:hover {
    color: rgb(123, 160, 228);
 }
 
-div#${prntid} #submit-button {
-   display: block;
-   padding: 20px;
-   border-radius: 10px;
-   color: white;
-   background-color: rgba(255, 166, 0, 0.739);
-   text-decoration: none;
-   font-size: 1.5em;
-   text-align: center;
-   width: 150px;
-   margin: 30px auto;
-   opacity: 0.6;
-   position: relative;
-}
+
 div#${prntid} #submit-button[href="#"] {
    opacity: 1.0;
 }
-
 div#${prntid} #submit-button[href="#"]:hover {
    background-color: rgba(255, 166, 0, 1.0);
 }
