@@ -42,7 +42,7 @@ class ULabel({
     task_meta: object,
     annotation_meta: object,
     px_per_px: number,
-    init_crop: object,
+    initial_crop: object,
     initial_line_size: number,
     instructions_url: string,
     config_data: object,
@@ -261,7 +261,7 @@ These are provided for convenience. They simply pass their contents to the globa
 
 In some cases, you may want the annotations to render at a higher or lower resolution than the underlying image. For example, for very low resolution images like CT scans, you may want to specify a value of 2-4 for aesthetic purposes, whereas for very high resolution images that will only be annotated at a very coarse level, you may want to specify a value of 0.25 - 0.5 for performance purposes.
 
-### `init_crop`
+### `initial_crop`
 
 *object* -- A definition for a bounding box that the viewer should fit to at the beginning of the session. Units are pixels in the underlying image.
 
