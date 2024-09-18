@@ -6,6 +6,9 @@ All notable changes to this project will be documented here.
 
 Nothing yet.
 
+## [???] - ???
+- Fix bug where class counts wouldn't update when changing subtasks.
+
 ## [0.10.17] - Sept 18th, 2024
 - Update `api_spec.md` indicating that `polyline` is no longer "under construction"
 - Correct a few typos where `init_crop` should be `initial_crop`

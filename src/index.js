@@ -382,27 +382,7 @@ export class ULabel {
 
             // Check for the right keypress
             if (e.key === ul.config.switch_subtask_keybind) {
-
-                let current_subtask = ul.state["current_subtask"];
-                let toolbox_tab_keys = [];
-
-                // Put all of the toolbox tab keys in a list
-                for (let idx in ul.toolbox.tabs) {
-                    toolbox_tab_keys.push(ul.toolbox.tabs[idx].subtask_key);
-                }
-
-                // Get the index of the next subtask in line
-                let new_subtask_index = toolbox_tab_keys.indexOf(current_subtask) + 1;  // +1 gets the next subtask
-
-                // If the current subtask was the last one in the array, then
-                // loop around to the first subtask
-                if (new_subtask_index === toolbox_tab_keys.length) {
-                    new_subtask_index = 0;
-                }
-
-                let new_subtask = toolbox_tab_keys[new_subtask_index];
-
-                ul.set_subtask(new_subtask);
+                ul.switch_to_next_subtask();
             }
         })
 
@@ -1477,11 +1457,40 @@ export class ULabel {
         this.update_annotation_mode();
         this.update_current_class();
 
+        // Update class counter
+        this.toolbox.redraw_update_items(this);
+
         // Set transparancy for inactive layers
         this.readjust_subtask_opacities();
 
         // Redraw demo
         this.redraw_demo();
+    }
+
+    /**
+     * Switch to the next subtask in the toolbox
+     */
+    switch_to_next_subtask() {
+        let current_subtask = this.state["current_subtask"];
+        let toolbox_tab_keys = [];
+
+        // Put all of the toolbox tab keys in a list
+        for (let idx in this.toolbox.tabs) {
+            toolbox_tab_keys.push(this.toolbox.tabs[idx].subtask_key);
+        }
+
+        // Get the index of the next subtask in line
+        let new_subtask_index = toolbox_tab_keys.indexOf(current_subtask) + 1;  // +1 gets the next subtask
+
+        // If the current subtask was the last one in the array, then
+        // loop around to the first subtask
+        if (new_subtask_index === toolbox_tab_keys.length) {
+            new_subtask_index = 0;
+        }
+
+        let new_subtask = toolbox_tab_keys[new_subtask_index];
+
+        this.set_subtask(new_subtask);
     }
 
     // ================= Toolbox Functions ==================

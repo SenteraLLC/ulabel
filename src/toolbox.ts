@@ -567,10 +567,6 @@ export class BrushToolboxItem extends ToolboxItem {
 
     private add_event_listeners() {
         $(document).on("click.ulabel", ".brush-button", (event) => {
-            // Get the current subtask
-            const current_subtask_key = this.ulabel.state["current_subtask"];
-            const current_subtask = this.ulabel.subtasks[current_subtask_key];
-
             // Get the clicked button
             const button = $(event.currentTarget)
 
