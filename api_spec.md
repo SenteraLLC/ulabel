@@ -238,6 +238,7 @@ The full list of `"allowed_modes"` that are currently supported is:
 - `"bbox"`: A simple single-frame bounding box
 - `"bbox3"`: A bounding box that can extend through multiple frames
 - `"polygon"`: A series of points that define a simple or complex polygon
+- `"polyline"`: A series of points that does not define a closed polygon
 - `"tbar"`: Two lines defining a "T" shape
 - `"contour"`: A freehand line
 - `"whole-image"`: A label to be applied to an entire frame
@@ -245,10 +246,6 @@ The full list of `"allowed_modes"` that are currently supported is:
 - `"point"`: A keypoint within a single frame
 - `"delete_polygon"`: Allows drawing a polygon around an area, and all annotations within that area will be deleted
 - `"delete_bbox"`: Allows drawing a bounding box around an area, and all annotations within that area will be deleted
-
-The list of modes currently **under construction** is:
-
-- `"polyline"`: A simple series of points that needn't define a closed polygon
 
 The `resume_from` attributes are used to import existing annotations into the annotation session for each subtask, respectively. Existing annotations must be provided as a list of annotations of the form specified above.
 
