@@ -308,7 +308,7 @@ URL to a page that gives annotation instructions.
     
     delete_annotation_keybind: string,
     
-    filter_low_confidence_default_value: number,
+    keypoint_slider_default_value: number,
 
     filter_annotations_on_load: boolean,
     
