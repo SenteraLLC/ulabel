@@ -8,6 +8,8 @@ Nothing yet.
 
 ## [???] - ???
 - Fix bug where class counts wouldn't update when changing subtasks.
+- Add `size_factor` arg to submit buttons to allow for custom sizing.
+- Add `row_number` arg to submit buttons to allow for grouping buttons into rows.
 
 ## [0.10.17] - Sept 18th, 2024
 - Update `api_spec.md` indicating that `polyline` is no longer "under construction"

@@ -2374,6 +2374,7 @@ export class SubmitButtons extends ToolboxItem {
         this.add_event_listeners()
 
         // For legacy reasons submit_buttons may be a function, in that case convert it to the right format
+        console.log(typeof this.submit_buttons);
         if (typeof this.submit_buttons == "function") {
             this.submit_buttons = [{
                 "name": "Submit",
@@ -2468,10 +2469,17 @@ export class SubmitButtons extends ToolboxItem {
         let row_numbers: Set<number> = new Set(this.submit_buttons.map((button) => button.row_number ? button.row_number : 0));
         // Sort the row numbers
         let sorted_row_numbers: number[] = Array.from(row_numbers).sort((a, b) => a - b);
-        // Group the buttons by row number
+        // Group the buttons by row number in ascending order
         for (let row_number of sorted_row_numbers) {
             submit_buttons_by_row.push(
-                this.submit_buttons.filter((button) => button.row_number === row_number)
+                this.submit_buttons.filter((button) => {
+                    // If the button doesn't have a row number, it will be placed in row 0
+                    if (button.row_number === undefined) {
+                        return row_number === 0;
+                    }
+                    // Otherwise, place the button in the row that matches its row number
+                    return button.row_number === row_number
+                })
             );
         }
         return submit_buttons_by_row;
