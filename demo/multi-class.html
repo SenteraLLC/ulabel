@@ -85,11 +85,35 @@
                 "container_id": "container",
                 "image_data": "https://ulabel.s3.us-east-2.amazonaws.com/cs-demo-0.png",
                 "username": "DemoUser",
-                "submit_buttons": [{
-                    "name": "Submit",
-                    "hook": on_submit,
-                    "size_factor": 0.7,
-                }],
+                "submit_buttons": [
+                    {
+                        "name": "Submit",
+                        "hook": on_submit,
+                        "size_factor": 0.9,
+                        "row_number": 1,
+                    },
+                    {
+                        "name": "Reject",
+                        "hook": () => { console.log("Skip"); },
+                        "size_factor": 0.9,
+                        "color": "red",
+                        "row_number": 1,
+                    },
+                    {
+                        "name": "Approve",
+                        "hook": () => { console.log("Skip"); },
+                        "size_factor": 0.9,
+                        "color": "green",
+                        "row_number": 1,
+                    },
+                    {
+                        "name": "Skip",
+                        "hook": () => { console.log("Skip"); },
+                        "size_factor": 0.7,
+                        "color": "pink",
+                        "row_number": 0,
+                    }
+                ],
                 "subtasks": subtasks,
                 "initial_line_size": 2,
                 "config_data": {

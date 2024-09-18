@@ -2361,6 +2361,7 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
 
 export class SubmitButtons extends ToolboxItem {
     private submit_buttons: ULabelSubmitButtons;
+    private submit_buttons_by_row: ULabelSubmitButtons[];
 
     constructor(ulabel: ULabel) {
         super();
@@ -2379,6 +2380,8 @@ export class SubmitButtons extends ToolboxItem {
                 "hook": this.submit_buttons
             }]
         }
+
+        this.submit_buttons_by_row = this.sort_buttons_by_row_number()
 
         for (let idx in this.submit_buttons) {
 
@@ -2453,12 +2456,35 @@ export class SubmitButtons extends ToolboxItem {
         }
     }
 
+    /**
+     * Group submit buttons by row number
+     * 
+     * @returns {ULabelSubmitButtons[]} Array of submit buttons grouped by row number
+     */
+    private sort_buttons_by_row_number() {
+        let submit_buttons_by_row: ULabelSubmitButtons[] = [];
+        // First, get all the unique row numbers. 
+        // If a button doesn't have a row number, it will be placed in row 0.
+        let row_numbers: Set<number> = new Set(this.submit_buttons.map((button) => button.row_number ? button.row_number : 0));
+        // Sort the row numbers
+        let sorted_row_numbers: number[] = Array.from(row_numbers).sort((a, b) => a - b);
+        // Group the buttons by row number
+        for (let row_number of sorted_row_numbers) {
+            submit_buttons_by_row.push(
+                this.submit_buttons.filter((button) => button.row_number === row_number)
+            );
+        }
+        console.log(sorted_row_numbers);
+        console.log(submit_buttons_by_row);
+        return submit_buttons_by_row;
+    }
+
     
     /**
      * Create the css for this ToolboxItem and append it to the page.
      */
     protected add_styles() {
-        // Styles defined in get_html()
+        // Styles defined in blobs.js and get_html()
     }
 
     add_event_listeners(): void {
@@ -2479,47 +2505,38 @@ export class SubmitButtons extends ToolboxItem {
     get_html(): string {
         let toolboxitem_html = ``
 
-        for (let idx in this.submit_buttons) {
+        for (let submit_buttons of this.submit_buttons_by_row) {
+            // Create a row for each row of submit buttons
+            toolboxitem_html += `<div class="submit-button-container">`
 
-            let button_color
-            if (this.submit_buttons[idx].color !== undefined) {
-                button_color = this.submit_buttons[idx].color
-            } else {
-                // If no color provided use hard coded default
-                button_color = "rgba(255, 166, 0, 0.739)"
+            // Create each button in the row
+            for (let submit_button of submit_buttons) {
+                let button_color = "rgba(255, 166, 0, 0.739)"
+                if (submit_button.color !== undefined) {
+                    button_color = submit_button.color
+                }
+
+                // Get the size scale
+                let size_factor = 1
+                if (submit_button.size_factor !== undefined) {
+                    size_factor = submit_button.size_factor
+                }
+
+                toolboxitem_html += `
+                <button 
+                    id="${submit_button.name.replaceLowerConcat(" ", "-")}" 
+                    class="submit-button" 
+                    style="
+                        background-color: ${button_color};
+                        border: 1px solid ${button_color};
+                        transform: scale(${size_factor});
+                ">
+                    ${submit_button.name}
+                </button>
+                `
             }
-
-            // Get the size scale
-            let size_factor = 1
-            if (this.submit_buttons[idx].size_factor !== undefined) {
-                size_factor = this.submit_buttons[idx].size_factor
-            }
-
-            toolboxitem_html += `
-            <button 
-            id="${this.submit_buttons[idx].name.replaceLowerConcat(" ", "-")}" 
-            class="submit-button" 
-            style="
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                height: ${1.2 * size_factor}em;
-                width: ${6 * size_factor}em;
-                font-size: ${1.5 * size_factor}em;
-                color: white;
-                background-color: ${button_color}; 
-                margin-left: auto;
-                margin-right: auto;
-                margin-top: ${0.5 * size_factor}em;
-                margin-bottom: ${0.5 * size_factor}em;
-                padding: ${1 * size_factor}em;
-                border: ${1 * size_factor}px solid ${button_color};
-                border-radius: ${0.5 * size_factor}em;
-                cursor: pointer;
-            ">
-                ${this.submit_buttons[idx].name}
-            </button>
-            `
+            // Close the row div
+            toolboxitem_html += `</div>`
         }
         
         return toolboxitem_html

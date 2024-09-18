@@ -93,7 +93,14 @@ export type FilterDistanceConfig = {
     show_overlay_on_load?: boolean
 }
 
-export type ULabelSubmitButtons = {name: string, hook: Function, color?: string, set_saved?: boolean, size_scale?: number}[] | Function
+export type ULabelSubmitButtons = {
+    name: string, 
+    hook: Function, 
+    color?: string, 
+    set_saved?: boolean, 
+    size_factor?: number,
+    row_number?: number,
+}[]
 
 export type ULabelAnnotations = { [key: string]: ULabelAnnotation[] };
 

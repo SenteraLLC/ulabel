@@ -94,6 +94,8 @@ If either more than one submit button or more button customization is desired, t
     },
     color?: "Arbitrary Color" // e.g. "#639", "#3AB890", "rgb(200, 0, 170)", "hsl(0, 100%, 50%)"
     set_saved?: boolean // If true, will call ulabel.set_saved(true) before the hook is called, thus avoiding the "unsaved changes" warning
+    size_factor?: number // Transform the default button size by this factor
+    row_number?: number // The row number of the button in the toolbox. Buttons with lower row numbers will be higher in the toolbox.
 }
 ```
 
