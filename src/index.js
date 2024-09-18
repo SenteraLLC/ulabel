@@ -135,17 +135,15 @@ export class ULabel {
     }
      
     /**
-     * Removes every ulabel event listener from the page.
+     * Removes persistent event listeners from the document and window.
+     * Listeners attached directly to html elements are not explicitly removed.
+     * Note that ULabel will not function properly after this method is called.
      */
     remove_listeners() {
         // Remove jquery event listeners
         $(document).off(".ulabel") // Unbind all events in the ulabel namespace from document
         $(window).off(".ulabel") // Unbind all events in the ulabel namespace from window
         $(".id_dialog").off(".ulabel") // Unbind all events in the ulabel namespace from .id_dialog
-        $("#" + this.config["annbox_id"]) // Unbind all events in the ulabel namespace from the annotation box
-
-        // Remove vanilla js eventlisteners through an abort
-        this?.abort_controller.abort()
 
         // Go through each resize observer and disconnect them
         if (this.resize_observers != null) {
@@ -156,9 +154,6 @@ export class ULabel {
     }
 
     static create_listeners(ul) {
-        // Grab the abort controller signal, used to remove vanilla js event listeners
-        const signal = ul.abort_controller.signal
-
         // ================= Mouse Events in the ID Dialog ================= 
 
         var iddg = $(".id_dialog");
@@ -182,7 +177,8 @@ export class ULabel {
             ul.handle_mouse_down(mouse_event);
         });
 
-        document.addEventListener("auxclick", ul.handle_aux_click, {"signal": signal});
+        // Prevent default for auxclick
+        $(document).on("auxclick.ulabel", ul.handle_aux_click);
 
         // Detect and record mouseup
         $(document).on("mouseup.ulabel", (e) => {
@@ -291,37 +287,11 @@ export class ULabel {
             }
         })
 
+        // This listener does not use jquery because it requires being able to prevent default
+        // There are maybe some hacky ways to do this with jquery
+        // https://stackoverflow.com/questions/60357083/does-not-use-passive-listeners-to-improve-scrolling-performance-lighthouse-repo
         // Detection ctrl+scroll
-        document.getElementById(ul.config["annbox_id"]).addEventListener("wheel", function (wheel_event) {
-            // Prevent scroll-zoom
-            wheel_event.preventDefault();
-            let fms = ul.config["image_data"].frames.length > 1;
-            if (wheel_event.altKey) {
-                // When in brush mode, change the brush size
-                if (ul.subtasks[ul.state["current_subtask"]]["state"]["is_in_brush_mode"]) {
-                    ul.change_brush_size(wheel_event.deltaY < 0 ? 1.1 : 1 / 1.1);
-                }
-            } else if (fms && (wheel_event.ctrlKey || wheel_event.shiftKey || wheel_event.metaKey)) {
-                // Get direction of wheel
-                const dlta = Math.sign(wheel_event.deltaY);
-                ul.update_frame(dlta);
-            } else {
-                // Don't scroll if id dialog is visible
-                if (ul.subtasks[ul.state["current_subtask"]]["state"]["idd_visible"] && !ul.subtasks[ul.state["current_subtask"]]["state"]["idd_thumbnail"]) {
-                    return;
-                }
-
-                // Get direction of wheel
-                const dlta = Math.sign(wheel_event.deltaY);
-
-                // Apply new zoom
-                ul.state["zoom_val"] *= (1 - dlta / 5);
-                ul.rezoom(wheel_event.clientX, wheel_event.clientY);
-
-                // Only try to update the overlay if it exists
-                ul.filter_distance_overlay?.draw_overlay()
-            }
-        }, {"signal": signal});
+        document.getElementById(ul.config["annbox_id"]).addEventListener("wheel", ul.handle_wheel.bind(ul));
 
         // Create a resize observer to reposition dialogs
         let dialog_resize_observer = new ResizeObserver(function () {
@@ -535,7 +505,7 @@ export class ULabel {
         })
 
         // Keyboard only events
-        document.addEventListener("keydown", (keypress_event) => {
+        $(document).on("keydown.ulabel", (keypress_event) => {
             const shift = keypress_event.shiftKey;
             const ctrl = keypress_event.ctrlKey || keypress_event.metaKey;
             if (ctrl &&
@@ -553,8 +523,7 @@ export class ULabel {
                     ul.undo();
                 }
                 return false;
-            }
-            else {
+            } else {
                 const current_subtask = ul.subtasks[ul.state["current_subtask"]]
                 switch (keypress_event.key) {
                     case "Escape":
@@ -573,16 +542,15 @@ export class ULabel {
                         break;
                 }
             }
-        }, {"signal": signal});
+        });
 
-        window.addEventListener("beforeunload", function (e) {
-            var confirmationMessage = '';
+        $(window).on("beforeunload.ulabel", () => {
             if (ul.state["edited"]) {
-                confirmationMessage = 'You have made unsave changes. Are you sure you would like to leave?';
-                (e || window.event).returnValue = confirmationMessage; //Gecko + IE
-                return confirmationMessage; //Gecko + Webkit, Safari, Chrome etc.
+                // Return of anything other than `undefined` will trigger the browser's confirmation dialog
+                // Custom messages are not supported
+                return 1;
             }
-        }, {"signal": signal});
+        });
     }
 
     static process_allowed_modes(ul, subtask_key, subtask) {
@@ -1127,9 +1095,6 @@ export class ULabel {
             "edited": false
         };
 
-        // Create an abort controller so it's possible to remove event listeners
-        this.abort_controller = new AbortController()
-
         // Create a place on ulabel to store resize observer objects
         this.resize_observers = []
 
@@ -1359,15 +1324,18 @@ export class ULabel {
     }
 
     handle_toolbox_overflow() {
-        let tabs_height = $("#" + this.config["container_id"] + " div.toolbox-tabs").height();
-        $("#" + this.config["container_id"] + " div.toolbox_inner_cls").css("height", `calc(100% - ${tabs_height + 38}px)`);
-        let view_height = $("#" + this.config["container_id"] + " div.toolbox_cls")[0].scrollHeight - 38 - tabs_height;
-        let want_height = $("#" + this.config["container_id"] + " div.toolbox_inner_cls")[0].scrollHeight;
-        if (want_height <= view_height) {
-            $("#" + this.config["container_id"] + " div.toolbox_inner_cls").css("overflow-y", "hidden");
-        }
-        else {
-            $("#" + this.config["container_id"] + " div.toolbox_inner_cls").css("overflow-y", "scroll");
+        try {
+            let tabs_height = $("#" + this.config["container_id"] + " div.toolbox-tabs").height();
+            $("#" + this.config["container_id"] + " div.toolbox_inner_cls").css("height", `calc(100% - ${tabs_height + 38}px)`);
+            let view_height = $("#" + this.config["container_id"] + " div.toolbox_cls")[0].scrollHeight - 38 - tabs_height;
+            let want_height = $("#" + this.config["container_id"] + " div.toolbox_inner_cls")[0].scrollHeight;
+            if (want_height <= view_height) {
+                $("#" + this.config["container_id"] + " div.toolbox_inner_cls").css("overflow-y", "hidden");
+            } else {
+                $("#" + this.config["container_id"] + " div.toolbox_inner_cls").css("overflow-y", "scroll");
+            }
+        } catch (e) {
+            console.warn("Failed to resize toolbox", e);
         }
     }
 
@@ -6602,6 +6570,42 @@ export class ULabel {
     handle_aux_click(mouse_event) {
         // Prevent default
         mouse_event.preventDefault();
+    }
+
+    /**
+     * Handler for "wheel" event listener
+     * 
+     * @param {*} wheel_event 
+     */
+    handle_wheel(wheel_event) {
+        // Prevent scroll-zoom
+        wheel_event.preventDefault();
+        let fms = this.config["image_data"].frames.length > 1;
+        if (wheel_event.altKey) {
+            // When in brush mode, change the brush size
+            if (this.subtasks[this.state["current_subtask"]]["state"]["is_in_brush_mode"]) {
+                this.change_brush_size(wheel_event.deltaY < 0 ? 1.1 : 1 / 1.1);
+            }
+        } else if (fms && (wheel_event.ctrlKey || wheel_event.shiftKey || wheel_event.metaKey)) {
+            // Get direction of wheel
+            const dlta = Math.sign(wheel_event.deltaY);
+            this.update_frame(dlta);
+        } else {
+            // Don't scroll if id dialog is visible
+            if (this.subtasks[this.state["current_subtask"]]["state"]["idd_visible"] && !this.subtasks[this.state["current_subtask"]]["state"]["idd_thumbnail"]) {
+                return;
+            }
+
+            // Get direction of wheel
+            const dlta = Math.sign(wheel_event.deltaY);
+
+            // Apply new zoom
+            this.state["zoom_val"] *= (1 - dlta / 5);
+            this.rezoom(wheel_event.clientX, wheel_event.clientY);
+
+            // Only try to update the overlay if it exists
+            this.filter_distance_overlay?.draw_overlay()
+        }
     }
 
     // Start dragging to pan around image
