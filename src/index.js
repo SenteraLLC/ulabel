@@ -182,7 +182,8 @@ export class ULabel {
             ul.handle_mouse_down(mouse_event);
         });
 
-        document.addEventListener("auxclick.ulabel", ul.handle_aux_click, {"signal": signal});
+        // Prevent default for auxclick
+        $(document).on("auxclick.ulabel", ul.handle_aux_click);
 
         // Detect and record mouseup
         $(document).on("mouseup.ulabel", (e) => {
@@ -535,7 +536,7 @@ export class ULabel {
         })
 
         // Keyboard only events
-        document.addEventListener("keydown.ulabel", (keypress_event) => {
+        $(document).on("keydown.ulabel", (keypress_event) => {
             const shift = keypress_event.shiftKey;
             const ctrl = keypress_event.ctrlKey || keypress_event.metaKey;
             if (ctrl &&
@@ -553,8 +554,7 @@ export class ULabel {
                     ul.undo();
                 }
                 return false;
-            }
-            else {
+            } else {
                 const current_subtask = ul.subtasks[ul.state["current_subtask"]]
                 switch (keypress_event.key) {
                     case "Escape":
@@ -573,7 +573,7 @@ export class ULabel {
                         break;
                 }
             }
-        }, {"signal": signal});
+        });
 
         $(window).on("beforeunload.ulabel", () => {
             if (ul.state["edited"]) {
