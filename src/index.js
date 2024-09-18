@@ -1370,7 +1370,7 @@ export class ULabel {
                 $("#" + this.config["container_id"] + " div.toolbox_inner_cls").css("overflow-y", "scroll");
             }
         } catch (e) {
-            console.log("[WARN]: Failed to resize toolbox", e);
+            console.warn("Failed to resize toolbox", e);
         }
     }
 
