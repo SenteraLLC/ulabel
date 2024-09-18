@@ -575,14 +575,13 @@ export class ULabel {
             }
         }, {"signal": signal});
 
-        window.addEventListener("beforeunload.ulabel", function (e) {
-            var confirmationMessage = '';
+        $(window).on("beforeunload.ulabel", () => {
             if (ul.state["edited"]) {
-                confirmationMessage = 'You have made unsaved changes. Are you sure you would like to leave?';
-                (e || window.event).returnValue = confirmationMessage; //Gecko + IE
-                return confirmationMessage; //Gecko + Webkit, Safari, Chrome etc.
+                // Return of anything other than `undefined` will trigger the browser's confirmation dialog
+                // Custom messages are not supported
+                return 1;
             }
-        }, {"signal": signal});
+        });
     }
 
     static process_allowed_modes(ul, subtask_key, subtask) {
