@@ -135,17 +135,15 @@ export class ULabel {
     }
      
     /**
-     * Removes every ulabel event listener from the page.
+     * Removes persistent event listeners from the document and window.
+     * Listeners attached directly to html elements are not explicitly removed.
+     * Note that ULabel will not function properly after this method is called.
      */
     remove_listeners() {
         // Remove jquery event listeners
         $(document).off(".ulabel") // Unbind all events in the ulabel namespace from document
         $(window).off(".ulabel") // Unbind all events in the ulabel namespace from window
         $(".id_dialog").off(".ulabel") // Unbind all events in the ulabel namespace from .id_dialog
-        $("#" + this.config["annbox_id"]) // Unbind all events in the ulabel namespace from the annotation box
-
-        // Remove vanilla js eventlisteners through an abort
-        this?.abort_controller.abort()
 
         // Go through each resize observer and disconnect them
         if (this.resize_observers != null) {
@@ -1096,9 +1094,6 @@ export class ULabel {
             "demo_canvas_context": null,
             "edited": false
         };
-
-        // Create an abort controller so it's possible to remove event listeners
-        this.abort_controller = new AbortController()
 
         // Create a place on ulabel to store resize observer objects
         this.resize_observers = []
