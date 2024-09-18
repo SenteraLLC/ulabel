@@ -2474,8 +2474,6 @@ export class SubmitButtons extends ToolboxItem {
                 this.submit_buttons.filter((button) => button.row_number === row_number)
             );
         }
-        console.log(sorted_row_numbers);
-        console.log(submit_buttons_by_row);
         return submit_buttons_by_row;
     }
 
@@ -2503,11 +2501,11 @@ export class SubmitButtons extends ToolboxItem {
     }
 
     get_html(): string {
-        let toolboxitem_html = ``
+        let toolboxitem_html = `<div class="submit-button-container">`
 
         for (let submit_buttons of this.submit_buttons_by_row) {
             // Create a row for each row of submit buttons
-            toolboxitem_html += `<div class="submit-button-container">`
+            toolboxitem_html += `<div class="submit-button-row">`
 
             // Create each button in the row
             for (let submit_button of submit_buttons) {
@@ -2516,7 +2514,7 @@ export class SubmitButtons extends ToolboxItem {
                     button_color = submit_button.color
                 }
 
-                // Get the size scale
+                // Get the size factor
                 let size_factor = 1
                 if (submit_button.size_factor !== undefined) {
                     size_factor = submit_button.size_factor
@@ -2528,8 +2526,12 @@ export class SubmitButtons extends ToolboxItem {
                     class="submit-button" 
                     style="
                         background-color: ${button_color};
-                        border: 1px solid ${button_color};
-                        transform: scale(${size_factor});
+                        border: ${1 * size_factor}px solid ${button_color};
+                        border-radius: ${0.5 * size_factor}em;
+                        height: ${1.2 * size_factor}em;
+                        width: ${6 * size_factor}em;
+                        font-size: ${1.5 * size_factor}em;
+                        padding: ${1 * size_factor}em;
                 ">
                     ${submit_button.name}
                 </button>
@@ -2538,6 +2540,8 @@ export class SubmitButtons extends ToolboxItem {
             // Close the row div
             toolboxitem_html += `</div>`
         }
+        // Close the container div
+        toolboxitem_html += `</div>`
         
         return toolboxitem_html
     }
