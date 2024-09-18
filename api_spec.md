@@ -394,7 +394,8 @@ Display utilities are provided for a constructed `ULabel` object.
 
 ### `remove_listeners()`
 
-*() => void* -- Deletes all ULabel event listeners from the page.
+*() => void* -- Removes persistent event listeners from the document and window. Listeners attached directly to html elements are not explicitly removed.
+Note that ULabel will not function properly after this method is called. Designed for use in single-page applications before navigating away from the annotation page.
 
 ## Generic Callbacks
 
