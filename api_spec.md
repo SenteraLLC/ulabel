@@ -42,7 +42,7 @@ class ULabel({
     task_meta: object,
     annotation_meta: object,
     px_per_px: number,
-    init_crop: object,
+    initial_crop: object,
     initial_line_size: number,
     instructions_url: string,
     config_data: object,
@@ -238,6 +238,7 @@ The full list of `"allowed_modes"` that are currently supported is:
 - `"bbox"`: A simple single-frame bounding box
 - `"bbox3"`: A bounding box that can extend through multiple frames
 - `"polygon"`: A series of points that define a simple or complex polygon
+- `"polyline"`: A series of points that does not define a closed polygon
 - `"tbar"`: Two lines defining a "T" shape
 - `"contour"`: A freehand line
 - `"whole-image"`: A label to be applied to an entire frame
@@ -245,10 +246,6 @@ The full list of `"allowed_modes"` that are currently supported is:
 - `"point"`: A keypoint within a single frame
 - `"delete_polygon"`: Allows drawing a polygon around an area, and all annotations within that area will be deleted
 - `"delete_bbox"`: Allows drawing a bounding box around an area, and all annotations within that area will be deleted
-
-The list of modes currently **under construction** is:
-
-- `"polyline"`: A simple series of points that needn't define a closed polygon
 
 The `resume_from` attributes are used to import existing annotations into the annotation session for each subtask, respectively. Existing annotations must be provided as a list of annotations of the form specified above.
 
@@ -264,7 +261,7 @@ These are provided for convenience. They simply pass their contents to the globa
 
 In some cases, you may want the annotations to render at a higher or lower resolution than the underlying image. For example, for very low resolution images like CT scans, you may want to specify a value of 2-4 for aesthetic purposes, whereas for very high resolution images that will only be annotated at a very coarse level, you may want to specify a value of 0.25 - 0.5 for performance purposes.
 
-### `init_crop`
+### `initial_crop`
 
 *object* -- A definition for a bounding box that the viewer should fit to at the beginning of the session. Units are pixels in the underlying image.
 
@@ -311,7 +308,7 @@ URL to a page that gives annotation instructions.
     
     delete_annotation_keybind: string,
     
-    filter_low_confidence_default_value: number,
+    keypoint_slider_default_value: number,
 
     filter_annotations_on_load: boolean,
     

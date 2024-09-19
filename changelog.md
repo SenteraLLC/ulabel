@@ -6,6 +6,11 @@ All notable changes to this project will be documented here.
 
 Nothing yet.
 
+## [0.10.17] - Sept 18th, 2024
+- Update `api_spec.md` indicating that `polyline` is no longer "under construction"
+- Correct a few typos where `init_crop` should be `initial_crop`
+- Correct typo where `filter_low_confidence_default_value` should be `keypoint_slider_default_value`
+
 ## [0.10.16] - Sept 17th, 2024
 - Catch a couple event listeners that were not being removed by `remove_listeners()`.
 - Suppress rare error from `handle_toolbox_overflow()`.
