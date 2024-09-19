@@ -32,10 +32,10 @@ export class ULabelAnnotation {
         public text_payload: string = "",
 
         // Optional properties
+        public subtask_key?: string,
         public classification_payloads?:ULabelClassificationPayload[],
         public containing_box?: ULabelContainingBox,
         public created_by?: string,
-        public distance_from_any_line?: number,
         public distance_from?: AnnotationClassDistanceData,
         public frame?: number,
         public line_size?: number,

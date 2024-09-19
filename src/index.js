@@ -3736,7 +3736,10 @@ export class ULabel {
         // If the filter distance toolboxitem is present,
         // And if the active annotation is a polyline,
         // Then filter annotations on annotation deletion
-        if (annotations["access"][active_id]["spatial_type"] && this.toolbox_order.includes(AllowedToolboxItem.FilterDistance)) {
+        if (
+            this.toolbox_order.includes(AllowedToolboxItem.FilterDistance) && 
+            annotations["access"][active_id]["spatial_type"] == "polyline"
+        ) {
             filter_points_distance_from_line(this);
         }
 

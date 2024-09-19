@@ -283,11 +283,9 @@ export function get_point_and_line_annotations(ulabel: ULabel): [ULabelAnnotatio
     let point_annotations: ULabelAnnotation[] = []
     let line_annotations: ULabelAnnotation[] = []
 
-    const subtasks: ULabelSubtask[] = Object.values(ulabel.subtasks)
-
     // Go through all annotations to populate a set of all point annotations and a set of all line annotations
     // First loop through each subtask
-    for (let subtask of subtasks) {
+    for (let [subtask_key, subtask] of Object.entries(ulabel.subtasks)) {
 
         // Then go through each annotation in the subtask
         for (let annotation_key in subtask.annotations.access) {
@@ -296,6 +294,8 @@ export function get_point_and_line_annotations(ulabel: ULabel): [ULabelAnnotatio
             // Check for annotation type and push the annotation into the appropriate array
             switch(annotation.spatial_type) {
                 case "point" as ULabelSpatialType:
+                    // Note the annotation's subtask
+                    annotation.subtask_key = subtask_key
                     // Add the point annotation to the set
                     point_annotations.push(annotation)
                     break
@@ -388,8 +388,15 @@ export function filter_points_distance_from_line(ulabel: ULabel, offset: Offset 
     // Calculate and assign each point a distance from line value
     assign_distance_from_line(point_annotations, line_annotations, offset)
 
+    // Store which annotations need to be redrawn
+    let annotations_ids_to_redraw_by_subtask: {[key: string]: string[]} = {}
+    // Initialize the object with the subtask keys
+    for (let subtask_key in ulabel.subtasks) {
+        annotations_ids_to_redraw_by_subtask[subtask_key] = []
+    }
+
     // Filter each point based on current mode, distances, and its distance_from property
-    if (multi_class_mode) { // Multi-class mode
+    if (multi_class_mode) { 
         // Loop through each point and deprecate them if they fall outside the range of all lines
         point_annotations.forEach(annotation => {
             check_distances: {
@@ -398,24 +405,32 @@ export function filter_points_distance_from_line(ulabel: ULabel, offset: Offset 
                     if (id === "single") continue
     
                     // If the annotation is smaller than the filter value for any id it passes
-                    if (annotation.distance_from[id] <= distances[id]) {
+                    if (annotation.deprecated && annotation.distance_from[id] <= distances[id]) {
                         mark_deprecated(annotation, false, "distance_from_row")
+                        annotations_ids_to_redraw_by_subtask[annotation.subtask_key].push(annotation.id)
                         break check_distances
                     }
                 }
                 // Only here if break not called
-                mark_deprecated(annotation, true, "distance_from_row")
+                if (!annotation.deprecated) {
+                    mark_deprecated(annotation, true, "distance_from_row")
+                    annotations_ids_to_redraw_by_subtask[annotation.subtask_key].push(annotation.id)
+                }
             }
         })
-    }
-    else { // Single-class mode
+    } else { 
+        // Single-class mode
         point_annotations.forEach(annotation => {
             mark_deprecated(annotation, annotation.distance_from["single"] > distances["single"], "distance_from_row")
+            annotations_ids_to_redraw_by_subtask[annotation.subtask_key].push(annotation.id)
         })
     }
 
-    if (should_redraw){
-        ulabel.redraw_all_annotations(null, null, false)
+    if (should_redraw) {
+        // Redraw each subtask's annotations
+        for (let subtask_key in annotations_ids_to_redraw_by_subtask) {
+            ulabel.redraw_multiple_spatial_annotations(annotations_ids_to_redraw_by_subtask[subtask_key], subtask_key)
+        }
     } 
     
     // Ensure the overlay exists before trying to access it
