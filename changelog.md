@@ -6,7 +6,7 @@ All notable changes to this project will be documented here.
 
 Nothing yet.
 
-## [???] - ???
+## [0.11.0] - Sept 19th, 2024
 - Fix bug where class counts wouldn't update when changing subtasks.
 - Add `size_factor` arg to submit buttons to allow for custom sizing.
 - Add `row_number` arg to submit buttons to allow for grouping buttons into rows.
