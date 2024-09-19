@@ -2374,7 +2374,6 @@ export class SubmitButtons extends ToolboxItem {
         this.add_event_listeners()
 
         // For legacy reasons submit_buttons may be a function, in that case convert it to the right format
-        console.log(typeof this.submit_buttons);
         if (typeof this.submit_buttons == "function") {
             this.submit_buttons = [{
                 "name": "Submit",
