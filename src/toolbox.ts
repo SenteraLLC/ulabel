@@ -3,7 +3,7 @@ import {
     FilterDistanceConfig, 
     RecolorActiveConfig, 
     ULabel,
-    ULabelSubmitButtons, 
+    ULabelSubmitButton, 
 } from "..";
 import { ULabelAnnotation, NONSPATIAL_MODES, DELETE_MODES } from "./annotation";
 import { ULabelSubtask } from "./subtask";
@@ -2360,8 +2360,8 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
 }
 
 export class SubmitButtons extends ToolboxItem {
-    private submit_buttons: ULabelSubmitButtons;
-    private submit_buttons_by_row: ULabelSubmitButtons[];
+    private submit_buttons: ULabelSubmitButton[];
+    private submit_buttons_by_row: ULabelSubmitButton[][];
 
     constructor(ulabel: ULabel) {
         super();
@@ -2378,7 +2378,8 @@ export class SubmitButtons extends ToolboxItem {
         if (typeof this.submit_buttons == "function") {
             this.submit_buttons = [{
                 "name": "Submit",
-                "hook": this.submit_buttons
+                "hook": this.submit_buttons,
+                "row_number": 0,
             }]
         }
 
@@ -2460,10 +2461,10 @@ export class SubmitButtons extends ToolboxItem {
     /**
      * Group submit buttons by row number
      * 
-     * @returns {ULabelSubmitButtons[]} Array of submit buttons grouped by row number
+     * @returns {ULabelSubmitButton[][]} Array of submit buttons grouped by row number
      */
     private sort_buttons_by_row_number() {
-        let submit_buttons_by_row: ULabelSubmitButtons[] = [];
+        let submit_buttons_by_row: ULabelSubmitButton[][] = [];
         // First, get all the unique row numbers. 
         // If a button doesn't have a row number, it will be placed in row 0.
         let row_numbers: Set<number> = new Set(this.submit_buttons.map((button) => button.row_number ? button.row_number : 0));

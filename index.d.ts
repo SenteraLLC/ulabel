@@ -1,4 +1,5 @@
 import { ULabelAnnotation } from "./src/annotation";
+import { AllowedToolboxItem } from "./src/configuration";
 import { FilterDistanceOverlay } from "./src/overlays";
 import { ULabelSubtask } from "./src/subtask";
 import { Toolbox } from "./src/toolbox";
@@ -93,14 +94,14 @@ export type FilterDistanceConfig = {
     show_overlay_on_load?: boolean
 }
 
-export type ULabelSubmitButtons = {
+export type ULabelSubmitButton = {
     name: string, 
     hook: Function, 
     color?: string, 
     set_saved?: boolean, 
     size_factor?: number,
     row_number?: number,
-}[]
+}
 
 export type ULabelAnnotations = { [key: string]: ULabelAnnotation[] };
 
@@ -135,6 +136,13 @@ export type ULabelContainingBox = {
     brz: number;
 };
 
+export type InitialCrop = {
+    top: number;
+    left: number;
+    height: number;
+    width: number;
+}
+
 export type ULabelSubtasks = { [key: string]: ULabelSubtask };
 
 export class ULabel {
@@ -153,14 +161,16 @@ export class ULabel {
         container_id: string,
         image_data: string | string[],
         username: string,
-        on_submit: ULabelSubmitHandler,
-        publicsubtasks: ULabelSubtasks,
-        task_meta?: any,
-        annotation_meta?: any,
+        submit_buttons: ULabelSubmitButton[],
+        subtasks: ULabelSubtasks,
+        task_meta?: object,
+        annotation_meta?: object,
         px_per_px?: number,
-        initial_crop?: any,
+        initial_crop?: InitialCrop,
         initial_line_size?: number,
-        instructions_url?: string
+        instructions_url?: string,
+        config_data?: object,
+        toolbox_order?: AllowedToolboxItem[],
     )
         
     /**
