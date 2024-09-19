@@ -2085,7 +2085,7 @@ div#${prntid}.ulabel-night *::-webkit-scrollbar-thumb {
    background-color: rgb(51, 51, 51);
 }
 div#${prntid}.ulabel-night *::-webkit-scrollbar-thumb:hover {
-   background-color: rgb(90, 90, 90);0.739
+   background-color: rgb(90, 90, 90);
 } 
 div#${prntid}.ulabel-night *::-webkit-scrollbar-corner {
    background-color:rgb(0, 60, 95);
