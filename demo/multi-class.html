@@ -85,13 +85,70 @@
                 "container_id": "container",
                 "image_data": "https://ulabel.s3.us-east-2.amazonaws.com/cs-demo-0.png",
                 "username": "DemoUser",
-                "submit_buttons": [{
-                    "name": "Submit",
-                    "hook": on_submit,
-                }],
+                "submit_buttons": [
+                    {
+                        "name": "Submit",
+                        "hook": on_submit,
+                        "size_factor": 0.9,
+                        "row_number": 1,
+                    },
+                    {
+                        "name": "Reject",
+                        "hook": () => { console.log("Reject"); },
+                        "size_factor": 0.9,
+                        "color": "red",
+                        "row_number": 1,
+                    },
+                    {
+                        "name": "Approve",
+                        "hook": () => { console.log("Approve"); },
+                        "size_factor": 0.9,
+                        "color": "green",
+                        "row_number": 1,
+                    },
+                    // {
+                    //     "name": "Submit",
+                    //     "hook": on_submit,
+                    //     "size_factor": 0.9,
+                    //     "row_number": 2,
+                    // },
+                    // {
+                    //     "name": "Reject",
+                    //     "hook": () => { console.log("Reject"); },
+                    //     "size_factor": 0.9,
+                    //     "color": "red",
+                    //     "row_number": 2,
+                    // },
+                    // {
+                    //     "name": "Approve",
+                    //     "hook": () => { console.log("Approve"); },
+                    //     "size_factor": 0.9,
+                    //     "color": "green",
+                    //     "row_number": 2,
+                    // },
+                    {
+                        "name": "Skip",
+                        "hook": () => { console.log("Skip"); },
+                        "size_factor": 0.9,
+                        "color": "pink",
+                        "row_number": 0,
+                    }
+                ],
                 "subtasks": subtasks,
                 "initial_line_size": 2,
                 "config_data": {
+                    "default_toolbox_item_order": [
+                        7, // SubmitButtons
+                        0, // ModeSelect
+                        // 1, // ZoomPan
+                        2, // AnnotationResize
+                        3, // AnnotationID
+                        4, // Recolor Active
+                        5, // ClassCounter
+                        6, // KeypointSlider
+                        8, // FilterDistance
+                        // 9, // Brush
+                    ],
                     "toggle_brush_mode_keybind": "f",
                     "create_bbox_on_initial_crop": "|",
                 }

@@ -1867,6 +1867,7 @@ div#${prntid} div.dialogs_container {
 div.toolbox_inner_cls {
    height: calc(100% - 38px);
    overflow-y: scroll;
+   overflow-x: hidden;
 }
 
 
@@ -2150,32 +2151,28 @@ div#${prntid}.ulabel-night div.toolbox-refs a:hover {
    color: rgb(123, 160, 228);
 }
 
-div#${prntid} #submit-button {
-   display: block;
-   padding: 20px;
-   border-radius: 10px;
+div#${prntid} .submit-button-container {
+   display: flex;
+   flex-direction: column;
+}
+div#${prntid} .submit-button-row {
+   display: flex;
+   align-items: center;
+   gap: 0.5em;
+   overflow-x: auto;
+   margin-bottom: -0.5em;
+}
+div#${prntid} .submit-button {
+   display: flex;
+   justify-content: center;
+   align-items: center;
    color: white;
-   background-color: rgba(255, 166, 0, 0.739);
-   text-decoration: none;
-   font-size: 1.5em;
-   text-align: center;
-   width: 150px;
-   margin: 30px auto;
-   opacity: 0.6;
-   position: relative;
-}
-div#${prntid} #submit-button[href="#"] {
-   opacity: 1.0;
-}
-
-div#${prntid} #submit-button[href="#"]:hover {
-   background-color: rgba(255, 166, 0, 1.0);
-}
-div#${prntid} #submit-button[href="#"]:active {
-   box-shadow: 0 0 3px black;
-}
-div#${prntid}.ulabel-night #submit-button[href="#"]:active {
-   box-shadow: 0 0 8px white;
+   background-color: rgba(255, 166, 0, 0.739); 
+   margin-right: auto;
+   margin-left: auto;
+   margin-top: 0.5em;
+   margin-bottom: 0.5em;
+   cursor: pointer;
 }
 
 /* Dual ring loader */
