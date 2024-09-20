@@ -5,6 +5,7 @@ import {
     ULabel,
     ULabelSubmitButton, 
 } from "..";
+import { DEFAULT_FILTER_DISTANCE_CONFIG } from "./configuration";
 import { ULabelAnnotation, NONSPATIAL_MODES, DELETE_MODES } from "./annotation";
 import { ULabelSubtask } from "./subtask";
 import { 
@@ -1982,8 +1983,9 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
     step_value: number // Value slider increments by
     filter_on_load: boolean // Whether or not to filter annotations on page load
     multi_class_mode: boolean // Whether or not the component is currently in multi-class mode
+    disable_multi_class_mode: boolean // Whether or not to disable the checkbox to enable multi-class mode
     show_options: boolean // Whether or not the options dialog will be visable
-    collapse_options: boolean// Whether or not the options is in a collapsed state
+    collapse_options: boolean // Whether or not the options is in a collapsed state
     show_overlay: boolean // Whether or not the overlay will be shown
     toggle_overlay_keybind: string 
     overlay: FilterDistanceOverlay
@@ -1999,25 +2001,10 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
         // Get this component's config from ulabel's config
         this.config = this.ulabel.config.distance_filter_toolbox_item
 
-        // Create a set of defaults for every config value
-        const default_values = {
-            "name": <string> "Filter Distance From Row",
-            "component_name": <string> "fitler_distance_from_row",
-            "filter_min": <number> 0,
-            "filter_max": <number> 100,
-            "default_values": <AnnotationClassDistanceData> {"single": 50},
-            "step_value": <number> 1,
-            "multi_class_mode": <boolean> false,
-            "filter_on_load": <boolean> true,
-            "show_options": <boolean> true,
-            "toggle_overlay_keybind": <string> "p"
-        }
-
-        // Loop through every key value pair in the config
-        for (const [key, value] of Object.entries(this.config)) {
-            // If the passed in value's type !== the default value's type then use the default value
-            if (typeof value !== typeof default_values[key]) {
-                this.config[key] = default_values[key]
+        // For each key missing from the config, set the default value
+        for (const key in DEFAULT_FILTER_DISTANCE_CONFIG) {
+            if (!this.config.hasOwnProperty(key)) {
+                this.config[key] = DEFAULT_FILTER_DISTANCE_CONFIG[key]
             }
         }
 
@@ -2025,31 +2012,21 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
         for (const property in this.config) {
             this[property] = this.config[property]
         }
+
+        // Force disable multi-class mode if the config doesn't allow it
+        if (this.disable_multi_class_mode) this.multi_class_mode = false
         
         // Get if the options should be collapsed from local storage
-        if (window.localStorage.getItem("filterDistanceCollapseOptions") === "true") {
-            this.collapse_options = true
-        }
-        else if (window.localStorage.getItem("filterDistanceCollapseOptions") === "false") {
-            this.collapse_options = false
-        }
+        this.collapse_options = window.localStorage.getItem("filterDistanceCollapseOptions") === "true"
  
         // Create an overlay and determine whether or not it should be displayed
         this.create_overlay()
-        if (window.localStorage.getItem("filterDistanceShowOverlay") === "true") {
-            this.show_overlay = true
-            this.overlay.update_display_overlay(true)
+
+        // Check if localStorage has a value for showing the overlay
+        if (window.localStorage.getItem("filterDistanceShowOverlay") !== null) {
+            this.show_overlay = window.localStorage.getItem("filterDistanceShowOverlay") === "true"
         }
-        else if (window.localStorage.getItem("filterDistanceShowOverlay") === "false") {
-            this.show_overlay = false
-            this.overlay.update_display_overlay(false)
-        }
-        else if (this.config.show_overlay_on_load !== undefined || this.config.show_overlay_on_load !== null) {
-            this.show_overlay = this.config.show_overlay_on_load
-        }
-        else {
-            this.show_overlay = false // Default
-        }
+        this.overlay.update_display_overlay(this.show_overlay);
 
         this.add_styles()
 
@@ -2301,7 +2278,27 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
             "step": this.step_value.toString()
         })
 
-        return`
+        let multi_class_mode_checkbox: string = ``
+        // If multi-class mode is allowed, create the checkbox
+        if (!this.disable_multi_class_mode) {
+            multi_class_mode_checkbox = `
+            <div class="filter-row-distance-option">
+                <input
+                    type="checkbox"
+                    id="filter-slider-distance-multi-checkbox"
+                    class="filter-row-distance-options-checkbox"
+                    ${this.multi_class_mode ? "checked" : ""}
+                />
+                <label
+                    for="filter-slider-distance-multi-checkbox"
+                    id="filter-slider-distance-multi-checkbox-label"
+                    class="filter-row-distance-label">
+                    Multi-Class Filtering
+                </label>
+            </div>`
+        }
+
+        return `
         <div class="filter-row-distance">
             <p class="tb-header">${this.name}</p>
             <fieldset class="
@@ -2312,20 +2309,7 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
                 <legend>
                     Options ˅
                 </legend>
-                <div class="filter-row-distance-option">
-                    <input
-                        type="checkbox"
-                        id="filter-slider-distance-multi-checkbox"
-                        class="filter-row-distance-options-checkbox"
-                        ${this.multi_class_mode ? "checked" : ""}
-                    />
-                    <label
-                        for="filter-slider-distance-multi-checkbox"
-                        id="filter-slider-distance-multi-checkbox-label"
-                        class="filter-row-distance-label">
-                        Multi-Class Filtering
-                    </label>
-                </div>
+                ` + multi_class_mode_checkbox + `
                 <div class="filter-row-distance-option">
                     <input
                         type="checkbox"

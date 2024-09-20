@@ -10,6 +10,8 @@ Nothing yet.
 - Fix bug where `delete` modes and the `FilterDistance` toolbox item would clash.
 - Expose `n_annos_per_canvas` arg to `config_data` as an advanced feature for performance tuning.
   - Also added some dynamic scaling of this value based on the max number of annotations in a single subtask if no value is provided by the user.
+- Renamed `FilterDistanceConfig` arg `show_overlay_on_load` -> `show_overlay` for internal consistency.
+- Added `disable_multi_class_mode` flag to `FilterDistanceConfig`, which defaults to `false`. When `true`, the multi-class mode will be disabled and the checkbox will not be shown.
 
 ## [0.11.0] - Sept 19th, 2024
 - Fix bug where class counts wouldn't update when changing subtasks.

@@ -88,10 +88,11 @@ export type FilterDistanceConfig = {
     default_values?: AnnotationClassDistanceData,
     step_value?: number,
     multi_class_mode?: boolean,
+    disable_multi_class_mode?: boolean,
     filter_on_load?: boolean,
     show_options?: boolean,
+    show_overlay?: boolean,
     toggle_overlay_keybind?: string,
-    show_overlay_on_load?: boolean
 }
 
 export type ULabelSubmitButton = {
