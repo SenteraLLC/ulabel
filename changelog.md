@@ -9,6 +9,7 @@ Nothing yet.
 ## [0.12.0] - ???
 - Fix bug where `delete` modes and the `FilterDistance` toolbox item would clash.
 - Expose `n_annos_per_canvas` arg to `config_data` as an advanced feature for performance tuning.
+  - Also added some dynamic scaling of this value based on the max number of annotations in a single subtask if no value is provided by the user.
 
 ## [0.11.0] - Sept 19th, 2024
 - Fix bug where class counts wouldn't update when changing subtasks.

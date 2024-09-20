@@ -26,6 +26,9 @@ export enum AllowedToolboxItem {
     Brush,            // 9
 }
 
+export const DEFAULT_N_ANNOS_PER_CANVAS: number = 100;
+export const TARGET_MAX_N_CANVASES_PER_SUBTASK: number = 8;
+
 export class Configuration {
     public toolbox_map = new Map<AllowedToolboxItem, any> ([
         [AllowedToolboxItem.ModeSelect, ModeSelectionToolboxItem],
@@ -107,7 +110,7 @@ export class Configuration {
 
     public decrease_brush_size_keybind: string = "["
 
-    public n_annos_per_canvas: number = 100;
+    public n_annos_per_canvas: number = DEFAULT_N_ANNOS_PER_CANVAS;
 
     constructor(...kwargs: {[key: string]: unknown}[]) {
         this.modify_config(...kwargs)

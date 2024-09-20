@@ -11,7 +11,12 @@ import {
 } from '../build/annotation';
 import { ULabelSubtask } from '../build/subtask';
 import { GeometricUtils } from '../build/geometric_utils';
-import { Configuration, AllowedToolboxItem } from '../build/configuration';
+import { 
+    AllowedToolboxItem, 
+    Configuration, 
+    DEFAULT_N_ANNOS_PER_CANVAS, 
+    TARGET_MAX_N_CANVASES_PER_SUBTASK,
+} from '../build/configuration';
 import { get_gradient } from '../build/drawing_utilities'
 import {
     filter_points_distance_from_line,
@@ -27,7 +32,7 @@ import {
     build_confidence_dialog 
 } from '../build/html_builder';
 
-import $, { unique } from 'jquery';
+import $ from 'jquery';
 const jQuery = $;
 window.$ = window.jQuery = require('jquery');
 
@@ -846,6 +851,7 @@ export class ULabel {
 
     static initialize_annotation_canvases(ul, subtask_key = null) {
         if (subtask_key === null) {
+            ul.dynamically_set_n_annos_per_canvas();
             for (const subtask_key in ul.subtasks) {
                 ULabel.initialize_annotation_canvases(ul, subtask_key)
             }
@@ -1682,6 +1688,34 @@ export class ULabel {
             }]
         } else {
             return JSON.parse(JSON.stringify(this.subtasks[this.state["current_subtask"]]["state"]["id_payload"]));
+        }
+    }
+
+    /**
+     * If no user-provided n_annos_per_canvas is provided, 
+     * Check if we should dynamically set it based on the number of annotations 
+     * in the subtasks, to help with performance.
+     * 
+     */
+    dynamically_set_n_annos_per_canvas() {
+        // Check if we should increase n_annos_per_canvas
+        // First, check if the value is still the default
+        if (this.config.n_annos_per_canvas === DEFAULT_N_ANNOS_PER_CANVAS) {
+            // See if we should dynamically raise the default by checking max number of annotations in a subtask
+            let max_annos = 0;
+            for (const subtask_key in this.subtasks) {
+                const subtask = this.subtasks[subtask_key];
+                if (subtask.annotations.ordering.length > max_annos) {
+                    max_annos = subtask.annotations.ordering.length;
+                }
+            }
+            // Performance starts to deteriorate when we require many canvases to be drawn on
+            // To be safe, check if max_annos / DEFAULT_N_ANNOS_PER_CANVAS is greater than TARGET_MAX_N_CANVASES_PER_SUBTASK
+            if (max_annos / DEFAULT_N_ANNOS_PER_CANVAS > TARGET_MAX_N_CANVASES_PER_SUBTASK) {
+                // If so, raise the default
+                this.config.n_annos_per_canvas = Math.ceil(max_annos / TARGET_MAX_N_CANVASES_PER_SUBTASK);
+                console.log("Dynamically setting n_annos_per_canvas to", this.config.n_annos_per_canvas);
+            }
         }
     }
 
