@@ -253,6 +253,10 @@ export function assign_distance_from_line(
 
         // Create a DistanceFrom object to be assigned to this point
         let distance_from: AnnotationClassDistanceData = {"single": undefined}
+        // Use the existing distance_from if it exists
+        if (current_point.distance_from !== undefined) {
+            distance_from = current_point.distance_from
+        }
 
         // Calculate the distance from each line and populate the distance_from accordingly
         line_annotations.forEach(current_line => {

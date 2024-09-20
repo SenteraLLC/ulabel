@@ -1518,33 +1518,46 @@ export class ULabel {
      * 
      * @param {string} annotation_id - The annotation id of the annotation that changed
      * @param {boolean} redraw_update_items - If true, redraw the toolbox items
-     * @param {boolean} force_filter - If true, force the filter to occur without checking the annotation type (used if annotation no longer exists)
+     * @param {boolean} force_filter_all - If true, force the filter to occur using all polylines
      * @param {object} offset - The offset (for polyline moves)
      */
-    update_filter_distance(annotation_id, redraw_update_items = true, force_filter = false, offset = null) {
+    update_filter_distance(annotation_id, redraw_update_items = true, force_filter_all = false, offset = null) {
         // First verify if the FilterDistance toolbox item is active
         if (this.toolbox_order.includes(AllowedToolboxItem.FilterDistance)) {
-            // Then verify if the annotation is a polyline
-            if (
-                force_filter || 
-                this.subtasks[this.state["current_subtask"]].annotations.access[annotation_id].spatial_type === "polyline"
-            ) {
-                // Add id to the offset
-                if (offset !== null) {
-                    offset["id"] = annotation_id;
-                }
-                // Filter all points
-                filter_points_distance_from_line(this, true, offset);
+            // Add id to the offset
+            if (offset !== null) {
+                offset["id"] = annotation_id;
+            }
 
-                // Lastly, redraw the toolbox items if necessary
-                if (redraw_update_items) {
-                    this.toolbox.redraw_update_items(this);
+            if (force_filter_all) {
+                // Filter all points from all lines
+                filter_points_distance_from_line(this, true, offset);
+            } else if (annotation_id in this.subtasks[this.state["current_subtask"]].annotations.access) {
+                // Update based on changes to a single polyline or point
+                let points_and_lines;
+                const annotation = this.subtasks[this.state["current_subtask"]].annotations.access[annotation_id];
+                switch (annotation.spatial_type) {
+                    case "polyline":
+                        // Update each point's distance to THIS polyline
+                        points_and_lines = get_point_and_line_annotations(this);
+                        assign_distance_from_line(points_and_lines[0], [annotation]);
+                        // Filter all points from the updated line
+                        filter_points_distance_from_line(this, false, offset);
+                        break;
+                    case "point":
+                        // Update THIS point's distance to the nearest lines
+                        points_and_lines = get_point_and_line_annotations(this);
+                        assign_distance_from_line([annotation], points_and_lines[1]);
+                        // Don't filter the point yet, since that may be unexpected for the user
+                        break;
+                    default:
+                        break;
                 }
-            } else if (this.subtasks[this.state["current_subtask"]].annotations.access[annotation_id].spatial_type === "point") {
-                // Update the point's distance to the nearest lines
-                const point = this.subtasks[this.state["current_subtask"]].annotations.access[annotation_id];
-                const points_and_lines = get_point_and_line_annotations(this);
-                assign_distance_from_line([point], points_and_lines[1]);
+            }
+
+            // Lastly, redraw the toolbox items if necessary
+            if (redraw_update_items) {
+                this.toolbox.redraw_update_items(this);
             }
         }
     }
@@ -1555,12 +1568,12 @@ export class ULabel {
      * 
      * @param {string} annotation_id - The annotation id of the annotation that changed
      * @param {boolean} redraw_update_items - If true, redraw the toolbox items
-     * @param {boolean} force_filter - If true, force the filter to occur without checking the annotation type (used if annotation no longer exists)
+     * @param {boolean} force_filter_all - If true, force the filter to occur without checking the annotation type (used if annotation no longer exists)
      * @param {object} offset - The offset (for polyline moves)
      */
-    update_filter_distance_during_polyline_move(annotation_id, redraw_update_items = true, force_filter = false, offset = null) {
+    update_filter_distance_during_polyline_move(annotation_id, redraw_update_items = true, force_filter_all = false, offset = null) {
         if (this.config.distance_filter_toolbox_item.filter_during_polyline_move) {
-            this.update_filter_distance(annotation_id, redraw_update_items, force_filter, offset);
+            this.update_filter_distance(annotation_id, redraw_update_items, force_filter_all, offset);
         }
     }
 
