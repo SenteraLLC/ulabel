@@ -10,7 +10,6 @@ import {
 } from "..";
 
 import { ULabelAnnotation } from "./annotation";
-import { ULabelSubtask } from "./subtask";
 
 /**
  * Returns the confidence of the passed in ULabelAnnotation.

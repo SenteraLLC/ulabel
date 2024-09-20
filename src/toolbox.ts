@@ -1918,27 +1918,39 @@ export class KeypointSliderItem extends ToolboxItem {
      * 
      * @param ulabel ULabel object
      * @param filter_value The number between 0-100 which annotation's confidence is compared against
+     * @returns Annotations that were modified, organized by subtask key
      */
-    private filter_annotations(ulabel: ULabel, filter_value: number) {
-        // Get the current subtask
-        const current_subtask = ulabel.subtasks[ulabel.state["current_subtask"]];
+    private filter_annotations(ulabel: ULabel, filter_value: number): {[key: string]: string[]} {
+        // Store which annotations need to be redrawn
+        let annotations_ids_to_redraw_by_subtask: {[key: string]: string[]} = {}
+        // Initialize the object with the subtask keys
+        for (let subtask_key in ulabel.subtasks) {
+            annotations_ids_to_redraw_by_subtask[subtask_key] = []
+        }
 
-        for (const annotation_id in current_subtask.annotations.access) {
-            // Get the current annotation from the access object
-            const current_annotation: ULabelAnnotation = current_subtask.annotations.access[annotation_id]
-
+        // Get all point annotations
+        const point_and_line_annotations = get_point_and_line_annotations(ulabel);
+        for (const annotation of point_and_line_annotations[0]) {
             // Get the annotation's confidence as decimal between 0-1
-            let confidence: number = this.get_confidence(current_annotation)
+            let confidence: number = this.get_confidence(annotation)
 
             // filter_value will be a number between 0-100, so convert the confidence to a percentage as well
             confidence = Math.round(confidence * 100)
 
             // Compare the confidence value against the filter value
             const should_deprecate: boolean = this.filter_function(confidence, filter_value)
-
-            // Mark this annotation as either deprecated or undeprecated by the confidence filter
-            this.mark_deprecated(current_annotation, should_deprecate, "confidence_filter")
+            // Check if an annotation should be deprecated or undeprecated, else do nothing
+            if (
+                (should_deprecate && !annotation.deprecated) ||
+                (!should_deprecate && annotation.deprecated)
+            ) {
+                // Mark this annotation as either deprecated or undeprecated by the confidence filter
+                this.mark_deprecated(annotation, should_deprecate, "confidence_filter")
+                annotations_ids_to_redraw_by_subtask[annotation.subtask_key].push(annotation.id)
+            }
         }
+
+        return annotations_ids_to_redraw_by_subtask
     }
 
     public get_html() {
@@ -1950,8 +1962,11 @@ export class KeypointSliderItem extends ToolboxItem {
             "label_units": "%",
             "slider_event": (slider_value: number) => {
                 // Filter the annotations, then redraw them
-                this.filter_annotations(this.ulabel, slider_value);
-                this.ulabel.redraw_all_annotations();
+                const modified_annotations = this.filter_annotations(this.ulabel, slider_value);
+                // Redraw each subtask's annotations
+                for (let subtask_key in modified_annotations) {
+                    this.ulabel.redraw_multiple_spatial_annotations(modified_annotations[subtask_key], subtask_key)
+                }
                 // Update class counter
                 this.ulabel.toolbox.redraw_update_items(this.ulabel);
             }

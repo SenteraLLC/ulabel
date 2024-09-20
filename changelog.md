@@ -12,6 +12,8 @@ Nothing yet.
   - Greatly reduce the number of distance calculations by only calculating distances for the newly modified annotation (polyline or point), 
     rather than recalculating all distances for all annotations everytime.
   - Each point now tracks the `id` of the closest line in each class to further reduce the number of redundant calculations.
+- Improvements to performance of the `KeypointSlider` Toolbox item:
+  - Switch to new redrawing util functions and only redraw annotations when necessary
 - Fix bug where `delete` modes and the `FilterDistance` toolbox item would clash.
 - Expose `n_annos_per_canvas` arg to `config_data` as an advanced feature for performance tuning.
   - Also added some dynamic scaling of this value based on the max number of annotations in a single subtask if no value is provided by the user.
@@ -20,6 +22,7 @@ Nothing yet.
 #### Breaking Changes
 - Renamed `FilterDistanceConfig` arg `show_overlay_on_load` -> `show_overlay` for internal consistency.
 - Changed format of `default_values` arg in `FilterDistanceConfig`. The name for the single class mode default has changed from `"single"` -> `"closest_row"`, and each entry in the object should be a `DistanceFromPolyline` object (`{distance: <number>}`), rather than a single number. See the updated `api_spec.md` for more details.
+- `KeypointSlider` now works on all points in every subtask, even when the subtask is not active.
 
 ## [0.11.0] - Sept 19th, 2024
 - Fix bug where class counts wouldn't update when changing subtasks.
