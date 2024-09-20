@@ -1284,7 +1284,7 @@ export class ULabel {
             // If the current toolboxitem is not included in possible_overlays then continue
             if (!possible_overlays.includes(toolbox_name)) continue
 
-            switch(toolbox_name) {
+            switch (toolbox_name) {
                 case "FilterDistance":
                     // Give ulabel a referance to the filter overlay for confinience
                     this.filter_distance_overlay = toolbox_item.get_overlay()
@@ -6523,7 +6523,7 @@ export class ULabel {
         // Check if the FilterDistance ToolboxItem is in this ULabel instance
         if (this.toolbox_order.includes(AllowedToolboxItem.FilterDistance)) {
             // Get the toolbox item
-            const filter_distance_toolbox_item = this.toolbox.items.filter(item => item.get_toolbox_item_type === "FilterDistance")[0];
+            const filter_distance_toolbox_item = this.toolbox.items.filter(item => item.get_toolbox_item_type() === "FilterDistance")[0];
             // filter annotations if in multi_class_mode
             if (filter_distance_toolbox_item.multi_class_mode) {
                 filter_points_distance_from_line(this, true);
