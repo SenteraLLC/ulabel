@@ -322,7 +322,7 @@ export function get_point_and_line_annotations(ulabel: ULabel): [ULabelAnnotatio
  * @param offset Offset of a particular annotation. Used when filter is called while an annotation is being moved
  * @param override Used to filter annotations without calling the dom
  */
-export function filter_points_distance_from_line(ulabel: ULabel, offset: Offset = null, override: FilterDistanceOverride = null) {
+export function filter_points_distance_from_line(ulabel: ULabel, recalculate_distances: boolean = false, offset: Offset = null, override: FilterDistanceOverride = null) {
 
     // Get a set of all point and polyline annotations
     const annotations: [ULabelAnnotation[], ULabelAnnotation[]] = get_point_and_line_annotations(ulabel)
@@ -385,8 +385,10 @@ export function filter_points_distance_from_line(ulabel: ULabel, offset: Offset 
         should_redraw = override.should_redraw // Useful for filtering before annotations have been rendered
     }
 
-    // Calculate and assign each point a distance from line value
-    assign_distance_from_line(point_annotations, line_annotations, offset)
+    if (recalculate_distances) {
+        // Calculate and assign each point a distance from line value
+        assign_distance_from_line(point_annotations, line_annotations, offset)
+    }
 
     // Store which annotations need to be redrawn
     let annotations_ids_to_redraw_by_subtask: {[key: string]: string[]} = {}
@@ -439,8 +441,7 @@ export function filter_points_distance_from_line(ulabel: ULabel, offset: Offset 
             filter_distance_overlay currently does not exist.
             As such, unable to update distance overlay
         `)
-    }
-    else {
+    } else {
         // Update overlay properties first
         ulabel.filter_distance_overlay.update_annotations(line_annotations)
         ulabel.filter_distance_overlay.update_distances(distances)
@@ -449,7 +450,7 @@ export function filter_points_distance_from_line(ulabel: ULabel, offset: Offset 
 
         // Then redraw the overlay
         ulabel.filter_distance_overlay.draw_overlay(offset)
-    }  
+    }
 }
 
 /**

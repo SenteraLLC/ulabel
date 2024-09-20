@@ -2153,8 +2153,9 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
 
             this.overlay.update_mode(this.multi_class_mode ? "multi" : "single")
 
-            // Re-filter the points in the new mode
-            filter_points_distance_from_line(this.ulabel)
+            // Re-filter the points in the new mode, recalculating all distances if changing to multi-class
+            let recalculate_distances = this.multi_class_mode
+            filter_points_distance_from_line(this.ulabel, recalculate_distances)
         })
 
         $(document).on("change.ulabel", "#filter-slider-distance-toggle-overlay-checkbox", (event) => {
@@ -2268,7 +2269,7 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
                 "step": this.step_value.toString(),
                 "label_units": "px",
                 "main_label": current_name,
-                "slider_event": () => filter_points_distance_from_line(this.ulabel)
+                "slider_event": () => filter_points_distance_from_line(this.ulabel, false)
             })
 
             // Add current classes html to multi_class_html
@@ -2294,7 +2295,7 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
             "default_value": this.default_values["single"].toString(),
             "id": "filter-row-distance-single",
             "label_units": "px",
-            "slider_event": () => filter_points_distance_from_line(this.ulabel),
+            "slider_event": () => filter_points_distance_from_line(this.ulabel, false),
             "min": this.filter_min.toString(),
             "max": this.filter_max.toString(),
             "step": this.step_value.toString()

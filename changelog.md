@@ -6,6 +6,9 @@ All notable changes to this project will be documented here.
 
 Nothing yet.
 
+## [0.12.0] - ???
+- Fix bug where `delete` modes and the `FilterDistance` toolbox item would clash.
+
 ## [0.11.0] - Sept 19th, 2024
 - Fix bug where class counts wouldn't update when changing subtasks.
 - Add `size_factor` arg to submit buttons to allow for custom sizing.
