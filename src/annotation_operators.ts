@@ -331,7 +331,7 @@ export function filter_points_distance_from_line(ulabel: ULabel, recalculate_dis
     const line_annotations: ULabelAnnotation[] = annotations[1]
 
     // Initialize variables to hold info required from the dom
-    let multi_class_mode: boolean
+    let multi_class_mode: boolean = false;
     let show_overlay: boolean
     let should_redraw: boolean
     let distances: AnnotationClassDistanceData = { 
@@ -349,10 +349,6 @@ export function filter_points_distance_from_line(ulabel: ULabel, recalculate_dis
         const sliders: NodeListOf<HTMLInputElement> = document.querySelectorAll(".filter-row-distance-slider")
         
         // Check to make sure each element exists before trying to use
-        if (multi_checkbox === null) {
-            console.error("filter_points_distance_from_line could not find multi-class checkbox object")
-            return_early = true
-        }
         if (show_overlay_checkbox === null) {
             console.error("filter_points_distance_from_line could not find show_overlay checkbox object")
             return_early = true
@@ -364,7 +360,10 @@ export function filter_points_distance_from_line(ulabel: ULabel, recalculate_dis
 
         if (return_early) return
 
-        multi_class_mode = multi_checkbox.checked
+        // Checkbox may not exist if `disable_multi_class_mode` is set to true
+        if (multi_checkbox) {
+            multi_class_mode = multi_checkbox.checked
+        }
         show_overlay = show_overlay_checkbox.checked
 
         // Loop through each slider and populate distances
