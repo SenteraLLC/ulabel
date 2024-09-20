@@ -1532,6 +1532,7 @@ export class ULabel {
 
             if (force_filter_all) {
                 // Filter all points from all lines
+                // Used when a line is deleted
                 filter_points_distance_from_line(this, true, offset);
             } else if (annotation_id in this.subtasks[this.state["current_subtask"]].annotations.access) {
                 // Update based on changes to a single polyline or point
@@ -3803,8 +3804,10 @@ export class ULabel {
             this.destroy_polygon_ender(annotation_id);
         }
 
-        // Filter points if necessary
-        this.update_filter_distance(annotation_id, false);
+        // Force filter points if necessary
+        if (annotation_mode === "polyline") {
+            this.update_filter_distance(annotation_id, false, true);
+        }
         // Update class counter
         this.toolbox.redraw_update_items(this);
     }
@@ -3816,9 +3819,6 @@ export class ULabel {
             // Set the active id to the old id
             active_id = undo_payload.old_id;
 
-            // Mark the active id undeprecated
-            mark_deprecated(annotations["access"][active_id], false);
-
             // Delete the annotation with the new id that's being undone
             delete annotations["access"][undo_payload.new_id];
 
@@ -3826,10 +3826,9 @@ export class ULabel {
             const index = annotations["ordering"].indexOf(undo_payload.new_id);
             annotations["ordering"].splice(index, 1);
         }
-        else {
-            // Set the annotation to be undeprecated
-            mark_deprecated(annotations["access"][undo_payload.annid], false);
-        }
+
+        // Set the annotation to be undeprecated
+        mark_deprecated(annotations["access"][active_id], false);
 
         // Handle visuals
         this.redraw_annotation(active_id);

@@ -270,7 +270,7 @@ export function assign_closest_line_to_single_point(
     offset: Offset = null
 ) {
     // Create a new distance_from object for the point annotation
-    let distance_from: DistanceFromPolylineClasses = {closest_row: undefined}
+    let distance_from: DistanceFromPolylineClasses = {closest_row: {distance: Infinity}}
 
     // Calculate the distance from each line and populate the distance_from accordingly
     line_annotations.forEach(current_line => {
@@ -287,7 +287,7 @@ export function assign_closest_line_to_single_point(
         }
 
         // Likewise check to see if the current distance is less than a line of any class
-        if (distance_from.closest_row === undefined || distance < distance_from.closest_row.distance) {
+        if (distance < distance_from.closest_row.distance) {
             distance_from.closest_row = {
                 distance: distance,
                 polyline_id: current_line.id,
@@ -330,8 +330,22 @@ export function update_distance_from_line_to_each_point(
             const distance = get_distance_from_point_to_line(current_point, line_annotation, offset)
 
             // Check if the line is the closest line of its class to the point
-            if (distance < current_point.distance_from[line_class_id].distance) {
+            if (
+                current_point.distance_from[line_class_id] === undefined ||
+                distance < current_point.distance_from[line_class_id].distance
+            ) {
                 current_point.distance_from[line_class_id] = {
+                    distance: distance,
+                    polyline_id: line_annotation.id,
+                }
+            }
+
+            // Check if the line is the closest line to the point
+            if (
+                current_point.distance_from.closest_row === undefined ||
+                distance < current_point.distance_from.closest_row.distance
+            ) {
+                current_point.distance_from.closest_row = {
                     distance: distance,
                     polyline_id: line_annotation.id,
                 }
@@ -358,7 +372,10 @@ export function is_closest_line_to_point(line_id: string, point_annotation: ULab
     // Loop through each class in the distance_from object
     for (let class_id in point_annotation.distance_from) {
         // Check if the line id matches the closest line id for any class
-        if (point_annotation.distance_from[class_id].polyline_id === line_id) {
+        if (
+            point_annotation.distance_from[class_id] !== undefined &&
+            point_annotation.distance_from[class_id].polyline_id === line_id
+        ) {
             return true
         }
     }
@@ -495,7 +512,11 @@ export function filter_points_distance_from_line(ulabel: ULabel, recalculate_dis
                     if (id === "closest_row") continue
     
                     // If the annotation is smaller than the filter value for any id it passes
-                    if (annotation.deprecated && annotation.distance_from[id].distance <= distances[id].distance) {
+                    if (
+                        annotation.deprecated && 
+                        annotation.distance_from[id] !== undefined &&
+                        annotation.distance_from[id].distance <= distances[id].distance
+                    ) {
                         mark_deprecated(annotation, false, "distance_from_row")
                         annotations_ids_to_redraw_by_subtask[annotation.subtask_key].push(annotation.id)
                         break check_distances
