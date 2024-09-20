@@ -2044,6 +2044,11 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
         }
         this.overlay.update_display_overlay(this.show_overlay);
 
+        // Check if localStorage has a value for filtering during polyline move
+        if (window.localStorage.getItem("filterDistanceFilterDuringPolylineMove") !== null) {
+            this.filter_during_polyline_move = window.localStorage.getItem("filterDistanceFilterDuringPolylineMove") === "true"
+        }
+
         this.add_styles()
 
         this.add_event_listeners()
@@ -2137,9 +2142,9 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
         $(document).on("click.ulabel", "fieldset.filter-row-distance-options > legend", () => this.toggleCollapsedOptions())
 
         // Whenever the multi-class filtering checkbox is clicked, switch the displayed filter mode
-        $(document).on("click.ulabel", "#filter-slider-distance-multi-checkbox", () => {
-            // Toggle the multi-class state
-            this.multi_class_mode = !this.multi_class_mode
+        $(document).on("click.ulabel", "#filter-slider-distance-multi-checkbox", (event) => {
+            // Update the multi-class state
+            this.multi_class_mode = event.currentTarget.checked
 
             // Toggle whether the single-class slider, or the multi-class sliders are visible
             this.switchFilterMode()
@@ -2152,14 +2157,24 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
         })
 
         $(document).on("change.ulabel", "#filter-slider-distance-toggle-overlay-checkbox", (event) => {
+            // Save the new value of `show_overlay`
+            this.show_overlay = event.currentTarget.checked
+    
             // Update whether or not the overlay is allowed to be drawn
-            this.overlay.update_display_overlay(event.currentTarget.checked)
+            this.overlay.update_display_overlay(this.show_overlay)
 
             // Try to draw the overlay
             this.overlay.draw_overlay()
 
             // Save whether or not the overlay is allowed to be drawn to local storage
-            window.localStorage.setItem("filterDistanceShowOverlay", event.currentTarget.checked.toString())
+            window.localStorage.setItem("filterDistanceShowOverlay", this.show_overlay.toString())
+        })
+
+        $(document).on("change.ulabel", "#filter-slider-distance-filter-during-polyline-move-checkbox", (event) => {
+            // Save new value of `filter_during_polyline_move`
+            this.filter_during_polyline_move = event.currentTarget.checked
+            // Save to local storage
+            window.localStorage.setItem("filterDistanceFilterDuringPolylineMove", this.filter_during_polyline_move.toString())
         })
 
         $(document).on("keypress.ulabel", (event) => {
@@ -2340,6 +2355,21 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
                         id="filter-slider-distance-toggle-overlay-checkbox-label"
                         class="filter-row-distance-label">
                         Show Filter Range
+                    </label>
+                </div>
+                <div class="filter-row-distance-option">
+                    <input
+                        type="checkbox"
+                        id="filter-slider-distance-filter-during-polyline-move-checkbox"
+                        class="filter-row-distance-options-checkbox"
+                        ${this.filter_during_polyline_move ? "checked" : ""}
+                    />
+                    <label
+                        for="filter-slider-distance-filter-during-polyline-move-checkbox"
+                        id="filter-slider-distance-filter-during-polyline-move-checkbox-label"
+                        class="filter-row-distance-label"
+                        title="When unchecked, will not update the filter/overlay until polyline moves/edits are complete">
+                        Filter During Move
                     </label>
                 </div>
             </fieldset>

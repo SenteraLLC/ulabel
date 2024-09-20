@@ -1573,7 +1573,10 @@ export class ULabel {
      * @param {object} offset - The offset (for polyline moves)
      */
     update_filter_distance_during_polyline_move(annotation_id, redraw_update_items = true, force_filter_all = false, offset = null) {
-        if (this.config.distance_filter_toolbox_item.filter_during_polyline_move) {
+        if (
+            this.toolbox_order.includes(AllowedToolboxItem.FilterDistance) && 
+            this.toolbox.items.find(item => item.get_toolbox_item_type() === "FilterDistance").filter_during_polyline_move
+        ) {
             this.update_filter_distance(annotation_id, redraw_update_items, force_filter_all, offset);
         }
     }
