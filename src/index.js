@@ -8,7 +8,6 @@ import {
     DELETE_MODES,
     NONSPATIAL_MODES,
     MODES_3D,
-    N_ANNOS_PER_CANVAS,
 } from '../build/annotation';
 import { ULabelSubtask } from '../build/subtask';
 import { GeometricUtils } from '../build/geometric_utils';
@@ -1699,12 +1698,12 @@ export class ULabel {
         }
         const canvas_ids = Object.keys(this.subtasks[subtask]["state"]["annotation_contexts"])
         for (let i = 0; i < canvas_ids.length; i++) {
-            // If the canvas has less than N_ANNOS_PER_CANVAS annotations, return its ID
-            if (this.subtasks[subtask]["state"]["annotation_contexts"][canvas_ids[i]]["annotation_ids"].length < N_ANNOS_PER_CANVAS) {
+            // If the canvas has less than n_annos_per_canvas annotations, return its ID
+            if (this.subtasks[subtask]["state"]["annotation_contexts"][canvas_ids[i]]["annotation_ids"].length < this.config.n_annos_per_canvas) {
                 return canvas_ids[i];
             }
         }
-        // If no canvas has less than N_ANNOS_PER_CANVAS annotations, create a new canvas
+        // If no canvas has less than n_annos_per_canvas annotations, create a new canvas
         return this.create_annotation_canvas(subtask);
     }
 

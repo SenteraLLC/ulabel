@@ -332,6 +332,8 @@ URL to a page that gives annotation instructions.
     increase_brush_size_keybind: string
 
     decrease_brush_size_keybind: string
+
+    n_annos_per_canvas: number // Default is 100. Setting higher for jobs with a large number annotations may help performance.
 }
 ```
 With the following custom definitions.

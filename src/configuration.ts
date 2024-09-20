@@ -107,6 +107,8 @@ export class Configuration {
 
     public decrease_brush_size_keybind: string = "["
 
+    public n_annos_per_canvas: number = 100;
+
     constructor(...kwargs: {[key: string]: unknown}[]) {
         this.modify_config(...kwargs)
     }
