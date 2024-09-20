@@ -7,12 +7,18 @@ All notable changes to this project will be documented here.
 Nothing yet.
 
 ## [0.12.0] - ???
+- Improvements to performance of the `FilterDistance` Toolbox item:
+  - Switch to new redrawing util functions and only redraw annotations when necessary
+  - Greatly reduce the number of distance calculations by only calculating distances for the newly modified annotation (polyline or point), 
+    rather than recalculating all distances for all annotations everytime.
+  - Each point now tracks the `id` of the closest line in each class to further reduce the number of redundant calculations.
 - Fix bug where `delete` modes and the `FilterDistance` toolbox item would clash.
 - Expose `n_annos_per_canvas` arg to `config_data` as an advanced feature for performance tuning.
   - Also added some dynamic scaling of this value based on the max number of annotations in a single subtask if no value is provided by the user.
-- Renamed `FilterDistanceConfig` arg `show_overlay_on_load` -> `show_overlay` for internal consistency.
 - Added `disable_multi_class_mode` flag to `FilterDistanceConfig`, which defaults to `false`. When `true`, the multi-class mode will be disabled and the checkbox will not be shown.
 - Added `filter_during_polyline_move` flag to `FilterDistanceConfig`, which defaults to `true`. When `false`, the filter/overlay will not be updated until polyline moves/edits are completed. This can be useful for boosting performance when working with many annotations.
+#### Breaking Changes
+- Renamed `FilterDistanceConfig` arg `show_overlay_on_load` -> `show_overlay` for internal consistency.
 - Changed format of `default_values` arg in `FilterDistanceConfig`. The name for the single class mode default has changed from `"single"` -> `"closest_row"`, and each entry in the object should be a `DistanceFromPolyline` object (`{distance: <number>}`), rather than a single number. See the updated `api_spec.md` for more details.
 
 ## [0.11.0] - Sept 19th, 2024

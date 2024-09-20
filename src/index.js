@@ -19,12 +19,13 @@ import {
 } from '../build/configuration';
 import { get_gradient } from '../build/drawing_utilities'
 import {
-    assign_distance_from_line,
+    assign_closest_line_to_each_point,
     filter_points_distance_from_line,
     get_annotation_class_id,
     get_annotation_confidence,
     get_point_and_line_annotations,
-    mark_deprecated
+    mark_deprecated,
+    update_distance_from_line_to_each_point,
 } from '../build/annotation_operators';
 import {
     add_style_to_document,
@@ -1540,14 +1541,14 @@ export class ULabel {
                     case "polyline":
                         // Update each point's distance to THIS polyline
                         points_and_lines = get_point_and_line_annotations(this);
-                        assign_distance_from_line(points_and_lines[0], [annotation]);
+                        update_distance_from_line_to_each_point(annotation, points_and_lines[0], points_and_lines[1], offset);
                         // Filter all points from the updated line
                         filter_points_distance_from_line(this, false, offset);
                         break;
                     case "point":
                         // Update THIS point's distance to the nearest lines
                         points_and_lines = get_point_and_line_annotations(this);
-                        assign_distance_from_line([annotation], points_and_lines[1]);
+                        assign_closest_line_to_each_point([annotation], points_and_lines[1], offset);
                         // Don't filter the point yet, since that may be unexpected for the user
                         break;
                     default:
