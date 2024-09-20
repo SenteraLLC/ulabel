@@ -1519,8 +1519,9 @@ export class ULabel {
      * @param {string} annotation_id - The annotation id of the annotation that changed
      * @param {boolean} redraw_update_items - If true, redraw the toolbox items
      * @param {boolean} force_filter - If true, force the filter to occur without checking the annotation type (used if annotation no longer exists)
+     * @param {object} offset - The offset (for polyline moves)
      */
-    update_filter_distance(annotation_id, redraw_update_items = true, force_filter = false) {
+    update_filter_distance(annotation_id, redraw_update_items = true, force_filter = false, offset = null) {
         // First verify if the FilterDistance toolbox item is active
         if (this.toolbox_order.includes(AllowedToolboxItem.FilterDistance)) {
             // Then verify if the annotation is a polyline
@@ -1528,8 +1529,12 @@ export class ULabel {
                 force_filter || 
                 this.subtasks[this.state["current_subtask"]].annotations.access[annotation_id].spatial_type === "polyline"
             ) {
+                // Add id to the offset
+                if (offset !== null) {
+                    offset["id"] = annotation_id;
+                }
                 // Filter all points
-                filter_points_distance_from_line(this, true);
+                filter_points_distance_from_line(this, true, offset);
 
                 // Lastly, redraw the toolbox items if necessary
                 if (redraw_update_items) {
@@ -1541,6 +1546,21 @@ export class ULabel {
                 const points_and_lines = get_point_and_line_annotations(this);
                 assign_distance_from_line([point], points_and_lines[1]);
             }
+        }
+    }
+
+    /**
+     * Wrapper for update_filter_distance that is called during a polyline move
+     * First checks if `filter_during_polyline_move` is true.
+     * 
+     * @param {string} annotation_id - The annotation id of the annotation that changed
+     * @param {boolean} redraw_update_items - If true, redraw the toolbox items
+     * @param {boolean} force_filter - If true, force the filter to occur without checking the annotation type (used if annotation no longer exists)
+     * @param {object} offset - The offset (for polyline moves)
+     */
+    update_filter_distance_during_polyline_move(annotation_id, redraw_update_items = true, force_filter = false, offset = null) {
+        if (this.config.distance_filter_toolbox_item.filter_during_polyline_move) {
+            this.update_filter_distance(annotation_id, redraw_update_items, force_filter, offset);
         }
     }
 
@@ -1721,7 +1741,6 @@ export class ULabel {
             if (max_annos / DEFAULT_N_ANNOS_PER_CANVAS > TARGET_MAX_N_CANVASES_PER_SUBTASK) {
                 // If so, raise the default
                 this.config.n_annos_per_canvas = Math.ceil(max_annos / TARGET_MAX_N_CANVASES_PER_SUBTASK);
-                console.log("Dynamically setting n_annos_per_canvas to", this.config.n_annos_per_canvas);
             }
         }
     }
@@ -5167,6 +5186,7 @@ export class ULabel {
                     current_subtask["state"]["edit_candidate"]["point"] = mouse_location;
                     this.show_edit_suggestion(current_subtask["state"]["edit_candidate"], true);
                     this.show_global_edit_suggestion(current_subtask["state"]["edit_candidate"]["annid"]);
+                    this.update_filter_distance_during_polyline_move(active_id)
                     break;
                 case "contour":
                     // TODO contour editing
@@ -5706,7 +5726,7 @@ export class ULabel {
             this.redraw_annotation(active_id, null, offset);
             this.show_global_edit_suggestion(current_subtask["state"]["move_candidate"]["annid"], offset); // TODO handle offset
             this.reposition_dialogs();
-            return;
+            this.update_filter_distance_during_polyline_move(active_id, true, false, offset);
         }
     }
 

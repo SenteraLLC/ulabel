@@ -357,18 +357,20 @@ type AnnotationClassDistanceData = {
 }
 
 type FilterDistanceConfig = {
-    "name"?: string,
-    "component_name"?: string,
-    "filter_min"?: number,
-    "filter_max"?: number,
-    "default_values"?: AnnotationClassDistanceData,
-    "step_value"?: number,
-    "multi_class_mode"?: boolean,
-    "disable_multi_class_mode"?: boolean,
-    "filter_on_load"?: boolean,
-    "show_options"?: boolean,
-    "show_overlay"?: boolean,
-    "toggle_overlay_keybind"?: string,
+    "name"?: string, // Default: Filter Distance From Row
+    "component_name"?: string, // Default: filter-distance-from-row
+    "filter_min"?: number, // Default: 0 (px)
+    "filter_max"?: number, // Default: 400 (px)
+    "default_values"?: AnnotationClassDistanceData, // Default: { "single": 40 (px) }
+    "step_value"?: number, // Default: 2 (px)
+    "multi_class_mode"?: boolean, // Default: false
+    "disable_multi_class_mode"?: boolean, // Default: false
+    "filter_on_load"?: boolean, // Default: false
+    "show_options"?: boolean, // Default: true
+    "show_overlay"?: boolean, // Default: false
+    "toggle_overlay_keybind"?: string, // Default: "p"
+    "filter_during_polyline_move"?: boolean, // Default: true. Set to false for performance boost, 
+    // since it will not update the filter/overlay until polyline moves/edits are complete.
 }
 ```
 Where all `config_data` properties are optional.

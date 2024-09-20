@@ -93,6 +93,7 @@ export type FilterDistanceConfig = {
     show_options?: boolean,
     show_overlay?: boolean,
     toggle_overlay_keybind?: string,
+    filter_during_polyline_move?: boolean,
 }
 
 export type ULabelSubmitButton = {

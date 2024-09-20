@@ -12,6 +12,7 @@ Nothing yet.
   - Also added some dynamic scaling of this value based on the max number of annotations in a single subtask if no value is provided by the user.
 - Renamed `FilterDistanceConfig` arg `show_overlay_on_load` -> `show_overlay` for internal consistency.
 - Added `disable_multi_class_mode` flag to `FilterDistanceConfig`, which defaults to `false`. When `true`, the multi-class mode will be disabled and the checkbox will not be shown.
+- Added `filter_during_polyline_move` flag to `FilterDistanceConfig`, which defaults to `true`. When `false`, the filter/overlay will not be updated until polyline moves/edits are completed. This can be useful for boosting performance when working with many annotations.
 
 ## [0.11.0] - Sept 19th, 2024
 - Fix bug where class counts wouldn't update when changing subtasks.

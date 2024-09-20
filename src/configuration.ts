@@ -41,6 +41,7 @@ export const DEFAULT_FILTER_DISTANCE_CONFIG: FilterDistanceConfig = {
     "show_options": true,
     "show_overlay": false,
     "toggle_overlay_keybind": "p",
+    "filter_during_polyline_move": true,
 }
 
 export class Configuration {

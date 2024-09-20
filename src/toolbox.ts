@@ -1988,6 +1988,7 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
     collapse_options: boolean // Whether or not the options is in a collapsed state
     show_overlay: boolean // Whether or not the overlay will be shown
     toggle_overlay_keybind: string 
+    filter_during_polyline_move: boolean // Whether or not to filter annotations during a pending mode/edit of a polyline
     overlay: FilterDistanceOverlay
 
     ulabel: ULabel // The ULabel object. Must be passed in
