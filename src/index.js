@@ -19,9 +19,11 @@ import {
 } from '../build/configuration';
 import { get_gradient } from '../build/drawing_utilities'
 import {
+    assign_distance_from_line,
     filter_points_distance_from_line,
     get_annotation_class_id,
     get_annotation_confidence,
+    get_point_and_line_annotations,
     mark_deprecated
 } from '../build/annotation_operators';
 import {
@@ -1524,7 +1526,7 @@ export class ULabel {
             // Then verify if the annotation is a polyline
             if (
                 force_filter || 
-                this.subtasks[this.state["current_subtask"]].annotations.access[annotation_id].spatial_type
+                this.subtasks[this.state["current_subtask"]].annotations.access[annotation_id].spatial_type === "polyline"
             ) {
                 // Filter all points
                 filter_points_distance_from_line(this, true);
@@ -1533,6 +1535,11 @@ export class ULabel {
                 if (redraw_update_items) {
                     this.toolbox.redraw_update_items(this);
                 }
+            } else if (this.subtasks[this.state["current_subtask"]].annotations.access[annotation_id].spatial_type === "point") {
+                // Update the point's distance to the nearest lines
+                const point = this.subtasks[this.state["current_subtask"]].annotations.access[annotation_id];
+                const points_and_lines = get_point_and_line_annotations(this);
+                assign_distance_from_line([point], points_and_lines[1]);
             }
         }
     }
@@ -3044,7 +3051,6 @@ export class ULabel {
                         layer_idx: layer_idx,
                     }
                 }, redoing);
-                
             }
         } 
         // Redraw when caller expects the annotation to be redrawn
@@ -5249,14 +5255,6 @@ export class ULabel {
                 this.redraw_annotation(actid);
                 this.suggest_edits(this.state["last_move"]);
                 break;
-            case "polyline":
-                this.set_with_access_string(actid, redo_payload.edit_candidate["access"], ms_loc, false);
-                this.rebuild_containing_box(actid);
-                this.redraw_annotation(actid);
-                this.suggest_edits(this.state["last_move"]);
-                // Filter points if necessary
-                this.update_filter_distance(actid);
-                break;
             default:
                 this.set_with_access_string(actid, redo_payload.edit_candidate["access"], ms_loc, false);
                 this.rebuild_containing_box(actid);
@@ -5265,6 +5263,9 @@ export class ULabel {
                 break;
 
         }
+        // Filter points if necessary
+        this.update_filter_distance(actid);
+
         let frame = this.state["current_frame"];
         if (MODES_3D.includes(spatial_type)) {
             frame = null;
@@ -5518,9 +5519,6 @@ export class ULabel {
                 // Redraw annotation and record action
                 this.redraw_annotation(active_id);
                 record_action = true;
-                
-                // Filter points if necessary
-                this.update_filter_distance(active_id, false);
                 break;
             case "delete_bbox":
                 this.record_finish(active_id);
@@ -5609,6 +5607,8 @@ export class ULabel {
             current_subtask["state"]["is_in_progress"] = false;
         }
 
+        // Filter points if necessary
+        this.update_filter_distance(active_id, false);
         this.toolbox.redraw_update_items(this);
     }
 
@@ -5670,9 +5670,6 @@ export class ULabel {
                 }
                 break;
             case "polyline":
-                // Filter points if necessary
-                this.update_filter_distance(actid);
-                break;
             case "bbox":
             case "bbox3":
             case "tbar":
@@ -5688,6 +5685,9 @@ export class ULabel {
         // Set mode to no active annotation
         this.subtasks[this.state["current_subtask"]]["state"]["active_id"] = null;
         this.subtasks[this.state["current_subtask"]]["state"]["is_in_edit"] = false;
+
+        // Filter points if necessary
+        this.update_filter_distance(actid);
     }
 
     move_annotation(mouse_event) {
@@ -5757,9 +5757,6 @@ export class ULabel {
 
         switch (spatial_type) {
             case "polyline":
-                // Filter points if necessary
-                this.update_filter_distance(active_id);
-                break;
             case "polygon":
             case "bbox":
             case "bbox3":
@@ -5777,6 +5774,9 @@ export class ULabel {
         this.redraw_annotation(active_id);
 
         this.record_finish_move(diffX, diffY, diffZ);
+
+        // Filter points if necessary
+        this.update_filter_distance(active_id);
     }
 
     move_annotation__undo(undo_payload) {

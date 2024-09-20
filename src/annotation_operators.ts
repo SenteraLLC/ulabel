@@ -319,6 +319,7 @@ export function get_point_and_line_annotations(ulabel: ULabel): [ULabelAnnotatio
  * from a polyline annotation.
  * 
  * @param ulabel ULabel object
+ * @param recalculate_distances whether to recalculate the distance from each point to the nearest line
  * @param offset Offset of a particular annotation. Used when filter is called while an annotation is being moved
  * @param override Used to filter annotations without calling the dom
  */
