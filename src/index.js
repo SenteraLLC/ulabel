@@ -4741,6 +4741,7 @@ export class ULabel {
                     break;
             }
             this.redraw_annotation(actid);
+            this.update_filter_distance_during_polyline_move(actid);
         }
     }
 
