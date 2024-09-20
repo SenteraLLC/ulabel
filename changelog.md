@@ -6,7 +6,7 @@ All notable changes to this project will be documented here.
 
 Nothing yet.
 
-## [0.12.0] - ???
+## [0.12.0] - Sept 20th, 2024
 - Improvements to performance of the `FilterDistance` Toolbox item:
   - Switch to new redrawing util functions and only redraw annotations when necessary
   - Greatly reduce the number of distance calculations by only calculating distances for the newly modified annotation (polyline or point), 
