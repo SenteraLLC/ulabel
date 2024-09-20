@@ -511,14 +511,16 @@ export function filter_points_distance_from_line(ulabel: ULabel, recalculate_dis
                     // Ignore the single class slider
                     if (id === "closest_row") continue
     
-                    // If the annotation is smaller than the filter value for any id it passes
+                    // If the annotation is smaller than the filter value for any id, it passes
                     if (
-                        annotation.deprecated && 
                         annotation.distance_from[id] !== undefined &&
                         annotation.distance_from[id].distance <= distances[id].distance
                     ) {
-                        mark_deprecated(annotation, false, "distance_from_row")
-                        annotations_ids_to_redraw_by_subtask[annotation.subtask_key].push(annotation.id)
+                        if (annotation.deprecated) {
+                            // Undeprecate the annotation
+                            mark_deprecated(annotation, false, "distance_from_row")
+                            annotations_ids_to_redraw_by_subtask[annotation.subtask_key].push(annotation.id)
+                        }
                         break check_distances
                     }
                 }
