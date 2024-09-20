@@ -13,6 +13,7 @@ Nothing yet.
 - Renamed `FilterDistanceConfig` arg `show_overlay_on_load` -> `show_overlay` for internal consistency.
 - Added `disable_multi_class_mode` flag to `FilterDistanceConfig`, which defaults to `false`. When `true`, the multi-class mode will be disabled and the checkbox will not be shown.
 - Added `filter_during_polyline_move` flag to `FilterDistanceConfig`, which defaults to `true`. When `false`, the filter/overlay will not be updated until polyline moves/edits are completed. This can be useful for boosting performance when working with many annotations.
+- Changed format of `default_values` arg in `FilterDistanceConfig`. The name for the single class mode default has changed from `"single"` -> `"closest_row"`, and each entry in the object should be a `DistanceFromPolyline` object (`{distance: <number>}`), rather than a single number. See the updated `api_spec.md` for more details.
 
 ## [0.11.0] - Sept 19th, 2024
 - Fix bug where class counts wouldn't update when changing subtasks.

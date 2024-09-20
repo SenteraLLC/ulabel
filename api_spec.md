@@ -351,9 +351,13 @@ enum AllowedToolboxItem {
     Brush             // 9
 }
 
-type AnnotationClassDistanceData = {
-    "single": number,
-    [key: number]?: number
+type DistanceFromPolyline = {
+    distance: number // distance in pixels
+}
+
+type DistanceFromPolylineClasses = {
+    "closest_row": DistanceFromPolyline, // value used in single-class mode
+    [key: number]?: DistanceFromPolyline // values for each polyline class id, used in multi-class mode
 }
 
 type FilterDistanceConfig = {
@@ -361,7 +365,7 @@ type FilterDistanceConfig = {
     "component_name"?: string, // Default: filter-distance-from-row
     "filter_min"?: number, // Default: 0 (px)
     "filter_max"?: number, // Default: 400 (px)
-    "default_values"?: AnnotationClassDistanceData, // Default: { "single": 40 (px) }
+    "default_values"?: DistanceFromPolylineClasses, // Default: {"closest_row": {"distance": 40}}
     "step_value"?: number, // Default: 2 (px)
     "multi_class_mode"?: boolean, // Default: false
     "disable_multi_class_mode"?: boolean, // Default: false

@@ -1,6 +1,6 @@
 import { 
-    AnnotationClassDistanceData, 
     DeprecatedBy, 
+    DistanceFromPolylineClasses,
     ULabelClassificationPayload, 
     ULabelContainingBox, 
     ULabelSpatialType 
@@ -35,7 +35,7 @@ export class ULabelAnnotation {
         public classification_payloads?:ULabelClassificationPayload[],
         public containing_box?: ULabelContainingBox,
         public created_by?: string,
-        public distance_from?: AnnotationClassDistanceData,
+        public distance_from?: DistanceFromPolylineClasses,
         public frame?: number,
         public line_size?: number,
         public id?: string,

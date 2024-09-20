@@ -1,5 +1,5 @@
 import { 
-    AnnotationClassDistanceData, 
+    DistanceFromPolylineClasses, 
     FilterDistanceConfig, 
     RecolorActiveConfig, 
     ULabel,
@@ -1977,7 +1977,7 @@ export class KeypointSliderItem extends ToolboxItem {
 export class FilterPointDistanceFromRow extends ToolboxItem {
     name: string // Component name shown to users
     component_name: string // Internal component name
-    default_values: AnnotationClassDistanceData // Values sliders are set to on page load
+    default_values: DistanceFromPolylineClasses // Values sliders are set to on page load
     filter_min: number // Minimum value slider may be set to
     filter_max: number // Maximum value slider may be set to
     step_value: number // Value slider increments by
@@ -2129,7 +2129,7 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
             // Toggle whether the single-class slider, or the multi-class sliders are visible
             this.switchFilterMode()
 
-            this.overlay.update_mode(this.multi_class_mode ? "multi" : "single")
+            this.overlay.update_mode(this.multi_class_mode)
 
             // Re-filter the points in the new mode, recalculating all distances if changing to multi-class
             let recalculate_distances = this.multi_class_mode
@@ -2183,18 +2183,20 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
         const line_annotations: ULabelAnnotation[] = get_point_and_line_annotations(this.ulabel)[1]
 
         // Initialize an object to hold the distances points are allowed to be from each class as well as any line
-        let filter_values: AnnotationClassDistanceData = {"single": undefined}
+        let filter_values: DistanceFromPolylineClasses = {closest_row: undefined}
 
         // Grab all filter-distance-sliders on the page
         const sliders: NodeListOf<HTMLInputElement> = document.querySelectorAll(".filter-row-distance-slider")
 
         // Loop through each slider and populate filter_values
         for (let idx = 0; idx < sliders.length; idx++) {
-            // Use a regex to get the string after the final - character in the slider id (Which is the class id or the string "single")
+            // Use a regex to get the string after the final - character in the slider id (Which is the class id or the string "closest_row")
             const slider_class_name = /[^-]*$/.exec(sliders[idx].id)[0]
 
             // Use the class id as a key to store the slider's value
-            filter_values[slider_class_name] = sliders[idx].valueAsNumber
+            filter_values[slider_class_name] = {
+                distance: sliders[idx].valueAsNumber
+            }
         }
 
         // Create and assign an overlay class instance to ulabel to be able to access it
@@ -2232,10 +2234,10 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
 
             let default_value: string
             if (this.default_values[current_id] !== undefined) {
-                default_value = this.default_values[current_id].toString()
+                default_value = this.default_values[current_id].distance.toString()
             }
             else {
-                default_value = this.default_values["single"].toString()
+                default_value = this.default_values.closest_row.distance.toString()
             }
 
             const multi_class_slider_instance = new SliderHandler({
@@ -2270,8 +2272,8 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
            and its event handlers */
         const single_class_slider_handler = new SliderHandler({
             "class": "filter-row-distance-slider",
-            "default_value": this.default_values["single"].toString(),
-            "id": "filter-row-distance-single",
+            "default_value": this.default_values.closest_row.distance.toString(),
+            "id": "filter-row-distance-closest_row", // `closest_row` will be extracted using regex
             "label_units": "px",
             "slider_event": () => filter_points_distance_from_line(this.ulabel, false),
             "min": this.filter_min.toString(),

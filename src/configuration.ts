@@ -33,7 +33,7 @@ export const DEFAULT_FILTER_DISTANCE_CONFIG: FilterDistanceConfig = {
     "component_name": "filter-distance-from-row",
     "filter_min": 0,
     "filter_max": 400,
-    "default_values": {"single": 40},
+    "default_values": {closest_row: {distance: 40}},
     "step_value": 2,
     "multi_class_mode": false,
     "disable_multi_class_mode": false,
