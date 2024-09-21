@@ -6985,6 +6985,8 @@ export class ULabel {
         ULabel.initialize_annotation_canvases(this, subtask);
         // Redraw all annotations to render them
         this.redraw_all_annotations(subtask);
+        // Calculate distances for all annotations if FilterDistance is present
+        this.update_filter_distance(null, false, true)
         // Update class counter in toolbox
         this.toolbox.redraw_update_items(this);
     }
