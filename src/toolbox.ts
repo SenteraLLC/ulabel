@@ -18,7 +18,11 @@ import {
 } from "./annotation_operators";
 import { SliderHandler, get_idd_string } from "./html_builder";
 import { FilterDistanceOverlay } from "./overlays";
-import { get_active_class_id } from "./utilities";
+import { 
+    get_active_class_id, 
+    get_local_storage_item,
+    set_local_storage_item, 
+} from "./utilities";
 
 // For ResizeToolboxItem
 enum ValidResizeValues {
@@ -1521,11 +1525,11 @@ export class RecolorActiveItem extends ToolboxItem {
     }
 
     private save_local_storage_color(class_id: number | string, color: string): void {
-        localStorage.setItem(`RecolorActiveItem-${class_id}`, color)
+        set_local_storage_item(`RecolorActiveItem-${class_id}`, color)
     }
 
     private save_local_storage_gradient(gradient_status: boolean): void {
-        localStorage.setItem("RecolorActiveItem-Gradient", gradient_status.toString())
+        set_local_storage_item("RecolorActiveItem-Gradient", gradient_status)
     }
 
     private read_local_storage(): void {
@@ -1533,7 +1537,7 @@ export class RecolorActiveItem extends ToolboxItem {
         for (const class_id of this.ulabel.valid_class_ids) {
 
             // Get the color from local storage based on the current class id
-            const color = localStorage.getItem(`RecolorActiveItem-${class_id}`)
+            const color = get_local_storage_item(`RecolorActiveItem-${class_id}`)
 
             // Update the color if its not null
             // Additionally no need to save the color to local storage since we got it from reading local storage
@@ -1541,7 +1545,7 @@ export class RecolorActiveItem extends ToolboxItem {
         }
 
         // Then read whether or not the gradient should be on by default
-        this.gradient_turned_on = localStorage.getItem("RecolorActiveItem-Gradient") === "true"
+        this.gradient_turned_on = get_local_storage_item("RecolorActiveItem-Gradient")
     }
 
     private replace_color_pie(): void {
@@ -2033,21 +2037,21 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
         if (this.disable_multi_class_mode) this.multi_class_mode = false
         
         // Get if the options should be collapsed from local storage
-        this.collapse_options = window.localStorage.getItem("filterDistanceCollapseOptions") === "true"
+        this.collapse_options = get_local_storage_item("filterDistanceCollapseOptions")
  
         // Create an overlay and determine whether or not it should be displayed
         this.create_overlay()
 
         // Check if localStorage has a value for showing the overlay
-        if (window.localStorage.getItem("filterDistanceShowOverlay") !== null) {
-            this.show_overlay = window.localStorage.getItem("filterDistanceShowOverlay") === "true"
-        }
+        const show_overlay = get_local_storage_item("filterDistanceShowOverlay")
+        // Guard against null values
+        this.show_overlay = show_overlay !== null ? show_overlay : this.show_overlay
         this.overlay.update_display_overlay(this.show_overlay);
 
         // Check if localStorage has a value for filtering during polyline move
-        if (window.localStorage.getItem("filterDistanceFilterDuringPolylineMove") !== null) {
-            this.filter_during_polyline_move = window.localStorage.getItem("filterDistanceFilterDuringPolylineMove") === "true"
-        }
+        const filter_during_polyline_move = get_local_storage_item("filterDistanceFilterDuringPolylineMove")
+        // Guard against null values
+        this.filter_during_polyline_move = filter_during_polyline_move !== null ? filter_during_polyline_move : this.filter_during_polyline_move
 
         this.add_styles()
 
@@ -2167,14 +2171,14 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
             this.overlay.draw_overlay()
 
             // Save whether or not the overlay is allowed to be drawn to local storage
-            window.localStorage.setItem("filterDistanceShowOverlay", this.show_overlay.toString())
+           set_local_storage_item("filterDistanceShowOverlay", this.show_overlay)
         })
 
         $(document).on("change.ulabel", "#filter-slider-distance-filter-during-polyline-move-checkbox", (event) => {
             // Save new value of `filter_during_polyline_move`
             this.filter_during_polyline_move = event.currentTarget.checked
             // Save to local storage
-            window.localStorage.setItem("filterDistanceFilterDuringPolylineMove", this.filter_during_polyline_move.toString())
+            set_local_storage_item("filterDistanceFilterDuringPolylineMove", this.filter_during_polyline_move)
         })
 
         $(document).on("keypress.ulabel", (event) => {
@@ -2205,7 +2209,7 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
         this.collapse_options = !this.collapse_options
 
         // Save the state to the user's browser so it can be re-loaded in the same state
-        window.localStorage.setItem("filterDistanceCollapseOptions", this.collapse_options.toString())
+        set_local_storage_item("filterDistanceCollapseOptions", this.collapse_options)
     }
 
     private create_overlay() {
