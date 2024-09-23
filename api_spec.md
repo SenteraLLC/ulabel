@@ -123,9 +123,6 @@ As you can see, each subtask will have a corresponding list of annotation object
 {
     // a unique id for this annotation
     "id": "<uuidv4 string>",
-
-    // true if was created this session
-    "new": <bool>, 
     
     // (nullable) id of ann that was edited to create this one
     "parent_id": "<uuidv4 string>", 

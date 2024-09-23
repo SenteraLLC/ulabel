@@ -24,6 +24,7 @@ Nothing yet.
 - Renamed `FilterDistanceConfig` arg `show_overlay_on_load` -> `show_overlay` for internal consistency.
 - Changed format of `default_values` arg in `FilterDistanceConfig`. The name for the single class mode default has changed from `"single"` -> `"closest_row"`, and each entry in the object should be a `DistanceFromPolyline` object (`{distance: <number>}`), rather than a single number. See the updated `api_spec.md` for more details.
 - `KeypointSlider` now works on all points in every subtask, even when the subtask is not active.
+- Deprecated the `new` and `is_new` fields in `ULabelAnnotation`. There was internal inconsistency in their use, and some internal logic that depended on them was buggy and was sometimes preventing the `FilterDistance` slider from working as expected.
 
 ## [0.11.0] - Sept 19th, 2024
 - Fix bug where class counts wouldn't update when changing subtasks.

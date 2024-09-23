@@ -26,7 +26,6 @@ export class ULabelAnnotation {
         public annotation_meta: any = null,
         public deprecated: boolean = false,
         public deprecated_by: DeprecatedBy = {"human": false},
-        public is_new: boolean = true,
         public parent_id: string = null,
         public text_payload: string = "",
 
@@ -172,10 +171,6 @@ export class ULabelAnnotation {
     public static from_json(json_block: any): ULabelAnnotation {
         let ret = new ULabelAnnotation();
         Object.assign(ret, json_block);
-        // Handle 'new' keyword collision
-        if("new" in json_block) {
-            ret.is_new = json_block["new"]
-        }
         // Convert deprecated spatial payloads if necessary
         if (ret.ensure_compatible_spatial_payloads()) {
             return ret;
@@ -209,9 +204,4 @@ export class ULabelAnnotation {
             return ret;
         }
     }
-}
-
-type ULabelAnnotations = {
-    ordering: [string],
-    access: { [key: string]: ULabelAnnotation[] }
 }
