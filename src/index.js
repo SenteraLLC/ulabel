@@ -3714,67 +3714,33 @@ export class ULabel {
     }
 
     delete_annotation(annotation_id, redo_payload = null, record_action = true) {
-        let old_id = annotation_id;
-        let new_id = old_id;
         let redoing = false;
+        if (redo_payload != null) {
+            redoing = true;
+            annotation_id = redo_payload.annid;
+        }
 
         // Grab constants for convenience
         const current_subtask = this.subtasks[this.state["current_subtask"]]
         const annotations = current_subtask["annotations"]["access"]
+        const spatial_type = annotations[annotation_id]["spatial_type"]
 
-        if (redo_payload != null) {
-            redoing = true;
-            annotation_id = redo_payload.annid;
-            old_id = redo_payload.old_id;
-        }
+        // Deprecate the annotation and redraw it
+        mark_deprecated(annotations[annotation_id], true)
+        this.redraw_annotation(annotation_id);
 
-        let annotation_mode = annotations[old_id]["spatial_type"];
-        let is_spatial = !NONSPATIAL_MODES.includes(annotation_mode);
-
-        let deprecate_old = false;
-        if (!annotations[old_id]["new"] && !DELETE_MODES.includes(annotation_mode)) {
-            // Make new id and record that you did
-            deprecate_old = true;
-            if (!redoing) {
-                new_id = this.make_new_annotation_id();
-            }
-            else {
-                new_id = redo_payload.new_id;
-            }
-
-            // Make new annotation (copy of old)
-            annotations[new_id] = JSON.parse(JSON.stringify(annotations[old_id]));
-            annotations[new_id]["id"] = new_id;
-            annotations[new_id]["created_by"] = this.config["annotator"];
-            annotations[new_id]["new"] = true;
-            annotations[new_id]["parent_id"] = old_id;
-            if (is_spatial) {
-                annotations[new_id]["canvas_id"] = this.get_init_canvas_context_id(new_id);
-            }
-            current_subtask["annotations"]["ordering"].push(new_id);
-
-            // Set parent_id and deprecated = true
-            mark_deprecated(annotations[old_id], true)
-            // Redraw the old annotation
-            this.redraw_annotation(old_id);
-
-            // Work with new annotation from now on
-            annotation_id = new_id;
-        }
-
-        if (current_subtask["state"]["active_id"] != null) {
+        if (current_subtask["state"]["active_id"] !== null) {
             current_subtask["state"]["active_id"] = null;
             current_subtask["state"]["is_in_edit"] = false;
             current_subtask["state"]["is_in_move"] = false;
             current_subtask["state"]["is_in_progress"] = false;
             current_subtask["state"]["starting_complex_polygon"] = false;
         }
-        mark_deprecated(annotations[annotation_id], true)
-        this.redraw_annotation(annotation_id);
+
         this.hide_global_edit_suggestion();
 
         let frame = this.state["current_frame"];
-        if (MODES_3D.includes(annotation_mode)) {
+        if (MODES_3D.includes(spatial_type)) {
             frame = null;
         }
 
@@ -3784,57 +3750,37 @@ export class ULabel {
                 frame: frame,
                 undo_payload: {
                     annid: annotation_id,
-                    deprecate_old: deprecate_old,
-                    old_id: old_id,
-                    new_id: new_id,
-                    suggest_edits: true,
                 },
                 redo_payload: {
                     annid: annotation_id,
-                    deprecate_old: deprecate_old,
-                    old_id: old_id,
-                    new_id: new_id,
-                    suggest_edits: true,
                 }
             }, redoing);
         }
 
         // Ensure there are no lingering enders
-        if (annotation_mode === "polygon" || annotation_mode === "polyline" || annotation_mode === "delete_polygon") {
+        if (spatial_type === "polygon" || spatial_type === "polyline" || spatial_type === "delete_polygon") {
             this.destroy_polygon_ender(annotation_id);
         }
 
         // Force filter points if necessary
-        if (annotation_mode === "polyline") {
+        if (spatial_type === "polyline") {
             this.update_filter_distance(annotation_id, false, true);
         }
+
         // Update class counter
         this.toolbox.redraw_update_items(this);
     }
 
     delete_annotation__undo(undo_payload) {
         let active_id = undo_payload.annid;
-        const annotations = this.subtasks[this.state["current_subtask"]]["annotations"]
-        if (undo_payload.deprecate_old) {
-            // Set the active id to the old id
-            active_id = undo_payload.old_id;
+        const annotations = this.subtasks[this.state["current_subtask"]]["annotations"]["access"];
 
-            // Delete the annotation with the new id that's being undone
-            delete annotations["access"][undo_payload.new_id];
-
-            // Remove deleted annotation from ordering
-            const index = annotations["ordering"].indexOf(undo_payload.new_id);
-            annotations["ordering"].splice(index, 1);
-        }
-
-        // Set the annotation to be undeprecated
-        mark_deprecated(annotations["access"][active_id], false);
-
-        // Handle visuals
+        // Set the annotation to be undeprecated and redraw it
+        mark_deprecated(annotations[active_id], false);
         this.redraw_annotation(active_id);
-        if (undo_payload.suggest_edits) {
-            this.suggest_edits(this.state["last_move"]);
-        }
+
+        // Show dialogs
+        this.suggest_edits(this.state["last_move"]);
 
         // Filter points if necessary
         this.update_filter_distance(active_id, false);
