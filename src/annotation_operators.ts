@@ -534,8 +534,15 @@ export function filter_points_distance_from_line(ulabel: ULabel, recalculate_dis
     } else { 
         // Single-class mode
         point_annotations.forEach(annotation => {
-            mark_deprecated(annotation, annotation.distance_from.closest_row.distance > distances.closest_row.distance, "distance_from_row")
-            annotations_ids_to_redraw_by_subtask[annotation.subtask_key].push(annotation.id)
+            const should_deprecate = annotation.distance_from.closest_row.distance > distances.closest_row.distance
+            // Only change deprecated status and redraw if it needs to be changed
+            if (should_deprecate && !annotation.deprecated) {
+                mark_deprecated(annotation, true, "distance_from_row")
+                annotations_ids_to_redraw_by_subtask[annotation.subtask_key].push(annotation.id)
+            } else if (!should_deprecate && annotation.deprecated) {
+                mark_deprecated(annotation, false, "distance_from_row")
+                annotations_ids_to_redraw_by_subtask[annotation.subtask_key].push(annotation.id)
+            }
         })
     }
 
