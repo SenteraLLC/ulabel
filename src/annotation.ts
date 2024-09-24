@@ -1,6 +1,6 @@
 import { 
-    AnnotationClassDistanceData, 
     DeprecatedBy, 
+    DistanceFromPolylineClasses,
     ULabelClassificationPayload, 
     ULabelContainingBox, 
     ULabelSpatialType 
@@ -12,7 +12,6 @@ export const DELETE_MODES = ["delete_polygon", "delete_bbox"]
 export const DELETE_CLASS_ID = -1;
 export const MODES_3D = ["global", "bbox3"];
 export const NONSPATIAL_MODES = ["whole-image", "global"];
-export const N_ANNOS_PER_CANVAS = 100;
 
 export type PolygonSpatialData = {
     spatial_payload: [number[]][],
@@ -27,16 +26,15 @@ export class ULabelAnnotation {
         public annotation_meta: any = null,
         public deprecated: boolean = false,
         public deprecated_by: DeprecatedBy = {"human": false},
-        public is_new: boolean = true,
         public parent_id: string = null,
         public text_payload: string = "",
 
         // Optional properties
+        public subtask_key?: string,
         public classification_payloads?:ULabelClassificationPayload[],
         public containing_box?: ULabelContainingBox,
         public created_by?: string,
-        public distance_from_any_line?: number,
-        public distance_from?: AnnotationClassDistanceData,
+        public distance_from?: DistanceFromPolylineClasses,
         public frame?: number,
         public line_size?: number,
         public id?: string,
@@ -173,10 +171,6 @@ export class ULabelAnnotation {
     public static from_json(json_block: any): ULabelAnnotation {
         let ret = new ULabelAnnotation();
         Object.assign(ret, json_block);
-        // Handle 'new' keyword collision
-        if("new" in json_block) {
-            ret.is_new = json_block["new"]
-        }
         // Convert deprecated spatial payloads if necessary
         if (ret.ensure_compatible_spatial_payloads()) {
             return ret;
@@ -210,9 +204,4 @@ export class ULabelAnnotation {
             return ret;
         }
     }
-}
-
-type ULabelAnnotations = {
-    ordering: [string],
-    access: { [key: string]: ULabelAnnotation[] }
 }

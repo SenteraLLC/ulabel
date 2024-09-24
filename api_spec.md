@@ -123,9 +123,6 @@ As you can see, each subtask will have a corresponding list of annotation object
 {
     // a unique id for this annotation
     "id": "<uuidv4 string>",
-
-    // true if was created this session
-    "new": <bool>, 
     
     // (nullable) id of ann that was edited to create this one
     "parent_id": "<uuidv4 string>", 
@@ -332,6 +329,8 @@ URL to a page that gives annotation instructions.
     increase_brush_size_keybind: string
 
     decrease_brush_size_keybind: string
+
+    n_annos_per_canvas: number // Default is 100. Setting higher for jobs with a large number annotations may help performance.
 }
 ```
 With the following custom definitions.
@@ -349,23 +348,30 @@ enum AllowedToolboxItem {
     Brush             // 9
 }
 
-type AnnotationClassDistanceData = {
-    "single": number,
-    [key: number]?: number
+type DistanceFromPolyline = {
+    distance: number // distance in pixels
+}
+
+type DistanceFromPolylineClasses = {
+    "closest_row": DistanceFromPolyline, // value used in single-class mode
+    [key: number]?: DistanceFromPolyline // values for each polyline class id, used in multi-class mode
 }
 
 type FilterDistanceConfig = {
-    "name"?: string,
-    "component_name"?: string,
-    "filter_min"?: number,
-    "filter_max"?: number,
-    "default_values"?: AnnotationClassDistanceData,
-    "step_value"?: number,
-    "multi_class_mode"?: boolean,
-    "filter_on_load"?: boolean,
-    "show_options"?: boolean,
-    "toggle_overlay_keybind"?: string,
-    "show_overlay_on_load"?: boolean
+    "name"?: string, // Default: Filter Distance From Row
+    "component_name"?: string, // Default: filter-distance-from-row
+    "filter_min"?: number, // Default: 0 (px)
+    "filter_max"?: number, // Default: 400 (px)
+    "default_values"?: DistanceFromPolylineClasses, // Default: {"closest_row": {"distance": 40}}
+    "step_value"?: number, // Default: 2 (px)
+    "multi_class_mode"?: boolean, // Default: false
+    "disable_multi_class_mode"?: boolean, // Default: false
+    "filter_on_load"?: boolean, // Default: false
+    "show_options"?: boolean, // Default: true
+    "show_overlay"?: boolean, // Default: false
+    "toggle_overlay_keybind"?: string, // Default: "p"
+    "filter_during_polyline_move"?: boolean, // Default: true. Set to false for performance boost, 
+    // since it will not update the filter/overlay until polyline moves/edits are complete.
 }
 ```
 Where all `config_data` properties are optional.

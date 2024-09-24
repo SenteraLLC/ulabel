@@ -1,4 +1,4 @@
-import { AbstractPoint, AnnotationClassDistanceData, Offset } from ".."
+import { AbstractPoint, DistanceFromPolylineClasses, Offset } from ".."
 import { ULabelAnnotation } from "./annotation"
 import { get_annotation_class_id } from "./annotation_operators"
 import { ULabelSpatialPayload2D } from "./geometric_utils"
@@ -126,9 +126,7 @@ class ULabelOverlay {
 
 export class FilterDistanceOverlay extends ULabelOverlay {
     private polyline_annotations: ULabelAnnotation[] // Set of polyline annotations the overlay will be drawn based on
-    private distances: AnnotationClassDistanceData = { // The current distance from a line annotation
-        "single": null 
-    }
+    private distances: DistanceFromPolylineClasses = {closest_row: undefined} // The current distance from a line annotation
     private multi_class_mode: boolean
     private display_overlay: boolean // Whether or not the overlay should currently be displayed
 
@@ -216,28 +214,12 @@ export class FilterDistanceOverlay extends ULabelOverlay {
         this.polyline_annotations = polyline_annotations
     }
 
-    public update_distances(distances: {[key: string]: number}) {
-        for (let key in distances) {
-            // Update this.distances's values with the values inside distances
-            this.distances[key] = distances[key]
-        }
+    public update_distances(distances: DistanceFromPolylineClasses) {
+        this.distances = distances
     }
 
-    public update_mode(current_mode: "single" | "multi") {
-        if (current_mode === "multi") {
-            this.multi_class_mode = true
-        }
-        else if (current_mode === "single") {
-            this.multi_class_mode = false
-        }
-        else {
-            console.error("FilterDistanceOverlay.update_mode recieved unknown mode type")
-        }
-    }
-
-    public get_mode() {
-        console.log(this.multi_class_mode)
-        return this.multi_class_mode ? "multi" : "single"
+    public update_mode(multi_class_mode: boolean) {
+        this.multi_class_mode = multi_class_mode
     }
 
     public update_display_overlay(display_overlay: boolean): void {
@@ -280,7 +262,7 @@ export class FilterDistanceOverlay extends ULabelOverlay {
             const annotation_class_id: string = get_annotation_class_id(annotation)
             
             // Use the class id if in multi-class mode, otherwise use the single class distance
-            const distance: number = this.multi_class_mode ? this.distances[annotation_class_id] : this.distances["single"]
+            const distance: number = this.multi_class_mode ? this.distances[annotation_class_id].distance : this.distances.closest_row.distance
 
             // length - 1 because the final endpoint doesn't have another endpoint to form a pair with
             for (let idx = 0; idx < spatial_payload.length - 1; idx++) {

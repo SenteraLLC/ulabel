@@ -8,17 +8,24 @@ import {
     DELETE_MODES,
     NONSPATIAL_MODES,
     MODES_3D,
-    N_ANNOS_PER_CANVAS,
 } from '../build/annotation';
 import { ULabelSubtask } from '../build/subtask';
 import { GeometricUtils } from '../build/geometric_utils';
-import { Configuration, AllowedToolboxItem } from '../build/configuration';
+import { 
+    AllowedToolboxItem, 
+    Configuration, 
+    DEFAULT_N_ANNOS_PER_CANVAS, 
+    TARGET_MAX_N_CANVASES_PER_SUBTASK,
+} from '../build/configuration';
 import { get_gradient } from '../build/drawing_utilities'
 import {
+    assign_closest_line_to_each_point,
     filter_points_distance_from_line,
     get_annotation_class_id,
     get_annotation_confidence,
-    mark_deprecated
+    get_point_and_line_annotations,
+    mark_deprecated,
+    update_distance_from_line_to_each_point,
 } from '../build/annotation_operators';
 import {
     add_style_to_document,
@@ -661,9 +668,6 @@ export class ULabel {
                     continue;
                 }
 
-                // Mark as not new
-                cand["new"] = false;
-
                 // Set to default line size if there is none, check for null and undefined using ==
                 if (
                     (!("line_size" in cand)) || (cand["line_size"] == null)
@@ -847,6 +851,7 @@ export class ULabel {
 
     static initialize_annotation_canvases(ul, subtask_key = null) {
         if (subtask_key === null) {
+            ul.dynamically_set_n_annos_per_canvas();
             for (const subtask_key in ul.subtasks) {
                 ULabel.initialize_annotation_canvases(ul, subtask_key)
             }
@@ -1276,7 +1281,7 @@ export class ULabel {
             // If the current toolboxitem is not included in possible_overlays then continue
             if (!possible_overlays.includes(toolbox_name)) continue
 
-            switch(toolbox_name) {
+            switch (toolbox_name) {
                 case "FilterDistance":
                     // Give ulabel a referance to the filter overlay for confinience
                     this.filter_distance_overlay = toolbox_item.get_overlay()
@@ -1290,7 +1295,7 @@ export class ULabel {
                     $("#" + this.config["imwrap_id"]).prepend(this.filter_distance_overlay.get_canvas())
                     
                     // Filter the points with an override
-                    filter_points_distance_from_line(this, null, {
+                    filter_points_distance_from_line(this, true, null, {
                         "should_redraw": this.config.distance_filter_toolbox_item.filter_on_load,
                         "multi_class_mode": this.config.distance_filter_toolbox_item.multi_class_mode,
                         "show_overlay": this.filter_distance_overlay.get_display_overlay(),
@@ -1505,6 +1510,75 @@ export class ULabel {
         // $("a#toolbox_sel_" + this.subtasks[this.state["current_subtask"]]["state"]["annotation_mode"]).removeAttr("href");
     }
 
+    /**
+     * If FilterDistance toolbox item is active AND a polyline undergoes a change,
+     * then filter the points based on the new polyline
+     * 
+     * @param {string} annotation_id - The annotation id of the annotation that changed
+     * @param {boolean} redraw_update_items - If true, redraw the toolbox items
+     * @param {boolean} force_filter_all - If true, force the filter to occur using all polylines
+     * @param {object} offset - The offset (for polyline moves)
+     */
+    update_filter_distance(annotation_id, redraw_update_items = true, force_filter_all = false, offset = null) {
+        // First verify if the FilterDistance toolbox item is active
+        if (this.toolbox_order.includes(AllowedToolboxItem.FilterDistance)) {
+            // Add id to the offset
+            if (offset !== null) {
+                offset["id"] = annotation_id;
+            }
+
+            if (force_filter_all) {
+                // Filter all points from all lines
+                // Used when a line is deleted
+                filter_points_distance_from_line(this, true, offset);
+            } else if (annotation_id in this.subtasks[this.state["current_subtask"]].annotations.access) {
+                // Update based on changes to a single polyline or point
+                let points_and_lines;
+                const annotation = this.subtasks[this.state["current_subtask"]].annotations.access[annotation_id];
+                switch (annotation.spatial_type) {
+                    case "polyline":
+                        // Update each point's distance to THIS polyline
+                        points_and_lines = get_point_and_line_annotations(this);
+                        update_distance_from_line_to_each_point(annotation, points_and_lines[0], points_and_lines[1], offset);
+                        // Filter all points from the updated line
+                        filter_points_distance_from_line(this, false, offset);
+                        break;
+                    case "point":
+                        // Update THIS point's distance to the nearest lines
+                        points_and_lines = get_point_and_line_annotations(this);
+                        assign_closest_line_to_each_point([annotation], points_and_lines[1], offset);
+                        // Don't filter the point yet, since that may be unexpected for the user
+                        break;
+                    default:
+                        break;
+                }
+            }
+
+            // Lastly, redraw the toolbox items if necessary
+            if (redraw_update_items) {
+                this.toolbox.redraw_update_items(this);
+            }
+        }
+    }
+
+    /**
+     * Wrapper for update_filter_distance that is called during a polyline move
+     * First checks if `filter_during_polyline_move` is true.
+     * 
+     * @param {string} annotation_id - The annotation id of the annotation that changed
+     * @param {boolean} redraw_update_items - If true, redraw the toolbox items
+     * @param {boolean} force_filter_all - If true, force the filter to occur without checking the annotation type (used if annotation no longer exists)
+     * @param {object} offset - The offset (for polyline moves)
+     */
+    update_filter_distance_during_polyline_move(annotation_id, redraw_update_items = true, force_filter_all = false, offset = null) {
+        if (
+            this.toolbox_order.includes(AllowedToolboxItem.FilterDistance) && 
+            this.toolbox.items.find(item => item.get_toolbox_item_type() === "FilterDistance").filter_during_polyline_move
+        ) {
+            this.update_filter_distance(annotation_id, redraw_update_items, force_filter_all, offset);
+        }
+    }
+
     // Show annotation mode
     show_annotation_mode(el = null) {
         if (el === null) {
@@ -1660,6 +1734,33 @@ export class ULabel {
     }
 
     /**
+     * If no user-provided n_annos_per_canvas is provided, 
+     * Check if we should dynamically set it based on the number of annotations 
+     * in the subtasks, to help with performance.
+     * 
+     */
+    dynamically_set_n_annos_per_canvas() {
+        // Check if we should increase n_annos_per_canvas
+        // First, check if the value is still the default
+        if (this.config.n_annos_per_canvas === DEFAULT_N_ANNOS_PER_CANVAS) {
+            // See if we should dynamically raise the default by checking max number of annotations in a subtask
+            let max_annos = 0;
+            for (const subtask_key in this.subtasks) {
+                const subtask = this.subtasks[subtask_key];
+                if (subtask.annotations.ordering.length > max_annos) {
+                    max_annos = subtask.annotations.ordering.length;
+                }
+            }
+            // Performance starts to deteriorate when we require many canvases to be drawn on
+            // To be safe, check if max_annos / DEFAULT_N_ANNOS_PER_CANVAS is greater than TARGET_MAX_N_CANVASES_PER_SUBTASK
+            if (max_annos / DEFAULT_N_ANNOS_PER_CANVAS > TARGET_MAX_N_CANVASES_PER_SUBTASK) {
+                // If so, raise the default
+                this.config.n_annos_per_canvas = Math.ceil(max_annos / TARGET_MAX_N_CANVASES_PER_SUBTASK);
+            }
+        }
+    }
+
+    /**
      * Find the next available annotation context and return its ID.
      * If all annotation contexts are in use, create a new canvas and return it's id.
      * 
@@ -1672,12 +1773,12 @@ export class ULabel {
         }
         const canvas_ids = Object.keys(this.subtasks[subtask]["state"]["annotation_contexts"])
         for (let i = 0; i < canvas_ids.length; i++) {
-            // If the canvas has less than N_ANNOS_PER_CANVAS annotations, return its ID
-            if (this.subtasks[subtask]["state"]["annotation_contexts"][canvas_ids[i]]["annotation_ids"].length < N_ANNOS_PER_CANVAS) {
+            // If the canvas has less than n_annos_per_canvas annotations, return its ID
+            if (this.subtasks[subtask]["state"]["annotation_contexts"][canvas_ids[i]]["annotation_ids"].length < this.config.n_annos_per_canvas) {
                 return canvas_ids[i];
             }
         }
-        // If no canvas has less than N_ANNOS_PER_CANVAS annotations, create a new canvas
+        // If no canvas has less than n_annos_per_canvas annotations, create a new canvas
         return this.create_annotation_canvas(subtask);
     }
 
@@ -2984,7 +3085,6 @@ export class ULabel {
                         layer_idx: layer_idx,
                     }
                 }, redoing);
-                
             }
         } 
         // Redraw when caller expects the annotation to be redrawn
@@ -3166,6 +3266,7 @@ export class ULabel {
             // Redraw if needed
             if (needs_redraw) {
                 this.redraw_annotation(annid);
+                this.update_filter_distance(annid, false);
                 this.toolbox.redraw_update_items(this);
             }
         }
@@ -3201,7 +3302,11 @@ export class ULabel {
         const annotations = this.subtasks[subtask]["annotations"]["access"];
         // Loop through all deprecated annotations
         let annotation_ids_to_redraw = [];
+        let polyline_was_updated = false
         for (let annid of undo_payload["deprecated_ids"]) {
+            if (!polyline_was_updated && annotations[annid].spatial_type === "polyline") {
+                polyline_was_updated = true;
+            }
             // Undeprecate the annotation
             annotations[annid]["deprecated"] = false;
             // Redraw the annotation
@@ -3209,6 +3314,9 @@ export class ULabel {
         }
         // Loop through all modified annotations
         for (let [annid, annotation] of Object.entries(undo_payload["modified_annotations"])) {
+            if (!polyline_was_updated && annotation.spatial_type === "polyline") {
+                polyline_was_updated = true;
+            }
             // Replace the annotation with the undo payload
             annotations[annid] = annotation;
             // Redraw the annotation
@@ -3216,6 +3324,10 @@ export class ULabel {
         }
         // Redraw annotations
         this.redraw_multiple_spatial_annotations(annotation_ids_to_redraw, subtask);
+        // If a polyline was updated, re-filter all points
+        if (polyline_was_updated) {
+            this.update_filter_distance(null, false, true);
+        }
         // Update class counter
         this.toolbox.redraw_update_items(this);
     }
@@ -3467,12 +3579,6 @@ export class ULabel {
         if (newact != null) {
             undone_stack[undone_stack.length - 1] = newact
         }
-
-        // If the FilterDistance ToolboxItem is present, filter points
-        if (this.toolbox_order.includes(AllowedToolboxItem.FilterDistance)) {
-            // Currently only supported by polyline
-            filter_points_distance_from_line(this)
-        }
     }
 
     redo() {
@@ -3484,12 +3590,6 @@ export class ULabel {
         if (undone_stack.length === 0) return
 
         this.redo_action(undone_stack.pop());
-
-        // If the FilterDistance ToolboxItem is present, filter points
-        if (this.toolbox_order.includes(AllowedToolboxItem.FilterDistance)) {
-            // Currently only supported by polyline
-            filter_points_distance_from_line(this)
-        }
     }
 
     /**
@@ -3518,7 +3618,6 @@ export class ULabel {
         // Create the new annotation
         let new_annotation = {
             "id": unique_id,
-            "new": true,
             "parent_id": null,
             "created_by": this.config["annotator"],
             "created_at": ULabel.get_time(),
@@ -3552,6 +3651,8 @@ export class ULabel {
 
         // Draw the new annotation to the canvas
         this.draw_annotation_from_id(unique_id)
+        // Filter points if necessary
+        this.update_filter_distance(unique_id);
     }
 
     /**
@@ -3585,6 +3686,9 @@ export class ULabel {
 
         // Remove the annotation id from the array
         annotation_ordering.splice(annotation_index, 1) // 1 means remove only the annotation id at the annotation index
+
+        // Filter points if necessary
+        this.update_filter_distance(annotation_id, true, true);
     }
 
     /**
@@ -3606,67 +3710,33 @@ export class ULabel {
     }
 
     delete_annotation(annotation_id, redo_payload = null, record_action = true) {
-        let old_id = annotation_id;
-        let new_id = old_id;
         let redoing = false;
+        if (redo_payload != null) {
+            redoing = true;
+            annotation_id = redo_payload.annid;
+        }
 
         // Grab constants for convenience
         const current_subtask = this.subtasks[this.state["current_subtask"]]
         const annotations = current_subtask["annotations"]["access"]
+        const spatial_type = annotations[annotation_id]["spatial_type"]
 
-        if (redo_payload != null) {
-            redoing = true;
-            annotation_id = redo_payload.annid;
-            old_id = redo_payload.old_id;
-        }
+        // Deprecate the annotation and redraw it
+        mark_deprecated(annotations[annotation_id], true)
+        this.redraw_annotation(annotation_id);
 
-        let annotation_mode = annotations[old_id]["spatial_type"];
-        let is_spatial = !NONSPATIAL_MODES.includes(annotation_mode);
-
-        let deprecate_old = false;
-        if (!annotations[old_id]["new"] && !DELETE_MODES.includes(annotation_mode)) {
-            // Make new id and record that you did
-            deprecate_old = true;
-            if (!redoing) {
-                new_id = this.make_new_annotation_id();
-            }
-            else {
-                new_id = redo_payload.new_id;
-            }
-
-            // Make new annotation (copy of old)
-            annotations[new_id] = JSON.parse(JSON.stringify(annotations[old_id]));
-            annotations[new_id]["id"] = new_id;
-            annotations[new_id]["created_by"] = this.config["annotator"];
-            annotations[new_id]["new"] = true;
-            annotations[new_id]["parent_id"] = old_id;
-            if (is_spatial) {
-                annotations[new_id]["canvas_id"] = this.get_init_canvas_context_id(new_id);
-            }
-            current_subtask["annotations"]["ordering"].push(new_id);
-
-            // Set parent_id and deprecated = true
-            mark_deprecated(annotations[old_id], true)
-            // Redraw the old annotation
-            this.redraw_annotation(old_id);
-
-            // Work with new annotation from now on
-            annotation_id = new_id;
-        }
-
-        if (current_subtask["state"]["active_id"] != null) {
+        if (current_subtask["state"]["active_id"] !== null) {
             current_subtask["state"]["active_id"] = null;
             current_subtask["state"]["is_in_edit"] = false;
             current_subtask["state"]["is_in_move"] = false;
             current_subtask["state"]["is_in_progress"] = false;
             current_subtask["state"]["starting_complex_polygon"] = false;
         }
-        mark_deprecated(annotations[annotation_id], true)
-        this.redraw_annotation(annotation_id);
+
         this.hide_global_edit_suggestion();
 
         let frame = this.state["current_frame"];
-        if (MODES_3D.includes(annotation_mode)) {
+        if (MODES_3D.includes(spatial_type)) {
             frame = null;
         }
 
@@ -3676,29 +3746,21 @@ export class ULabel {
                 frame: frame,
                 undo_payload: {
                     annid: annotation_id,
-                    deprecate_old: deprecate_old,
-                    old_id: old_id,
-                    new_id: new_id,
-                    suggest_edits: true,
                 },
                 redo_payload: {
                     annid: annotation_id,
-                    deprecate_old: deprecate_old,
-                    old_id: old_id,
-                    new_id: new_id,
-                    suggest_edits: true,
                 }
             }, redoing);
         }
 
-        // If the annotation is a polyline and the filter distance toolboxitem is present, then filter annotations on annotation deletion
-        if (annotations[annotation_id].spatial_type === "polyline" && this.toolbox_order.includes(AllowedToolboxItem.FilterDistance)) {
-            filter_points_distance_from_line(this)
+        // Ensure there are no lingering enders
+        if (spatial_type === "polygon" || spatial_type === "polyline" || spatial_type === "delete_polygon") {
+            this.destroy_polygon_ender(annotation_id);
         }
 
-        // Ensure there are no lingering enders
-        if (annotation_mode === "polygon" || annotation_mode === "polyline" || annotation_mode === "delete_polygon") {
-            this.destroy_polygon_ender(annotation_id);
+        // Force filter points if necessary
+        if (spatial_type === "polyline") {
+            this.update_filter_distance(annotation_id, false, true);
         }
 
         // Update class counter
@@ -3707,38 +3769,17 @@ export class ULabel {
 
     delete_annotation__undo(undo_payload) {
         let active_id = undo_payload.annid;
-        const annotations = this.subtasks[this.state["current_subtask"]]["annotations"]
-        if (undo_payload.deprecate_old) {
-            // Set the active id to the old id
-            active_id = undo_payload.old_id;
+        const annotations = this.subtasks[this.state["current_subtask"]]["annotations"]["access"];
 
-            // Mark the active id undeprecated
-            mark_deprecated(annotations["access"][active_id], false);
-
-            // Delete the annotation with the new id that's being undone
-            delete annotations["access"][undo_payload.new_id];
-
-            // Remove deleted annotation from ordering
-            const index = annotations["ordering"].indexOf(undo_payload.new_id);
-            annotations["ordering"].splice(index, 1);
-        }
-        else {
-            // Set the annotation to be undeprecated
-            mark_deprecated(annotations["access"][undo_payload.annid], false);
-        }
-
-        // Handle visuals
+        // Set the annotation to be undeprecated and redraw it
+        mark_deprecated(annotations[active_id], false);
         this.redraw_annotation(active_id);
-        if (undo_payload.suggest_edits) {
-            this.suggest_edits(this.state["last_move"]);
-        }
 
-        // If the filter distance toolboxitem is present,
-        // And if the active annotation is a polyline,
-        // Then filter annotations on annotation deletion
-        if (annotations["access"][active_id]["spatial_type"] && this.toolbox_order.includes(AllowedToolboxItem.FilterDistance)) {
-            filter_points_distance_from_line(this);
-        }
+        // Show dialogs
+        this.suggest_edits(this.state["last_move"]);
+
+        // Filter points if necessary
+        this.update_filter_distance(active_id, false);
 
         // Update class counter
         this.toolbox.redraw_update_items(this);
@@ -4179,7 +4220,6 @@ export class ULabel {
 
         let new_annotation = {
             "id": unq_id,
-            "new": true,
             "parent_id": null,
             "created_by": this.config["annotator"],
             "created_at": ULabel.get_time(),
@@ -4307,7 +4347,6 @@ export class ULabel {
         // Add this annotation to annotations object
         this.subtasks[subtask]["annotations"]["access"][unq_id] = {
             "id": unq_id,
-            "new": true,
             "parent_id": null,
             "created_by": this.config["annotator"],
             "created_at": ULabel.get_time(),
@@ -4628,13 +4667,6 @@ export class ULabel {
                             }
                         }
                     }
-
-                    // If the FilterDistance ToolboxItem is present, filter points with this new polyline present
-                    if (this.toolbox_order.includes(AllowedToolboxItem.FilterDistance)) {
-                        // Currently only supported by polyline
-                        filter_points_distance_from_line(this);
-                        this.toolbox.redraw_update_items(this);
-                    }
                     break;
                 case "contour":
                     if (GeometricUtils.l2_norm(ms_loc, spatial_payload.at(-1)) * this.config["px_per_px"] > 3) {
@@ -4651,6 +4683,7 @@ export class ULabel {
                     break;
             }
             this.redraw_annotation(actid);
+            this.update_filter_distance_during_polyline_move(actid);
         }
     }
 
@@ -5001,38 +5034,12 @@ export class ULabel {
         const current_subtask = this.subtasks[this.state["current_subtask"]]
         const annotations = current_subtask["annotations"]["access"]
 
-        // Handle case of editing an annotation that was not originally created by you
-        let deprecate_old = false;
-        let old_id = current_subtask["state"]["edit_candidate"]["annid"];
-        let new_id = old_id;
-        // TODO(3d)
-        if (!annotations[old_id]["new"]) {
-            // Make new id and record that you did
-            deprecate_old = true;
-            new_id = this.make_new_annotation_id();
-
-            // Make new annotation (copy of old)
-            annotations[new_id] = JSON.parse(JSON.stringify(annotations[old_id]));
-            annotations[new_id]["id"] = new_id;
-            annotations[new_id]["created_by"] = this.config["annotator"];
-            annotations[new_id]["new"] = true;
-            annotations[new_id]["parent_id"] = old_id;
-            if (!NONSPATIAL_MODES.includes(annotations[new_id]["spatial_type"])) {
-                annotations[new_id]["canvas_id"] = this.get_init_canvas_context_id(new_id);
-            }
-            this.subtasks[this.state["current_subtask"]]["annotations"]["ordering"].push(new_id);
-
-            // Set parent_id and deprecated = true
-            mark_deprecated(annotations[old_id], true)
-            // Redraw the old annotation
-            this.redraw_annotation(old_id);
-
-            // Change edit candidate to new id
-            this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"]["annid"] = new_id;
-        }
-
-        current_subtask["state"]["active_id"] = current_subtask["state"]["edit_candidate"]["annid"];
+        // Set global params
+        const active_id = current_subtask["state"]["edit_candidate"]["annid"];
+        current_subtask["state"]["active_id"] = active_id;
         current_subtask["state"]["is_in_edit"] = true;
+
+        // Get the edit information and render the edit
         const edit_candidate = current_subtask["state"]["edit_candidate"];
         let starting_point = this.get_with_access_string(current_subtask["state"]["edit_candidate"]["annid"], edit_candidate["access"]);
         this.edit_annotation(mouse_event);
@@ -5040,7 +5047,7 @@ export class ULabel {
         let gmx = this.get_global_mouse_x(mouse_event);
         let gmy = this.get_global_mouse_y(mouse_event);
 
-        let annotation_mode = annotations[new_id]["spatial_type"];
+        let annotation_mode = annotations[active_id]["spatial_type"];
         let frame = this.state["current_frame"];
         if (MODES_3D.includes(annotation_mode)) {
             frame = null;
@@ -5050,23 +5057,17 @@ export class ULabel {
             act_type: "edit_annotation",
             frame: frame,
             undo_payload: {
-                actid: this.subtasks[this.state["current_subtask"]]["state"]["active_id"],
+                actid: active_id,
                 edit_candidate: edit_candidate,
                 starting_x: starting_point[0],
                 starting_y: starting_point[1],
-                deprecate_old: deprecate_old,
-                old_id: old_id,
-                new_id: new_id
             },
             redo_payload: {
-                actid: this.subtasks[this.state["current_subtask"]]["state"]["active_id"],
+                actid: active_id,
                 edit_candidate: edit_candidate,
                 ending_x: gmx,
                 ending_y: gmy,
                 finished: false,
-                deprecate_old: deprecate_old,
-                old_id: old_id,
-                new_id: new_id
             }
         });
     }
@@ -5110,13 +5111,7 @@ export class ULabel {
                     current_subtask["state"]["edit_candidate"]["point"] = mouse_location;
                     this.show_edit_suggestion(current_subtask["state"]["edit_candidate"], true);
                     this.show_global_edit_suggestion(current_subtask["state"]["edit_candidate"]["annid"]);
-
-                    // If the FilterDistance ToolboxItem is present, filter annotations on annotation edit
-                    if (this.toolbox_order.includes(AllowedToolboxItem.FilterDistance)) {
-                        // Currently only supported by polyline
-                        filter_points_distance_from_line(this)
-                        this.toolbox.redraw_update_items(this);
-                    }
+                    this.update_filter_distance_during_polyline_move(active_id)
                     break;
                 case "contour":
                     // TODO contour editing
@@ -5131,92 +5126,44 @@ export class ULabel {
 
     edit_annotation__undo(undo_payload) {
         // Convenience
-        const current_subtask = this.subtasks[this.state["current_subtask"]]
-        const annotations = current_subtask["annotations"]["access"]
-
         let active_id = undo_payload.actid;
-        if (undo_payload.deprecate_old) {
-            active_id = undo_payload.old_id;
-            // TODO(3d)
-            // Undeprecate the active annotation
-            mark_deprecated(annotations[active_id], false)
 
-            // Delete the new annotation which is being undone
-            this.destroy_annotation_context(undo_payload.new_id);
-            delete annotations[undo_payload.new_id];
-
-            // Remove deleted annotation from ordering
-            const index = this.subtasks[this.state["current_subtask"]]["annotations"]["ordering"].indexOf(undo_payload.new_id)
-            this.subtasks[this.state["current_subtask"]]["annotations"]["ordering"].splice(index, 1);
-        }
-
-        // Get the mouse location
-        const mouse_location = [
+        // Get the location where the annotation was before the edit
+        const undo_location = [
             undo_payload.starting_x,
             undo_payload.starting_y
         ];
 
-        this.set_with_access_string(active_id, undo_payload.edit_candidate["access"], mouse_location, true);
+        // Revert the annotation to its previous state and redraw
+        this.set_with_access_string(active_id, undo_payload.edit_candidate["access"], undo_location, true);
         this.rebuild_containing_box(active_id);
         this.redraw_annotation(active_id);
         this.suggest_edits(this.state["last_move"]);
+
+        // Filter points if necessary
+        this.update_filter_distance(active_id);
     }
 
     edit_annotation__redo(redo_payload) {
         // Convenience
         const current_subtask = this.subtasks[this.state["current_subtask"]]
         const annotations = current_subtask["annotations"]["access"]
-
         let actid = redo_payload.actid;
-        if (redo_payload.deprecate_old) {
-            actid = redo_payload.new_id;
-            // TODO(3d)
-            annotations[redo_payload.new_id] = JSON.parse(JSON.stringify(annotations[redo_payload.old_id]));
-            annotations[redo_payload.new_id]["id"] = redo_payload.new_id;
-            annotations[redo_payload.new_id]["created_by"] = this.config["annotator"];
-            annotations[redo_payload.new_id]["new"] = true;
-            annotations[redo_payload.new_id]["parent_id"] = redo_payload.old_id;
-            if (!NONSPATIAL_MODES.includes(annotations[redo_payload.new_id]["spatial_type"])) {
-                annotations[redo_payload.new_id]["canvas_id"] = this.get_init_canvas_context_id(redo_payload.new_id);
-            }
-
-            // Mark the old annotation as deprecated
-            mark_deprecated(annotations[redo_payload.old_id], true)
-            // Redraw old annotation
-            this.redraw_annotation(redo_payload.old_id);
-
-            // Add the new annotation to the ordering array
-            current_subtask["annotations"]["ordering"].push(redo_payload.new_id);
-        }
         const ms_loc = [
             redo_payload.ending_x,
             redo_payload.ending_y
         ];
         const cur_loc = this.get_with_access_string(redo_payload.actid, redo_payload.edit_candidate["access"]);
-        // TODO(3d)
         const spatial_type = annotations[actid]["spatial_type"]
         switch (spatial_type) {
-            case "bbox":
-                this.set_with_access_string(actid, redo_payload.edit_candidate["access"], ms_loc);
-                this.rebuild_containing_box(actid);
-                this.redraw_annotation(actid);
-                this.suggest_edits(this.state["last_move"]);
-                break;
             case "bbox3":
                 ms_loc.push(redo_payload.ending_frame);
-                this.set_with_access_string(actid, redo_payload.edit_candidate["access"], ms_loc);
-                this.rebuild_containing_box(actid);
-                this.redraw_annotation(actid);
-                this.suggest_edits(this.state["last_move"]);
-                break;
-            case "polygon":
-            case "polyline":
                 this.set_with_access_string(actid, redo_payload.edit_candidate["access"], ms_loc, false);
                 this.rebuild_containing_box(actid);
                 this.redraw_annotation(actid);
                 this.suggest_edits(this.state["last_move"]);
                 break;
-            case "tbar":
+            default:
                 this.set_with_access_string(actid, redo_payload.edit_candidate["access"], ms_loc, false);
                 this.rebuild_containing_box(actid);
                 this.redraw_annotation(actid);
@@ -5224,9 +5171,11 @@ export class ULabel {
                 break;
 
         }
-        let annotation_mode = annotations[actid]["spatial_type"];
+        // Filter points if necessary
+        this.update_filter_distance(actid);
+
         let frame = this.state["current_frame"];
-        if (MODES_3D.includes(annotation_mode)) {
+        if (MODES_3D.includes(spatial_type)) {
             frame = null;
         }
         this.record_action({
@@ -5237,9 +5186,6 @@ export class ULabel {
                 edit_candidate: redo_payload.edit_candidate,
                 starting_x: cur_loc[0],
                 starting_y: cur_loc[1],
-                deprecate_old: redo_payload.deprecate_old,
-                old_id: redo_payload.old_id,
-                new_id: redo_payload.new_id
             },
             redo_payload: {
                 actid: redo_payload.actid,
@@ -5247,58 +5193,22 @@ export class ULabel {
                 ending_x: redo_payload.ending_x,
                 ending_y: redo_payload.ending_y,
                 finished: true,
-                deprecate_old: redo_payload.deprecate_old,
-                old_id: redo_payload.old_id,
-                new_id: redo_payload.new_id
             }
         }, true);
     }
 
     begin_move(mouse_event) {
         // Convenience
-        const current_subtask = this.subtasks[this.state["current_subtask"]]
-        const annotations = current_subtask["annotations"]["access"]
+        const current_subtask = this.subtasks[this.state["current_subtask"]];
+        const annotations = current_subtask["annotations"]["access"];
+        const active_id = current_subtask["state"]["move_candidate"]["annid"];
 
-        let deprecate_old = false;
-        let old_id = this.subtasks[this.state["current_subtask"]]["state"]["move_candidate"]["annid"];
-        let new_id = old_id;
-        // TODO(3d)
-        if (!annotations[old_id]["new"]) {
-            // Make new id and record that you did
-            deprecate_old = true;
-            new_id = this.make_new_annotation_id();
-
-            // Make new annotation (copy of old)
-            annotations[new_id] = JSON.parse(JSON.stringify(annotations[old_id]));
-            annotations[new_id]["id"] = new_id;
-            annotations[new_id]["created_by"] = this.config["annotator"];
-            annotations[new_id]["new"] = true;
-            annotations[new_id]["parent_id"] = old_id;
-            if (!NONSPATIAL_MODES.includes(annotations[new_id]["spatial_type"])) {
-                annotations[new_id]["canvas_id"] = this.get_init_canvas_context_id(new_id);
-            }
-            current_subtask["annotations"]["ordering"].push(new_id);
-
-            // Set parent_id and deprecated = true
-            mark_deprecated(annotations[old_id], true);
-            // Redraw the old annotation
-            this.redraw_annotation(old_id);
-
-            // Change edit candidate to new id
-            current_subtask["state"]["move_candidate"]["annid"] = new_id;
-        }
-
-        current_subtask["state"]["active_id"] = current_subtask["state"]["move_candidate"]["annid"];
+        // Set global params
+        current_subtask["state"]["active_id"] = active_id;
         current_subtask["state"]["is_in_move"] = true;
 
-        // Revise start to current button center
-        // TODO
-        /*
-        this.drag_state["move"]["mouse_start"][0] = mouse_event.target.pageX 
-        this.drag_state["move"]["mouse_start"][1] +=
-        */
         const move_candidate = current_subtask["state"]["move_candidate"];
-        const annotation_mode = annotations[new_id]["spatial_type"];
+        const annotation_mode = annotations[active_id]["spatial_type"];
         let frame = this.state["current_frame"];
         if (MODES_3D.includes(annotation_mode)) {
             frame = null;
@@ -5308,25 +5218,19 @@ export class ULabel {
             act_type: "move_annotation",
             frame: frame,
             undo_payload: {
-                actid: current_subtask["state"]["active_id"],
+                actid: active_id,
                 move_candidate: move_candidate,
                 diffX: 0,
                 diffY: 0,
                 diffZ: 0,
-                deprecate_old: deprecate_old,
-                old_id: old_id,
-                new_id: new_id
             },
             redo_payload: {
-                actid: this.subtasks[this.state["current_subtask"]]["state"]["active_id"],
+                actid: active_id,
                 move_candidate: move_candidate,
                 diffX: 0,
                 diffY: 0,
                 diffZ: 0,
                 finished: false,
-                deprecate_old: deprecate_old,
-                old_id: old_id,
-                new_id: new_id
             }
         });
         // Hide point edit suggestion
@@ -5566,6 +5470,8 @@ export class ULabel {
             current_subtask["state"]["is_in_progress"] = false;
         }
 
+        // Filter points if necessary
+        this.update_filter_distance(active_id, false);
         this.toolbox.redraw_update_items(this);
     }
 
@@ -5576,6 +5482,8 @@ export class ULabel {
         this.redraw_annotation(undo_payload.actid);
         // Update dialogs
         this.suggest_edits(this.state["last_move"]);
+        // Filter points if necessary
+        this.update_filter_distance(undo_payload.actid, false);
         // Update toolbox counter
         this.toolbox.redraw_update_items(this);
     }
@@ -5598,6 +5506,8 @@ export class ULabel {
         }, true);
         // Update dialogs
         this.suggest_edits(this.state["last_move"]);
+        // Filter points if necessary
+        this.update_filter_distance(redo_payload.actid, false);
         // Update toolbox counter
         this.toolbox.redraw_update_items(this);
     }
@@ -5638,13 +5548,15 @@ export class ULabel {
         // Set mode to no active annotation
         this.subtasks[this.state["current_subtask"]]["state"]["active_id"] = null;
         this.subtasks[this.state["current_subtask"]]["state"]["is_in_edit"] = false;
+
+        // Filter points if necessary
+        this.update_filter_distance(actid);
     }
 
     move_annotation(mouse_event) {
         // Convenience
         const current_subtask = this.subtasks[this.state["current_subtask"]]
         const active_id = current_subtask["state"]["active_id"];
-        const active_annotation = current_subtask["annotations"]["access"][active_id]
 
         if (active_id && (active_id !== null)) {
             let offset = {
@@ -5654,19 +5566,10 @@ export class ULabel {
                 "diffZ": this.state["current_frame"] - this.drag_state["move"]["mouse_start"][2]
             };
 
-            // Check if the FilterDistance ToolboxItem is in this ULabel instance
-            // And that the current annotations is of type polyline
-            if (
-                this.toolbox_order.includes(AllowedToolboxItem.FilterDistance) &&
-                active_annotation["spatial_type"] === "polyline"
-            ) {
-                filter_points_distance_from_line(this, offset);
-                this.toolbox.redraw_update_items(this);
-            }
             this.redraw_annotation(active_id, null, offset);
             this.show_global_edit_suggestion(current_subtask["state"]["move_candidate"]["annid"], offset); // TODO handle offset
             this.reposition_dialogs();
-            return;
+            this.update_filter_distance_during_polyline_move(active_id, true, false, offset);
         }
     }
 
@@ -5716,8 +5619,8 @@ export class ULabel {
         this.subtasks[this.state["current_subtask"]]["annotations"]["access"][active_id]["containing_box"]["bry"] += diffY;
 
         switch (spatial_type) {
-            case "polygon":
             case "polyline":
+            case "polygon":
             case "bbox":
             case "bbox3":
             case "contour":
@@ -5734,6 +5637,9 @@ export class ULabel {
         this.redraw_annotation(active_id);
 
         this.record_finish_move(diffX, diffY, diffZ);
+
+        // Filter points if necessary
+        this.update_filter_distance(active_id);
     }
 
     move_annotation__undo(undo_payload) {
@@ -5745,50 +5651,34 @@ export class ULabel {
         const diffY = undo_payload.diffY;
         const diffZ = undo_payload.diffZ;
 
-        let active_id = undo_payload.move_candidate["annid"];
-        // TODO(3d)
-        if (undo_payload.deprecate_old) {
-            active_id = undo_payload.old_id;
+        const active_id = undo_payload.move_candidate["annid"];
+        const spatial_type = annotations[active_id]["spatial_type"];
+        const spatial_payload = annotations[active_id]["spatial_payload"];
+        let active_spatial_payload = spatial_payload;
 
-            // Mark the active annotation undeprecated
-            mark_deprecated(annotations[active_id], false)
+        // if a polygon, n_iters is the length the spatial payload
+        // else n_iters is 1
+        let n_iters = spatial_type === "polygon" ? spatial_payload.length : 1;
 
-            // Delete the new annotation that is being undone
-            this.destroy_annotation_context(undo_payload.new_id);
-            delete annotations[undo_payload.new_id];
-
-            // Remove the deleted annotation from the access array
-            let index = current_subtask["annotations"]["ordering"].indexOf(undo_payload.new_id);
-            current_subtask["annotations"]["ordering"].splice(index, 1);
-        } else {
-            const spatial_type = annotations[active_id]["spatial_type"];
-            let spatial_payload = annotations[active_id]["spatial_payload"];
-            let active_spatial_payload = spatial_payload;
-
-            // if a polygon, n_iters is the length the spatial payload
-            // else n_iters is 1
-            let n_iters = spatial_type === "polygon" ? spatial_payload.length : 1;
-
-            for (let i = 0; i < n_iters; i++) {
-                // for polygons, we need to move the points in each part of the spatial payload
-                if (spatial_type === "polygon") {
-                    active_spatial_payload = spatial_payload[i];
-                }
+        for (let i = 0; i < n_iters; i++) {
+            // for polygons, we need to move the points in each part of the spatial payload
+            if (spatial_type === "polygon") {
+                active_spatial_payload = spatial_payload[i];
+            }
 
 
-                for (var spi = 0; spi < active_spatial_payload.length; spi++) {
-                    active_spatial_payload[spi][0] += diffX;
-                    active_spatial_payload[spi][1] += diffY;
-                    if (active_spatial_payload[spi].length > 2) {
-                        active_spatial_payload[spi][2] += diffZ;
-                    }
+            for (var spi = 0; spi < active_spatial_payload.length; spi++) {
+                active_spatial_payload[spi][0] += diffX;
+                active_spatial_payload[spi][1] += diffY;
+                if (active_spatial_payload[spi].length > 2) {
+                    active_spatial_payload[spi][2] += diffZ;
                 }
             }
-            annotations[active_id]["containing_box"]["tlx"] += diffX;
-            annotations[active_id]["containing_box"]["brx"] += diffX;
-            annotations[active_id]["containing_box"]["tly"] += diffY;
-            annotations[active_id]["containing_box"]["bry"] += diffY;
         }
+        annotations[active_id]["containing_box"]["tlx"] += diffX;
+        annotations[active_id]["containing_box"]["brx"] += diffX;
+        annotations[active_id]["containing_box"]["tly"] += diffY;
+        annotations[active_id]["containing_box"]["bry"] += diffY;
 
         this.redraw_annotation(active_id);
         this.hide_edit_suggestion();
@@ -5796,6 +5686,8 @@ export class ULabel {
         this.reposition_dialogs();
         this.suggest_edits(this.state["last_move"]);
         this.update_frame(diffZ);
+        // Filter points if necessary
+        this.update_filter_distance(active_id);
     }
 
     move_annotation__redo(redo_payload) {
@@ -5807,30 +5699,9 @@ export class ULabel {
         const diffY = redo_payload.diffY;
         const diffZ = redo_payload.diffZ;
 
-        let active_id = redo_payload.move_candidate["annid"];
-        // TODO(3d)
-        if (redo_payload.deprecate_old) {
-            active_id = redo_payload.new_id;
-            annotations[active_id] = JSON.parse(JSON.stringify(annotations[redo_payload.old_id]));
-            annotations[redo_payload.new_id]["id"] = redo_payload.new_id;
-            annotations[redo_payload.new_id]["created_by"] = this.config["annotator"];
-            annotations[redo_payload.new_id]["new"] = true;
-            annotations[redo_payload.new_id]["parent_id"] = redo_payload.old_id;
-            if (!NONSPATIAL_MODES.includes(annotations[redo_payload.new_id]["spatial_type"])) {
-                annotations[redo_payload.new_id]["canvas_id"] = this.get_init_canvas_context_id(redo_payload.new_id);
-            }
-
-            // Mark old annotation deprecated
-            mark_deprecated(annotations[redo_payload.old_id], true)
-            // Redraw the old annotation
-            this.redraw_annotation(redo_payload.old_id);
-
-            // Add new annotation id to ordering array
-            current_subtask["annotations"]["ordering"].push(redo_payload.new_id);
-        }
-
+        const active_id = redo_payload.move_candidate["annid"];
         const spatial_type = annotations[active_id]["spatial_type"];
-        let spatial_payload = annotations[active_id]["spatial_payload"];
+        const spatial_payload = annotations[active_id]["spatial_payload"];
         let active_spatial_payload = spatial_payload;
 
         // if a polygon, n_iters is the length the spatial payload
@@ -5843,7 +5714,6 @@ export class ULabel {
                 active_spatial_payload = spatial_payload[i];
             }
         
-            // TODO(3d)
             for (var spi = 0; spi < active_spatial_payload.length; spi++) {
                 active_spatial_payload[spi][0] += diffX;
                 active_spatial_payload[spi][1] += diffY;
@@ -5863,10 +5733,10 @@ export class ULabel {
         this.hide_global_edit_suggestion();
         this.reposition_dialogs();
         this.suggest_edits(this.state["last_move"]);
+        this.update_filter_distance(active_id);
 
-        let annotation_mode = annotations[active_id]["spatial_type"];
         let frame = this.state["current_frame"];
-        if (MODES_3D.includes(annotation_mode)) {
+        if (MODES_3D.includes(spatial_type)) {
             frame = null;
         }
 
@@ -5874,25 +5744,19 @@ export class ULabel {
             act_type: "move_annotation",
             frame: frame,
             undo_payload: {
-                actid: current_subtask["state"]["active_id"],
+                actid: active_id,
                 move_candidate: redo_payload.move_candidate,
                 diffX: -diffX,
                 diffY: -diffY,
                 diffZ: -diffZ,
-                deprecate_old: redo_payload.deprecate_old,
-                old_id: redo_payload.old_id,
-                new_id: redo_payload.new_id
             },
             redo_payload: {
-                actid: current_subtask["state"]["active_id"],
+                actid: active_id,
                 move_candidate: redo_payload.move_candidate,
                 diffX: diffX,
                 diffY: diffY,
                 diffZ: diffZ,
                 finished: true,
-                deprecate_old: redo_payload.deprecate_old,
-                old_id: redo_payload.old_id,
-                new_id: redo_payload.new_id
             }
         }, true);
         this.update_frame(diffZ);
@@ -6437,12 +6301,14 @@ export class ULabel {
             this.show_global_edit_suggestion(annotation_id);
         }
 
-        // TODO: Check to make sure the clicked annotation was a polyline
-        // If the filter_distance_toolbox_item exists, filter annotations if in multi_class_mode
-        if (this.filter_distance_overlay !== undefined) {
-            // Probably not good practice to get the mode from the overlay instead of the toolboxitem but this is easier
-            if (this.filter_distance_overlay.get_mode() === "multi") {
-                filter_points_distance_from_line(this)
+        // If the filter_distance_toolbox_item exists, 
+        // Check if the FilterDistance ToolboxItem is in this ULabel instance
+        if (this.toolbox_order.includes(AllowedToolboxItem.FilterDistance)) {
+            // Get the toolbox item
+            const filter_distance_toolbox_item = this.toolbox.items.filter(item => item.get_toolbox_item_type() === "FilterDistance")[0];
+            // filter annotations if in multi_class_mode
+            if (filter_distance_toolbox_item.multi_class_mode) {
+                filter_points_distance_from_line(this, true);
             }
         }
 
@@ -6700,7 +6566,6 @@ export class ULabel {
                 }
                 break;
             case "edit":
-                // TODO should be finish edit, right?
                 this.finish_edit();
                 break;
             case "move":
@@ -6902,6 +6767,8 @@ export class ULabel {
         ULabel.initialize_annotation_canvases(this, subtask);
         // Redraw all annotations to render them
         this.redraw_all_annotations(subtask);
+        // Calculate distances for all annotations if FilterDistance is present
+        this.update_filter_distance(null, false, true)
         // Update class counter in toolbox
         this.toolbox.redraw_update_items(this);
     }

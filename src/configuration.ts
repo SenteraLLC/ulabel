@@ -26,6 +26,24 @@ export enum AllowedToolboxItem {
     Brush,            // 9
 }
 
+export const DEFAULT_N_ANNOS_PER_CANVAS: number = 100;
+export const TARGET_MAX_N_CANVASES_PER_SUBTASK: number = 8;
+export const DEFAULT_FILTER_DISTANCE_CONFIG: FilterDistanceConfig = {
+    "name": "Filter Distance From Row",
+    "component_name": "filter-distance-from-row",
+    "filter_min": 0,
+    "filter_max": 400,
+    "default_values": {closest_row: {distance: 40}},
+    "step_value": 2,
+    "multi_class_mode": false,
+    "disable_multi_class_mode": false,
+    "filter_on_load": true,
+    "show_options": true,
+    "show_overlay": false,
+    "toggle_overlay_keybind": "p",
+    "filter_during_polyline_move": true,
+}
+
 export class Configuration {
     public toolbox_map = new Map<AllowedToolboxItem, any> ([
         [AllowedToolboxItem.ModeSelect, ModeSelectionToolboxItem],
@@ -67,19 +85,7 @@ export class Configuration {
     }
 
     // Config for FilterDistanceToolboxItem
-    public distance_filter_toolbox_item: FilterDistanceConfig = {
-        "name": "Filter Distance From Row",
-        "component_name": "filter-distance-from-row",
-        "filter_min": 0,
-        "filter_max": 400,
-        "default_values": {"single": 40},
-        "step_value": 2,
-        "multi_class_mode": false,
-        "filter_on_load": true,
-        "show_options": true,
-        "toggle_overlay_keybind": "p",
-        "show_overlay_on_load": false
-    }
+    public distance_filter_toolbox_item: FilterDistanceConfig = DEFAULT_FILTER_DISTANCE_CONFIG; 
 
     public change_zoom_keybind: string = "r";
 
@@ -106,6 +112,8 @@ export class Configuration {
     public increase_brush_size_keybind: string = "]"
 
     public decrease_brush_size_keybind: string = "["
+
+    public n_annos_per_canvas: number = DEFAULT_N_ANNOS_PER_CANVAS;
 
     constructor(...kwargs: {[key: string]: unknown}[]) {
         this.modify_config(...kwargs)

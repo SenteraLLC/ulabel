@@ -3,14 +3,13 @@ import {
     ULabel, 
     ULabelSpatialType, 
     DeprecatedBy, 
-    AnnotationClassDistanceData, 
+    DistanceFromPolylineClasses, 
     FilterDistanceOverride, 
     ValidDeprecatedBy,
     ClassDefinition
 } from "..";
 
 import { ULabelAnnotation } from "./annotation";
-import { ULabelSubtask } from "./subtask";
 
 /**
  * Returns the confidence of the passed in ULabelAnnotation.
@@ -238,56 +237,161 @@ function get_distance_from_point_to_line(point_annotation: ULabelAnnotation, lin
 }
 
 /**
- * Assigns each point annotation a distance from each diffrent class of row. Will also update the distance from any row.
+ * Wrapper for assign_closest_line_to_single_point()
  * 
  * @param point_annotations Set of point annotations
  * @param line_annotations Set of line annotations
  * @param offset Offset of a particular annotation in the set. Used when an annotation is being moved by the user
  */
-export function assign_distance_from_line(
+export function assign_closest_line_to_each_point(
     point_annotations: ULabelAnnotation[],
     line_annotations: ULabelAnnotation[],
-    offset: Offset = null) {
+    offset: Offset = null
+) {
     // Loop through every point and assign it a distance from line
     point_annotations.forEach(current_point => {
-
-        // Create a DistanceFrom object to be assigned to this point
-        let distance_from: AnnotationClassDistanceData = {"single": undefined}
-
-        // Calculate the distance from each line and populate the distance_from accordingly
-        line_annotations.forEach(current_line => {
-
-            const line_class_id = get_annotation_class_id(current_line)
-            
-            const distance = get_distance_from_point_to_line(current_point, current_line, offset)
-
-            // If the distance from the current class is undefined, then set it
-            // Otherwise replace the value if the current distance is less than the one set
-            if (distance_from[line_class_id] === undefined || distance < distance_from[line_class_id]) {
-                distance_from[line_class_id] = distance
-            }
-
-            // Likewise check to see if the current distance is less than a line of any class
-            if (distance_from["single"] === undefined || distance < distance_from["single"]) {
-                distance_from["single"] = distance
-            }
-        })
-
-        // Assign the distance from object to the current point
-        current_point.distance_from = distance_from
+        assign_closest_line_to_single_point(current_point, line_annotations, offset)
     })
 }
+
+
+/**
+ * Assigns a single point annotation a distance to the closest polyline
+ * from each diffrent class of polyline, as well as the distance from
+ * the closest line, regardless of class.
+ * 
+ * @param point_annotation single point annotation
+ * @param line_annotations set of line annotations
+ * @param offset Offset of a particular annotation in the set. Used when an annotation is being moved by the user
+ */
+export function assign_closest_line_to_single_point(
+    point_annotation: ULabelAnnotation,
+    line_annotations: ULabelAnnotation[],
+    offset: Offset = null
+) {
+    // Create a new distance_from object for the point annotation
+    let distance_from: DistanceFromPolylineClasses = {closest_row: {distance: Infinity}}
+
+    // Calculate the distance from each line and populate the distance_from accordingly
+    line_annotations.forEach(current_line => {
+        const line_class_id = get_annotation_class_id(current_line)
+        const distance = get_distance_from_point_to_line(point_annotation, current_line, offset)
+
+        // If the distance from the current class is undefined, then set it
+        // Otherwise replace the value if the current distance is less than the one set
+        if (distance_from[line_class_id] === undefined || distance < distance_from[line_class_id].distance) {
+            distance_from[line_class_id] = {
+                distance: distance, 
+                polyline_id: current_line.id,
+            }
+        }
+
+        // Likewise check to see if the current distance is less than a line of any class
+        if (distance < distance_from.closest_row.distance) {
+            distance_from.closest_row = {
+                distance: distance,
+                polyline_id: current_line.id,
+            }
+        }
+    })
+
+    // Assign the distance from object to the current point
+    point_annotation.distance_from = distance_from
+}
+
+
+/**
+ * Update the distance from a single line to each point annotation.
+ * If a line was previously the closest line to a point, then the distance from that point to ALL lines will be recalculated.
+ * Used when a single polyline is modified.
+ * 
+ * @param line_annotation line annotation
+ * @param point_annotations all point annotations
+ * @param all_line_annotations all line annotations
+ * @param offset offset of the line annotation
+ */
+export function update_distance_from_line_to_each_point(
+    line_annotation: ULabelAnnotation,
+    point_annotations: ULabelAnnotation[],
+    all_line_annotations: ULabelAnnotation[],
+    offset: Offset = null
+) {
+    // Get the class id of the line annotation
+    const line_class_id = get_annotation_class_id(line_annotation)
+
+    // Loop through each point and update the distance from the line to the point
+    point_annotations.forEach(current_point => {
+        // Check if the line was the closest line to the point for any class
+        if (is_closest_line_to_point(line_annotation.id, current_point)) {
+            // Recalculate the distance from the point to all lines, since this may no longer be its closest line
+            assign_closest_line_to_single_point(current_point, all_line_annotations, offset)
+        } else {
+            // Otherwise only update the distance from the line to the point
+            const distance = get_distance_from_point_to_line(current_point, line_annotation, offset)
+
+            // Check if the line is the closest line of its class to the point
+            if (
+                current_point.distance_from[line_class_id] === undefined ||
+                distance < current_point.distance_from[line_class_id].distance
+            ) {
+                current_point.distance_from[line_class_id] = {
+                    distance: distance,
+                    polyline_id: line_annotation.id,
+                }
+            }
+
+            // Check if the line is the closest line to the point
+            if (
+                current_point.distance_from.closest_row === undefined ||
+                distance < current_point.distance_from.closest_row.distance
+            ) {
+                current_point.distance_from.closest_row = {
+                    distance: distance,
+                    polyline_id: line_annotation.id,
+                }
+            }
+        }
+    })
+}
+
+
+/**
+ * Check if a line is the closest line to a point annotation,
+ * either the closest line for any class or the closest line for a specific class.
+ * 
+ * @param line_id polyline id
+ * @param point_annotation point annotation
+ * @returns whether the line is the closest line to the point
+ */
+export function is_closest_line_to_point(line_id: string, point_annotation: ULabelAnnotation): boolean {
+    // Check if the distance_from is undefined
+    if (point_annotation.distance_from === undefined) {
+        console.error("is_closest_line_to_point called on a point without a distance_from object");
+    }
+
+    // Loop through each class in the distance_from object
+    for (let class_id in point_annotation.distance_from) {
+        // Check if the line id matches the closest line id for any class
+        if (
+            point_annotation.distance_from[class_id] !== undefined &&
+            point_annotation.distance_from[class_id].polyline_id === line_id
+        ) {
+            return true
+        }
+    }
+
+    return false
+}
+
 
 export function get_point_and_line_annotations(ulabel: ULabel): [ULabelAnnotation[], ULabelAnnotation[]] {
     // Initialize set of all point and line annotations
     let point_annotations: ULabelAnnotation[] = []
     let line_annotations: ULabelAnnotation[] = []
 
-    const subtasks: ULabelSubtask[] = Object.values(ulabel.subtasks)
-
     // Go through all annotations to populate a set of all point annotations and a set of all line annotations
     // First loop through each subtask
-    for (let subtask of subtasks) {
+    for (let [subtask_key, subtask] of Object.entries(ulabel.subtasks)) {
 
         // Then go through each annotation in the subtask
         for (let annotation_key in subtask.annotations.access) {
@@ -296,6 +400,8 @@ export function get_point_and_line_annotations(ulabel: ULabel): [ULabelAnnotatio
             // Check for annotation type and push the annotation into the appropriate array
             switch(annotation.spatial_type) {
                 case "point" as ULabelSpatialType:
+                    // Note the annotation's subtask
+                    annotation.subtask_key = subtask_key
                     // Add the point annotation to the set
                     point_annotations.push(annotation)
                     break
@@ -319,10 +425,11 @@ export function get_point_and_line_annotations(ulabel: ULabel): [ULabelAnnotatio
  * from a polyline annotation.
  * 
  * @param ulabel ULabel object
+ * @param recalculate_distances whether to recalculate the distance from each point to the nearest line
  * @param offset Offset of a particular annotation. Used when filter is called while an annotation is being moved
  * @param override Used to filter annotations without calling the dom
  */
-export function filter_points_distance_from_line(ulabel: ULabel, offset: Offset = null, override: FilterDistanceOverride = null) {
+export function filter_points_distance_from_line(ulabel: ULabel, recalculate_distances: boolean = false, offset: Offset = null, override: FilterDistanceOverride = null) {
 
     // Get a set of all point and polyline annotations
     const annotations: [ULabelAnnotation[], ULabelAnnotation[]] = get_point_and_line_annotations(ulabel)
@@ -330,12 +437,10 @@ export function filter_points_distance_from_line(ulabel: ULabel, offset: Offset 
     const line_annotations: ULabelAnnotation[] = annotations[1]
 
     // Initialize variables to hold info required from the dom
-    let multi_class_mode: boolean
+    let multi_class_mode: boolean = false;
     let show_overlay: boolean
     let should_redraw: boolean
-    let distances: AnnotationClassDistanceData = { 
-        "single": null // It gets angry if you don't initilize the single property
-    }
+    let distances: DistanceFromPolylineClasses = {closest_row: undefined}
 
     // If the override is null grab the necessary info from the dom
     if (override === null) {
@@ -348,10 +453,6 @@ export function filter_points_distance_from_line(ulabel: ULabel, offset: Offset 
         const sliders: NodeListOf<HTMLInputElement> = document.querySelectorAll(".filter-row-distance-slider")
         
         // Check to make sure each element exists before trying to use
-        if (multi_checkbox === null) {
-            console.error("filter_points_distance_from_line could not find multi-class checkbox object")
-            return_early = true
-        }
         if (show_overlay_checkbox === null) {
             console.error("filter_points_distance_from_line could not find show_overlay checkbox object")
             return_early = true
@@ -363,16 +464,20 @@ export function filter_points_distance_from_line(ulabel: ULabel, offset: Offset 
 
         if (return_early) return
 
-        multi_class_mode = multi_checkbox.checked
+        // Checkbox may not exist if `disable_multi_class_mode` is set to true
+        if (multi_checkbox) {
+            multi_class_mode = multi_checkbox.checked
+        }
         show_overlay = show_overlay_checkbox.checked
 
         // Loop through each slider and populate distances
         for (let idx = 0; idx < sliders.length; idx++) {
-            // Use a regex to get the string after the final - character in the slider id (Which is the class id or the string "single")
+            // Use a regex to get the string after the final - character in the slider id (Which is the class id or the string "closest_row")
             const slider_class_name = /[^-]*$/.exec(sliders[idx].id)[0]
-
             // Use the class id as a key to store the slider's value
-            distances[slider_class_name] = sliders[idx].valueAsNumber
+            distances[slider_class_name] = {
+                distance: sliders[idx].valueAsNumber
+            }
         }
         
         // Always redraw when there's no override
@@ -385,37 +490,67 @@ export function filter_points_distance_from_line(ulabel: ULabel, offset: Offset 
         should_redraw = override.should_redraw // Useful for filtering before annotations have been rendered
     }
 
-    // Calculate and assign each point a distance from line value
-    assign_distance_from_line(point_annotations, line_annotations, offset)
+    if (recalculate_distances) {
+        // Calculate and assign each point a distance from line value
+        assign_closest_line_to_each_point(point_annotations, line_annotations, offset)
+    }
+
+    // Store which annotations need to be redrawn
+    let annotations_ids_to_redraw_by_subtask: {[key: string]: string[]} = {}
+    // Initialize the object with the subtask keys
+    for (let subtask_key in ulabel.subtasks) {
+        annotations_ids_to_redraw_by_subtask[subtask_key] = []
+    }
 
     // Filter each point based on current mode, distances, and its distance_from property
-    if (multi_class_mode) { // Multi-class mode
+    if (multi_class_mode) { 
         // Loop through each point and deprecate them if they fall outside the range of all lines
         point_annotations.forEach(annotation => {
             check_distances: {
                 for (const id in distances) {
                     // Ignore the single class slider
-                    if (id === "single") continue
+                    if (id === "closest_row") continue
     
-                    // If the annotation is smaller than the filter value for any id it passes
-                    if (annotation.distance_from[id] <= distances[id]) {
-                        mark_deprecated(annotation, false, "distance_from_row")
+                    // If the annotation is smaller than the filter value for any id, it passes
+                    if (
+                        annotation.distance_from[id] !== undefined &&
+                        annotation.distance_from[id].distance <= distances[id].distance
+                    ) {
+                        if (annotation.deprecated) {
+                            // Undeprecate the annotation
+                            mark_deprecated(annotation, false, "distance_from_row")
+                            annotations_ids_to_redraw_by_subtask[annotation.subtask_key].push(annotation.id)
+                        }
                         break check_distances
                     }
                 }
                 // Only here if break not called
+                if (!annotation.deprecated) {
+                    mark_deprecated(annotation, true, "distance_from_row")
+                    annotations_ids_to_redraw_by_subtask[annotation.subtask_key].push(annotation.id)
+                }
+            }
+        })
+    } else { 
+        // Single-class mode
+        point_annotations.forEach(annotation => {
+            const should_deprecate = annotation.distance_from.closest_row.distance > distances.closest_row.distance
+            // Only change deprecated status and redraw if it needs to be changed
+            if (should_deprecate && !annotation.deprecated) {
                 mark_deprecated(annotation, true, "distance_from_row")
+                annotations_ids_to_redraw_by_subtask[annotation.subtask_key].push(annotation.id)
+            } else if (!should_deprecate && annotation.deprecated) {
+                mark_deprecated(annotation, false, "distance_from_row")
+                annotations_ids_to_redraw_by_subtask[annotation.subtask_key].push(annotation.id)
             }
         })
     }
-    else { // Single-class mode
-        point_annotations.forEach(annotation => {
-            mark_deprecated(annotation, annotation.distance_from["single"] > distances["single"], "distance_from_row")
-        })
-    }
 
-    if (should_redraw){
-        ulabel.redraw_all_annotations(null, null, false)
+    if (should_redraw) {
+        // Redraw each subtask's annotations
+        for (let subtask_key in annotations_ids_to_redraw_by_subtask) {
+            ulabel.redraw_multiple_spatial_annotations(annotations_ids_to_redraw_by_subtask[subtask_key], subtask_key)
+        }
     } 
     
     // Ensure the overlay exists before trying to access it
@@ -424,17 +559,16 @@ export function filter_points_distance_from_line(ulabel: ULabel, offset: Offset 
             filter_distance_overlay currently does not exist.
             As such, unable to update distance overlay
         `)
-    }
-    else {
+    } else {
         // Update overlay properties first
         ulabel.filter_distance_overlay.update_annotations(line_annotations)
         ulabel.filter_distance_overlay.update_distances(distances)
-        ulabel.filter_distance_overlay.update_mode(multi_class_mode ? "multi" : "single")
+        ulabel.filter_distance_overlay.update_mode(multi_class_mode)
         ulabel.filter_distance_overlay.update_display_overlay(show_overlay)
 
         // Then redraw the overlay
         ulabel.filter_distance_overlay.draw_overlay(offset)
-    }  
+    }
 }
 
 /**

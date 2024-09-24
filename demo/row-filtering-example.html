@@ -662,7 +662,7 @@
                     "text_payload": "",
                     "annotation_meta": null,
                     "human_deprecated": false,
-                    "new": false,
+                    "new": true,
                     "created_at": "2023-02-22T00:16:01.606Z"
                 },
                 {
@@ -761,7 +761,14 @@
                 "username": "DemoUser",
                 "submit_buttons": on_submit,
                 "subtasks": subtasks,
-                "toolbox_order": [0, 1, 3, 6, 8, 2, 7, 4, 5]
+                "toolbox_order": [0, 1, 3, 6, 8, 2, 7, 4, 5],
+                "config_data": {
+                    "distance_filter_toolbox_item": {
+                        "show_overlay": true,
+                        // "disable_multi_class_mode": true,
+                        // "filter_during_polyline_move": false,
+                    }
+                }
             });
             // Wait for ULabel instance to finish initialization
             ulabel.init(function () {

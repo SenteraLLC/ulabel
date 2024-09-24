@@ -4,13 +4,18 @@ import { FilterDistanceOverlay } from "./src/overlays";
 import { ULabelSubtask } from "./src/subtask";
 import { Toolbox } from "./src/toolbox";
 
+export type DistanceFromPolyline = {
+    distance: number,
+    polyline_id?: string,
+}
+
 /**
- * Stores the current "distance from line" filter values.
- * "single" refers to the value of the single class distance filter while [key: number] is all of the polyline classes.
+ * Stores the current "distance from line" filter values, or the distance of a point to the closest lines.
+ * The key is the class id of the polyline. "closest_row" is a special key that stores the distance to the closest line.
  */
-export type AnnotationClassDistanceData = {
-    "single": number,
-    [key: number]: number
+export type DistanceFromPolylineClasses = {
+    closest_row: DistanceFromPolyline,
+    [key: number]: DistanceFromPolyline
 }
 
 export type AbstractPoint = {
@@ -42,7 +47,7 @@ export type DeprecatedBy = {
  * Primarily exists so that points can be filtered before the page loads.
  */
 export type FilterDistanceOverride = {
-    distances: AnnotationClassDistanceData,
+    distances: DistanceFromPolylineClasses,
     multi_class_mode: boolean,
     should_redraw: boolean,
     show_overlay: boolean
@@ -85,13 +90,15 @@ export type FilterDistanceConfig = {
     component_name?: string,
     filter_min?: number,
     filter_max?: number,
-    default_values?: AnnotationClassDistanceData,
+    default_values?: DistanceFromPolylineClasses,
     step_value?: number,
     multi_class_mode?: boolean,
+    disable_multi_class_mode?: boolean,
     filter_on_load?: boolean,
     show_options?: boolean,
+    show_overlay?: boolean,
     toggle_overlay_keybind?: string,
-    show_overlay_on_load?: boolean
+    filter_during_polyline_move?: boolean,
 }
 
 export type ULabelSubmitButton = {
@@ -185,6 +192,7 @@ export class ULabel {
     public set_annotations(annotations: ULabelAnnotation[], subtask: ULabelSubtask);
     public set_saved(saved: boolean);
     public redraw_all_annotations(subtask?: any, offset?: any, spatial_only?: any);
+    public redraw_multiple_spatial_annotations(annotation_ids: string[], subtask?: string, offset?: number)
     public show_annotation_mode(target_jq: JQuery<any>);
     public raise_error(message: string, level?: number);
     public rezoom(): void;

@@ -63,3 +63,34 @@ export function get_active_class_id(ulabel: ULabel): number {
     console.error(`get_active_class_id was unable to determine an active class id.
     current_subtask: ${JSON.stringify(current_subtask)}`)
 }
+
+
+/**
+ * Save an item to local storage
+ * 
+ * @param key item key
+ * @param value value to store
+ */
+export function set_local_storage_item(key: string, value: any): void {
+    localStorage.setItem(key, JSON.stringify(value));
+}
+
+
+/**
+ * Retrieve an item from local storage
+ * 
+ * @param key item key
+ * @returns value stored at key
+ */
+export function get_local_storage_item(key: string): any {
+    const item: string | null = localStorage.getItem(key)
+    if (item === null) return null
+    // Try to parse the item
+    // Catch syntax errors from invalid JSON
+    try {
+        return JSON.parse(item)
+    } catch (error) {
+        console.error(`Error parsing item from local storage: ${error}`)
+        return null
+    }
+}

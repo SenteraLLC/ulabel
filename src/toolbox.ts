@@ -1,10 +1,11 @@
 import { 
-    AnnotationClassDistanceData, 
+    DistanceFromPolylineClasses, 
     FilterDistanceConfig, 
     RecolorActiveConfig, 
     ULabel,
     ULabelSubmitButton, 
 } from "..";
+import { DEFAULT_FILTER_DISTANCE_CONFIG } from "./configuration";
 import { ULabelAnnotation, NONSPATIAL_MODES, DELETE_MODES } from "./annotation";
 import { ULabelSubtask } from "./subtask";
 import { 
@@ -17,7 +18,11 @@ import {
 } from "./annotation_operators";
 import { SliderHandler, get_idd_string } from "./html_builder";
 import { FilterDistanceOverlay } from "./overlays";
-import { get_active_class_id } from "./utilities";
+import { 
+    get_active_class_id, 
+    get_local_storage_item,
+    set_local_storage_item, 
+} from "./utilities";
 
 // For ResizeToolboxItem
 enum ValidResizeValues {
@@ -1520,11 +1525,11 @@ export class RecolorActiveItem extends ToolboxItem {
     }
 
     private save_local_storage_color(class_id: number | string, color: string): void {
-        localStorage.setItem(`RecolorActiveItem-${class_id}`, color)
+        set_local_storage_item(`RecolorActiveItem-${class_id}`, color)
     }
 
     private save_local_storage_gradient(gradient_status: boolean): void {
-        localStorage.setItem("RecolorActiveItem-Gradient", gradient_status.toString())
+        set_local_storage_item("RecolorActiveItem-Gradient", gradient_status)
     }
 
     private read_local_storage(): void {
@@ -1532,7 +1537,7 @@ export class RecolorActiveItem extends ToolboxItem {
         for (const class_id of this.ulabel.valid_class_ids) {
 
             // Get the color from local storage based on the current class id
-            const color = localStorage.getItem(`RecolorActiveItem-${class_id}`)
+            const color = get_local_storage_item(`RecolorActiveItem-${class_id}`)
 
             // Update the color if its not null
             // Additionally no need to save the color to local storage since we got it from reading local storage
@@ -1540,7 +1545,7 @@ export class RecolorActiveItem extends ToolboxItem {
         }
 
         // Then read whether or not the gradient should be on by default
-        this.gradient_turned_on = localStorage.getItem("RecolorActiveItem-Gradient") === "true"
+        this.gradient_turned_on = get_local_storage_item("RecolorActiveItem-Gradient")
     }
 
     private replace_color_pie(): void {
@@ -1917,27 +1922,39 @@ export class KeypointSliderItem extends ToolboxItem {
      * 
      * @param ulabel ULabel object
      * @param filter_value The number between 0-100 which annotation's confidence is compared against
+     * @returns Annotations that were modified, organized by subtask key
      */
-    private filter_annotations(ulabel: ULabel, filter_value: number) {
-        // Get the current subtask
-        const current_subtask = ulabel.subtasks[ulabel.state["current_subtask"]];
+    private filter_annotations(ulabel: ULabel, filter_value: number): {[key: string]: string[]} {
+        // Store which annotations need to be redrawn
+        let annotations_ids_to_redraw_by_subtask: {[key: string]: string[]} = {}
+        // Initialize the object with the subtask keys
+        for (let subtask_key in ulabel.subtasks) {
+            annotations_ids_to_redraw_by_subtask[subtask_key] = []
+        }
 
-        for (const annotation_id in current_subtask.annotations.access) {
-            // Get the current annotation from the access object
-            const current_annotation: ULabelAnnotation = current_subtask.annotations.access[annotation_id]
-
+        // Get all point annotations
+        const point_and_line_annotations = get_point_and_line_annotations(ulabel);
+        for (const annotation of point_and_line_annotations[0]) {
             // Get the annotation's confidence as decimal between 0-1
-            let confidence: number = this.get_confidence(current_annotation)
+            let confidence: number = this.get_confidence(annotation)
 
             // filter_value will be a number between 0-100, so convert the confidence to a percentage as well
             confidence = Math.round(confidence * 100)
 
             // Compare the confidence value against the filter value
             const should_deprecate: boolean = this.filter_function(confidence, filter_value)
-
-            // Mark this annotation as either deprecated or undeprecated by the confidence filter
-            this.mark_deprecated(current_annotation, should_deprecate, "confidence_filter")
+            // Check if an annotation should be deprecated or undeprecated, else do nothing
+            if (
+                (should_deprecate && !annotation.deprecated) ||
+                (!should_deprecate && annotation.deprecated)
+            ) {
+                // Mark this annotation as either deprecated or undeprecated by the confidence filter
+                this.mark_deprecated(annotation, should_deprecate, "confidence_filter")
+                annotations_ids_to_redraw_by_subtask[annotation.subtask_key].push(annotation.id)
+            }
         }
+
+        return annotations_ids_to_redraw_by_subtask
     }
 
     public get_html() {
@@ -1949,8 +1966,11 @@ export class KeypointSliderItem extends ToolboxItem {
             "label_units": "%",
             "slider_event": (slider_value: number) => {
                 // Filter the annotations, then redraw them
-                this.filter_annotations(this.ulabel, slider_value);
-                this.ulabel.redraw_all_annotations();
+                const modified_annotations = this.filter_annotations(this.ulabel, slider_value);
+                // Redraw each subtask's annotations
+                for (let subtask_key in modified_annotations) {
+                    this.ulabel.redraw_multiple_spatial_annotations(modified_annotations[subtask_key], subtask_key)
+                }
                 // Update class counter
                 this.ulabel.toolbox.redraw_update_items(this.ulabel);
             }
@@ -1976,16 +1996,18 @@ export class KeypointSliderItem extends ToolboxItem {
 export class FilterPointDistanceFromRow extends ToolboxItem {
     name: string // Component name shown to users
     component_name: string // Internal component name
-    default_values: AnnotationClassDistanceData // Values sliders are set to on page load
+    default_values: DistanceFromPolylineClasses // Values sliders are set to on page load
     filter_min: number // Minimum value slider may be set to
     filter_max: number // Maximum value slider may be set to
     step_value: number // Value slider increments by
     filter_on_load: boolean // Whether or not to filter annotations on page load
     multi_class_mode: boolean // Whether or not the component is currently in multi-class mode
+    disable_multi_class_mode: boolean // Whether or not to disable the checkbox to enable multi-class mode
     show_options: boolean // Whether or not the options dialog will be visable
-    collapse_options: boolean// Whether or not the options is in a collapsed state
+    collapse_options: boolean // Whether or not the options is in a collapsed state
     show_overlay: boolean // Whether or not the overlay will be shown
     toggle_overlay_keybind: string 
+    filter_during_polyline_move: boolean // Whether or not to filter annotations during a pending mode/edit of a polyline
     overlay: FilterDistanceOverlay
 
     ulabel: ULabel // The ULabel object. Must be passed in
@@ -1999,25 +2021,10 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
         // Get this component's config from ulabel's config
         this.config = this.ulabel.config.distance_filter_toolbox_item
 
-        // Create a set of defaults for every config value
-        const default_values = {
-            "name": <string> "Filter Distance From Row",
-            "component_name": <string> "fitler_distance_from_row",
-            "filter_min": <number> 0,
-            "filter_max": <number> 100,
-            "default_values": <AnnotationClassDistanceData> {"single": 50},
-            "step_value": <number> 1,
-            "multi_class_mode": <boolean> false,
-            "filter_on_load": <boolean> true,
-            "show_options": <boolean> true,
-            "toggle_overlay_keybind": <string> "p"
-        }
-
-        // Loop through every key value pair in the config
-        for (const [key, value] of Object.entries(this.config)) {
-            // If the passed in value's type !== the default value's type then use the default value
-            if (typeof value !== typeof default_values[key]) {
-                this.config[key] = default_values[key]
+        // For each key missing from the config, set the default value
+        for (const key in DEFAULT_FILTER_DISTANCE_CONFIG) {
+            if (!this.config.hasOwnProperty(key)) {
+                this.config[key] = DEFAULT_FILTER_DISTANCE_CONFIG[key]
             }
         }
 
@@ -2025,31 +2032,26 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
         for (const property in this.config) {
             this[property] = this.config[property]
         }
+
+        // Force disable multi-class mode if the config doesn't allow it
+        if (this.disable_multi_class_mode) this.multi_class_mode = false
         
         // Get if the options should be collapsed from local storage
-        if (window.localStorage.getItem("filterDistanceCollapseOptions") === "true") {
-            this.collapse_options = true
-        }
-        else if (window.localStorage.getItem("filterDistanceCollapseOptions") === "false") {
-            this.collapse_options = false
-        }
+        this.collapse_options = get_local_storage_item("filterDistanceCollapseOptions")
  
         // Create an overlay and determine whether or not it should be displayed
         this.create_overlay()
-        if (window.localStorage.getItem("filterDistanceShowOverlay") === "true") {
-            this.show_overlay = true
-            this.overlay.update_display_overlay(true)
-        }
-        else if (window.localStorage.getItem("filterDistanceShowOverlay") === "false") {
-            this.show_overlay = false
-            this.overlay.update_display_overlay(false)
-        }
-        else if (this.config.show_overlay_on_load !== undefined || this.config.show_overlay_on_load !== null) {
-            this.show_overlay = this.config.show_overlay_on_load
-        }
-        else {
-            this.show_overlay = false // Default
-        }
+
+        // Check if localStorage has a value for showing the overlay
+        const show_overlay = get_local_storage_item("filterDistanceShowOverlay")
+        // Guard against null values
+        this.show_overlay = show_overlay !== null ? show_overlay : this.show_overlay
+        this.overlay.update_display_overlay(this.show_overlay);
+
+        // Check if localStorage has a value for filtering during polyline move
+        const filter_during_polyline_move = get_local_storage_item("filterDistanceFilterDuringPolylineMove")
+        // Guard against null values
+        this.filter_during_polyline_move = filter_during_polyline_move !== null ? filter_during_polyline_move : this.filter_during_polyline_move
 
         this.add_styles()
 
@@ -2144,28 +2146,39 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
         $(document).on("click.ulabel", "fieldset.filter-row-distance-options > legend", () => this.toggleCollapsedOptions())
 
         // Whenever the multi-class filtering checkbox is clicked, switch the displayed filter mode
-        $(document).on("click.ulabel", "#filter-slider-distance-multi-checkbox", () => {
-            // Toggle the multi-class state
-            this.multi_class_mode = !this.multi_class_mode
+        $(document).on("click.ulabel", "#filter-slider-distance-multi-checkbox", (event) => {
+            // Update the multi-class state
+            this.multi_class_mode = event.currentTarget.checked
 
             // Toggle whether the single-class slider, or the multi-class sliders are visible
             this.switchFilterMode()
 
-            this.overlay.update_mode(this.multi_class_mode ? "multi" : "single")
+            this.overlay.update_mode(this.multi_class_mode)
 
-            // Re-filter the points in the new mode
-            filter_points_distance_from_line(this.ulabel)
+            // Re-filter the points in the new mode, recalculating all distances if changing to multi-class
+            let recalculate_distances = this.multi_class_mode
+            filter_points_distance_from_line(this.ulabel, recalculate_distances)
         })
 
         $(document).on("change.ulabel", "#filter-slider-distance-toggle-overlay-checkbox", (event) => {
+            // Save the new value of `show_overlay`
+            this.show_overlay = event.currentTarget.checked
+    
             // Update whether or not the overlay is allowed to be drawn
-            this.overlay.update_display_overlay(event.currentTarget.checked)
+            this.overlay.update_display_overlay(this.show_overlay)
 
             // Try to draw the overlay
             this.overlay.draw_overlay()
 
             // Save whether or not the overlay is allowed to be drawn to local storage
-            window.localStorage.setItem("filterDistanceShowOverlay", event.currentTarget.checked.toString())
+           set_local_storage_item("filterDistanceShowOverlay", this.show_overlay)
+        })
+
+        $(document).on("change.ulabel", "#filter-slider-distance-filter-during-polyline-move-checkbox", (event) => {
+            // Save new value of `filter_during_polyline_move`
+            this.filter_during_polyline_move = event.currentTarget.checked
+            // Save to local storage
+            set_local_storage_item("filterDistanceFilterDuringPolylineMove", this.filter_during_polyline_move)
         })
 
         $(document).on("keypress.ulabel", (event) => {
@@ -2196,7 +2209,7 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
         this.collapse_options = !this.collapse_options
 
         // Save the state to the user's browser so it can be re-loaded in the same state
-        window.localStorage.setItem("filterDistanceCollapseOptions", this.collapse_options.toString())
+        set_local_storage_item("filterDistanceCollapseOptions", this.collapse_options)
     }
 
     private create_overlay() {
@@ -2204,18 +2217,20 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
         const line_annotations: ULabelAnnotation[] = get_point_and_line_annotations(this.ulabel)[1]
 
         // Initialize an object to hold the distances points are allowed to be from each class as well as any line
-        let filter_values: AnnotationClassDistanceData = {"single": undefined}
+        let filter_values: DistanceFromPolylineClasses = {closest_row: undefined}
 
         // Grab all filter-distance-sliders on the page
         const sliders: NodeListOf<HTMLInputElement> = document.querySelectorAll(".filter-row-distance-slider")
 
         // Loop through each slider and populate filter_values
         for (let idx = 0; idx < sliders.length; idx++) {
-            // Use a regex to get the string after the final - character in the slider id (Which is the class id or the string "single")
+            // Use a regex to get the string after the final - character in the slider id (Which is the class id or the string "closest_row")
             const slider_class_name = /[^-]*$/.exec(sliders[idx].id)[0]
 
             // Use the class id as a key to store the slider's value
-            filter_values[slider_class_name] = sliders[idx].valueAsNumber
+            filter_values[slider_class_name] = {
+                distance: sliders[idx].valueAsNumber
+            }
         }
 
         // Create and assign an overlay class instance to ulabel to be able to access it
@@ -2253,10 +2268,10 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
 
             let default_value: string
             if (this.default_values[current_id] !== undefined) {
-                default_value = this.default_values[current_id].toString()
+                default_value = this.default_values[current_id].distance.toString()
             }
             else {
-                default_value = this.default_values["single"].toString()
+                default_value = this.default_values.closest_row.distance.toString()
             }
 
             const multi_class_slider_instance = new SliderHandler({
@@ -2268,7 +2283,7 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
                 "step": this.step_value.toString(),
                 "label_units": "px",
                 "main_label": current_name,
-                "slider_event": () => filter_points_distance_from_line(this.ulabel)
+                "slider_event": () => filter_points_distance_from_line(this.ulabel, false)
             })
 
             // Add current classes html to multi_class_html
@@ -2291,16 +2306,36 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
            and its event handlers */
         const single_class_slider_handler = new SliderHandler({
             "class": "filter-row-distance-slider",
-            "default_value": this.default_values["single"].toString(),
-            "id": "filter-row-distance-single",
+            "default_value": this.default_values.closest_row.distance.toString(),
+            "id": "filter-row-distance-closest_row", // `closest_row` will be extracted using regex
             "label_units": "px",
-            "slider_event": () => filter_points_distance_from_line(this.ulabel),
+            "slider_event": () => filter_points_distance_from_line(this.ulabel, false),
             "min": this.filter_min.toString(),
             "max": this.filter_max.toString(),
             "step": this.step_value.toString()
         })
 
-        return`
+        let multi_class_mode_checkbox: string = ``
+        // If multi-class mode is allowed, create the checkbox
+        if (!this.disable_multi_class_mode) {
+            multi_class_mode_checkbox = `
+            <div class="filter-row-distance-option">
+                <input
+                    type="checkbox"
+                    id="filter-slider-distance-multi-checkbox"
+                    class="filter-row-distance-options-checkbox"
+                    ${this.multi_class_mode ? "checked" : ""}
+                />
+                <label
+                    for="filter-slider-distance-multi-checkbox"
+                    id="filter-slider-distance-multi-checkbox-label"
+                    class="filter-row-distance-label">
+                    Multi-Class Filtering
+                </label>
+            </div>`
+        }
+
+        return `
         <div class="filter-row-distance">
             <p class="tb-header">${this.name}</p>
             <fieldset class="
@@ -2311,20 +2346,7 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
                 <legend>
                     Options ˅
                 </legend>
-                <div class="filter-row-distance-option">
-                    <input
-                        type="checkbox"
-                        id="filter-slider-distance-multi-checkbox"
-                        class="filter-row-distance-options-checkbox"
-                        ${this.multi_class_mode ? "checked" : ""}
-                    />
-                    <label
-                        for="filter-slider-distance-multi-checkbox"
-                        id="filter-slider-distance-multi-checkbox-label"
-                        class="filter-row-distance-label">
-                        Multi-Class Filtering
-                    </label>
-                </div>
+                ` + multi_class_mode_checkbox + `
                 <div class="filter-row-distance-option">
                     <input
                         type="checkbox"
@@ -2337,6 +2359,21 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
                         id="filter-slider-distance-toggle-overlay-checkbox-label"
                         class="filter-row-distance-label">
                         Show Filter Range
+                    </label>
+                </div>
+                <div class="filter-row-distance-option">
+                    <input
+                        type="checkbox"
+                        id="filter-slider-distance-filter-during-polyline-move-checkbox"
+                        class="filter-row-distance-options-checkbox"
+                        ${this.filter_during_polyline_move ? "checked" : ""}
+                    />
+                    <label
+                        for="filter-slider-distance-filter-during-polyline-move-checkbox"
+                        id="filter-slider-distance-filter-during-polyline-move-checkbox-label"
+                        class="filter-row-distance-label"
+                        title="When unchecked, will not update the filter/overlay until polyline moves/edits are complete">
+                        Filter During Move
                     </label>
                 </div>
             </fieldset>
