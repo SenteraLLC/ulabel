@@ -95,6 +95,11 @@ An API spec can be found [here](https://github.com/SenteraLLC/ulabel/blob/main/a
 </html>
 ```
 
+### Integrating in a React Project
+
+See [ulabel-react-demo](https://github.com/joshua-dean/ulabel-react-demo/tree/main)
+for an example of how to integrate ULabel into a React project.
+
 ## Development
 
 The recommended way to develop new features is to use the tool as if you were running the demo. For testing new API features, you can create a new HTML file in `demo/`. The server in `demo.js` runs a static server from `demo/` so it will be served at `localhost:8080/<new-file>.html` automatically.
