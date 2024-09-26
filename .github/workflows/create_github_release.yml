@@ -1,6 +1,7 @@
 name: Create GitHub Release
 
 on:
+  workflow_dispatch:
   pull_request:
     types: [closed]
     branches:
@@ -14,11 +15,13 @@ jobs:
       contents: write
 
     steps:
-      - name: Check if PR was merged
+      - name: Exit if PR was closed without merging
         run: |
-          if [ "${{ github.event.pull_request.merged }}" != "true" ]; then
-            echo "PR was not merged, skipping."
-            exit 78
+          if [ ${{ github.event_name }} == 'pull_request' ]; then
+            if [ ${{ github.event.pull_request.merged }} == 'false' ]; then
+              echo "This PR was closed without merging. Exiting..."
+              exit 0
+            fi
           fi
 
       - name: Checkout code
