@@ -179,11 +179,7 @@ export class ULabel {
         var annbox = $("#" + ul.config["annbox_id"]);
 
         // Detect and record mousedown
-        // annbox.mousedown(function (mouse_event) {
-        //     ul.handle_mouse_down(mouse_event);
-        // });
         annbox.on("mousedown.ulabel", (e) => {
-            console.log("mousedown");
             ul.handle_mouse_down(e);
         });
 
@@ -200,11 +196,7 @@ export class ULabel {
         })
 
         // Mouse movement has meaning in certain cases
-        // annbox.mousemove(function (mouse_event) {
-        //     ul.handle_mouse_move(mouse_event);
-        // });
         annbox.on("mousemove.ulabel", (e) => {
-            console.log("mousemove");
             ul.handle_mouse_move(e);
         });
 
@@ -6431,7 +6423,6 @@ export class ULabel {
     }
 
     handle_mouse_up(mouse_event) {
-        console.log("mouseup");
         if (mouse_event.button === this.drag_state["release_button"]) {
             mouse_event.preventDefault();
             this.end_drag(mouse_event);
