@@ -191,10 +191,7 @@ export class ULabel {
         $(document).on("auxclick.ulabel", ul.handle_aux_click);
 
         // Detect and record mouseup
-        $(document).on("mouseup.ulabel", (e) => {
-            console.log("mouseup");
-            ul.handle_mouse_up(e);
-        });
+        $(document).on("mouseup.ulabel", ul.handle_mouse_up.bind(ul));
 
         $(window).on("click.ulabel", (e) => {
             if (e.shiftKey) {
@@ -6434,6 +6431,7 @@ export class ULabel {
     }
 
     handle_mouse_up(mouse_event) {
+        console.log("mouseup");
         if (mouse_event.button === this.drag_state["release_button"]) {
             mouse_event.preventDefault();
             this.end_drag(mouse_event);
@@ -6526,7 +6524,6 @@ export class ULabel {
     }
 
     end_drag(mouse_event) {
-        // TODO handle this drag end
         const annotation_mode = this.subtasks[this.state["current_subtask"]]["state"]["annotation_mode"];
         const active_id = this.subtasks[this.state["current_subtask"]]["state"]["active_id"];
         let spatial_payload, n_points, active_spatial_payload;
