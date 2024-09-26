@@ -179,8 +179,12 @@ export class ULabel {
         var annbox = $("#" + ul.config["annbox_id"]);
 
         // Detect and record mousedown
-        annbox.mousedown(function (mouse_event) {
-            ul.handle_mouse_down(mouse_event);
+        // annbox.mousedown(function (mouse_event) {
+        //     ul.handle_mouse_down(mouse_event);
+        // });
+        annbox.on("mousedown.ulabel", (e) => {
+            console.log("mousedown");
+            ul.handle_mouse_down(e);
         });
 
         // Prevent default for auxclick
@@ -188,6 +192,7 @@ export class ULabel {
 
         // Detect and record mouseup
         $(document).on("mouseup.ulabel", (e) => {
+            console.log("mouseup");
             ul.handle_mouse_up(e);
         });
 
@@ -198,8 +203,12 @@ export class ULabel {
         })
 
         // Mouse movement has meaning in certain cases
-        annbox.mousemove(function (mouse_event) {
-            ul.handle_mouse_move(mouse_event);
+        // annbox.mousemove(function (mouse_event) {
+        //     ul.handle_mouse_move(mouse_event);
+        // });
+        annbox.on("mousemove.ulabel", (e) => {
+            console.log("mousemove");
+            ul.handle_mouse_move(e);
         });
 
         $(document).on("keypress.ulabel", (e) => {

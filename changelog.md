@@ -6,8 +6,9 @@ All notable changes to this project will be documented here.
 
 Nothing yet.
 
-## [0.12.1] - Sept 26th, 2024
+## [0.12.1 - 0.12.2] - Sept 26th, 2024
 - Prevent default mouseup event when listening for the end to a drag event. This fixes a bug where using right-click to end polyline/countour annotations would bring up a browser context menu.
+- Fix bug where some mouse events were being blocked by `Content Security Policy directive: script-src 'self'`
 
 
 ## [0.12.0] - Sept 20th, 2024
