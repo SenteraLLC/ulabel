@@ -97,7 +97,7 @@ An API spec can be found [here](https://github.com/SenteraLLC/ulabel/blob/main/a
 
 ### Integrating in a React Project
 
-See [ulabel-react-demo](https://github.com/joshua-dean/ulabel-react-demo/tree/main)
+See [ulabel-react-demo](https://github.com/joshua-dean/ulabel-react-demo/)
 for an example of how to integrate ULabel into a React project.
 
 ## Development
