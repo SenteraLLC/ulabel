@@ -34,19 +34,42 @@ The constructor is used to specify the configuration for an "annotation session"
 
 ```javascript
 class ULabel({
+    // Required arguments
     container_id: string,
     image_data: string | string[],
     username: string,
     submit_buttons: function | ULabelSubmitButton[],
     subtasks: object,
+    // Optional arguments
     task_meta: object,
     annotation_meta: object,
     px_per_px: number,
     initial_crop: InitialCrop,
     initial_line_size: number,
     instructions_url: string,
-    config_data: object,
-    toolbox_order: AllowedToolboxItem[]
+    toolbox_order: AllowedToolboxItem[],
+    default_keybinds = {
+        "annotation_size_small": string,
+        "annotation_size_large": string,
+        "annotation_size_plus": string,
+        "annotation_size_minus": string,
+        "annotation_vanish": string
+    },
+    distance_filter_toolbox_item: FilterDistanceConfig,
+    change_zoom_keybind: string,
+    create_point_annotation_keybind: string,
+    default_annotation_size: number,
+    delete_annotation_keybind: string,
+    keypoint_slider_default_value: number,.
+    filter_annotations_on_load: boolean,
+    switch_subtask_keybind: string,
+    toggle_annotation_mode_keybind: string,
+    create_bbox_on_initial_crop: string,
+    toggle_brush_mode_keybind: string
+    toggle_erase_mode_keybind: string
+    increase_brush_size_keybind: string
+    decrease_brush_size_keybind: string
+    n_annos_per_canvas: number
 })
 ```
 
@@ -284,57 +307,11 @@ The line width with which new annotations are drawn initially. Units are pixels 
 
 URL to a page that gives annotation instructions.
 
-### `config_data`
+### `toolbox_order`
+An array of numbers that defines the vertical order of items in the toolbox. At least one item must be included in the array. Any excluded items will not be displayed in the toolbox.
 
-*object* -- An object to configure much of ULabel's behaviors.
-
+The supported toolbox items are:
 ```javascript
-{
-    default_toolbox_item_order: AllowedToolboxItem[],
-
-    default_keybinds = {
-        "annotation_size_small": string,
-        "annotation_size_large": string,
-        "annotation_size_plus": string,
-        "annotation_size_minus": string,
-        "annotation_vanish": string
-    },
-
-    distance_filter_toolbox_item: FilterDistanceConfig,
-
-    change_zoom_keybind: string,
-
-    create_point_annotation_keybind: string,
-
-    default_annotation_size: number,
-    
-    delete_annotation_keybind: string,
-    
-    keypoint_slider_default_value: number, // Value between 0 and 1.
-
-    filter_annotations_on_load: boolean, // Default is false. Must be true for keypoint_slider_default_value to be applied on load
-    
-    switch_subtask_keybind: string,
-    
-    toggle_annotation_mode_keybind: string,
-
-    create_bbox_on_initial_crop: string,
-
-    annotation_gradient_default: boolean
-
-    toggle_brush_mode_keybind: string
-
-    toggle_erase_mode_keybind: string
-
-    increase_brush_size_keybind: string
-
-    decrease_brush_size_keybind: string
-
-    n_annos_per_canvas: number // Default is 100. Setting higher for jobs with a large number annotations may help performance.
-}
-```
-With the following custom definitions.
-```Javascript
 enum AllowedToolboxItem {
     ModeSelect,       // 0
     ZoomPan,          // 1
@@ -347,7 +324,23 @@ enum AllowedToolboxItem {
     FilterDistance,   // 8
     Brush             // 9
 }
+```
 
+### `default_keybinds`
+Various keybinds that can be set to control the annotation session. The default values are:
+```javascript
+{
+    "annotation_size_small": "s",
+    "annotation_size_large": "l",
+    "annotation_size_plus": "=",
+    "annotation_size_minus": "-",
+    "annotation_vanish": "v"
+}
+```
+
+### `distance_filter_toolbox_item`
+Configuration object for the `FilterDistance` toolbox item with the following custom definitions:
+```javascript
 type DistanceFromPolyline = {
     distance: number // distance in pixels
 }
@@ -374,7 +367,49 @@ type FilterDistanceConfig = {
     // since it will not update the filter/overlay until polyline moves/edits are complete.
 }
 ```
-Where all `config_data` properties are optional.
+
+### `change_zoom_keybind`
+Keybind to change the zoom level. Must be a letter, and the lowercase version of the letter will set the zoom level to the `initial_crop`, while the capitalized version will show the full image. Default is `r`.
+
+### `create_point_annotation_keybind`
+Keybind to create a point annotation at the mouse location. Default is `c`. Requires the active subtask to have a `point` mode.
+
+### `default_annotation_size`
+Default size of annotations in pixels. Default is `6`.
+
+### `delete_annotation_keybind`
+Keybind to delete the annotation that the mouse is hovering over. Default is `d`.
+
+### `keypoint_slider_default_value`
+Default value for the keypoint slider. Must be a number between 0 and 1. Default is `0`.
+
+### `filter_annotations_on_load`
+If true, the annotations will be filtered on load based on the `keypoint_slider_default_value`. Default is `false`.
+
+### `switch_subtask_keybind`
+Keybind to switch between subtasks. Default is `z`.
+
+### `toggle_annotation_mode_keybind`
+Keybind to toggle between annotation and selection modes. Default is `u`.
+
+### `create_bbox_on_initial_crop`
+Keybind to create a bounding box annotation around the `initial_crop`. Default is `f`. Requires the active subtask to have a `bbox` mode.
+
+### `toggle_brush_mode_keybind`
+Keybind to toggle brush mode for polygon annotations. Default is `g`. Requires the active subtask to have a `polygon` mode.
+
+### `toggle_erase_mode_keybind`
+Keybind to toggle erase mode for polygon annotations. Default is `e`. Requires the active subtask to have a `polygon` mode.
+
+### `increase_brush_size_keybind`
+Keybind to increase the brush size. Default is `]`. Requires the active subtask to have a `polygon` mode.
+
+### `decrease_brush_size_keybind`
+Keybind to decrease the brush size. Default is `[`. Requires the active subtask to have a `polygon` mode.
+
+### `n_annos_per_canvas`
+The number of annotations to render on a single canvas. Default is `100`. Increasing this number may improve performance for jobs with a large number of annotations.
+
 
 ## Display Utility Functions
 
