@@ -6,6 +6,9 @@ All notable changes to this project will be documented here.
 
 Nothing yet.
 
+## [0.12.5] - Sept 26th, 2024
+- Fix release workflow using actions on `node` 16, which is now deprecated.
+
 ## [0.12.1 - 0.12.4] - Sept 26th, 2024
 - Prevent default mouseup event when listening for the end to a drag event.
 - Multiple publishes are from testing in a netlify app.
