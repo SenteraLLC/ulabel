@@ -81,8 +81,9 @@ export function mark_deprecated(annotation: any, deprecated: boolean, deprecated
  * 
  * @param value Value to be compaired against the filter
  * @param filter What the value is compared against
+ * @returns True if the value is less than the filter, false otherwise
  */
-export function value_is_lower_than_filter(value: number, filter: number) {
+export function value_is_lower_than_filter(value: number, filter: number): boolean {
     return value < filter
 }
 
@@ -91,8 +92,9 @@ export function value_is_lower_than_filter(value: number, filter: number) {
  * 
  * @param value Value to be compaired against the filter
  * @param filter What the value is compared against
+ * @returns True if the value is greater than the filter, false otherwise
  */
-export function value_is_higher_than_filter(value: number, filter: number) {
+export function value_is_higher_than_filter(value: number, filter: number): boolean {
     return value > filter
 }
 

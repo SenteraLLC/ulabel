@@ -1168,7 +1168,6 @@ export class ULabel {
             that.redraw_demo();
 
             // Draw resumed from annotations
-            console.log("Drawing resumed from annotations", that.subtasks[that.state["current_subtask"]]["annotations"]["access"]);
             that.redraw_all_annotations();
 
             // Update class counter

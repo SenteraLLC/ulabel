@@ -310,9 +310,9 @@ URL to a page that gives annotation instructions.
     
     delete_annotation_keybind: string,
     
-    keypoint_slider_default_value: number,
+    keypoint_slider_default_value: number, // Value between 0 and 1.
 
-    filter_annotations_on_load: boolean,
+    filter_annotations_on_load: boolean, // Default is false. Must be true for keypoint_slider_default_value to be applied on load
     
     switch_subtask_keybind: string,
     

@@ -52,8 +52,6 @@ String.prototype.replaceLowerConcat = function(before: string, after: string, co
  * Manager for toolbox. Contains ToolboxTab items.
  */
 export class Toolbox {
-    // public tabs: ToolboxTab[] = [];
-    // public items: ToolboxItem[] = []; 
     
     constructor(
         public tabs: ToolboxTab[] = [],
@@ -64,7 +62,7 @@ export class Toolbox {
     public static create_toolbox(ulabel: ULabel, toolbox_item_order: unknown[]) {
         // Grab the default toolbox if one wasn't provided
         if (toolbox_item_order == null) {
-            toolbox_item_order = ulabel.config.default_toolbox_item_order
+            toolbox_item_order = ulabel.config.toolbox_order
         }
 
         // There's no point to having an empty toolbox, so throw an error if the toolbox is empty.
@@ -1883,7 +1881,7 @@ export class KeypointSliderItem extends ToolboxItem {
 
         // Check the config to see if we should update the annotations with the default filter on load
         if (this.ulabel.config.filter_annotations_on_load) {
-            this.filter_annotations(this.ulabel, this.filter_value);
+            this.filter_annotations(this.ulabel);
         }
 
         this.add_styles()
@@ -1922,9 +1920,14 @@ export class KeypointSliderItem extends ToolboxItem {
      * 
      * @param ulabel ULabel object
      * @param filter_value The number between 0-100 which annotation's confidence is compared against
+     * @param redraw whether or not to redraw the annotations after filtering
      * @returns Annotations that were modified, organized by subtask key
      */
-    private filter_annotations(ulabel: ULabel, filter_value: number): {[key: string]: string[]} {
+    private filter_annotations(ulabel: ULabel, filter_value: number = null, redraw: boolean = false): void {
+        if (filter_value === null) {
+            // Use stored filter value if none is passed in
+            filter_value = Math.round(this.filter_value * 100);
+        }
         // Store which annotations need to be redrawn
         let annotations_ids_to_redraw_by_subtask: {[key: string]: string[]} = {}
         // Initialize the object with the subtask keys
@@ -1954,7 +1957,14 @@ export class KeypointSliderItem extends ToolboxItem {
             }
         }
 
-        return annotations_ids_to_redraw_by_subtask
+        if (redraw) {
+            // Redraw each subtask's annotations
+            for (let subtask_key in annotations_ids_to_redraw_by_subtask) {
+                ulabel.redraw_multiple_spatial_annotations(annotations_ids_to_redraw_by_subtask[subtask_key], subtask_key)
+            }
+            // Update class counter
+            ulabel.toolbox.redraw_update_items(ulabel);
+        }
     }
 
     public get_html() {
@@ -1966,13 +1976,7 @@ export class KeypointSliderItem extends ToolboxItem {
             "label_units": "%",
             "slider_event": (slider_value: number) => {
                 // Filter the annotations, then redraw them
-                const modified_annotations = this.filter_annotations(this.ulabel, slider_value);
-                // Redraw each subtask's annotations
-                for (let subtask_key in modified_annotations) {
-                    this.ulabel.redraw_multiple_spatial_annotations(modified_annotations[subtask_key], subtask_key)
-                }
-                // Update class counter
-                this.ulabel.toolbox.redraw_update_items(this.ulabel);
+                this.filter_annotations(this.ulabel, slider_value, true);
             }
         })
 
