@@ -150,6 +150,16 @@ export type InitialCrop = {
     width: number;
 }
 
+export type ImageData = {
+    spacing: {
+        x: number,
+        y: number,
+        z: number,
+        units: string
+    },
+    frames: string[]
+}
+
 export type ULabelSubtasks = { [key: string]: ULabelSubtask };
 
 export class ULabel {

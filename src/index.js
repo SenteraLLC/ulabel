@@ -769,7 +769,7 @@ export class ULabel {
         }
     }
 
-    static initialize_subtasks(ul, stcs) {
+    static initialize_subtasks(ul) {
         let first_non_ro = null;
 
         // Initialize a place on the ulabel object to hold annotation color information
@@ -779,9 +779,9 @@ export class ULabel {
         ul.valid_class_ids = []
 
         // Perform initialization tasks on each subtask individually
-        for (const subtask_key in stcs) {
+        for (const subtask_key in ul.config.subtasks) {
             // For convenience, make a raw subtask var
-            let raw_subtask = stcs[subtask_key];
+            let raw_subtask = ul.config.subtasks[subtask_key];
             ul.subtasks[subtask_key] = ULabelSubtask.from_json(subtask_key, raw_subtask);
 
             if (first_non_ro === null && !ul.subtasks[subtask_key]["read_only"]) {
@@ -975,57 +975,19 @@ export class ULabel {
             }
         }
 
-        // Assign each value to a constant. Assign defaults for optional properties
-        const container_id      = kwargs["container_id"]
-        const image_data        = kwargs["image_data"]
-        const username          = kwargs["username"]
-        const submit_buttons    = kwargs["submit_buttons"]
-        const subtasks          = kwargs["subtasks"]
-        const task_meta         = kwargs["task_meta"] ?? null
-        const annotation_meta   = kwargs["annotation_meta"] ?? null
-        const px_per_px         = kwargs["px_per_px"] ?? 1
-        const initial_crop      = kwargs["initial_crop"] ?? null // {top: #, left: #, height: #, width: #,}
-        const initial_line_size = kwargs["initial_line_size"] ?? null
-        const instructions_url  = kwargs["instructions_url"] ?? null
-        const config_data       = kwargs["config_data"] ?? null
-        const toolbox_order     = kwargs["toolbox_order"] ?? null
+        // Process image_data
+        kwargs["image_data"] = ULabel.expand_image_data(this, kwargs["image_data"])
 
-        // TODO 
-        // Allow for importing spacing data -- a measure tool would be nice too
-        // Much of this is hardcoded defaults, 
-        //   some might be offloaded to the constructor eventually...
-
-        //create the config and add ulabel dependent data
-        this.config = new Configuration({
-            // TODO(v1) Make sure these don't conflict with other page elements
-            "container_id": container_id,
-            "px_per_px": px_per_px,
-            "initial_crop": initial_crop,
-
-            // Configuration for the annotation task itself
-            "image_data": ULabel.expand_image_data(this, image_data),
-            "annotator": username,
-
-            // Behavior on special interactions
-            "instructions_url": instructions_url,
-            "submit_buttons": submit_buttons,
-
-            // Passthrough
-            "task_meta": task_meta,
-            "annotation_meta": annotation_meta,
-        });
-
-        // Update the ulabel config object with the passed in config data
-        if (config_data != null) {
-            this.config.modify_config(config_data)
+        // Process deprecated config_data field by adding each key-value pair to kwargs
+        if ("config_data" in kwargs) {
+            console.warn("The 'config_data' argument is deprecated. Please pass in all configuration values as keyword arguments.")
+            for (const key in kwargs["config_data"]) {
+                kwargs[key] = kwargs["config_data"][key]
+            }
         }
 
-        if (toolbox_order === null) {
-            this.toolbox_order = this.config.default_toolbox_item_order;
-        }
-        else {
-            this.toolbox_order = toolbox_order;
-        }
+        // Create the config and add ulabel dependent data
+        this.config = new Configuration(kwargs);
 
         // Useful for the efficient redraw of nonspatial annotations
         this.tmp_nonspatial_element_ids = {};
@@ -1041,7 +1003,7 @@ export class ULabel {
             // Global annotation state (subtasks also maintain an annotation state)
             "current_subtask": null,
             "last_brush_stroke": null,
-            "line_size": initial_line_size,
+            "line_size": this.config.initial_line_size,
             "size_mode": "fixed",
 
             // Renderings state
@@ -1055,7 +1017,7 @@ export class ULabel {
         // Populate these in an external "static" function
         this.subtasks = {};
         this.color_info = {}
-        ULabel.initialize_subtasks(this, subtasks);
+        ULabel.initialize_subtasks(this);
 
         // Create object for dragging interaction state
         // TODO(v1)
@@ -1123,7 +1085,7 @@ export class ULabel {
         that.state["current_subtask"] = Object.keys(that.subtasks)[0];
 
         // Place image element
-        prep_window_html(this, this.toolbox_order);
+        prep_window_html(this, this.config.toolbox_order);
 
         // Detect night cookie
         if (ULabel.has_night_mode_cookie()) {
@@ -1173,11 +1135,6 @@ export class ULabel {
                 ).getContext("2d");
             }
 
-            // Get rendering context for demo canvas
-            // that.state["demo_canvas_context"] = document.getElementById(
-            //     that.config["canvas_did"]
-            // ).getContext("2d");
-
             // Create the annotation canvases for the resume_from annotations
             ULabel.initialize_annotation_canvases(that);
 
@@ -1211,6 +1168,7 @@ export class ULabel {
             that.redraw_demo();
 
             // Draw resumed from annotations
+            console.log("Drawing resumed from annotations", that.subtasks[that.state["current_subtask"]]["annotations"]["access"]);
             that.redraw_all_annotations();
 
             // Update class counter
@@ -1490,7 +1448,7 @@ export class ULabel {
      */
     update_filter_distance(annotation_id, redraw_update_items = true, force_filter_all = false, offset = null) {
         // First verify if the FilterDistance toolbox item is active
-        if (this.toolbox_order.includes(AllowedToolboxItem.FilterDistance)) {
+        if (this.config.toolbox_order.includes(AllowedToolboxItem.FilterDistance)) {
             // Add id to the offset
             if (offset !== null) {
                 offset["id"] = annotation_id;
@@ -1541,7 +1499,7 @@ export class ULabel {
      */
     update_filter_distance_during_polyline_move(annotation_id, redraw_update_items = true, force_filter_all = false, offset = null) {
         if (
-            this.toolbox_order.includes(AllowedToolboxItem.FilterDistance) && 
+            this.config.toolbox_order.includes(AllowedToolboxItem.FilterDistance) && 
             this.toolbox.items.find(item => item.get_toolbox_item_type() === "FilterDistance").filter_during_polyline_move
         ) {
             this.update_filter_distance(annotation_id, redraw_update_items, force_filter_all, offset);
@@ -3588,7 +3546,7 @@ export class ULabel {
         let new_annotation = {
             "id": unique_id,
             "parent_id": null,
-            "created_by": this.config["annotator"],
+            "created_by": this.config.username,
             "created_at": ULabel.get_time(),
             "deprecated": false,
             "deprecated_by": { "human": false },
@@ -4190,7 +4148,7 @@ export class ULabel {
         let new_annotation = {
             "id": unq_id,
             "parent_id": null,
-            "created_by": this.config["annotator"],
+            "created_by": this.config.username,
             "created_at": ULabel.get_time(),
             "deprecated": false,
             "deprecated_by": { "human": false },
@@ -4317,7 +4275,7 @@ export class ULabel {
         this.subtasks[subtask]["annotations"]["access"][unq_id] = {
             "id": unq_id,
             "parent_id": null,
-            "created_by": this.config["annotator"],
+            "created_by": this.config.username,
             "created_at": ULabel.get_time(),
             "deprecated": false,
             "deprecated_by": { "human": false },
@@ -6272,7 +6230,7 @@ export class ULabel {
 
         // If the filter_distance_toolbox_item exists, 
         // Check if the FilterDistance ToolboxItem is in this ULabel instance
-        if (this.toolbox_order.includes(AllowedToolboxItem.FilterDistance)) {
+        if (this.config.toolbox_order.includes(AllowedToolboxItem.FilterDistance)) {
             // Get the toolbox item
             const filter_distance_toolbox_item = this.toolbox.items.filter(item => item.get_toolbox_item_type() === "FilterDistance")[0];
             // filter annotations if in multi_class_mode
