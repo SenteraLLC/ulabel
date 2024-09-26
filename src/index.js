@@ -131,7 +131,6 @@ export class ULabel {
                     mouse_event.preventDefault();
                     return "move";
                 } else {
-                    console.log("Unable to assign a drag key to click target:", mouse_event.target.id);
                     return null;
                 }
             case 1:
@@ -6341,7 +6340,6 @@ export class ULabel {
 
     handle_mouse_down(mouse_event) {
         const drag_key = ULabel.get_drag_key_start(mouse_event, this);
-        console.log(drag_key);
         if (drag_key != null) {
             // Don't start new drag while id_dialog is visible
             if (this.subtasks[this.state["current_subtask"]]["state"]["idd_visible"] && !this.subtasks[this.state["current_subtask"]]["state"]["idd_thumbnail"]) {
