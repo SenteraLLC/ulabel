@@ -1,5 +1,5 @@
 import { ULabelAnnotation } from "./src/annotation";
-import { AllowedToolboxItem } from "./src/configuration";
+import { AllowedToolboxItem, Configuration } from "./src/configuration";
 import { FilterDistanceOverlay } from "./src/overlays";
 import { ULabelSubtask } from "./src/subtask";
 import { Toolbox } from "./src/toolbox";
@@ -155,7 +155,7 @@ export type ULabelSubtasks = { [key: string]: ULabelSubtask };
 export class ULabel {
     subtasks: ULabelSubtask[];
     state: any;
-    config: any;
+    config: Configuration;
     toolbox: Toolbox;
     color_info: {[key: number]: string}
     valid_class_ids: number[];

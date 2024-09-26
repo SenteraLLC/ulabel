@@ -997,46 +997,18 @@ export class ULabel {
 
         //create the config and add ulabel dependent data
         this.config = new Configuration({
-            // Values useful for generating HTML for tool
             // TODO(v1) Make sure these don't conflict with other page elements
             "container_id": container_id,
-            "annbox_id": "annbox",
-            "imwrap_id": "imwrap",
-            "canvas_fid_pfx": "front-canvas",
-            "canvas_bid_pfx": "back-canvas",
-            "canvas_did": "demo-canvas",
-            "canvas_class": "easel",
-            "image_id_pfx": "ann_image",
-            "imgsz_class": "imgsz",
-            "toolbox_id": "toolbox",
             "px_per_px": px_per_px,
             "initial_crop": initial_crop,
 
             // Configuration for the annotation task itself
             "image_data": ULabel.expand_image_data(this, image_data),
             "annotator": username,
-            "allow_soft_id": false, // TODO allow soft eventually
-            "default_annotation_color": "#fa9d2a",
-
-            // Dimensions of various components of the tool
-            "image_width": null,
-            "image_height": null,
-            "demo_width": 120,
-            "demo_height": 40,
-            "polygon_ender_size": 15,
-            "edit_handle_size": 30,
-            "brush_size": 60, // radius in pixels
 
             // Behavior on special interactions
-            // "done_callback": fin_on_submit_hook,
-            // "done_button": on_submit_unrolled.name,
             "instructions_url": instructions_url,
             "submit_buttons": submit_buttons,
-
-            // ID Dialog config
-            "cl_opacity": 0.4,
-            "outer_diameter": 200,
-            "inner_prop": 0.3,
 
             // Passthrough
             "task_meta": task_meta,

@@ -1,4 +1,8 @@
-import { FilterDistanceConfig, RecolorActiveConfig } from "..";
+import { 
+    FilterDistanceConfig, 
+    RecolorActiveConfig,
+    ULabelSubmitButton,
+} from "..";
 import { 
     ModeSelectionToolboxItem, 
     ZoomPanToolboxItem, 
@@ -45,6 +49,37 @@ export const DEFAULT_FILTER_DISTANCE_CONFIG: FilterDistanceConfig = {
 }
 
 export class Configuration {
+    // Values useful for generating HTML for tool
+    public annbox_id: string = "annbox"
+    public imwrap_id: string = "imwrap"
+    public canvas_fid_pfx: string = "front-canvas"
+    public canvas_bid_pfx: string = "back-canvas"
+    public canvas_did: string = "demo-canvas"
+    public canvas_class: string = "easel"
+    public image_id_pfx: string = "ann_image"
+    public imgsz_class: string = "imgsz"
+    public toolbox_id: string = "toolbox"
+
+    // Dimensions of various components of the tool
+    public image_width: number = null;
+    public image_height: number = null;
+    public demo_width: number = 120;
+    public demo_height: number = 40;
+    public polygon_ender_size: number = 15;
+    public edit_handle_size: number = 30;
+    public brush_size: number = 60;
+
+    // Configuration for the annotation task itself
+    public allow_soft_id: boolean = false;
+    public default_annotation_color: string = "#fa9d2a";
+
+    // ID Dialog config
+    public cl_opacity: number = 0.4;
+    public outer_diameter: number = 200;
+    public inner_prop: number = 0.3;
+
+    public submit_buttons: ULabelSubmitButton[] = []
+
     public toolbox_map = new Map<AllowedToolboxItem, any> ([
         [AllowedToolboxItem.ModeSelect, ModeSelectionToolboxItem],
         [AllowedToolboxItem.ZoomPan, ZoomPanToolboxItem],
