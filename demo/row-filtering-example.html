@@ -715,7 +715,7 @@
                 }
             ]
 
-            let subtasks = {
+            const subtasks = {
                 "plants": {
                     "display_name": "Plants",
                     "classes": [
@@ -751,6 +751,7 @@
                 }
             };
 
+            const AllowedToolboxItem = ULabel.get_allowed_toolbox_item_enum();
             // Initial ULabel configuration
             let ulabel = new ULabel({
                 "container_id": "container",
@@ -758,7 +759,17 @@
                 "username": "DemoUser",
                 "submit_buttons": on_submit,
                 "subtasks": subtasks,
-                "toolbox_order": [0, 1, 3, 6, 8, 2, 7, 4, 5],
+                "toolbox_order": [
+                    AllowedToolboxItem.ModeSelect,
+                    AllowedToolboxItem.ZoomPan,
+                    AllowedToolboxItem.AnnotationID, 
+                    AllowedToolboxItem.ClassCounter, 
+                    AllowedToolboxItem.KeypointSlider,  
+                    AllowedToolboxItem.FilterDistance,
+                    AllowedToolboxItem.AnnotationResize,
+                    AllowedToolboxItem.SubmitButtons,
+                    AllowedToolboxItem.RecolorActive,
+                ],
                 "distance_filter_toolbox_item": {
                     "default_values": {
                         "closest_row": {

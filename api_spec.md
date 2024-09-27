@@ -325,6 +325,10 @@ enum AllowedToolboxItem {
     Brush             // 9
 }
 ```
+You can access the AllowedToolboxItem enum by calling the static method:
+```javascript
+const AllowedToolboxItem = ULabel.get_allowed_toolbox_item_enum();
+```
 
 ### `default_keybinds`
 Keybinds can be set to control the annotation session. The default values are:

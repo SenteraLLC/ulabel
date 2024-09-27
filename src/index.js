@@ -91,6 +91,10 @@ export class ULabel {
         document.cookie = "nightmode=true;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/";
     }
 
+    static get_allowed_toolbox_item_enum() {
+        return AllowedToolboxItem;
+    }
+
     /*
     Types of drags
         - annotation

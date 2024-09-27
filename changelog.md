@@ -9,6 +9,7 @@ Nothing yet.
 - Fix bug where the `filter_annotations_on_load = true` option would not work as expected. 
   - The `keypoint_slider_default_value` option was not being properly multiplied by 100 internally.
 - Move several config argument defaults into the configuration class instead of in the ULabel constructor.
+- Add `get_allowed_toolbox_item_enum()` static method to ULabel.
 #### Breaking Changes
 - Changed default for `filter_annotations_on_load` from `false` to `true`.
 - Deprecated the `default_toolbox_item_order` argument in the ULabel constructor. Use `toolbox_order` instead.
