@@ -60,15 +60,15 @@ class ULabel({
     create_point_annotation_keybind: string,
     default_annotation_size: number,
     delete_annotation_keybind: string,
-    keypoint_slider_default_value: number,.
+    keypoint_slider_default_value: number,
     filter_annotations_on_load: boolean,
     switch_subtask_keybind: string,
     toggle_annotation_mode_keybind: string,
     create_bbox_on_initial_crop: string,
-    toggle_brush_mode_keybind: string
-    toggle_erase_mode_keybind: string
-    increase_brush_size_keybind: string
-    decrease_brush_size_keybind: string
+    toggle_brush_mode_keybind: string,
+    toggle_erase_mode_keybind: string,
+    increase_brush_size_keybind: string,
+    decrease_brush_size_keybind: string,
     n_annos_per_canvas: number
 })
 ```
@@ -327,7 +327,7 @@ enum AllowedToolboxItem {
 ```
 
 ### `default_keybinds`
-Various keybinds that can be set to control the annotation session. The default values are:
+Keybinds can be set to control the annotation session. The default values are:
 ```javascript
 {
     "annotation_size_small": "s",
