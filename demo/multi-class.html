@@ -80,6 +80,7 @@
                 }
             };
 
+            const AllowedToolboxItem = ULabel.get_allowed_toolbox_item_enum();
             // Initial ULabel configuration
             let ulabel = new ULabel({
                 "container_id": "container",
@@ -106,26 +107,6 @@
                         "color": "green",
                         "row_number": 1,
                     },
-                    // {
-                    //     "name": "Submit",
-                    //     "hook": on_submit,
-                    //     "size_factor": 0.9,
-                    //     "row_number": 2,
-                    // },
-                    // {
-                    //     "name": "Reject",
-                    //     "hook": () => { console.log("Reject"); },
-                    //     "size_factor": 0.9,
-                    //     "color": "red",
-                    //     "row_number": 2,
-                    // },
-                    // {
-                    //     "name": "Approve",
-                    //     "hook": () => { console.log("Approve"); },
-                    //     "size_factor": 0.9,
-                    //     "color": "green",
-                    //     "row_number": 2,
-                    // },
                     {
                         "name": "Skip",
                         "hook": () => { console.log("Skip"); },
@@ -136,17 +117,16 @@
                 ],
                 "subtasks": subtasks,
                 "initial_line_size": 2,
-                "default_toolbox_item_order": [
-                    7, // SubmitButtons
-                    0, // ModeSelect
-                    // 1, // ZoomPan
-                    2, // AnnotationResize
-                    3, // AnnotationID
-                    4, // Recolor Active
-                    5, // ClassCounter
-                    6, // KeypointSlider
-                    8, // FilterDistance
-                    // 9, // Brush
+                "toolbox_order": [
+                    AllowedToolboxItem.SubmitButtons,
+                    AllowedToolboxItem.ModeSelect,
+                    AllowedToolboxItem.ZoomPan,
+                    AllowedToolboxItem.AnnotationID, 
+                    AllowedToolboxItem.ClassCounter,
+                    AllowedToolboxItem.AnnotationResize, 
+                    AllowedToolboxItem.KeypointSlider,  
+                    AllowedToolboxItem.FilterDistance,
+                    AllowedToolboxItem.RecolorActive,
                 ],
                 "toggle_brush_mode_keybind": "f",
                 "create_bbox_on_initial_crop": "|",
