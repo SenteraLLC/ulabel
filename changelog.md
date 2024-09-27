@@ -10,6 +10,7 @@ Nothing yet.
   - The `keypoint_slider_default_value` option was not being properly multiplied by 100 internally.
 - Move several config argument defaults into the configuration class instead of in the ULabel constructor.
 #### Breaking Changes
+- Changed default for `filter_annotations_on_load` from `false` to `true`.
 - Deprecated the `default_toolbox_item_order` argument in the ULabel constructor. Use `toolbox_order` instead.
 - Deprecated `config_data` argument in the ULabel constructor. Instead, pass all configuration options as keyword arguments directly to the ULabel constructor.
   - For now, the `config_data` argument will still work, but may be removed in a future release.

@@ -13,9 +13,6 @@
 
     <!-- ULabel Usage -->
     <script>
-        /* global $ */
-        /* global ULabel */
-
         $(window).on("load", function () {
 
             function on_submit(annotations) {
@@ -773,7 +770,6 @@
                     // "filter_during_polyline_move": false,
                 },
                 "keypoint_slider_default_value": 0.2,
-                "filter_annotations_on_load": true,
             });
             // Wait for ULabel instance to finish initialization
             ulabel.init(function () {

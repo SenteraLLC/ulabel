@@ -148,7 +148,7 @@ export class Configuration {
     
     public keypoint_slider_default_value: number;
 
-    public filter_annotations_on_load: boolean = false;
+    public filter_annotations_on_load: boolean = true;
     
     public switch_subtask_keybind: string = "z";
     

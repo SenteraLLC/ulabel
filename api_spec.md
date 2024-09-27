@@ -384,7 +384,7 @@ Keybind to delete the annotation that the mouse is hovering over. Default is `d`
 Default value for the keypoint slider. Must be a number between 0 and 1. Default is `0`.
 
 ### `filter_annotations_on_load`
-If true, the annotations will be filtered on load based on the `keypoint_slider_default_value`. Default is `false`.
+If true, the annotations will be filtered on load based on the `keypoint_slider_default_value`. Default is `true`.
 
 ### `switch_subtask_keybind`
 Keybind to switch between subtasks. Default is `z`.
