@@ -74,7 +74,7 @@ export class Toolbox {
 
         this.add_styles()
 
-        let toolbox_instance_list = [];
+        const toolbox_instance_list = [];
         // Go through the items in toolbox_item_order and add their instance to the toolbox instance list
         for (let i = 0; i < toolbox_item_order.length; i++) {
 
@@ -91,7 +91,7 @@ export class Toolbox {
                 args = toolbox_item_order[i][1]  
             }
 
-            let toolbox_item_class = ulabel.config.toolbox_map.get(toolbox_key);
+            const toolbox_item_class = ulabel.config.toolbox_map.get(toolbox_key);
 
             if (args == null) {
                 toolbox_instance_list.push(new toolbox_item_class(ulabel))
@@ -241,9 +241,9 @@ export class Toolbox {
     public get_toolbox_tabs(ulabel: ULabel): string{
         let ret: string = "";
         for (const st_key in ulabel.subtasks) {
-            let selected = st_key == ulabel.state["current_subtask"];
-            let subtask = ulabel.subtasks[st_key];
-            let current_tab = new ToolboxTab(
+            const selected = st_key == ulabel.state["current_subtask"];
+            const subtask = ulabel.subtasks[st_key];
+            const current_tab = new ToolboxTab(
                 [],
                 subtask,
                 st_key,
@@ -335,14 +335,14 @@ export class ModeSelectionToolboxItem extends ToolboxItem {
         $(document).on("click.ulabel", "a.md-btn", (e) => {
             
             // Grab the current target and the current subtask
-            let target_jq = $(e.currentTarget);
-            let current_subtask = ulabel.state["current_subtask"];
+            const target_jq = $(e.currentTarget);
+            const current_subtask = ulabel.state["current_subtask"];
 
             // Check if button clicked is already selected, or if creation of a new annotation is in progress
             if (target_jq.hasClass("sel") || ulabel.subtasks[current_subtask]["state"]["is_in_progress"]) return;
 
             // Get the new mode and set it to ulabel's current mode
-            let new_mode = target_jq.attr("id").split("--")[1];
+            const new_mode = target_jq.attr("id").split("--")[1];
             ulabel.subtasks[current_subtask]["state"]["annotation_mode"] = new_mode;
 
             // Show the BrushToolboxItem when polygon mode is selected
@@ -375,19 +375,19 @@ export class ModeSelectionToolboxItem extends ToolboxItem {
         $(document).on("keypress.ulabel", (e) => {
 
             // If creation of a new annotation is in progress, don't change the mode
-            let current_subtask = ulabel.state["current_subtask"];
+            const current_subtask = ulabel.state["current_subtask"];
             if (ulabel.subtasks[current_subtask]["state"]["is_in_progress"]) return;
 
             // Check if the correct key was pressed
             if (e.key == ulabel.config.toggle_annotation_mode_keybind) {
 
-                let mode_button_array: HTMLElement[] = []
+                const mode_button_array: HTMLElement[] = []
 
                 // Loop through all of the mode buttons
-                for (let idx in Array.from(document.getElementsByClassName("md-btn"))) {
+                for (const idx in Array.from(document.getElementsByClassName("md-btn"))) {
     
                     // Grab mode button
-                    let mode_button = <HTMLElement> document.getElementsByClassName("md-btn")[idx]
+                    const mode_button = <HTMLElement> document.getElementsByClassName("md-btn")[idx]
 
                     // Continue without adding it to the array if its display is none
                     if (mode_button.style.display == "none") {
@@ -397,7 +397,7 @@ export class ModeSelectionToolboxItem extends ToolboxItem {
                 } 
 
                 // Grab the currently selected mode button
-                let selected_mode_button = <HTMLAnchorElement> Array.from(document.getElementsByClassName("md-btn sel"))[0] // There's only ever going to be one element in this array, so grab the first one
+                const selected_mode_button = <HTMLAnchorElement> Array.from(document.getElementsByClassName("md-btn sel"))[0] // There's only ever going to be one element in this array, so grab the first one
 
                 let new_button_index: number
 
@@ -406,7 +406,7 @@ export class ModeSelectionToolboxItem extends ToolboxItem {
                 // to get the index of the next mode select button. If the new button index
                 // is the same as the array's length, then loop back and set the new button
                 // to 0.
-                for (let idx in mode_button_array) {
+                for (const idx in mode_button_array) {
                     if (mode_button_array[idx] === selected_mode_button) {
                         new_button_index = Number(idx) + 1
                         if (new_button_index == mode_button_array.length) {
@@ -416,7 +416,7 @@ export class ModeSelectionToolboxItem extends ToolboxItem {
                 }
 
                 // Grab the button for the mode we want to switch to
-                let new_selected_button = mode_button_array[new_button_index]
+                const new_selected_button = mode_button_array[new_button_index]
 
                 new_selected_button.click()
             }
@@ -1094,13 +1094,13 @@ export class ClassCounterToolboxItem extends ToolboxItem {
         }
         const class_ids = subtask.class_ids;
         let i: number, j: number;
-        let class_counts = {};
+        const class_counts = {};
         for (i = 0; i < class_ids.length; i++) {
             class_counts[class_ids[i]] = 0;
         }
-        let annotations = subtask.annotations.access;
-        let annotation_ids = subtask.annotations.ordering;
-        var current_annotation: ULabelAnnotation, current_payload;
+        const annotations = subtask.annotations.access;
+        const annotation_ids = subtask.annotations.ordering;
+        let current_annotation: ULabelAnnotation, current_payload;
         for (i = 0; i < annotation_ids.length; i++) {
             current_annotation = annotations[annotation_ids[i]];
             if (current_annotation.deprecated === false) {
@@ -1168,9 +1168,9 @@ export class AnnotationResizeItem extends ToolboxItem {
         // First check for a size cookie, if one isn't found then check the config
         // for a default annotation size. If neither are found it will use the size
         // that the annotation was saved as.
-        for (let subtask in ulabel.subtasks) {
-            let cached_size_property = ulabel.subtasks[subtask].display_name.replaceLowerConcat(" ", "-", "-cached-size")
-            let size_cookie = this.read_size_cookie(ulabel.subtasks[subtask])
+        for (const subtask in ulabel.subtasks) {
+            const cached_size_property = ulabel.subtasks[subtask].display_name.replaceLowerConcat(" ", "-", "-cached-size")
+            const size_cookie = this.read_size_cookie(ulabel.subtasks[subtask])
             if ((size_cookie != null) && size_cookie != "NaN") {
                 this.update_annotation_size(ulabel, ulabel.subtasks[subtask], Number(size_cookie));
                 this[cached_size_property] = Number(size_cookie)
@@ -1331,8 +1331,8 @@ export class AnnotationResizeItem extends ToolboxItem {
         const large_size = 5;
         const increment_size = 0.5;
         const vanish_size = 0.01;
-        let subtask_cached_size = subtask.display_name.replaceLowerConcat(" ", "-", "-cached-size");
-        let subtask_vanished_flag = subtask.display_name.replaceLowerConcat(" ", "-", "-vanished");
+        const subtask_cached_size = subtask.display_name.replaceLowerConcat(" ", "-", "-cached-size");
+        const subtask_vanished_flag = subtask.display_name.replaceLowerConcat(" ", "-", "-vanished");
 
         // If the annotations are currently vanished and a button other than the vanish button is
         // pressed, then we want to ignore the input
@@ -1428,26 +1428,26 @@ export class AnnotationResizeItem extends ToolboxItem {
 
     //Loop through all subtasks and apply a size to them all
     public update_all_subtask_annotation_size(ulabel, size) {
-        for (let subtask in ulabel.subtasks) {
+        for (const subtask in ulabel.subtasks) {
             this.update_annotation_size(ulabel, ulabel.subtasks[subtask], size)
         }
     }
 
     private set_size_cookie(cookie_value, subtask) {
-        let d = new Date();
+        const d = new Date();
         d.setTime(d.getTime() + (10000 * 24 * 60 * 60 * 1000));
 
-        let subtask_name = subtask.display_name.replaceLowerConcat(" ", "_");
+        const subtask_name = subtask.display_name.replaceLowerConcat(" ", "_");
 
         document.cookie = subtask_name + "_size=" + cookie_value + ";" + d.toUTCString() + ";path=/";
     }
 
     private read_size_cookie(subtask) {
-        let subtask_name = subtask.display_name.replaceLowerConcat(" ", "_");
+        const subtask_name = subtask.display_name.replaceLowerConcat(" ", "_");
 
-        let cookie_name = subtask_name + "_size=";       
+        const cookie_name = subtask_name + "_size=";       
 
-        let cookie_array = document.cookie.split(";");
+        const cookie_array = document.cookie.split(";");
 
         for (let i = 0; i < cookie_array.length; i++) {
             let current_cookie = cookie_array[i];
@@ -1562,17 +1562,17 @@ export class RecolorActiveItem extends ToolboxItem {
         const color_info = this.ulabel.color_info
 
         // Grab the dialogs and their containers
-        let subtask_dialog_container_jq = $("#dialogs__" + current_subtask_key);
-        let id_dialog_container = $(`#id_dialog__${current_subtask_key}`)
-        let front_subtask_dialog_container_jq = $("#front_dialogs__" + current_subtask_key);
-        let front_id_dialog_container = $(`#id_front_dialog__${current_subtask_key}`)
+        const subtask_dialog_container_jq = $("#dialogs__" + current_subtask_key);
+        const id_dialog_container = $(`#id_dialog__${current_subtask_key}`)
+        const front_subtask_dialog_container_jq = $("#front_dialogs__" + current_subtask_key);
+        const front_id_dialog_container = $(`#id_front_dialog__${current_subtask_key}`)
 
         // Build the html
-        let dialog_html_v2 = get_idd_string(
+        const dialog_html_v2 = get_idd_string(
             id_dialog_id, width, this.ulabel.subtasks[current_subtask_key].class_ids,
             inner_radius, color_info
         );
-        let front_dialog_html_v2 = get_idd_string(
+        const front_dialog_html_v2 = get_idd_string(
             front_id_dialog_id, width, this.ulabel.subtasks[current_subtask_key].class_ids,
             inner_radius, color_info
         );
@@ -1587,7 +1587,7 @@ export class RecolorActiveItem extends ToolboxItem {
 
         // Re-add the event listener for changing the opacity on hover
         // Set that = this because this references the element inside the event listener instead of the toolbox item
-        let that = this
+        const that = this
         $(".id_dialog").on("mousemove.ulabel", function (mouse_event) {
             if (!that.ulabel.subtasks[current_subtask_key].state.idd_thumbnail) {
                 that.ulabel.handle_id_dialog_hover(mouse_event);
@@ -1732,7 +1732,7 @@ export class RecolorActiveItem extends ToolboxItem {
         // Listener for the color picker
         $(document).on("input.ulabel", "input.color-change-picker", (event) => {
             // Get the selected color from the event
-            let color: string = event.currentTarget.value
+            const color: string = event.currentTarget.value
 
             // Get the currently selected class id
             const active_class_id: number = get_active_class_id(this.ulabel)
@@ -1741,7 +1741,7 @@ export class RecolorActiveItem extends ToolboxItem {
             this.update_color(active_class_id, color)
             
             // Grab the color picker container and update its background to the selected color
-            let color_picker_container = <HTMLDivElement> document.getElementById("color-picker-container")
+            const color_picker_container = <HTMLDivElement> document.getElementById("color-picker-container")
             color_picker_container.style.backgroundColor = color
 
             // Redraw the annotations with the new color
@@ -1929,9 +1929,9 @@ export class KeypointSliderItem extends ToolboxItem {
             filter_value = Math.round(this.filter_value * 100);
         }
         // Store which annotations need to be redrawn
-        let annotations_ids_to_redraw_by_subtask: {[key: string]: string[]} = {}
+        const annotations_ids_to_redraw_by_subtask: {[key: string]: string[]} = {}
         // Initialize the object with the subtask keys
-        for (let subtask_key in ulabel.subtasks) {
+        for (const subtask_key in ulabel.subtasks) {
             annotations_ids_to_redraw_by_subtask[subtask_key] = []
         }
 
@@ -1959,7 +1959,7 @@ export class KeypointSliderItem extends ToolboxItem {
 
         if (redraw) {
             // Redraw each subtask's annotations
-            for (let subtask_key in annotations_ids_to_redraw_by_subtask) {
+            for (const subtask_key in annotations_ids_to_redraw_by_subtask) {
                 ulabel.redraw_multiple_spatial_annotations(annotations_ids_to_redraw_by_subtask[subtask_key], subtask_key)
             }
             // Update class counter
@@ -2160,7 +2160,7 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
             this.overlay.update_mode(this.multi_class_mode)
 
             // Re-filter the points in the new mode, recalculating all distances if changing to multi-class
-            let recalculate_distances = this.multi_class_mode
+            const recalculate_distances = this.multi_class_mode
             filter_points_distance_from_line(this.ulabel, recalculate_distances)
         })
 
@@ -2221,7 +2221,7 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
         const line_annotations: ULabelAnnotation[] = get_point_and_line_annotations(this.ulabel)[1]
 
         // Initialize an object to hold the distances points are allowed to be from each class as well as any line
-        let filter_values: DistanceFromPolylineClasses = {closest_row: undefined}
+        const filter_values: DistanceFromPolylineClasses = {closest_row: undefined}
 
         // Grab all filter-distance-sliders on the page
         const sliders: NodeListOf<HTMLInputElement> = document.querySelectorAll(".filter-row-distance-slider")
@@ -2425,7 +2425,7 @@ export class SubmitButtons extends ToolboxItem {
 
         this.submit_buttons_by_row = this.sort_buttons_by_row_number()
 
-        for (let idx in this.submit_buttons) {
+        for (const idx in this.submit_buttons) {
 
             // Create a unique event listener for each submit button in the submit buttons array.
             $(document).on("click.ulabel", "#" + this.submit_buttons[idx].name.replaceLowerConcat(" ", "-"), async (e) => {
@@ -2433,22 +2433,22 @@ export class SubmitButtons extends ToolboxItem {
                 const button: HTMLButtonElement = <HTMLButtonElement> document.getElementById(this.submit_buttons[idx].name.replaceLowerConcat(" ", "-"));
                 
                 // Grab all of the submit buttons
-                let submit_button_elements = <HTMLButtonElement[]> Array.from(document.getElementsByClassName("submit-button"));
+                const submit_button_elements = <HTMLButtonElement[]> Array.from(document.getElementsByClassName("submit-button"));
                 
                 // Make all the buttons look disabled
-                for (let i in submit_button_elements) {
+                for (const i in submit_button_elements) {
                     submit_button_elements[i].disabled = true;
                     submit_button_elements[i].style.filter = "opacity(0.7)";
                 }
 
                 // Give the clicked button a loading animation
                 button.innerText = "";
-                let animation = document.createElement("div");
+                const animation = document.createElement("div");
                 animation.className = "lds-dual-ring";
                 button.appendChild(animation);
 
                 // Create the submit payload
-                let submit_payload = {
+                const submit_payload = {
                     "task_meta": ulabel.config["task_meta"],
                     "annotations": {}
                 };
@@ -2459,7 +2459,7 @@ export class SubmitButtons extends ToolboxItem {
 
                     // Add all of the annotations in that subtask
                     for (let i = 0; i < ulabel.subtasks[stkey]["annotations"]["ordering"].length; i++) {
-                        let annotation = ulabel.subtasks[stkey]["annotations"]["access"][ulabel.subtasks[stkey]["annotations"]["ordering"][i]];
+                        const annotation = ulabel.subtasks[stkey]["annotations"]["access"][ulabel.subtasks[stkey]["annotations"]["ordering"][i]];
                         // Skip any delete modes
                         if (
                             DELETE_MODES.includes(annotation.spatial_type)
@@ -2490,7 +2490,7 @@ export class SubmitButtons extends ToolboxItem {
                 button.innerText = this.submit_buttons[idx].name;
 
                 // Re-enable the buttons
-                for (let i in submit_button_elements) {
+                for (const i in submit_button_elements) {
                     submit_button_elements[i].disabled = false;
                     submit_button_elements[i].style.filter = "opacity(1)";
                 }
@@ -2504,14 +2504,14 @@ export class SubmitButtons extends ToolboxItem {
      * @returns {ULabelSubmitButton[][]} Array of submit buttons grouped by row number
      */
     private sort_buttons_by_row_number() {
-        let submit_buttons_by_row: ULabelSubmitButton[][] = [];
+        const submit_buttons_by_row: ULabelSubmitButton[][] = [];
         // First, get all the unique row numbers. 
         // If a button doesn't have a row number, it will be placed in row 0.
-        let row_numbers: Set<number> = new Set(this.submit_buttons.map((button) => button.row_number ? button.row_number : 0));
+        const row_numbers: Set<number> = new Set(this.submit_buttons.map((button) => button.row_number ? button.row_number : 0));
         // Sort the row numbers
-        let sorted_row_numbers: number[] = Array.from(row_numbers).sort((a, b) => a - b);
+        const sorted_row_numbers: number[] = Array.from(row_numbers).sort((a, b) => a - b);
         // Group the buttons by row number in ascending order
-        for (let row_number of sorted_row_numbers) {
+        for (const row_number of sorted_row_numbers) {
             submit_buttons_by_row.push(
                 this.submit_buttons.filter((button) => {
                     // If the button doesn't have a row number, it will be placed in row 0
@@ -2552,12 +2552,12 @@ export class SubmitButtons extends ToolboxItem {
     get_html(): string {
         let toolboxitem_html = `<div class="submit-button-container">`
 
-        for (let submit_buttons of this.submit_buttons_by_row) {
+        for (const submit_buttons of this.submit_buttons_by_row) {
             // Create a row for each row of submit buttons
             toolboxitem_html += `<div class="submit-button-row">`
 
             // Create each button in the row
-            for (let submit_button of submit_buttons) {
+            for (const submit_button of submit_buttons) {
                 let button_color = "rgba(255, 166, 0, 0.739)"
                 if (submit_button.color !== undefined) {
                     button_color = submit_button.color
