@@ -12,7 +12,7 @@ export default [
     },
   },
   {
-    ignores: ["node_modules", "dist", "build", "demo.js"],
+    ignores: ["node_modules", "dist", "build", "demo.js", "webpack.config.js"],
   },
   pluginJs.configs.recommended,
   ...tseslint.configs.recommended,

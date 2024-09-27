@@ -44,7 +44,7 @@
     "@types/jquery": "^3.5.30",
     "@typescript-eslint/eslint-plugin": "^4.16.1",
     "@typescript-eslint/parser": "^4.16.1",
-    "eslint": "^7.32.0",
+    "eslint": "^9.11.1",
     "eslint-config-prettier": "^9.1.0",
     "express": "^4.17.1",
     "globals": "^15.9.0",

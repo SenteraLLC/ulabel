@@ -37,9 +37,12 @@ import {
 
 import $ from 'jquery';
 const jQuery = $;
-window.$ = window.jQuery = require('jquery');
 
-const { v4: uuidv4 } = require('uuid');
+// Electron workaround: https://github.com/electron/electron/issues/254
+// eslint-disable-next-line @typescript-eslint/no-require-imports, no-undef
+window.$ = window.jQuery = require('jquery'); 
+
+import { v4 as uuidv4 } from 'uuid';
 
 import {
     COLORS,
