@@ -3,7 +3,8 @@ import {
     FilterDistanceConfig, 
     RecolorActiveConfig, 
     ULabel,
-    ULabelSubmitButton, 
+    ULabelSubmitButton,
+    ValidDeprecatedBy, 
 } from "..";
 import { DEFAULT_FILTER_DISTANCE_CONFIG } from "./configuration";
 import { ULabelAnnotation, NONSPATIAL_MODES, DELETE_MODES } from "./annotation";
@@ -198,7 +199,12 @@ export class Toolbox {
         head.appendChild(style);
     }
 
-    public setup_toolbox_html(ulabel: ULabel, frame_annotation_dialogs: any, images: any, ULABEL_VERSION: any): string {
+    public setup_toolbox_html(
+        ulabel: ULabel,
+        frame_annotation_dialogs: string,
+        images: string,
+        ULABEL_VERSION: string,
+    ): string {
         // Setup base div and ULabel version header
         let toolbox_html = `
         <div class="full_ulabel_container_">
@@ -318,8 +324,11 @@ export abstract class ToolboxItem {
      */
     protected abstract add_styles(): void; 
 
+    // TODO (joshua-dean): Find the right way to handle this with abstract classes
+    /* eslint-disable @typescript-eslint/no-unused-vars */
     public redraw_update(ulabel: ULabel): void {}
     public frame_update(ulabel: ULabel): void {} 
+    /* eslint-enable @typescript-eslint/no-unused-vars */
 }
 
 /**
@@ -886,6 +895,7 @@ export class ZoomPanToolboxItem extends ToolboxItem {
                     case "ArrowDown":
                         annbox.scrollTop(annbox.scrollTop() + 20)
                         event.preventDefault()
+                        break
                     default:
                 }
             })
@@ -1051,6 +1061,9 @@ export class AnnotationIDToolboxItem extends ToolboxItem {
 export class ClassCounterToolboxItem extends ToolboxItem {
     public html: string;
     public inner_HTML: string;
+    
+    // TODO (joshua-dean): Find the correct way to handle this
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     constructor(...args) {
         super();
         this.inner_HTML = `<p class="tb-header">Annotation Count</p>`;
@@ -1585,8 +1598,12 @@ export class RecolorActiveItem extends ToolboxItem {
         front_subtask_dialog_container_jq.append(front_dialog_html_v2);
         subtask_dialog_container_jq.append(dialog_html_v2);
 
+
         // Re-add the event listener for changing the opacity on hover
         // Set that = this because this references the element inside the event listener instead of the toolbox item
+        // TODO (joshua-dean): Don't alias this
+        // https://typescript-eslint.io/rules/no-this-alias/
+        // eslint-disable-next-line @typescript-eslint/no-this-alias
         const that = this
         $(".id_dialog").on("mousemove.ulabel", function (mouse_event) {
             if (!that.ulabel.subtasks[current_subtask_key].state.idd_thumbnail) {
@@ -1834,9 +1851,13 @@ export class KeypointSliderItem extends ToolboxItem {
     public inner_HTML: string;
     public name: string;
     public slider_bar_id: string;
-    public filter_function: Function;
-    public get_confidence: Function;
-    public mark_deprecated: Function;
+    public filter_function: (value: number, filter: number) => boolean;
+    public get_confidence: (annotation: ULabelAnnotation) => number;
+    public mark_deprecated: (
+        annotation: ULabelAnnotation,
+        deprecated: boolean,
+        deprecated_by_key?: ValidDeprecatedBy,
+    ) => void;
     filter_value: number = 0;
     ulabel: ULabel;
     keybinds: {
@@ -1844,6 +1865,8 @@ export class KeypointSliderItem extends ToolboxItem {
         "decrement": string
     }
 
+    // TODO (joshua-dean): See if we can narrow this any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     constructor(ulabel: ULabel, kwargs: {[name: string]: any}) {
         super();
         this.inner_HTML = `<p class="tb-header">Keypoint Slider</p>`;
@@ -1874,7 +1897,11 @@ export class KeypointSliderItem extends ToolboxItem {
         this.slider_bar_id = this.name.replaceLowerConcat(" ", "-");
         
         // If the config has a default value override the filter_value
-        if (this.ulabel.config.hasOwnProperty(this.name.replaceLowerConcat(" ", "_", "_default_value"))) {
+        const has_filter_override = Object.prototype.hasOwnProperty.call(
+            this.ulabel.config,
+            this.name.replaceLowerConcat(" ", "_", "_default_value")
+        );
+        if (has_filter_override) {
             // Set the filter value
             this.filter_value = this.ulabel.config[this.name.replaceLowerConcat(" ", "_", "_default_value")];
         }
@@ -2017,6 +2044,8 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
     ulabel: ULabel // The ULabel object. Must be passed in
     config: FilterDistanceConfig // This object's config object
 
+    // TODO (joshua-dean): Resolve kwargs usage and narrow any
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any
     constructor(ulabel: ULabel, kwargs: {[name: string]: any} = null) {
         super()
 
@@ -2027,7 +2056,7 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
 
         // For each key missing from the config, set the default value
         for (const key in DEFAULT_FILTER_DISTANCE_CONFIG) {
-            if (!this.config.hasOwnProperty(key)) {
+            if (!Object.prototype.hasOwnProperty.call(this.config, key)) {
                 this.config[key] = DEFAULT_FILTER_DISTANCE_CONFIG[key]
             }
         }
@@ -2428,7 +2457,7 @@ export class SubmitButtons extends ToolboxItem {
         for (const idx in this.submit_buttons) {
 
             // Create a unique event listener for each submit button in the submit buttons array.
-            $(document).on("click.ulabel", "#" + this.submit_buttons[idx].name.replaceLowerConcat(" ", "-"), async (e) => {
+            $(document).on("click.ulabel", "#" + this.submit_buttons[idx].name.replaceLowerConcat(" ", "-"), async () => {
                 // Grab the button
                 const button: HTMLButtonElement = <HTMLButtonElement> document.getElementById(this.submit_buttons[idx].name.replaceLowerConcat(" ", "-"));
                 
