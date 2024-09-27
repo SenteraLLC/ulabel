@@ -1,4 +1,10 @@
-import { FilterDistanceConfig, RecolorActiveConfig } from "..";
+import { 
+    FilterDistanceConfig, 
+    InitialCrop,
+    ImageData,
+    RecolorActiveConfig,
+    ULabelSubmitButton,
+} from "..";
 import { 
     ModeSelectionToolboxItem, 
     ZoomPanToolboxItem, 
@@ -45,6 +51,51 @@ export const DEFAULT_FILTER_DISTANCE_CONFIG: FilterDistanceConfig = {
 }
 
 export class Configuration {
+    // Values useful for generating HTML for tool
+    public container_id: string = "container"
+    public px_per_px: number = 1
+    public initial_crop: InitialCrop = null
+    public annbox_id: string = "annbox"
+    public imwrap_id: string = "imwrap"
+    public canvas_fid_pfx: string = "front-canvas"
+    public canvas_bid_pfx: string = "back-canvas"
+    public canvas_did: string = "demo-canvas"
+    public canvas_class: string = "easel"
+    public image_id_pfx: string = "ann_image"
+    public imgsz_class: string = "imgsz"
+    public toolbox_id: string = "toolbox"
+
+    // Dimensions of various components of the tool
+    public image_width: number = null;
+    public image_height: number = null;
+    public demo_width: number = 120;
+    public demo_height: number = 40;
+    public polygon_ender_size: number = 15;
+    public edit_handle_size: number = 30;
+    public brush_size: number = 60;
+
+    // Configuration for the annotation task itself
+    public image_data: ImageData = null;
+    public allow_soft_id: boolean = false;
+    public default_annotation_color: string = "#fa9d2a";
+    public username: string = "ULabelUser";
+    public initial_line_size: number = null;
+
+    // ID Dialog config
+    public cl_opacity: number = 0.4;
+    public outer_diameter: number = 200;
+    public inner_prop: number = 0.3;
+    
+    // Behavior on special interactions
+    public instructions_url: string = null;
+    public submit_buttons: ULabelSubmitButton[] = [];
+
+    // Passthrough
+    public task_meta: object = null;
+    public annotation_meta: object = null;
+
+    public subtasks: object = null;
+
     public toolbox_map = new Map<AllowedToolboxItem, any> ([
         [AllowedToolboxItem.ModeSelect, ModeSelectionToolboxItem],
         [AllowedToolboxItem.ZoomPan, ZoomPanToolboxItem],
@@ -59,7 +110,7 @@ export class Configuration {
     ]);
     
     // Default toolbox order used when the user doesn't specify one
-    public default_toolbox_item_order: AllowedToolboxItem[] = [
+    public toolbox_order: AllowedToolboxItem[] = [
         AllowedToolboxItem.ModeSelect,
         AllowedToolboxItem.Brush,
         AllowedToolboxItem.ZoomPan,
@@ -97,7 +148,7 @@ export class Configuration {
     
     public keypoint_slider_default_value: number;
 
-    public filter_annotations_on_load: boolean = false;
+    public filter_annotations_on_load: boolean = true;
     
     public switch_subtask_keybind: string = "z";
     

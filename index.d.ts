@@ -1,5 +1,5 @@
 import { ULabelAnnotation } from "./src/annotation";
-import { AllowedToolboxItem } from "./src/configuration";
+import { AllowedToolboxItem, Configuration } from "./src/configuration";
 import { FilterDistanceOverlay } from "./src/overlays";
 import { ULabelSubtask } from "./src/subtask";
 import { Toolbox } from "./src/toolbox";
@@ -150,12 +150,22 @@ export type InitialCrop = {
     width: number;
 }
 
+export type ImageData = {
+    spacing: {
+        x: number,
+        y: number,
+        z: number,
+        units: string
+    },
+    frames: string[]
+}
+
 export type ULabelSubtasks = { [key: string]: ULabelSubtask };
 
 export class ULabel {
     subtasks: ULabelSubtask[];
     state: any;
-    config: any;
+    config: Configuration;
     toolbox: Toolbox;
     color_info: {[key: number]: string}
     valid_class_ids: number[];
@@ -203,6 +213,7 @@ export class ULabel {
     public toggle_delete_class_id_in_toolbox(): void;
     public change_brush_size(scale_factor: number): void;
     public remove_listeners(): void;
+    static get_allowed_toolbox_item_enum(): AllowedToolboxItem;
     static process_classes(ulabel_obj: any, arg1: string, subtask_obj: any);
     static build_id_dialogs(ulabel_obj: any);
         
