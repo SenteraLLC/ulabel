@@ -9,12 +9,12 @@
     "demo": "node demo.js",
     "build": "tsc && webpack --mode production",
     "build-dev": "tsc && webpack --mode development",
-    "build-and-demo": "npm run build && npm run demo"
+    "build-and-demo": "npm run build && npm run demo",
+    "prepare": "husky"
   },
-  "pre-commit": [
-    "eslint .",
-    "prettier . --write"
-  ],
+  "lint-staged": {
+    "**/*.{js,mjs,cjs,ts}": "eslint"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/SenteraLLC/ulabel"
@@ -47,6 +47,8 @@
     "eslint-config-prettier": "^9.1.0",
     "express": "^4.17.1",
     "globals": "^15.9.0",
+    "husky": "^9.1.6",
+    "lint-staged": "^15.2.10",
     "pre-commit": "^1.2.2",
     "prettier": "3.3.3",
     "typescript-eslint": "^8.7.0",
