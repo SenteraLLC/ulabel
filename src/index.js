@@ -1088,6 +1088,9 @@ export class ULabel {
         // Add stylesheet
         add_style_to_document(this);
 
+        // TODO (joshua-dean): Make this follow the rule
+        // https://typescript-eslint.io/rules/no-this-alias/
+        // eslint-disable-next-line @typescript-eslint/no-this-alias
         let that = this;
         that.state["current_subtask"] = Object.keys(that.subtasks)[0];
 
@@ -6631,7 +6634,9 @@ export class ULabel {
             this.subtasks[q[i]]["state"]["is_in_move"] = false;
             this.subtasks[q[i]]["state"]["is_in_progress"] = false;
             this.subtasks[q[i]]["state"]["active_id"] = null;
-            this.show
+            // TODO (joshua-dean): this line was probably a mistake
+            // It's at least 3 years old, and is a nop as far as I can tell
+            // this.show
         }
         this.drag_state = {
             "active_key": null,
