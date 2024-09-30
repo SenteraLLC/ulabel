@@ -3,21 +3,32 @@ Uncertain Labeling Tool
 Sentera Inc.
 */
 import {
-    ULabelAnnotation,
-    DELETE_CLASS_ID,
-    DELETE_MODES,
-    NONSPATIAL_MODES,
-    MODES_3D,
-} from "../build/annotation";
-import { ULabelSubtask } from "../build/subtask";
-import { GeometricUtils } from "../build/geometric_utils";
-import {
     AllowedToolboxItem,
     Configuration,
     DEFAULT_N_ANNOS_PER_CANVAS,
     TARGET_MAX_N_CANVASES_PER_SUBTASK,
 } from "../build/configuration";
-import { get_gradient } from "../build/drawing_utilities";
+import {
+    BACK_Z_INDEX,
+    COLORS,
+    FRONT_Z_INDEX,
+    GLOBAL_SVG,
+    WHOLE_IMAGE_SVG,
+} from "./blobs";
+import {
+    DELETE_CLASS_ID,
+    DELETE_MODES,
+    MODES_3D,
+    NONSPATIAL_MODES,
+    ULabelAnnotation,
+} from "../build/annotation";
+import {
+    add_style_to_document,
+    build_confidence_dialog,
+    build_edit_suggestion,
+    build_id_dialogs,
+    prep_window_html,
+} from "../build/html_builder";
 import {
     assign_closest_line_to_each_point,
     filter_points_distance_from_line,
@@ -27,31 +38,18 @@ import {
     mark_deprecated,
     update_distance_from_line_to_each_point,
 } from "../build/annotation_operators";
-import {
-    add_style_to_document,
-    prep_window_html,
-    build_id_dialogs,
-    build_edit_suggestion,
-    build_confidence_dialog,
-} from "../build/html_builder";
-
 import $ from "jquery";
+import { GeometricUtils } from "../build/geometric_utils";
+import { ULABEL_VERSION } from "./version";
+import { ULabelSubtask } from "../build/subtask";
+import { get_gradient } from "../build/drawing_utilities";
+import { v4 as uuidv4 } from "uuid";
+
 const jQuery = $;
 
 // Electron workaround: https://github.com/electron/electron/issues/254
 // eslint-disable-next-line @typescript-eslint/no-require-imports, no-undef
 window.$ = window.jQuery = require("jquery");
-
-import { v4 as uuidv4 } from "uuid";
-
-import {
-    COLORS,
-    WHOLE_IMAGE_SVG,
-    GLOBAL_SVG,
-    FRONT_Z_INDEX,
-    BACK_Z_INDEX,
-} from "./blobs";
-import { ULABEL_VERSION } from "./version";
 
 jQuery.fn.outer_html = function () {
     return jQuery("<div />").append(this.eq(0).clone()).html();
