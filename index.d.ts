@@ -198,6 +198,8 @@ export class ULabel {
     public show_whole_image(): void;
     public swap_frame_image(new_src: string, frame?: number): string;
     public swap_anno_bg_color(new_bg_color: string): string;
+    public get_current_subtask_key(): string;
+    public get_current_subtask(): ULabelSubtask;
     public get_annotations(subtask: ULabelSubtask): ULabelAnnotation[];
     public set_annotations(annotations: ULabelAnnotation[], subtask: ULabelSubtask);
     public set_saved(saved: boolean);
