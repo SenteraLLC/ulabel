@@ -1348,6 +1348,23 @@ export class ULabel {
 
     // ================== Subtask Helpers ===================
 
+    /**
+     * Get the current subtask key
+     * @returns {string} The current subtask key
+     */
+    get_current_subtask_key() {
+        return this.state["current_subtask"];
+    }
+    
+    /**
+     * Get the current subtask
+     * @returns {ULabelSubtask} The current subtask
+     */
+    get_current_subtask() {
+        return this.subtasks[this.get_current_subtask_key()];
+        
+    }
+
     readjust_subtask_opacities() {
         for (const st_key in this.subtasks) {
             let sliderval = $("#tb-st-range--" + st_key).val();
