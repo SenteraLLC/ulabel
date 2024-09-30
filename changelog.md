@@ -8,7 +8,8 @@ Nothing yet.
 
 ## [0.13.1] - Sept 30th, 2024
 - Remove unecessary and confusing default in global edit dialog
-- Fix missing field `active_annotation` in `ULabelSubtask`
+- Squash `active_annotation` into `edit_candidate` in subtask state
+- Fix missing fields in `ULabelSubtask.state.edit_candidate`
 
 ## [0.13.0] - Sept 26th, 2024
 - Fix bug where the `filter_annotations_on_load = true` option would not work as expected. 
