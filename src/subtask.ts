@@ -5,6 +5,7 @@ export class ULabelSubtask {
     public actions: { stream: any[]; undone_stack: any[]; };
     public class_ids: number[] = [];
     public class_defs: ClassDefinition[]
+    public active_annotation: ULabelAnnotation
     public annotations: {
         "access": {[key: string]: ULabelAnnotation},
         "ordering": string[]
