@@ -1,11 +1,10 @@
-import { ULabelSpatialType, ClassDefinition } from "..";
+import { ULabelSpatialType, ClassDefinition, ULabelSpatialPayload } from "..";
 import { ULabelAnnotation } from "./annotation";
 
 export class ULabelSubtask {
     public actions: { stream: any[]; undone_stack: any[]; };
     public class_ids: number[] = [];
     public class_defs: ClassDefinition[]
-    public active_annotation: ULabelAnnotation
     public annotations: {
         "access": {[key: string]: ULabelAnnotation},
         "ordering": string[]
@@ -15,7 +14,12 @@ export class ULabelSubtask {
         active_id: string,
         annotation_mode: string,
         back_context: CanvasRenderingContext2D,
-        edit_candidate: unknown, // TODO: figure out what type this is
+        edit_candidate: {
+            annid: string,
+            access: ULabelAnnotation,
+            distance: number,
+            point: ULabelSpatialPayload  // TODO: double check this one 
+        },
         first_explicit_assignment: boolean,
         front_context: CanvasRenderingContext2D,
         id_payload: number[] | {
