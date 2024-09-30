@@ -109,7 +109,7 @@ export class ULabel {
             - Shift-left mousedown
     */
     static get_drag_key_start(mouse_event, ul) {
-        if (ul.subtasks[ul.state["current_subtask"]]["state"]["active_id"] != null) {
+        if (ul.get_current_subtask()["state"]["active_id"] != null) {
             if (mouse_event.button === 1) {
                 return "pan";
             } else if (mouse_event.button === 2) {
@@ -121,7 +121,7 @@ export class ULabel {
             case 0:
                 if (mouse_event.target.id === "brush_circle") {
                     return "brush";
-                } else if (mouse_event.target.id === ul.subtasks[ul.state["current_subtask"]]["canvas_fid"]) {
+                } else if (mouse_event.target.id === ul.get_current_subtask()["canvas_fid"]) {
                     if (mouse_event.ctrlKey || mouse_event.metaKey) {
                         return "pan";
                     }
@@ -171,8 +171,7 @@ export class ULabel {
         // Hover interactions
 
         iddg.on("mousemove.ulabel", function (mouse_event) {
-            let crst = ul.state["current_subtask"];
-            if (!ul.subtasks[crst]["state"]["idd_thumbnail"]) {
+            if (!ul.get_current_subtask()["state"]["idd_thumbnail"]) {
                 ul.handle_id_dialog_hover(mouse_event);
             }
         });
@@ -207,7 +206,7 @@ export class ULabel {
         $(document).on("keypress.ulabel", (e) => {
             // Check for the correct keypress
             // Grab current subtask
-            const current_subtask = ul.subtasks[ul.state["current_subtask"]]
+            const current_subtask = ul.get_current_subtask();
             switch (e.key) {
                 // Create a point annotation at the mouse's current location
                 case ul.config.create_point_annotation_keybind:
@@ -267,7 +266,7 @@ export class ULabel {
                         for (let i = 0; i < current_subtask.class_defs.length; i++) {
                             const class_def = current_subtask.class_defs[i];
                             if (class_def.keybind !== null && e.key === class_def.keybind) {
-                                let class_button = $(`#tb-id-app--${ul.state["current_subtask"]} a.tbid-opt`).eq(i);
+                                let class_button = $(`#tb-id-app--${ul.get_current_subtask_key()} a.tbid-opt`).eq(i);
                                 if (class_button.hasClass("sel")) {
                                     // If the class button is already selected, check if there is an active annotation
                                     // Get the active annotation, if any
@@ -326,9 +325,8 @@ export class ULabel {
         // Listener for soft id toolbox buttons
         $(document).on("click.ulabel", "#" + ul.config["toolbox_id"] + " a.tbid-opt", (e) => {
             let tgt_jq = $(e.currentTarget);
-            let pfx = "div#tb-id-app--" + ul.state["current_subtask"];
-            const subtask_key = ul.state["current_subtask"];
-            const current_subtask = ul.subtasks[subtask_key];
+            let pfx = "div#tb-id-app--" + ul.get_current_subtask_key();
+            const current_subtask = ul.get_current_subtask();
             if (tgt_jq.attr("href") === "#") {
                 const current_id_button = $(pfx + " a.tbid-opt.sel");
                 current_id_button.attr("href", "#");
@@ -373,7 +371,7 @@ export class ULabel {
             let switch_to = $(e.target).attr("id").split("--")[1];
 
             // Ignore if in the middle of annotation
-            if (ul.subtasks[ul.state["current_subtask"]]["state"]["is_in_progress"]) {
+            if (ul.get_current_subtask()["state"]["is_in_progress"]) {
                 return;
             }
 
@@ -384,7 +382,7 @@ export class ULabel {
         $(document).on("keypress.ulabel", (e) => {
 
             // Ignore if in the middle of annotation
-            if (ul.subtasks[ul.state["current_subtask"]]["state"]["is_in_progress"]) {
+            if (ul.get_current_subtask()["state"]["is_in_progress"]) {
                 return;
             }
 
@@ -413,7 +411,7 @@ export class ULabel {
         });
         $(document).on("input.ulabel", "textarea.nonspatial_note", (e) => {
             // Update annotation's text field
-            ul.subtasks[ul.state["current_subtask"]]["annotations"]["access"][e.target.id.substring("note__".length)]["text_payload"] = e.target.value;
+            ul.get_current_subtask()["annotations"]["access"][e.target.id.substring("note__".length)]["text_payload"] = e.target.value;
         });
         $(document).on("click.ulabel", "a.fad_button.delete", (e) => {
             ul.delete_annotation(e.target.id.substring("delete__".length));
@@ -429,7 +427,10 @@ export class ULabel {
         });
         $(document).on("mouseleave.ulabel", "div.fad_annotation_rows div.fad_row", () => {
             // Show thumbnail for idd
-            if (ul.subtasks[ul.state["current_subtask"]]["state"]["idd_visible"] && !ul.subtasks[ul.state["current_subtask"]]["state"]["idd_thumbnail"]) {
+            if (
+                ul.get_current_subtask()["state"]["idd_visible"] &&
+                !ul.get_current_subtask()["state"]["idd_thumbnail"]
+            ) {
                 return;
             }
             ul.suggest_edits(null);
@@ -441,20 +442,19 @@ export class ULabel {
 
                 // Check the active_annotation to make sure its not null and isn't nonspatial
                 if (
-                    ul.subtasks[ul.state["current_subtask"]]["active_annotation"] != null &&
-                    !NONSPATIAL_MODES.includes(ul.subtasks[ul.state["current_subtask"]]["state"]["annotation_mode"])
+                    ul.get_current_subtask()["active_annotation"] != null &&
+                    !NONSPATIAL_MODES.includes(ul.get_current_subtask()["active_annotation"]["spatial_type"])
                 ) {
 
                     // Delete the active annotation
-                    ul.delete_annotation(ul.subtasks[ul.state["current_subtask"]]["active_annotation"])
+                    ul.delete_annotation(ul.get_current_subtask()["active_annotation"])
                 }
             }
         })
 
         // Listener for id_dialog click interactions
         $(document).on("click.ulabel", "#" + ul.config["container_id"] + " a.id-dialog-clickable-indicator", (e) => {
-            let crst = ul.state["current_subtask"];
-            if (!ul.subtasks[crst]["state"]["idd_thumbnail"]) {
+            if (!ul.get_current_subtask()["state"]["idd_thumbnail"]) {
                 ul.handle_id_dialog_click(e);
             }
             else {
@@ -462,8 +462,8 @@ export class ULabel {
             }
         });
         $(document).on("click.ulabel", ".global_edit_suggestion a.reid_suggestion", (e) => {
-            let crst = ul.state["current_subtask"];
-            let annid = ul.subtasks[crst]["state"]["idd_associated_annotation"];
+            let crst = ul.get_current_subtask();
+            let annid = crst["state"]["idd_associated_annotation"];
             ul.hide_global_edit_suggestion();
             ul.show_id_dialog(
                 ul.get_global_mouse_x(e),
@@ -474,8 +474,8 @@ export class ULabel {
         });
 
         $(document).on("click.ulabel", "#" + ul.config["annbox_id"] + " .delete_suggestion", () => {
-            let crst = ul.state["current_subtask"];
-            ul.delete_annotation(ul.subtasks[crst]["state"]["move_candidate"]["annid"]);
+            let crst = ul.get_current_subtask();
+            ul.delete_annotation(crst["state"]["move_candidate"]["annid"]);
         })
 
         // Button to save annotations
@@ -512,7 +512,7 @@ export class ULabel {
                 }
                 return false;
             } else {
-                const current_subtask = ul.subtasks[ul.state["current_subtask"]]
+                const current_subtask = ul.get_current_subtask();
                 switch (keypress_event.key) {
                     case "Escape":
                         // If in erase or brush mode, cancel the brush
@@ -1005,7 +1005,7 @@ export class ULabel {
             "current_frame": 0,
 
             // Global annotation state (subtasks also maintain an annotation state)
-            "current_subtask": null,
+            "current_subtask": null,  // The key of the current subtask
             "last_brush_stroke": null,
             "line_size": this.config.initial_line_size,
             "size_mode": "fixed",
@@ -1157,7 +1157,7 @@ export class ULabel {
             that.handle_toolbox_overflow();
 
             // Set the canvas elements in the correct stacking order given current subtask
-            that.set_subtask(that.state["current_subtask"]);
+            that.set_subtask(that.get_current_subtask_key());
 
             that.create_overlays()
 
@@ -1373,18 +1373,18 @@ export class ULabel {
     }
 
     set_subtask(st_key) {
-        let old_st = this.state["current_subtask"];
+        let old_st = this.get_current_subtask_key();
 
         // Change object state
         this.state["current_subtask"] = st_key;
 
         // Bring new set of canvasses out to front
         $("div.canvasses").css("z-index", BACK_Z_INDEX);
-        $("div#canvasses__" + this.state["current_subtask"]).css("z-index", FRONT_Z_INDEX);
+        $("div#canvasses__" + st_key).css("z-index", FRONT_Z_INDEX);
 
         // Show appropriate set of dialogs
         $("div.dialogs_container").css("display", "none");
-        $("div#dialogs__" + this.state["current_subtask"]).css("display", "block");
+        $("div#dialogs__" + st_key).css("display", "block");
 
         // Show appropriate set of annotation modes
         $("a.md-btn").css("display", "none");
@@ -1392,7 +1392,7 @@ export class ULabel {
 
         // Show appropriate set of class options
         $("div.tb-id-app").css("display", "none");
-        $("div#tb-id-app--" + this.state["current_subtask"]).css("display", "block");
+        $("div#tb-id-app--" + st_key).css("display", "block");
 
         // Hide/show delete class
         this.toggle_delete_class_id_in_toolbox();
@@ -1423,7 +1423,7 @@ export class ULabel {
      * Switch to the next subtask in the toolbox
      */
     switch_to_next_subtask() {
-        let current_subtask = this.state["current_subtask"];
+        let current_subtask = this.get_current_subtask_key();
         let new_subtask_index = this.toolbox.tabs.findIndex(tab => tab.subtask_key === current_subtask) + 1;
         // If the current subtask was the last one in the array, then
         // loop around to the first subtask
@@ -1437,15 +1437,16 @@ export class ULabel {
     // ================= Toolbox Functions ==================
 
     set_annotation_mode(annotation_mode) {
-        this.subtasks[this.state["current_subtask"]]["state"]["annotation_mode"] = annotation_mode;
+        this.get_current_subtask()["state"]["annotation_mode"] = annotation_mode;
         this.update_annotation_mode();
     }
 
     update_annotation_mode() {
         $("a.md-btn.sel").attr("href", "#");
         $("a.md-btn.sel").removeClass("sel");
-        $("a#md-btn--" + this.subtasks[this.state["current_subtask"]]["state"]["annotation_mode"]).addClass("sel");
-        $("a#md-btn--" + this.subtasks[this.state["current_subtask"]]["state"]["annotation_mode"]).removeAttr("href");
+        const ann_mode = this.get_current_subtask()["state"]["annotation_mode"];
+        $("a#md-btn--" + ann_mode).addClass("sel");
+        $("a#md-btn--" + ann_mode).removeAttr("href");
         this.show_annotation_mode();
     }
 
@@ -1478,10 +1479,10 @@ export class ULabel {
                 // Filter all points from all lines
                 // Used when a line is deleted
                 filter_points_distance_from_line(this, true, offset);
-            } else if (annotation_id in this.subtasks[this.state["current_subtask"]].annotations.access) {
+            } else if (annotation_id in this.get_current_subtask().annotations.access) {
                 // Update based on changes to a single polyline or point
                 let points_and_lines;
-                const annotation = this.subtasks[this.state["current_subtask"]].annotations.access[annotation_id];
+                const annotation = this.get_current_subtask().annotations.access[annotation_id];
                 switch (annotation.spatial_type) {
                     case "polyline":
                         // Update each point's distance to THIS polyline
@@ -1533,9 +1534,11 @@ export class ULabel {
         }
         let new_name = el.attr("amdname");
         $("#" + this.config["toolbox_id"] + " .current_mode").html(new_name);
-        $(`div.frame_annotation_dialog:not(.fad_st__${this.state["current_subtask"]})`).removeClass("active");
-        if (["whole-image", "global"].includes(this.subtasks[this.state["current_subtask"]]["state"]["annotation_mode"])) {
-            $(`div.frame_annotation_dialog.fad_st__${this.state["current_subtask"]}`).addClass("active");
+        const current_stk = this.get_current_subtask_key();
+        const current_st = this.get_current_subtask();
+        $(`div.frame_annotation_dialog:not(.fad_st__${current_stk})`).removeClass("active");
+        if (["whole-image", "global"].includes(current_st["state"]["annotation_mode"])) {
+            $(`div.frame_annotation_dialog.fad_st__${current_stk}`).addClass("active");
         }
         else {
             $("div.frame_annotation_dialog").removeClass("active");
@@ -1543,7 +1546,7 @@ export class ULabel {
     }
 
     toggle_delete_class_id_in_toolbox() {
-        const current_subtask = this.subtasks[this.state["current_subtask"]]
+        const current_subtask = this.get_current_subtask();
         // Check if a DELETE_MODE is active
         let show_delete = DELETE_MODES.includes(current_subtask["state"]["annotation_mode"]);
         if (show_delete) {
@@ -1579,7 +1582,7 @@ export class ULabel {
         }
 
         // For all other class ids, show or hide them in the toolbox
-        for (const class_id of this.subtasks[this.state["current_subtask"]]["class_ids"]) {
+        for (const class_id of this.get_current_subtask()["class_ids"]) {
             // Skip the delete class id
             if (class_id === DELETE_CLASS_ID) continue;
 
@@ -1600,8 +1603,8 @@ export class ULabel {
      */
     set_and_update_annotation_mode(annotation_mode) {
         // Ensure new mode is allowed
-        if (!this.subtasks[this.state["current_subtask"]]["allowed_modes"].includes(annotation_mode)) {
-            console.warn(`Annotation mode ${annotation_mode} is not allowed for subtask ${this.state["current_subtask"]}`);
+        if (!this.get_current_subtask()["allowed_modes"].includes(annotation_mode)) {
+            console.warn(`Annotation mode ${annotation_mode} is not allowed for subtask ${this.get_current_subtask_key()}`);
             return false;
         }
         // Set the new mode via the toolbox
@@ -1648,7 +1651,7 @@ export class ULabel {
                 ];
             case "polygon":
                 // Get brush spatial payload if in brush mode
-                if (this.subtasks[this.state["current_subtask"]]["state"]["is_in_brush_mode"]) {
+                if (this.get_current_subtask()["state"]["is_in_brush_mode"]) {
                     return this.get_brush_circle_spatial_payload(gmx, gmy);
                 }
                 return [[
@@ -1676,7 +1679,7 @@ export class ULabel {
                 "confidence": 1.0,
             }]
         } else {
-            return JSON.parse(JSON.stringify(this.subtasks[this.state["current_subtask"]]["state"]["id_payload"]));
+            return JSON.parse(JSON.stringify(this.get_current_subtask()["state"]["id_payload"]));
         }
     }
 
@@ -1716,7 +1719,7 @@ export class ULabel {
      */
     get_next_available_canvas_id(subtask = null) {
         if (subtask === null) {
-            subtask = this.state["current_subtask"];
+            subtask = this.get_current_subtask_key();
         }
         const canvas_ids = Object.keys(this.subtasks[subtask]["state"]["annotation_contexts"])
         for (let i = 0; i < canvas_ids.length; i++) {
@@ -1770,7 +1773,7 @@ export class ULabel {
      */
     get_init_canvas_context_id(annotation_id, subtask = null) {
         if (subtask === null) {
-            subtask = this.state["current_subtask"];
+            subtask = this.get_current_subtask_key();
         }
         // Get the next available canvas id
         const canvas_id = this.get_next_available_canvas_id(subtask);
@@ -1783,7 +1786,7 @@ export class ULabel {
     // Remove a canvas from the document and the state
     destroy_annotation_context(annotation_id, subtask = null) {
         if (subtask === null) {
-            subtask = this.state["current_subtask"];
+            subtask = this.get_current_subtask_key();
         }
 
         // Remove the annotation_id from the canvas context list
@@ -1812,8 +1815,8 @@ export class ULabel {
     get_with_access_string(annid, access_str, as_though_pre_splice = false) {
         // TODO(3d)
         let bbi, bbj, bbk, bbox_pts, ret, bas, dif, tbi, tbj, tbar_pts, active_index;
-        const spatial_type = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid]["spatial_type"];
-        let spatial_payload = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid]["spatial_payload"];
+        const spatial_type = this.get_current_subtask()["annotations"]["access"][annid]["spatial_type"];
+        let spatial_payload = this.get_current_subtask()["annotations"]["access"][annid]["spatial_payload"];
         let active_spatial_payload = spatial_payload;
 
         switch (spatial_type) {
@@ -1884,8 +1887,8 @@ export class ULabel {
         // val[1] = Math.round(val[1]);
         // TODO(3d)
         let bbi, bbj, bbk, active_index;
-        const spatial_type = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid]["spatial_type"];
-        let spatial_payload = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid]["spatial_payload"];
+        const spatial_type = this.get_current_subtask()["annotations"]["access"][annid]["spatial_type"];
+        let spatial_payload = this.get_current_subtask()["annotations"]["access"][annid]["spatial_payload"];
         let active_spatial_payload = spatial_payload;
 
         switch (spatial_type) {
@@ -1992,7 +1995,7 @@ export class ULabel {
             // not currently supported;
             return this.config["default_annotation_color"];
         }
-        let crst = this.state["current_subtask"];
+        let crst = this.get_current_subtask_key();
         if (subtask != null && !demo) {
             crst = subtask;
         }
@@ -2000,7 +2003,7 @@ export class ULabel {
         if (demo) {
             let dist_prop = 1.0;
             let class_ids = this.subtasks[crst]["class_ids"];
-            let pfx = "div#tb-id-app--" + this.state["current_subtask"];
+            let pfx = "div#tb-id-app--" + this.get_current_subtask_key();
             let idarr = $(pfx + " a.tbid-opt.sel").attr("id").split("_");
             let class_ind = class_ids.indexOf(parseInt(idarr[idarr.length - 1]));
             // Recompute and render opaque pie slices
@@ -2245,8 +2248,8 @@ export class ULabel {
         if (
             spatial_type === "polygon" && 
             !layer_is_closed && 
-            this.subtasks[this.state["current_subtask"]]["state"]["is_in_progress"] &&
-            !this.subtasks[this.state["current_subtask"]]["state"]["starting_complex_polygon"]
+            this.get_current_subtask()["state"]["is_in_progress"] &&
+            !this.get_current_subtask()["state"]["starting_complex_polygon"]
         ) {
             // Clear the lines that fall within the polygon ender
             // Use the first point of the last layer
@@ -2374,7 +2377,7 @@ export class ULabel {
 
     draw_nonspatial_annotation(annotation_object, svg_obj, subtask = null) {
         if (subtask === null) {
-            subtask = this.state["current_subtask"];
+            subtask = this.get_current_subtask_key();
         }
         let found = false;
         for (let i = 0; i < this.tmp_nonspatial_element_ids[subtask].length; i++) {
@@ -2487,7 +2490,7 @@ export class ULabel {
     draw_annotation_from_id(id, offset = null, subtask = null) {
         if (subtask === null) {
             // Should never be here tbh
-            subtask = this.state["current_subtask"];
+            subtask = this.get_current_subtask_key();
         }
         let frame = this.subtasks[subtask]["annotations"]["access"][id]["frame"];
         // Keep `==` here, we want to catch null and undefined
@@ -2566,7 +2569,7 @@ export class ULabel {
      */
     redraw_annotation(annotation_id, subtask = null, offset = null) {
         if (subtask === null) {
-            subtask = this.state["current_subtask"];
+            subtask = this.get_current_subtask_key();
         }
         // Check if the annotation is spatial
         let is_spatial = !NONSPATIAL_MODES.includes(this.subtasks[subtask]["annotations"]["access"][annotation_id]["spatial_type"]);
@@ -2589,7 +2592,7 @@ export class ULabel {
      */
     redraw_multiple_spatial_annotations(annotation_ids, subtask = null, offset = null) {
         if (subtask === null) {
-            subtask = this.state["current_subtask"];
+            subtask = this.get_current_subtask_key();
         }
 
         // Find all unique annotation contexts
@@ -2606,14 +2609,14 @@ export class ULabel {
 
     clear_annotation_canvas(canvas_id, subtask = null) {
         if (subtask === null) {
-            subtask = this.state["current_subtask"];
+            subtask = this.get_current_subtask_key();
         }
         this.subtasks[subtask]["state"]["annotation_contexts"][canvas_id]["context"].clearRect(0, 0, this.config["image_width"] * this.config["px_per_px"], this.config["image_height"] * this.config["px_per_px"]);
     }
 
     clear_front_canvas(subtask = null) {
         if (subtask === null) {
-            subtask = this.state["current_subtask"];
+            subtask = this.get_current_subtask_key();
         }
         this.subtasks[subtask]["state"]["front_context"].clearRect(0, 0, this.config["image_width"] * this.config["px_per_px"], this.config["image_height"] * this.config["px_per_px"]);
     }
@@ -2629,7 +2632,7 @@ export class ULabel {
         const new_dimy = imwrap.height();
 
         // Get current subtask for convenience
-        let crst = this.state["current_subtask"];
+        let crst = this.get_current_subtask_key();
 
         // Iterate over all visible dialogs and apply new positions
         for (var id in this.subtasks[crst]["state"]["visible_dialogs"]) {
@@ -2671,13 +2674,13 @@ export class ULabel {
         </a>
         `;
         const polygon_ender_size = this.config["polygon_ender_size"]*this.state["zoom_val"];
-        $("#dialogs__" + this.state["current_subtask"]).append(ender_html);
+        $("#dialogs__" + this.get_current_subtask_key()).append(ender_html);
         $("#" + ender_id).css({
             "width": polygon_ender_size + "px",
             "height": polygon_ender_size + "px",
             "border-radius": polygon_ender_size / 2 + "px",
             // Get the color of the active class
-            "box-shadow": "0 0 0 2px " + this.get_annotation_color(this.subtasks[this.state["current_subtask"]]["annotations"]["access"][polygon_id]),
+            "box-shadow": "0 0 0 2px " + this.get_annotation_color(this.get_current_subtask()["annotations"]["access"][polygon_id]),
         });
         $("#" + ender_id + "_inner").css({
             "width": polygon_ender_size / 5 + "px",
@@ -2688,7 +2691,7 @@ export class ULabel {
         });
 
         // Add this id to the list of dialogs with managed positions
-        this.subtasks[this.state["current_subtask"]]["state"]["visible_dialogs"][ender_id] = {
+        this.get_current_subtask()["state"]["visible_dialogs"][ender_id] = {
             "left": gmx / this.config["image_width"],
             "top": gmy / this.config["image_height"],
             "pin": "center"
@@ -2700,7 +2703,7 @@ export class ULabel {
         // Create ender id
         const ender_id = "ender_" + polygon_id;
         $("#" + ender_id).remove();
-        delete this.subtasks[this.state["current_subtask"]]["state"]["visible_dialogs"][ender_id];
+        delete this.get_current_subtask()["state"]["visible_dialogs"][ender_id];
         this.reposition_dialogs();
     }
 
@@ -2716,7 +2719,7 @@ export class ULabel {
         }
         
         // Add to list of visible dialogs
-        this.subtasks[this.state["current_subtask"]]["state"]["visible_dialogs"][ender_id] = {
+        this.get_current_subtask()["state"]["visible_dialogs"][ender_id] = {
             "left": gmx / this.config["image_width"],
             "top": gmy / this.config["image_height"],
             "pin": "center"
@@ -2726,7 +2729,7 @@ export class ULabel {
 
     resize_active_polygon_ender() {
         // Check if there is an active polygon annotation
-        const current_subtask = this.state["current_subtask"];
+        const current_subtask = this.get_current_subtask_key();
         const active_id = this.subtasks[current_subtask]["state"]["active_id"];
         if (active_id === null) {
             return;
@@ -2755,7 +2758,7 @@ export class ULabel {
 
     recolor_active_polygon_ender() {
         // Check if there is an active polygon annotation
-        const current_subtask = this.state["current_subtask"];
+        const current_subtask = this.get_current_subtask_key();
         const active_id = this.subtasks[current_subtask]["state"]["active_id"];
         if (active_id === null) {
             return;
@@ -2775,7 +2778,7 @@ export class ULabel {
 
     toggle_brush_mode(mouse_event) {
         // Try and switch to polygon annotation if not already in it
-        const current_subtask = this.state["current_subtask"];
+        const current_subtask = this.get_current_subtask_key();
         let is_in_polygon_mode = this.subtasks[current_subtask]["state"]["annotation_mode"] === "polygon";
         // Try and switch to polygon mode if not already in it
         if (!is_in_polygon_mode) {
@@ -2811,7 +2814,7 @@ export class ULabel {
     }
 
     toggle_erase_mode(mouse_event) {
-        const current_subtask = this.state["current_subtask"];
+        const current_subtask = this.get_current_subtask_key();
         // If not in brush mode, turn it on
         if (!this.subtasks[current_subtask]["state"]["is_in_brush_mode"]) {
             this.toggle_brush_mode(mouse_event);
@@ -2840,18 +2843,18 @@ export class ULabel {
         // Build brush circle html
         const brush_circle_html = `
         <a id="${brush_circle_id}" class="brush_circle"></a>`;
-        $("#dialogs__" + this.state["current_subtask"]).append(brush_circle_html);
+        $("#dialogs__" + this.get_current_subtask_key()).append(brush_circle_html);
         $("#" + brush_circle_id).css({
             "width": (this.config["brush_size"]*this.state["zoom_val"]) + "px",
             "height": (this.config["brush_size"]*this.state["zoom_val"]) + "px",
             "border-radius": (this.config["brush_size"]*this.state["zoom_val"])*2 + "px",
-            "background-color": this.subtasks[this.state["current_subtask"]]["state"]["is_in_erase_mode"] ? "red" : this.get_active_class_color(),
+            "background-color": this.get_current_subtask()["state"]["is_in_erase_mode"] ? "red" : this.get_active_class_color(),
             "left": gmx + "px",
             "top": gmy + "px",
         });
 
         // Add this id to the list of dialogs with managed positions
-        this.subtasks[this.state["current_subtask"]]["state"]["visible_dialogs"][brush_circle_id] = {
+        this.get_current_subtask()["state"]["visible_dialogs"][brush_circle_id] = {
             "left": gmx / this.config["image_width"],
             "top": gmy / this.config["image_height"],
             "pin": "center"
@@ -2874,7 +2877,7 @@ export class ULabel {
         this.change_brush_size(1);
 
         // Add to list of visible dialogs
-        this.subtasks[this.state["current_subtask"]]["state"]["visible_dialogs"][brush_circle_id] = {
+        this.get_current_subtask()["state"]["visible_dialogs"][brush_circle_id] = {
             "left": gmx / this.config["image_width"],
             "top": gmy / this.config["image_height"],
             "pin": "center"
@@ -2885,16 +2888,16 @@ export class ULabel {
     recolor_brush_circle() {
         // Only allow when not in erase mode
         if (
-            this.subtasks[this.state["current_subtask"]]["state"]["is_in_brush_mode"] &&
-            !this.subtasks[this.state["current_subtask"]]["state"]["is_in_erase_mode"]
+            this.get_current_subtask()["state"]["is_in_brush_mode"] &&
+            !this.get_current_subtask()["state"]["is_in_erase_mode"]
         ) {
             // Get brush circle id
             const brush_circle_id = "brush_circle";
-            const active_id = this.subtasks[this.state["current_subtask"]]["state"]["active_id"];
+            const active_id = this.get_current_subtask()["state"]["active_id"];
             $("#" + brush_circle_id).css({
                 // Use annotation id if available, else use active class color
                 "background-color": active_id !== null 
-                    ? this.get_annotation_color(this.subtasks[this.state["current_subtask"]]["annotations"]["access"][active_id])
+                    ? this.get_annotation_color(this.get_current_subtask()["annotations"]["access"][active_id])
                     : this.get_active_class_color(),
             });
         }
@@ -2905,13 +2908,13 @@ export class ULabel {
         // Get brush circle id
         const brush_circle_id = "brush_circle";
         $("#" + brush_circle_id).remove();
-        delete this.subtasks[this.state["current_subtask"]]["state"]["visible_dialogs"][brush_circle_id];
+        delete this.get_current_subtask()["state"]["visible_dialogs"][brush_circle_id];
         this.reposition_dialogs();
     }
 
     // Change the brush size by a scale factor
     change_brush_size(scale_factor) {
-        if (this.subtasks[this.state["current_subtask"]]["state"]["is_in_brush_mode"]) {
+        if (this.get_current_subtask()["state"]["is_in_brush_mode"]) {
             this.config["brush_size"] *= scale_factor;
 
             // Get brush circle id
@@ -2948,7 +2951,7 @@ export class ULabel {
 
     // Check if the newest complex layer can merge with each previous layer.
     merge_polygon_complex_layer(annotation_id, layer_idx = null, recursive_call = false, redoing = false, redraw = true) {
-        const annotation = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annotation_id];
+        const annotation = this.get_current_subtask()["annotations"]["access"][annotation_id];
         if (annotation["spatial_type"] === "polygon" && annotation["spatial_payload"].length > 1) {
             const og_polygon_spatial_data = ULabelAnnotation.get_polygon_spatial_data(annotation, true);
             if (layer_idx === null) {
@@ -3050,7 +3053,7 @@ export class ULabel {
 
     // Call merge_polygon_complex_layer on all layers of a polygon
     verify_all_polygon_complex_layers(annotation_id, redraw = false) {
-        const annotation = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annotation_id];
+        const annotation = this.get_current_subtask()["annotations"]["access"][annotation_id];
         // Reset the child indices and holes
         annotation["spatial_payload_holes"] = [false];
         annotation["spatial_payload_child_indices"] = [[]];
@@ -3064,7 +3067,7 @@ export class ULabel {
     // Simplify a single layer of a complex polygon. Modifies the annotation directly.
     simplify_polygon_complex_layer(annotation_id, active_idx, redoing = false) {
         // Get the annotation
-        const annotation = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annotation_id];
+        const annotation = this.get_current_subtask()["annotations"]["access"][annotation_id];
         // Save the annotation for undo
         const og_polygon_spatial_data = ULabelAnnotation.get_polygon_spatial_data(annotation, true);
         // Get the layer
@@ -3104,14 +3107,14 @@ export class ULabel {
             delete_polygon = redo_payload["delete_polygon"];
         } else {
             // Get the delete annotation
-            delete_annotation = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][delete_annid];
+            delete_annotation = this.get_current_subtask()["annotations"]["access"][delete_annid];
             delete_polygon = delete_annotation["spatial_payload"];
             // Deprecate the delete annotation
             delete_annotation["deprecated"] = true;
         }
         
         // Get the list of annotations
-        const annotations = this.subtasks[this.state["current_subtask"]]["annotations"]["access"];
+        const annotations = this.get_current_subtask()["annotations"]["access"];
         // Track the ids of deprecated annotations for undo
         let deprecated_ids = [];
         // Track id and annotation pairs of modified annotations for undo
@@ -3236,8 +3239,8 @@ export class ULabel {
             this.destroy_polygon_ender(delete_annid);
             // Remove the delete annotation from access and ordering, and delete its canvas context
             this.destroy_annotation_context(delete_annid);
-            delete this.subtasks[this.state["current_subtask"]]["annotations"]["access"][delete_annid];
-            this.subtasks[this.state["current_subtask"]]["annotations"]["ordering"] = this.subtasks[this.state["current_subtask"]]["annotations"]["ordering"].filter((value) => value !== delete_annid);
+            delete this.get_current_subtask()["annotations"]["access"][delete_annid];
+            this.get_current_subtask()["annotations"]["ordering"] = this.get_current_subtask()["annotations"]["ordering"].filter((value) => value !== delete_annid);
             this.remove_recorded_events_for_annotation(delete_annid);
         }
     }
@@ -3245,7 +3248,7 @@ export class ULabel {
     // Undo the deletion of annotations by replacing the annotations with the undo payload
     delete_annotations_in_polygon__undo(undo_payload) {
         // Get the list of annotations
-        const subtask = this.state["current_subtask"];
+        const subtask = this.get_current_subtask_key();
         const annotations = this.subtasks[subtask]["annotations"]["access"];
         // Loop through all deprecated annotations
         let annotation_ids_to_redraw = [];
@@ -3281,7 +3284,7 @@ export class ULabel {
 
     // Convert bbox to polygon and then delete annotations in polygon
     delete_annotations_in_bbox(delete_annid) {
-        const delete_annotation = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][delete_annid];
+        const delete_annotation = this.get_current_subtask()["annotations"]["access"][delete_annid];
         const delete_bbox = delete_annotation["spatial_payload"];
         const delete_polygon = GeometricUtils.bbox_to_simple_polygon(delete_bbox);
         delete_annotation["spatial_payload"] = delete_polygon;
@@ -3294,7 +3297,7 @@ export class ULabel {
     remove_recorded_events_for_annotation(annotation_id) {
         // filter action stream
         let new_action_stream = [];
-        for (let action of this.subtasks[this.state["current_subtask"]]["actions"]["stream"]) {
+        for (let action of this.get_current_subtask()["actions"]["stream"]) {
             // Check that action has an undo_payload
             const undo_payload = JSON.parse(action.undo_payload)
             if (undo_payload) {
@@ -3311,7 +3314,7 @@ export class ULabel {
                 }
             }
         }
-        this.subtasks[this.state["current_subtask"]]["actions"]["stream"] = new_action_stream;
+        this.get_current_subtask()["actions"]["stream"] = new_action_stream;
     }
 
     /**
@@ -3321,7 +3324,7 @@ export class ULabel {
      * @param {object} new_annotation The new annotation to replace the old one
      */
     replace_annotation(annotation_id, annotation) {
-        this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annotation_id] = annotation;
+        this.get_current_subtask()["annotations"]["access"][annotation_id] = annotation;
     }
 
     /**
@@ -3331,7 +3334,7 @@ export class ULabel {
      * @param {object} new_spatial_data The new spatial data to replace the old one
      */
     replace_polygon_spatial_data(annotation_id, new_spatial_data) {
-        const annotation = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annotation_id];
+        const annotation = this.get_current_subtask()["annotations"]["access"][annotation_id];
         annotation["spatial_payload"] = new_spatial_data["spatial_payload"];
         annotation["spatial_payload_holes"] = new_spatial_data["spatial_payload_holes"];
         annotation["spatial_payload_child_indices"] = new_spatial_data["spatial_payload_child_indices"];
@@ -3339,7 +3342,7 @@ export class ULabel {
     }
 
     show_edit_suggestion(nearest_point, currently_exists) {
-        let esid = "edit_suggestion__" + this.state["current_subtask"];
+        let esid = "edit_suggestion__" + this.get_current_subtask_key();
         var esjq = $("#" + esid);
         esjq.css("display", "block");
         if (currently_exists) {
@@ -3348,8 +3351,8 @@ export class ULabel {
         else {
             esjq.addClass("soft");
         }
-        this.subtasks[this.state["current_subtask"]]["state"]["visible_dialogs"][esid]["left"] = nearest_point["point"][0] / this.config["image_width"];
-        this.subtasks[this.state["current_subtask"]]["state"]["visible_dialogs"][esid]["top"] = nearest_point["point"][1] / this.config["image_height"];
+        this.get_current_subtask()["state"]["visible_dialogs"][esid]["left"] = nearest_point["point"][0] / this.config["image_width"];
+        this.get_current_subtask()["state"]["visible_dialogs"][esid]["top"] = nearest_point["point"][1] / this.config["image_height"];
         this.reposition_dialogs();
     }
 
@@ -3368,14 +3371,14 @@ export class ULabel {
         let idd_x;
         let idd_y;
         if (nonspatial_id === null) {
-            let esid = "global_edit_suggestion__" + this.state["current_subtask"];
+            let esid = "global_edit_suggestion__" + this.get_current_subtask_key();
             var esjq = $("#" + esid);
             esjq.css("display", "block");
-            let cbox = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid]["containing_box"];
+            let cbox = this.get_current_subtask()["annotations"]["access"][annid]["containing_box"];
             let new_lft = (cbox["tlx"] + cbox["brx"] + 2 * diffX) / (2 * this.config["image_width"]);
             let new_top = (cbox["tly"] + cbox["bry"] + 2 * diffY) / (2 * this.config["image_height"]);
-            this.subtasks[this.state["current_subtask"]]["state"]["visible_dialogs"][esid]["left"] = new_lft;
-            this.subtasks[this.state["current_subtask"]]["state"]["visible_dialogs"][esid]["top"] = new_top;
+            this.get_current_subtask()["state"]["visible_dialogs"][esid]["left"] = new_lft;
+            this.get_current_subtask()["state"]["visible_dialogs"][esid]["top"] = new_top;
             this.reposition_dialogs();
             idd_x = (cbox["tlx"] + cbox["brx"] + 2 * diffX) / 2;
             idd_y = (cbox["tly"] + cbox["bry"] + 2 * diffY) / 2;
@@ -3388,7 +3391,7 @@ export class ULabel {
 
 
         // let placeholder = $("#global_edit_suggestion a.reid_suggestion");
-        if (!this.subtasks[this.state["current_subtask"]]["single_class_mode"]) {
+        if (!this.get_current_subtask()["single_class_mode"]) {
             this.show_id_dialog(idd_x, idd_y, annid, true, nonspatial_id != null);
         }
     }
@@ -3399,30 +3402,30 @@ export class ULabel {
     }
 
     show_id_dialog(gbx, gby, active_ann, thumbnail = false, nonspatial = false) {
-        let stkey = this.state["current_subtask"];
+        let stkey = this.get_current_subtask_key();
 
         // Record which annotation this dialog is associated with
         // TODO
         // am_dialog_associated_ann = active_ann;
-        this.subtasks[this.state["current_subtask"]]["state"]["idd_visible"] = true;
-        this.subtasks[this.state["current_subtask"]]["state"]["idd_thumbnail"] = thumbnail;
-        this.subtasks[this.state["current_subtask"]]["state"]["idd_associated_annotation"] = active_ann;
-        this.subtasks[this.state["current_subtask"]]["state"]["idd_which"] = "back";
+        this.get_current_subtask()["state"]["idd_visible"] = true;
+        this.get_current_subtask()["state"]["idd_thumbnail"] = thumbnail;
+        this.get_current_subtask()["state"]["idd_associated_annotation"] = active_ann;
+        this.get_current_subtask()["state"]["idd_which"] = "back";
 
-        let idd_id = this.subtasks[this.state["current_subtask"]]["state"]["idd_id"];
-        let idd_niu_id = this.subtasks[this.state["current_subtask"]]["state"]["idd_id_front"];
+        let idd_id = this.get_current_subtask()["state"]["idd_id"];
+        let idd_niu_id = this.get_current_subtask()["state"]["idd_id_front"];
         let new_height = $(`#global_edit_suggestion__${stkey} a.reid_suggestion`)[0].getBoundingClientRect().height;
 
         if (nonspatial) {
-            this.subtasks[this.state["current_subtask"]]["state"]["idd_which"] = "front";
-            idd_id = this.subtasks[this.state["current_subtask"]]["state"]["idd_id_front"];
-            idd_niu_id = this.subtasks[this.state["current_subtask"]]["state"]["idd_id"];
+            this.get_current_subtask()["state"]["idd_which"] = "front";
+            idd_id = this.get_current_subtask()["state"]["idd_id_front"];
+            idd_niu_id = this.get_current_subtask()["state"]["idd_id"];
             new_height = 28;
         }
         else {
             // Add this id to the list of dialogs with managed positions
             // TODO actually only do this when calling append()
-            this.subtasks[this.state["current_subtask"]]["state"]["visible_dialogs"][idd_id] = {
+            this.get_current_subtask()["state"]["visible_dialogs"][idd_id] = {
                 "left": gbx / this.config["image_width"],
                 "top": gby / this.config["image_height"],
                 "pin": "center"
@@ -3489,10 +3492,10 @@ export class ULabel {
     }
 
     hide_id_dialog() {
-        let idd_id = this.subtasks[this.state["current_subtask"]]["state"]["idd_id"];
-        let idd_id_front = this.subtasks[this.state["current_subtask"]]["state"]["idd_id_front"];
-        this.subtasks[this.state["current_subtask"]]["state"]["idd_visible"] = false;
-        this.subtasks[this.state["current_subtask"]]["state"]["idd_associated_annotation"] = null;
+        let idd_id = this.get_current_subtask()["state"]["idd_id"];
+        let idd_id_front = this.get_current_subtask()["state"]["idd_id_front"];
+        this.get_current_subtask()["state"]["idd_visible"] = false;
+        this.get_current_subtask()["state"]["idd_associated_annotation"] = null;
         $("#" + idd_id).css("display", "none");
         $("#" + idd_id_front).css("display", "none");
     }
@@ -3502,7 +3505,7 @@ export class ULabel {
 
     undo(is_internal_undo = false) {
         // Create constants for convenience
-        const current_subtask = this.subtasks[this.state["current_subtask"]]
+        const current_subtask = this.get_current_subtask()
         const action_stream = current_subtask["actions"]["stream"]
         const undone_stack = current_subtask["actions"]["undone_stack"]
 
@@ -3530,7 +3533,7 @@ export class ULabel {
 
     redo() {
         // Create constants for convenience
-        const current_subtask = this.subtasks[this.state["current_subtask"]]
+        const current_subtask = this.get_current_subtask()
         const undone_stack = current_subtask["actions"]["undone_stack"]
 
         // If the action_steam is empty, then there are no actions to undo
@@ -3547,7 +3550,7 @@ export class ULabel {
      */
     create_annotation(spatial_type, spatial_payload, unique_id = null) {
         // Grab constants for convenience
-        const current_subtask = this.subtasks[this.state["current_subtask"]]
+        const current_subtask = this.get_current_subtask()
         const annotation_access = current_subtask["annotations"]["access"]
         const annotation_ordering = current_subtask["annotations"]["ordering"]
 
@@ -3613,7 +3616,7 @@ export class ULabel {
      */
     create_annotation__undo(undo_payload) {
         // Get the current subtask
-        const current_subtask = this.subtasks[this.state["current_subtask"]]
+        const current_subtask = this.get_current_subtask()
 
         // Get the id from the payload
         const annotation_id = undo_payload.annotation_id
@@ -3664,7 +3667,7 @@ export class ULabel {
         }
 
         // Grab constants for convenience
-        const current_subtask = this.subtasks[this.state["current_subtask"]]
+        const current_subtask = this.get_current_subtask()
         const annotations = current_subtask["annotations"]["access"]
         const spatial_type = annotations[annotation_id]["spatial_type"]
 
@@ -3716,7 +3719,7 @@ export class ULabel {
 
     delete_annotation__undo(undo_payload) {
         let active_id = undo_payload.annid;
-        const annotations = this.subtasks[this.state["current_subtask"]]["annotations"]["access"];
+        const annotations = this.get_current_subtask()["annotations"]["access"];
 
         // Set the annotation to be undeprecated and redraw it
         mark_deprecated(annotations[active_id], false);
@@ -3752,7 +3755,7 @@ export class ULabel {
             "point": null
         };
         if (candidates === null) {
-            candidates = this.subtasks[this.state["current_subtask"]]["annotations"]["ordering"];
+            candidates = this.get_current_subtask()["annotations"]["ordering"];
         }
         // Iterate through and find any close enough defined points
         var edid = null;
@@ -3760,8 +3763,8 @@ export class ULabel {
             edid = candidates[edi];
             let npi = null;
             let curfrm, pts, n_iters, access_idx;
-            const spatial_type = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][edid]["spatial_type"];
-            let spatial_payload = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][edid]["spatial_payload"];
+            const spatial_type = this.get_current_subtask()["annotations"]["access"][edid]["spatial_type"];
+            let spatial_payload = this.get_current_subtask()["annotations"]["access"][edid]["spatial_payload"];
             let active_spatial_payload = spatial_payload;
             switch (spatial_type) {
                 case "bbox":
@@ -3863,12 +3866,12 @@ export class ULabel {
             "point": null
         };
         if (candidates === null) {
-            candidates = this.subtasks[this.state["current_subtask"]]["annotations"]["ordering"];
+            candidates = this.get_current_subtask()["annotations"]["ordering"];
         }
         for (var edi = 0; edi < candidates.length; edi++) {
             var edid = candidates[edi];
-            const spatial_type = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][edid]["spatial_type"]
-            let spatial_payload = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][edid]["spatial_payload"];
+            const spatial_type = this.get_current_subtask()["annotations"]["access"][edid]["spatial_type"]
+            let spatial_payload = this.get_current_subtask()["annotations"]["access"][edid]["spatial_payload"];
             let active_spatial_payload = spatial_payload;
             let n_iters, access_idx;
             switch (spatial_type) {
@@ -3949,7 +3952,7 @@ export class ULabel {
 
         // After a new action, you can no longer redo old actions
         if (!is_redo) {
-            this.subtasks[this.state["current_subtask"]]["actions"]["undone_stack"] = [];
+            this.get_current_subtask()["actions"]["undone_stack"] = [];
         }
 
         // Stringify the undo/redo payloads
@@ -3957,24 +3960,24 @@ export class ULabel {
         action.redo_payload = JSON.stringify(action.redo_payload);
 
         // Add to stream
-        this.subtasks[this.state["current_subtask"]]["actions"]["stream"].push(action);
+        this.get_current_subtask()["actions"]["stream"].push(action);
     }
 
     record_finish(actid) {
         // TODO(3d) 
-        let i = this.subtasks[this.state["current_subtask"]]["actions"]["stream"].length - 1;
+        let i = this.get_current_subtask()["actions"]["stream"].length - 1;
         // Parse payload, edit, and then stringify
-        let redo_payload = JSON.parse(this.subtasks[this.state["current_subtask"]]["actions"]["stream"][i].redo_payload);
-        redo_payload.init_spatial = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"];
+        let redo_payload = JSON.parse(this.get_current_subtask()["actions"]["stream"][i].redo_payload);
+        redo_payload.init_spatial = this.get_current_subtask()["annotations"]["access"][actid]["spatial_payload"];
         redo_payload.finished = true;
-        this.subtasks[this.state["current_subtask"]]["actions"]["stream"][i].redo_payload = JSON.stringify(redo_payload);
+        this.get_current_subtask()["actions"]["stream"][i].redo_payload = JSON.stringify(redo_payload);
     }
 
     record_finish_edit(actid) {
         // TODO(3d) 
-        let i = this.subtasks[this.state["current_subtask"]]["actions"]["stream"].length - 1;
+        let i = this.get_current_subtask()["actions"]["stream"].length - 1;
         // Parse payload, edit, and then stringify
-        let redo_payload = JSON.parse(this.subtasks[this.state["current_subtask"]]["actions"]["stream"][i].redo_payload);
+        let redo_payload = JSON.parse(this.get_current_subtask()["actions"]["stream"][i].redo_payload);
         let fin_pt = this.get_with_access_string(
             actid,
             redo_payload.edit_candidate["access"],
@@ -3984,15 +3987,15 @@ export class ULabel {
         redo_payload.ending_y = fin_pt[1];
         redo_payload.ending_frame = this.state["current_frame"];
         redo_payload.finished = true;
-        this.subtasks[this.state["current_subtask"]]["actions"]["stream"][i].redo_payload = JSON.stringify(redo_payload);
+        this.get_current_subtask()["actions"]["stream"][i].redo_payload = JSON.stringify(redo_payload);
     }
 
     record_finish_move(diffX, diffY, diffZ = 0) {
         // TODO(3d) 
-        let i = this.subtasks[this.state["current_subtask"]]["actions"]["stream"].length - 1;
+        let i = this.get_current_subtask()["actions"]["stream"].length - 1;
         // Parse payloads, edit, and then stringify
-        let redo_payload = JSON.parse(this.subtasks[this.state["current_subtask"]]["actions"]["stream"][i].redo_payload);
-        let undo_payload = JSON.parse(this.subtasks[this.state["current_subtask"]]["actions"]["stream"][i].undo_payload);
+        let redo_payload = JSON.parse(this.get_current_subtask()["actions"]["stream"][i].redo_payload);
+        let undo_payload = JSON.parse(this.get_current_subtask()["actions"]["stream"][i].undo_payload);
         redo_payload.diffX = diffX;
         redo_payload.diffY = diffY;
         redo_payload.diffZ = diffZ;
@@ -4000,8 +4003,8 @@ export class ULabel {
         undo_payload.diffY = -diffY;
         undo_payload.diffZ = -diffZ;
         redo_payload.finished = true;
-        this.subtasks[this.state["current_subtask"]]["actions"]["stream"][i].redo_payload = JSON.stringify(redo_payload);
-        this.subtasks[this.state["current_subtask"]]["actions"]["stream"][i].undo_payload = JSON.stringify(undo_payload);
+        this.get_current_subtask()["actions"]["stream"][i].redo_payload = JSON.stringify(redo_payload);
+        this.get_current_subtask()["actions"]["stream"][i].undo_payload = JSON.stringify(undo_payload);
     }
 
     undo_action(action) {
@@ -4149,7 +4152,7 @@ export class ULabel {
         let init_idpyld = null;
         if (redo_payload === null) {
             unq_id = this.make_new_annotation_id();
-            annotation_mode = this.subtasks[this.state["current_subtask"]]["state"]["annotation_mode"];
+            annotation_mode = this.get_current_subtask()["state"]["annotation_mode"];
             init_idpyld = this.get_init_id_payload();
         }
         else {
@@ -4183,12 +4186,12 @@ export class ULabel {
 
         let undo_frame = this.state["current_frame"];
 
-        this.subtasks[this.state["current_subtask"]]["annotations"]["access"][unq_id] = new_annotation;
+        this.get_current_subtask()["annotations"]["access"][unq_id] = new_annotation;
         if (redoing) {
             this.set_id_dialog_payload_to_init(unq_id, init_idpyld);
         }
-        this.subtasks[this.state["current_subtask"]]["annotations"]["access"][unq_id]["annotation_meta"] = this.config["annotation_meta"];
-        this.subtasks[this.state["current_subtask"]]["annotations"]["ordering"].push(unq_id);
+        this.get_current_subtask()["annotations"]["access"][unq_id]["annotation_meta"] = this.config["annotation_meta"];
+        this.get_current_subtask()["annotations"]["ordering"].push(unq_id);
 
         // Draw new annotation
         this.draw_annotation_from_id(unq_id);
@@ -4207,7 +4210,7 @@ export class ULabel {
                 annotation_mode: annotation_mode,
                 init_spatial: null,
                 finished: true,
-                init_payload: this.subtasks[this.state["current_subtask"]]["state"]["id_payload"]
+                init_payload: this.get_current_subtask()["state"]["id_payload"]
             },
             undo_payload: {
                 unq_id: unq_id,
@@ -4218,7 +4221,7 @@ export class ULabel {
     }
 
     create_nonspatial_annotation__undo(undo_payload) {
-        const end_ann = this.subtasks[this.state["current_subtask"]]["annotations"]["ordering"].pop();
+        const end_ann = this.get_current_subtask()["annotations"]["ordering"].pop();
 
         if (end_ann !== undo_payload.unq_id) {
             console.log("We may have a problem... undo replication");
@@ -4226,14 +4229,14 @@ export class ULabel {
         }
 
         // Remove from access
-        if (undo_payload.unq_id in this.subtasks[this.state["current_subtask"]]["annotations"]["access"]) {
-            delete this.subtasks[this.state["current_subtask"]]["annotations"]["access"][undo_payload.unq_id];
+        if (undo_payload.unq_id in this.get_current_subtask()["annotations"]["access"]) {
+            delete this.get_current_subtask()["annotations"]["access"][undo_payload.unq_id];
         } else {
             console.log("We may have a problem... undo replication");
         }
 
         // Render the change (have to redraw all non-spatial since they all live on the front canvas)
-        this.redraw_all_annotations(this.state["current_subtask"], null, true);
+        this.redraw_all_annotations(this.get_current_subtask_key(), null, true);
         this.suggest_edits(this.state["last_move"]);
     }
 
@@ -4248,12 +4251,12 @@ export class ULabel {
         let init_spatial = null;
         let init_id_payload = null;
 
-        const subtask = this.state["current_subtask"] 
+        const subtask = this.get_current_subtask_key() 
 
         if (redo_payload === null) {
             unq_id = this.make_new_annotation_id();
             line_size = this.get_line_size();
-            annotation_mode = this.subtasks[this.state["current_subtask"]]["state"]["annotation_mode"];
+            annotation_mode = this.get_current_subtask()["state"]["annotation_mode"];
             gmx = this.get_global_mouse_x(mouse_event);
             gmy = this.get_global_mouse_y(mouse_event);
             init_spatial = this.get_init_spatial(gmx, gmy, annotation_mode);
@@ -4376,7 +4379,7 @@ export class ULabel {
     }
 
     begin_annotation__undo(undo_payload) {
-        const current_subtask = this.subtasks[this.state["current_subtask"]];
+        const current_subtask = this.get_current_subtask();
         // Parse necessary data
         const unq_id = undo_payload.actid;
 
@@ -4411,7 +4414,7 @@ export class ULabel {
 
     update_containing_box(ms_loc, actid, subtask = null) {
         if (subtask === null) {
-            subtask = this.state["current_subtask"];
+            subtask = this.get_current_subtask_key();
         }
         // TODO(3d)
         if (ms_loc[0] < this.subtasks[subtask]["annotations"]["access"][actid]["containing_box"]["tlx"]) {
@@ -4430,7 +4433,7 @@ export class ULabel {
 
     rebuild_containing_box(actid, ignore_final = false, subtask = null) {
         if (subtask === null) {
-            subtask = this.state["current_subtask"];
+            subtask = this.get_current_subtask_key();
         }
         // No need to rebuild containing box for image-level annotation types.
         const spatial_type = this.subtasks[subtask]["annotations"]["access"][actid]["spatial_type"];
@@ -4495,7 +4498,7 @@ export class ULabel {
         let frm = this.state["current_frame"];
         let is_click_dragging = this.drag_state["active_key"] != null;
         if (redo_payload === null) {
-            actid = this.subtasks[this.state["current_subtask"]]["state"]["active_id"];
+            actid = this.get_current_subtask()["state"]["active_id"];
             gmx = this.get_global_mouse_x(mouse_event);
             gmy = this.get_global_mouse_y(mouse_event);
         } else {
@@ -4517,8 +4520,8 @@ export class ULabel {
             // TODO(3d)
             // TODO(3d--META) -- This is the farthest I got tagging places that will need to be fixed.
             let n_kpts, ender_pt, ender_dist, ender_thresh, add_keypoint;
-            const spatial_type = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_type"];
-            let spatial_payload = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"];
+            const spatial_type = this.get_current_subtask()["annotations"]["access"][actid]["spatial_type"];
+            let spatial_payload = this.get_current_subtask()["annotations"]["access"][actid]["spatial_payload"];
             let active_spatial_payload = spatial_payload;
 
             switch (spatial_type) {
@@ -4559,7 +4562,7 @@ export class ULabel {
                         else { // Else, just redirect line to mouse position
                             active_spatial_payload[n_kpts - 1] = ms_loc;
                         }
-                    } else if (this.subtasks[this.state["current_subtask"]]["state"]["starting_complex_polygon"]) {
+                    } else if (this.get_current_subtask()["state"]["starting_complex_polygon"]) {
                         // When waiting to start a complex polygon, move the ender to the mouse position
                         this.move_polygon_ender(gmx, gmy, actid);
                     }
@@ -4576,7 +4579,7 @@ export class ULabel {
                             // and once for rendering future lines.
                             active_spatial_payload.push(ms_loc);
                             // mark that we've successfully started our complex polygon
-                            this.subtasks[this.state["current_subtask"]]["state"]["starting_complex_polygon"] = false;
+                            this.get_current_subtask()["state"]["starting_complex_polygon"] = false;
                         } else if (n_kpts > 1){
                             // the last point in the active spatial payload is the current mouse position for rendering purposes,
                             // so we check against the second to last point
@@ -4636,7 +4639,7 @@ export class ULabel {
 
     continue_annotation__undo(undo_payload) {
         // TODO(3d)
-        const current_subtask = this.subtasks[this.state["current_subtask"]]
+        const current_subtask = this.get_current_subtask()
         let spatial_payload = current_subtask["annotations"]["access"][undo_payload.actid]["spatial_payload"];
         const spatial_type = current_subtask["annotations"]["access"][undo_payload.actid]["spatial_type"];
         let active_spatial_payload = spatial_payload;
@@ -4674,7 +4677,7 @@ export class ULabel {
         this.hide_edit_suggestion();
         this.hide_global_edit_suggestion();
 
-        const current_subtask = this.subtasks[this.state["current_subtask"]]
+        const current_subtask = this.get_current_subtask()
         let active_id = null;
         let redoing = false;
         if (redo_payload === null) {
@@ -4712,7 +4715,7 @@ export class ULabel {
     }
 
     start_complex_polygon__undo(undo_payload) {
-        const current_subtask = this.subtasks[this.state["current_subtask"]]
+        const current_subtask = this.get_current_subtask()
         // Set the starting_complex_polygon state to false
         current_subtask["state"]["starting_complex_polygon"] = false
         // Remove the placeholder annotation
@@ -4731,7 +4734,7 @@ export class ULabel {
     split_complex_polygon(active_id) {
         this.verify_complex_polygon_child_indices(active_id);
         // Get annotation
-        const annotation = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][active_id];
+        const annotation = this.get_current_subtask()["annotations"]["access"][active_id];
         const spatial_payload = annotation["spatial_payload"];
         const spatial_payload_holes = annotation["spatial_payload_holes"];
         const spatial_payload_child_indices = annotation["spatial_payload_child_indices"];
@@ -4761,7 +4764,7 @@ export class ULabel {
     // Remove any child indices and spatial_payload_holes that are not longer in the spatial_payload
     verify_complex_polygon_child_indices(active_id) {
         // Get annotation
-        const annotation = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][active_id];
+        const annotation = this.get_current_subtask()["annotations"]["access"][active_id];
         // Get the spatial payload
         const spatial_payload = annotation["spatial_payload"];
         // Verify length
@@ -4783,7 +4786,7 @@ export class ULabel {
 
     // Start annotating or erasing with the brush
     begin_brush(mouse_event) {  
-        const current_subtask = this.subtasks[this.state["current_subtask"]];
+        const current_subtask = this.get_current_subtask();
         // First, we check if there is an annotation touching the brush      
         let brush_cand_active_id = null;
         const global_x = this.get_global_mouse_x(mouse_event);
@@ -4845,7 +4848,7 @@ export class ULabel {
     begin_brush__undo(undo_payload) {
         if (undo_payload.actid !== null) {
             // Reset the annotation
-            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][undo_payload.actid] = undo_payload.annotation;
+            this.get_current_subtask()["annotations"]["access"][undo_payload.actid] = undo_payload.annotation;
             // Redraw annotation
             this.redraw_annotation(undo_payload.actid);
         }
@@ -4871,7 +4874,7 @@ export class ULabel {
         if (continue_brush) {
             // Save the last brush stroke
             this.state["last_brush_stroke"] = [gmx, gmy];
-            const current_subtask = this.subtasks[this.state["current_subtask"]];
+            const current_subtask = this.get_current_subtask();
             const active_id = current_subtask["state"]["active_id"];
             if (active_id !== null) {
                 // Merge the brush with the annotation
@@ -4960,7 +4963,7 @@ export class ULabel {
             frame: this.state["current_frame"],
             undo_payload: {
                 actid: redo_payload.actid,
-                polygon_spatial_data: ULabelAnnotation.get_polygon_spatial_data(this.subtasks[this.state["current_subtask"]]["annotations"]["access"][redo_payload.actid]),
+                polygon_spatial_data: ULabelAnnotation.get_polygon_spatial_data(this.get_current_subtask()["annotations"]["access"][redo_payload.actid]),
             },
             redo_payload: {
                 actid: redo_payload.actid,
@@ -4978,7 +4981,7 @@ export class ULabel {
 
     begin_edit(mouse_event) {
         // Create constants for convenience
-        const current_subtask = this.subtasks[this.state["current_subtask"]]
+        const current_subtask = this.get_current_subtask()
         const annotations = current_subtask["annotations"]["access"]
 
         // Set global params
@@ -5021,7 +5024,7 @@ export class ULabel {
 
     edit_annotation(mouse_event) {
         // Convenience and readability
-        const current_subtask = this.subtasks[this.state["current_subtask"]]
+        const current_subtask = this.get_current_subtask()
         const active_id = current_subtask["state"]["active_id"];
         const access_str = current_subtask["state"]["edit_candidate"]["access"];
         if (active_id && (active_id !== null)) {
@@ -5093,7 +5096,7 @@ export class ULabel {
 
     edit_annotation__redo(redo_payload) {
         // Convenience
-        const current_subtask = this.subtasks[this.state["current_subtask"]]
+        const current_subtask = this.get_current_subtask()
         const annotations = current_subtask["annotations"]["access"]
         let actid = redo_payload.actid;
         const ms_loc = [
@@ -5146,7 +5149,7 @@ export class ULabel {
 
     begin_move(mouse_event) {
         // Convenience
-        const current_subtask = this.subtasks[this.state["current_subtask"]];
+        const current_subtask = this.get_current_subtask();
         const annotations = current_subtask["annotations"]["access"];
         const active_id = current_subtask["state"]["move_candidate"]["annid"];
 
@@ -5191,14 +5194,14 @@ export class ULabel {
         let annid;
         if (redo_payload === null) {
             // Get the active id
-            annid = this.subtasks[this.state["current_subtask"]]["state"]["active_id"];
+            annid = this.get_current_subtask()["state"]["active_id"];
         } else {
             annid = redo_payload.annid;
         }
 
         let is_complex_layer = false;
         if (annid !== null) {
-            const annotation = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid];
+            const annotation = this.get_current_subtask()["annotations"]["access"][annid];
             // Record the cancel action
             this.record_action({
                 act_type: "cancel_annotation",
@@ -5233,12 +5236,12 @@ export class ULabel {
 
     cancel_annotation__undo(undo_payload) {
         // Mark that the annotation is in progress again
-        this.subtasks[this.state["current_subtask"]]["state"]["active_id"] = undo_payload.annid;
-        this.subtasks[this.state["current_subtask"]]["state"]["is_in_progress"] = true;
+        this.get_current_subtask()["state"]["active_id"] = undo_payload.annid;
+        this.get_current_subtask()["state"]["is_in_progress"] = true;
 
         if (undo_payload.is_complex_layer) {
             // Restore the removed layer
-            this.subtasks[this.state["current_subtask"]]["annotations"]["access"][undo_payload.annid] = undo_payload.annotation;
+            this.get_current_subtask()["annotations"]["access"][undo_payload.annid] = undo_payload.annotation;
             // Redraw the annotation
             this.redraw_annotation(undo_payload.annid);
         } else {
@@ -5246,7 +5249,7 @@ export class ULabel {
             this.delete_annotation__undo(undo_payload);
         }
 
-        let annotation = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][undo_payload.annid];
+        let annotation = this.get_current_subtask()["annotations"]["access"][undo_payload.annid];
         // If a polygon/delete polygon, show the ender
         if (annotation["spatial_type"] === "polygon") {
             // Get the first point of the last layer for a polygon
@@ -5266,7 +5269,7 @@ export class ULabel {
 
     finish_annotation(mouse_event) {
         // Convenience
-        const current_subtask = this.subtasks[this.state["current_subtask"]]
+        const current_subtask = this.get_current_subtask()
         const annotations = current_subtask["annotations"]["access"]
 
         // Initialize required variables
@@ -5324,7 +5327,7 @@ export class ULabel {
                 if (n_kpts > 2) {
                     spatial_payload.pop();
                 } else {
-                    this.rebuild_containing_box(active_id, false, this.state["current_subtask"]);
+                    this.rebuild_containing_box(active_id, false, this.get_current_subtask_key());
                 }
                 // Redraw annotation and record action
                 this.redraw_annotation(active_id);
@@ -5424,7 +5427,7 @@ export class ULabel {
 
     finish_annotation__undo(undo_payload) {
         // Deprecate the annotation
-        mark_deprecated(this.subtasks[this.state["current_subtask"]]["annotations"]["access"][undo_payload.actid], true);
+        mark_deprecated(this.get_current_subtask()["annotations"]["access"][undo_payload.actid], true);
         // Redraw the annotation
         this.redraw_annotation(undo_payload.actid);
         // Update dialogs
@@ -5437,7 +5440,7 @@ export class ULabel {
 
     finish_annotation__redo(redo_payload) {
         // Undeprecate the annotation
-        mark_deprecated(this.subtasks[this.state["current_subtask"]]["annotations"]["access"][redo_payload.actid], false);
+        mark_deprecated(this.get_current_subtask()["annotations"]["access"][redo_payload.actid], false);
         // Redraw the annotation
         this.redraw_annotation(redo_payload.actid);
         // Record the action
@@ -5461,19 +5464,19 @@ export class ULabel {
 
     finish_edit() {
         // Record last point and redraw if necessary
-        let actid = this.subtasks[this.state["current_subtask"]]["state"]["active_id"];
-        const access_str = this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"]["access"];
+        let actid = this.get_current_subtask()["state"]["active_id"];
+        const access_str = this.get_current_subtask()["state"]["edit_candidate"]["access"];
         let layer_idx;
-        switch (this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_type"]) {
+        switch (this.get_current_subtask()["annotations"]["access"][actid]["spatial_type"]) {
             case "polygon":
                 this.record_finish_edit(actid);
                 // Reset spatial_payload_child_indices
-                this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload_child_indices"] = [];
+                this.get_current_subtask()["annotations"]["access"][actid]["spatial_payload_child_indices"] = [];
                 // Get the idx of the edited layer and try and merge it
                 layer_idx = parseInt(access_str[0], 10)
                 this.merge_polygon_complex_layer(actid, layer_idx);
                 // Check if any other layers need to be merged
-                for (let i = 0; i < this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_payload"].length; i++) {
+                for (let i = 0; i < this.get_current_subtask()["annotations"]["access"][actid]["spatial_payload"].length; i++) {
                     if (i !== layer_idx) {
                         this.merge_polygon_complex_layer(actid, i);
                     }
@@ -5493,8 +5496,8 @@ export class ULabel {
         }
 
         // Set mode to no active annotation
-        this.subtasks[this.state["current_subtask"]]["state"]["active_id"] = null;
-        this.subtasks[this.state["current_subtask"]]["state"]["is_in_edit"] = false;
+        this.get_current_subtask()["state"]["active_id"] = null;
+        this.get_current_subtask()["state"]["is_in_edit"] = false;
 
         // Filter points if necessary
         this.update_filter_distance(actid);
@@ -5502,7 +5505,7 @@ export class ULabel {
 
     move_annotation(mouse_event) {
         // Convenience
-        const current_subtask = this.subtasks[this.state["current_subtask"]]
+        const current_subtask = this.get_current_subtask()
         const active_id = current_subtask["state"]["active_id"];
 
         if (active_id && (active_id !== null)) {
@@ -5526,9 +5529,9 @@ export class ULabel {
         const diffY = (mouse_event.clientY - this.drag_state["move"]["mouse_start"][1]) / this.state["zoom_val"];
         const diffZ = this.state["current_frame"] - this.drag_state["move"]["mouse_start"][2];
 
-        const active_id = this.subtasks[this.state["current_subtask"]]["state"]["active_id"];
-        const spatial_type = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][active_id]["spatial_type"];
-        let spatial_payload = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][active_id]["spatial_payload"];
+        const active_id = this.get_current_subtask()["state"]["active_id"];
+        const spatial_type = this.get_current_subtask()["annotations"]["access"][active_id]["spatial_type"];
+        let spatial_payload = this.get_current_subtask()["annotations"]["access"][active_id]["spatial_payload"];
         let active_spatial_payload = spatial_payload;
 
         // if a polygon, n_iters is the length the spatial payload
@@ -5560,10 +5563,10 @@ export class ULabel {
             }
         }
 
-        this.subtasks[this.state["current_subtask"]]["annotations"]["access"][active_id]["containing_box"]["tlx"] += diffX;
-        this.subtasks[this.state["current_subtask"]]["annotations"]["access"][active_id]["containing_box"]["brx"] += diffX;
-        this.subtasks[this.state["current_subtask"]]["annotations"]["access"][active_id]["containing_box"]["tly"] += diffY;
-        this.subtasks[this.state["current_subtask"]]["annotations"]["access"][active_id]["containing_box"]["bry"] += diffY;
+        this.get_current_subtask()["annotations"]["access"][active_id]["containing_box"]["tlx"] += diffX;
+        this.get_current_subtask()["annotations"]["access"][active_id]["containing_box"]["brx"] += diffX;
+        this.get_current_subtask()["annotations"]["access"][active_id]["containing_box"]["tly"] += diffY;
+        this.get_current_subtask()["annotations"]["access"][active_id]["containing_box"]["bry"] += diffY;
 
         switch (spatial_type) {
             case "polyline":
@@ -5578,8 +5581,8 @@ export class ULabel {
                 break;
         }
 
-        this.subtasks[this.state["current_subtask"]]["state"]["active_id"] = null;
-        this.subtasks[this.state["current_subtask"]]["state"]["is_in_move"] = false;
+        this.get_current_subtask()["state"]["active_id"] = null;
+        this.get_current_subtask()["state"]["is_in_move"] = false;
 
         this.redraw_annotation(active_id);
 
@@ -5591,7 +5594,7 @@ export class ULabel {
 
     move_annotation__undo(undo_payload) {
         // Convenience
-        const current_subtask = this.subtasks[this.state["current_subtask"]]
+        const current_subtask = this.get_current_subtask()
         const annotations = current_subtask["annotations"]["access"]
 
         const diffX = undo_payload.diffX;
@@ -5639,7 +5642,7 @@ export class ULabel {
 
     move_annotation__redo(redo_payload) {
         // Convenience
-        const current_subtask = this.subtasks[this.state["current_subtask"]]
+        const current_subtask = this.get_current_subtask()
         const annotations = current_subtask["annotations"]["access"]
 
         const diffX = redo_payload.diffX;
@@ -5724,9 +5727,9 @@ export class ULabel {
         };
         let minsize = Infinity;
         // TODO(3d)
-        for (let edi = 0; edi < this.subtasks[this.state["current_subtask"]]["annotations"]["ordering"].length; edi++) {
-            const annotation_id = this.subtasks[this.state["current_subtask"]]["annotations"]["ordering"][edi];
-            let annotation = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annotation_id];
+        for (let edi = 0; edi < this.get_current_subtask()["annotations"]["ordering"].length; edi++) {
+            const annotation_id = this.get_current_subtask()["annotations"]["ordering"][edi];
+            let annotation = this.get_current_subtask()["annotations"]["access"][annotation_id];
             if (annotation["deprecated"]) continue;
             let cbox = annotation["containing_box"];
             let frame = annotation["frame"];
@@ -5811,9 +5814,9 @@ export class ULabel {
     suggest_edits(mouse_event = null, nonspatial_id = null) {
         // don't show edits when potentially trying to draw a hole
         if (
-            this.subtasks[this.state["current_subtask"]]["state"]["is_in_progress"] ||
-            this.subtasks[this.state["current_subtask"]]["state"]["starting_complex_polygon"] || 
-            this.subtasks[this.state["current_subtask"]]["state"]["is_in_brush_mode"]
+            this.get_current_subtask()["state"]["is_in_progress"] ||
+            this.get_current_subtask()["state"]["starting_complex_polygon"] || 
+            this.get_current_subtask()["state"]["is_in_brush_mode"]
         ) {
             this.hide_global_edit_suggestion();
             this.hide_edit_suggestion();
@@ -5840,22 +5843,22 @@ export class ULabel {
                 if (edit_candidates["best"] === null) {
                     this.hide_global_edit_suggestion();
                     this.hide_edit_suggestion();
-                    this.subtasks[this.state["current_subtask"]]["state"]["move_candidate"] = null;
-                    this.subtasks[this.state["current_subtask"]]["active_annotation"] = null;
+                    this.get_current_subtask()["state"]["move_candidate"] = null;
+                    this.get_current_subtask()["active_annotation"] = null;
                     return;
                 }
 
                 // Look for an existing point that's close enough to suggest editing it
                 const nearest_active_keypoint = this.get_nearest_active_keypoint(global_x, global_y, dst_thresh, edit_candidates["candidate_ids"]);
                 if (nearest_active_keypoint != null && nearest_active_keypoint.point != null) {
-                    this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"] = nearest_active_keypoint;
+                    this.get_current_subtask()["state"]["edit_candidate"] = nearest_active_keypoint;
                     this.show_edit_suggestion(nearest_active_keypoint, true);
                     edit_candidates["best"] = nearest_active_keypoint;
                 }
                 else { // If none are found, look for a point along a segment that's close enough
                     const nearest_segment_point = this.get_nearest_segment_point(global_x, global_y, Infinity, edit_candidates["candidate_ids"]);
                     if (nearest_segment_point != null && nearest_segment_point.point != null) {
-                        this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"] = nearest_segment_point;
+                        this.get_current_subtask()["state"]["edit_candidate"] = nearest_segment_point;
                         this.show_edit_suggestion(nearest_segment_point, false);
                         edit_candidates["best"] = nearest_segment_point;
                     }
@@ -5865,7 +5868,7 @@ export class ULabel {
                 }
 
                 // Show global edit dialogs for "best" candidate
-                this.subtasks[this.state["current_subtask"]]["state"]["move_candidate"] = edit_candidates["best"];
+                this.get_current_subtask()["state"]["move_candidate"] = edit_candidates["best"];
                 best_candidate = edit_candidates["best"]["annid"];
             }
             else {
@@ -5874,7 +5877,7 @@ export class ULabel {
                 best_candidate = nonspatial_id;
             }
             this.show_global_edit_suggestion(best_candidate, null, nonspatial_id);
-            this.subtasks[this.state["current_subtask"]]["active_annotation"] = best_candidate
+            this.get_current_subtask()["active_annotation"] = best_candidate
 
             // Must be called after active_annotation is updated
             this.update_confidence_dialog(best_candidate)
@@ -5937,9 +5940,9 @@ export class ULabel {
     // ----------------- ID Dialog -----------------
 
     lookup_id_dialog_mouse_pos(mouse_event, front) {
-        let idd = $("#" + this.subtasks[this.state["current_subtask"]]["state"]["idd_id"]);
+        let idd = $("#" + this.get_current_subtask()["state"]["idd_id"]);
         if (front) {
-            idd = $("#" + this.subtasks[this.state["current_subtask"]]["state"]["idd_id_front"]);
+            idd = $("#" + this.get_current_subtask()["state"]["idd_id_front"]);
         }
 
         // Get mouse position relative to center of div
@@ -5966,7 +5969,7 @@ export class ULabel {
         // Get array of classes by name in the dialog
         //    TODO handle nesting case
         //    TODO this is not efficient
-        let class_ids = this.subtasks[this.state["current_subtask"]]["class_ids"];
+        let class_ids = this.get_current_subtask()["class_ids"];
 
         // Get the index of that class currently hovering over
         const class_ind = (
@@ -5985,16 +5988,16 @@ export class ULabel {
     }
 
     set_id_dialog_payload_nopin(class_ind, dist_prop) {
-        let class_ids = this.subtasks[this.state["current_subtask"]]["class_ids"];
+        let class_ids = this.get_current_subtask()["class_ids"];
         // Recompute and render opaque pie slices
         for (var i = 0; i < class_ids.length; i++) {
             if (i === class_ind) {
-                this.subtasks[this.state["current_subtask"]]["state"]["id_payload"][i] = {
+                this.get_current_subtask()["state"]["id_payload"][i] = {
                     "class_id": class_ids[i],
                     "confidence": dist_prop
                 };
             } else {
-                this.subtasks[this.state["current_subtask"]]["state"]["id_payload"][i] = {
+                this.get_current_subtask()["state"]["id_payload"][i] = {
                     "class_id": class_ids[i],
                     "confidence": (1 - dist_prop) / (class_ids.length - 1)
                 };
@@ -6004,45 +6007,45 @@ export class ULabel {
 
     // Grab the active class id from the toolbox
     get_active_class_id() {
-        const pfx = "div#tb-id-app--" + this.state["current_subtask"];
+        const pfx = "div#tb-id-app--" + this.get_current_subtask_key();
         const idarr = $(pfx + " a.tbid-opt.sel").attr("id").split("_");
         return parseInt(idarr[idarr.length - 1]);
     }
 
     get_active_class_id_idx() {
-        const class_ids = this.subtasks[this.state["current_subtask"]]["class_ids"];
+        const class_ids = this.get_current_subtask()["class_ids"];
         return class_ids.indexOf(this.get_active_class_id());
     }
 
     set_id_dialog_payload_to_init(annid, pyld = null) {
         // TODO(3D)
         if (pyld != null) {
-            this.subtasks[this.state["current_subtask"]]["state"]["id_payload"] = JSON.parse(JSON.stringify(pyld));
+            this.get_current_subtask()["state"]["id_payload"] = JSON.parse(JSON.stringify(pyld));
             this.update_id_toolbox_display();
         }
         else {
             if (annid != null) {
-                let anpyld = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][annid]["classification_payloads"];
+                let anpyld = this.get_current_subtask()["annotations"]["access"][annid]["classification_payloads"];
                 if (anpyld != null) {
-                    this.subtasks[this.state["current_subtask"]]["state"]["id_payload"] = JSON.parse(JSON.stringify(anpyld));
+                    this.get_current_subtask()["state"]["id_payload"] = JSON.parse(JSON.stringify(anpyld));
                     return;
                 }
             }
             // TODO currently assumes soft
             if (!this.config["allow_soft_id"]) {
                 const dist_prop = 1.0;
-                const class_ids = this.subtasks[this.state["current_subtask"]]["class_ids"];
+                const class_ids = this.get_current_subtask()["class_ids"];
                 const class_ind = this.get_active_class_id_idx();
                 // Recompute and render opaque pie slices
                 for (var i = 0; i < class_ids.length; i++) {
                     if (i === class_ind) {
-                        this.subtasks[this.state["current_subtask"]]["state"]["id_payload"][i] = {
+                        this.get_current_subtask()["state"]["id_payload"][i] = {
                             "class_id": class_ids[i],
                             "confidence": dist_prop
                         };
                     }
                     else {
-                        this.subtasks[this.state["current_subtask"]]["state"]["id_payload"][i] = {
+                        this.get_current_subtask()["state"]["id_payload"][i] = {
                             "class_id": class_ids[i],
                             "confidence": (1 - dist_prop) / (class_ids.length - 1)
                         };
@@ -6058,10 +6061,10 @@ export class ULabel {
     update_id_dialog_display(front = false) {
         const inner_rad = this.config["inner_prop"] * this.config["outer_diameter"] / 2;
         const outer_rad = 0.5 * this.config["outer_diameter"];
-        let class_ids = this.subtasks[this.state["current_subtask"]]["class_ids"];
+        let class_ids = this.get_current_subtask()["class_ids"];
         for (var i = 0; i < class_ids.length; i++) {
             // Skip 
-            let srt_prop = this.subtasks[this.state["current_subtask"]]["state"]["id_payload"][i]["confidence"];
+            let srt_prop = this.get_current_subtask()["state"]["id_payload"][i]["confidence"];
 
             let cum_prop = i / class_ids.length;
             let srk_prop = 1 / class_ids.length;
@@ -6083,10 +6086,10 @@ export class ULabel {
             // circ.setAttribute("stroke-width", wdt_frnt);
             let idd_id;
             if (!front) {
-                idd_id = this.subtasks[this.state["current_subtask"]]["state"]["idd_id"];
+                idd_id = this.get_current_subtask()["state"]["idd_id"];
             }
             else {
-                idd_id = this.subtasks[this.state["current_subtask"]]["state"]["idd_id_front"];
+                idd_id = this.get_current_subtask()["state"]["idd_id_front"];
             }
             var circ = $(`#${idd_id}__circ_` + class_ids[i])
             // circ.attr("r", rad_frnt);
@@ -6106,9 +6109,9 @@ export class ULabel {
         if (this.config["allow_soft_id"]) {
             // Not supported yet
         } else {
-            let class_ids = this.subtasks[this.state["current_subtask"]]["class_ids"];
+            let class_ids = this.get_current_subtask()["class_ids"];
             if (new_class_idx === null) {
-                let id_payload = this.subtasks[this.state["current_subtask"]]["state"]["id_payload"];
+                let id_payload = this.get_current_subtask()["state"]["id_payload"];
                 // Get the id payload with the highest confidence
                 let max_conf = 0;
                 let new_class_id = null;
@@ -6157,10 +6160,10 @@ export class ULabel {
         // TODO(3d)
         if (redo_payload === null) {
             if (actid === null) {
-                actid = this.subtasks[this.state["current_subtask"]]["state"]["idd_associated_annotation"];
+                actid = this.get_current_subtask()["state"]["idd_associated_annotation"];
             }
-            old_payload = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["classification_payloads"];
-            new_payload = this.subtasks[this.state["current_subtask"]]["state"]["id_payload"];
+            old_payload = this.get_current_subtask()["annotations"]["access"][actid]["classification_payloads"];
+            new_payload = this.get_current_subtask()["state"]["id_payload"];
         } else {
             redoing = true;
             old_payload = redo_payload.old_id_payload;
@@ -6170,7 +6173,7 @@ export class ULabel {
 
         // Perform assignment
         // TODO(3d)
-        this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["classification_payloads"] = JSON.parse(JSON.stringify(new_payload));
+        this.get_current_subtask()["annotations"]["access"][actid]["classification_payloads"] = JSON.parse(JSON.stringify(new_payload));
 
         // Redraw with correct color and hide id_dialog if applicable
         if (!redoing) {
@@ -6186,14 +6189,14 @@ export class ULabel {
         // Explicit changes are undoable
         // First assignments are treated as though they were done all along
         // TODO(3d)
-        if (this.subtasks[this.state["current_subtask"]]["state"]["first_explicit_assignment"]) {
-            let n = this.subtasks[this.state["current_subtask"]]["actions"]["stream"].length;
+        if (this.get_current_subtask()["state"]["first_explicit_assignment"]) {
+            let n = this.get_current_subtask()["actions"]["stream"].length;
             for (var i = 0; i < n; i++) {
-                if (this.subtasks[this.state["current_subtask"]]["actions"]["stream"][n - i - 1].act_type === "begin_annotation") {
+                if (this.get_current_subtask()["actions"]["stream"][n - i - 1].act_type === "begin_annotation") {
                     // Parse the payload, edit, and then stringify
-                    let redo_payload = JSON.parse(this.subtasks[this.state["current_subtask"]]["actions"]["stream"][n - i - 1].redo_payload);
+                    let redo_payload = JSON.parse(this.get_current_subtask()["actions"]["stream"][n - i - 1].redo_payload);
                     redo_payload.init_payload = new_payload;
-                    this.subtasks[this.state["current_subtask"]]["actions"]["stream"][n - i - 1].redo_payload = JSON.stringify(redo_payload);
+                    this.get_current_subtask()["actions"]["stream"][n - i - 1].redo_payload = JSON.stringify(redo_payload);
                     break;
                 }
             }
@@ -6218,7 +6221,7 @@ export class ULabel {
         let actid = undo_payload.actid;
         let new_payload = undo_payload.old_id_payload;
         // TODO(3d)
-        this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["classification_payloads"] = new_payload;
+        this.get_current_subtask()["annotations"]["access"][actid]["classification_payloads"] = new_payload;
         this.redraw_annotation(actid);
         this.recolor_active_polygon_ender();
         this.recolor_brush_circle();
@@ -6226,7 +6229,7 @@ export class ULabel {
     }
 
     handle_id_dialog_click(mouse_event, annotation_id = null, new_class_idx = null) {
-        const current_subtask = this.subtasks[this.state["current_subtask"]]
+        const current_subtask = this.get_current_subtask()
 
         // Handle explicitly setting the class
         if (new_class_idx !== null) {
@@ -6266,7 +6269,7 @@ export class ULabel {
     // Update the displayed annotation confidence
     update_confidence_dialog() {
         // Whenever the mouse makes the dialogs show up, update the displayed annotation confidence.
-        const current_subtask = this.subtasks[this.state["current_subtask"]]
+        const current_subtask = this.get_current_subtask()
         const active_annotation_id = current_subtask["active_annotation"]
         const active_annotation = current_subtask["annotations"]["access"][active_annotation_id]
         /** The active annotation's classification payloads. */
@@ -6290,7 +6293,7 @@ export class ULabel {
         const drag_key = ULabel.get_drag_key_start(mouse_event, this);
         if (drag_key != null) {
             // Don't start new drag while id_dialog is visible
-            if (this.subtasks[this.state["current_subtask"]]["state"]["idd_visible"] && !this.subtasks[this.state["current_subtask"]]["state"]["idd_thumbnail"]) {
+            if (this.get_current_subtask()["state"]["idd_visible"] && !this.get_current_subtask()["state"]["idd_thumbnail"]) {
                 return;
             }
             mouse_event.preventDefault();
@@ -6301,10 +6304,10 @@ export class ULabel {
     }
 
     handle_mouse_move(mouse_event) {
-        const annotation_mode = this.subtasks[this.state["current_subtask"]]["state"]["annotation_mode"];
-        const idd_visible = this.subtasks[this.state["current_subtask"]]["state"]["idd_visible"];
-        const idd_thumbnail = this.subtasks[this.state["current_subtask"]]["state"]["idd_thumbnail"];
-        const edit_candidate = this.subtasks[this.state["current_subtask"]]["state"]["edit_candidate"];
+        const annotation_mode = this.get_current_subtask()["state"]["annotation_mode"];
+        const idd_visible = this.get_current_subtask()["state"]["idd_visible"];
+        const idd_thumbnail = this.get_current_subtask()["state"]["idd_thumbnail"];
+        const edit_candidate = this.get_current_subtask()["state"]["edit_candidate"];
         this.state["last_move"] = mouse_event;
         // If the ID dialog is visible, let it's own handler take care of this
         // If not dragging...
@@ -6313,7 +6316,7 @@ export class ULabel {
                 return;
             }
             // If polygon is in progress, redirect last segment
-            if (this.subtasks[this.state["current_subtask"]]["state"]["is_in_progress"]) {
+            if (this.get_current_subtask()["state"]["is_in_progress"]) {
                 if (
                     (annotation_mode === "polygon") ||
                     (annotation_mode === "polyline") ||
@@ -6321,7 +6324,7 @@ export class ULabel {
                 ) {
                     this.continue_annotation(mouse_event);
                 }
-            } else if (this.subtasks[this.state["current_subtask"]]["state"]["is_in_brush_mode"]) {
+            } else if (this.get_current_subtask()["state"]["is_in_brush_mode"]) {
                 // If brush mode is in progress, move the brush
                 let gmx = this.get_global_mouse_x(mouse_event);
                 let gmy = this.get_global_mouse_y(mouse_event);
@@ -6330,7 +6333,7 @@ export class ULabel {
                 // If shift key is held while hovering a polygon, we want to start a new complex payload
 
                 // set annotation as active, in_progress, and starting_complex_polygon
-                this.subtasks[this.state["current_subtask"]]["state"]["active_id"] = edit_candidate["annid"];
+                this.get_current_subtask()["state"]["active_id"] = edit_candidate["annid"];
                 this.start_complex_polygon();
             } else { // Nothing in progress. Maybe show editable queues
                 this.suggest_edits(mouse_event);
@@ -6351,7 +6354,7 @@ export class ULabel {
                     break;
                 case "brush":
                     // If currently brushing, continue
-                    if (this.subtasks[this.state["current_subtask"]]["state"]["is_in_progress"]) {
+                    if (this.get_current_subtask()["state"]["is_in_progress"]) {
                         this.continue_brush(mouse_event);
                     } else {
                         // If not, see if we should start
@@ -6395,7 +6398,7 @@ export class ULabel {
         let fms = this.config["image_data"].frames.length > 1;
         if (wheel_event.altKey) {
             // When in brush mode, change the brush size
-            if (this.subtasks[this.state["current_subtask"]]["state"]["is_in_brush_mode"]) {
+            if (this.get_current_subtask()["state"]["is_in_brush_mode"]) {
                 this.change_brush_size(wheel_event.deltaY < 0 ? 1.1 : 1 / 1.1);
             }
         } else if (fms && (wheel_event.ctrlKey || wheel_event.shiftKey || wheel_event.metaKey)) {
@@ -6404,7 +6407,7 @@ export class ULabel {
             this.update_frame(dlta);
         } else {
             // Don't scroll if id dialog is visible
-            if (this.subtasks[this.state["current_subtask"]]["state"]["idd_visible"] && !this.subtasks[this.state["current_subtask"]]["state"]["idd_thumbnail"]) {
+            if (this.get_current_subtask()["state"]["idd_visible"] && !this.get_current_subtask()["state"]["idd_thumbnail"]) {
                 return;
             }
 
@@ -6444,8 +6447,8 @@ export class ULabel {
         let annmd;
         switch (drag_key) {
             case "annotation":
-                annmd = this.subtasks[this.state["current_subtask"]]["state"]["annotation_mode"];
-                if (!NONSPATIAL_MODES.includes(annmd) && !this.subtasks[this.state["current_subtask"]]["state"]["is_in_progress"]) {
+                annmd = this.get_current_subtask()["state"]["annotation_mode"];
+                if (!NONSPATIAL_MODES.includes(annmd) && !this.get_current_subtask()["state"]["is_in_progress"]) {
                     this.begin_annotation(mouse_event);
                 }
                 break;
@@ -6465,13 +6468,13 @@ export class ULabel {
     }
 
     end_drag(mouse_event) {
-        const annotation_mode = this.subtasks[this.state["current_subtask"]]["state"]["annotation_mode"];
-        const active_id = this.subtasks[this.state["current_subtask"]]["state"]["active_id"];
+        const annotation_mode = this.get_current_subtask()["state"]["annotation_mode"];
+        const active_id = this.get_current_subtask()["state"]["active_id"];
         let spatial_payload, n_points, active_spatial_payload;
         switch (this.drag_state["active_key"]) {
             case "annotation":
                 if (active_id != null) {
-                    spatial_payload = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][active_id]["spatial_payload"]
+                    spatial_payload = this.get_current_subtask()["annotations"]["access"][active_id]["spatial_payload"]
                     if (
                         (annotation_mode != "polygon") &&
                         (annotation_mode != "polyline") &&
@@ -6485,7 +6488,7 @@ export class ULabel {
                             // We can finish a polygon by clicking on the ender
                             // however, we don't want this to trigger immediately after starting an annotation
                             // so we check that the polygon has more than 2 points
-                            !this.subtasks[this.state["current_subtask"]]["state"]["starting_complex_polygon"] &&
+                            !this.get_current_subtask()["state"]["starting_complex_polygon"] &&
                             n_points > 2 &&
                             (
                                 (mouse_event.target.id === "ender_" + active_id) ||
@@ -6688,7 +6691,7 @@ export class ULabel {
         let ret = [];
         for (let i = 0; i < this.subtasks[subtask]["annotations"]["ordering"].length; i++) {
             let id = this.subtasks[subtask]["annotations"]["ordering"][i];
-            if (id != this.subtasks[this.state["current_subtask"]]["state"]["active_id"]) {
+            if (id != this.get_current_subtask()["state"]["active_id"]) {
                 ret.push(this.subtasks[subtask]["annotations"]["access"][id]);
             }
         }
@@ -6725,9 +6728,9 @@ export class ULabel {
         if (this.config["image_data"]["frames"].length === 1) {
             return;
         }
-        let actid = this.subtasks[this.state["current_subtask"]]["state"]["active_id"]
+        let actid = this.get_current_subtask()["state"]["active_id"]
         if (actid != null) {
-            if (!MODES_3D.includes(this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_type"])) {
+            if (!MODES_3D.includes(this.get_current_subtask()["annotations"]["access"][actid]["spatial_type"])) {
                 return;
             }
         }
@@ -6751,16 +6754,16 @@ export class ULabel {
         if (
             actid &&
             MODES_3D.includes(
-                this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_type"]
+                this.get_current_subtask()["annotations"]["access"][actid]["spatial_type"]
             )
         ) {
-            if (this.subtasks[this.state["current_subtask"]]["state"]["is_in_edit"]) {
+            if (this.get_current_subtask()["state"]["is_in_edit"]) {
                 this.edit_annotation(this.state["last_move"]);
             }
-            else if (this.subtasks[this.state["current_subtask"]]["state"]["is_in_move"]) {
+            else if (this.get_current_subtask()["state"]["is_in_move"]) {
                 this.move_annotation(this.state["last_move"]);
             }
-            else if (this.subtasks[this.state["current_subtask"]]["state"]["is_in_progress"]) {
+            else if (this.get_current_subtask()["state"]["is_in_progress"]) {
                 this.continue_annotation(this.state["last_move"]);
             }
             else {
