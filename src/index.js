@@ -441,12 +441,12 @@ export class ULabel {
 
                 // Check the active_annotation to make sure its not null and isn't nonspatial
                 if (
-                    ul.subtasks[ul.state["current_subtask"]]["active_annotation"] != null &&
+                    ul.subtasks[ul.state["current_subtask"]]["state"]["active_id"] != null &&
                     !NONSPATIAL_MODES.includes(ul.subtasks[ul.state["current_subtask"]]["state"]["annotation_mode"])
                 ) {
 
                     // Delete the active annotation
-                    ul.delete_annotation(ul.subtasks[ul.state["current_subtask"]]["active_annotation"])
+                    ul.delete_annotation(ul.subtasks[ul.state["current_subtask"]]["state"]["active_id"]);
                 }
             }
         })
@@ -5824,7 +5824,7 @@ export class ULabel {
                     this.hide_global_edit_suggestion();
                     this.hide_edit_suggestion();
                     this.subtasks[this.state["current_subtask"]]["state"]["move_candidate"] = null;
-                    this.subtasks[this.state["current_subtask"]]["active_annotation"] = null;
+                    this.subtasks[this.state["current_subtask"]]["state"]["active_id"] = null;
                     return;
                 }
 
@@ -5857,7 +5857,7 @@ export class ULabel {
                 best_candidate = nonspatial_id;
             }
             this.show_global_edit_suggestion(best_candidate, null, nonspatial_id);
-            this.subtasks[this.state["current_subtask"]]["active_annotation"] = best_candidate
+            this.subtasks[this.state["current_subtask"]]["state"]["active_id"] = best_candidate
 
             // Must be called after active_annotation is updated
             this.update_confidence_dialog(best_candidate)
@@ -6250,7 +6250,7 @@ export class ULabel {
     update_confidence_dialog() {
         // Whenever the mouse makes the dialogs show up, update the displayed annotation confidence.
         const current_subtask = this.subtasks[this.state["current_subtask"]]
-        const active_annotation_id = current_subtask["active_annotation"]
+        const active_annotation_id = current_subtask["state"]["active_id"]
         const active_annotation = current_subtask["annotations"]["access"][active_annotation_id]
         /** The active annotation's classification payloads. */
         const aacp = active_annotation["classification_payloads"]
