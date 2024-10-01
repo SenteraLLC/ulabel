@@ -1206,6 +1206,8 @@ export class ULabel {
                     // Update class counter
                     that.toolbox.redraw_update_items(that);
 
+                    ULabelLoader.remove_loader(); 
+
                     // Call the user-provided callback
                     callback();
                 },

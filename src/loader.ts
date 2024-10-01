@@ -6,13 +6,18 @@ export class ULabelLoader {
     public static add_loader(
         container: HTMLElement
     ) {
+        const loader_overlay = document.createElement('div');
+        loader_overlay.classList.add('ulabel-loader-overlay');
+
         const loader = document.createElement('div');
         loader.classList.add('ulabel-loader');
-        container.appendChild(loader);
+        
+        loader_overlay.appendChild(loader);
+        container.appendChild(loader_overlay);
     }
     
     public static remove_loader() {
-        const loader = document.querySelector('.ulabel-loader');
+        const loader = document.querySelector('.ulabel-loader-overlay');
         if (loader) {
             loader.remove();
         }
@@ -20,6 +25,14 @@ export class ULabelLoader {
     
     public static add_css() {
         const css = `
+            .ulabel-loader-overlay {
+                position: fixed;
+                width: 100%;
+                height: 100%;
+                inset: 0;
+                background-color: rgba(0, 0, 0, 0.5);
+                z-index: 100;
+            }
             .ulabel-loader {
                 border: 16px solid #f3f3f3;
                 border-top: 16px solid #3498db;
@@ -28,7 +41,8 @@ export class ULabelLoader {
                 height: 120px;
                 animation: spin 2s linear infinite;
                 position: fixed;
-                z-index: 100;
+                inset: 0;
+                margin: auto;
             }
             
             @keyframes spin {
