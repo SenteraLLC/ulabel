@@ -83,8 +83,7 @@ export class Toolbox {
             // must be the second value
             if (typeof (toolbox_item_order[i]) === "number") {
                 toolbox_key = <number> toolbox_item_order[i];
-            }
-            else {
+            } else {
                 toolbox_key = toolbox_item_order[i][0];
                 args = toolbox_item_order[i][1];
             }
@@ -93,8 +92,7 @@ export class Toolbox {
 
             if (args == null) {
                 toolbox_instance_list.push(new toolbox_item_class(ulabel));
-            }
-            else {
+            } else {
                 toolbox_instance_list.push(new toolbox_item_class(ulabel, args));
             }
         }
@@ -353,8 +351,7 @@ export class ModeSelectionToolboxItem extends ToolboxItem {
             // Show the BrushToolboxItem when polygon mode is selected
             if (new_mode === "polygon") {
                 BrushToolboxItem.show_brush_toolbox_item();
-            }
-            else {
+            } else {
                 BrushToolboxItem.hide_brush_toolbox_item();
                 // Turn off erase mode if it's on
                 if (ulabel.subtasks[current_subtask]["state"]["is_in_erase_mode"]) {
@@ -826,8 +823,7 @@ export class ZoomPanToolboxItem extends ToolboxItem {
         $(document).on("click.ulabel", ".ulabel-zoom-button", (event) => {
             if ($(event.currentTarget).hasClass("ulabel-zoom-out")) {
                 this.ulabel.state.zoom_val /= 1.1;
-            }
-            else if ($(event.currentTarget).hasClass("ulabel-zoom-in")) {
+            } else if ($(event.currentTarget).hasClass("ulabel-zoom-in")) {
                 this.ulabel.state.zoom_val *= 1.1;
             }
 
@@ -841,14 +837,11 @@ export class ZoomPanToolboxItem extends ToolboxItem {
             const annbox = $("#" + this.ulabel.config.annbox_id);
             if ($(event.currentTarget).hasClass("ulabel-pan-up")) {
                 annbox.scrollTop(annbox.scrollTop() - 20);
-            }
-            else if ($(event.currentTarget).hasClass("ulabel-pan-down")) {
+            } else if ($(event.currentTarget).hasClass("ulabel-pan-down")) {
                 annbox.scrollTop(annbox.scrollTop() + 20);
-            }
-            else if ($(event.currentTarget).hasClass("ulabel-pan-left")) {
+            } else if ($(event.currentTarget).hasClass("ulabel-pan-left")) {
                 annbox.scrollLeft(annbox.scrollLeft() - 20);
-            }
-            else if ($(event.currentTarget).hasClass("ulabel-pan-right")) {
+            } else if ($(event.currentTarget).hasClass("ulabel-pan-right")) {
                 annbox.scrollLeft(annbox.scrollLeft() + 20);
             }
         });
@@ -867,8 +860,7 @@ export class ZoomPanToolboxItem extends ToolboxItem {
                         this.ulabel.update_frame(-1);
                 }
             });
-        }
-        else {
+        } else {
             $(document).on("keydown.ulabel", (event) => {
                 const annbox = $("#" + this.ulabel.config.annbox_id);
                 switch (event.key) {
@@ -1177,12 +1169,10 @@ export class AnnotationResizeItem extends ToolboxItem {
             if ((size_cookie != null) && size_cookie != "NaN") {
                 this.update_annotation_size(ulabel, ulabel.subtasks[subtask], Number(size_cookie));
                 this[cached_size_property] = Number(size_cookie);
-            }
-            else if (ulabel.config.default_annotation_size != undefined) {
+            } else if (ulabel.config.default_annotation_size != undefined) {
                 this.update_annotation_size(ulabel, ulabel.subtasks[subtask], ulabel.config.default_annotation_size);
                 this[cached_size_property] = ulabel.config.default_annotation_size;
-            }
-            else {
+            } else {
                 const DEFAULT_SIZE = 5;
                 this.update_annotation_size(ulabel, ulabel.subtasks[subtask], DEFAULT_SIZE);
                 this[cached_size_property] = DEFAULT_SIZE;
@@ -1361,8 +1351,7 @@ export class AnnotationResizeItem extends ToolboxItem {
                 this.loop_through_annotations(subtask, increment_size, "-");
                 if (this[subtask_cached_size] - increment_size > vanish_size) {
                     this[subtask_cached_size] -= increment_size;
-                }
-                else {
+                } else {
                     this[subtask_cached_size] = vanish_size;
                 }
                 break;
@@ -1380,8 +1369,7 @@ export class AnnotationResizeItem extends ToolboxItem {
 
                     // Unlock the vanish button
                     $("#annotation-resize-v").removeClass("locked");
-                }
-                else {
+                } else {
                     // Apply the vanish size to make the annotations to small to see
                     this.loop_through_annotations(subtask, vanish_size, "=");
 
@@ -1417,8 +1405,7 @@ export class AnnotationResizeItem extends ToolboxItem {
                     // If it would, set it equal to a small positive number
                     if (subtask.annotations.access[annotation_id].line_size - size <= 0.01) {
                         subtask.annotations.access[annotation_id].line_size = 0.01;
-                    }
-                    else {
+                    } else {
                         subtask.annotations.access[annotation_id].line_size -= size;
                     }
                     break;
@@ -1786,8 +1773,7 @@ export class RecolorActiveItem extends ToolboxItem {
         if (redraw_all_annotations) {
             // Redraw all annotations
             this.ulabel.redraw_all_annotations();
-        }
-        else {
+        } else {
             // Otherwise only redraw the annotations in the subtask we updated
             const current_subtask_key: string = this.ulabel.state.current_subtask;
             this.ulabel.redraw_all_annotations(current_subtask_key);
@@ -1869,9 +1855,8 @@ export class KeypointSliderItem extends ToolboxItem {
             this.get_confidence = kwargs.confidence_function;
             this.mark_deprecated = kwargs.mark_deprecated;
             this.keybinds = kwargs.keybinds;
-        }
-        // Otherwise use defaults
-        else {
+        } else {
+            // Otherwise use defaults
             this.name = "Keypoint Slider";
             this.filter_function = value_is_lower_than_filter;
             this.get_confidence = get_annotation_confidence;
@@ -2291,8 +2276,7 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
             let default_value: string;
             if (this.default_values[current_id] !== undefined) {
                 default_value = this.default_values[current_id].distance.toString();
-            }
-            else {
+            } else {
                 default_value = this.default_values.closest_row.distance.toString();
             }
 
