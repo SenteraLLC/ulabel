@@ -1089,13 +1089,6 @@ export class ULabel {
     }
 
     init(callback) {
-        // Add loader
-        // console.log(ULabelLoader);
-        // ULabelLoader.add_loader(
-        //     document.getElementById(this.config["container_id"]),
-        // );
-        // ULabelLoader.add_css();
-
 
         // Add stylesheet
         add_style_to_document(this);

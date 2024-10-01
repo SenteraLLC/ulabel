@@ -3,7 +3,7 @@
  */
 export class ULabelLoader {
     
-    public static add_loader(
+    public static add_loader_div(
         container: HTMLElement
     ) {
         const loader_overlay = document.createElement('div');
@@ -14,16 +14,18 @@ export class ULabelLoader {
         
         loader_overlay.appendChild(loader);
         container.appendChild(loader_overlay);
+        
+        ULabelLoader.add_loader_css();
     }
     
-    public static remove_loader() {
+    public static remove_loader_div() {
         const loader = document.querySelector('.ulabel-loader-overlay');
         if (loader) {
             loader.remove();
         }
     }
     
-    public static add_css() {
+    public static add_loader_css() {
         const css = `
             .ulabel-loader-overlay {
                 position: fixed;
