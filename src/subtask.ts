@@ -18,7 +18,7 @@ export class ULabelSubtask {
             annid: string,
             access: ULabelAnnotation,
             distance: number,
-            point: ULabelSpatialPayload  // TODO: double check this one 
+            point: [number, number] 
         },
         first_explicit_assignment: boolean,
         front_context: CanvasRenderingContext2D,
