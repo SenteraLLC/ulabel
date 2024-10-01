@@ -540,7 +540,6 @@ export class BrushToolboxItem extends ToolboxItem {
      */
     protected add_styles() {
         // Define the css
-        // Define the css
         const css = `
         #toolbox div.brush button:not(.circle) {
             padding: 1rem 0.5rem;
