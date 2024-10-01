@@ -9,6 +9,7 @@ import {
     NONSPATIAL_MODES,
     MODES_3D,
 } from '../build/annotation';
+import { ULabelLoader } from '../build/loader';
 import { ULabelSubtask } from '../build/subtask';
 import { GeometricUtils } from '../build/geometric_utils';
 import { 
@@ -1081,7 +1082,16 @@ export class ULabel {
         this.is_init = false;
     }
 
-    init(callback) {
+    async init(callback) {
+        // Add loader
+        console.log(ULabelLoader);
+        ULabelLoader.add_loader(
+            document.getElementById(this.config["container_id"]),
+        );
+        ULabelLoader.add_css();
+
+        await new Promise(r => setTimeout(r, 5000));
+
         // Add stylesheet
         add_style_to_document(this);
 
