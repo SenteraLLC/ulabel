@@ -49,6 +49,7 @@ import {
     BACK_Z_INDEX,
 } from './blobs';
 import { ULABEL_VERSION } from './version';
+import { BrushToolboxItem } from '../build/toolbox';
 
 jQuery.fn.outer_html = function () {
     return jQuery('<div />').append(this.eq(0).clone()).html();
@@ -2763,6 +2764,8 @@ export class ULabel {
         // Try and switch to polygon mode if not already in it
         if (!is_in_polygon_mode) {
             is_in_polygon_mode = this.set_and_update_annotation_mode("polygon");
+            $("#brush-mode").removeClass(BrushToolboxItem.BRUSH_BTN_ACTIVE_CLS);
+            $("#erase-mode").removeClass(BrushToolboxItem.BRUSH_BTN_ACTIVE_CLS);
         }
         // If we're in polygon mode, toggle brush mode
         if (is_in_polygon_mode) {
@@ -2787,8 +2790,10 @@ export class ULabel {
                 let gmx = this.get_global_mouse_x(mouse_event);
                 let gmy = this.get_global_mouse_y(mouse_event);
                 this.create_brush_circle(gmx, gmy);
+                $("#brush-mode").addClass(BrushToolboxItem.BRUSH_BTN_ACTIVE_CLS);
             } else {
                 this.destroy_brush_circle();
+                $("#brush-mode").removeClass(BrushToolboxItem.BRUSH_BTN_ACTIVE_CLS);
             }
         }
     }
@@ -2801,6 +2806,16 @@ export class ULabel {
         }
 
         // Toggle erase mode
+        if (this.subtasks[current_subtask]["state"]["is_in_erase_mode"]) {
+            $("#erase-mode").removeClass(BrushToolboxItem.BRUSH_BTN_ACTIVE_CLS);
+            // "Erase mode" is a subet of "brush mode"
+            if (this.subtasks[current_subtask]["state"]["is_in_brush_mode"]) {
+                $("#brush-mode").addClass(BrushToolboxItem.BRUSH_BTN_ACTIVE_CLS);
+            }
+        } else {
+            $("#erase-mode").addClass(BrushToolboxItem.BRUSH_BTN_ACTIVE_CLS);
+            $("#brush-mode").removeClass(BrushToolboxItem.BRUSH_BTN_ACTIVE_CLS);
+        }
         this.subtasks[current_subtask]["state"]["is_in_erase_mode"] = !this.subtasks[current_subtask]["state"]["is_in_erase_mode"];
 
         // Update brush circle color
