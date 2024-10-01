@@ -1,6 +1,5 @@
-.editorconfig
-.husky
 .prettierignore
+.husky
 build
 dist
 node_modules
