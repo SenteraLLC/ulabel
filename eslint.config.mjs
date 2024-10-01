@@ -27,7 +27,6 @@ export default [
             commaDangle: "always-multiline",
             indent: 4,
             quotes: "double",
-            semi: "always",
         },
     ),
     {
@@ -44,6 +43,7 @@ export default [
             ],
             "@stylistic/function-call-argument-newline": ["error", "consistent"],
             "@stylistic/function-call-spacing": ["error", "never"],
+            "@stylistic/semi": ["error", "always"],
         },
 
     },
