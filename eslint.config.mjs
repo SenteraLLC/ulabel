@@ -24,6 +24,7 @@ export default [
     },
     stylistic.configs.customize(
         {
+            braceStyle: "1tbs",
             commaDangle: "always-multiline",
             indent: 4,
             quotes: "double",
