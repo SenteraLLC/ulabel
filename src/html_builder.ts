@@ -16,6 +16,7 @@ import {
     GLOBAL_SVG,
     get_init_style
 } from '../src/blobs';
+import { ULabelLoader } from "./loader";
 
 
 /**
@@ -159,6 +160,9 @@ export function prep_window_html(ulabel: ULabel, toolbox_item_order: unknown[] =
 
     // Set the container's html to the toolbox html we just created
     $("#" + ulabel.config["container_id"]).html(tool_html)
+    const container = document.getElementById(ulabel.config["container_id"]);
+    ULabelLoader.add_loader(container);
+    ULabelLoader.add_css();
 
     // Build toolbox for the current subtask only
     const current_subtask: string = Object.keys(ulabel.subtasks)[0];

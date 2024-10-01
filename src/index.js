@@ -56,6 +56,12 @@ jQuery.fn.outer_html = function () {
 };
 
 
+function sleep(ms) {
+    var start = new Date().getTime(), expire = start + ms;
+    while (new Date().getTime() < expire) { }
+    return;
+}
+  
 
 export class ULabel {
 
@@ -1082,15 +1088,14 @@ export class ULabel {
         this.is_init = false;
     }
 
-    async init(callback) {
+    init(callback) {
         // Add loader
-        console.log(ULabelLoader);
-        ULabelLoader.add_loader(
-            document.getElementById(this.config["container_id"]),
-        );
-        ULabelLoader.add_css();
+        // console.log(ULabelLoader);
+        // ULabelLoader.add_loader(
+        //     document.getElementById(this.config["container_id"]),
+        // );
+        // ULabelLoader.add_css();
 
-        await new Promise(r => setTimeout(r, 5000));
 
         // Add stylesheet
         add_style_to_document(this);
@@ -1100,6 +1105,7 @@ export class ULabel {
 
         // Place image element
         prep_window_html(this, this.config.toolbox_order);
+
 
         // Detect night cookie
         if (ULabel.has_night_mode_cookie()) {
@@ -1113,6 +1119,9 @@ export class ULabel {
             break;
         }
         let image_promises = mappable_images.map(ULabel.load_image_promise);
+        // image_promises.push(
+        //     new Promise(resolve => setTimeout(resolve, 5000))
+        // );
         Promise.all(image_promises).then((loaded_imgs) => {
             // Store image dimensions
             that.config["image_height"] = loaded_imgs[0].naturalHeight;
@@ -1148,6 +1157,14 @@ export class ULabel {
                     that.subtasks[st]["canvas_fid"]
                 ).getContext("2d");
             }
+            /**
+             * This used to be just after `that.is_init = true;`,
+             * but for testing loading I've hoisted it up here.
+             * 
+             * Some things (like available annotation modes)
+             * display incorrectly as a result.
+             */
+            $(`div#${this.config["container_id"]}`).css("display", "block");
 
             // Create the annotation canvases for the resume_from annotations
             ULabel.initialize_annotation_canvases(that);
@@ -1158,37 +1175,42 @@ export class ULabel {
             // Add the HTML for the edit suggestion to the window
             build_edit_suggestion(that);
 
-            // Add dialog to show annotation confidence
-            build_confidence_dialog(that);
 
-            // Create listers to manipulate and export this object
-            ULabel.create_listeners(that);
+            setTimeout(
+                () => {
+                    // Add dialog to show annotation confidence
+                    build_confidence_dialog(that);
 
-            that.handle_toolbox_overflow();
+                    // Create listers to manipulate and export this object
+                    ULabel.create_listeners(that);
 
-            // Set the canvas elements in the correct stacking order given current subtask
-            that.set_subtask(that.state["current_subtask"]);
+                    that.handle_toolbox_overflow();
 
-            that.create_overlays()
+                    // Set the canvas elements in the correct stacking order given current subtask
+                    that.set_subtask(that.state["current_subtask"]);
 
-            // Indicate that the object is now init!
-            that.is_init = true;
-            $(`div#${this.config["container_id"]}`).css("display", "block");
+                    that.create_overlays()
 
-            this.show_initial_crop();
-            this.update_frame();
+                    // Indicate that the object is now init!
+                    that.is_init = true;
 
-            // Draw demo annotation
-            that.redraw_demo();
+                    this.show_initial_crop();
+                    this.update_frame();
 
-            // Draw resumed from annotations
-            that.redraw_all_annotations();
+                    // Draw demo annotation
+                    that.redraw_demo();
 
-            // Update class counter
-            that.toolbox.redraw_update_items(that);
+                    // Draw resumed from annotations
+                    that.redraw_all_annotations();
 
-            // Call the user-provided callback
-            callback();
+                    // Update class counter
+                    that.toolbox.redraw_update_items(that);
+
+                    // Call the user-provided callback
+                    callback();
+                },
+                5000
+            )
         }).catch((err) => {
             console.log(err);
             this.raise_error("Unable to load images: " + JSON.stringify(err), ULabel.elvl_fatal);

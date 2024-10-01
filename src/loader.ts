@@ -27,6 +27,8 @@ export class ULabelLoader {
                 width: 120px;
                 height: 120px;
                 animation: spin 2s linear infinite;
+                position: fixed;
+                z-index: 100;
             }
             
             @keyframes spin {
