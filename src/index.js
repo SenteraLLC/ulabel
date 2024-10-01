@@ -440,14 +440,14 @@ export class ULabel {
             // Check the key pressed against the delete annotation keybind in the config
             if (e.key === ul.config.delete_annotation_keybind) {
 
-                // Check the active_annotation to make sure its not null and isn't nonspatial
+                // Check the edit_candidate to make sure its not null and isn't nonspatial
                 if (
-                    ul.get_current_subtask()["active_annotation"] != null &&
-                    !NONSPATIAL_MODES.includes(ul.get_current_subtask()["active_annotation"]["spatial_type"])
+                    ul.get_current_subtask().state.edit_candidate != null &&
+                    !NONSPATIAL_MODES.includes(ul.get_current_subtask().state.edit_candidate.spatial_type)
                 ) {
 
                     // Delete the active annotation
-                    ul.delete_annotation(ul.get_current_subtask()["active_annotation"])
+                    ul.delete_annotation(ul.subtasks[ul.state["current_subtask"]].state.edit_candidate.annid);
                 }
             }
         })
@@ -5844,7 +5844,7 @@ export class ULabel {
                     this.hide_global_edit_suggestion();
                     this.hide_edit_suggestion();
                     this.get_current_subtask()["state"]["move_candidate"] = null;
-                    this.get_current_subtask()["active_annotation"] = null;
+                    this.get_current_subtask()["state"]["edit_candidate"] = null;
                     return;
                 }
 
@@ -5869,18 +5869,20 @@ export class ULabel {
 
                 // Show global edit dialogs for "best" candidate
                 this.get_current_subtask()["state"]["move_candidate"] = edit_candidates["best"];
-                best_candidate = edit_candidates["best"]["annid"];
+                best_candidate = edit_candidates["best"];
             }
             else {
                 this.hide_global_edit_suggestion();
                 this.hide_edit_suggestion();
-                best_candidate = nonspatial_id;
+                best_candidate = {
+                    "annid": nonspatial_id,
+                }
             }
-            this.show_global_edit_suggestion(best_candidate, null, nonspatial_id);
-            this.get_current_subtask()["active_annotation"] = best_candidate
+            this.show_global_edit_suggestion(best_candidate.annid, null, nonspatial_id);
+            this.get_current_subtask()["state"]["edit_candidate"] = best_candidate;
 
             // Must be called after active_annotation is updated
-            this.update_confidence_dialog(best_candidate)
+            this.update_confidence_dialog()
         }
     }
 
@@ -6270,7 +6272,7 @@ export class ULabel {
     update_confidence_dialog() {
         // Whenever the mouse makes the dialogs show up, update the displayed annotation confidence.
         const current_subtask = this.get_current_subtask()
-        const active_annotation_id = current_subtask["active_annotation"]
+        const active_annotation_id = current_subtask["state"]["edit_candidate"]["annid"]
         const active_annotation = current_subtask["annotations"]["access"][active_annotation_id]
         /** The active annotation's classification payloads. */
         const aacp = active_annotation["classification_payloads"]

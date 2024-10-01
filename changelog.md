@@ -5,6 +5,12 @@ All notable changes to this project will be documented here.
 ## [unreleased]
 
 Nothing yet.
+
+## [0.13.1] - Sept 30th, 2024
+- Remove unecessary and confusing default in global edit dialog
+- Squash `active_annotation` into `edit_candidate` in subtask state
+- Fix missing fields in `ULabelSubtask.state.edit_candidate`
+
 ## [0.13.0] - Sept 26th, 2024
 - Fix bug where the `filter_annotations_on_load = true` option would not work as expected. 
   - The `keypoint_slider_default_value` option was not being properly multiplied by 100 internally.
