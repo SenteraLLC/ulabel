@@ -1,28 +1,28 @@
-import { 
-    DistanceFromPolylineClasses, 
-    FilterDistanceConfig, 
-    RecolorActiveConfig, 
+import {
+    DistanceFromPolylineClasses,
+    FilterDistanceConfig,
+    RecolorActiveConfig,
     ULabel,
     ULabelSubmitButton,
-    ValidDeprecatedBy, 
+    ValidDeprecatedBy,
 } from "..";
 import { DEFAULT_FILTER_DISTANCE_CONFIG } from "./configuration";
 import { ULabelAnnotation, NONSPATIAL_MODES, DELETE_MODES } from "./annotation";
 import { ULabelSubtask } from "./subtask";
-import { 
-    get_annotation_confidence, 
-    value_is_lower_than_filter, 
-    mark_deprecated, 
+import {
+    get_annotation_confidence,
+    value_is_lower_than_filter,
+    mark_deprecated,
     filter_points_distance_from_line,
     findAllPolylineClassDefinitions,
-    get_point_and_line_annotations
+    get_point_and_line_annotations,
 } from "./annotation_operators";
 import { SliderHandler, get_idd_string } from "./html_builder";
 import { FilterDistanceOverlay } from "./overlays";
-import { 
-    get_active_class_id, 
+import {
+    get_active_class_id,
     get_local_storage_item,
-    set_local_storage_item, 
+    set_local_storage_item,
 } from "./utilities";
 
 // For ResizeToolboxItem
@@ -31,77 +31,75 @@ enum ValidResizeValues {
     SMALL = "s",
     LARGE = "l",
     INCREMENT = "inc",
-    DECREMENT = "dec"
+    DECREMENT = "dec",
 }
 
-const toolboxDividerDiv = "<div class=toolbox-divider></div>"
+const toolboxDividerDiv = "<div class=toolbox-divider></div>";
 
 /** Chains the replaceAll method and the toLowerCase method.
  *  Optionally concatenates a string at the end of the method.
   */
-String.prototype.replaceLowerConcat = function(before: string, after: string, concat_string: string = null) {
-    
-    if (typeof(concat_string) === "string") {
-        return this.replaceAll(before, after).toLowerCase().concat(concat_string)
+String.prototype.replaceLowerConcat = function (before: string, after: string, concat_string: string = null) {
+    if (typeof (concat_string) === "string") {
+        return this.replaceAll(before, after).toLowerCase().concat(concat_string);
     }
 
-    return this.replaceAll(before, after).toLowerCase()
-}
-
+    return this.replaceAll(before, after).toLowerCase();
+};
 
 /**
  * Manager for toolbox. Contains ToolboxTab items.
  */
 export class Toolbox {
-    
     constructor(
         public tabs: ToolboxTab[] = [],
-        public items: ToolboxItem[] = []
+        public items: ToolboxItem[] = [],
     ) {
     }
 
     public static create_toolbox(ulabel: ULabel, toolbox_item_order: unknown[]) {
         // Grab the default toolbox if one wasn't provided
         if (toolbox_item_order == null) {
-            toolbox_item_order = ulabel.config.toolbox_order
+            toolbox_item_order = ulabel.config.toolbox_order;
         }
 
         // There's no point to having an empty toolbox, so throw an error if the toolbox is empty.
         // The toolbox won't actually break if there aren't any items in the toolbox, so this
         // error isn't strictly neccesary.
         if (toolbox_item_order.length === 0) {
-            throw new Error("No Toolbox Items Given")
+            throw new Error("No Toolbox Items Given");
         }
 
-        this.add_styles()
+        this.add_styles();
 
-        let toolbox_instance_list = [];
+        const toolbox_instance_list = [];
         // Go through the items in toolbox_item_order and add their instance to the toolbox instance list
         for (let i = 0; i < toolbox_item_order.length; i++) {
-
             let args: object, toolbox_key: number;
 
-            // If the value of toolbox_item_order[i] is a number then that means the it is one of the 
+            // If the value of toolbox_item_order[i] is a number then that means the it is one of the
             // enumerated toolbox items, so set it to the key, otherwise the element must be an array
             // of which the first element of that array must be the enumerated value, and the arguments
             // must be the second value
-            if (typeof(toolbox_item_order[i]) === "number") {
-                toolbox_key = <number> toolbox_item_order[i]
-            } else {
+            if (typeof (toolbox_item_order[i]) === "number") {
+                toolbox_key = <number> toolbox_item_order[i];
+            }
+            else {
                 toolbox_key = toolbox_item_order[i][0];
-                args = toolbox_item_order[i][1]  
+                args = toolbox_item_order[i][1];
             }
 
-            let toolbox_item_class = ulabel.config.toolbox_map.get(toolbox_key);
+            const toolbox_item_class = ulabel.config.toolbox_map.get(toolbox_key);
 
             if (args == null) {
-                toolbox_instance_list.push(new toolbox_item_class(ulabel))
-            } else {
-                toolbox_instance_list.push(new toolbox_item_class(ulabel, args))
-            }  
-        }                    
+                toolbox_instance_list.push(new toolbox_item_class(ulabel));
+            }
+            else {
+                toolbox_instance_list.push(new toolbox_item_class(ulabel, args));
+            }
+        }
 
-        return toolbox_instance_list
+        return toolbox_instance_list;
     }
 
     static add_styles() {
@@ -179,21 +177,21 @@ export class Toolbox {
 
         .ulabel-night #toolbox div.toolbox-divider {
             background-color: gray;
-        }`
+        }`;
 
         // Create an id so this specific style tag can be referenced
-        const style_id = "toolbox-styles"
+        const style_id = "toolbox-styles";
 
         // Don't add the style tag if its already been added once
-        if (document.getElementById(style_id)) return
+        if (document.getElementById(style_id)) return;
 
         // Grab the document's head and create a style tag
-        const head = document.head || document.querySelector("head")
-        const style = document.createElement('style');
+        const head = document.head || document.querySelector("head");
+        const style = document.createElement("style");
 
         // Add the css and id to the style tag
         style.appendChild(document.createTextNode(css));
-        style.id = style_id
+        style.id = style_id;
 
         // Add the style tag to the document's head
         head.appendChild(style);
@@ -236,7 +234,7 @@ export class Toolbox {
                     ${this.get_toolbox_tabs(ulabel)}
                 </div> 
             </div>
-        </div>`; 
+        </div>`;
 
         return toolbox_html;
     }
@@ -244,27 +242,27 @@ export class Toolbox {
     /**
      * Adds tabs for each ULabel subtask to the toolbox.
      */
-    public get_toolbox_tabs(ulabel: ULabel): string{
+    public get_toolbox_tabs(ulabel: ULabel): string {
         let ret: string = "";
         for (const st_key in ulabel.subtasks) {
-            let selected = st_key == ulabel.state["current_subtask"];
-            let subtask = ulabel.subtasks[st_key];
-            let current_tab = new ToolboxTab(
+            const selected = st_key == ulabel.state["current_subtask"];
+            const subtask = ulabel.subtasks[st_key];
+            const current_tab = new ToolboxTab(
                 [],
                 subtask,
                 st_key,
-                selected 
+                selected,
             );
             ret += current_tab.html;
             this.tabs.push(
-                current_tab 
+                current_tab,
             );
         }
-        return ret 
+        return ret;
     }
-    
+
     public redraw_update_items(ulabel: ULabel): void {
-        for(const tbitem of this.items) {
+        for (const tbitem of this.items) {
             tbitem.redraw_update(ulabel);
         }
     }
@@ -288,7 +286,7 @@ export class ToolboxTab {
             sel = " sel";
             val = 100;
         }
-        console.log(subtask.display_name, subtask)
+        console.log(subtask.display_name, subtask);
         this.html = `
         <div class="tb-st-tab${sel}">
             <a${href} id="tb-st-switch--${subtask_key}" class="tb-st-switch">${this.subtask.display_name}</a><!--
@@ -297,7 +295,6 @@ export class ToolboxTab {
             </span>
         </div>
         `;
-
     }
 }
 
@@ -322,12 +319,12 @@ export abstract class ToolboxItem {
     /**
      * ToolboxItems need to handle their own css.
      */
-    protected abstract add_styles(): void; 
+    protected abstract add_styles(): void;
 
     // TODO (joshua-dean): Find the right way to handle this with abstract classes
     /* eslint-disable @typescript-eslint/no-unused-vars */
     public redraw_update(ulabel: ULabel): void {}
-    public frame_update(ulabel: ULabel): void {} 
+    public frame_update(ulabel: ULabel): void {}
     /* eslint-enable @typescript-eslint/no-unused-vars */
 }
 
@@ -338,26 +335,26 @@ export class ModeSelectionToolboxItem extends ToolboxItem {
     constructor(public ulabel: ULabel) {
         super();
 
-        this.add_styles()
+        this.add_styles();
 
         // Buttons to change annotation mode
         $(document).on("click.ulabel", "a.md-btn", (e) => {
-            
             // Grab the current target and the current subtask
-            let target_jq = $(e.currentTarget);
-            let current_subtask = ulabel.state["current_subtask"];
+            const target_jq = $(e.currentTarget);
+            const current_subtask = ulabel.state["current_subtask"];
 
             // Check if button clicked is already selected, or if creation of a new annotation is in progress
             if (target_jq.hasClass("sel") || ulabel.subtasks[current_subtask]["state"]["is_in_progress"]) return;
 
             // Get the new mode and set it to ulabel's current mode
-            let new_mode = target_jq.attr("id").split("--")[1];
+            const new_mode = target_jq.attr("id").split("--")[1];
             ulabel.subtasks[current_subtask]["state"]["annotation_mode"] = new_mode;
 
             // Show the BrushToolboxItem when polygon mode is selected
             if (new_mode === "polygon") {
                 BrushToolboxItem.show_brush_toolbox_item();
-            } else {
+            }
+            else {
                 BrushToolboxItem.hide_brush_toolbox_item();
                 // Turn off erase mode if it's on
                 if (ulabel.subtasks[current_subtask]["state"]["is_in_erase_mode"]) {
@@ -382,57 +379,53 @@ export class ModeSelectionToolboxItem extends ToolboxItem {
         });
 
         $(document).on("keypress.ulabel", (e) => {
-
             // If creation of a new annotation is in progress, don't change the mode
-            let current_subtask = ulabel.state["current_subtask"];
+            const current_subtask = ulabel.state["current_subtask"];
             if (ulabel.subtasks[current_subtask]["state"]["is_in_progress"]) return;
 
             // Check if the correct key was pressed
             if (e.key == ulabel.config.toggle_annotation_mode_keybind) {
-
-                let mode_button_array: HTMLElement[] = []
+                const mode_button_array: HTMLElement[] = [];
 
                 // Loop through all of the mode buttons
-                for (let idx in Array.from(document.getElementsByClassName("md-btn"))) {
-    
+                for (const idx in Array.from(document.getElementsByClassName("md-btn"))) {
                     // Grab mode button
-                    let mode_button = <HTMLElement> document.getElementsByClassName("md-btn")[idx]
+                    const mode_button = <HTMLElement> document.getElementsByClassName("md-btn")[idx];
 
                     // Continue without adding it to the array if its display is none
                     if (mode_button.style.display == "none") {
-                        continue
+                        continue;
                     }
-                    mode_button_array.push(mode_button)                  
-                } 
+                    mode_button_array.push(mode_button);
+                }
 
                 // Grab the currently selected mode button
-                let selected_mode_button = <HTMLAnchorElement> Array.from(document.getElementsByClassName("md-btn sel"))[0] // There's only ever going to be one element in this array, so grab the first one
+                const selected_mode_button = <HTMLAnchorElement> Array.from(document.getElementsByClassName("md-btn sel"))[0]; // There's only ever going to be one element in this array, so grab the first one
 
-                let new_button_index: number
+                let new_button_index: number;
 
-                // Loop through all of the mode select buttons that are currently displayed 
+                // Loop through all of the mode select buttons that are currently displayed
                 // to find which one is the currently selected button.  Once its found add 1
                 // to get the index of the next mode select button. If the new button index
                 // is the same as the array's length, then loop back and set the new button
                 // to 0.
-                for (let idx in mode_button_array) {
+                for (const idx in mode_button_array) {
                     if (mode_button_array[idx] === selected_mode_button) {
-                        new_button_index = Number(idx) + 1
+                        new_button_index = Number(idx) + 1;
                         if (new_button_index == mode_button_array.length) {
-                            new_button_index = 0
+                            new_button_index = 0;
                         }
                     }
                 }
 
                 // Grab the button for the mode we want to switch to
-                let new_selected_button = mode_button_array[new_button_index]
+                const new_selected_button = mode_button_array[new_button_index];
 
-                new_selected_button.click()
+                new_selected_button.click();
             }
-        })
+        });
     }
 
-    
     /**
      * Create the css for this ToolboxItem and append it to the page.
      */
@@ -484,20 +477,20 @@ export class ModeSelectionToolboxItem extends ToolboxItem {
         
         
         
-        `
+        `;
         // Create an id so this specific style tag can be referenced
-        const style_id = "mode-selection-toolbox-item-styles"
+        const style_id = "mode-selection-toolbox-item-styles";
 
         // Don't add the style tag if its already been added once
-        if (document.getElementById(style_id)) return
+        if (document.getElementById(style_id)) return;
 
         // Grab the document's head and create a style tag
-        const head = document.head || document.querySelector("head")
-        const style = document.createElement('style');
+        const head = document.head || document.querySelector("head");
+        const style = document.createElement("style");
 
         // Add the css and id to the style tag
         style.appendChild(document.createTextNode(css));
-        style.id = style_id
+        style.id = style_id;
 
         // Add the style tag to the document's head
         head.appendChild(style);
@@ -511,7 +504,7 @@ export class ModeSelectionToolboxItem extends ToolboxItem {
                 <span class="current_mode"></span>
             </p>
         </div>
-        `
+        `;
     }
 
     public after_init() {
@@ -519,7 +512,7 @@ export class ModeSelectionToolboxItem extends ToolboxItem {
     }
 
     public get_toolbox_item_type() {
-        return "ModeSelection"
+        return "ModeSelection";
     }
 }
 
@@ -528,16 +521,16 @@ export class ModeSelectionToolboxItem extends ToolboxItem {
  */
 export class BrushToolboxItem extends ToolboxItem {
     public html: string;
-    private ulabel: ULabel
+    private ulabel: ULabel;
 
     constructor(ulabel: ULabel) {
         super();
 
-        this.ulabel = ulabel
+        this.ulabel = ulabel;
 
-        this.add_styles()
+        this.add_styles();
 
-        this.add_event_listeners()
+        this.add_event_listeners();
     }
 
     /**
@@ -564,20 +557,20 @@ export class BrushToolboxItem extends ToolboxItem {
         #toolbox div.brush span.brush-mode {
             display: flex;
         }        
-        `
+        `;
         // Create an id so this specific style tag can be referenced
-        const style_id = "brush-toolbox-item-styles"
+        const style_id = "brush-toolbox-item-styles";
 
         // Don't add the style tag if its already been added once
-        if (document.getElementById(style_id)) return
+        if (document.getElementById(style_id)) return;
 
         // Grab the document's head and create a style tag
-        const head = document.head || document.querySelector("head")
-        const style = document.createElement('style');
+        const head = document.head || document.querySelector("head");
+        const style = document.createElement("style");
 
         // Add the css and id to the style tag
         style.appendChild(document.createTextNode(css));
-        style.id = style_id
+        style.id = style_id;
 
         // Add the style tag to the document's head
         head.appendChild(style);
@@ -586,7 +579,7 @@ export class BrushToolboxItem extends ToolboxItem {
     private add_event_listeners() {
         $(document).on("click.ulabel", ".brush-button", (event) => {
             // Get the clicked button
-            const button = $(event.currentTarget)
+            const button = $(event.currentTarget);
 
             // Use the button id to get what size to resize the annotations to
             const button_id: string = button.attr("id");
@@ -594,20 +587,20 @@ export class BrushToolboxItem extends ToolboxItem {
             switch (button_id) {
                 case "brush-mode":
                     this.ulabel.toggle_brush_mode(event);
-                    break
+                    break;
                 case "erase-mode":
                     this.ulabel.toggle_erase_mode(event);
-                    break
+                    break;
                 case "brush-inc":
                     this.ulabel.change_brush_size(1.1);
-                    break
+                    break;
                 case "brush-dec":
-                    this.ulabel.change_brush_size(1/1.1);
-                    break
+                    this.ulabel.change_brush_size(1 / 1.1);
+                    break;
             }
-        })
+        });
     }
-    
+
     public get_html() {
         return `
         <div class="brush">
@@ -623,28 +616,28 @@ export class BrushToolboxItem extends ToolboxItem {
                 </span>
             </div>
         </div>
-        `
+        `;
     }
 
     public static show_brush_toolbox_item() {
         // Remove hidden class from the brush toolbox item
-        $(".brush").removeClass("ulabel-hidden")
+        $(".brush").removeClass("ulabel-hidden");
     }
 
     public static hide_brush_toolbox_item() {
         // Add hidden class to the brush toolbox item
-        $(".brush").addClass("ulabel-hidden")
+        $(".brush").addClass("ulabel-hidden");
     }
 
     public after_init() {
         // Only show BrushToolboxItem if the current mode is polygon
         if (this.ulabel.subtasks[this.ulabel.state["current_subtask"]].state["annotation_mode"] !== "polygon") {
-            BrushToolboxItem.hide_brush_toolbox_item()
+            BrushToolboxItem.hide_brush_toolbox_item();
         }
     }
 
     public get_toolbox_item_type() {
-        return "Brush"
+        return "Brush";
     }
 }
 
@@ -652,18 +645,18 @@ export class BrushToolboxItem extends ToolboxItem {
  * Toolbox item for zooming and panning.
  */
 export class ZoomPanToolboxItem extends ToolboxItem {
-    public frame_range: string
+    public frame_range: string;
     constructor(
-        public ulabel: ULabel
+        public ulabel: ULabel,
     ) {
         super();
         this.set_frame_range(ulabel);
 
-        this.add_styles()
+        this.add_styles();
 
-        this.add_event_listeners()
+        this.add_event_listeners();
     }
-    
+
     /**
      * Create the css for this ToolboxItem and append it to the page.
      */
@@ -808,42 +801,41 @@ export class ZoomPanToolboxItem extends ToolboxItem {
         .ulabel-night #toolbox div.zoom-pan a:active {
             color: white;
         }
-        `
+        `;
         // Create an id so this specific style tag can be referenced
-        const style_id = "zoom-pan-toolbox-item-styles"
+        const style_id = "zoom-pan-toolbox-item-styles";
 
         // Don't add the style tag if its already been added once
-        if (document.getElementById(style_id)) return
+        if (document.getElementById(style_id)) return;
 
         // Grab the document's head and create a style tag
-        const head = document.head || document.querySelector("head")
-        const style = document.createElement('style');
+        const head = document.head || document.querySelector("head");
+        const style = document.createElement("style");
 
         // Add the css and id to the style tag
         style.appendChild(document.createTextNode(css));
-        style.id = style_id
+        style.id = style_id;
 
         // Add the style tag to the document's head
         head.appendChild(style);
     }
 
     private add_event_listeners() {
-        const frames_exist = this.ulabel.config["image_data"].frames.length > 1
+        const frames_exist = this.ulabel.config["image_data"].frames.length > 1;
 
         $(document).on("click.ulabel", ".ulabel-zoom-button", (event) => {
-
             if ($(event.currentTarget).hasClass("ulabel-zoom-out")) {
-                this.ulabel.state.zoom_val /= 1.1
+                this.ulabel.state.zoom_val /= 1.1;
             }
             else if ($(event.currentTarget).hasClass("ulabel-zoom-in")) {
-                this.ulabel.state.zoom_val *= 1.1
+                this.ulabel.state.zoom_val *= 1.1;
             }
 
-            this.ulabel.rezoom()
+            this.ulabel.rezoom();
 
             // Only try to update the overlay if it exists
-            this.ulabel.filter_distance_overlay?.draw_overlay()
-        })
+            this.ulabel.filter_distance_overlay?.draw_overlay();
+        });
 
         $(document).on("click.ulabel", ".ulabel-pan", (event) => {
             const annbox = $("#" + this.ulabel.config.annbox_id);
@@ -859,46 +851,46 @@ export class ZoomPanToolboxItem extends ToolboxItem {
             else if ($(event.currentTarget).hasClass("ulabel-pan-right")) {
                 annbox.scrollLeft(annbox.scrollLeft() + 20);
             }
-        })
+        });
 
         // Add diffrent keypress events if frames exist
         if (frames_exist) {
             $(document).on("keypress.ulabel", (event) => {
-                event.preventDefault()
+                event.preventDefault();
                 switch (event.key) {
                     case "ArrowRight":
                     case "ArrowDown":
-                        this.ulabel.update_frame(1)
-                        break
+                        this.ulabel.update_frame(1);
+                        break;
                     case "ArrowUp":
                     case "ArrowLeft":
-                        this.ulabel.update_frame(-1)
+                        this.ulabel.update_frame(-1);
                 }
-            })
+            });
         }
         else {
             $(document).on("keydown.ulabel", (event) => {
                 const annbox = $("#" + this.ulabel.config.annbox_id);
                 switch (event.key) {
                     case "ArrowLeft":
-                        annbox.scrollLeft(annbox.scrollLeft() - 20)
-                        event.preventDefault()
-                        break
+                        annbox.scrollLeft(annbox.scrollLeft() - 20);
+                        event.preventDefault();
+                        break;
                     case "ArrowRight":
-                        annbox.scrollLeft(annbox.scrollLeft() + 20)
-                        event.preventDefault()
-                        break
+                        annbox.scrollLeft(annbox.scrollLeft() + 20);
+                        event.preventDefault();
+                        break;
                     case "ArrowUp":
-                        annbox.scrollTop(annbox.scrollTop() - 20)
-                        event.preventDefault()
-                        break
+                        annbox.scrollTop(annbox.scrollTop() - 20);
+                        event.preventDefault();
+                        break;
                     case "ArrowDown":
-                        annbox.scrollTop(annbox.scrollTop() + 20)
-                        event.preventDefault()
-                        break
+                        annbox.scrollTop(annbox.scrollTop() + 20);
+                        event.preventDefault();
+                        break;
                     default:
                 }
-            })
+            });
         }
 
         $(document).on("click.ulabel", "#recenter-button", () => {
@@ -911,18 +903,18 @@ export class ZoomPanToolboxItem extends ToolboxItem {
 
         $(document).on("keypress.ulabel", (e) => {
             if (e.key == this.ulabel.config.change_zoom_keybind.toLowerCase()) {
-                document.getElementById("recenter-button").click()
+                document.getElementById("recenter-button").click();
             }
             if (e.key == this.ulabel.config.change_zoom_keybind.toUpperCase()) {
-                document.getElementById("recenter-whole-image-button").click()
+                document.getElementById("recenter-whole-image-button").click();
             }
-        })
+        });
     }
 
     private set_frame_range(ulabel) {
         if (ulabel.config["image_data"]["frames"].length == 1) {
             this.frame_range = ``;
-            return
+            return;
         }
         this.frame_range = `
             <div class="full-tb htbmain set-frame">
@@ -975,7 +967,7 @@ export class ZoomPanToolboxItem extends ToolboxItem {
     }
 
     public get_toolbox_item_type() {
-        return "ZoomPan"
+        return "ZoomPan";
     }
 }
 
@@ -983,17 +975,16 @@ export class ZoomPanToolboxItem extends ToolboxItem {
  * Toolbox item for selection Annotation ID.
  */
 export class AnnotationIDToolboxItem extends ToolboxItem {
-    instructions: string
+    instructions: string;
     constructor(
-        public ulabel: ULabel
+        public ulabel: ULabel,
     ) {
         super();
         this.set_instructions(ulabel);
 
-        this.add_styles()
+        this.add_styles();
     }
 
-    
     /**
      * Create the css for this ToolboxItem and append it to the page.
      */
@@ -1003,20 +994,20 @@ export class AnnotationIDToolboxItem extends ToolboxItem {
         #toolbox div.classification div.id-toolbox-app {
             margin-bottom: 1rem;
         }
-        `
+        `;
         // Create an id so this specific style tag can be referenced
-        const style_id = "annotation-id-toolbox-item-styles"
+        const style_id = "annotation-id-toolbox-item-styles";
 
         // Don't add the style tag if its already been added once
-        if (document.getElementById(style_id)) return
+        if (document.getElementById(style_id)) return;
 
         // Grab the document's head and create a style tag
-        const head = document.head || document.querySelector("head")
-        const style = document.createElement('style');
+        const head = document.head || document.querySelector("head");
+        const style = document.createElement("style");
 
         // Add the css and id to the style tag
         style.appendChild(document.createTextNode(css));
-        style.id = style_id
+        style.id = style_id;
 
         // Add the style tag to the document's head
         head.appendChild(style);
@@ -1032,9 +1023,9 @@ export class AnnotationIDToolboxItem extends ToolboxItem {
     }
 
     /**
-     * Get the html skeleton for this ToolboxItem. The actual ID selection items will be added 
+     * Get the html skeleton for this ToolboxItem. The actual ID selection items will be added
      * in html_builder.ts in the function build_id_dialogs()
-     * 
+     *
      * @returns html string
      */
     public get_html() {
@@ -1054,43 +1045,42 @@ export class AnnotationIDToolboxItem extends ToolboxItem {
     }
 
     public get_toolbox_item_type() {
-        return "AnnotationID"
+        return "AnnotationID";
     }
 }
 
 export class ClassCounterToolboxItem extends ToolboxItem {
     public html: string;
     public inner_HTML: string;
-    
+
     // TODO (joshua-dean): Find the correct way to handle this
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     constructor(...args) {
         super();
         this.inner_HTML = `<p class="tb-header">Annotation Count</p>`;
-        this.add_styles()
+        this.add_styles();
     }
 
-    
     /**
      * Create the css for this ToolboxItem and append it to the page.
      */
     protected add_styles() {
         // Define the css
-        const css = ` /* ClassCounterToolboxItem currently requires no styling */ `
-        
+        const css = ` /* ClassCounterToolboxItem currently requires no styling */ `;
+
         // Create an id so this specific style tag can be referenced
-        const style_id = "class-counter-toolbox-item-styles"
+        const style_id = "class-counter-toolbox-item-styles";
 
         // Don't add the style tag if its already been added once
-        if (document.getElementById(style_id)) return
+        if (document.getElementById(style_id)) return;
 
         // Grab the document's head and create a style tag
-        const head = document.head || document.querySelector("head")
-        const style = document.createElement('style');
+        const head = document.head || document.querySelector("head");
+        const style = document.createElement("style");
 
         // Add the css and id to the style tag
         style.appendChild(document.createTextNode(css));
-        style.id = style_id
+        style.id = style_id;
 
         // Add the style tag to the document's head
         head.appendChild(style);
@@ -1098,7 +1088,7 @@ export class ClassCounterToolboxItem extends ToolboxItem {
 
     /**
      * Update the Class Counter with the current number of active annotations.
-     * 
+     *
      * @param {ULabelSubtask} subtask Subtask to update the counter for.
      */
     update_toolbox_counter(subtask: ULabelSubtask): void {
@@ -1107,13 +1097,13 @@ export class ClassCounterToolboxItem extends ToolboxItem {
         }
         const class_ids = subtask.class_ids;
         let i: number, j: number;
-        let class_counts = {};
+        const class_counts = {};
         for (i = 0; i < class_ids.length; i++) {
             class_counts[class_ids[i]] = 0;
         }
-        let annotations = subtask.annotations.access;
-        let annotation_ids = subtask.annotations.ordering;
-        var current_annotation: ULabelAnnotation, current_payload;
+        const annotations = subtask.annotations.access;
+        const annotation_ids = subtask.annotations.ordering;
+        let current_annotation: ULabelAnnotation, current_payload;
         for (i = 0; i < annotation_ids.length; i++) {
             current_annotation = annotations[annotation_ids[i]];
             if (current_annotation.deprecated === false) {
@@ -1139,10 +1129,10 @@ export class ClassCounterToolboxItem extends ToolboxItem {
         }
         this.inner_HTML = `<p class="tb-header">Annotation Count</p>` + `<p>${f_string}</p>`;
     }
-    
+
     public get_html() {
         return `
-        <div class="toolbox-class-counter">` + this.inner_HTML + `</div>`;
+            <div class="toolbox-class-counter">` + this.inner_HTML + `</div>`;
     }
 
     public after_init() {
@@ -1157,7 +1147,7 @@ export class ClassCounterToolboxItem extends ToolboxItem {
     }
 
     public get_toolbox_item_type() {
-        return "ClassCounter"
+        return "ClassCounter";
     }
 }
 
@@ -1167,41 +1157,41 @@ export class ClassCounterToolboxItem extends ToolboxItem {
 export class AnnotationResizeItem extends ToolboxItem {
     public cached_size: number = 1.5;
     public html: string;
-    private keybind_configuration: {[key: string]: string}
-    private ulabel: ULabel
+    private keybind_configuration: { [key: string]: string };
+    private ulabel: ULabel;
 
     constructor(ulabel: ULabel) {
         super();
 
-        this.ulabel = ulabel
+        this.ulabel = ulabel;
 
         // Get default keybinds
-        this.keybind_configuration = ulabel.config.default_keybinds
+        this.keybind_configuration = ulabel.config.default_keybinds;
 
         // First check for a size cookie, if one isn't found then check the config
         // for a default annotation size. If neither are found it will use the size
         // that the annotation was saved as.
-        for (let subtask in ulabel.subtasks) {
-            let cached_size_property = ulabel.subtasks[subtask].display_name.replaceLowerConcat(" ", "-", "-cached-size")
-            let size_cookie = this.read_size_cookie(ulabel.subtasks[subtask])
+        for (const subtask in ulabel.subtasks) {
+            const cached_size_property = ulabel.subtasks[subtask].display_name.replaceLowerConcat(" ", "-", "-cached-size");
+            const size_cookie = this.read_size_cookie(ulabel.subtasks[subtask]);
             if ((size_cookie != null) && size_cookie != "NaN") {
                 this.update_annotation_size(ulabel, ulabel.subtasks[subtask], Number(size_cookie));
-                this[cached_size_property] = Number(size_cookie)
+                this[cached_size_property] = Number(size_cookie);
             }
-            else if (ulabel.config.default_annotation_size != undefined) {          
+            else if (ulabel.config.default_annotation_size != undefined) {
                 this.update_annotation_size(ulabel, ulabel.subtasks[subtask], ulabel.config.default_annotation_size);
-                this[cached_size_property] = ulabel.config.default_annotation_size
-            } 
+                this[cached_size_property] = ulabel.config.default_annotation_size;
+            }
             else {
-                const DEFAULT_SIZE = 5
-                this.update_annotation_size(ulabel, ulabel.subtasks[subtask], DEFAULT_SIZE)
-                this[cached_size_property] = DEFAULT_SIZE
+                const DEFAULT_SIZE = 5;
+                this.update_annotation_size(ulabel, ulabel.subtasks[subtask], DEFAULT_SIZE);
+                this[cached_size_property] = DEFAULT_SIZE;
             }
         }
 
-        this.add_styles()
+        this.add_styles();
 
-        this.add_event_listeners()
+        this.add_event_listeners();
     }
 
     /**
@@ -1258,20 +1248,20 @@ export class AnnotationResizeItem extends ToolboxItem {
             background-color: #1c2d4d;
         }
         
-        `
+        `;
         // Create an id so this specific style tag can be referenced
-        const style_id = "resize-annotation-toolbox-item-styles"
+        const style_id = "resize-annotation-toolbox-item-styles";
 
         // Don't add the style tag if its already been added once
-        if (document.getElementById(style_id)) return
+        if (document.getElementById(style_id)) return;
 
         // Grab the document's head and create a style tag
-        const head = document.head || document.querySelector("head")
-        const style = document.createElement('style');
+        const head = document.head || document.querySelector("head");
+        const style = document.createElement("style");
 
         // Add the css and id to the style tag
         style.appendChild(document.createTextNode(css));
-        style.id = style_id
+        style.id = style_id;
 
         // Add the style tag to the document's head
         head.appendChild(style);
@@ -1284,7 +1274,7 @@ export class AnnotationResizeItem extends ToolboxItem {
             const current_subtask = this.ulabel.subtasks[current_subtask_key];
 
             // Get the clicked button
-            const button = $(event.currentTarget)
+            const button = $(event.currentTarget);
 
             // Use the button id to get what size to resize the annotations to
             const annotation_size = <ValidResizeValues> button.attr("id").slice(18);
@@ -1293,47 +1283,47 @@ export class AnnotationResizeItem extends ToolboxItem {
             this.update_annotation_size(this.ulabel, current_subtask, annotation_size);
 
             this.ulabel.redraw_all_annotations(current_subtask_key, null, false);
-        })
+        });
 
         $(document).on("keydown.ulabel", (event) => {
             // Get the current subtask
             const current_subtask_key = this.ulabel.state["current_subtask"];
             const current_subtask = this.ulabel.subtasks[current_subtask_key];
 
-            switch(event.key) {
+            switch (event.key) {
                 case this.keybind_configuration.annotation_vanish.toUpperCase():
-                    this.update_all_subtask_annotation_size(this.ulabel, ValidResizeValues.VANISH)
-                    break
+                    this.update_all_subtask_annotation_size(this.ulabel, ValidResizeValues.VANISH);
+                    break;
                 case this.keybind_configuration.annotation_vanish.toLowerCase():
-                    this.update_annotation_size(this.ulabel, current_subtask, ValidResizeValues.VANISH)
-                    break
+                    this.update_annotation_size(this.ulabel, current_subtask, ValidResizeValues.VANISH);
+                    break;
                 case this.keybind_configuration.annotation_size_small:
-                    this.update_annotation_size(this.ulabel, current_subtask, ValidResizeValues.SMALL)
-                    break
+                    this.update_annotation_size(this.ulabel, current_subtask, ValidResizeValues.SMALL);
+                    break;
                 case this.keybind_configuration.annotation_size_large:
-                    this.update_annotation_size(this.ulabel, current_subtask, ValidResizeValues.LARGE)
-                    break
+                    this.update_annotation_size(this.ulabel, current_subtask, ValidResizeValues.LARGE);
+                    break;
                 case this.keybind_configuration.annotation_size_minus:
-                    this.update_annotation_size(this.ulabel, current_subtask, ValidResizeValues.DECREMENT)
-                    break
+                    this.update_annotation_size(this.ulabel, current_subtask, ValidResizeValues.DECREMENT);
+                    break;
                 case this.keybind_configuration.annotation_size_plus:
-                    this.update_annotation_size(this.ulabel, current_subtask, ValidResizeValues.INCREMENT)
-                    break
+                    this.update_annotation_size(this.ulabel, current_subtask, ValidResizeValues.INCREMENT);
+                    break;
                 default:
                     // Return if no valid keybind was pressed
-                    return
+                    return;
             }
-            
+
             // If the sizes were updated resize the annotations
-            this.ulabel.redraw_all_annotations(null, null, false)
-        })
+            this.ulabel.redraw_all_annotations(null, null, false);
+        });
     }
 
     /**
-     * Takes in either a number or a ValidResizeValues.value. If given a number it will resize all annotations in the subtask to 
-     * be that size. The ValidResizeValues will either set the size of all annotations to set values or increment/decrement the 
+     * Takes in either a number or a ValidResizeValues.value. If given a number it will resize all annotations in the subtask to
+     * be that size. The ValidResizeValues will either set the size of all annotations to set values or increment/decrement the
      * current size of the annotations.
-     * 
+     *
      * @param subtask Subtask which holds the annotations to act on
      * @param size How to resize the annotations
      */
@@ -1344,62 +1334,64 @@ export class AnnotationResizeItem extends ToolboxItem {
         const large_size = 5;
         const increment_size = 0.5;
         const vanish_size = 0.01;
-        let subtask_cached_size = subtask.display_name.replaceLowerConcat(" ", "-", "-cached-size");
-        let subtask_vanished_flag = subtask.display_name.replaceLowerConcat(" ", "-", "-vanished");
+        const subtask_cached_size = subtask.display_name.replaceLowerConcat(" ", "-", "-cached-size");
+        const subtask_vanished_flag = subtask.display_name.replaceLowerConcat(" ", "-", "-vanished");
 
         // If the annotations are currently vanished and a button other than the vanish button is
         // pressed, then we want to ignore the input
         if (this[subtask_vanished_flag] && size !== "v") return;
 
         // If a number was passed in, set all annotations to be the size of the number
-        if (typeof(size) === "number") {
+        if (typeof (size) === "number") {
             this.loop_through_annotations(subtask, size, "=");
-            return
+            return;
         }
 
         // Otherwise handle each ValidResizeValues case here
-        switch(size) {
+        switch (size) {
             case ValidResizeValues.SMALL:
-                this.loop_through_annotations(subtask, small_size, "=")
-                this[subtask_cached_size] = small_size
-                break;           
+                this.loop_through_annotations(subtask, small_size, "=");
+                this[subtask_cached_size] = small_size;
+                break;
             case ValidResizeValues.LARGE:
-                this.loop_through_annotations(subtask, large_size, "=")
-                this[subtask_cached_size] = large_size
+                this.loop_through_annotations(subtask, large_size, "=");
+                this[subtask_cached_size] = large_size;
                 break;
             case ValidResizeValues.DECREMENT:
-                this.loop_through_annotations(subtask, increment_size, "-")
+                this.loop_through_annotations(subtask, increment_size, "-");
                 if (this[subtask_cached_size] - increment_size > vanish_size) {
                     this[subtask_cached_size] -= increment_size;
-                } else {
+                }
+                else {
                     this[subtask_cached_size] = vanish_size;
                 }
                 break;
             case ValidResizeValues.INCREMENT:
-                this.loop_through_annotations(subtask, increment_size, "+")
+                this.loop_through_annotations(subtask, increment_size, "+");
                 this[subtask_cached_size] += increment_size;
                 break;
             case ValidResizeValues.VANISH:
                 if (this[subtask_vanished_flag]) {
-                    // Re-apply the cashed annotation size 
-                    this.loop_through_annotations(subtask, this[subtask_cached_size], "=")
-                    
+                    // Re-apply the cashed annotation size
+                    this.loop_through_annotations(subtask, this[subtask_cached_size], "=");
+
                     // Filp the state
-                    this[subtask_vanished_flag] = !this[subtask_vanished_flag]
-    
+                    this[subtask_vanished_flag] = !this[subtask_vanished_flag];
+
                     // Unlock the vanish button
-                    $("#annotation-resize-v").removeClass("locked")
-                } else {
-                    // Apply the vanish size to make the annotations to small to see
-                    this.loop_through_annotations(subtask, vanish_size, "=")
-                    
-                    // Filp the state
-                    this[subtask_vanished_flag] = !this[subtask_vanished_flag]
-    
-                    // Lock the vanish button
-                    $("#annotation-resize-v").addClass("locked")
+                    $("#annotation-resize-v").removeClass("locked");
                 }
-                break
+                else {
+                    // Apply the vanish size to make the annotations to small to see
+                    this.loop_through_annotations(subtask, vanish_size, "=");
+
+                    // Filp the state
+                    this[subtask_vanished_flag] = !this[subtask_vanished_flag];
+
+                    // Lock the vanish button
+                    $("#annotation-resize-v").addClass("locked");
+                }
+                break;
             default:
                 console.error("update_annotation_size called with unknown size");
         }
@@ -1411,7 +1403,7 @@ export class AnnotationResizeItem extends ToolboxItem {
     }
 
     // Loop through all annotations in a subtask and change their line size
-    public loop_through_annotations(subtask: ULabelSubtask, size: number, operation: "=" | "+" | "-") {        
+    public loop_through_annotations(subtask: ULabelSubtask, size: number, operation: "=" | "+" | "-") {
         for (const annotation_id in subtask.annotations.access) {
             switch (operation) {
                 case "=":
@@ -1421,16 +1413,17 @@ export class AnnotationResizeItem extends ToolboxItem {
                     subtask.annotations.access[annotation_id].line_size += size;
                     break;
                 case "-":
-                    // Check to make sure annotation line size won't go 0 or negative. 
+                    // Check to make sure annotation line size won't go 0 or negative.
                     // If it would, set it equal to a small positive number
                     if (subtask.annotations.access[annotation_id].line_size - size <= 0.01) {
-                        subtask.annotations.access[annotation_id].line_size = 0.01
-                    } else {
+                        subtask.annotations.access[annotation_id].line_size = 0.01;
+                    }
+                    else {
                         subtask.annotations.access[annotation_id].line_size -= size;
                     }
                     break;
                 default:
-                    throw Error("Invalid Operation given to loop_through_annotations")
+                    throw Error("Invalid Operation given to loop_through_annotations");
             }
         }
 
@@ -1439,45 +1432,45 @@ export class AnnotationResizeItem extends ToolboxItem {
         }
     }
 
-    //Loop through all subtasks and apply a size to them all
+    // Loop through all subtasks and apply a size to them all
     public update_all_subtask_annotation_size(ulabel, size) {
-        for (let subtask in ulabel.subtasks) {
-            this.update_annotation_size(ulabel, ulabel.subtasks[subtask], size)
+        for (const subtask in ulabel.subtasks) {
+            this.update_annotation_size(ulabel, ulabel.subtasks[subtask], size);
         }
     }
 
     private set_size_cookie(cookie_value, subtask) {
-        let d = new Date();
+        const d = new Date();
         d.setTime(d.getTime() + (10000 * 24 * 60 * 60 * 1000));
 
-        let subtask_name = subtask.display_name.replaceLowerConcat(" ", "_");
+        const subtask_name = subtask.display_name.replaceLowerConcat(" ", "_");
 
         document.cookie = subtask_name + "_size=" + cookie_value + ";" + d.toUTCString() + ";path=/";
     }
 
     private read_size_cookie(subtask) {
-        let subtask_name = subtask.display_name.replaceLowerConcat(" ", "_");
+        const subtask_name = subtask.display_name.replaceLowerConcat(" ", "_");
 
-        let cookie_name = subtask_name + "_size=";       
+        const cookie_name = subtask_name + "_size=";
 
-        let cookie_array = document.cookie.split(";");
+        const cookie_array = document.cookie.split(";");
 
         for (let i = 0; i < cookie_array.length; i++) {
             let current_cookie = cookie_array[i];
 
-            //while there's whitespace at the front of the cookie, loop through and remove it
+            // while there's whitespace at the front of the cookie, loop through and remove it
             while (current_cookie.charAt(0) == " ") {
                 current_cookie = current_cookie.substring(1);
             }
 
             if (current_cookie.indexOf(cookie_name) == 0) {
-                return current_cookie.substring(cookie_name.length, current_cookie.length)
+                return current_cookie.substring(cookie_name.length, current_cookie.length);
             }
         }
 
-        return null
+        return null;
     }
-    
+
     public get_html() {
         return `
         <div class="annotation-resize">
@@ -1496,7 +1489,7 @@ export class AnnotationResizeItem extends ToolboxItem {
                 </span>
             </div>
         </div>
-        `
+        `;
     }
 
     public after_init() {
@@ -1504,7 +1497,7 @@ export class AnnotationResizeItem extends ToolboxItem {
     }
 
     public get_toolbox_item_type() {
-        return "AnnotationResize"
+        return "AnnotationResize";
     }
 }
 
@@ -1512,119 +1505,115 @@ export class AnnotationResizeItem extends ToolboxItem {
  * ToolboxItem for recoloring annotations and applying gradients to annotations based on confidence.
  */
 export class RecolorActiveItem extends ToolboxItem {
-    private ulabel: ULabel
-    private config: RecolorActiveConfig
-    private most_recent_redraw_time: number = 0
-    private gradient_turned_on: boolean
+    private ulabel: ULabel;
+    private config: RecolorActiveConfig;
+    private most_recent_redraw_time: number = 0;
+    private gradient_turned_on: boolean;
 
     constructor(ulabel: ULabel) {
-        super()
+        super();
 
         // Save ulabel to this object and grab this component's config from the main config
-        this.ulabel = ulabel
-        this.config = this.ulabel.config.recolor_active_toolbox_item
+        this.ulabel = ulabel;
+        this.config = this.ulabel.config.recolor_active_toolbox_item;
 
         // Add styles and event listeners for this component
-        this.add_styles()
-        this.add_event_listeners()
+        this.add_styles();
+        this.add_event_listeners();
 
         // Read local storage to see if any colors have been saved
-        this.read_local_storage()
+        this.read_local_storage();
 
         // Use the config's default only if a value wasn't found inside local storage
-        this.gradient_turned_on ??= this.config.gradient_turned_on
+        this.gradient_turned_on ??= this.config.gradient_turned_on;
     }
 
     private save_local_storage_color(class_id: number | string, color: string): void {
-        set_local_storage_item(`RecolorActiveItem-${class_id}`, color)
+        set_local_storage_item(`RecolorActiveItem-${class_id}`, color);
     }
 
     private save_local_storage_gradient(gradient_status: boolean): void {
-        set_local_storage_item("RecolorActiveItem-Gradient", gradient_status)
+        set_local_storage_item("RecolorActiveItem-Gradient", gradient_status);
     }
 
     private read_local_storage(): void {
         // Loop through every valid id and see if a color has been saved for it in local storage
         for (const class_id of this.ulabel.valid_class_ids) {
-
             // Get the color from local storage based on the current class id
-            const color = get_local_storage_item(`RecolorActiveItem-${class_id}`)
+            const color = get_local_storage_item(`RecolorActiveItem-${class_id}`);
 
             // Update the color if its not null
             // Additionally no need to save the color to local storage since we got it from reading local storage
-            if (color !== null) this.update_color(class_id, color, false)
+            if (color !== null) this.update_color(class_id, color, false);
         }
 
         // Then read whether or not the gradient should be on by default
-        this.gradient_turned_on = get_local_storage_item("RecolorActiveItem-Gradient")
+        this.gradient_turned_on = get_local_storage_item("RecolorActiveItem-Gradient");
     }
 
     private replace_color_pie(): void {
         // Only the current subtask's color can be changed, so only the current subtask needs to be updated
-        const current_subtask_key: string = this.ulabel.state.current_subtask
-        const current_subtask: ULabelSubtask = this.ulabel.subtasks[current_subtask_key]
+        const current_subtask_key: string = this.ulabel.state.current_subtask;
+        const current_subtask: ULabelSubtask = this.ulabel.subtasks[current_subtask_key];
 
         // Get the back and front id dialog's ids
-        const id_dialog_id: string = current_subtask.state.idd_id
-        const front_id_dialog_id = this.ulabel.subtasks[current_subtask_key].state.idd_id_front
+        const id_dialog_id: string = current_subtask.state.idd_id;
+        const front_id_dialog_id = this.ulabel.subtasks[current_subtask_key].state.idd_id_front;
 
         // Need the width and inner radius of the pie to re-build it
-        const width: number = this.ulabel.config.outer_diameter
-        const inner_radius = this.ulabel.config.inner_prop * width / 2
+        const width: number = this.ulabel.config.outer_diameter;
+        const inner_radius = this.ulabel.config.inner_prop * width / 2;
 
-        const color_info = this.ulabel.color_info
+        const color_info = this.ulabel.color_info;
 
         // Grab the dialogs and their containers
-        let subtask_dialog_container_jq = $("#dialogs__" + current_subtask_key);
-        let id_dialog_container = $(`#id_dialog__${current_subtask_key}`)
-        let front_subtask_dialog_container_jq = $("#front_dialogs__" + current_subtask_key);
-        let front_id_dialog_container = $(`#id_front_dialog__${current_subtask_key}`)
+        const subtask_dialog_container_jq = $("#dialogs__" + current_subtask_key);
+        const id_dialog_container = $(`#id_dialog__${current_subtask_key}`);
+        const front_subtask_dialog_container_jq = $("#front_dialogs__" + current_subtask_key);
+        const front_id_dialog_container = $(`#id_front_dialog__${current_subtask_key}`);
 
         // Build the html
-        let dialog_html_v2 = get_idd_string(
-            id_dialog_id, width, this.ulabel.subtasks[current_subtask_key].class_ids,
-            inner_radius, color_info
+        const dialog_html_v2 = get_idd_string(
+            id_dialog_id, width, this.ulabel.subtasks[current_subtask_key].class_ids, inner_radius, color_info,
         );
-        let front_dialog_html_v2 = get_idd_string(
-            front_id_dialog_id, width, this.ulabel.subtasks[current_subtask_key].class_ids,
-            inner_radius, color_info
+        const front_dialog_html_v2 = get_idd_string(
+            front_id_dialog_id, width, this.ulabel.subtasks[current_subtask_key].class_ids, inner_radius, color_info,
         );
 
         // Remove the old pies
-        id_dialog_container.remove()
-        front_id_dialog_container.remove()
+        id_dialog_container.remove();
+        front_id_dialog_container.remove();
 
         // Add dialog to the document inside their containers
         front_subtask_dialog_container_jq.append(front_dialog_html_v2);
         subtask_dialog_container_jq.append(dialog_html_v2);
-
 
         // Re-add the event listener for changing the opacity on hover
         // Set that = this because this references the element inside the event listener instead of the toolbox item
         // TODO (joshua-dean): Don't alias this
         // https://typescript-eslint.io/rules/no-this-alias/
         // eslint-disable-next-line @typescript-eslint/no-this-alias
-        const that = this
+        const that = this;
         $(".id_dialog").on("mousemove.ulabel", function (mouse_event) {
             if (!that.ulabel.subtasks[current_subtask_key].state.idd_thumbnail) {
                 that.ulabel.handle_id_dialog_hover(mouse_event);
             }
-        })
+        });
     }
 
     private update_color(class_id: number | string, color: string, need_to_save: boolean = true): void {
         // Update the color_info for annotations appropriately
-        this.ulabel.color_info[class_id] = color
+        this.ulabel.color_info[class_id] = color;
 
         // Update the color in the AnnotationId button for this class
-        const button_color_square = <HTMLDivElement> document.querySelector(`#toolbox_sel_${class_id} > div`)
-        if (button_color_square) button_color_square.style.backgroundColor = color
+        const button_color_square = <HTMLDivElement> document.querySelector(`#toolbox_sel_${class_id} > div`);
+        if (button_color_square) button_color_square.style.backgroundColor = color;
 
         // Update the id update pie
-        this.replace_color_pie()
+        this.replace_color_pie();
 
         // Save the color to local storage if appropriate
-        if (need_to_save) this.save_local_storage_color(class_id, color)
+        if (need_to_save) this.save_local_storage_color(class_id, color);
     }
 
     protected add_styles(): void {
@@ -1709,21 +1698,21 @@ export class RecolorActiveItem extends ToolboxItem {
             height: 100%;
             padding: 0;
             opacity: 0;
-        }`
+        }`;
 
         // Create an id so this specific style tag can be referenced
-        const style_id = "recolor-toolbox-item-styles"
+        const style_id = "recolor-toolbox-item-styles";
 
         // Don't add the style tag if its already been added once
-        if (document.getElementById(style_id)) return
+        if (document.getElementById(style_id)) return;
 
         // Grab the document's head and create a style tag
-        const head = document.head || document.querySelector("head")
-        const style = document.createElement('style');
+        const head = document.head || document.querySelector("head");
+        const style = document.createElement("style");
 
         // Add the css and id to the style tag
         style.appendChild(document.createTextNode(css));
-        style.id = style_id
+        style.id = style_id;
 
         // Add the style tag to the document's head
         head.appendChild(style);
@@ -1733,46 +1722,46 @@ export class RecolorActiveItem extends ToolboxItem {
         // Listener for the static color change buttons
         $(document).on("click.ulabel", ".color-change-btn", (event) => {
             // Grab the color of what button was clicked
-            const color: string = event.target.id.slice(13)
+            const color: string = event.target.id.slice(13);
 
             // Get the currently selected class id
-            const active_class_id: number = get_active_class_id(this.ulabel)
+            const active_class_id: number = get_active_class_id(this.ulabel);
 
             // Overwrite the color info with the new color
-            this.update_color(active_class_id, color)
+            this.update_color(active_class_id, color);
 
             // Redraw the annotations with the new color
             // Since this is a listener for a button, no limit needs to be imposed on the redrawing
-            this.redraw(0)
-        })
+            this.redraw(0);
+        });
 
         // Listener for the color picker
         $(document).on("input.ulabel", "input.color-change-picker", (event) => {
             // Get the selected color from the event
-            let color: string = event.currentTarget.value
+            const color: string = event.currentTarget.value;
 
             // Get the currently selected class id
-            const active_class_id: number = get_active_class_id(this.ulabel)
+            const active_class_id: number = get_active_class_id(this.ulabel);
 
             // Update the color for this class
-            this.update_color(active_class_id, color)
-            
+            this.update_color(active_class_id, color);
+
             // Grab the color picker container and update its background to the selected color
-            let color_picker_container = <HTMLDivElement> document.getElementById("color-picker-container")
-            color_picker_container.style.backgroundColor = color
+            const color_picker_container = <HTMLDivElement> document.getElementById("color-picker-container");
+            color_picker_container.style.backgroundColor = color;
 
             // Redraw the annotations with the new color
-            this.redraw()
-        })
+            this.redraw();
+        });
 
         // Event listener for the gradient toggle
         $(document).on("input.ulabel", "#gradient-toggle", (event) => {
             // Redraw all annotations, not just those in the active subtask because all subtasks can be effected by the gradient
-            this.redraw(0)
+            this.redraw(0);
 
             // Save whether or not the toggle is checked so when the page is reloaded it can remain in the same state
-            this.save_local_storage_gradient(event.target.checked) 
-        })
+            this.save_local_storage_gradient(event.target.checked);
+        });
 
         // Event listener for the gradient max value slider
         $(document).on("input.ulabel", "#gradient-slider", (event) => {
@@ -1780,32 +1769,32 @@ export class RecolorActiveItem extends ToolboxItem {
             $("div.gradient-slider-value-display").text(event.currentTarget.value + "%");
 
             // Redraw all annotations because other subtasks can be effected by the gradient slider
-            this.redraw(100, true)
-        })
+            this.redraw(100, true);
+        });
     }
 
     /**
      * Redraw all annotations in the current subtask. Limits how frequently annotations can be redrawn for performance reasons.
-     * 
+     *
      * @param wait_time Number of milliseconds that must pass since the previous redraw before drawing is allowed again
      * @param redraw_all_annotations False by default. If true, redraws all subtasks. Otherwise only redraws current subtask
      */
     private redraw(wait_time: number = 100, redraw_all_annotations: boolean = false): void {
         // If less than the wait time has passed since since the most recent redraw, then return without drawing
-        if (Date.now() - this.most_recent_redraw_time < wait_time) return
+        if (Date.now() - this.most_recent_redraw_time < wait_time) return;
 
         if (redraw_all_annotations) {
             // Redraw all annotations
-            this.ulabel.redraw_all_annotations()
+            this.ulabel.redraw_all_annotations();
         }
         else {
             // Otherwise only redraw the annotations in the subtask we updated
-            const current_subtask_key: string = this.ulabel.state.current_subtask
-            this.ulabel.redraw_all_annotations(current_subtask_key)
+            const current_subtask_key: string = this.ulabel.state.current_subtask;
+            this.ulabel.redraw_all_annotations(current_subtask_key);
         }
 
         // Update the most_recent_redraw_time
-        this.most_recent_redraw_time = Date.now()
+        this.most_recent_redraw_time = Date.now();
     }
 
     public get_html(): string {
@@ -1834,7 +1823,7 @@ export class RecolorActiveItem extends ToolboxItem {
                 </div>
             </div>
         </div>
-        `
+        `;
     }
 
     public after_init() {
@@ -1842,7 +1831,7 @@ export class RecolorActiveItem extends ToolboxItem {
     }
 
     public get_toolbox_item_type(): string {
-        return "RecolorActive"
+        return "RecolorActive";
     }
 }
 
@@ -1858,16 +1847,17 @@ export class KeypointSliderItem extends ToolboxItem {
         deprecated: boolean,
         deprecated_by_key?: ValidDeprecatedBy,
     ) => void;
+
     filter_value: number = 0;
     ulabel: ULabel;
     keybinds: {
-        "increment": string,
-        "decrement": string
-    }
+        increment: string
+        decrement: string
+    };
 
     // TODO (joshua-dean): See if we can narrow this any
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    constructor(ulabel: ULabel, kwargs: {[name: string]: any}) {
+    constructor(ulabel: ULabel, kwargs: { [name: string]: any }) {
         super();
         this.inner_HTML = `<p class="tb-header">Keypoint Slider</p>`;
         this.ulabel = ulabel;
@@ -1878,7 +1868,7 @@ export class KeypointSliderItem extends ToolboxItem {
             this.filter_function = kwargs.filter_function;
             this.get_confidence = kwargs.confidence_function;
             this.mark_deprecated = kwargs.mark_deprecated;
-            this.keybinds = kwargs.keybinds
+            this.keybinds = kwargs.keybinds;
         }
         // Otherwise use defaults
         else {
@@ -1887,19 +1877,19 @@ export class KeypointSliderItem extends ToolboxItem {
             this.get_confidence = get_annotation_confidence;
             this.mark_deprecated = mark_deprecated;
             this.keybinds = {
-                "increment": "2",
-                "decrement": "1"
-            }
+                increment: "2",
+                decrement: "1",
+            };
             kwargs = {};
         }
 
         // Create slider bar id
         this.slider_bar_id = this.name.replaceLowerConcat(" ", "-");
-        
+
         // If the config has a default value override the filter_value
         const has_filter_override = Object.prototype.hasOwnProperty.call(
             this.ulabel.config,
-            this.name.replaceLowerConcat(" ", "_", "_default_value")
+            this.name.replaceLowerConcat(" ", "_", "_default_value"),
         );
         if (has_filter_override) {
             // Set the filter value
@@ -1911,10 +1901,9 @@ export class KeypointSliderItem extends ToolboxItem {
             this.filter_annotations(this.ulabel);
         }
 
-        this.add_styles()
+        this.add_styles();
     }
 
-    
     /**
      * Create the css for this ToolboxItem and append it to the page.
      */
@@ -1922,29 +1911,29 @@ export class KeypointSliderItem extends ToolboxItem {
         // Define the css
         const css = `
         /* Component has no css?? */
-        `
+        `;
         // Create an id so this specific style tag can be referenced
-        const style_id = "keypoint-slider-toolbox-item-styles"
+        const style_id = "keypoint-slider-toolbox-item-styles";
 
         // Don't add the style tag if its already been added once
-        if (document.getElementById(style_id)) return
+        if (document.getElementById(style_id)) return;
 
         // Grab the document's head and create a style tag
-        const head = document.head || document.querySelector("head")
-        const style = document.createElement('style');
+        const head = document.head || document.querySelector("head");
+        const style = document.createElement("style");
 
         // Add the css and id to the style tag
         style.appendChild(document.createTextNode(css));
-        style.id = style_id
+        style.id = style_id;
 
         // Add the style tag to the document's head
         head.appendChild(style);
     }
 
     /**
-     * Given the ulabel object and a filter value, go through each annotation and decide whether or 
+     * Given the ulabel object and a filter value, go through each annotation and decide whether or
      * not to deprecate it.
-     * 
+     *
      * @param ulabel ULabel object
      * @param filter_value The number between 0-100 which annotation's confidence is compared against
      * @param redraw whether or not to redraw the annotations after filtering
@@ -1956,38 +1945,38 @@ export class KeypointSliderItem extends ToolboxItem {
             filter_value = Math.round(this.filter_value * 100);
         }
         // Store which annotations need to be redrawn
-        let annotations_ids_to_redraw_by_subtask: {[key: string]: string[]} = {}
+        const annotations_ids_to_redraw_by_subtask: { [key: string]: string[] } = {};
         // Initialize the object with the subtask keys
-        for (let subtask_key in ulabel.subtasks) {
-            annotations_ids_to_redraw_by_subtask[subtask_key] = []
+        for (const subtask_key in ulabel.subtasks) {
+            annotations_ids_to_redraw_by_subtask[subtask_key] = [];
         }
 
         // Get all point annotations
         const point_and_line_annotations = get_point_and_line_annotations(ulabel);
         for (const annotation of point_and_line_annotations[0]) {
             // Get the annotation's confidence as decimal between 0-1
-            let confidence: number = this.get_confidence(annotation)
+            let confidence: number = this.get_confidence(annotation);
 
             // filter_value will be a number between 0-100, so convert the confidence to a percentage as well
-            confidence = Math.round(confidence * 100)
+            confidence = Math.round(confidence * 100);
 
             // Compare the confidence value against the filter value
-            const should_deprecate: boolean = this.filter_function(confidence, filter_value)
+            const should_deprecate: boolean = this.filter_function(confidence, filter_value);
             // Check if an annotation should be deprecated or undeprecated, else do nothing
             if (
-                (should_deprecate && !annotation.deprecated) ||
-                (!should_deprecate && annotation.deprecated)
+                (should_deprecate && !annotation.deprecated)
+                || (!should_deprecate && annotation.deprecated)
             ) {
                 // Mark this annotation as either deprecated or undeprecated by the confidence filter
-                this.mark_deprecated(annotation, should_deprecate, "confidence_filter")
-                annotations_ids_to_redraw_by_subtask[annotation.subtask_key].push(annotation.id)
+                this.mark_deprecated(annotation, should_deprecate, "confidence_filter");
+                annotations_ids_to_redraw_by_subtask[annotation.subtask_key].push(annotation.id);
             }
         }
 
         if (redraw) {
             // Redraw each subtask's annotations
-            for (let subtask_key in annotations_ids_to_redraw_by_subtask) {
-                ulabel.redraw_multiple_spatial_annotations(annotations_ids_to_redraw_by_subtask[subtask_key], subtask_key)
+            for (const subtask_key in annotations_ids_to_redraw_by_subtask) {
+                ulabel.redraw_multiple_spatial_annotations(annotations_ids_to_redraw_by_subtask[subtask_key], subtask_key);
             }
             // Update class counter
             ulabel.toolbox.redraw_update_items(ulabel);
@@ -1997,22 +1986,22 @@ export class KeypointSliderItem extends ToolboxItem {
     public get_html() {
         // Create a SliderHandler instance to handle slider interactions
         const slider_handler = new SliderHandler({
-            "id": this.name.replaceLowerConcat(" ", "-"),
-            "class": "keypoint-slider",
-            "default_value": Math.round(this.filter_value * 100).toString(),
-            "label_units": "%",
-            "slider_event": (slider_value: number) => {
+            id: this.name.replaceLowerConcat(" ", "-"),
+            class: "keypoint-slider",
+            default_value: Math.round(this.filter_value * 100).toString(),
+            label_units: "%",
+            slider_event: (slider_value: number) => {
                 // Filter the annotations, then redraw them
                 this.filter_annotations(this.ulabel, slider_value, true);
-            }
-        })
+            },
+        });
 
         return `
         <div class="keypoint-slider">
             <p class="tb-header">${this.name}</p>
             ` + slider_handler.getSliderHTML() + `
         </div>
-        `
+        `;
     }
 
     public after_init() {
@@ -2020,75 +2009,75 @@ export class KeypointSliderItem extends ToolboxItem {
     }
 
     public get_toolbox_item_type() {
-        return "KeypointSlider"
+        return "KeypointSlider";
     }
 }
 
 export class FilterPointDistanceFromRow extends ToolboxItem {
-    name: string // Component name shown to users
-    component_name: string // Internal component name
-    default_values: DistanceFromPolylineClasses // Values sliders are set to on page load
-    filter_min: number // Minimum value slider may be set to
-    filter_max: number // Maximum value slider may be set to
-    step_value: number // Value slider increments by
-    filter_on_load: boolean // Whether or not to filter annotations on page load
-    multi_class_mode: boolean // Whether or not the component is currently in multi-class mode
-    disable_multi_class_mode: boolean // Whether or not to disable the checkbox to enable multi-class mode
-    show_options: boolean // Whether or not the options dialog will be visable
-    collapse_options: boolean // Whether or not the options is in a collapsed state
-    show_overlay: boolean // Whether or not the overlay will be shown
-    toggle_overlay_keybind: string 
-    filter_during_polyline_move: boolean // Whether or not to filter annotations during a pending mode/edit of a polyline
-    overlay: FilterDistanceOverlay
+    name: string; // Component name shown to users
+    component_name: string; // Internal component name
+    default_values: DistanceFromPolylineClasses; // Values sliders are set to on page load
+    filter_min: number; // Minimum value slider may be set to
+    filter_max: number; // Maximum value slider may be set to
+    step_value: number; // Value slider increments by
+    filter_on_load: boolean; // Whether or not to filter annotations on page load
+    multi_class_mode: boolean; // Whether or not the component is currently in multi-class mode
+    disable_multi_class_mode: boolean; // Whether or not to disable the checkbox to enable multi-class mode
+    show_options: boolean; // Whether or not the options dialog will be visable
+    collapse_options: boolean; // Whether or not the options is in a collapsed state
+    show_overlay: boolean; // Whether or not the overlay will be shown
+    toggle_overlay_keybind: string;
+    filter_during_polyline_move: boolean; // Whether or not to filter annotations during a pending mode/edit of a polyline
+    overlay: FilterDistanceOverlay;
 
-    ulabel: ULabel // The ULabel object. Must be passed in
-    config: FilterDistanceConfig // This object's config object
+    ulabel: ULabel; // The ULabel object. Must be passed in
+    config: FilterDistanceConfig; // This object's config object
 
     // TODO (joshua-dean): Resolve kwargs usage and narrow any
     // eslint-disable-next-line @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any
-    constructor(ulabel: ULabel, kwargs: {[name: string]: any} = null) {
-        super()
+    constructor(ulabel: ULabel, kwargs: { [name: string]: any } = null) {
+        super();
 
-        this.ulabel = ulabel
-        
+        this.ulabel = ulabel;
+
         // Get this component's config from ulabel's config
-        this.config = this.ulabel.config.distance_filter_toolbox_item
+        this.config = this.ulabel.config.distance_filter_toolbox_item;
 
         // For each key missing from the config, set the default value
         for (const key in DEFAULT_FILTER_DISTANCE_CONFIG) {
             if (!Object.prototype.hasOwnProperty.call(this.config, key)) {
-                this.config[key] = DEFAULT_FILTER_DISTANCE_CONFIG[key]
+                this.config[key] = DEFAULT_FILTER_DISTANCE_CONFIG[key];
             }
         }
 
         // Set the component's properties to be the same as the config's properties
         for (const property in this.config) {
-            this[property] = this.config[property]
+            this[property] = this.config[property];
         }
 
         // Force disable multi-class mode if the config doesn't allow it
-        if (this.disable_multi_class_mode) this.multi_class_mode = false
-        
+        if (this.disable_multi_class_mode) this.multi_class_mode = false;
+
         // Get if the options should be collapsed from local storage
-        this.collapse_options = get_local_storage_item("filterDistanceCollapseOptions")
- 
+        this.collapse_options = get_local_storage_item("filterDistanceCollapseOptions");
+
         // Create an overlay and determine whether or not it should be displayed
-        this.create_overlay()
+        this.create_overlay();
 
         // Check if localStorage has a value for showing the overlay
-        const show_overlay = get_local_storage_item("filterDistanceShowOverlay")
+        const show_overlay = get_local_storage_item("filterDistanceShowOverlay");
         // Guard against null values
-        this.show_overlay = show_overlay !== null ? show_overlay : this.show_overlay
+        this.show_overlay = show_overlay !== null ? show_overlay : this.show_overlay;
         this.overlay.update_display_overlay(this.show_overlay);
 
         // Check if localStorage has a value for filtering during polyline move
-        const filter_during_polyline_move = get_local_storage_item("filterDistanceFilterDuringPolylineMove")
+        const filter_during_polyline_move = get_local_storage_item("filterDistanceFilterDuringPolylineMove");
         // Guard against null values
-        this.filter_during_polyline_move = filter_during_polyline_move !== null ? filter_during_polyline_move : this.filter_during_polyline_move
+        this.filter_during_polyline_move = filter_during_polyline_move !== null ? filter_during_polyline_move : this.filter_during_polyline_move;
 
-        this.add_styles()
+        this.add_styles();
 
-        this.add_event_listeners()
+        this.add_event_listeners();
     }
 
     /**
@@ -2154,21 +2143,21 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
                 position: relative;
                 top: -0.2rem;
                 font-size: smaller;
-            }`
+            }`;
 
         // Create an id so this specific style tag can be referenced
-        const style_id = "filter-distance-from-row-toolbox-item-styles"
+        const style_id = "filter-distance-from-row-toolbox-item-styles";
 
         // Don't add the style tag if its already been added once
-        if (document.getElementById(style_id)) return
+        if (document.getElementById(style_id)) return;
 
         // Grab the document's head and create a style tag
-        const head = document.head || document.querySelector("head")
-        const style = document.createElement('style');
+        const head = document.head || document.querySelector("head");
+        const style = document.createElement("style");
 
         // Add the css and id to the style tag
         style.appendChild(document.createTextNode(css));
-        style.id = style_id
+        style.id = style_id;
 
         // Add the style tag to the document's head
         head.appendChild(style);
@@ -2176,59 +2165,59 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
 
     private add_event_listeners() {
         // Whenever the options legend is clicked, toggle displaying the options
-        $(document).on("click.ulabel", "fieldset.filter-row-distance-options > legend", () => this.toggleCollapsedOptions())
+        $(document).on("click.ulabel", "fieldset.filter-row-distance-options > legend", () => this.toggleCollapsedOptions());
 
         // Whenever the multi-class filtering checkbox is clicked, switch the displayed filter mode
         $(document).on("click.ulabel", "#filter-slider-distance-multi-checkbox", (event) => {
             // Update the multi-class state
-            this.multi_class_mode = event.currentTarget.checked
+            this.multi_class_mode = event.currentTarget.checked;
 
             // Toggle whether the single-class slider, or the multi-class sliders are visible
-            this.switchFilterMode()
+            this.switchFilterMode();
 
-            this.overlay.update_mode(this.multi_class_mode)
+            this.overlay.update_mode(this.multi_class_mode);
 
             // Re-filter the points in the new mode, recalculating all distances if changing to multi-class
-            let recalculate_distances = this.multi_class_mode
-            filter_points_distance_from_line(this.ulabel, recalculate_distances)
-        })
+            const recalculate_distances = this.multi_class_mode;
+            filter_points_distance_from_line(this.ulabel, recalculate_distances);
+        });
 
         $(document).on("change.ulabel", "#filter-slider-distance-toggle-overlay-checkbox", (event) => {
             // Save the new value of `show_overlay`
-            this.show_overlay = event.currentTarget.checked
-    
+            this.show_overlay = event.currentTarget.checked;
+
             // Update whether or not the overlay is allowed to be drawn
-            this.overlay.update_display_overlay(this.show_overlay)
+            this.overlay.update_display_overlay(this.show_overlay);
 
             // Try to draw the overlay
-            this.overlay.draw_overlay()
+            this.overlay.draw_overlay();
 
             // Save whether or not the overlay is allowed to be drawn to local storage
-           set_local_storage_item("filterDistanceShowOverlay", this.show_overlay)
-        })
+            set_local_storage_item("filterDistanceShowOverlay", this.show_overlay);
+        });
 
         $(document).on("change.ulabel", "#filter-slider-distance-filter-during-polyline-move-checkbox", (event) => {
             // Save new value of `filter_during_polyline_move`
-            this.filter_during_polyline_move = event.currentTarget.checked
+            this.filter_during_polyline_move = event.currentTarget.checked;
             // Save to local storage
-            set_local_storage_item("filterDistanceFilterDuringPolylineMove", this.filter_during_polyline_move)
-        })
+            set_local_storage_item("filterDistanceFilterDuringPolylineMove", this.filter_during_polyline_move);
+        });
 
         $(document).on("keypress.ulabel", (event) => {
-            if (event.key !== this.toggle_overlay_keybind) return
+            if (event.key !== this.toggle_overlay_keybind) return;
 
             // Grab the show overlay checkbox and click it
-            const show_overlay_checkbox: HTMLInputElement = document.querySelector("#filter-slider-distance-toggle-overlay-checkbox")
-            show_overlay_checkbox.click()
-        })
+            const show_overlay_checkbox: HTMLInputElement = document.querySelector("#filter-slider-distance-toggle-overlay-checkbox");
+            show_overlay_checkbox.click();
+        });
     }
 
     /**
      * Toggle which filter mode is being displayed and which one is being hidden.
      */
     private switchFilterMode() {
-        $("#filter-single-class-mode").toggleClass("ulabel-hidden")
-        $("#filter-multi-class-mode").toggleClass("ulabel-hidden")
+        $("#filter-single-class-mode").toggleClass("ulabel-hidden");
+        $("#filter-multi-class-mode").toggleClass("ulabel-hidden");
     }
 
     /**
@@ -2236,34 +2225,34 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
      */
     private toggleCollapsedOptions() {
         // Toggle the class which collapses the options
-        $("fieldset.filter-row-distance-options").toggleClass("ulabel-collapsed")
+        $("fieldset.filter-row-distance-options").toggleClass("ulabel-collapsed");
 
         // Toggle the state
-        this.collapse_options = !this.collapse_options
+        this.collapse_options = !this.collapse_options;
 
         // Save the state to the user's browser so it can be re-loaded in the same state
-        set_local_storage_item("filterDistanceCollapseOptions", this.collapse_options)
+        set_local_storage_item("filterDistanceCollapseOptions", this.collapse_options);
     }
 
     private create_overlay() {
         // Get only the set of all line annotations
-        const line_annotations: ULabelAnnotation[] = get_point_and_line_annotations(this.ulabel)[1]
+        const line_annotations: ULabelAnnotation[] = get_point_and_line_annotations(this.ulabel)[1];
 
         // Initialize an object to hold the distances points are allowed to be from each class as well as any line
-        let filter_values: DistanceFromPolylineClasses = {closest_row: undefined}
+        const filter_values: DistanceFromPolylineClasses = { closest_row: undefined };
 
         // Grab all filter-distance-sliders on the page
-        const sliders: NodeListOf<HTMLInputElement> = document.querySelectorAll(".filter-row-distance-slider")
+        const sliders: NodeListOf<HTMLInputElement> = document.querySelectorAll(".filter-row-distance-slider");
 
         // Loop through each slider and populate filter_values
         for (let idx = 0; idx < sliders.length; idx++) {
             // Use a regex to get the string after the final - character in the slider id (Which is the class id or the string "closest_row")
-            const slider_class_name = /[^-]*$/.exec(sliders[idx].id)[0]
+            const slider_class_name = /[^-]*$/.exec(sliders[idx].id)[0];
 
             // Use the class id as a key to store the slider's value
             filter_values[slider_class_name] = {
-                distance: sliders[idx].valueAsNumber
-            }
+                distance: sliders[idx].valueAsNumber,
+            };
         }
 
         // Create and assign an overlay class instance to ulabel to be able to access it
@@ -2271,84 +2260,84 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
             this.ulabel.config["image_width"] * this.ulabel.config["px_per_px"],
             this.ulabel.config["image_height"] * this.ulabel.config["px_per_px"],
             line_annotations,
-            this.ulabel.config["px_per_px"]
-        )
+            this.ulabel.config["px_per_px"],
+        );
 
         // Apply the generated distances to the overlay
-        this.overlay.update_distances(filter_values)
+        this.overlay.update_distances(filter_values);
     }
 
     public get_overlay() {
-        return this.overlay
+        return this.overlay;
     }
 
     /**
      * Gets all classes that polylines can be and creates a distance filter for each class.
-     * 
+     *
      * @returns {string} HTML for the multi-class filtering mode
      */
     private createMultiFilterHTML(): string {
         // Get all potential classes
-        const class_defs = findAllPolylineClassDefinitions(this.ulabel)
+        const class_defs = findAllPolylineClassDefinitions(this.ulabel);
 
-        let multi_class_html: string = ``
+        let multi_class_html: string = ``;
 
         // Loop through each class and create their html
         for (let idx = 0; idx < class_defs.length; idx++) {
             // Grab current class for convenience
-            const current_id = class_defs[idx].id
-            const current_name = class_defs[idx].name
+            const current_id = class_defs[idx].id;
+            const current_name = class_defs[idx].name;
 
-            let default_value: string
+            let default_value: string;
             if (this.default_values[current_id] !== undefined) {
-                default_value = this.default_values[current_id].distance.toString()
+                default_value = this.default_values[current_id].distance.toString();
             }
             else {
-                default_value = this.default_values.closest_row.distance.toString()
+                default_value = this.default_values.closest_row.distance.toString();
             }
 
             const multi_class_slider_instance = new SliderHandler({
-                "id": `filter-row-distance-${current_id}`,
-                "class": "filter-row-distance-slider filter-row-distance-class-slider",
-                "min": this.filter_min.toString(),
-                "max": this.filter_max.toString(),
-                "default_value": default_value,
-                "step": this.step_value.toString(),
-                "label_units": "px",
-                "main_label": current_name,
-                "slider_event": () => filter_points_distance_from_line(this.ulabel, false)
-            })
+                id: `filter-row-distance-${current_id}`,
+                class: "filter-row-distance-slider filter-row-distance-class-slider",
+                min: this.filter_min.toString(),
+                max: this.filter_max.toString(),
+                default_value: default_value,
+                step: this.step_value.toString(),
+                label_units: "px",
+                main_label: current_name,
+                slider_event: () => filter_points_distance_from_line(this.ulabel, false),
+            });
 
             // Add current classes html to multi_class_html
-            multi_class_html += multi_class_slider_instance.getSliderHTML()
+            multi_class_html += multi_class_slider_instance.getSliderHTML();
         }
 
-        return multi_class_html
+        return multi_class_html;
     }
 
     /**
      * Returns the component's html.
-     * 
+     *
      * @returns {String} Component's html
      */
     public get_html(): string {
         // Get the multi-class filter html
-        const multi_class_html: string = this.createMultiFilterHTML()
+        const multi_class_html: string = this.createMultiFilterHTML();
 
         /* Create a SliderHandler instance to take care of creating the single class slider's html
            and its event handlers */
         const single_class_slider_handler = new SliderHandler({
-            "class": "filter-row-distance-slider",
-            "default_value": this.default_values.closest_row.distance.toString(),
-            "id": "filter-row-distance-closest_row", // `closest_row` will be extracted using regex
-            "label_units": "px",
-            "slider_event": () => filter_points_distance_from_line(this.ulabel, false),
-            "min": this.filter_min.toString(),
-            "max": this.filter_max.toString(),
-            "step": this.step_value.toString()
-        })
+            class: "filter-row-distance-slider",
+            default_value: this.default_values.closest_row.distance.toString(),
+            id: "filter-row-distance-closest_row", // `closest_row` will be extracted using regex
+            label_units: "px",
+            slider_event: () => filter_points_distance_from_line(this.ulabel, false),
+            min: this.filter_min.toString(),
+            max: this.filter_max.toString(),
+            step: this.step_value.toString(),
+        });
 
-        let multi_class_mode_checkbox: string = ``
+        let multi_class_mode_checkbox: string = ``;
         // If multi-class mode is allowed, create the checkbox
         if (!this.disable_multi_class_mode) {
             multi_class_mode_checkbox = `
@@ -2365,7 +2354,7 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
                     class="filter-row-distance-label">
                     Multi-Class Filtering
                 </label>
-            </div>`
+            </div>`;
         }
 
         return `
@@ -2374,12 +2363,12 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
             <fieldset class="
                     filter-row-distance-options 
                     ${this.show_options ? "" : "ulabel-hidden"} 
-                    ${this.collapse_options ? "ulabel-collapsed" : "" } 
+                    ${this.collapse_options ? "ulabel-collapsed" : ""} 
                 ">
                 <legend>
                     Options ˅
                 </legend>
-                ` + multi_class_mode_checkbox + `
+                    ` + multi_class_mode_checkbox + `
                 <div class="filter-row-distance-option">
                     <input
                         type="checkbox"
@@ -2414,10 +2403,10 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
                 ${single_class_slider_handler.getSliderHTML()}
             </div>
             <div id="filter-multi-class-mode" class="${this.multi_class_mode ? "" : "ulabel-hidden"}">
-                ` + multi_class_html + `
+            ` + multi_class_html + `
             </div>
         </div>
-        `
+        `;
     }
 
     public after_init() {
@@ -2425,7 +2414,7 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
     }
 
     public get_toolbox_item_type() {
-        return "FilterDistance"
+        return "FilterDistance";
     }
 }
 
@@ -2435,51 +2424,50 @@ export class SubmitButtons extends ToolboxItem {
 
     constructor(ulabel: ULabel) {
         super();
-    
+
         // Grab the submit buttons from ulabel
-        this.submit_buttons = ulabel.config.submit_buttons
+        this.submit_buttons = ulabel.config.submit_buttons;
 
-        this.add_styles()
+        this.add_styles();
 
-        this.add_event_listeners()
+        this.add_event_listeners();
 
         // For legacy reasons submit_buttons may be a function, in that case convert it to the right format
         if (typeof this.submit_buttons == "function") {
             this.submit_buttons = [{
-                "name": "Submit",
-                "hook": this.submit_buttons,
-                "row_number": 0,
-            }]
+                name: "Submit",
+                hook: this.submit_buttons,
+                row_number: 0,
+            }];
         }
 
-        this.submit_buttons_by_row = this.sort_buttons_by_row_number()
+        this.submit_buttons_by_row = this.sort_buttons_by_row_number();
 
-        for (let idx in this.submit_buttons) {
-
+        for (const idx in this.submit_buttons) {
             // Create a unique event listener for each submit button in the submit buttons array.
             $(document).on("click.ulabel", "#" + this.submit_buttons[idx].name.replaceLowerConcat(" ", "-"), async () => {
                 // Grab the button
                 const button: HTMLButtonElement = <HTMLButtonElement> document.getElementById(this.submit_buttons[idx].name.replaceLowerConcat(" ", "-"));
-                
+
                 // Grab all of the submit buttons
-                let submit_button_elements = <HTMLButtonElement[]> Array.from(document.getElementsByClassName("submit-button"));
-                
+                const submit_button_elements = <HTMLButtonElement[]> Array.from(document.getElementsByClassName("submit-button"));
+
                 // Make all the buttons look disabled
-                for (let i in submit_button_elements) {
+                for (const i in submit_button_elements) {
                     submit_button_elements[i].disabled = true;
                     submit_button_elements[i].style.filter = "opacity(0.7)";
                 }
 
                 // Give the clicked button a loading animation
                 button.innerText = "";
-                let animation = document.createElement("div");
+                const animation = document.createElement("div");
                 animation.className = "lds-dual-ring";
                 button.appendChild(animation);
 
                 // Create the submit payload
-                let submit_payload = {
-                    "task_meta": ulabel.config["task_meta"],
-                    "annotations": {}
+                const submit_payload = {
+                    task_meta: ulabel.config["task_meta"],
+                    annotations: {},
                 };
 
                 // Loop through all of the subtasks
@@ -2488,7 +2476,7 @@ export class SubmitButtons extends ToolboxItem {
 
                     // Add all of the annotations in that subtask
                     for (let i = 0; i < ulabel.subtasks[stkey]["annotations"]["ordering"].length; i++) {
-                        let annotation = ulabel.subtasks[stkey]["annotations"]["access"][ulabel.subtasks[stkey]["annotations"]["ordering"][i]];
+                        const annotation = ulabel.subtasks[stkey]["annotations"]["access"][ulabel.subtasks[stkey]["annotations"]["ordering"][i]];
                         // Skip any delete modes
                         if (
                             DELETE_MODES.includes(annotation.spatial_type)
@@ -2498,8 +2486,8 @@ export class SubmitButtons extends ToolboxItem {
 
                         // Skip spatial annotations that have an empty spatial payload
                         if (
-                            NONSPATIAL_MODES.includes(annotation.spatial_type) ||
-                            annotation.spatial_payload.length === 0
+                            NONSPATIAL_MODES.includes(annotation.spatial_type)
+                            || annotation.spatial_payload.length === 0
                         ) {
                             continue;
                         }
@@ -2512,35 +2500,35 @@ export class SubmitButtons extends ToolboxItem {
                 if (this.submit_buttons[idx].set_saved !== undefined) {
                     ulabel.set_saved(this.submit_buttons[idx].set_saved);
                 }
-                
+
                 await this.submit_buttons[idx].hook(submit_payload);
 
                 // Give the button back its name
                 button.innerText = this.submit_buttons[idx].name;
 
                 // Re-enable the buttons
-                for (let i in submit_button_elements) {
+                for (const i in submit_button_elements) {
                     submit_button_elements[i].disabled = false;
                     submit_button_elements[i].style.filter = "opacity(1)";
                 }
-            })
+            });
         }
     }
 
     /**
      * Group submit buttons by row number
-     * 
+     *
      * @returns {ULabelSubmitButton[][]} Array of submit buttons grouped by row number
      */
     private sort_buttons_by_row_number() {
-        let submit_buttons_by_row: ULabelSubmitButton[][] = [];
-        // First, get all the unique row numbers. 
+        const submit_buttons_by_row: ULabelSubmitButton[][] = [];
+        // First, get all the unique row numbers.
         // If a button doesn't have a row number, it will be placed in row 0.
-        let row_numbers: Set<number> = new Set(this.submit_buttons.map((button) => button.row_number ? button.row_number : 0));
+        const row_numbers: Set<number> = new Set(this.submit_buttons.map(button => button.row_number ? button.row_number : 0));
         // Sort the row numbers
-        let sorted_row_numbers: number[] = Array.from(row_numbers).sort((a, b) => a - b);
+        const sorted_row_numbers: number[] = Array.from(row_numbers).sort((a, b) => a - b);
         // Group the buttons by row number in ascending order
-        for (let row_number of sorted_row_numbers) {
+        for (const row_number of sorted_row_numbers) {
             submit_buttons_by_row.push(
                 this.submit_buttons.filter((button) => {
                     // If the button doesn't have a row number, it will be placed in row 0
@@ -2548,14 +2536,13 @@ export class SubmitButtons extends ToolboxItem {
                         return row_number === 0;
                     }
                     // Otherwise, place the button in the row that matches its row number
-                    return button.row_number === row_number
-                })
+                    return button.row_number === row_number;
+                }),
             );
         }
         return submit_buttons_by_row;
     }
 
-    
     /**
      * Create the css for this ToolboxItem and append it to the page.
      */
@@ -2565,37 +2552,37 @@ export class SubmitButtons extends ToolboxItem {
 
     add_event_listeners(): void {
         $(document).on("keypress.ulabel", (event) => {
-            const ctrl = event.ctrlKey || event.metaKey
-            if (ctrl &&
-                (
-                    event.key === "s" ||
-                    event.key === "S"
+            const ctrl = event.ctrlKey || event.metaKey;
+            if (ctrl
+                && (
+                    event.key === "s"
+                    || event.key === "S"
                 )
             ) {
                 event.preventDefault();
                 $(".submit-button")[0].click(); // Click the first submit button
             }
-        })
+        });
     }
 
     get_html(): string {
-        let toolboxitem_html = `<div class="submit-button-container">`
+        let toolboxitem_html = `<div class="submit-button-container">`;
 
-        for (let submit_buttons of this.submit_buttons_by_row) {
+        for (const submit_buttons of this.submit_buttons_by_row) {
             // Create a row for each row of submit buttons
-            toolboxitem_html += `<div class="submit-button-row">`
+            toolboxitem_html += `<div class="submit-button-row">`;
 
             // Create each button in the row
-            for (let submit_button of submit_buttons) {
-                let button_color = "rgba(255, 166, 0, 0.739)"
+            for (const submit_button of submit_buttons) {
+                let button_color = "rgba(255, 166, 0, 0.739)";
                 if (submit_button.color !== undefined) {
-                    button_color = submit_button.color
+                    button_color = submit_button.color;
                 }
 
                 // Get the size factor
-                let size_factor = 1
+                let size_factor = 1;
                 if (submit_button.size_factor !== undefined) {
-                    size_factor = submit_button.size_factor
+                    size_factor = submit_button.size_factor;
                 }
 
                 toolboxitem_html += `
@@ -2613,15 +2600,15 @@ export class SubmitButtons extends ToolboxItem {
                 ">
                     ${submit_button.name}
                 </button>
-                `
+                `;
             }
             // Close the row div
-            toolboxitem_html += `</div>`
+            toolboxitem_html += `</div>`;
         }
         // Close the container div
-        toolboxitem_html += `</div>`
-        
-        return toolboxitem_html
+        toolboxitem_html += `</div>`;
+
+        return toolboxitem_html;
     }
 
     public after_init() {
@@ -2629,7 +2616,7 @@ export class SubmitButtons extends ToolboxItem {
     }
 
     public get_toolbox_item_type() {
-        return "SubmitButtons"
+        return "SubmitButtons";
     }
 }
 
