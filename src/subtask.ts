@@ -16,7 +16,7 @@ export class ULabelSubtask {
         back_context: CanvasRenderingContext2D,
         edit_candidate: {
             annid: string,
-            access: ULabelAnnotation,
+            access: string | number | [number, number],
             distance: number,
             point: [number, number] 
         },
