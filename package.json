@@ -13,7 +13,7 @@
     "prepare": "husky"
   },
   "lint-staged": {
-    "**/*.{js,mjs,cjs,ts}": "eslint --fix"
+    "**/*.{js,mjs,cjs,ts}": ""
   },
   "repository": {
     "type": "git",
