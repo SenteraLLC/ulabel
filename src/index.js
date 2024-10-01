@@ -2808,7 +2808,7 @@ export class ULabel {
         // Toggle erase mode
         if (this.subtasks[current_subtask]["state"]["is_in_erase_mode"]) {
             $("#erase-mode").removeClass(BrushToolboxItem.BRUSH_BTN_ACTIVE_CLS);
-            // "Erase mode" is a subet of "brush mode"
+            // "Erase mode" is a subset of "brush mode"
             if (this.subtasks[current_subtask]["state"]["is_in_brush_mode"]) {
                 $("#brush-mode").addClass(BrushToolboxItem.BRUSH_BTN_ACTIVE_CLS);
             }
