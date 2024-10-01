@@ -44,6 +44,7 @@ export default [
             ],
             "@stylistic/function-call-argument-newline": ["error", "consistent"],
             "@stylistic/function-call-spacing": ["error", "never"],
+            "@stylistic/operator-linebreak": ["error", "after"],
             "@stylistic/semi": ["error", "always"],
         },
 

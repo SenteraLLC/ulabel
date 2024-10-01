@@ -1949,8 +1949,8 @@ export class KeypointSliderItem extends ToolboxItem {
             const should_deprecate: boolean = this.filter_function(confidence, filter_value);
             // Check if an annotation should be deprecated or undeprecated, else do nothing
             if (
-                (should_deprecate && !annotation.deprecated)
-                || (!should_deprecate && annotation.deprecated)
+                (should_deprecate && !annotation.deprecated) ||
+                (!should_deprecate && annotation.deprecated)
             ) {
                 // Mark this annotation as either deprecated or undeprecated by the confidence filter
                 this.mark_deprecated(annotation, should_deprecate, "confidence_filter");
@@ -2470,8 +2470,8 @@ export class SubmitButtons extends ToolboxItem {
 
                         // Skip spatial annotations that have an empty spatial payload
                         if (
-                            NONSPATIAL_MODES.includes(annotation.spatial_type)
-                            || annotation.spatial_payload.length === 0
+                            NONSPATIAL_MODES.includes(annotation.spatial_type) ||
+                            annotation.spatial_payload.length === 0
                         ) {
                             continue;
                         }
@@ -2537,12 +2537,7 @@ export class SubmitButtons extends ToolboxItem {
     add_event_listeners(): void {
         $(document).on("keypress.ulabel", (event) => {
             const ctrl = event.ctrlKey || event.metaKey;
-            if (ctrl
-                && (
-                    event.key === "s"
-                    || event.key === "S"
-                )
-            ) {
+            if (ctrl && (event.key === "s" || event.key === "S")) {
                 event.preventDefault();
                 $(".submit-button")[0].click(); // Click the first submit button
             }

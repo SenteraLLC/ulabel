@@ -448,8 +448,8 @@ export class ULabel {
             if (e.key === ul.config.delete_annotation_keybind) {
                 // Check the active_annotation to make sure its not null and isn't nonspatial
                 if (
-                    ul.subtasks[ul.state["current_subtask"]]["active_annotation"] != null
-                    && !NONSPATIAL_MODES.includes(ul.subtasks[ul.state["current_subtask"]]["state"]["annotation_mode"])
+                    ul.subtasks[ul.state["current_subtask"]]["active_annotation"] != null &&
+                    !NONSPATIAL_MODES.includes(ul.subtasks[ul.state["current_subtask"]]["state"]["annotation_mode"])
                 ) {
                     // Delete the active annotation
                     ul.delete_annotation(ul.subtasks[ul.state["current_subtask"]]["active_annotation"]);
@@ -500,11 +500,11 @@ export class ULabel {
         $(document).on("keydown.ulabel", (keypress_event) => {
             const shift = keypress_event.shiftKey;
             const ctrl = keypress_event.ctrlKey || keypress_event.metaKey;
-            if (ctrl
-                && (
-                    keypress_event.key === "z"
-                    || keypress_event.key === "Z"
-                    || keypress_event.code === "KeyZ"
+            if (ctrl &&
+                (
+                    keypress_event.key === "z" ||
+                    keypress_event.key === "Z" ||
+                    keypress_event.code === "KeyZ"
                 )
             ) {
                 keypress_event.preventDefault();
@@ -740,8 +740,8 @@ export class ULabel {
                 cand["classification_payloads"].sort(
                     (a, b) => {
                         return (
-                            ul.subtasks[subtask_key]["class_ids"].find(e => e === a["class_id"])
-                            - ul.subtasks[subtask_key]["class_ids"].find(e => e === b["class_id"])
+                            ul.subtasks[subtask_key]["class_ids"].find(e => e === a["class_id"]) -
+                            ul.subtasks[subtask_key]["class_ids"].find(e => e === b["class_id"])
                         );
                     },
                 );
@@ -754,10 +754,10 @@ export class ULabel {
                     // If missing any of `spatial_payload_holes` or `spatial_payload_child_indices`,
                     // or if they don't match the length of `spatial_payload`, then rebuild them
                     if (
-                        !("spatial_payload_holes" in cand)
-                        || !("spatial_payload_child_indices" in cand)
-                        || cand["spatial_payload_holes"].length !== cand["spatial_payload"].length
-                        || cand["spatial_payload_child_indices"].length !== cand["spatial_payload"].length
+                        !("spatial_payload_holes" in cand) ||
+                        !("spatial_payload_child_indices" in cand) ||
+                        cand["spatial_payload_holes"].length !== cand["spatial_payload"].length ||
+                        cand["spatial_payload_child_indices"].length !== cand["spatial_payload"].length
                     ) {
                         ul.state.current_subtask = subtask_key;
                         // For polygons, verify all layers
@@ -1270,10 +1270,10 @@ export class ULabel {
         let initial_crop = this.config["initial_crop"];
         if (initial_crop != null) {
             if (
-                "width" in initial_crop
-                && "height" in initial_crop
-                && "left" in initial_crop
-                && "top" in initial_crop
+                "width" in initial_crop &&
+                "height" in initial_crop &&
+                "left" in initial_crop &&
+                "top" in initial_crop
             ) {
                 let width = this.config["image_width"];
                 let height = this.config["image_height"];
@@ -1502,8 +1502,8 @@ export class ULabel {
      */
     update_filter_distance_during_polyline_move(annotation_id, redraw_update_items = true, force_filter_all = false, offset = null) {
         if (
-            this.config.toolbox_order.includes(AllowedToolboxItem.FilterDistance)
-            && this.toolbox.items.find(item => item.get_toolbox_item_type() === "FilterDistance").filter_during_polyline_move
+            this.config.toolbox_order.includes(AllowedToolboxItem.FilterDistance) &&
+            this.toolbox.items.find(item => item.get_toolbox_item_type() === "FilterDistance").filter_during_polyline_move
         ) {
             this.update_filter_distance(annotation_id, redraw_update_items, force_filter_all, offset);
         }
@@ -2215,10 +2215,10 @@ export class ULabel {
         }
 
         if (
-            spatial_type === "polygon"
-            && !layer_is_closed
-            && this.subtasks[this.state["current_subtask"]]["state"]["is_in_progress"]
-            && !this.subtasks[this.state["current_subtask"]]["state"]["starting_complex_polygon"]
+            spatial_type === "polygon" &&
+            !layer_is_closed &&
+            this.subtasks[this.state["current_subtask"]]["state"]["is_in_progress"] &&
+            !this.subtasks[this.state["current_subtask"]]["state"]["starting_complex_polygon"]
         ) {
             // Clear the lines that fall within the polygon ender
             // Use the first point of the last layer
@@ -2848,17 +2848,17 @@ export class ULabel {
     recolor_brush_circle() {
         // Only allow when not in erase mode
         if (
-            this.subtasks[this.state["current_subtask"]]["state"]["is_in_brush_mode"]
-            && !this.subtasks[this.state["current_subtask"]]["state"]["is_in_erase_mode"]
+            this.subtasks[this.state["current_subtask"]]["state"]["is_in_brush_mode"] &&
+            !this.subtasks[this.state["current_subtask"]]["state"]["is_in_erase_mode"]
         ) {
             // Get brush circle id
             const brush_circle_id = "brush_circle";
             const active_id = this.subtasks[this.state["current_subtask"]]["state"]["active_id"];
             $("#" + brush_circle_id).css({
                 // Use annotation id if available, else use active class color
-                "background-color": active_id !== null
-                    ? this.get_annotation_color(this.subtasks[this.state["current_subtask"]]["annotations"]["access"][active_id])
-                    : this.get_active_class_color(),
+                "background-color": active_id !== null ?
+                    this.get_annotation_color(this.subtasks[this.state["current_subtask"]]["annotations"]["access"][active_id]) :
+                    this.get_active_class_color(),
             });
         }
     }
@@ -3162,8 +3162,8 @@ export class ULabel {
                     }
                     // Check if the polygon falls within the delete polygon or intersects it
                     if (
-                        GeometricUtils.simple_polygon_is_within_simple_polygon(simple_polygon, delete_polygon)
-                        || GeometricUtils.complex_polygons_intersect([simple_polygon], [delete_polygon])
+                        GeometricUtils.simple_polygon_is_within_simple_polygon(simple_polygon, delete_polygon) ||
+                        GeometricUtils.complex_polygons_intersect([simple_polygon], [delete_polygon])
                     ) {
                         annotation["deprecated"] = true;
                         deprecated_ids.push(annid);
@@ -4419,10 +4419,10 @@ export class ULabel {
     // Check that two containing boxes are equal
     containing_boxes_are_equal(containing_box1, containing_box2) {
         return (
-            containing_box1["tlx"] === containing_box2["tlx"]
-            && containing_box1["tly"] === containing_box2["tly"]
-            && containing_box1["brx"] === containing_box2["brx"]
-            && containing_box1["bry"] === containing_box2["bry"]
+            containing_box1["tlx"] === containing_box2["tlx"] &&
+            containing_box1["tly"] === containing_box2["tly"] &&
+            containing_box1["brx"] === containing_box2["brx"] &&
+            containing_box1["bry"] === containing_box2["bry"]
         );
     }
 
@@ -4738,8 +4738,8 @@ export class ULabel {
                 // Check if the brush intersects with or is within any layer
                 for (let split_polygon of split_polygons) {
                     if (
-                        GeometricUtils.complex_polygons_intersect(split_polygon, brush_polygon)
-                        || GeometricUtils.complex_polygon_is_within_complex_polygon(brush_polygon, split_polygon)
+                        GeometricUtils.complex_polygons_intersect(split_polygon, brush_polygon) ||
+                        GeometricUtils.complex_polygon_is_within_complex_polygon(brush_polygon, split_polygon)
                     ) {
                         brush_cand_active_id = active_id;
                         break;
@@ -4840,9 +4840,9 @@ export class ULabel {
                         // or if the split polygon as a whole intersects with our merged polygon
                         // or if any hole in the split polygon is within our merged polygon (handles really small holes)
                         if (
-                            GeometricUtils.complex_polygons_intersect([split_polygon[0]], merged_polygon)
-                            || GeometricUtils.complex_polygons_intersect(split_polygon, merged_polygon)
-                            || GeometricUtils.any_complex_polygon_hole_is_within_complex_polygon(split_polygon, merged_polygon)
+                            GeometricUtils.complex_polygons_intersect([split_polygon[0]], merged_polygon) ||
+                            GeometricUtils.complex_polygons_intersect(split_polygon, merged_polygon) ||
+                            GeometricUtils.any_complex_polygon_hole_is_within_complex_polygon(split_polygon, merged_polygon)
                         ) {
                             n_merges += 1;
                             // Merge the split polygon with the current merged polygon
@@ -5320,10 +5320,10 @@ export class ULabel {
 
             // When shift key is held, we start a new complex layer
             if (
-                annotation["spatial_type"] === "polygon"
-                && !current_subtask["state"]["is_in_brush_mode"]
-                && mouse_event != null
-                && mouse_event.shiftKey
+                annotation["spatial_type"] === "polygon" &&
+                !current_subtask["state"]["is_in_brush_mode"] &&
+                mouse_event != null &&
+                mouse_event.shiftKey
             ) {
                 // Start a new complex layer
                 this.start_complex_polygon();
@@ -5683,13 +5683,13 @@ export class ULabel {
             }
             // TODO(new3d) bbox3 will have different rules here
             if (
-                cbox
-                && (gblx >= cbox["tlx"] - dst_thresh)
-                && (gblx <= cbox["brx"] + dst_thresh)
-                && (gbly >= cbox["tly"] - dst_thresh)
-                && (gbly <= cbox["bry"] + dst_thresh)
-                && (this.state["current_frame"] >= cbox["tlz"])
-                && (this.state["current_frame"] <= cbox["brz"])
+                cbox &&
+                (gblx >= cbox["tlx"] - dst_thresh) &&
+                (gblx <= cbox["brx"] + dst_thresh) &&
+                (gbly >= cbox["tly"] - dst_thresh) &&
+                (gbly <= cbox["bry"] + dst_thresh) &&
+                (this.state["current_frame"] >= cbox["tlz"]) &&
+                (this.state["current_frame"] <= cbox["brz"])
             ) {
                 let found_perfect_match = false;
                 let boxsize;
@@ -5703,10 +5703,10 @@ export class ULabel {
                     case "bbox":
                     case "point":
                         if (
-                            gblx >= cbox["tlx"]
-                            && gblx <= cbox["brx"]
-                            && gbly >= cbox["tly"]
-                            && gbly <= cbox["bry"]
+                            gblx >= cbox["tlx"] &&
+                            gblx <= cbox["brx"] &&
+                            gbly >= cbox["tly"] &&
+                            gbly <= cbox["bry"]
                         ) {
                             found_perfect_match = true;
                         }
@@ -5747,9 +5747,9 @@ export class ULabel {
     suggest_edits(mouse_event = null, nonspatial_id = null) {
         // don't show edits when potentially trying to draw a hole
         if (
-            this.subtasks[this.state["current_subtask"]]["state"]["is_in_progress"]
-            || this.subtasks[this.state["current_subtask"]]["state"]["starting_complex_polygon"]
-            || this.subtasks[this.state["current_subtask"]]["state"]["is_in_brush_mode"]
+            this.subtasks[this.state["current_subtask"]]["state"]["is_in_progress"] ||
+            this.subtasks[this.state["current_subtask"]]["state"]["starting_complex_polygon"] ||
+            this.subtasks[this.state["current_subtask"]]["state"]["is_in_brush_mode"]
         ) {
             this.hide_global_edit_suggestion();
             this.hide_edit_suggestion();
@@ -6170,10 +6170,10 @@ export class ULabel {
 
         // Ensure that the id dialog is visible again
         if (
-            annotation_id !== null
-            && !current_subtask["state"]["is_in_progress"]
-            && !current_subtask["state"]["is_in_brush_mode"]
-            && !current_subtask["state"]["idd_visible"]
+            annotation_id !== null &&
+            !current_subtask["state"]["is_in_progress"] &&
+            !current_subtask["state"]["is_in_brush_mode"] &&
+            !current_subtask["state"]["idd_visible"]
         ) {
             this.show_global_edit_suggestion(annotation_id);
         }
@@ -6245,9 +6245,9 @@ export class ULabel {
             // If polygon is in progress, redirect last segment
             if (this.subtasks[this.state["current_subtask"]]["state"]["is_in_progress"]) {
                 if (
-                    (annotation_mode === "polygon")
-                    || (annotation_mode === "polyline")
-                    || (annotation_mode === "delete_polygon")
+                    (annotation_mode === "polygon") ||
+                    (annotation_mode === "polyline") ||
+                    (annotation_mode === "delete_polygon")
                 ) {
                     this.continue_annotation(mouse_event);
                 }
@@ -6402,9 +6402,9 @@ export class ULabel {
                 if (active_id != null) {
                     spatial_payload = this.subtasks[this.state["current_subtask"]]["annotations"]["access"][active_id]["spatial_payload"];
                     if (
-                        (annotation_mode != "polygon")
-                        && (annotation_mode != "polyline")
-                        && (annotation_mode != "delete_polygon")
+                        (annotation_mode != "polygon") &&
+                        (annotation_mode != "polyline") &&
+                        (annotation_mode != "delete_polygon")
                     ) {
                         this.finish_annotation(mouse_event);
                     } else {
@@ -6414,11 +6414,11 @@ export class ULabel {
                             // We can finish a polygon by clicking on the ender
                             // however, we don't want this to trigger immediately after starting an annotation
                             // so we check that the polygon has more than 2 points
-                            !this.subtasks[this.state["current_subtask"]]["state"]["starting_complex_polygon"]
-                            && n_points > 2
-                            && (
-                                (mouse_event.target.id === "ender_" + active_id)
-                                || (mouse_event.target.id === "ender_" + active_id + "_inner")
+                            !this.subtasks[this.state["current_subtask"]]["state"]["starting_complex_polygon"] &&
+                            n_points > 2 &&
+                            (
+                                (mouse_event.target.id === "ender_" + active_id) ||
+                                (mouse_event.target.id === "ender_" + active_id + "_inner")
                             )
                         ) {
                             this.finish_annotation(mouse_event);
@@ -6677,8 +6677,8 @@ export class ULabel {
         // $(`img#${this.config["image_id_pfx"]}__${new_frame}`).css("z-index", 50);
         $(`img#${this.config["image_id_pfx"]}__${new_frame}`).css("display", "block");
         if (
-            actid
-            && MODES_3D.includes(
+            actid &&
+            MODES_3D.includes(
                 this.subtasks[this.state["current_subtask"]]["annotations"]["access"][actid]["spatial_type"],
             )
         ) {
