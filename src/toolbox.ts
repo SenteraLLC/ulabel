@@ -339,7 +339,7 @@ export class ModeSelectionToolboxItem extends ToolboxItem {
             let current_subtask = ulabel.get_current_subtask();
 
             // Check if button clicked is already selected, or if creation of a new annotation is in progress
-            if (target_jq.hasClass("sel") || ulabel.subtasks[current_subtask]["state"]["is_in_progress"]) return;
+            if (target_jq.hasClass("sel") || current_subtask["state"]["is_in_progress"]) return;
 
             // Get the new mode and set it to ulabel's current mode
             let new_mode = target_jq.attr("id").split("--")[1];
