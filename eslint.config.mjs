@@ -22,6 +22,14 @@ export default [
             globals: globals.browser,
         },
     },
+    stylistic.configs.customize(
+        {
+            commaDangle: "always-multiline",
+            indent: 4,
+            quotes: "double",
+            semi: "always",
+        },
+    ),
     {
         plugins: {
             "@stylistic": stylistic,
@@ -30,28 +38,12 @@ export default [
             "@stylistic/array-element-newline": [
                 "error",
                 {
-                    "consistent": true,
-                    "multiline": true,
+                    consistent: true,
+                    multiline: true,
                 },
             ],
-            "@stylistic/block-spacing": ["error", "always"],
-            "@stylistic/brace-style": ["error", "1tbs"],
-            "@stylistic/comma-dangle": ["error", "always-multiline"],
-            "@stylistic/comma-spacing": [
-                "error",
-                {
-                    before: false,
-                    after: true,
-                },
-            ],
-            "@stylistic/comma-style": ["error", "last"],
-            "@stylistic/dot-location": ["error", "property"],
-            "@stylistic/eol-last": ["error", "always"],
             "@stylistic/function-call-argument-newline": ["error", "consistent"],
             "@stylistic/function-call-spacing": ["error", "never"],
-            "@stylistic/indent": ["error", 4],
-            "@stylistic/quotes": ["error", "double"],
-            "@stylistic/semi": ["error", "always"],
         },
 
     },
