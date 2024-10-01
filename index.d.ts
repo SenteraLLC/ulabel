@@ -171,6 +171,10 @@ export class ULabel {
     valid_class_ids: number[];
     toolbox_order?: number[];
     filter_distance_overlay?: FilterDistanceOverlay
+    begining_time: number;
+    is_init: boolean;
+    static get elvl_fatal(): number;
+
     /**
      * @link https://github.com/SenteraLLC/ulabel/blob/main/api_spec.md#ulabel-constructor
      */
@@ -216,7 +220,18 @@ export class ULabel {
     static get_allowed_toolbox_item_enum(): AllowedToolboxItem;
     static process_classes(ulabel_obj: any, arg1: string, subtask_obj: any);
     static build_id_dialogs(ulabel_obj: any);
-        
+    // Static init functions
+    static has_night_mode_cookie(): boolean;
+    static load_image_promise(img_el: HTMLImageElement): Promise<HTMLImageElement>;
+    static initialize_annotation_canvases(ul: ULabel, subtask_key?: string): void;
+    static create_listeners(ul: ULabel): void;
+    static after_init(ulabel: ULabel): void;
+    // Instance init functions
+    public handle_toolbox_overflow(): void;
+    public set_subtask(st_key: string): void;
+    public create_overlays(): void;
+    // nops
+    public redraw_demo(): void;
 }
 
 declare global {

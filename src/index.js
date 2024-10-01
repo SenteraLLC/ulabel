@@ -9,7 +9,7 @@ import {
     NONSPATIAL_MODES,
     MODES_3D,
 } from '../build/annotation';
-import { ULabelLoader } from '../build/loader';
+import { ulabel_init } from '../build/initializer';
 import { ULabelSubtask } from '../build/subtask';
 import { GeometricUtils } from '../build/geometric_utils';
 import { 
@@ -1089,132 +1089,128 @@ export class ULabel {
     }
 
     init(callback) {
+        ulabel_init(this, callback);
 
-        // Add stylesheet
-        add_style_to_document(this);
+        // // Add stylesheet
+        // add_style_to_document(this);
 
-        let that = this;
-        that.state["current_subtask"] = Object.keys(that.subtasks)[0];
+        // let that = this;
+        // that.state["current_subtask"] = Object.keys(that.subtasks)[0];
 
-        // Place image element
-        prep_window_html(this, this.config.toolbox_order);
-
-
-        // Detect night cookie
-        if (ULabel.has_night_mode_cookie()) {
-            $("#" + this.config["container_id"]).addClass("ulabel-night");
-        }
-
-        var images = [document.getElementById(`${this.config["image_id_pfx"]}__0`)];
-        let mappable_images = [];
-        for (let i = 0; i < images.length; i++) {
-            mappable_images.push(images[i]);
-            break;
-        }
-        let image_promises = mappable_images.map(ULabel.load_image_promise);
-        // image_promises.push(
-        //     new Promise(resolve => setTimeout(resolve, 5000))
-        // );
-        Promise.all(image_promises).then((loaded_imgs) => {
-            // Store image dimensions
-            that.config["image_height"] = loaded_imgs[0].naturalHeight;
-            that.config["image_width"] = loaded_imgs[0].naturalWidth;
-
-            // Add canvasses for each subtask and get their rendering contexts
-            for (const st in that.subtasks) {
-                $("#" + that.config["imwrap_id"]).append(`
-                <div id="canvasses__${st}" class="canvasses">
-                    <canvas 
-                        id="${that.subtasks[st]["canvas_bid"]}" 
-                        class="${that.config["canvas_class"]} ${that.config["imgsz_class"]} canvas_cls" 
-                        height=${that.config["image_height"] * this.config["px_per_px"]} 
-                        width=${that.config["image_width"] * this.config["px_per_px"]}></canvas>
-                    <canvas 
-                        id="${that.subtasks[st]["canvas_fid"]}" 
-                        class="${that.config["canvas_class"]} ${that.config["imgsz_class"]} canvas_cls" 
-                        height=${that.config["image_height"] * this.config["px_per_px"]} 
-                        width=${that.config["image_width"] * this.config["px_per_px"]} 
-                        oncontextmenu="return false"></canvas>
-                    <div id="dialogs__${st}" class="dialogs_container"></div>
-                </div>
-                `);
-                $("#" + that.config["container_id"] + ` div#fad_st__${st}`).append(`
-                    <div id="front_dialogs__${st}" class="front_dialogs"></div>
-                `);
-
-                // Get canvas contexts
-                that.subtasks[st]["state"]["back_context"] = document.getElementById(
-                    that.subtasks[st]["canvas_bid"]
-                ).getContext("2d");
-                that.subtasks[st]["state"]["front_context"] = document.getElementById(
-                    that.subtasks[st]["canvas_fid"]
-                ).getContext("2d");
-            }
-            /**
-             * This used to be just after `that.is_init = true;`,
-             * but for testing loading I've hoisted it up here.
-             * 
-             * Some things (like available annotation modes)
-             * display incorrectly as a result.
-             */
-            $(`div#${this.config["container_id"]}`).css("display", "block");
-
-            // Create the annotation canvases for the resume_from annotations
-            ULabel.initialize_annotation_canvases(that);
-
-            // Add the ID dialogs' HTML to the document
-            build_id_dialogs(that);
-
-            // Add the HTML for the edit suggestion to the window
-            build_edit_suggestion(that);
+        // // Place image element
+        // prep_window_html(this, this.config.toolbox_order);
 
 
-            setTimeout(
-                () => {
-                    // Add dialog to show annotation confidence
-                    build_confidence_dialog(that);
+        // // Detect night cookie
+        // if (ULabel.has_night_mode_cookie()) {
+        //     $("#" + this.config["container_id"]).addClass("ulabel-night");
+        // }
 
-                    // Create listers to manipulate and export this object
-                    ULabel.create_listeners(that);
+        // var images = [document.getElementById(`${this.config["image_id_pfx"]}__0`)];
+        // let mappable_images = [];
+        // for (let i = 0; i < images.length; i++) {
+        //     mappable_images.push(images[i]);
+        //     break;
+        // }
+        // let image_promises = mappable_images.map(ULabel.load_image_promise);
+        // // image_promises.push(
+        // //     new Promise(resolve => setTimeout(resolve, 5000))
+        // // );
+        // Promise.all(image_promises).then((loaded_imgs) => {
+        //     // Store image dimensions
+        //     that.config["image_height"] = loaded_imgs[0].naturalHeight;
+        //     that.config["image_width"] = loaded_imgs[0].naturalWidth;
 
-                    that.handle_toolbox_overflow();
+        //     // Add canvasses for each subtask and get their rendering contexts
+        //     for (const st in that.subtasks) {
+        //         $("#" + that.config["imwrap_id"]).append(`
+        //         <div id="canvasses__${st}" class="canvasses">
+        //             <canvas 
+        //                 id="${that.subtasks[st]["canvas_bid"]}" 
+        //                 class="${that.config["canvas_class"]} ${that.config["imgsz_class"]} canvas_cls" 
+        //                 height=${that.config["image_height"] * this.config["px_per_px"]} 
+        //                 width=${that.config["image_width"] * this.config["px_per_px"]}></canvas>
+        //             <canvas 
+        //                 id="${that.subtasks[st]["canvas_fid"]}" 
+        //                 class="${that.config["canvas_class"]} ${that.config["imgsz_class"]} canvas_cls" 
+        //                 height=${that.config["image_height"] * this.config["px_per_px"]} 
+        //                 width=${that.config["image_width"] * this.config["px_per_px"]} 
+        //                 oncontextmenu="return false"></canvas>
+        //             <div id="dialogs__${st}" class="dialogs_container"></div>
+        //         </div>
+        //         `);
+        //         $("#" + that.config["container_id"] + ` div#fad_st__${st}`).append(`
+        //             <div id="front_dialogs__${st}" class="front_dialogs"></div>
+        //         `);
 
-                    // Set the canvas elements in the correct stacking order given current subtask
-                    that.set_subtask(that.state["current_subtask"]);
+        //         // Get canvas contexts
+        //         that.subtasks[st]["state"]["back_context"] = document.getElementById(
+        //             that.subtasks[st]["canvas_bid"]
+        //         ).getContext("2d");
+        //         that.subtasks[st]["state"]["front_context"] = document.getElementById(
+        //             that.subtasks[st]["canvas_fid"]
+        //         ).getContext("2d");
+        //     }
+        //     /**
+        //      * This used to be just after `that.is_init = true;`,
+        //      * but for testing loading I've hoisted it up here.
+        //      * 
+        //      * Some things (like available annotation modes)
+        //      * display incorrectly as a result.
+        //      */
+        //     $(`div#${this.config["container_id"]}`).css("display", "block");
 
-                    that.create_overlays()
+        //     // Create the annotation canvases for the resume_from annotations
+        //     ULabel.initialize_annotation_canvases(that);
 
-                    // Indicate that the object is now init!
-                    that.is_init = true;
+        //     // Add the ID dialogs' HTML to the document
+        //     build_id_dialogs(that);
 
-                    this.show_initial_crop();
-                    this.update_frame();
+        //     // Add the HTML for the edit suggestion to the window
+        //     build_edit_suggestion(that);
 
-                    // Draw demo annotation
-                    that.redraw_demo();
+        //     // Add dialog to show annotation confidence
+        //     build_confidence_dialog(that);
 
-                    // Draw resumed from annotations
-                    that.redraw_all_annotations();
+        //     // Create listers to manipulate and export this object
+        //     ULabel.create_listeners(that);
 
-                    // Update class counter
-                    that.toolbox.redraw_update_items(that);
+        //     that.handle_toolbox_overflow();
 
-                    ULabelLoader.remove_loader(); 
+        //     // Set the canvas elements in the correct stacking order given current subtask
+        //     that.set_subtask(that.state["current_subtask"]);
 
-                    // Call the user-provided callback
-                    callback();
-                },
-                5000
-            )
-        }).catch((err) => {
-            console.log(err);
-            this.raise_error("Unable to load images: " + JSON.stringify(err), ULabel.elvl_fatal);
-        });
+        //     that.create_overlays()
 
-        // Final code to be called after the object is initialized
-        ULabel.after_init(this)
+        //     // Indicate that the object is now init!
+        //     that.is_init = true;
 
-        console.log(`Time taken to construct and initialize: ${Date.now() - this.begining_time}`)
+        //     this.show_initial_crop();
+        //     this.update_frame();
+
+        //     // Draw demo annotation
+        //     that.redraw_demo();
+
+        //     // Draw resumed from annotations
+        //     that.redraw_all_annotations();
+
+        //     // Update class counter
+        //     that.toolbox.redraw_update_items(that);
+
+        //     ULabelLoader.remove_loader(); 
+
+        //     // Call the user-provided callback
+        //     callback();
+
+        // }).catch((err) => {
+        //     console.log(err);
+        //     this.raise_error("Unable to load images: " + JSON.stringify(err), ULabel.elvl_fatal);
+        // });
+
+        // // Final code to be called after the object is initialized
+        // ULabel.after_init(this)
+
+        // console.log(`Time taken to construct and initialize: ${Date.now() - this.begining_time}`)
     }
 
     version() {
