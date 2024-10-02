@@ -90,14 +90,6 @@ export function ulabel_init(
     Promise.all(image_promises).then((loaded_imgs) => {
         make_image_canvases(ulabel, loaded_imgs);
 
-        /**
-         * This used to be just after `that.is_init = true;`,
-         * but for testing loading I've hoisted it up here.
-         * 
-         * Some things (like available annotation modes)
-         * display incorrectly as a result.
-         */
-        $(`div#${ulabel.config["container_id"]}`).css("display", "block");
 
         // Create the annotation canvases for the resume_from annotations
         ULabel.initialize_annotation_canvases(ulabel);
@@ -125,6 +117,7 @@ export function ulabel_init(
 
         // Indicate that the object is now init!
         ulabel.is_init = true;
+        $(`div#${ulabel.config["container_id"]}`).css("display", "block");
 
         ulabel.show_initial_crop();
         ulabel.update_frame();
@@ -199,6 +192,7 @@ export async function staggered_ulabel_init(
     make_image_canvases(ulabel, [first_img]);
     await delay(interval);
 
+    // This step is hoisted up to show the container before the rest of the initialization
     $(`div#${ulabel.config["container_id"]}`).css("display", "block");
     await delay(interval);
 
