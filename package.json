@@ -9,7 +9,8 @@
     "demo": "node demo.js",
     "build": "tsc && webpack --mode production",
     "build-dev": "tsc && webpack --mode development",
-    "build-and-demo": "npm run build && npm run demo"
+    "build-and-demo": "npm run build && npm run demo",
+    "build-dev-and-demo": "npm run build-dev && npm run demo"
   },
   "repository": {
     "type": "git",
