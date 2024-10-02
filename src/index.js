@@ -28,13 +28,6 @@ import {
     mark_deprecated,
     update_distance_from_line_to_each_point,
 } from '../build/annotation_operators';
-import {
-    add_style_to_document,
-    prep_window_html,
-    build_id_dialogs,
-    build_edit_suggestion,
-    build_confidence_dialog 
-} from '../build/html_builder';
 
 import $ from 'jquery';
 const jQuery = $;
@@ -54,8 +47,6 @@ import { ULABEL_VERSION } from './version';
 jQuery.fn.outer_html = function () {
     return jQuery('<div />').append(this.eq(0).clone()).html();
 };
-
-
   
 
 export class ULabel {
@@ -1085,7 +1076,7 @@ export class ULabel {
 
     init(callback) {
         // ulabel_init(this, callback);
-        staggered_ulabel_init(this, callback);
+        staggered_ulabel_init(this, callback, 250);
     }
 
     version() {

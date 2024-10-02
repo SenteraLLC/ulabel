@@ -45,8 +45,8 @@ function make_image_canvases(
         `);
 
         // Get canvas contexts
-        const canvas_bid = <HTMLCanvasElement> document.getElementById(ulabel.subtasks[st]["canvas_bid"]);
-        const canvas_fid = <HTMLCanvasElement> document.getElementById(ulabel.subtasks[st]["canvas_fid"]);
+        const canvas_bid = <HTMLCanvasElement>document.getElementById(ulabel.subtasks[st]["canvas_bid"]);
+        const canvas_fid = <HTMLCanvasElement>document.getElementById(ulabel.subtasks[st]["canvas_fid"]);
         ulabel.subtasks[st]["state"]["back_context"] = canvas_bid.getContext("2d");
         ulabel.subtasks[st]["state"]["front_context"] = canvas_fid.getContext("2d");
     }
@@ -64,10 +64,10 @@ export function ulabel_init(
 ) {
     // Add stylesheet
     add_style_to_document(ulabel);
-    
+
     // Set current subtask to first subtask
     ulabel.state["current_subtask"] = Object.keys(ulabel.subtasks)[0];
-    
+
     // Place image element
     prep_window_html(
         ulabel,
@@ -138,7 +138,7 @@ export function ulabel_init(
         // Update class counter
         ulabel.toolbox.redraw_update_items(ulabel);
 
-        ULabelLoader.remove_loader_div(); 
+        ULabelLoader.remove_loader_div();
 
         // Call the user-provided callback
         callback();
@@ -159,32 +159,27 @@ export function ulabel_init(
  * @returns Promise<void> after delay.
  */
 function delay(ms: number): Promise<void> {
-    return new Promise( resolve => setTimeout(resolve, ms) );
-}
-
-function load_image_promise(img_el: HTMLImageElement): Promise<HTMLImageElement> {
-    return new Promise((resolve, reject) => {
-        img_el.onload = () => resolve(img_el);
-        img_el.onerror = reject;
-    });
+    return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 /**
- * Initializer for ULabel with staggered waits to visually show the loading process .
+ * Initializer for ULabel with staggered waits to visually show the loading process.
  *
  * @param ulabel ULabel instance to initialize.
+ * @param user_callback User-provided callback to run after initialization.`
  * @param interval Interval between each step in the initialization process.
  */
-async function _staggered_ulabel_init(
+export async function staggered_ulabel_init(
     ulabel: ULabel,
-    interval: number = 1000
+    user_callback: () => void,
+    interval: number = 250
 ) {
     // Add stylesheet
     add_style_to_document(ulabel);
-    
+
     // Set current subtask to first subtask
     ulabel.state["current_subtask"] = Object.keys(ulabel.subtasks)[0];
-    
+
     // Place image element
     prep_window_html(
         ulabel,
@@ -203,45 +198,7 @@ async function _staggered_ulabel_init(
 
     make_image_canvases(ulabel, [first_img]);
     await delay(interval);
-    // let mappable_images = [];
-    // let imgs = [];
-    // for (let i = 0; i < images.length; i++) {
-    //     await images[i].decode();
-    //     imgs.push(
-    //     )
-    //     mappable_images.push(images[i]);
-    //     break;
-    // }
 
-    // let image_promises = mappable_images.map(ULabel.load_image_promise);
-    // console.log(image_promises);
-
-    
-    // console.log("potatoe")
-    // // set timeout on this
-    // let loaded_imgs = await Promise.all(
-    //     mappable_images.map(load_image_promise)
-    // )
-
-    // Promise.all(image_promises).then((loaded_imgs) => {
-    //     console.log("potatoe2");
-    //     console.log(loaded_imgs);
-    // });
-    // let loaded_imgs = await Promise.all(
-    //     mappable_images.map(ULabel.load_image_promise)
-    // )
-    // console.log("potatoe2");
-    // make_image_canvases(ulabel, loaded_imgs);
-    // console.log("potatoe3");
-    // console.log("potatoe2");
-    // console.log(loaded_imgs);
-    /**
-     * This used to be just after `that.is_init = true;`,
-     * but for testing loading I've hoisted it up here.
-     * 
-     * Some things (like available annotation modes)
-     * display incorrectly as a result.
-     */
     $(`div#${ulabel.config["container_id"]}`).css("display", "block");
     await delay(interval);
 
@@ -299,27 +256,10 @@ async function _staggered_ulabel_init(
     ulabel.toolbox.redraw_update_items(ulabel);
     await delay(interval);
 
-    ULabelLoader.remove_loader_div(); 
-}
+    ULabelLoader.remove_loader_div();
 
-/**
- * ULabel initializer with staggered loading. 
- *
- * @param ulabel ULabel instance to initialize.
- * @param callback User-provided callback to run after initialization.
- */
-export function staggered_ulabel_init(
-    ulabel: ULabel,
-    callback: () => void,
-    interval: number = 250
-) {
-    // Promise.all([
-    //     _staggered_ulabel_init(ulabel, interval),
-        
-    // ]).then(() => {
-    _staggered_ulabel_init(ulabel, interval).then(() => {
-        callback();
-        ULabel.after_init(ulabel);
-        console.log(`Time taken to construct and initialize: ${Date.now() - ulabel.begining_time}`)
-    })
+    // Call the user-provided callback
+    user_callback();
+    ULabel.after_init(ulabel);
+    console.log(`Time taken to construct and initialize: ${Date.now() - ulabel.begining_time}`)
 }
