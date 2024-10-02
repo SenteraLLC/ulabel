@@ -9,7 +9,7 @@ import {
     NONSPATIAL_MODES,
     MODES_3D,
 } from '../build/annotation';
-import { ulabel_init } from '../build/initializer';
+import { staggered_ulabel_init, ulabel_init } from '../build/initializer';
 import { ULabelSubtask } from '../build/subtask';
 import { GeometricUtils } from '../build/geometric_utils';
 import { 
@@ -56,11 +56,6 @@ jQuery.fn.outer_html = function () {
 };
 
 
-function sleep(ms) {
-    var start = new Date().getTime(), expire = start + ms;
-    while (new Date().getTime() < expire) { }
-    return;
-}
   
 
 export class ULabel {
@@ -1089,7 +1084,8 @@ export class ULabel {
     }
 
     init(callback) {
-        ulabel_init(this, callback);
+        // ulabel_init(this, callback);
+        staggered_ulabel_init(this, callback);
     }
 
     version() {
