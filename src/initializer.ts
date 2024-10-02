@@ -90,7 +90,6 @@ export function ulabel_init(
     Promise.all(image_promises).then((loaded_imgs) => {
         make_image_canvases(ulabel, loaded_imgs);
 
-
         // Create the annotation canvases for the resume_from annotations
         ULabel.initialize_annotation_canvases(ulabel);
 
