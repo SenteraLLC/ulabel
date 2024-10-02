@@ -1363,7 +1363,6 @@ export class ULabel {
      */
     get_current_subtask() {
         return this.subtasks[this.get_current_subtask_key()];
-        
     }
 
     readjust_subtask_opacities() {
