@@ -2819,33 +2819,36 @@ export class ULabel {
     }
 
     toggle_erase_mode(mouse_event) {
-        const current_subtask = this.get_current_subtask_key();
+        const current_subtask = this.get_current_subtask();
         // If not in brush mode, turn it on
-        if (!this.subtasks[current_subtask]["state"]["is_in_brush_mode"]) {
+        if (!current_subtask["state"]["is_in_brush_mode"]) {
             this.toggle_brush_mode(mouse_event);
         }
 
         // Toggle erase mode
-        if (this.subtasks[current_subtask]["state"]["is_in_erase_mode"]) {
+        if (current_subtask["state"]["is_in_erase_mode"]) {
             $("#erase-mode").removeClass(BrushToolboxItem.BRUSH_BTN_ACTIVE_CLS);
             // "Erase mode" is a subset of "brush mode"
-            if (this.subtasks[current_subtask]["state"]["is_in_brush_mode"]) {
+            if (current_subtask["state"]["is_in_brush_mode"]) {
                 $("#brush-mode").addClass(BrushToolboxItem.BRUSH_BTN_ACTIVE_CLS);
             }
         } else {
             $("#erase-mode").addClass(BrushToolboxItem.BRUSH_BTN_ACTIVE_CLS);
             $("#brush-mode").removeClass(BrushToolboxItem.BRUSH_BTN_ACTIVE_CLS);
         }
-        this.subtasks[current_subtask]["state"]["is_in_erase_mode"] = !this.subtasks[current_subtask]["state"]["is_in_erase_mode"];
+        current_subtask["state"]["is_in_erase_mode"] = !current_subtask["state"]["is_in_erase_mode"];
 
         // Update brush circle color
         const brush_circle_id = "brush_circle";
         $("#" + brush_circle_id).css({
-            "background-color": this.subtasks[current_subtask]["state"]["is_in_erase_mode"] ? "red" : "white",
+            "background-color": current_subtask["state"]["is_in_erase_mode"] ? "red" : "white",
         });
 
         // When turning off erase mode, also turn off brush mode
-        if (this.subtasks[current_subtask]["state"]["is_in_brush_mode"] && !this.subtasks[current_subtask]["state"]["is_in_erase_mode"]) {
+        if (
+            current_subtask["state"]["is_in_brush_mode"] &&
+            !current_subtask["state"]["is_in_erase_mode"]
+        ) {
             this.toggle_brush_mode();
         }
     }
