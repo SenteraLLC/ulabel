@@ -635,7 +635,7 @@ export class BrushToolboxItem extends ToolboxItem {
 
     public after_init() {
         // Only show BrushToolboxItem if the current mode is polygon
-        if (this.ulabel.get_current_subtask().state["annotation_mode"] === "polygon") {
+        if (this.ulabel.get_current_subtask().state["annotation_mode"] !== "polygon") {
             BrushToolboxItem.hide_brush_toolbox_item()
         }
     }
