@@ -6,6 +6,10 @@ All notable changes to this project will be documented here.
 
 Nothing yet.
 
+## [0.14.0] - Oct 1st, 2024
+- Add `.get_current_subtask_key()` and `.get_current_subtask()` utility methods
+    - Updated almost all internal methods to use these utility methods
+
 ## [0.13.1] - Sept 30th, 2024
 - Remove unecessary and confusing default in global edit dialog
 - Squash `active_annotation` into `edit_candidate` in subtask state
