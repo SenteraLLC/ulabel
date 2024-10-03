@@ -27,8 +27,12 @@ export function is_object_and_not_array(object: unknown): boolean {
  * @param function_name String to be added to the beginning of the log. Useful for stating which function was wrapped.
  * @returns
  */
-export function time_function(original_function: Function, function_name: string = "", log_all: boolean = false): Function {
-    function replacement_method(...args: any[]) {
+export function time_function<T, R>(
+    original_function: (...args: T[]) => R,
+    function_name: string = "",
+    log_all: boolean = false,
+): (...args: T[]) => R {
+    function replacement_method(...args: T[]): R {
         const time_before: number = Date.now();
         const result = original_function(...args);
         const total_time: number = Date.now() - time_before;
@@ -70,7 +74,10 @@ export function get_active_class_id(ulabel: ULabel): number {
  * @param key item key
  * @param value value to store
  */
-export function set_local_storage_item(key: string, value: any): void {
+export function set_local_storage_item(
+    key: string,
+    value: any, // eslint-disable-line @typescript-eslint/no-explicit-any
+): void {
     localStorage.setItem(key, JSON.stringify(value));
 }
 
@@ -80,7 +87,9 @@ export function set_local_storage_item(key: string, value: any): void {
  * @param key item key
  * @returns value stored at key
  */
-export function get_local_storage_item(key: string): any {
+export function get_local_storage_item(
+    key: string,
+): any { // eslint-disable-line @typescript-eslint/no-explicit-any
     const item: string | null = localStorage.getItem(key);
     if (item === null) return null;
     // Try to parse the item
