@@ -1,8 +1,31 @@
 import { ULabelSpatialType, ClassDefinition } from "..";
 import { ULabelAnnotation } from "./annotation";
 
+/**
+ * Action object for undo/redo functionality
+ */
+export type ULabelAction = {
+    act_type: string
+    frame: number
+    /**
+     * Undo/reload payloads vary on the action type
+     * When they are stored, JSON.stringify() is called on the payload
+     */
+    undo_payload: string
+    redo_payload: string
+};
+
+/**
+ * Position information for a dialog
+ */
+export type ULabelDialogPosition = {
+    left: number
+    top: number
+    pin: string
+};
+
 export class ULabelSubtask {
-    public actions: { stream: any[], undone_stack: any[] };
+    public actions: { stream: ULabelAction[], undone_stack: ULabelAction[] };
     public class_ids: number[] = [];
     public class_defs: ClassDefinition[];
     public annotations: {
@@ -34,7 +57,9 @@ export class ULabelSubtask {
         is_in_brush_mode: boolean
         is_in_erase_mode: boolean
         move_candidate: unknown // TODO: figure out what type this is.  Probably ULabelAnnotation idk for sure tho
-        visible_dialogs: {}
+        visible_dialogs: {
+            [key: string]: ULabelDialogPosition
+        }
     };
 
     constructor(
@@ -42,8 +67,15 @@ export class ULabelSubtask {
         public classes: { name: string, color: string, id: number, keybind: string }[],
         public allowed_modes: ULabelSpatialType[],
         public resume_from: ULabelAnnotation[],
-        public task_meta: any,
-        public annotation_meta: any,
+        // TODO (joshua-dean): Is `task_meta` even used?
+        public task_meta: object,
+        /**
+         * TODO (joshua-dean): Is `annotation_meta` even used?
+         * It gets loaded/saved, but I don't see it being used anywhere
+         * If it's specifically for user-defined meta that we shouldn't touch,
+         * Then that should be documented
+         */
+        public annotation_meta: object | string,
         public read_only?: boolean,
         public inactive_opacity: number = 0.4,
     ) {
@@ -53,7 +85,7 @@ export class ULabelSubtask {
         };
     }
 
-    public static from_json(subtask_key: string, subtask_json: any): ULabelSubtask {
+    public static from_json(subtask_key: string, subtask_json: object): ULabelSubtask {
         const ret = new ULabelSubtask(
             subtask_json["display_name"],
             subtask_json["classes"],
