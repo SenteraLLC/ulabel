@@ -519,6 +519,10 @@ export class ModeSelectionToolboxItem extends ToolboxItem {
 export class BrushToolboxItem extends ToolboxItem {
     public html: string;
     private ulabel: ULabel
+    /**
+     * CSS class indicating the brush button is active
+     */
+    public static BRUSH_BTN_ACTIVE_CLS: string = "brush-button-active";
 
     constructor(ulabel: ULabel) {
         super();
@@ -534,7 +538,6 @@ export class BrushToolboxItem extends ToolboxItem {
      * Create the css for this ToolboxItem and append it to the page.
      */
     protected add_styles() {
-        // Define the css
         // Define the css
         const css = `
         #toolbox div.brush button:not(.circle) {
@@ -554,6 +557,10 @@ export class BrushToolboxItem extends ToolboxItem {
         #toolbox div.brush span.brush-mode {
             display: flex;
         }        
+        
+        #toolbox div.brush button.brush-button.${BrushToolboxItem.BRUSH_BTN_ACTIVE_CLS} {
+            background-color: #1c2d4d;
+        }
         `
         // Create an id so this specific style tag can be referenced
         const style_id = "brush-toolbox-item-styles"
@@ -594,7 +601,7 @@ export class BrushToolboxItem extends ToolboxItem {
                 case "brush-dec":
                     this.ulabel.change_brush_size(1/1.1);
                     break
-            }
+            };
         })
     }
     
@@ -628,7 +635,7 @@ export class BrushToolboxItem extends ToolboxItem {
 
     public after_init() {
         // Only show BrushToolboxItem if the current mode is polygon
-        if (this.ulabel.get_current_subtask().state["annotation_mode"] === "polygon") {
+        if (this.ulabel.get_current_subtask().state["annotation_mode"] !== "polygon") {
             BrushToolboxItem.hide_brush_toolbox_item()
         }
     }

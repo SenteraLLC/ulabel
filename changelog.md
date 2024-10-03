@@ -6,6 +6,10 @@ All notable changes to this project will be documented here.
 
 Nothing yet.
 
+## [0.14.1] - Oct 2nd, 2024
+- Add a `brush-button-active` CSS class to the "brush" and "erase" buttons
+that visually depicts when the brush or erase tool is active
+
 ## [0.14.0] - Oct 1st, 2024
 - Add `.get_current_subtask_key()` and `.get_current_subtask()` utility methods
     - Updated almost all internal methods to use these utility methods
