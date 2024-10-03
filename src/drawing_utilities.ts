@@ -81,8 +81,8 @@ function apply_gradient(
 export function get_gradient(
     annotation_object: ULabelAnnotation,
     base_color: string,
-    get_annotation_confidence: Function,
-    maximum_confidence: number) {
+    get_annotation_confidence: (annotation_object: ULabelAnnotation) => number,
+    maximum_confidence: number): string {
     // If the gradient toggle is checked off, then don't apply a gradient
     if ($("#gradient-toggle").prop("checked") === false) return base_color;
 
@@ -114,7 +114,7 @@ export function get_gradient(
  * @param {string} color CSS color keyword or color hex
  * @returns {string} Color hex
  */
-export function color_to_hex(color: string) {
+export function color_to_hex(color: string): string {
     if (color.toLowerCase() in VALID_HTML_COLORS) return VALID_HTML_COLORS[color.toLowerCase()];
     return color;
 }
