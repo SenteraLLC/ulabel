@@ -38,7 +38,16 @@ export class ULabelSubtask {
         active_id: string
         annotation_mode: string
         back_context: CanvasRenderingContext2D
-        edit_candidate: unknown // TODO: figure out what type this is
+        edit_candidate: {
+            annid: string
+            /**
+             * Access string, referring to the point with a spatial payload being edited.
+             * The type varies on the type of spatial payload.
+             */
+            access: string | number | [number, number]
+            distance: number
+            point: [number, number] // Mouse location
+        }
         first_explicit_assignment: boolean
         front_context: CanvasRenderingContext2D
         id_payload: number[] | {

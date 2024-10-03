@@ -534,7 +534,7 @@ export function build_confidence_dialog(ulabel: ULabel) {
             <div id="${global_id}" class="annotation-confidence gedit-target${mcm_ind}">
                 <p class="annotation-confidence-title" style="margin: 0.25em; margin-top: 1em; padding-top: 0.3em; opacity: 1;">Annotation Confidence:</p>
                 <p class="annotation-confidence-value" style="margin: 0.25em; opacity: 1;">
-                ${ulabel.subtasks[ulabel.state["current_subtask"]]["active_annotation"]}
+                    N/A
                 </p>
             </div>
         `);

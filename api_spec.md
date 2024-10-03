@@ -427,6 +427,14 @@ Display utilities are provided for a constructed `ULabel` object.
 
 *(string) => string* -- Changes the background color for the annotation box. Returns the old color.
 
+### `get_current_subtask_key()`
+
+*() => string* -- Returns the key of the current subtask.
+
+### `get_current_subtask()`
+
+*() => object* -- Returns the current subtask object.
+
 ### `get_annotations(subtask)`
 
 *(string) => array* -- Gets the current list of annotations within the provided subtask.

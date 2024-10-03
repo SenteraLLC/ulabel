@@ -243,7 +243,7 @@ export class Toolbox {
     public get_toolbox_tabs(ulabel: ULabel): string {
         let ret: string = "";
         for (const st_key in ulabel.subtasks) {
-            const selected = st_key == ulabel.state["current_subtask"];
+            const selected = st_key == ulabel.get_current_subtask_key();
             const subtask = ulabel.subtasks[st_key];
             const current_tab = new ToolboxTab(
                 [],
@@ -339,14 +339,14 @@ export class ModeSelectionToolboxItem extends ToolboxItem {
         $(document).on("click.ulabel", "a.md-btn", (e) => {
             // Grab the current target and the current subtask
             const target_jq = $(e.currentTarget);
-            const current_subtask = ulabel.state["current_subtask"];
+            const current_subtask = ulabel.get_current_subtask();
 
             // Check if button clicked is already selected, or if creation of a new annotation is in progress
-            if (target_jq.hasClass("sel") || ulabel.subtasks[current_subtask]["state"]["is_in_progress"]) return;
+            if (target_jq.hasClass("sel") || current_subtask["state"]["is_in_progress"]) return;
 
             // Get the new mode and set it to ulabel's current mode
             const new_mode = target_jq.attr("id").split("--")[1];
-            ulabel.subtasks[current_subtask]["state"]["annotation_mode"] = new_mode;
+            current_subtask["state"]["annotation_mode"] = new_mode;
 
             // Show the BrushToolboxItem when polygon mode is selected
             if (new_mode === "polygon") {
@@ -354,11 +354,11 @@ export class ModeSelectionToolboxItem extends ToolboxItem {
             } else {
                 BrushToolboxItem.hide_brush_toolbox_item();
                 // Turn off erase mode if it's on
-                if (ulabel.subtasks[current_subtask]["state"]["is_in_erase_mode"]) {
+                if (current_subtask["state"]["is_in_erase_mode"]) {
                     ulabel.toggle_erase_mode(e);
                 }
                 // Turn off brush mode if it's on
-                if (ulabel.subtasks[current_subtask]["state"]["is_in_brush_mode"]) {
+                if (current_subtask["state"]["is_in_brush_mode"]) {
                     ulabel.toggle_brush_mode(e);
                 }
             }
@@ -377,8 +377,7 @@ export class ModeSelectionToolboxItem extends ToolboxItem {
 
         $(document).on("keypress.ulabel", (e) => {
             // If creation of a new annotation is in progress, don't change the mode
-            const current_subtask = ulabel.state["current_subtask"];
-            if (ulabel.subtasks[current_subtask]["state"]["is_in_progress"]) return;
+            if (ulabel.get_current_subtask()["state"]["is_in_progress"]) return;
 
             // Check if the correct key was pressed
             if (e.key == ulabel.config.toggle_annotation_mode_keybind) {
@@ -519,6 +518,10 @@ export class ModeSelectionToolboxItem extends ToolboxItem {
 export class BrushToolboxItem extends ToolboxItem {
     public html: string;
     private ulabel: ULabel;
+    /**
+     * CSS class indicating the brush button is active
+     */
+    public static BRUSH_BTN_ACTIVE_CLS: string = "brush-button-active";
 
     constructor(ulabel: ULabel) {
         super();
@@ -534,7 +537,6 @@ export class BrushToolboxItem extends ToolboxItem {
      * Create the css for this ToolboxItem and append it to the page.
      */
     protected add_styles() {
-        // Define the css
         // Define the css
         const css = `
         #toolbox div.brush button:not(.circle) {
@@ -554,6 +556,10 @@ export class BrushToolboxItem extends ToolboxItem {
         #toolbox div.brush span.brush-mode {
             display: flex;
         }        
+        
+        #toolbox div.brush button.brush-button.${BrushToolboxItem.BRUSH_BTN_ACTIVE_CLS} {
+            background-color: #1c2d4d;
+        }
         `;
         // Create an id so this specific style tag can be referenced
         const style_id = "brush-toolbox-item-styles";
@@ -594,7 +600,7 @@ export class BrushToolboxItem extends ToolboxItem {
                 case "brush-dec":
                     this.ulabel.change_brush_size(1 / 1.1);
                     break;
-            }
+            };
         });
     }
 
@@ -628,7 +634,7 @@ export class BrushToolboxItem extends ToolboxItem {
 
     public after_init() {
         // Only show BrushToolboxItem if the current mode is polygon
-        if (this.ulabel.subtasks[this.ulabel.state["current_subtask"]].state["annotation_mode"] !== "polygon") {
+        if (this.ulabel.get_current_subtask().state["annotation_mode"] !== "polygon") {
             BrushToolboxItem.hide_brush_toolbox_item();
         }
     }
@@ -1133,7 +1139,7 @@ export class ClassCounterToolboxItem extends ToolboxItem {
 
     public redraw_update(ulabel: ULabel) {
         this.update_toolbox_counter(
-            ulabel.subtasks[ulabel.state["current_subtask"]],
+            ulabel.get_current_subtask(),
         );
         $("#" + ulabel.config["toolbox_id"] + " div.toolbox-class-counter").html(this.inner_HTML);
     }
@@ -1260,8 +1266,8 @@ export class AnnotationResizeItem extends ToolboxItem {
     private add_event_listeners() {
         $(document).on("click.ulabel", ".annotation-resize-button", (event) => {
             // Get the current subtask
-            const current_subtask_key = this.ulabel.state["current_subtask"];
-            const current_subtask = this.ulabel.subtasks[current_subtask_key];
+            const current_subtask_key = this.ulabel.get_current_subtask_key();
+            const current_subtask = this.ulabel.get_current_subtask();
 
             // Get the clicked button
             const button = $(event.currentTarget);
@@ -1277,8 +1283,7 @@ export class AnnotationResizeItem extends ToolboxItem {
 
         $(document).on("keydown.ulabel", (event) => {
             // Get the current subtask
-            const current_subtask_key = this.ulabel.state["current_subtask"];
-            const current_subtask = this.ulabel.subtasks[current_subtask_key];
+            const current_subtask = this.ulabel.get_current_subtask();
 
             switch (event.key) {
                 case this.keybind_configuration.annotation_vanish.toUpperCase():

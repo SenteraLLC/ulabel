@@ -5,6 +5,20 @@ All notable changes to this project will be documented here.
 ## [unreleased]
 
 Nothing yet.
+
+## [0.14.1] - Oct 2nd, 2024
+- Add a `brush-button-active` CSS class to the "brush" and "erase" buttons
+that visually depicts when the brush or erase tool is active
+
+## [0.14.0] - Oct 1st, 2024
+- Add `.get_current_subtask_key()` and `.get_current_subtask()` utility methods
+    - Updated almost all internal methods to use these utility methods
+
+## [0.13.1] - Sept 30th, 2024
+- Remove unecessary and confusing default in global edit dialog
+- Squash `active_annotation` into `edit_candidate` in subtask state
+- Fix missing fields in `ULabelSubtask.state.edit_candidate`
+
 ## [0.13.0] - Sept 26th, 2024
 - Fix bug where the `filter_annotations_on_load = true` option would not work as expected. 
   - The `keypoint_slider_default_value` option was not being properly multiplied by 100 internally.
