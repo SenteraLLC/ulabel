@@ -16,6 +16,7 @@ import {
     SubmitButtons,
     FilterPointDistanceFromRow,
     BrushToolboxItem,
+    ToolboxItem,
 } from "./toolbox";
 import { is_object_and_not_array } from "./utilities";
 
@@ -96,7 +97,7 @@ export class Configuration {
 
     public subtasks: object = null;
 
-    public toolbox_map = new Map<AllowedToolboxItem, any>([
+    public toolbox_map = new Map<AllowedToolboxItem, new (..._) => ToolboxItem>([
         [AllowedToolboxItem.ModeSelect, ModeSelectionToolboxItem],
         [AllowedToolboxItem.ZoomPan, ZoomPanToolboxItem],
         [AllowedToolboxItem.AnnotationResize, AnnotationResizeItem],
@@ -170,6 +171,8 @@ export class Configuration {
         this.modify_config(...kwargs);
     }
 
+    // TODO (joshua-dean): Can this any be narrowed?
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     public modify_config(...kwargs: { [key: string]: any }[]) {
         // Loop through every elements in kwargs
         for (let idx = 0; idx < kwargs.length; idx++) {
