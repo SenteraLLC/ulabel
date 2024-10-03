@@ -192,7 +192,7 @@ export function prep_window_html(ulabel: ULabel, toolbox_item_order: unknown[] =
     ulabel.toolbox = toolbox;
 
     // Check an array to see if it contains a ZoomPanToolboxItem
-    const contains_zoom_pan: Function = function (array: unknown[]) {
+    const contains_zoom_pan = function (array: unknown[]) {
         // check if the array is empty
         if (array.length == 0) return false;
 
@@ -208,7 +208,7 @@ export function prep_window_html(ulabel: ULabel, toolbox_item_order: unknown[] =
     };
 
     // Check if initial_crop exists and has the appropriate properties
-    const initial_crop_is_valid: Function = function (initial_crop) {
+    const initial_crop_is_valid = function (initial_crop) {
         // If initial_crop doesn't exist, return false
         if (initial_crop == null) return false;
 
@@ -525,6 +525,8 @@ export function build_confidence_dialog(ulabel: ULabel) {
         let id_edit: string = "";
         let mcm_ind: string = "";
         if (!ulabel.subtasks[stkey]["single_class_mode"]) {
+            // TODO (joshua-dean): Is `id_edit` actually necessary or can we yoink it?
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
             id_edit = `--><a href="#" class="reid_suggestion global_sub_suggestion gedit-target"></a><!--`;
             mcm_ind = " mcm";
         }
@@ -558,7 +560,7 @@ export function build_confidence_dialog(ulabel: ULabel) {
 export class SliderHandler {
     default_value: string;
     id: string;
-    slider_event: Function;
+    slider_event: (slider_val: number) => void;
     class?: string;
     label_units?: string = "";
     main_label: string;
