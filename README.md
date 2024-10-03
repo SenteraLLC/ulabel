@@ -132,6 +132,15 @@ The repository ships with the built `dist/ulabel.js` file. This file is not to b
 npm run build
 ```
 
+### Linting and Formatting
+
+Linting and formatting are performed by [ESLint](https://eslint.org/)
+with the following plugins:
+- [typescript-eslint](https://typescript-eslint.io/)
+- [ESLint Stylistic](https://eslint.style/)
+
+Git hooks are run by [husky](https://typicode.github.io/husky/).
+
 ## Attribution
 
 The three demo images were downloaded from the [CityScapes dataset](https://www.cityscapes-dataset.com/). In particular, they are sampled from the first few frames of the `leftImg8bit_demoVideo`.
