@@ -68,7 +68,7 @@ export type ClassDefinition = {
 export type SliderInfo = {
     default_value: string // Whole number
     id: string
-    slider_event: Function
+    slider_event: (slider_val: number) => void
 
     class?: string
     label_units?: string
@@ -103,7 +103,7 @@ export type FilterDistanceConfig = {
 
 export type ULabelSubmitButton = {
     name: string
-    hook: Function
+    hook: (submit_data: ULabelSubmitData) => void
     color?: string
     set_saved?: boolean
     size_factor?: number
@@ -114,7 +114,7 @@ export type ULabelAnnotations = { [key: string]: ULabelAnnotation[] };
 
 export type ULabelSubmitData = {
     annotations: ULabelAnnotations
-    task_meta: any
+    task_meta: object
 };
 export type ULabelSubmitHandler = (submitData: ULabelSubmitData) => void;
 
@@ -164,7 +164,22 @@ export type ULabelSubtasks = { [key: string]: ULabelSubtask };
 
 export class ULabel {
     subtasks: ULabelSubtask[];
-    state: any;
+    state: {
+        // Viewer state
+        zoom_val: number
+        last_move: MouseEvent
+        current_frame: number
+        // Global annotation state
+        current_subtask: string
+        last_brush_stroke: [number, number]
+        line_size: number
+        size_mode: string // TODO (joshua-dean): use enum
+        // Render state
+        // TODO (joshua-dean): this is never assigned, is it used?
+        demo_canvas_context: CanvasRenderingContext2D
+        edited: boolean
+    };
+
     config: Configuration;
     toolbox: Toolbox;
     color_info: { [key: number]: string };
@@ -201,21 +216,33 @@ export class ULabel {
     public get_annotations(subtask: ULabelSubtask): ULabelAnnotation[];
     public set_annotations(annotations: ULabelAnnotation[], subtask: ULabelSubtask);
     public set_saved(saved: boolean);
-    public redraw_all_annotations(subtask?: any, offset?: any, spatial_only?: any);
+    public redraw_all_annotations(
+        subtask?: string, // TODO (joshua-dean): THIS IS SUBTASK KEY, NAME PROPERLY
+        offset?: number,
+        spatial_only?: boolean,
+    );
     public redraw_multiple_spatial_annotations(annotation_ids: string[], subtask?: string, offset?: number);
-    public show_annotation_mode(target_jq: JQuery<any>);
+    public show_annotation_mode(
+        target_jq?: JQuery<HTMLElement>, // TODO (joshua-dean): validate this type
+    );
     public raise_error(message: string, level?: number);
     public rezoom(): void;
     public update_frame(delta?: number, new_frame?: number): void;
-    public handle_id_dialog_hover(event: any): void;
-    public toggle_erase_mode(mouse_event: any): void;
-    public toggle_brush_mode(mouse_event: any): void;
+    public handle_id_dialog_hover(
+        mouse_event: MouseEvent,
+        pos_evt?: {
+            class_ind: number
+            dist_prop: number
+        },
+    ): void;
+    public toggle_erase_mode(mouse_event: MouseEvent): void;
+    public toggle_brush_mode(mouse_event: MouseEvent): void;
     public toggle_delete_class_id_in_toolbox(): void;
     public change_brush_size(scale_factor: number): void;
     public remove_listeners(): void;
     static get_allowed_toolbox_item_enum(): AllowedToolboxItem;
-    static process_classes(ulabel_obj: any, arg1: string, subtask_obj: any);
-    static build_id_dialogs(ulabel_obj: any);
+    static process_classes(ulabel_obj: ULabel, arg1: string, subtask_obj: ULabelSubtask);
+    static build_id_dialogs(ulabel_obj: ULabel);
 }
 
 declare global {
