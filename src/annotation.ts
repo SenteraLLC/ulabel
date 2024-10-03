@@ -14,6 +14,7 @@ export const MODES_3D = ["global", "bbox3"];
 export const NONSPATIAL_MODES = ["whole-image", "global"];
 
 export type PolygonSpatialData = {
+    // TODO (joshua-dean): validate this type
     spatial_payload: [number[]][]
     spatial_payload_holes: boolean[]
     spatial_payload_child_indices: number[][]
@@ -23,7 +24,7 @@ export type PolygonSpatialData = {
 export class ULabelAnnotation {
     constructor(
         // Required properties
-        public annotation_meta: any = null,
+        public annotation_meta: object = null,
         public deprecated: boolean = false,
         public deprecated_by: DeprecatedBy = { human: false },
         public parent_id: string = null,
@@ -40,6 +41,8 @@ export class ULabelAnnotation {
         public id?: string,
         public canvas_id?: string,
         // Polygons use complex spatial payloads
+        // TODO (joshua-dean): narrow this disaster
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         public spatial_payload?: any,
         public spatial_type?: ULabelSpatialType,
         // Polygons track if each layer is a hole or fill
@@ -73,6 +76,8 @@ export class ULabelAnnotation {
                     conf_not_found_j = j;
                 }
             } else {
+                // TODO (joshua-dean): Why is this here? It doesn't do anything
+                // eslint-disable-next-line no-self-assign
                 this.classification_payloads[j].confidence = this.classification_payloads[j].confidence;
                 remaining_confidence -= this.classification_payloads[j]["confidence"];
             }
@@ -105,7 +110,7 @@ export class ULabelAnnotation {
             }
             // Check that spatial_payload[0][0] is an array and not a number
             if (!Array.isArray(this.spatial_payload[0][0]) && typeof this.spatial_payload[0][0] === "number") {
-                this.spatial_payload = [this.spatial_payload];
+                this.spatial_payload = <[number[]][]>[this.spatial_payload];
             }
 
             // Default fields if not provided
@@ -133,7 +138,10 @@ export class ULabelAnnotation {
                 if (layer.length === 3) {
                     // If the last point is NOT the same as the first, add the first point to the end
                     if (layer[0][0] !== layer[2][0] || layer[0][1] !== layer[2][1]) {
-                        layer.push([layer[0][0], layer[0][1]]);
+                        layer.push([
+                            layer[0][0],
+                            layer[0][1],
+                        ]);
                     }
                 }
                 if (layer.length < 4) {
@@ -165,7 +173,7 @@ export class ULabelAnnotation {
         return true;
     }
 
-    public static from_json(json_block: any): ULabelAnnotation {
+    public static from_json(json_block: object): ULabelAnnotation {
         const ret = new ULabelAnnotation();
         Object.assign(ret, json_block);
         // Convert deprecated spatial payloads if necessary
@@ -183,13 +191,16 @@ export class ULabelAnnotation {
      * @param {boolean} deep_copy whether to return a deep copy
      * @returns {PolygonSpatialData} polygon spatial data
      */
-    public static get_polygon_spatial_data(annotation: ULabelAnnotation, deep_copy: boolean = false): PolygonSpatialData {
+    public static get_polygon_spatial_data(
+        annotation: ULabelAnnotation,
+        deep_copy: boolean = false,
+    ): PolygonSpatialData {
         // Check if the annotation is a polygon
         if (annotation.spatial_type !== "polygon") {
             throw new Error("Annotation is not a polygon");
         }
         // Return the data, initializing the arrays if they are undefined
-        const ret = {
+        const ret: PolygonSpatialData = {
             spatial_payload: annotation.spatial_payload,
             containing_box: annotation.containing_box ? annotation.containing_box : null,
             spatial_payload_holes: annotation.spatial_payload_holes ? annotation.spatial_payload_holes : [false],
