@@ -3,10 +3,9 @@ import eslint from "@eslint/js";
 import stylistic from "@stylistic/eslint-plugin";
 import tseslint from "typescript-eslint";
 
-
 export default [
     {
-        // Global ignores 
+        // Global ignores
         // https://eslint.org/docs/latest/use/configure/configuration-files#configuration-objects
         ignores: [
             "node_modules",

@@ -1,7 +1,7 @@
 // z-indices for canvases
 const FRONT_Z_INDEX = 100;
 const BACK_Z_INDEX = 75;
-const DEMO_ANNOTATION = {"id":"7c64913a-9d8c-475a-af1a-658944e37c31","new":true,"parent_id":null,"created_by":"TestUser","created_at":"2020-12-21T02:41:47.304Z","deprecated":false,"spatial_type":"contour","spatial_payload":[[4,25],[4,25],[4,24],[4,23],[4,22],[4,22],[5,22],[5,21],[5,20],[6,20],[6,19],[7,19],[7,18],[8,18],[8,18],[10,18],[11,18],[11,17],[12,17],[12,16],[12,16],[13,16],[14,15],[16,14],[16,14],[17,14],[18,14],[18,13],[19,13],[20,13],[20,13],[21,13],[22,13],[23,13],[24,13],[24,13],[25,13],[26,13],[27,13],[28,13],[28,13],[29,13],[30,13],[31,13],[32,13],[34,13],[36,14],[36,14],[37,15],[40,15],[40,16],[41,16],[42,17],[43,17],[44,18],[44,18],[45,18],[46,18],[47,18],[47,18],[48,18],[48,18],[49,19],[50,20],[52,20],[52,20],[53,21],[54,21],[55,21],[56,21],[57,21],[58,22],[59,22],[60,22],[60,22],[61,22],[63,22],[64,22],[64,22],[65,22],[66,22],[67,22],[68,22],[68,21],[69,21],[70,20],[70,19],[71,19],[71,18],[72,18],[72,18],[72,18],[73,18],[75,17],[75,16],[76,16],[76,16],[76,15],[77,14],[78,14],[79,14],[79,13],[79,12],[80,12],[81,12],[82,11],[83,11],[84,10],[85,10],[86,10],[87,10],[88,10],[88,10],[89,10],[90,10],[91,10],[92,10],[92,10],[93,10],[94,10],[94,10],[95,10],[96,10],[96,11],[96,11],[98,11],[98,12],[99,12],[100,13],[100,14],[101,14],[101,15],[102,15],[104,16],[104,17],[104,18],[105,18],[106,18],[106,18],[107,18],[107,19],[107,20],[108,20],[108,21],[108,21],[108,22],[109,22],[109,22],[109,23]],"classification_payloads": null,"annotation_meta":"is_assigned_to_each_annotation"};
+const DEMO_ANNOTATION = { id: "7c64913a-9d8c-475a-af1a-658944e37c31", new: true, parent_id: null, created_by: "TestUser", created_at: "2020-12-21T02:41:47.304Z", deprecated: false, spatial_type: "contour", spatial_payload: [[4, 25], [4, 25], [4, 24], [4, 23], [4, 22], [4, 22], [5, 22], [5, 21], [5, 20], [6, 20], [6, 19], [7, 19], [7, 18], [8, 18], [8, 18], [10, 18], [11, 18], [11, 17], [12, 17], [12, 16], [12, 16], [13, 16], [14, 15], [16, 14], [16, 14], [17, 14], [18, 14], [18, 13], [19, 13], [20, 13], [20, 13], [21, 13], [22, 13], [23, 13], [24, 13], [24, 13], [25, 13], [26, 13], [27, 13], [28, 13], [28, 13], [29, 13], [30, 13], [31, 13], [32, 13], [34, 13], [36, 14], [36, 14], [37, 15], [40, 15], [40, 16], [41, 16], [42, 17], [43, 17], [44, 18], [44, 18], [45, 18], [46, 18], [47, 18], [47, 18], [48, 18], [48, 18], [49, 19], [50, 20], [52, 20], [52, 20], [53, 21], [54, 21], [55, 21], [56, 21], [57, 21], [58, 22], [59, 22], [60, 22], [60, 22], [61, 22], [63, 22], [64, 22], [64, 22], [65, 22], [66, 22], [67, 22], [68, 22], [68, 21], [69, 21], [70, 20], [70, 19], [71, 19], [71, 18], [72, 18], [72, 18], [72, 18], [73, 18], [75, 17], [75, 16], [76, 16], [76, 16], [76, 15], [77, 14], [78, 14], [79, 14], [79, 13], [79, 12], [80, 12], [81, 12], [82, 11], [83, 11], [84, 10], [85, 10], [86, 10], [87, 10], [88, 10], [88, 10], [89, 10], [90, 10], [91, 10], [92, 10], [92, 10], [93, 10], [94, 10], [94, 10], [95, 10], [96, 10], [96, 11], [96, 11], [98, 11], [98, 12], [99, 12], [100, 13], [100, 14], [101, 14], [101, 15], [102, 15], [104, 16], [104, 17], [104, 18], [105, 18], [106, 18], [106, 18], [107, 18], [107, 19], [107, 20], [108, 20], [108, 21], [108, 21], [108, 22], [109, 22], [109, 22], [109, 23]], classification_payloads: null, annotation_meta: "is_assigned_to_each_annotation" };
 const BBOX_SVG = `
 <svg
    xmlns:dc="http://purl.org/dc/elements/1.1/"
@@ -1463,8 +1463,8 @@ const BBOX3_SVG = `
 `;
 
 let get_init_style = (prntid) => {
-   const NONSP_SZ = 400;
-   return `
+    const NONSP_SZ = 400;
+    return `
 div#${prntid} {
    display: none;
 }
@@ -1556,7 +1556,7 @@ div.front_dialogs {
 div#${prntid} div.frame_annotation_dialog div.row_container {
    position: relative;
    width: ${NONSP_SZ}px;
-   left: ${60-NONSP_SZ}px;
+   left: ${60 - NONSP_SZ}px;
    overflow: visible;
    transition: left 0.3s;
 }
@@ -1647,7 +1647,7 @@ div#${prntid} div.frame_annotation_dialog div.fad_row div.fad_buttons {
    display: inline-block;
    vertical-align: top;
    min-height: 60px;
-   width: ${NONSP_SZ-60}px;
+   width: ${NONSP_SZ - 60}px;
 }
 div#${prntid} div.frame_annotation_dialog div.fad_row div.fad_type_icon {
    display: inline-block;
@@ -1667,7 +1667,7 @@ div#${prntid} div.frame_annotation_dialog div.fad_row div.fad_buttons div.fad_in
    vertical-align: top;
 }
 div#${prntid} div.frame_annotation_dialog div.fad_row div.fad_buttons div.fad_inp_container.text {
-   width: ${NONSP_SZ-180}px;
+   width: ${NONSP_SZ - 180}px;
    margin: 0;
    border: none;
    padding: none;
@@ -2205,20 +2205,29 @@ div#${prntid} .submit-button {
     }
 }
 `;
-}
+};
 
 const BUTTON_LOADER_HTML = `<div class="lds-dual-ring"></div>`;
 
 // TODO more of these
 const COLORS = [
-   "orange", "crimson", "dodgerblue", "midnightblue", "seagreen", "tan", "blueviolet", "chocolate",
-   "darksalmon", "deeppink", "fuchsia"
+    "orange",
+    "crimson",
+    "dodgerblue",
+    "midnightblue",
+    "seagreen",
+    "tan",
+    "blueviolet",
+    "chocolate",
+    "darksalmon",
+    "deeppink",
+    "fuchsia",
 ];
 
-export { 
-   BBOX_SVG, DELETE_BBOX_SVG, BBOX3_SVG, POINT_SVG, POLYGON_SVG, DELETE_POLYGON_SVG, CONTOUR_SVG, TBAR_SVG, POLYLINE_SVG, WHOLE_IMAGE_SVG, GLOBAL_SVG, 
-   DEMO_ANNOTATION, 
-   get_init_style, 
-   COLORS, BUTTON_LOADER_HTML,
-   FRONT_Z_INDEX, BACK_Z_INDEX, 
+export {
+    BBOX_SVG, DELETE_BBOX_SVG, BBOX3_SVG, POINT_SVG, POLYGON_SVG, DELETE_POLYGON_SVG, CONTOUR_SVG, TBAR_SVG, POLYLINE_SVG, WHOLE_IMAGE_SVG, GLOBAL_SVG,
+    DEMO_ANNOTATION,
+    get_init_style,
+    COLORS, BUTTON_LOADER_HTML,
+    FRONT_Z_INDEX, BACK_Z_INDEX,
 };

@@ -1,37 +1,37 @@
-import { 
-    DeprecatedBy, 
+import {
+    DeprecatedBy,
     DistanceFromPolylineClasses,
-    ULabelClassificationPayload, 
-    ULabelContainingBox, 
-    ULabelSpatialType 
+    ULabelClassificationPayload,
+    ULabelContainingBox,
+    ULabelSpatialType,
 } from "..";
 import { GeometricUtils } from "./geometric_utils";
 
 // Modes used to draw an area in the which to delete all annotations
-export const DELETE_MODES = ["delete_polygon", "delete_bbox"]
+export const DELETE_MODES = ["delete_polygon", "delete_bbox"];
 export const DELETE_CLASS_ID = -1;
 export const MODES_3D = ["global", "bbox3"];
 export const NONSPATIAL_MODES = ["whole-image", "global"];
 
 export type PolygonSpatialData = {
-    spatial_payload: [number[]][],
-    spatial_payload_holes: boolean[],
-    spatial_payload_child_indices: number[][],
-    containing_box: ULabelContainingBox,
-}
+    spatial_payload: [number[]][]
+    spatial_payload_holes: boolean[]
+    spatial_payload_child_indices: number[][]
+    containing_box: ULabelContainingBox
+};
 
 export class ULabelAnnotation {
     constructor(
         // Required properties
         public annotation_meta: any = null,
         public deprecated: boolean = false,
-        public deprecated_by: DeprecatedBy = {"human": false},
+        public deprecated_by: DeprecatedBy = { human: false },
         public parent_id: string = null,
         public text_payload: string = "",
 
         // Optional properties
         public subtask_key?: string,
-        public classification_payloads?:ULabelClassificationPayload[],
+        public classification_payloads?: ULabelClassificationPayload[],
         public containing_box?: ULabelContainingBox,
         public created_by?: string,
         public distance_from?: DistanceFromPolylineClasses,
@@ -49,7 +49,7 @@ export class ULabelAnnotation {
     ) {}
 
     public ensure_compatible_classification_payloads(ulabel_class_ids: [number]) {
-        let found_ids = [];
+        const found_ids = [];
         let j: number;
         let conf_not_found_j = null;
         let remaining_confidence = 1.0;
@@ -59,30 +59,27 @@ export class ULabelAnnotation {
             return payload.class_id !== DELETE_CLASS_ID;
         });
 
-        for (j = 0; j < this.classification_payloads.length;j++) {
-            let this_id = this.classification_payloads[j].class_id;
+        for (j = 0; j < this.classification_payloads.length; j++) {
+            const this_id = this.classification_payloads[j].class_id;
             if (!ulabel_class_ids.includes(this_id)) {
                 alert(`Found class id ${this_id} in "resume_from" data but not in "allowed_classes"`);
                 throw `Found class id ${this_id} in "resume_from" data but not in "allowed_classes"`;
             }
             found_ids.push(this_id);
             if (!("confidence" in this.classification_payloads[j])) {
-                if(conf_not_found_j !== null) {
-                    throw("More than one classification payload was supplied without confidence for a single annotation.");
-                }
-                else {
+                if (conf_not_found_j !== null) {
+                    throw ("More than one classification payload was supplied without confidence for a single annotation.");
+                } else {
                     conf_not_found_j = j;
                 }
-            }
-            else {
+            } else {
                 this.classification_payloads[j].confidence = this.classification_payloads[j].confidence;
                 remaining_confidence -= this.classification_payloads[j]["confidence"];
             }
-
         }
         if (conf_not_found_j !== null) {
             if (remaining_confidence < 0) {
-                throw("Supplied total confidence was greater than 100%");
+                throw ("Supplied total confidence was greater than 100%");
             }
             this.classification_payloads[conf_not_found_j].confidence = remaining_confidence;
         }
@@ -90,10 +87,10 @@ export class ULabelAnnotation {
             if (!(found_ids.includes(ulabel_class_ids[j]))) {
                 this.classification_payloads.push(
                     {
-                        "class_id": ulabel_class_ids[j],
-                        "confidence": 0.0
-                    }
-                )
+                        class_id: ulabel_class_ids[j],
+                        confidence: 0.0,
+                    },
+                );
             }
         }
     }
@@ -111,7 +108,7 @@ export class ULabelAnnotation {
                 this.spatial_payload = [this.spatial_payload];
             }
 
-            // Default fields if not provided 
+            // Default fields if not provided
             if (
                 this.spatial_payload_holes === undefined ||
                 this.spatial_payload_child_indices === undefined
@@ -121,10 +118,10 @@ export class ULabelAnnotation {
                 this.spatial_payload_child_indices = [[]];
             }
 
-            let indices_to_remove = [];
+            const indices_to_remove = [];
             // Simplify each layer of the polygon
             for (let i = 0; i < this.spatial_payload.length; i++) {
-                let layer = this.spatial_payload[i];
+                const layer = this.spatial_payload[i];
                 // Ensure that the layer is an array
                 if (!Array.isArray(layer[0])) {
                     console.log(`Layer ${i} points of id ${this.id} are not arrays. Removing layer.`);
@@ -140,10 +137,10 @@ export class ULabelAnnotation {
                     }
                 }
                 if (layer.length < 4) {
-                    console.log(`Layer ${i} of id ${this.id} has fewer than 4 points. Removing layer.`)
+                    console.log(`Layer ${i} of id ${this.id} has fewer than 4 points. Removing layer.`);
                     indices_to_remove.push(i);
                     continue;
-                } 
+                }
 
                 // If the last point is NOT the same as the first, add the first point to the end
                 if (layer[0][0] !== layer[layer.length - 1][0] || layer[0][1] !== layer[layer.length - 1][1]) {
@@ -159,7 +156,7 @@ export class ULabelAnnotation {
             }
 
             // Remove layers that are too small
-            for (let idx of indices_to_remove) {
+            for (const idx of indices_to_remove) {
                 this.spatial_payload.splice(idx, 1);
             }
         }
@@ -169,7 +166,7 @@ export class ULabelAnnotation {
     }
 
     public static from_json(json_block: any): ULabelAnnotation {
-        let ret = new ULabelAnnotation();
+        const ret = new ULabelAnnotation();
         Object.assign(ret, json_block);
         // Convert deprecated spatial payloads if necessary
         if (ret.ensure_compatible_spatial_payloads()) {
@@ -178,10 +175,10 @@ export class ULabelAnnotation {
         // Return null if the spatial payload is not compatible
         return null;
     }
-    
+
     /**
      * Get the polygon spatial data from an annotation.
-     * 
+     *
      * @param {ULabelAnnotation} annotation  polygon annotation
      * @param {boolean} deep_copy whether to return a deep copy
      * @returns {PolygonSpatialData} polygon spatial data
@@ -197,7 +194,7 @@ export class ULabelAnnotation {
             containing_box: annotation.containing_box ? annotation.containing_box : null,
             spatial_payload_holes: annotation.spatial_payload_holes ? annotation.spatial_payload_holes : [false],
             spatial_payload_child_indices: annotation.spatial_payload_child_indices ? annotation.spatial_payload_child_indices : [[]],
-        }
+        };
         if (deep_copy) {
             return JSON.parse(JSON.stringify(ret));
         } else {
