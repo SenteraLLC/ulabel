@@ -59,7 +59,11 @@ export function get_annotation_class_id(annotation: ULabelAnnotation): string {
  * @param deprecated boolean
  * @param deprecated_by_key
  */
-export function mark_deprecated(annotation: any, deprecated: boolean, deprecated_by_key: ValidDeprecatedBy = "human") {
+export function mark_deprecated(
+    annotation: ULabelAnnotation,
+    deprecated: boolean,
+    deprecated_by_key: ValidDeprecatedBy = "human",
+) {
     if (annotation.deprecated_by === undefined) {
         annotation.deprecated_by = <DeprecatedBy> {};
     }
