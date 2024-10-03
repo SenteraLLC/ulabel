@@ -68,7 +68,8 @@ export type ClassDefinition = {
 export type SliderInfo = {
     default_value: string // Whole number
     id: string
-    slider_event: (slider_val: number) => void
+    // TODO (joshua-dean): decide if this type can be narrowed
+    slider_event: (slider_val: number | string) => void
 
     class?: string
     label_units?: string
@@ -167,7 +168,10 @@ export class ULabel {
     state: {
         // Viewer state
         zoom_val: number
-        last_move: MouseEvent
+        // TODO (joshua-dean): See if this can be narrowed.
+        // This exists in a few other spots that are technically
+        // just mouse events as well
+        last_move: JQuery.TriggeredEvent
         current_frame: number
         // Global annotation state
         current_subtask: string
@@ -229,14 +233,14 @@ export class ULabel {
     public rezoom(): void;
     public update_frame(delta?: number, new_frame?: number): void;
     public handle_id_dialog_hover(
-        mouse_event: MouseEvent,
+        mouse_event: JQuery.TriggeredEvent,
         pos_evt?: {
             class_ind: number
             dist_prop: number
         },
     ): void;
-    public toggle_erase_mode(mouse_event: MouseEvent): void;
-    public toggle_brush_mode(mouse_event: MouseEvent): void;
+    public toggle_erase_mode(mouse_event: JQuery.TriggeredEvent): void;
+    public toggle_brush_mode(mouse_event: JQuery.TriggeredEvent): void;
     public toggle_delete_class_id_in_toolbox(): void;
     public change_brush_size(scale_factor: number): void;
     public remove_listeners(): void;

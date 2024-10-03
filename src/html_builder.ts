@@ -560,7 +560,7 @@ export function build_confidence_dialog(ulabel: ULabel) {
 export class SliderHandler {
     default_value: string;
     id: string;
-    slider_event: (slider_val: number) => void;
+    slider_event: (slider_val: number | string) => void;
     class?: string;
     label_units?: string = "";
     main_label: string;
