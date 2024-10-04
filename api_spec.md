@@ -116,7 +116,11 @@ If either more than one submit button or more button customization is desired, t
         // If submit is unsuccessful and annotations edits should not be treated as "saved", return false
     },
     color?: "Arbitrary Color" // e.g. "#639", "#3AB890", "rgb(200, 0, 170)", "hsl(0, 100%, 50%)"
-    set_saved: boolean // If true, will call ulabel.set_saved(true) before the hook is called, thus avoiding the "unsaved changes" warning
+    /**
+     * If true, will call ulabel.set_saved(true) before the hook is called,
+     * thus avoid the "unsaved changes" warning. Defaults to false.
+     */
+    set_saved?: boolean 
     size_factor?: number // Transform the default button size by this factor.
     row_number?: number // The row number of the button in the toolbox
     // Buttons with lower row numbers will be higher in the toolbox

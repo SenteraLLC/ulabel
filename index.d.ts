@@ -110,7 +110,7 @@ export type ULabelSubmitButton = {
      * Whether or not the button should call `set_saved`
      * on the ULabel object when clicked. Defaults to false.
      */
-    set_saved: boolean;
+    set_saved?: boolean;
     size_factor?: number;
     row_number?: number;
 };
