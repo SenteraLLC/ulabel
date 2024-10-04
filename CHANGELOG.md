@@ -6,6 +6,9 @@ All notable changes to this project will be documented here.
 
 Nothing yet.
 
+## [0.15.1] - Oct 4th, 2024
+- Change deprecation cases to use dedicated `mark_deprecated` function
+
 ## [0.15.0] - Oct 3rd, 2024
 - Added [ESLint](https://eslint.org/) to enforce code quality and consistency
 
