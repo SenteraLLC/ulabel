@@ -3106,8 +3106,7 @@ export class ULabel {
             // Get the delete annotation
             delete_annotation = this.get_current_subtask()["annotations"]["access"][delete_annid];
             delete_polygon = delete_annotation["spatial_payload"];
-            // Deprecate the delete annotation
-            delete_annotation["deprecated"] = true;
+            mark_deprecated(delete_annotation, true);
         }
 
         // Get the list of annotations
@@ -3138,7 +3137,7 @@ export class ULabel {
                 // Check if the point is within the delete polygon
                 case "point":
                     if (GeometricUtils.point_is_within_simple_polygon(annotation["spatial_payload"][0], delete_polygon)) {
-                        annotation["deprecated"] = true;
+                        mark_deprecated(annotation, true);
                         deprecated_ids.push(annid);
                         needs_redraw = true;
                     }
@@ -3168,7 +3167,7 @@ export class ULabel {
                             break;
                     }
                     if (new_spatial_payload.length === 0) {
-                        annotation["deprecated"] = true;
+                        mark_deprecated(annotation, true);
                         deprecated_ids.push(annid);
                         needs_redraw = true;
                     } else {
@@ -3202,7 +3201,7 @@ export class ULabel {
                         GeometricUtils.simple_polygon_is_within_simple_polygon(simple_polygon, delete_polygon) ||
                         GeometricUtils.complex_polygons_intersect([simple_polygon], [delete_polygon])
                     ) {
-                        annotation["deprecated"] = true;
+                        mark_deprecated(annotation, true);
                         deprecated_ids.push(annid);
                         needs_redraw = true;
                     }
@@ -3255,7 +3254,7 @@ export class ULabel {
                 polyline_was_updated = true;
             }
             // Undeprecate the annotation
-            annotations[annid]["deprecated"] = false;
+            mark_deprecated(annotations[annid], false);
             // Redraw the annotation
             annotation_ids_to_redraw.push(annid);
         }
