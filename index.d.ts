@@ -106,6 +106,10 @@ export type ULabelSubmitButton = {
     name: string;
     hook: (submit_data: ULabelSubmitData) => void;
     color?: string;
+    /**
+     * Whether or not the button should call `set_saved(true)`
+     * on the ULabel object when clicked. Defaults to false.
+     */
     set_saved?: boolean;
     size_factor?: number;
     row_number?: number;

@@ -6,6 +6,10 @@ All notable changes to this project will be documented here.
 
 Nothing yet.
 
+## [0.15.2] - Oct 4th, 2024
+- Change `set_saved` on submit buttons to be a true boolean,
+rather than an optional boolean that could needlessly force a reload prompt
+
 ## [0.15.1] - Oct 4th, 2024
 - Change deprecation cases to use dedicated `mark_deprecated` function
 
