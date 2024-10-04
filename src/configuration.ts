@@ -99,6 +99,12 @@ export class Configuration {
 
     public subtasks: object = null;
 
+    /**
+     * Map from AllowedToolboxItem enum to the class that implements it.
+     * The typing here uses a
+     * [abstract construct signature](https://www.typescriptlang.org/docs/handbook/2/classes.html#abstract-construct-signatures)
+     * to handle the different constructors for each toolbox item.
+     */
     public toolbox_map = new Map<AllowedToolboxItem, new (..._) => ToolboxItem>([
         [AllowedToolboxItem.ModeSelect, ModeSelectionToolboxItem],
         [AllowedToolboxItem.ZoomPan, ZoomPanToolboxItem],
