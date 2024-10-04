@@ -20,18 +20,20 @@ import {
 } from "./toolbox";
 import { is_object_and_not_array } from "./utilities";
 
+/* eslint-disable @stylistic/no-multi-spaces */
 export enum AllowedToolboxItem {
-    ModeSelect, // 0
-    ZoomPan, // 1
+    ModeSelect,       // 0
+    ZoomPan,          // 1
     AnnotationResize, // 2
-    AnnotationID, // 3
-    RecolorActive, // 4
-    ClassCounter, // 5
-    KeypointSlider, // 6
-    SubmitButtons, // 7
-    FilterDistance, // 8
-    Brush, // 9
+    AnnotationID,     // 3
+    RecolorActive,    // 4
+    ClassCounter,     // 5
+    KeypointSlider,   // 6
+    SubmitButtons,    // 7
+    FilterDistance,   // 8
+    Brush,            // 9
 }
+/* eslint-enable @stylistic/no-multi-spaces */
 
 export const DEFAULT_N_ANNOS_PER_CANVAS: number = 100;
 export const TARGET_MAX_N_CANVASES_PER_SUBTASK: number = 8;
@@ -123,13 +125,15 @@ export class Configuration {
         AllowedToolboxItem.SubmitButtons,
     ];
 
+    /* eslint-disable @stylistic/no-multi-spaces */
     public default_keybinds = {
         annotation_size_small: "s", // The s Key by default
         annotation_size_large: "l", // The l Key by default
-        annotation_size_plus: "=", // The = Key by default
+        annotation_size_plus: "=",  // The = Key by default
         annotation_size_minus: "-", // The - Key by default
-        annotation_vanish: "v", // The v Key by default
+        annotation_vanish: "v",     // The v Key by default
     };
+    /* eslint-enable @stylistic/no-multi-spaces */
 
     // Config for RecolorActiveItem
     public recolor_active_toolbox_item: RecolorActiveConfig = {
