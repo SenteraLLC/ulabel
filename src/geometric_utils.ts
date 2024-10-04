@@ -75,7 +75,6 @@ export class GeometricUtils {
         eq: LineEquation,
         kp1: Point2D,
         kp2: Point2D,
-        // Return
     ): { dst: number, prop: number } {
         // Check to make sure eq exists
         if (eq === null) return null;
