@@ -257,9 +257,9 @@ export function build_class_change_svg(
     color_info: { [id: number]: string },
     id_dialog_id: string,
     extra_info: {
-        width?: number
-        inner_radius?: number
-        opacity?: number
+        width?: number;
+        inner_radius?: number;
+        opacity?: number;
     } = {},
 ): string {
     // Use defaults if custom values aren't used

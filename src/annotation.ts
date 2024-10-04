@@ -15,10 +15,10 @@ export const NONSPATIAL_MODES = ["whole-image", "global"];
 
 export type PolygonSpatialData = {
     // TODO (joshua-dean): validate this type
-    spatial_payload: [number[]][]
-    spatial_payload_holes: boolean[]
-    spatial_payload_child_indices: number[][]
-    containing_box: ULabelContainingBox
+    spatial_payload: [number[]][];
+    spatial_payload_holes: boolean[];
+    spatial_payload_child_indices: number[][];
+    containing_box: ULabelContainingBox;
 };
 
 export class ULabelAnnotation {

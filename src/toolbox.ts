@@ -1842,8 +1842,8 @@ export class KeypointSliderItem extends ToolboxItem {
     filter_value: number = 0;
     ulabel: ULabel;
     keybinds: {
-        increment: string
-        decrement: string
+        increment: string;
+        decrement: string;
     };
 
     // TODO (joshua-dean): See if we can narrow this any

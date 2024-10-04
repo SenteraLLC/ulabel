@@ -7,14 +7,14 @@ export type LineSegment2D = [Point2D, Point2D];
 export type ULabelSpatialPayload2D = Point2D[];
 export type ULabelSpatialPayload3D = Point3D[];
 export type PointAccessObject = {
-    access: string | number // Access string or number that acts as the index of the point in the original spatial payload
-    distance: number
-    point: Point2D
+    access: string | number; // Access string or number that acts as the index of the point in the original spatial payload
+    distance: number;
+    point: Point2D;
 };
 export type LineEquation = {
-    a: number
-    b: number
-    c: number
+    a: number;
+    b: number;
+    c: number;
 };
 
 export class GeometricUtils {
@@ -75,7 +75,7 @@ export class GeometricUtils {
         eq: LineEquation,
         kp1: Point2D,
         kp2: Point2D,
-    ): { dst: number, prop: number } {
+    ): { dst: number; prop: number } {
         // Check to make sure eq exists
         if (eq === null) return null;
 
@@ -302,8 +302,8 @@ export class GeometricUtils {
             for (let kpi: number = 0; kpi < poly_pts.length - 1; kpi++) {
                 const kp1: Point2D = poly_pts[kpi];
                 const kp2: Point2D = poly_pts[kpi + 1];
-                const eq: { a: number, b: number, c: number } = GeometricUtils.get_line_equation_through_points(kp1, kp2);
-                const nr: { dst: number, prop: number } = GeometricUtils.get_nearest_point_on_segment(ref_x, ref_y, eq, kp1, kp2);
+                const eq: { a: number; b: number; c: number } = GeometricUtils.get_line_equation_through_points(kp1, kp2);
+                const nr: { dst: number; prop: number } = GeometricUtils.get_nearest_point_on_segment(ref_x, ref_y, eq, kp1, kp2);
                 if ((nr != null) && (nr["dst"] < dstmax) && (ret["distance"] === null || nr["dst"] < ret["distance"])) {
                     ret["access"] = "" + (kpi + nr["prop"]);
                     ret["distance"] = nr["dst"];

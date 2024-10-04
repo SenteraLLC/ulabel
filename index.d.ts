@@ -5,8 +5,8 @@ import { ULabelSubtask } from "./src/subtask";
 import { Toolbox } from "./src/toolbox";
 
 export type DistanceFromPolyline = {
-    distance: number
-    polyline_id?: string
+    distance: number;
+    polyline_id?: string;
 };
 
 /**
@@ -14,21 +14,21 @@ export type DistanceFromPolyline = {
  * The key is the class id of the polyline. "closest_row" is a special key that stores the distance to the closest line.
  */
 export type DistanceFromPolylineClasses = {
-    closest_row: DistanceFromPolyline
-    [key: number]: DistanceFromPolyline
+    closest_row: DistanceFromPolyline;
+    [key: number]: DistanceFromPolyline;
 };
 
 export type AbstractPoint = {
-    x: number
-    y: number
-    z?: number
+    x: number;
+    y: number;
+    z?: number;
 };
 
 export type Offset = {
-    id: string
-    diffX: number
-    diffY: number
-    diffZ?: number
+    id: string;
+    diffX: number;
+    diffY: number;
+    diffZ?: number;
 };
 
 /**
@@ -37,9 +37,9 @@ export type Offset = {
 export type ValidDeprecatedBy = "human" | "confidence_filter" | "distance_from_row";
 
 export type DeprecatedBy = {
-    human?: boolean
-    confidence_filter?: boolean
-    distance_from_row?: boolean
+    human?: boolean;
+    confidence_filter?: boolean;
+    distance_from_row?: boolean;
 };
 
 /**
@@ -47,75 +47,75 @@ export type DeprecatedBy = {
  * Primarily exists so that points can be filtered before the page loads.
  */
 export type FilterDistanceOverride = {
-    distances: DistanceFromPolylineClasses
-    multi_class_mode: boolean
-    should_redraw: boolean
-    show_overlay: boolean
+    distances: DistanceFromPolylineClasses;
+    multi_class_mode: boolean;
+    should_redraw: boolean;
+    show_overlay: boolean;
 };
 
 export type DistanceOverlayInfo = {
-    multi_class_mode: boolean
-    zoom_val: number
-    offset?: Offset
+    multi_class_mode: boolean;
+    zoom_val: number;
+    offset?: Offset;
 };
 
 export type ClassDefinition = {
-    name: string
-    id: number
-    color: string
+    name: string;
+    id: number;
+    color: string;
 };
 
 export type SliderInfo = {
-    default_value: string // Whole number
-    id: string
+    default_value: string; // Whole number
+    id: string;
     // TODO (joshua-dean): decide if this type can be narrowed
-    slider_event: (slider_val: number | string) => void
+    slider_event: (slider_val: number | string) => void;
 
-    class?: string
-    label_units?: string
-    main_label?: string // A label that displays above the slider
-    min?: string // Whole number
-    max?: string // Whole number
-    step?: string // Whole number
+    class?: string;
+    label_units?: string;
+    main_label?: string; // A label that displays above the slider
+    min?: string; // Whole number
+    max?: string; // Whole number
+    step?: string; // Whole number
 };
 
 export type RecolorActiveConfig = {
-    gradient_turned_on: boolean
+    gradient_turned_on: boolean;
 };
 
 /**
  * Config object for the FilterPointDistanceFromRow ToolboxItem.
  */
 export type FilterDistanceConfig = {
-    name?: string
-    component_name?: string
-    filter_min?: number
-    filter_max?: number
-    default_values?: DistanceFromPolylineClasses
-    step_value?: number
-    multi_class_mode?: boolean
-    disable_multi_class_mode?: boolean
-    filter_on_load?: boolean
-    show_options?: boolean
-    show_overlay?: boolean
-    toggle_overlay_keybind?: string
-    filter_during_polyline_move?: boolean
+    name?: string;
+    component_name?: string;
+    filter_min?: number;
+    filter_max?: number;
+    default_values?: DistanceFromPolylineClasses;
+    step_value?: number;
+    multi_class_mode?: boolean;
+    disable_multi_class_mode?: boolean;
+    filter_on_load?: boolean;
+    show_options?: boolean;
+    show_overlay?: boolean;
+    toggle_overlay_keybind?: string;
+    filter_during_polyline_move?: boolean;
 };
 
 export type ULabelSubmitButton = {
-    name: string
-    hook: (submit_data: ULabelSubmitData) => void
-    color?: string
-    set_saved?: boolean
-    size_factor?: number
-    row_number?: number
+    name: string;
+    hook: (submit_data: ULabelSubmitData) => void;
+    color?: string;
+    set_saved?: boolean;
+    size_factor?: number;
+    row_number?: number;
 };
 
 export type ULabelAnnotations = { [key: string]: ULabelAnnotation[] };
 
 export type ULabelSubmitData = {
-    annotations: ULabelAnnotations
-    task_meta: object
+    annotations: ULabelAnnotations;
+    task_meta: object;
 };
 export type ULabelSubmitHandler = (submitData: ULabelSubmitData) => void;
 
@@ -131,34 +131,34 @@ export type ULabelSpatialPayload = [number, number][];
 export type ULabelComplexSpatialPayload = ULabelSpatialPayload[];
 
 export type ULabelClassificationPayload = {
-    class_id: number
-    confidence: number
+    class_id: number;
+    confidence: number;
 };
 
 export type ULabelContainingBox = {
-    tlx: number
-    tly: number
-    brx: number
-    bry: number
-    tlz: number
-    brz: number
+    tlx: number;
+    tly: number;
+    brx: number;
+    bry: number;
+    tlz: number;
+    brz: number;
 };
 
 export type InitialCrop = {
-    top: number
-    left: number
-    height: number
-    width: number
+    top: number;
+    left: number;
+    height: number;
+    width: number;
 };
 
 export type ImageData = {
     spacing: {
-        x: number
-        y: number
-        z: number
-        units: string
-    }
-    frames: string[]
+        x: number;
+        y: number;
+        z: number;
+        units: string;
+    };
+    frames: string[];
 };
 
 export type ULabelSubtasks = { [key: string]: ULabelSubtask };
@@ -167,21 +167,21 @@ export class ULabel {
     subtasks: ULabelSubtask[];
     state: {
         // Viewer state
-        zoom_val: number
+        zoom_val: number;
         // TODO (joshua-dean): See if this can be narrowed.
         // This exists in a few other spots that are technically
         // just mouse events as well
-        last_move: JQuery.TriggeredEvent
-        current_frame: number
+        last_move: JQuery.TriggeredEvent;
+        current_frame: number;
         // Global annotation state
-        current_subtask: string
-        last_brush_stroke: [number, number]
-        line_size: number
-        size_mode: string // TODO (joshua-dean): use enum
+        current_subtask: string;
+        last_brush_stroke: [number, number];
+        line_size: number;
+        size_mode: string; // TODO (joshua-dean): use enum
         // Render state
         // TODO (joshua-dean): this is never assigned, is it used?
-        demo_canvas_context: CanvasRenderingContext2D
-        edited: boolean
+        demo_canvas_context: CanvasRenderingContext2D;
+        edited: boolean;
     };
 
     config: Configuration;
@@ -237,8 +237,8 @@ export class ULabel {
     public handle_id_dialog_hover(
         mouse_event: JQuery.TriggeredEvent,
         pos_evt?: {
-            class_ind: number
-            dist_prop: number
+            class_ind: number;
+            dist_prop: number;
         },
     ): void;
     public toggle_erase_mode(mouse_event: JQuery.TriggeredEvent): void;
@@ -253,6 +253,6 @@ export class ULabel {
 
 declare global {
     interface String {
-        replaceLowerConcat(before: string, after: string, concat_string?: string): string
+        replaceLowerConcat(before: string, after: string, concat_string?: string): string;
     }
 }

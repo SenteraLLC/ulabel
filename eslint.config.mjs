@@ -43,6 +43,20 @@ export default [
             ],
             "@stylistic/function-call-argument-newline": ["error", "consistent"],
             "@stylistic/function-call-spacing": ["error", "never"],
+            "@stylistic/member-delimiter-style": [
+                "error",
+                {
+                    multiline: {
+                        delimiter: "semi",
+                        requireLast: true,
+                    },
+                    singleline: {
+                        delimiter: "semi",
+                        requireLast: false,
+                    },
+                    multilineDetection: "brackets",
+                },
+            ],
             "@stylistic/operator-linebreak": ["error", "after"],
             "@stylistic/semi": ["error", "always"],
         },
