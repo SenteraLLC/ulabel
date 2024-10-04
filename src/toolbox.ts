@@ -2417,6 +2417,11 @@ export class SubmitButtons extends ToolboxItem {
         // Grab the submit buttons from ulabel
         this.submit_buttons = ulabel.config.submit_buttons;
 
+        // Set `set_saved` to false if not provided
+        for (const button of this.submit_buttons) {
+            button.set_saved = button.set_saved ?? false;
+        }
+
         this.add_styles();
 
         this.add_event_listeners();
@@ -2427,6 +2432,7 @@ export class SubmitButtons extends ToolboxItem {
                 name: "Submit",
                 hook: this.submit_buttons,
                 row_number: 0,
+                set_saved: false,
             }];
         }
 
@@ -2486,8 +2492,8 @@ export class SubmitButtons extends ToolboxItem {
                 }
 
                 // Set set_saved if it was provided
-                if (this.submit_buttons[idx].set_saved !== undefined) {
-                    ulabel.set_saved(this.submit_buttons[idx].set_saved);
+                if (this.submit_buttons[idx].set_saved) {
+                    ulabel.set_saved(true);
                 }
 
                 await this.submit_buttons[idx].hook(submit_payload);
