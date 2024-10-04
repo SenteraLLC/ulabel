@@ -274,7 +274,6 @@ export class GeometricUtils {
         spatial_payload: ULabelSpatialPayload2D,
         dstmax: number = Infinity,
         include_segments: boolean = false,
-        // Return
     ): PointAccessObject {
         const poly_pts: ULabelSpatialPayload2D = spatial_payload;
 
