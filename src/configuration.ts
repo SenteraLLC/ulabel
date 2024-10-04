@@ -131,15 +131,13 @@ export class Configuration {
         AllowedToolboxItem.SubmitButtons,
     ];
 
-    /* eslint-disable @stylistic/no-multi-spaces */
     public default_keybinds = {
-        annotation_size_small: "s", // The s Key by default
-        annotation_size_large: "l", // The l Key by default
-        annotation_size_plus: "=",  // The = Key by default
-        annotation_size_minus: "-", // The - Key by default
-        annotation_vanish: "v",     // The v Key by default
+        annotation_size_small: "s",
+        annotation_size_large: "l",
+        annotation_size_plus: "=",
+        annotation_size_minus: "-",
+        annotation_vanish: "v",
     };
-    /* eslint-enable @stylistic/no-multi-spaces */
 
     // Config for RecolorActiveItem
     public recolor_active_toolbox_item: RecolorActiveConfig = {
