@@ -1,6 +1,6 @@
 import { SliderInfo, ULabel } from "..";
 import { Toolbox, ZoomPanToolboxItem } from "./toolbox";
-import { ULABEL_VERSION } from '../src/version';
+import { ULABEL_VERSION } from "../src/version";
 import { DELETE_CLASS_ID } from "./annotation";
 import {
     BBOX_SVG,
@@ -14,29 +14,28 @@ import {
     POLYLINE_SVG,
     WHOLE_IMAGE_SVG,
     GLOBAL_SVG,
-    get_init_style
-} from '../src/blobs';
-
+    get_init_style,
+} from "../src/blobs";
 
 /**
  * Creates a style document, populates it with the styles in get_init_style, and appends it to the page.
  */
 export function add_style_to_document(ulabel: ULabel) {
-    let head: HTMLHeadElement = document.head || document.getElementsByTagName('head')[0];
-    let style: HTMLStyleElement = document.createElement('style');
+    const head: HTMLHeadElement = document.head || document.getElementsByTagName("head")[0];
+    const style: HTMLStyleElement = document.createElement("style");
     head.appendChild(style);
-    
+
     style.appendChild(document.createTextNode(get_init_style(ulabel.config["container_id"])));
 }
 
 /**
  * Creates a mode button that when clicked switches the current annotation type.
- * 
+ *
  * @param md_key Key for which button is being constructed. Valid Keys: bbox, point, polygon, tbar, polyline, contour, bbox3, whole-image, global
  * @param md_name Mode name which shows when selected.
  * @param svg_blob svg which shows up on the button
  * @param cur_md Current annotation mode
- * @param subtasks ULabel's Subtasks object 
+ * @param subtasks ULabel's Subtasks object
  * @returns html for a mode button
  */
 function get_md_button(md_key, md_name, svg_blob, cur_md, subtasks): string {
@@ -62,7 +61,7 @@ function get_md_button(md_key, md_name, svg_blob, cur_md, subtasks): string {
 
 /**
  * Loads image data from ULabel's config and returns html string for image data.
- * 
+ *
  * @returns html for image data
  */
 function get_images_html(ulabel: ULabel): string {
@@ -72,8 +71,7 @@ function get_images_html(ulabel: ULabel): string {
     for (let i = 0; i < ulabel.config["image_data"].frames.length; i++) {
         if (i != 0) {
             display = "none";
-        }
-        else {
+        } else {
             display = "block";
         }
         images_html += `
@@ -85,7 +83,7 @@ function get_images_html(ulabel: ULabel): string {
 
 /**
  * Constructs html string for whole-image and global dialogs.
- * 
+ *
  * @returns html for whole-image and global dialogs
  */
 function get_frame_annotation_dialogs(ulabel: ULabel): string {
@@ -93,8 +91,8 @@ function get_frame_annotation_dialogs(ulabel: ULabel): string {
     let tot: number = 0;
     for (const st_key in ulabel.subtasks) {
         if (
-            !ulabel.subtasks[st_key].allowed_modes.includes('whole-image') &&
-            !ulabel.subtasks[st_key].allowed_modes.includes('global')
+            !ulabel.subtasks[st_key].allowed_modes.includes("whole-image") &&
+            !ulabel.subtasks[st_key].allowed_modes.includes("global")
         ) {
             continue;
         }
@@ -103,8 +101,8 @@ function get_frame_annotation_dialogs(ulabel: ULabel): string {
     let ind: number = 0;
     for (const st_key in ulabel.subtasks) {
         if (
-            !ulabel.subtasks[st_key].allowed_modes.includes('whole-image') &&
-            !ulabel.subtasks[st_key].allowed_modes.includes('global')
+            !ulabel.subtasks[st_key].allowed_modes.includes("whole-image") &&
+            !ulabel.subtasks[st_key].allowed_modes.includes("global")
         ) {
             continue;
         }
@@ -143,30 +141,30 @@ export function prep_window_html(ulabel: ULabel, toolbox_item_order: unknown[] =
     // const tabs = ULabel.get_toolbox_tabs(ul);
     const images: string = get_images_html(ulabel);
     const frame_annotation_dialogs: string = get_frame_annotation_dialogs(ulabel);
-    
+
     // const toolbox = configuration.create_toolbox();
     const toolbox: Toolbox = new Toolbox(
         [],
-        Toolbox.create_toolbox(ulabel, toolbox_item_order)
+        Toolbox.create_toolbox(ulabel, toolbox_item_order),
     );
 
-    let tool_html: string = toolbox.setup_toolbox_html(
+    const tool_html: string = toolbox.setup_toolbox_html(
         ulabel,
         frame_annotation_dialogs,
         images,
-        ULABEL_VERSION
-    )
+        ULABEL_VERSION,
+    );
 
     // Set the container's html to the toolbox html we just created
-    $("#" + ulabel.config["container_id"]).html(tool_html)
+    $("#" + ulabel.config["container_id"]).html(tool_html);
 
     // Build toolbox for the current subtask only
     const current_subtask: string = Object.keys(ulabel.subtasks)[0];
 
     // Initialize toolbox based on configuration
     const sp_id = ulabel.config["toolbox_id"];
-    let curmd = ulabel.subtasks[current_subtask]["state"]["annotation_mode"];
-    let md_buttons: string[] = [
+    const curmd = ulabel.subtasks[current_subtask]["state"]["annotation_mode"];
+    const md_buttons: string[] = [
         get_md_button("bbox", "Bounding Box", BBOX_SVG, curmd, ulabel.subtasks),
         get_md_button("point", "Point", POINT_SVG, curmd, ulabel.subtasks),
         get_md_button("polygon", "Polygon", POLYGON_SVG, curmd, ulabel.subtasks),
@@ -194,25 +192,23 @@ export function prep_window_html(ulabel: ULabel, toolbox_item_order: unknown[] =
     ulabel.toolbox = toolbox;
 
     // Check an array to see if it contains a ZoomPanToolboxItem
-    let contains_zoom_pan: Function = function(array: unknown[]) {
-        
-        //check if the array is empty
+    const contains_zoom_pan = function (array: unknown[]) {
+        // check if the array is empty
         if (array.length == 0) return false;
-        
+
         // Loop through everything in the array and check if its the ZoomPanToolboxItem
-        for (let idx in array) {
+        for (const idx in array) {
             if (array[idx] instanceof ZoomPanToolboxItem) {
                 return true;
             }
         }
-        
+
         // If the ZoomPanToolboxItem wasn't found then return false
         return false;
-    }
+    };
 
     // Check if initial_crop exists and has the appropriate properties
-    let initial_crop_is_valid: Function = function(initial_crop) {
-
+    const initial_crop_is_valid = function (initial_crop) {
         // If initial_crop doesn't exist, return false
         if (initial_crop == null) return false;
 
@@ -230,21 +226,18 @@ export function prep_window_html(ulabel: ULabel, toolbox_item_order: unknown[] =
         // then raise an error and return false
         ulabel.raise_error("initial_crop missing necessary properties. Ignoring.");
         return false;
-    }
+    };
 
     // Make sure the toolbox contains the ZoomPanToolboxItem
     if (contains_zoom_pan(ulabel.toolbox.items)) {
-
         // Make sure the initial_crop exists and contains the necessary properties
         if (initial_crop_is_valid(ulabel.config.initial_crop)) {
-
             // Grab the initial crop button and rename it
-            let initial_crop_button = document.getElementById("recenter-button");
-            initial_crop_button.innerHTML = "Initial Crop"
-        } 
-        else {
+            const initial_crop_button = document.getElementById("recenter-button");
+            initial_crop_button.innerHTML = "Initial Crop";
+        } else {
             // Grab the whole image button and set its display to none
-            let whole_image_button = document.getElementById("recenter-whole-image-button");
+            const whole_image_button = document.getElementById("recenter-whole-image-button");
             whole_image_button.style.display = "none";
         }
     }
@@ -252,58 +245,58 @@ export function prep_window_html(ulabel: ULabel, toolbox_item_order: unknown[] =
 
 /**
  * Builds the svg used to change the class of an annotation.
- * 
+ *
  * @param class_ids Array of all class ids in the subtask
  * @param color_info Color info used to know which color each id is
  * @param id_dialog_id id of the id dialog
  * @param extra_info Optional parameters. Width - size of svg. inner_radius - size of inner black circle. opacity - opacity of unselected pie section
- * @returns 
+ * @returns
  */
 export function build_class_change_svg(
     class_ids: number[],
-    color_info: {[id: number]: string},
+    color_info: { [id: number]: string },
     id_dialog_id: string,
     extra_info: {
-        width?: number,
-        inner_radius?: number,
-        opacity?: number
-    } = {}
+        width?: number;
+        inner_radius?: number;
+        opacity?: number;
+    } = {},
 ): string {
     // Use defaults if custom values aren't used
-    const width = extra_info.width ?? 500
-    const inner_radius: number = extra_info.inner_radius ?? 0.3
-    const opacity: number = extra_info.opacity ?? 0.4
+    const width = extra_info.width ?? 500;
+    const inner_radius: number = extra_info.inner_radius ?? 0.3;
+    const opacity: number = extra_info.opacity ?? 0.4;
 
     // Define constants independent of which id is being processed
-    const outer_radius: number = 0.5 * width
-    const center_coordinate: number = width / 2 // X and Y will always be the same, so just use a single number to store X and Y coordinate
-    const proportion: number = 1 / class_ids.length // Proportion of the circle each section will take up
-    const proportion_gap: number = 1 - proportion // Proportion of the circle not taken up by an individual section
+    const outer_radius: number = 0.5 * width;
+    const center_coordinate: number = width / 2; // X and Y will always be the same, so just use a single number to store X and Y coordinate
+    const proportion: number = 1 / class_ids.length; // Proportion of the circle each section will take up
+    const proportion_gap: number = 1 - proportion; // Proportion of the circle not taken up by an individual section
 
-    const back_radius: number = inner_radius + (outer_radius - inner_radius) / 2
-    const back_stroke: number = 2 * Math.PI * back_radius * proportion
-    const back_stroke_width: number = outer_radius - inner_radius
-    const back_gap: number = 2 * Math.PI * back_radius * proportion_gap
+    const back_radius: number = inner_radius + (outer_radius - inner_radius) / 2;
+    const back_stroke: number = 2 * Math.PI * back_radius * proportion;
+    const back_stroke_width: number = outer_radius - inner_radius;
+    const back_gap: number = 2 * Math.PI * back_radius * proportion_gap;
 
-    const front_radius: number = inner_radius + proportion * (outer_radius - inner_radius) / 2
-    const front_stroke: number = 2 * Math.PI * front_radius * proportion
-    const front_stroke_width: number = proportion * (outer_radius - inner_radius)
-    const front_gap: number = 2 * Math.PI * front_radius * proportion_gap
+    const front_radius: number = inner_radius + proportion * (outer_radius - inner_radius) / 2;
+    const front_stroke: number = 2 * Math.PI * front_radius * proportion;
+    const front_stroke_width: number = proportion * (outer_radius - inner_radius);
+    const front_gap: number = 2 * Math.PI * front_radius * proportion_gap;
 
     // Create the beginning of the svg where the height always equals the width
-    let svg: string = `<svg width="${width}" height="${width}">`
+    let svg: string = `<svg width="${width}" height="${width}">`;
 
     // Build each id's section of the class change pie
     for (let idx: number = 0; idx < class_ids.length; idx++) {
         // Grab the current id being used
-        const current_id: number = class_ids[idx]
+        const current_id: number = class_ids[idx];
 
         // Get the current id's color from color info
-        const current_color: string = color_info[current_id]
+        const current_color: string = color_info[current_id];
 
         // Define constants dependent on the current index
-        const cumulative_proportion: number = idx * proportion
-        const back_offset: number = 2 * Math.PI * back_radius * cumulative_proportion
+        const cumulative_proportion: number = idx * proportion;
+        const back_offset: number = 2 * Math.PI * back_radius * cumulative_proportion;
         const front_offset = 2 * Math.PI * front_radius * cumulative_proportion;
 
         // TODO: Should names also go on the id dialog?
@@ -325,41 +318,41 @@ export function build_class_change_svg(
             stroke-opacity="1.0"
             stroke-width="${front_stroke_width}" 
             stroke-dasharray="${front_stroke} ${front_gap}" 
-            stroke-dashoffset="${front_offset}" /> `
+            stroke-dashoffset="${front_offset}" /> `;
     }
 
     // Finally close the svg
-    svg += "</svg>"
+    svg += "</svg>";
 
-    return svg
+    return svg;
 }
 
 /**
  * Builds and returns html string for the id dialog.
- * 
+ *
  * @param idd_id id of the id dialog
  * @param width Size of the id dialog
  * @param class_ids Array of class ids in the subtask
  * @param inner_rad Radius of the black inner circle
  * @param color_info Color info used to know which color each id is
- * @returns 
+ * @returns
  */
 export function get_idd_string(
-    idd_id: string, 
-    width: number, 
-    class_ids: number[], 
-    inner_rad: number, 
-    color_info: {[key: number]: string}
+    idd_id: string,
+    width: number,
+    class_ids: number[],
+    inner_rad: number,
+    color_info: { [key: number]: string },
 ) {
     // TODO noconflict
     let dialog_html: string = `
     <div id="${idd_id}" class="id_dialog" style="width: ${width}px; height: ${width}px;">
-        <a class="id-dialog-clickable-indicator" href="#"></a>`
+        <a class="id-dialog-clickable-indicator" href="#"></a>`;
 
     // Build the svg html and add it to the div
-    dialog_html += build_class_change_svg(class_ids, color_info, idd_id, {"width": width, "inner_radius": inner_rad})
+    dialog_html += build_class_change_svg(class_ids, color_info, idd_id, { width: width, inner_radius: inner_rad });
 
-    const outer_radius = 0.5 * width
+    const outer_radius = 0.5 * width;
 
     // Create a centcirc div at the end and close off the div
     dialog_html += `<div class="centcirc" style="position: absolute; top: ${outer_radius - inner_rad}px; left:${outer_radius - inner_rad}px; width: ${2 * inner_rad}px; height: ${2 * inner_rad}px; background-color: black; border-radius: ${inner_rad}px;" ></div></div>`;
@@ -378,51 +371,47 @@ export function build_id_dialogs(ulabel: ULabel) {
     const inner_rad: number = ulabel.config.inner_prop * width / 2;
     const outer_rad: number = 0.5 * width;
 
-    let tbid: string = ulabel.config.toolbox_id;
+    const tbid: string = ulabel.config.toolbox_id;
 
     for (const st in ulabel.subtasks) {
         const idd_id: string = ulabel.subtasks[st]["state"]["idd_id"];
         const idd_id_front: string = ulabel.subtasks[st]["state"]["idd_id_front"];
-        const color_info: {[key: number]: string} = ulabel.color_info
+        const color_info: { [key: number]: string } = ulabel.color_info;
 
-        let subtask_dialog_container_jq = $("#dialogs__" + st);
-        let front_subtask_dialog_container_jq = $("#front_dialogs__" + st);
+        const subtask_dialog_container_jq = $("#dialogs__" + st);
+        const front_subtask_dialog_container_jq = $("#front_dialogs__" + st);
 
-        let dialog_html_v2: string = get_idd_string(
-            idd_id, width, ulabel.subtasks[st]["class_ids"],
-            inner_rad, color_info
+        const dialog_html_v2: string = get_idd_string(
+            idd_id, width, ulabel.subtasks[st]["class_ids"], inner_rad, color_info,
         );
-        let front_dialog_html_v2: string = get_idd_string(
-            idd_id_front, width, ulabel.subtasks[st]["class_ids"],
-            inner_rad, color_info
+        const front_dialog_html_v2: string = get_idd_string(
+            idd_id_front, width, ulabel.subtasks[st]["class_ids"], inner_rad, color_info,
         );
 
         // TODO noconflict
         let toolbox_html: string = `<div id="tb-id-app--${st}" class="tb-id-app">`;
-        let class_ids: number[] = JSON.parse(JSON.stringify(ulabel.subtasks[st]["class_ids"]));
+        const class_ids: number[] = JSON.parse(JSON.stringify(ulabel.subtasks[st]["class_ids"]));
         // Add the reserved DELETE_CLASS_ID if it is present in the class_defs
         if (ulabel.subtasks[st]["class_defs"].at(-1)["id"] === DELETE_CLASS_ID) {
             class_ids.push(DELETE_CLASS_ID);
         }
 
         for (let i = 0; i < class_ids.length; i++) {
-
-            let this_id: string = class_ids[i].toString();
-            let this_color: string = ulabel.color_info[this_id]
+            const this_id: string = class_ids[i].toString();
+            const this_color: string = ulabel.color_info[this_id];
             // let this_color: string = ulabel.subtasks[st]["class_defs"][i]["color"];
-            let this_name: string = ulabel.subtasks[st]["class_defs"][i]["name"];
+            const this_name: string = ulabel.subtasks[st]["class_defs"][i]["name"];
 
             let sel: string = "";
-            let href: string = ' href="#"';
+            let href: string = " href=\"#\"";
             if (i == 0) {
                 sel = " sel";
                 href = "";
             }
             if (ulabel.config["allow_soft_id"]) {
-                let msg = "Only hard id is currently supported";
+                const msg = "Only hard id is currently supported";
                 throw new Error(msg);
-            }
-            else {
+            } else {
                 toolbox_html += `
                     <a${href} id="${tbid}_sel_${this_id}" class="tbid-opt${sel}">
                         <div class="colprev ${tbid}_colprev_${this_id}" style="background-color: ${this_color}"></div> <span class="tb-cls-nam">${this_name}</span>
@@ -441,9 +430,9 @@ export function build_id_dialogs(ulabel: ULabel) {
         full_toolbox_html += toolbox_html;
 
         ulabel.subtasks[st]["state"]["visible_dialogs"][idd_id] = {
-            "left": 0.0,
-            "top": 0.0,
-            "pin": "center"
+            left: 0.0,
+            top: 0.0,
+            pin: "center",
         };
     }
 
@@ -451,7 +440,7 @@ export function build_id_dialogs(ulabel: ULabel) {
     $("#" + ulabel.config["toolbox_id"] + " div.id-toolbox-app").html(full_toolbox_html);
 
     // Style revisions based on the size
-    let idci = $("#" + ulabel.config["container_id"] + " a.id-dialog-clickable-indicator");
+    const idci = $("#" + ulabel.config["container_id"] + " a.id-dialog-clickable-indicator");
     idci.css({
         "height": `${width}px`,
         "width": `${width}px`,
@@ -464,10 +453,10 @@ export function build_edit_suggestion(ulabel: ULabel) {
     // DONE Migrated to subtasks
 
     for (const stkey in ulabel.subtasks) {
-        let local_id: string = `edit_suggestion__${stkey}`;
-        let global_id: string = `global_edit_suggestion__${stkey}`;
+        const local_id: string = `edit_suggestion__${stkey}`;
+        const global_id: string = `global_edit_suggestion__${stkey}`;
 
-        let subtask_dialog_container_jq = $("#dialogs__" + stkey);
+        const subtask_dialog_container_jq = $("#dialogs__" + stkey);
 
         // Local edit suggestion
         subtask_dialog_container_jq.append(`
@@ -476,7 +465,7 @@ export function build_edit_suggestion(ulabel: ULabel) {
         $("#" + local_id).css({
             "height": ulabel.config["edit_handle_size"] + "px",
             "width": ulabel.config["edit_handle_size"] + "px",
-            "border-radius": ulabel.config["edit_handle_size"] / 2 + "px"
+            "border-radius": ulabel.config["edit_handle_size"] / 2 + "px",
         });
 
         // Global edit suggestion
@@ -500,14 +489,14 @@ export function build_edit_suggestion(ulabel: ULabel) {
 
         // Register these dialogs with each subtask
         ulabel.subtasks[stkey]["state"]["visible_dialogs"][local_id] = {
-            "left": 0.0,
-            "top": 0.0,
-            "pin": "center"
+            left: 0.0,
+            top: 0.0,
+            pin: "center",
         };
         ulabel.subtasks[stkey]["state"]["visible_dialogs"][global_id] = {
-            "left": 0.0,
-            "top": 0.0,
-            "pin": "center"
+            left: 0.0,
+            top: 0.0,
+            pin: "center",
         };
     }
 }
@@ -517,25 +506,27 @@ export function build_edit_suggestion(ulabel: ULabel) {
  */
 export function build_confidence_dialog(ulabel: ULabel) {
     for (const stkey in ulabel.subtasks) {
-        let local_id = `annotation_confidence__${stkey}`;
-        let global_id = `global_annotation_confidence__${stkey}`;
+        const local_id = `annotation_confidence__${stkey}`;
+        const global_id = `global_annotation_confidence__${stkey}`;
 
-        let subtask_dialog_container_jq = $("#dialogs__" + stkey);
-        let global_edit_suggestion_jq = $("#global_edit_suggestion__" + stkey);
+        const subtask_dialog_container_jq = $("#dialogs__" + stkey);
+        const global_edit_suggestion_jq = $("#global_edit_suggestion__" + stkey);
 
-        //Local confidence dialog
+        // Local confidence dialog
         subtask_dialog_container_jq.append(`
             <p id="${local_id}" class="annotation-confidence editable"></p>
         `);
         $("#" + local_id).css({
-            "height": ulabel.config["edit_handle_size"] + "px",
-            "width": ulabel.config["edit_handle_size"] + "px",
+            height: ulabel.config["edit_handle_size"] + "px",
+            width: ulabel.config["edit_handle_size"] + "px",
         });
 
         // Global edit suggestion
         let id_edit: string = "";
         let mcm_ind: string = "";
         if (!ulabel.subtasks[stkey]["single_class_mode"]) {
+            // TODO (joshua-dean): Is `id_edit` actually necessary or can we yoink it?
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
             id_edit = `--><a href="#" class="reid_suggestion global_sub_suggestion gedit-target"></a><!--`;
             mcm_ind = " mcm";
         }
@@ -567,58 +558,58 @@ export function build_confidence_dialog(ulabel: ULabel) {
  * Class that allows for creation of sliders. Handles event listeners for increment and decrement buttons, and displaying the value of the slider.
  */
 export class SliderHandler {
-    default_value: string
-    id: string
-    slider_event: Function
-    class?: string
-    label_units?: string = ""
-    main_label: string
-    min: string = "0"
-    max: string = "100"
-    step: string = "1"
-    step_as_number: number = 1
+    default_value: string;
+    id: string;
+    slider_event: (slider_val: number | string) => void;
+    class?: string;
+    label_units?: string = "";
+    main_label: string;
+    min: string = "0";
+    max: string = "100";
+    step: string = "1";
+    step_as_number: number = 1;
 
     constructor(kwargs: SliderInfo) {
-        this.default_value = kwargs.default_value
-        this.id = kwargs.id
-        this.slider_event = kwargs.slider_event
-        
+        this.default_value = kwargs.default_value;
+        this.id = kwargs.id;
+        this.slider_event = kwargs.slider_event;
+
         // Only check optional properties
         if (typeof kwargs.class !== "undefined") {
-            this.class = kwargs.class
+            this.class = kwargs.class;
         }
         if (typeof kwargs.main_label !== "undefined") {
-            this.main_label = kwargs.main_label
+            this.main_label = kwargs.main_label;
         }
         if (typeof kwargs.label_units !== "undefined") {
-            this.label_units = kwargs.label_units
+            this.label_units = kwargs.label_units;
         }
         if (typeof kwargs.min !== "undefined") {
-            this.min = kwargs.min
+            this.min = kwargs.min;
         }
         if (typeof kwargs.max !== "undefined") {
-            this.max = kwargs.max
+            this.max = kwargs.max;
         }
         if (typeof kwargs.step !== "undefined") {
-            this.step = kwargs.step
+            this.step = kwargs.step;
         }
 
         // Useful to have as both string and number
         // String for html creation
         // Number for incrementing and decrementing slider value
-        this.step_as_number = Number(this.step)
+        this.step_as_number = Number(this.step);
 
-        this.add_styles()
+        this.add_styles();
 
         /* Add Event Listeners for this component */
         $(document).on("input.ulabel", `#${this.id}`, (event) => {
-            this.updateLabel()
-            this.slider_event(event.currentTarget.valueAsNumber)
-        })
+            this.updateLabel();
+            this.slider_event(event.currentTarget.valueAsNumber);
+        });
 
-        $(document).on("click.ulabel", `#${this.id}-inc-button`, () => this.incrementSlider())
+        $(document).on("click.ulabel", `#${this.id}-inc-button`, () => this.incrementSlider());
 
-        $(document).on("click.ulabel", `#${this.id}-dec-button`, () => this.decrementSlider())
+        $(document).on("click.ulabel", `#${this.id}-dec-button`, () => this.decrementSlider());
     }
 
     private add_styles() {
@@ -653,82 +644,82 @@ export class SliderHandler {
         #toolbox div.ulabel-slider-container div.ulabel-slider-decrement-button-text {
             position: relative;
             bottom: 1.5px;
-        }`
+        }`;
 
         // Create an id so this specific style tag can be referenced
-        const style_id = "slider-handler-styles"
+        const style_id = "slider-handler-styles";
 
         // Don't add the style tag if its already been added once
-        if (document.getElementById(style_id)) return
+        if (document.getElementById(style_id)) return;
 
         // Grab the document's head and create a style tag
-        const head = document.head || document.querySelector("head")
-        const style = document.createElement('style');
+        const head = document.head || document.querySelector("head");
+        const style = document.createElement("style");
 
         // Add the css and id to the style tag
         style.appendChild(document.createTextNode(css));
-        style.id = style_id
+        style.id = style_id;
 
         // Add the style tag to the document's head
         head.appendChild(style);
     }
 
     private updateLabel() {
-        const slider: HTMLInputElement = document.querySelector(`#${this.id}`)
-        const label: HTMLLabelElement = document.querySelector(`#${this.id}-value-label`)
-        
+        const slider: HTMLInputElement = document.querySelector(`#${this.id}`);
+        const label: HTMLLabelElement = document.querySelector(`#${this.id}-value-label`);
+
         // Set the label as a concatenation of the value and the units
-        label.innerText = slider.value + this.label_units
+        label.innerText = slider.value + this.label_units;
     }
 
     /**
-     * Increment the slider's value by the step value and call the slider event with 
+     * Increment the slider's value by the step value and call the slider event with
      * new slider value.
      */
     private incrementSlider() {
         // Get the slider element
-        const slider: HTMLInputElement = document.querySelector(`#${this.id}`)
+        const slider: HTMLInputElement = document.querySelector(`#${this.id}`);
 
         // Add the step value
-        const new_value = slider.valueAsNumber + this.step_as_number
+        const new_value = slider.valueAsNumber + this.step_as_number;
 
         // Update the slider's value
-        slider.value = new_value.toString()
+        slider.value = new_value.toString();
 
         // Update the label
-        this.updateLabel()
+        this.updateLabel();
 
         // Call the slider event with the slider value
-        this.slider_event(slider.value)
+        this.slider_event(slider.value);
     }
 
     /**
-     * Decrement the slider's value by the step value and call the slider event with 
+     * Decrement the slider's value by the step value and call the slider event with
      * new slider value.
      */
     private decrementSlider() {
         // Get the slider element
-        const slider: HTMLInputElement = document.querySelector(`#${this.id}`)
+        const slider: HTMLInputElement = document.querySelector(`#${this.id}`);
 
         // Add the step value
-        const new_value = slider.valueAsNumber - this.step_as_number
+        const new_value = slider.valueAsNumber - this.step_as_number;
 
         // Update the slider's value
-        slider.value = new_value.toString()
+        slider.value = new_value.toString();
 
         // Update the label
-        this.updateLabel()
+        this.updateLabel();
 
         // Call the slider event with the slider value
-        this.slider_event(slider.value)
+        this.slider_event(slider.value);
     }
 
     public getSliderHTML(): string {
         return `
         <div class="ulabel-slider-container">
-            ${this.main_label 
-                ? `<label for="${this.id}" class="ulabel-filter-row-distance-name-label">${this.main_label}</label>` 
-                : ""
+            ${this.main_label ?
+                    `<label for="${this.id}" class="ulabel-filter-row-distance-name-label">${this.main_label}</label>` :
+                    ""
             }
             <input 
                 id="${this.id}"
@@ -754,6 +745,6 @@ export class SliderHandler {
                 </button>
             </div>
         </div>
-        `
+        `;
     }
 }

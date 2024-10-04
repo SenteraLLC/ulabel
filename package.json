@@ -1,7 +1,7 @@
 {
   "name": "ulabel",
   "description": "An image annotation tool.",
-  "version": "0.14.1",
+  "version": "0.15.0",
   "main": "dist/ulabel.js",
   "module": "dist/ulabel.js",
   "scripts": {
@@ -9,7 +9,11 @@
     "demo": "node demo.js",
     "build": "tsc && webpack --mode production",
     "build-dev": "tsc && webpack --mode development",
-    "build-and-demo": "npm run build && npm run demo"
+    "build-and-demo": "npm run build && npm run demo",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "**/*.{js,mjs,cjs,ts}": "eslint --fix"
   },
   "repository": {
     "type": "git",
@@ -31,15 +35,22 @@
     "@turf/turf": "^6.5.0",
     "jquery": "^3.5.1",
     "polygon-clipping": "^0.15.7",
-    "typescript": "^5.6.2",
     "uuidv4": "^6.2.6"
   },
   "devDependencies": {
-    "@types/jquery": "^3.5.30",
-    "@typescript-eslint/eslint-plugin": "^4.16.1",
-    "@typescript-eslint/parser": "^4.16.1",
-    "eslint": "^7.21.0",
+    "@eslint/config-inspector": "^0.5.4",
+    "@eslint/js": "^9.11.1",
+    "@stylistic/eslint-plugin": "^2.8.0",
+    "@types/eslint__js": "^8.42.3",
+    "@types/jquery": "^3.5.31",
+    "eslint": "^9.11.1",
+    "eslint-config-prettier": "^9.1.0",
     "express": "^4.17.1",
+    "globals": "^15.9.0",
+    "husky": "^9.1.6",
+    "lint-staged": "^15.2.10",
+    "typescript": "^5.6.2",
+    "typescript-eslint": "^8.8.0",
     "webpack": "^5.74.0",
     "webpack-cli": "^4.3.1"
   },
