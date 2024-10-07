@@ -1,0 +1,5 @@
+.prettierignore
+.husky
+build
+dist
+node_modules

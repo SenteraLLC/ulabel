@@ -6,6 +6,27 @@ All notable changes to this project will be documented here.
 
 Nothing yet.
 
+## [0.15.3] - Oct 4th, 2024
+- Fix issue where legacy submit button functionality would break loading
+
+## [0.15.2] - Oct 4th, 2024
+- Change `set_saved` on submit buttons to be a true boolean,
+rather than an optional boolean that could needlessly force a reload prompt
+
+## [0.15.1] - Oct 4th, 2024
+- Change deprecation cases to use dedicated `mark_deprecated` function
+
+## [0.15.0] - Oct 3rd, 2024
+- Added [ESLint](https://eslint.org/) to enforce code quality and consistency
+
+## [0.14.1] - Oct 2nd, 2024
+- Add a `brush-button-active` CSS class to the "brush" and "erase" buttons
+that visually depicts when the brush or erase tool is active
+
+## [0.14.0] - Oct 1st, 2024
+- Add `.get_current_subtask_key()` and `.get_current_subtask()` utility methods
+    - Updated almost all internal methods to use these utility methods
+
 ## [0.13.1] - Sept 30th, 2024
 - Remove unecessary and confusing default in global edit dialog
 - Squash `active_annotation` into `edit_candidate` in subtask state

@@ -1,26 +1,30 @@
 /**
  * ULabel initializer utilities and logic.
- * 
+ *
  * This also includes "staggered" initializers to test loading.
  */
 
 import { ULabel } from "..";
+import { initialize_annotation_canvases } from "./canvas_utils";
+import { NightModeCookie } from "./cookies";
+import { log_message, LogLevel } from "./error_logging";
 import { add_style_to_document, build_confidence_dialog, build_edit_suggestion, build_id_dialogs, prep_window_html } from "./html_builder";
+import { create_ulabel_listeners } from "./listeners";
 import { ULabelLoader } from "./loader";
 
 /**
- * Make canvases for each subtask 
+ * Make canvases for each subtask
  *
  * @param ulabel ULabel instance to create canvases for
- * @param loaded_imgs Array of loaded images
+ * @param loaded_img Single loaded image for sizing
  */
 function make_image_canvases(
     ulabel: ULabel,
-    loaded_imgs: HTMLImageElement[]
+    loaded_img: HTMLImageElement,
 ) {
     // Store image dimensions
-    ulabel.config["image_height"] = loaded_imgs[0].naturalHeight;
-    ulabel.config["image_width"] = loaded_imgs[0].naturalWidth;
+    ulabel.config["image_height"] = loaded_img.naturalHeight;
+    ulabel.config["image_width"] = loaded_img.naturalWidth;
 
     // Add canvases for each subtask and get their rendering contexts
     for (const st in ulabel.subtasks) {
@@ -54,13 +58,13 @@ function make_image_canvases(
 
 /**
  * Standard ULabel initializer.
- * 
+ *
  * @param ulabel ULabel instance to initialize.
  * @param callback User-provided callback to run after initialization.
  */
 export function ulabel_init(
     ulabel: ULabel,
-    callback: () => void
+    callback: () => void,
 ) {
     // Add stylesheet
     add_style_to_document(ulabel);
@@ -71,27 +75,20 @@ export function ulabel_init(
     // Place image element
     prep_window_html(
         ulabel,
-        ulabel.config.toolbox_order
+        ulabel.config.toolbox_order,
     );
 
     // Detect night cookie
-    if (ULabel.has_night_mode_cookie()) {
+    if (NightModeCookie.exists_in_document()) {
         $("#" + ulabel.config["container_id"]).addClass("ulabel-night");
     }
 
-    var images = [document.getElementById(`${ulabel.config["image_id_pfx"]}__0`)];
-    let mappable_images = [];
-    for (let i = 0; i < images.length; i++) {
-        mappable_images.push(images[i]);
-        break;
-    }
-    let image_promises = mappable_images.map(ULabel.load_image_promise);
-
-    Promise.all(image_promises).then((loaded_imgs) => {
-        make_image_canvases(ulabel, loaded_imgs);
+    const first_bg_img = <HTMLImageElement>document.getElementById(`${ulabel.config["image_id_pfx"]}__0`);
+    first_bg_img.decode().then(() => {
+        make_image_canvases(ulabel, first_bg_img);
 
         // Create the annotation canvases for the resume_from annotations
-        ULabel.initialize_annotation_canvases(ulabel);
+        initialize_annotation_canvases(ulabel);
 
         // Add the ID dialogs' HTML to the document
         build_id_dialogs(ulabel);
@@ -103,16 +100,16 @@ export function ulabel_init(
         build_confidence_dialog(ulabel);
 
         // Create listers to manipulate and export this object
-        ULabel.create_listeners(ulabel);
+        create_ulabel_listeners(ulabel);
 
         ulabel.handle_toolbox_overflow();
 
         // Set the canvas elements in the correct stacking order given current subtask
         ulabel.set_subtask(
-            ulabel.state["current_subtask"]
+            ulabel.state["current_subtask"],
         );
 
-        ulabel.create_overlays()
+        ulabel.create_overlays();
 
         // Indicate that the object is now init!
         ulabel.is_init = true;
@@ -136,13 +133,16 @@ export function ulabel_init(
         callback();
     }).catch((err) => {
         console.log(err);
-        ulabel.raise_error("Unable to load images: " + JSON.stringify(err), ULabel.elvl_fatal);
+        log_message(
+            "Unable to load images: " + JSON.stringify(err),
+            LogLevel.ERROR,
+        );
     });
 
     // Final code to be called after the object is initialized
-    ULabel.after_init(ulabel)
+    ulabel.after_init();
 
-    console.log(`Time taken to construct and initialize: ${Date.now() - ulabel.begining_time}`)
+    console.log(`Time taken to construct and initialize: ${Date.now() - ulabel.begining_time}`);
 }
 
 /**
@@ -164,7 +164,7 @@ function delay(ms: number): Promise<void> {
 export async function staggered_ulabel_init(
     ulabel: ULabel,
     user_callback: () => void,
-    interval: number = 250
+    interval: number = 250,
 ) {
     // Add stylesheet
     add_style_to_document(ulabel);
@@ -175,20 +175,20 @@ export async function staggered_ulabel_init(
     // Place image element
     prep_window_html(
         ulabel,
-        ulabel.config.toolbox_order
+        ulabel.config.toolbox_order,
     );
 
     // Detect night cookie
-    if (ULabel.has_night_mode_cookie()) {
+    if (NightModeCookie.exists_in_document()) {
         $("#" + ulabel.config["container_id"]).addClass("ulabel-night");
     }
     await delay(interval);
 
-    let first_img = <HTMLImageElement>document.getElementById(`${ulabel.config["image_id_pfx"]}__0`);
-    await first_img.decode();
+    const first_bg_img = <HTMLImageElement>document.getElementById(`${ulabel.config["image_id_pfx"]}__0`);
+    await first_bg_img.decode();
     await delay(interval);
 
-    make_image_canvases(ulabel, [first_img]);
+    make_image_canvases(ulabel, first_bg_img);
     await delay(interval);
 
     // This step is hoisted up to show the container before the rest of the initialization
@@ -196,7 +196,7 @@ export async function staggered_ulabel_init(
     await delay(interval);
 
     // Create the annotation canvases for the resume_from annotations
-    ULabel.initialize_annotation_canvases(ulabel);
+    initialize_annotation_canvases(ulabel);
     await delay(interval);
 
     // Add the ID dialogs' HTML to the document
@@ -212,7 +212,7 @@ export async function staggered_ulabel_init(
     await delay(interval);
 
     // Create listers to manipulate and export this object
-    ULabel.create_listeners(ulabel);
+    create_ulabel_listeners(ulabel);
     await delay(interval);
 
     ulabel.handle_toolbox_overflow();
@@ -220,11 +220,11 @@ export async function staggered_ulabel_init(
 
     // Set the canvas elements in the correct stacking order given current subtask
     ulabel.set_subtask(
-        ulabel.state["current_subtask"]
+        ulabel.state["current_subtask"],
     );
     await delay(interval);
 
-    ulabel.create_overlays()
+    ulabel.create_overlays();
     await delay(interval);
 
     // Indicate that the object is now init!
@@ -253,6 +253,6 @@ export async function staggered_ulabel_init(
 
     // Call the user-provided callback
     user_callback();
-    ULabel.after_init(ulabel);
-    console.log(`Time taken to construct and initialize: ${Date.now() - ulabel.begining_time}`)
+    ulabel.after_init();
+    console.log(`Time taken to construct and initialize: ${Date.now() - ulabel.begining_time}`);
 }
