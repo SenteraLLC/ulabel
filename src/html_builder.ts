@@ -17,7 +17,7 @@ import {
     get_init_style,
 } from "../src/blobs";
 import { ULabelLoader } from "./loader";
-import { log_message } from "./error_logging";
+import { log_message, LogLevel } from "./error_logging";
 
 /**
  * Creates a style document, populates it with the styles in get_init_style, and appends it to the page.
@@ -229,7 +229,10 @@ export function prep_window_html(ulabel: ULabel, toolbox_item_order: unknown[] =
 
         // If initial_crop exists but doesn't have the appropriate properties,
         // then raise an error and return false
-        log_message("initial_crop missing necessary properties. Ignoring.");
+        log_message(
+            "initial_crop missing necessary properties. Ignoring.",
+            LogLevel.INFO,
+        );
         return false;
     };
 
