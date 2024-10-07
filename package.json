@@ -1,7 +1,7 @@
 {
   "name": "ulabel",
   "description": "An image annotation tool.",
-  "version": "0.15.2",
+  "version": "0.15.3",
   "main": "dist/ulabel.js",
   "module": "dist/ulabel.js",
   "scripts": {
@@ -10,6 +10,7 @@
     "build": "tsc && webpack --mode production",
     "build-dev": "tsc && webpack --mode development",
     "build-and-demo": "npm run build && npm run demo",
+    "build-dev-and-demo": "npm run build-dev && npm run demo",
     "prepare": "husky"
   },
   "lint-staged": {
