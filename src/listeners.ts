@@ -371,12 +371,12 @@ export function create_ulabel_listeners(
     // Keybind to switch active subtask
     $(document).on(
         "keypress" + ULABEL_NAMESPACE,
-        function (e) {
+        function (keypress_event) {
             // Ignore if in the middle of annotation
             if (ulabel.get_current_subtask()["state"]["is_in_progress"]) return;
 
             // Check for the right keypress
-            if (e.key === ulabel.config.switch_subtask_keybind) {
+            if (keypress_event.key === ulabel.config.switch_subtask_keybind) {
                 ulabel.switch_to_next_subtask();
             }
         },
@@ -501,13 +501,13 @@ export function create_ulabel_listeners(
     $(document).on(
         "click" + ULABEL_NAMESPACE,
         ".global_edit_suggestion a.reid_suggestion",
-        function (e) {
+        function (click_event) {
             const crst = ulabel.get_current_subtask();
             const annid = crst["state"]["idd_associated_annotation"];
             ulabel.hide_global_edit_suggestion();
             ulabel.show_id_dialog(
-                ulabel.get_global_mouse_x(e),
-                ulabel.get_global_mouse_y(e),
+                ulabel.get_global_mouse_x(click_event),
+                ulabel.get_global_mouse_y(click_event),
                 annid,
                 false,
             );
