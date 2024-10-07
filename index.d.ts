@@ -244,7 +244,6 @@ export class ULabel {
     public show_annotation_mode(
         target_jq?: JQuery<HTMLElement>, // TODO (joshua-dean): validate this type
     );
-    public raise_error(message: string, level?: number);
     public rezoom(): void;
     public update_frame(delta?: number, new_frame?: number): void;
     public handle_id_dialog_hover(
