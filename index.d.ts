@@ -223,12 +223,14 @@ export class ULabel {
     public show_whole_image(): void;
     public swap_frame_image(new_src: string, frame?: number): string;
     public swap_anno_bg_color(new_bg_color: string): string;
+
     // Subtasks
     public get_current_subtask_key(): string;
     public get_current_subtask(): ULabelSubtask;
     public readjust_subtask_opacities(): void;
     public set_subtask(st_key: string): void;
     public switch_to_next_subtask(): void;
+
     // Annotations
     public get_annotations(subtask: ULabelSubtask): ULabelAnnotation[];
     public set_annotations(annotations: ULabelAnnotation[], subtask: ULabelSubtask);
@@ -304,9 +306,11 @@ export class ULabel {
     public end_drag(mouse_event: JQuery.TriggeredEvent): void;
     public drag_repan(mouse_event: JQuery.TriggeredEvent): void;
     public drag_rezoom(mouse_event: JQuery.TriggeredEvent): void;
+
     // "Mouse event interpreters"
     public get_global_mouse_x(mouse_event: JQuery.TriggeredEvent): number;
     public get_global_mouse_y(mouse_event: JQuery.TriggeredEvent): number;
+
     // Edit suggestions
     public suggest_edits(
         mouse_event?: JQuery.TriggeredEvent,
@@ -322,6 +326,7 @@ export class ULabel {
         nonspatial_id?: string,
     ): void;
     public hide_global_edit_suggestion(): void;
+
     // Drawing
     public rezoom(
         foc_x?: number,
@@ -330,6 +335,7 @@ export class ULabel {
     ): void;
     public reposition_dialogs(): void;
     public handle_toolbox_overflow(): void;
+
     // ID Dialog
     public set_id_dialog_payload_nopin(
         class_ind: number,
@@ -350,10 +356,6 @@ export class ULabel {
         thumbnail?: boolean,
         nonspatial?: boolean,
     ): void;
-    // Cookies
-    static has_night_mode_cookie(): boolean;
-    static set_night_mode_cookie(): void;
-    static destroy_night_mode_cookie(): void;
 }
 
 declare global {
