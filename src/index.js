@@ -37,6 +37,7 @@ import {
 
 import { create_ulabel_listeners, remove_ulabel_listeners } from "../build/listeners";
 import { NightModeCookie } from "../build/cookies";
+import { log_message, LogLevel } from "../build/error_logging";
 
 import $ from "jquery";
 const jQuery = $;
@@ -62,20 +63,6 @@ jQuery.fn.outer_html = function () {
 };
 
 export class ULabel {
-    // ================= Internal constants =================
-
-    static get elvl_info() {
-        return 0;
-    }
-
-    static get elvl_standard() {
-        return 1;
-    }
-
-    static get elvl_fatal() {
-        return 2;
-    }
-
     static version() {
         return ULABEL_VERSION;
     }
@@ -453,7 +440,10 @@ export class ULabel {
             };
         }
         if (first_non_ro === null) {
-            ul.raise_error("You must have at least one subtask without 'read_only' set to true.", ULabel.elvl_fatal);
+            log_message(
+                "You must have at least one subtask without 'read_only' set to true.",
+                LogLevel.ERROR,
+            );
         }
     }
 
@@ -502,7 +492,10 @@ export class ULabel {
         } else if ("spacing" in raw_img_dat && "frames" in raw_img_dat) {
             return raw_img_dat;
         } else {
-            ul.raise_error(`Image data object not understood. Must be of form "http://url.to/img" OR ["img1", "img2", ...] OR {spacing: {x: <num>, y: <num>, z: <num>, units: <str>}, frames: ["img1", "img2", ...]}. Provided: ${JSON.stringify(raw_img_dat)}`, ULabel.elvl_fatal);
+            log_message(
+                `Image data object not understood. Must be of form "http://url.to/img" OR ["img1", "img2", ...] OR {spacing: {x: <num>, y: <num>, z: <num>, units: <str>}, frames: ["img1", "img2", ...]}. Provided: ${JSON.stringify(raw_img_dat)}`,
+                LogLevel.ERROR,
+            );
             return null;
         }
     }
@@ -787,7 +780,10 @@ export class ULabel {
             callback();
         }).catch((err) => {
             console.log(err);
-            this.raise_error("Unable to load images: " + JSON.stringify(err), ULabel.elvl_fatal);
+            log_message(
+                "Failed to load images: " + JSON.stringify(err),
+                LogLevel.ERROR,
+            );
         });
 
         // Final code to be called after the object is initialized
@@ -902,7 +898,10 @@ export class ULabel {
 
                 return;
             } else {
-                this.raise_error(`Initial crop must contain properties "width", "height", "left", and "top". Ignoring.`, ULabel.elvl_info);
+                log_message(
+                    `Initial crop must contain properties "width", "height", "left", and "top". Ignoring.`,
+                    LogLevel.INFO,
+                );
             }
         }
         this.show_whole_image();
@@ -1268,7 +1267,10 @@ export class ULabel {
                 ];
             default:
                 // TODO broader refactor of error handling and detecting/preventing corruption
-                this.raise_error("Annotation mode is not understood", ULabel.elvl_info);
+                log_message(
+                    "Annotation mode is not understood",
+                    LogLevel.INFO,
+                );
                 return null;
         }
     }
@@ -1475,9 +1477,9 @@ export class ULabel {
                 tbar_pts = spatial_payload;
                 return [tbar_pts[tbi][0], tbar_pts[tbj][1]];
             default:
-                this.raise_error(
+                log_message(
                     "Unable to apply access string to annotation of type " + spatial_type,
-                    ULabel.elvl_standard,
+                    LogLevel.WARNING,
                 );
         }
     }
@@ -1558,9 +1560,9 @@ export class ULabel {
                 }
                 break;
             default:
-                this.raise_error(
+                log_message(
                     "Unable to apply access string to annotation of type " + spatial_type,
-                    ULabel.elvl_standard,
+                    LogLevel.WARNING,
                 );
         }
     }
@@ -2069,7 +2071,12 @@ export class ULabel {
                 this.draw_global_annotation(annotation_object, subtask);
                 break;
             default:
-                this.raise_error("Warning: Annotation " + annotation_object["id"] + " not understood", ULabel.elvl_info);
+                // TODO (joshua-dean): why would this log at info level,
+                // and then write "warning" in the message?
+                log_message(
+                    "Warning: Annotation " + annotation_object["id"] + " not understood",
+                    LogLevel.INFO,
+                );
                 break;
         }
     }
@@ -4204,7 +4211,10 @@ export class ULabel {
                     this.rebuild_containing_box(actid);
                     break;
                 default:
-                    this.raise_error(`Annotation mode is not understood: ${spatial_type}`, ULabel.elvl_info);
+                    log_message(
+                        `Annotation mode is not understood: ${spatial_type}`,
+                        LogLevel.INFO,
+                    );
                     break;
             }
             this.redraw_annotation(actid);
@@ -4640,10 +4650,16 @@ export class ULabel {
                     break;
                 case "contour":
                     // TODO contour editing
-                    this.raise_error("Annotation mode is not currently editable", ULabel.elvl_info);
+                    log_message(
+                        "Annotation mode is not currently editable",
+                        LogLevel.INFO,
+                    );
                     break;
                 default:
-                    this.raise_error("Annotation mode is not understood", ULabel.elvl_info);
+                    log_message(
+                        "Annotation mode is not understood",
+                        LogLevel.INFO,
+                    );
                     break;
             }
         }
@@ -5453,24 +5469,6 @@ export class ULabel {
 
             // Must be called after active_annotation is updated
             this.update_confidence_dialog();
-        }
-    }
-
-    // ================= Error handlers =================
-
-    // Notify the user of information at a given level
-    raise_error(message, level = ULabel.elvl_standard) {
-        switch (level) {
-            // TODO less crude here
-            case ULabel.elvl_info:
-                console.log("[info] " + message);
-                break;
-            case ULabel.elvl_standard:
-                alert("[error] " + message);
-                break;
-            case ULabel.elvl_fatal:
-                alert("[fatal] " + message);
-                throw new Error(message);
         }
     }
 
