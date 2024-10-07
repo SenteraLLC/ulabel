@@ -2428,7 +2428,6 @@ export class SubmitButtons extends ToolboxItem {
         }
 
         // Set `set_saved` to false if not provided
-        console.log(this.submit_buttons);
         for (const button of this.submit_buttons ?? []) {
             button.set_saved = button.set_saved ?? false;
         }
