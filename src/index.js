@@ -655,10 +655,9 @@ export class ULabel {
 
         let first_img = document.getElementById(`${this.config["image_id_pfx"]}__0`);
         first_img.decode().then(() => {
-            const loaded_imgs = [first_img];
             // Store image dimensions
-            that.config["image_height"] = loaded_imgs[0].naturalHeight;
-            that.config["image_width"] = loaded_imgs[0].naturalWidth;
+            that.config["image_height"] = first_img.naturalHeight;
+            that.config["image_width"] = first_img.naturalWidth;
 
             // Add canvasses for each subtask and get their rendering contexts
             for (const st in that.subtasks) {
