@@ -242,7 +242,7 @@ function handle_keydown_event(
 
 /**
  * Create listeners for a ULabel instance.
- * Consider breaking out the handler if longer than 10 lines.
+ * Consider breaking out long handlers.
  *
  * @param ulabel ULabel instance
  */
@@ -558,4 +558,25 @@ export function create_ulabel_listeners(
             }
         },
     );
+}
+
+/**
+ * Remove listeners from a ULabel instance.
+ *
+ * @param ulabel ULabel instance.
+ */
+export function remove_ulabel_listeners(
+    ulabel: ULabel,
+) {
+    // Remove jquery event listeners with the ulabel namespace
+    $(document).off(ULABEL_NAMESPACE);
+    $(window).off(ULABEL_NAMESPACE);
+    $(".id_dialog").off(ULABEL_NAMESPACE);
+
+    // Go through each resize observer and disconnect them
+    if (ulabel.resize_observers != null) {
+        ulabel.resize_observers.forEach((observer) => {
+            observer.disconnect();
+        });
+    }
 }
