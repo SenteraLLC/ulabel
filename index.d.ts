@@ -169,7 +169,7 @@ export type ImageData = {
 export type ULabelSubtasks = { [key: string]: ULabelSubtask };
 
 export class ULabel {
-    subtasks: ULabelSubtask[];
+    subtasks: ULabelSubtasks;
     state: {
         // Viewer state
         zoom_val: number;
@@ -356,6 +356,12 @@ export class ULabel {
         thumbnail?: boolean,
         nonspatial?: boolean,
     ): void;
+
+    // Canvases
+    public get_init_canvas_context_id(
+        annotation_id: string,
+        subtask?: string, // SUBTASK KEY
+    ): string;
 }
 
 declare global {

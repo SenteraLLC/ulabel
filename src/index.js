@@ -14,8 +14,6 @@ import { GeometricUtils } from "../build/geometric_utils";
 import {
     AllowedToolboxItem,
     Configuration,
-    DEFAULT_N_ANNOS_PER_CANVAS,
-    TARGET_MAX_N_CANVASES_PER_SUBTASK,
 } from "../build/configuration";
 import { get_gradient } from "../build/drawing_utilities";
 import {
@@ -38,6 +36,7 @@ import {
 import { create_ulabel_listeners, remove_ulabel_listeners } from "../build/listeners";
 import { NightModeCookie } from "../build/cookies";
 import { log_message, LogLevel } from "../build/error_logging";
+import { initialize_annotation_canvases } from "../build/canvas_utils";
 
 import $ from "jquery";
 const jQuery = $;
@@ -447,25 +446,6 @@ export class ULabel {
         }
     }
 
-    static initialize_annotation_canvases(ul, subtask_key = null) {
-        if (subtask_key === null) {
-            ul.dynamically_set_n_annos_per_canvas();
-            for (const subtask_key in ul.subtasks) {
-                ULabel.initialize_annotation_canvases(ul, subtask_key);
-            }
-            return;
-        }
-
-        // Create the canvas for each annotation
-        const subtask = ul.subtasks[subtask_key];
-        for (const annotation_id in subtask.annotations.access) {
-            let annotation = subtask.annotations.access[annotation_id];
-            if (!NONSPATIAL_MODES.includes(annotation.spatial_type)) {
-                annotation["canvas_id"] = ul.get_init_canvas_context_id(annotation_id, subtask_key);
-            }
-        }
-    }
-
     static expand_image_data(ul, raw_img_dat) {
         if (typeof raw_img_dat === "string") {
             return {
@@ -739,7 +719,7 @@ export class ULabel {
             }
 
             // Create the annotation canvases for the resume_from annotations
-            ULabel.initialize_annotation_canvases(that);
+            initialize_annotation_canvases(that);
 
             // Add the ID dialogs' HTML to the document
             build_id_dialogs(that);
@@ -1285,33 +1265,6 @@ export class ULabel {
             }];
         } else {
             return JSON.parse(JSON.stringify(this.get_current_subtask()["state"]["id_payload"]));
-        }
-    }
-
-    /**
-     * If no user-provided n_annos_per_canvas is provided,
-     * Check if we should dynamically set it based on the number of annotations
-     * in the subtasks, to help with performance.
-     *
-     */
-    dynamically_set_n_annos_per_canvas() {
-        // Check if we should increase n_annos_per_canvas
-        // First, check if the value is still the default
-        if (this.config.n_annos_per_canvas === DEFAULT_N_ANNOS_PER_CANVAS) {
-            // See if we should dynamically raise the default by checking max number of annotations in a subtask
-            let max_annos = 0;
-            for (const subtask_key in this.subtasks) {
-                const subtask = this.subtasks[subtask_key];
-                if (subtask.annotations.ordering.length > max_annos) {
-                    max_annos = subtask.annotations.ordering.length;
-                }
-            }
-            // Performance starts to deteriorate when we require many canvases to be drawn on
-            // To be safe, check if max_annos / DEFAULT_N_ANNOS_PER_CANVAS is greater than TARGET_MAX_N_CANVASES_PER_SUBTASK
-            if (max_annos / DEFAULT_N_ANNOS_PER_CANVAS > TARGET_MAX_N_CANVASES_PER_SUBTASK) {
-                // If so, raise the default
-                this.config.n_annos_per_canvas = Math.ceil(max_annos / TARGET_MAX_N_CANVASES_PER_SUBTASK);
-            }
         }
     }
 
@@ -6280,7 +6233,7 @@ export class ULabel {
         }
         // Set new annotations and initialize canvases
         ULabel.process_resume_from(this, subtask, { resume_from: new_annotations });
-        ULabel.initialize_annotation_canvases(this, subtask);
+        initialize_annotation_canvases(this, subtask);
         // Redraw all annotations to render them
         this.redraw_all_annotations(subtask);
         // Calculate distances for all annotations if FilterDistance is present
