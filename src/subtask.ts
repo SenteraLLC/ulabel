@@ -69,6 +69,7 @@ export class ULabelSubtask {
         visible_dialogs: {
             [key: string]: ULabelDialogPosition;
         };
+        spatial_type: ULabelSpatialType;
     };
 
     constructor(
