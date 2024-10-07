@@ -653,11 +653,11 @@ export class ULabel {
             $("#" + this.config["container_id"]).addClass("ulabel-night");
         }
 
-        let first_img = document.getElementById(`${this.config["image_id_pfx"]}__0`);
-        first_img.decode().then(() => {
+        let first_bg_img = document.getElementById(`${this.config["image_id_pfx"]}__0`);
+        first_bg_img.decode().then(() => {
             // Store image dimensions
-            that.config["image_height"] = first_img.naturalHeight;
-            that.config["image_width"] = first_img.naturalWidth;
+            that.config["image_height"] = first_bg_img.naturalHeight;
+            that.config["image_width"] = first_bg_img.naturalWidth;
 
             // Add canvasses for each subtask and get their rendering contexts
             for (const st in that.subtasks) {
