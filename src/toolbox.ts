@@ -2417,15 +2417,6 @@ export class SubmitButtons extends ToolboxItem {
         // Grab the submit buttons from ulabel
         this.submit_buttons = ulabel.config.submit_buttons;
 
-        // Set `set_saved` to false if not provided
-        for (const button of this.submit_buttons) {
-            button.set_saved = button.set_saved ?? false;
-        }
-
-        this.add_styles();
-
-        this.add_event_listeners();
-
         // For legacy reasons submit_buttons may be a function, in that case convert it to the right format
         if (typeof this.submit_buttons == "function") {
             this.submit_buttons = [{
@@ -2435,6 +2426,16 @@ export class SubmitButtons extends ToolboxItem {
                 set_saved: false,
             }];
         }
+
+        // Set `set_saved` to false if not provided
+        console.log(this.submit_buttons);
+        for (const button of this.submit_buttons ?? []) {
+            button.set_saved = button.set_saved ?? false;
+        }
+
+        this.add_styles();
+
+        this.add_event_listeners();
 
         this.submit_buttons_by_row = this.sort_buttons_by_row_number();
 
