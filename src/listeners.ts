@@ -5,7 +5,7 @@
  */
 
 import { ULabel } from "..";
-import { DELETE_CLASS_ID, DELETE_MODES } from "./annotation";
+import { DELETE_CLASS_ID, DELETE_MODES, NONSPATIAL_MODES } from "./annotation";
 
 const ULABEL_NAMESPACE = ".ulabel";
 
@@ -192,6 +192,54 @@ function create_soft_id_toolbox_button_listener(
             }
         },
     );
+}
+
+/**
+ * Handler for ULabel keydown events.
+ *
+ * @param keydown_event Event to handle
+ * @param ulabel ULabel instance
+ * @returns Whether the event was handled
+ */
+function handle_keydown_event(
+    keydown_event: JQuery.KeyDownEvent,
+    ulabel: ULabel,
+): boolean {
+    const shift = keydown_event.shiftKey;
+    const ctrl = keydown_event.ctrlKey || keydown_event.metaKey;
+    const key_is_z = (
+        keydown_event.key === "z" ||
+        keydown_event.key === "Z" ||
+        keydown_event.code === "KeyZ"
+    );
+
+    if (ctrl && key_is_z) {
+        keydown_event.preventDefault();
+        if (shift) {
+            ulabel.redo();
+        } else {
+            ulabel.undo();
+        }
+        return false;
+    } else {
+        const current_subtask = ulabel.get_current_subtask();
+        switch (keydown_event.key) {
+            case "Escape":
+                // If in erase or brush mode, cancel the brush
+                if (current_subtask.state.is_in_erase_mode) {
+                    ulabel.toggle_erase_mode();
+                } else if (current_subtask.state.is_in_brush_mode) {
+                    ulabel.toggle_brush_mode();
+                } else if (current_subtask.state.starting_complex_polygon) {
+                    // If starting a complex polygon, undo
+                    ulabel.undo();
+                } else if (current_subtask.state.is_in_progress) {
+                    // If in the middle of drawing an annotation, cancel the annotation
+                    ulabel.cancel_annotation();
+                }
+                break;
+        }
+    }
 }
 
 /**
@@ -385,6 +433,119 @@ export function create_ulabel_listeners(
                 false,
                 true,
             );
+        },
+    );
+
+    $(document).on(
+        "mouseenter" + ULABEL_NAMESPACE,
+        "div.fad_annotation_rows div.fad_row",
+        function (mouse_event) {
+            // Show thumbnail for idd
+            ulabel.suggest_edits(
+                null,
+                $(mouse_event.currentTarget).attr("id").substring("row__".length),
+            );
+        },
+    );
+
+    $(document).on(
+        "mouseleave" + ULABEL_NAMESPACE,
+        "div.fad_annotation_rows div.fad_row",
+        function () {
+            // Show thumbnail for idd
+            if (
+                ulabel.get_current_subtask()["state"]["idd_visible"] &&
+                !ulabel.get_current_subtask()["state"]["idd_thumbnail"]
+            ) {
+                return;
+            }
+            ulabel.suggest_edits(null);
+        },
+    );
+
+    $(document).on(
+        "keypress" + ULABEL_NAMESPACE,
+        function (keypress_event) {
+            // Check the key pressed against the delete annotation keybind in the config
+            if (keypress_event.key === ulabel.config.delete_annotation_keybind) {
+                // Check the edit_candidate to make sure its not null and isn't nonspatial
+                const edit_cand = ulabel.get_current_subtask().state.edit_candidate;
+                if (edit_cand !== null && !NONSPATIAL_MODES.includes(edit_cand.spatial_type)) {
+                    ulabel.delete_annotation(edit_cand.annid);
+                }
+            }
+        },
+    );
+
+    // Listener for id_dialog click interactions
+    $(document).on(
+        "click" + ULABEL_NAMESPACE,
+        "#" + ulabel.config["container_id"] + " a.id-dialog-clickable-indicator",
+        function (click_event) {
+            if (!ulabel.get_current_subtask()["state"]["idd_thumbnail"]) {
+                ulabel.handle_id_dialog_click(click_event);
+            }
+        },
+    );
+
+    $(document).on(
+        "click" + ULABEL_NAMESPACE,
+        ".global_edit_suggestion a.reid_suggestion",
+        function (e) {
+            const crst = ulabel.get_current_subtask();
+            const annid = crst["state"]["idd_associated_annotation"];
+            ulabel.hide_global_edit_suggestion();
+            ulabel.show_id_dialog(
+                ulabel.get_global_mouse_x(e),
+                ulabel.get_global_mouse_y(e),
+                annid,
+                false,
+            );
+        },
+    );
+
+    $(document).on(
+        "click" + ULABEL_NAMESPACE,
+        "#" + ulabel.config["annbox_id"] + " .delete_suggestion",
+        function () {
+            const crst = ulabel.get_current_subtask();
+            ulabel.delete_annotation(crst["state"]["move_candidate"]["annid"]);
+        },
+    );
+
+    // Button to save annotations
+    $(document).on(
+        "click" + ULABEL_NAMESPACE,
+        "#" + ulabel.config["toolbox_id"] + " a.night-button",
+        function () {
+            const root_container = $("#" + ulabel.config["container_id"]);
+            if (root_container.hasClass("ulabel-night")) {
+                root_container.removeClass("ulabel-night");
+                ULabel.destroy_night_mode_cookie();
+            } else {
+                root_container.addClass("ulabel-night");
+                ULabel.set_night_mode_cookie();
+            }
+        },
+    );
+
+    // Keyboard only events
+    $(document).on(
+        "keydown" + ULABEL_NAMESPACE,
+        function (keydown_event: JQuery.KeyDownEvent) {
+            handle_keydown_event(keydown_event, ulabel);
+        },
+    );
+
+    $(window).on(
+        "beforeunload" + ULABEL_NAMESPACE,
+        function () {
+            if (ulabel.state["edited"]) {
+                // Return of anything other than `undefined`
+                // will trigger the browser's confirmation dialog
+                // Custom messages are not supported
+                return 1;
+            }
         },
     );
 }
