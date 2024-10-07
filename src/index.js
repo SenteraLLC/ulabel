@@ -515,16 +515,6 @@ export class ULabel {
         };
     }
 
-    /**
-     * Code to be called after ULabel has finished initializing.
-    */
-    static after_init(ulabel) {
-        // Perform the after_init method for each toolbox item
-        for (const toolbox_item of ulabel.toolbox.items) {
-            toolbox_item.after_init();
-        }
-    }
-
     // ================= Construction/Initialization =================
 
     constructor(kwargs) {
@@ -767,9 +757,19 @@ export class ULabel {
         });
 
         // Final code to be called after the object is initialized
-        ULabel.after_init(this);
+        this.after_init();
 
         console.log(`Time taken to construct and initialize: ${Date.now() - this.begining_time}`);
+    }
+
+    /**
+     * Code to be called after ULabel has finished initializing.
+     */
+    after_init() {
+        // Perform the after_init method for each toolbox item
+        for (const toolbox_item of this.toolbox.items) {
+            toolbox_item.after_init();
+        }
     }
 
     version() {
