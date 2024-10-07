@@ -35,6 +35,9 @@ import {
     build_confidence_dialog,
 } from "../build/html_builder";
 
+import { create_ulabel_listeners } from "../build/listeners";
+import { NightModeCookie } from "../build/cookies";
+
 import $ from "jquery";
 const jQuery = $;
 
@@ -82,25 +85,6 @@ export class ULabel {
     // Returns current epoch time in milliseconds
     static get_time() {
         return (new Date()).toISOString();
-    }
-
-    // =========================== NIGHT MODE COOKIES =======================================
-
-    static has_night_mode_cookie() {
-        if (document.cookie.split(";").find(row => row.trim().startsWith("nightmode=true"))) {
-            return true;
-        }
-        return false;
-    }
-
-    static set_night_mode_cookie() {
-        let d = new Date();
-        d.setTime(d.getTime() + (10000 * 24 * 60 * 60 * 1000));
-        document.cookie = "nightmode=true;expires=" + d.toUTCString() + ";path=/";
-    }
-
-    static destroy_night_mode_cookie() {
-        document.cookie = "nightmode=true;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/";
     }
 
     static get_allowed_toolbox_item_enum() {
@@ -176,373 +160,375 @@ export class ULabel {
     }
 
     static create_listeners(ul) {
-        // ================= Mouse Events in the ID Dialog =================
+        create_ulabel_listeners(ul);
 
-        var iddg = $(".id_dialog");
+        // // ================= Mouse Events in the ID Dialog =================
 
-        // Hover interactions
+        // var iddg = $(".id_dialog");
 
-        iddg.on("mousemove.ulabel", function (mouse_event) {
-            if (!ul.get_current_subtask()["state"]["idd_thumbnail"]) {
-                ul.handle_id_dialog_hover(mouse_event);
-            }
-        });
+        // // Hover interactions
 
-        // ================= Mouse Events in the Annotation Container =================
+        // iddg.on("mousemove.ulabel", function (mouse_event) {
+        //     if (!ul.get_current_subtask()["state"]["idd_thumbnail"]) {
+        //         ul.handle_id_dialog_hover(mouse_event);
+        //     }
+        // });
 
-        var annbox = $("#" + ul.config["annbox_id"]);
+        // // ================= Mouse Events in the Annotation Container =================
 
-        // Detect and record mousedown
-        annbox.on("mousedown.ulabel", (e) => {
-            ul.handle_mouse_down(e);
-        });
+        // var annbox = $("#" + ul.config["annbox_id"]);
 
-        // Prevent default for auxclick
-        $(document).on("auxclick.ulabel", ul.handle_aux_click);
+        // // Detect and record mousedown
+        // annbox.on("mousedown.ulabel", (e) => {
+        //     ul.handle_mouse_down(e);
+        // });
 
-        // Detect and record mouseup
-        $(document).on("mouseup.ulabel", ul.handle_mouse_up.bind(ul));
+        // // Prevent default for auxclick
+        // $(document).on("auxclick.ulabel", ul.handle_aux_click);
 
-        $(window).on("click.ulabel", (e) => {
-            if (e.shiftKey) {
-                e.preventDefault();
-            }
-        });
+        // // Detect and record mouseup
+        // $(document).on("mouseup.ulabel", ul.handle_mouse_up.bind(ul));
 
-        // Mouse movement has meaning in certain cases
-        annbox.on("mousemove.ulabel", (e) => {
-            ul.handle_mouse_move(e);
-        });
+        // $(window).on("click.ulabel", (e) => {
+        //     if (e.shiftKey) {
+        //         e.preventDefault();
+        //     }
+        // });
 
-        $(document).on("keypress.ulabel", (e) => {
-            // Check for the correct keypress
-            // Grab current subtask
-            const current_subtask = ul.get_current_subtask();
-            switch (e.key) {
-                // Create a point annotation at the mouse's current location
-                case ul.config.create_point_annotation_keybind:
-                    // Only allow keypress to create point annotations
-                    if (current_subtask.state.annotation_mode === "point") {
-                        // Create an annotation based on the last mouse position
-                        ul.begin_annotation(ul.state["last_move"]);
-                    }
-                    break;
-                // Create a bbox annotation around the initial_crop. Or the whole image if inital_crop does not exist
-                case ul.config.create_bbox_on_initial_crop:
-                    if (current_subtask.state.annotation_mode === "bbox") {
-                        // Default to an annotation with size of image
-                        // Create the coordinates for the bbox's spatial payload
-                        let bbox_top_left = [0, 0];
-                        let bbox_bottom_right = [ul.config.image_width, ul.config.image_height];
+        // // Mouse movement has meaning in certain cases
+        // annbox.on("mousemove.ulabel", (e) => {
+        //     ul.handle_mouse_move(e);
+        // });
 
-                        // If an initial crop exists, use that instead
-                        if (ul.config.initial_crop !== null && ul.config.initial_crop !== undefined) {
-                            // Convenience
-                            const initial_crop = ul.config.initial_crop;
+        // $(document).on("keypress.ulabel", (e) => {
+        //     // Check for the correct keypress
+        //     // Grab current subtask
+        //     const current_subtask = ul.get_current_subtask();
+        //     switch (e.key) {
+        //         // Create a point annotation at the mouse's current location
+        //         case ul.config.create_point_annotation_keybind:
+        //             // Only allow keypress to create point annotations
+        //             if (current_subtask.state.annotation_mode === "point") {
+        //                 // Create an annotation based on the last mouse position
+        //                 ul.begin_annotation(ul.state["last_move"]);
+        //             }
+        //             break;
+        //         // Create a bbox annotation around the initial_crop. Or the whole image if inital_crop does not exist
+        //         case ul.config.create_bbox_on_initial_crop:
+        //             if (current_subtask.state.annotation_mode === "bbox") {
+        //                 // Default to an annotation with size of image
+        //                 // Create the coordinates for the bbox's spatial payload
+        //                 let bbox_top_left = [0, 0];
+        //                 let bbox_bottom_right = [ul.config.image_width, ul.config.image_height];
 
-                            // Create the coordinates for the bbox's spatial payload
-                            bbox_top_left = [initial_crop.left, initial_crop.top];
-                            bbox_bottom_right = [initial_crop.left + initial_crop.width, initial_crop.top + initial_crop.height];
-                        }
+        //                 // If an initial crop exists, use that instead
+        //                 if (ul.config.initial_crop !== null && ul.config.initial_crop !== undefined) {
+        //                     // Convenience
+        //                     const initial_crop = ul.config.initial_crop;
 
-                        // Create the annotation
-                        ul.create_annotation(current_subtask.state.annotation_mode, [bbox_top_left, bbox_bottom_right]);
-                    }
-                    break;
-                // Change to brush mode (for now, polygon only)
-                case ul.config.toggle_brush_mode_keybind:
-                    ul.toggle_brush_mode(ul.state["last_move"]);
-                    break;
-                // Change to erase mode (will also set the is_in_brush_mode state)
-                case ul.config.toggle_erase_mode_keybind:
-                    ul.toggle_erase_mode(ul.state["last_move"]);
-                    break;
-                // Increase brush size by 10%
-                case ul.config.increase_brush_size_keybind:
-                    ul.change_brush_size(1.1);
-                    break;
-                // Decrease brush size by 10%
-                case ul.config.decrease_brush_size_keybind:
-                    ul.change_brush_size(1 / 1.1);
-                    break;
-                case ul.config.change_zoom_keybind.toLowerCase():
-                    ul.show_initial_crop();
-                    break;
-                case ul.config.change_zoom_keybind.toUpperCase():
-                    ul.show_whole_image();
-                    break;
-                default:
-                    if (!DELETE_MODES.includes(current_subtask.state.spatial_type)) {
-                        // Check for class keybinds
-                        for (let i = 0; i < current_subtask.class_defs.length; i++) {
-                            const class_def = current_subtask.class_defs[i];
-                            if (class_def.keybind !== null && e.key === class_def.keybind) {
-                                let class_button = $(`#tb-id-app--${ul.get_current_subtask_key()} a.tbid-opt`).eq(i);
-                                if (class_button.hasClass("sel")) {
-                                    // If the class button is already selected, check if there is an active annotation
-                                    // Get the active annotation, if any
-                                    let target_id = null;
-                                    if (current_subtask.state.active_id !== null) {
-                                        target_id = current_subtask.state.active_id;
-                                    } else if (current_subtask.state.move_candidate !== null) {
-                                        target_id = current_subtask.state.move_candidate["annid"];
-                                    }
-                                    // Update the class of the active annotation
-                                    if (target_id !== null) {
-                                        // Set the annotation's class to the selected class
-                                        ul.handle_id_dialog_click(ul.state["last_move"], target_id, ul.get_active_class_id_idx());
-                                    }
-                                } else {
-                                    // Click the class button if not already selected
-                                    class_button.trigger("click");
-                                }
-                                return;
-                            }
-                        }
-                    }
+        //                     // Create the coordinates for the bbox's spatial payload
+        //                     bbox_top_left = [initial_crop.left, initial_crop.top];
+        //                     bbox_bottom_right = [initial_crop.left + initial_crop.width, initial_crop.top + initial_crop.height];
+        //                 }
 
-                    break;
-            }
-        });
+        //                 // Create the annotation
+        //                 ul.create_annotation(current_subtask.state.annotation_mode, [bbox_top_left, bbox_bottom_right]);
+        //             }
+        //             break;
+        //         // Change to brush mode (for now, polygon only)
+        //         case ul.config.toggle_brush_mode_keybind:
+        //             ul.toggle_brush_mode(ul.state["last_move"]);
+        //             break;
+        //         // Change to erase mode (will also set the is_in_brush_mode state)
+        //         case ul.config.toggle_erase_mode_keybind:
+        //             ul.toggle_erase_mode(ul.state["last_move"]);
+        //             break;
+        //         // Increase brush size by 10%
+        //         case ul.config.increase_brush_size_keybind:
+        //             ul.change_brush_size(1.1);
+        //             break;
+        //         // Decrease brush size by 10%
+        //         case ul.config.decrease_brush_size_keybind:
+        //             ul.change_brush_size(1 / 1.1);
+        //             break;
+        //         case ul.config.change_zoom_keybind.toLowerCase():
+        //             ul.show_initial_crop();
+        //             break;
+        //         case ul.config.change_zoom_keybind.toUpperCase():
+        //             ul.show_whole_image();
+        //             break;
+        //         default:
+        //             if (!DELETE_MODES.includes(current_subtask.state.spatial_type)) {
+        //                 // Check for class keybinds
+        //                 for (let i = 0; i < current_subtask.class_defs.length; i++) {
+        //                     const class_def = current_subtask.class_defs[i];
+        //                     if (class_def.keybind !== null && e.key === class_def.keybind) {
+        //                         let class_button = $(`#tb-id-app--${ul.get_current_subtask_key()} a.tbid-opt`).eq(i);
+        //                         if (class_button.hasClass("sel")) {
+        //                             // If the class button is already selected, check if there is an active annotation
+        //                             // Get the active annotation, if any
+        //                             let target_id = null;
+        //                             if (current_subtask.state.active_id !== null) {
+        //                                 target_id = current_subtask.state.active_id;
+        //                             } else if (current_subtask.state.move_candidate !== null) {
+        //                                 target_id = current_subtask.state.move_candidate["annid"];
+        //                             }
+        //                             // Update the class of the active annotation
+        //                             if (target_id !== null) {
+        //                                 // Set the annotation's class to the selected class
+        //                                 ul.handle_id_dialog_click(ul.state["last_move"], target_id, ul.get_active_class_id_idx());
+        //                             }
+        //                         } else {
+        //                             // Click the class button if not already selected
+        //                             class_button.trigger("click");
+        //                         }
+        //                         return;
+        //                     }
+        //                 }
+        //             }
 
-        // This listener does not use jquery because it requires being able to prevent default
-        // There are maybe some hacky ways to do this with jquery
-        // https://stackoverflow.com/questions/60357083/does-not-use-passive-listeners-to-improve-scrolling-performance-lighthouse-repo
-        // Detection ctrl+scroll
-        document.getElementById(ul.config["annbox_id"]).addEventListener("wheel", ul.handle_wheel.bind(ul));
+        //             break;
+        //     }
+        // });
 
-        // Create a resize observer to reposition dialogs
-        let dialog_resize_observer = new ResizeObserver(function () {
-            ul.reposition_dialogs();
-        });
+        // // This listener does not use jquery because it requires being able to prevent default
+        // // There are maybe some hacky ways to do this with jquery
+        // // https://stackoverflow.com/questions/60357083/does-not-use-passive-listeners-to-improve-scrolling-performance-lighthouse-repo
+        // // Detection ctrl+scroll
+        // document.getElementById(ul.config["annbox_id"]).addEventListener("wheel", ul.handle_wheel.bind(ul));
 
-        // Observe the changes on the imwrap_id element
-        dialog_resize_observer.observe(document.getElementById(ul.config["imwrap_id"]));
+        // // Create a resize observer to reposition dialogs
+        // let dialog_resize_observer = new ResizeObserver(function () {
+        //     ul.reposition_dialogs();
+        // });
 
-        // Store a reference
-        ul.resize_observers.push(dialog_resize_observer);
+        // // Observe the changes on the imwrap_id element
+        // dialog_resize_observer.observe(document.getElementById(ul.config["imwrap_id"]));
 
-        // Create a resize observer to handle toolbox overflow
-        let tb_overflow_resize_observer = new ResizeObserver(function () {
-            ul.handle_toolbox_overflow();
-        });
+        // // Store a reference
+        // ul.resize_observers.push(dialog_resize_observer);
 
-        // Observe the changes on the ulabel container
-        tb_overflow_resize_observer.observe(document.getElementById(ul.config["container_id"]));
+        // // Create a resize observer to handle toolbox overflow
+        // let tb_overflow_resize_observer = new ResizeObserver(function () {
+        //     ul.handle_toolbox_overflow();
+        // });
 
-        // Store a reference
-        ul.resize_observers.push(tb_overflow_resize_observer);
+        // // Observe the changes on the ulabel container
+        // tb_overflow_resize_observer.observe(document.getElementById(ul.config["container_id"]));
 
-        // Listener for soft id toolbox buttons
-        $(document).on("click.ulabel", "#" + ul.config["toolbox_id"] + " a.tbid-opt", (e) => {
-            let tgt_jq = $(e.currentTarget);
-            let pfx = "div#tb-id-app--" + ul.get_current_subtask_key();
-            const current_subtask = ul.get_current_subtask();
-            if (tgt_jq.attr("href") === "#") {
-                const current_id_button = $(pfx + " a.tbid-opt.sel");
-                current_id_button.attr("href", "#");
-                current_id_button.removeClass("sel");
-                const old_id = parseInt(current_id_button.attr("id").split("_").at(-1));
-                tgt_jq.addClass("sel");
-                tgt_jq.removeAttr("href");
-                let idarr = tgt_jq.attr("id").split("_");
-                let rawid = parseInt(idarr[idarr.length - 1]);
-                ul.set_id_dialog_payload_nopin(current_subtask["class_ids"].indexOf(rawid), 1.0);
-                ul.update_id_dialog_display();
+        // // Store a reference
+        // ul.resize_observers.push(tb_overflow_resize_observer);
 
-                // Update the class of the active annotation, except when toggling on the delete class
-                if (rawid !== DELETE_CLASS_ID) {
-                    // Get the active annotation, if any
-                    let target_id = null;
-                    if (current_subtask.state.active_id !== null) {
-                        target_id = current_subtask.state.active_id;
-                    } else if (current_subtask.state.move_candidate !== null) {
-                        target_id = current_subtask.state.move_candidate["annid"];
-                    }
+        // // Listener for soft id toolbox buttons
+        // $(document).on("click.ulabel", "#" + ul.config["toolbox_id"] + " a.tbid-opt", (e) => {
+        //     let tgt_jq = $(e.currentTarget);
+        //     let pfx = "div#tb-id-app--" + ul.get_current_subtask_key();
+        //     const current_subtask = ul.get_current_subtask();
+        //     if (tgt_jq.attr("href") === "#") {
+        //         const current_id_button = $(pfx + " a.tbid-opt.sel");
+        //         current_id_button.attr("href", "#");
+        //         current_id_button.removeClass("sel");
+        //         const old_id = parseInt(current_id_button.attr("id").split("_").at(-1));
+        //         tgt_jq.addClass("sel");
+        //         tgt_jq.removeAttr("href");
+        //         let idarr = tgt_jq.attr("id").split("_");
+        //         let rawid = parseInt(idarr[idarr.length - 1]);
+        //         ul.set_id_dialog_payload_nopin(current_subtask["class_ids"].indexOf(rawid), 1.0);
+        //         ul.update_id_dialog_display();
 
-                    // Update the class of the active annotation
-                    if (target_id !== null) {
-                        // Set the annotation's class to the selected class
-                        ul.handle_id_dialog_click(ul.state["last_move"], target_id, ul.get_active_class_id_idx());
-                    } else {
-                        // If there is not active annotation, still update the brush circle if in brush mode
-                        ul.recolor_brush_circle();
-                    }
-                }
+        //         // Update the class of the active annotation, except when toggling on the delete class
+        //         if (rawid !== DELETE_CLASS_ID) {
+        //             // Get the active annotation, if any
+        //             let target_id = null;
+        //             if (current_subtask.state.active_id !== null) {
+        //                 target_id = current_subtask.state.active_id;
+        //             } else if (current_subtask.state.move_candidate !== null) {
+        //                 target_id = current_subtask.state.move_candidate["annid"];
+        //             }
 
-                // If toggling off a delete class while still in delete mode, re-toggle the delete class
-                // This occurs when using a keybind to change a hovered annotation's class while in delete mode
-                if (old_id === DELETE_CLASS_ID && DELETE_MODES.includes(current_subtask.state.annotation_mode)) {
-                    $("#toolbox_sel_" + DELETE_CLASS_ID).trigger("click");
-                }
-            }
-        });
+        //             // Update the class of the active annotation
+        //             if (target_id !== null) {
+        //                 // Set the annotation's class to the selected class
+        //                 ul.handle_id_dialog_click(ul.state["last_move"], target_id, ul.get_active_class_id_idx());
+        //             } else {
+        //                 // If there is not active annotation, still update the brush circle if in brush mode
+        //                 ul.recolor_brush_circle();
+        //             }
+        //         }
 
-        $(document).on("click.ulabel", "a.tb-st-switch[href]", (e) => {
-            let switch_to = $(e.target).attr("id").split("--")[1];
+        //         // If toggling off a delete class while still in delete mode, re-toggle the delete class
+        //         // This occurs when using a keybind to change a hovered annotation's class while in delete mode
+        //         if (old_id === DELETE_CLASS_ID && DELETE_MODES.includes(current_subtask.state.annotation_mode)) {
+        //             $("#toolbox_sel_" + DELETE_CLASS_ID).trigger("click");
+        //         }
+        //     }
+        // });
 
-            // Ignore if in the middle of annotation
-            if (ul.get_current_subtask()["state"]["is_in_progress"]) {
-                return;
-            }
+        // $(document).on("click.ulabel", "a.tb-st-switch[href]", (e) => {
+        //     let switch_to = $(e.target).attr("id").split("--")[1];
 
-            ul.set_subtask(switch_to);
-        });
+        //     // Ignore if in the middle of annotation
+        //     if (ul.get_current_subtask()["state"]["is_in_progress"]) {
+        //         return;
+        //     }
 
-        // Keybind to switch active subtask
-        $(document).on("keypress.ulabel", (e) => {
-            // Ignore if in the middle of annotation
-            if (ul.get_current_subtask()["state"]["is_in_progress"]) {
-                return;
-            }
+        //     ul.set_subtask(switch_to);
+        // });
 
-            // Check for the right keypress
-            if (e.key === ul.config.switch_subtask_keybind) {
-                ul.switch_to_next_subtask();
-            }
-        });
+        // // Keybind to switch active subtask
+        // $(document).on("keypress.ulabel", (e) => {
+        //     // Ignore if in the middle of annotation
+        //     if (ul.get_current_subtask()["state"]["is_in_progress"]) {
+        //         return;
+        //     }
 
-        $(document).on("input.ulabel", "input.frame_input", () => {
-            ul.update_frame();
-        });
+        //     // Check for the right keypress
+        //     if (e.key === ul.config.switch_subtask_keybind) {
+        //         ul.switch_to_next_subtask();
+        //     }
+        // });
 
-        $(document).on("input.ulabel", "span.tb-st-range input", () => {
-            ul.readjust_subtask_opacities();
-        });
+        // $(document).on("input.ulabel", "input.frame_input", () => {
+        //     ul.update_frame();
+        // });
 
-        $(document).on("click.ulabel", "div.fad_row.add a.add-glob-button", () => {
-            ul.create_nonspatial_annotation();
-        });
-        $(document).on("focus.ulabel", "textarea.nonspatial_note", () => {
-            $("div.frame_annotation_dialog.active").addClass("permopen");
-        });
-        $(document).on("focusout.ulabel", "textarea.nonspatial_note", () => {
-            $("div.frame_annotation_dialog.permopen").removeClass("permopen");
-        });
-        $(document).on("input.ulabel", "textarea.nonspatial_note", (e) => {
-            // Update annotation's text field
-            ul.get_current_subtask()["annotations"]["access"][e.target.id.substring("note__".length)]["text_payload"] = e.target.value;
-        });
-        $(document).on("click.ulabel", "a.fad_button.delete", (e) => {
-            ul.delete_annotation(e.target.id.substring("delete__".length));
-        });
-        $(document).on("click.ulabel", "a.fad_button.reclf", (e) => {
-            // Show idd
-            ul.show_id_dialog(e.pageX, e.pageY, e.target.id.substring("reclf__".length), false, true);
-        });
+        // $(document).on("input.ulabel", "span.tb-st-range input", () => {
+        //     ul.readjust_subtask_opacities();
+        // });
 
-        $(document).on("mouseenter.ulabel", "div.fad_annotation_rows div.fad_row", (e) => {
-            // Show thumbnail for idd
-            ul.suggest_edits(null, $(e.currentTarget).attr("id").substring("row__".length));
-        });
-        $(document).on("mouseleave.ulabel", "div.fad_annotation_rows div.fad_row", () => {
-            // Show thumbnail for idd
-            if (
-                ul.get_current_subtask()["state"]["idd_visible"] &&
-                !ul.get_current_subtask()["state"]["idd_thumbnail"]
-            ) {
-                return;
-            }
-            ul.suggest_edits(null);
-        });
-        $(document).on("keypress.ulabel", (e) => {
-            // Check the key pressed against the delete annotation keybind in the config
-            if (e.key === ul.config.delete_annotation_keybind) {
-                // Check the edit_candidate to make sure its not null and isn't nonspatial
-                if (
-                    ul.get_current_subtask().state.edit_candidate != null &&
-                    !NONSPATIAL_MODES.includes(ul.get_current_subtask().state.edit_candidate.spatial_type)
-                ) {
-                    // Delete the active annotation
-                    ul.delete_annotation(ul.get_current_subtask().state.edit_candidate.annid);
-                }
-            }
-        });
+        // $(document).on("click.ulabel", "div.fad_row.add a.add-glob-button", () => {
+        //     ul.create_nonspatial_annotation();
+        // });
+        // $(document).on("focus.ulabel", "textarea.nonspatial_note", () => {
+        //     $("div.frame_annotation_dialog.active").addClass("permopen");
+        // });
+        // $(document).on("focusout.ulabel", "textarea.nonspatial_note", () => {
+        //     $("div.frame_annotation_dialog.permopen").removeClass("permopen");
+        // });
+        // $(document).on("input.ulabel", "textarea.nonspatial_note", (e) => {
+        //     // Update annotation's text field
+        //     ul.get_current_subtask()["annotations"]["access"][e.target.id.substring("note__".length)]["text_payload"] = e.target.value;
+        // });
+        // $(document).on("click.ulabel", "a.fad_button.delete", (e) => {
+        //     ul.delete_annotation(e.target.id.substring("delete__".length));
+        // });
+        // $(document).on("click.ulabel", "a.fad_button.reclf", (e) => {
+        //     // Show idd
+        //     ul.show_id_dialog(e.pageX, e.pageY, e.target.id.substring("reclf__".length), false, true);
+        // });
 
-        // Listener for id_dialog click interactions
-        $(document).on("click.ulabel", "#" + ul.config["container_id"] + " a.id-dialog-clickable-indicator", (e) => {
-            if (!ul.get_current_subtask()["state"]["idd_thumbnail"]) {
-                ul.handle_id_dialog_click(e);
-            } else {
-                // It's always covered up as a thumbnail. See below
-            }
-        });
-        $(document).on("click.ulabel", ".global_edit_suggestion a.reid_suggestion", (e) => {
-            let crst = ul.get_current_subtask();
-            let annid = crst["state"]["idd_associated_annotation"];
-            ul.hide_global_edit_suggestion();
-            ul.show_id_dialog(
-                ul.get_global_mouse_x(e),
-                ul.get_global_mouse_y(e),
-                annid,
-                false,
-            );
-        });
+        // $(document).on("mouseenter.ulabel", "div.fad_annotation_rows div.fad_row", (e) => {
+        //     // Show thumbnail for idd
+        //     ul.suggest_edits(null, $(e.currentTarget).attr("id").substring("row__".length));
+        // });
+        // $(document).on("mouseleave.ulabel", "div.fad_annotation_rows div.fad_row", () => {
+        //     // Show thumbnail for idd
+        //     if (
+        //         ul.get_current_subtask()["state"]["idd_visible"] &&
+        //         !ul.get_current_subtask()["state"]["idd_thumbnail"]
+        //     ) {
+        //         return;
+        //     }
+        //     ul.suggest_edits(null);
+        // });
+        // $(document).on("keypress.ulabel", (e) => {
+        //     // Check the key pressed against the delete annotation keybind in the config
+        //     if (e.key === ul.config.delete_annotation_keybind) {
+        //         // Check the edit_candidate to make sure its not null and isn't nonspatial
+        //         if (
+        //             ul.get_current_subtask().state.edit_candidate != null &&
+        //             !NONSPATIAL_MODES.includes(ul.get_current_subtask().state.edit_candidate.spatial_type)
+        //         ) {
+        //             // Delete the active annotation
+        //             ul.delete_annotation(ul.get_current_subtask().state.edit_candidate.annid);
+        //         }
+        //     }
+        // });
 
-        $(document).on("click.ulabel", "#" + ul.config["annbox_id"] + " .delete_suggestion", () => {
-            let crst = ul.get_current_subtask();
-            ul.delete_annotation(crst["state"]["move_candidate"]["annid"]);
-        });
+        // // Listener for id_dialog click interactions
+        // $(document).on("click.ulabel", "#" + ul.config["container_id"] + " a.id-dialog-clickable-indicator", (e) => {
+        //     if (!ul.get_current_subtask()["state"]["idd_thumbnail"]) {
+        //         ul.handle_id_dialog_click(e);
+        //     } else {
+        //         // It's always covered up as a thumbnail. See below
+        //     }
+        // });
+        // $(document).on("click.ulabel", ".global_edit_suggestion a.reid_suggestion", (e) => {
+        //     let crst = ul.get_current_subtask();
+        //     let annid = crst["state"]["idd_associated_annotation"];
+        //     ul.hide_global_edit_suggestion();
+        //     ul.show_id_dialog(
+        //         ul.get_global_mouse_x(e),
+        //         ul.get_global_mouse_y(e),
+        //         annid,
+        //         false,
+        //     );
+        // });
 
-        // Button to save annotations
-        $(document).on("click.ulabel", "#" + ul.config["toolbox_id"] + " a.night-button", function () {
-            if ($("#" + ul.config["container_id"]).hasClass("ulabel-night")) {
-                $("#" + ul.config["container_id"]).removeClass("ulabel-night");
-                // Destroy any night cookie
-                ULabel.destroy_night_mode_cookie();
-            } else {
-                $("#" + ul.config["container_id"]).addClass("ulabel-night");
-                // Drop a night cookie
-                ULabel.set_night_mode_cookie();
-            }
-        });
+        // $(document).on("click.ulabel", "#" + ul.config["annbox_id"] + " .delete_suggestion", () => {
+        //     let crst = ul.get_current_subtask();
+        //     ul.delete_annotation(crst["state"]["move_candidate"]["annid"]);
+        // });
 
-        // Keyboard only events
-        $(document).on("keydown.ulabel", (keypress_event) => {
-            const shift = keypress_event.shiftKey;
-            const ctrl = keypress_event.ctrlKey || keypress_event.metaKey;
-            if (ctrl &&
-                (
-                    keypress_event.key === "z" ||
-                    keypress_event.key === "Z" ||
-                    keypress_event.code === "KeyZ"
-                )
-            ) {
-                keypress_event.preventDefault();
-                if (shift) {
-                    ul.redo();
-                } else {
-                    ul.undo();
-                }
-                return false;
-            } else {
-                const current_subtask = ul.get_current_subtask();
-                switch (keypress_event.key) {
-                    case "Escape":
-                        // If in erase or brush mode, cancel the brush
-                        if (current_subtask.state.is_in_erase_mode) {
-                            ul.toggle_erase_mode();
-                        } else if (current_subtask.state.is_in_brush_mode) {
-                            ul.toggle_brush_mode();
-                        } else if (current_subtask.state.starting_complex_polygon) {
-                            // If starting a complex polygon, undo
-                            ul.undo();
-                        } else if (current_subtask.state.is_in_progress) {
-                            // If in the middle of drawing an annotation, cancel the annotation
-                            ul.cancel_annotation();
-                        }
-                        break;
-                }
-            }
-        });
+        // // Button to save annotations
+        // $(document).on("click.ulabel", "#" + ul.config["toolbox_id"] + " a.night-button", function () {
+        //     if ($("#" + ul.config["container_id"]).hasClass("ulabel-night")) {
+        //         $("#" + ul.config["container_id"]).removeClass("ulabel-night");
+        //         // Destroy any night cookie
+        //         ULabel.destroy_night_mode_cookie();
+        //     } else {
+        //         $("#" + ul.config["container_id"]).addClass("ulabel-night");
+        //         // Drop a night cookie
+        //         ULabel.set_night_mode_cookie();
+        //     }
+        // });
 
-        $(window).on("beforeunload.ulabel", () => {
-            if (ul.state["edited"]) {
-                // Return of anything other than `undefined` will trigger the browser's confirmation dialog
-                // Custom messages are not supported
-                return 1;
-            }
-        });
+        // // Keyboard only events
+        // $(document).on("keydown.ulabel", (keypress_event) => {
+        //     const shift = keypress_event.shiftKey;
+        //     const ctrl = keypress_event.ctrlKey || keypress_event.metaKey;
+        //     if (ctrl &&
+        //         (
+        //             keypress_event.key === "z" ||
+        //             keypress_event.key === "Z" ||
+        //             keypress_event.code === "KeyZ"
+        //         )
+        //     ) {
+        //         keypress_event.preventDefault();
+        //         if (shift) {
+        //             ul.redo();
+        //         } else {
+        //             ul.undo();
+        //         }
+        //         return false;
+        //     } else {
+        //         const current_subtask = ul.get_current_subtask();
+        //         switch (keypress_event.key) {
+        //             case "Escape":
+        //                 // If in erase or brush mode, cancel the brush
+        //                 if (current_subtask.state.is_in_erase_mode) {
+        //                     ul.toggle_erase_mode();
+        //                 } else if (current_subtask.state.is_in_brush_mode) {
+        //                     ul.toggle_brush_mode();
+        //                 } else if (current_subtask.state.starting_complex_polygon) {
+        //                     // If starting a complex polygon, undo
+        //                     ul.undo();
+        //                 } else if (current_subtask.state.is_in_progress) {
+        //                     // If in the middle of drawing an annotation, cancel the annotation
+        //                     ul.cancel_annotation();
+        //                 }
+        //                 break;
+        //         }
+        //     }
+        // });
+
+        // $(window).on("beforeunload.ulabel", () => {
+        //     if (ul.state["edited"]) {
+        //         // Return of anything other than `undefined` will trigger the browser's confirmation dialog
+        //         // Custom messages are not supported
+        //         return 1;
+        //     }
+        // });
     }
 
     static process_allowed_modes(ul, subtask_key, subtask) {
@@ -1094,7 +1080,7 @@ export class ULabel {
         prep_window_html(this, this.config.toolbox_order);
 
         // Detect night cookie
-        if (ULabel.has_night_mode_cookie()) {
+        if (NightModeCookie.exists_in_document()) {
             $("#" + this.config["container_id"]).addClass("ulabel-night");
         }
 

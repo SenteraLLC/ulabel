@@ -4,7 +4,8 @@
  * These primarily use JQuery, within the namespace "ulabel".
  */
 
-import { ULabel } from "..";
+import type { ULabel } from "..";
+import { NightModeCookie } from "./cookies";
 import { DELETE_CLASS_ID, DELETE_MODES, NONSPATIAL_MODES } from "./annotation";
 
 const ULABEL_NAMESPACE = ".ulabel";
@@ -521,10 +522,10 @@ export function create_ulabel_listeners(
             const root_container = $("#" + ulabel.config["container_id"]);
             if (root_container.hasClass("ulabel-night")) {
                 root_container.removeClass("ulabel-night");
-                ULabel.destroy_night_mode_cookie();
+                NightModeCookie.destroy_cookie();
             } else {
                 root_container.addClass("ulabel-night");
-                ULabel.set_night_mode_cookie();
+                NightModeCookie.set_cookie();
             }
         },
     );
