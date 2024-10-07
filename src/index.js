@@ -480,18 +480,6 @@ export class ULabel {
         }
     }
 
-    static load_image_promise(img_el) {
-        return new Promise((resolve, reject) => {
-            try {
-                img_el.onload = () => {
-                    resolve(img_el);
-                };
-            } catch (err) {
-                reject(err);
-            }
-        });
-    }
-
     static handle_deprecated_arguments() {
         // Warn users that this method is deprecated
         console.warn(`
@@ -665,14 +653,9 @@ export class ULabel {
             $("#" + this.config["container_id"]).addClass("ulabel-night");
         }
 
-        var images = [document.getElementById(`${this.config["image_id_pfx"]}__0`)];
-        let mappable_images = [];
-        for (let i = 0; i < images.length; i++) {
-            mappable_images.push(images[i]);
-            break;
-        }
-        let image_promises = mappable_images.map(ULabel.load_image_promise);
-        Promise.all(image_promises).then((loaded_imgs) => {
+        let first_img = document.getElementById(`${this.config["image_id_pfx"]}__0`);
+        first_img.decode().then(() => {
+            const loaded_imgs = [first_img];
             // Store image dimensions
             that.config["image_height"] = loaded_imgs[0].naturalHeight;
             that.config["image_width"] = loaded_imgs[0].naturalWidth;
