@@ -296,7 +296,7 @@ export class ULabel {
     public handle_mouse_move(mouse_event: JQuery.TriggeredEvent): void;
     public handle_mouse_up(mouse_event: JQuery.TriggeredEvent): void;
     public handle_aux_click(mouse_event: JQuery.TriggeredEvent): void;
-    public handle_wheel(wheel_event: JQuery.TriggeredEvent): void;
+    public handle_wheel(wheel_event: WheelEvent): void;
     public start_drag(
         drag_key: string,
         release_button: string,
