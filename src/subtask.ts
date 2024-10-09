@@ -47,6 +47,7 @@ export class ULabelSubtask {
             access: string | number | [number, number];
             distance: number;
             point: [number, number]; // Mouse location
+            spatial_type: ULabelSpatialType;
         };
         first_explicit_assignment: boolean;
         front_context: CanvasRenderingContext2D;
@@ -54,7 +55,7 @@ export class ULabelSubtask {
             class_id: number;
             confidence: number;
         }[];
-        idd_associated_annotation: unknown; // TODO: figure out what type this is
+        idd_associated_annotation: string;
         idd_id: string;
         idd_id_front: string;
         idd_thumbnail: boolean;
@@ -69,6 +70,7 @@ export class ULabelSubtask {
         visible_dialogs: {
             [key: string]: ULabelDialogPosition;
         };
+        spatial_type: ULabelSpatialType;
     };
 
     constructor(

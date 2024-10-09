@@ -23,6 +23,7 @@ export default [
     },
     stylistic.configs.customize(
         {
+            arrowParens: true,
             braceStyle: "1tbs",
             commaDangle: "always-multiline",
             indent: 4,
