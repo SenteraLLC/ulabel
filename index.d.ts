@@ -195,6 +195,8 @@ export class ULabel {
     valid_class_ids: number[];
     toolbox_order?: number[];
     filter_distance_overlay?: FilterDistanceOverlay;
+    begining_time: number;
+    is_init: boolean;
     resize_observers: ResizeObserver[];
     /**
      * @link https://github.com/SenteraLLC/ulabel/blob/main/api_spec.md#ulabel-constructor
@@ -219,6 +221,7 @@ export class ULabel {
      * @link https://github.com/SenteraLLC/ulabel/blob/main/api_spec.md#display-utility-functions
      */
     public init(callback: () => void): void;
+    public after_init(): void;
     public show_initial_crop(): void;
     public show_whole_image(): void;
     public swap_frame_image(new_src: string, frame?: number): string;
@@ -244,7 +247,6 @@ export class ULabel {
     public show_annotation_mode(
         target_jq?: JQuery<HTMLElement>, // TODO (joshua-dean): validate this type
     );
-    public rezoom(): void;
     public update_frame(delta?: number, new_frame?: number): void;
     public handle_id_dialog_hover(
         mouse_event: JQuery.TriggeredEvent,
@@ -266,8 +268,14 @@ export class ULabel {
     // Listeners
     public remove_listeners(): void;
     static get_allowed_toolbox_item_enum(): AllowedToolboxItem;
-    static process_classes(ulabel_obj: ULabel, arg1: string, subtask_obj: ULabelSubtask);
-    static build_id_dialogs(ulabel_obj: ULabel);
+    static process_classes(ulabel_obj: ULabel, arg1: string, subtask_obj: ULabelSubtask): void;
+    static build_id_dialogs(ulabel_obj: ULabel): void;
+
+    // Instance init functions
+    public create_overlays(): void;
+
+    // nops
+    public redraw_demo(): void;
 
     // Annotation lifecycle
     // TODO (joshua-dean): type for redo_payload
