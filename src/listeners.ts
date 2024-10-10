@@ -242,6 +242,7 @@ function handle_keydown_event(
 
 /**
  * Create listeners for a ULabel instance.
+ * Inline handlers must be arrow functions.
  * Consider breaking out long handlers.
  *
  * @param ulabel ULabel instance
@@ -253,7 +254,7 @@ export function create_ulabel_listeners(
     const id_dialog = $(".id_dialog");
     id_dialog.on(
         "mousemove" + ULABEL_NAMESPACE,
-        function (mouse_event) {
+        (mouse_event) => {
             if (!ulabel.get_current_subtask()["state"]["idd_thumbnail"]) {
                 ulabel.handle_id_dialog_hover(mouse_event);
             }
@@ -266,26 +267,24 @@ export function create_ulabel_listeners(
     // Detect and record mousedown
     annbox.on(
         "mousedown" + ULABEL_NAMESPACE,
-        function (click_event) {
-            ulabel.handle_mouse_down(click_event);
-        },
+        (click_event) => ulabel.handle_mouse_down(click_event),
     );
 
     // Prevent default for auxclick
     $(document).on(
         "auxclick" + ULABEL_NAMESPACE,
-        ulabel.handle_aux_click,
+        (mouse_event) => ulabel.handle_aux_click(mouse_event),
     );
 
     // Detect and record mouseup
     $(document).on(
         "mouseup" + ULABEL_NAMESPACE,
-        ulabel.handle_mouse_up.bind(ulabel),
+        (mouseup_event) => ulabel.handle_mouse_up(mouseup_event),
     );
 
     $(window).on(
         "click" + ULABEL_NAMESPACE,
-        function (click_event) {
+        (click_event) => {
             if (click_event.shiftKey) {
                 click_event.preventDefault();
             }
@@ -295,16 +294,14 @@ export function create_ulabel_listeners(
     // Mouse movement has meaning in certain cases
     annbox.on(
         "mousemove" + ULABEL_NAMESPACE,
-        function (move_event) {
-            ulabel.handle_mouse_move(move_event);
-        },
+        (move_event) => ulabel.handle_mouse_move(move_event),
     );
 
     // ================= Uncategorized =================
 
     $(document).on(
         "keypress" + ULABEL_NAMESPACE,
-        function (keypress_event: JQuery.KeyPressEvent) {
+        (keypress_event: JQuery.KeyPressEvent) => {
             handle_keypress_event(keypress_event, ulabel);
         },
     );
@@ -317,13 +314,13 @@ export function create_ulabel_listeners(
         ulabel.config["annbox_id"],
     ).addEventListener(
         "wheel",
-        ulabel.handle_wheel.bind(ulabel),
+        (wheel_event) => ulabel.handle_wheel(wheel_event),
     );
 
     // Create a resize observer to reposition dialogs
-    const dialog_resize_observer = new ResizeObserver(function () {
-        ulabel.reposition_dialogs();
-    });
+    const dialog_resize_observer = new ResizeObserver(
+        () => ulabel.reposition_dialogs(),
+    );
 
     // Observe the changes on the imwrap_id element
     dialog_resize_observer.observe(
@@ -334,9 +331,9 @@ export function create_ulabel_listeners(
     ulabel.resize_observers.push(dialog_resize_observer);
 
     // Create a resize observer to handle toolbox overflow
-    const tb_overflow_resize_observer = new ResizeObserver(function () {
-        ulabel.handle_toolbox_overflow();
-    });
+    const tb_overflow_resize_observer = new ResizeObserver(
+        () => ulabel.handle_toolbox_overflow(),
+    );
 
     // Observe the changes on the ulabel container
     tb_overflow_resize_observer.observe(
@@ -350,7 +347,7 @@ export function create_ulabel_listeners(
     $(document).on(
         "click" + ULABEL_NAMESPACE,
         `#${ulabel.config["toolbox_id"]} a.tbid-opt`,
-        function (click_event: JQuery.ClickEvent) {
+        (click_event: JQuery.ClickEvent) => {
             handle_soft_id_toolbox_button_click(click_event, ulabel);
         },
     );
@@ -358,7 +355,7 @@ export function create_ulabel_listeners(
     $(document).on(
         "click" + ULABEL_NAMESPACE,
         "a.tb-st-switch[href]",
-        function (click_event) {
+        (click_event) => {
             const switch_to = $(click_event.target).attr("id").split("--")[1];
 
             // Ignore if in the middle of annotation
@@ -371,7 +368,7 @@ export function create_ulabel_listeners(
     // Keybind to switch active subtask
     $(document).on(
         "keypress" + ULABEL_NAMESPACE,
-        function (keypress_event) {
+        (keypress_event) => {
             // Ignore if in the middle of annotation
             if (ulabel.get_current_subtask()["state"]["is_in_progress"]) return;
 
@@ -415,7 +412,7 @@ export function create_ulabel_listeners(
     $(document).on(
         "input" + ULABEL_NAMESPACE,
         "textarea.nonspatial_note",
-        function (input_event) {
+        (input_event) => {
             // Update annotation's text field
             const annos = ulabel.get_current_subtask()["annotations"]["access"];
             const text_payload_anno_id = input_event.target.id.substring("note__".length);
@@ -426,7 +423,7 @@ export function create_ulabel_listeners(
     $(document).on(
         "click" + ULABEL_NAMESPACE,
         "a.fad_button.delete",
-        function (click_event) {
+        (click_event) => {
             ulabel.delete_annotation(click_event.target.id.substring("delete__".length));
         },
     );
@@ -434,7 +431,7 @@ export function create_ulabel_listeners(
     $(document).on(
         "click" + ULABEL_NAMESPACE,
         "a.fad_button.reclf",
-        function (click_event) {
+        (click_event) => {
             // Show idd
             ulabel.show_id_dialog(
                 click_event.pageX,
@@ -449,7 +446,7 @@ export function create_ulabel_listeners(
     $(document).on(
         "mouseenter" + ULABEL_NAMESPACE,
         "div.fad_annotation_rows div.fad_row",
-        function (mouse_event) {
+        (mouse_event) => {
             // Show thumbnail for idd
             ulabel.suggest_edits(
                 null,
@@ -461,7 +458,7 @@ export function create_ulabel_listeners(
     $(document).on(
         "mouseleave" + ULABEL_NAMESPACE,
         "div.fad_annotation_rows div.fad_row",
-        function () {
+        () => {
             // Show thumbnail for idd
             if (
                 ulabel.get_current_subtask()["state"]["idd_visible"] &&
@@ -475,7 +472,7 @@ export function create_ulabel_listeners(
 
     $(document).on(
         "keypress" + ULABEL_NAMESPACE,
-        function (keypress_event) {
+        (keypress_event) => {
             // Check the key pressed against the delete annotation keybind in the config
             if (keypress_event.key === ulabel.config.delete_annotation_keybind) {
                 // Check the edit_candidate to make sure its not null and isn't nonspatial
@@ -491,7 +488,7 @@ export function create_ulabel_listeners(
     $(document).on(
         "click" + ULABEL_NAMESPACE,
         "#" + ulabel.config["container_id"] + " a.id-dialog-clickable-indicator",
-        function (click_event) {
+        (click_event) => {
             if (!ulabel.get_current_subtask()["state"]["idd_thumbnail"]) {
                 ulabel.handle_id_dialog_click(click_event);
             }
@@ -501,7 +498,7 @@ export function create_ulabel_listeners(
     $(document).on(
         "click" + ULABEL_NAMESPACE,
         ".global_edit_suggestion a.reid_suggestion",
-        function (click_event) {
+        (click_event) => {
             const crst = ulabel.get_current_subtask();
             const annid = crst["state"]["idd_associated_annotation"];
             ulabel.hide_global_edit_suggestion();
@@ -517,7 +514,7 @@ export function create_ulabel_listeners(
     $(document).on(
         "click" + ULABEL_NAMESPACE,
         "#" + ulabel.config["annbox_id"] + " .delete_suggestion",
-        function () {
+        () => {
             const crst = ulabel.get_current_subtask();
             ulabel.delete_annotation(crst["state"]["move_candidate"]["annid"]);
         },
@@ -527,7 +524,7 @@ export function create_ulabel_listeners(
     $(document).on(
         "click" + ULABEL_NAMESPACE,
         "#" + ulabel.config["toolbox_id"] + " a.night-button",
-        function () {
+        () => {
             const root_container = $("#" + ulabel.config["container_id"]);
             if (root_container.hasClass("ulabel-night")) {
                 root_container.removeClass("ulabel-night");
@@ -542,14 +539,14 @@ export function create_ulabel_listeners(
     // Keyboard only events
     $(document).on(
         "keydown" + ULABEL_NAMESPACE,
-        function (keydown_event: JQuery.KeyDownEvent) {
+        (keydown_event: JQuery.KeyDownEvent) => {
             handle_keydown_event(keydown_event, ulabel);
         },
     );
 
     $(window).on(
         "beforeunload" + ULABEL_NAMESPACE,
-        function () {
+        () => {
             if (ulabel.state["edited"]) {
                 // Return of anything other than `undefined`
                 // will trigger the browser's confirmation dialog

@@ -1895,10 +1895,8 @@ export class ULabel {
                 this.draw_global_annotation(annotation_object, subtask);
                 break;
             default:
-                // TODO (joshua-dean): why would this log at info level,
-                // and then write "warning" in the message?
                 log_message(
-                    "Warning: Annotation " + annotation_object["id"] + " not understood",
+                    "Annotation mode " + annotation_object["spatial_type"] + " not understood",
                     LogLevel.INFO,
                 );
                 break;
