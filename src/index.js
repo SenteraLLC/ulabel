@@ -14,8 +14,6 @@ import { GeometricUtils } from "../build/geometric_utils";
 import {
     AllowedToolboxItem,
     Configuration,
-    DEFAULT_N_ANNOS_PER_CANVAS,
-    TARGET_MAX_N_CANVASES_PER_SUBTASK,
 } from "../build/configuration";
 import { get_gradient } from "../build/drawing_utilities";
 import {
@@ -37,6 +35,8 @@ import {
 
 import { create_ulabel_listeners, remove_ulabel_listeners } from "../build/listeners";
 import { NightModeCookie } from "../build/cookies";
+import { log_message, LogLevel } from "../build/error_logging";
+import { initialize_annotation_canvases } from "../build/canvas_utils";
 
 import $ from "jquery";
 const jQuery = $;
@@ -62,20 +62,6 @@ jQuery.fn.outer_html = function () {
 };
 
 export class ULabel {
-    // ================= Internal constants =================
-
-    static get elvl_info() {
-        return 0;
-    }
-
-    static get elvl_standard() {
-        return 1;
-    }
-
-    static get elvl_fatal() {
-        return 2;
-    }
-
     static version() {
         return ULABEL_VERSION;
     }
@@ -453,26 +439,10 @@ export class ULabel {
             };
         }
         if (first_non_ro === null) {
-            ul.raise_error("You must have at least one subtask without 'read_only' set to true.", ULabel.elvl_fatal);
-        }
-    }
-
-    static initialize_annotation_canvases(ul, subtask_key = null) {
-        if (subtask_key === null) {
-            ul.dynamically_set_n_annos_per_canvas();
-            for (const subtask_key in ul.subtasks) {
-                ULabel.initialize_annotation_canvases(ul, subtask_key);
-            }
-            return;
-        }
-
-        // Create the canvas for each annotation
-        const subtask = ul.subtasks[subtask_key];
-        for (const annotation_id in subtask.annotations.access) {
-            let annotation = subtask.annotations.access[annotation_id];
-            if (!NONSPATIAL_MODES.includes(annotation.spatial_type)) {
-                annotation["canvas_id"] = ul.get_init_canvas_context_id(annotation_id, subtask_key);
-            }
+            log_message(
+                "You must have at least one subtask without 'read_only' set to true.",
+                LogLevel.ERROR,
+            );
         }
     }
 
@@ -502,21 +472,12 @@ export class ULabel {
         } else if ("spacing" in raw_img_dat && "frames" in raw_img_dat) {
             return raw_img_dat;
         } else {
-            ul.raise_error(`Image data object not understood. Must be of form "http://url.to/img" OR ["img1", "img2", ...] OR {spacing: {x: <num>, y: <num>, z: <num>, units: <str>}, frames: ["img1", "img2", ...]}. Provided: ${JSON.stringify(raw_img_dat)}`, ULabel.elvl_fatal);
+            log_message(
+                `Image data object not understood. Must be of form "http://url.to/img" OR ["img1", "img2", ...] OR {spacing: {x: <num>, y: <num>, z: <num>, units: <str>}, frames: ["img1", "img2", ...]}. Provided: ${JSON.stringify(raw_img_dat)}`,
+                LogLevel.ERROR,
+            );
             return null;
         }
-    }
-
-    static load_image_promise(img_el) {
-        return new Promise((resolve, reject) => {
-            try {
-                img_el.onload = () => {
-                    resolve(img_el);
-                };
-            } catch (err) {
-                reject(err);
-            }
-        });
     }
 
     static handle_deprecated_arguments() {
@@ -540,16 +501,6 @@ export class ULabel {
             config_data: arguments[10] ?? null, // Use default if optional argument is undefined
             toolbox_order: arguments[11] ?? null, // Use default if optional argument is undefined
         };
-    }
-
-    /**
-     * Code to be called after ULabel has finished initializing.
-    */
-    static after_init(ulabel) {
-        // Perform the after_init method for each toolbox item
-        for (const toolbox_item of ulabel.toolbox.items) {
-            toolbox_item.after_init();
-        }
     }
 
     // ================= Construction/Initialization =================
@@ -702,17 +653,11 @@ export class ULabel {
             $("#" + this.config["container_id"]).addClass("ulabel-night");
         }
 
-        var images = [document.getElementById(`${this.config["image_id_pfx"]}__0`)];
-        let mappable_images = [];
-        for (let i = 0; i < images.length; i++) {
-            mappable_images.push(images[i]);
-            break;
-        }
-        let image_promises = mappable_images.map(ULabel.load_image_promise);
-        Promise.all(image_promises).then((loaded_imgs) => {
+        let first_bg_img = document.getElementById(`${this.config["image_id_pfx"]}__0`);
+        first_bg_img.decode().then(() => {
             // Store image dimensions
-            that.config["image_height"] = loaded_imgs[0].naturalHeight;
-            that.config["image_width"] = loaded_imgs[0].naturalWidth;
+            that.config["image_height"] = first_bg_img.naturalHeight;
+            that.config["image_width"] = first_bg_img.naturalWidth;
 
             // Add canvasses for each subtask and get their rendering contexts
             for (const st in that.subtasks) {
@@ -746,7 +691,7 @@ export class ULabel {
             }
 
             // Create the annotation canvases for the resume_from annotations
-            ULabel.initialize_annotation_canvases(that);
+            initialize_annotation_canvases(that);
 
             // Add the ID dialogs' HTML to the document
             build_id_dialogs(that);
@@ -787,13 +732,26 @@ export class ULabel {
             callback();
         }).catch((err) => {
             console.log(err);
-            this.raise_error("Unable to load images: " + JSON.stringify(err), ULabel.elvl_fatal);
+            log_message(
+                "Failed to load images: " + JSON.stringify(err),
+                LogLevel.ERROR,
+            );
         });
 
         // Final code to be called after the object is initialized
-        ULabel.after_init(this);
+        this.after_init();
 
         console.log(`Time taken to construct and initialize: ${Date.now() - this.begining_time}`);
+    }
+
+    /**
+     * Code to be called after ULabel has finished initializing.
+     */
+    after_init() {
+        // Perform the after_init method for each toolbox item
+        for (const toolbox_item of this.toolbox.items) {
+            toolbox_item.after_init();
+        }
     }
 
     version() {
@@ -902,7 +860,10 @@ export class ULabel {
 
                 return;
             } else {
-                this.raise_error(`Initial crop must contain properties "width", "height", "left", and "top". Ignoring.`, ULabel.elvl_info);
+                log_message(
+                    `Initial crop must contain properties "width", "height", "left", and "top". Ignoring.`,
+                    LogLevel.INFO,
+                );
             }
         }
         this.show_whole_image();
@@ -1268,7 +1229,10 @@ export class ULabel {
                 ];
             default:
                 // TODO broader refactor of error handling and detecting/preventing corruption
-                this.raise_error("Annotation mode is not understood", ULabel.elvl_info);
+                log_message(
+                    "Annotation mode is not understood",
+                    LogLevel.INFO,
+                );
                 return null;
         }
     }
@@ -1283,33 +1247,6 @@ export class ULabel {
             }];
         } else {
             return JSON.parse(JSON.stringify(this.get_current_subtask()["state"]["id_payload"]));
-        }
-    }
-
-    /**
-     * If no user-provided n_annos_per_canvas is provided,
-     * Check if we should dynamically set it based on the number of annotations
-     * in the subtasks, to help with performance.
-     *
-     */
-    dynamically_set_n_annos_per_canvas() {
-        // Check if we should increase n_annos_per_canvas
-        // First, check if the value is still the default
-        if (this.config.n_annos_per_canvas === DEFAULT_N_ANNOS_PER_CANVAS) {
-            // See if we should dynamically raise the default by checking max number of annotations in a subtask
-            let max_annos = 0;
-            for (const subtask_key in this.subtasks) {
-                const subtask = this.subtasks[subtask_key];
-                if (subtask.annotations.ordering.length > max_annos) {
-                    max_annos = subtask.annotations.ordering.length;
-                }
-            }
-            // Performance starts to deteriorate when we require many canvases to be drawn on
-            // To be safe, check if max_annos / DEFAULT_N_ANNOS_PER_CANVAS is greater than TARGET_MAX_N_CANVASES_PER_SUBTASK
-            if (max_annos / DEFAULT_N_ANNOS_PER_CANVAS > TARGET_MAX_N_CANVASES_PER_SUBTASK) {
-                // If so, raise the default
-                this.config.n_annos_per_canvas = Math.ceil(max_annos / TARGET_MAX_N_CANVASES_PER_SUBTASK);
-            }
         }
     }
 
@@ -1475,9 +1412,9 @@ export class ULabel {
                 tbar_pts = spatial_payload;
                 return [tbar_pts[tbi][0], tbar_pts[tbj][1]];
             default:
-                this.raise_error(
+                log_message(
                     "Unable to apply access string to annotation of type " + spatial_type,
-                    ULabel.elvl_standard,
+                    LogLevel.WARNING,
                 );
         }
     }
@@ -1558,9 +1495,9 @@ export class ULabel {
                 }
                 break;
             default:
-                this.raise_error(
+                log_message(
                     "Unable to apply access string to annotation of type " + spatial_type,
-                    ULabel.elvl_standard,
+                    LogLevel.WARNING,
                 );
         }
     }
@@ -2069,7 +2006,10 @@ export class ULabel {
                 this.draw_global_annotation(annotation_object, subtask);
                 break;
             default:
-                this.raise_error("Warning: Annotation " + annotation_object["id"] + " not understood", ULabel.elvl_info);
+                log_message(
+                    "Annotation mode " + annotation_object["spatial_type"] + " not understood",
+                    LogLevel.INFO,
+                );
                 break;
         }
     }
@@ -4204,7 +4144,10 @@ export class ULabel {
                     this.rebuild_containing_box(actid);
                     break;
                 default:
-                    this.raise_error(`Annotation mode is not understood: ${spatial_type}`, ULabel.elvl_info);
+                    log_message(
+                        `Annotation mode is not understood: ${spatial_type}`,
+                        LogLevel.INFO,
+                    );
                     break;
             }
             this.redraw_annotation(actid);
@@ -4640,10 +4583,16 @@ export class ULabel {
                     break;
                 case "contour":
                     // TODO contour editing
-                    this.raise_error("Annotation mode is not currently editable", ULabel.elvl_info);
+                    log_message(
+                        "Annotation mode is not currently editable",
+                        LogLevel.INFO,
+                    );
                     break;
                 default:
-                    this.raise_error("Annotation mode is not understood", ULabel.elvl_info);
+                    log_message(
+                        "Annotation mode is not understood",
+                        LogLevel.INFO,
+                    );
                     break;
             }
         }
@@ -5456,24 +5405,6 @@ export class ULabel {
         }
     }
 
-    // ================= Error handlers =================
-
-    // Notify the user of information at a given level
-    raise_error(message, level = ULabel.elvl_standard) {
-        switch (level) {
-            // TODO less crude here
-            case ULabel.elvl_info:
-                console.log("[info] " + message);
-                break;
-            case ULabel.elvl_standard:
-                alert("[error] " + message);
-                break;
-            case ULabel.elvl_fatal:
-                alert("[fatal] " + message);
-                throw new Error(message);
-        }
-    }
-
     // ================= Mouse event interpreters =================
 
     // Get the mouse position on the screen
@@ -6282,7 +6213,7 @@ export class ULabel {
         }
         // Set new annotations and initialize canvases
         ULabel.process_resume_from(this, subtask, { resume_from: new_annotations });
-        ULabel.initialize_annotation_canvases(this, subtask);
+        initialize_annotation_canvases(this, subtask);
         // Redraw all annotations to render them
         this.redraw_all_annotations(subtask);
         // Calculate distances for all annotations if FilterDistance is present
