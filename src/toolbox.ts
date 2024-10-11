@@ -2519,7 +2519,7 @@ export class SubmitButtons extends ToolboxItem {
         const submit_buttons_by_row: ULabelSubmitButton[][] = [];
         // First, get all the unique row numbers.
         // If a button doesn't have a row number, it will be placed in row 0.
-        const row_numbers: Set<number> = new Set(this.submit_buttons.map(button => button.row_number ? button.row_number : 0));
+        const row_numbers: Set<number> = new Set(this.submit_buttons.map((button) => button.row_number ? button.row_number : 0));
         // Sort the row numbers
         const sorted_row_numbers: number[] = Array.from(row_numbers).sort((a, b) => a - b);
         // Group the buttons by row number in ascending order

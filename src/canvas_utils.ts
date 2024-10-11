@@ -22,7 +22,7 @@ function dynamically_set_n_annos_per_canvas(
     if (config.n_annos_per_canvas === DEFAULT_N_ANNOS_PER_CANVAS) {
         // Count max annotations per subtask
         const max_annos = Math.max(
-            ...Object.values(subtasks).map(subtask => subtask.annotations.ordering.length),
+            ...Object.values(subtasks).map((subtask) => subtask.annotations.ordering.length),
         );
 
         // Performance starts to deteriorate when we require many canvases to be drawn on
