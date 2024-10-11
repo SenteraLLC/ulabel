@@ -2,6 +2,8 @@
  * ULabel cookie utilities.
  */
 
+import { ULabelSubtask } from "./subtask";
+
 export abstract class NightModeCookie {
     /**
      * The name of the cookie that stores the night mode preference.
@@ -41,5 +43,59 @@ export abstract class NightModeCookie {
             "expires=Thu, 01 Jan 1970 00:00:00 UTC",
             "path=/",
         ].join(";");
+    }
+}
+
+/**
+ * Cookie utilities for tracking annotation display size.
+ */
+export abstract class AnnotationSizeCookie {
+    /**
+     * Produce the name of the cookie for a given subtask.
+     * Swaps spaces for underscores and lowercases the name.
+     *
+     * @param subtask ULabelSubtask to generate the cookie name for.
+     */
+    private static cooke_name(subtask: ULabelSubtask): string {
+        const subtask_name = subtask.display_name.replaceLowerConcat(" ", "_");
+        return `${subtask_name}_size`;
+    }
+
+    /**
+     * Set the annotation size cookie for a given subtask.
+     *
+     * @param cookie_value Cookie value to set.
+     * @param subtask Subtask to set the cookie for.
+     */
+    public static set_size_cookie(
+        cookie_value: number,
+        subtask: ULabelSubtask,
+    ) {
+        const cookie_name = AnnotationSizeCookie.cooke_name(subtask);
+        const d = new Date();
+        d.setTime(d.getTime() + (10000 * 24 * 60 * 60 * 1000));
+
+        document.cookie = `${cookie_name}=${cookie_value};${d.toUTCString()};path=/`;
+    }
+
+    /**
+     * Retrieve the annotation size cookie for a given subtask, if it exists.
+     *
+     * @param subtask Subtask to read the cookie for.
+     * @returns The cookie value if it exists, otherwise null.
+     */
+    public static read_size_cookie(subtask: ULabelSubtask): number | null {
+        const cookie_name = AnnotationSizeCookie.cooke_name(subtask);
+        const cookie_array = document.cookie.split(";");
+
+        cookie_array.forEach((cookie) => {
+            // Trim whitespace at the beginning
+            cookie = cookie.trim();
+            if (cookie.startsWith(cookie_name)) {
+                return parseInt(cookie.split("=")[1]);
+            }
+        });
+
+        return null;
     }
 }
