@@ -2,29 +2,28 @@
  * Animated loader for initial loading screen.
  */
 export class ULabelLoader {
-    
     public static add_loader_div(
-        container: HTMLElement
+        container: HTMLElement,
     ) {
-        const loader_overlay = document.createElement('div');
-        loader_overlay.classList.add('ulabel-loader-overlay');
+        const loader_overlay = document.createElement("div");
+        loader_overlay.classList.add("ulabel-loader-overlay");
 
-        const loader = document.createElement('div');
-        loader.classList.add('ulabel-loader');
-        
+        const loader = document.createElement("div");
+        loader.classList.add("ulabel-loader");
+
         loader_overlay.appendChild(loader);
         container.appendChild(loader_overlay);
-        
+
         ULabelLoader.add_loader_css();
     }
-    
+
     public static remove_loader_div() {
-        const loader = document.querySelector('.ulabel-loader-overlay');
+        const loader = document.querySelector(".ulabel-loader-overlay");
         if (loader) {
             loader.remove();
         }
     }
-    
+
     public static add_loader_css() {
         const css = `
             .ulabel-loader-overlay {
@@ -52,7 +51,7 @@ export class ULabelLoader {
                 100% { transform: rotate(360deg); }
             }
         `;
-        const style = document.createElement('style');
+        const style = document.createElement("style");
         style.innerHTML = css;
         document.head.appendChild(style);
     }

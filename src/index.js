@@ -228,7 +228,7 @@ export class ULabel {
         }
 
         // If the subtask has any DELETE_MODE enabled, add a class definition for it
-        if (subtask.allowed_modes.some(mode => DELETE_MODES.includes(mode))) {
+        if (subtask.allowed_modes.some((mode) => DELETE_MODES.includes(mode))) {
             subtask.class_defs.push({
                 name: "Delete",
                 id: DELETE_CLASS_ID,
@@ -324,8 +324,8 @@ export class ULabel {
                 cand["classification_payloads"].sort(
                     (a, b) => {
                         return (
-                            ul.subtasks[subtask_key]["class_ids"].find(e => e === a["class_id"]) -
-                            ul.subtasks[subtask_key]["class_ids"].find(e => e === b["class_id"])
+                            ul.subtasks[subtask_key]["class_ids"].find((e) => e === a["class_id"]) -
+                            ul.subtasks[subtask_key]["class_ids"].find((e) => e === b["class_id"])
                         );
                     },
                 );
@@ -878,7 +878,7 @@ export class ULabel {
      */
     switch_to_next_subtask() {
         let current_subtask = this.get_current_subtask_key();
-        let new_subtask_index = this.toolbox.tabs.findIndex(tab => tab.subtask_key === current_subtask) + 1;
+        let new_subtask_index = this.toolbox.tabs.findIndex((tab) => tab.subtask_key === current_subtask) + 1;
         // If the current subtask was the last one in the array, then
         // loop around to the first subtask
         if (new_subtask_index === this.toolbox.tabs.length) {
@@ -975,7 +975,7 @@ export class ULabel {
     update_filter_distance_during_polyline_move(annotation_id, redraw_update_items = true, force_filter_all = false, offset = null) {
         if (
             this.config.toolbox_order.includes(AllowedToolboxItem.FilterDistance) &&
-            this.toolbox.items.find(item => item.get_toolbox_item_type() === "FilterDistance").filter_during_polyline_move
+            this.toolbox.items.find((item) => item.get_toolbox_item_type() === "FilterDistance").filter_during_polyline_move
         ) {
             this.update_filter_distance(annotation_id, redraw_update_items, force_filter_all, offset);
         }
@@ -2669,7 +2669,7 @@ export class ULabel {
             // Remove the delete annotation from access and ordering, and delete its canvas context
             this.destroy_annotation_context(delete_annid);
             delete this.get_current_subtask()["annotations"]["access"][delete_annid];
-            this.get_current_subtask()["annotations"]["ordering"] = this.get_current_subtask()["annotations"]["ordering"].filter(value => value !== delete_annid);
+            this.get_current_subtask()["annotations"]["ordering"] = this.get_current_subtask()["annotations"]["ordering"].filter((value) => value !== delete_annid);
             this.remove_recorded_events_for_annotation(delete_annid);
         }
     }
@@ -3809,7 +3809,7 @@ export class ULabel {
         this.destroy_annotation_context(unq_id);
 
         // Remove from ordering
-        current_subtask["annotations"]["ordering"] = current_subtask["annotations"]["ordering"].filter(id => id !== unq_id);
+        current_subtask["annotations"]["ordering"] = current_subtask["annotations"]["ordering"].filter((id) => id !== unq_id);
 
         // Remove from access
         delete current_subtask["annotations"]["access"][unq_id];
@@ -5644,7 +5644,7 @@ export class ULabel {
         // Check if the FilterDistance ToolboxItem is in this ULabel instance
         if (this.config.toolbox_order.includes(AllowedToolboxItem.FilterDistance)) {
             // Get the toolbox item
-            const filter_distance_toolbox_item = this.toolbox.items.filter(item => item.get_toolbox_item_type() === "FilterDistance")[0];
+            const filter_distance_toolbox_item = this.toolbox.items.filter((item) => item.get_toolbox_item_type() === "FilterDistance")[0];
             // filter annotations if in multi_class_mode
             if (filter_distance_toolbox_item.multi_class_mode) {
                 filter_points_distance_from_line(this, true);
