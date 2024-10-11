@@ -56,7 +56,7 @@ export abstract class AnnotationSizeCookie {
      *
      * @param subtask ULabelSubtask to generate the cookie name for.
      */
-    private static cooke_name(subtask: ULabelSubtask): string {
+    private static cookie_name(subtask: ULabelSubtask): string {
         const subtask_name = subtask.display_name.replaceLowerConcat(" ", "_");
         return `${subtask_name}_size`;
     }
@@ -71,30 +71,36 @@ export abstract class AnnotationSizeCookie {
         cookie_value: number,
         subtask: ULabelSubtask,
     ) {
-        const cookie_name = AnnotationSizeCookie.cooke_name(subtask);
+        const cookie_name = AnnotationSizeCookie.cookie_name(subtask);
         const d = new Date();
         d.setTime(d.getTime() + (10000 * 24 * 60 * 60 * 1000));
 
-        document.cookie = `${cookie_name}=${cookie_value};${d.toUTCString()};path=/`;
+        document.cookie = `${cookie_name}=${cookie_value};expires=${d.toUTCString()};path=/`;
     }
 
     /**
      * Retrieve the annotation size cookie for a given subtask, if it exists.
+     * Resolves NaN to null.
      *
      * @param subtask Subtask to read the cookie for.
      * @returns The cookie value if it exists, otherwise null.
      */
     public static read_size_cookie(subtask: ULabelSubtask): number | null {
-        const cookie_name = AnnotationSizeCookie.cooke_name(subtask);
+        const cookie_name = AnnotationSizeCookie.cookie_name(subtask);
+        console.log(cookie_name);
         const cookie_array = document.cookie.split(";");
 
-        cookie_array.forEach((cookie) => {
+        for (let cookie of cookie_array) {
             // Trim whitespace at the beginning
             cookie = cookie.trim();
             if (cookie.startsWith(cookie_name)) {
-                return parseInt(cookie.split("=")[1]);
+                let cookie_value = parseInt(cookie.split("=")[1]);
+                if (cookie_value === undefined || isNaN(cookie_value)) {
+                    cookie_value = null;
+                }
+                return cookie_value;
             }
-        });
+        };
 
         return null;
     }
