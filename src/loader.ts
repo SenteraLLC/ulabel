@@ -11,10 +11,11 @@ export class ULabelLoader {
         const loader = document.createElement("div");
         loader.classList.add("ulabel-loader");
 
-        loader_overlay.appendChild(loader);
-        container.appendChild(loader_overlay);
+        const style = ULabelLoader.build_loader_style();
 
-        ULabelLoader.add_loader_css();
+        loader_overlay.appendChild(loader);
+        loader_overlay.appendChild(style);
+        container.appendChild(loader_overlay);
     }
 
     public static remove_loader_div() {
@@ -24,7 +25,7 @@ export class ULabelLoader {
         }
     }
 
-    public static add_loader_css() {
+    public static build_loader_style(): HTMLStyleElement {
         const css = `
             .ulabel-loader-overlay {
                 position: fixed;
@@ -53,6 +54,6 @@ export class ULabelLoader {
         `;
         const style = document.createElement("style");
         style.innerHTML = css;
-        document.head.appendChild(style);
+        return style;
     }
 }
