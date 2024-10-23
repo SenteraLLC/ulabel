@@ -11,7 +11,8 @@
     "build-dev": "tsc && webpack --mode development",
     "build-and-demo": "npm run build && npm run demo",
     "build-dev-and-demo": "npm run build-dev && npm run demo",
-    "prepare": "husky"
+    "prepare": "husky",
+    "lint": "eslint . --no-fix"
   },
   "lint-staged": {
     "**/*.{js,mjs,cjs,ts}": "eslint --fix"
