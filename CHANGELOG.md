@@ -6,7 +6,7 @@ All notable changes to this project will be documented here.
 
 Nothing yet.
 
-## [0.16.0] - Oct 11th, 2024
+## [0.16.0] - Nov 8th, 2024
 - Added loading overlay with spinning icon while ULabel is initializing
 - Moved several existing utilties (mostly static methods) to isolated files:
     - Event listener management to `listeners.ts`
