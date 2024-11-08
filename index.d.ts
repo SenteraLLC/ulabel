@@ -169,7 +169,7 @@ export type ImageData = {
 export type ULabelSubtasks = { [key: string]: ULabelSubtask };
 
 export class ULabel {
-    subtasks: ULabelSubtask[];
+    subtasks: ULabelSubtasks;
     state: {
         // Viewer state
         zoom_val: number;
@@ -244,7 +244,6 @@ export class ULabel {
     public show_annotation_mode(
         target_jq?: JQuery<HTMLElement>, // TODO (joshua-dean): validate this type
     );
-    public raise_error(message: string, level?: number);
     public rezoom(): void;
     public update_frame(delta?: number, new_frame?: number): void;
     public handle_id_dialog_hover(
@@ -356,6 +355,12 @@ export class ULabel {
         thumbnail?: boolean,
         nonspatial?: boolean,
     ): void;
+
+    // Canvases
+    public get_init_canvas_context_id(
+        annotation_id: string,
+        subtask?: string, // SUBTASK KEY
+    ): string;
 }
 
 declare global {
