@@ -63,6 +63,7 @@ export type ClassDefinition = {
     name: string;
     id: number;
     color: string;
+    keybind?: string;
 };
 
 export type SliderInfo = {
@@ -194,6 +195,7 @@ export class ULabel {
     valid_class_ids: number[];
     toolbox_order?: number[];
     filter_distance_overlay?: FilterDistanceOverlay;
+    resize_observers: ResizeObserver[];
     /**
      * @link https://github.com/SenteraLLC/ulabel/blob/main/api_spec.md#ulabel-constructor
      */
@@ -221,8 +223,15 @@ export class ULabel {
     public show_whole_image(): void;
     public swap_frame_image(new_src: string, frame?: number): string;
     public swap_anno_bg_color(new_bg_color: string): string;
+
+    // Subtasks
     public get_current_subtask_key(): string;
     public get_current_subtask(): ULabelSubtask;
+    public readjust_subtask_opacities(): void;
+    public set_subtask(st_key: string): void;
+    public switch_to_next_subtask(): void;
+
+    // Annotations
     public get_annotations(subtask: ULabelSubtask): ULabelAnnotation[];
     public set_annotations(annotations: ULabelAnnotation[], subtask: ULabelSubtask);
     public set_saved(saved: boolean);
@@ -245,14 +254,108 @@ export class ULabel {
             dist_prop: number;
         },
     ): void;
-    public toggle_erase_mode(mouse_event: JQuery.TriggeredEvent): void;
-    public toggle_brush_mode(mouse_event: JQuery.TriggeredEvent): void;
+
+    // Brush
+    // TODO (joshua-dean): should these actually be optional?
+    public toggle_erase_mode(mouse_event?: JQuery.TriggeredEvent): void;
+    public toggle_brush_mode(mouse_event?: JQuery.TriggeredEvent): void;
     public toggle_delete_class_id_in_toolbox(): void;
     public change_brush_size(scale_factor: number): void;
+    public recolor_brush_circle(): void;
+    public destroy_brush_circle(): void;
+
+    // Listeners
     public remove_listeners(): void;
     static get_allowed_toolbox_item_enum(): AllowedToolboxItem;
     static process_classes(ulabel_obj: ULabel, arg1: string, subtask_obj: ULabelSubtask);
     static build_id_dialogs(ulabel_obj: ULabel);
+
+    // Annotation lifecycle
+    // TODO (joshua-dean): type for redo_payload
+    public begin_annotation(mouse_event: JQuery.TriggeredEvent, redo_payload?: object): void;
+    public create_annotation(
+        spatial_type: ULabelSpatialType,
+        spatial_payload: ULabelSpatialPayload,
+        unique_id?: string,
+    ): void;
+    public create_nonspatial_annotation(
+        redo_payload?: object,
+    ): void;
+    public delete_annotation(
+        annotation_id: string,
+        redo_payload?: object,
+        record_action?: boolean,
+    ): void;
+    public cancel_annotation(redo_payload?: object): void;
+    public get_active_class_id(): number;
+    public get_active_class_id_idx(): number;
+    public undo(is_internal_undo?: boolean): void;
+    public redo(): void;
+
+    // Mouse event handlers
+    public handle_mouse_down(mouse_event: JQuery.TriggeredEvent): void;
+    public handle_mouse_move(mouse_event: JQuery.TriggeredEvent): void;
+    public handle_mouse_up(mouse_event: JQuery.TriggeredEvent): void;
+    public handle_aux_click(mouse_event: JQuery.TriggeredEvent): void;
+    public handle_wheel(wheel_event: WheelEvent): void;
+    public start_drag(
+        drag_key: string,
+        release_button: string,
+        mouse_event: JQuery.TriggeredEvent,
+    ): void;
+    public end_drag(mouse_event: JQuery.TriggeredEvent): void;
+    public drag_repan(mouse_event: JQuery.TriggeredEvent): void;
+    public drag_rezoom(mouse_event: JQuery.TriggeredEvent): void;
+
+    // "Mouse event interpreters"
+    public get_global_mouse_x(mouse_event: JQuery.TriggeredEvent): number;
+    public get_global_mouse_y(mouse_event: JQuery.TriggeredEvent): number;
+
+    // Edit suggestions
+    public suggest_edits(
+        mouse_event?: JQuery.TriggeredEvent,
+        nonspatial_id?: string,
+    ): void;
+    public show_global_edit_suggestion(
+        annid: string,
+        offset?: {
+            diffX: number;
+            diffY: number;
+            diffZ?: number;
+        },
+        nonspatial_id?: string,
+    ): void;
+    public hide_global_edit_suggestion(): void;
+
+    // Drawing
+    public rezoom(
+        foc_x?: number,
+        foc_y?: number,
+        abs?: boolean,
+    ): void;
+    public reposition_dialogs(): void;
+    public handle_toolbox_overflow(): void;
+
+    // ID Dialog
+    public set_id_dialog_payload_nopin(
+        class_ind: number,
+        dist_prop: number
+    ): void;
+    public update_id_dialog_display(
+        front?: boolean,
+    ): void;
+    public handle_id_dialog_click(
+        mouse_event: JQuery.TriggeredEvent,
+        annotation_id?: string,
+        new_class_idx?: number,
+    ): void;
+    public show_id_dialog(
+        gbx: number,
+        gby: number,
+        active_ann: string, // annotation id
+        thumbnail?: boolean,
+        nonspatial?: boolean,
+    ): void;
 }
 
 declare global {
