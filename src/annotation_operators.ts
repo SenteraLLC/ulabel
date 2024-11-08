@@ -71,7 +71,7 @@ export function mark_deprecated(
     annotation.deprecated_by[deprecated_by_key] = deprecated;
 
     // If the annotation has been deprecated by any method, then deprecate the annotation
-    if (Object.values(annotation.deprecated_by).some(x => x)) {
+    if (Object.values(annotation.deprecated_by).some((x) => x)) {
         annotation.deprecated = true;
         return;
     }

@@ -25,16 +25,8 @@ import {
     mark_deprecated,
     update_distance_from_line_to_each_point,
 } from "../build/annotation_operators";
-import {
-    add_style_to_document,
-    prep_window_html,
-    build_id_dialogs,
-    build_edit_suggestion,
-    build_confidence_dialog,
-} from "../build/html_builder";
 
-import { create_ulabel_listeners, remove_ulabel_listeners } from "../build/listeners";
-import { NightModeCookie } from "../build/cookies";
+import { remove_ulabel_listeners } from "../build/listeners";
 import { log_message, LogLevel } from "../build/error_logging";
 import { initialize_annotation_canvases } from "../build/canvas_utils";
 
@@ -56,6 +48,7 @@ import {
 } from "./blobs";
 import { ULABEL_VERSION } from "./version";
 import { BrushToolboxItem } from "../build/toolbox";
+import { ulabel_init } from "../build/initializer";
 
 jQuery.fn.outer_html = function () {
     return jQuery("<div />").append(this.eq(0).clone()).html();
@@ -235,7 +228,7 @@ export class ULabel {
         }
 
         // If the subtask has any DELETE_MODE enabled, add a class definition for it
-        if (subtask.allowed_modes.some(mode => DELETE_MODES.includes(mode))) {
+        if (subtask.allowed_modes.some((mode) => DELETE_MODES.includes(mode))) {
             subtask.class_defs.push({
                 name: "Delete",
                 id: DELETE_CLASS_ID,
@@ -331,8 +324,8 @@ export class ULabel {
                 cand["classification_payloads"].sort(
                     (a, b) => {
                         return (
-                            ul.subtasks[subtask_key]["class_ids"].find(e => e === a["class_id"]) -
-                            ul.subtasks[subtask_key]["class_ids"].find(e => e === b["class_id"])
+                            ul.subtasks[subtask_key]["class_ids"].find((e) => e === a["class_id"]) -
+                            ul.subtasks[subtask_key]["class_ids"].find((e) => e === b["class_id"])
                         );
                     },
                 );
@@ -636,112 +629,7 @@ export class ULabel {
     }
 
     init(callback) {
-        // Add stylesheet
-        add_style_to_document(this);
-
-        // TODO (joshua-dean): Make this follow the rule
-        // https://typescript-eslint.io/rules/no-this-alias/
-        // eslint-disable-next-line @typescript-eslint/no-this-alias
-        let that = this;
-        that.state["current_subtask"] = Object.keys(that.subtasks)[0];
-
-        // Place image element
-        prep_window_html(this, this.config.toolbox_order);
-
-        // Detect night cookie
-        if (NightModeCookie.exists_in_document()) {
-            $("#" + this.config["container_id"]).addClass("ulabel-night");
-        }
-
-        let first_bg_img = document.getElementById(`${this.config["image_id_pfx"]}__0`);
-        first_bg_img.decode().then(() => {
-            // Store image dimensions
-            that.config["image_height"] = first_bg_img.naturalHeight;
-            that.config["image_width"] = first_bg_img.naturalWidth;
-
-            // Add canvasses for each subtask and get their rendering contexts
-            for (const st in that.subtasks) {
-                $("#" + that.config["imwrap_id"]).append(`
-                <div id="canvasses__${st}" class="canvasses">
-                    <canvas 
-                        id="${that.subtasks[st]["canvas_bid"]}" 
-                        class="${that.config["canvas_class"]} ${that.config["imgsz_class"]} canvas_cls" 
-                        height=${that.config["image_height"] * this.config["px_per_px"]} 
-                        width=${that.config["image_width"] * this.config["px_per_px"]}></canvas>
-                    <canvas 
-                        id="${that.subtasks[st]["canvas_fid"]}" 
-                        class="${that.config["canvas_class"]} ${that.config["imgsz_class"]} canvas_cls" 
-                        height=${that.config["image_height"] * this.config["px_per_px"]} 
-                        width=${that.config["image_width"] * this.config["px_per_px"]} 
-                        oncontextmenu="return false"></canvas>
-                    <div id="dialogs__${st}" class="dialogs_container"></div>
-                </div>
-                `);
-                $("#" + that.config["container_id"] + ` div#fad_st__${st}`).append(`
-                    <div id="front_dialogs__${st}" class="front_dialogs"></div>
-                `);
-
-                // Get canvas contexts
-                that.subtasks[st]["state"]["back_context"] = document.getElementById(
-                    that.subtasks[st]["canvas_bid"],
-                ).getContext("2d");
-                that.subtasks[st]["state"]["front_context"] = document.getElementById(
-                    that.subtasks[st]["canvas_fid"],
-                ).getContext("2d");
-            }
-
-            // Create the annotation canvases for the resume_from annotations
-            initialize_annotation_canvases(that);
-
-            // Add the ID dialogs' HTML to the document
-            build_id_dialogs(that);
-
-            // Add the HTML for the edit suggestion to the window
-            build_edit_suggestion(that);
-
-            // Add dialog to show annotation confidence
-            build_confidence_dialog(that);
-
-            // Create listers to manipulate and export this object
-            create_ulabel_listeners(that);
-
-            that.handle_toolbox_overflow();
-
-            // Set the canvas elements in the correct stacking order given current subtask
-            that.set_subtask(that.get_current_subtask_key());
-
-            that.create_overlays();
-
-            // Indicate that the object is now init!
-            that.is_init = true;
-            $(`div#${this.config["container_id"]}`).css("display", "block");
-
-            this.show_initial_crop();
-            this.update_frame();
-
-            // Draw demo annotation
-            that.redraw_demo();
-
-            // Draw resumed from annotations
-            that.redraw_all_annotations();
-
-            // Update class counter
-            that.toolbox.redraw_update_items(that);
-
-            // Call the user-provided callback
-            callback();
-        }).catch((err) => {
-            console.log(err);
-            log_message(
-                "Failed to load images: " + JSON.stringify(err),
-                LogLevel.ERROR,
-            );
-        });
-
-        // Final code to be called after the object is initialized
-        this.after_init();
-
-        console.log(`Time taken to construct and initialize: ${Date.now() - this.begining_time}`);
+        ulabel_init(this, callback);
     }
 
     /**
@@ -989,7 +877,7 @@ export class ULabel {
      */
     switch_to_next_subtask() {
         let current_subtask = this.get_current_subtask_key();
-        let new_subtask_index = this.toolbox.tabs.findIndex(tab => tab.subtask_key === current_subtask) + 1;
+        let new_subtask_index = this.toolbox.tabs.findIndex((tab) => tab.subtask_key === current_subtask) + 1;
         // If the current subtask was the last one in the array, then
         // loop around to the first subtask
         if (new_subtask_index === this.toolbox.tabs.length) {
@@ -1086,7 +974,7 @@ export class ULabel {
     update_filter_distance_during_polyline_move(annotation_id, redraw_update_items = true, force_filter_all = false, offset = null) {
         if (
             this.config.toolbox_order.includes(AllowedToolboxItem.FilterDistance) &&
-            this.toolbox.items.find(item => item.get_toolbox_item_type() === "FilterDistance").filter_during_polyline_move
+            this.toolbox.items.find((item) => item.get_toolbox_item_type() === "FilterDistance").filter_during_polyline_move
         ) {
             this.update_filter_distance(annotation_id, redraw_update_items, force_filter_all, offset);
         }
@@ -2780,7 +2668,7 @@ export class ULabel {
             // Remove the delete annotation from access and ordering, and delete its canvas context
             this.destroy_annotation_context(delete_annid);
             delete this.get_current_subtask()["annotations"]["access"][delete_annid];
-            this.get_current_subtask()["annotations"]["ordering"] = this.get_current_subtask()["annotations"]["ordering"].filter(value => value !== delete_annid);
+            this.get_current_subtask()["annotations"]["ordering"] = this.get_current_subtask()["annotations"]["ordering"].filter((value) => value !== delete_annid);
             this.remove_recorded_events_for_annotation(delete_annid);
         }
     }
@@ -3920,7 +3808,7 @@ export class ULabel {
         this.destroy_annotation_context(unq_id);
 
         // Remove from ordering
-        current_subtask["annotations"]["ordering"] = current_subtask["annotations"]["ordering"].filter(id => id !== unq_id);
+        current_subtask["annotations"]["ordering"] = current_subtask["annotations"]["ordering"].filter((id) => id !== unq_id);
 
         // Remove from access
         delete current_subtask["annotations"]["access"][unq_id];
@@ -5755,7 +5643,7 @@ export class ULabel {
         // Check if the FilterDistance ToolboxItem is in this ULabel instance
         if (this.config.toolbox_order.includes(AllowedToolboxItem.FilterDistance)) {
             // Get the toolbox item
-            const filter_distance_toolbox_item = this.toolbox.items.filter(item => item.get_toolbox_item_type() === "FilterDistance")[0];
+            const filter_distance_toolbox_item = this.toolbox.items.filter((item) => item.get_toolbox_item_type() === "FilterDistance")[0];
             // filter annotations if in multi_class_mode
             if (filter_distance_toolbox_item.multi_class_mode) {
                 filter_points_distance_from_line(this, true);

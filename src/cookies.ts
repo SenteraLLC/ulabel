@@ -14,7 +14,7 @@ export abstract class NightModeCookie {
     public static exists_in_document(): boolean {
         const cookie_components = document.cookie.split(";");
         const night_mode_comp = cookie_components.find(
-            row => row.trim().startsWith(`${NightModeCookie.COOKIE_NAME}=true`),
+            (row) => row.trim().startsWith(`${NightModeCookie.COOKIE_NAME}=true`),
         );
         return night_mode_comp !== undefined;
     }
