@@ -14,8 +14,6 @@ import { GeometricUtils } from "../build/geometric_utils";
 import {
     AllowedToolboxItem,
     Configuration,
-    DEFAULT_N_ANNOS_PER_CANVAS,
-    TARGET_MAX_N_CANVASES_PER_SUBTASK,
 } from "../build/configuration";
 import { get_gradient } from "../build/drawing_utilities";
 import {
@@ -27,13 +25,10 @@ import {
     mark_deprecated,
     update_distance_from_line_to_each_point,
 } from "../build/annotation_operators";
-import {
-    add_style_to_document,
-    prep_window_html,
-    build_id_dialogs,
-    build_edit_suggestion,
-    build_confidence_dialog,
-} from "../build/html_builder";
+
+import { remove_ulabel_listeners } from "../build/listeners";
+import { log_message, LogLevel } from "../build/error_logging";
+import { initialize_annotation_canvases } from "../build/canvas_utils";
 
 import $ from "jquery";
 const jQuery = $;
@@ -53,26 +48,13 @@ import {
 } from "./blobs";
 import { ULABEL_VERSION } from "./version";
 import { BrushToolboxItem } from "../build/toolbox";
+import { ulabel_init } from "../build/initializer";
 
 jQuery.fn.outer_html = function () {
     return jQuery("<div />").append(this.eq(0).clone()).html();
 };
 
 export class ULabel {
-    // ================= Internal constants =================
-
-    static get elvl_info() {
-        return 0;
-    }
-
-    static get elvl_standard() {
-        return 1;
-    }
-
-    static get elvl_fatal() {
-        return 2;
-    }
-
     static version() {
         return ULABEL_VERSION;
     }
@@ -82,25 +64,6 @@ export class ULabel {
     // Returns current epoch time in milliseconds
     static get_time() {
         return (new Date()).toISOString();
-    }
-
-    // =========================== NIGHT MODE COOKIES =======================================
-
-    static has_night_mode_cookie() {
-        if (document.cookie.split(";").find(row => row.trim().startsWith("nightmode=true"))) {
-            return true;
-        }
-        return false;
-    }
-
-    static set_night_mode_cookie() {
-        let d = new Date();
-        d.setTime(d.getTime() + (10000 * 24 * 60 * 60 * 1000));
-        document.cookie = "nightmode=true;expires=" + d.toUTCString() + ";path=/";
-    }
-
-    static destroy_night_mode_cookie() {
-        document.cookie = "nightmode=true;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/";
     }
 
     static get_allowed_toolbox_item_enum() {
@@ -162,387 +125,7 @@ export class ULabel {
      * Note that ULabel will not function properly after this method is called.
      */
     remove_listeners() {
-        // Remove jquery event listeners
-        $(document).off(".ulabel"); // Unbind all events in the ulabel namespace from document
-        $(window).off(".ulabel"); // Unbind all events in the ulabel namespace from window
-        $(".id_dialog").off(".ulabel"); // Unbind all events in the ulabel namespace from .id_dialog
-
-        // Go through each resize observer and disconnect them
-        if (this.resize_observers != null) {
-            this.resize_observers.forEach((observer) => {
-                observer.disconnect();
-            });
-        }
-    }
-
-    static create_listeners(ul) {
-        // ================= Mouse Events in the ID Dialog =================
-
-        var iddg = $(".id_dialog");
-
-        // Hover interactions
-
-        iddg.on("mousemove.ulabel", function (mouse_event) {
-            if (!ul.get_current_subtask()["state"]["idd_thumbnail"]) {
-                ul.handle_id_dialog_hover(mouse_event);
-            }
-        });
-
-        // ================= Mouse Events in the Annotation Container =================
-
-        var annbox = $("#" + ul.config["annbox_id"]);
-
-        // Detect and record mousedown
-        annbox.on("mousedown.ulabel", (e) => {
-            ul.handle_mouse_down(e);
-        });
-
-        // Prevent default for auxclick
-        $(document).on("auxclick.ulabel", ul.handle_aux_click);
-
-        // Detect and record mouseup
-        $(document).on("mouseup.ulabel", ul.handle_mouse_up.bind(ul));
-
-        $(window).on("click.ulabel", (e) => {
-            if (e.shiftKey) {
-                e.preventDefault();
-            }
-        });
-
-        // Mouse movement has meaning in certain cases
-        annbox.on("mousemove.ulabel", (e) => {
-            ul.handle_mouse_move(e);
-        });
-
-        $(document).on("keypress.ulabel", (e) => {
-            // Check for the correct keypress
-            // Grab current subtask
-            const current_subtask = ul.get_current_subtask();
-            switch (e.key) {
-                // Create a point annotation at the mouse's current location
-                case ul.config.create_point_annotation_keybind:
-                    // Only allow keypress to create point annotations
-                    if (current_subtask.state.annotation_mode === "point") {
-                        // Create an annotation based on the last mouse position
-                        ul.begin_annotation(ul.state["last_move"]);
-                    }
-                    break;
-                // Create a bbox annotation around the initial_crop. Or the whole image if inital_crop does not exist
-                case ul.config.create_bbox_on_initial_crop:
-                    if (current_subtask.state.annotation_mode === "bbox") {
-                        // Default to an annotation with size of image
-                        // Create the coordinates for the bbox's spatial payload
-                        let bbox_top_left = [0, 0];
-                        let bbox_bottom_right = [ul.config.image_width, ul.config.image_height];
-
-                        // If an initial crop exists, use that instead
-                        if (ul.config.initial_crop !== null && ul.config.initial_crop !== undefined) {
-                            // Convenience
-                            const initial_crop = ul.config.initial_crop;
-
-                            // Create the coordinates for the bbox's spatial payload
-                            bbox_top_left = [initial_crop.left, initial_crop.top];
-                            bbox_bottom_right = [initial_crop.left + initial_crop.width, initial_crop.top + initial_crop.height];
-                        }
-
-                        // Create the annotation
-                        ul.create_annotation(current_subtask.state.annotation_mode, [bbox_top_left, bbox_bottom_right]);
-                    }
-                    break;
-                // Change to brush mode (for now, polygon only)
-                case ul.config.toggle_brush_mode_keybind:
-                    ul.toggle_brush_mode(ul.state["last_move"]);
-                    break;
-                // Change to erase mode (will also set the is_in_brush_mode state)
-                case ul.config.toggle_erase_mode_keybind:
-                    ul.toggle_erase_mode(ul.state["last_move"]);
-                    break;
-                // Increase brush size by 10%
-                case ul.config.increase_brush_size_keybind:
-                    ul.change_brush_size(1.1);
-                    break;
-                // Decrease brush size by 10%
-                case ul.config.decrease_brush_size_keybind:
-                    ul.change_brush_size(1 / 1.1);
-                    break;
-                case ul.config.change_zoom_keybind.toLowerCase():
-                    ul.show_initial_crop();
-                    break;
-                case ul.config.change_zoom_keybind.toUpperCase():
-                    ul.show_whole_image();
-                    break;
-                default:
-                    if (!DELETE_MODES.includes(current_subtask.state.spatial_type)) {
-                        // Check for class keybinds
-                        for (let i = 0; i < current_subtask.class_defs.length; i++) {
-                            const class_def = current_subtask.class_defs[i];
-                            if (class_def.keybind !== null && e.key === class_def.keybind) {
-                                let class_button = $(`#tb-id-app--${ul.get_current_subtask_key()} a.tbid-opt`).eq(i);
-                                if (class_button.hasClass("sel")) {
-                                    // If the class button is already selected, check if there is an active annotation
-                                    // Get the active annotation, if any
-                                    let target_id = null;
-                                    if (current_subtask.state.active_id !== null) {
-                                        target_id = current_subtask.state.active_id;
-                                    } else if (current_subtask.state.move_candidate !== null) {
-                                        target_id = current_subtask.state.move_candidate["annid"];
-                                    }
-                                    // Update the class of the active annotation
-                                    if (target_id !== null) {
-                                        // Set the annotation's class to the selected class
-                                        ul.handle_id_dialog_click(ul.state["last_move"], target_id, ul.get_active_class_id_idx());
-                                    }
-                                } else {
-                                    // Click the class button if not already selected
-                                    class_button.trigger("click");
-                                }
-                                return;
-                            }
-                        }
-                    }
-
-                    break;
-            }
-        });
-
-        // This listener does not use jquery because it requires being able to prevent default
-        // There are maybe some hacky ways to do this with jquery
-        // https://stackoverflow.com/questions/60357083/does-not-use-passive-listeners-to-improve-scrolling-performance-lighthouse-repo
-        // Detection ctrl+scroll
-        document.getElementById(ul.config["annbox_id"]).addEventListener("wheel", ul.handle_wheel.bind(ul));
-
-        // Create a resize observer to reposition dialogs
-        let dialog_resize_observer = new ResizeObserver(function () {
-            ul.reposition_dialogs();
-        });
-
-        // Observe the changes on the imwrap_id element
-        dialog_resize_observer.observe(document.getElementById(ul.config["imwrap_id"]));
-
-        // Store a reference
-        ul.resize_observers.push(dialog_resize_observer);
-
-        // Create a resize observer to handle toolbox overflow
-        let tb_overflow_resize_observer = new ResizeObserver(function () {
-            ul.handle_toolbox_overflow();
-        });
-
-        // Observe the changes on the ulabel container
-        tb_overflow_resize_observer.observe(document.getElementById(ul.config["container_id"]));
-
-        // Store a reference
-        ul.resize_observers.push(tb_overflow_resize_observer);
-
-        // Listener for soft id toolbox buttons
-        $(document).on("click.ulabel", "#" + ul.config["toolbox_id"] + " a.tbid-opt", (e) => {
-            let tgt_jq = $(e.currentTarget);
-            let pfx = "div#tb-id-app--" + ul.get_current_subtask_key();
-            const current_subtask = ul.get_current_subtask();
-            if (tgt_jq.attr("href") === "#") {
-                const current_id_button = $(pfx + " a.tbid-opt.sel");
-                current_id_button.attr("href", "#");
-                current_id_button.removeClass("sel");
-                const old_id = parseInt(current_id_button.attr("id").split("_").at(-1));
-                tgt_jq.addClass("sel");
-                tgt_jq.removeAttr("href");
-                let idarr = tgt_jq.attr("id").split("_");
-                let rawid = parseInt(idarr[idarr.length - 1]);
-                ul.set_id_dialog_payload_nopin(current_subtask["class_ids"].indexOf(rawid), 1.0);
-                ul.update_id_dialog_display();
-
-                // Update the class of the active annotation, except when toggling on the delete class
-                if (rawid !== DELETE_CLASS_ID) {
-                    // Get the active annotation, if any
-                    let target_id = null;
-                    if (current_subtask.state.active_id !== null) {
-                        target_id = current_subtask.state.active_id;
-                    } else if (current_subtask.state.move_candidate !== null) {
-                        target_id = current_subtask.state.move_candidate["annid"];
-                    }
-
-                    // Update the class of the active annotation
-                    if (target_id !== null) {
-                        // Set the annotation's class to the selected class
-                        ul.handle_id_dialog_click(ul.state["last_move"], target_id, ul.get_active_class_id_idx());
-                    } else {
-                        // If there is not active annotation, still update the brush circle if in brush mode
-                        ul.recolor_brush_circle();
-                    }
-                }
-
-                // If toggling off a delete class while still in delete mode, re-toggle the delete class
-                // This occurs when using a keybind to change a hovered annotation's class while in delete mode
-                if (old_id === DELETE_CLASS_ID && DELETE_MODES.includes(current_subtask.state.annotation_mode)) {
-                    $("#toolbox_sel_" + DELETE_CLASS_ID).trigger("click");
-                }
-            }
-        });
-
-        $(document).on("click.ulabel", "a.tb-st-switch[href]", (e) => {
-            let switch_to = $(e.target).attr("id").split("--")[1];
-
-            // Ignore if in the middle of annotation
-            if (ul.get_current_subtask()["state"]["is_in_progress"]) {
-                return;
-            }
-
-            ul.set_subtask(switch_to);
-        });
-
-        // Keybind to switch active subtask
-        $(document).on("keypress.ulabel", (e) => {
-            // Ignore if in the middle of annotation
-            if (ul.get_current_subtask()["state"]["is_in_progress"]) {
-                return;
-            }
-
-            // Check for the right keypress
-            if (e.key === ul.config.switch_subtask_keybind) {
-                ul.switch_to_next_subtask();
-            }
-        });
-
-        $(document).on("input.ulabel", "input.frame_input", () => {
-            ul.update_frame();
-        });
-
-        $(document).on("input.ulabel", "span.tb-st-range input", () => {
-            ul.readjust_subtask_opacities();
-        });
-
-        $(document).on("click.ulabel", "div.fad_row.add a.add-glob-button", () => {
-            ul.create_nonspatial_annotation();
-        });
-        $(document).on("focus.ulabel", "textarea.nonspatial_note", () => {
-            $("div.frame_annotation_dialog.active").addClass("permopen");
-        });
-        $(document).on("focusout.ulabel", "textarea.nonspatial_note", () => {
-            $("div.frame_annotation_dialog.permopen").removeClass("permopen");
-        });
-        $(document).on("input.ulabel", "textarea.nonspatial_note", (e) => {
-            // Update annotation's text field
-            ul.get_current_subtask()["annotations"]["access"][e.target.id.substring("note__".length)]["text_payload"] = e.target.value;
-        });
-        $(document).on("click.ulabel", "a.fad_button.delete", (e) => {
-            ul.delete_annotation(e.target.id.substring("delete__".length));
-        });
-        $(document).on("click.ulabel", "a.fad_button.reclf", (e) => {
-            // Show idd
-            ul.show_id_dialog(e.pageX, e.pageY, e.target.id.substring("reclf__".length), false, true);
-        });
-
-        $(document).on("mouseenter.ulabel", "div.fad_annotation_rows div.fad_row", (e) => {
-            // Show thumbnail for idd
-            ul.suggest_edits(null, $(e.currentTarget).attr("id").substring("row__".length));
-        });
-        $(document).on("mouseleave.ulabel", "div.fad_annotation_rows div.fad_row", () => {
-            // Show thumbnail for idd
-            if (
-                ul.get_current_subtask()["state"]["idd_visible"] &&
-                !ul.get_current_subtask()["state"]["idd_thumbnail"]
-            ) {
-                return;
-            }
-            ul.suggest_edits(null);
-        });
-        $(document).on("keypress.ulabel", (e) => {
-            // Check the key pressed against the delete annotation keybind in the config
-            if (e.key === ul.config.delete_annotation_keybind) {
-                // Check the edit_candidate to make sure its not null and isn't nonspatial
-                if (
-                    ul.get_current_subtask().state.edit_candidate != null &&
-                    !NONSPATIAL_MODES.includes(ul.get_current_subtask().state.edit_candidate.spatial_type)
-                ) {
-                    // Delete the active annotation
-                    ul.delete_annotation(ul.get_current_subtask().state.edit_candidate.annid);
-                }
-            }
-        });
-
-        // Listener for id_dialog click interactions
-        $(document).on("click.ulabel", "#" + ul.config["container_id"] + " a.id-dialog-clickable-indicator", (e) => {
-            if (!ul.get_current_subtask()["state"]["idd_thumbnail"]) {
-                ul.handle_id_dialog_click(e);
-            } else {
-                // It's always covered up as a thumbnail. See below
-            }
-        });
-        $(document).on("click.ulabel", ".global_edit_suggestion a.reid_suggestion", (e) => {
-            let crst = ul.get_current_subtask();
-            let annid = crst["state"]["idd_associated_annotation"];
-            ul.hide_global_edit_suggestion();
-            ul.show_id_dialog(
-                ul.get_global_mouse_x(e),
-                ul.get_global_mouse_y(e),
-                annid,
-                false,
-            );
-        });
-
-        $(document).on("click.ulabel", "#" + ul.config["annbox_id"] + " .delete_suggestion", () => {
-            let crst = ul.get_current_subtask();
-            ul.delete_annotation(crst["state"]["move_candidate"]["annid"]);
-        });
-
-        // Button to save annotations
-        $(document).on("click.ulabel", "#" + ul.config["toolbox_id"] + " a.night-button", function () {
-            if ($("#" + ul.config["container_id"]).hasClass("ulabel-night")) {
-                $("#" + ul.config["container_id"]).removeClass("ulabel-night");
-                // Destroy any night cookie
-                ULabel.destroy_night_mode_cookie();
-            } else {
-                $("#" + ul.config["container_id"]).addClass("ulabel-night");
-                // Drop a night cookie
-                ULabel.set_night_mode_cookie();
-            }
-        });
-
-        // Keyboard only events
-        $(document).on("keydown.ulabel", (keypress_event) => {
-            const shift = keypress_event.shiftKey;
-            const ctrl = keypress_event.ctrlKey || keypress_event.metaKey;
-            if (ctrl &&
-                (
-                    keypress_event.key === "z" ||
-                    keypress_event.key === "Z" ||
-                    keypress_event.code === "KeyZ"
-                )
-            ) {
-                keypress_event.preventDefault();
-                if (shift) {
-                    ul.redo();
-                } else {
-                    ul.undo();
-                }
-                return false;
-            } else {
-                const current_subtask = ul.get_current_subtask();
-                switch (keypress_event.key) {
-                    case "Escape":
-                        // If in erase or brush mode, cancel the brush
-                        if (current_subtask.state.is_in_erase_mode) {
-                            ul.toggle_erase_mode();
-                        } else if (current_subtask.state.is_in_brush_mode) {
-                            ul.toggle_brush_mode();
-                        } else if (current_subtask.state.starting_complex_polygon) {
-                            // If starting a complex polygon, undo
-                            ul.undo();
-                        } else if (current_subtask.state.is_in_progress) {
-                            // If in the middle of drawing an annotation, cancel the annotation
-                            ul.cancel_annotation();
-                        }
-                        break;
-                }
-            }
-        });
-
-        $(window).on("beforeunload.ulabel", () => {
-            if (ul.state["edited"]) {
-                // Return of anything other than `undefined` will trigger the browser's confirmation dialog
-                // Custom messages are not supported
-                return 1;
-            }
-        });
+        remove_ulabel_listeners(this);
     }
 
     static process_allowed_modes(ul, subtask_key, subtask) {
@@ -645,7 +228,7 @@ export class ULabel {
         }
 
         // If the subtask has any DELETE_MODE enabled, add a class definition for it
-        if (subtask.allowed_modes.some(mode => DELETE_MODES.includes(mode))) {
+        if (subtask.allowed_modes.some((mode) => DELETE_MODES.includes(mode))) {
             subtask.class_defs.push({
                 name: "Delete",
                 id: DELETE_CLASS_ID,
@@ -741,8 +324,8 @@ export class ULabel {
                 cand["classification_payloads"].sort(
                     (a, b) => {
                         return (
-                            ul.subtasks[subtask_key]["class_ids"].find(e => e === a["class_id"]) -
-                            ul.subtasks[subtask_key]["class_ids"].find(e => e === b["class_id"])
+                            ul.subtasks[subtask_key]["class_ids"].find((e) => e === a["class_id"]) -
+                            ul.subtasks[subtask_key]["class_ids"].find((e) => e === b["class_id"])
                         );
                     },
                 );
@@ -849,26 +432,10 @@ export class ULabel {
             };
         }
         if (first_non_ro === null) {
-            ul.raise_error("You must have at least one subtask without 'read_only' set to true.", ULabel.elvl_fatal);
-        }
-    }
-
-    static initialize_annotation_canvases(ul, subtask_key = null) {
-        if (subtask_key === null) {
-            ul.dynamically_set_n_annos_per_canvas();
-            for (const subtask_key in ul.subtasks) {
-                ULabel.initialize_annotation_canvases(ul, subtask_key);
-            }
-            return;
-        }
-
-        // Create the canvas for each annotation
-        const subtask = ul.subtasks[subtask_key];
-        for (const annotation_id in subtask.annotations.access) {
-            let annotation = subtask.annotations.access[annotation_id];
-            if (!NONSPATIAL_MODES.includes(annotation.spatial_type)) {
-                annotation["canvas_id"] = ul.get_init_canvas_context_id(annotation_id, subtask_key);
-            }
+            log_message(
+                "You must have at least one subtask without 'read_only' set to true.",
+                LogLevel.ERROR,
+            );
         }
     }
 
@@ -898,21 +465,12 @@ export class ULabel {
         } else if ("spacing" in raw_img_dat && "frames" in raw_img_dat) {
             return raw_img_dat;
         } else {
-            ul.raise_error(`Image data object not understood. Must be of form "http://url.to/img" OR ["img1", "img2", ...] OR {spacing: {x: <num>, y: <num>, z: <num>, units: <str>}, frames: ["img1", "img2", ...]}. Provided: ${JSON.stringify(raw_img_dat)}`, ULabel.elvl_fatal);
+            log_message(
+                `Image data object not understood. Must be of form "http://url.to/img" OR ["img1", "img2", ...] OR {spacing: {x: <num>, y: <num>, z: <num>, units: <str>}, frames: ["img1", "img2", ...]}. Provided: ${JSON.stringify(raw_img_dat)}`,
+                LogLevel.ERROR,
+            );
             return null;
         }
-    }
-
-    static load_image_promise(img_el) {
-        return new Promise((resolve, reject) => {
-            try {
-                img_el.onload = () => {
-                    resolve(img_el);
-                };
-            } catch (err) {
-                reject(err);
-            }
-        });
     }
 
     static handle_deprecated_arguments() {
@@ -936,16 +494,6 @@ export class ULabel {
             config_data: arguments[10] ?? null, // Use default if optional argument is undefined
             toolbox_order: arguments[11] ?? null, // Use default if optional argument is undefined
         };
-    }
-
-    /**
-     * Code to be called after ULabel has finished initializing.
-    */
-    static after_init(ulabel) {
-        // Perform the after_init method for each toolbox item
-        for (const toolbox_item of ulabel.toolbox.items) {
-            toolbox_item.after_init();
-        }
     }
 
     // ================= Construction/Initialization =================
@@ -1081,115 +629,17 @@ export class ULabel {
     }
 
     init(callback) {
-        // Add stylesheet
-        add_style_to_document(this);
+        ulabel_init(this, callback);
+    }
 
-        // TODO (joshua-dean): Make this follow the rule
-        // https://typescript-eslint.io/rules/no-this-alias/
-        // eslint-disable-next-line @typescript-eslint/no-this-alias
-        let that = this;
-        that.state["current_subtask"] = Object.keys(that.subtasks)[0];
-
-        // Place image element
-        prep_window_html(this, this.config.toolbox_order);
-
-        // Detect night cookie
-        if (ULabel.has_night_mode_cookie()) {
-            $("#" + this.config["container_id"]).addClass("ulabel-night");
+    /**
+     * Code to be called after ULabel has finished initializing.
+     */
+    after_init() {
+        // Perform the after_init method for each toolbox item
+        for (const toolbox_item of this.toolbox.items) {
+            toolbox_item.after_init();
         }
-
-        var images = [document.getElementById(`${this.config["image_id_pfx"]}__0`)];
-        let mappable_images = [];
-        for (let i = 0; i < images.length; i++) {
-            mappable_images.push(images[i]);
-            break;
-        }
-        let image_promises = mappable_images.map(ULabel.load_image_promise);
-        Promise.all(image_promises).then((loaded_imgs) => {
-            // Store image dimensions
-            that.config["image_height"] = loaded_imgs[0].naturalHeight;
-            that.config["image_width"] = loaded_imgs[0].naturalWidth;
-
-            // Add canvasses for each subtask and get their rendering contexts
-            for (const st in that.subtasks) {
-                $("#" + that.config["imwrap_id"]).append(`
-                <div id="canvasses__${st}" class="canvasses">
-                    <canvas 
-                        id="${that.subtasks[st]["canvas_bid"]}" 
-                        class="${that.config["canvas_class"]} ${that.config["imgsz_class"]} canvas_cls" 
-                        height=${that.config["image_height"] * this.config["px_per_px"]} 
-                        width=${that.config["image_width"] * this.config["px_per_px"]}></canvas>
-                    <canvas 
-                        id="${that.subtasks[st]["canvas_fid"]}" 
-                        class="${that.config["canvas_class"]} ${that.config["imgsz_class"]} canvas_cls" 
-                        height=${that.config["image_height"] * this.config["px_per_px"]} 
-                        width=${that.config["image_width"] * this.config["px_per_px"]} 
-                        oncontextmenu="return false"></canvas>
-                    <div id="dialogs__${st}" class="dialogs_container"></div>
-                </div>
-                `);
-                $("#" + that.config["container_id"] + ` div#fad_st__${st}`).append(`
-                    <div id="front_dialogs__${st}" class="front_dialogs"></div>
-                `);
-
-                // Get canvas contexts
-                that.subtasks[st]["state"]["back_context"] = document.getElementById(
-                    that.subtasks[st]["canvas_bid"],
-                ).getContext("2d");
-                that.subtasks[st]["state"]["front_context"] = document.getElementById(
-                    that.subtasks[st]["canvas_fid"],
-                ).getContext("2d");
-            }
-
-            // Create the annotation canvases for the resume_from annotations
-            ULabel.initialize_annotation_canvases(that);
-
-            // Add the ID dialogs' HTML to the document
-            build_id_dialogs(that);
-
-            // Add the HTML for the edit suggestion to the window
-            build_edit_suggestion(that);
-
-            // Add dialog to show annotation confidence
-            build_confidence_dialog(that);
-
-            // Create listers to manipulate and export this object
-            ULabel.create_listeners(that);
-
-            that.handle_toolbox_overflow();
-
-            // Set the canvas elements in the correct stacking order given current subtask
-            that.set_subtask(that.get_current_subtask_key());
-
-            that.create_overlays();
-
-            // Indicate that the object is now init!
-            that.is_init = true;
-            $(`div#${this.config["container_id"]}`).css("display", "block");
-
-            this.show_initial_crop();
-            this.update_frame();
-
-            // Draw demo annotation
-            that.redraw_demo();
-
-            // Draw resumed from annotations
-            that.redraw_all_annotations();
-
-            // Update class counter
-            that.toolbox.redraw_update_items(that);
-
-            // Call the user-provided callback
-            callback();
-        }).catch((err) => {
-            console.log(err);
-            this.raise_error("Unable to load images: " + JSON.stringify(err), ULabel.elvl_fatal);
-        });
-
-        // Final code to be called after the object is initialized
-        ULabel.after_init(this);
-
-        console.log(`Time taken to construct and initialize: ${Date.now() - this.begining_time}`);
     }
 
     version() {
@@ -1298,7 +748,10 @@ export class ULabel {
 
                 return;
             } else {
-                this.raise_error(`Initial crop must contain properties "width", "height", "left", and "top". Ignoring.`, ULabel.elvl_info);
+                log_message(
+                    `Initial crop must contain properties "width", "height", "left", and "top". Ignoring.`,
+                    LogLevel.INFO,
+                );
             }
         }
         this.show_whole_image();
@@ -1424,7 +877,7 @@ export class ULabel {
      */
     switch_to_next_subtask() {
         let current_subtask = this.get_current_subtask_key();
-        let new_subtask_index = this.toolbox.tabs.findIndex(tab => tab.subtask_key === current_subtask) + 1;
+        let new_subtask_index = this.toolbox.tabs.findIndex((tab) => tab.subtask_key === current_subtask) + 1;
         // If the current subtask was the last one in the array, then
         // loop around to the first subtask
         if (new_subtask_index === this.toolbox.tabs.length) {
@@ -1521,7 +974,7 @@ export class ULabel {
     update_filter_distance_during_polyline_move(annotation_id, redraw_update_items = true, force_filter_all = false, offset = null) {
         if (
             this.config.toolbox_order.includes(AllowedToolboxItem.FilterDistance) &&
-            this.toolbox.items.find(item => item.get_toolbox_item_type() === "FilterDistance").filter_during_polyline_move
+            this.toolbox.items.find((item) => item.get_toolbox_item_type() === "FilterDistance").filter_during_polyline_move
         ) {
             this.update_filter_distance(annotation_id, redraw_update_items, force_filter_all, offset);
         }
@@ -1664,7 +1117,10 @@ export class ULabel {
                 ];
             default:
                 // TODO broader refactor of error handling and detecting/preventing corruption
-                this.raise_error("Annotation mode is not understood", ULabel.elvl_info);
+                log_message(
+                    "Annotation mode is not understood",
+                    LogLevel.INFO,
+                );
                 return null;
         }
     }
@@ -1679,33 +1135,6 @@ export class ULabel {
             }];
         } else {
             return JSON.parse(JSON.stringify(this.get_current_subtask()["state"]["id_payload"]));
-        }
-    }
-
-    /**
-     * If no user-provided n_annos_per_canvas is provided,
-     * Check if we should dynamically set it based on the number of annotations
-     * in the subtasks, to help with performance.
-     *
-     */
-    dynamically_set_n_annos_per_canvas() {
-        // Check if we should increase n_annos_per_canvas
-        // First, check if the value is still the default
-        if (this.config.n_annos_per_canvas === DEFAULT_N_ANNOS_PER_CANVAS) {
-            // See if we should dynamically raise the default by checking max number of annotations in a subtask
-            let max_annos = 0;
-            for (const subtask_key in this.subtasks) {
-                const subtask = this.subtasks[subtask_key];
-                if (subtask.annotations.ordering.length > max_annos) {
-                    max_annos = subtask.annotations.ordering.length;
-                }
-            }
-            // Performance starts to deteriorate when we require many canvases to be drawn on
-            // To be safe, check if max_annos / DEFAULT_N_ANNOS_PER_CANVAS is greater than TARGET_MAX_N_CANVASES_PER_SUBTASK
-            if (max_annos / DEFAULT_N_ANNOS_PER_CANVAS > TARGET_MAX_N_CANVASES_PER_SUBTASK) {
-                // If so, raise the default
-                this.config.n_annos_per_canvas = Math.ceil(max_annos / TARGET_MAX_N_CANVASES_PER_SUBTASK);
-            }
         }
     }
 
@@ -1871,9 +1300,9 @@ export class ULabel {
                 tbar_pts = spatial_payload;
                 return [tbar_pts[tbi][0], tbar_pts[tbj][1]];
             default:
-                this.raise_error(
+                log_message(
                     "Unable to apply access string to annotation of type " + spatial_type,
-                    ULabel.elvl_standard,
+                    LogLevel.WARNING,
                 );
         }
     }
@@ -1954,9 +1383,9 @@ export class ULabel {
                 }
                 break;
             default:
-                this.raise_error(
+                log_message(
                     "Unable to apply access string to annotation of type " + spatial_type,
-                    ULabel.elvl_standard,
+                    LogLevel.WARNING,
                 );
         }
     }
@@ -2465,7 +1894,10 @@ export class ULabel {
                 this.draw_global_annotation(annotation_object, subtask);
                 break;
             default:
-                this.raise_error("Warning: Annotation " + annotation_object["id"] + " not understood", ULabel.elvl_info);
+                log_message(
+                    "Annotation mode " + annotation_object["spatial_type"] + " not understood",
+                    LogLevel.INFO,
+                );
                 break;
         }
     }
@@ -3236,7 +2668,7 @@ export class ULabel {
             // Remove the delete annotation from access and ordering, and delete its canvas context
             this.destroy_annotation_context(delete_annid);
             delete this.get_current_subtask()["annotations"]["access"][delete_annid];
-            this.get_current_subtask()["annotations"]["ordering"] = this.get_current_subtask()["annotations"]["ordering"].filter(value => value !== delete_annid);
+            this.get_current_subtask()["annotations"]["ordering"] = this.get_current_subtask()["annotations"]["ordering"].filter((value) => value !== delete_annid);
             this.remove_recorded_events_for_annotation(delete_annid);
         }
     }
@@ -4376,7 +3808,7 @@ export class ULabel {
         this.destroy_annotation_context(unq_id);
 
         // Remove from ordering
-        current_subtask["annotations"]["ordering"] = current_subtask["annotations"]["ordering"].filter(id => id !== unq_id);
+        current_subtask["annotations"]["ordering"] = current_subtask["annotations"]["ordering"].filter((id) => id !== unq_id);
 
         // Remove from access
         delete current_subtask["annotations"]["access"][unq_id];
@@ -4600,7 +4032,10 @@ export class ULabel {
                     this.rebuild_containing_box(actid);
                     break;
                 default:
-                    this.raise_error(`Annotation mode is not understood: ${spatial_type}`, ULabel.elvl_info);
+                    log_message(
+                        `Annotation mode is not understood: ${spatial_type}`,
+                        LogLevel.INFO,
+                    );
                     break;
             }
             this.redraw_annotation(actid);
@@ -5036,10 +4471,16 @@ export class ULabel {
                     break;
                 case "contour":
                     // TODO contour editing
-                    this.raise_error("Annotation mode is not currently editable", ULabel.elvl_info);
+                    log_message(
+                        "Annotation mode is not currently editable",
+                        LogLevel.INFO,
+                    );
                     break;
                 default:
-                    this.raise_error("Annotation mode is not understood", ULabel.elvl_info);
+                    log_message(
+                        "Annotation mode is not understood",
+                        LogLevel.INFO,
+                    );
                     break;
             }
         }
@@ -5852,24 +5293,6 @@ export class ULabel {
         }
     }
 
-    // ================= Error handlers =================
-
-    // Notify the user of information at a given level
-    raise_error(message, level = ULabel.elvl_standard) {
-        switch (level) {
-            // TODO less crude here
-            case ULabel.elvl_info:
-                console.log("[info] " + message);
-                break;
-            case ULabel.elvl_standard:
-                alert("[error] " + message);
-                break;
-            case ULabel.elvl_fatal:
-                alert("[fatal] " + message);
-                throw new Error(message);
-        }
-    }
-
     // ================= Mouse event interpreters =================
 
     // Get the mouse position on the screen
@@ -6220,7 +5643,7 @@ export class ULabel {
         // Check if the FilterDistance ToolboxItem is in this ULabel instance
         if (this.config.toolbox_order.includes(AllowedToolboxItem.FilterDistance)) {
             // Get the toolbox item
-            const filter_distance_toolbox_item = this.toolbox.items.filter(item => item.get_toolbox_item_type() === "FilterDistance")[0];
+            const filter_distance_toolbox_item = this.toolbox.items.filter((item) => item.get_toolbox_item_type() === "FilterDistance")[0];
             // filter annotations if in multi_class_mode
             if (filter_distance_toolbox_item.multi_class_mode) {
                 filter_points_distance_from_line(this, true);
@@ -6678,7 +6101,7 @@ export class ULabel {
         }
         // Set new annotations and initialize canvases
         ULabel.process_resume_from(this, subtask, { resume_from: new_annotations });
-        ULabel.initialize_annotation_canvases(this, subtask);
+        initialize_annotation_canvases(this, subtask);
         // Redraw all annotations to render them
         this.redraw_all_annotations(subtask);
         // Calculate distances for all annotations if FilterDistance is present
