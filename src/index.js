@@ -48,7 +48,7 @@ import {
 } from "./blobs";
 import { ULABEL_VERSION } from "./version";
 import { BrushToolboxItem } from "../build/toolbox";
-import { staggered_ulabel_init } from "../build/initializer";
+import { ulabel_init } from "../build/initializer";
 
 jQuery.fn.outer_html = function () {
     return jQuery("<div />").append(this.eq(0).clone()).html();
@@ -612,8 +612,7 @@ export class ULabel {
     }
 
     init(callback) {
-        // ulabel_init(this, callback);
-        staggered_ulabel_init(this, callback, 250);
+        ulabel_init(this, callback);
     }
 
     /**
