@@ -175,6 +175,8 @@ export class Configuration {
 
     public n_annos_per_canvas: number = DEFAULT_N_ANNOS_PER_CANVAS;
 
+    public click_and_drag_poly_annotations: boolean = true;
+
     constructor(...kwargs: { [key: string]: unknown }[]) {
         this.modify_config(...kwargs);
     }
