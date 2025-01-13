@@ -6,6 +6,9 @@ All notable changes to this project will be documented here.
 
 Nothing yet.
 
+## [0.16.1] - Jan 13th, 2025
+-  Added `click_and_drag_poly_annotations` flag to the configuration object, that when set to false prevents continuous points from being added to a polyline or polygon annotations when clicking and dragging.
+
 ## [0.16.0] - Nov 8th, 2024
 - Added loading overlay with spinning icon while ULabel is initializing
 - Moved several existing utilties (mostly static methods) to isolated files:
