@@ -3974,7 +3974,7 @@ export class ULabel {
                     // If this mouse event is a click, add a new member to the list of keypoints
                     //    ender clicks are filtered before they get here
                     add_keypoint = true;
-                    if (isclick || is_click_dragging) {
+                    if (isclick || (is_click_dragging && this.config.click_and_drag_poly_annotations)) {
                         if (n_kpts === 0) {
                             // If no keypoints, then we create an ender at the mouse position
                             // this.create_polygon_ender(gmx, gmy, actid);

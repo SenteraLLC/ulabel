@@ -418,6 +418,9 @@ Keybind to decrease the brush size. Default is `[`. Requires the active subtask 
 ### `n_annos_per_canvas`
 The number of annotations to render on a single canvas. Default is `100`. Increasing this number may improve performance for jobs with a large number of annotations.
 
+### `click_and_drag_poly_annotations`
+If true, the user can click and drag to contiuously place points for polyline and polygon annotations. Default is `true`.
+
 
 ## Display Utility Functions
 
