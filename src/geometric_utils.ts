@@ -251,7 +251,7 @@ export class GeometricUtils {
             ret = temp_coords;
         } else {
             // TODO (joshua-dean): See if this casting can be better
-            ret = <ULabelSpatialPayload2D[]><unknown> temp_coords[0].concat(temp[1]);
+            ret = <ULabelSpatialPayload2D[]><unknown> temp_coords[0].concat(temp_coords[1]);
         }
         return GeometricUtils.turf_simplify_complex_polygon(ret);
     }
