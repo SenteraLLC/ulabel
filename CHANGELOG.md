@@ -6,6 +6,9 @@ All notable changes to this project will be documented here.
 
 Nothing yet.
 
+## [0.16.2] - Apr 2nd, 2025
+- Fixed bug introduced in v0.15.0 where using the erase tool such that a polygon was separated into multiple disjoint regions would cause an unrecoverable error.
+
 ## [0.16.1] - Jan 13th, 2025
 -  Added `click_and_drag_poly_annotations` flag to the configuration object, that when set to false prevents continuous points from being added to a polyline or polygon annotations when clicking and dragging.
 

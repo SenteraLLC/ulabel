@@ -4293,8 +4293,8 @@ export class ULabel {
                 let new_spatial_payload = [];
 
                 if (current_subtask["state"]["is_in_erase_mode"]) {
+                    let merged_polygon = null;
                     for (let split_polygon of split_polygons) {
-                        let merged_polygon;
                         // Erase the brush from the annotation
                         merged_polygon = GeometricUtils.subtract_polygons(split_polygon, brush_polygon);
                         if (merged_polygon !== null) {
