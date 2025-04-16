@@ -481,18 +481,20 @@ export class ULabel {
         `);
 
         return {
-            container_id: arguments[0], // Required
-            image_data: arguments[1], // Required
-            username: arguments[2], // Required
-            submit_buttons: arguments[3], // Required
-            subtasks: arguments[4], // Required
-            task_meta: arguments[5] ?? null, // Use default if optional argument is undefined
-            annotation_meta: arguments[6] ?? null, // Use default if optional argument is undefined
-            px_per_px: arguments[7] ?? 1, // Use default if optional argument is undefined
-            initial_crop: arguments[8] ?? null, // Use default if optional argument is undefined
-            initial_line_size: arguments[9] ?? null, // Use default if optional argument is undefined
-            config_data: arguments[10] ?? null, // Use default if optional argument is undefined
-            toolbox_order: arguments[11] ?? null, // Use default if optional argument is undefined
+            // Required arguments
+            container_id: arguments[0],
+            image_data: arguments[1],
+            username: arguments[2],
+            submit_buttons: arguments[3],
+            subtasks: arguments[4],
+            // Optional arguments
+            task_meta: arguments[5] ?? null,
+            annotation_meta: arguments[6] ?? null,
+            px_per_px: arguments[7] ?? 1,
+            initial_crop: arguments[8] ?? null,
+            initial_line_size: arguments[9] ?? null,
+            config_data: arguments[10] ?? null,
+            toolbox_order: arguments[11] ?? null,
         };
     }
 
@@ -570,6 +572,15 @@ export class ULabel {
         this.color_info = {};
         ULabel.initialize_subtasks(this);
 
+        // Build entry for `this.drag_state`
+        const build_drag_state_entry = () => {
+            return {
+                mouse_start: null, // Screen coordinates where the current mouse drag started
+                offset_start: null, // Scroll values where the current mouse drag started
+                zoom_val_start: null, // zoom_val when the dragging interaction started
+            };
+        };
+
         // Create object for dragging interaction state
         // TODO(v1)
         // There can only be one drag, yes? Maybe pare this down...
@@ -577,41 +588,13 @@ export class ULabel {
         this.drag_state = {
             active_key: null,
             release_button: null,
-            annotation: {
-                mouse_start: null, // Screen coordinates where the current mouse drag started
-                offset_start: null, // Scroll values where the current mouse drag started
-                zoom_val_start: null, // zoom_val when the dragging interaction started
-            },
-            brush: {
-                mouse_start: null, // Screen coordinates where the current mouse drag started
-                offset_start: null, // Scroll values where the current mouse drag started
-                zoom_val_start: null, // zoom_val when the dragging interaction started
-            },
-            edit: {
-                mouse_start: null, // Screen coordinates where the current mouse drag started
-                offset_start: null, // Scroll values where the current mouse drag started
-                zoom_val_start: null, // zoom_val when the dragging interaction started
-            },
-            pan: {
-                mouse_start: null, // Screen coordinates where the current mouse drag started
-                offset_start: null, // Scroll values where the current mouse drag started
-                zoom_val_start: null, // zoom_val when the dragging interaction started
-            },
-            zoom: {
-                mouse_start: null, // Screen coordinates where the current mouse drag started
-                offset_start: null, // Scroll values where the current mouse drag started
-                zoom_val_start: null, // zoom_val when the dragging interaction started
-            },
-            move: {
-                mouse_start: null, // Screen coordinates where the current mouse drag started
-                offset_start: null, // Scroll values where the current mouse drag started
-                zoom_val_start: null, // zoom_val when the dragging interaction started
-            },
-            right: {
-                mouse_start: null, // Screen coordinates where the current mouse drag started
-                offset_start: null, // Scroll values where the current mouse drag started
-                zoom_val_start: null, // zoom_val when the dragging interaction started
-            },
+            annotation: build_drag_state_entry(),
+            brush: build_drag_state_entry(),
+            edit: build_drag_state_entry(),
+            pan: build_drag_state_entry(),
+            zoom: build_drag_state_entry(),
+            move: build_drag_state_entry(),
+            right: build_drag_state_entry(),
         };
 
         for (const st in this.subtasks) {

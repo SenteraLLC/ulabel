@@ -24,6 +24,7 @@ import {
     get_local_storage_item,
     set_local_storage_item,
 } from "./utilities";
+import { AnnotationSizeCookie } from "./cookies";
 
 // For ResizeToolboxItem
 enum ValidResizeValues {
@@ -1171,8 +1172,8 @@ export class AnnotationResizeItem extends ToolboxItem {
         // that the annotation was saved as.
         for (const subtask in ulabel.subtasks) {
             const cached_size_property = ulabel.subtasks[subtask].display_name.replaceLowerConcat(" ", "-", "-cached-size");
-            const size_cookie = this.read_size_cookie(ulabel.subtasks[subtask]);
-            if ((size_cookie != null) && size_cookie != "NaN") {
+            const size_cookie = AnnotationSizeCookie.read_size_cookie(ulabel.subtasks[subtask]);
+            if (size_cookie != null) {
                 this.update_annotation_size(ulabel, ulabel.subtasks[subtask], Number(size_cookie));
                 this[cached_size_property] = Number(size_cookie);
             } else if (ulabel.config.default_annotation_size != undefined) {
@@ -1420,7 +1421,8 @@ export class AnnotationResizeItem extends ToolboxItem {
         }
 
         if (subtask.annotations.ordering.length > 0) {
-            this.set_size_cookie(subtask.annotations.access[subtask.annotations.ordering[0]].line_size, subtask);
+            const cst_line_size = subtask.annotations.access[subtask.annotations.ordering[0]].line_size;
+            AnnotationSizeCookie.set_size_cookie(cst_line_size, subtask);
         }
     }
 
@@ -1429,38 +1431,6 @@ export class AnnotationResizeItem extends ToolboxItem {
         for (const subtask in ulabel.subtasks) {
             this.update_annotation_size(ulabel, ulabel.subtasks[subtask], size);
         }
-    }
-
-    private set_size_cookie(cookie_value, subtask) {
-        const d = new Date();
-        d.setTime(d.getTime() + (10000 * 24 * 60 * 60 * 1000));
-
-        const subtask_name = subtask.display_name.replaceLowerConcat(" ", "_");
-
-        document.cookie = subtask_name + "_size=" + cookie_value + ";" + d.toUTCString() + ";path=/";
-    }
-
-    private read_size_cookie(subtask) {
-        const subtask_name = subtask.display_name.replaceLowerConcat(" ", "_");
-
-        const cookie_name = subtask_name + "_size=";
-
-        const cookie_array = document.cookie.split(";");
-
-        for (let i = 0; i < cookie_array.length; i++) {
-            let current_cookie = cookie_array[i];
-
-            // while there's whitespace at the front of the cookie, loop through and remove it
-            while (current_cookie.charAt(0) == " ") {
-                current_cookie = current_cookie.substring(1);
-            }
-
-            if (current_cookie.indexOf(cookie_name) == 0) {
-                return current_cookie.substring(cookie_name.length, current_cookie.length);
-            }
-        }
-
-        return null;
     }
 
     public get_html() {
@@ -2057,13 +2027,13 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
         // Check if localStorage has a value for showing the overlay
         const show_overlay = get_local_storage_item("filterDistanceShowOverlay");
         // Guard against null values
-        this.show_overlay = show_overlay !== null ? show_overlay : this.show_overlay;
+        this.show_overlay = show_overlay ?? this.show_overlay;
         this.overlay.update_display_overlay(this.show_overlay);
 
         // Check if localStorage has a value for filtering during polyline move
         const filter_during_polyline_move = get_local_storage_item("filterDistanceFilterDuringPolylineMove");
         // Guard against null values
-        this.filter_during_polyline_move = filter_during_polyline_move !== null ? filter_during_polyline_move : this.filter_during_polyline_move;
+        this.filter_during_polyline_move = filter_during_polyline_move ?? this.filter_during_polyline_move;
 
         this.add_styles();
 
@@ -2519,7 +2489,7 @@ export class SubmitButtons extends ToolboxItem {
         const submit_buttons_by_row: ULabelSubmitButton[][] = [];
         // First, get all the unique row numbers.
         // If a button doesn't have a row number, it will be placed in row 0.
-        const row_numbers: Set<number> = new Set(this.submit_buttons.map((button) => button.row_number ? button.row_number : 0));
+        const row_numbers: Set<number> = new Set(this.submit_buttons.map((button) => button.row_number ?? 0));
         // Sort the row numbers
         const sorted_row_numbers: number[] = Array.from(row_numbers).sort((a, b) => a - b);
         // Group the buttons by row number in ascending order
