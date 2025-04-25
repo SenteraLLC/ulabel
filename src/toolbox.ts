@@ -1422,7 +1422,7 @@ export class AnnotationResizeItem extends ToolboxItem {
         if (subtask.annotations.ordering.length > 0) {
             const line_size = subtask.annotations.access[subtask.annotations.ordering[0]].line_size;
             if (line_size !== vanish_size) {
-                this.set_size_cookie(subtask.annotations.access[subtask.annotations.ordering[0]].line_size, subtask);
+                this.set_size_cookie(line_size, subtask);
             }
         }
     }
