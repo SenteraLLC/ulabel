@@ -6,6 +6,10 @@ All notable changes to this project will be documented here.
 
 Nothing yet.
 
+## [0.16.3] - Apr 25th, 2025
+- Fix bug where the `Vanish` button wouldn't update its `locked` state when switching between subtasks.
+- Fix bug where clicking the `Vanish` button would unexpectedly set the size cookie, causing future annotations in the same subtask to be loaded in a very small size on subsequent sessions, with the only way to recover being to increase the annotation size.
+
 ## [0.16.2] - Apr 2nd, 2025
 - Fixed bug introduced in v0.15.0 where using the erase tool such that a polygon was separated into multiple disjoint regions would cause an unrecoverable error.
 
