@@ -35,6 +35,7 @@ enum ValidResizeValues {
 }
 
 const toolboxDividerDiv = "<div class=toolbox-divider></div>";
+const vanish_size = 0.01;
 
 /** Chains the replaceAll method and the toLowerCase method.
  *  Optionally concatenates a string at the end of the method.
@@ -1328,7 +1329,6 @@ export class AnnotationResizeItem extends ToolboxItem {
         const small_size = 1.5;
         const large_size = 5;
         const increment_size = 0.5;
-        const vanish_size = 0.01;
         const subtask_cached_size = subtask.display_name.replaceLowerConcat(" ", "-", "-cached-size");
         const subtask_vanished_flag = subtask.display_name.replaceLowerConcat(" ", "-", "-vanished");
 
@@ -1408,8 +1408,8 @@ export class AnnotationResizeItem extends ToolboxItem {
                 case "-":
                     // Check to make sure annotation line size won't go 0 or negative.
                     // If it would, set it equal to a small positive number
-                    if (subtask.annotations.access[annotation_id].line_size - size <= 0.01) {
-                        subtask.annotations.access[annotation_id].line_size = 0.01;
+                    if (subtask.annotations.access[annotation_id].line_size - size <= vanish_size) {
+                        subtask.annotations.access[annotation_id].line_size = vanish_size;
                     } else {
                         subtask.annotations.access[annotation_id].line_size -= size;
                     }
@@ -1420,7 +1420,12 @@ export class AnnotationResizeItem extends ToolboxItem {
         }
 
         if (subtask.annotations.ordering.length > 0) {
-            this.set_size_cookie(subtask.annotations.access[subtask.annotations.ordering[0]].line_size, subtask);
+            const line_size = subtask.annotations.access[subtask.annotations.ordering[0]].line_size;
+            if (line_size !== vanish_size) {
+                this.set_size_cookie(subtask.annotations.access[subtask.annotations.ordering[0]].line_size, subtask);
+            } else {
+                console.log("Annotation size is set to vanish size, not setting cookie");
+            }
         }
     }
 
