@@ -1423,8 +1423,6 @@ export class AnnotationResizeItem extends ToolboxItem {
             const line_size = subtask.annotations.access[subtask.annotations.ordering[0]].line_size;
             if (line_size !== vanish_size) {
                 this.set_size_cookie(subtask.annotations.access[subtask.annotations.ordering[0]].line_size, subtask);
-            } else {
-                console.log("Annotation size is set to vanish size, not setting cookie");
             }
         }
     }
@@ -1433,6 +1431,17 @@ export class AnnotationResizeItem extends ToolboxItem {
     public update_all_subtask_annotation_size(ulabel, size) {
         for (const subtask in ulabel.subtasks) {
             this.update_annotation_size(ulabel, ulabel.subtasks[subtask], size);
+        }
+    }
+
+    public redraw_update(ulabel: ULabel): void {
+        // Ensure the vanish button reflects the vanish state of the current subtask
+        const current_subtask = ulabel.get_current_subtask();
+        const subtask_vanished_flag = current_subtask.display_name.replaceLowerConcat(" ", "-", "-vanished");
+        if (this[subtask_vanished_flag]) {
+            $("#annotation-resize-v").addClass("locked");
+        } else {
+            $("#annotation-resize-v").removeClass("locked");
         }
     }
 
