@@ -2484,8 +2484,15 @@ export class SubmitButtons extends ToolboxItem {
                     submit_payload["annotations"][stkey] = [];
 
                     // Add all of the annotations in that subtask
+                    let annotation: ULabelAnnotation;
                     for (let i = 0; i < ulabel.subtasks[stkey]["annotations"]["ordering"].length; i++) {
-                        const annotation = ULabelAnnotation.from_json(ulabel.subtasks[stkey]["annotations"]["access"][ulabel.subtasks[stkey]["annotations"]["ordering"][i]]);
+                        try {
+                            annotation = ULabelAnnotation.from_json(ulabel.subtasks[stkey]["annotations"]["access"][ulabel.subtasks[stkey]["annotations"]["ordering"][i]]);
+                        } catch (e) {
+                            console.error("Error validating annotation during submit.", e);
+                            continue;
+                        }
+
                         // Skip any delete modes
                         if (
                             DELETE_MODES.includes(annotation.spatial_type)
