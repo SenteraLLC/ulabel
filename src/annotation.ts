@@ -129,7 +129,7 @@ export class ULabelAnnotation {
                 const layer = this.spatial_payload[i];
                 // Ensure that the layer is an array
                 if (!Array.isArray(layer[0])) {
-                    console.log(`Layer ${i} points of id ${this.id} are not arrays. Removing layer.`);
+                    console.log(`Layer ${i} of id ${this.id} has an invalid or empty point array. Removing layer.`);
                     indices_to_remove.push(i);
                     continue;
                 }

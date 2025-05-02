@@ -2485,7 +2485,7 @@ export class SubmitButtons extends ToolboxItem {
 
                     // Add all of the annotations in that subtask
                     for (let i = 0; i < ulabel.subtasks[stkey]["annotations"]["ordering"].length; i++) {
-                        const annotation = ulabel.subtasks[stkey]["annotations"]["access"][ulabel.subtasks[stkey]["annotations"]["ordering"][i]];
+                        const annotation = ULabelAnnotation.from_json(ulabel.subtasks[stkey]["annotations"]["access"][ulabel.subtasks[stkey]["annotations"]["ordering"][i]]);
                         // Skip any delete modes
                         if (
                             DELETE_MODES.includes(annotation.spatial_type)

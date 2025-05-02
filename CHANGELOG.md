@@ -6,6 +6,9 @@ All notable changes to this project will be documented here.
 
 Nothing yet.
 
+## [0.16.4] - May 2nd, 2025
+- Fix bug where empty polygon layers could be included in a `submit_button` hook payload.
+
 ## [0.16.3] - Apr 25th, 2025
 - Fix bug where the `Vanish` button wouldn't update its `locked` state when switching between subtasks.
 - Fix bug where clicking the `Vanish` button would unexpectedly set the size cookie, causing future annotations in the same subtask to be loaded in a very small size on subsequent sessions, with the only way to recover being to increase the annotation size.
