@@ -166,7 +166,7 @@ export type ImageData = {
     frames: string[];
 };
 
-export type SizeMode = "fixed" | "dynamic";
+export type SizeMode = "fixed" | "inverse-zoom" | "zoom";
 
 export type ULabelSubtasks = { [key: string]: ULabelSubtask };
 

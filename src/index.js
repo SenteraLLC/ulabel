@@ -3286,9 +3286,12 @@ export class ULabel {
         }
 
         // fixed: line size is independent of zoom level
-        // dynamic: line size scales with zoom level
-        if (this.state.size_mode === "dynamic") {
+        // zoom: line size increases with increased zoom level
+        // inverse-zoom: line size decreased with increased zoom level
+        if (this.state.size_mode === "zoom") {
             line_size *= this.state["zoom_val"];
+        } else if (this.state.size_mode === "inverse-zoom") {
+            line_size /= this.state["zoom_val"];
         }
 
         return line_size;
@@ -5947,8 +5950,8 @@ export class ULabel {
         // Redraw demo annotation
         this.redraw_demo();
 
-        // Redraw all annotations if size mode is dynamic
-        if (this.state.size_mode === "dynamic") {
+        // Redraw all annotations if size mode is not fixed
+        if (this.state.size_mode === "inverse-zoom" || this.state.size_mode === "zoom") {
             this.redraw_all_annotations();
         }
     }
