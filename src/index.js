@@ -3298,7 +3298,6 @@ export class ULabel {
     }
 
     get_initial_line_size() {
-        // Get the initial line size based on the current px_per_px
         return this.state.line_size;
     }
 
@@ -5950,7 +5949,7 @@ export class ULabel {
         // Redraw demo annotation
         this.redraw_demo();
 
-        // Redraw all annotations if size mode is not fixed
+        // Redraw all annotations if size mode is not "fixed" to render them at their new size
         if (this.state.size_mode === "inverse-zoom" || this.state.size_mode === "zoom") {
             this.redraw_all_annotations();
         }
