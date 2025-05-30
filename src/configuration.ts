@@ -4,6 +4,7 @@ import {
     ImageData,
     RecolorActiveConfig,
     ULabelSubmitButton,
+    SizeMode,
 } from "..";
 import {
     ModeSelectionToolboxItem,
@@ -57,6 +58,7 @@ export class Configuration {
     // Values useful for generating HTML for tool
     public container_id: string = "container";
     public px_per_px: number = 1;
+    public size_mode: SizeMode = "fixed";
     public initial_crop: InitialCrop = null;
     public annbox_id: string = "annbox";
     public imwrap_id: string = "imwrap";
@@ -82,7 +84,7 @@ export class Configuration {
     public allow_soft_id: boolean = false;
     public default_annotation_color: string = "#fa9d2a";
     public username: string = "ULabelUser";
-    public initial_line_size: number = null;
+    public initial_line_size: number = 4;
 
     // ID Dialog config
     public cl_opacity: number = 0.4;
