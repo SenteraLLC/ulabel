@@ -3287,7 +3287,7 @@ export class ULabel {
 
         // fixed: line size is independent of zoom level
         // zoom: line size increases with increased zoom level
-        // inverse-zoom: line size decreased with increased zoom level
+        // inverse-zoom: line size decreases with increased zoom level
         if (this.state.size_mode === "zoom") {
             line_size *= this.state["zoom_val"];
         } else if (this.state.size_mode === "inverse-zoom") {
