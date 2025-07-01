@@ -6,7 +6,6 @@ import {
     ULabelSubmitButton,
 } from "..";
 import {
-    ModeSelectionToolboxItem,
     ZoomPanToolboxItem,
     AnnotationIDToolboxItem,
     ClassCounterToolboxItem,
@@ -18,6 +17,7 @@ import {
     BrushToolboxItem,
     ToolboxItem,
 } from "./toolbox";
+import { ModeSelectionToolboxItem } from "./toolbox_items/mode_selection";
 import { is_object_and_not_array } from "./utilities";
 
 /* eslint-disable @stylistic/no-multi-spaces */
