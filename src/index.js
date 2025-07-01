@@ -49,6 +49,7 @@ import {
 import { ULABEL_VERSION } from "./version";
 import { BrushToolboxItem } from "../build/toolbox";
 import { ulabel_init } from "../build/initializer";
+import { set_annotation_mode } from "../build/toolbox_items/mode_selection";
 
 jQuery.fn.outer_html = function () {
     return jQuery("<div />").append(this.eq(0).clone()).html();
@@ -859,7 +860,10 @@ export class ULabel {
         $("input#tb-st-range--" + st_key).val(100);
 
         // Update toolbox opts
-        this.update_annotation_mode();
+        // this.update_annotation_mode();
+        const ann_mode = this.get_current_subtask()["state"]["annotation_mode"];
+        set_annotation_mode(ann_mode, this);
+
         this.update_current_class();
 
         // Update class counter
@@ -889,19 +893,21 @@ export class ULabel {
 
     // ================= Toolbox Functions ==================
 
-    set_annotation_mode(annotation_mode) {
-        this.get_current_subtask()["state"]["annotation_mode"] = annotation_mode;
-        this.update_annotation_mode();
-    }
+    // Not called by anything
+    // set_annotation_mode(annotation_mode) {
+    //     this.get_current_subtask()["state"]["annotation_mode"] = annotation_mode;
+    //     this.update_annotation_mode();
+    // }
 
-    update_annotation_mode() {
-        $("a.md-btn.sel").attr("href", "#");
-        $("a.md-btn.sel").removeClass("sel");
-        const ann_mode = this.get_current_subtask()["state"]["annotation_mode"];
-        $("a#md-btn--" + ann_mode).addClass("sel");
-        $("a#md-btn--" + ann_mode).removeAttr("href");
-        this.show_annotation_mode();
-    }
+    // // Called when changing the subtask
+    // update_annotation_mode() {
+    //     $("a.md-btn.sel").attr("href", "#");
+    //     $("a.md-btn.sel").removeClass("sel");
+    //     const ann_mode = this.get_current_subtask()["state"]["annotation_mode"];
+    //     $("a#md-btn--" + ann_mode).addClass("sel");
+    //     $("a#md-btn--" + ann_mode).removeAttr("href");
+    //     this.show_annotation_mode();
+    // }
 
     update_current_class() {
         this.update_id_toolbox_display();

@@ -2,6 +2,34 @@ import { ULabel } from "..";
 import { ToolboxItem, BrushToolboxItem } from "../toolbox";
 
 /**
+ * Set the annotation mode.
+ * @param new_anno_mode Annotation mode to switch to
+ */
+export function set_annotation_mode(
+    new_anno_mode: string,
+    ulabel: ULabel,
+) {
+    const current_subtask = ulabel.get_current_subtask();
+    current_subtask.state.annotation_mode = new_anno_mode;
+    if (new_anno_mode === "polygon") {
+        BrushToolboxItem.show_brush_toolbox_item();
+    } else {
+        BrushToolboxItem.hide_brush_toolbox_item();
+        // Should be able to pass null because we're turning it off
+        if (current_subtask.state.is_in_erase_mode) ulabel.toggle_erase_mode(null);
+        if (current_subtask.state.is_in_brush_mode) ulabel.toggle_brush_mode(null);
+    }
+
+    $("a.md-btn.sel").attr("href", "#");
+    $("a.md-btn.sel").removeClass("sel");
+
+    $("a#md-btn--" + new_anno_mode).addClass("sel");
+    $("a#md-btn--" + new_anno_mode).removeAttr("href");
+    ulabel.show_annotation_mode();
+    ulabel.toggle_delete_class_id_in_toolbox();
+}
+
+/**
  * Toolbox item for selecting annotation mode.
  */
 
@@ -22,33 +50,34 @@ export class ModeSelectionToolboxItem extends ToolboxItem {
 
             // Get the new mode and set it to ulabel's current mode
             const new_mode = target_jq.attr("id").split("--")[1];
-            current_subtask["state"]["annotation_mode"] = new_mode;
+            set_annotation_mode(new_mode, ulabel);
+            // current_subtask["state"]["annotation_mode"] = new_mode;
 
-            // Show the BrushToolboxItem when polygon mode is selected
-            if (new_mode === "polygon") {
-                BrushToolboxItem.show_brush_toolbox_item();
-            } else {
-                BrushToolboxItem.hide_brush_toolbox_item();
-                // Turn off erase mode if it's on
-                if (current_subtask["state"]["is_in_erase_mode"]) {
-                    ulabel.toggle_erase_mode(e);
-                }
-                // Turn off brush mode if it's on
-                if (current_subtask["state"]["is_in_brush_mode"]) {
-                    ulabel.toggle_brush_mode(e);
-                }
-            }
+            // // Show the BrushToolboxItem when polygon mode is selected
+            // if (new_mode === "polygon") {
+            //     BrushToolboxItem.show_brush_toolbox_item();
+            // } else {
+            //     BrushToolboxItem.hide_brush_toolbox_item();
+            //     // Turn off erase mode if it's on
+            //     if (current_subtask["state"]["is_in_erase_mode"]) {
+            //         ulabel.toggle_erase_mode(e);
+            //     }
+            //     // Turn off brush mode if it's on
+            //     if (current_subtask["state"]["is_in_brush_mode"]) {
+            //         ulabel.toggle_brush_mode(e);
+            //     }
+            // }
 
-            // Reset the previously selected mode button
-            $("a.md-btn.sel").attr("href", "#");
-            $("a.md-btn.sel").removeClass("sel");
+            // // Reset the previously selected mode button
+            // $("a.md-btn.sel").attr("href", "#");
+            // $("a.md-btn.sel").removeClass("sel");
 
-            // Make the selected class look selected
-            target_jq.addClass("sel");
-            target_jq.removeAttr("href");
+            // // Make the selected class look selected
+            // target_jq.addClass("sel");
+            // target_jq.removeAttr("href");
 
-            ulabel.show_annotation_mode(target_jq);
-            ulabel.toggle_delete_class_id_in_toolbox();
+            // ulabel.show_annotation_mode(target_jq);
+            // ulabel.toggle_delete_class_id_in_toolbox();
         });
 
         $(document).on("keypress.ulabel", (e) => {
