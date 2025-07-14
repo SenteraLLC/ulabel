@@ -12,6 +12,7 @@ Nothing yet.
   - When set to `match-zoom`, the line size of annotations will increase with increased zoom level.
   - When set to `inverse-zoom`, the line size of annotations will decrease with increased zoom level.
 - Prior behavior is equivalent to `anno_scaling_mode = "fixed"`.
+- Fix bug where fully erased polygon annotations would cause the an error upon submit.
 
 ## [0.16.4] - May 2nd, 2025
 - Fix bug where empty polygon layers could be included in a `submit_button` hook payload.
