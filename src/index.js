@@ -1449,7 +1449,7 @@ export class ULabel {
             diffY = offset["diffY"];
         }
 
-        const line_size = this.zoom_scale_annotation_line_size(annotation_object);
+        const line_size = this.get_scaled_line_size(annotation_object);
 
         // Prep for bbox drawing
         const color = this.get_annotation_color(annotation_object);
@@ -1482,7 +1482,7 @@ export class ULabel {
             diffY = offset["diffY"];
         }
 
-        const line_size = this.zoom_scale_annotation_line_size(annotation_object);
+        const line_size = this.get_scaled_line_size(annotation_object);
 
         // Prep for bbox drawing
         const color = this.get_annotation_color(annotation_object);
@@ -1530,7 +1530,7 @@ export class ULabel {
             fill = true;
         }
 
-        const line_size = this.zoom_scale_annotation_line_size(annotation_object);
+        const line_size = this.get_scaled_line_size(annotation_object);
 
         // Prep for bbox drawing
         const color = this.get_annotation_color(annotation_object);
@@ -1566,7 +1566,7 @@ export class ULabel {
             diffY = offset["diffY"];
         }
 
-        const line_size = this.zoom_scale_annotation_line_size(annotation_object);
+        const line_size = this.get_scaled_line_size(annotation_object);
 
         // Hack to turn off fills during vanish
         let is_in_vanish_mode = line_size <= 0.01;
@@ -1655,7 +1655,7 @@ export class ULabel {
             diffY = offset["diffY"];
         }
 
-        const line_size = this.zoom_scale_annotation_line_size(annotation_object);
+        const line_size = this.get_scaled_line_size(annotation_object);
 
         // Prep for bbox drawing
         const color = this.get_annotation_color(annotation_object);
@@ -1686,7 +1686,7 @@ export class ULabel {
             diffY = offset["diffY"];
         }
 
-        const line_size = this.zoom_scale_annotation_line_size(annotation_object);
+        const line_size = this.get_scaled_line_size(annotation_object);
 
         // Prep for tbar drawing
         const color = this.get_annotation_color(annotation_object);
@@ -3278,7 +3278,7 @@ export class ULabel {
         return ret;
     }
 
-    zoom_scale_annotation_line_size(annotation) {
+    get_scaled_line_size(annotation) {
         // If a line size isn't provided, use the default line size
         let line_size;
         if ("line_size" in annotation && annotation["line_size"] !== null) {
