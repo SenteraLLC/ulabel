@@ -44,6 +44,20 @@ export class GeometricUtils {
         ];
     }
 
+    /**
+     * Clamp a point to the image boundaries.
+     * @param pt [x, y] point
+     * @param width image width
+     * @param height image height
+     * @returns [x, y] clamped point
+     */
+    public static clamp_point_to_image(pt: Point2D, width: number, height: number): Point2D {
+        console.log("fit point within image");
+        const x = Math.max(0, Math.min(pt[0], width - 1));
+        const y = Math.max(0, Math.min(pt[1], height - 1));
+        return [x, y];
+    }
+
     // Check if two points are equal
     public static points_are_equal(pt1: Point2D, pt2: Point2D): boolean {
         return (pt1[0] === pt2[0]) && (pt1[1] === pt2[1]);
