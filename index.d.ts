@@ -166,7 +166,7 @@ export type ImageData = {
     frames: string[];
 };
 
-export type SizeMode = "fixed" | "inverse-zoom" | "zoom";
+export type AnnoScalingMode = "fixed" | "inverse-zoom" | "match-zoom";
 
 export type ULabelSubtasks = { [key: string]: ULabelSubtask };
 
@@ -184,7 +184,7 @@ export class ULabel {
         current_subtask: string;
         last_brush_stroke: [number, number];
         line_size: number;
-        size_mode: SizeMode;
+        anno_scaling_mode: AnnoScalingMode;
         // Render state
         // TODO (joshua-dean): this is never assigned, is it used?
         demo_canvas_context: CanvasRenderingContext2D;

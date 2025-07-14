@@ -480,18 +480,20 @@ export class ULabel {
         `);
 
         return {
-            container_id: arguments[0], // Required
-            image_data: arguments[1], // Required
-            username: arguments[2], // Required
-            submit_buttons: arguments[3], // Required
-            subtasks: arguments[4], // Required
-            task_meta: arguments[5] ?? null, // Use default if optional argument is undefined
-            annotation_meta: arguments[6] ?? null, // Use default if optional argument is undefined
-            px_per_px: arguments[7] ?? 1, // Use default if optional argument is undefined
-            initial_crop: arguments[8] ?? null, // Use default if optional argument is undefined
-            initial_line_size: arguments[9] ?? 4, // Use default if optional argument is undefined
-            config_data: arguments[10] ?? null, // Use default if optional argument is undefined
-            toolbox_order: arguments[11] ?? null, // Use default if optional argument is undefined
+            // Required
+            container_id: arguments[0],
+            image_data: arguments[1],
+            username: arguments[2],
+            submit_buttons: arguments[3],
+            subtasks: arguments[4],
+            // Use default if optional argument is undefined
+            task_meta: arguments[5] ?? null,
+            annotation_meta: arguments[6] ?? null,
+            px_per_px: arguments[7] ?? 1,
+            initial_crop: arguments[8] ?? null,
+            initial_line_size: arguments[9] ?? 4,
+            config_data: arguments[10] ?? null,
+            toolbox_order: arguments[11] ?? null,
         };
     }
 
@@ -554,7 +556,7 @@ export class ULabel {
             current_subtask: null, // The key of the current subtask
             last_brush_stroke: null,
             line_size: this.config.initial_line_size,
-            size_mode: this.config.size_mode,
+            anno_scaling_mode: this.config.anno_scaling_mode,
 
             // Renderings state
             demo_canvas_context: null,
@@ -3286,11 +3288,11 @@ export class ULabel {
         }
 
         // fixed: line size is independent of zoom level
-        // zoom: line size increases with increased zoom level
+        // match-zoom: line size increases with increased zoom level
         // inverse-zoom: line size decreases with increased zoom level
-        if (this.state.size_mode === "zoom") {
+        if (this.state.anno_scaling_mode === "match-zoom") {
             line_size *= this.state["zoom_val"];
-        } else if (this.state.size_mode === "inverse-zoom") {
+        } else if (this.state.anno_scaling_mode === "inverse-zoom") {
             line_size /= this.state["zoom_val"];
         }
 
@@ -5950,7 +5952,7 @@ export class ULabel {
         this.redraw_demo();
 
         // Redraw all annotations if size mode is not "fixed" to render them at their new size
-        if (this.state.size_mode === "inverse-zoom" || this.state.size_mode === "zoom") {
+        if (this.state.anno_scaling_mode === "inverse-zoom" || this.state.anno_scaling_mode === "match-zoom") {
             this.redraw_all_annotations();
         }
     }

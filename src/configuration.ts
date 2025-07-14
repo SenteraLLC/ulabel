@@ -4,7 +4,7 @@ import {
     ImageData,
     RecolorActiveConfig,
     ULabelSubmitButton,
-    SizeMode,
+    AnnoScalingMode,
 } from "..";
 import {
     ModeSelectionToolboxItem,
@@ -58,7 +58,7 @@ export class Configuration {
     // Values useful for generating HTML for tool
     public container_id: string = "container";
     public px_per_px: number = 1;
-    public size_mode: SizeMode = "fixed";
+    public anno_scaling_mode: AnnoScalingMode = "fixed";
     public initial_crop: InitialCrop = null;
     public annbox_id: string = "annbox";
     public imwrap_id: string = "imwrap";

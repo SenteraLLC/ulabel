@@ -307,12 +307,12 @@ In some cases, you may want the annotations to render at a higher or lower resol
 
 The line width with which new annotations are drawn initially. Units are pixels in the underlying image. When this value is not included, the default value of `4` is used.
 
-### `size_mode`
+### `anno_scaling_mode`
 
 Defines how annotation line size is adjusted based on the zoom level. The following modes are supported:
 
 - `"fixed"`: Line size remains constant regardless of zoom level. (Default. Use for best performance)
-- `"zoom"`: Line size increases with increased zoom level.
+- `"match-zoom"`: Line size increases with increased zoom level.
 - `"inverse-zoom"`: Line size decreases with increased zoom level.
 
 ### `instructions_url`
