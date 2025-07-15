@@ -330,7 +330,7 @@ export class ULabel {
                     },
                 );
 
-                cand = this.fit_annotation_to_image_bounds(cand);
+                cand = ul.fit_annotation_to_image_bounds(cand);
 
                 // Push to ordering and add to access
                 ul.subtasks[subtask_key]["annotations"]["ordering"].push(cand["id"]);
@@ -3395,7 +3395,7 @@ export class ULabel {
         this.get_current_subtask()["actions"]["stream"][i].redo_payload = JSON.stringify(redo_payload);
     }
 
-    record_finish_move(diffX, diffY, diffZ = 0) {
+    record_finish_move(diffX, diffY, diffZ = 0, move_not_allowed = false) {
         // TODO(3d)
         let i = this.get_current_subtask()["actions"]["stream"].length - 1;
         // Parse payloads, edit, and then stringify
@@ -3408,6 +3408,7 @@ export class ULabel {
         undo_payload.diffY = -diffY;
         undo_payload.diffZ = -diffZ;
         redo_payload.finished = true;
+        redo_payload.move_not_allowed = move_not_allowed;
         this.get_current_subtask()["actions"]["stream"][i].redo_payload = JSON.stringify(redo_payload);
         this.get_current_subtask()["actions"]["stream"][i].undo_payload = JSON.stringify(undo_payload);
     }
@@ -4086,7 +4087,7 @@ export class ULabel {
             redoing = true;
 
             // Add back the ender
-            const [gmx, gmy] = this.get_image_aware_mouse_x_y(mouse_event);
+            const [gmx, gmy] = this.get_image_aware_mouse_x_y(this.state["last_move"]);
             this.create_polygon_ender(gmx, gmy, active_id);
         }
 
@@ -4583,6 +4584,7 @@ export class ULabel {
                 diffY: 0,
                 diffZ: 0,
                 finished: false,
+                move_not_allowed: false,
             },
         });
         // Hide point edit suggestion
@@ -4939,7 +4941,9 @@ export class ULabel {
         // if a polygon, n_iters is the length the spatial payload
         // else n_iters is 1
         let n_iters = spatial_type === "polygon" ? spatial_payload.length : 1;
-
+        let point_outside_image = false;
+        let x_outside_image = false;
+        let y_outside_image = false;
         for (let i = 0; i < n_iters; i++) {
             // for polygons, we need to move the points in each part of the spatial payload
             if (spatial_type === "polygon") {
@@ -4956,6 +4960,13 @@ export class ULabel {
             for (let spi = 0; spi < n_points; spi++) {
                 active_spatial_payload[spi][0] += diffX;
                 active_spatial_payload[spi][1] += diffY;
+                
+                // Check if any point moved outside the image bounds
+                if (!point_outside_image) {
+                    x_outside_image = active_spatial_payload[spi][0] < 0 || active_spatial_payload[spi][0] > this.config["image_width"];
+                    y_outside_image = active_spatial_payload[spi][1] < 0 || active_spatial_payload[spi][1] > this.config["image_height"];
+                    point_outside_image = x_outside_image || y_outside_image;
+                }
             }
 
             if (MODES_3D.includes(spatial_type)) {
@@ -4970,28 +4981,21 @@ export class ULabel {
         this.get_current_subtask()["annotations"]["access"][active_id]["containing_box"]["tly"] += diffY;
         this.get_current_subtask()["annotations"]["access"][active_id]["containing_box"]["bry"] += diffY;
 
-        switch (spatial_type) {
-            case "polyline":
-            case "polygon":
-            case "bbox":
-            case "bbox3":
-            case "contour":
-            case "tbar":
-            case "point":
-                break;
-            default:
-                break;
-        }
-
         this.get_current_subtask()["state"]["active_id"] = null;
         this.get_current_subtask()["state"]["is_in_move"] = false;
 
-        this.redraw_annotation(active_id);
+        const move_not_allowed = !this.config.allow_annotations_outside_image && point_outside_image
+        this.record_finish_move(diffX, diffY, diffZ, move_not_allowed);
 
-        this.record_finish_move(diffX, diffY, diffZ);
+        // If any point is outside the image bounds, bounce back the move
+        if (move_not_allowed) {
+            this.undo(true);
+        } else {
+            this.redraw_annotation(active_id);
 
-        // Filter points if necessary
-        this.update_filter_distance(active_id);
+            // Filter points if necessary
+            this.update_filter_distance(active_id);
+        }
     }
 
     move_annotation__undo(undo_payload) {
@@ -5036,12 +5040,17 @@ export class ULabel {
         this.hide_global_edit_suggestion();
         this.reposition_dialogs();
         this.suggest_edits(this.state["last_move"]);
-        this.update_frame(diffZ);
+
         // Filter points if necessary
         this.update_filter_distance(active_id);
     }
 
     move_annotation__redo(redo_payload) {
+        // If the move wasn't allowed in the first place, we don't want to redo it
+        if (redo_payload.move_not_allowed) {
+            return;
+        }
+
         // Convenience
         const current_subtask = this.get_current_subtask();
         const annotations = current_subtask["annotations"]["access"];
