@@ -259,7 +259,7 @@ export class ULabel {
                 if (
                     (!("line_size" in cand)) || (cand["line_size"] == null)
                 ) {
-                    cand["line_size"] = ul.get_line_size();
+                    cand["line_size"] = ul.get_initial_line_size();
                 }
 
                 // Add created by attribute if there is none
@@ -418,7 +418,6 @@ export class ULabel {
                 starting_complex_polygon: false,
                 is_in_brush_mode: false,
                 is_in_erase_mode: false,
-                line_size: ul.subtasks[subtask_key]["default_line_size"],
                 edit_candidate: null,
                 move_candidate: null,
 
@@ -481,18 +480,20 @@ export class ULabel {
         `);
 
         return {
-            container_id: arguments[0], // Required
-            image_data: arguments[1], // Required
-            username: arguments[2], // Required
-            submit_buttons: arguments[3], // Required
-            subtasks: arguments[4], // Required
-            task_meta: arguments[5] ?? null, // Use default if optional argument is undefined
-            annotation_meta: arguments[6] ?? null, // Use default if optional argument is undefined
-            px_per_px: arguments[7] ?? 1, // Use default if optional argument is undefined
-            initial_crop: arguments[8] ?? null, // Use default if optional argument is undefined
-            initial_line_size: arguments[9] ?? null, // Use default if optional argument is undefined
-            config_data: arguments[10] ?? null, // Use default if optional argument is undefined
-            toolbox_order: arguments[11] ?? null, // Use default if optional argument is undefined
+            // Required
+            container_id: arguments[0],
+            image_data: arguments[1],
+            username: arguments[2],
+            submit_buttons: arguments[3],
+            subtasks: arguments[4],
+            // Use default if optional argument is undefined
+            task_meta: arguments[5] ?? null,
+            annotation_meta: arguments[6] ?? null,
+            px_per_px: arguments[7] ?? 1,
+            initial_crop: arguments[8] ?? null,
+            initial_line_size: arguments[9] ?? 4,
+            config_data: arguments[10] ?? null,
+            toolbox_order: arguments[11] ?? null,
         };
     }
 
@@ -555,7 +556,7 @@ export class ULabel {
             current_subtask: null, // The key of the current subtask
             last_brush_stroke: null,
             line_size: this.config.initial_line_size,
-            size_mode: "fixed",
+            anno_scaling_mode: this.config.anno_scaling_mode,
 
             // Renderings state
             demo_canvas_context: null,
@@ -780,7 +781,7 @@ export class ULabel {
      * TODO: Un-deprecated the dynamic line size toolbox item.
      */
     update_cursor() {
-        // let color = this.get_non_spatial_annotation_color(null, true);
+        // let color = this.get_non_spatial_annotation_color(null);
         // let thr_width = this.get_line_size() * this.state["zoom_val"]
         // let width = Math.max(Math.min(thr_width, 64), 6);
         // let cursor_svg = `<svg version="1.1" xmlns="http://www.w3.org/2000/svg" width="${width}px" height="${width}px" viewBox="0 0 ${width} ${width}">
@@ -1067,7 +1068,7 @@ export class ULabel {
     // Draw demo annotation in demo canvas
     redraw_demo() {
         // this.state["demo_canvas_context"].clearRect(0, 0, this.config["demo_width"] * this.config["px_per_px"], this.config["demo_height"] * this.config["px_per_px"]);
-        // this.draw_annotation(DEMO_ANNOTATION, "demo_canvas_context", true, null, "demo");
+        // this.draw_annotation(DEMO_ANNOTATION, null, "demo");
         // this.update_cursor();
     }
 
@@ -1415,40 +1416,18 @@ export class ULabel {
         return color;
     }
 
-    get_non_spatial_annotation_color(clf_payload, demo = false, subtask = null) {
+    get_non_spatial_annotation_color(clf_payload, subtask = null) {
         if (this.config["allow_soft_id"]) {
             // not currently supported;
             return this.config["default_annotation_color"];
         }
         let crst = this.get_current_subtask_key();
-        if (subtask != null && !demo) {
+        if (subtask != null) {
             crst = subtask;
         }
         let col_payload = JSON.parse(JSON.stringify(this.subtasks[crst]["state"]["id_payload"])); // BOOG
-        if (demo) {
-            let dist_prop = 1.0;
-            let class_ids = this.subtasks[crst]["class_ids"];
-            let pfx = "div#tb-id-app--" + this.get_current_subtask_key();
-            let idarr = $(pfx + " a.tbid-opt.sel").attr("id").split("_");
-            let class_ind = class_ids.indexOf(parseInt(idarr[idarr.length - 1]));
-            // Recompute and render opaque pie slices
-            for (var i = 0; i < class_ids.length; i++) {
-                if (i === class_ind) {
-                    col_payload[i] = {
-                        class_id: class_ids[i],
-                        confidence: dist_prop,
-                    };
-                } else {
-                    col_payload[i] = {
-                        class_id: class_ids[i],
-                        confidence: (1 - dist_prop) / (class_ids.length - 1),
-                    };
-                }
-            }
-        } else {
-            if (clf_payload != null) {
-                col_payload = clf_payload;
-            }
+        if (clf_payload != null) {
+            col_payload = clf_payload;
         }
 
         for (let i = 0; i < col_payload.length; i++) {
@@ -1461,7 +1440,7 @@ export class ULabel {
 
     // ================= Drawing Functions =================
 
-    draw_bounding_box(annotation_object, ctx, demo = false, offset = null) {
+    draw_bounding_box(annotation_object, ctx, offset = null) {
         const px_per_px = this.config["px_per_px"];
         let diffX = 0;
         let diffY = 0;
@@ -1470,12 +1449,7 @@ export class ULabel {
             diffY = offset["diffY"];
         }
 
-        let line_size = null;
-        if ("line_size" in annotation_object) {
-            line_size = annotation_object["line_size"];
-        } else {
-            line_size = this.get_line_size(demo);
-        }
+        const line_size = this.get_scaled_line_size(annotation_object);
 
         // Prep for bbox drawing
         const color = this.get_annotation_color(annotation_object);
@@ -1499,7 +1473,7 @@ export class ULabel {
         ctx.stroke();
     }
 
-    draw_point(annotation_object, ctx, demo = false, offset = null) {
+    draw_point(annotation_object, ctx, offset = null) {
         const px_per_px = this.config["px_per_px"];
         let diffX = 0;
         let diffY = 0;
@@ -1508,12 +1482,7 @@ export class ULabel {
             diffY = offset["diffY"];
         }
 
-        let line_size = null;
-        if ("line_size" in annotation_object) {
-            line_size = annotation_object["line_size"];
-        } else {
-            line_size = this.get_line_size(demo);
-        }
+        const line_size = this.get_scaled_line_size(annotation_object);
 
         // Prep for bbox drawing
         const color = this.get_annotation_color(annotation_object);
@@ -1537,7 +1506,7 @@ export class ULabel {
         ctx.stroke();
     }
 
-    draw_bbox3(annotation_object, ctx, demo = false, offset = null) {
+    draw_bbox3(annotation_object, ctx, offset = null) {
         const px_per_px = this.config["px_per_px"];
         let diffX = 0;
         let diffY = 0;
@@ -1561,12 +1530,7 @@ export class ULabel {
             fill = true;
         }
 
-        let line_size = null;
-        if ("line_size" in annotation_object) {
-            line_size = annotation_object["line_size"];
-        } else {
-            line_size = this.get_line_size(demo);
-        }
+        const line_size = this.get_scaled_line_size(annotation_object);
 
         // Prep for bbox drawing
         const color = this.get_annotation_color(annotation_object);
@@ -1593,7 +1557,7 @@ export class ULabel {
         }
     }
 
-    draw_polygon(annotation_object, ctx, demo = false, offset = null) {
+    draw_polygon(annotation_object, ctx, offset = null) {
         const px_per_px = this.config["px_per_px"];
         let diffX = 0;
         let diffY = 0;
@@ -1602,12 +1566,7 @@ export class ULabel {
             diffY = offset["diffY"];
         }
 
-        let line_size = null;
-        if ("line_size" in annotation_object) {
-            line_size = annotation_object["line_size"];
-        } else {
-            line_size = this.get_line_size(demo);
-        }
+        const line_size = this.get_scaled_line_size(annotation_object);
 
         // Hack to turn off fills during vanish
         let is_in_vanish_mode = line_size <= 0.01;
@@ -1687,7 +1646,7 @@ export class ULabel {
         }
     }
 
-    draw_contour(annotation_object, ctx, demo = false, offset = null) {
+    draw_contour(annotation_object, ctx, offset = null) {
         const px_per_px = this.config["px_per_px"];
         let diffX = 0;
         let diffY = 0;
@@ -1696,12 +1655,7 @@ export class ULabel {
             diffY = offset["diffY"];
         }
 
-        let line_size = null;
-        if ("line_size" in annotation_object) {
-            line_size = annotation_object["line_size"];
-        } else {
-            line_size = this.get_line_size(demo);
-        }
+        const line_size = this.get_scaled_line_size(annotation_object);
 
         // Prep for bbox drawing
         const color = this.get_annotation_color(annotation_object);
@@ -1723,7 +1677,7 @@ export class ULabel {
         ctx.stroke();
     }
 
-    draw_tbar(annotation_object, ctx, demo = false, offset = null) {
+    draw_tbar(annotation_object, ctx, offset = null) {
         const px_per_px = this.config["px_per_px"];
         let diffX = 0;
         let diffY = 0;
@@ -1732,12 +1686,7 @@ export class ULabel {
             diffY = offset["diffY"];
         }
 
-        let line_size = null;
-        if ("line_size" in annotation_object) {
-            line_size = annotation_object["line_size"];
-        } else {
-            line_size = this.get_line_size(demo);
-        }
+        const line_size = this.get_scaled_line_size(annotation_object);
 
         // Prep for tbar drawing
         const color = this.get_annotation_color(annotation_object);
@@ -1814,14 +1763,14 @@ export class ULabel {
                         <a href="#" id="delete__${annotation_object["id"]}" class="fad_button delete">&#215;</a>
                     </div>
                 </div><!--
-                --><div id="icon__${annotation_object["id"]}" class="fad_type_icon invert-this-svg" style="background-color: ${this.get_non_spatial_annotation_color(annotation_object["classification_payloads"], false, subtask)};">
+                --><div id="icon__${annotation_object["id"]}" class="fad_type_icon invert-this-svg" style="background-color: ${this.get_non_spatial_annotation_color(annotation_object["classification_payloads"], subtask)};">
                     ${svg_obj}
                 </div>
             </div>
             `);
         } else {
             $(`textarea#note__${annotation_object["id"]}`).val(annotation_object["text_payload"]);
-            $(`div#icon__${annotation_object["id"]}`).css("background-color", this.get_non_spatial_annotation_color(annotation_object["classification_payloads"], false, subtask));
+            $(`div#icon__${annotation_object["id"]}`).css("background-color", this.get_non_spatial_annotation_color(annotation_object["classification_payloads"], subtask));
         }
     }
 
@@ -1841,7 +1790,7 @@ export class ULabel {
         this.tmp_nonspatial_element_ids[subtask] = [];
     }
 
-    draw_annotation(annotation_object, demo = false, offset = null, subtask = null) {
+    draw_annotation(annotation_object, offset = null, subtask = null) {
         // DEBUG left here for refactor reference, but I don't think it's needed moving forward
         //    there may be a use case for drawing depreacted annotations
         // Don't draw if deprecated
@@ -1867,25 +1816,25 @@ export class ULabel {
         switch (annotation_object["spatial_type"]) {
             case "bbox":
             case "delete_bbox":
-                this.draw_bounding_box(annotation_object, context, demo, offset);
+                this.draw_bounding_box(annotation_object, context, offset);
                 break;
             case "point":
-                this.draw_point(annotation_object, context, demo, offset);
+                this.draw_point(annotation_object, context, offset);
                 break;
             case "bbox3":
                 // TODO(new3d)
-                this.draw_bbox3(annotation_object, context, demo, offset);
+                this.draw_bbox3(annotation_object, context, offset);
                 break;
             case "polygon":
             case "polyline":
             case "delete_polygon":
-                this.draw_polygon(annotation_object, context, demo, offset);
+                this.draw_polygon(annotation_object, context, offset);
                 break;
             case "contour":
-                this.draw_contour(annotation_object, context, demo, offset);
+                this.draw_contour(annotation_object, context, offset);
                 break;
             case "tbar":
-                this.draw_tbar(annotation_object, context, demo, offset);
+                this.draw_tbar(annotation_object, context, offset);
                 break;
             case "whole-image":
                 this.draw_whole_image_annotation(annotation_object, subtask);
@@ -1910,7 +1859,7 @@ export class ULabel {
         let frame = this.subtasks[subtask]["annotations"]["access"][id]["frame"];
         // Keep `==` here, we want to catch null and undefined
         if (frame == null || frame == "undefined" || frame == this.state["current_frame"]) {
-            this.draw_annotation(this.subtasks[subtask]["annotations"]["access"][id], false, offset, subtask);
+            this.draw_annotation(this.subtasks[subtask]["annotations"]["access"][id], offset, subtask);
         }
     }
 
@@ -1943,7 +1892,7 @@ export class ULabel {
         // Handle redrawing of nonspatial annotations
         for (const annid of this.subtasks[subtask]["annotations"]["ordering"]) {
             if (NONSPATIAL_MODES.includes(this.subtasks[subtask]["annotations"]["access"][annid]["spatial_type"])) {
-                this.draw_annotation(this.subtasks[subtask]["annotations"]["access"][annid], false, offset, subtask);
+                this.draw_annotation(this.subtasks[subtask]["annotations"]["access"][annid], offset, subtask);
             }
         }
         // Handle redraw of each annotation context
@@ -3329,27 +3278,29 @@ export class ULabel {
         return ret;
     }
 
-    get_line_size(demo = false) {
-        // If the user did not specify an initial_line_size, then this.state["line_size"] will be null.
-        // This indicates that we will scale the line size based on the zoom level
-        if (this.state["line_size"] === null) {
-            // 4 is the legacy default line size
-            let line_size = 4 * this.config["px_per_px"];
-            if (demo) {
-                if (this.state["size_mode"] === "dynamic") {
-                    line_size *= this.state["zoom_val"];
-                }
-                return line_size;
-            } else {
-                if (this.state["size_mode"] === "fixed") {
-                    line_size /= this.state["zoom_val"];
-                }
-                return line_size;
-            }
+    get_scaled_line_size(annotation) {
+        // If a line size isn't provided, use the default line size
+        let line_size;
+        if ("line_size" in annotation && annotation["line_size"] !== null) {
+            line_size = annotation["line_size"];
         } else {
-            // Default to the user-specified line size
-            return this.state["line_size"] * this.config["px_per_px"];
+            line_size = this.get_initial_line_size();
         }
+
+        // fixed: line size is independent of zoom level
+        // match-zoom: line size increases with increased zoom level
+        // inverse-zoom: line size decreases with increased zoom level
+        if (this.state.anno_scaling_mode === "match-zoom") {
+            line_size *= this.state["zoom_val"];
+        } else if (this.state.anno_scaling_mode === "inverse-zoom") {
+            line_size /= this.state["zoom_val"];
+        }
+
+        return line_size;
+    }
+
+    get_initial_line_size() {
+        return this.state.line_size;
     }
 
     // Action Stream Events
@@ -3665,7 +3616,7 @@ export class ULabel {
 
         if (redo_payload === null) {
             unq_id = this.make_new_annotation_id();
-            line_size = this.get_line_size();
+            line_size = this.get_initial_line_size();
             annotation_mode = this.get_current_subtask()["state"]["annotation_mode"];
             gmx = this.get_global_mouse_x(mouse_event);
             gmy = this.get_global_mouse_y(mouse_event);
@@ -5999,6 +5950,11 @@ export class ULabel {
 
         // Redraw demo annotation
         this.redraw_demo();
+
+        // Redraw all annotations if size mode is not "fixed" to render them at their new size
+        if (this.state.anno_scaling_mode === "inverse-zoom" || this.state.anno_scaling_mode === "match-zoom") {
+            this.redraw_all_annotations();
+        }
     }
 
     swap_frame_image(new_src, frame = 0) {

@@ -2493,6 +2493,11 @@ export class SubmitButtons extends ToolboxItem {
                             continue;
                         }
 
+                        // Handle null
+                        if (annotation === null) {
+                            continue;
+                        }
+
                         // Skip any delete modes
                         if (
                             DELETE_MODES.includes(annotation.spatial_type)

@@ -14,7 +14,7 @@ ULabel is an entirely "frontend" tool. It can be incorporated into any HTML page
 <script src="https://unpkg.com/ulabel/dist/ulabel.js"></script>
 ```
 
-Or you can use npm to install it and serve the `dist/ulabel.js` file from `node_modules` locally.
+ULabel is also published on [npm](https://www.npmjs.com/package/ulabel). You can use npm to install it and serve the `dist/ulabel.js` file from `node_modules` locally.
 
 ```bash
 npm install ulabel
@@ -22,6 +22,12 @@ npm install ulabel
 
 ```html
 <script src="/node_modules/ulabel/dist/ulabel.js"></script>
+```
+
+Or you can import it directly in your JavaScript code:
+
+```javascript
+import ULabel from 'ulabel';
 ```
 
 An API spec can be found [here](https://github.com/SenteraLLC/ulabel/blob/main/api_spec.md), but as a brief overview: Once the script is included in your HTML doc, you can create a ULabel annotation session as follows.

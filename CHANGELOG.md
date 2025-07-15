@@ -5,6 +5,14 @@ All notable changes to this project will be documented here.
 ## [unreleased]
 
 Nothing yet.
+## [0.17.0] - May 30th, 2025
+- Add `anno_scaling_mode` argument to the `ULabel` constructor, which allows users to specify how the size of annotations should be scaled when the zoom level is changed.
+  - Options are `fixed`, `match-zoom`, and `inverse-zoom`.
+  - When set to `fixed`, the line size of annotations will remain constant regardless of zoom level.
+  - When set to `match-zoom`, the line size of annotations will increase with increased zoom level.
+  - When set to `inverse-zoom`, the line size of annotations will decrease with increased zoom level.
+- Prior behavior is equivalent to `anno_scaling_mode = "fixed"`.
+- Fix bug where fully erased polygon annotations would cause the an error upon submit.
 
 ## [0.16.4] - May 2nd, 2025
 - Fix bug where empty polygon layers could be included in a `submit_button` hook payload.
