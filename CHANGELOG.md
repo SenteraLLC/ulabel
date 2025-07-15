@@ -5,6 +5,7 @@ All notable changes to this project will be documented here.
 ## [unreleased]
 
 Nothing yet.
+
 ## [0.17.0] - May 30th, 2025
 - Add `anno_scaling_mode` argument to the `ULabel` constructor, which allows users to specify how the size of annotations should be scaled when the zoom level is changed.
   - Options are `fixed`, `match-zoom`, and `inverse-zoom`.
