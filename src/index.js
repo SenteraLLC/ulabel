@@ -3662,7 +3662,7 @@ export class ULabel {
             unq_id = this.make_new_annotation_id();
             line_size = this.get_initial_line_size();
             annotation_mode = this.get_current_subtask()["state"]["annotation_mode"];
-            [gmx, gmy] = this.get_image_aware_mouse_x_y(mouse_event)
+            [gmx, gmy] = this.get_image_aware_mouse_x_y(mouse_event);
             init_spatial = this.get_init_spatial(gmx, gmy, annotation_mode);
             init_id_payload = this.get_init_id_payload(annotation_mode);
             this.hide_edit_suggestion();
@@ -4960,7 +4960,7 @@ export class ULabel {
             for (let spi = 0; spi < n_points; spi++) {
                 active_spatial_payload[spi][0] += diffX;
                 active_spatial_payload[spi][1] += diffY;
-                
+
                 // Check if any point moved outside the image bounds
                 if (!point_outside_image) {
                     x_outside_image = active_spatial_payload[spi][0] < 0 || active_spatial_payload[spi][0] > this.config["image_width"];
@@ -4984,7 +4984,7 @@ export class ULabel {
         this.get_current_subtask()["state"]["active_id"] = null;
         this.get_current_subtask()["state"]["is_in_move"] = false;
 
-        const move_not_allowed = !this.config.allow_annotations_outside_image && point_outside_image
+        const move_not_allowed = !this.config.allow_annotations_outside_image && point_outside_image;
         this.record_finish_move(diffX, diffY, diffZ, move_not_allowed);
 
         // If any point is outside the image bounds, bounce back the move
