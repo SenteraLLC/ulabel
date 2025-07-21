@@ -46,14 +46,15 @@ export class GeometricUtils {
 
     /**
      * Clamp a point to the image boundaries.
+     * Ensures the point lies within [0, width) and [0, height).
      * @param pt [x, y] point
      * @param width image width
      * @param height image height
      * @returns [x, y] clamped point
      */
     public static clamp_point_to_image(pt: Point2D, width: number, height: number): Point2D {
-        const x = Math.max(0, Math.min(pt[0], width - 1));
-        const y = Math.max(0, Math.min(pt[1], height - 1));
+        const x = Math.max(0, Math.min(pt[0], width));
+        const y = Math.max(0, Math.min(pt[1], height));
         return [x, y];
     }
 
