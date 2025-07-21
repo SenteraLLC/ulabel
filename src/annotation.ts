@@ -212,4 +212,9 @@ export class ULabelAnnotation {
             return ret;
         }
     }
+
+    public static is_delete_annotation(annotation: ULabelAnnotation): boolean {
+        // Check if the annotation is a delete annotation
+        return annotation.classification_payloads[0]["class_id"] === DELETE_CLASS_ID;
+    }
 }

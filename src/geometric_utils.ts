@@ -57,6 +57,17 @@ export class GeometricUtils {
         return [x, y];
     }
 
+    /**
+     * Check if a point is within the image bounds.
+     * @param pt [x, y] point
+     * @param width image width
+     * @param height image height
+     * @returns true if the point is within the image bounds, false otherwise
+     */
+    public static point_is_within_image_bounds(pt: Point2D, width: number, height: number): boolean {
+        return (pt[0] >= 0 && pt[0] < width && pt[1] >= 0 && pt[1] < height);
+    }
+
     // Check if two points are equal
     public static points_are_equal(pt1: Point2D, pt2: Point2D): boolean {
         return (pt1[0] === pt2[0]) && (pt1[1] === pt2[1]);
