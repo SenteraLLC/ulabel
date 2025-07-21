@@ -4989,10 +4989,13 @@ export class ULabel {
 
         // If any point is outside the image bounds, bounce back the move
         if (move_not_allowed) {
+            // Revert the move
             this.undo(true);
+            // Shake the screen to indicate the move was not allowed
+            this.shake_screen();
         } else {
+            // Render the annotation position
             this.redraw_annotation(active_id);
-
             // Filter points if necessary
             this.update_filter_distance(active_id);
         }
@@ -6015,6 +6018,31 @@ export class ULabel {
         if (this.state.anno_scaling_mode === "inverse-zoom" || this.state.anno_scaling_mode === "match-zoom") {
             this.redraw_all_annotations();
         }
+    }
+
+    // Shake the screen
+    shake_screen() {
+        const annbox = $("#" + this.config["annbox_id"]);
+        const old_top = annbox.scrollTop();
+        const shake_distance = 10; // pixels
+        const shake_duration = 150; // milliseconds
+        const shake_interval = 25; // milliseconds
+        let shake_count = 0;
+        const shake = setInterval(() => {
+            if (shake_count < shake_duration / shake_interval) {
+                // Alternate between shaking up and down
+                if (shake_count % 2 === 0) {
+                    annbox.scrollTop(old_top + shake_distance);
+                } else {
+                    annbox.scrollTop(old_top - shake_distance);
+                }
+            } else {
+                // Stop shaking and reset position
+                clearInterval(shake);
+                annbox.scrollTop(old_top);
+            }
+            shake_count++;
+        }, shake_interval);
     }
 
     swap_frame_image(new_src, frame = 0) {

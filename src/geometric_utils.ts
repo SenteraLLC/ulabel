@@ -52,7 +52,6 @@ export class GeometricUtils {
      * @returns [x, y] clamped point
      */
     public static clamp_point_to_image(pt: Point2D, width: number, height: number): Point2D {
-        console.log("fit point within image");
         const x = Math.max(0, Math.min(pt[0], width - 1));
         const y = Math.max(0, Math.min(pt[1], height - 1));
         return [x, y];
