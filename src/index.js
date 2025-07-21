@@ -330,8 +330,6 @@ export class ULabel {
                     },
                 );
 
-                cand = ul.fit_annotation_to_image_bounds(cand);
-
                 // Push to ordering and add to access
                 ul.subtasks[subtask_key]["annotations"]["ordering"].push(cand["id"]);
                 ul.subtasks[subtask_key]["annotations"]["access"][subtask["resume_from"][i]["id"]] = cand;
@@ -2354,7 +2352,6 @@ export class ULabel {
 
             // If no point is inside the image, then return null
             if (!any_point_inside_image) {
-                console.log("Brush circle is outside the image.");
                 return null;
             }
         }
@@ -2986,7 +2983,9 @@ export class ULabel {
         };
 
         // Snap each point to the image bounds
-        new_annotation = this.fit_annotation_to_image_bounds(new_annotation);
+        if (!this.config.allow_annotations_outside_image) {
+            new_annotation = new_annotation.fit_to_image_bounds(this.config["image_width"], this.config["image_height"]);
+        }
 
         if (spatial_type === "polygon") {
             new_annotation["spatial_payload_holes"] = [false];
@@ -3146,46 +3145,6 @@ export class ULabel {
 
     delete_annotation__redo(redo_payload) {
         this.delete_annotation(null, redo_payload);
-    }
-
-    /**
-     * Ensure each point in an annotation is within the image.
-     */
-    fit_annotation_to_image_bounds(annotation) {
-        if (
-            this.config.allow_annotations_outside_image ||
-            ULabelAnnotation.is_delete_annotation(annotation)
-        ) {
-            return annotation;
-        }
-
-        // Get the image bounds
-        const image_height = this.config["image_height"];
-        const image_width = this.config["image_width"];
-
-        // Get the spatial payload
-        const spatial_type = annotation["spatial_type"];
-        let spatial_payload = annotation["spatial_payload"];
-        let active_spatial_payload = spatial_payload;
-
-        // Ensure each point in the payload is within the image
-        // for polygons, we'll need to loop through all points
-        const n_iters = spatial_type === "polygon" ? spatial_payload.length : 1;
-        for (let i = 0; i < n_iters; i++) {
-            if (spatial_type === "polygon") {
-                active_spatial_payload = spatial_payload[i];
-            }
-
-            for (let j = 0; j < active_spatial_payload.length; j++) {
-                active_spatial_payload[j] = GeometricUtils.clamp_point_to_image(
-                    active_spatial_payload[j],
-                    image_width,
-                    image_height,
-                );
-            }
-        }
-
-        return annotation;
     }
 
     /**
