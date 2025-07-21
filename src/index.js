@@ -6051,10 +6051,10 @@ export class ULabel {
                     // Stop shaking and reset position
                     clearInterval(shake);
                     annbox.scrollTop(old_top);
+                    this.is_shaking = false;
                 }
                 shake_count++;
             }, shake_interval);
-            this.is_shaking = false;
         }
     }
 
