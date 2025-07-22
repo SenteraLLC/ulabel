@@ -1997,6 +1997,11 @@ div#${prntid} span.tb-cls-nam {
    display: inline-block;
    vertical-align: middle;
 }
+div#${prntid}.ulabel-night span.tb-cls-nam {
+   display: inline-block;
+   vertical-align: middle;
+   color: white;
+}
 div#${prntid} a.tbid-opt:hover {
    background-color: rgba(255, 181, 44, 0.397);
 }
