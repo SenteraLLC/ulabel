@@ -87,6 +87,17 @@ export async function ulabel_init(
 
     make_image_canvases(ulabel, first_bg_img);
 
+    // Once the image dimensions are known, we can resize annotations if needed
+    if (!ulabel.config.allow_annotations_outside_image) {
+        const image_height = ulabel.config["image_height"];
+        const image_width = ulabel.config["image_width"];
+        for (const subtask of Object.values(ulabel.subtasks)) {
+            for (const anno of Object.values(subtask.annotations.access)) {
+                anno.clamp_annotation_to_image_bounds(image_width, image_height);
+            }
+        }
+    }
+
     // This step is hoisted up to show the container before the rest of the initialization
     $(`div#${ulabel.config["container_id"]}`).css("display", "block");
 

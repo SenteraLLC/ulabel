@@ -2513,6 +2513,14 @@ export class SubmitButtons extends ToolboxItem {
                             continue;
                         }
 
+                        // Ensure annotation is within the image if required
+                        if (!ulabel.config.allow_annotations_outside_image) {
+                            annotation.clamp_annotation_to_image_bounds(
+                                ulabel.config["image_width"],
+                                ulabel.config["image_height"],
+                            );
+                        }
+
                         submit_payload["annotations"][stkey].push(annotation);
                     }
                 }

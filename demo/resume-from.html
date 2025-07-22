@@ -188,7 +188,46 @@
                     "line_size": 3,
                     "text_payload": "",
                     "annotation_meta": null
-                    }, 
+                    },
+                    {
+                    "id": "6ce129ba-9201-4425-ad75-215c2a0a1e0c",
+                    "new": true,
+                    "parent_id": null,
+                    "created_by": "out_of_bounds_test",
+                    "created_at": "2025-07-21T18:17:44.862Z",
+                    "deprecated": false,
+                    "deprecated_by": {
+                        "human": false
+                    },
+                    "spatial_type": "bbox",
+                    "spatial_payload": [
+                        [
+                            1202.358968798912,
+                            959.6967745553865
+                        ],
+                        [
+                            1440.9410038651008,
+                            1132.1372553458002
+                        ]
+                    ],
+                    "classification_payloads": [
+                        {
+                            "class_id": 10,
+                            "confidence": 1
+                        },
+                        {
+                            "class_id": 11,
+                            "confidence": 0
+                        },
+                        {
+                            "class_id": 12,
+                            "confidence": 0
+                        }
+                    ],
+                    "line_size": 4,
+                    "text_payload": "",
+                    "annotation_meta": null
+                    } 
                 ];
 
                 let subtasks = {
@@ -248,6 +287,7 @@
                     "submit_buttons": on_submit,
                     "subtasks": subtasks,
                     "anno_scaling_mode": "inverse-zoom",
+                    "allow_annotations_outside_image": false,
                 });
                 // Wait for ULabel instance to finish initialization
                 ulabel.init(function() {

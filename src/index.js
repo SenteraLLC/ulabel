@@ -627,6 +627,8 @@ export class ULabel {
 
         // Indicate that object must be "init" before use!
         this.is_init = false;
+        // Track global state
+        this.is_shaking = false;
     }
 
     init(callback) {
@@ -1086,7 +1088,9 @@ export class ULabel {
     }
 
     // Get the start of a spatial payload based on mouse event and current annotation mode
-    get_init_spatial(gmx, gmy, annotation_mode) {
+    get_init_spatial(gmx, gmy, annotation_mode, mouse_event) {
+        const true_gmx = this.get_global_mouse_x(mouse_event);
+        const true_gmy = this.get_global_mouse_y(mouse_event);
         switch (annotation_mode) {
             case "point":
                 return [
@@ -1105,7 +1109,8 @@ export class ULabel {
             case "polygon":
                 // Get brush spatial payload if in brush mode
                 if (this.get_current_subtask()["state"]["is_in_brush_mode"]) {
-                    return this.get_brush_circle_spatial_payload(gmx, gmy);
+                    // Don't pass the potentially adjusted mouse coordinates
+                    return this.get_brush_circle_spatial_payload(true_gmx, true_gmy);
                 }
                 return [[
                     [gmx, gmy],
@@ -2316,14 +2321,41 @@ export class ULabel {
         // Create a spatial payload around the entire radius of the brush circle
         let spatial_payload = [];
         let radius = this.config["brush_size"] / 2;
+
         for (let i = 0; i < 360; i += 10) {
             let rad = i * Math.PI / 180;
             spatial_payload.push([imx + (radius * Math.cos(rad)), imy + (radius * Math.sin(rad))]);
         }
+
         // Ensure that first and last points are the same
         if (spatial_payload.length > 0) {
             spatial_payload[spatial_payload.length - 1] = spatial_payload[0];
         }
+
+        // If we can't draw outside the image, then adjust the payload to fit within the image
+        if (!this.config.allow_annotations_outside_image) {
+            let any_point_inside_image = false;
+            for (let i = 0; i < spatial_payload.length; i++) {
+                let pt = spatial_payload[i];
+
+                // Check if the point is inside the image
+                if (
+                    !any_point_inside_image &&
+                    GeometricUtils.point_is_within_image_bounds(pt, this.config["image_width"], this.config["image_height"])
+                ) {
+                    any_point_inside_image = true;
+                }
+
+                // Clamp the point to the image bounds
+                spatial_payload[i] = GeometricUtils.clamp_point_to_image(pt, this.config["image_width"], this.config["image_height"]);
+            }
+
+            // If no point is inside the image, then return null
+            if (!any_point_inside_image) {
+                return null;
+            }
+        }
+
         return [spatial_payload];
     }
 
@@ -2949,6 +2981,12 @@ export class ULabel {
             text_payload: "",
             canvas_id: this.get_init_canvas_context_id(unique_id),
         };
+
+        // Snap each point to the image bounds
+        if (!this.config.allow_annotations_outside_image) {
+            new_annotation = new_annotation.clamp_annotation_to_image_bounds(this.config["image_width"], this.config["image_height"]);
+        }
+
         if (spatial_type === "polygon") {
             new_annotation["spatial_payload_holes"] = [false];
             new_annotation["spatial_payload_child_indices"] = [[]];
@@ -3352,7 +3390,7 @@ export class ULabel {
         this.get_current_subtask()["actions"]["stream"][i].redo_payload = JSON.stringify(redo_payload);
     }
 
-    record_finish_move(diffX, diffY, diffZ = 0) {
+    record_finish_move(diffX, diffY, diffZ = 0, move_not_allowed = false) {
         // TODO(3d)
         let i = this.get_current_subtask()["actions"]["stream"].length - 1;
         // Parse payloads, edit, and then stringify
@@ -3365,6 +3403,7 @@ export class ULabel {
         undo_payload.diffY = -diffY;
         undo_payload.diffZ = -diffZ;
         redo_payload.finished = true;
+        redo_payload.move_not_allowed = move_not_allowed;
         this.get_current_subtask()["actions"]["stream"][i].redo_payload = JSON.stringify(redo_payload);
         this.get_current_subtask()["actions"]["stream"][i].undo_payload = JSON.stringify(undo_payload);
     }
@@ -3618,9 +3657,8 @@ export class ULabel {
             unq_id = this.make_new_annotation_id();
             line_size = this.get_initial_line_size();
             annotation_mode = this.get_current_subtask()["state"]["annotation_mode"];
-            gmx = this.get_global_mouse_x(mouse_event);
-            gmy = this.get_global_mouse_y(mouse_event);
-            init_spatial = this.get_init_spatial(gmx, gmy, annotation_mode);
+            [gmx, gmy] = this.get_image_aware_mouse_x_y(mouse_event);
+            init_spatial = this.get_init_spatial(gmx, gmy, annotation_mode, mouse_event);
             init_id_payload = this.get_init_id_payload(annotation_mode);
             this.hide_edit_suggestion();
             this.hide_global_edit_suggestion();
@@ -3855,8 +3893,7 @@ export class ULabel {
         let is_click_dragging = this.drag_state["active_key"] != null;
         if (redo_payload === null) {
             actid = this.get_current_subtask()["state"]["active_id"];
-            gmx = this.get_global_mouse_x(mouse_event);
-            gmy = this.get_global_mouse_y(mouse_event);
+            [gmx, gmy] = this.get_image_aware_mouse_x_y(mouse_event);
         } else {
             mouse_event = redo_payload.mouse_event;
             isclick = redo_payload.isclick;
@@ -4045,8 +4082,7 @@ export class ULabel {
             redoing = true;
 
             // Add back the ender
-            let gmx = this.get_global_mouse_x(this.state["last_move"]);
-            let gmy = this.get_global_mouse_y(this.state["last_move"]);
+            const [gmx, gmy] = this.get_image_aware_mouse_x_y(this.state["last_move"]);
             this.create_polygon_ender(gmx, gmy, active_id);
         }
 
@@ -4149,27 +4185,30 @@ export class ULabel {
         const global_x = this.get_global_mouse_x(mouse_event);
         const global_y = this.get_global_mouse_y(mouse_event);
         let brush_polygon = this.get_brush_circle_spatial_payload(global_x, global_y);
+
         // Loop through all annotations in the ordering until we find a polygon that intersects with the brush
-        for (let i = current_subtask["annotations"]["ordering"].length - 1; i >= 0; i--) {
-            let active_id = current_subtask["annotations"]["ordering"][i];
-            let annotation = current_subtask["annotations"]["access"][active_id];
-            // Only undeprecated polygons
-            if (!annotation["deprecated"] && annotation["spatial_type"] === "polygon") {
-                // Split into fills + their associated holes
-                let split_polygons = this.split_complex_polygon(active_id);
-                // Check if the brush intersects with or is within any layer
-                for (let split_polygon of split_polygons) {
-                    if (
-                        GeometricUtils.complex_polygons_intersect(split_polygon, brush_polygon) ||
-                        GeometricUtils.complex_polygon_is_within_complex_polygon(brush_polygon, split_polygon)
-                    ) {
-                        brush_cand_active_id = active_id;
-                        break;
+        if (brush_polygon !== null) {
+            for (let i = current_subtask["annotations"]["ordering"].length - 1; i >= 0; i--) {
+                let active_id = current_subtask["annotations"]["ordering"][i];
+                let annotation = current_subtask["annotations"]["access"][active_id];
+                // Only undeprecated polygons
+                if (!annotation["deprecated"] && annotation["spatial_type"] === "polygon") {
+                    // Split into fills + their associated holes
+                    let split_polygons = this.split_complex_polygon(active_id);
+                    // Check if the brush intersects with or is within any layer
+                    for (let split_polygon of split_polygons) {
+                        if (
+                            GeometricUtils.complex_polygons_intersect(split_polygon, brush_polygon) ||
+                            GeometricUtils.complex_polygon_is_within_complex_polygon(brush_polygon, split_polygon)
+                        ) {
+                            brush_cand_active_id = active_id;
+                            break;
+                        }
                     }
                 }
-            }
-            if (brush_cand_active_id !== null) {
-                break;
+                if (brush_cand_active_id !== null) {
+                    break;
+                }
             }
         }
 
@@ -4192,12 +4231,20 @@ export class ULabel {
                 },
             });
             this.continue_brush(mouse_event);
-        } else if (!current_subtask["state"]["is_in_erase_mode"]) {
+        } else if (
+            !current_subtask["state"]["is_in_erase_mode"] &&
+            brush_polygon !== null
+        ) {
             // Start a new annotation if not in erase mode
             this.begin_annotation(mouse_event);
         } else {
             // Move the brush
             this.move_brush_circle(global_x, global_y);
+        }
+
+        if (brush_polygon === null && !current_subtask["state"]["is_in_erase_mode"]) {
+            // Indicate that the brush is fully outside the image
+            this.shake_screen();
         }
     }
 
@@ -4228,15 +4275,15 @@ export class ULabel {
                 continue_brush = false;
             }
         }
+
         if (continue_brush) {
             // Save the last brush stroke
             this.state["last_brush_stroke"] = [gmx, gmy];
             const current_subtask = this.get_current_subtask();
             const active_id = current_subtask["state"]["active_id"];
-            if (active_id !== null) {
-                // Merge the brush with the annotation
-                let brush_polygon = this.get_brush_circle_spatial_payload(gmx, gmy);
+            let brush_polygon = this.get_brush_circle_spatial_payload(gmx, gmy);
 
+            if (active_id !== null && brush_polygon !== null) {
                 // Get the current annotation
                 const annotation = current_subtask["annotations"]["access"][active_id];
                 // Split the annotation into separate polygons for each fill
@@ -4543,6 +4590,7 @@ export class ULabel {
                 diffY: 0,
                 diffZ: 0,
                 finished: false,
+                move_not_allowed: false,
             },
         });
         // Hide point edit suggestion
@@ -4899,7 +4947,9 @@ export class ULabel {
         // if a polygon, n_iters is the length the spatial payload
         // else n_iters is 1
         let n_iters = spatial_type === "polygon" ? spatial_payload.length : 1;
-
+        let point_outside_image = false;
+        let x_outside_image = false;
+        let y_outside_image = false;
         for (let i = 0; i < n_iters; i++) {
             // for polygons, we need to move the points in each part of the spatial payload
             if (spatial_type === "polygon") {
@@ -4916,6 +4966,13 @@ export class ULabel {
             for (let spi = 0; spi < n_points; spi++) {
                 active_spatial_payload[spi][0] += diffX;
                 active_spatial_payload[spi][1] += diffY;
+
+                // Check if any point moved outside the image bounds
+                if (!point_outside_image) {
+                    x_outside_image = active_spatial_payload[spi][0] < 0 || active_spatial_payload[spi][0] > this.config["image_width"];
+                    y_outside_image = active_spatial_payload[spi][1] < 0 || active_spatial_payload[spi][1] > this.config["image_height"];
+                    point_outside_image = x_outside_image || y_outside_image;
+                }
             }
 
             if (MODES_3D.includes(spatial_type)) {
@@ -4930,28 +4987,24 @@ export class ULabel {
         this.get_current_subtask()["annotations"]["access"][active_id]["containing_box"]["tly"] += diffY;
         this.get_current_subtask()["annotations"]["access"][active_id]["containing_box"]["bry"] += diffY;
 
-        switch (spatial_type) {
-            case "polyline":
-            case "polygon":
-            case "bbox":
-            case "bbox3":
-            case "contour":
-            case "tbar":
-            case "point":
-                break;
-            default:
-                break;
-        }
-
         this.get_current_subtask()["state"]["active_id"] = null;
         this.get_current_subtask()["state"]["is_in_move"] = false;
 
-        this.redraw_annotation(active_id);
+        const move_not_allowed = !this.config.allow_annotations_outside_image && point_outside_image;
+        this.record_finish_move(diffX, diffY, diffZ, move_not_allowed);
 
-        this.record_finish_move(diffX, diffY, diffZ);
-
-        // Filter points if necessary
-        this.update_filter_distance(active_id);
+        // If any point is outside the image bounds, bounce back the move
+        if (move_not_allowed) {
+            // Revert the move
+            this.undo(true);
+            // Shake the screen to indicate the move was not allowed
+            this.shake_screen();
+        } else {
+            // Render the annotation position
+            this.redraw_annotation(active_id);
+            // Filter points if necessary
+            this.update_filter_distance(active_id);
+        }
     }
 
     move_annotation__undo(undo_payload) {
@@ -4996,12 +5049,17 @@ export class ULabel {
         this.hide_global_edit_suggestion();
         this.reposition_dialogs();
         this.suggest_edits(this.state["last_move"]);
-        this.update_frame(diffZ);
+
         // Filter points if necessary
         this.update_filter_distance(active_id);
     }
 
     move_annotation__redo(redo_payload) {
+        // If the move wasn't allowed in the first place, we don't want to redo it
+        if (redo_payload.move_not_allowed) {
+            return;
+        }
+
         // Convenience
         const current_subtask = this.get_current_subtask();
         const annotations = current_subtask["annotations"]["access"];
@@ -5251,7 +5309,6 @@ export class ULabel {
         const scale = this.get_empirical_scale();
         const annbox = $("#" + this.config["annbox_id"]);
         const raw = (mouse_event.pageX - annbox.offset().left + annbox.scrollLeft()) / scale;
-        // return Math.round(raw);
         return raw;
     }
 
@@ -5259,8 +5316,29 @@ export class ULabel {
         const scale = this.get_empirical_scale();
         const annbox = $("#" + this.config["annbox_id"]);
         const raw = (mouse_event.pageY - annbox.offset().top + annbox.scrollTop()) / scale;
-        // return Math.round(raw);
         return raw;
+    }
+
+    /**
+     * Get the mouse position, clamped to the image bounds if `allow_annotations_outside_image` is false.
+     *
+     * @param {*} mouse_event The mouse event to get the position from
+     * @returns {[number, number]} The (x, y) coordinates of the mouse, clamped to the image bounds if required
+     */
+    get_image_aware_mouse_x_y(mouse_event) {
+        const x = this.get_global_mouse_x(mouse_event);
+        const y = this.get_global_mouse_y(mouse_event);
+        let ret = [x, y];
+
+        // Fit inside image bounds
+        if (
+            !this.config.allow_annotations_outside_image &&
+            !DELETE_MODES.includes(this.get_current_subtask()["state"]["annotation_mode"])
+        ) {
+            ret = GeometricUtils.clamp_point_to_image(ret, this.config["image_width"], this.config["image_height"]);
+        }
+
+        return ret;
     }
 
     get_global_element_center_x(jqel) {
@@ -5954,6 +6032,35 @@ export class ULabel {
         // Redraw all annotations if size mode is not "fixed" to render them at their new size
         if (this.state.anno_scaling_mode === "inverse-zoom" || this.state.anno_scaling_mode === "match-zoom") {
             this.redraw_all_annotations();
+        }
+    }
+
+    // Shake the screen
+    shake_screen() {
+        if (!this.is_shaking) {
+            const annbox = $("#" + this.config["annbox_id"]);
+            const old_top = annbox.scrollTop();
+            const shake_distance = 10; // pixels
+            const shake_duration = 150; // milliseconds
+            const shake_interval = 25; // milliseconds
+            let shake_count = 0;
+            this.is_shaking = true;
+            const shake = setInterval(() => {
+                if (shake_count < shake_duration / shake_interval) {
+                    // Alternate between shaking up and down
+                    if (shake_count % 2 === 0) {
+                        annbox.scrollTop(old_top + shake_distance);
+                    } else {
+                        annbox.scrollTop(old_top - shake_distance);
+                    }
+                } else {
+                    // Stop shaking and reset position
+                    clearInterval(shake);
+                    annbox.scrollTop(old_top);
+                    this.is_shaking = false;
+                }
+                shake_count++;
+            }, shake_interval);
         }
     }
 
