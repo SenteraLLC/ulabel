@@ -179,6 +179,8 @@ export class Configuration {
 
     public click_and_drag_poly_annotations: boolean = true;
 
+    public allow_annotations_outside_image: boolean = true;
+
     constructor(...kwargs: { [key: string]: unknown }[]) {
         this.modify_config(...kwargs);
     }

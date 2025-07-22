@@ -173,6 +173,49 @@ export class ULabelAnnotation {
         return true;
     }
 
+    /**
+     * Ensure each point in an annotation is within the image.
+     *
+     * @param {number} image_width Width of the image.
+     * @param {number} image_height Height of the image.
+     * @return {ULabelAnnotation} The annotation with the updated spatial payload.
+     */
+    public clamp_annotation_to_image_bounds(image_width: number, image_height: number): ULabelAnnotation {
+        if (!this.is_delete_annotation()) {
+            // Ensure each point in the payload is within the image
+            // for polygons, we'll need to loop through all points
+            let active_spatial_payload = this.spatial_payload;
+            const n_iters = this.spatial_type === "polygon" ? this.spatial_payload.length : 1;
+            for (let i = 0; i < n_iters; i++) {
+                if (this.spatial_type === "polygon") {
+                    active_spatial_payload = this.spatial_payload[i];
+                }
+
+                for (let j = 0; j < active_spatial_payload.length; j++) {
+                    active_spatial_payload[j] = GeometricUtils.clamp_point_to_image(
+                        active_spatial_payload[j],
+                        image_width,
+                        image_height,
+                    );
+                }
+            }
+        }
+
+        // Return the annotation with the updated spatial payload
+        return this;
+    }
+
+    /**
+     * Check if the annotation is a delete annotation, e.g. annotations drawn by the `delete_polygon`
+     * or `delete_bbox` annotation modes.
+     *
+     * @returns {boolean} True if the annotation is a delete annotation, false otherwise.
+     */
+    public is_delete_annotation(): boolean {
+        // Check if the annotation is a delete annotation
+        return this.classification_payloads[0]["class_id"] === DELETE_CLASS_ID;
+    }
+
     public static from_json(json_block: object): ULabelAnnotation {
         const ret = new ULabelAnnotation();
         Object.assign(ret, json_block);
