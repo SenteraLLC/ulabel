@@ -2984,7 +2984,7 @@ export class ULabel {
 
         // Snap each point to the image bounds
         if (!this.config.allow_annotations_outside_image) {
-            new_annotation = new_annotation.fit_to_image_bounds(this.config["image_width"], this.config["image_height"]);
+            new_annotation = new_annotation.clamp_annotation_to_image_bounds(this.config["image_width"], this.config["image_height"]);
         }
 
         if (spatial_type === "polygon") {
@@ -5319,6 +5319,12 @@ export class ULabel {
         return raw;
     }
 
+    /**
+     * Get the mouse position, clamped to the image bounds if `allow_annotations_outside_image` is false.
+     *
+     * @param {*} mouse_event The mouse event to get the position from
+     * @returns {[number, number]} The (x, y) coordinates of the mouse, clamped to the image bounds if required
+     */
     get_image_aware_mouse_x_y(mouse_event) {
         const x = this.get_global_mouse_x(mouse_event);
         const y = this.get_global_mouse_y(mouse_event);

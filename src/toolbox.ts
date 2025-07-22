@@ -2515,7 +2515,7 @@ export class SubmitButtons extends ToolboxItem {
 
                         // Ensure annotation is within the image if required
                         if (!ulabel.config.allow_annotations_outside_image) {
-                            annotation.fit_to_image_bounds(
+                            annotation.clamp_annotation_to_image_bounds(
                                 ulabel.config["image_width"],
                                 ulabel.config["image_height"],
                             );

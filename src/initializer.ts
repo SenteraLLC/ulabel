@@ -93,7 +93,7 @@ export async function ulabel_init(
         const image_width = ulabel.config["image_width"];
         for (const subtask of Object.values(ulabel.subtasks)) {
             for (const anno of Object.values(subtask.annotations.access)) {
-                anno.fit_to_image_bounds(image_width, image_height);
+                anno.clamp_annotation_to_image_bounds(image_width, image_height);
             }
         }
     }

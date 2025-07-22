@@ -180,7 +180,7 @@ export class ULabelAnnotation {
      * @param {number} image_height Height of the image.
      * @return {ULabelAnnotation} The annotation with the updated spatial payload.
      */
-    public fit_to_image_bounds(image_width: number, image_height: number): ULabelAnnotation {
+    public clamp_annotation_to_image_bounds(image_width: number, image_height: number): ULabelAnnotation {
         if (!this.is_delete_annotation()) {
             // Ensure each point in the payload is within the image
             // for polygons, we'll need to loop through all points
@@ -205,6 +205,12 @@ export class ULabelAnnotation {
         return this;
     }
 
+    /**
+     * Check if the annotation is a delete annotation, e.g. annotations drawn by the `delete_polygon`
+     * or `delete_bbox` annotation modes.
+     *
+     * @returns {boolean} True if the annotation is a delete annotation, false otherwise.
+     */
     public is_delete_annotation(): boolean {
         // Check if the annotation is a delete annotation
         return this.classification_payloads[0]["class_id"] === DELETE_CLASS_ID;
