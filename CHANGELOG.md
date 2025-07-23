@@ -6,6 +6,10 @@ All notable changes to this project will be documented here.
 
 Nothing yet.
 
+## [0.18.1] - July 22nd, 2025
+
+- Fix "Annotation ID" text color in night mode
+
 ## [0.18.0] - July 21st, 2025
 - add `allow_annotations_outside_image` arg to the `ULabel` constructor, which defaults to `true`.
   - when set to `false`, new annotations will be limited to points within the image, and attempts to move annotations outside the image will bounce back. 
