@@ -14,11 +14,11 @@ import {
     AnnotationResizeItem,
     RecolorActiveItem,
     KeypointSliderItem,
-    SubmitButtons,
     FilterPointDistanceFromRow,
     BrushToolboxItem,
     ToolboxItem,
 } from "./toolbox";
+import { SubmitButtons } from "./toolbox_items/submit_buttons";
 import { is_object_and_not_array } from "./utilities";
 
 /* eslint-disable @stylistic/no-multi-spaces */
