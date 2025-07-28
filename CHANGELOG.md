@@ -6,6 +6,10 @@ All notable changes to this project will be documented here.
 
 Nothing yet.
 
+## [0.18.2] - July 28th, 2025
+
+- Fix special characters in submit buttons breaking tool
+
 ## [0.18.1] - July 22nd, 2025
 
 - Fix "Annotation ID" text color in night mode
