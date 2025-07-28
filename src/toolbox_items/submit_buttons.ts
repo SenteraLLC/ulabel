@@ -160,9 +160,7 @@ export class SubmitButtons extends ToolboxItem {
         // Remove everything except alphanumeric, dash, underscore, space
         let submit_button_id = submit_button.name.replace(/[^a-zA-Z0-9-_ ]/g, "");
 
-        // Spaces to dashes
-        submit_button_id = submit_button_id.replace(" ", "-");
-
+        submit_button_id = submit_button_id.trim().toLowerCase().replace(" ", "-");
         return submit_button_id;
     }
 
