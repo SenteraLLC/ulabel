@@ -35,9 +35,10 @@ export class SubmitButtons extends ToolboxItem {
 
         for (const idx in this.submit_buttons) {
             // Create a unique event listener for each submit button in the submit buttons array.
-            $(document).on("click.ulabel", "#" + this.submit_buttons[idx].name.replaceLowerConcat(" ", "-"), async () => {
+            const submit_button_id = SubmitButtons.submit_button_id(this.submit_buttons[idx]);
+            $(document).on("click.ulabel", "#" + submit_button_id, async () => {
                 // Grab the button
-                const button: HTMLButtonElement = <HTMLButtonElement>document.getElementById(this.submit_buttons[idx].name.replaceLowerConcat(" ", "-"));
+                const button: HTMLButtonElement = <HTMLButtonElement>document.getElementById(submit_button_id);
 
                 // Grab all of the submit buttons
                 const submit_button_elements = <HTMLButtonElement[]>Array.from(document.getElementsByClassName("submit-button"));
@@ -150,6 +151,22 @@ export class SubmitButtons extends ToolboxItem {
     }
 
     /**
+     * Produce a valid ID for the given submit button.
+     * Achieved by removing special characters from the `name` property.
+     *
+     * @param submit_button Submit button to generate ID for
+     */
+    public static submit_button_id(submit_button: ULabelSubmitButton) {
+        // Remove everything except alphanumeric, dash, underscore, space
+        let submit_button_id = submit_button.name.replace(/[^a-zA-Z0-9-_ ]/g, "");
+
+        // Spaces to dashes
+        submit_button_id = submit_button_id.replace(" ", "-");
+
+        return submit_button_id;
+    }
+
+    /**
      * Create the css for this ToolboxItem and append it to the page.
      */
     protected add_styles() {
@@ -188,7 +205,7 @@ export class SubmitButtons extends ToolboxItem {
 
                 toolboxitem_html += `
                 <button 
-                    id="${submit_button.name.replaceLowerConcat(" ", "-")}" 
+                    id="${SubmitButtons.submit_button_id(submit_button)}" 
                     class="submit-button" 
                     style="
                         background-color: ${button_color};
