@@ -2,10 +2,16 @@ import {
     ULabel,
     ULabelAction,
     ULabelActionRaw,
+    ULabelActionType,
 } from "..";
+
+import { log_message, LogLevel } from "./error_logging";
+
+// ================= Record Actions =================
 
 /**
  * Record an action in the action stream to allow undo/redo functionality.
+ * Also trigger any listeners associated with the action.
  *
  * @param ulabel ULabel instance
  * @param raw_action action to record
@@ -21,8 +27,10 @@ export function record_action(ulabel: ULabel, raw_action: ULabelActionRaw, is_re
     }
 
     // Stringify the undo/redo payloads
+    const act_type = raw_action.act_type;
     const action: ULabelAction = {
-        act_type: raw_action.act_type,
+        act_type: act_type,
+        annotation_id: raw_action.annotation_id,
         frame: raw_action.frame,
         undo_payload: JSON.stringify(raw_action.undo_payload),
         redo_payload: JSON.stringify(raw_action.redo_payload),
@@ -30,6 +38,12 @@ export function record_action(ulabel: ULabel, raw_action: ULabelActionRaw, is_re
 
     // Add to stream
     current_subtask.actions.stream.push(action);
+
+    // Trigger any listeners for the action
+    on_completed_annotation_spatial_modification(
+        ulabel,
+        action,
+    );
 };
 
 /**
@@ -137,6 +151,157 @@ function finish_action(ulabel: ULabel, action: ULabelAction) {
     }
 }
 
+// ================= Action Listeners =================
+
+/**
+ * Triggered when an annotation is modified.
+ *
+ * @param ulabel ULabel instance
+ */
+function on_completed_annotation_spatial_modification(
+    ulabel: ULabel,
+    action: ULabelAction,
+    is_undo_or_redo: boolean = false,
+) {
+    const modification_actions: ULabelActionType[] = [
+        "finish_modify_annotation", // triggered when brush edit ends
+        "edit_annotation", // triggered when edit begins
+        "move_annotation", // triggered when move begins
+    ];
+
+    // Currently, we only need to perform actions here for undo/redo
+    // since *during* brush/edit/move, things are being constantly updated
+    if (is_undo_or_redo && modification_actions.includes(action.act_type)) {
+        ulabel.rebuild_containing_box(action.annotation_id);
+        ulabel.redraw_annotation(action.annotation_id);
+        ulabel.hide_edit_suggestion();
+        ulabel.hide_global_edit_suggestion();
+        ulabel.reposition_dialogs();
+        ulabel.suggest_edits(ulabel.state.last_move);
+        ulabel.update_filter_distance(action.annotation_id);
+    }
+}
+
+/*
+
+ASSIGN_ID:
+this.redraw_annotation(actid);
+this.recolor_active_polygon_ender();
+this.recolor_brush_circle();
+*UNDO*:
+redraw_annotation(actid);
+recolor_active_polygon_ender();
+recolor_brush_circle();
+suggest_edits();
+
+CONTINUE:
+rebuild containing box / update containing box
+redraw annotation
+update_filter_distance_during_polyline_move
+*UNDO*:
+rebuild_containing_box
+
+FINISH:
+update_filter_distance
+this.toolbox.redraw_update_items
+*UNDO*:
+redraw_annotation
+suggest_edits
+update_filter_distance
+this.toolbox.redraw_update_items(this);
+todo: properly destroy the annotation context and suggest edits (see begin_annotation__undo)
+*REDO*
+redraw_annotation
+suggest_edits
+this.update_filter_distance(redo_payload.actid, false);
+this.toolbox.redraw_update_items(this);
+
+CREATE_NONSPATIAL
+draw_annotation_from_id
+*UNDO*:
+redraw_all_annotations
+suggest_edits
+
+CREATE
+draw_annotation_from_id(unique_id);
+update_filter_distance(unique_id);
+*UNDO*:
+destroy_annotation_context
+this.update_filter_distance(annotation_id, true, true);
+
+BEGIN
+draw_annotation_from_id
+*UNDO*:
+destroy_annotation_context
+this.toolbox.redraw_update_items(this);
+this.suggest_edits(this.state["last_move"]);
+*REDO*:
+finish_annotation(null);
+rebuild_containing_box(unq_id);
+suggest_edits(this.state["last_move"]);
+
+CANCEL
+start_complex_polygon__undo
+delete_annotation
+*UNDO*:
+redraw_annotation
+delete_annotation__undo
+create_polygon_ender
+
+DELETE
+mark_deprecated
+redraw_annotation
+hide_global_edit_suggestion
+destroy_polygon_ender
+update_filter_distance(annotation_id, false, true);
+toolbox.redraw_update_items(this);
+*UNDO*:
+mark_deprecated
+redraw_annotation
+this.suggest_edits(this.state["last_move"]);
+this.update_filter_distance(active_id, false);
+this.toolbox.redraw_update_items(this);
+
+DELETE IN POLYGON
+destroy_annotation_context(delete_annid);
+this.destroy_polygon_ender(delete_annid);
+remove from ordering and annotation lists
+this.remove_recorded_events_for_annotation(delete_annid);
+*UNDO*
+redraw_multiple_spatial_annotations
+this.update_filter_distance(null, false, true);
+this.toolbox.redraw_update_items(this);
+
+START COMPLEX POLYGON
+hide_edit_suggestion();
+hide_global_edit_suggestion();
+*UNDO*:
+destroy_polygon_ender(undo_payload.actid);
+this.rebuild_containing_box(undo_payload.actid);
+this.redraw_annotation(undo_payload.actid);
+
+MERGE POLYGON COMPLEX LAYER
+rebuild_containing_box(annotation_id);
+redraw_annotation(annotation_id);
+*UNDO*:
+rebuild_containing_box(annotation_id);
+redraw_annotation(annotation_id);
+
+SIMPLIFY POLYGON COMPLEX LAYER
+*UNDO*:
+rebuild_containing_box(undo_payload["actid"]);
+redraw_annotation(undo_payload["actid"]);
+
+BEGIN BRUSH
+update_id_toolbox_display
+recolor_brush_circle
+*UNDO*
+redraw_annotation(actid);
+
+*/
+
+// ================= Undo / Redo =================
+
 /**
  * Undo the last action in the action stream.
  *
@@ -167,6 +332,13 @@ export function undo(ulabel: ULabel, is_internal_undo: boolean = false) {
     undo_candidate.is_internal_undo = is_internal_undo;
     undo_action(ulabel, undo_candidate);
     undone_stack.push(undo_candidate);
+
+    // Trigger any listeners for the action
+    on_completed_annotation_spatial_modification(
+        ulabel,
+        undo_candidate,
+        true,
+    );
 }
 
 /**
@@ -179,10 +351,19 @@ export function redo(ulabel: ULabel) {
     const current_subtask = ulabel.get_current_subtask();
     const undone_stack = current_subtask.actions.undone_stack;
 
-    // If the action_steam is empty, then there are no actions to undo
+    // If the action_steam is empty, then there are no actions to redo
     if (undone_stack.length === 0) return;
 
-    redo_action(ulabel, undone_stack.pop());
+    // Redo the action
+    const redo_candidate = undone_stack.pop();
+    redo_action(ulabel, redo_candidate);
+
+    // Trigger any listeners for the action
+    on_completed_annotation_spatial_modification(
+        ulabel,
+        redo_candidate,
+        true,
+    );
 }
 
 /**
@@ -254,7 +435,7 @@ function undo_action(ulabel: ULabel, action: ULabelAction) {
             ulabel.finish_modify_annotation__undo(undo_payload);
             break;
         default:
-            console.warn("Action type not recognized for undo:", action.act_type);
+            log_message(`Action type not recognized for undo: ${action.act_type}`, LogLevel.WARNING);
             break;
     }
 }
@@ -317,7 +498,7 @@ export function redo_action(ulabel: ULabel, action: ULabelAction) {
             ulabel.finish_modify_annotation__redo(redo_payload);
             break;
         default:
-            console.warn("Action type not recognized for redo:", action.act_type);
+            log_message(`Action type not recognized for redo: ${action.act_type}`, LogLevel.WARNING);
             break;
     }
 }

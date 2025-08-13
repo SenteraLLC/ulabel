@@ -2436,6 +2436,7 @@ export class ULabel {
             if (!recursive_call) {
                 record_action(this, {
                     act_type: "merge_polygon_complex_layer",
+                    annotation_id: annotation_id,
                     frame: this.state["current_frame"],
                     undo_payload: {
                         actid: annotation_id,
@@ -2490,6 +2491,7 @@ export class ULabel {
         // Record the action
         record_action(this, {
             act_type: "simplify_polygon_complex_layer",
+            annotation_id: annotation_id,
             frame: this.state["current_frame"],
             undo_payload: {
                 actid: annotation_id,
@@ -2634,6 +2636,7 @@ export class ULabel {
         // Record the delete annotation
         record_action(this, {
             act_type: "delete_annotations_in_polygon",
+            annotation_id: delete_annid,
             frame: this.state["current_frame"],
             undo_payload: {
                 ender_html: $("#ender_" + delete_annid).outer_html(),
@@ -2975,6 +2978,8 @@ export class ULabel {
         // Record the action so it can be undone and redone
         record_action(this, {
             act_type: "create_annotation",
+            annotation_id: unique_id,
+            frame: this.state["current_frame"],
             undo_payload: { annotation_id: unique_id },
             redo_payload: {
                 annotation_id: unique_id,
@@ -3077,6 +3082,7 @@ export class ULabel {
         if (should_record_action) {
             record_action(this, {
                 act_type: "delete_annotation",
+                annotation_id: annotation_id,
                 frame: frame,
                 undo_payload: {
                     annid: annotation_id,
@@ -3381,6 +3387,7 @@ export class ULabel {
         // Record for potential undo/redo
         record_action(this, {
             act_type: "create_nonspatial_annotation",
+            annotation_id: unq_id,
             frame: frame,
             redo_payload: {
                 unq_id: unq_id,
@@ -3518,6 +3525,7 @@ export class ULabel {
         // Record for potential undo/redo
         record_action(this, {
             act_type: "begin_annotation",
+            annotation_id: unq_id,
             frame: frame,
             redo_payload: {
                 mouse_event: mouse_event,
@@ -3768,6 +3776,7 @@ export class ULabel {
                             // Only an undoable action if placing a polygon keypoint
                             record_action(this, {
                                 act_type: "continue_annotation",
+                                annotation_id: actid,
                                 frame: frame,
                                 redo_payload: {
                                     mouse_event: mouse_event,
@@ -3873,6 +3882,7 @@ export class ULabel {
 
         record_action(this, {
             act_type: "start_complex_polygon",
+            annotation_id: active_id,
             frame: this.state["current_frame"],
             undo_payload: {
                 actid: active_id,
@@ -4001,6 +4011,7 @@ export class ULabel {
             // Record for potential undo/redo
             record_action(this, {
                 act_type: "begin_brush",
+                annotation_id: brush_cand_active_id,
                 frame: this.state["current_frame"],
                 undo_payload: {
                     actid: brush_cand_active_id,
@@ -4126,10 +4137,6 @@ export class ULabel {
     finish_modify_annotation__undo(undo_payload) {
         // Replace the polygon spatial data
         this.replace_polygon_spatial_data(undo_payload.actid, undo_payload.polygon_spatial_data);
-        // Redraw the annotation
-        this.redraw_annotation(undo_payload.actid);
-        // Update dialogs
-        this.suggest_edits(this.state["last_move"]);
     }
 
     /**
@@ -4141,6 +4148,7 @@ export class ULabel {
         // Record the action
         record_action(this, {
             act_type: "finish_modify_annotation",
+            annotation_id: redo_payload.actid,
             frame: this.state["current_frame"],
             undo_payload: {
                 actid: redo_payload.actid,
@@ -4154,10 +4162,6 @@ export class ULabel {
 
         // Replace the polygon spatial data
         this.replace_polygon_spatial_data(redo_payload.actid, redo_payload.polygon_spatial_data);
-        // Redraw the annotation
-        this.redraw_annotation(redo_payload.actid);
-        // Update dialogs
-        this.suggest_edits(this.state["last_move"]);
     }
 
     begin_edit(mouse_event) {
@@ -4174,7 +4178,6 @@ export class ULabel {
         const edit_candidate = current_subtask["state"]["edit_candidate"];
         let starting_point = this.get_with_access_string(current_subtask["state"]["edit_candidate"]["annid"], edit_candidate["access"]);
         this.edit_annotation(mouse_event);
-        this.suggest_edits(mouse_event);
         let gmx = this.get_global_mouse_x(mouse_event);
         let gmy = this.get_global_mouse_y(mouse_event);
 
@@ -4186,6 +4189,7 @@ export class ULabel {
 
         record_action(this, {
             act_type: "edit_annotation",
+            annotation_id: active_id,
             frame: frame,
             undo_payload: {
                 actid: active_id,
@@ -4273,12 +4277,6 @@ export class ULabel {
 
         // Revert the annotation to its previous state and redraw
         this.set_with_access_string(active_id, undo_payload.edit_candidate["access"], undo_location, true);
-        this.rebuild_containing_box(active_id);
-        this.redraw_annotation(active_id);
-        this.suggest_edits(this.state["last_move"]);
-
-        // Filter points if necessary
-        this.update_filter_distance(active_id);
     }
 
     edit_annotation__redo(redo_payload) {
@@ -4296,19 +4294,11 @@ export class ULabel {
             case "bbox3":
                 ms_loc.push(redo_payload.ending_frame);
                 this.set_with_access_string(actid, redo_payload.edit_candidate["access"], ms_loc, false);
-                this.rebuild_containing_box(actid);
-                this.redraw_annotation(actid);
-                this.suggest_edits(this.state["last_move"]);
                 break;
             default:
                 this.set_with_access_string(actid, redo_payload.edit_candidate["access"], ms_loc, false);
-                this.rebuild_containing_box(actid);
-                this.redraw_annotation(actid);
-                this.suggest_edits(this.state["last_move"]);
                 break;
         }
-        // Filter points if necessary
-        this.update_filter_distance(actid);
 
         let frame = this.state["current_frame"];
         if (MODES_3D.includes(spatial_type)) {
@@ -4316,6 +4306,7 @@ export class ULabel {
         }
         record_action(this, {
             act_type: "edit_annotation",
+            annotation_id: actid,
             frame: frame,
             undo_payload: {
                 actid: redo_payload.actid,
@@ -4352,6 +4343,7 @@ export class ULabel {
 
         record_action(this, {
             act_type: "move_annotation",
+            annotation_id: active_id,
             frame: frame,
             undo_payload: {
                 actid: active_id,
@@ -4371,8 +4363,7 @@ export class ULabel {
             },
         });
         // Hide point edit suggestion
-        $(".edit_suggestion").css("display", "none");
-
+        this.hide_edit_suggestion();
         this.move_annotation(mouse_event);
     }
 
@@ -4392,6 +4383,7 @@ export class ULabel {
             // Record the cancel action
             record_action(this, {
                 act_type: "cancel_annotation",
+                annotation_id: annid,
                 frame: this.state["current_frame"],
                 undo_payload: {
                     annid: annid,
@@ -4554,9 +4546,10 @@ export class ULabel {
             // remove the entire completed annotation rather that undoing each point.
             // Loop through the action stream until and remove every recorded action
             // until we find the start_complex_polygon, begin_brush, or begin_annotation action
-            while (current_subtask["actions"]["stream"].length > 0) {
+            const action_stream = current_subtask["actions"]["stream"];
+            while (action_stream.length > 0) {
                 // Pop the action to remove it from the stream
-                let action = current_subtask["actions"]["stream"].pop();
+                let action = action_stream.pop();
                 if (action.act_type === "begin_annotation") {
                     // Now we're done
                     break;
@@ -4572,6 +4565,8 @@ export class ULabel {
             // Record the finish_annotation or finish_modify_annotation action
             record_action(this, {
                 act_type: act_type,
+                annotation_id: active_id,
+                active_id: active_id,
                 frame: this.state["current_frame"],
                 undo_payload: undo_payload,
                 redo_payload: redo_payload,
@@ -4639,6 +4634,7 @@ export class ULabel {
         // Record the action
         record_action(this, {
             act_type: "finish_annotation",
+            annotation_id: redo_payload.actid,
             frame: this.state["current_frame"],
             undo_payload: {
                 actid: redo_payload.actid,
@@ -4826,19 +4822,6 @@ export class ULabel {
                 }
             }
         }
-        annotations[active_id]["containing_box"]["tlx"] += diffX;
-        annotations[active_id]["containing_box"]["brx"] += diffX;
-        annotations[active_id]["containing_box"]["tly"] += diffY;
-        annotations[active_id]["containing_box"]["bry"] += diffY;
-
-        this.redraw_annotation(active_id);
-        this.hide_edit_suggestion();
-        this.hide_global_edit_suggestion();
-        this.reposition_dialogs();
-        this.suggest_edits(this.state["last_move"]);
-
-        // Filter points if necessary
-        this.update_filter_distance(active_id);
     }
 
     move_annotation__redo(redo_payload) {
@@ -4879,18 +4862,6 @@ export class ULabel {
             }
         }
 
-        annotations[active_id]["containing_box"]["tlx"] += diffX;
-        annotations[active_id]["containing_box"]["brx"] += diffX;
-        annotations[active_id]["containing_box"]["tly"] += diffY;
-        annotations[active_id]["containing_box"]["bry"] += diffY;
-
-        this.redraw_annotation(active_id);
-        this.hide_edit_suggestion();
-        this.hide_global_edit_suggestion();
-        this.reposition_dialogs();
-        this.suggest_edits(this.state["last_move"]);
-        this.update_filter_distance(active_id);
-
         let frame = this.state["current_frame"];
         if (MODES_3D.includes(spatial_type)) {
             frame = null;
@@ -4898,6 +4869,7 @@ export class ULabel {
 
         record_action(this, {
             act_type: "move_annotation",
+            annotation_id: active_id,
             frame: frame,
             undo_payload: {
                 actid: active_id,
@@ -5408,6 +5380,7 @@ export class ULabel {
         } else {
             record_action(this, {
                 act_type: "assign_annotation_id",
+                annotation_id: actid,
                 undo_payload: {
                     actid: actid,
                     old_id_payload: old_payload,

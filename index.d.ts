@@ -187,6 +187,7 @@ export type ULabelActionType = "create_nonspatial_annotation" |
 
 export type ULabelActionRaw = {
     act_type: ULabelActionType;
+    annotation_id: string | null;
     frame: number;
     redo_payload: object;
     undo_payload: object;
@@ -194,6 +195,7 @@ export type ULabelActionRaw = {
 
 export type ULabelAction = {
     act_type: ULabelActionType;
+    annotation_id: string | null;
     frame: number;
     redo_payload: string; // Stringified object
     undo_payload: string; // Stringified object
@@ -272,6 +274,7 @@ export class ULabel {
     public get_annotations(subtask: ULabelSubtask): ULabelAnnotation[];
     public set_annotations(annotations: ULabelAnnotation[], subtask: ULabelSubtask);
     public set_saved(saved: boolean);
+    public redraw_annotation(annotation_id: string, subtask?: string, offset?: number): void;
     public redraw_all_annotations(
         subtask?: string, // TODO (joshua-dean): THIS IS SUBTASK KEY, NAME PROPERLY
         offset?: number,
@@ -282,12 +285,18 @@ export class ULabel {
         target_jq?: JQuery<HTMLElement>, // TODO (joshua-dean): validate this type
     );
     public update_frame(delta?: number, new_frame?: number): void;
-    public handle_id_dialog_hover(
-        mouse_event: JQuery.TriggeredEvent,
-        pos_evt?: {
-            class_ind: number;
-            dist_prop: number;
-        },
+    public rebuild_containing_box(actid: string, ignore_final?: boolean, subtask?: string): void;
+    public update_filter_distance_during_polyline_move(
+        annotation_id: string,
+        redraw_update_items?: boolean,
+        force_filter_all?: boolean,
+        offset?: Offset,
+    ): void;
+    public update_filter_distance(
+        annotation_id: string,
+        redraw_update_items?: boolean,
+        force_filter_all?: boolean,
+        offset?: Offset,
     ): void;
 
     // Brush
@@ -409,6 +418,7 @@ export class ULabel {
         nonspatial_id?: string,
     ): void;
     public hide_global_edit_suggestion(): void;
+    public hide_edit_suggestion(): void;
 
     // Edit utils
     public get_with_access_string(
@@ -433,6 +443,13 @@ export class ULabel {
     ): void;
     public update_id_dialog_display(
         front?: boolean,
+    ): void;
+    public handle_id_dialog_hover(
+        mouse_event: JQuery.TriggeredEvent,
+        pos_evt?: {
+            class_ind: number;
+            dist_prop: number;
+        },
     ): void;
     public handle_id_dialog_click(
         mouse_event: JQuery.TriggeredEvent,
