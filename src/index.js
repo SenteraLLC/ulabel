@@ -4692,7 +4692,7 @@ export class ULabel {
 
         // Record last point and redraw if necessary
         // TODO(3d)
-        let n_kpts, start_pt, active_idx;
+        let n_kpts, start_pt, active_idx, uniquePoints;
         switch (annotation["spatial_type"]) {
             case "polygon":
                 // For polygons, the active spatial payload is the last array of points in the spatial payload
@@ -4731,15 +4731,21 @@ export class ULabel {
                 this.delete_annotations_in_polygon(active_id);
                 break;
             case "polyline":
-                // TODO handle the case of merging with existing annotation
+                // Prevent zero-length polylines (must have at least two unique points)
+                uniquePoints = new Set(spatial_payload.map((pt) => pt.join(",")));
+                if (uniquePoints.size < 2) {
+                    console.warn("Canceled polyline with insufficient unique points:", spatial_payload);
+                    return;
+                }
+
                 // Remove last point
                 n_kpts = spatial_payload.length;
                 if (n_kpts > 2) {
                     spatial_payload.pop();
-                } else {
-                    this.rebuild_containing_box(active_id, false, this.get_current_subtask_key());
                 }
+
                 // Redraw annotation and record action
+                this.rebuild_containing_box(active_id);
                 this.redraw_annotation(active_id);
                 record_action = true;
                 break;
