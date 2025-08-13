@@ -1,19 +1,5 @@
-import { ULabelSpatialType, ClassDefinition } from "..";
+import { ULabelSpatialType, ClassDefinition, ULabelAction } from "..";
 import { ULabelAnnotation } from "./annotation";
-
-/**
- * Action object for undo/redo functionality
- */
-export type ULabelAction = {
-    act_type: string;
-    frame: number;
-    /**
-     * Undo/reload payloads vary on the action type
-     * When they are stored, JSON.stringify() is called on the payload
-     */
-    undo_payload: string;
-    redo_payload: string;
-};
 
 /**
  * Position information for a dialog

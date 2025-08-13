@@ -168,6 +168,37 @@ export type ImageData = {
 
 export type AnnoScalingMode = "fixed" | "inverse-zoom" | "match-zoom";
 
+export type ULabelActionType = "create_nonspatial_annotation" |
+    "create_annotation" |
+    "begin_annotation" |
+    "continue_annotation" |
+    "finish_annotation" |
+    "edit_annotation" |
+    "move_annotation" |
+    "cancel_annotation" |
+    "delete_annotation" |
+    "delete_annotations_in_polygon" |
+    "start_complex_polygon" |
+    "merge_polygon_complex_layer" |
+    "simplify_polygon_complex_layer" |
+    "begin_brush" |
+    "finish_modify_annotation" |
+    "assign_annotation_id";
+
+export type ULabelActionRaw = {
+    act_type: ULabelActionType;
+    frame: number;
+    redo_payload: object;
+    undo_payload: object;
+};
+
+export type ULabelAction = {
+    act_type: ULabelActionType;
+    frame: number;
+    redo_payload: string; // Stringified object
+    undo_payload: string; // Stringified object
+};
+
 export type ULabelSubtasks = { [key: string]: ULabelSubtask };
 
 export class ULabel {
