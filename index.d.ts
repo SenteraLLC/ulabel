@@ -197,6 +197,7 @@ export type ULabelAction = {
     frame: number;
     redo_payload: string; // Stringified object
     undo_payload: string; // Stringified object
+    is_internal_undo?: boolean;
 };
 
 export type ULabelSubtasks = { [key: string]: ULabelSubtask };
@@ -313,6 +314,14 @@ export class ULabel {
     // Annotation lifecycle
     // TODO (joshua-dean): type for redo_payload
     public begin_annotation(mouse_event: JQuery.TriggeredEvent, redo_payload?: object): void;
+    public continue_annotation(mouse_event: JQuery.TriggeredEvent, is_click?: boolean, redo_payload?: object): void;
+    public delete_annotation(
+        annotation_id: string,
+        redo_payload?: object,
+        record_action?: boolean,
+    ): void;
+    public cancel_annotation(redo_payload?: object): void;
+    public assign_annotation_id(actid: string, redo_payload?: object): void;
     public create_annotation(
         spatial_type: ULabelSpatialType,
         spatial_payload: ULabelSpatialPayload,
@@ -321,16 +330,50 @@ export class ULabel {
     public create_nonspatial_annotation(
         redo_payload?: object,
     ): void;
-    public delete_annotation(
+    public start_complex_polygon(redo_payload?: object): void;
+    public merge_polygon_complex_layer(
         annotation_id: string,
-        redo_payload?: object,
-        record_action?: boolean,
+        layer_idx?: number,
+        recursive_call?: boolean,
+        redoing?: boolean,
+        redraw?: boolean,
     ): void;
-    public cancel_annotation(redo_payload?: object): void;
+    public simplify_polygon_complex_layer(
+        annotation_id: string,
+        active_idx: string,
+        redoing?: boolean,
+    ): void;
+    public delete_annotations_in_polygon(delete_annid: string, redo_payload?: object): void;
     public get_active_class_id(): number;
     public get_active_class_id_idx(): number;
-    public undo(is_internal_undo?: boolean): void;
+
+    // Undo
+    public undo(): void;
+    public begin_annotation__undo(undo_payload: object): void;
+    public continue_annotation__undo(undo_payload: object): void;
+    public finish_annotation__undo(undo_payload: object): void;
+    public edit_annotation__undo(undo_payload: object): void;
+    public move_annotation__undo(undo_payload: object): void;
+    public delete_annotation__undo(undo_payload: object): void;
+    public cancel_annotation__undo(undo_payload: object): void;
+    public assign_annotation_id__undo(undo_payload: object): void;
+    public create_annotation__undo(undo_payload: object): void;
+    public create_nonspatial_annotation__undo(undo_payload: object): void;
+    public start_complex_polygon__undo(undo_payload: object): void;
+    public merge_polygon_complex_layer__undo(undo_payload: object): void;
+    public simplify_polygon_complex_layer__undo(undo_payload: object): void;
+    public delete_annotations_in_polygon__undo(undo_payload: object): void;
+    public begin_brush__undo(undo_payload: object): void;
+    public finish_modify_annotation__undo(undo_payload: object): void;
+
+    // Redo
     public redo(): void;
+    public finish_annotation__redo(redo_payload: object): void;
+    public edit_annotation__redo(redo_payload: object): void;
+    public move_annotation__redo(redo_payload: object): void;
+    public delete_annotation__redo(redo_payload: object): void;
+    public create_annotation__redo(redo_payload: object): void;
+    public finish_modify_annotation__redo(redo_payload: object): void;
 
     // Mouse event handlers
     public handle_mouse_down(mouse_event: JQuery.TriggeredEvent): void;
@@ -367,6 +410,13 @@ export class ULabel {
     ): void;
     public hide_global_edit_suggestion(): void;
 
+    // Edit utils
+    public get_with_access_string(
+        annid: string,
+        access_str: string,
+        as_though_pre_splice: boolean,
+    );
+
     // Drawing
     public rezoom(
         foc_x?: number,
@@ -396,6 +446,7 @@ export class ULabel {
         thumbnail?: boolean,
         nonspatial?: boolean,
     ): void;
+    public hide_id_dialog(): void;
 
     // Canvases
     public get_init_canvas_context_id(
