@@ -214,10 +214,7 @@ function on_completed_annotation_spatial_modification(
         ulabel.rebuild_containing_box(action.annotation_id);
         ulabel.redraw_annotation(action.annotation_id);
         // Update dialogs
-        ulabel.hide_edit_suggestion();
-        ulabel.hide_global_edit_suggestion();
-        ulabel.reposition_dialogs();
-        ulabel.suggest_edits(ulabel.state.last_move);
+        ulabel.suggest_edits();
         // Update the toolbox filter distance
         ulabel.update_filter_distance(action.annotation_id);
     }
@@ -251,12 +248,13 @@ function on_in_progress_annotation_spatial_modification(
             diffZ: 0,
         };
 
-        console.log(`In-progress action: ${action.act_type} for annotation ID: ${action.annotation_id}`);
+        // Update the annotation rendering
         ulabel.rebuild_containing_box(action.annotation_id, false, subtask_key);
         ulabel.redraw_annotation(action.annotation_id, subtask_key, offset);
+        // Update dialogs
+        ulabel.suggest_edits();
+        // Update the toolbox filter distance
         ulabel.update_filter_distance_during_polyline_move(action.annotation_id, true, false, offset);
-        ulabel.show_global_edit_suggestion(action.annotation_id, offset);
-        ulabel.reposition_dialogs();
     }
 }
 

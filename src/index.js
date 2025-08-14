@@ -2163,9 +2163,7 @@ export class ULabel {
             this.subtasks[current_subtask]["state"]["is_in_brush_mode"] = !this.subtasks[current_subtask]["state"]["is_in_brush_mode"];
             if (this.subtasks[current_subtask]["state"]["is_in_brush_mode"]) {
                 // Hide edit/id dialogs
-                this.hide_edit_suggestion();
-                this.hide_global_edit_suggestion();
-                this.hide_id_dialog();
+                this.suggest_edits();
                 // Clear any move candidates
                 this.subtasks[current_subtask]["state"]["move_candidate"] = null;
                 // If in starting_complex_polygon mode, end it by undoing
@@ -2752,7 +2750,10 @@ export class ULabel {
         annotation["containing_box"] = new_spatial_data["containing_box"];
     }
 
-    show_edit_suggestion(nearest_point, currently_exists) {
+    // ================= Edit/ID Dialogs =================
+
+    // Edit suggestion: highlight a point in an annotation that can be edited
+    show_edit_suggestion(edit_suggestion, currently_exists = false) {
         let esid = "edit_suggestion__" + this.get_current_subtask_key();
         var esjq = $("#" + esid);
         esjq.css("display", "block");
@@ -2761,8 +2762,8 @@ export class ULabel {
         } else {
             esjq.addClass("soft");
         }
-        this.get_current_subtask()["state"]["visible_dialogs"][esid]["left"] = nearest_point["point"][0] / this.config["image_width"];
-        this.get_current_subtask()["state"]["visible_dialogs"][esid]["top"] = nearest_point["point"][1] / this.config["image_height"];
+        this.get_current_subtask()["state"]["visible_dialogs"][esid]["left"] = edit_suggestion["point"][0] / this.config["image_width"];
+        this.get_current_subtask()["state"]["visible_dialogs"][esid]["top"] = edit_suggestion["point"][1] / this.config["image_height"];
         this.reposition_dialogs();
     }
 
@@ -2770,14 +2771,10 @@ export class ULabel {
         $(".edit_suggestion").css("display", "none");
     }
 
+    // Global edit suggestion: id dialog, move button, and delete button
     show_global_edit_suggestion(annid, offset = null, nonspatial_id = null) {
         const subtask_key = this.get_current_subtask_key();
         const current_subtask = this.subtasks[subtask_key];
-
-        // // Don't show suggestion if annotating is in progress
-        // if (current_subtask["state"]["is_in_progress"]) {
-        //     return;
-        // }
 
         let diffX = 0;
         let diffY = 0;
@@ -2808,6 +2805,7 @@ export class ULabel {
 
         // let placeholder = $("#global_edit_suggestion a.reid_suggestion");
         if (!current_subtask["single_class_mode"]) {
+            // Show id dialog thumbnail
             this.show_id_dialog(idd_x, idd_y, annid, true, nonspatial_id != null);
         }
     }
@@ -2817,6 +2815,7 @@ export class ULabel {
         this.hide_id_dialog();
     }
 
+    // ID dialog: color wheel to change the ID of an annotation
     show_id_dialog(gbx, gby, active_ann, thumbnail = false, nonspatial = false) {
         let stkey = this.get_current_subtask_key();
 
@@ -3104,7 +3103,7 @@ export class ULabel {
         this.redraw_annotation(annotation_id);
 
         // Show dialogs
-        this.suggest_edits(this.state["last_move"]);
+        this.suggest_edits();
 
         // Filter points if necessary
         this.update_filter_distance(annotation_id, false);
@@ -3381,7 +3380,7 @@ export class ULabel {
             },
             undo_payload: {},
         }, redoing);
-        this.suggest_edits(this.state["last_move"]);
+        this.suggest_edits();
     }
 
     create_nonspatial_annotation__undo(annotation_id) {
@@ -3389,7 +3388,7 @@ export class ULabel {
             this.remove_annotation_from_access_and_ordering(annotation_id);
             // Render the change (have to redraw all non-spatial since they all live on the front canvas)
             this.redraw_all_annotations(this.get_current_subtask_key(), null, true);
-            this.suggest_edits(this.state["last_move"]);
+            this.suggest_edits();
         }
     }
 
@@ -3413,8 +3412,6 @@ export class ULabel {
             [gmx, gmy] = this.get_image_aware_mouse_x_y(mouse_event);
             init_spatial = this.get_init_spatial(gmx, gmy, annotation_mode, mouse_event);
             init_id_payload = this.get_init_id_payload(annotation_mode);
-            this.hide_edit_suggestion();
-            this.hide_global_edit_suggestion();
         } else {
             line_size = redo_payload.line_size;
             mouse_event = redo_payload.mouse_event;
@@ -3514,12 +3511,12 @@ export class ULabel {
             } else {
                 this.finish_annotation(null);
                 this.rebuild_containing_box(annotation_id);
-                this.suggest_edits(this.state["last_move"]);
+                this.suggest_edits();
             }
         } else if (annotation_mode === "point") {
             this.finish_annotation(null);
             this.rebuild_containing_box(annotation_id);
-            this.suggest_edits(this.state["last_move"]);
+            this.suggest_edits();
         }
     }
 
@@ -3547,7 +3544,7 @@ export class ULabel {
         // Update class counter
         this.toolbox.redraw_update_items(this);
 
-        this.suggest_edits(this.state["last_move"]);
+        this.suggest_edits();
     }
 
     update_containing_box(ms_loc, actid, subtask = null) {
@@ -3798,10 +3795,6 @@ export class ULabel {
     }
 
     start_complex_polygon(annotation_id = null) {
-        // Turn off any edit suggestions or id dialogs
-        this.hide_edit_suggestion();
-        this.hide_global_edit_suggestion();
-
         const current_subtask = this.get_current_subtask();
         let redoing = false;
         if (annotation_id === null) {
@@ -4549,7 +4542,7 @@ export class ULabel {
         // Redraw the annotation
         this.redraw_annotation(annotation_id);
         // Update dialogs
-        this.suggest_edits(this.state["last_move"]);
+        this.suggest_edits();
         // Filter points if necessary
         this.update_filter_distance(annotation_id, false);
         // Update toolbox counter
@@ -4570,7 +4563,7 @@ export class ULabel {
             redo_payload: {},
         }, true);
         // Update dialogs
-        this.suggest_edits(this.state["last_move"]);
+        this.suggest_edits();
         // Filter points if necessary
         this.update_filter_distance(annotation_id, false);
         // Update toolbox counter
@@ -4616,8 +4609,7 @@ export class ULabel {
                 move_not_allowed: false,
             },
         });
-        // Hide point edit suggestion
-        this.hide_edit_suggestion();
+
         this.continue_move(mouse_event);
     }
 
@@ -4915,75 +4907,102 @@ export class ULabel {
      * If no endpoints, search along segments with infinite range
      */
     suggest_edits(mouse_event = null, nonspatial_id = null) {
-        // don't show edits when potentially trying to draw a hole
+        const current_subtask = this.get_current_subtask();
+        // Don't any dialogs when currently drawing an annotation,
+        // And hide just edit dialogs when moving
         if (
-            this.get_current_subtask()["state"]["is_in_progress"] ||
-            this.get_current_subtask()["state"]["starting_complex_polygon"] ||
-            this.get_current_subtask()["state"]["is_in_brush_mode"]
+            current_subtask["state"]["is_in_progress"] ||
+            current_subtask["state"]["starting_complex_polygon"] ||
+            current_subtask["state"]["is_in_brush_mode"]
         ) {
-            this.hide_global_edit_suggestion();
-            this.hide_edit_suggestion();
-        } else {
-            let best_candidate;
+            return this.hide_edits();
+        } else if (
+            current_subtask["state"]["is_in_move"]
+        ) {
+            return this.hide_edit_suggestion_during_move();
+        }
 
-            if (nonspatial_id === null) {
-                if (mouse_event === null) {
+        let best_candidate = null;
+        if (nonspatial_id !== null) {
+            best_candidate = {
+                annid: nonspatial_id,
+            };
+        }
+
+        if (best_candidate === null) {
+            // Get mouse event from last move if not provided
+            if (mouse_event === null) {
+                if (this.state["last_move"] !== null) {
                     mouse_event = this.state["last_move"];
-                }
-
-                const dst_thresh = this.config["edit_handle_size"] / 2;
-                const global_x = this.get_global_mouse_x(mouse_event);
-                const global_y = this.get_global_mouse_y(mouse_event);
-
-                if ($(mouse_event.target).hasClass("gedit-target")) return;
-
-                const edit_candidates = this.get_edit_candidates(
-                    global_x,
-                    global_y,
-                    dst_thresh,
-                );
-
-                if (edit_candidates["best"] === null) {
-                    this.hide_global_edit_suggestion();
-                    this.hide_edit_suggestion();
-                    this.get_current_subtask()["state"]["move_candidate"] = null;
-                    this.get_current_subtask()["state"]["edit_candidate"] = null;
+                } else {
                     return;
                 }
-
-                // Look for an existing point that's close enough to suggest editing it
-                const nearest_active_keypoint = this.get_nearest_active_keypoint(global_x, global_y, dst_thresh, edit_candidates["candidate_ids"]);
-                if (nearest_active_keypoint != null && nearest_active_keypoint.point != null) {
-                    this.get_current_subtask()["state"]["edit_candidate"] = nearest_active_keypoint;
-                    this.show_edit_suggestion(nearest_active_keypoint, true);
-                    edit_candidates["best"] = nearest_active_keypoint;
-                } else { // If none are found, look for a point along a segment that's close enough
-                    const nearest_segment_point = this.get_nearest_segment_point(global_x, global_y, Infinity, edit_candidates["candidate_ids"]);
-                    if (nearest_segment_point != null && nearest_segment_point.point != null) {
-                        this.get_current_subtask()["state"]["edit_candidate"] = nearest_segment_point;
-                        this.show_edit_suggestion(nearest_segment_point, false);
-                        edit_candidates["best"] = nearest_segment_point;
-                    } else {
-                        this.hide_edit_suggestion();
-                    }
-                }
-
-                // Show global edit dialogs for "best" candidate
-                this.get_current_subtask()["state"]["move_candidate"] = edit_candidates["best"];
-                best_candidate = edit_candidates["best"];
-            } else {
-                this.hide_global_edit_suggestion();
-                this.hide_edit_suggestion();
-                best_candidate = {
-                    annid: nonspatial_id,
-                };
             }
-            this.show_global_edit_suggestion(best_candidate.annid, null, nonspatial_id);
-            this.get_current_subtask()["state"]["edit_candidate"] = best_candidate;
 
-            // Must be called after active_annotation is updated
-            this.update_confidence_dialog();
+            const dst_thresh = this.config["edit_handle_size"] / 2;
+            const global_x = this.get_global_mouse_x(mouse_event);
+            const global_y = this.get_global_mouse_y(mouse_event);
+
+            // Ignore when we're already hovering an edit
+            if ($(mouse_event.target).hasClass("gedit-target")) return;
+
+            const edit_candidates = this.get_edit_candidates(
+                global_x,
+                global_y,
+                dst_thresh,
+            );
+
+            if (edit_candidates["best"] === null) {
+                return this.hide_and_clear_action_candidates();
+            }
+
+            // Look for an existing point that's close enough to suggest editing it
+            const nearest_active_keypoint = this.get_nearest_active_keypoint(global_x, global_y, dst_thresh, edit_candidates["candidate_ids"]);
+            if (nearest_active_keypoint != null && nearest_active_keypoint.point != null) {
+                this.show_edit_suggestion(nearest_active_keypoint, true);
+                edit_candidates["best"] = nearest_active_keypoint;
+            } else { // If none are found, look for a point along a segment that's close enough
+                const nearest_segment_point = this.get_nearest_segment_point(global_x, global_y, Infinity, edit_candidates["candidate_ids"]);
+                if (nearest_segment_point != null && nearest_segment_point.point != null) {
+                    this.show_edit_suggestion(nearest_segment_point, false);
+                    edit_candidates["best"] = nearest_segment_point;
+                }
+            }
+
+            // Show global edit dialogs for "best" candidate
+            best_candidate = edit_candidates["best"];
+
+            // Only spatial annotations can be moved
+            current_subtask["state"]["move_candidate"] = best_candidate;
         }
+
+        // Both spatial/non-spatial can have the global suggestions
+        this.show_global_edit_suggestion(best_candidate.annid, null, nonspatial_id);
+        current_subtask["state"]["edit_candidate"] = best_candidate;
+
+        // Must be called after active_annotation is updated
+        this.update_confidence_dialog();
+    }
+
+    hide_edits() {
+        this.hide_global_edit_suggestion();
+        this.hide_edit_suggestion();
+    }
+
+    hide_and_clear_action_candidates() {
+        this.hide_edits();
+        this.get_current_subtask()["state"]["edit_candidate"] = null;
+        this.get_current_subtask()["state"]["move_candidate"] = null;
+    }
+
+    hide_edit_suggestion_during_move() {
+        // Hide edit suggestions
+        this.hide_edit_suggestion();
+        // Render annotation dialogs with offset
+        this.show_global_edit_suggestion(
+            this.get_current_subtask()["state"]["move_candidate"]["annid"],
+            this.get_current_subtask()["state"]["move_candidate"]["offset"],
+        );
     }
 
     // ================= Mouse event interpreters =================
@@ -5336,7 +5355,7 @@ export class ULabel {
         // TODO need to differentiate between first click and a reassign -- potentially with global state
         this.assign_annotation_id(annotation_id);
         current_subtask["state"]["first_explicit_assignment"] = false;
-        this.suggest_edits(this.state["last_move"]);
+        this.suggest_edits();
 
         // Ensure that the id dialog is visible again
         if (
@@ -5898,9 +5917,8 @@ export class ULabel {
         } else {
             this.redraw_all_annotations();
         }
-        if (this.state["last_move"] != null) {
-            this.suggest_edits(this.state["last_move"]);
-        }
+
+        this.suggest_edits();
     }
 
     // Generic Callback Support
