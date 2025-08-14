@@ -1,4 +1,4 @@
-import { ULabelSpatialType, ClassDefinition, ULabelAction } from "..";
+import { ULabelSpatialType, ClassDefinition, ULabelAction, ULabelActionCandidate } from "..";
 import { ULabelAnnotation } from "./annotation";
 
 /**
@@ -24,17 +24,8 @@ export class ULabelSubtask {
         active_id: string;
         annotation_mode: string;
         back_context: CanvasRenderingContext2D;
-        edit_candidate: {
-            annid: string;
-            /**
-             * Access string, referring to the point with a spatial payload being edited.
-             * The type varies on the type of spatial payload.
-             */
-            access: string | number | [number, number];
-            distance: number;
-            point: [number, number]; // Mouse location
-            spatial_type: ULabelSpatialType;
-        };
+        edit_candidate: ULabelActionCandidate | null;
+        move_candidate: ULabelActionCandidate | null;
         first_explicit_assignment: boolean;
         front_context: CanvasRenderingContext2D;
         id_payload: number[] | {
@@ -52,7 +43,6 @@ export class ULabelSubtask {
         starting_complex_polygon: boolean;
         is_in_brush_mode: boolean;
         is_in_erase_mode: boolean;
-        move_candidate: unknown; // TODO: figure out what type this is.  Probably ULabelAnnotation idk for sure tho
         visible_dialogs: {
             [key: string]: ULabelDialogPosition;
         };

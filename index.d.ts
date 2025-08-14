@@ -206,6 +206,19 @@ export type ULabelAction = {
     is_internal_undo?: boolean;
 };
 
+export type ULabelActionCandidate = {
+    annid: string;
+    /**
+     * Access string, referring to the point with a spatial payload being edited.
+     * The type varies on the type of spatial payload.
+     */
+    access: string | number | [number, number];
+    distance: number;
+    point: [number, number]; // Mouse location
+    spatial_type: ULabelSpatialType;
+    offset?: Offset; // Optional offset for move actions
+};
+
 export type ULabelSubtasks = { [key: string]: ULabelSubtask };
 
 export class ULabel {
@@ -278,13 +291,13 @@ export class ULabel {
     public get_annotations(subtask: ULabelSubtask): ULabelAnnotation[];
     public set_annotations(annotations: ULabelAnnotation[], subtask: ULabelSubtask);
     public set_saved(saved: boolean);
-    public redraw_annotation(annotation_id: string, subtask?: string, offset?: number): void;
+    public redraw_annotation(annotation_id: string, subtask?: string, offset?: Offset): void;
     public redraw_all_annotations(
         subtask?: string, // TODO (joshua-dean): THIS IS SUBTASK KEY, NAME PROPERLY
         offset?: number,
         spatial_only?: boolean,
     );
-    public redraw_multiple_spatial_annotations(annotation_ids: string[], subtask?: string, offset?: number);
+    public redraw_multiple_spatial_annotations(annotation_ids: string[], subtask?: string, offset?: Offset);
     public show_annotation_mode(
         target_jq?: JQuery<HTMLElement>, // TODO (joshua-dean): validate this type
     );
@@ -414,11 +427,7 @@ export class ULabel {
     ): void;
     public show_global_edit_suggestion(
         annid: string,
-        offset?: {
-            diffX: number;
-            diffY: number;
-            diffZ?: number;
-        },
+        offset?: Offset,
         nonspatial_id?: string,
     ): void;
     public hide_global_edit_suggestion(): void;

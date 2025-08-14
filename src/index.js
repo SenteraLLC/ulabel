@@ -4159,59 +4159,55 @@ export class ULabel {
                 this.get_global_mouse_x(mouse_event),
                 this.get_global_mouse_y(mouse_event),
             ];
+            const spatial_type = current_subtask["annotations"]["access"][active_id]["spatial_type"];
+            let edit_success = true;
             // Clicks are handled elsewhere
-            switch (current_subtask["annotations"]["access"][active_id]["spatial_type"]) {
+            switch (spatial_type) {
                 case "bbox":
                 case "tbar":
                 case "polygon":
                     this.set_with_access_string(active_id, access_str, mouse_location);
-                    this.rebuild_containing_box(active_id);
-                    this.redraw_annotation(active_id);
-                    current_subtask["state"]["edit_candidate"]["point"] = mouse_location;
-                    this.show_edit_suggestion(current_subtask["state"]["edit_candidate"], true);
-                    this.show_global_edit_suggestion(current_subtask["state"]["edit_candidate"]["annid"]);
                     break;
                 case "bbox3":
                     // TODO(new3d) Will not always want to set 3rd val -- editing is possible within an intermediate frame or frames
                     this.set_with_access_string(active_id, access_str, [mouse_location[0], mouse_location[1], this.state["current_frame"]]);
-                    this.rebuild_containing_box(active_id);
-                    this.redraw_annotation(active_id);
-                    current_subtask["state"]["edit_candidate"]["point"] = mouse_location;
-                    this.show_edit_suggestion(current_subtask["state"]["edit_candidate"], true);
-                    this.show_global_edit_suggestion(current_subtask["state"]["edit_candidate"]["annid"]);
                     break;
                 case "polyline":
                     this.set_with_access_string(active_id, access_str, mouse_location);
-                    this.rebuild_containing_box(active_id);
-                    this.redraw_annotation(active_id);
-                    current_subtask["state"]["edit_candidate"]["point"] = mouse_location;
-                    this.show_edit_suggestion(current_subtask["state"]["edit_candidate"], true);
-                    this.show_global_edit_suggestion(current_subtask["state"]["edit_candidate"]["annid"]);
-                    this.update_filter_distance_during_polyline_move(active_id);
                     break;
                 case "contour":
+                case "point":
                     // TODO contour editing
                     log_message(
                         "Annotation mode is not currently editable",
                         LogLevel.INFO,
                     );
+                    edit_success = false;
                     break;
                 default:
                     log_message(
-                        "Annotation mode is not understood",
+                        `Annotation mode ${spatial_type} is not understood`,
                         LogLevel.INFO,
                     );
+                    edit_success = false;
                     break;
             }
 
-            // Record action without adding to the action stream
-            record_action(this, {
-                act_type: "continue_edit",
-                annotation_id: active_id,
-                frame: this.state["current_frame"],
-                undo_payload: {},
-                redo_payload: {},
-            }, false, false);
+            if (edit_success) {
+                // Record action without adding to the action stream
+                record_action(this, {
+                    act_type: "continue_edit",
+                    annotation_id: active_id,
+                    frame: this.state["current_frame"],
+                    undo_payload: {},
+                    redo_payload: {},
+                }, false, false);
+
+                // Update the edit candidate point
+                current_subtask["state"]["edit_candidate"]["point"] = mouse_location;
+                this.show_edit_suggestion(current_subtask["state"]["edit_candidate"], true);
+                this.show_global_edit_suggestion(current_subtask["state"]["edit_candidate"]["annid"]);
+            }
         }
     }
 
@@ -4589,6 +4585,12 @@ export class ULabel {
         // Set global params
         current_subtask["state"]["active_id"] = active_id;
         current_subtask["state"]["is_in_move"] = true;
+        current_subtask["state"]["move_candidate"]["offset"] = {
+            id: active_id,
+            diffX: 0,
+            diffY: 0,
+            diffZ: 0,
+        };
 
         const annotation_mode = annotations[active_id]["spatial_type"];
         let frame = this.state["current_frame"];
@@ -4623,7 +4625,7 @@ export class ULabel {
         const current_subtask = this.get_current_subtask();
         const active_id = current_subtask["state"]["active_id"];
 
-        if (active_id && (active_id !== null)) {
+        if (active_id !== null) {
             let offset = {
                 id: current_subtask["state"]["move_candidate"]["annid"],
                 diffX: (mouse_event.clientX - this.drag_state["move"]["mouse_start"][0]) / this.state["zoom_val"],
@@ -4631,10 +4633,8 @@ export class ULabel {
                 diffZ: this.state["current_frame"] - this.drag_state["move"]["mouse_start"][2],
             };
 
-            this.redraw_annotation(active_id, null, offset);
-            this.show_global_edit_suggestion(current_subtask["state"]["move_candidate"]["annid"], offset); // TODO handle offset
-            this.reposition_dialogs();
-            this.update_filter_distance_during_polyline_move(active_id, true, false, offset);
+            // Update move candidate
+            current_subtask["state"]["move_candidate"]["offset"] = offset;
         }
 
         // Record the action without adding to the action stream
@@ -4698,13 +4698,6 @@ export class ULabel {
             }
         }
 
-        // Update the containing box
-        const containing_box = annotation["containing_box"];
-        containing_box["tlx"] += diffX;
-        containing_box["brx"] += diffX;
-        containing_box["tly"] += diffY;
-        containing_box["bry"] += diffY;
-
         current_subtask["state"]["active_id"] = null;
         current_subtask["state"]["is_in_move"] = false;
 
@@ -4717,11 +4710,6 @@ export class ULabel {
             undo(this, true);
             // Shake the screen to indicate the move was not allowed
             this.shake_screen();
-        } else {
-            // Render the annotation position
-            this.redraw_annotation(active_id);
-            // Filter points if necessary
-            this.update_filter_distance(active_id);
         }
     }
 

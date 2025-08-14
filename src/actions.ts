@@ -1,4 +1,5 @@
 import {
+    Offset,
     ULabel,
     ULabelAction,
     ULabelActionRaw,
@@ -235,16 +236,26 @@ function on_in_progress_annotation_spatial_modification(
     // is_undo_or_redo: boolean = false,
 ) {
     const actions: ULabelActionType[] = [
-        "continue_edit",
-        "continue_move",
+        "continue_edit", // no undo/redo for this action
+        "continue_move", // no undo/redo for this action
     ];
 
     if (actions.includes(action.act_type)) {
+        const subtask_key = ulabel.get_current_subtask_key();
+        const current_subtask = ulabel.subtasks[subtask_key];
+        const offset: Offset = current_subtask.state.move_candidate.offset || {
+            id: action.annotation_id,
+            diffX: 0,
+            diffY: 0,
+            diffZ: 0,
+        };
+
         console.log(`In-progress action: ${action.act_type} for annotation ID: ${action.annotation_id}`);
-        // TODO: fill out
-        // ulabel.rebuild_containing_box(action.annotation_id);
-        // ulabel.redraw_annotation(action.annotation_id);
-        // ulabel.reposition_dialogs();
+        ulabel.rebuild_containing_box(action.annotation_id, false, subtask_key);
+        ulabel.redraw_annotation(action.annotation_id, subtask_key, offset);
+        ulabel.update_filter_distance_during_polyline_move(action.annotation_id, true, false, offset);
+        ulabel.show_global_edit_suggestion(action.annotation_id, offset);
+        ulabel.reposition_dialogs();
     }
 }
 
