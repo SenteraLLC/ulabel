@@ -4310,44 +4310,6 @@ export class ULabel {
         }, true);
     }
 
-    begin_move(mouse_event) {
-        // Convenience
-        const current_subtask = this.get_current_subtask();
-        const annotations = current_subtask["annotations"]["access"];
-        const active_id = current_subtask["state"]["move_candidate"]["annid"];
-
-        // Set global params
-        current_subtask["state"]["active_id"] = active_id;
-        current_subtask["state"]["is_in_move"] = true;
-
-        const annotation_mode = annotations[active_id]["spatial_type"];
-        let frame = this.state["current_frame"];
-        if (MODES_3D.includes(annotation_mode)) {
-            frame = null;
-        }
-
-        record_action(this, {
-            act_type: "move_annotation",
-            annotation_id: active_id,
-            frame: frame,
-            undo_payload: {
-                diffX: 0,
-                diffY: 0,
-                diffZ: 0,
-            },
-            redo_payload: {
-                diffX: 0,
-                diffY: 0,
-                diffZ: 0,
-                finished: false,
-                move_not_allowed: false,
-            },
-        });
-        // Hide point edit suggestion
-        this.hide_edit_suggestion();
-        this.move_annotation(mouse_event);
-    }
-
     // Cancel the annotation currently in progress
     cancel_annotation(annotation_id = null) {
         let redoing = true;
@@ -4618,7 +4580,45 @@ export class ULabel {
         this.toolbox.redraw_update_items(this);
     }
 
-    move_annotation(mouse_event) {
+    begin_move(mouse_event) {
+        // Convenience
+        const current_subtask = this.get_current_subtask();
+        const annotations = current_subtask["annotations"]["access"];
+        const active_id = current_subtask["state"]["move_candidate"]["annid"];
+
+        // Set global params
+        current_subtask["state"]["active_id"] = active_id;
+        current_subtask["state"]["is_in_move"] = true;
+
+        const annotation_mode = annotations[active_id]["spatial_type"];
+        let frame = this.state["current_frame"];
+        if (MODES_3D.includes(annotation_mode)) {
+            frame = null;
+        }
+
+        record_action(this, {
+            act_type: "begin_move",
+            annotation_id: active_id,
+            frame: frame,
+            undo_payload: {
+                diffX: 0,
+                diffY: 0,
+                diffZ: 0,
+            },
+            redo_payload: {
+                diffX: 0,
+                diffY: 0,
+                diffZ: 0,
+                finished: false,
+                move_not_allowed: false,
+            },
+        });
+        // Hide point edit suggestion
+        this.hide_edit_suggestion();
+        this.continue_move(mouse_event);
+    }
+
+    continue_move(mouse_event) {
         // Convenience
         const current_subtask = this.get_current_subtask();
         const active_id = current_subtask["state"]["active_id"];
@@ -4636,6 +4636,15 @@ export class ULabel {
             this.reposition_dialogs();
             this.update_filter_distance_during_polyline_move(active_id, true, false, offset);
         }
+
+        // Record the action without adding to the action stream
+        record_action(this, {
+            act_type: "continue_move",
+            annotation_id: active_id,
+            frame: this.state["current_frame"],
+            undo_payload: {},
+            redo_payload: {},
+        }, false, false);
     }
 
     finish_move(mouse_event) {
@@ -4716,7 +4725,10 @@ export class ULabel {
         }
     }
 
-    move_annotation__undo(annotation_id, undo_payload) {
+    // Undo the move of an annotation
+    // The action name used to trigger this is "begin_move"
+    // which is updated by the "record_finish_move" in "finish_move"
+    begin_move__undo(annotation_id, undo_payload) {
         // Convenience
         const current_subtask = this.get_current_subtask();
         const annotations = current_subtask["annotations"]["access"];
@@ -4749,7 +4761,10 @@ export class ULabel {
         }
     }
 
-    move_annotation__redo(annotation_id, redo_payload) {
+    // Redo the move of an annotation
+    // The action name used to trigger this is "begin_move"
+    // which is updated by the "record_finish_move" in "finish_move"
+    begin_move__redo(annotation_id, redo_payload) {
         // If the move wasn't allowed in the first place, we don't want to redo it
         if (redo_payload.move_not_allowed) {
             return;
@@ -4792,7 +4807,7 @@ export class ULabel {
         }
 
         record_action(this, {
-            act_type: "move_annotation",
+            act_type: "begin_move",
             annotation_id: annotation_id,
             frame: frame,
             undo_payload: {
@@ -5459,7 +5474,7 @@ export class ULabel {
                     break;
                 case "move":
                     if (!idd_visible || idd_thumbnail) {
-                        this.move_annotation(mouse_event);
+                        this.continue_move(mouse_event);
                     }
                     break;
             }
@@ -5884,7 +5899,7 @@ export class ULabel {
             if (this.get_current_subtask()["state"]["is_in_edit"]) {
                 this.continue_edit(this.state["last_move"]);
             } else if (this.get_current_subtask()["state"]["is_in_move"]) {
-                this.move_annotation(this.state["last_move"]);
+                this.continue_move(this.state["last_move"]);
             } else if (this.get_current_subtask()["state"]["is_in_progress"]) {
                 this.continue_annotation(this.state["last_move"]);
             } else {

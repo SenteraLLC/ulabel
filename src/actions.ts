@@ -148,6 +148,17 @@ export function record_finish_move(
 
     // Add the completed action back to the stream
     current_subtask.actions.stream.push(action);
+
+    // Record action without adding to the action stream
+    // The "begin_move" action in the action stream is what is used to
+    // undo/redo the move
+    record_action(ulabel, {
+        act_type: "finish_move",
+        annotation_id: action.annotation_id,
+        frame: ulabel.state.current_frame,
+        undo_payload: {},
+        redo_payload: {},
+    }, false, false);
 };
 
 /**
@@ -160,7 +171,7 @@ function finish_action(ulabel: ULabel, action: ULabelAction) {
     switch (action.act_type) {
         case "begin_annotation":
         case "begin_edit":
-        case "move_annotation":
+        case "begin_move":
             ulabel.end_drag(ulabel.state.last_move);
             break;
         default:
@@ -184,12 +195,13 @@ function on_completed_annotation_spatial_modification(
 ) {
     const action_completion: ULabelActionType[] = [
         "finish_edit", // triggered when edit ends
+        "finish_move", // triggered when move ends
     ];
 
     const action_undo_redo: ULabelActionType[] = [
         "finish_modify_annotation", // triggered when brush edit ends
         "begin_edit", // triggered when edit begins, updated when edit ends
-        "move_annotation", // triggered when move begins
+        "begin_move", // triggered when move begins, updated when move ends
     ];
 
     // Trigger updates on action completion or on undo/redo
@@ -224,6 +236,7 @@ function on_in_progress_annotation_spatial_modification(
 ) {
     const actions: ULabelActionType[] = [
         "continue_edit",
+        "continue_move",
     ];
 
     if (actions.includes(action.act_type)) {
@@ -454,8 +467,8 @@ function undo_action(ulabel: ULabel, action: ULabelAction) {
         case "begin_edit":
             ulabel.begin_edit__undo(action.annotation_id, undo_payload);
             break;
-        case "move_annotation":
-            ulabel.move_annotation__undo(action.annotation_id, undo_payload);
+        case "begin_move":
+            ulabel.begin_move__undo(action.annotation_id, undo_payload);
             break;
         case "delete_annotation":
             ulabel.delete_annotation__undo(action.annotation_id);
@@ -528,8 +541,8 @@ export function redo_action(ulabel: ULabel, action: ULabelAction) {
         case "begin_edit":
             ulabel.begin_edit__redo(action.annotation_id, redo_payload);
             break;
-        case "move_annotation":
-            ulabel.move_annotation__redo(action.annotation_id, redo_payload);
+        case "begin_move":
+            ulabel.begin_move__redo(action.annotation_id, redo_payload);
             break;
         case "delete_annotation":
             ulabel.delete_annotation__redo(action.annotation_id);

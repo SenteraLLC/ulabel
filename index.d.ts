@@ -176,7 +176,9 @@ export type ULabelActionType = "create_nonspatial_annotation" |
     "begin_edit" |
     "continue_edit" |
     "finish_edit" |
-    "move_annotation" |
+    "begin_move" |
+    "continue_move" |
+    "finish_move" |
     "cancel_annotation" |
     "delete_annotation" |
     "delete_annotations_in_polygon" |
@@ -364,7 +366,7 @@ export class ULabel {
     public continue_annotation__undo(annotation_id: string): void;
     public finish_annotation__undo(annotation_id: string): void;
     public begin_edit__undo(annotation_id: string, undo_payload: object): void;
-    public move_annotation__undo(annotation_id: string, undo_payload: object): void;
+    public begin_move__undo(annotation_id: string, undo_payload: object): void;
     public delete_annotation__undo(annotation_id: string): void;
     public cancel_annotation__undo(annotation_id: string, undo_payload: object): void;
     public assign_annotation_id__undo(annotation_id: string, undo_payload: object): void;
@@ -381,7 +383,7 @@ export class ULabel {
     public redo(): void;
     public finish_annotation__redo(annotation_id: string): void;
     public begin_edit__redo(annotation_id: string, redo_payload: object): void;
-    public move_annotation__redo(annotation_id: string, redo_payload: object): void;
+    public begin_move__redo(annotation_id: string, redo_payload: object): void;
     public delete_annotation__redo(annotation_id: string): void;
     public create_annotation__redo(annotation_id: string, redo_payload: object): void;
     public finish_modify_annotation__redo(annotation_id: string, redo_payload: object): void;
