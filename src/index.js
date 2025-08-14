@@ -3509,14 +3509,8 @@ export class ULabel {
             if (annotation_mode === "polygon" || annotation_mode === "polyline" || annotation_mode === "delete_polygon") {
                 this.continue_annotation(this.state["last_move"]);
             } else {
-                this.finish_annotation(null);
-                this.rebuild_containing_box(annotation_id);
-                this.suggest_edits();
+                this.finish_annotation();
             }
-        } else if (annotation_mode === "point") {
-            this.finish_annotation(null);
-            this.rebuild_containing_box(annotation_id);
-            this.suggest_edits();
         }
     }
 
@@ -3540,11 +3534,6 @@ export class ULabel {
         // Destroy the annotation's canvas, thus removing it from the screen
         this.destroy_annotation_context(annotation_id);
         this.remove_annotation_from_access_and_ordering(annotation_id);
-
-        // Update class counter
-        this.toolbox.redraw_update_items(this);
-
-        this.suggest_edits();
     }
 
     update_containing_box(ms_loc, actid, subtask = null) {
@@ -3568,12 +3557,13 @@ export class ULabel {
         if (subtask === null) {
             subtask = this.get_current_subtask_key();
         }
+
         // No need to rebuild containing box for image-level annotation types.
         const spatial_type = this.subtasks[subtask]["annotations"]["access"][actid]["spatial_type"];
-
         if (NONSPATIAL_MODES.includes(spatial_type)) {
             return;
         }
+
         let spatial_payload = [];
         if (spatial_type === "polygon") {
             // Collapse the list[list[points]] into a single list of points
@@ -4071,8 +4061,6 @@ export class ULabel {
     finish_modify_annotation__undo(annotation_id, undo_payload) {
         // Replace the polygon spatial data
         this.replace_polygon_spatial_data(annotation_id, undo_payload.polygon_spatial_data);
-        // Redraw the annotation
-        this.redraw_annotation(annotation_id);
     }
 
     /**
@@ -4097,8 +4085,6 @@ export class ULabel {
 
         // Replace the polygon spatial data
         this.replace_polygon_spatial_data(annotation_id, redo_payload.polygon_spatial_data);
-        // Redraw the annotation
-        this.redraw_annotation(annotation_id);
     }
 
     begin_edit(mouse_event) {
@@ -4376,7 +4362,7 @@ export class ULabel {
         }
     }
 
-    finish_annotation(mouse_event) {
+    finish_annotation(mouse_event = null) {
         // Convenience
         const current_subtask = this.get_current_subtask();
         const annotations = current_subtask["annotations"]["access"];
@@ -4392,7 +4378,8 @@ export class ULabel {
         // Record last point and redraw if necessary
         // TODO(3d)
         let n_kpts, start_pt, active_idx, uniquePoints;
-        switch (annotation["spatial_type"]) {
+        const spatial_type = annotation["spatial_type"];
+        switch (spatial_type) {
             case "polygon":
                 // For polygons, the active spatial payload is the last array of points in the spatial payload
                 active_idx = spatial_payload.length - 1;
@@ -4443,9 +4430,6 @@ export class ULabel {
                     spatial_payload.pop();
                 }
 
-                // Redraw annotation and record action
-                this.rebuild_containing_box(active_id);
-                this.redraw_annotation(active_id);
                 should_record_action = true;
                 break;
             case "delete_bbox":
@@ -4501,13 +4485,16 @@ export class ULabel {
         }
 
         // Record the finish_annotation or finish_modify_annotation action
-        record_action(this, {
-            act_type: act_type,
-            annotation_id: active_id,
-            frame: this.state["current_frame"],
-            undo_payload: undo_payload,
-            redo_payload: redo_payload,
-        }, false, should_record_action);
+        // except for delete modes, which record their action separately
+        if (!DELETE_MODES.includes(spatial_type)) {
+            record_action(this, {
+                act_type: act_type,
+                annotation_id: active_id,
+                frame: this.state["current_frame"],
+                undo_payload: undo_payload,
+                redo_payload: redo_payload,
+            }, false, should_record_action);
+        }
 
         // TODO build a dialog here when necessary -- will also need to integrate with undo
         // TODO(3d)
@@ -4530,10 +4517,6 @@ export class ULabel {
             current_subtask["state"]["active_id"] = null;
             current_subtask["state"]["is_in_progress"] = false;
         }
-
-        // Filter points if necessary
-        this.update_filter_distance(active_id, false);
-        this.toolbox.redraw_update_items(this);
     }
 
     finish_annotation__undo(annotation_id) {

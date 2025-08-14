@@ -195,8 +195,10 @@ function on_completed_annotation_spatial_modification(
     is_undo_or_redo: boolean = false,
 ) {
     const action_completion: ULabelActionType[] = [
+        "finish_modify_annotation", // triggered when brush edit ends
         "finish_edit", // triggered when edit ends
         "finish_move", // triggered when move ends
+        "finish_annotation", // triggered when most annotations end (except for brush/complex polygons),
     ];
 
     const action_undo_redo: ULabelActionType[] = [
@@ -215,8 +217,11 @@ function on_completed_annotation_spatial_modification(
         ulabel.redraw_annotation(action.annotation_id);
         // Update dialogs
         ulabel.suggest_edits();
-        // Update the toolbox filter distance
+        // Update the toolbox
         ulabel.update_filter_distance(action.annotation_id);
+        ulabel.toolbox.redraw_update_items(ulabel);
+
+        // TODO: reset state variables?
     }
 }
 
@@ -225,12 +230,10 @@ function on_completed_annotation_spatial_modification(
  *
  * @param ulabel ULabel instance
  * @param action ULabelAction instance
- * @param is_undo_or_redo whether the action is an undo or redo action
  */
 function on_in_progress_annotation_spatial_modification(
     ulabel: ULabel,
     action: ULabelAction,
-    // is_undo_or_redo: boolean = false,
 ) {
     const actions: ULabelActionType[] = [
         "continue_edit", // no undo/redo for this action
@@ -269,13 +272,6 @@ redraw_annotation(actid);
 recolor_active_polygon_ender();
 recolor_brush_circle();
 suggest_edits();
-
-CONTINUE:
-rebuild containing box / update containing box
-redraw annotation
-update_filter_distance_during_polyline_move
-*UNDO*:
-rebuild_containing_box
 
 FINISH:
 update_filter_distance
