@@ -322,24 +322,24 @@ export class ULabel {
 
     // Annotation lifecycle
     // TODO (joshua-dean): type for redo_payload
-    public begin_annotation(mouse_event: JQuery.TriggeredEvent, redo_payload?: object): void;
-    public continue_annotation(mouse_event: JQuery.TriggeredEvent, is_click?: boolean, redo_payload?: object): void;
+    public begin_annotation(mouse_event: JQuery.TriggeredEvent, annotation_id?: string, redo_payload?: object): void;
+    public continue_annotation(mouse_event: JQuery.TriggeredEvent, is_click?: boolean, annotation_id?: string, redo_payload?: object): void;
     public delete_annotation(
         annotation_id: string,
-        redo_payload?: object,
-        record_action?: boolean,
+        redoing?: boolean,
+        should_record_action?: boolean,
     ): void;
-    public cancel_annotation(redo_payload?: object): void;
-    public assign_annotation_id(actid: string, redo_payload?: object): void;
+    public cancel_annotation(annotation_id?: string): void;
+    public assign_annotation_id(annotation_id?: string, redo_payload?: object): void;
     public create_annotation(
         spatial_type: ULabelSpatialType,
         spatial_payload: ULabelSpatialPayload,
         unique_id?: string,
     ): void;
     public create_nonspatial_annotation(
-        redo_payload?: object,
+        annotation_id?: string, redo_payload?: object,
     ): void;
-    public start_complex_polygon(redo_payload?: object): void;
+    public start_complex_polygon(annotation_id?: string): void;
     public merge_polygon_complex_layer(
         annotation_id: string,
         layer_idx?: number,
@@ -358,31 +358,31 @@ export class ULabel {
 
     // Undo
     public undo(): void;
-    public begin_annotation__undo(undo_payload: object): void;
-    public continue_annotation__undo(undo_payload: object): void;
-    public finish_annotation__undo(undo_payload: object): void;
-    public edit_annotation__undo(undo_payload: object): void;
-    public move_annotation__undo(undo_payload: object): void;
-    public delete_annotation__undo(undo_payload: object): void;
-    public cancel_annotation__undo(undo_payload: object): void;
-    public assign_annotation_id__undo(undo_payload: object): void;
-    public create_annotation__undo(undo_payload: object): void;
-    public create_nonspatial_annotation__undo(undo_payload: object): void;
-    public start_complex_polygon__undo(undo_payload: object): void;
-    public merge_polygon_complex_layer__undo(undo_payload: object): void;
-    public simplify_polygon_complex_layer__undo(undo_payload: object): void;
+    public begin_annotation__undo(annotation_id: string): void;
+    public continue_annotation__undo(annotation_id: string): void;
+    public finish_annotation__undo(annotation_id: string): void;
+    public edit_annotation__undo(annotation_id: string, undo_payload: object): void;
+    public move_annotation__undo(annotation_id: string, undo_payload: object): void;
+    public delete_annotation__undo(annotation_id: string): void;
+    public cancel_annotation__undo(annotation_id: string, undo_payload: object): void;
+    public assign_annotation_id__undo(annotation_id: string, undo_payload: object): void;
+    public create_annotation__undo(annotation_id: string): void;
+    public create_nonspatial_annotation__undo(annotation_id: string): void;
+    public start_complex_polygon__undo(annotation_id: string): void;
+    public merge_polygon_complex_layer__undo(annotation_id: string, undo_payload: object): void;
+    public simplify_polygon_complex_layer__undo(annotation_id: string, undo_payload: object): void;
     public delete_annotations_in_polygon__undo(undo_payload: object): void;
-    public begin_brush__undo(undo_payload: object): void;
-    public finish_modify_annotation__undo(undo_payload: object): void;
+    public begin_brush__undo(annotation_id: string, undo_payload: object): void;
+    public finish_modify_annotation__undo(annotation_id: string, undo_payload: object): void;
 
     // Redo
     public redo(): void;
-    public finish_annotation__redo(redo_payload: object): void;
-    public edit_annotation__redo(redo_payload: object): void;
-    public move_annotation__redo(redo_payload: object): void;
-    public delete_annotation__redo(redo_payload: object): void;
-    public create_annotation__redo(redo_payload: object): void;
-    public finish_modify_annotation__redo(redo_payload: object): void;
+    public finish_annotation__redo(annotation_id: string): void;
+    public edit_annotation__redo(annotation_id: string, redo_payload: object): void;
+    public move_annotation__redo(annotation_id: string, redo_payload: object): void;
+    public delete_annotation__redo(annotation_id: string): void;
+    public create_annotation__redo(annotation_id: string, redo_payload: object): void;
+    public finish_modify_annotation__redo(annotation_id: string, redo_payload: object): void;
 
     // Mouse event handlers
     public handle_mouse_down(mouse_event: JQuery.TriggeredEvent): void;
