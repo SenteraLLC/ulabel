@@ -3066,15 +3066,13 @@ export class ULabel {
             frame = null;
         }
 
-        if (should_record_action) {
-            record_action(this, {
-                act_type: "delete_annotation",
-                annotation_id: annotation_id,
-                frame: frame,
-                undo_payload: {},
-                redo_payload: {},
-            }, redoing);
-        }
+        record_action(this, {
+            act_type: "delete_annotation",
+            annotation_id: annotation_id,
+            frame: frame,
+            undo_payload: {},
+            redo_payload: {},
+        }, redoing, should_record_action);
 
         // Ensure there are no lingering enders
         if (spatial_type === "polygon" || spatial_type === "polyline" || spatial_type === "delete_polygon") {
@@ -4122,7 +4120,6 @@ export class ULabel {
         // Get the edit information and render the edit
         const edit_candidate = current_subtask["state"]["edit_candidate"];
         let starting_point = this.get_with_access_string(current_subtask["state"]["edit_candidate"]["annid"], edit_candidate["access"]);
-        this.edit_annotation(mouse_event);
         let gmx = this.get_global_mouse_x(mouse_event);
         let gmy = this.get_global_mouse_y(mouse_event);
 
@@ -4133,7 +4130,7 @@ export class ULabel {
         }
 
         record_action(this, {
-            act_type: "edit_annotation",
+            act_type: "begin_edit",
             annotation_id: active_id,
             frame: frame,
             undo_payload: {
@@ -4148,20 +4145,21 @@ export class ULabel {
                 finished: false,
             },
         });
+
+        this.continue_edit(mouse_event);
     }
 
-    edit_annotation(mouse_event) {
+    continue_edit(mouse_event) {
         // Convenience and readability
         const current_subtask = this.get_current_subtask();
         const active_id = current_subtask["state"]["active_id"];
         const access_str = current_subtask["state"]["edit_candidate"]["access"];
-        if (active_id && (active_id !== null)) {
+        if (active_id !== null) {
             const mouse_location = [
                 this.get_global_mouse_x(mouse_event),
                 this.get_global_mouse_y(mouse_event),
             ];
             // Clicks are handled elsewhere
-            // TODO(3d)
             switch (current_subtask["annotations"]["access"][active_id]["spatial_type"]) {
                 case "bbox":
                 case "tbar":
@@ -4205,16 +4203,59 @@ export class ULabel {
                     );
                     break;
             }
+
+            // Record action without adding to the action stream
+            record_action(this, {
+                act_type: "continue_edit",
+                annotation_id: active_id,
+                frame: this.state["current_frame"],
+                undo_payload: {},
+                redo_payload: {},
+            }, false, false);
         }
     }
 
-    edit_annotation__undo(annotation_id, undo_payload) {
+    finish_edit() {
         const current_subtask = this.get_current_subtask();
-        // If edit is in progress, finish it first
-        if (current_subtask["state"]["is_in_edit"]) {
-            this.finish_edit();
+        let actid = current_subtask["state"]["active_id"];
+        const access_str = current_subtask["state"]["edit_candidate"]["access"];
+        let layer_idx;
+        switch (current_subtask["annotations"]["access"][actid]["spatial_type"]) {
+            case "polygon":
+                record_finish_edit(this, actid);
+                // Reset spatial_payload_child_indices
+                current_subtask["annotations"]["access"][actid]["spatial_payload_child_indices"] = [];
+                // Get the idx of the edited layer and try and merge it
+                layer_idx = parseInt(access_str[0], 10);
+                this.merge_polygon_complex_layer(actid, layer_idx);
+                // Check if any other layers need to be merged
+                for (let i = 0; i < current_subtask["annotations"]["access"][actid]["spatial_payload"].length; i++) {
+                    if (i !== layer_idx) {
+                        this.merge_polygon_complex_layer(actid, i);
+                    }
+                }
+                break;
+            case "polyline":
+            case "bbox":
+            case "bbox3":
+            case "tbar":
+                record_finish_edit(this, actid);
+                break;
+            case "contour":
+            case "point":
+                break;
+            default:
+                break;
         }
 
+        // Set mode to no active annotation
+        this.get_current_subtask()["state"]["active_id"] = null;
+        this.get_current_subtask()["state"]["is_in_edit"] = false;
+    }
+
+    // The action name used to trigger this is "begin_edit"
+    // which is updated by the "record_finish_edit" in "finish_edit"
+    begin_edit__undo(annotation_id, undo_payload) {
         // Get the location where the annotation was before the edit
         const undo_location = [
             undo_payload.starting_x,
@@ -4225,7 +4266,9 @@ export class ULabel {
         this.set_with_access_string(annotation_id, undo_payload.edit_candidate["access"], undo_location, true);
     }
 
-    edit_annotation__redo(annotation_id, redo_payload) {
+    // The action name used to trigger this is "begin_edit"
+    // which is updated by the "record_finish_edit" in "finish_edit"
+    begin_edit__redo(annotation_id, redo_payload) {
         // Convenience
         const current_subtask = this.get_current_subtask();
         const annotations = current_subtask["annotations"]["access"];
@@ -4250,7 +4293,7 @@ export class ULabel {
             frame = null;
         }
         record_action(this, {
-            act_type: "edit_annotation",
+            act_type: "begin_edit",
             annotation_id: annotation_id,
             frame: frame,
             undo_payload: {
@@ -4468,11 +4511,9 @@ export class ULabel {
                 break;
         }
 
+        let undo_payload = {};
+        let redo_payload = {};
         if (should_record_action) {
-            // Same payload for undo and redo
-            let undo_payload = {};
-            let redo_payload = {};
-
             // Once we've finished a polygon or polyline, undoing will
             // remove the entire completed annotation rather that undoing each point.
             // Loop through the action stream until and remove every recorded action
@@ -4493,15 +4534,6 @@ export class ULabel {
                 }
             }
 
-            // Record the finish_annotation or finish_modify_annotation action
-            record_action(this, {
-                act_type: act_type,
-                annotation_id: active_id,
-                frame: this.state["current_frame"],
-                undo_payload: undo_payload,
-                redo_payload: redo_payload,
-            });
-
             // When shift key is held, we start a new complex layer
             if (
                 annotation["spatial_type"] === "polygon" &&
@@ -4515,6 +4547,15 @@ export class ULabel {
                 this.destroy_polygon_ender(active_id);
             }
         }
+
+        // Record the finish_annotation or finish_modify_annotation action
+        record_action(this, {
+            act_type: act_type,
+            annotation_id: active_id,
+            frame: this.state["current_frame"],
+            undo_payload: undo_payload,
+            redo_payload: redo_payload,
+        }, false, should_record_action);
 
         // TODO build a dialog here when necessary -- will also need to integrate with undo
         // TODO(3d)
@@ -4575,47 +4616,6 @@ export class ULabel {
         this.update_filter_distance(annotation_id, false);
         // Update toolbox counter
         this.toolbox.redraw_update_items(this);
-    }
-
-    finish_edit() {
-        const current_subtask = this.get_current_subtask();
-        let actid = current_subtask["state"]["active_id"];
-        const access_str = current_subtask["state"]["edit_candidate"]["access"];
-        let layer_idx;
-        switch (this.get_current_subtask()["annotations"]["access"][actid]["spatial_type"]) {
-            case "polygon":
-                record_finish_edit(this, actid);
-                // Reset spatial_payload_child_indices
-                this.get_current_subtask()["annotations"]["access"][actid]["spatial_payload_child_indices"] = [];
-                // Get the idx of the edited layer and try and merge it
-                layer_idx = parseInt(access_str[0], 10);
-                this.merge_polygon_complex_layer(actid, layer_idx);
-                // Check if any other layers need to be merged
-                for (let i = 0; i < this.get_current_subtask()["annotations"]["access"][actid]["spatial_payload"].length; i++) {
-                    if (i !== layer_idx) {
-                        this.merge_polygon_complex_layer(actid, i);
-                    }
-                }
-                break;
-            case "polyline":
-            case "bbox":
-            case "bbox3":
-            case "tbar":
-                record_finish_edit(this, actid);
-                break;
-            case "contour":
-            case "point":
-                break;
-            default:
-                break;
-        }
-
-        // Set mode to no active annotation
-        this.get_current_subtask()["state"]["active_id"] = null;
-        this.get_current_subtask()["state"]["is_in_edit"] = false;
-
-        // Filter points if necessary
-        this.update_filter_distance(actid);
     }
 
     move_annotation(mouse_event) {
@@ -5454,7 +5454,7 @@ export class ULabel {
                     break;
                 case "edit":
                     if (!idd_visible || idd_thumbnail) {
-                        this.edit_annotation(mouse_event);
+                        this.continue_edit(mouse_event);
                     }
                     break;
                 case "move":
@@ -5882,7 +5882,7 @@ export class ULabel {
             )
         ) {
             if (this.get_current_subtask()["state"]["is_in_edit"]) {
-                this.edit_annotation(this.state["last_move"]);
+                this.continue_edit(this.state["last_move"]);
             } else if (this.get_current_subtask()["state"]["is_in_move"]) {
                 this.move_annotation(this.state["last_move"]);
             } else if (this.get_current_subtask()["state"]["is_in_progress"]) {

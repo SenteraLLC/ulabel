@@ -17,7 +17,7 @@ import { log_message, LogLevel } from "./error_logging";
  * @param raw_action action to record
  * @param is_redo whether ulabel action is a redo or not
  */
-export function record_action(ulabel: ULabel, raw_action: ULabelActionRaw, is_redo: boolean = false) {
+export function record_action(ulabel: ULabel, raw_action: ULabelActionRaw, is_redo: boolean = false, add_to_action_stream: boolean = true) {
     ulabel.set_saved(false);
     const current_subtask = ulabel.get_current_subtask();
 
@@ -37,9 +37,15 @@ export function record_action(ulabel: ULabel, raw_action: ULabelActionRaw, is_re
     };
 
     // Add to stream
-    current_subtask.actions.stream.push(action);
+    if (add_to_action_stream) {
+        current_subtask.actions.stream.push(action);
+    }
 
     // Trigger any listeners for the action
+    on_in_progress_annotation_spatial_modification(
+        ulabel,
+        action,
+    );
     on_completed_annotation_spatial_modification(
         ulabel,
         action,
@@ -93,6 +99,17 @@ export function record_finish_edit(ulabel: ULabel, active_id: string) {
 
     // Add the completed action back to the stream
     current_subtask.actions.stream.push(action);
+
+    // Record action without adding to the action stream
+    // The "begin_edit" action in the action stream is what is used to
+    // undo/redo the edit
+    record_action(ulabel, {
+        act_type: "finish_edit",
+        annotation_id: active_id,
+        frame: ulabel.state.current_frame,
+        undo_payload: {},
+        redo_payload: {},
+    }, false, false);
 }
 
 /**
@@ -142,7 +159,7 @@ export function record_finish_move(
 function finish_action(ulabel: ULabel, action: ULabelAction) {
     switch (action.act_type) {
         case "begin_annotation":
-        case "edit_annotation":
+        case "begin_edit":
         case "move_annotation":
             ulabel.end_drag(ulabel.state.last_move);
             break;
@@ -157,28 +174,64 @@ function finish_action(ulabel: ULabel, action: ULabelAction) {
  * Triggered when an annotation is modified.
  *
  * @param ulabel ULabel instance
+ * @param action Action that was completed
+ * @param is_undo_or_redo whether the action is an undo or redo action
  */
 function on_completed_annotation_spatial_modification(
     ulabel: ULabel,
     action: ULabelAction,
     is_undo_or_redo: boolean = false,
 ) {
-    const modification_actions: ULabelActionType[] = [
+    const action_completion: ULabelActionType[] = [
+        "finish_edit", // triggered when edit ends
+    ];
+
+    const action_undo_redo: ULabelActionType[] = [
         "finish_modify_annotation", // triggered when brush edit ends
-        "edit_annotation", // triggered when edit begins
+        "begin_edit", // triggered when edit begins, updated when edit ends
         "move_annotation", // triggered when move begins
     ];
 
-    // Currently, we only need to perform actions here for undo/redo
-    // since *during* brush/edit/move, things are being constantly updated
-    if (is_undo_or_redo && modification_actions.includes(action.act_type)) {
+    // Trigger updates on action completion or on undo/redo
+    if (
+        action_completion.includes(action.act_type) ||
+        (is_undo_or_redo && action_undo_redo.includes(action.act_type))
+    ) {
+        // Update annotation rendering
         ulabel.rebuild_containing_box(action.annotation_id);
         ulabel.redraw_annotation(action.annotation_id);
+        // Update dialogs
         ulabel.hide_edit_suggestion();
         ulabel.hide_global_edit_suggestion();
         ulabel.reposition_dialogs();
         ulabel.suggest_edits(ulabel.state.last_move);
+        // Update the toolbox filter distance
         ulabel.update_filter_distance(action.annotation_id);
+    }
+}
+
+/**
+ * For modes like edit, move, brush, etc, in-progress changes need to be rendered.
+ *
+ * @param ulabel ULabel instance
+ * @param action ULabelAction instance
+ * @param is_undo_or_redo whether the action is an undo or redo action
+ */
+function on_in_progress_annotation_spatial_modification(
+    ulabel: ULabel,
+    action: ULabelAction,
+    // is_undo_or_redo: boolean = false,
+) {
+    const actions: ULabelActionType[] = [
+        "continue_edit",
+    ];
+
+    if (actions.includes(action.act_type)) {
+        console.log(`In-progress action: ${action.act_type} for annotation ID: ${action.annotation_id}`);
+        // TODO: fill out
+        // ulabel.rebuild_containing_box(action.annotation_id);
+        // ulabel.redraw_annotation(action.annotation_id);
+        // ulabel.reposition_dialogs();
     }
 }
 
@@ -323,6 +376,11 @@ export function undo(ulabel: ULabel, is_internal_undo: boolean = false) {
 
     let undo_candidate = action_stream.pop();
 
+    log_message(
+        `Undoing action: ${undo_candidate.act_type} for annotation ID: ${undo_candidate.annotation_id}`,
+        LogLevel.INFO,
+    );
+
     // Finish action if it is marked as unfinished
     if (JSON.parse(undo_candidate.redo_payload).finished === false) {
         // Push action back to the stream, finish, then pop it again
@@ -393,8 +451,8 @@ function undo_action(ulabel: ULabel, action: ULabelAction) {
         case "finish_annotation":
             ulabel.finish_annotation__undo(action.annotation_id);
             break;
-        case "edit_annotation":
-            ulabel.edit_annotation__undo(action.annotation_id, undo_payload);
+        case "begin_edit":
+            ulabel.begin_edit__undo(action.annotation_id, undo_payload);
             break;
         case "move_annotation":
             ulabel.move_annotation__undo(action.annotation_id, undo_payload);
@@ -467,8 +525,8 @@ export function redo_action(ulabel: ULabel, action: ULabelAction) {
         case "finish_annotation":
             ulabel.finish_annotation__redo(action.annotation_id);
             break;
-        case "edit_annotation":
-            ulabel.edit_annotation__redo(action.annotation_id, redo_payload);
+        case "begin_edit":
+            ulabel.begin_edit__redo(action.annotation_id, redo_payload);
             break;
         case "move_annotation":
             ulabel.move_annotation__redo(action.annotation_id, redo_payload);
