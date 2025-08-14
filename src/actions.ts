@@ -238,12 +238,13 @@ function on_in_progress_annotation_spatial_modification(
     const actions: ULabelActionType[] = [
         "continue_edit", // no undo/redo for this action
         "continue_move", // no undo/redo for this action
+        "continue_annotation", // polygons/polylines can undo/redo this action
     ];
 
     if (actions.includes(action.act_type)) {
         const subtask_key = ulabel.get_current_subtask_key();
         const current_subtask = ulabel.subtasks[subtask_key];
-        const offset: Offset = current_subtask.state.move_candidate.offset || {
+        const offset: Offset = current_subtask.state.move_candidate?.offset || {
             id: action.annotation_id,
             diffX: 0,
             diffY: 0,

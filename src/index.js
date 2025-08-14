@@ -2771,6 +2771,14 @@ export class ULabel {
     }
 
     show_global_edit_suggestion(annid, offset = null, nonspatial_id = null) {
+        const subtask_key = this.get_current_subtask_key();
+        const current_subtask = this.subtasks[subtask_key];
+
+        // // Don't show suggestion if annotating is in progress
+        // if (current_subtask["state"]["is_in_progress"]) {
+        //     return;
+        // }
+
         let diffX = 0;
         let diffY = 0;
         if (offset != null) {
@@ -2781,14 +2789,14 @@ export class ULabel {
         let idd_x;
         let idd_y;
         if (nonspatial_id === null) {
-            let esid = "global_edit_suggestion__" + this.get_current_subtask_key();
+            let esid = "global_edit_suggestion__" + subtask_key;
             var esjq = $("#" + esid);
             esjq.css("display", "block");
-            let cbox = this.get_current_subtask()["annotations"]["access"][annid]["containing_box"];
+            let cbox = current_subtask["annotations"]["access"][annid]["containing_box"];
             let new_lft = (cbox["tlx"] + cbox["brx"] + 2 * diffX) / (2 * this.config["image_width"]);
             let new_top = (cbox["tly"] + cbox["bry"] + 2 * diffY) / (2 * this.config["image_height"]);
-            this.get_current_subtask()["state"]["visible_dialogs"][esid]["left"] = new_lft;
-            this.get_current_subtask()["state"]["visible_dialogs"][esid]["top"] = new_top;
+            current_subtask["state"]["visible_dialogs"][esid]["left"] = new_lft;
+            current_subtask["state"]["visible_dialogs"][esid]["top"] = new_top;
             this.reposition_dialogs();
             idd_x = (cbox["tlx"] + cbox["brx"] + 2 * diffX) / 2;
             idd_y = (cbox["tly"] + cbox["bry"] + 2 * diffY) / 2;
@@ -2799,7 +2807,7 @@ export class ULabel {
         }
 
         // let placeholder = $("#global_edit_suggestion a.reid_suggestion");
-        if (!this.get_current_subtask()["single_class_mode"]) {
+        if (!current_subtask["single_class_mode"]) {
             this.show_id_dialog(idd_x, idd_y, annid, true, nonspatial_id != null);
         }
     }
@@ -3645,7 +3653,8 @@ export class ULabel {
             // Handle annotation continuation based on the annotation mode
             // TODO(3d)
             // TODO(3d--META) -- This is the farthest I got tagging places that will need to be fixed.
-            let n_kpts, ender_pt, ender_dist, ender_thresh, add_keypoint;
+            let n_kpts, ender_pt, ender_dist, ender_thresh;
+            let add_keypoint = false;
             const spatial_type = current_subtask["annotations"]["access"][annotation_id]["spatial_type"];
             let spatial_payload = current_subtask["annotations"]["access"][annotation_id]["spatial_payload"];
             let active_spatial_payload = spatial_payload;
@@ -3654,7 +3663,6 @@ export class ULabel {
                 case "bbox":
                 case "delete_bbox":
                     spatial_payload[1] = ms_loc;
-                    this.rebuild_containing_box(annotation_id);
                     break;
                 case "bbox3":
                     spatial_payload[1] = [
@@ -3662,7 +3670,6 @@ export class ULabel {
                         ms_loc[1],
                         frm,
                     ];
-                    this.rebuild_containing_box(annotation_id);
                     break;
                 case "polygon":
                 case "polyline":
@@ -3694,8 +3701,8 @@ export class ULabel {
 
                     // If this mouse event is a click, add a new member to the list of keypoints
                     //    ender clicks are filtered before they get here
-                    add_keypoint = true;
                     if (isclick || (is_click_dragging && this.config.click_and_drag_poly_annotations)) {
+                        add_keypoint = true;
                         if (n_kpts === 0) {
                             // If no keypoints, then we create an ender at the mouse position
                             // this.create_polygon_ender(gmx, gmy, actid);
@@ -3717,38 +3724,16 @@ export class ULabel {
                         // only add a new keypoint if it is different from the last one
                         if (add_keypoint) {
                             active_spatial_payload.push(ms_loc);
-                            this.update_containing_box(ms_loc, annotation_id);
-
-                            let frame = this.state["current_frame"];
-
-                            // Only an undoable action if placing a polygon keypoint
-                            record_action(this, {
-                                act_type: "continue_annotation",
-                                annotation_id: annotation_id,
-                                frame: frame,
-                                redo_payload: {
-                                    mouse_event: mouse_event,
-                                    isclick: isclick || is_click_dragging,
-                                    gmx: gmx,
-                                    gmy: gmy,
-                                },
-                                undo_payload: {},
-                            }, redoing);
-                            if (redoing) {
-                                this.continue_annotation(this.state["last_move"]);
-                            }
                         }
                     }
                     break;
                 case "contour":
                     if (GeometricUtils.l2_norm(ms_loc, spatial_payload.at(-1)) * this.config["px_per_px"] > 3) {
                         spatial_payload.push(ms_loc);
-                        this.update_containing_box(ms_loc, annotation_id);
                     }
                     break;
                 case "tbar":
                     spatial_payload[1] = ms_loc;
-                    this.rebuild_containing_box(annotation_id);
                     break;
                 default:
                     log_message(
@@ -3757,8 +3742,24 @@ export class ULabel {
                     );
                     break;
             }
-            this.redraw_annotation(annotation_id);
-            this.update_filter_distance_during_polyline_move(annotation_id);
+
+            // Only an undoable action if placing a polygon keypoint
+            record_action(this, {
+                act_type: "continue_annotation",
+                annotation_id: annotation_id,
+                frame: this.state["current_frame"],
+                redo_payload: {
+                    mouse_event: mouse_event,
+                    isclick: isclick || is_click_dragging,
+                    gmx: gmx,
+                    gmy: gmy,
+                },
+                undo_payload: {},
+            }, redoing, add_keypoint);
+
+            if (redoing) {
+                this.continue_annotation(this.state["last_move"]);
+            }
         }
     }
 
@@ -4634,6 +4635,7 @@ export class ULabel {
             };
 
             // Update move candidate
+            // this offset is used to render the in-progress move
             current_subtask["state"]["move_candidate"]["offset"] = offset;
         }
 
