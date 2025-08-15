@@ -51,6 +51,10 @@ export function record_action(ulabel: ULabel, raw_action: ULabelActionRaw, is_re
         ulabel,
         action,
     );
+    on_annotation_deletion(
+        ulabel,
+        action,
+    );
 };
 
 /**
@@ -202,7 +206,6 @@ function on_completed_annotation_spatial_modification(
     ];
 
     const action_undo_redo: ULabelActionType[] = [
-        "finish_modify_annotation", // triggered when brush edit ends
         "begin_edit", // triggered when edit begins, updated when edit ends
         "begin_move", // triggered when move begins, updated when move ends
     ];
@@ -216,7 +219,7 @@ function on_completed_annotation_spatial_modification(
         ulabel.rebuild_containing_box(action.annotation_id);
         ulabel.redraw_annotation(action.annotation_id);
         // Update dialogs
-        ulabel.suggest_edits();
+        ulabel.suggest_edits(null, null, true);
         // Update the toolbox
         ulabel.update_filter_distance(action.annotation_id);
         ulabel.toolbox.redraw_update_items(ulabel);
@@ -258,6 +261,51 @@ function on_in_progress_annotation_spatial_modification(
         ulabel.suggest_edits();
         // Update the toolbox filter distance
         ulabel.update_filter_distance_during_polyline_move(action.annotation_id, true, false, offset);
+    }
+}
+
+/**
+ * Triggered when an annotation is deleted.
+ *
+ * @param ulabel ULabel instance
+ * @param action ULabelAction instance
+ * @param is_undo Whether the action is an undo or redo action
+ */
+function on_annotation_deletion(
+    ulabel: ULabel,
+    action: ULabelAction,
+    is_undo_or_redo: boolean = false,
+) {
+    const actions: ULabelActionType[] = [
+        "delete_annotation", // Deprecates/undeprecates the annotation
+    ];
+
+    const action_undo_redo: ULabelActionType[] = [
+        "begin_annotation", // When undone, the annotation is deleted
+    ];
+
+    // Trigger updates on action completion or on undo/redo
+    if (
+        actions.includes(action.act_type) ||
+        (is_undo_or_redo && action_undo_redo.includes(action.act_type))
+    ) {
+        // Sometimes the annotation is just deprecated, and sometimes it is fully deleted
+        // Check if it still exists, because if so we need to redraw
+        const annotations = ulabel.get_current_subtask().annotations.access;
+        if (action.annotation_id in annotations) {
+            ulabel.redraw_annotation(action.annotation_id);
+            // Force filter points if necessary
+            if (annotations[action.annotation_id].spatial_type === "polyline") {
+                this.update_filter_distance(action.annotation_id, false, true);
+            }
+        }
+
+        // Ensure there are no lingering enders
+        ulabel.destroy_polygon_ender(action.annotation_id);
+        // Update dialogs
+        ulabel.suggest_edits(null, null, true);
+        // Update the toolbox
+        ulabel.toolbox.redraw_update_items(ulabel);
     }
 }
 
@@ -420,6 +468,11 @@ export function undo(ulabel: ULabel, is_internal_undo: boolean = false) {
         undo_candidate,
         true,
     );
+    on_annotation_deletion(
+        ulabel,
+        undo_candidate,
+        true,
+    );
 }
 
 /**
@@ -445,6 +498,11 @@ export function redo(ulabel: ULabel) {
 
     // Trigger any listeners for the action
     on_completed_annotation_spatial_modification(
+        ulabel,
+        redo_candidate,
+        true,
+    );
+    on_annotation_deletion(
         ulabel,
         redo_candidate,
         true,

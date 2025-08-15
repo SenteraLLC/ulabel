@@ -2068,11 +2068,14 @@ export class ULabel {
     }
 
     destroy_polygon_ender(polygon_id) {
-        // Create ender id
+        // Check if the ender exists
         const ender_id = "ender_" + polygon_id;
-        $("#" + ender_id).remove();
-        delete this.get_current_subtask()["state"]["visible_dialogs"][ender_id];
-        this.reposition_dialogs();
+        const ender_jq = $("#" + ender_id);
+        if (ender_jq.length) {
+            $("#" + ender_id).remove();
+            delete this.get_current_subtask()["state"]["visible_dialogs"][ender_id];
+            this.reposition_dialogs();
+        }
     }
 
     // Move a polygon ender to the mouse location
@@ -3056,7 +3059,6 @@ export class ULabel {
 
         // Deprecate the annotation and redraw it
         mark_deprecated(annotations[annotation_id], true);
-        this.redraw_annotation(annotation_id);
 
         if (current_subtask["state"]["active_id"] !== null) {
             current_subtask["state"]["active_id"] = null;
@@ -3065,8 +3067,6 @@ export class ULabel {
             current_subtask["state"]["is_in_progress"] = false;
             current_subtask["state"]["starting_complex_polygon"] = false;
         }
-
-        this.hide_global_edit_suggestion();
 
         let frame = this.state["current_frame"];
         if (MODES_3D.includes(spatial_type)) {
@@ -3080,19 +3080,6 @@ export class ULabel {
             undo_payload: {},
             redo_payload: {},
         }, redoing, should_record_action);
-
-        // Ensure there are no lingering enders
-        if (spatial_type === "polygon" || spatial_type === "polyline" || spatial_type === "delete_polygon") {
-            this.destroy_polygon_ender(annotation_id);
-        }
-
-        // Force filter points if necessary
-        if (spatial_type === "polyline") {
-            this.update_filter_distance(annotation_id, false, true);
-        }
-
-        // Update class counter
-        this.toolbox.redraw_update_items(this);
     }
 
     delete_annotation__undo(annotation_id) {
@@ -3520,16 +3507,6 @@ export class ULabel {
         // Set annotation state not in progress, nullify active id
         current_subtask["state"]["is_in_progress"] = false;
         current_subtask["state"]["active_id"] = null;
-
-        // Destroy ender
-        // TODO(3d)
-        const spatial_type = current_subtask["annotations"]["access"][annotation_id]["spatial_type"];
-        if (spatial_type === "polygon" || spatial_type === "delete_polygon") {
-            this.destroy_polygon_ender(annotation_id);
-        } else if (spatial_type === "polyline") {
-            // Destroy enders/linkers for polyline
-            // TODO
-        }
 
         // Destroy the annotation's canvas, thus removing it from the screen
         this.destroy_annotation_context(annotation_id);
@@ -4889,7 +4866,7 @@ export class ULabel {
      * Find closest keypoints (ends of polygons/polylines etc) within a range defined by the edit handle
      * If no endpoints, search along segments with infinite range
      */
-    suggest_edits(mouse_event = null, nonspatial_id = null) {
+    suggest_edits(mouse_event = null, nonspatial_id = null, force_refresh = false) {
         const current_subtask = this.get_current_subtask();
         // Don't any dialogs when currently drawing an annotation,
         // And hide just edit dialogs when moving
@@ -4927,7 +4904,12 @@ export class ULabel {
             const global_y = this.get_global_mouse_y(mouse_event);
 
             // Ignore when we're already hovering an edit
-            if ($(mouse_event.target).hasClass("gedit-target")) return;
+            if (
+                !force_refresh &&
+                $(mouse_event.target).hasClass("gedit-target")
+            ) {
+                return;
+            }
 
             const edit_candidates = this.get_edit_candidates(
                 global_x,
@@ -4943,12 +4925,12 @@ export class ULabel {
             const nearest_active_keypoint = this.get_nearest_active_keypoint(global_x, global_y, dst_thresh, edit_candidates["candidate_ids"]);
             if (nearest_active_keypoint != null && nearest_active_keypoint.point != null) {
                 this.show_edit_suggestion(nearest_active_keypoint, true);
-                edit_candidates["best"] = nearest_active_keypoint;
+                best_candidate = nearest_active_keypoint;
             } else { // If none are found, look for a point along a segment that's close enough
                 const nearest_segment_point = this.get_nearest_segment_point(global_x, global_y, Infinity, edit_candidates["candidate_ids"]);
                 if (nearest_segment_point != null && nearest_segment_point.point != null) {
                     this.show_edit_suggestion(nearest_segment_point, false);
-                    edit_candidates["best"] = nearest_segment_point;
+                    best_candidate = nearest_segment_point;
                 }
             }
 

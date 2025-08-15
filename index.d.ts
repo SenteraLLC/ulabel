@@ -424,6 +424,7 @@ export class ULabel {
     public suggest_edits(
         mouse_event?: JQuery.TriggeredEvent,
         nonspatial_id?: string,
+        force_refresh?: boolean,
     ): void;
     public show_global_edit_suggestion(
         annid: string,
@@ -432,6 +433,7 @@ export class ULabel {
     ): void;
     public hide_global_edit_suggestion(): void;
     public hide_edit_suggestion(): void;
+    public destroy_polygon_ender(polygon_id: string): void;
 
     // Edit utils
     public get_with_access_string(
