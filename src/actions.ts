@@ -46,23 +46,29 @@ export function record_action(ulabel: ULabel, raw_action: ULabelActionRaw, is_re
         current_subtask.actions.stream.push(action);
     }
 
-    // Trigger any listeners for the action
-    on_in_progress_annotation_spatial_modification(
-        ulabel,
-        action,
-    );
-    on_completed_annotation_spatial_modification(
-        ulabel,
-        action,
-    );
-    on_annotation_deletion(
-        ulabel,
-        action,
-    );
-    on_annotation_id_change(
-        ulabel,
-        action,
-    );
+    if (!is_redo) {
+        // Trigger any listeners for the action
+        on_start_annotation_spatial_modification(
+            ulabel,
+            action,
+        );
+        on_in_progress_annotation_spatial_modification(
+            ulabel,
+            action,
+        );
+        on_finish_annotation_spatial_modification(
+            ulabel,
+            action,
+        );
+        on_annotation_deletion(
+            ulabel,
+            action,
+        );
+        on_annotation_id_change(
+            ulabel,
+            action,
+        );
+    }
 };
 
 /**
@@ -195,46 +201,26 @@ function finish_action(ulabel: ULabel, action: ULabelAction) {
 // ================= Action Listeners =================
 
 /**
- * Triggered when an annotation is modified.
+ * Triggered when an annotation is started.
  *
  * @param ulabel ULabel instance
- * @param action Action that was completed
- * @param is_undo_or_redo whether the action is an undo or redo action
+ * @param action ULabelAction instance
+ * @param is_undo whether the action is an undo action
  */
-function on_completed_annotation_spatial_modification(
+function on_start_annotation_spatial_modification(
     ulabel: ULabel,
     action: ULabelAction,
-    is_undo_or_redo: boolean = false,
+    is_undo: boolean = false,
 ) {
-    const action_completion: ULabelActionType[] = [
-        "finish_modify_annotation", // triggered when brush edit ends
-        "finish_edit", // triggered when edit ends
-        "finish_move", // triggered when move ends
-        "finish_annotation", // triggered when most annotations end (except for brush/complex polygons),
+    const actions: ULabelActionType[] = [
+        "begin_annotation", // triggered when an annotation is started
+        // "begin_edit", // triggered when an edit is started
+        // "begin_move", // triggered when a move is started
     ];
 
-    const action_undo_redo: ULabelActionType[] = [
-        "begin_edit", // triggered when edit begins, updated when edit ends
-        "begin_move", // triggered when move begins, updated when move ends
-    ];
-
-    // Trigger updates on action completion or on undo/redo
-    if (
-        action_completion.includes(action.act_type) ||
-        (is_undo_or_redo && action_undo_redo.includes(action.act_type))
-    ) {
-        // Update annotation rendering
-        ulabel.rebuild_containing_box(action.annotation_id);
-        ulabel.redraw_annotation(action.annotation_id);
-        // Update dialogs
-        ulabel.suggest_edits(null, null, true);
-        // Update the toolbox
-        ulabel.update_filter_distance(action.annotation_id);
-        ulabel.toolbox.redraw_update_items(ulabel);
-        // Ensure there are no lingering enders
-        ulabel.destroy_polygon_ender(action.annotation_id);
-
-        // TODO: reset state variables?
+    if (!is_undo && actions.includes(action.act_type)) {
+        // Draw new annotation
+        ulabel.draw_annotation_from_id(action.annotation_id);
     }
 }
 
@@ -276,6 +262,50 @@ function on_in_progress_annotation_spatial_modification(
         ulabel.suggest_edits();
         // Update the toolbox filter distance
         ulabel.update_filter_distance_during_polyline_move(action.annotation_id, true, false, offset);
+    }
+}
+
+/**
+ * Triggered when an annotation is modified.
+ *
+ * @param ulabel ULabel instance
+ * @param action Action that was completed
+ * @param is_undo_or_redo whether the action is an undo or redo action
+ */
+function on_finish_annotation_spatial_modification(
+    ulabel: ULabel,
+    action: ULabelAction,
+    is_undo_or_redo: boolean = false,
+) {
+    const action_completion: ULabelActionType[] = [
+        "finish_modify_annotation", // triggered when brush edit ends
+        "finish_edit", // triggered when edit ends
+        "finish_move", // triggered when move ends
+        "finish_annotation", // triggered when most annotations end (except for brush/complex polygons),
+    ];
+
+    const action_undo_redo: ULabelActionType[] = [
+        "begin_edit", // triggered when edit begins, updated when edit ends
+        "begin_move", // triggered when move begins, updated when move ends
+    ];
+
+    // Trigger updates on action completion or on undo/redo
+    if (
+        action_completion.includes(action.act_type) ||
+        (is_undo_or_redo && action_undo_redo.includes(action.act_type))
+    ) {
+        // Update annotation rendering
+        ulabel.rebuild_containing_box(action.annotation_id);
+        ulabel.redraw_annotation(action.annotation_id);
+        // Update dialogs
+        ulabel.suggest_edits(null, null, true);
+        // Update the toolbox
+        ulabel.update_filter_distance(action.annotation_id);
+        ulabel.toolbox.redraw_update_items(ulabel);
+        // Ensure there are no lingering enders
+        ulabel.destroy_polygon_ender(action.annotation_id);
+
+        // TODO: reset state variables?
     }
 }
 
@@ -491,7 +521,12 @@ export function undo(ulabel: ULabel, is_internal_undo: boolean = false) {
     undone_stack.push(undo_candidate);
 
     // Trigger any listeners for the action
-    on_completed_annotation_spatial_modification(
+    on_start_annotation_spatial_modification(
+        ulabel,
+        undo_candidate,
+        true,
+    );
+    on_finish_annotation_spatial_modification(
         ulabel,
         undo_candidate,
         true,
@@ -537,7 +572,11 @@ export function redo(ulabel: ULabel) {
     redo_action(ulabel, redo_candidate);
 
     // Trigger any listeners for the action
-    on_completed_annotation_spatial_modification(
+    on_start_annotation_spatial_modification(
+        ulabel,
+        redo_candidate,
+    );
+    on_finish_annotation_spatial_modification(
         ulabel,
         redo_candidate,
         true,

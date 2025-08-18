@@ -291,6 +291,7 @@ export class ULabel {
     public get_annotations(subtask: ULabelSubtask): ULabelAnnotation[];
     public set_annotations(annotations: ULabelAnnotation[], subtask: ULabelSubtask);
     public set_saved(saved: boolean);
+    public draw_annotation_from_id(id: string, offset?: Offset, subtask?: string): void;
     public redraw_annotation(annotation_id: string, subtask?: string, offset?: Offset): void;
     public redraw_all_annotations(
         subtask?: string, // TODO (joshua-dean): THIS IS SUBTASK KEY, NAME PROPERLY

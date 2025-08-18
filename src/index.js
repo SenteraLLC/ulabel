@@ -2032,39 +2032,50 @@ export class ULabel {
     }
 
     create_polygon_ender(gmx, gmy, polygon_id) {
-        // Create ender id
-        const ender_id = "ender_" + polygon_id;
+        const subtask_key = this.get_current_subtask_key();
+        const current_subtask = this.subtasks[subtask_key];
+        const annotation = current_subtask["annotations"]["access"][polygon_id];
+        const spatial_type = annotation["spatial_type"];
 
-        // Build ender html
-        const ender_html = `
-        <a href="#" id="${ender_id}" class="ender_outer">
-            <span id="${ender_id}_inner" class="ender_inner"></span>
-        </a>
-        `;
-        const polygon_ender_size = this.config["polygon_ender_size"] * this.state["zoom_val"];
-        $("#dialogs__" + this.get_current_subtask_key()).append(ender_html);
-        $("#" + ender_id).css({
-            "width": polygon_ender_size + "px",
-            "height": polygon_ender_size + "px",
-            "border-radius": polygon_ender_size / 2 + "px",
-            // Get the color of the active class
-            "box-shadow": "0 0 0 2px " + this.get_annotation_color(this.get_current_subtask()["annotations"]["access"][polygon_id]),
-        });
-        $("#" + ender_id + "_inner").css({
-            "width": polygon_ender_size / 5 + "px",
-            "height": polygon_ender_size / 5 + "px",
-            "border-radius": polygon_ender_size / 10 + "px",
-            "top": 2 * polygon_ender_size / 5 + "px",
-            "left": 2 * polygon_ender_size / 5 + "px",
-        });
+        // Verify polygon spatial type
+        if (
+            !current_subtask["state"]["is_in_brush_mode"] &&
+            (spatial_type === "polygon" || spatial_type === "delete_polygon")
+        ) {
+            // Create ender id
+            const ender_id = "ender_" + polygon_id;
 
-        // Add this id to the list of dialogs with managed positions
-        this.get_current_subtask()["state"]["visible_dialogs"][ender_id] = {
-            left: gmx / this.config["image_width"],
-            top: gmy / this.config["image_height"],
-            pin: "center",
-        };
-        this.reposition_dialogs();
+            // Build ender html
+            const ender_html = `
+            <a href="#" id="${ender_id}" class="ender_outer">
+                <span id="${ender_id}_inner" class="ender_inner"></span>
+            </a>
+            `;
+            const polygon_ender_size = this.config["polygon_ender_size"] * this.state["zoom_val"];
+            $("#dialogs__" + subtask_key).append(ender_html);
+            $("#" + ender_id).css({
+                "width": polygon_ender_size + "px",
+                "height": polygon_ender_size + "px",
+                "border-radius": polygon_ender_size / 2 + "px",
+                // Get the color of the active class
+                "box-shadow": "0 0 0 2px " + this.get_annotation_color(annotation),
+            });
+            $("#" + ender_id + "_inner").css({
+                "width": polygon_ender_size / 5 + "px",
+                "height": polygon_ender_size / 5 + "px",
+                "border-radius": polygon_ender_size / 10 + "px",
+                "top": 2 * polygon_ender_size / 5 + "px",
+                "left": 2 * polygon_ender_size / 5 + "px",
+            });
+
+            // Add this id to the list of dialogs with managed positions
+            current_subtask["state"]["visible_dialogs"][ender_id] = {
+                left: gmx / this.config["image_width"],
+                top: gmy / this.config["image_height"],
+                pin: "center",
+            };
+            this.reposition_dialogs();
+        }
     }
 
     destroy_polygon_ender(polygon_id) {
@@ -3376,6 +3387,7 @@ export class ULabel {
         let gmy = null;
         let init_spatial = null;
         let init_id_payload = null;
+        let containing_box = null;
 
         const subtask_key = this.get_current_subtask_key();
         const current_subtask = this.subtasks[subtask_key];
@@ -3401,17 +3413,18 @@ export class ULabel {
         let canvas_id = this.get_init_canvas_context_id(annotation_id, subtask_key);
 
         // TODO(3d)
-        let containing_box = {
-            tlx: gmx,
-            tly: gmy,
-            brx: gmx,
-            bry: gmy,
-        };
         if (NONSPATIAL_MODES.includes(annotation_mode)) {
-            containing_box = null;
             line_size = null;
             init_spatial = null;
+        } else {
+            containing_box = {
+                tlx: gmx,
+                tly: gmy,
+                brx: gmx,
+                bry: gmy,
+            };
         }
+
         let frame = this.state["current_frame"];
         if (MODES_3D.includes(annotation_mode)) {
             frame = null;
@@ -3434,13 +3447,11 @@ export class ULabel {
             canvas_id: canvas_id,
             text_payload: "",
         };
+
         if (annotation_mode === "polygon") {
             // First layer is always a fill, not a hole
             current_subtask["annotations"]["access"][annotation_id]["spatial_payload_holes"] = [false];
             current_subtask["annotations"]["access"][annotation_id]["spatial_payload_child_indices"] = [[]];
-        }
-        if (redoing) {
-            this.set_id_dialog_payload_to_init(annotation_id, init_id_payload);
         }
 
         // TODO(3d)
@@ -3449,16 +3460,8 @@ export class ULabel {
         current_subtask["annotations"]["ordering"].push(annotation_id);
 
         // If a polygon was just started, we need to add a clickable to end the shape
-        // Don't create ender when in brush mode
-        if ((annotation_mode === "polygon" || annotation_mode === "delete_polygon") && !current_subtask["state"]["is_in_brush_mode"]) {
-            this.create_polygon_ender(gmx, gmy, annotation_id);
-        } else if (annotation_mode === "polyline") {
-            // Create enders to connect to the ends of other polylines
-            // TODO
-        }
+        this.create_polygon_ender(gmx, gmy, annotation_id);
 
-        // Draw annotation, and set state to annotation in progress
-        this.draw_annotation_from_id(annotation_id);
         current_subtask["state"]["active_id"] = annotation_id;
         current_subtask["state"]["is_in_progress"] = true;
 
@@ -3475,12 +3478,14 @@ export class ULabel {
                 gmy: gmy,
                 init_spatial: init_spatial,
                 finished: redoing || annotation_mode === "point",
-                init_payload: current_subtask["state"]["id_payload"],
+                init_payload: init_id_payload,
             },
             undo_payload: {},
         }, redoing);
 
         if (redoing) {
+            this.set_id_dialog_payload_to_init(annotation_id, init_id_payload);
+
             if (annotation_mode === "polygon" || annotation_mode === "polyline" || annotation_mode === "delete_polygon") {
                 this.continue_annotation(this.state["last_move"]);
             } else {
@@ -3656,9 +3661,7 @@ export class ULabel {
                     if (isclick || (is_click_dragging && this.config.click_and_drag_poly_annotations)) {
                         add_keypoint = true;
                         if (n_kpts === 0) {
-                            // If no keypoints, then we create an ender at the mouse position
-                            // this.create_polygon_ender(gmx, gmy, actid);
-                            // we'll need to add this point twice, once for the actual point
+                            // We'll need to add this point twice, once for the actual point
                             // and once for rendering future lines.
                             active_spatial_payload.push(ms_loc);
                             // mark that we've successfully started our complex polygon
