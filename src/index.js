@@ -1243,6 +1243,11 @@ export class ULabel {
         }
     }
 
+    // Get the element id for a nonspatial annotation row
+    get_nonspatial_annotation_element_id(annotation_id) {
+        return `row__${annotation_id}`;
+    }
+
     // ================= Access string utilities =================
 
     // Access a point in a spatial payload using access string
@@ -1733,51 +1738,39 @@ export class ULabel {
         ctx.lineCap = "round";
     }
 
-    register_nonspatial_redraw_start(subtask) {
-        // TODO(3d)
-        this.tmp_nonspatial_element_ids[subtask] = [];
-        let nonsp_window = $(`div#fad_st__${subtask}`);
-        if (nonsp_window.length) {
-            $(`div#fad_st__${subtask} div.fad_annotation_rows div.fad_row`).each((idx, val) => {
-                this.tmp_nonspatial_element_ids[subtask].push($(val).attr("id"));
-            });
-        }
-    }
-
     draw_nonspatial_annotation(annotation_object, svg_obj, subtask = null) {
         if (subtask === null) {
             subtask = this.get_current_subtask_key();
         }
-        let found = false;
-        for (let i = 0; i < this.tmp_nonspatial_element_ids[subtask].length; i++) {
-            if ("row__" + annotation_object["id"] === this.tmp_nonspatial_element_ids[subtask][i]) {
-                this.tmp_nonspatial_element_ids[subtask][i] = null;
-                found = true;
-            }
-        }
-        if (!found) {
+        const annotation_id = annotation_object["id"];
+        const element_id = this.get_nonspatial_annotation_element_id(annotation_id);
+        if ($(`div#${element_id}`).length === 0) {
             $(`div#fad_st__${subtask} div.fad_annotation_rows`).append(`
-            <div id="row__${annotation_object["id"]}" class="fad_row">
+            <div id="row__${annotation_id}" class="fad_row">
                 <div class="fad_buttons">
                     <div class="fad_inp_container text">
-                        <textarea id="note__${annotation_object["id"]}" class="nonspatial_note" placeholder="Notes...">${annotation_object["text_payload"]}</textarea>
+                        <textarea id="note__${annotation_id}" class="nonspatial_note" placeholder="Notes...">${annotation_object["text_payload"]}</textarea>
                     </div><!--
                     --><div class="fad_inp_container button frst">
-                        <a href="#" id="reclf__${annotation_object["id"]}" class="fad_button reclf"></a>
+                        <a href="#" id="reclf__${annotation_id}" class="fad_button reclf"></a>
                     </div><!--
                     --><div class="fad_inp_container button">
-                        <a href="#" id="delete__${annotation_object["id"]}" class="fad_button delete">&#215;</a>
+                        <a href="#" id="delete__${annotation_id}" class="fad_button delete">&#215;</a>
                     </div>
                 </div><!--
-                --><div id="icon__${annotation_object["id"]}" class="fad_type_icon invert-this-svg" style="background-color: ${this.get_non_spatial_annotation_color(annotation_object["classification_payloads"], subtask)};">
+                --><div id="icon__${annotation_id}" class="fad_type_icon invert-this-svg" style="background-color: ${this.get_non_spatial_annotation_color(annotation_object["classification_payloads"], subtask)};">
                     ${svg_obj}
                 </div>
             </div>
             `);
         } else {
-            $(`textarea#note__${annotation_object["id"]}`).val(annotation_object["text_payload"]);
-            $(`div#icon__${annotation_object["id"]}`).css("background-color", this.get_non_spatial_annotation_color(annotation_object["classification_payloads"], subtask));
+            $(`textarea#note__${annotation_id}`).val(annotation_object["text_payload"]);
+            $(`div#icon__${annotation_id}`).css("background-color", this.get_non_spatial_annotation_color(annotation_object["classification_payloads"], subtask));
         }
+    }
+
+    clear_nonspatial_annotation(annotation_id) {
+        $(`div#row__${annotation_id}`).remove();
     }
 
     draw_whole_image_annotation(annotation_object, subtask = null) {
@@ -1786,14 +1779,6 @@ export class ULabel {
 
     draw_global_annotation(annotation_object, subtask = null) {
         this.draw_nonspatial_annotation(annotation_object, GLOBAL_SVG, subtask);
-    }
-
-    handle_nonspatial_redraw_end(subtask) {
-        // TODO(3d)
-        for (let i = 0; i < this.tmp_nonspatial_element_ids[subtask].length; i++) {
-            $(`#${this.tmp_nonspatial_element_ids[subtask][i]}`).remove();
-        }
-        this.tmp_nonspatial_element_ids[subtask] = [];
     }
 
     draw_annotation(annotation_object, offset = null, subtask = null) {
@@ -1893,8 +1878,7 @@ export class ULabel {
 
     redraw_all_annotations_in_subtask(subtask, offset = null, nonspatial_only = false) {
         // Clear the canvas
-        this.clear_front_canvas();
-        this.register_nonspatial_redraw_start(subtask);
+        this.clear_front_canvas(subtask);
         // Handle redrawing of nonspatial annotations
         for (const annid of this.subtasks[subtask]["annotations"]["ordering"]) {
             if (NONSPATIAL_MODES.includes(this.subtasks[subtask]["annotations"]["access"][annid]["spatial_type"])) {
@@ -1907,7 +1891,6 @@ export class ULabel {
                 this.redraw_all_annotations_in_annotation_context(canvas_id, subtask, offset);
             }
         }
-        this.handle_nonspatial_redraw_end(subtask);
     }
 
     /**
@@ -3292,12 +3275,13 @@ export class ULabel {
     }
 
     create_nonspatial_annotation(annotation_id = null, redo_payload = null) {
+        const current_subtask = this.get_current_subtask();
         let redoing = false;
         let annotation_mode = null;
         let init_idpyld = null;
         if (redo_payload === null) {
             annotation_id = this.make_new_annotation_id();
-            annotation_mode = this.get_current_subtask()["state"]["annotation_mode"];
+            annotation_mode = current_subtask["state"]["annotation_mode"];
             init_idpyld = this.get_init_id_payload();
         } else {
             redoing = true;
@@ -3325,17 +3309,15 @@ export class ULabel {
             containing_box: null,
             frame: annframe,
             text_payload: "",
+            annotation_meta: this.config["annotation_meta"],
         };
 
-        this.get_current_subtask()["annotations"]["access"][annotation_id] = new_annotation;
+        current_subtask["annotations"]["access"][annotation_id] = new_annotation;
+        current_subtask["annotations"]["ordering"].push(annotation_id);
+
         if (redoing) {
             this.set_id_dialog_payload_to_init(annotation_id, init_idpyld);
         }
-        this.get_current_subtask()["annotations"]["access"][annotation_id]["annotation_meta"] = this.config["annotation_meta"];
-        this.get_current_subtask()["annotations"]["ordering"].push(annotation_id);
-
-        // Draw new annotation
-        this.draw_annotation_from_id(annotation_id);
 
         let frame = this.state["current_frame"];
         if (MODES_3D.includes(annotation_mode)) {
@@ -3355,16 +3337,11 @@ export class ULabel {
             },
             undo_payload: {},
         }, redoing);
-        this.suggest_edits();
     }
 
     create_nonspatial_annotation__undo(annotation_id) {
-        if (annotation_id in this.get_current_subtask()["annotations"]["access"]) {
-            this.remove_annotation_from_access_and_ordering(annotation_id);
-            // Render the change (have to redraw all non-spatial since they all live on the front canvas)
-            this.redraw_all_annotations(this.get_current_subtask_key(), null, true);
-            this.suggest_edits();
-        }
+        this.remove_annotation_from_access_and_ordering(annotation_id);
+        this.clear_nonspatial_annotation(annotation_id);
     }
 
     begin_annotation(mouse_event, annotation_id = null, redo_payload = null) {

@@ -8,6 +8,7 @@ import {
 import { FilterPointDistanceFromRow } from "./toolbox";
 import { AllowedToolboxItem } from "./configuration";
 import { filter_points_distance_from_line } from "./annotation_operators";
+import { NONSPATIAL_MODES } from "./annotation";
 
 import { log_message, LogLevel } from "./error_logging";
 
@@ -215,6 +216,7 @@ function on_start_annotation_spatial_modification(
     const actions: ULabelActionType[] = [
         "begin_annotation", // triggered when an annotation is started
         "create_annotation", // triggered when an annotation is explicitly created
+        "create_nonspatial_annotation", // triggered when a non-spatial annotation is created
     ];
 
     if (!is_undo && actions.includes(action.act_type)) {
@@ -287,6 +289,7 @@ function on_finish_annotation_spatial_modification(
     const action_undo: ULabelActionType[] = [
         "finish_modify_annotation",
         "finish_annotation",
+        "delete_annotation",
         "begin_edit", // triggered when edit begins, updated when edit ends
         "begin_move", // triggered when move begins, updated when move ends
     ];
@@ -341,9 +344,10 @@ function on_annotation_deletion(
     ];
 
     const action_undo: ULabelActionType[] = [
-        "delete_annotation", // Undeprecates the annotation
+        // "delete_annotation", // Undeprecates the annotation
         "begin_annotation", // When undone, the annotation is deleted
         "create_annotation", // When undone, the annotation is deleted
+        "create_nonspatial_annotation", // When undone, the annotation is deleted
     ];
 
     // Trigger updates on action completion or on undo/redo
@@ -353,12 +357,19 @@ function on_annotation_deletion(
     ) {
         // Sometimes the annotation is just deprecated, and sometimes it is fully deleted
         // Check if it still exists, because if so we need to redraw
-        const annotations = ulabel.get_current_subtask().annotations.access;
+        const current_subtask = ulabel.get_current_subtask();
+        const annotations = current_subtask.annotations.access;
         if (action.annotation_id in annotations) {
-            ulabel.redraw_annotation(action.annotation_id);
-            // Force filter points if necessary
-            if (annotations[action.annotation_id].spatial_type === "polyline") {
-                ulabel.update_filter_distance(action.annotation_id, false, true);
+            const spatial_type = annotations[action.annotation_id]?.spatial_type;
+            if (NONSPATIAL_MODES.includes(spatial_type)) {
+                // Render the change
+                ulabel.clear_nonspatial_annotation(action.annotation_id);
+            } else {
+                ulabel.redraw_annotation(action.annotation_id);
+                // Force filter points if necessary
+                if (annotations[action.annotation_id].spatial_type === "polyline") {
+                    ulabel.update_filter_distance(action.annotation_id, false, true);
+                }
             }
         }
 

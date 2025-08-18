@@ -299,6 +299,7 @@ export class ULabel {
         spatial_only?: boolean,
     );
     public redraw_multiple_spatial_annotations(annotation_ids: string[], subtask?: string, offset?: Offset);
+    public clear_nonspatial_annotation(annotation_id: string): void;
     public show_annotation_mode(
         target_jq?: JQuery<HTMLElement>, // TODO (joshua-dean): validate this type
     );
