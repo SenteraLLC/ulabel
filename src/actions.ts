@@ -224,6 +224,8 @@ function on_completed_annotation_spatial_modification(
         // Update the toolbox
         ulabel.update_filter_distance(action.annotation_id);
         ulabel.toolbox.redraw_update_items(ulabel);
+        // Ensure there are no lingering enders
+        ulabel.destroy_polygon_ender(action.annotation_id);
 
         // TODO: reset state variables?
     }
@@ -321,21 +323,6 @@ redraw_annotation(actid);
 recolor_active_polygon_ender();
 recolor_brush_circle();
 suggest_edits();
-
-FINISH:
-update_filter_distance
-this.toolbox.redraw_update_items
-*UNDO*:
-redraw_annotation
-suggest_edits
-update_filter_distance
-this.toolbox.redraw_update_items(this);
-todo: properly destroy the annotation context and suggest edits (see begin_annotation__undo)
-*REDO*
-redraw_annotation
-suggest_edits
-this.update_filter_distance(redo_payload.actid, false);
-this.toolbox.redraw_update_items(this);
 
 CREATE_NONSPATIAL
 draw_annotation_from_id
