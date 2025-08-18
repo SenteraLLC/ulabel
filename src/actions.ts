@@ -27,7 +27,7 @@ export function record_action(ulabel: ULabel, raw_action: ULabelActionRaw, is_re
     const current_subtask = ulabel.get_current_subtask();
 
     // After a new action, you can no longer redo old actions
-    if (!is_redo) {
+    if (add_to_action_stream && !is_redo) {
         current_subtask.actions.undone_stack = [];
     }
 
@@ -377,16 +377,6 @@ function on_annotation_id_change(
 }
 
 /*
-
-ASSIGN_ID:
-this.redraw_annotation(actid);
-this.recolor_active_polygon_ender();
-this.recolor_brush_circle();
-*UNDO*:
-redraw_annotation(actid);
-recolor_active_polygon_ender();
-recolor_brush_circle();
-suggest_edits();
 
 CREATE_NONSPATIAL
 draw_annotation_from_id
