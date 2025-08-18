@@ -4055,7 +4055,7 @@ export class ULabel {
 
         // Get the edit information and render the edit
         const edit_candidate = current_subtask["state"]["edit_candidate"];
-        let starting_point = this.get_with_access_string(current_subtask["state"]["edit_candidate"]["annid"], edit_candidate["access"]);
+        let starting_point = this.get_with_access_string(active_id, edit_candidate["access"]);
         let gmx = this.get_global_mouse_x(mouse_event);
         let gmy = this.get_global_mouse_y(mouse_event);
 
@@ -4882,21 +4882,25 @@ export class ULabel {
                 return this.hide_and_clear_action_candidates();
             }
 
+            // Show global edit dialogs for "best" candidate
+            best_candidate = edit_candidates["best"];
+
             // Look for an existing point that's close enough to suggest editing it
             const nearest_active_keypoint = this.get_nearest_active_keypoint(global_x, global_y, dst_thresh, edit_candidates["candidate_ids"]);
             if (nearest_active_keypoint != null && nearest_active_keypoint.point != null) {
                 this.show_edit_suggestion(nearest_active_keypoint, true);
                 best_candidate = nearest_active_keypoint;
-            } else { // If none are found, look for a point along a segment that's close enough
+            } else {
+                // If none are found, look for a point along a segment that's close enough
+                // else, we should hide the suggestion
                 const nearest_segment_point = this.get_nearest_segment_point(global_x, global_y, Infinity, edit_candidates["candidate_ids"]);
                 if (nearest_segment_point != null && nearest_segment_point.point != null) {
                     this.show_edit_suggestion(nearest_segment_point, false);
                     best_candidate = nearest_segment_point;
+                } else {
+                    this.hide_edit_suggestion();
                 }
             }
-
-            // Show global edit dialogs for "best" candidate
-            best_candidate = edit_candidates["best"];
 
             // Only spatial annotations can be moved
             current_subtask["state"]["move_candidate"] = best_candidate;
