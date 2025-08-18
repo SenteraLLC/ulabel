@@ -3009,8 +3009,6 @@ export class ULabel {
             },
         });
 
-        // Draw the new annotation to the canvas
-        this.draw_annotation_from_id(unique_id);
         // Filter points if necessary
         this.update_filter_distance(unique_id);
     }
@@ -3021,27 +3019,10 @@ export class ULabel {
      * @param {string} annotation_id The id of the annotation
      */
     create_annotation__undo(annotation_id) {
-        // Get the current subtask
-        const current_subtask = this.get_current_subtask();
-
         // Destory the canvas context
         this.destroy_annotation_context(annotation_id);
-
-        // Delete the created annotation
-        delete current_subtask.annotations.access[annotation_id];
-
-        // Next delete the annotation id from the ordering array
-        // Grab the array for convenience
-        const annotation_ordering = current_subtask.annotations.ordering;
-
-        // Get the index of the annotation's id
-        const annotation_index = annotation_ordering.indexOf(annotation_id);
-
-        // Remove the annotation id from the array
-        annotation_ordering.splice(annotation_index, 1); // 1 means remove only the annotation id at the annotation index
-
-        // Filter points if necessary
-        this.update_filter_distance(annotation_id, true, true);
+        // Remove the annotation from access and ordering
+        this.remove_annotation_from_access_and_ordering(annotation_id);
     }
 
     /**

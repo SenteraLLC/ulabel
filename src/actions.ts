@@ -214,6 +214,7 @@ function on_start_annotation_spatial_modification(
 ) {
     const actions: ULabelActionType[] = [
         "begin_annotation", // triggered when an annotation is started
+        "create_annotation", // triggered when an annotation is explicitly created
         // "begin_edit", // triggered when an edit is started
         // "begin_move", // triggered when a move is started
     ];
@@ -327,6 +328,7 @@ function on_annotation_deletion(
 
     const action_undo_redo: ULabelActionType[] = [
         "begin_annotation", // When undone, the annotation is deleted
+        "create_annotation", // When undone, the annotation is deleted
     ];
 
     // Trigger updates on action completion or on undo/redo
@@ -413,24 +415,6 @@ draw_annotation_from_id
 *UNDO*:
 redraw_all_annotations
 suggest_edits
-
-CREATE
-draw_annotation_from_id(unique_id);
-update_filter_distance(unique_id);
-*UNDO*:
-destroy_annotation_context
-this.update_filter_distance(annotation_id, true, true);
-
-BEGIN
-draw_annotation_from_id
-*UNDO*:
-destroy_annotation_context
-this.toolbox.redraw_update_items(this);
-this.suggest_edits(this.state["last_move"]);
-*REDO*:
-finish_annotation(null);
-rebuild_containing_box(unq_id);
-suggest_edits(this.state["last_move"]);
 
 CANCEL
 start_complex_polygon__undo
