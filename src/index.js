@@ -2949,7 +2949,7 @@ export class ULabel {
      * @param {[number, number][]} spatial_payload
      * @param {string} unique_id Optional unique id to use for the annotation. If null, a new unique id will be generated
      */
-    create_annotation(spatial_type, spatial_payload, unique_id = null) {
+    create_annotation(spatial_type, spatial_payload, unique_id = null, is_redo = false) {
         // Grab constants for convenience
         const current_subtask = this.get_current_subtask();
         const annotation_access = current_subtask["annotations"]["access"];
@@ -2978,6 +2978,7 @@ export class ULabel {
             spatial_payload: spatial_payload,
             classification_payloads: this.get_init_id_payload(spatial_type),
             text_payload: "",
+            line_size: this.get_initial_line_size(),
             canvas_id: this.get_init_canvas_context_id(unique_id),
         };
 
@@ -3007,10 +3008,7 @@ export class ULabel {
                 spatial_payload: spatial_payload,
                 spatial_type: spatial_type,
             },
-        });
-
-        // Filter points if necessary
-        this.update_filter_distance(unique_id);
+        }, is_redo);
     }
 
     /**
@@ -3040,7 +3038,17 @@ export class ULabel {
             redo_payload.spatial_type,
             redo_payload.spatial_payload,
             annotation_id,
+            true,
         );
+    }
+
+    create_point_annotation_at_mouse_location() {
+        const last_move = this.state["last_move"];
+        if (last_move !== null) {
+            const spatial_payload = this.get_image_aware_mouse_x_y(last_move);
+            // Create a point annotation at the mouse position
+            this.create_annotation("point", [spatial_payload]);
+        }
     }
 
     delete_annotation(annotation_id, redoing = false, should_record_action = true) {

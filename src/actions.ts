@@ -215,8 +215,6 @@ function on_start_annotation_spatial_modification(
     const actions: ULabelActionType[] = [
         "begin_annotation", // triggered when an annotation is started
         "create_annotation", // triggered when an annotation is explicitly created
-        // "begin_edit", // triggered when an edit is started
-        // "begin_move", // triggered when a move is started
     ];
 
     if (!is_undo && actions.includes(action.act_type)) {

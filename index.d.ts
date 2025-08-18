@@ -353,10 +353,12 @@ export class ULabel {
     ): void;
     public cancel_annotation(annotation_id?: string): void;
     public assign_annotation_id(annotation_id?: string, redo_payload?: object): void;
+    public create_point_annotation_at_mouse_location(): void;
     public create_annotation(
         spatial_type: ULabelSpatialType,
         spatial_payload: ULabelSpatialPayload,
         unique_id?: string,
+        is_redo?: boolean,
     ): void;
     public create_nonspatial_annotation(
         annotation_id?: string, redo_payload?: object,
