@@ -46,29 +46,29 @@ export function record_action(ulabel: ULabel, raw_action: ULabelActionRaw, is_re
         current_subtask.actions.stream.push(action);
     }
 
-    if (!is_redo) {
-        // Trigger any listeners for the action
-        on_start_annotation_spatial_modification(
-            ulabel,
-            action,
-        );
-        on_in_progress_annotation_spatial_modification(
-            ulabel,
-            action,
-        );
-        on_finish_annotation_spatial_modification(
-            ulabel,
-            action,
-        );
-        on_annotation_deletion(
-            ulabel,
-            action,
-        );
-        on_annotation_id_change(
-            ulabel,
-            action,
-        );
-    }
+    // Trigger any listeners for the action
+    on_start_annotation_spatial_modification(
+        ulabel,
+        action,
+    );
+    on_in_progress_annotation_spatial_modification(
+        ulabel,
+        action,
+    );
+    on_finish_annotation_spatial_modification(
+        ulabel,
+        action,
+        false,
+        is_redo,
+    );
+    on_annotation_deletion(
+        ulabel,
+        action,
+    );
+    on_annotation_id_change(
+        ulabel,
+        action,
+    );
 };
 
 /**
@@ -235,7 +235,6 @@ function on_start_annotation_spatial_modification(
 function on_in_progress_annotation_spatial_modification(
     ulabel: ULabel,
     action: ULabelAction,
-    is_redo: boolean = false,
 ) {
     const actions: ULabelActionType[] = [
         "continue_edit", // no undo/redo for this action
@@ -243,10 +242,7 @@ function on_in_progress_annotation_spatial_modification(
         "continue_annotation", // polygons/polylines can undo/redo this action
     ];
 
-    if (
-        (!is_redo && actions.includes(action.act_type)) ||
-        (is_redo && action.act_type === "continue_annotation")
-    ) {
+    if (actions.includes(action.act_type)) {
         const subtask_key = ulabel.get_current_subtask_key();
         const current_subtask = ulabel.subtasks[subtask_key];
         const offset: Offset = current_subtask.state.move_candidate?.offset || {
@@ -271,33 +267,53 @@ function on_in_progress_annotation_spatial_modification(
  *
  * @param ulabel ULabel instance
  * @param action Action that was completed
- * @param is_undo_or_redo whether the action is an undo or redo action
+ * @param is_undo whether the action is an undo
+ * @param is_redo whether the action is a redo
  */
 function on_finish_annotation_spatial_modification(
     ulabel: ULabel,
     action: ULabelAction,
-    is_undo_or_redo: boolean = false,
+    is_undo: boolean = false,
+    is_redo: boolean = false,
 ) {
+    // Triggered on action completion as well as redo
     const action_completion: ULabelActionType[] = [
+        "create_annotation", // triggered when an annotation is explicitly created
         "finish_modify_annotation", // triggered when brush edit ends
         "finish_edit", // triggered when edit ends
         "finish_move", // triggered when move ends
         "finish_annotation", // triggered when most annotations end (except for brush/complex polygons),
     ];
 
-    const action_undo_redo: ULabelActionType[] = [
+    // Triggered on undo only
+    const action_undo: ULabelActionType[] = [
+        "finish_modify_annotation",
+        "finish_annotation",
         "begin_edit", // triggered when edit begins, updated when edit ends
         "begin_move", // triggered when move begins, updated when move ends
     ];
 
+    // Triggered on redo only
+    // These actions need rendering on undo/redo only. When initially triggered,
+    // they signal the start of an action. On undo/redo, the  payload
+    // will contain information to fully render the annotation.
+    const action_redo: ULabelActionType[] = [
+        "begin_edit",
+        "begin_move",
+    ];
+
     // Trigger updates on action completion or on undo/redo
     if (
-        action_completion.includes(action.act_type) ||
-        (is_undo_or_redo && action_undo_redo.includes(action.act_type))
+        (!is_undo && action_completion.includes(action.act_type)) ||
+        (is_undo && action_undo.includes(action.act_type)) ||
+        (is_redo && action_redo.includes(action.act_type))
     ) {
-        // Update annotation rendering
-        ulabel.rebuild_containing_box(action.annotation_id);
-        ulabel.redraw_annotation(action.annotation_id);
+        // create_annotation will have already handled drawing the annotation from scratch
+        if (action.act_type !== "create_annotation") {
+            // Update annotation rendering
+            ulabel.rebuild_containing_box(action.annotation_id);
+            ulabel.redraw_annotation(action.annotation_id);
+        }
         // Update dialogs
         ulabel.suggest_edits(null, null, true);
         // Update the toolbox
@@ -315,26 +331,27 @@ function on_finish_annotation_spatial_modification(
  *
  * @param ulabel ULabel instance
  * @param action ULabelAction instance
- * @param is_undo_or_redo Whether the action is an undo or redo action
+ * @param is_undo Whether the action is an undo
  */
 function on_annotation_deletion(
     ulabel: ULabel,
     action: ULabelAction,
-    is_undo_or_redo: boolean = false,
+    is_undo: boolean = false,
 ) {
     const actions: ULabelActionType[] = [
-        "delete_annotation", // Deprecates/undeprecates the annotation
+        "delete_annotation", // Deprecates the annotation
     ];
 
-    const action_undo_redo: ULabelActionType[] = [
+    const action_undo: ULabelActionType[] = [
+        "delete_annotation", // Undeprecates the annotation
         "begin_annotation", // When undone, the annotation is deleted
         "create_annotation", // When undone, the annotation is deleted
     ];
 
     // Trigger updates on action completion or on undo/redo
     if (
-        actions.includes(action.act_type) ||
-        (is_undo_or_redo && action_undo_redo.includes(action.act_type))
+        (!is_undo && actions.includes(action.act_type)) ||
+        (is_undo && action_undo.includes(action.act_type))
     ) {
         // Sometimes the annotation is just deprecated, and sometimes it is fully deleted
         // Check if it still exists, because if so we need to redraw
@@ -554,32 +571,6 @@ export function redo(ulabel: ULabel) {
         LogLevel.INFO,
     );
     redo_action(ulabel, redo_candidate);
-
-    // Trigger any listeners for the action
-    on_start_annotation_spatial_modification(
-        ulabel,
-        redo_candidate,
-    );
-    on_finish_annotation_spatial_modification(
-        ulabel,
-        redo_candidate,
-        true,
-    );
-    on_in_progress_annotation_spatial_modification(
-        ulabel,
-        redo_candidate,
-        true,
-    );
-    on_annotation_deletion(
-        ulabel,
-        redo_candidate,
-        true,
-    );
-    on_annotation_id_change(
-        ulabel,
-        redo_candidate,
-        true,
-    );
 }
 
 /**
