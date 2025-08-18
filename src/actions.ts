@@ -17,6 +17,7 @@ import { log_message, LogLevel } from "./error_logging";
  * @param ulabel ULabel instance
  * @param raw_action action to record
  * @param is_redo whether ulabel action is a redo or not
+ * @param add_to_action_stream whether to add the action to the action stream
  */
 export function record_action(ulabel: ULabel, raw_action: ULabelActionRaw, is_redo: boolean = false, add_to_action_stream: boolean = true) {
     ulabel.set_saved(false);
@@ -269,7 +270,7 @@ function on_in_progress_annotation_spatial_modification(
  *
  * @param ulabel ULabel instance
  * @param action ULabelAction instance
- * @param is_undo Whether the action is an undo or redo action
+ * @param is_undo_or_redo Whether the action is an undo or redo action
  */
 function on_annotation_deletion(
     ulabel: ULabel,
