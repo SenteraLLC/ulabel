@@ -2129,13 +2129,13 @@ export class ULabel {
 
     recolor_active_polygon_ender() {
         // Check if there is an active polygon annotation
-        const current_subtask = this.get_current_subtask_key();
-        const active_id = this.subtasks[current_subtask]["state"]["active_id"];
+        const current_subtask = this.get_current_subtask();
+        const active_id = current_subtask["state"]["active_id"];
         if (active_id === null) {
             return;
         }
         // Check that this is a polygon
-        const active_annotation = this.subtasks[current_subtask]["annotations"]["access"][active_id];
+        const active_annotation = current_subtask["annotations"]["access"][active_id];
         if (active_annotation["spatial_type"] !== "polygon") {
             return;
         }
@@ -3757,7 +3757,6 @@ export class ULabel {
                 this.move_polygon_ender(last_pt[0], last_pt[1], current_subtask["state"]["active_id"]);
             }
         }
-        this.rebuild_containing_box(annotation_id, true);
         this.continue_annotation(this.state["last_move"]);
     }
 
@@ -5243,16 +5242,6 @@ export class ULabel {
         // Perform assignment
         current_subtask["annotations"]["access"][annotation_id]["classification_payloads"] = JSON.parse(JSON.stringify(new_payload));
 
-        // Redraw with correct color and hide id_dialog if applicable
-        if (!redoing) {
-            this.hide_id_dialog();
-        } else {
-            this.suggest_edits();
-        }
-        this.redraw_annotation(annotation_id);
-        this.recolor_active_polygon_ender();
-        this.recolor_brush_circle();
-
         // Explicit changes are undoable
         // First assignments are treated as though they were done all along
         if (current_subtask["state"]["first_explicit_assignment"]) {
@@ -5284,11 +5273,6 @@ export class ULabel {
     assign_annotation_id__undo(annotation_id, undo_payload) {
         // Restore the old payload
         this.get_current_subtask()["annotations"]["access"][annotation_id]["classification_payloads"] = undo_payload.old_id_payload;
-        // Redraw with correct color
-        this.redraw_annotation(annotation_id);
-        this.recolor_active_polygon_ender();
-        this.recolor_brush_circle();
-        this.suggest_edits();
     }
 
     handle_id_dialog_click(mouse_event, annotation_id = null, new_class_idx = null) {
@@ -5302,31 +5286,6 @@ export class ULabel {
         // TODO need to differentiate between first click and a reassign -- potentially with global state
         this.assign_annotation_id(annotation_id);
         current_subtask["state"]["first_explicit_assignment"] = false;
-        this.suggest_edits();
-
-        // Ensure that the id dialog is visible again
-        if (
-            annotation_id !== null &&
-            !current_subtask["state"]["is_in_progress"] &&
-            !current_subtask["state"]["is_in_brush_mode"] &&
-            !current_subtask["state"]["idd_visible"]
-        ) {
-            this.show_global_edit_suggestion(annotation_id);
-        }
-
-        // If the filter_distance_toolbox_item exists,
-        // Check if the FilterDistance ToolboxItem is in this ULabel instance
-        if (this.config.toolbox_order.includes(AllowedToolboxItem.FilterDistance)) {
-            // Get the toolbox item
-            const filter_distance_toolbox_item = this.toolbox.items.filter((item) => item.get_toolbox_item_type() === "FilterDistance")[0];
-            // filter annotations if in multi_class_mode
-            if (filter_distance_toolbox_item.multi_class_mode) {
-                filter_points_distance_from_line(this, true);
-            }
-        }
-
-        // Update class counter in toolbox
-        this.toolbox.redraw_update_items(this);
     }
 
     // Update the displayed annotation confidence

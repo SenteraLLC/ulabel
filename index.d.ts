@@ -325,6 +325,10 @@ export class ULabel {
     public recolor_brush_circle(): void;
     public destroy_brush_circle(): void;
 
+    // Polygon ender
+    public destroy_polygon_ender(polygon_id: string): void;
+    public recolor_active_polygon_ender(): void;
+
     // Listeners
     public remove_listeners(): void;
     static get_allowed_toolbox_item_enum(): AllowedToolboxItem;
@@ -433,7 +437,6 @@ export class ULabel {
     ): void;
     public hide_global_edit_suggestion(): void;
     public hide_edit_suggestion(): void;
-    public destroy_polygon_ender(polygon_id: string): void;
 
     // Edit utils
     public get_with_access_string(

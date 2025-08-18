@@ -5,6 +5,9 @@ import {
     ULabelActionRaw,
     ULabelActionType,
 } from "..";
+import { FilterPointDistanceFromRow } from "./toolbox";
+import { AllowedToolboxItem } from "./configuration";
+import { filter_points_distance_from_line } from "./annotation_operators";
 
 import { log_message, LogLevel } from "./error_logging";
 
@@ -53,6 +56,10 @@ export function record_action(ulabel: ULabel, raw_action: ULabelActionRaw, is_re
         action,
     );
     on_annotation_deletion(
+        ulabel,
+        action,
+    );
+    on_annotation_id_change(
         ulabel,
         action,
     );
@@ -236,10 +243,12 @@ function on_completed_annotation_spatial_modification(
  *
  * @param ulabel ULabel instance
  * @param action ULabelAction instance
+ * @param is_redo whether the action is a redo action
  */
 function on_in_progress_annotation_spatial_modification(
     ulabel: ULabel,
     action: ULabelAction,
+    is_redo: boolean = false,
 ) {
     const actions: ULabelActionType[] = [
         "continue_edit", // no undo/redo for this action
@@ -247,7 +256,10 @@ function on_in_progress_annotation_spatial_modification(
         "continue_annotation", // polygons/polylines can undo/redo this action
     ];
 
-    if (actions.includes(action.act_type)) {
+    if (
+        (!is_redo && actions.includes(action.act_type)) ||
+        (is_redo && action.act_type === "continue_annotation")
+    ) {
         const subtask_key = ulabel.get_current_subtask_key();
         const current_subtask = ulabel.subtasks[subtask_key];
         const offset: Offset = current_subtask.state.move_candidate?.offset || {
@@ -299,7 +311,7 @@ function on_annotation_deletion(
             ulabel.redraw_annotation(action.annotation_id);
             // Force filter points if necessary
             if (annotations[action.annotation_id].spatial_type === "polyline") {
-                this.update_filter_distance(action.annotation_id, false, true);
+                ulabel.update_filter_distance(action.annotation_id, false, true);
             }
         }
 
@@ -308,6 +320,58 @@ function on_annotation_deletion(
         // Update dialogs
         ulabel.suggest_edits(null, null, true);
         // Update the toolbox
+        ulabel.toolbox.redraw_update_items(ulabel);
+    }
+}
+
+/**
+ * Triggered when an annotation ID is changed.
+ *
+ * @param ulabel ULabel instance
+ * @param action ULabelAction instance
+ * @param is_undo_or_redo Whether the action is an undo or redo action
+ */
+function on_annotation_id_change(
+    ulabel: ULabel,
+    action: ULabelAction,
+    is_undo_or_redo: boolean = false,
+) {
+    const actions: ULabelActionType[] = [
+        "assign_annotation_id", // triggered when an annotation ID is assigned
+    ];
+
+    if (actions.includes(action.act_type)) {
+        // Update the annotation rendering
+        ulabel.redraw_annotation(action.annotation_id);
+        ulabel.recolor_active_polygon_ender();
+        ulabel.recolor_brush_circle();
+
+        // Update dialogs
+        if (!is_undo_or_redo) {
+            // Hide the large ID dialog after the user has made a selection
+            ulabel.hide_id_dialog();
+        }
+        ulabel.suggest_edits(null, null, true);
+
+        // Determine if we need to update the filter distance
+        // If the filter_distance_toolbox_item exists,
+        // Check if the FilterDistance ToolboxItem is in this ULabel instance
+        if (ulabel.config.toolbox_order.includes(AllowedToolboxItem.FilterDistance)) {
+            const spatial_type = ulabel.get_current_subtask().annotations.access[action.annotation_id].spatial_type;
+            if (spatial_type === "polyline") {
+                // Get the toolbox item
+                // @ts-expect-error TS2740
+                const filter_distance_toolbox_item: FilterPointDistanceFromRow = ulabel.toolbox.items.filter((item) => item.get_toolbox_item_type() === "FilterDistance")[0];
+                // filter annotations if in multi_class_mode
+                if (
+                    filter_distance_toolbox_item.multi_class_mode
+                ) {
+                    filter_points_distance_from_line(ulabel, true);
+                }
+            }
+        }
+
+        // Update toolbox
         ulabel.toolbox.redraw_update_items(ulabel);
     }
 }
@@ -456,7 +520,19 @@ export function undo(ulabel: ULabel, is_internal_undo: boolean = false) {
         undo_candidate,
         true,
     );
+    // Don't need to trigger in-progress modification listeners on undo
+    // since continue_edit/continue_move actions aren't actually recorded
+    // and continue_annotation will immediately call itself normally
+    // on_in_progress_annotation_spatial_modification(
+    //     ulabel,
+    //     undo_candidate,
+    // );
     on_annotation_deletion(
+        ulabel,
+        undo_candidate,
+        true,
+    );
+    on_annotation_id_change(
         ulabel,
         undo_candidate,
         true,
@@ -490,7 +566,17 @@ export function redo(ulabel: ULabel) {
         redo_candidate,
         true,
     );
+    on_in_progress_annotation_spatial_modification(
+        ulabel,
+        redo_candidate,
+        true,
+    );
     on_annotation_deletion(
+        ulabel,
+        redo_candidate,
+        true,
+    );
+    on_annotation_id_change(
         ulabel,
         redo_candidate,
         true,
