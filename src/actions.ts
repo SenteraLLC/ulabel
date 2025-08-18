@@ -410,20 +410,6 @@ redraw_annotation
 delete_annotation__undo
 create_polygon_ender
 
-DELETE
-mark_deprecated
-redraw_annotation
-hide_global_edit_suggestion
-destroy_polygon_ender
-update_filter_distance(annotation_id, false, true);
-toolbox.redraw_update_items(this);
-*UNDO*:
-mark_deprecated
-redraw_annotation
-this.suggest_edits(this.state["last_move"]);
-this.update_filter_distance(active_id, false);
-this.toolbox.redraw_update_items(this);
-
 DELETE IN POLYGON
 destroy_annotation_context(delete_annid);
 this.destroy_polygon_ender(delete_annid);

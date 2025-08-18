@@ -3083,20 +3083,8 @@ export class ULabel {
     }
 
     delete_annotation__undo(annotation_id) {
-        const annotations = this.get_current_subtask()["annotations"]["access"];
-
         // Set the annotation to be undeprecated and redraw it
-        mark_deprecated(annotations[annotation_id], false);
-        this.redraw_annotation(annotation_id);
-
-        // Show dialogs
-        this.suggest_edits();
-
-        // Filter points if necessary
-        this.update_filter_distance(annotation_id, false);
-
-        // Update class counter
-        this.toolbox.redraw_update_items(this);
+        mark_deprecated(this.get_current_subtask()["annotations"]["access"][annotation_id], false);
     }
 
     delete_annotation__redo(annotation_id) {
