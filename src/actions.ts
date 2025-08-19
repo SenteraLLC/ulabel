@@ -70,6 +70,10 @@ export function record_action(ulabel: ULabel, raw_action: ULabelActionRaw, is_re
         ulabel,
         action,
     );
+    on_annotation_revert(
+        ulabel,
+        action,
+    );
 };
 
 /**
@@ -230,11 +234,12 @@ function on_start_annotation_spatial_modification(
  *
  * @param ulabel ULabel instance
  * @param action ULabelAction instance
- * @param is_redo whether the action is a redo action
+ * @param is_undo whether the action is an undo action
  */
 function on_in_progress_annotation_spatial_modification(
     ulabel: ULabel,
     action: ULabelAction,
+    is_undo: boolean = false,
 ) {
     const actions: ULabelActionType[] = [
         "continue_edit", // no undo/redo for this action
@@ -242,7 +247,7 @@ function on_in_progress_annotation_spatial_modification(
         "continue_annotation", // polygons/polylines can undo/redo this action
     ];
 
-    if (actions.includes(action.act_type)) {
+    if (!is_undo && actions.includes(action.act_type)) {
         const subtask_key = ulabel.get_current_subtask_key();
         const current_subtask = ulabel.subtasks[subtask_key];
         const offset: Offset = current_subtask.state.move_candidate?.offset || {
@@ -388,12 +393,12 @@ function on_annotation_deletion(
  *
  * @param ulabel ULabel instance
  * @param action ULabelAction instance
- * @param is_undo_or_redo Whether the action is an undo or redo action
+ * @param is_undo Whether the action is an undo action
  */
 function on_annotation_id_change(
     ulabel: ULabel,
     action: ULabelAction,
-    is_undo_or_redo: boolean = false,
+    is_undo: boolean = false,
 ) {
     const actions: ULabelActionType[] = [
         "assign_annotation_id", // triggered when an annotation ID is assigned
@@ -406,7 +411,7 @@ function on_annotation_id_change(
         ulabel.recolor_brush_circle();
 
         // Update dialogs
-        if (!is_undo_or_redo) {
+        if (!is_undo) {
             // Hide the large ID dialog after the user has made a selection
             ulabel.hide_id_dialog();
         }
@@ -432,6 +437,29 @@ function on_annotation_id_change(
 
         // Update toolbox
         ulabel.toolbox.redraw_update_items(ulabel);
+    }
+}
+
+/**
+ * Triggered when an annotation is fully reverted as part of an undo action.
+ *
+ * @param ulabel ULabel instance
+ * @param action ULabelAction instance
+ * @param is_undo whether the action is an undo action
+ */
+function on_annotation_revert(
+    ulabel: ULabel,
+    action: ULabelAction,
+    is_undo: boolean = false,
+) {
+    const actions_undo: ULabelActionType[] = [
+        "begin_brush", // triggered when a brush is started
+        "cancel_annotation", // triggered when an annotation is canceled
+    ];
+
+    if (is_undo && actions_undo.includes(action.act_type)) {
+        // Redraw the annotation
+        ulabel.redraw_annotation(action.annotation_id);
     }
 }
 
@@ -520,19 +548,22 @@ export function undo(ulabel: ULabel, is_internal_undo: boolean = false) {
         undo_candidate,
         true,
     );
-    // Don't need to trigger in-progress modification listeners on undo
-    // since continue_edit/continue_move actions aren't actually recorded
-    // and continue_annotation will immediately call itself normally
-    // on_in_progress_annotation_spatial_modification(
-    //     ulabel,
-    //     undo_candidate,
-    // );
+    on_in_progress_annotation_spatial_modification(
+        ulabel,
+        undo_candidate,
+        true,
+    );
     on_annotation_deletion(
         ulabel,
         undo_candidate,
         true,
     );
     on_annotation_id_change(
+        ulabel,
+        undo_candidate,
+        true,
+    );
+    on_annotation_revert(
         ulabel,
         undo_candidate,
         true,

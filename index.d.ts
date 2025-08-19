@@ -186,6 +186,7 @@ export type ULabelActionType = "create_nonspatial_annotation" |
     "merge_polygon_complex_layer" |
     "simplify_polygon_complex_layer" |
     "begin_brush" |
+    "continue_brush" |
     "finish_modify_annotation" |
     "assign_annotation_id";
 

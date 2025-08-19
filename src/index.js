@@ -3892,8 +3892,6 @@ export class ULabel {
         if (annotation_id !== null) {
             // Reset the annotation
             this.replace_polygon_spatial_data(annotation_id, undo_payload.polygon_spatial_data);
-            // Redraw annotation
-            this.redraw_annotation(annotation_id);
         }
     }
 
@@ -3998,21 +3996,22 @@ export class ULabel {
      * @param {object} redo_payload {polygon_spatial_data: object}
      */
     finish_modify_annotation__redo(annotation_id, redo_payload) {
+        // Store data for undo
+        const polygon_spatial_data = ULabelAnnotation.get_polygon_spatial_data(this.get_current_subtask()["annotations"]["access"][annotation_id]);
+        // Replace the polygon spatial data
+        this.replace_polygon_spatial_data(annotation_id, redo_payload.polygon_spatial_data);
         // Record the action
         record_action(this, {
             act_type: "finish_modify_annotation",
             annotation_id: annotation_id,
             frame: this.state["current_frame"],
             undo_payload: {
-                polygon_spatial_data: ULabelAnnotation.get_polygon_spatial_data(this.get_current_subtask()["annotations"]["access"][annotation_id]),
+                polygon_spatial_data: polygon_spatial_data,
             },
             redo_payload: {
                 polygon_spatial_data: redo_payload.polygon_spatial_data,
             },
         }, true);
-
-        // Replace the polygon spatial data
-        this.replace_polygon_spatial_data(annotation_id, redo_payload.polygon_spatial_data);
     }
 
     begin_edit(mouse_event) {
@@ -4269,9 +4268,6 @@ export class ULabel {
             // Undeprecate the annotation
             this.delete_annotation__undo(annotation_id);
         }
-
-        // Redraw the annotation
-        this.redraw_annotation(annotation_id);
 
         const annotation = current_subtask["annotations"]["access"][annotation_id];
         // If a polygon/delete polygon, show the ender
