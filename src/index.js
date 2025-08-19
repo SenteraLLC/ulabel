@@ -2356,7 +2356,7 @@ export class ULabel {
     }
 
     // Check if the newest complex layer can merge with each previous layer.
-    merge_polygon_complex_layer(annotation_id, layer_idx = null, recursive_call = false, redoing = false, redraw = true) {
+    merge_polygon_complex_layer(annotation_id, layer_idx = null, recursive_call = false, redoing = false) {
         const annotation = this.get_current_subtask()["annotations"]["access"][annotation_id];
         if (annotation["spatial_type"] === "polygon" && annotation["spatial_payload"].length > 1) {
             const og_polygon_spatial_data = ULabelAnnotation.get_polygon_spatial_data(annotation, true);
@@ -2442,11 +2442,6 @@ export class ULabel {
                 }, redoing);
             }
         }
-        // Redraw when caller expects the annotation to be redrawn
-        if (!recursive_call && redraw) {
-            this.rebuild_containing_box(annotation_id);
-            this.redraw_annotation(annotation_id);
-        }
     }
 
     // Undo the merging of layers by replacing the annotation with the undo payload
@@ -2455,7 +2450,7 @@ export class ULabel {
     }
 
     // Call merge_polygon_complex_layer on all layers of a polygon
-    verify_all_polygon_complex_layers(annotation_id, redraw = false) {
+    verify_all_polygon_complex_layers(annotation_id) {
         const annotation = this.get_current_subtask()["annotations"]["access"][annotation_id];
         // Reset the child indices and holes
         annotation["spatial_payload_holes"] = [false];
@@ -2463,7 +2458,7 @@ export class ULabel {
         // merge_polygon_complex_layer will verify all layers
         // We can start at layer 1 since layer 0 is always a fill
         for (let layer_idx = 1; layer_idx < annotation["spatial_payload"].length; layer_idx++) {
-            this.merge_polygon_complex_layer(annotation_id, layer_idx, false, false, redraw);
+            this.merge_polygon_complex_layer(annotation_id, layer_idx, false, false);
         }
     }
 
