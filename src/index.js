@@ -3868,6 +3868,7 @@ export class ULabel {
                 undo_payload: {
                     polygon_spatial_data: ULabelAnnotation.get_polygon_spatial_data(current_subtask["annotations"]["access"][brush_cand_active_id]),
                 },
+                redo_payload: {},
             });
             this.continue_brush(mouse_event);
         } else if (
@@ -3972,8 +3973,15 @@ export class ULabel {
                 }
                 annotation["spatial_payload"] = new_spatial_payload;
                 this.verify_all_polygon_complex_layers(active_id);
-                this.rebuild_containing_box(active_id);
-                this.redraw_annotation(active_id);
+
+                // Record the action without adding to the action stream
+                record_action(this, {
+                    act_type: "continue_brush",
+                    annotation_id: active_id,
+                    frame: this.state["current_frame"],
+                    undo_payload: {},
+                    redo_payload: {},
+                }, false, false);
             }
         }
     }

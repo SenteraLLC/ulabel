@@ -244,6 +244,7 @@ function on_in_progress_annotation_spatial_modification(
     const actions: ULabelActionType[] = [
         "continue_edit", // no undo/redo for this action
         "continue_move", // no undo/redo for this action
+        "continue_brush", // no undo/redo for this action
         "continue_annotation", // polygons/polylines can undo/redo this action
     ];
 
@@ -486,12 +487,6 @@ SIMPLIFY POLYGON COMPLEX LAYER
 *UNDO*:
 rebuild_containing_box(undo_payload["actid"]);
 redraw_annotation(undo_payload["actid"]);
-
-BEGIN BRUSH
-update_id_toolbox_display
-recolor_brush_circle
-*UNDO*
-redraw_annotation(actid);
 
 */
 
