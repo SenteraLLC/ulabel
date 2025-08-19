@@ -159,15 +159,24 @@ As you can see, each subtask will have a corresponding list of annotation object
     
     // timestamp when annotation was created
     "created_at": "<ISO datetime string>",
+
+    // the username associated with the most recent modification to the annotation
+    "last_edited_by": "<string>",
+
+    // timestamp of the most recent modification to the annotation
+    "last_edited_at": "<ISO datetime string>",
     
     // true if annotation was deleted
-    "deprecated": <bool>, 
+    "deprecated": "<bool>", 
+
+    // indicates what/who deprecated the annotation, eg { human: false }
+    "deprecated_by": "<object>",
     
     // which type of annotation
     "spatial_type": "<string>", 
     
     // (nullable) e.g. [[x1, y1], [x2, y2], ...]
-    "spatial_payload": <array>, 
+    "spatial_payload": "<array>", 
     
     // The class associated with the annotation
     "classification_payloads": [ 
@@ -186,16 +195,16 @@ As you can see, each subtask will have a corresponding list of annotation object
     ],
 
     // size in underlying image pixels
-    "line_size": <number>, 
+    "line_size": "<number>", 
 
     // (nullable) frame ann was created for
-    "frame": <int>, 
+    "frame": "<int>", 
     
     // certain spatial types allow text
     "text_payload": "<string>", 
     
     // as provided to constructor
-    "annotation_meta": <object> 
+    "annotation_meta": "<object>"
 }
 ```
 
