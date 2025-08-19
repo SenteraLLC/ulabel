@@ -151,10 +151,10 @@ export class ULabel {
     static process_classes(ulabel, subtask_key, raw_subtask_json) {
         // Check to make sure allowed classes were provided
         if (!("classes" in raw_subtask_json)) {
-            throw new Error(`classes not specified for subtask "${subtask_key}"`);
+            log_message(`classes not specified for subtask "${subtask_key}"`, LogLevel.ERROR);
         }
         if (typeof raw_subtask_json.classes != "object" || raw_subtask_json.classes.length === undefined || raw_subtask_json.classes.length === 0) {
-            throw new Error(`classes has an invalid value for subtask "${subtask_key}"`);
+            log_message(`classes has an invalid value for subtask "${subtask_key}"`, LogLevel.ERROR);
         }
 
         // Create a constant to hold the actual ULabelSubtask
@@ -189,7 +189,10 @@ export class ULabel {
 
                     // Skip classes with the reserved DELETE_CLASS_ID
                     if (class_definition.id === DELETE_CLASS_ID) {
-                        console.warn(`Class id ${DELETE_CLASS_ID} is reserved for delete mode and cannot be used for class definitions`);
+                        log_message(
+                            `Class id ${DELETE_CLASS_ID} is reserved for delete mode and cannot be used for class definitions`,
+                            LogLevel.WARNING,
+                        );
                         continue;
                     }
 
@@ -197,8 +200,9 @@ export class ULabel {
                     id = class_definition.id ?? ULabel.create_unused_class_id(ulabel);
 
                     if (ulabel.valid_class_ids.includes(id)) {
-                        console.warn(`Duplicate class id ${id} detected. This is not supported and may result in unintended side-effects.
-                        This may be caused by mixing string and object class definitions, or by assigning the same id to two or more object class definitions.`);
+                        log_message(`Duplicate class id ${id} detected. This is not supported and may result in unintended side-effects.
+                        This may be caused by mixing string and object class definitions, or by assigning the same id to two or more object class definitions.`,
+                        LogLevel.WARNING);
                     }
 
                     // Use generic color only if color not provided
@@ -215,8 +219,7 @@ export class ULabel {
                     };
                     break;
                 default:
-                    console.log(raw_subtask_json.classes);
-                    throw new Error(`Entry in classes not understood: ${class_definition}\n${class_definition} must either be a string or an object.`);
+                    log_message(`Entry in classes not understood: ${class_definition}\n${class_definition} must either be a string or an object.`, LogLevel.ERROR);
             }
 
             // Save the class definitions and ids on the subtask
@@ -309,20 +312,18 @@ export class ULabel {
                 if (
                     (cand.spatial_type === undefined)
                 ) {
-                    alert(`Error: Attempted to import annotation without a spatial type (id: ${cand.id})`);
-                    throw `Error: Attempted to import annotation without a spatial type (id: ${cand.id})`;
+                    log_message(`Attempted to import annotation without a spatial type (id: ${cand.id})`, LogLevel.ERROR);
                 }
 
                 // Throw error if no spatial type is found
                 if (
-                    !("spatial_payload" in cand)
+                    (cand.spatial_payload === undefined) && !NONSPATIAL_MODES.includes(cand.spatial_type)
                 ) {
-                    alert(`Error: Attempted to import annotation without a spatial payload (id: ${cand.id})`);
-                    throw `Error: Attempted to import annotation without a spatial payload (id: ${cand.id})`;
+                    log_message(`Attempted to import annotation without a spatial payload (id: ${cand.id})`, LogLevel.ERROR);
                 } else if (
                     cand.spatial_type === "polygon" && cand.spatial_payload.length < 1
                 ) {
-                    console.warn(`[WARNING]: Skipping attempted import of polygon annotation without any points (id: ${cand.id})`);
+                    log_message(`Skipping attempted import of polygon annotation without any points (id: ${cand.id})`, LogLevel.WARNING, true);
                     continue;
                 }
 
@@ -375,8 +376,6 @@ export class ULabel {
                 if (!NONSPATIAL_MODES.includes(cand.spatial_type)) {
                     ul.rebuild_containing_box(cand.id, false, subtask_key);
                 }
-
-                console.log(cand);
             }
         }
     }
@@ -496,10 +495,10 @@ export class ULabel {
 
     static handle_deprecated_arguments() {
         // Warn users that this method is deprecated
-        console.warn(`
+        log_message(`
             Passing in each argument as a seperate parameter to ULabel is now deprecated \n
             Please pass in an object with keyword arguments instead
-        `);
+        `, LogLevel.WARNING, true);
 
         return {
             // Required
@@ -526,7 +525,7 @@ export class ULabel {
 
         // Ensure arguments were recieved
         if (arguments.length === 0) {
-            console.error("ULabel was given no arguments");
+            log_message("ULabel was given no arguments", LogLevel.WARNING, true);
         } else if (arguments.length > 1) {
             // The old constructor took in up to 11 arguments,
             // so if more than 1 argument is present convert them to the new format
@@ -545,7 +544,7 @@ export class ULabel {
         // Ensure kwargs has all required properties
         for (const property of required_properties) {
             if (kwargs[property] == undefined) { // == also checks for null
-                console.error(`ULabel did not receive required property ${property}`);
+                log_message(`ULabel did not receive required property ${property}`, LogLevel.ERROR);
             }
         }
 
@@ -554,7 +553,7 @@ export class ULabel {
 
         // Process deprecated config_data field by adding each key-value pair to kwargs
         if ("config_data" in kwargs) {
-            console.warn("The 'config_data' argument is deprecated. Please pass in all configuration values as keyword arguments.");
+            log_message("The 'config_data' argument is deprecated. Please pass in all configuration values as keyword arguments.", LogLevel.WARNING, true);
             for (const key in kwargs["config_data"]) {
                 kwargs[key] = kwargs["config_data"][key];
             }
@@ -710,7 +709,7 @@ export class ULabel {
                     });
                     break;
                 default:
-                    console.warn(`Toolbox item ${toolbox_name} is associated with an overlay, yet no overlay logic exists.`);
+                    log_message(`Toolbox item ${toolbox_name} is associated with an overlay, yet no overlay logic exists.`, LogLevel.WARNING, true);
             }
         }
     }
@@ -727,7 +726,7 @@ export class ULabel {
                 $("#" + this.config["container_id"] + " div.toolbox_inner_cls").css("overflow-y", "scroll");
             }
         } catch (e) {
-            console.warn("Failed to resize toolbox", e);
+            log_message(`Failed to resize toolbox: ${e.message}`, LogLevel.WARNING, true);
         }
     }
 
@@ -775,7 +774,8 @@ export class ULabel {
             } else {
                 log_message(
                     `Initial crop must contain properties "width", "height", "left", and "top". Ignoring.`,
-                    LogLevel.INFO,
+                    LogLevel.WARNING,
+                    true,
                 );
             }
         }
@@ -1081,7 +1081,7 @@ export class ULabel {
     set_and_update_annotation_mode(annotation_mode) {
         // Ensure new mode is allowed
         if (!this.get_current_subtask()["allowed_modes"].includes(annotation_mode)) {
-            console.warn(`Annotation mode ${annotation_mode} is not allowed for subtask ${this.get_current_subtask_key()}`);
+            log_message(`Annotation mode ${annotation_mode} is not allowed for subtask ${this.get_current_subtask_key()}`, LogLevel.WARNING);
             return false;
         }
         // Set the new mode via the toolbox
@@ -1147,7 +1147,8 @@ export class ULabel {
                 // TODO broader refactor of error handling and detecting/preventing corruption
                 log_message(
                     "Annotation mode is not understood",
-                    LogLevel.INFO,
+                    LogLevel.WARNING,
+                    true,
                 );
                 return null;
         }
@@ -1336,6 +1337,7 @@ export class ULabel {
                 log_message(
                     "Unable to apply access string to annotation of type " + spatial_type,
                     LogLevel.WARNING,
+                    true,
                 );
         }
     }
@@ -1419,6 +1421,7 @@ export class ULabel {
                 log_message(
                     "Unable to apply access string to annotation of type " + spatial_type,
                     LogLevel.WARNING,
+                    true,
                 );
         }
     }
@@ -1430,7 +1433,7 @@ export class ULabel {
 
         // Log an error and return a default color if the color is undefined
         if (color === undefined) {
-            console.error(`get_annotation_color encountered error while getting annotation color with class id ${class_id}`);
+            log_message(`get_annotation_color encountered error while getting annotation color with class id ${class_id}`, LogLevel.ERROR, true);
             return this.config.default_annotation_color;
         }
 
@@ -1442,7 +1445,7 @@ export class ULabel {
     get_active_class_color() {
         const color = this.color_info[this.get_active_class_id()];
         if (color === undefined) {
-            console.error(`get_active_class_color() encountered error while getting active class color.`);
+            log_message(`get_active_class_color() encountered error while getting active class color.`, LogLevel.ERROR, true);
             return this.config.default_annotation_color;
         }
         return color;
@@ -1813,7 +1816,7 @@ export class ULabel {
         if (subtask === "demo") {
             // Must be demo
             if (annotation_object["canvas_id"] != "demo_canvas_context") {
-                throw new Error("Error drawing demo annotation.");
+                log_message("Attempted to draw demo annotation on non-demo canvas.", LogLevel.ERROR);
             }
             context = this.state["demo_canvas_context"];
         } else if (NONSPATIAL_MODES.includes(annotation_object["spatial_type"])) {
@@ -1857,7 +1860,8 @@ export class ULabel {
             default:
                 log_message(
                     "Annotation mode " + annotation_object["spatial_type"] + " not understood",
-                    LogLevel.INFO,
+                    LogLevel.WARNING,
+                    true,
                 );
                 break;
         }
@@ -3677,7 +3681,8 @@ export class ULabel {
                 default:
                     log_message(
                         `Annotation mode is not understood: ${spatial_type}`,
-                        LogLevel.INFO,
+                        LogLevel.WARNING,
+                        true,
                     );
                     break;
             }
@@ -4102,15 +4107,17 @@ export class ULabel {
                 case "point":
                     // TODO contour editing
                     log_message(
-                        "Annotation mode is not currently editable",
-                        LogLevel.INFO,
+                        `Annotation mode ${spatial_type} is not currently editable`,
+                        LogLevel.WARNING,
+                        true,
                     );
                     edit_success = false;
                     break;
                 default:
                     log_message(
                         `Annotation mode ${spatial_type} is not understood`,
-                        LogLevel.INFO,
+                        LogLevel.WARNING,
+                        true,
                     );
                     edit_success = false;
                     break;
@@ -4311,7 +4318,7 @@ export class ULabel {
                 active_spatial_payload = spatial_payload[active_idx];
                 n_kpts = active_spatial_payload.length;
                 if (n_kpts < 4) {
-                    console.error("Canceled polygon with insufficient points:", n_kpts);
+                    log_message("Canceled polygon with insufficient points:", n_kpts, LogLevel.WARNING, true);
                     return;
                 }
                 start_pt = [
@@ -4331,7 +4338,7 @@ export class ULabel {
             case "delete_polygon":
                 n_kpts = active_spatial_payload.length;
                 if (n_kpts < 4) {
-                    console.error("Canceled delete with insufficient points:", n_kpts);
+                    log_message("Canceled delete with insufficient points:", n_kpts, LogLevel.WARNING, true);
                     return;
                 }
                 start_pt = [
@@ -4345,7 +4352,7 @@ export class ULabel {
                 // Prevent zero-length polylines (must have at least two unique points)
                 uniquePoints = new Set(spatial_payload.map((pt) => pt.join(",")));
                 if (uniquePoints.size < 2) {
-                    console.warn("Canceled polyline with insufficient unique points:", spatial_payload);
+                    log_message("Canceled polyline with insufficient unique points:", spatial_payload, LogLevel.WARNING, true);
                     return;
                 }
 

@@ -33,11 +33,6 @@ export function record_action(ulabel: ULabel, raw_action: ULabelActionRaw, is_re
         current_subtask.actions.undone_stack = [];
     }
 
-    log_message(
-        `Action: ${raw_action.act_type} for annotation ID: ${raw_action.annotation_id}, recorded: ${add_to_action_stream}, is_redo: ${is_redo}`,
-        LogLevel.INFO,
-    );
-
     // Stringify the undo/redo payloads
     const act_type = raw_action.act_type;
     const action: ULabelAction = {
@@ -130,7 +125,7 @@ export function record_finish_edit(ulabel: ULabel, active_id: string) {
 
     // If no action was found, log an error and return
     if (action === null) {
-        log_message(`No "begin_edit" action found for annotation ID: ${active_id}`, LogLevel.ERROR);
+        log_message(`No "begin_edit" action found for annotation ID: ${active_id}`, LogLevel.ERROR, true);
         return;
     }
 
@@ -504,11 +499,6 @@ export function undo(ulabel: ULabel, is_internal_undo: boolean = false) {
 
     let undo_candidate = action_stream.pop();
 
-    log_message(
-        `Undoing action: ${undo_candidate.act_type} for annotation ID: ${undo_candidate.annotation_id}, is_internal_undo: ${is_internal_undo}`,
-        LogLevel.INFO,
-    );
-
     // Finish action if it is marked as unfinished
     if (JSON.parse(undo_candidate.redo_payload).finished === false) {
         // Push action back to the stream, finish, then pop it again
@@ -571,10 +561,6 @@ export function redo(ulabel: ULabel) {
 
     // Redo the action
     const redo_candidate = undone_stack.pop();
-    log_message(
-        `Redoing action: ${redo_candidate.act_type} for annotation ID: ${redo_candidate.annotation_id}`,
-        LogLevel.INFO,
-    );
     redo_action(ulabel, redo_candidate);
 }
 
