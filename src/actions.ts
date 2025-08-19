@@ -456,6 +456,8 @@ function on_annotation_revert(
     const actions_undo: ULabelActionType[] = [
         "begin_brush", // triggered when a brush is started
         "cancel_annotation", // triggered when an annotation is canceled
+        "merge_polygon_complex_layer",
+        "simplify_polygon_complex_layer",
     ];
 
     if (is_undo && actions_undo.includes(action.act_type)) {
@@ -475,18 +477,6 @@ this.remove_recorded_events_for_annotation(delete_annid);
 redraw_multiple_spatial_annotations
 this.update_filter_distance(null, false, true);
 this.toolbox.redraw_update_items(this);
-
-MERGE POLYGON COMPLEX LAYER
-rebuild_containing_box(annotation_id);
-redraw_annotation(annotation_id);
-*UNDO*:
-rebuild_containing_box(annotation_id);
-redraw_annotation(annotation_id);
-
-SIMPLIFY POLYGON COMPLEX LAYER
-*UNDO*:
-rebuild_containing_box(undo_payload["actid"]);
-redraw_annotation(undo_payload["actid"]);
 
 */
 

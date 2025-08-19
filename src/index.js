@@ -2452,8 +2452,6 @@ export class ULabel {
     // Undo the merging of layers by replacing the annotation with the undo payload
     merge_polygon_complex_layer__undo(annotation_id, undo_payload) {
         this.replace_polygon_spatial_data(annotation_id, undo_payload["og_polygon_spatial_data"]);
-        this.rebuild_containing_box(annotation_id);
-        this.redraw_annotation(annotation_id);
     }
 
     // Call merge_polygon_complex_layer on all layers of a polygon
@@ -2498,8 +2496,6 @@ export class ULabel {
     // Undo the simplification of a layer by replacing the annotation with the undo payload
     simplify_polygon_complex_layer__undo(annotation_id, undo_payload) {
         this.replace_polygon_spatial_data(annotation_id, undo_payload["og_polygon_spatial_data"]);
-        this.rebuild_containing_box(annotation_id);
-        this.redraw_annotation(annotation_id);
     }
 
     // Delete all annotations that are completely within a delete annotation (a simple polygon).
