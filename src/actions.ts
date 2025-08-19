@@ -26,6 +26,7 @@ import { log_message, LogLevel } from "./error_logging";
 export function record_action(ulabel: ULabel, raw_action: ULabelActionRaw, is_redo: boolean = false, add_to_action_stream: boolean = true) {
     ulabel.set_saved(false);
     const current_subtask = ulabel.get_current_subtask();
+    const annotation = current_subtask.annotations.access[raw_action.annotation_id];
 
     // After a new action, you can no longer redo old actions
     if (add_to_action_stream && !is_redo) {
@@ -45,11 +46,17 @@ export function record_action(ulabel: ULabel, raw_action: ULabelActionRaw, is_re
         frame: raw_action.frame,
         undo_payload: JSON.stringify(raw_action.undo_payload),
         redo_payload: JSON.stringify(raw_action.redo_payload),
+        prev_timestamp: annotation.last_edited_at,
+        prev_user: annotation.last_edited_by,
     };
 
     // Add to stream
     if (add_to_action_stream) {
         current_subtask.actions.stream.push(action);
+
+        // Update annotation edit info
+        annotation.last_edited_at = ULabel.get_time();
+        annotation.last_edited_by = ulabel.config.username;
     }
 
     // Trigger any listeners for the action
@@ -580,6 +587,12 @@ export function redo(ulabel: ULabel) {
 function undo_action(ulabel: ULabel, action: ULabelAction) {
     ulabel.update_frame(null, action.frame);
     const undo_payload = JSON.parse(action.undo_payload);
+    const annotation = ulabel.get_current_subtask().annotations.access[action.annotation_id];
+
+    // Revert the annotation's last edited info
+    annotation.last_edited_at = action.prev_timestamp;
+    annotation.last_edited_by = action.prev_user;
+
     switch (action.act_type) {
         case "begin_annotation":
             ulabel.begin_annotation__undo(action.annotation_id);

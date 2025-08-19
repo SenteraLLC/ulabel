@@ -256,106 +256,127 @@ export class ULabel {
                     continue;
                 }
 
+                // Ensure the id is unique
+                if (
+                    (cand.id === undefined) || (cand.id in ul.subtasks[subtask_key]["annotations"]["access"])
+                ) {
+                    cand.id = ul.make_new_annotation_id();
+                }
+
                 // Set to default line size if there is none, check for null and undefined using ==
                 if (
-                    (!("line_size" in cand)) || (cand["line_size"] == null)
+                    (cand.line_size === undefined) || (cand.line_size == null)
                 ) {
-                    cand["line_size"] = ul.get_initial_line_size();
+                    cand.line_size = ul.get_initial_line_size();
                 }
 
                 // Add created by attribute if there is none
                 if (
-                    !("created_by" in cand)
+                    (cand.created_by === undefined)
                 ) {
-                    cand["created_by"] = null;
+                    cand.created_by = "unknown";
                 }
 
                 // Add created at attribute if there is none
                 if (
-                    !("created_at" in cand)
+                    (cand.created_at === undefined)
                 ) {
-                    cand["created_at"] = ULabel.get_time();
+                    cand.created_at = ULabel.get_time();
+                }
+
+                // Add last edited by attribute if there is none
+                if (
+                    (cand.last_edited_by === undefined)
+                ) {
+                    cand.last_edited_by = cand.created_by;
+                }
+
+                // Add last edited at attribute if there is none
+                if (
+                    (cand.last_edited_at === undefined)
+                ) {
+                    cand.last_edited_at = cand.created_at;
                 }
 
                 // Add deprecated at attribute if there is none
                 if (
-                    !("deprecated" in cand)
+                    (cand.deprecated === undefined)
                 ) {
                     mark_deprecated(cand, false);
                 }
 
                 // Throw error if no spatial type is found
                 if (
-                    !("spatial_type" in cand)
+                    (cand.spatial_type === undefined)
                 ) {
-                    alert(`Error: Attempted to import annotation without a spatial type (id: ${cand["id"]})`);
-                    throw `Error: Attempted to import annotation without a spatial type (id: ${cand["id"]})"`;
+                    alert(`Error: Attempted to import annotation without a spatial type (id: ${cand.id})`);
+                    throw `Error: Attempted to import annotation without a spatial type (id: ${cand.id})`;
                 }
 
                 // Throw error if no spatial type is found
                 if (
                     !("spatial_payload" in cand)
                 ) {
-                    alert(`Error: Attempted to import annotation without a spatial payload (id: ${cand["id"]})`);
-                    throw `Error: Attempted to import annotation without a spatial payload (id: ${cand["id"]})"`;
+                    alert(`Error: Attempted to import annotation without a spatial payload (id: ${cand.id})`);
+                    throw `Error: Attempted to import annotation without a spatial payload (id: ${cand.id})`;
                 } else if (
-                    cand["spatial_type"] === "polygon" && cand["spatial_payload"].length < 1
+                    cand.spatial_type === "polygon" && cand.spatial_payload.length < 1
                 ) {
-                    console.warn(`[WARNING]: Skipping attempted import of polygon annotation without any points (id: ${cand["id"]})`);
+                    console.warn(`[WARNING]: Skipping attempted import of polygon annotation without any points (id: ${cand.id})`);
                     continue;
                 }
 
                 // Set frame to zero if not provided
                 if (
-                    !("frame" in cand)
+                    (cand.frame === undefined)
                 ) {
-                    cand["frame"] = 0;
+                    cand.frame = 0;
                 }
 
                 // Set annotation_meta if not provided
                 if (
-                    !("annotation_meta" in cand)
+                    (cand.annotation_meta === undefined)
                 ) {
-                    cand["annotation_meta"] = {};
+                    cand.annotation_meta = {};
                 }
 
                 // Ensure that classification payloads are compatible with config
-                cand.ensure_compatible_classification_payloads(ul.subtasks[subtask_key]["class_ids"]);
+                cand.ensure_compatible_classification_payloads(ul.subtasks[subtask_key].class_ids);
 
-                cand["classification_payloads"].sort(
+                cand.classification_payloads.sort(
                     (a, b) => {
                         return (
-                            ul.subtasks[subtask_key]["class_ids"].find((e) => e === a["class_id"]) -
-                            ul.subtasks[subtask_key]["class_ids"].find((e) => e === b["class_id"])
+                            ul.subtasks[subtask_key].class_ids.find((e) => e === a.class_id) -
+                            ul.subtasks[subtask_key].class_ids.find((e) => e === b.class_id)
                         );
                     },
                 );
 
                 // Push to ordering and add to access
-                ul.subtasks[subtask_key]["annotations"]["ordering"].push(cand["id"]);
+                ul.subtasks[subtask_key]["annotations"]["ordering"].push(cand.id);
                 ul.subtasks[subtask_key]["annotations"]["access"][subtask["resume_from"][i]["id"]] = cand;
 
-                if (cand["spatial_type"] === "polygon") {
+                if (cand.spatial_type === "polygon") {
                     // If missing any of `spatial_payload_holes` or `spatial_payload_child_indices`,
                     // or if they don't match the length of `spatial_payload`, then rebuild them
                     if (
-                        !("spatial_payload_holes" in cand) ||
-                        !("spatial_payload_child_indices" in cand) ||
-                        cand["spatial_payload_holes"].length !== cand["spatial_payload"].length ||
-                        cand["spatial_payload_child_indices"].length !== cand["spatial_payload"].length
+                        (cand.spatial_payload_holes === undefined) ||
+                        (cand.spatial_payload_child_indices === undefined) ||
+                        cand.spatial_payload_holes.length !== cand.spatial_payload.length ||
+                        cand.spatial_payload_child_indices.length !== cand.spatial_payload.length
                     ) {
                         ul.state.current_subtask = subtask_key;
                         // For polygons, verify all layers
-                        ul.verify_all_polygon_complex_layers(cand["id"]);
-                        // Clear action stream, since the above action should not be undoable
-                        ul.remove_recorded_events_for_annotation(cand["id"]);
+                        ul.verify_all_polygon_complex_layers(cand.id);
                     }
                 }
 
                 // Update the containing box for all spatial types
-                if (!NONSPATIAL_MODES.includes(cand["spatial_type"])) {
-                    ul.rebuild_containing_box(cand["id"], false, subtask_key);
+                if (!NONSPATIAL_MODES.includes(cand.spatial_type)) {
+                    ul.rebuild_containing_box(cand.id, false, subtask_key);
                 }
+
+                console.log(cand);
             }
         }
     }
@@ -2458,7 +2479,7 @@ export class ULabel {
         // merge_polygon_complex_layer will verify all layers
         // We can start at layer 1 since layer 0 is always a fill
         for (let layer_idx = 1; layer_idx < annotation["spatial_payload"].length; layer_idx++) {
-            this.merge_polygon_complex_layer(annotation_id, layer_idx, false, false);
+            this.merge_polygon_complex_layer(annotation_id, layer_idx, false, false, false);
         }
     }
 
@@ -2946,6 +2967,8 @@ export class ULabel {
             parent_id: null,
             created_by: this.config.username,
             created_at: ULabel.get_time(),
+            last_edited_by: this.config.username,
+            last_edited_at: ULabel.get_time(),
             deprecated: false,
             deprecated_by: { human: false },
             spatial_type: spatial_type,
@@ -3291,6 +3314,8 @@ export class ULabel {
             parent_id: null,
             created_by: this.config.username,
             created_at: ULabel.get_time(),
+            last_edited_by: this.config.username,
+            last_edited_at: ULabel.get_time(),
             deprecated: false,
             deprecated_by: { human: false },
             spatial_type: annotation_mode,
@@ -3393,6 +3418,8 @@ export class ULabel {
             parent_id: null,
             created_by: this.config.username,
             created_at: ULabel.get_time(),
+            last_edited_at: ULabel.get_time(),
+            last_edited_by: this.config.username,
             deprecated: false,
             deprecated_by: { human: false },
             spatial_type: annotation_mode,

@@ -204,6 +204,8 @@ export type ULabelAction = {
     frame: number;
     redo_payload: string; // Stringified object
     undo_payload: string; // Stringified object
+    prev_timestamp: string;
+    prev_user: string;
     is_internal_undo?: boolean;
 };
 
@@ -334,6 +336,9 @@ export class ULabel {
 
     // Listeners
     public remove_listeners(): void;
+
+    // Static functions
+    static get_time(): string;
     static get_allowed_toolbox_item_enum(): AllowedToolboxItem;
     static process_classes(ulabel_obj: ULabel, arg1: string, subtask_obj: ULabelSubtask): void;
     static build_id_dialogs(ulabel_obj: ULabel): void;
