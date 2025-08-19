@@ -266,14 +266,13 @@ function on_in_progress_annotation_spatial_modification(
             diffY: 0,
             diffZ: 0,
         };
-
+        // Update the toolbox filter distance
+        ulabel.update_filter_distance_during_polyline_move(action.annotation_id, true, false, offset);
         // Update the annotation rendering
         ulabel.rebuild_containing_box(action.annotation_id, false, subtask_key);
         ulabel.redraw_annotation(action.annotation_id, subtask_key, offset);
         // Update dialogs
         ulabel.suggest_edits();
-        // Update the toolbox filter distance
-        ulabel.update_filter_distance_during_polyline_move(action.annotation_id, true, false, offset);
     }
 }
 
