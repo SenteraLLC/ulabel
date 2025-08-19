@@ -32,6 +32,11 @@ export function record_action(ulabel: ULabel, raw_action: ULabelActionRaw, is_re
         current_subtask.actions.undone_stack = [];
     }
 
+    log_message(
+        `Action: ${raw_action.act_type} for annotation ID: ${raw_action.annotation_id}, recorded: ${add_to_action_stream}, is_redo: ${is_redo}`,
+        LogLevel.INFO,
+    );
+
     // Stringify the undo/redo payloads
     const act_type = raw_action.act_type;
     const action: ULabelAction = {
@@ -106,7 +111,8 @@ export function record_finish(ulabel: ULabel, active_id: string) {
 export function record_finish_edit(ulabel: ULabel, active_id: string) {
     // Set up constants for convenience
     const current_subtask = ulabel.get_current_subtask();
-    const action = current_subtask.actions.stream.pop();
+    // Iterate backwards through the action stream to find the source "begin_edit" action
+    const action = current_subtask.actions.stream.reverse().find((a) => a.act_type === "begin_edit" && a.annotation_id === active_id);
 
     // Parse and complete the redo payload
     const redo_payload = JSON.parse(action.redo_payload);
@@ -120,9 +126,6 @@ export function record_finish_edit(ulabel: ULabel, active_id: string) {
     redo_payload.ending_frame = ulabel.state.current_frame;
     redo_payload.finished = true;
     action.redo_payload = JSON.stringify(redo_payload);
-
-    // Add the completed action back to the stream
-    current_subtask.actions.stream.push(action);
 
     // Record action without adding to the action stream
     // The "begin_edit" action in the action stream is what is used to

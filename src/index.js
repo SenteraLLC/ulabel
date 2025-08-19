@@ -4026,6 +4026,7 @@ export class ULabel {
         // Get the edit information and render the edit
         const edit_candidate = current_subtask["state"]["edit_candidate"];
         let starting_point = this.get_with_access_string(active_id, edit_candidate["access"]);
+        console.log("Starting point for edit:", starting_point, edit_candidate);
         let gmx = this.get_global_mouse_x(mouse_event);
         let gmy = this.get_global_mouse_y(mouse_event);
 
@@ -4052,10 +4053,10 @@ export class ULabel {
             },
         });
 
-        this.continue_edit(mouse_event);
+        this.continue_edit(mouse_event, true);
     }
 
-    continue_edit(mouse_event) {
+    continue_edit(mouse_event, is_begin_edit = false) {
         // Convenience and readability
         const current_subtask = this.get_current_subtask();
         const active_id = current_subtask["state"]["active_id"];
@@ -4109,10 +4110,18 @@ export class ULabel {
                     redo_payload: {},
                 }, false, false);
 
+                // If this is the first edit, we may need to update the access string
+                // if we've added a new point to the spatial payload
+                // TODO: less hacky way to do this
+                if (is_begin_edit) {
+                    current_subtask["state"]["is_in_edit"] = false;
+                    this.suggest_edits();
+                    current_subtask["state"]["is_in_edit"] = true;
+                }
+
                 // Update the edit candidate point
                 current_subtask["state"]["edit_candidate"]["point"] = mouse_location;
                 this.show_edit_suggestion(current_subtask["state"]["edit_candidate"], true);
-                this.show_global_edit_suggestion(current_subtask["state"]["edit_candidate"]["annid"]);
             }
         }
     }
@@ -4124,7 +4133,6 @@ export class ULabel {
         let layer_idx;
         switch (current_subtask["annotations"]["access"][actid]["spatial_type"]) {
             case "polygon":
-                record_finish_edit(this, actid);
                 // Reset spatial_payload_child_indices
                 current_subtask["annotations"]["access"][actid]["spatial_payload_child_indices"] = [];
                 // Get the idx of the edited layer and try and merge it
@@ -4136,6 +4144,7 @@ export class ULabel {
                         this.merge_polygon_complex_layer(actid, i);
                     }
                 }
+                record_finish_edit(this, actid);
                 break;
             case "polyline":
             case "bbox":
@@ -4793,12 +4802,13 @@ export class ULabel {
      */
     suggest_edits(mouse_event = null, nonspatial_id = null, force_refresh = false) {
         const current_subtask = this.get_current_subtask();
-        // Don't any dialogs when currently drawing an annotation,
+        // Don't show any dialogs when currently drawing/editing an annotation,
         // And hide just edit dialogs when moving
         if (
             current_subtask["state"]["is_in_progress"] ||
             current_subtask["state"]["starting_complex_polygon"] ||
-            current_subtask["state"]["is_in_brush_mode"]
+            current_subtask["state"]["is_in_brush_mode"] ||
+            current_subtask["state"]["is_in_edit"]
         ) {
             return this.hide_edits();
         } else if (
