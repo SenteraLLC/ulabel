@@ -29,7 +29,7 @@ function handle_keypress_event(
             // Only allow keypress to create point annotations
             if (current_subtask.state.annotation_mode === "point") {
                 // Create an annotation based on the last mouse position
-                ulabel.begin_annotation(ulabel.state["last_move"]);
+                ulabel.create_point_annotation_at_mouse_location();
             }
             break;
         // Create a bbox annotation around the initial_crop,

@@ -6,6 +6,19 @@ All notable changes to this project will be documented here.
 
 Nothing yet.
 
+## [0.19.0] - Aug 19th, 2025
+
+- Add minimal lineage tracking via `last_edited_by` and `last_edited_at` annotation fields
+- Prevent creation of zero-length polylines
+- Fixed `process_resume_from` not actually populating missing annotation fields on load
+- Misc bug/QOL fixes
+  - Simplified/fixed non-spatial annotation creation/deletion
+  - Replaced `alert`, `throw`, and `console` calls with `log_message()`
+  - Cleanup of `suggest_edits()` and other functions related to toggling dialogs
+  - Refactor action stream management and undo/redo flow into `actions.ts`
+    - Move a lot of repeated rendering/cleanup steps after actions into general action listeners that trigger on similar actions
+    - Move `annotation_id` out of undo/redo payloads and into the action itself 
+
 ## [0.18.2] - July 28th, 2025
 
 - Fix special characters in submit buttons breaking tool

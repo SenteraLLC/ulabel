@@ -67,12 +67,17 @@ export class SubmitButtons extends ToolboxItem {
 
                     // Add all of the annotations in that subtask
                     let annotation: ULabelAnnotation;
+                    let temp_annotation: ULabelAnnotation | object;
                     for (let i = 0; i < ulabel.subtasks[stkey]["annotations"]["ordering"].length; i++) {
-                        try {
-                            annotation = ULabelAnnotation.from_json(ulabel.subtasks[stkey]["annotations"]["access"][ulabel.subtasks[stkey]["annotations"]["ordering"][i]]);
-                        } catch (e) {
-                            console.error("Error validating annotation during submit.", e);
-                            continue;
+                        temp_annotation = ulabel.subtasks[stkey]["annotations"]["access"][ulabel.subtasks[stkey]["annotations"]["ordering"][i]];
+                        // Validate the annotation
+                        if (typeof temp_annotation === "object") {
+                            try {
+                                annotation = ULabelAnnotation.from_json(ulabel.subtasks[stkey]["annotations"]["access"][ulabel.subtasks[stkey]["annotations"]["ordering"][i]]);
+                            } catch (e) {
+                                console.error("Error validating annotation during submit.", e);
+                                continue;
+                            }
                         }
 
                         // Handle null

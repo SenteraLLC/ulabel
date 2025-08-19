@@ -49,6 +49,9 @@ export class ULabelAnnotation {
         public spatial_payload_holes?: boolean[],
         // Track what holes belong to what fill, ie if spatial_payload[0] is a fill with a hole at spatial_payload[1], spatial_payload_child_indices[0] = [1]
         public spatial_payload_child_indices?: number[][],
+        // Lineage tracking fields
+        public last_edited_by?: string,
+        public last_edited_at?: string,
     ) {}
 
     public ensure_compatible_classification_payloads(ulabel_class_ids: [number]) {

@@ -168,6 +168,60 @@ export type ImageData = {
 
 export type AnnoScalingMode = "fixed" | "inverse-zoom" | "match-zoom";
 
+export type ULabelActionType = "create_nonspatial_annotation" |
+    "create_annotation" |
+    "begin_annotation" |
+    "continue_annotation" |
+    "finish_annotation" |
+    "begin_edit" |
+    "continue_edit" |
+    "finish_edit" |
+    "begin_move" |
+    "continue_move" |
+    "finish_move" |
+    "cancel_annotation" |
+    "delete_annotation" |
+    "delete_annotations_in_polygon" |
+    "start_complex_polygon" |
+    "merge_polygon_complex_layer" |
+    "simplify_polygon_complex_layer" |
+    "begin_brush" |
+    "continue_brush" |
+    "finish_modify_annotation" |
+    "assign_annotation_id";
+
+export type ULabelActionRaw = {
+    act_type: ULabelActionType;
+    annotation_id: string | null;
+    frame: number;
+    redo_payload: object;
+    undo_payload: object;
+};
+
+export type ULabelAction = {
+    act_type: ULabelActionType;
+    annotation_id: string | null;
+    frame: number;
+    redo_payload: string; // Stringified object
+    undo_payload: string; // Stringified object
+    prev_timestamp: string;
+    prev_user: string;
+    is_internal_undo?: boolean;
+};
+
+export type ULabelActionCandidate = {
+    annid: string;
+    /**
+     * Access string, referring to the point with a spatial payload being edited.
+     * The type varies on the type of spatial payload.
+     */
+    access: string | number | [number, number];
+    distance: number;
+    point: [number, number]; // Mouse location
+    spatial_type: ULabelSpatialType;
+    offset?: Offset; // Optional offset for move actions
+};
+
 export type ULabelSubtasks = { [key: string]: ULabelSubtask };
 
 export class ULabel {
@@ -240,22 +294,31 @@ export class ULabel {
     public get_annotations(subtask: ULabelSubtask): ULabelAnnotation[];
     public set_annotations(annotations: ULabelAnnotation[], subtask: ULabelSubtask);
     public set_saved(saved: boolean);
+    public draw_annotation_from_id(id: string, offset?: Offset, subtask?: string): void;
+    public redraw_annotation(annotation_id: string, subtask?: string, offset?: Offset): void;
     public redraw_all_annotations(
         subtask?: string, // TODO (joshua-dean): THIS IS SUBTASK KEY, NAME PROPERLY
         offset?: number,
         spatial_only?: boolean,
     );
-    public redraw_multiple_spatial_annotations(annotation_ids: string[], subtask?: string, offset?: number);
+    public redraw_multiple_spatial_annotations(annotation_ids: string[], subtask?: string, offset?: Offset);
+    public clear_nonspatial_annotation(annotation_id: string): void;
     public show_annotation_mode(
         target_jq?: JQuery<HTMLElement>, // TODO (joshua-dean): validate this type
     );
     public update_frame(delta?: number, new_frame?: number): void;
-    public handle_id_dialog_hover(
-        mouse_event: JQuery.TriggeredEvent,
-        pos_evt?: {
-            class_ind: number;
-            dist_prop: number;
-        },
+    public rebuild_containing_box(actid: string, ignore_final?: boolean, subtask?: string): void;
+    public update_filter_distance_during_polyline_move(
+        annotation_id: string,
+        redraw_update_items?: boolean,
+        force_filter_all?: boolean,
+        offset?: Offset,
+    ): void;
+    public update_filter_distance(
+        annotation_id: string,
+        redraw_update_items?: boolean,
+        force_filter_all?: boolean,
+        offset?: Offset,
     ): void;
 
     // Brush
@@ -267,8 +330,15 @@ export class ULabel {
     public recolor_brush_circle(): void;
     public destroy_brush_circle(): void;
 
+    // Polygon ender
+    public destroy_polygon_ender(polygon_id: string): void;
+    public recolor_active_polygon_ender(): void;
+
     // Listeners
     public remove_listeners(): void;
+
+    // Static functions
+    static get_time(): string;
     static get_allowed_toolbox_item_enum(): AllowedToolboxItem;
     static process_classes(ulabel_obj: ULabel, arg1: string, subtask_obj: ULabelSubtask): void;
     static build_id_dialogs(ulabel_obj: ULabel): void;
@@ -281,25 +351,69 @@ export class ULabel {
 
     // Annotation lifecycle
     // TODO (joshua-dean): type for redo_payload
-    public begin_annotation(mouse_event: JQuery.TriggeredEvent, redo_payload?: object): void;
+    public begin_annotation(mouse_event: JQuery.TriggeredEvent, annotation_id?: string, redo_payload?: object): void;
+    public continue_annotation(mouse_event: JQuery.TriggeredEvent, is_click?: boolean, annotation_id?: string, redo_payload?: object): void;
+    public delete_annotation(
+        annotation_id: string,
+        redoing?: boolean,
+        should_record_action?: boolean,
+    ): void;
+    public cancel_annotation(annotation_id?: string): void;
+    public assign_annotation_id(annotation_id?: string, redo_payload?: object): void;
+    public create_point_annotation_at_mouse_location(): void;
     public create_annotation(
         spatial_type: ULabelSpatialType,
         spatial_payload: ULabelSpatialPayload,
         unique_id?: string,
+        is_redo?: boolean,
     ): void;
     public create_nonspatial_annotation(
-        redo_payload?: object,
+        annotation_id?: string, redo_payload?: object,
     ): void;
-    public delete_annotation(
+    public start_complex_polygon(annotation_id?: string): void;
+    public merge_polygon_complex_layer(
         annotation_id: string,
-        redo_payload?: object,
-        record_action?: boolean,
+        layer_idx?: number,
+        recursive_call?: boolean,
+        redoing?: boolean,
+        redraw?: boolean,
     ): void;
-    public cancel_annotation(redo_payload?: object): void;
+    public simplify_polygon_complex_layer(
+        annotation_id: string,
+        active_idx: string,
+        redoing?: boolean,
+    ): void;
+    public delete_annotations_in_polygon(delete_annid: string, redo_payload?: object): void;
     public get_active_class_id(): number;
     public get_active_class_id_idx(): number;
-    public undo(is_internal_undo?: boolean): void;
+
+    // Undo
+    public undo(): void;
+    public begin_annotation__undo(annotation_id: string): void;
+    public continue_annotation__undo(annotation_id: string): void;
+    public finish_annotation__undo(annotation_id: string): void;
+    public begin_edit__undo(annotation_id: string, undo_payload: object): void;
+    public begin_move__undo(annotation_id: string, undo_payload: object): void;
+    public delete_annotation__undo(annotation_id: string): void;
+    public cancel_annotation__undo(annotation_id: string, undo_payload: object): void;
+    public assign_annotation_id__undo(annotation_id: string, undo_payload: object): void;
+    public create_annotation__undo(annotation_id: string): void;
+    public create_nonspatial_annotation__undo(annotation_id: string): void;
+    public start_complex_polygon__undo(annotation_id: string): void;
+    public merge_polygon_complex_layer__undo(annotation_id: string, undo_payload: object): void;
+    public simplify_polygon_complex_layer__undo(annotation_id: string, undo_payload: object): void;
+    public delete_annotations_in_polygon__undo(undo_payload: object): void;
+    public begin_brush__undo(annotation_id: string, undo_payload: object): void;
+    public finish_modify_annotation__undo(annotation_id: string, undo_payload: object): void;
+
+    // Redo
     public redo(): void;
+    public finish_annotation__redo(annotation_id: string): void;
+    public begin_edit__redo(annotation_id: string, redo_payload: object): void;
+    public begin_move__redo(annotation_id: string, redo_payload: object): void;
+    public delete_annotation__redo(annotation_id: string): void;
+    public create_annotation__redo(annotation_id: string, redo_payload: object): void;
+    public finish_modify_annotation__redo(annotation_id: string, redo_payload: object): void;
 
     // Mouse event handlers
     public handle_mouse_down(mouse_event: JQuery.TriggeredEvent): void;
@@ -324,17 +438,22 @@ export class ULabel {
     public suggest_edits(
         mouse_event?: JQuery.TriggeredEvent,
         nonspatial_id?: string,
+        force_refresh?: boolean,
     ): void;
     public show_global_edit_suggestion(
         annid: string,
-        offset?: {
-            diffX: number;
-            diffY: number;
-            diffZ?: number;
-        },
+        offset?: Offset,
         nonspatial_id?: string,
     ): void;
     public hide_global_edit_suggestion(): void;
+    public hide_edit_suggestion(): void;
+
+    // Edit utils
+    public get_with_access_string(
+        annid: string,
+        access_str: string,
+        as_though_pre_splice: boolean,
+    );
 
     // Drawing
     public rezoom(
@@ -353,6 +472,13 @@ export class ULabel {
     public update_id_dialog_display(
         front?: boolean,
     ): void;
+    public handle_id_dialog_hover(
+        mouse_event: JQuery.TriggeredEvent,
+        pos_evt?: {
+            class_ind: number;
+            dist_prop: number;
+        },
+    ): void;
     public handle_id_dialog_click(
         mouse_event: JQuery.TriggeredEvent,
         annotation_id?: string,
@@ -365,6 +491,7 @@ export class ULabel {
         thumbnail?: boolean,
         nonspatial?: boolean,
     ): void;
+    public hide_id_dialog(): void;
 
     // Canvases
     public get_init_canvas_context_id(
