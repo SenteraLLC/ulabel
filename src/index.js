@@ -2356,7 +2356,7 @@ export class ULabel {
     }
 
     // Check if the newest complex layer can merge with each previous layer.
-    merge_polygon_complex_layer(annotation_id, layer_idx = null, recursive_call = false, redoing = false) {
+    merge_polygon_complex_layer(annotation_id, layer_idx = null, recursive_call = false, redoing = false, should_record_action = true) {
         const annotation = this.get_current_subtask()["annotations"]["access"][annotation_id];
         if (annotation["spatial_type"] === "polygon" && annotation["spatial_payload"].length > 1) {
             const og_polygon_spatial_data = ULabelAnnotation.get_polygon_spatial_data(annotation, true);
@@ -2439,7 +2439,7 @@ export class ULabel {
                     redo_payload: {
                         layer_idx: layer_idx,
                     },
-                }, redoing);
+                }, redoing, should_record_action);
             }
         }
     }
@@ -4023,14 +4023,7 @@ export class ULabel {
         current_subtask["state"]["active_id"] = active_id;
         current_subtask["state"]["is_in_edit"] = true;
 
-        // Get the edit information and render the edit
-        const edit_candidate = current_subtask["state"]["edit_candidate"];
-        let starting_point = this.get_with_access_string(active_id, edit_candidate["access"]);
-        console.log("Starting point for edit:", starting_point, edit_candidate);
-        let gmx = this.get_global_mouse_x(mouse_event);
-        let gmy = this.get_global_mouse_y(mouse_event);
-
-        let annotation_mode = annotations[active_id]["spatial_type"];
+        const annotation_mode = annotations[active_id]["spatial_type"];
         let frame = this.state["current_frame"];
         if (MODES_3D.includes(annotation_mode)) {
             frame = null;
@@ -4041,14 +4034,10 @@ export class ULabel {
             annotation_id: active_id,
             frame: frame,
             undo_payload: {
-                edit_candidate: edit_candidate,
-                starting_x: starting_point[0],
-                starting_y: starting_point[1],
+                annotation: annotations[active_id],
             },
             redo_payload: {
-                edit_candidate: edit_candidate,
-                ending_x: gmx,
-                ending_y: gmy,
+                annotation: annotations[active_id],
                 finished: false,
             },
         });
@@ -4137,11 +4126,11 @@ export class ULabel {
                 current_subtask["annotations"]["access"][actid]["spatial_payload_child_indices"] = [];
                 // Get the idx of the edited layer and try and merge it
                 layer_idx = parseInt(access_str[0], 10);
-                this.merge_polygon_complex_layer(actid, layer_idx);
+                this.merge_polygon_complex_layer(actid, layer_idx, false, false, false);
                 // Check if any other layers need to be merged
                 for (let i = 0; i < current_subtask["annotations"]["access"][actid]["spatial_payload"].length; i++) {
                     if (i !== layer_idx) {
-                        this.merge_polygon_complex_layer(actid, i);
+                        this.merge_polygon_complex_layer(actid, i, false, false, false);
                     }
                 }
                 record_finish_edit(this, actid);
@@ -4167,38 +4156,18 @@ export class ULabel {
     // The action name used to trigger this is "begin_edit"
     // which is updated by the "record_finish_edit" in "finish_edit"
     begin_edit__undo(annotation_id, undo_payload) {
-        // Get the location where the annotation was before the edit
-        const undo_location = [
-            undo_payload.starting_x,
-            undo_payload.starting_y,
-        ];
-
-        // Revert the annotation to its previous state and redraw
-        this.set_with_access_string(annotation_id, undo_payload.edit_candidate["access"], undo_location, true);
+        this.replace_annotation(annotation_id, undo_payload.annotation);
     }
 
     // The action name used to trigger this is "begin_edit"
     // which is updated by the "record_finish_edit" in "finish_edit"
     begin_edit__redo(annotation_id, redo_payload) {
-        // Convenience
-        const current_subtask = this.get_current_subtask();
-        const annotations = current_subtask["annotations"]["access"];
-        const ms_loc = [
-            redo_payload.ending_x,
-            redo_payload.ending_y,
-        ];
-        const cur_loc = this.get_with_access_string(annotation_id, redo_payload.edit_candidate["access"]);
-        const spatial_type = annotations[annotation_id]["spatial_type"];
-        switch (spatial_type) {
-            case "bbox3":
-                ms_loc.push(redo_payload.ending_frame);
-                this.set_with_access_string(annotation_id, redo_payload.edit_candidate["access"], ms_loc, false);
-                break;
-            default:
-                this.set_with_access_string(annotation_id, redo_payload.edit_candidate["access"], ms_loc, false);
-                break;
-        }
+        // Save the current annotation for undo
+        const current_annotation = JSON.parse(JSON.stringify(this.get_current_subtask()["annotations"]["access"][annotation_id]));
+        // Replace the annotation with the redo payload
+        this.replace_annotation(annotation_id, redo_payload.annotation);
 
+        const spatial_type = redo_payload.annotation["spatial_type"];
         let frame = this.state["current_frame"];
         if (MODES_3D.includes(spatial_type)) {
             frame = null;
@@ -4208,14 +4177,10 @@ export class ULabel {
             annotation_id: annotation_id,
             frame: frame,
             undo_payload: {
-                edit_candidate: redo_payload.edit_candidate,
-                starting_x: cur_loc[0],
-                starting_y: cur_loc[1],
+                annotation: current_annotation,
             },
             redo_payload: {
-                edit_candidate: redo_payload.edit_candidate,
-                ending_x: redo_payload.ending_x,
-                ending_y: redo_payload.ending_y,
+                annotation: redo_payload.annotation,
                 finished: true,
             },
         }, true);

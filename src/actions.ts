@@ -111,19 +111,25 @@ export function record_finish(ulabel: ULabel, active_id: string) {
 export function record_finish_edit(ulabel: ULabel, active_id: string) {
     // Set up constants for convenience
     const current_subtask = ulabel.get_current_subtask();
+    const stream = current_subtask.actions.stream;
     // Iterate backwards through the action stream to find the source "begin_edit" action
-    const action = current_subtask.actions.stream.reverse().find((a) => a.act_type === "begin_edit" && a.annotation_id === active_id);
+    let action: ULabelAction | null = null;
+    for (let i = stream.length - 1; i >= 0; i--) {
+        if (stream[i].act_type === "begin_edit" && stream[i].annotation_id === active_id) {
+            action = stream[i];
+            break;
+        }
+    }
+
+    // If no action was found, log an error and return
+    if (action === null) {
+        log_message(`No "begin_edit" action found for annotation ID: ${active_id}`, LogLevel.ERROR);
+        return;
+    }
 
     // Parse and complete the redo payload
     const redo_payload = JSON.parse(action.redo_payload);
-    const fin_pt = ulabel.get_with_access_string(
-        active_id,
-        redo_payload.edit_candidate.access,
-        true,
-    );
-    redo_payload.ending_x = fin_pt[0];
-    redo_payload.ending_y = fin_pt[1];
-    redo_payload.ending_frame = ulabel.state.current_frame;
+    redo_payload.annotation = current_subtask.annotations.access[active_id];
     redo_payload.finished = true;
     action.redo_payload = JSON.stringify(redo_payload);
 
@@ -469,20 +475,6 @@ function on_annotation_revert(
     }
 }
 
-/*
-
-DELETE IN POLYGON
-destroy_annotation_context(delete_annid);
-this.destroy_polygon_ender(delete_annid);
-remove from ordering and annotation lists
-this.remove_recorded_events_for_annotation(delete_annid);
-*UNDO*
-redraw_multiple_spatial_annotations
-this.update_filter_distance(null, false, true);
-this.toolbox.redraw_update_items(this);
-
-*/
-
 // ================= Undo / Redo =================
 
 /**
@@ -507,7 +499,7 @@ export function undo(ulabel: ULabel, is_internal_undo: boolean = false) {
     let undo_candidate = action_stream.pop();
 
     log_message(
-        `Undoing action: ${undo_candidate.act_type} for annotation ID: ${undo_candidate.annotation_id}`,
+        `Undoing action: ${undo_candidate.act_type} for annotation ID: ${undo_candidate.annotation_id}, is_internal_undo: ${is_internal_undo}`,
         LogLevel.INFO,
     );
 
@@ -522,8 +514,8 @@ export function undo(ulabel: ULabel, is_internal_undo: boolean = false) {
 
     // Set internal undo status
     undo_candidate.is_internal_undo = is_internal_undo;
-    undo_action(ulabel, undo_candidate);
     undone_stack.push(undo_candidate);
+    undo_action(ulabel, undo_candidate);
 
     // Trigger any listeners for the action
     on_start_annotation_spatial_modification(
