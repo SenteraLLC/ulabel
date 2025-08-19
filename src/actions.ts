@@ -283,6 +283,7 @@ function on_finish_annotation_spatial_modification(
         "finish_edit", // triggered when edit ends
         "finish_move", // triggered when move ends
         "finish_annotation", // triggered when most annotations end (except for brush/complex polygons),
+        "cancel_annotation", // triggered when an annotation is canceled
     ];
 
     // Triggered on undo only
@@ -290,6 +291,7 @@ function on_finish_annotation_spatial_modification(
         "finish_modify_annotation",
         "finish_annotation",
         "delete_annotation",
+        "start_complex_polygon", // triggered when complex polygon is started
         "begin_edit", // triggered when edit begins, updated when edit ends
         "begin_move", // triggered when move begins, updated when move ends
     ];
@@ -344,7 +346,6 @@ function on_annotation_deletion(
     ];
 
     const action_undo: ULabelActionType[] = [
-        // "delete_annotation", // Undeprecates the annotation
         "begin_annotation", // When undone, the annotation is deleted
         "create_annotation", // When undone, the annotation is deleted
         "create_nonspatial_annotation", // When undone, the annotation is deleted
@@ -436,20 +437,6 @@ function on_annotation_id_change(
 
 /*
 
-CREATE_NONSPATIAL
-draw_annotation_from_id
-*UNDO*:
-redraw_all_annotations
-suggest_edits
-
-CANCEL
-start_complex_polygon__undo
-delete_annotation
-*UNDO*:
-redraw_annotation
-delete_annotation__undo
-create_polygon_ender
-
 DELETE IN POLYGON
 destroy_annotation_context(delete_annid);
 this.destroy_polygon_ender(delete_annid);
@@ -459,14 +446,6 @@ this.remove_recorded_events_for_annotation(delete_annid);
 redraw_multiple_spatial_annotations
 this.update_filter_distance(null, false, true);
 this.toolbox.redraw_update_items(this);
-
-START COMPLEX POLYGON
-hide_edit_suggestion();
-hide_global_edit_suggestion();
-*UNDO*:
-destroy_polygon_ender(undo_payload.actid);
-this.rebuild_containing_box(undo_payload.actid);
-this.redraw_annotation(undo_payload.actid);
 
 MERGE POLYGON COMPLEX LAYER
 rebuild_containing_box(annotation_id);

@@ -3757,14 +3757,9 @@ export class ULabel {
         current_subtask["state"]["starting_complex_polygon"] = false;
         // Remove the placeholder annotation
         current_subtask["annotations"]["access"][annotation_id]["spatial_payload"].pop();
-        // Remove the polygon ender
-        this.destroy_polygon_ender(annotation_id);
         // Mark that we're done here
         current_subtask["state"]["active_id"] = null;
         current_subtask["state"]["is_in_progress"] = false;
-        // Redraw the annotation
-        this.rebuild_containing_box(annotation_id);
-        this.redraw_annotation(annotation_id);
     }
 
     // Split a ULabel complex polygon seperate turf polygons for each fill
@@ -4231,20 +4226,6 @@ export class ULabel {
         let is_complex_layer = false;
         if (annotation_id !== null) {
             const annotation = this.get_current_subtask()["annotations"]["access"][annotation_id];
-            // Record the cancel action
-            record_action(this, {
-                act_type: "cancel_annotation",
-                annotation_id: annotation_id,
-                frame: this.state["current_frame"],
-                undo_payload: {
-                    suggest_edits: false,
-                    drag_state: this.drag_state,
-                    is_complex_layer: is_complex_layer,
-                    annotation: annotation,
-                },
-                redo_payload: {},
-            }, redoing);
-
             const spatial_type = annotation["spatial_type"];
             // When drawing a complex layer, we will only delete the last layer
             if (
@@ -4258,6 +4239,20 @@ export class ULabel {
                 // This will also clear is_in_progress and other states
                 this.delete_annotation(annotation_id, false, false);
             }
+
+            // Record the cancel action
+            record_action(this, {
+                act_type: "cancel_annotation",
+                annotation_id: annotation_id,
+                frame: this.state["current_frame"],
+                undo_payload: {
+                    suggest_edits: false,
+                    drag_state: this.drag_state,
+                    is_complex_layer: is_complex_layer,
+                    annotation: annotation,
+                },
+                redo_payload: {},
+            }, redoing);
         }
     }
 
@@ -4270,12 +4265,13 @@ export class ULabel {
         if (undo_payload.is_complex_layer) {
             // Restore the removed layer
             this.replace_annotation(annotation_id, undo_payload.annotation);
-            // Redraw the annotation
-            this.redraw_annotation(annotation_id);
         } else {
             // Undeprecate the annotation
             this.delete_annotation__undo(annotation_id);
         }
+
+        // Redraw the annotation
+        this.redraw_annotation(annotation_id);
 
         const annotation = current_subtask["annotations"]["access"][annotation_id];
         // If a polygon/delete polygon, show the ender
@@ -4402,17 +4398,6 @@ export class ULabel {
                     break;
                 }
             }
-
-            // When shift key is held, we start a new complex layer
-            if (
-                annotation["spatial_type"] === "polygon" &&
-                !current_subtask["state"]["is_in_brush_mode"] &&
-                mouse_event != null &&
-                mouse_event.shiftKey
-            ) {
-                // Start a new complex layer
-                this.start_complex_polygon();
-            }
         }
 
         // Record the finish_annotation or finish_modify_annotation action
@@ -4442,8 +4427,15 @@ export class ULabel {
         this.state["last_brush_stroke"] = null;
 
         // Set mode to no active annotation, unless shift key is held for a polygon
-        if (current_subtask["state"]["starting_complex_polygon"]) {
-            console.log("Continuing complex polygon...");
+        // When shift key is held, we start a new complex layer
+        if (
+            annotation["spatial_type"] === "polygon" &&
+            !current_subtask["state"]["is_in_brush_mode"] &&
+            mouse_event != null &&
+            mouse_event.shiftKey
+        ) {
+            // Start a new complex layer
+            this.start_complex_polygon();
         } else {
             current_subtask["state"]["active_id"] = null;
             current_subtask["state"]["is_in_progress"] = false;
