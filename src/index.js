@@ -284,21 +284,21 @@ export class ULabel {
                 if (
                     (cand.created_at === undefined)
                 ) {
-                    cand.created_at = ULabel.get_time();
+                    cand.created_at = null;
                 }
 
                 // Add last edited by attribute if there is none
                 if (
                     (cand.last_edited_by === undefined)
                 ) {
-                    cand.last_edited_by = cand.created_by;
+                    cand.last_edited_by = "unknown";
                 }
 
                 // Add last edited at attribute if there is none
                 if (
                     (cand.last_edited_at === undefined)
                 ) {
-                    cand.last_edited_at = cand.created_at;
+                    cand.last_edited_at = null;
                 }
 
                 // Add deprecated at attribute if there is none
