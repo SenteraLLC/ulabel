@@ -41,46 +41,24 @@ export function record_action(ulabel: ULabel, raw_action: ULabelActionRaw, is_re
         frame: raw_action.frame,
         undo_payload: JSON.stringify(raw_action.undo_payload),
         redo_payload: JSON.stringify(raw_action.redo_payload),
-        prev_timestamp: annotation.last_edited_at,
-        prev_user: annotation.last_edited_by,
+        prev_timestamp: annotation?.last_edited_at || null,
+        prev_user: annotation?.last_edited_by || "unknown",
     };
 
     // Add to stream
     if (add_to_action_stream) {
         current_subtask.actions.stream.push(action);
 
-        // Update annotation edit info
-        annotation.last_edited_at = ULabel.get_time();
-        annotation.last_edited_by = ulabel.config.username;
+        // For some redo actions the annotation may no longer exist
+        if (annotation !== undefined) {
+            // Update annotation edit info
+            annotation.last_edited_at = ULabel.get_time();
+            annotation.last_edited_by = ulabel.config.username;
+        }
     }
 
     // Trigger any listeners for the action
-    on_start_annotation_spatial_modification(
-        ulabel,
-        action,
-    );
-    on_in_progress_annotation_spatial_modification(
-        ulabel,
-        action,
-    );
-    on_finish_annotation_spatial_modification(
-        ulabel,
-        action,
-        false,
-        is_redo,
-    );
-    on_annotation_deletion(
-        ulabel,
-        action,
-    );
-    on_annotation_id_change(
-        ulabel,
-        action,
-    );
-    on_annotation_revert(
-        ulabel,
-        action,
-    );
+    trigger_action_listeners(ulabel, action, false, is_redo);
 };
 
 /**
@@ -216,6 +194,108 @@ function finish_action(ulabel: ULabel, action: ULabelAction) {
 
 // ================= Action Listeners =================
 
+function trigger_action_listeners(
+    ulabel: ULabel,
+    action: ULabelAction,
+    is_undo: boolean = false,
+    is_redo: boolean = false,
+) {
+    const action_map: Record<ULabelActionType, {
+        action?: (ulabel: ULabel, action: ULabelAction) => void;
+        undo?: (ulabel: ULabel, action: ULabelAction, is_undo?: boolean) => void;
+        redo?: (ulabel: ULabel, action: ULabelAction) => void;
+    }> = {
+        begin_annotation: {
+            action: on_start_annotation_spatial_modification,
+            undo: on_annotation_deletion,
+        },
+        create_nonspatial_annotation: {
+            action: on_start_annotation_spatial_modification,
+            undo: on_annotation_deletion,
+        },
+        continue_edit: {
+            action: on_in_progress_annotation_spatial_modification,
+        },
+        continue_move: {
+            action: on_in_progress_annotation_spatial_modification,
+        },
+        continue_brush: {
+            action: on_in_progress_annotation_spatial_modification,
+        },
+        continue_annotation: {
+            action: on_in_progress_annotation_spatial_modification,
+        },
+        create_annotation: {
+            action: on_finish_annotation_spatial_modification,
+            undo: on_annotation_deletion,
+        },
+        finish_modify_annotation: {
+            action: on_finish_annotation_spatial_modification,
+            undo: on_finish_annotation_spatial_modification,
+        },
+        finish_edit: {
+            action: on_finish_annotation_spatial_modification,
+        },
+        finish_move: {
+            action: on_finish_annotation_spatial_modification,
+        },
+        finish_annotation: {
+            action: on_finish_annotation_spatial_modification,
+            undo: on_finish_annotation_spatial_modification,
+        },
+        cancel_annotation: {
+            action: on_finish_annotation_spatial_modification,
+            undo: on_annotation_revert,
+        },
+        delete_annotation: {
+            action: on_annotation_deletion,
+            undo: on_finish_annotation_spatial_modification,
+        },
+        assign_annotation_id: {
+            action: on_annotation_id_change,
+            undo: on_annotation_id_change,
+        },
+        begin_edit: {
+            undo: on_finish_annotation_spatial_modification,
+            redo: on_finish_annotation_spatial_modification,
+        },
+        begin_move: {
+            undo: on_finish_annotation_spatial_modification,
+            redo: on_finish_annotation_spatial_modification,
+        },
+        start_complex_polygon: {
+            undo: on_finish_annotation_spatial_modification,
+        },
+        merge_polygon_complex_layer: {
+            undo: on_annotation_revert,
+        },
+        simplify_polygon_complex_layer: {
+            undo: on_annotation_revert,
+        },
+        begin_brush: {
+            undo: on_annotation_revert,
+        },
+        delete_annotations_in_polygon: {
+            // No listener for this action.
+            // It handles the re-rendering of the affected annotations itself.
+        },
+    };
+
+    // Call the appropriate listener
+    if (action.act_type in action_map) {
+        if ((!is_undo && !is_redo && "action" in action_map[action.act_type]) ||
+            // For actions without a specific "redo" listener, call the "action" listener instead
+            (is_redo && !("redo" in action_map[action.act_type]) && "action" in action_map[action.act_type])
+        ) {
+            action_map[action.act_type].action(ulabel, action);
+        } else if (is_undo && "undo" in action_map[action.act_type]) {
+            action_map[action.act_type].undo(ulabel, action, is_undo);
+        } else if (is_redo && "redo" in action_map[action.act_type]) {
+            action_map[action.act_type].redo(ulabel, action);
+        }
+    }
+}
+
 /**
  * Triggered when an annotation is started.
  *
@@ -226,18 +306,11 @@ function finish_action(ulabel: ULabel, action: ULabelAction) {
 function on_start_annotation_spatial_modification(
     ulabel: ULabel,
     action: ULabelAction,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     is_undo: boolean = false,
 ) {
-    const actions: ULabelActionType[] = [
-        "begin_annotation", // triggered when an annotation is started
-        "create_annotation", // triggered when an annotation is explicitly created
-        "create_nonspatial_annotation", // triggered when a non-spatial annotation is created
-    ];
-
-    if (!is_undo && actions.includes(action.act_type)) {
-        // Draw new annotation
-        ulabel.draw_annotation_from_id(action.annotation_id);
-    }
+    // Draw new annotation
+    ulabel.draw_annotation_from_id(action.annotation_id);
 }
 
 /**
@@ -250,32 +323,24 @@ function on_start_annotation_spatial_modification(
 function on_in_progress_annotation_spatial_modification(
     ulabel: ULabel,
     action: ULabelAction,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     is_undo: boolean = false,
 ) {
-    const actions: ULabelActionType[] = [
-        "continue_edit", // no undo/redo for this action
-        "continue_move", // no undo/redo for this action
-        "continue_brush", // no undo/redo for this action
-        "continue_annotation", // polygons/polylines can undo/redo this action
-    ];
-
-    if (!is_undo && actions.includes(action.act_type)) {
-        const subtask_key = ulabel.get_current_subtask_key();
-        const current_subtask = ulabel.subtasks[subtask_key];
-        const offset: Offset = current_subtask.state.move_candidate?.offset || {
-            id: action.annotation_id,
-            diffX: 0,
-            diffY: 0,
-            diffZ: 0,
-        };
-        // Update the toolbox filter distance
-        ulabel.update_filter_distance_during_polyline_move(action.annotation_id, true, false, offset);
-        // Update the annotation rendering
-        ulabel.rebuild_containing_box(action.annotation_id, false, subtask_key);
-        ulabel.redraw_annotation(action.annotation_id, subtask_key, offset);
-        // Update dialogs
-        ulabel.suggest_edits();
-    }
+    const subtask_key = ulabel.get_current_subtask_key();
+    const current_subtask = ulabel.subtasks[subtask_key];
+    const offset: Offset = current_subtask.state.move_candidate?.offset || {
+        id: action.annotation_id,
+        diffX: 0,
+        diffY: 0,
+        diffZ: 0,
+    };
+    // Update the toolbox filter distance
+    ulabel.update_filter_distance_during_polyline_move(action.annotation_id, true, false, offset);
+    // Update the annotation rendering
+    ulabel.rebuild_containing_box(action.annotation_id, false, subtask_key);
+    ulabel.redraw_annotation(action.annotation_id, subtask_key, offset);
+    // Update dialogs
+    ulabel.suggest_edits();
 }
 
 /**
@@ -289,60 +354,19 @@ function on_in_progress_annotation_spatial_modification(
 function on_finish_annotation_spatial_modification(
     ulabel: ULabel,
     action: ULabelAction,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     is_undo: boolean = false,
-    is_redo: boolean = false,
 ) {
-    // Triggered on action completion as well as redo
-    const action_completion: ULabelActionType[] = [
-        "create_annotation", // triggered when an annotation is explicitly created
-        "finish_modify_annotation", // triggered when brush edit ends
-        "finish_edit", // triggered when edit ends
-        "finish_move", // triggered when move ends
-        "finish_annotation", // triggered when most annotations end (except for brush/complex polygons),
-        "cancel_annotation", // triggered when an annotation is canceled
-    ];
-
-    // Triggered on undo only
-    const action_undo: ULabelActionType[] = [
-        "finish_modify_annotation",
-        "finish_annotation",
-        "delete_annotation",
-        "start_complex_polygon", // triggered when complex polygon is started
-        "begin_edit", // triggered when edit begins, updated when edit ends
-        "begin_move", // triggered when move begins, updated when move ends
-    ];
-
-    // Triggered on redo only
-    // These actions need rendering on undo/redo only. When initially triggered,
-    // they signal the start of an action. On undo/redo, the  payload
-    // will contain information to fully render the annotation.
-    const action_redo: ULabelActionType[] = [
-        "begin_edit",
-        "begin_move",
-    ];
-
-    // Trigger updates on action completion or on undo/redo
-    if (
-        (!is_undo && action_completion.includes(action.act_type)) ||
-        (is_undo && action_undo.includes(action.act_type)) ||
-        (is_redo && action_redo.includes(action.act_type))
-    ) {
-        // create_annotation will have already handled drawing the annotation from scratch
-        if (action.act_type !== "create_annotation") {
-            // Update annotation rendering
-            ulabel.rebuild_containing_box(action.annotation_id);
-            ulabel.redraw_annotation(action.annotation_id);
-        }
-        // Update dialogs
-        ulabel.suggest_edits(null, null, true);
-        // Update the toolbox
-        ulabel.update_filter_distance(action.annotation_id);
-        ulabel.toolbox.redraw_update_items(ulabel);
-        // Ensure there are no lingering enders
-        ulabel.destroy_polygon_ender(action.annotation_id);
-
-        // TODO: reset state variables?
-    }
+    // Update annotation rendering
+    ulabel.rebuild_containing_box(action.annotation_id);
+    ulabel.redraw_annotation(action.annotation_id);
+    // Update dialogs
+    ulabel.suggest_edits(null, null, true);
+    // Update the toolbox
+    ulabel.update_filter_distance(action.annotation_id);
+    ulabel.toolbox.redraw_update_items(ulabel);
+    // Ensure there are no lingering enders
+    ulabel.destroy_polygon_ender(action.annotation_id);
 }
 
 /**
@@ -355,48 +379,33 @@ function on_finish_annotation_spatial_modification(
 function on_annotation_deletion(
     ulabel: ULabel,
     action: ULabelAction,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     is_undo: boolean = false,
 ) {
-    const actions: ULabelActionType[] = [
-        "delete_annotation", // Deprecates the annotation
-    ];
-
-    const action_undo: ULabelActionType[] = [
-        "begin_annotation", // When undone, the annotation is deleted
-        "create_annotation", // When undone, the annotation is deleted
-        "create_nonspatial_annotation", // When undone, the annotation is deleted
-    ];
-
-    // Trigger updates on action completion or on undo/redo
-    if (
-        (!is_undo && actions.includes(action.act_type)) ||
-        (is_undo && action_undo.includes(action.act_type))
-    ) {
-        // Sometimes the annotation is just deprecated, and sometimes it is fully deleted
-        // Check if it still exists, because if so we need to redraw
-        const current_subtask = ulabel.get_current_subtask();
-        const annotations = current_subtask.annotations.access;
-        if (action.annotation_id in annotations) {
-            const spatial_type = annotations[action.annotation_id]?.spatial_type;
-            if (NONSPATIAL_MODES.includes(spatial_type)) {
-                // Render the change
-                ulabel.clear_nonspatial_annotation(action.annotation_id);
-            } else {
-                ulabel.redraw_annotation(action.annotation_id);
-                // Force filter points if necessary
-                if (annotations[action.annotation_id].spatial_type === "polyline") {
-                    ulabel.update_filter_distance(action.annotation_id, false, true);
-                }
+    // Sometimes the annotation is just deprecated, and sometimes it is fully deleted
+    // Check if it still exists, because if so we need to redraw
+    const current_subtask = ulabel.get_current_subtask();
+    const annotations = current_subtask.annotations.access;
+    if (action.annotation_id in annotations) {
+        const spatial_type = annotations[action.annotation_id]?.spatial_type;
+        if (NONSPATIAL_MODES.includes(spatial_type)) {
+            // Render the change
+            ulabel.clear_nonspatial_annotation(action.annotation_id);
+        } else {
+            ulabel.redraw_annotation(action.annotation_id);
+            // Force filter points if necessary
+            if (annotations[action.annotation_id].spatial_type === "polyline") {
+                ulabel.update_filter_distance(action.annotation_id, false, true);
             }
         }
-
-        // Ensure there are no lingering enders
-        ulabel.destroy_polygon_ender(action.annotation_id);
-        // Update dialogs
-        ulabel.suggest_edits(null, null, true);
-        // Update the toolbox
-        ulabel.toolbox.redraw_update_items(ulabel);
     }
+
+    // Ensure there are no lingering enders
+    ulabel.destroy_polygon_ender(action.annotation_id);
+    // Update dialogs
+    ulabel.suggest_edits(null, null, true);
+    // Update the toolbox
+    ulabel.toolbox.redraw_update_items(ulabel);
 }
 
 /**
@@ -411,44 +420,38 @@ function on_annotation_id_change(
     action: ULabelAction,
     is_undo: boolean = false,
 ) {
-    const actions: ULabelActionType[] = [
-        "assign_annotation_id", // triggered when an annotation ID is assigned
-    ];
+    // Update the annotation rendering
+    ulabel.redraw_annotation(action.annotation_id);
+    ulabel.recolor_active_polygon_ender();
+    ulabel.recolor_brush_circle();
 
-    if (actions.includes(action.act_type)) {
-        // Update the annotation rendering
-        ulabel.redraw_annotation(action.annotation_id);
-        ulabel.recolor_active_polygon_ender();
-        ulabel.recolor_brush_circle();
+    // Update dialogs
+    if (!is_undo) {
+        // Hide the large ID dialog after the user has made a selection
+        ulabel.hide_id_dialog();
+    }
+    ulabel.suggest_edits(null, null, true);
 
-        // Update dialogs
-        if (!is_undo) {
-            // Hide the large ID dialog after the user has made a selection
-            ulabel.hide_id_dialog();
-        }
-        ulabel.suggest_edits(null, null, true);
-
-        // Determine if we need to update the filter distance
-        // If the filter_distance_toolbox_item exists,
-        // Check if the FilterDistance ToolboxItem is in this ULabel instance
-        if (ulabel.config.toolbox_order.includes(AllowedToolboxItem.FilterDistance)) {
-            const spatial_type = ulabel.get_current_subtask().annotations.access[action.annotation_id].spatial_type;
-            if (spatial_type === "polyline") {
-                // Get the toolbox item
-                // @ts-expect-error TS2740
-                const filter_distance_toolbox_item: FilterPointDistanceFromRow = ulabel.toolbox.items.filter((item) => item.get_toolbox_item_type() === "FilterDistance")[0];
-                // filter annotations if in multi_class_mode
-                if (
-                    filter_distance_toolbox_item.multi_class_mode
-                ) {
-                    filter_points_distance_from_line(ulabel, true);
-                }
+    // Determine if we need to update the filter distance
+    // If the filter_distance_toolbox_item exists,
+    // Check if the FilterDistance ToolboxItem is in this ULabel instance
+    if (ulabel.config.toolbox_order.includes(AllowedToolboxItem.FilterDistance)) {
+        const spatial_type = ulabel.get_current_subtask().annotations.access[action.annotation_id].spatial_type;
+        if (spatial_type === "polyline") {
+            // Get the toolbox item
+            // @ts-expect-error TS2740
+            const filter_distance_toolbox_item: FilterPointDistanceFromRow = ulabel.toolbox.items.filter((item) => item.get_toolbox_item_type() === "FilterDistance")[0];
+            // filter annotations if in multi_class_mode
+            if (
+                filter_distance_toolbox_item.multi_class_mode
+            ) {
+                filter_points_distance_from_line(ulabel, true);
             }
         }
-
-        // Update toolbox
-        ulabel.toolbox.redraw_update_items(ulabel);
     }
+
+    // Update toolbox
+    ulabel.toolbox.redraw_update_items(ulabel);
 }
 
 /**
@@ -461,19 +464,11 @@ function on_annotation_id_change(
 function on_annotation_revert(
     ulabel: ULabel,
     action: ULabelAction,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     is_undo: boolean = false,
 ) {
-    const actions_undo: ULabelActionType[] = [
-        "begin_brush", // triggered when a brush is started
-        "cancel_annotation", // triggered when an annotation is canceled
-        "merge_polygon_complex_layer",
-        "simplify_polygon_complex_layer",
-    ];
-
-    if (is_undo && actions_undo.includes(action.act_type)) {
-        // Redraw the annotation
-        ulabel.redraw_annotation(action.annotation_id);
-    }
+    // Redraw the annotation
+    ulabel.redraw_annotation(action.annotation_id);
 }
 
 // ================= Undo / Redo =================
@@ -514,36 +509,7 @@ export function undo(ulabel: ULabel, is_internal_undo: boolean = false) {
     undo_action(ulabel, undo_candidate);
 
     // Trigger any listeners for the action
-    on_start_annotation_spatial_modification(
-        ulabel,
-        undo_candidate,
-        true,
-    );
-    on_finish_annotation_spatial_modification(
-        ulabel,
-        undo_candidate,
-        true,
-    );
-    on_in_progress_annotation_spatial_modification(
-        ulabel,
-        undo_candidate,
-        true,
-    );
-    on_annotation_deletion(
-        ulabel,
-        undo_candidate,
-        true,
-    );
-    on_annotation_id_change(
-        ulabel,
-        undo_candidate,
-        true,
-    );
-    on_annotation_revert(
-        ulabel,
-        undo_candidate,
-        true,
-    );
+    trigger_action_listeners(ulabel, undo_candidate, true);
 }
 
 /**
@@ -573,11 +539,16 @@ export function redo(ulabel: ULabel) {
 function undo_action(ulabel: ULabel, action: ULabelAction) {
     ulabel.update_frame(null, action.frame);
     const undo_payload = JSON.parse(action.undo_payload);
-    const annotation = ulabel.get_current_subtask().annotations.access[action.annotation_id];
+    const annotations = ulabel.get_current_subtask().annotations.access;
 
-    // Revert the annotation's last edited info
-    annotation.last_edited_at = action.prev_timestamp;
-    annotation.last_edited_by = action.prev_user;
+    // For some actions like delete_annotations_in_polygon, the annotation may no longer exist
+    if (action.annotation_id in annotations) {
+        const annotation = annotations[action.annotation_id];
+
+        // Revert the annotation's last edited info
+        annotation.last_edited_at = action.prev_timestamp;
+        annotation.last_edited_by = action.prev_user;
+    }
 
     switch (action.act_type) {
         case "begin_annotation":
