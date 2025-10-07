@@ -2,3 +2,4 @@ node_modules
 ulabel_local/py-dbapi/dbapi/__pycache__
 build
 build/*
+output.txt

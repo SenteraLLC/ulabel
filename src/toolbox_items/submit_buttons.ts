@@ -1,6 +1,7 @@
 import { ULabelSubmitButton, ULabel } from "../..";
 import { ULabelAnnotation, DELETE_MODES, NONSPATIAL_MODES } from "../annotation";
 import { ToolboxItem } from "../toolbox";
+import { log_message, LogLevel } from "../error_logging";
 
 export class SubmitButtons extends ToolboxItem {
     private submit_buttons: ULabelSubmitButton[];
@@ -67,12 +68,17 @@ export class SubmitButtons extends ToolboxItem {
 
                     // Add all of the annotations in that subtask
                     let annotation: ULabelAnnotation;
+                    let temp_annotation: ULabelAnnotation | object;
                     for (let i = 0; i < ulabel.subtasks[stkey]["annotations"]["ordering"].length; i++) {
-                        try {
-                            annotation = ULabelAnnotation.from_json(ulabel.subtasks[stkey]["annotations"]["access"][ulabel.subtasks[stkey]["annotations"]["ordering"][i]]);
-                        } catch (e) {
-                            console.error("Error validating annotation during submit.", e);
-                            continue;
+                        temp_annotation = ulabel.subtasks[stkey]["annotations"]["access"][ulabel.subtasks[stkey]["annotations"]["ordering"][i]];
+                        // Validate the annotation
+                        if (typeof temp_annotation === "object") {
+                            try {
+                                annotation = ULabelAnnotation.from_json(temp_annotation);
+                            } catch (e) {
+                                log_message(`Error validating annotation ${temp_annotation} during submit: ${e}.`, LogLevel.ERROR, true);
+                                continue;
+                            }
                         }
 
                         // Handle null
