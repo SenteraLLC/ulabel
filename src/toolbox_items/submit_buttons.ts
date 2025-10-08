@@ -1,4 +1,5 @@
 import type { ULabelSubmitButton } from "../..";
+// Import ULabel from ../../src/index - TypeScript will find ../../src/index.d.ts for types
 import { ULabel } from "../../src/index";
 import { ULabelAnnotation, DELETE_MODES, NONSPATIAL_MODES } from "../annotation";
 import { ToolboxItem } from "../toolbox";

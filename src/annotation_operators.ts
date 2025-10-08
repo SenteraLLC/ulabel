@@ -7,6 +7,7 @@ import type {
     ValidDeprecatedBy,
     ClassDefinition,
 } from "..";
+// Import ULabel from ../src/index - TypeScript will find ../src/index.d.ts for types
 import { ULabel } from "../src/index";
 
 import { ULabelAnnotation } from "./annotation";

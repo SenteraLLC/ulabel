@@ -4,6 +4,8 @@ import type {
     ULabelActionRaw,
     ULabelActionType,
 } from "..";
+// Import ULabel from ../src/index - TypeScript will find ../src/index.d.ts for types
+// and resolve to ../src/index.js at runtime after compilation
 import { ULabel } from "../src/index";
 import { FilterPointDistanceFromRow } from "./toolbox";
 import { AllowedToolboxItem } from "./configuration";
@@ -439,7 +441,7 @@ function on_annotation_id_change(
         const spatial_type = ulabel.get_current_subtask().annotations.access[action.annotation_id].spatial_type;
         if (spatial_type === "polyline") {
             // Get the toolbox item
-            const filter_distance_toolbox_item: FilterPointDistanceFromRow = ulabel.toolbox.items.filter((item) => item.get_toolbox_item_type() === "FilterDistance")[0];
+            const filter_distance_toolbox_item = ulabel.toolbox.items.filter((item) => item.get_toolbox_item_type() === "FilterDistance")[0] as FilterPointDistanceFromRow;
             // filter annotations if in multi_class_mode
             if (
                 filter_distance_toolbox_item.multi_class_mode
