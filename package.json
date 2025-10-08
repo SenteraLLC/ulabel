@@ -15,6 +15,7 @@
     "build-dev": "npm run clean && tsc && webpack --mode development",
     "build-and-demo": "npm run build && npm run demo",
     "build-dev-and-demo": "npm run build-dev && npm run demo",
+    "build-and-test": "npm run build && npm run test",
     "prepare": "husky",
     "lint": "eslint . --no-fix"
   },

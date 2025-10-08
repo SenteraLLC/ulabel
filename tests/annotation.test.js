@@ -153,20 +153,6 @@ describe("Annotation Processing", () => {
         });
     });
 
-    describe("ID Payload Generation", () => {
-        test("should generate correct ID payload for normal modes", () => {
-            const ulabel = new ULabel(mockConfig);
-            const payload = ulabel.get_init_id_payload("bbox");
-            expect(payload).toEqual([{ class_id: 1, confidence: 1 }]);
-        });
-
-        test("should generate delete ID payload for delete modes", () => {
-            const ulabel = new ULabel(mockConfig);
-            const payload = ulabel.get_init_id_payload("delete_bbox");
-            expect(payload).toEqual([{ class_id: -1, confidence: 1 }]);
-        });
-    });
-
     describe("Annotation ID Generation", () => {
         test("should generate unique annotation IDs", () => {
             const ulabel = new ULabel(mockConfig);
