@@ -2,7 +2,7 @@
  * File for storing useful utilities that are not strictly ULabel related.
  */
 
-import { ULabel } from "..";
+import { ULabel } from "../src/index";
 import { ULabelSubtask } from "./subtask";
 import { DELETE_CLASS_ID, DELETE_MODES } from "./annotation";
 

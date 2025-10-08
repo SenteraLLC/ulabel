@@ -1,10 +1,10 @@
-import {
+import type {
     DistanceFromPolylineClasses,
     FilterDistanceConfig,
     RecolorActiveConfig,
-    ULabel,
     ValidDeprecatedBy,
 } from "..";
+import { ULabel } from "../src/index";
 import { DEFAULT_FILTER_DISTANCE_CONFIG } from "./configuration";
 import { ULabelAnnotation } from "./annotation";
 import { ULabelSubtask } from "./subtask";

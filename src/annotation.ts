@@ -1,4 +1,4 @@
-import {
+import type {
     DeprecatedBy,
     DistanceFromPolylineClasses,
     ULabelClassificationPayload,

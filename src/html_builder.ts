@@ -1,4 +1,5 @@
-import { SliderInfo, ULabel } from "..";
+import type { SliderInfo } from "..";
+import { ULabel } from "../src/index";
 import { Toolbox, ZoomPanToolboxItem } from "./toolbox";
 import { ULABEL_VERSION } from "../src/version";
 import { DELETE_CLASS_ID } from "./annotation";

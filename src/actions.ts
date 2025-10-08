@@ -1,10 +1,10 @@
-import {
+import type {
     Offset,
-    ULabel,
     ULabelAction,
     ULabelActionRaw,
     ULabelActionType,
 } from "..";
+import { ULabel } from "../src/index";
 import { FilterPointDistanceFromRow } from "./toolbox";
 import { AllowedToolboxItem } from "./configuration";
 import { filter_points_distance_from_line } from "./annotation_operators";
@@ -439,7 +439,6 @@ function on_annotation_id_change(
         const spatial_type = ulabel.get_current_subtask().annotations.access[action.annotation_id].spatial_type;
         if (spatial_type === "polyline") {
             // Get the toolbox item
-            // @ts-expect-error TS2740
             const filter_distance_toolbox_item: FilterPointDistanceFromRow = ulabel.toolbox.items.filter((item) => item.get_toolbox_item_type() === "FilterDistance")[0];
             // filter annotations if in multi_class_mode
             if (

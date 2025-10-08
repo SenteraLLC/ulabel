@@ -1,4 +1,5 @@
-import { ULabelSubmitButton, ULabel } from "../..";
+import type { ULabelSubmitButton } from "../..";
+import { ULabel } from "../../src/index";
 import { ULabelAnnotation, DELETE_MODES, NONSPATIAL_MODES } from "../annotation";
 import { ToolboxItem } from "../toolbox";
 import { log_message, LogLevel } from "../error_logging";

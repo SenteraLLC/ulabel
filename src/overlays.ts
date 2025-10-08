@@ -1,4 +1,4 @@
-import { AbstractPoint, DistanceFromPolylineClasses, Offset } from "..";
+import type { AbstractPoint, DistanceFromPolylineClasses, Offset } from "..";
 import { ULabelAnnotation } from "./annotation";
 import { get_annotation_class_id } from "./annotation_operators";
 import { ULabelSpatialPayload2D } from "./geometric_utils";
