@@ -96,8 +96,8 @@ export class Configuration {
     public submit_buttons: ULabelSubmitButton[] = [];
 
     // Passthrough
-    public task_meta: object = null;
-    public annotation_meta: object = null;
+    public task_meta: object = {};
+    public annotation_meta: object = {};
 
     public subtasks: object = null;
 

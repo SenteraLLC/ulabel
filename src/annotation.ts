@@ -6,6 +6,7 @@ import {
     ULabelSpatialType,
 } from "..";
 import { GeometricUtils } from "./geometric_utils";
+import { log_message, LogLevel } from "./error_logging";
 
 // Modes used to draw an area in the which to delete all annotations
 export const DELETE_MODES = ["delete_polygon", "delete_bbox"];
@@ -24,10 +25,9 @@ export type PolygonSpatialData = {
 export class ULabelAnnotation {
     constructor(
         // Required properties
-        public annotation_meta: object = null,
+        public annotation_meta: object = {},
         public deprecated: boolean = false,
         public deprecated_by: DeprecatedBy = { human: false },
-        public parent_id: string = null,
         public text_payload: string = "",
 
         // Optional properties
@@ -68,13 +68,12 @@ export class ULabelAnnotation {
         for (j = 0; j < this.classification_payloads.length; j++) {
             const this_id = this.classification_payloads[j].class_id;
             if (!ulabel_class_ids.includes(this_id)) {
-                alert(`Found class id ${this_id} in "resume_from" data but not in "allowed_classes"`);
-                throw `Found class id ${this_id} in "resume_from" data but not in "allowed_classes"`;
+                log_message(`Found class id ${this_id} in "resume_from" data but not in "allowed_classes"`, LogLevel.ERROR);
             }
             found_ids.push(this_id);
             if (!("confidence" in this.classification_payloads[j])) {
                 if (conf_not_found_j !== null) {
-                    throw ("More than one classification payload was supplied without confidence for a single annotation.");
+                    log_message("More than one classification payload was supplied without confidence for a single annotation.", LogLevel.ERROR);
                 } else {
                     conf_not_found_j = j;
                 }
@@ -87,7 +86,7 @@ export class ULabelAnnotation {
         }
         if (conf_not_found_j !== null) {
             if (remaining_confidence < 0) {
-                throw ("Supplied total confidence was greater than 100%");
+                log_message("Supplied total confidence was greater than 100%", LogLevel.ERROR);
             }
             this.classification_payloads[conf_not_found_j].confidence = remaining_confidence;
         }
@@ -108,7 +107,7 @@ export class ULabelAnnotation {
         if (this.spatial_type === "polygon") {
             // Catch empty spatial payloads
             if (this.spatial_payload === undefined || this.spatial_payload.length === 0) {
-                console.warn(`Empty spatial payload for polygon id ${this.id}. Skipping annotation.`);
+                log_message(`Empty spatial payload for polygon id ${this.id}. Skipping annotation.`, LogLevel.WARNING, true);
                 return false;
             }
             // Check that spatial_payload[0][0] is an array and not a number
@@ -132,7 +131,7 @@ export class ULabelAnnotation {
                 const layer = this.spatial_payload[i];
                 // Ensure that the layer is an array
                 if (!Array.isArray(layer[0])) {
-                    console.log(`Layer ${i} of id ${this.id} has an invalid or empty point array. Removing layer.`);
+                    log_message(`Layer ${i} of id ${this.id} has an invalid or empty point array. Removing layer.`, LogLevel.WARNING, true);
                     indices_to_remove.push(i);
                     continue;
                 }
@@ -148,7 +147,7 @@ export class ULabelAnnotation {
                     }
                 }
                 if (layer.length < 4) {
-                    console.log(`Layer ${i} of id ${this.id} has fewer than 4 points. Removing layer.`);
+                    log_message(`Layer ${i} of id ${this.id} has fewer than 4 points. Removing layer.`, LogLevel.WARNING, true);
                     indices_to_remove.push(i);
                     continue;
                 }
@@ -160,8 +159,7 @@ export class ULabelAnnotation {
                 try {
                     this.spatial_payload[i] = GeometricUtils.turf_simplify_complex_polygon([layer])[0];
                 } catch (error) {
-                    console.log(`Error simplifying polygon layer ${i} of id ${this.id}. Removing layer.`);
-                    console.warn(error);
+                    log_message(`Error simplifying polygon layer ${i} of id ${this.id}. Removing layer. Error: ${error.message}`, LogLevel.WARNING, true);
                     indices_to_remove.push(i);
                 }
             }
