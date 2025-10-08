@@ -26,10 +26,16 @@ module.exports = {
         "node_modules/(?!(uuid)/)",
     ],
     // Optimize memory usage
-    maxWorkers: 1,
+    maxWorkers: 2,
     workerIdleMemoryLimit: "512MB",
     // Clear cache between runs
     clearMocks: true,
     resetMocks: true,
     restoreMocks: true,
+    // Reduce noise in error output
+    verbose: false,
+    // Suppress stack traces
+    noStackTrace: true,
+    // Suppress console output during tests
+    silent: true,
 };

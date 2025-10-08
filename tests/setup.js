@@ -27,10 +27,6 @@ Object.defineProperty(window, "HTMLCanvasElement", {
     },
 });
 
-// Mock heavy dependencies to reduce memory usage
-jest.mock("@turf/turf", () => ({}));
-jest.mock("polygon-clipping", () => ({}));
-
 // Mock image loading
 global.Image = class {
     constructor() {
@@ -50,10 +46,12 @@ global.Image = class {
 
 // Suppress console warnings in tests unless explicitly testing them
 const originalWarn = console.warn;
+const originalError = console.error;
 global.console.warn = jest.fn();
 global.console.error = jest.fn();
 
 // Restore for specific tests that need to check console output
 global.restoreConsole = () => {
     global.console.warn = originalWarn;
+    global.console.error = originalError;
 };

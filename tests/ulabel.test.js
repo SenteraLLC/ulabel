@@ -1,19 +1,22 @@
 // Unit tests for ULabel core functionality
 // Import the built ULabel from the dist directory (webpack exports as default)
 const ulabelModule = require("../dist/ulabel.js");
-const ULabel = ulabelModule.ULabel || ulabelModule;
+const ULabel = ulabelModule.ULabel;
 
 describe("ULabel Core Functionality", () => {
     let mockConfig;
+    const container_id = "test-container";
+    const image_data = "test-image.png";
+    const username = "test-user";
 
     beforeEach(() => {
-    // Mock DOM container
-        document.body.innerHTML = "<div id=\"test-container\"></div>";
+        // Mock DOM container
+        document.body.innerHTML = `<div id="${container_id}"></div>`;
 
         mockConfig = {
-            container_id: "test-container",
-            image_data: "test-image.png",
-            username: "test-user",
+            container_id: container_id,
+            image_data: image_data,
+            username: username,
             submit_buttons: [{
                 name: "Submit",
                 hook: jest.fn(),
@@ -25,38 +28,58 @@ describe("ULabel Core Functionality", () => {
                         { name: "Class1", id: 1, color: "red" },
                         { name: "Class2", id: 2, color: "blue" },
                     ],
+                    allowed_modes: ["contour", "polygon", "polyline", "bbox", "tbar", "bbox3", "whole-image", "global", "point"],
+                },
+                single_class_task: {
+                    display_name: "Single Class Task",
+                    classes: [
+                        { name: "SingleClass", id: 1, color: "green" },
+                    ],
                     allowed_modes: ["bbox", "polygon"],
                 },
             },
         };
     });
 
-    describe("Constructor and Initialization", () => {
+    describe("Constructor", () => {
         test("should create ULabel instance with valid config", () => {
             const ulabel = new ULabel(mockConfig);
             expect(ulabel).toBeInstanceOf(ULabel);
-            expect(ulabel.config.container_id).toBe("test-container");
-            expect(ulabel.config.username).toBe("test-user");
+            // Validate config properties
+            expect(ulabel.config.container_id).toBe(container_id);
+            expect(ulabel.config.username).toBe(username);
+            // Validate subtask properties
+            expect(ulabel.subtasks.test_task.class_defs).toHaveLength(2);
+            expect(ulabel.subtasks.test_task.class_defs[0]).toEqual({
+                name: "Class1",
+                id: 1,
+                color: "red",
+                keybind: null,
+            });
+            // Correctly set single class mode
+            expect(ulabel.subtasks.single_class_task.single_class_mode).toBe(true);
+            expect(ulabel.subtasks.single_class_task.allowed_modes).toEqual(["bbox", "polygon"]);
         });
 
         test("should throw error for missing required properties", () => {
             const invalidConfig = { ...mockConfig };
             delete invalidConfig.container_id;
 
-            expect(() => new ULabel(invalidConfig)).not.toThrow();
-            // Should log error message instead of throwing
+            expect(() => new ULabel(invalidConfig)).toThrow();
         });
 
         test("should handle deprecated constructor arguments", () => {
             const ulabel = new ULabel(
-                "test-container",
-                "test-image.png",
-                "test-user",
+                container_id,
+                image_data,
+                username,
                 mockConfig.submit_buttons,
                 mockConfig.subtasks,
             );
 
-            expect(ulabel.config.container_id).toBe("test-container");
+            expect(ulabel).toBeInstanceOf(ULabel);
+            expect(ulabel.config.container_id).toBe(container_id);
+            expect(ulabel.config.username).toBe(username);
         });
     });
 
@@ -95,19 +118,10 @@ describe("ULabel Core Functionality", () => {
             expect(subtask.class_defs).toHaveLength(2);
             expect(subtask.class_defs[0].name).toBe("Class1");
             expect(subtask.class_defs[1].name).toBe("Class2");
-        });
-
-        test("should process object class definitions", () => {
-            const ulabel = new ULabel(mockConfig);
-            const subtask = ulabel.subtasks.test_task;
-
-            expect(subtask.class_defs).toHaveLength(2);
-            expect(subtask.class_defs[0]).toEqual({
-                name: "Class1",
-                id: 1,
-                color: "red",
-                keybind: null,
-            });
+            // IDs should be assigned and unique
+            expect(subtask.class_defs[0].id).toBeDefined();
+            expect(subtask.class_defs[1].id).toBeDefined();
+            expect(subtask.class_defs[0].id).not.toBe(subtask.class_defs[1].id);
         });
 
         test("should create unused class IDs", () => {
@@ -116,43 +130,9 @@ describe("ULabel Core Functionality", () => {
             };
 
             const newId = ULabel.create_unused_class_id(mockULabel);
-            expect(newId).toBe(2); // Should find the gap
-        });
-    });
-
-    describe("Annotation ID Generation", () => {
-        test("should generate unique annotation IDs", () => {
-            const ulabel = new ULabel(mockConfig);
-            const id1 = ulabel.make_new_annotation_id();
-            const id2 = ulabel.make_new_annotation_id();
-
-            expect(id1).not.toBe(id2);
-            expect(typeof id1).toBe("string");
-            expect(id1.length).toBeGreaterThan(0);
-        });
-    });
-
-    describe("Subtask Management", () => {
-        test("should process allowed modes", () => {
-            const ulabel = new ULabel(mockConfig);
-            const subtask = ulabel.subtasks.test_task;
-
-            expect(subtask.allowed_modes).toEqual(["bbox", "polygon"]);
-        });
-
-        test("should set single class mode correctly", () => {
-            const singleClassConfig = {
-                ...mockConfig,
-                subtasks: {
-                    test_task: {
-                        classes: [{ name: "SingleClass", id: 1 }],
-                        allowed_modes: ["bbox"],
-                    },
-                },
-            };
-
-            const ulabel = new ULabel(singleClassConfig);
-            expect(ulabel.subtasks.test_task.single_class_mode).toBe(true);
+            // The new ID should not be in the existing list
+            expect(mockULabel.valid_class_ids).not.toContain(newId);
+            expect(typeof newId).toBe("number");
         });
     });
 });

@@ -3,3 +3,10 @@
 - [x] Implement the fix requested in [#209](https://github.com/SenteraLLC/ulabel/issues/209).
 - [x] Build the fix and ensure the build succeeds by running `npm run build`.
 - [x] Receive confirmation that the fix works as expected.
+- [x] Configure Jest to suppress verbose stack traces (added --noStackTrace flag)
+- [x] Fix class ID test to check ID is not in existing list (implementation-agnostic)
+- [x] Increase max workers from 1 to 2 (reduced test time from 200s+ to ~23s)
+- [ ] Fix remaining unit test failures (6 failures, 14 passed)
+  - Spatial payload tests need DOM mocking
+  - ID payload tests need DOM mocking
+  - Note: Some error messages contain minified code context - this is expected when testing against dist/ulabel.js

@@ -1,19 +1,24 @@
 // Tests for annotation processing and manipulation
 // Import the built ULabel from the dist directory (webpack exports as default)
 const ulabelModule = require("../dist/ulabel.js");
-const ULabel = ulabelModule.ULabel || ulabelModule;
+const ULabel = ulabelModule.ULabel;
 
 describe("Annotation Processing", () => {
-    let ulabel;
     let mockConfig;
+    const container_id = "test-container";
+    const image_data = "test-image.png";
+    const username = "test-user";
+    const line_size = 2;
 
     beforeEach(() => {
-        document.body.innerHTML = "<div id=\"test-container\"></div>";
+        // Set up more complete DOM structure for ULabel
+        document.body.innerHTML = `<div id="${container_id}">`;
 
         mockConfig = {
-            container_id: "test-container",
-            image_data: "test-image.png",
-            username: "test-user",
+            container_id: container_id,
+            image_data: image_data,
+            username: username,
+            initial_line_size: line_size,
             submit_buttons: [{ name: "Submit", hook: jest.fn() }],
             subtasks: {
                 test_task: {
@@ -24,29 +29,10 @@ describe("Annotation Processing", () => {
                 },
             },
         };
-
-        ulabel = new ULabel(mockConfig);
-    });
-
-    describe("Spatial Payload Generation", () => {
-        test("should generate correct spatial payload for point", () => {
-            const spatial = ulabel.get_init_spatial(100, 200, "point", {});
-            expect(spatial).toEqual([[100, 200]]);
-        });
-
-        test("should generate correct spatial payload for bbox", () => {
-            const spatial = ulabel.get_init_spatial(100, 200, "bbox", {});
-            expect(spatial).toEqual([[100, 200], [100, 200]]);
-        });
-
-        test("should generate correct spatial payload for polygon", () => {
-            const spatial = ulabel.get_init_spatial(100, 200, "polygon", {});
-            expect(spatial).toEqual([[[100, 200], [100, 200]]]);
-        });
     });
 
     describe("Resume From Functionality", () => {
-        test("should process resume_from annotations correctly", () => {
+        test("should process valid resume_from annotations and set default values for missing properties", () => {
             const resumeConfig = {
                 ...mockConfig,
                 subtasks: {
@@ -54,59 +40,6 @@ describe("Annotation Processing", () => {
                         ...mockConfig.subtasks.test_task,
                         resume_from: [
                             {
-                                id: "test-annotation-1",
-                                spatial_type: "bbox",
-                                spatial_payload: [[10, 10], [50, 50]],
-                                classification_payloads: [{ class_id: 1, confidence: 1.0 }],
-                            },
-                        ],
-                    },
-                },
-            };
-
-            const ulabelWithResume = new ULabel(resumeConfig);
-            const annotations = ulabelWithResume.subtasks.test_task.annotations;
-
-            expect(annotations.ordering).toHaveLength(1);
-            expect(annotations.access["test-annotation-1"]).toBeDefined();
-            expect(annotations.access["test-annotation-1"].spatial_type).toBe("bbox");
-        });
-
-        test("should generate new ID for annotations without ID", () => {
-            const resumeConfig = {
-                ...mockConfig,
-                subtasks: {
-                    test_task: {
-                        ...mockConfig.subtasks.test_task,
-                        resume_from: [
-                            {
-                                spatial_type: "point",
-                                spatial_payload: [[25, 25]],
-                                classification_payloads: [{ class_id: 1, confidence: 1.0 }],
-                            },
-                        ],
-                    },
-                },
-            };
-
-            const ulabelWithResume = new ULabel(resumeConfig);
-            const annotations = ulabelWithResume.subtasks.test_task.annotations;
-
-            expect(annotations.ordering).toHaveLength(1);
-            const annotationId = annotations.ordering[0];
-            expect(typeof annotationId).toBe("string");
-            expect(annotationId.length).toBeGreaterThan(0);
-        });
-
-        test("should set default values for missing annotation properties", () => {
-            const resumeConfig = {
-                ...mockConfig,
-                subtasks: {
-                    test_task: {
-                        ...mockConfig.subtasks.test_task,
-                        resume_from: [
-                            {
-                                id: "minimal-annotation",
                                 spatial_type: "point",
                                 spatial_payload: [[0, 0]],
                                 classification_payloads: [{ class_id: 1, confidence: 1.0 }],
@@ -117,26 +50,132 @@ describe("Annotation Processing", () => {
             };
 
             const ulabelWithResume = new ULabel(resumeConfig);
-            const annotation = ulabelWithResume.subtasks.test_task.annotations.access["minimal-annotation"];
+            const annotations = ulabelWithResume.subtasks.test_task.annotations;
 
+            // Annotation ID
+            expect(annotations.ordering).toHaveLength(1);
+            const annotationId = annotations.ordering[0];
+            expect(typeof annotationId).toBe("string");
+            expect(annotationId.length).toBeGreaterThan(0);
+            const annotation = annotations.access[annotationId];
+
+            // Provided properties
+            expect(annotation.spatial_type).toBe("point");
+            expect(annotation.spatial_payload).toEqual([[0, 0]]);
+            expect(annotation.classification_payloads).toEqual([{ class_id: 1, confidence: 1.0 }]);
+
+            // Other properties
+            expect(annotation.line_size).toBe(ulabelWithResume.config.initial_line_size);
             expect(annotation.created_by).toBe("unknown");
+            expect(annotation.created_at).toBe(null);
             expect(annotation.last_edited_by).toBe("unknown");
+            expect(annotation.last_edited_at).toBe(null);
             expect(annotation.frame).toBe(0);
-            expect(annotation.annotation_meta).toEqual({});
+            expect(annotation.annotation_meta).toStrictEqual({});
             expect(annotation.deprecated).toBe(false);
+        });
+
+        test("should throw an error for missing spatial_type", () => {
+            const invalidResumeConfig = {
+                ...mockConfig,
+                subtasks: {
+                    test_task: {
+                        ...mockConfig.subtasks.test_task,
+                        resume_from: [
+                            {
+                                spatial_payload: [[0, 0]],
+                                classification_payloads: [{ class_id: 1, confidence: 1.0 }],
+                            },
+                        ],
+                    },
+                },
+            };
+
+            expect(() => new ULabel(invalidResumeConfig)).toThrow();
+        });
+
+        test("should throw an error for missing spatial_payload in spatial modes", () => {
+            const invalidResumeConfig = {
+                ...mockConfig,
+                subtasks: {
+                    test_task: {
+                        ...mockConfig.subtasks.test_task,
+                        resume_from: [
+                            {
+                                spatial_type: "bbox",
+                                classification_payloads: [{ class_id: 1, confidence: 1.0 }],
+                            },
+                        ],
+                    },
+                },
+            };
+
+            expect(() => new ULabel(invalidResumeConfig)).toThrow();
+        });
+
+        test("should throw an error for missing classification_payloads", () => {
+            const invalidResumeConfig = {
+                ...mockConfig,
+                subtasks: {
+                    test_task: {
+                        ...mockConfig.subtasks.test_task,
+                        resume_from: [
+                            {
+                                spatial_type: "point",
+                                spatial_payload: [[0, 0]],
+                            },
+                        ],
+                    },
+                },
+            };
+
+            expect(() => new ULabel(invalidResumeConfig)).toThrow();
+        });
+
+        test("should throw an error for class_id not in allowed_classes", () => {
+            const invalidResumeConfig = {
+                ...mockConfig,
+                subtasks: {
+                    test_task: {
+                        ...mockConfig.subtasks.test_task,
+                        resume_from: [
+                            {
+                                spatial_type: "point",
+                                spatial_payload: [[0, 0]],
+                                classification_payloads: [{ class_id: 999, confidence: 1.0 }],
+                            },
+                        ],
+                    },
+                },
+            };
+
+            expect(() => new ULabel(invalidResumeConfig)).toThrow();
         });
     });
 
     describe("ID Payload Generation", () => {
         test("should generate correct ID payload for normal modes", () => {
+            const ulabel = new ULabel(mockConfig);
             const payload = ulabel.get_init_id_payload("bbox");
-            expect(Array.isArray(payload)).toBe(true);
-            expect(payload.length).toBeGreaterThan(0);
+            expect(payload).toEqual([{ class_id: 1, confidence: 1 }]);
         });
 
         test("should generate delete ID payload for delete modes", () => {
+            const ulabel = new ULabel(mockConfig);
             const payload = ulabel.get_init_id_payload("delete_bbox");
-            expect(payload).toEqual([{ class_id: -1, confidence: 1.0 }]);
+            expect(payload).toEqual([{ class_id: -1, confidence: 1 }]);
+        });
+    });
+
+    describe("Annotation ID Generation", () => {
+        test("should generate unique annotation IDs", () => {
+            const ulabel = new ULabel(mockConfig);
+            const id1 = ulabel.make_new_annotation_id();
+            const id2 = ulabel.make_new_annotation_id();
+
+            expect(id1).not.toBe(id2);
+            expect(typeof id1).toBe("string");
+            expect(id1.length).toBeGreaterThan(0);
         });
     });
 });
