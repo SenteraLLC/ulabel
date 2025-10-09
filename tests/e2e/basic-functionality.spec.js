@@ -1,6 +1,7 @@
 // End-to-end tests for basic annotation functionality
 import { test, expect } from "@playwright/test";
 import { draw_bbox, draw_point } from "../utils/drawing_utils";
+import { download_annotations } from "../utils/general_utils";
 
 test.describe("ULabel Basic Functionality", () => {
     test("should load and initialize correctly", async ({ page }) => {
@@ -112,21 +113,16 @@ test.describe("ULabel Basic Functionality", () => {
         await page.waitForFunction(() => window.ulabel && window.ulabel.is_init);
 
         // Create an annotation first
-        await page.click("a#md-btn--point");
-        const canvas_id = await page.evaluate(() => window.ulabel.get_current_subtask().canvas_fid);
-        const canvas = page.locator(`#${canvas_id}`);
-        await canvas.click({ position: { x: 100, y: 100 } });
+        const point = await draw_point(page, [100, 100]);
 
-        // Click the submit button
-        // The annotations will be downloaded as a JSON file
-        // Load and parse the downloaded file to verify contents
+        const annotations = await download_annotations(page, "submit");
 
         // Check that annotations contain expected data
         expect(annotations).toHaveProperty("annotations");
         expect(annotations.annotations).toHaveProperty("car_detection");
         const anno = annotations.annotations.car_detection[0];
         expect(anno.spatial_type).toBe("point");
-        expect(anno.spatial_payload).toEqual([[100, 100]]);
-        expect(anno.created_by).toBe("Demo User");
+        expect(anno.spatial_payload).toEqual(point);
+        expect(anno.created_by).toBe("DemoUser");
     });
 });
