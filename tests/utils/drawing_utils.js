@@ -1,7 +1,11 @@
 /**
+ * @typedef {import('@playwright/test').Page} Page
+ */
+
+/**
  * Draw a bounding box and return its spatial payload.
  *
- * @param {*} page
+ * @param {Page} page
  * @param {[number, number]} top_left
  * @param {[number, number]} bottom_right
  * @returns {Promise<[[number, number], [number, number]]>} The bbox spatial payload in image coordinates.
@@ -31,7 +35,7 @@ export async function draw_bbox(page, top_left, bottom_right) {
 
 /**
  * Draw a point and return its spatial payload.
- * @param {*} page
+ * @param {Page} page
  * @param {[number, number]} position
  * @returns {Promise<[[number, number]]>} The point spatial payload in image coordinates.
  */

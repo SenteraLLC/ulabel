@@ -10,3 +10,10 @@
   - Spatial payload tests need DOM mocking
   - ID payload tests need DOM mocking
   - Note: Some error messages contain minified code context - this is expected when testing against dist/ulabel.js
+- [x] Refactor e2e tests to use utility functions
+  - [x] Create init_utils.js with waitForULabelInit
+  - [x] Create annotation_utils.js with getAnnotationCount, getAnnotationByIndex, getAllAnnotations
+  - [x] Create mode_utils.js with switchToMode
+  - [x] Create subtask_utils.js with getCurrentSubtask, switchToSubtask, getSubtaskCount
+  - [x] Update basic-functionality.spec.js to use new utilities
+  - [x] All 6 basic functionality tests passing

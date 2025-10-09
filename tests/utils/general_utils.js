@@ -1,8 +1,12 @@
 import fs from "fs";
 
 /**
+ * @typedef {import('@playwright/test').Page} Page
+ */
+
+/**
  * Download annotations by clicking the button with the given ID.
- * @param {*} page
+ * @param {Page} page
  * @param {string} button_id
  * @returns {Promise<Object>} The parsed JSON annotations.
  */

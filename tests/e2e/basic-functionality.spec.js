@@ -2,13 +2,14 @@
 import { test, expect } from "@playwright/test";
 import { draw_bbox, draw_point } from "../utils/drawing_utils";
 import { download_annotations } from "../utils/general_utils";
+import { waitForULabelInit } from "../utils/init_utils";
+import { getAnnotationCount, getAnnotationByIndex } from "../utils/annotation_utils";
+import { switchToMode } from "../utils/mode_utils";
+import { getCurrentSubtaskKey, switchToSubtask, getSubtaskCount } from "../utils/subtask_utils";
 
 test.describe("ULabel Basic Functionality", () => {
     test("should load and initialize correctly", async ({ page }) => {
-        await page.goto("/multi-class.html");
-
-        // Wait for ULabel to initialize
-        await page.waitForFunction(() => window.ulabel && window.ulabel.is_init);
+        await waitForULabelInit(page);
 
         // Check that the main container is present
         await expect(page.locator("#container")).toBeVisible();
@@ -26,91 +27,70 @@ test.describe("ULabel Basic Functionality", () => {
     });
 
     test("should switch between annotation modes", async ({ page }) => {
-        await page.goto("/multi-class.html");
-        await page.waitForFunction(() => window.ulabel && window.ulabel.is_init);
+        await waitForULabelInit(page);
 
         // Test switching to bbox mode
-        await page.click("a#md-btn--bbox");
+        await switchToMode(page, "bbox");
         await expect(page.locator("a#md-btn--bbox")).toHaveClass(/sel/);
 
         // Test switching to polygon mode
-        await page.click("a#md-btn--polygon");
+        await switchToMode(page, "polygon");
         await expect(page.locator("a#md-btn--polygon")).toHaveClass(/sel/);
 
         // Test switching to point mode
-        await page.click("a#md-btn--point");
+        await switchToMode(page, "point");
         await expect(page.locator("a#md-btn--point")).toHaveClass(/sel/);
     });
 
     test("should create bbox annotation", async ({ page }) => {
-        await page.goto("/multi-class.html");
-        await page.waitForFunction(() => window.ulabel && window.ulabel.is_init);
+        await waitForULabelInit(page);
 
         const bbox = await draw_bbox(page, [100, 100], [200, 200]);
 
         // Check that an annotation was created
-        const annotationCount = await page.evaluate(() => {
-            const currentSubtask = window.ulabel.get_current_subtask();
-            return currentSubtask.annotations.ordering.length;
-        });
+        const annotationCount = await getAnnotationCount(page);
         expect(annotationCount).toBe(1);
 
-        const annotation = await page.evaluate(() => {
-            const currentSubtask = window.ulabel.get_current_subtask();
-            const annotationId = currentSubtask.annotations.ordering[0];
-            return currentSubtask.annotations.access[annotationId];
-        });
+        const annotation = await getAnnotationByIndex(page, 0);
 
         expect(annotation.spatial_type).toBe("bbox");
         expect(annotation.spatial_payload).toEqual(bbox);
     });
 
     test("should create point annotation", async ({ page }) => {
-        await page.goto("/multi-class.html");
-        await page.waitForFunction(() => window.ulabel && window.ulabel.is_init);
+        await waitForULabelInit(page);
 
         const point = await draw_point(page, [150, 150]);
 
         // Check that an annotation was created
-        const annotationCount = await page.evaluate(() => {
-            const currentSubtask = window.ulabel.get_current_subtask();
-            return currentSubtask.annotations.ordering.length;
-        });
-
+        const annotationCount = await getAnnotationCount(page);
         expect(annotationCount).toBe(1);
 
-        const annotation = await page.evaluate(() => {
-            const currentSubtask = window.ulabel.get_current_subtask();
-            const annotationId = currentSubtask.annotations.ordering[0];
-            return currentSubtask.annotations.access[annotationId];
-        });
+        const annotation = await getAnnotationByIndex(page, 0);
 
         expect(annotation.spatial_type).toBe("point");
         expect(annotation.spatial_payload).toEqual(point);
     });
 
     test("should switch between subtasks", async ({ page }) => {
-        await page.goto("/multi-class.html");
-        await page.waitForFunction(() => window.ulabel && window.ulabel.is_init);
+        await waitForULabelInit(page);
 
         // Get initial subtask
-        const initialSubtask = await page.evaluate(() => window.ulabel.get_current_subtask_key());
+        const initialSubtaskKey = await getCurrentSubtaskKey(page);
 
         // Switch subtask (assuming there are multiple subtasks)
-        const subtaskTabs = page.locator(".toolbox-tabs a");
-        const tabCount = await subtaskTabs.count();
+        const tabCount = await getSubtaskCount(page);
 
         if (tabCount > 1) {
-            await subtaskTabs.nth(1).click();
+            await switchToSubtask(page, 1);
 
-            const newSubtask = await page.evaluate(() => window.ulabel.get_current_subtask_key());
-            expect(newSubtask).not.toBe(initialSubtask);
+            const newSubtaskKey = await getCurrentSubtaskKey(page);
+            expect(newSubtaskKey).not.toBe(initialSubtaskKey);
         }
     });
 
     test("should handle submit button", async ({ page }) => {
-        await page.goto("/multi-class.html");
-        await page.waitForFunction(() => window.ulabel && window.ulabel.is_init);
+        await waitForULabelInit(page);
 
         // Create an annotation first
         const point = await draw_point(page, [100, 100]);
