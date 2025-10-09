@@ -4,12 +4,15 @@
  * This also includes "staggered" initializers to test loading.
  */
 
-import { ULabel } from "..";
+// Import ULabel from ../src/index - TypeScript will find ../src/index.d.ts for types
+import { ULabel } from "../src/index";
 import { initialize_annotation_canvases } from "./canvas_utils";
 import { NightModeCookie } from "./cookies";
 import { add_style_to_document, build_confidence_dialog, build_edit_suggestion, build_id_dialogs, prep_window_html } from "./html_builder";
 import { create_ulabel_listeners } from "./listeners";
 import { ULabelLoader } from "./loader";
+import { ULabelSubtask } from "./subtask";
+import { ULabelAnnotation } from "./annotation";
 
 /**
  * Make canvases for each subtask
@@ -91,8 +94,8 @@ export async function ulabel_init(
     if (!ulabel.config.allow_annotations_outside_image) {
         const image_height = ulabel.config["image_height"];
         const image_width = ulabel.config["image_width"];
-        for (const subtask of Object.values(ulabel.subtasks)) {
-            for (const anno of Object.values(subtask.annotations.access)) {
+        for (const subtask of Object.values(ulabel.subtasks) as ULabelSubtask[]) {
+            for (const anno of Object.values(subtask.annotations.access) as ULabelAnnotation[]) {
                 anno.clamp_annotation_to_image_bounds(image_width, image_height);
             }
         }

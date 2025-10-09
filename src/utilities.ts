@@ -2,7 +2,8 @@
  * File for storing useful utilities that are not strictly ULabel related.
  */
 
-import { ULabel } from "..";
+// Import ULabel from ../src/index - TypeScript will find ../src/index.d.ts for types
+import { ULabel } from "../src/index";
 import { ULabelSubtask } from "./subtask";
 import { DELETE_CLASS_ID, DELETE_MODES } from "./annotation";
 

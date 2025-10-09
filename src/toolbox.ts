@@ -1,10 +1,11 @@
-import {
+import type {
     DistanceFromPolylineClasses,
     FilterDistanceConfig,
     RecolorActiveConfig,
-    ULabel,
     ValidDeprecatedBy,
 } from "..";
+// Import ULabel from ../src/index - TypeScript will find ../src/index.d.ts for types
+import { ULabel } from "../src/index";
 import { DEFAULT_FILTER_DISTANCE_CONFIG } from "./configuration";
 import { ULabelAnnotation } from "./annotation";
 import { ULabelSubtask } from "./subtask";

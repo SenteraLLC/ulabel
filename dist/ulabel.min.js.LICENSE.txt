@@ -68,8 +68,6 @@ object-assign
     and limitations under the License.
     ***************************************************************************** */
 
-/*! For license information please see ulabel.js.LICENSE.txt */
-
 /**
      * splaytree v3.1.2
      * Fast Splay tree for Node and browser

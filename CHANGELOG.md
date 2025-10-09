@@ -6,6 +6,14 @@ All notable changes to this project will be documented here.
 
 Nothing yet.
 
+## [0.19.1] - Oct 9th, 2025
+- Add automated testing to the repo
+- Fix circular webpack builds by forcibly cleaning the `dist/` directory before each build
+  - Also use `import type... from ".."` instead of just `import` to fix ts not properly resolving imports to js
+  - Reduced bundle size from ~20 MB -> 1 MB
+- Refactor some more `console.warn` and `console.error` instances to use `log_message`
+- Remove deprecated `parent_id` field from `ULabelAnnotation`
+
 ## [0.19.0] - Aug 19th, 2025
 
 - Add minimal lineage tracking via `last_edited_by` and `last_edited_at` annotation fields
