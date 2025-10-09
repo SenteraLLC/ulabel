@@ -1,10 +1,10 @@
 // Tests for annotation processing and manipulation
 // Import the built ULabel from the dist directory (webpack exports as default)
-const ulabelModule = require("../dist/ulabel.js");
-const ULabel = ulabelModule.ULabel;
+const ulabel_module = require("../dist/ulabel.js");
+const ULabel = ulabel_module.ULabel;
 
 describe("Annotation Processing", () => {
-    let mockConfig;
+    let mock_config;
     const container_id = "test-container";
     const image_data = "test-image.png";
     const username = "test-user";
@@ -14,7 +14,7 @@ describe("Annotation Processing", () => {
         // Set up more complete DOM structure for ULabel
         document.body.innerHTML = `<div id="${container_id}">`;
 
-        mockConfig = {
+        mock_config = {
             container_id: container_id,
             image_data: image_data,
             username: username,
@@ -33,11 +33,11 @@ describe("Annotation Processing", () => {
 
     describe("Resume From Functionality", () => {
         test("should process valid resume_from annotations and set default values for missing properties", () => {
-            const resumeConfig = {
-                ...mockConfig,
+            const resume_config = {
+                ...mock_config,
                 subtasks: {
                     test_task: {
-                        ...mockConfig.subtasks.test_task,
+                        ...mock_config.subtasks.test_task,
                         resume_from: [
                             {
                                 spatial_type: "point",
@@ -49,15 +49,15 @@ describe("Annotation Processing", () => {
                 },
             };
 
-            const ulabelWithResume = new ULabel(resumeConfig);
-            const annotations = ulabelWithResume.subtasks.test_task.annotations;
+            const ulabel_with_resume = new ULabel(resume_config);
+            const annotations = ulabel_with_resume.subtasks.test_task.annotations;
 
             // Annotation ID
             expect(annotations.ordering).toHaveLength(1);
-            const annotationId = annotations.ordering[0];
-            expect(typeof annotationId).toBe("string");
-            expect(annotationId.length).toBeGreaterThan(0);
-            const annotation = annotations.access[annotationId];
+            const annotation_id = annotations.ordering[0];
+            expect(typeof annotation_id).toBe("string");
+            expect(annotation_id.length).toBeGreaterThan(0);
+            const annotation = annotations.access[annotation_id];
 
             // Provided properties
             expect(annotation.spatial_type).toBe("point");
@@ -65,7 +65,7 @@ describe("Annotation Processing", () => {
             expect(annotation.classification_payloads).toEqual([{ class_id: 1, confidence: 1.0 }]);
 
             // Other properties
-            expect(annotation.line_size).toBe(ulabelWithResume.config.initial_line_size);
+            expect(annotation.line_size).toBe(ulabel_with_resume.config.initial_line_size);
             expect(annotation.created_by).toBe("unknown");
             expect(annotation.created_at).toBe(null);
             expect(annotation.last_edited_by).toBe("unknown");
@@ -76,11 +76,11 @@ describe("Annotation Processing", () => {
         });
 
         test("should throw an error for missing spatial_type", () => {
-            const invalidResumeConfig = {
-                ...mockConfig,
+            const invalid_resume_config = {
+                ...mock_config,
                 subtasks: {
                     test_task: {
-                        ...mockConfig.subtasks.test_task,
+                        ...mock_config.subtasks.test_task,
                         resume_from: [
                             {
                                 spatial_payload: [[0, 0]],
@@ -91,15 +91,15 @@ describe("Annotation Processing", () => {
                 },
             };
 
-            expect(() => new ULabel(invalidResumeConfig)).toThrow();
+            expect(() => new ULabel(invalid_resume_config)).toThrow();
         });
 
         test("should throw an error for missing spatial_payload in spatial modes", () => {
-            const invalidResumeConfig = {
-                ...mockConfig,
+            const invalid_resume_config = {
+                ...mock_config,
                 subtasks: {
                     test_task: {
-                        ...mockConfig.subtasks.test_task,
+                        ...mock_config.subtasks.test_task,
                         resume_from: [
                             {
                                 spatial_type: "bbox",
@@ -110,15 +110,15 @@ describe("Annotation Processing", () => {
                 },
             };
 
-            expect(() => new ULabel(invalidResumeConfig)).toThrow();
+            expect(() => new ULabel(invalid_resume_config)).toThrow();
         });
 
         test("should throw an error for missing classification_payloads", () => {
-            const invalidResumeConfig = {
-                ...mockConfig,
+            const invalid_resume_config = {
+                ...mock_config,
                 subtasks: {
                     test_task: {
-                        ...mockConfig.subtasks.test_task,
+                        ...mock_config.subtasks.test_task,
                         resume_from: [
                             {
                                 spatial_type: "point",
@@ -129,15 +129,15 @@ describe("Annotation Processing", () => {
                 },
             };
 
-            expect(() => new ULabel(invalidResumeConfig)).toThrow();
+            expect(() => new ULabel(invalid_resume_config)).toThrow();
         });
 
         test("should throw an error for class_id not in allowed_classes", () => {
-            const invalidResumeConfig = {
-                ...mockConfig,
+            const invalid_resume_config = {
+                ...mock_config,
                 subtasks: {
                     test_task: {
-                        ...mockConfig.subtasks.test_task,
+                        ...mock_config.subtasks.test_task,
                         resume_from: [
                             {
                                 spatial_type: "point",
@@ -149,13 +149,13 @@ describe("Annotation Processing", () => {
                 },
             };
 
-            expect(() => new ULabel(invalidResumeConfig)).toThrow();
+            expect(() => new ULabel(invalid_resume_config)).toThrow();
         });
     });
 
     describe("Annotation ID Generation", () => {
         test("should generate unique annotation IDs", () => {
-            const ulabel = new ULabel(mockConfig);
+            const ulabel = new ULabel(mock_config);
             const id1 = ulabel.make_new_annotation_id();
             const id2 = ulabel.make_new_annotation_id();
 

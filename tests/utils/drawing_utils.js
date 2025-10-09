@@ -23,13 +23,13 @@ export async function draw_bbox(page, top_left, bottom_right) {
 
     // Convert coordinates to image space
     return await page.evaluate(([tl, br]) => {
-        const topLeft = window.ulabel.get_image_aware_mouse_x_y(
+        const top_left = window.ulabel.get_image_aware_mouse_x_y(
             { pageX: tl[0], pageY: tl[1] },
         );
-        const bottomRight = window.ulabel.get_image_aware_mouse_x_y(
+        const bottom_right = window.ulabel.get_image_aware_mouse_x_y(
             { pageX: br[0], pageY: br[1] },
         );
-        return [topLeft, bottomRight];
+        return [top_left, bottom_right];
     }, [top_left, bottom_right]);
 }
 

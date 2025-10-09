@@ -12,18 +12,18 @@ import fs from "fs";
  */
 export async function download_annotations(page, button_id) {
     // Set up download listener and click submit button
-    const downloadPromise = page.waitForEvent("download");
+    const download_promise = page.waitForEvent("download");
     await page.click(`#${button_id}`);
 
     // Wait for the download to start and get the download object
-    const download = await downloadPromise;
+    const download = await download_promise;
 
     // Get the path where the file was downloaded
     const path = await download.path();
 
     // Read the file content
-    const jsonContent = fs.readFileSync(path, "utf-8");
+    const json_content = fs.readFileSync(path, "utf-8");
 
     // Parse the JSON content and return
-    return JSON.parse(jsonContent);
+    return JSON.parse(json_content);
 }

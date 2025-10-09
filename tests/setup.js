@@ -45,13 +45,13 @@ global.Image = class {
 };
 
 // Suppress console warnings in tests unless explicitly testing them
-const originalWarn = console.warn;
-const originalError = console.error;
+const original_warn = console.warn;
+const original_error = console.error;
 global.console.warn = jest.fn();
 global.console.error = jest.fn();
 
 // Restore for specific tests that need to check console output
 global.restoreConsole = () => {
-    global.console.warn = originalWarn;
-    global.console.error = originalError;
+    global.console.warn = original_warn;
+    global.console.error = original_error;
 };

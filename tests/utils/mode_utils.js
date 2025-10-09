@@ -9,6 +9,6 @@
  * @param {string} mode - The mode to switch to (e.g., "bbox", "polygon", "point")
  * @returns {Promise<void>}
  */
-export async function switchToMode(page, mode) {
+export async function switch_to_mode(page, mode) {
     await page.click(`a#md-btn--${mode}`);
 }

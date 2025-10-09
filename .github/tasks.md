@@ -11,9 +11,17 @@
   - ID payload tests need DOM mocking
   - Note: Some error messages contain minified code context - this is expected when testing against dist/ulabel.js
 - [x] Refactor e2e tests to use utility functions
-  - [x] Create init_utils.js with waitForULabelInit
-  - [x] Create annotation_utils.js with getAnnotationCount, getAnnotationByIndex, getAllAnnotations
-  - [x] Create mode_utils.js with switchToMode
-  - [x] Create subtask_utils.js with getCurrentSubtask, switchToSubtask, getSubtaskCount
+  - [x] Create init_utils.js with wait_for_ulabel_init
+  - [x] Create annotation_utils.js with get_annotation_count, get_annotation_by_index, get_all_annotations
+  - [x] Create mode_utils.js with switch_to_mode
+  - [x] Create subtask_utils.js with get_current_subtask_key, switch_to_subtask, get_subtask_count
   - [x] Update basic-functionality.spec.js to use new utilities
   - [x] All 6 basic functionality tests passing
+- [x] Refactor tests/ folder to use snake_case naming convention
+  - [x] Updated all utility function names to snake_case
+  - [x] Updated all variable names in e2e tests to snake_case
+  - [x] Updated all variable names in unit tests to snake_case
+  - [x] Updated all variable names in setup.js to snake_case
+  - [x] Updated all variable names in utility files to snake_case
+  - [x] Verified unit tests pass (14 passed)
+  - [x] Verified e2e tests pass (6 passed)

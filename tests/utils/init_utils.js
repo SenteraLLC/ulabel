@@ -9,7 +9,7 @@
  * @param {string} url - The URL to navigate to (default: "/multi-class.html")
  * @returns {Promise<void>}
  */
-export async function waitForULabelInit(page, url = "/multi-class.html") {
+export async function wait_for_ulabel_init(page, url = "/multi-class.html") {
     await page.goto(url);
     await page.waitForFunction(() => window.ulabel && window.ulabel.is_init);
 }
