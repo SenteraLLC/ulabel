@@ -441,10 +441,10 @@ function on_annotation_id_change(
         const spatial_type = ulabel.get_current_subtask().annotations.access[action.annotation_id].spatial_type;
         if (spatial_type === "polyline") {
             // Get the toolbox item
-            const filter_distance_toolbox_item = ulabel.toolbox.items.filter((item) => item.get_toolbox_item_type() === "FilterDistance")[0] as FilterPointDistanceFromRow;
+            const filter_distance_toolbox_item = ulabel.toolbox.items.find((item) => item.get_toolbox_item_type() === "FilterDistance") as FilterPointDistanceFromRow | undefined;
             // filter annotations if in multi_class_mode
             if (
-                filter_distance_toolbox_item.multi_class_mode
+                filter_distance_toolbox_item?.multi_class_mode
             ) {
                 filter_points_distance_from_line(ulabel, true);
             }
