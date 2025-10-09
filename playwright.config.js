@@ -10,7 +10,7 @@ export default defineConfig({
     use: {
         baseURL: "http://localhost:8080",
         trace: "on-first-retry",
-        screenshot: "on",
+        screenshot: "only-on-failure",
         video: "retain-on-failure",
         // Enable downloads
         acceptDownloads: true,
@@ -21,19 +21,18 @@ export default defineConfig({
             name: "chromium",
             use: { ...devices["Desktop Chrome"] },
         },
-        // Commenting out other browsers for now to simplify testing
-        // {
-        //     name: "firefox",
-        //     use: { ...devices["Desktop Firefox"] },
-        // },
-        // {
-        //     name: "webkit",
-        //     use: { ...devices["Desktop Safari"] },
-        // },
+        {
+            name: "firefox",
+            use: { ...devices["Desktop Firefox"] },
+        },
+        {
+            name: "webkit",
+            use: { ...devices["Desktop Safari"] },
+        },
     ],
 
     webServer: {
-        command: "npm run build-and-demo",
+        command: "npm run demo",
         url: "http://localhost:8080/multi-class.html",
         reuseExistingServer: !process.env.CI,
     },
