@@ -1,5 +1,6 @@
 // End-to-end tests for basic annotation functionality
 import { test, expect } from "@playwright/test";
+import { draw_bbox, draw_point } from "../utils/drawing_utils";
 
 test.describe("ULabel Basic Functionality", () => {
     test("should load and initialize correctly", async ({ page }) => {
@@ -12,7 +13,12 @@ test.describe("ULabel Basic Functionality", () => {
         await expect(page.locator("#container")).toBeVisible();
 
         // Check that the image loads
-        await expect(page.locator("img")).toBeVisible();
+        const img = page.locator("#ann_image__0");
+        await expect(img).toBeVisible();
+
+        // Get the expected image URL from the browser context
+        const expectedSrc = await page.evaluate(() => window.ulabel.config.image_data.frames[0]);
+        await expect(img).toHaveAttribute("src", expectedSrc);
 
         // Check that toolbox is present
         await expect(page.locator(".toolbox_cls")).toBeVisible();
@@ -39,37 +45,30 @@ test.describe("ULabel Basic Functionality", () => {
         await page.goto("/multi-class.html");
         await page.waitForFunction(() => window.ulabel && window.ulabel.is_init);
 
-        // Switch to bbox mode
-        await page.click("a#md-btn--bbox");
-
-        // Get the canvas element
-        const canvas = page.locator("canvas.front_canvas");
-
-        // Create a bbox by clicking and dragging
-        await canvas.click({ position: { x: 100, y: 100 } });
-        await canvas.click({ position: { x: 200, y: 200 } });
+        const bbox = await draw_bbox(page, [100, 100], [200, 200]);
 
         // Check that an annotation was created
         const annotationCount = await page.evaluate(() => {
             const currentSubtask = window.ulabel.get_current_subtask();
             return currentSubtask.annotations.ordering.length;
         });
-
         expect(annotationCount).toBe(1);
+
+        const annotation = await page.evaluate(() => {
+            const currentSubtask = window.ulabel.get_current_subtask();
+            const annotationId = currentSubtask.annotations.ordering[0];
+            return currentSubtask.annotations.access[annotationId];
+        });
+
+        expect(annotation.spatial_type).toBe("bbox");
+        expect(annotation.spatial_payload).toEqual(bbox);
     });
 
     test("should create point annotation", async ({ page }) => {
         await page.goto("/multi-class.html");
         await page.waitForFunction(() => window.ulabel && window.ulabel.is_init);
 
-        // Switch to point mode
-        await page.click("a#md-btn--point");
-
-        // Get the canvas element
-        const canvas = page.locator("canvas.front_canvas");
-
-        // Create a point by clicking
-        await canvas.click({ position: { x: 150, y: 150 } });
+        const point = await draw_point(page, [150, 150]);
 
         // Check that an annotation was created
         const annotationCount = await page.evaluate(() => {
@@ -78,6 +77,15 @@ test.describe("ULabel Basic Functionality", () => {
         });
 
         expect(annotationCount).toBe(1);
+
+        const annotation = await page.evaluate(() => {
+            const currentSubtask = window.ulabel.get_current_subtask();
+            const annotationId = currentSubtask.annotations.ordering[0];
+            return currentSubtask.annotations.access[annotationId];
+        });
+
+        expect(annotation.spatial_type).toBe("point");
+        expect(annotation.spatial_payload).toEqual(point);
     });
 
     test("should switch between subtasks", async ({ page }) => {
@@ -105,24 +113,20 @@ test.describe("ULabel Basic Functionality", () => {
 
         // Create an annotation first
         await page.click("a#md-btn--point");
-        const canvas = page.locator("canvas.front_canvas");
+        const canvas_id = await page.evaluate(() => window.ulabel.get_current_subtask().canvas_fid);
+        const canvas = page.locator(`#${canvas_id}`);
         await canvas.click({ position: { x: 100, y: 100 } });
 
-        // Mock the download functionality
-        await page.evaluate(() => {
-            // Override the submit function to capture the result
-            window.lastSubmittedAnnotations = null;
-            const originalOnSubmit = window.on_submit;
-            window.on_submit = function (annotations) {
-                window.lastSubmittedAnnotations = annotations;
-            };
-        });
+        // Click the submit button
+        // The annotations will be downloaded as a JSON file
+        // Load and parse the downloaded file to verify contents
 
-        // Click submit button
-        await page.click("button:has-text(\"Submit\")");
-
-        // Check that annotations were submitted
-        const submittedAnnotations = await page.evaluate(() => window.lastSubmittedAnnotations);
-        expect(submittedAnnotations).toBeTruthy();
+        // Check that annotations contain expected data
+        expect(annotations).toHaveProperty("annotations");
+        expect(annotations.annotations).toHaveProperty("car_detection");
+        const anno = annotations.annotations.car_detection[0];
+        expect(anno.spatial_type).toBe("point");
+        expect(anno.spatial_payload).toEqual([[100, 100]]);
+        expect(anno.created_by).toBe("Demo User");
     });
 });
