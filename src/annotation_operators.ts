@@ -1,6 +1,5 @@
-import {
+import type {
     Offset,
-    ULabel,
     ULabelSpatialType,
     DeprecatedBy,
     DistanceFromPolylineClasses,
@@ -8,8 +7,11 @@ import {
     ValidDeprecatedBy,
     ClassDefinition,
 } from "..";
+// Import ULabel from ../src/index - TypeScript will find ../src/index.d.ts for types
+import { ULabel } from "../src/index";
 
 import { ULabelAnnotation } from "./annotation";
+import { ULabelSubtask } from "./subtask";
 
 /**
  * Returns the confidence of the passed in ULabelAnnotation.
@@ -387,7 +389,7 @@ export function get_point_and_line_annotations(ulabel: ULabel): [ULabelAnnotatio
 
     // Go through all annotations to populate a set of all point annotations and a set of all line annotations
     // First loop through each subtask
-    for (const [subtask_key, subtask] of Object.entries(ulabel.subtasks)) {
+    for (const [subtask_key, subtask] of Object.entries(ulabel.subtasks) as [string, ULabelSubtask][]) {
         // Then go through each annotation in the subtask
         for (const annotation_key in subtask.annotations.access) {
             const annotation: ULabelAnnotation = subtask.annotations.access[annotation_key];

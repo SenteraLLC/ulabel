@@ -312,14 +312,14 @@ export class ULabel {
                 if (
                     (cand.spatial_type === undefined)
                 ) {
-                    log_message(`Attempted to import annotation without a spatial type (id: ${cand.id})`, LogLevel.ERROR);
+                    log_message(`Failed to import annotation without a spatial type (id: ${cand.id})`, LogLevel.ERROR);
                 }
 
-                // Throw error if no spatial type is found
+                // Throw error if no spatial payload is found, if the spatial type requires one
                 if (
                     (cand.spatial_payload === undefined) && !NONSPATIAL_MODES.includes(cand.spatial_type)
                 ) {
-                    log_message(`Attempted to import annotation without a spatial payload (id: ${cand.id})`, LogLevel.ERROR);
+                    log_message(`Failed to import ${cand.spatial_type} annotation without a spatial payload (id: ${cand.id})`, LogLevel.ERROR);
                 } else if (
                     cand.spatial_type === "polygon" && cand.spatial_payload.length < 1
                 ) {
@@ -341,6 +341,13 @@ export class ULabel {
                     cand.annotation_meta = {};
                 }
 
+                // Throw error if no classification payload is found
+                if (
+                    (cand.classification_payloads === undefined)
+                ) {
+                    log_message(`Failed to import ${cand.spatial_type} annotation without a classification payload (id: ${cand.id})`, LogLevel.ERROR);
+                }
+
                 // Ensure that classification payloads are compatible with config
                 cand.ensure_compatible_classification_payloads(ul.subtasks[subtask_key].class_ids);
 
@@ -355,7 +362,7 @@ export class ULabel {
 
                 // Push to ordering and add to access
                 ul.subtasks[subtask_key]["annotations"]["ordering"].push(cand.id);
-                ul.subtasks[subtask_key]["annotations"]["access"][subtask["resume_from"][i]["id"]] = cand;
+                ul.subtasks[subtask_key]["annotations"]["access"][cand.id] = cand;
 
                 if (cand.spatial_type === "polygon") {
                     // If missing any of `spatial_payload_holes` or `spatial_payload_child_indices`,
@@ -508,8 +515,8 @@ export class ULabel {
             submit_buttons: arguments[3],
             subtasks: arguments[4],
             // Use default if optional argument is undefined
-            task_meta: arguments[5] ?? null,
-            annotation_meta: arguments[6] ?? null,
+            task_meta: arguments[5] ?? {},
+            annotation_meta: arguments[6] ?? {},
             px_per_px: arguments[7] ?? 1,
             initial_crop: arguments[8] ?? null,
             initial_line_size: arguments[9] ?? 4,
@@ -2968,7 +2975,6 @@ export class ULabel {
         // Create the new annotation
         let new_annotation = {
             id: unique_id,
-            parent_id: null,
             created_by: this.config.username,
             created_at: ULabel.get_time(),
             last_edited_by: this.config.username,
@@ -3315,7 +3321,6 @@ export class ULabel {
 
         let new_annotation = {
             id: annotation_id,
-            parent_id: null,
             created_by: this.config.username,
             created_at: ULabel.get_time(),
             last_edited_by: this.config.username,
@@ -3419,7 +3424,6 @@ export class ULabel {
         // Add this annotation to annotations object
         current_subtask["annotations"]["access"][annotation_id] = {
             id: annotation_id,
-            parent_id: null,
             created_by: this.config.username,
             created_at: ULabel.get_time(),
             last_edited_at: ULabel.get_time(),

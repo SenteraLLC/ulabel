@@ -1,4 +1,4 @@
-import { ULabelSpatialType, ClassDefinition, ULabelAction, ULabelActionCandidate } from "..";
+import type { ULabelSpatialType, ClassDefinition, ULabelAction, ULabelActionCandidate } from "..";
 import { ULabelAnnotation } from "./annotation";
 
 /**
