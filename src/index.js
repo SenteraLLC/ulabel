@@ -5601,6 +5601,49 @@ export class ULabel {
         }
     }
 
+    // Zoom to the next annotation in the ordering
+    fly_to_next_annotation() {
+        const current_subtask = this.get_current_subtask();
+        const ordering = current_subtask["annotations"]["ordering"];
+        if (ordering.length === 0 || current_subtask["state"]["active_id"] !== null) {
+            return;
+        }
+        let next_ind = 0;
+        this.fly_to_annotation(ordering[next_ind]);
+    }
+
+    fly_to_annotation(annotation_id, subtask_key = null) {
+        if (subtask_key !== null) {
+            this.set_subtask(subtask_key);
+        }
+        const current_subtask = this.get_current_subtask();
+        const ann = current_subtask["annotations"]["access"][annotation_id];
+        if (ann != null) {
+            // Zoom based on the containing box of the annotation
+            const bbox = ann["containing_box"];
+            const annbox = $("#" + this.config["annbox_id"]);
+
+            // Get viewport dimensions
+            const viewport_width = annbox.width();
+            const viewport_height = annbox.height();
+
+            // Get annotation dimensions in image coordinates
+            const bbox_width = bbox["brx"] - bbox["tlx"];
+            const bbox_height = bbox["bry"] - bbox["tly"];
+
+            // Calculate zoom to fit annotation with some padding
+            const padding_factor = 0.9;
+            const zoom_x = (viewport_width * padding_factor) / bbox_width;
+            const zoom_y = (viewport_height * padding_factor) / bbox_height;
+
+            // Use the smaller zoom to ensure annotation fits in both dimensions
+            this.state["zoom_val"] = Math.min(zoom_x, zoom_y);
+
+            // Center on the annotation
+            this.rezoom((bbox["tlx"] + bbox["brx"]) / 2, (bbox["tly"] + bbox["bry"]) / 2, true);
+        }
+    }
+
     // Shake the screen
     shake_screen() {
         if (!this.is_shaking) {

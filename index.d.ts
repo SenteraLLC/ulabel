@@ -320,6 +320,8 @@ export class ULabel {
         force_filter_all?: boolean,
         offset?: Offset,
     ): void;
+    public fly_to_next_annotation(): void;
+    public fly_to_annotation(annotation_id: string, subtask_key?: string): void;
 
     // Brush
     // TODO (joshua-dean): should these actually be optional?

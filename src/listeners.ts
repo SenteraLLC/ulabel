@@ -236,6 +236,11 @@ function handle_keydown_event(
                     ulabel.cancel_annotation();
                 }
                 break;
+            case "Tab":
+                // Prevent focusing the browser address bar
+                keydown_event.preventDefault();
+                ulabel.fly_to_next_annotation();
+                break;
         }
     }
 }
