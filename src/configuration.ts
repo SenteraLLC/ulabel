@@ -177,7 +177,10 @@ export class Configuration {
 
     public fly_to_next_annotation_keybind: string = "Tab";
 
+    // null -> Shift+fly_to_next_annotation_keybind
     public fly_to_previous_annotation_keybind: string | null = null;
+
+    public fly_to_max_zoom: number = 10;
 
     public n_annos_per_canvas: number = DEFAULT_N_ANNOS_PER_CANVAS;
 

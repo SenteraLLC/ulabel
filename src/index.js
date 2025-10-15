@@ -5603,7 +5603,7 @@ export class ULabel {
     }
 
     // Zoom to the next annotation in the ordering
-    fly_to_next_annotation(increment = 1) {
+    fly_to_next_annotation(increment = 1, max_zoom = 10) {
         const current_subtask = this.get_current_subtask();
         const ordering = current_subtask["annotations"]["ordering"];
         // Don't interrupt if currently editing an annotation
@@ -5625,7 +5625,7 @@ export class ULabel {
         // Continue until the fly-to succeeds or we've checked all annotations
         do {
             const next_ann = current_subtask["annotations"]["access"][ordering[next_idx]];
-            if (this.fly_to_annotation(next_ann)) {
+            if (this.fly_to_annotation(next_ann, null, max_zoom)) {
                 current_subtask["state"]["fly_to_idx"] = next_idx;
                 return true;
             }
@@ -5636,15 +5636,15 @@ export class ULabel {
         return false;
     }
 
-    fly_to_annotation_id(annotation_id, subtask_key = null) {
+    fly_to_annotation_id(annotation_id, subtask_key = null, max_zoom = 10) {
         if (subtask_key !== null && subtask_key !== this.state.current_subtask) {
             this.set_subtask(subtask_key);
         }
         const annotation = this.get_current_subtask()["annotations"]["access"][annotation_id];
-        return this.fly_to_annotation(annotation);
+        return this.fly_to_annotation(annotation, null, max_zoom);
     }
 
-    fly_to_annotation(annotation, subtask_key = null) {
+    fly_to_annotation(annotation, subtask_key = null, max_zoom = 10) {
         // Handle null, deprecated, and non-spatial annotations
         if (
             annotation === null ||
@@ -5678,7 +5678,6 @@ export class ULabel {
         const zoom_y = (viewport_height * padding_factor) / bbox_height;
 
         // Use the smaller zoom to ensure annotation fits in both dimensions
-        const max_zoom = 10;
         this.state["zoom_val"] = Math.min(zoom_x, zoom_y, max_zoom);
 
         // Center on the annotation

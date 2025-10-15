@@ -243,14 +243,14 @@ function handle_keydown_event(
                 }
 
                 if (ulabel.config.fly_to_previous_annotation_keybind === null && shift) {
-                    ulabel.fly_to_next_annotation(-1);
+                    ulabel.fly_to_next_annotation(-1, ulabel.config.fly_to_max_zoom);
                 } else if (!shift) {
-                    ulabel.fly_to_next_annotation(1);
+                    ulabel.fly_to_next_annotation(1, ulabel.config.fly_to_max_zoom);
                 }
                 break;
             case ulabel.config.fly_to_previous_annotation_keybind:
                 if (ulabel.config.fly_to_previous_annotation_keybind !== null) {
-                    ulabel.fly_to_next_annotation(-1);
+                    ulabel.fly_to_next_annotation(-1, ulabel.config.fly_to_max_zoom);
                 }
                 break;
         }
