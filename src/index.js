@@ -5608,7 +5608,7 @@ export class ULabel {
         const ordering = current_subtask["annotations"]["ordering"];
         // Don't interrupt if currently editing an annotation
         if (ordering.length === 0 || current_subtask["state"]["active_id"] !== null) {
-            return;
+            return false;
         }
 
         // Find the next non-deprecated, spatial annotation
@@ -5627,11 +5627,13 @@ export class ULabel {
             const next_ann = current_subtask["annotations"]["access"][ordering[next_idx]];
             if (this.fly_to_annotation(next_ann)) {
                 current_subtask["state"]["fly_to_idx"] = next_idx;
-                return;
+                return true;
             }
             // Increment by a single step and try again
             next_idx = (next_idx + single_increment + ordering.length) % ordering.length;
         } while (next_idx !== first_checked_idx);
+
+        return false;
     }
 
     fly_to_annotation_id(annotation_id, subtask_key = null) {

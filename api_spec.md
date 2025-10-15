@@ -13,6 +13,8 @@ This should eventually be replaced with a more comprehensive approach to documen
 - Hold `shift` when moving the cursor inside a polygon to begin annotating a new region or hole.
 - Press `Escape` or `crtl+z` to cancel the start of a new region or hole.
 - Press `Escape` to exit brush/erase mode.
+- Press `Tab` to set the zoom to focus on the next annotation
+- Press `Tab+Shift` to set the zoom to focus on the previous annotation
 
 ## ULabel Constructor
 
@@ -475,6 +477,15 @@ Display utilities are provided for a constructed `ULabel` object.
 
 *() => void* -- Removes persistent event listeners from the document and window. Listeners attached directly to html elements are not explicitly removed.
 Note that ULabel will not function properly after this method is called. Designed for use in single-page applications before navigating away from the annotation page.
+
+### `fly_to_next_annotation(increment)`
+Sets the zoom to focus on the a non-deprecated, spatial annotation in the active subtask's ordering that is an `<increment>` number away from the previously focused annotation, if any. Returns `true` on success and `false` on failure (eg, no valid annotations exist, or an annotation is currently is actively being edited).
+
+### `fly_to_annotation_id(annotation_id, subtask_key)`
+Sets the zoom to focus on the provided annotation id, and switches to its subtask. Returns `true` on success and `false` on failure (eg, annotation doesn't exist in subtask, is not a spatial annotation, or is deprecated).
+
+### `fly_to_annotation(annotation, subtask_key)`
+Sets the zoom to focus on the provided annotation, and switches to its subtask if provided. Returns `true` on success and `false` on failure (eg, annotation doesn't exist in subtask, is not a spatial annotation, or is deprecated).
 
 ## Generic Callbacks
 
