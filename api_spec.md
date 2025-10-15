@@ -434,10 +434,10 @@ Keybind to increase the brush size. Default is `]`. Requires the active subtask 
 Keybind to decrease the brush size. Default is `[`. Requires the active subtask to have a `polygon` mode.
 
 ### `fly_to_next_annotation_keybind`
-Keybind set the zoom to focus on the next annotation. Default is `Tab`, which also will disable any default browser behavior for `Tab`.
+Keybind to set the zoom to focus on the next annotation. Default is `Tab`, which also will disable any default browser behavior for `Tab`.
 
 ### `fly_to_previous_annotation_keybind`
-Keybind set the zoom to focus on the previous annotation. Default is `<null>`, which will default to `Shift+<fly_to_next_annotation_keybind>`.
+Keybind to set the zoom to focus on the previous annotation. Default is `<null>`, which will default to `Shift+<fly_to_next_annotation_keybind>`.
 
 ### `n_annos_per_canvas`
 The number of annotations to render on a single canvas. Default is `100`. Increasing this number may improve performance for jobs with a large number of annotations.
@@ -487,7 +487,7 @@ Display utilities are provided for a constructed `ULabel` object.
 Note that ULabel will not function properly after this method is called. Designed for use in single-page applications before navigating away from the annotation page.
 
 ### `fly_to_next_annotation(increment)`
-Sets the zoom to focus on the a non-deprecated, spatial annotation in the active subtask's ordering that is an `<increment>` number away from the previously focused annotation, if any. Returns `true` on success and `false` on failure (eg, no valid annotations exist, or an annotation is currently is actively being edited).
+Sets the zoom to focus on a non-deprecated, spatial annotation in the active subtask's ordering that is an `<increment>` number away from the previously focused annotation, if any. Returns `true` on success and `false` on failure (eg, no valid annotations exist, or an annotation is currently actively being edited).
 
 ### `fly_to_annotation_id(annotation_id, subtask_key)`
 Sets the zoom to focus on the provided annotation id, and switches to its subtask. Returns `true` on success and `false` on failure (eg, annotation doesn't exist in subtask, is not a spatial annotation, or is deprecated).
