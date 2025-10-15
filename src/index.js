@@ -5399,7 +5399,6 @@ export class ULabel {
 
             // Apply new zoom
             this.state["zoom_val"] *= (1 - dlta / 5);
-            console.log(this.state["zoom_val"]);
             this.rezoom(wheel_event.clientX, wheel_event.clientY);
 
             // Only try to update the overlay if it exists
@@ -5615,10 +5614,16 @@ export class ULabel {
         // Find the next non-deprecated, spatial annotation
         let start_idx = current_subtask["state"]["fly_to_idx"];
         const single_increment = increment > 0 ? 1 : -1;
+        if (start_idx === null) {
+            start_idx = increment > 0 ? -1 : 0;
+        }
+
         // Start with the full increment amount
         let next_idx = (start_idx + increment + ordering.length) % ordering.length;
-        // Continue until the fly-to succeeds
-        while (next_idx !== start_idx) {
+        const first_checked_idx = next_idx;
+
+        // Continue until the fly-to succeeds or we've checked all annotations
+        do {
             const next_ann = current_subtask["annotations"]["access"][ordering[next_idx]];
             if (this.fly_to_annotation(next_ann)) {
                 current_subtask["state"]["fly_to_idx"] = next_idx;
@@ -5626,7 +5631,7 @@ export class ULabel {
             }
             // Increment by a single step and try again
             next_idx = (next_idx + single_increment + ordering.length) % ordering.length;
-        }
+        } while (next_idx !== first_checked_idx);
     }
 
     fly_to_annotation_id(annotation_id, subtask_key = null) {
@@ -5673,7 +5678,6 @@ export class ULabel {
         // Use the smaller zoom to ensure annotation fits in both dimensions
         const max_zoom = 10;
         this.state["zoom_val"] = Math.min(zoom_x, zoom_y, max_zoom);
-        console.log(this.state["zoom_val"]);
 
         // Center on the annotation
         this.rezoom((bbox["tlx"] + bbox["brx"]) / 2, (bbox["tly"] + bbox["bry"]) / 2, true);
