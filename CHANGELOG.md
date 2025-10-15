@@ -11,7 +11,10 @@ Nothing yet.
   - `fly_to_next_annotation()`
   - `fly_to_annotation_id()`
   - `fly_to_annotation()`
-- Add `Tab` and `Tab+Shift` keybinds to fly-to the next/previous annotation, respectively
+- Add `Tab` and `Tab+Shift` default keybinds to fly-to the next/previous annotation, respectively
+  - Keybinds are configurable:
+    - `fly_to_next_annotation_keybind`
+    - `fly_to_previous_annotation_keybind` 
 
 ## [0.19.1] - Oct 9th, 2025
 - Add automated testing to the repo

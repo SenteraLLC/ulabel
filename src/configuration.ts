@@ -175,6 +175,10 @@ export class Configuration {
 
     public decrease_brush_size_keybind: string = "[";
 
+    public fly_to_next_annotation_keybind: string = "Tab";
+
+    public fly_to_previous_annotation_keybind: string | null = null;
+
     public n_annos_per_canvas: number = DEFAULT_N_ANNOS_PER_CANVAS;
 
     public click_and_drag_poly_annotations: boolean = true;

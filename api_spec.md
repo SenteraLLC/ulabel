@@ -71,6 +71,8 @@ class ULabel({
     toggle_erase_mode_keybind: string,
     increase_brush_size_keybind: string,
     decrease_brush_size_keybind: string,
+    fly_to_next_annotation_keybind: string,
+    fly_to_previous_annotation_keybind: string | null,
     n_annos_per_canvas: number
 })
 ```
@@ -430,6 +432,12 @@ Keybind to increase the brush size. Default is `]`. Requires the active subtask 
 
 ### `decrease_brush_size_keybind`
 Keybind to decrease the brush size. Default is `[`. Requires the active subtask to have a `polygon` mode.
+
+### `fly_to_next_annotation_keybind`
+Keybind set the zoom to focus on the next annotation. Default is `Tab`, which also will disable any default browser behavior for `Tab`.
+
+### `fly_to_previous_annotation_keybind`
+Keybind set the zoom to focus on the previous annotation. Default is `<null>`, which will default to `Shift+<fly_to_next_annotation_keybind>`.
 
 ### `n_annos_per_canvas`
 The number of annotations to render on a single canvas. Default is `100`. Increasing this number may improve performance for jobs with a large number of annotations.
