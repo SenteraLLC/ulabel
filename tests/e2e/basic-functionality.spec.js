@@ -1,11 +1,11 @@
 // End-to-end tests for basic annotation functionality
 import { test, expect } from "@playwright/test";
-import { draw_bbox, draw_point } from "../utils/drawing_utils";
-import { download_annotations } from "../utils/general_utils";
-import { wait_for_ulabel_init } from "../utils/init_utils";
-import { get_annotation_count, get_annotation_by_index } from "../utils/annotation_utils";
-import { switch_to_mode } from "../utils/mode_utils";
-import { get_current_subtask_key, switch_to_subtask, get_subtask_count } from "../utils/subtask_utils";
+import { draw_bbox, draw_point } from "../testing-utils/drawing_utils";
+import { download_annotations } from "../testing-utils/general_utils";
+import { wait_for_ulabel_init } from "../testing-utils/init_utils";
+import { get_annotation_count, get_annotation_by_index } from "../testing-utils/annotation_utils";
+import { switch_to_mode } from "../testing-utils/mode_utils";
+import { get_current_subtask_key, switch_to_subtask, get_subtask_count } from "../testing-utils/subtask_utils";
 
 test.describe("ULabel Basic Functionality", () => {
     test("should load and initialize correctly", async ({ page }) => {
