@@ -239,7 +239,11 @@ function handle_keydown_event(
             case "Tab":
                 // Prevent focusing the browser address bar
                 keydown_event.preventDefault();
-                ulabel.fly_to_next_annotation();
+                if (shift) {
+                    ulabel.fly_to_next_annotation(-1);
+                } else {
+                    ulabel.fly_to_next_annotation(1);
+                }
                 break;
         }
     }

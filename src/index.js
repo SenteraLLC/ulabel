@@ -448,6 +448,7 @@ export class ULabel {
                 is_in_erase_mode: false,
                 edit_candidate: null,
                 move_candidate: null,
+                fly_to_idx: null,
 
                 // Rendering context
                 front_context: null,
@@ -5398,6 +5399,7 @@ export class ULabel {
 
             // Apply new zoom
             this.state["zoom_val"] *= (1 - dlta / 5);
+            console.log(this.state["zoom_val"]);
             this.rezoom(wheel_event.clientX, wheel_event.clientY);
 
             // Only try to update the overlay if it exists
@@ -5602,46 +5604,81 @@ export class ULabel {
     }
 
     // Zoom to the next annotation in the ordering
-    fly_to_next_annotation() {
+    fly_to_next_annotation(increment = 1) {
         const current_subtask = this.get_current_subtask();
         const ordering = current_subtask["annotations"]["ordering"];
+        // Don't interrupt if currently editing an annotation
         if (ordering.length === 0 || current_subtask["state"]["active_id"] !== null) {
             return;
         }
-        let next_ind = 0;
-        this.fly_to_annotation(ordering[next_ind]);
+
+        // Find the next non-deprecated, spatial annotation
+        let start_idx = current_subtask["state"]["fly_to_idx"];
+        const single_increment = increment > 0 ? 1 : -1;
+        // Start with the full increment amount
+        let next_idx = (start_idx + increment + ordering.length) % ordering.length;
+        // Continue until the fly-to succeeds
+        while (next_idx !== start_idx) {
+            const next_ann = current_subtask["annotations"]["access"][ordering[next_idx]];
+            if (this.fly_to_annotation(next_ann)) {
+                current_subtask["state"]["fly_to_idx"] = next_idx;
+                return;
+            }
+            // Increment by a single step and try again
+            next_idx = (next_idx + single_increment + ordering.length) % ordering.length;
+        }
     }
 
-    fly_to_annotation(annotation_id, subtask_key = null) {
-        if (subtask_key !== null) {
+    fly_to_annotation_id(annotation_id, subtask_key = null) {
+        if (subtask_key !== null && subtask_key !== this.state.current_subtask) {
             this.set_subtask(subtask_key);
         }
-        const current_subtask = this.get_current_subtask();
-        const ann = current_subtask["annotations"]["access"][annotation_id];
-        if (ann != null) {
-            // Zoom based on the containing box of the annotation
-            const bbox = ann["containing_box"];
-            const annbox = $("#" + this.config["annbox_id"]);
+        const annotation = this.get_current_subtask()["annotations"]["access"][annotation_id];
+        return this.fly_to_annotation(annotation);
+    }
 
-            // Get viewport dimensions
-            const viewport_width = annbox.width();
-            const viewport_height = annbox.height();
-
-            // Get annotation dimensions in image coordinates
-            const bbox_width = bbox["brx"] - bbox["tlx"];
-            const bbox_height = bbox["bry"] - bbox["tly"];
-
-            // Calculate zoom to fit annotation with some padding
-            const padding_factor = 0.9;
-            const zoom_x = (viewport_width * padding_factor) / bbox_width;
-            const zoom_y = (viewport_height * padding_factor) / bbox_height;
-
-            // Use the smaller zoom to ensure annotation fits in both dimensions
-            this.state["zoom_val"] = Math.min(zoom_x, zoom_y);
-
-            // Center on the annotation
-            this.rezoom((bbox["tlx"] + bbox["brx"]) / 2, (bbox["tly"] + bbox["bry"]) / 2, true);
+    fly_to_annotation(annotation, subtask_key = null) {
+        // Handle null, deprecated, and non-spatial annotations
+        if (
+            annotation === null ||
+            annotation === undefined ||
+            annotation["deprecated"] ||
+            NONSPATIAL_MODES.includes(annotation["spatial_type"])
+        ) {
+            return false;
         }
+
+        // Set the current subtask if necessary
+        if (subtask_key !== null && subtask_key !== this.state.current_subtask) {
+            this.set_subtask(subtask_key);
+        }
+
+        // Zoom based on the containing box of the annotation
+        const bbox = annotation["containing_box"];
+        const annbox = $("#" + this.config["annbox_id"]);
+
+        // Get viewport dimensions
+        const viewport_width = annbox.width();
+        const viewport_height = annbox.height();
+
+        // Get annotation dimensions in image coordinates
+        const bbox_width = bbox["brx"] - bbox["tlx"];
+        const bbox_height = bbox["bry"] - bbox["tly"];
+
+        // Calculate zoom to fit annotation with some padding
+        const padding_factor = 0.9;
+        const zoom_x = (viewport_width * padding_factor) / bbox_width;
+        const zoom_y = (viewport_height * padding_factor) / bbox_height;
+
+        // Use the smaller zoom to ensure annotation fits in both dimensions
+        const max_zoom = 10;
+        this.state["zoom_val"] = Math.min(zoom_x, zoom_y, max_zoom);
+        console.log(this.state["zoom_val"]);
+
+        // Center on the annotation
+        this.rezoom((bbox["tlx"] + bbox["brx"]) / 2, (bbox["tly"] + bbox["bry"]) / 2, true);
+
+        return true;
     }
 
     // Shake the screen
