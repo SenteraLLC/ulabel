@@ -58,6 +58,7 @@ class ULabel({
         "annotation_vanish": string
     },
     distance_filter_toolbox_item: FilterDistanceConfig,
+    image_filters_toolbox_item: ImageFiltersConfig,
     change_zoom_keybind: string,
     create_point_annotation_keybind: string,
     default_annotation_size: number,
@@ -345,7 +346,8 @@ enum AllowedToolboxItem {
     KeypointSlider,   // 6
     SubmitButtons,    // 7
     FilterDistance,   // 8
-    Brush             // 9
+    Brush,            // 9
+    ImageFilters      // 10
 }
 ```
 You can access the AllowedToolboxItem enum by calling the static method:
@@ -390,10 +392,26 @@ type FilterDistanceConfig = {
     "show_options"?: boolean, // Default: true
     "show_overlay"?: boolean, // Default: false
     "toggle_overlay_keybind"?: string, // Default: "p"
-    "filter_during_polyline_move"?: boolean, // Default: true. Set to false for performance boost, 
+    "filter_during_polyline_move"?: boolean, // Default: true. Set to false for performance boost,
     // since it will not update the filter/overlay until polyline moves/edits are complete.
 }
 ```
+
+### `image_filters_toolbox_item`
+Configuration object for the `ImageFilters` toolbox item with the following custom definitions:
+```javascript
+type ImageFiltersConfig = {
+    "default_values"?: {
+        "brightness"?: number, // Default: 100 (0-200%)
+        "contrast"?: number,   // Default: 100 (0-200%)
+        "hueRotate"?: number,  // Default: 0 (0-360 degrees)
+        "invert"?: number,     // Default: 0 (0-100%)
+        "saturate"?: number    // Default: 100 (0-200%)
+    }
+}
+```
+
+This toolbox item provides CSS filter controls that apply only to the image, not to the UI elements. Users can adjust brightness, contrast, hue rotation, inversion, and saturation using sliders. The filters are hardware-accelerated by modern browsers for optimal performance.
 
 ### `change_zoom_keybind`
 Keybind to change the zoom level. Must be a letter, and the lowercase version of the letter will set the zoom level to the `initial_crop`, while the capitalized version will show the full image. Default is `r`.

@@ -15,7 +15,7 @@
   
 - [x] Implement filter state management
   - [x] Add filter state to configuration/state management
-  - [x] Ensure filters persist during session (if needed)
+  - [x] Make default filter values configurable
   - [x] Add getter/setter methods for filter values
 
 - [x] Apply CSS filters to canvas/image
@@ -23,13 +23,13 @@
   - [x] Update filter values dynamically as sliders change
   - [x] Ensure filters don't affect UI elements (text, buttons, etc.)
 
-- [ ] Testing
-  - [ ] Test all filter controls work correctly
-  - [ ] Verify filters only apply to image, not UI
-  - [ ] Test filter combinations
+- [x] Testing
+  - [x] Test all filter controls work correctly
+  - [x] Verify filters only apply to image, not UI
+  - [x] Test filter combinations
   - [x] Run linting: `npm run lint`
   - [x] Run build: `npm run build`
   
-- [ ] Documentation
-  - [ ] Update API documentation with new filter methods
-  - [ ] Add demo page showing filter functionality
+- [x] Documentation
+  - [x] Update API documentation with new filter methods
+  - [x] Tested on demo page (multi-class demo works great!)

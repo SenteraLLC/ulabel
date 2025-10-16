@@ -33,7 +33,17 @@ export class ImageFiltersToolboxItem extends ToolboxItem {
     constructor(ulabel: ULabel) {
         super();
         this.ulabel = ulabel;
-        this.filter_values = { ...DEFAULT_FILTER_VALUES };
+
+        // Get default values from config, or use the built-in defaults
+        const config_defaults = ulabel.config.image_filters_toolbox_item?.default_values || {};
+        this.filter_values = {
+            brightness: config_defaults.brightness ?? DEFAULT_FILTER_VALUES.brightness,
+            contrast: config_defaults.contrast ?? DEFAULT_FILTER_VALUES.contrast,
+            hueRotate: config_defaults.hueRotate ?? DEFAULT_FILTER_VALUES.hueRotate,
+            invert: config_defaults.invert ?? DEFAULT_FILTER_VALUES.invert,
+            saturate: config_defaults.saturate ?? DEFAULT_FILTER_VALUES.saturate,
+        };
+
         this.init_sliders();
         this.add_styles();
         this.init_listeners();
@@ -45,7 +55,7 @@ export class ImageFiltersToolboxItem extends ToolboxItem {
             id: "image-filter-brightness",
             main_label: "Brightness",
             label_units: "%",
-            default_value: "100",
+            default_value: String(this.filter_values.brightness),
             min: "0",
             max: "200",
             step: "1",
@@ -60,7 +70,7 @@ export class ImageFiltersToolboxItem extends ToolboxItem {
             id: "image-filter-contrast",
             main_label: "Contrast",
             label_units: "%",
-            default_value: "100",
+            default_value: String(this.filter_values.contrast),
             min: "0",
             max: "200",
             step: "1",
@@ -75,7 +85,7 @@ export class ImageFiltersToolboxItem extends ToolboxItem {
             id: "image-filter-hue-rotate",
             main_label: "Hue Rotate",
             label_units: "°",
-            default_value: "0",
+            default_value: String(this.filter_values.hueRotate),
             min: "0",
             max: "360",
             step: "1",
@@ -90,7 +100,7 @@ export class ImageFiltersToolboxItem extends ToolboxItem {
             id: "image-filter-invert",
             main_label: "Invert",
             label_units: "%",
-            default_value: "0",
+            default_value: String(this.filter_values.invert),
             min: "0",
             max: "100",
             step: "1",
@@ -105,7 +115,7 @@ export class ImageFiltersToolboxItem extends ToolboxItem {
             id: "image-filter-saturate",
             main_label: "Saturate",
             label_units: "%",
-            default_value: "100",
+            default_value: String(this.filter_values.saturate),
             min: "0",
             max: "200",
             step: "1",
@@ -154,10 +164,18 @@ export class ImageFiltersToolboxItem extends ToolboxItem {
     }
 
     /**
-     * Reset all filters to default values
+     * Reset all filters to default values (from config or built-in defaults)
      */
     private reset_filters() {
-        this.filter_values = { ...DEFAULT_FILTER_VALUES };
+        // Get default values from config, or use the built-in defaults
+        const config_defaults = this.ulabel.config.image_filters_toolbox_item?.default_values || {};
+        this.filter_values = {
+            brightness: config_defaults.brightness ?? DEFAULT_FILTER_VALUES.brightness,
+            contrast: config_defaults.contrast ?? DEFAULT_FILTER_VALUES.contrast,
+            hueRotate: config_defaults.hueRotate ?? DEFAULT_FILTER_VALUES.hueRotate,
+            invert: config_defaults.invert ?? DEFAULT_FILTER_VALUES.invert,
+            saturate: config_defaults.saturate ?? DEFAULT_FILTER_VALUES.saturate,
+        };
 
         // Update slider values in the DOM
         const brightness_input = document.querySelector<HTMLInputElement>("#image-filter-brightness");
@@ -166,11 +184,11 @@ export class ImageFiltersToolboxItem extends ToolboxItem {
         const invert_input = document.querySelector<HTMLInputElement>("#image-filter-invert");
         const saturate_input = document.querySelector<HTMLInputElement>("#image-filter-saturate");
 
-        if (brightness_input) brightness_input.value = "100";
-        if (contrast_input) contrast_input.value = "100";
-        if (hue_rotate_input) hue_rotate_input.value = "0";
-        if (invert_input) invert_input.value = "0";
-        if (saturate_input) saturate_input.value = "100";
+        if (brightness_input) brightness_input.value = String(this.filter_values.brightness);
+        if (contrast_input) contrast_input.value = String(this.filter_values.contrast);
+        if (hue_rotate_input) hue_rotate_input.value = String(this.filter_values.hueRotate);
+        if (invert_input) invert_input.value = String(this.filter_values.invert);
+        if (saturate_input) saturate_input.value = String(this.filter_values.saturate);
 
         // Update labels
         const brightness_label = document.querySelector<HTMLLabelElement>("#image-filter-brightness-value-label");
@@ -179,11 +197,11 @@ export class ImageFiltersToolboxItem extends ToolboxItem {
         const invert_label = document.querySelector<HTMLLabelElement>("#image-filter-invert-value-label");
         const saturate_label = document.querySelector<HTMLLabelElement>("#image-filter-saturate-value-label");
 
-        if (brightness_label) brightness_label.innerText = "100%";
-        if (contrast_label) contrast_label.innerText = "100%";
-        if (hue_rotate_label) hue_rotate_label.innerText = "0°";
-        if (invert_label) invert_label.innerText = "0%";
-        if (saturate_label) saturate_label.innerText = "100%";
+        if (brightness_label) brightness_label.innerText = `${this.filter_values.brightness}%`;
+        if (contrast_label) contrast_label.innerText = `${this.filter_values.contrast}%`;
+        if (hue_rotate_label) hue_rotate_label.innerText = `${this.filter_values.hueRotate}°`;
+        if (invert_label) invert_label.innerText = `${this.filter_values.invert}%`;
+        if (saturate_label) saturate_label.innerText = `${this.filter_values.saturate}%`;
 
         this.apply_filters();
     }
@@ -222,7 +240,8 @@ export class ImageFiltersToolboxItem extends ToolboxItem {
      * Code called after all of ULabel's constructor and initialization code is called
      */
     public after_init(): void {
-        // Nothing needed after init for this toolbox item
+        // Apply the initial filter values from config
+        this.apply_filters();
     }
 
     /**

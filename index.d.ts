@@ -85,6 +85,19 @@ export type RecolorActiveConfig = {
 };
 
 /**
+ * Config object for the ImageFilters ToolboxItem.
+ */
+export type ImageFiltersConfig = {
+    default_values?: {
+        brightness?: number;
+        contrast?: number;
+        hueRotate?: number;
+        invert?: number;
+        saturate?: number;
+    };
+};
+
+/**
  * Config object for the FilterPointDistanceFromRow ToolboxItem.
  */
 export type FilterDistanceConfig = {

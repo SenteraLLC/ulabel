@@ -1,5 +1,6 @@
 import type {
     FilterDistanceConfig,
+    ImageFiltersConfig,
     InitialCrop,
     ImageData,
     RecolorActiveConfig,
@@ -54,6 +55,16 @@ export const DEFAULT_FILTER_DISTANCE_CONFIG: FilterDistanceConfig = {
     show_overlay: false,
     toggle_overlay_keybind: "p",
     filter_during_polyline_move: true,
+};
+
+export const DEFAULT_IMAGE_FILTERS_CONFIG: ImageFiltersConfig = {
+    default_values: {
+        brightness: 100,
+        contrast: 100,
+        hueRotate: 0,
+        invert: 0,
+        saturate: 100,
+    },
 };
 
 export class Configuration {
@@ -152,6 +163,9 @@ export class Configuration {
 
     // Config for FilterDistanceToolboxItem
     public distance_filter_toolbox_item: FilterDistanceConfig = DEFAULT_FILTER_DISTANCE_CONFIG;
+
+    // Config for ImageFiltersToolboxItem
+    public image_filters_toolbox_item: ImageFiltersConfig = DEFAULT_IMAGE_FILTERS_CONFIG;
 
     public change_zoom_keybind: string = "r";
 
