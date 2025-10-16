@@ -1,27 +1,35 @@
 ## Tasks
-- [x] Read the discussion in [#209](https://github.com/SenteraLLC/ulabel/issues/209) and understand the requirements.
-- [x] Implement the fix requested in [#209](https://github.com/SenteraLLC/ulabel/issues/209).
-- [x] Build the fix and ensure the build succeeds by running `npm run build`.
-- [x] Receive confirmation that the fix works as expected.
-- [x] Configure Jest to suppress verbose stack traces (added --noStackTrace flag)
-- [x] Fix class ID test to check ID is not in existing list (implementation-agnostic)
-- [x] Increase max workers from 1 to 2 (reduced test time from 200s+ to ~23s)
-- [ ] Fix remaining unit test failures (6 failures, 14 passed)
-  - Spatial payload tests need DOM mocking
-  - ID payload tests need DOM mocking
-  - Note: Some error messages contain minified code context - this is expected when testing against dist/ulabel.js
-- [x] Refactor e2e tests to use utility functions
-  - [x] Create init_utils.js with wait_for_ulabel_init
-  - [x] Create annotation_utils.js with get_annotation_count, get_annotation_by_index, get_all_annotations
-  - [x] Create mode_utils.js with switch_to_mode
-  - [x] Create subtask_utils.js with get_current_subtask_key, switch_to_subtask, get_subtask_count
-  - [x] Update basic-functionality.spec.js to use new utilities
-  - [x] All 6 basic functionality tests passing
-- [x] Refactor tests/ folder to use snake_case naming convention
-  - [x] Updated all utility function names to snake_case
-  - [x] Updated all variable names in e2e tests to snake_case
-  - [x] Updated all variable names in unit tests to snake_case
-  - [x] Updated all variable names in setup.js to snake_case
-  - [x] Updated all variable names in utility files to snake_case
-  - [x] Verified unit tests pass (14 passed)
-  - [x] Verified e2e tests pass (6 passed)
+- [x] Read the description in [#128](https://github.com/SenteraLLC/ulabel/issues/128)
+  - [x] Update this checklist with steps to take in order to implement the requested functionality
+
+### Implementation Steps
+- [x] Design and implement UI for image filters
+  - [x] Create a collapsible/popup menu component for filter controls
+  - [x] Add sliders for each CSS filter property:
+    - [x] Brightness (0-200%, default 100%)
+    - [x] Contrast (0-200%, default 100%)
+    - [x] Hue-rotate (0-360deg, default 0)
+    - [x] Invert (0-100%, default 0%)
+    - [x] Saturate (0-200%, default 100%)
+  - [x] Add reset button to restore default values
+  
+- [x] Implement filter state management
+  - [x] Add filter state to configuration/state management
+  - [x] Ensure filters persist during session (if needed)
+  - [x] Add getter/setter methods for filter values
+
+- [x] Apply CSS filters to canvas/image
+  - [x] Apply CSS filter property to the image canvas element only (not whole screen)
+  - [x] Update filter values dynamically as sliders change
+  - [x] Ensure filters don't affect UI elements (text, buttons, etc.)
+
+- [ ] Testing
+  - [ ] Test all filter controls work correctly
+  - [ ] Verify filters only apply to image, not UI
+  - [ ] Test filter combinations
+  - [x] Run linting: `npm run lint`
+  - [x] Run build: `npm run build`
+  
+- [ ] Documentation
+  - [ ] Update API documentation with new filter methods
+  - [ ] Add demo page showing filter functionality
