@@ -34,19 +34,26 @@ export class ImageFiltersToolboxItem extends ToolboxItem {
         super();
         this.ulabel = ulabel;
 
-        // Get default values from config, or use the built-in defaults
-        const config_defaults = ulabel.config.image_filters_toolbox_item?.default_values || {};
-        this.filter_values = {
+        // Get default values from config
+        this.filter_values = this.get_default_filter_values();
+
+        this.init_sliders();
+        this.add_styles();
+        this.init_listeners();
+    }
+
+    /**
+     * Get default filter values from config or use built-in defaults
+     */
+    private get_default_filter_values(): ImageFilterValues {
+        const config_defaults = this.ulabel.config.image_filters_toolbox_item?.default_values || {};
+        return {
             brightness: config_defaults.brightness ?? DEFAULT_FILTER_VALUES.brightness,
             contrast: config_defaults.contrast ?? DEFAULT_FILTER_VALUES.contrast,
             hueRotate: config_defaults.hueRotate ?? DEFAULT_FILTER_VALUES.hueRotate,
             invert: config_defaults.invert ?? DEFAULT_FILTER_VALUES.invert,
             saturate: config_defaults.saturate ?? DEFAULT_FILTER_VALUES.saturate,
         };
-
-        this.init_sliders();
-        this.add_styles();
-        this.init_listeners();
     }
 
     private init_sliders() {
@@ -167,43 +174,28 @@ export class ImageFiltersToolboxItem extends ToolboxItem {
      * Reset all filters to default values (from config or built-in defaults)
      */
     private reset_filters() {
-        // Get default values from config, or use the built-in defaults
-        const config_defaults = this.ulabel.config.image_filters_toolbox_item?.default_values || {};
-        this.filter_values = {
-            brightness: config_defaults.brightness ?? DEFAULT_FILTER_VALUES.brightness,
-            contrast: config_defaults.contrast ?? DEFAULT_FILTER_VALUES.contrast,
-            hueRotate: config_defaults.hueRotate ?? DEFAULT_FILTER_VALUES.hueRotate,
-            invert: config_defaults.invert ?? DEFAULT_FILTER_VALUES.invert,
-            saturate: config_defaults.saturate ?? DEFAULT_FILTER_VALUES.saturate,
-        };
+        // Reset filter values to defaults
+        this.filter_values = this.get_default_filter_values();
 
-        // Update slider values in the DOM
-        const brightness_input = document.querySelector<HTMLInputElement>("#image-filter-brightness");
-        const contrast_input = document.querySelector<HTMLInputElement>("#image-filter-contrast");
-        const hue_rotate_input = document.querySelector<HTMLInputElement>("#image-filter-hue-rotate");
-        const invert_input = document.querySelector<HTMLInputElement>("#image-filter-invert");
-        const saturate_input = document.querySelector<HTMLInputElement>("#image-filter-saturate");
-
-        if (brightness_input) brightness_input.value = String(this.filter_values.brightness);
-        if (contrast_input) contrast_input.value = String(this.filter_values.contrast);
-        if (hue_rotate_input) hue_rotate_input.value = String(this.filter_values.hueRotate);
-        if (invert_input) invert_input.value = String(this.filter_values.invert);
-        if (saturate_input) saturate_input.value = String(this.filter_values.saturate);
-
-        // Update labels
-        const brightness_label = document.querySelector<HTMLLabelElement>("#image-filter-brightness-value-label");
-        const contrast_label = document.querySelector<HTMLLabelElement>("#image-filter-contrast-value-label");
-        const hue_rotate_label = document.querySelector<HTMLLabelElement>("#image-filter-hue-rotate-value-label");
-        const invert_label = document.querySelector<HTMLLabelElement>("#image-filter-invert-value-label");
-        const saturate_label = document.querySelector<HTMLLabelElement>("#image-filter-saturate-value-label");
-
-        if (brightness_label) brightness_label.innerText = `${this.filter_values.brightness}%`;
-        if (contrast_label) contrast_label.innerText = `${this.filter_values.contrast}%`;
-        if (hue_rotate_label) hue_rotate_label.innerText = `${this.filter_values.hueRotate}°`;
-        if (invert_label) invert_label.innerText = `${this.filter_values.invert}%`;
-        if (saturate_label) saturate_label.innerText = `${this.filter_values.saturate}%`;
+        // Update all slider inputs and labels
+        this.update_slider_input_and_label("brightness", this.filter_values.brightness, "%");
+        this.update_slider_input_and_label("contrast", this.filter_values.contrast, "%");
+        this.update_slider_input_and_label("hue-rotate", this.filter_values.hueRotate, "°");
+        this.update_slider_input_and_label("invert", this.filter_values.invert, "%");
+        this.update_slider_input_and_label("saturate", this.filter_values.saturate, "%");
 
         this.apply_filters();
+    }
+
+    /**
+     * Helper method to update both slider input value and label
+     */
+    private update_slider_input_and_label(filter_type: string, value: number, unit: string) {
+        const input = document.querySelector<HTMLInputElement>(`#image-filter-${filter_type}`);
+        const label = document.querySelector<HTMLLabelElement>(`#image-filter-${filter_type}-value-label`);
+
+        if (input) input.value = String(value);
+        if (label) label.innerText = `${value}${unit}`;
     }
 
     /**
