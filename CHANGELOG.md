@@ -4,7 +4,11 @@ All notable changes to this project will be documented here.
 
 ## [unreleased]
 
-Nothing yet.
+- **Build Process Improvements** ([#164](https://github.com/SenteraLLC/ulabel/issues/164)):
+  - Moved runtime dependencies (`@turf/turf`, `jquery`, `polygon-clipping`, `uuidv4`) to `devDependencies` since they are bundled by webpack
+  - Enabled webpack minification using TerserPlugin for `ulabel.min.js` only
+  - Removed deprecated UglifyJsPlugin code (was commented out)
+  - **Note**: `ulabel.js` (non-minified) is now larger (~2.3 MB vs ~1 MB) due to webpack runtime overhead, but is human-readable for debugging. Use `ulabel.min.js` (~1 MB) for production.
 
 ## [0.20.0] - Oct 15th, 2025
 - Add `fly-to` functions, which sets the zoom and focus to a specific annotation
