@@ -1,5 +1,6 @@
 import type {
     FilterDistanceConfig,
+    ImageFiltersConfig,
     InitialCrop,
     ImageData,
     RecolorActiveConfig,
@@ -19,6 +20,7 @@ import {
     ToolboxItem,
 } from "./toolbox";
 import { SubmitButtons } from "./toolbox_items/submit_buttons";
+import { ImageFiltersToolboxItem } from "./toolbox_items/image_filters";
 import { is_object_and_not_array } from "./utilities";
 
 /* eslint-disable @stylistic/no-multi-spaces */
@@ -33,6 +35,7 @@ export enum AllowedToolboxItem {
     SubmitButtons,    // 7
     FilterDistance,   // 8
     Brush,            // 9
+    ImageFilters,     // 10
 }
 /* eslint-enable @stylistic/no-multi-spaces */
 
@@ -52,6 +55,16 @@ export const DEFAULT_FILTER_DISTANCE_CONFIG: FilterDistanceConfig = {
     show_overlay: false,
     toggle_overlay_keybind: "p",
     filter_during_polyline_move: true,
+};
+
+export const DEFAULT_IMAGE_FILTERS_CONFIG: ImageFiltersConfig = {
+    default_values: {
+        brightness: 100,
+        contrast: 100,
+        hueRotate: 0,
+        invert: 0,
+        saturate: 100,
+    },
 };
 
 export class Configuration {
@@ -118,12 +131,14 @@ export class Configuration {
         [AllowedToolboxItem.SubmitButtons, SubmitButtons],
         [AllowedToolboxItem.FilterDistance, FilterPointDistanceFromRow],
         [AllowedToolboxItem.Brush, BrushToolboxItem],
+        [AllowedToolboxItem.ImageFilters, ImageFiltersToolboxItem],
     ]);
 
     // Default toolbox order used when the user doesn't specify one
     public toolbox_order: AllowedToolboxItem[] = [
         AllowedToolboxItem.ModeSelect,
         AllowedToolboxItem.Brush,
+        AllowedToolboxItem.ImageFilters,
         AllowedToolboxItem.ZoomPan,
         AllowedToolboxItem.AnnotationResize,
         AllowedToolboxItem.AnnotationID,
@@ -148,6 +163,9 @@ export class Configuration {
 
     // Config for FilterDistanceToolboxItem
     public distance_filter_toolbox_item: FilterDistanceConfig = DEFAULT_FILTER_DISTANCE_CONFIG;
+
+    // Config for ImageFiltersToolboxItem
+    public image_filters_toolbox_item: ImageFiltersConfig = DEFAULT_IMAGE_FILTERS_CONFIG;
 
     public change_zoom_keybind: string = "r";
 
@@ -174,6 +192,13 @@ export class Configuration {
     public increase_brush_size_keybind: string = "]";
 
     public decrease_brush_size_keybind: string = "[";
+
+    public fly_to_next_annotation_keybind: string = "Tab";
+
+    // null -> Shift+fly_to_next_annotation_keybind
+    public fly_to_previous_annotation_keybind: string | null = null;
+
+    public fly_to_max_zoom: number = 10;
 
     public n_annos_per_canvas: number = DEFAULT_N_ANNOS_PER_CANVAS;
 
