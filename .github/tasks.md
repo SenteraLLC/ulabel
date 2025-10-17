@@ -37,14 +37,33 @@ All steps completed successfully! ✅
 
 ### What Changed:
 1. **Dependencies moved to devDependencies**: `@turf/turf`, `jquery`, `polygon-clipping`, `uuidv4`
-2. **Webpack minification enabled**: Using modern TerserPlugin for webpack 5
+2. **Webpack minification enabled**: Using modern TerserPlugin (built-in to webpack 5)
 3. **Selective minification**: Only `ulabel.min.js` is minified, `ulabel.js` remains readable
+4. **License files generated**: Both builds now have proper LICENSE.txt files for legal compliance
+5. **Removed unnecessary dependency**: `terser-webpack-plugin` removed from package.json (using webpack's built-in version)
+6. **Test coverage**: Added `test:min` and `test:both` scripts to test both builds
 
 ### File Size Changes:
 - **Before**: Both `ulabel.js` and `ulabel.min.js` were 1039 KB (identical, minification was disabled)
 - **After**: 
   - `ulabel.js`: 2.33 MB (readable, includes webpack runtime and formatting)
   - `ulabel.min.js`: 1.02 MB (minified for production use)
+  - `ulabel.js.LICENSE.txt`: 3 KB (license information)
+  - `ulabel.min.js.LICENSE.txt`: 3 KB (license information)
+
+### Testing Results:
+- ✅ All tests pass with unminified build (`npm test`)
+- ✅ All tests pass with minified build (`npm run test:min`)
+- ✅ Both builds tested together (`npm run test:both`)
+- ✅ No linting errors
+- ✅ Created shared `tests/testing-utils/build_loader.js` helper for consistent build loading across all test files
+
+### Code Organization:
+- Created `tests/testing-utils/build_loader.js` - Centralized helper for loading the correct ULabel build
+  - Automatically selects build based on `ULABEL_BUILD` environment variable
+  - Exports `ULabel` class and metadata about which build is loaded
+  - Makes it easy to add more test files without duplicating build logic
+  - Usage: `const { ULabel } = require('./testing-utils/build_loader');`
 
 ### Why is ulabel.js larger now?
 The non-minified version includes:
@@ -60,6 +79,7 @@ This is **expected and correct** behavior. The readable version is larger becaus
 - Use `ulabel.min.js` in production for smaller bundle size
 - Use `ulabel.js` during development/debugging for readable code
 - The build process is now properly configured and working as intended
+- Run `npm run build-and-test` to build and test both outputs
 
 ### Summary of Issue #164
 

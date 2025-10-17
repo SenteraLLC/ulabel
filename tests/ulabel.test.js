@@ -1,7 +1,5 @@
 // Unit tests for ULabel core functionality
-// Import the built ULabel from the dist directory (webpack exports as default)
-const ulabel_module = require("../dist/ulabel.js");
-const ULabel = ulabel_module.ULabel;
+const { ULabel } = require("./testing-utils/build_loader");
 
 describe("ULabel Core Functionality", () => {
     let mock_config;

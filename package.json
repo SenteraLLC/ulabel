@@ -8,6 +8,8 @@
     "test": "cross-env NODE_OPTIONS=\"--max-old-space-size=8192\" jest",
     "test:watch": "cross-env NODE_OPTIONS=\"--max-old-space-size=8192\" jest --watch",
     "test:coverage": "cross-env NODE_OPTIONS=\"--max-old-space-size=8192\" jest --coverage",
+    "test:min": "cross-env NODE_OPTIONS=\"--max-old-space-size=8192\" ULABEL_BUILD=min jest",
+    "test:both": "npm run test && npm run test:min",
     "test:e2e": "playwright test",
     "demo": "node demo.js",
     "clean": "node -e \"require('fs').rmSync('dist', {recursive: true, force: true})\"",
@@ -15,7 +17,7 @@
     "build-dev": "npm run clean && tsc && webpack --mode development",
     "build-and-demo": "npm run build && npm run demo",
     "build-dev-and-demo": "npm run build-dev && npm run demo",
-    "build-and-test": "npm run build && npm run test",
+    "build-and-test": "npm run build && npm run test:both",
     "prepare": "husky",
     "lint": "eslint . --no-fix"
   },
