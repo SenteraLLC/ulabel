@@ -2,8 +2,13 @@
   "name": "ulabel",
   "description": "An image annotation tool.",
   "version": "0.20.0",
-  "main": "dist/ulabel.js",
-  "module": "dist/ulabel.js",
+  "main": "dist/ulabel.min.js",
+  "module": "dist/ulabel.min.js",
+  "exports": {
+    ".": "./dist/ulabel.min.js",
+    "./min": "./dist/ulabel.min.js",
+    "./debug": "./dist/ulabel.js"
+  },
   "scripts": {
     "test": "cross-env NODE_OPTIONS=\"--max-old-space-size=8192\" jest",
     "test:watch": "cross-env NODE_OPTIONS=\"--max-old-space-size=8192\" jest --watch",
@@ -40,6 +45,7 @@
     "url": "https://github.com/SenteraLLC/ulabel/issues"
   },
   "homepage": "https://github.com/SenteraLLC/ulabel",
+  "unpkg": "dist/ulabel.min.js",
   "devDependencies": {
     "@eslint/config-inspector": "^1.3.0",
     "@eslint/js": "^9.11.1",
@@ -68,6 +74,5 @@
     "uuidv4": "^6.2.6",
     "webpack": "^5.74.0",
     "webpack-cli": "^4.3.1"
-  },
-  "unpkg": "dist/ulabel.js"
+  }
 }

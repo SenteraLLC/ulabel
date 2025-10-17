@@ -11,23 +11,35 @@ A browser-based tool for annotating images.
 ULabel is an entirely "frontend" tool. It can be incorporated into any HTML page using either the unpkg cdn
 
 ```html
+<!-- Use minified version (recommended for production) -->
+<script src="https://unpkg.com/ulabel"></script>
+
+<!-- Or use unminified version for debugging -->
 <script src="https://unpkg.com/ulabel/dist/ulabel.js"></script>
 ```
 
-ULabel is also published on [npm](https://www.npmjs.com/package/ulabel). You can use npm to install it and serve the `dist/ulabel.js` file from `node_modules` locally.
+ULabel is also published on [npm](https://www.npmjs.com/package/ulabel). You can use npm to install it and serve the files from `node_modules` locally.
 
 ```bash
 npm install ulabel
 ```
 
 ```html
+<!-- Use minified version (recommended for production) -->
+<script src="/node_modules/ulabel/dist/ulabel.min.js"></script>
+
+<!-- Or use unminified version for debugging -->
 <script src="/node_modules/ulabel/dist/ulabel.js"></script>
 ```
 
 Or you can import it directly in your JavaScript code:
 
 ```javascript
+// Use minified version (default, recommended for production)
 import ULabel from 'ulabel';
+
+// Or use unminified version for debugging
+import ULabel from 'ulabel/debug';
 ```
 
 An API spec can be found [here](https://github.com/SenteraLLC/ulabel/blob/main/api_spec.md), but as a brief overview: Once the script is included in your HTML doc, you can create a ULabel annotation session as follows.

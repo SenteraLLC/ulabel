@@ -40,6 +40,13 @@
 - [x] Verify all tests still pass (28 unit tests + 36 e2e tests)
 - [x] Final audit: 0 vulnerabilities
 
+#### Step 5: Configure package exports for minified by default ✅ COMPLETE
+- [x] Update `main` and `module` fields to point to `dist/ulabel.min.js`
+- [x] Add `exports` field with options: `.` (minified), `./min` (minified), `./debug` (unminified)
+- [x] Update `unpkg` field to serve minified version by default
+- [x] Update README.md with usage examples for both minified and unminified versions
+- [x] Document clear import patterns for users
+
 ## Summary of Changes
 
 All steps completed successfully! ✅

@@ -8,7 +8,25 @@ All notable changes to this project will be documented here.
   - Moved runtime dependencies (`@turf/turf`, `jquery`, `polygon-clipping`, `uuidv4`) to `devDependencies` since they are bundled by webpack
   - Enabled webpack minification using TerserPlugin for `ulabel.min.js` only
   - Removed deprecated UglifyJsPlugin code (was commented out)
+  - **Breaking Change**: Default entry point now uses minified build (`ulabel.min.js` ~1 MB) instead of unminified (`ulabel.js` ~2.3 MB)
+    - `main`, `module`, and `unpkg` fields now point to minified version for better performance
+    - Added `exports` field for explicit control:
+      - `import ULabel from 'ulabel'` → minified (default)
+      - `import ULabel from 'ulabel/min'` → minified (explicit)
+      - `import ULabel from 'ulabel/debug'` → unminified (for debugging)
   - **Note**: `ulabel.js` (non-minified) is now larger (~2.3 MB vs ~1 MB) due to webpack runtime overhead, but is human-readable for debugging. Use `ulabel.min.js` (~1 MB) for production.
+
+- **Testing Improvements**:
+  - Added comprehensive test coverage for both minified and unminified builds
+  - Unit tests now run against both builds (28 total tests)
+  - E2E tests now run against both builds across all browsers (36 total tests)
+  - Created shared test utilities: `tests/testing-utils/build_loader.js` and `tests/e2e/fixtures.js`
+  - Updated GitHub Actions workflow to test both builds
+
+- **Security Updates**:
+  - Fixed 12 npm security vulnerabilities
+  - Updated to webpack 5.102.1, ESLint 9.37.0, and typescript-eslint 8.46.1
+  - All dependencies now have 0 known vulnerabilities
 
 ## [0.20.0] - Oct 15th, 2025
 - Add `fly-to` functions, which sets the zoom and focus to a specific annotation
