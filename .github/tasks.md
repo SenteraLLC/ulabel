@@ -52,18 +52,26 @@ All steps completed successfully! ✅
   - `ulabel.min.js.LICENSE.txt`: 3 KB (license information)
 
 ### Testing Results:
-- ✅ All tests pass with unminified build (`npm test`)
-- ✅ All tests pass with minified build (`npm run test:min`)
-- ✅ Both builds tested together (`npm run test:both`)
+- ✅ All 14 unit tests pass with unminified build (`npm test`)
+- ✅ All 14 unit tests pass with minified build (`npm run test:min`)
+- ✅ Both unit test builds tested together (`npm run test:both`) - 28 total tests
+- ✅ All 36 e2e tests pass (`npm run test:e2e`) - 6 tests × 6 browsers (chromium, firefox, webkit, chromium-minified, firefox-minified, webkit-minified)
 - ✅ No linting errors
-- ✅ Created shared `tests/testing-utils/build_loader.js` helper for consistent build loading across all test files
+- ✅ Created shared `tests/testing-utils/build_loader.js` helper for consistent build loading across all unit test files
+- ✅ Created `tests/e2e/fixtures.js` for Playwright to test both builds in e2e tests
 
 ### Code Organization:
-- Created `tests/testing-utils/build_loader.js` - Centralized helper for loading the correct ULabel build
+- Created `tests/testing-utils/build_loader.js` - Centralized helper for loading the correct ULabel build in unit tests
   - Automatically selects build based on `ULABEL_BUILD` environment variable
   - Exports `ULabel` class and metadata about which build is loaded
   - Makes it easy to add more test files without duplicating build logic
   - Usage: `const { ULabel } = require('./testing-utils/build_loader');`
+
+- Created `tests/e2e/fixtures.js` - Playwright fixture for testing both builds in e2e tests
+  - Extends Playwright's `test` fixture with automatic route interception
+  - Detects "-minified" in project name and redirects `/ulabel.js` → `/ulabel.min.js`
+  - Works seamlessly with existing tests - just change import from `@playwright/test` to `./fixtures`
+  - Usage: `import { test, expect } from "./fixtures";`
 
 ### Why is ulabel.js larger now?
 The non-minified version includes:
