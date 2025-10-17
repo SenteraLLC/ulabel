@@ -9,7 +9,7 @@ import { test as base } from "@playwright/test";
  * based on the project name.
  */
 export const test = base.extend({
-    page: async ({ page, browserName }, use, testInfo) => {
+    page: async ({ page }, use, testInfo) => {
         const isMinified = testInfo.project.name.includes("minified");
 
         if (isMinified) {
