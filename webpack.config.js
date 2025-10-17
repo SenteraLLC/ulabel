@@ -1,4 +1,5 @@
 const path = require('path');
+const fs = require('fs');
 const TerserPlugin = require('terser-webpack-plugin');
 
 module.exports = {
@@ -39,7 +40,6 @@ module.exports = {
     {
       apply: (compiler) => {
         compiler.hooks.afterEmit.tap('CopyLicensePlugin', (compilation) => {
-          const fs = require('fs');
           const licenseSource = path.join(__dirname, 'dist', 'ulabel.min.js.LICENSE.txt');
           const licenseDest = path.join(__dirname, 'dist', 'ulabel.js.LICENSE.txt');
           

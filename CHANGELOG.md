@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented here.
 
-## [unreleased]
+## [unreleased]https://github.com/SenteraLLC/ulabel/pull/233
 
 ## [0.20.0] - Oct 15th, 2025
 - Add `fly-to` functions, which sets the zoom and focus to a specific annotation
@@ -19,7 +19,7 @@ All notable changes to this project will be documented here.
   - hue rotate
   - invert
   - saturate
-- Removed redundant depencencies that were being unnecessarily installed by users using npm to install ulabel
+- Removed redundant dependencies that were being unnecessarily installed by users using npm to install ulabel
 - Updated webpack build process to properly provide both a minified (default) and unminified build (for better debugging)
   - Added package `exports` field with options: `.` (minified), `./min` (minified), `./debug` (unminified)
 - Add test coverage for both minified and unminified builds
