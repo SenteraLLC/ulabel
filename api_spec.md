@@ -13,6 +13,8 @@ This should eventually be replaced with a more comprehensive approach to documen
 - Hold `shift` when moving the cursor inside a polygon to begin annotating a new region or hole.
 - Press `Escape` or `crtl+z` to cancel the start of a new region or hole.
 - Press `Escape` to exit brush/erase mode.
+- Press `Tab` to set the zoom to focus on the next annotation
+- Press `Shift+Tab` to set the zoom to focus on the previous annotation
 
 ## ULabel Constructor
 
@@ -56,6 +58,7 @@ class ULabel({
         "annotation_vanish": string
     },
     distance_filter_toolbox_item: FilterDistanceConfig,
+    image_filters_toolbox_item: ImageFiltersConfig,
     change_zoom_keybind: string,
     create_point_annotation_keybind: string,
     default_annotation_size: number,
@@ -69,6 +72,9 @@ class ULabel({
     toggle_erase_mode_keybind: string,
     increase_brush_size_keybind: string,
     decrease_brush_size_keybind: string,
+    fly_to_next_annotation_keybind: string,
+    fly_to_previous_annotation_keybind: string | null,
+    fly_to_max_zoom: number,
     n_annos_per_canvas: number
 })
 ```
@@ -340,7 +346,8 @@ enum AllowedToolboxItem {
     KeypointSlider,   // 6
     SubmitButtons,    // 7
     FilterDistance,   // 8
-    Brush             // 9
+    Brush,            // 9
+    ImageFilters      // 10
 }
 ```
 You can access the AllowedToolboxItem enum by calling the static method:
@@ -385,10 +392,26 @@ type FilterDistanceConfig = {
     "show_options"?: boolean, // Default: true
     "show_overlay"?: boolean, // Default: false
     "toggle_overlay_keybind"?: string, // Default: "p"
-    "filter_during_polyline_move"?: boolean, // Default: true. Set to false for performance boost, 
+    "filter_during_polyline_move"?: boolean, // Default: true. Set to false for performance boost,
     // since it will not update the filter/overlay until polyline moves/edits are complete.
 }
 ```
+
+### `image_filters_toolbox_item`
+Configuration object for the `ImageFilters` toolbox item with the following custom definitions:
+```javascript
+type ImageFiltersConfig = {
+    "default_values"?: {
+        "brightness"?: number, // Default: 100 (0-200%)
+        "contrast"?: number,   // Default: 100 (0-200%)
+        "hueRotate"?: number,  // Default: 0 (0-360 degrees)
+        "invert"?: number,     // Default: 0 (0-100%)
+        "saturate"?: number    // Default: 100 (0-200%)
+    }
+}
+```
+
+This toolbox item provides CSS filter controls that apply only to the image, not to the UI elements. Users can adjust brightness, contrast, hue rotation, inversion, and saturation using sliders. The filters are hardware-accelerated by modern browsers for optimal performance.
 
 ### `change_zoom_keybind`
 Keybind to change the zoom level. Must be a letter, and the lowercase version of the letter will set the zoom level to the `initial_crop`, while the capitalized version will show the full image. Default is `r`.
@@ -428,6 +451,15 @@ Keybind to increase the brush size. Default is `]`. Requires the active subtask 
 
 ### `decrease_brush_size_keybind`
 Keybind to decrease the brush size. Default is `[`. Requires the active subtask to have a `polygon` mode.
+
+### `fly_to_next_annotation_keybind`
+Keybind to set the zoom to focus on the next annotation. Default is `Tab`, which also will disable any default browser behavior for `Tab`.
+
+### `fly_to_previous_annotation_keybind`
+Keybind to set the zoom to focus on the previous annotation. Default is `<null>`, which will default to `Shift+<fly_to_next_annotation_keybind>`.
+
+### `fly_to_max_zoom`
+Maximum zoom factor used when flying-to an annotation. Default is `10`, value must be > `0`. 
 
 ### `n_annos_per_canvas`
 The number of annotations to render on a single canvas. Default is `100`. Increasing this number may improve performance for jobs with a large number of annotations.
@@ -475,6 +507,15 @@ Display utilities are provided for a constructed `ULabel` object.
 
 *() => void* -- Removes persistent event listeners from the document and window. Listeners attached directly to html elements are not explicitly removed.
 Note that ULabel will not function properly after this method is called. Designed for use in single-page applications before navigating away from the annotation page.
+
+### `fly_to_next_annotation(increment)`
+Sets the zoom to focus on a non-deprecated, spatial annotation in the active subtask's ordering that is an `<increment>` number away from the previously focused annotation, if any. Returns `true` on success and `false` on failure (eg, no valid annotations exist, or an annotation is currently actively being edited).
+
+### `fly_to_annotation_id(annotation_id, subtask_key, max_zoom)`
+Sets the zoom to focus on the provided annotation id, and switches to its subtask. Returns `true` on success and `false` on failure (eg, annotation doesn't exist in subtask, is not a spatial annotation, or is deprecated).
+
+### `fly_to_annotation(annotation, subtask_key, max_zoom)`
+Sets the zoom to focus on the provided annotation, and switches to its subtask if provided. Returns `true` on success and `false` on failure (eg, annotation doesn't exist in subtask, is not a spatial annotation, or is deprecated).
 
 ## Generic Callbacks
 

@@ -47,6 +47,7 @@ export class ULabelSubtask {
             [key: string]: ULabelDialogPosition;
         };
         spatial_type: ULabelSpatialType;
+        fly_to_idx: number | null;
     };
 
     constructor(

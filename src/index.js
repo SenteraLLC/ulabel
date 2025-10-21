@@ -448,6 +448,7 @@ export class ULabel {
                 is_in_erase_mode: false,
                 edit_candidate: null,
                 move_candidate: null,
+                fly_to_idx: null,
 
                 // Rendering context
                 front_context: null,
@@ -771,7 +772,7 @@ export class ULabel {
                 let lft_cntr = initial_crop["left"] + initial_crop["width"] / 2;
                 let top_cntr = initial_crop["top"] + initial_crop["height"] / 2;
 
-                this.state["zoom_val"] = Math.min(this.get_viewport_height_ratio(height), this.get_viewport_width_ratio(width));
+                this.set_zoom_val(Math.min(this.get_viewport_height_ratio(height), this.get_viewport_width_ratio(width)));
                 this.rezoom(lft_cntr, top_cntr, true);
 
                 // Redraw the filter_distance_overlay if it exists
@@ -799,7 +800,7 @@ export class ULabel {
         const top_left_corner_y = 0;
 
         // Calculate minimum zoom value required to show the whole image
-        this.state["zoom_val"] = Math.min(this.get_viewport_height_ratio(height), this.get_viewport_width_ratio(width));
+        this.set_zoom_val(Math.min(this.get_viewport_height_ratio(height), this.get_viewport_width_ratio(width)));
 
         this.rezoom(top_left_corner_x, top_left_corner_y, true);
 
@@ -5531,12 +5532,18 @@ export class ULabel {
     // Handle zooming by click-drag
     drag_rezoom(mouse_event) {
         const aY = mouse_event.clientY;
-        this.state["zoom_val"] = (
+        this.set_zoom_val(
             this.drag_state["zoom"]["zoom_val_start"] * Math.pow(
                 1.1, -(aY - this.drag_state["zoom"]["mouse_start"][1]) / 10,
-            )
+            ),
         );
         this.rezoom(this.drag_state["zoom"]["mouse_start"][0], this.drag_state["zoom"]["mouse_start"][1]);
+    }
+
+    // Set the zoom value in state and render accordingly
+    set_zoom_val(zoom_val) {
+        // Prevent zoom val <= 0
+        this.state["zoom_val"] = Math.max(zoom_val, 0.01);
     }
 
     // Handle zooming at a certain focus
@@ -5599,6 +5606,90 @@ export class ULabel {
         if (this.state.anno_scaling_mode === "inverse-zoom" || this.state.anno_scaling_mode === "match-zoom") {
             this.redraw_all_annotations();
         }
+    }
+
+    // Zoom to the next annotation in the ordering
+    fly_to_next_annotation(increment = 1, max_zoom = 10) {
+        const current_subtask = this.get_current_subtask();
+        const ordering = current_subtask["annotations"]["ordering"];
+        // Don't interrupt if currently editing an annotation
+        if (ordering.length === 0 || current_subtask["state"]["active_id"] !== null) {
+            return false;
+        }
+
+        // Find the next non-deprecated, spatial annotation
+        let start_idx = current_subtask["state"]["fly_to_idx"];
+        const single_increment = increment > 0 ? 1 : -1;
+        if (start_idx === null) {
+            start_idx = increment > 0 ? -1 : 0;
+        }
+
+        // Start with the full increment amount
+        let next_idx = (start_idx + increment + ordering.length) % ordering.length;
+        const first_checked_idx = next_idx;
+
+        // Continue until the fly-to succeeds or we've checked all annotations
+        do {
+            const next_ann = current_subtask["annotations"]["access"][ordering[next_idx]];
+            if (this.fly_to_annotation(next_ann, null, max_zoom)) {
+                current_subtask["state"]["fly_to_idx"] = next_idx;
+                return true;
+            }
+            // Increment by a single step and try again
+            next_idx = (next_idx + single_increment + ordering.length) % ordering.length;
+        } while (next_idx !== first_checked_idx);
+
+        return false;
+    }
+
+    fly_to_annotation_id(annotation_id, subtask_key = null, max_zoom = 10) {
+        if (subtask_key !== null && subtask_key !== this.state.current_subtask) {
+            this.set_subtask(subtask_key);
+        }
+        const annotation = this.get_current_subtask()["annotations"]["access"][annotation_id];
+        return this.fly_to_annotation(annotation, null, max_zoom);
+    }
+
+    fly_to_annotation(annotation, subtask_key = null, max_zoom = 10) {
+        // Handle null, deprecated, and non-spatial annotations
+        if (
+            annotation === null ||
+            annotation === undefined ||
+            annotation["deprecated"] ||
+            NONSPATIAL_MODES.includes(annotation["spatial_type"])
+        ) {
+            return false;
+        }
+
+        // Set the current subtask if necessary
+        if (subtask_key !== null && subtask_key !== this.state.current_subtask) {
+            this.set_subtask(subtask_key);
+        }
+
+        // Zoom based on the containing box of the annotation
+        const bbox = annotation["containing_box"];
+        const annbox = $("#" + this.config["annbox_id"]);
+
+        // Get viewport dimensions
+        const viewport_width = annbox.width();
+        const viewport_height = annbox.height();
+
+        // Get annotation dimensions in image coordinates
+        const bbox_width = bbox["brx"] - bbox["tlx"];
+        const bbox_height = bbox["bry"] - bbox["tly"];
+
+        // Calculate zoom to fit annotation with some padding
+        const padding_factor = 0.9;
+        const zoom_x = (viewport_width * padding_factor) / bbox_width;
+        const zoom_y = (viewport_height * padding_factor) / bbox_height;
+
+        // Use the smaller zoom to ensure annotation fits in both dimensions
+        this.set_zoom_val(Math.min(zoom_x, zoom_y, max_zoom));
+
+        // Center on the annotation
+        this.rezoom((bbox["tlx"] + bbox["brx"]) / 2, (bbox["tly"] + bbox["bry"]) / 2, true);
+
+        return true;
     }
 
     // Shake the screen
