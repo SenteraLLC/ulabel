@@ -772,7 +772,7 @@ export class ULabel {
                 let lft_cntr = initial_crop["left"] + initial_crop["width"] / 2;
                 let top_cntr = initial_crop["top"] + initial_crop["height"] / 2;
 
-                this.state["zoom_val"] = Math.min(this.get_viewport_height_ratio(height), this.get_viewport_width_ratio(width));
+                this.set_zoom_val(Math.min(this.get_viewport_height_ratio(height), this.get_viewport_width_ratio(width)));
                 this.rezoom(lft_cntr, top_cntr, true);
 
                 // Redraw the filter_distance_overlay if it exists
@@ -800,7 +800,7 @@ export class ULabel {
         const top_left_corner_y = 0;
 
         // Calculate minimum zoom value required to show the whole image
-        this.state["zoom_val"] = Math.min(this.get_viewport_height_ratio(height), this.get_viewport_width_ratio(width));
+        this.set_zoom_val(Math.min(this.get_viewport_height_ratio(height), this.get_viewport_width_ratio(width)));
 
         this.rezoom(top_left_corner_x, top_left_corner_y, true);
 
@@ -5532,12 +5532,18 @@ export class ULabel {
     // Handle zooming by click-drag
     drag_rezoom(mouse_event) {
         const aY = mouse_event.clientY;
-        this.state["zoom_val"] = (
+        this.set_zoom_val(
             this.drag_state["zoom"]["zoom_val_start"] * Math.pow(
                 1.1, -(aY - this.drag_state["zoom"]["mouse_start"][1]) / 10,
-            )
+            ),
         );
         this.rezoom(this.drag_state["zoom"]["mouse_start"][0], this.drag_state["zoom"]["mouse_start"][1]);
+    }
+
+    // Set the zoom value in state and render accordingly
+    set_zoom_val(zoom_val) {
+        // Prevent zoom val <= 0
+        this.state["zoom_val"] = Math.max(zoom_val, 0.01);
     }
 
     // Handle zooming at a certain focus
@@ -5678,7 +5684,7 @@ export class ULabel {
         const zoom_y = (viewport_height * padding_factor) / bbox_height;
 
         // Use the smaller zoom to ensure annotation fits in both dimensions
-        this.state["zoom_val"] = Math.min(zoom_x, zoom_y, max_zoom);
+        this.set_zoom_val(Math.min(zoom_x, zoom_y, max_zoom));
 
         // Center on the annotation
         this.rezoom((bbox["tlx"] + bbox["brx"]) / 2, (bbox["tly"] + bbox["bry"]) / 2, true);

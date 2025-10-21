@@ -14,7 +14,7 @@ This should eventually be replaced with a more comprehensive approach to documen
 - Press `Escape` or `crtl+z` to cancel the start of a new region or hole.
 - Press `Escape` to exit brush/erase mode.
 - Press `Tab` to set the zoom to focus on the next annotation
-- Press `Tab+Shift` to set the zoom to focus on the previous annotation
+- Press `Shift+Tab` to set the zoom to focus on the previous annotation
 
 ## ULabel Constructor
 
@@ -459,7 +459,7 @@ Keybind to set the zoom to focus on the next annotation. Default is `Tab`, which
 Keybind to set the zoom to focus on the previous annotation. Default is `<null>`, which will default to `Shift+<fly_to_next_annotation_keybind>`.
 
 ### `fly_to_max_zoom`
-Maximum zoom factor used when flying-to an annotation. Default is `10`.
+Maximum zoom factor used when flying-to an annotation. Default is `10`, value must be > `0`. 
 
 ### `n_annos_per_canvas`
 The number of annotations to render on a single canvas. Default is `100`. Increasing this number may improve performance for jobs with a large number of annotations.
