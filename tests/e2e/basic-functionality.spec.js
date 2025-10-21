@@ -1,5 +1,5 @@
 // End-to-end tests for basic annotation functionality
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 import { draw_bbox, draw_point } from "../testing-utils/drawing_utils";
 import { download_annotations } from "../testing-utils/general_utils";
 import { wait_for_ulabel_init } from "../testing-utils/init_utils";
