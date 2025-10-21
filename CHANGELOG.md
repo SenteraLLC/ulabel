@@ -15,6 +15,12 @@ Nothing yet.
   - Keybinds are configurable:
     - `fly_to_next_annotation_keybind`
     - `fly_to_previous_annotation_keybind` 
+- Add `ImageFilters` toolbox item to expose sliders for the following image css filters:
+  - brightness
+  - contrast
+  - hue rotate
+  - invert
+  - saturate
 
 ## [0.19.1] - Oct 9th, 2025
 - Add automated testing to the repo
