@@ -7090,7 +7090,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   ULABEL_VERSION: () => (/* binding */ ULABEL_VERSION)
 /* harmony export */ });
-const ULABEL_VERSION = "0.20.0";
+const ULABEL_VERSION = "0.21.0";
 
 
 /***/ }),
