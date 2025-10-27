@@ -108,14 +108,6 @@ export class AnnotationListToolboxItem extends ToolboxItem {
             margin: 0.5rem 0;
         }
 
-        #toolbox .annotation-list-navigation {
-            padding: 0.5rem;
-            text-align: center;
-            font-size: 0.85rem;
-            color: gray;
-            border-bottom: 1px solid rgba(128, 128, 128, 0.2);
-        }
-
         #toolbox .annotation-list-empty {
             padding: 1rem;
             text-align: center;
@@ -241,6 +233,34 @@ export class AnnotationListToolboxItem extends ToolboxItem {
         .ulabel-night #toolbox .annotation-list-class-group-header {
             background-color: rgba(255, 255, 255, 0.1);
         }
+
+        .annotation-navigation-toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0, 0, 0, 0.85);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            pointer-events: none;
+            z-index: 10000;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+        }
+
+        .annotation-navigation-toast.show {
+            opacity: 1;
+        }
+
+        .ulabel-night .annotation-navigation-toast {
+            background-color: rgba(255, 255, 255, 0.9);
+            color: black;
+            box-shadow: 0 4px 12px rgba(255, 255, 255, 0.3);
+        }
         `;
 
         const style_id = "annotation-list-toolbox-styles";
@@ -341,30 +361,40 @@ export class AnnotationListToolboxItem extends ToolboxItem {
     }
 
     /**
-     * Update the navigation indicator showing current position
+     * Update the navigation indicator showing current position as a toast overlay
      */
     private update_navigation_indicator(current_idx: number) {
-        const nav_indicator = document.querySelector<HTMLDivElement>("#annotation-list-navigation");
-        if (!nav_indicator) return;
-
         const current_subtask = this.ulabel.get_current_subtask();
         if (!current_subtask) return;
 
         const annotations = this.get_filtered_annotations(current_subtask);
         const total = annotations.length;
 
-        if (total === 0) {
-            nav_indicator.style.display = "none";
-            return;
+        if (total === 0) return;
+
+        // Create or get existing toast element
+        let toast = document.getElementById("annotation-navigation-toast") as HTMLDivElement;
+
+        if (!toast) {
+            toast = document.createElement("div");
+            toast.id = "annotation-navigation-toast";
+            toast.className = "annotation-navigation-toast";
+            document.body.appendChild(toast);
         }
 
-        nav_indicator.style.display = "block";
-        nav_indicator.textContent = `${current_idx} / ${total - 1}`;
+        // Update the text - add 1 to show human-readable numbering (1-based instead of 0-based)
+        toast.textContent = `${current_idx + 1} / ${total}`;
 
-        // Hide the indicator after 2 seconds
+        // Show the toast
+        // Use a small delay to ensure the opacity transition works
         setTimeout(() => {
-            nav_indicator.style.display = "none";
-        }, 2000);
+            toast.classList.add("show");
+        }, 10);
+
+        // Hide the toast after 1.5 seconds
+        setTimeout(() => {
+            toast.classList.remove("show");
+        }, 1500);
     }
 
     /**
@@ -700,7 +730,6 @@ export class AnnotationListToolboxItem extends ToolboxItem {
                         <label for="annotation-list-show-labels">Show Labels on Canvas</label>
                     </div>
                 </div>
-                <div id="annotation-list-navigation" class="annotation-list-navigation" style="display: none;"></div>
                 <div id="annotation-list-container" class="annotation-list-container">
                     <div class="annotation-list-empty">No annotations</div>
                 </div>
