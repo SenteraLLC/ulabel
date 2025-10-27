@@ -1409,6 +1409,21 @@ var AnnotationListToolboxItem = /** @class */ (function (_super) {
             }
         }
     };
+    /**
+     * Highlight a specific annotation in the list
+     * Public method that can be called when flying to an annotation
+     */
+    AnnotationListToolboxItem.prototype.highlight_annotation = function (annotation_id) {
+        // Remove all highlights first
+        $(".annotation-list-item").removeClass("highlighted");
+        // Highlight the specified annotation
+        var list_item = $(".annotation-list-item[data-annotation-id=\"".concat(annotation_id, "\"]"));
+        if (list_item.length > 0) {
+            list_item.addClass("highlighted");
+            // Scroll the item into view
+            list_item[0].scrollIntoView({ block: "nearest", behavior: "smooth" });
+        }
+    };
     return AnnotationListToolboxItem;
 }(toolbox_1.ToolboxItem));
 exports.AnnotationListToolboxItem = AnnotationListToolboxItem;
@@ -48860,6 +48875,12 @@ class ULabel {
 
         // Show navigation toast
         this.show_annotation_navigation_toast(annotation["id"]);
+
+        // Highlight annotation in the list if AnnotationList toolbox item exists
+        const annotation_list_item = this.toolbox.items.find((item) => item.get_toolbox_item_type() === "AnnotationList");
+        if (annotation_list_item && typeof annotation_list_item.highlight_annotation === "function") {
+            annotation_list_item.highlight_annotation(annotation["id"]);
+        }
 
         return true;
     }

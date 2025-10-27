@@ -5709,6 +5709,12 @@ export class ULabel {
         // Show navigation toast
         this.show_annotation_navigation_toast(annotation["id"]);
 
+        // Highlight annotation in the list if AnnotationList toolbox item exists
+        const annotation_list_item = this.toolbox.items.find((item) => item.get_toolbox_item_type() === "AnnotationList");
+        if (annotation_list_item && typeof annotation_list_item.highlight_annotation === "function") {
+            annotation_list_item.highlight_annotation(annotation["id"]);
+        }
+
         return true;
     }
 

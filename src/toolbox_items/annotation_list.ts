@@ -630,4 +630,21 @@ export class AnnotationListToolboxItem extends ToolboxItem {
             }
         }
     }
+
+    /**
+     * Highlight a specific annotation in the list
+     * Public method that can be called when flying to an annotation
+     */
+    public highlight_annotation(annotation_id: string) {
+        // Remove all highlights first
+        $(".annotation-list-item").removeClass("highlighted");
+
+        // Highlight the specified annotation
+        const list_item = $(`.annotation-list-item[data-annotation-id="${annotation_id}"]`);
+        if (list_item.length > 0) {
+            list_item.addClass("highlighted");
+            // Scroll the item into view
+            list_item[0].scrollIntoView({ block: "nearest", behavior: "smooth" });
+        }
+    }
 }
