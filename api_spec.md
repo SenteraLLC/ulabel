@@ -347,7 +347,8 @@ enum AllowedToolboxItem {
     SubmitButtons,    // 7
     FilterDistance,   // 8
     Brush,            // 9
-    ImageFilters      // 10
+    ImageFilters,     // 10
+    AnnotationList    // 11
 }
 ```
 You can access the AllowedToolboxItem enum by calling the static method:
@@ -412,6 +413,29 @@ type ImageFiltersConfig = {
 ```
 
 This toolbox item provides CSS filter controls that apply only to the image, not to the UI elements. Users can adjust brightness, contrast, hue rotation, inversion, and saturation using sliders. The filters are hardware-accelerated by modern browsers for optimal performance.
+
+### `annotation_list_toolbox_item`
+
+The `AnnotationList` toolbox item displays all annotations in the current subtask in a scrollable list. This toolbox item provides several features:
+
+**Display Features:**
+- Shows each annotation with its spatial type icon (bbox, polygon, point, etc.) and class name
+- Displays annotation index (0-based) for easy reference
+- Collapsible interface to maximize canvas space
+
+**Filtering Options:**
+- **Show Deprecated**: Toggle to show/hide deprecated annotations (default: hidden)
+- **Group by Class**: Organize annotations by their classification for easier management
+
+**Navigation:**
+- Click any annotation in the list to fly-to and zoom on that annotation
+- Toast notification appears showing current position (e.g., "3 / 10") when navigating
+
+**Bidirectional Highlighting:**
+- Hover over an annotation in the list to highlight it on the canvas with the ID dialog
+- Hover over an annotation on the canvas to highlight its corresponding entry in the list
+
+This toolbox item requires no configuration and can be added to the `toolbox_order` array using `AllowedToolboxItem.AnnotationList`.
 
 ### `change_zoom_keybind`
 Keybind to change the zoom level. Must be a letter, and the lowercase version of the letter will set the zoom level to the `initial_crop`, while the capitalized version will show the full image. Default is `r`.

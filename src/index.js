@@ -658,6 +658,7 @@ export class ULabel {
         this.is_init = false;
         // Track global state
         this.is_shaking = false;
+        this.annotation_navigation_toast_timeout = null;
     }
 
     init(callback) {
@@ -4719,6 +4720,7 @@ export class ULabel {
             best: null,
         };
         let minsize = Infinity;
+        let found_containing_annotation = false;
         // TODO(3d)
         for (let edi = 0; edi < this.get_current_subtask()["annotations"]["ordering"].length; edi++) {
             const annotation_id = this.get_current_subtask()["annotations"]["ordering"][edi];
@@ -4751,13 +4753,13 @@ export class ULabel {
                 (this.state["current_frame"] >= cbox["tlz"]) &&
                 (this.state["current_frame"] <= cbox["brz"])
             ) {
-                let found_perfect_match = false;
-                let boxsize;
+                let is_a_containing_annotation = false;
+                let boxsize = (cbox["brx"] - cbox["tlx"]) * (cbox["bry"] - cbox["tly"]);
                 switch (spatial_type) {
                     case "polygon":
                         // Check if the mouse is within the polygon
                         if (GeometricUtils.point_is_within_polygon_annotation([gblx, gbly], annotation)) {
-                            found_perfect_match = true;
+                            is_a_containing_annotation = true;
                         }
                         break;
                     case "bbox":
@@ -4768,29 +4770,38 @@ export class ULabel {
                             gbly >= cbox["tly"] &&
                             gbly <= cbox["bry"]
                         ) {
-                            found_perfect_match = true;
+                            is_a_containing_annotation = true;
                         }
                         break;
                     default:
-                        boxsize = (cbox["brx"] - cbox["tlx"]) * (cbox["bry"] - cbox["tly"]);
+
+                        break;
+                }
+
+                // First time we find a containing annotation, clear previous candidates
+                if (is_a_containing_annotation && !found_containing_annotation) {
+                    found_containing_annotation = true;
+                    minsize = Infinity;
+                    ret["candidate_ids"] = [];
+                }
+
+                if (found_containing_annotation) {
+                    if (is_a_containing_annotation) {
+                        // Prefer containing annotations
                         if (boxsize < minsize) {
                             minsize = boxsize;
+                            ret["candidate_ids"] = [annotation_id];
                             ret["best"] = {
                                 annid: annotation_id,
                             };
                         }
-                        break;
-                }
-
-                if (!found_perfect_match) {
+                    }
+                } else if (boxsize < minsize) {
                     ret["candidate_ids"].push(annotation_id);
-                } else {
-                    // This should be the only candidate
-                    ret["candidate_ids"] = [annotation_id];
+                    minsize = boxsize;
                     ret["best"] = {
                         annid: annotation_id,
                     };
-                    break;
                 }
             }
         }
@@ -5689,7 +5700,80 @@ export class ULabel {
         // Center on the annotation
         this.rezoom((bbox["tlx"] + bbox["brx"]) / 2, (bbox["tly"] + bbox["bry"]) / 2, true);
 
+        // Suggest edits at the centered annotation
+        this.suggest_edits({
+            pageX: annbox.width() / 2,
+            pageY: annbox.height() / 2,
+        });
+
+        // Show navigation toast
+        this.show_annotation_navigation_toast(annotation["id"]);
+
+        // Highlight annotation in the list if AnnotationList toolbox item exists
+        const annotation_list_item = this.toolbox.items.find((item) => item.get_toolbox_item_type() === "AnnotationList");
+        if (annotation_list_item && typeof annotation_list_item.highlight_annotation === "function") {
+            annotation_list_item.highlight_annotation(annotation["id"]);
+        }
+
         return true;
+    }
+
+    // Show navigation toast indicating which annotation is being viewed
+    show_annotation_navigation_toast(annotation_id) {
+        const current_subtask = this.get_current_subtask();
+        if (!current_subtask) return;
+
+        // Find the index of this annotation in the ordering
+        const ordering = current_subtask["annotations"]["ordering"];
+        const annotation_idx = ordering.indexOf(annotation_id);
+
+        if (annotation_idx === -1) return;
+
+        // Count non-deprecated annotations up to and including this one
+        let visible_count = 0;
+        let current_visible_idx = -1;
+        for (let i = 0; i < ordering.length; i++) {
+            const ann = current_subtask["annotations"]["access"][ordering[i]];
+            if (!ann["deprecated"]) {
+                if (ordering[i] === annotation_id) {
+                    current_visible_idx = visible_count;
+                }
+                visible_count++;
+            }
+        }
+
+        if (current_visible_idx === -1) return;
+
+        // Create or get existing toast element
+        let toast = document.getElementById("annotation-navigation-toast");
+
+        if (!toast) {
+            toast = document.createElement("div");
+            toast.id = "annotation-navigation-toast";
+            toast.className = "annotation-navigation-toast";
+            document.body.appendChild(toast);
+        }
+
+        // Update the text - add 1 to show human-readable numbering (1-based instead of 0-based)
+        toast.textContent = `${current_visible_idx + 1} / ${visible_count}`;
+
+        // Clear any existing timeout to reset the timer
+        if (this.annotation_navigation_toast_timeout !== null) {
+            clearTimeout(this.annotation_navigation_toast_timeout);
+            this.annotation_navigation_toast_timeout = null;
+        }
+
+        // Show the toast
+        // Use a small delay to ensure the opacity transition works
+        setTimeout(() => {
+            toast.classList.add("show");
+        }, 10);
+
+        // Hide the toast after a delay
+        this.annotation_navigation_toast_timeout = setTimeout(() => {
+            toast.classList.remove("show");
+            this.annotation_navigation_toast_timeout = null;
+        }, 1000);
     }
 
     // Shake the screen
