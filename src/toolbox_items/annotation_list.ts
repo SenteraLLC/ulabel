@@ -311,10 +311,8 @@ export class AnnotationListToolboxItem extends ToolboxItem {
         // Click on annotation list item to fly to it
         $(document).on("click.ulabel", ".annotation-list-item", (e) => {
             const annotation_id = $(e.currentTarget).data("annotation-id");
-            const annotation_idx = $(e.currentTarget).data("annotation-idx");
             if (annotation_id) {
                 this.ulabel.fly_to_annotation_id(annotation_id, null, this.ulabel.config.fly_to_max_zoom);
-                this.update_navigation_indicator(annotation_idx);
             }
         });
 
@@ -358,43 +356,6 @@ export class AnnotationListToolboxItem extends ToolboxItem {
                 $(".annotation-list-item").removeClass("highlighted");
             }
         });
-    }
-
-    /**
-     * Update the navigation indicator showing current position as a toast overlay
-     */
-    private update_navigation_indicator(current_idx: number) {
-        const current_subtask = this.ulabel.get_current_subtask();
-        if (!current_subtask) return;
-
-        const annotations = this.get_filtered_annotations(current_subtask);
-        const total = annotations.length;
-
-        if (total === 0) return;
-
-        // Create or get existing toast element
-        let toast = document.getElementById("annotation-navigation-toast") as HTMLDivElement;
-
-        if (!toast) {
-            toast = document.createElement("div");
-            toast.id = "annotation-navigation-toast";
-            toast.className = "annotation-navigation-toast";
-            document.body.appendChild(toast);
-        }
-
-        // Update the text - add 1 to show human-readable numbering (1-based instead of 0-based)
-        toast.textContent = `${current_idx + 1} / ${total}`;
-
-        // Show the toast
-        // Use a small delay to ensure the opacity transition works
-        setTimeout(() => {
-            toast.classList.add("show");
-        }, 10);
-
-        // Hide the toast after 1.5 seconds
-        setTimeout(() => {
-            toast.classList.remove("show");
-        }, 1500);
     }
 
     /**

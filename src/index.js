@@ -658,6 +658,7 @@ export class ULabel {
         this.is_init = false;
         // Track global state
         this.is_shaking = false;
+        this.annotation_navigation_toast_timeout = null;
     }
 
     init(callback) {
@@ -5705,7 +5706,68 @@ export class ULabel {
             pageY: annbox.height() / 2,
         });
 
+        // Show navigation toast
+        this.show_annotation_navigation_toast(annotation["id"]);
+
         return true;
+    }
+
+    // Show navigation toast indicating which annotation is being viewed
+    show_annotation_navigation_toast(annotation_id) {
+        const current_subtask = this.get_current_subtask();
+        if (!current_subtask) return;
+
+        // Find the index of this annotation in the ordering
+        const ordering = current_subtask["annotations"]["ordering"];
+        const annotation_idx = ordering.indexOf(annotation_id);
+
+        if (annotation_idx === -1) return;
+
+        // Count non-deprecated annotations up to and including this one
+        let visible_count = 0;
+        let current_visible_idx = -1;
+        for (let i = 0; i < ordering.length; i++) {
+            const ann = current_subtask["annotations"]["access"][ordering[i]];
+            if (!ann["deprecated"]) {
+                if (ordering[i] === annotation_id) {
+                    current_visible_idx = visible_count;
+                }
+                visible_count++;
+            }
+        }
+
+        if (current_visible_idx === -1) return;
+
+        // Create or get existing toast element
+        let toast = document.getElementById("annotation-navigation-toast");
+
+        if (!toast) {
+            toast = document.createElement("div");
+            toast.id = "annotation-navigation-toast";
+            toast.className = "annotation-navigation-toast";
+            document.body.appendChild(toast);
+        }
+
+        // Update the text - add 1 to show human-readable numbering (1-based instead of 0-based)
+        toast.textContent = `${current_visible_idx + 1} / ${visible_count}`;
+
+        // Clear any existing timeout to reset the timer
+        if (this.annotation_navigation_toast_timeout !== null) {
+            clearTimeout(this.annotation_navigation_toast_timeout);
+            this.annotation_navigation_toast_timeout = null;
+        }
+
+        // Show the toast
+        // Use a small delay to ensure the opacity transition works
+        setTimeout(() => {
+            toast.classList.add("show");
+        }, 10);
+
+        // Hide the toast after a delay
+        this.annotation_navigation_toast_timeout = setTimeout(() => {
+            toast.classList.remove("show");
+            this.annotation_navigation_toast_timeout = null;
+        }, 1000);
     }
 
     // Shake the screen

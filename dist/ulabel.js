@@ -1153,10 +1153,8 @@ var AnnotationListToolboxItem = /** @class */ (function (_super) {
         // Click on annotation list item to fly to it
         $(document).on("click.ulabel", ".annotation-list-item", function (e) {
             var annotation_id = $(e.currentTarget).data("annotation-id");
-            var annotation_idx = $(e.currentTarget).data("annotation-idx");
             if (annotation_id) {
                 _this.ulabel.fly_to_annotation_id(annotation_id, null, _this.ulabel.config.fly_to_max_zoom);
-                _this.update_navigation_indicator(annotation_idx);
             }
         });
         // Hover on annotation list item to highlight annotation on canvas
@@ -1195,37 +1193,6 @@ var AnnotationListToolboxItem = /** @class */ (function (_super) {
                 $(".annotation-list-item").removeClass("highlighted");
             }
         });
-    };
-    /**
-     * Update the navigation indicator showing current position as a toast overlay
-     */
-    AnnotationListToolboxItem.prototype.update_navigation_indicator = function (current_idx) {
-        var current_subtask = this.ulabel.get_current_subtask();
-        if (!current_subtask)
-            return;
-        var annotations = this.get_filtered_annotations(current_subtask);
-        var total = annotations.length;
-        if (total === 0)
-            return;
-        // Create or get existing toast element
-        var toast = document.getElementById("annotation-navigation-toast");
-        if (!toast) {
-            toast = document.createElement("div");
-            toast.id = "annotation-navigation-toast";
-            toast.className = "annotation-navigation-toast";
-            document.body.appendChild(toast);
-        }
-        // Update the text - add 1 to show human-readable numbering (1-based instead of 0-based)
-        toast.textContent = "".concat(current_idx + 1, " / ").concat(total);
-        // Show the toast
-        // Use a small delay to ensure the opacity transition works
-        setTimeout(function () {
-            toast.classList.add("show");
-        }, 10);
-        // Hide the toast after 1.5 seconds
-        setTimeout(function () {
-            toast.classList.remove("show");
-        }, 1500);
     };
     /**
      * Render labels on all annotations
@@ -43937,6 +43904,7 @@ class ULabel {
         this.is_init = false;
         // Track global state
         this.is_shaking = false;
+        this.annotation_navigation_toast_timeout = null;
     }
 
     init(callback) {
@@ -48984,7 +48952,68 @@ class ULabel {
             pageY: annbox.height() / 2,
         });
 
+        // Show navigation toast
+        this.show_annotation_navigation_toast(annotation["id"]);
+
         return true;
+    }
+
+    // Show navigation toast indicating which annotation is being viewed
+    show_annotation_navigation_toast(annotation_id) {
+        const current_subtask = this.get_current_subtask();
+        if (!current_subtask) return;
+
+        // Find the index of this annotation in the ordering
+        const ordering = current_subtask["annotations"]["ordering"];
+        const annotation_idx = ordering.indexOf(annotation_id);
+
+        if (annotation_idx === -1) return;
+
+        // Count non-deprecated annotations up to and including this one
+        let visible_count = 0;
+        let current_visible_idx = -1;
+        for (let i = 0; i < ordering.length; i++) {
+            const ann = current_subtask["annotations"]["access"][ordering[i]];
+            if (!ann["deprecated"]) {
+                if (ordering[i] === annotation_id) {
+                    current_visible_idx = visible_count;
+                }
+                visible_count++;
+            }
+        }
+
+        if (current_visible_idx === -1) return;
+
+        // Create or get existing toast element
+        let toast = document.getElementById("annotation-navigation-toast");
+
+        if (!toast) {
+            toast = document.createElement("div");
+            toast.id = "annotation-navigation-toast";
+            toast.className = "annotation-navigation-toast";
+            document.body.appendChild(toast);
+        }
+
+        // Update the text - add 1 to show human-readable numbering (1-based instead of 0-based)
+        toast.textContent = `${current_visible_idx + 1} / ${visible_count}`;
+
+        // Clear any existing timeout to reset the timer
+        if (this.annotation_navigation_toast_timeout !== null) {
+            clearTimeout(this.annotation_navigation_toast_timeout);
+            this.annotation_navigation_toast_timeout = null;
+        }
+
+        // Show the toast
+        // Use a small delay to ensure the opacity transition works
+        setTimeout(() => {
+            toast.classList.add("show");
+        }, 10);
+
+        // Hide the toast after 1.5 seconds
+        this.annotation_navigation_toast_timeout = setTimeout(() => {
+            toast.classList.remove("show");
+            this.annotation_navigation_toast_timeout = null;
+        }, 1500);
     }
 
     // Shake the screen
