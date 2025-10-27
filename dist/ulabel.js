@@ -810,6 +810,7 @@ exports.Configuration = exports.DEFAULT_IMAGE_FILTERS_CONFIG = exports.DEFAULT_F
 var toolbox_1 = __webpack_require__(3045);
 var submit_buttons_1 = __webpack_require__(8035);
 var image_filters_1 = __webpack_require__(6840);
+var annotation_list_1 = __webpack_require__(931);
 var utilities_1 = __webpack_require__(8286);
 /* eslint-disable @stylistic/no-multi-spaces */
 var AllowedToolboxItem;
@@ -825,6 +826,7 @@ var AllowedToolboxItem;
     AllowedToolboxItem[AllowedToolboxItem["FilterDistance"] = 8] = "FilterDistance";
     AllowedToolboxItem[AllowedToolboxItem["Brush"] = 9] = "Brush";
     AllowedToolboxItem[AllowedToolboxItem["ImageFilters"] = 10] = "ImageFilters";
+    AllowedToolboxItem[AllowedToolboxItem["AnnotationList"] = 11] = "AnnotationList";
 })(AllowedToolboxItem || (exports.AllowedToolboxItem = AllowedToolboxItem = {}));
 /* eslint-enable @stylistic/no-multi-spaces */
 exports.DEFAULT_N_ANNOS_PER_CANVAS = 100;
@@ -916,6 +918,7 @@ var Configuration = /** @class */ (function () {
             [AllowedToolboxItem.FilterDistance, toolbox_1.FilterPointDistanceFromRow],
             [AllowedToolboxItem.Brush, toolbox_1.BrushToolboxItem],
             [AllowedToolboxItem.ImageFilters, image_filters_1.ImageFiltersToolboxItem],
+            [AllowedToolboxItem.AnnotationList, annotation_list_1.AnnotationListToolboxItem],
         ]);
         // Default toolbox order used when the user doesn't specify one
         this.toolbox_order = [
@@ -927,6 +930,7 @@ var Configuration = /** @class */ (function () {
             AllowedToolboxItem.AnnotationID,
             AllowedToolboxItem.RecolorActive,
             AllowedToolboxItem.ClassCounter,
+            AllowedToolboxItem.AnnotationList,
             AllowedToolboxItem.KeypointSlider,
             AllowedToolboxItem.SubmitButtons,
         ];
@@ -1057,6 +1061,415 @@ if ($defineProperty) {
 }
 
 module.exports = $defineProperty;
+
+
+/***/ }),
+
+/***/ 931:
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+"use strict";
+
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = function (d, b) {
+        extendStatics = Object.setPrototypeOf ||
+            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
+        return extendStatics(d, b);
+    };
+    return function (d, b) {
+        if (typeof b !== "function" && b !== null)
+            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.AnnotationListToolboxItem = void 0;
+var toolbox_1 = __webpack_require__(3045);
+/**
+ * Toolbox item for displaying and navigating annotations in a list
+ */
+var AnnotationListToolboxItem = /** @class */ (function (_super) {
+    __extends(AnnotationListToolboxItem, _super);
+    function AnnotationListToolboxItem(ulabel) {
+        var _this = _super.call(this) || this;
+        _this.show_deprecated = false;
+        _this.group_by_class = false;
+        _this.is_collapsed = false;
+        _this.show_labels = false;
+        _this.ulabel = ulabel;
+        _this.add_styles();
+        _this.add_event_listeners();
+        return _this;
+    }
+    /**
+     * Create the css for this ToolboxItem and append it to the page.
+     */
+    AnnotationListToolboxItem.prototype.add_styles = function () {
+        var css = "\n        #toolbox .annotation-list-toolbox-item {\n            padding: 0.5rem 0;\n        }\n\n        #toolbox .annotation-list-header {\n            display: flex;\n            justify-content: space-between;\n            align-items: center;\n            padding: 0 1.5rem;\n            cursor: pointer;\n        }\n\n        #toolbox .annotation-list-title {\n            margin: 0.5rem 0;\n            font-size: 1rem;\n            font-weight: 600;\n        }\n\n        #toolbox .annotation-list-toggle-btn {\n            background: none;\n            border: none;\n            color: inherit;\n            font-size: 1rem;\n            cursor: pointer;\n            padding: 0.25rem;\n            width: 24px;\n            height: 24px;\n        }\n\n        #toolbox .annotation-list-toggle-btn:hover {\n            background-color: rgba(0, 128, 255, 0.1);\n        }\n\n        #toolbox .annotation-list-content {\n            display: block;\n            padding: 0 1rem;\n        }\n\n        #toolbox .annotation-list-options {\n            display: flex;\n            flex-direction: column;\n            gap: 0.5rem;\n            padding: 0.5rem;\n            font-size: 0.85rem;\n        }\n\n        #toolbox .annotation-list-option {\n            display: flex;\n            align-items: center;\n            gap: 0.5rem;\n        }\n\n        #toolbox .annotation-list-option input[type=\"checkbox\"] {\n            cursor: pointer;\n        }\n\n        #toolbox .annotation-list-option label {\n            cursor: pointer;\n            user-select: none;\n        }\n\n        #toolbox .annotation-list-container {\n            max-height: 300px;\n            overflow-y: auto;\n            border: 1px solid rgba(128, 128, 128, 0.3);\n            border-radius: 4px;\n            margin: 0.5rem 0;\n        }\n\n        #toolbox .annotation-list-navigation {\n            padding: 0.5rem;\n            text-align: center;\n            font-size: 0.85rem;\n            color: gray;\n            border-bottom: 1px solid rgba(128, 128, 128, 0.2);\n        }\n\n        #toolbox .annotation-list-empty {\n            padding: 1rem;\n            text-align: center;\n            color: gray;\n            font-style: italic;\n        }\n\n        #toolbox .annotation-list-item {\n            padding: 0.5rem;\n            border-bottom: 1px solid rgba(128, 128, 128, 0.2);\n            cursor: pointer;\n            transition: background-color 150ms;\n        }\n\n        #toolbox .annotation-list-item:last-child {\n            border-bottom: none;\n        }\n\n        #toolbox .annotation-list-item:hover {\n            background-color: rgba(0, 128, 255, 0.1);\n        }\n\n        #toolbox .annotation-list-item.highlighted {\n            background-color: rgba(0, 128, 255, 0.2);\n        }\n\n        #toolbox .annotation-list-item-header {\n            display: flex;\n            align-items: center;\n            gap: 0.5rem;\n        }\n\n        #toolbox .annotation-list-item-color {\n            width: 12px;\n            height: 12px;\n            border-radius: 2px;\n            flex-shrink: 0;\n        }\n\n        #toolbox .annotation-list-item-text {\n            flex: 1;\n            font-size: 0.85rem;\n        }\n\n        #toolbox .annotation-list-item-class {\n            font-weight: 600;\n        }\n\n        #toolbox .annotation-list-item-id {\n            color: gray;\n            font-size: 0.75rem;\n        }\n\n        #toolbox .annotation-list-class-group {\n            margin-bottom: 0.5rem;\n        }\n\n        #toolbox .annotation-list-class-group-header {\n            display: flex;\n            align-items: center;\n            gap: 0.5rem;\n            padding: 0.5rem;\n            background-color: rgba(128, 128, 128, 0.1);\n            font-weight: 600;\n            font-size: 0.9rem;\n        }\n\n        #toolbox .annotation-list-class-group-color {\n            width: 14px;\n            height: 14px;\n            border-radius: 2px;\n            flex-shrink: 0;\n        }\n\n        #toolbox .annotation-list-class-group-count {\n            margin-left: auto;\n            color: gray;\n            font-size: 0.8rem;\n            font-weight: normal;\n        }\n\n        .annotation-label {\n            position: absolute;\n            background-color: rgba(0, 0, 0, 0.7);\n            color: white;\n            padding: 2px 6px;\n            border-radius: 3px;\n            font-size: 12px;\n            font-weight: bold;\n            pointer-events: none;\n            z-index: 1000;\n            white-space: nowrap;\n        }\n\n        .ulabel-night .annotation-label {\n            background-color: rgba(255, 255, 255, 0.8);\n            color: black;\n        }\n\n        .ulabel-night #toolbox .annotation-list-container {\n            border-color: rgba(255, 255, 255, 0.3);\n        }\n\n        .ulabel-night #toolbox .annotation-list-item {\n            border-bottom-color: rgba(255, 255, 255, 0.2);\n        }\n\n        .ulabel-night #toolbox .annotation-list-item:hover {\n            background-color: rgba(100, 149, 237, 0.2);\n        }\n\n        .ulabel-night #toolbox .annotation-list-item.highlighted {\n            background-color: rgba(100, 149, 237, 0.3);\n        }\n\n        .ulabel-night #toolbox .annotation-list-class-group-header {\n            background-color: rgba(255, 255, 255, 0.1);\n        }\n        ";
+        var style_id = "annotation-list-toolbox-styles";
+        if (document.getElementById(style_id))
+            return;
+        var head = document.head || document.querySelector("head");
+        var style = document.createElement("style");
+        style.appendChild(document.createTextNode(css));
+        style.id = style_id;
+        head.appendChild(style);
+    };
+    /**
+     * Initialize event listeners for this toolbox item
+     */
+    AnnotationListToolboxItem.prototype.add_event_listeners = function () {
+        var _this = this;
+        // Toggle button to show/hide annotation list
+        $(document).on("click.ulabel", "#annotation-list-toggle", function () {
+            _this.is_collapsed = !_this.is_collapsed;
+            _this.update_list();
+        });
+        // Show/hide deprecated annotations checkbox
+        $(document).on("change.ulabel", "#annotation-list-show-deprecated", function (e) {
+            _this.show_deprecated = e.target.checked;
+            _this.update_list();
+        });
+        // Group by class checkbox
+        $(document).on("change.ulabel", "#annotation-list-group-by-class", function (e) {
+            _this.group_by_class = e.target.checked;
+            _this.update_list();
+        });
+        // Show labels checkbox
+        $(document).on("change.ulabel", "#annotation-list-show-labels", function (e) {
+            _this.show_labels = e.target.checked;
+            if (_this.show_labels) {
+                _this.render_all_labels();
+            }
+            else {
+                _this.clear_all_labels();
+            }
+        });
+        // Click on annotation list item to fly to it
+        $(document).on("click.ulabel", ".annotation-list-item", function (e) {
+            var annotation_id = $(e.currentTarget).data("annotation-id");
+            var annotation_idx = $(e.currentTarget).data("annotation-idx");
+            if (annotation_id) {
+                _this.ulabel.fly_to_annotation_id(annotation_id, null, _this.ulabel.config.fly_to_max_zoom);
+                _this.update_navigation_indicator(annotation_idx);
+            }
+        });
+        // Hover on annotation list item to highlight annotation on canvas
+        $(document).on("mouseenter.ulabel", ".annotation-list-item", function (e) {
+            var annotation_id = $(e.currentTarget).data("annotation-id");
+            if (annotation_id) {
+                // Highlight this list item
+                $(".annotation-list-item").removeClass("highlighted");
+                $(e.currentTarget).addClass("highlighted");
+                // Show the edit suggestion for this annotation on the canvas
+                _this.ulabel.suggest_edits(null, annotation_id, true);
+            }
+        });
+        // Remove highlight when mouse leaves the list item
+        $(document).on("mouseleave.ulabel", ".annotation-list-item", function () {
+            $(".annotation-list-item").removeClass("highlighted");
+            // Clear the edit suggestion
+            _this.ulabel.hide_global_edit_suggestion();
+            _this.ulabel.hide_edit_suggestion();
+        });
+        // Listen for canvas hover changes to sync list highlighting
+        // This creates bidirectional highlighting between canvas and list
+        $(document).on("mousemove.ulabel", "#".concat(this.ulabel.config.canvas_fid_pfx, "--").concat(this.ulabel.state.current_subtask), function () {
+            // Delay the sync slightly to allow suggest_edits to update first
+            setTimeout(function () {
+                _this.sync_highlight_from_canvas();
+            }, 10);
+        });
+    };
+    /**
+     * Update the navigation indicator showing current position
+     */
+    AnnotationListToolboxItem.prototype.update_navigation_indicator = function (current_idx) {
+        var nav_indicator = document.querySelector("#annotation-list-navigation");
+        if (!nav_indicator)
+            return;
+        var current_subtask = this.ulabel.get_current_subtask();
+        if (!current_subtask)
+            return;
+        var annotations = this.get_filtered_annotations(current_subtask);
+        var total = annotations.length;
+        if (total === 0) {
+            nav_indicator.style.display = "none";
+            return;
+        }
+        nav_indicator.style.display = "block";
+        nav_indicator.textContent = "".concat(current_idx + 1, " / ").concat(total);
+        // Hide the indicator after 2 seconds
+        setTimeout(function () {
+            nav_indicator.style.display = "none";
+        }, 2000);
+    };
+    /**
+     * Render labels on all annotations
+     */
+    AnnotationListToolboxItem.prototype.render_all_labels = function () {
+        // Clear existing labels first
+        this.clear_all_labels();
+        var current_subtask = this.ulabel.get_current_subtask();
+        if (!current_subtask)
+            return;
+        var annotations = this.get_filtered_annotations(current_subtask);
+        for (var i = 0; i < annotations.length; i++) {
+            var annotation = annotations[i];
+            this.render_annotation_label(annotation, i + 1);
+        }
+    };
+    /**
+     * Render a label for a single annotation
+     */
+    AnnotationListToolboxItem.prototype.render_annotation_label = function (annotation, display_idx) {
+        // Skip if annotation doesn't have a containing box
+        if (!annotation.containing_box)
+            return;
+        var bbox = annotation.containing_box;
+        var class_id = this.get_annotation_class_id(annotation);
+        var current_subtask = this.ulabel.get_current_subtask();
+        var class_def = current_subtask.class_defs.find(function (def) { return def.id === class_id; });
+        var class_name = class_def ? class_def.name : "Unknown";
+        // Calculate scale using the same method as get_empirical_scale
+        var imwrap_width = $("#" + this.ulabel.config.imwrap_id).width();
+        var scale = imwrap_width / this.ulabel.config.image_width;
+        var annbox = $("#" + this.ulabel.config.annbox_id);
+        var x = bbox.tlx * scale - annbox.scrollLeft();
+        var y = bbox.tly * scale - annbox.scrollTop();
+        // Create label element
+        var label = document.createElement("div");
+        label.className = "annotation-label";
+        label.id = "annotation-label-".concat(annotation.id);
+        label.textContent = "".concat(class_name, " #").concat(display_idx);
+        label.style.left = "".concat(x, "px");
+        label.style.top = "".concat(y - 20, "px"); // Position above the annotation
+        // Add to annbox
+        annbox.append(label);
+    };
+    /**
+     * Clear all annotation labels
+     */
+    AnnotationListToolboxItem.prototype.clear_all_labels = function () {
+        $(".annotation-label").remove();
+    };
+    /**
+     * Update labels when zooming/panning
+     */
+    AnnotationListToolboxItem.prototype.update_label_positions = function () {
+        if (!this.show_labels)
+            return;
+        var current_subtask = this.ulabel.get_current_subtask();
+        if (!current_subtask)
+            return;
+        var annotations = this.get_filtered_annotations(current_subtask);
+        // Calculate scale using the same method as get_empirical_scale
+        var imwrap_width = $("#" + this.ulabel.config.imwrap_id).width();
+        var scale = imwrap_width / this.ulabel.config.image_width;
+        var annbox = $("#" + this.ulabel.config.annbox_id);
+        for (var i = 0; i < annotations.length; i++) {
+            var annotation = annotations[i];
+            if (!annotation.containing_box)
+                continue;
+            var bbox = annotation.containing_box;
+            var x = bbox.tlx * scale - annbox.scrollLeft();
+            var y = bbox.tly * scale - annbox.scrollTop();
+            var label = document.getElementById("annotation-label-".concat(annotation.id));
+            if (label) {
+                label.style.left = "".concat(x, "px");
+                label.style.top = "".concat(y - 20, "px");
+            }
+        }
+    };
+    /**
+     * Build and update the annotation list display
+     */
+    AnnotationListToolboxItem.prototype.update_list = function () {
+        var content = document.querySelector("#annotation-list-content");
+        var toggle_btn = document.querySelector("#annotation-list-toggle");
+        if (!content || !toggle_btn)
+            return;
+        // Update toggle button
+        toggle_btn.innerText = this.is_collapsed ? "▼" : "▲";
+        content.style.display = this.is_collapsed ? "none" : "block";
+        if (this.is_collapsed)
+            return;
+        // Get current subtask
+        var current_subtask = this.ulabel.get_current_subtask();
+        if (!current_subtask)
+            return;
+        // Build the list HTML
+        var list_container = document.querySelector("#annotation-list-container");
+        if (!list_container)
+            return;
+        var annotations = this.get_filtered_annotations(current_subtask);
+        if (annotations.length === 0) {
+            list_container.innerHTML = "<div class=\"annotation-list-empty\">No annotations</div>";
+            return;
+        }
+        if (this.group_by_class) {
+            list_container.innerHTML = this.build_grouped_list_html(annotations, current_subtask);
+        }
+        else {
+            list_container.innerHTML = this.build_flat_list_html(annotations, current_subtask);
+        }
+    };
+    /**
+     * Get filtered annotations based on current options
+     */
+    AnnotationListToolboxItem.prototype.get_filtered_annotations = function (subtask) {
+        var annotations = [];
+        for (var _i = 0, _a = subtask.annotations.ordering; _i < _a.length; _i++) {
+            var annotation_id = _a[_i];
+            var annotation = subtask.annotations.access[annotation_id];
+            // Skip deprecated if option is disabled
+            if (!this.show_deprecated && annotation.deprecated) {
+                continue;
+            }
+            annotations.push(annotation);
+        }
+        return annotations;
+    };
+    /**
+     * Build HTML for flat (non-grouped) list
+     */
+    AnnotationListToolboxItem.prototype.build_flat_list_html = function (annotations, subtask) {
+        var html = "";
+        var _loop_1 = function (i) {
+            var annotation = annotations[i];
+            var class_id = this_1.get_annotation_class_id(annotation);
+            var class_def = subtask.class_defs.find(function (def) { return def.id === class_id; });
+            var class_name = class_def ? class_def.name : "Unknown";
+            var color = this_1.ulabel.color_info[class_id] || "#cccccc";
+            html += "\n                <div class=\"annotation-list-item\" data-annotation-id=\"".concat(annotation.id, "\" data-annotation-idx=\"").concat(i, "\">\n                    <div class=\"annotation-list-item-header\">\n                        <div class=\"annotation-list-item-color\" style=\"background-color: ").concat(color, ";\"></div>\n                        <div class=\"annotation-list-item-text\">\n                            <span class=\"annotation-list-item-class\">").concat(class_name, "</span>\n                            <span class=\"annotation-list-item-id\">#").concat(i + 1, "</span>\n                        </div>\n                    </div>\n                </div>\n            ");
+        };
+        var this_1 = this;
+        for (var i = 0; i < annotations.length; i++) {
+            _loop_1(i);
+        }
+        return html;
+    };
+    /**
+     * Build HTML for grouped (by class) list
+     */
+    AnnotationListToolboxItem.prototype.build_grouped_list_html = function (annotations, subtask) {
+        // Group annotations by class
+        var groups = {};
+        for (var _i = 0, annotations_1 = annotations; _i < annotations_1.length; _i++) {
+            var annotation = annotations_1[_i];
+            var class_id = this.get_annotation_class_id(annotation);
+            if (!groups[class_id]) {
+                groups[class_id] = [];
+            }
+            groups[class_id].push(annotation);
+        }
+        // Build HTML for each group
+        var html = "";
+        var _loop_2 = function (class_id_str) {
+            var class_id = parseInt(class_id_str);
+            var group_annotations = groups[class_id];
+            var class_def = subtask.class_defs.find(function (def) { return def.id === class_id; });
+            var class_name = class_def ? class_def.name : "Unknown";
+            var color = this_2.ulabel.color_info[class_id] || "#cccccc";
+            html += "\n                <div class=\"annotation-list-class-group\">\n                    <div class=\"annotation-list-class-group-header\">\n                        <div class=\"annotation-list-class-group-color\" style=\"background-color: ".concat(color, ";\"></div>\n                        <span>").concat(class_name, "</span>\n                        <span class=\"annotation-list-class-group-count\">(").concat(group_annotations.length, ")</span>\n                    </div>\n            ");
+            for (var i = 0; i < group_annotations.length; i++) {
+                var annotation = group_annotations[i];
+                var overall_idx = annotations.indexOf(annotation);
+                html += "\n                    <div class=\"annotation-list-item\" data-annotation-id=\"".concat(annotation.id, "\" data-annotation-idx=\"").concat(overall_idx, "\">\n                        <div class=\"annotation-list-item-header\">\n                            <div class=\"annotation-list-item-text\" style=\"padding-left: 1.5rem;\">\n                                <span class=\"annotation-list-item-id\">#").concat(i + 1, "</span>\n                            </div>\n                        </div>\n                    </div>\n                ");
+            }
+            html += "</div>";
+        };
+        var this_2 = this;
+        for (var class_id_str in groups) {
+            _loop_2(class_id_str);
+        }
+        return html;
+    };
+    /**
+     * Get the primary class ID for an annotation
+     */
+    AnnotationListToolboxItem.prototype.get_annotation_class_id = function (annotation) {
+        if (!annotation.classification_payloads || annotation.classification_payloads.length === 0) {
+            return 0;
+        }
+        // Find the classification payload with the highest confidence
+        var max_confidence = -1;
+        var class_id = annotation.classification_payloads[0].class_id;
+        for (var _i = 0, _a = annotation.classification_payloads; _i < _a.length; _i++) {
+            var payload = _a[_i];
+            if (payload.confidence > max_confidence) {
+                max_confidence = payload.confidence;
+                class_id = payload.class_id;
+            }
+        }
+        return class_id;
+    };
+    /**
+     * Get the HTML for this toolbox item
+     */
+    AnnotationListToolboxItem.prototype.get_html = function () {
+        return "\n        <div id=\"annotation-list-container-outer\" class=\"annotation-list-toolbox-item\">\n            <div class=\"toolbox-divider\"></div>\n            <div class=\"annotation-list-header\">\n                <h3 class=\"annotation-list-title\">Annotation List</h3>\n                <button id=\"annotation-list-toggle\" class=\"annotation-list-toggle-btn\">\u25B2</button>\n            </div>\n            <div id=\"annotation-list-content\" class=\"annotation-list-content\">\n                <div class=\"annotation-list-options\">\n                    <div class=\"annotation-list-option\">\n                        <input type=\"checkbox\" id=\"annotation-list-show-deprecated\" />\n                        <label for=\"annotation-list-show-deprecated\">Show Deprecated</label>\n                    </div>\n                    <div class=\"annotation-list-option\">\n                        <input type=\"checkbox\" id=\"annotation-list-group-by-class\" />\n                        <label for=\"annotation-list-group-by-class\">Group by Class</label>\n                    </div>\n                    <div class=\"annotation-list-option\">\n                        <input type=\"checkbox\" id=\"annotation-list-show-labels\" />\n                        <label for=\"annotation-list-show-labels\">Show Labels on Canvas</label>\n                    </div>\n                </div>\n                <div id=\"annotation-list-navigation\" class=\"annotation-list-navigation\" style=\"display: none;\"></div>\n                <div id=\"annotation-list-container\" class=\"annotation-list-container\">\n                    <div class=\"annotation-list-empty\">No annotations</div>\n                </div>\n            </div>\n        </div>\n        ";
+    };
+    /**
+     * Returns a unique string for this toolbox item
+     */
+    AnnotationListToolboxItem.prototype.get_toolbox_item_type = function () {
+        return "AnnotationList";
+    };
+    /**
+     * Code called after all of ULabel's constructor and initialization code is called
+     */
+    AnnotationListToolboxItem.prototype.after_init = function () {
+        // Initial list update
+        this.update_list();
+    };
+    /**
+     * Update the list when annotations change
+     */
+    AnnotationListToolboxItem.prototype.redraw_update = function () {
+        this.update_list();
+        this.sync_highlight_from_canvas();
+        if (this.show_labels) {
+            this.render_all_labels();
+        }
+    };
+    /**
+     * Update the list when frame changes
+     */
+    AnnotationListToolboxItem.prototype.frame_update = function () {
+        this.update_list();
+        this.sync_highlight_from_canvas();
+        if (this.show_labels) {
+            this.render_all_labels();
+        }
+    };
+    /**
+     * Sync highlighting from canvas hover to list
+     * Called when the edit_candidate changes on the canvas
+     */
+    AnnotationListToolboxItem.prototype.sync_highlight_from_canvas = function () {
+        var current_subtask = this.ulabel.get_current_subtask();
+        if (!current_subtask)
+            return;
+        var edit_candidate = current_subtask.state.edit_candidate;
+        // Remove all highlights first
+        $(".annotation-list-item").removeClass("highlighted");
+        // If there's an edit candidate, highlight its list item
+        if (edit_candidate && edit_candidate.annid) {
+            var list_item = $(".annotation-list-item[data-annotation-id=\"".concat(edit_candidate.annid, "\"]"));
+            if (list_item.length > 0) {
+                list_item.addClass("highlighted");
+                // Optionally scroll the item into view
+                list_item[0].scrollIntoView({ block: "nearest", behavior: "smooth" });
+            }
+        }
+    };
+    return AnnotationListToolboxItem;
+}(toolbox_1.ToolboxItem));
+exports.AnnotationListToolboxItem = AnnotationListToolboxItem;
 
 
 /***/ }),

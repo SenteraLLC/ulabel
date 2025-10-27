@@ -21,6 +21,7 @@ import {
 } from "./toolbox";
 import { SubmitButtons } from "./toolbox_items/submit_buttons";
 import { ImageFiltersToolboxItem } from "./toolbox_items/image_filters";
+import { AnnotationListToolboxItem } from "./toolbox_items/annotation_list";
 import { is_object_and_not_array } from "./utilities";
 
 /* eslint-disable @stylistic/no-multi-spaces */
@@ -36,6 +37,7 @@ export enum AllowedToolboxItem {
     FilterDistance,   // 8
     Brush,            // 9
     ImageFilters,     // 10
+    AnnotationList,   // 11
 }
 /* eslint-enable @stylistic/no-multi-spaces */
 
@@ -132,6 +134,7 @@ export class Configuration {
         [AllowedToolboxItem.FilterDistance, FilterPointDistanceFromRow],
         [AllowedToolboxItem.Brush, BrushToolboxItem],
         [AllowedToolboxItem.ImageFilters, ImageFiltersToolboxItem],
+        [AllowedToolboxItem.AnnotationList, AnnotationListToolboxItem],
     ]);
 
     // Default toolbox order used when the user doesn't specify one
@@ -144,6 +147,7 @@ export class Configuration {
         AllowedToolboxItem.AnnotationID,
         AllowedToolboxItem.RecolorActive,
         AllowedToolboxItem.ClassCounter,
+        AllowedToolboxItem.AnnotationList,
         AllowedToolboxItem.KeypointSlider,
         AllowedToolboxItem.SubmitButtons,
     ];
