@@ -23,7 +23,6 @@ export class AnnotationListToolboxItem extends ToolboxItem {
     private show_deprecated: boolean = false;
     private group_by_class: boolean = false;
     private is_collapsed: boolean = false;
-    private show_labels: boolean = false;
     private sync_scheduled: boolean = false;
 
     constructor(ulabel: ULabel) {
@@ -196,24 +195,6 @@ export class AnnotationListToolboxItem extends ToolboxItem {
             font-weight: normal;
         }
 
-        .annotation-label {
-            position: absolute;
-            background-color: rgba(0, 0, 0, 0.7);
-            color: white;
-            padding: 2px 6px;
-            border-radius: 3px;
-            font-size: 12px;
-            font-weight: bold;
-            pointer-events: none;
-            z-index: 1000;
-            white-space: nowrap;
-        }
-
-        .ulabel-night .annotation-label {
-            background-color: rgba(255, 255, 255, 0.8);
-            color: black;
-        }
-
         .ulabel-night #toolbox .annotation-list-container {
             border-color: rgba(255, 255, 255, 0.3);
         }
@@ -298,16 +279,6 @@ export class AnnotationListToolboxItem extends ToolboxItem {
             this.update_list();
         });
 
-        // Show labels checkbox
-        $(document).on("change.ulabel", "#annotation-list-show-labels", (e) => {
-            this.show_labels = (e.target as HTMLInputElement).checked;
-            if (this.show_labels) {
-                this.render_all_labels();
-            } else {
-                this.clear_all_labels();
-            }
-        });
-
         // Click on annotation list item to fly to it
         $(document).on("click.ulabel", ".annotation-list-item", (e) => {
             const annotation_id = $(e.currentTarget).data("annotation-id");
@@ -356,96 +327,6 @@ export class AnnotationListToolboxItem extends ToolboxItem {
                 $(".annotation-list-item").removeClass("highlighted");
             }
         });
-    }
-
-    /**
-     * Render labels on all annotations
-     */
-    private render_all_labels() {
-        // Clear existing labels first
-        this.clear_all_labels();
-
-        const current_subtask = this.ulabel.get_current_subtask();
-        if (!current_subtask) return;
-
-        const annotations = this.get_filtered_annotations(current_subtask);
-
-        for (let i = 0; i < annotations.length; i++) {
-            const annotation = annotations[i];
-            this.render_annotation_label(annotation, i);
-        }
-    }
-
-    /**
-     * Render a label for a single annotation
-     */
-    private render_annotation_label(annotation: ULabelAnnotation, display_idx: number) {
-        // Skip if annotation doesn't have a containing box
-        if (!annotation.containing_box) return;
-
-        const bbox = annotation.containing_box;
-        const class_id = this.get_annotation_class_id(annotation);
-        const current_subtask = this.ulabel.get_current_subtask();
-        const class_def = current_subtask.class_defs.find((def) => def.id === class_id);
-        const class_name = class_def ? class_def.name : "Unknown";
-
-        // Calculate scale using the same method as get_empirical_scale
-        const imwrap_width = $("#" + this.ulabel.config.imwrap_id).width();
-        const scale = imwrap_width / this.ulabel.config.image_width;
-        const annbox = $("#" + this.ulabel.config.annbox_id);
-
-        const x = bbox.tlx * scale - annbox.scrollLeft();
-        const y = bbox.tly * scale - annbox.scrollTop();
-
-        // Create label element
-        const label = document.createElement("div");
-        label.className = "annotation-label";
-        label.id = `annotation-label-${annotation.id}`;
-        label.textContent = `${class_name} #${display_idx}`;
-        label.style.left = `${x}px`;
-        label.style.top = `${y - 20}px`; // Position above the annotation
-
-        // Add to annbox
-        annbox.append(label);
-    }
-
-    /**
-     * Clear all annotation labels
-     */
-    private clear_all_labels() {
-        $(".annotation-label").remove();
-    }
-
-    /**
-     * Update labels when zooming/panning
-     */
-    private update_label_positions() {
-        if (!this.show_labels) return;
-
-        const current_subtask = this.ulabel.get_current_subtask();
-        if (!current_subtask) return;
-
-        const annotations = this.get_filtered_annotations(current_subtask);
-
-        // Calculate scale using the same method as get_empirical_scale
-        const imwrap_width = $("#" + this.ulabel.config.imwrap_id).width();
-        const scale = imwrap_width / this.ulabel.config.image_width;
-        const annbox = $("#" + this.ulabel.config.annbox_id);
-
-        for (let i = 0; i < annotations.length; i++) {
-            const annotation = annotations[i];
-            if (!annotation.containing_box) continue;
-
-            const bbox = annotation.containing_box;
-            const x = bbox.tlx * scale - annbox.scrollLeft();
-            const y = bbox.tly * scale - annbox.scrollTop();
-
-            const label = document.getElementById(`annotation-label-${annotation.id}`);
-            if (label) {
-                label.style.left = `${x}px`;
-                label.style.top = `${y - 20}px`;
-            }
-        }
     }
 
     /**
@@ -686,10 +567,6 @@ export class AnnotationListToolboxItem extends ToolboxItem {
                         <input type="checkbox" id="annotation-list-group-by-class" />
                         <label for="annotation-list-group-by-class">Group by Class</label>
                     </div>
-                    <div class="annotation-list-option">
-                        <input type="checkbox" id="annotation-list-show-labels" />
-                        <label for="annotation-list-show-labels">Show Labels on Canvas</label>
-                    </div>
                 </div>
                 <div id="annotation-list-container" class="annotation-list-container">
                     <div class="annotation-list-empty">No annotations</div>
@@ -720,9 +597,6 @@ export class AnnotationListToolboxItem extends ToolboxItem {
     public redraw_update(): void {
         this.update_list();
         this.sync_highlight_from_canvas();
-        if (this.show_labels) {
-            this.render_all_labels();
-        }
     }
 
     /**
@@ -731,9 +605,6 @@ export class AnnotationListToolboxItem extends ToolboxItem {
     public frame_update(): void {
         this.update_list();
         this.sync_highlight_from_canvas();
-        if (this.show_labels) {
-            this.render_all_labels();
-        }
     }
 
     /**

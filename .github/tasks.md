@@ -26,14 +26,11 @@ Create an annotation list toolbox item that displays all annotations in a list f
   - [x] Display all annotations with their ID/index
   - [x] Add show/hide toggle for deprecated annotations (default: hide)
   - [x] Add option to group by class
-- [ ] 4. Implement click-to-fly functionality
+- [x] 4. Implement click-to-fly functionality
   - [x] Integrate with existing "fly to" functionality from PR #230
   - [x] Add click handlers to list items
-  - [ ] Display "current idx / total" indicator
+  - [x] Display "current idx / total" indicator
 - [x] 5. Implement hover highlighting
   - [x] Add hover handlers to list items
   - [x] Integrate with existing annotation highlighting system
   - [x] Ensure bidirectional highlighting (list hover → canvas, canvas hover → list)
-- [x] 6. Implement annotation label display
-  - [x] Add option to show labels on annotations
-  - [ ] Support persistent label display on canvas

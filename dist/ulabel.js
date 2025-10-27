@@ -1099,7 +1099,6 @@ var AnnotationListToolboxItem = /** @class */ (function (_super) {
         _this.show_deprecated = false;
         _this.group_by_class = false;
         _this.is_collapsed = false;
-        _this.show_labels = false;
         _this.sync_scheduled = false;
         _this.ulabel = ulabel;
         _this.add_styles();
@@ -1110,7 +1109,7 @@ var AnnotationListToolboxItem = /** @class */ (function (_super) {
      * Create the css for this ToolboxItem and append it to the page.
      */
     AnnotationListToolboxItem.prototype.add_styles = function () {
-        var css = "\n        #toolbox .annotation-list-toolbox-item {\n            padding: 0.5rem 0;\n        }\n\n        #toolbox .annotation-list-header {\n            display: flex;\n            justify-content: space-between;\n            align-items: center;\n            padding: 0 1.5rem;\n            cursor: pointer;\n        }\n\n        #toolbox .annotation-list-title {\n            margin: 0.5rem 0;\n            font-size: 1rem;\n            font-weight: 600;\n        }\n\n        #toolbox .annotation-list-toggle-btn {\n            background: none;\n            border: none;\n            color: inherit;\n            font-size: 1rem;\n            cursor: pointer;\n            padding: 0.25rem;\n            width: 24px;\n            height: 24px;\n        }\n\n        #toolbox .annotation-list-toggle-btn:hover {\n            background-color: rgba(0, 128, 255, 0.1);\n        }\n\n        #toolbox .annotation-list-content {\n            display: block;\n            padding: 0 1rem;\n        }\n\n        #toolbox .annotation-list-options {\n            display: flex;\n            flex-direction: column;\n            gap: 0.5rem;\n            padding: 0.5rem;\n            font-size: 0.85rem;\n        }\n\n        #toolbox .annotation-list-option {\n            display: flex;\n            align-items: center;\n            gap: 0.5rem;\n        }\n\n        #toolbox .annotation-list-option input[type=\"checkbox\"] {\n            cursor: pointer;\n        }\n\n        #toolbox .annotation-list-option label {\n            cursor: pointer;\n            user-select: none;\n        }\n\n        #toolbox .annotation-list-container {\n            max-height: 300px;\n            overflow-y: auto;\n            border: 1px solid rgba(128, 128, 128, 0.3);\n            border-radius: 4px;\n            margin: 0.5rem 0;\n        }\n\n        #toolbox .annotation-list-empty {\n            padding: 1rem;\n            text-align: center;\n            color: gray;\n            font-style: italic;\n        }\n\n        #toolbox .annotation-list-item {\n            padding: 0.5rem;\n            border-bottom: 1px solid rgba(128, 128, 128, 0.2);\n            cursor: pointer;\n            transition: background-color 150ms;\n        }\n\n        #toolbox .annotation-list-item:last-child {\n            border-bottom: none;\n        }\n\n        #toolbox .annotation-list-item:hover {\n            background-color: rgba(0, 128, 255, 0.1);\n        }\n\n        #toolbox .annotation-list-item.highlighted {\n            background-color: rgba(0, 128, 255, 0.2);\n        }\n\n        #toolbox .annotation-list-item-header {\n            display: flex;\n            align-items: center;\n            gap: 0.5rem;\n        }\n\n        #toolbox .annotation-list-item-icon {\n            width: 20px;\n            height: 20px;\n            flex-shrink: 0;\n            display: flex;\n            align-items: center;\n            justify-content: center;\n        }\n\n        #toolbox .annotation-list-item-icon svg {\n            width: 100%;\n            height: 100%;\n        }\n\n        #toolbox .annotation-list-item-text {\n            flex: 1;\n            font-size: 0.85rem;\n        }\n\n        #toolbox .annotation-list-item-class {\n            font-weight: 600;\n        }\n\n        #toolbox .annotation-list-item-id {\n            color: gray;\n            font-size: 0.75rem;\n        }\n\n        #toolbox .annotation-list-class-group {\n            margin-bottom: 0.5rem;\n        }\n\n        #toolbox .annotation-list-class-group-header {\n            display: flex;\n            align-items: center;\n            gap: 0.5rem;\n            padding: 0.5rem;\n            background-color: rgba(128, 128, 128, 0.1);\n            font-weight: 600;\n            font-size: 0.9rem;\n        }\n\n        #toolbox .annotation-list-class-group-color {\n            width: 14px;\n            height: 14px;\n            border-radius: 2px;\n            flex-shrink: 0;\n        }\n\n        #toolbox .annotation-list-class-group-count {\n            margin-left: auto;\n            color: gray;\n            font-size: 0.8rem;\n            font-weight: normal;\n        }\n\n        .annotation-label {\n            position: absolute;\n            background-color: rgba(0, 0, 0, 0.7);\n            color: white;\n            padding: 2px 6px;\n            border-radius: 3px;\n            font-size: 12px;\n            font-weight: bold;\n            pointer-events: none;\n            z-index: 1000;\n            white-space: nowrap;\n        }\n\n        .ulabel-night .annotation-label {\n            background-color: rgba(255, 255, 255, 0.8);\n            color: black;\n        }\n\n        .ulabel-night #toolbox .annotation-list-container {\n            border-color: rgba(255, 255, 255, 0.3);\n        }\n\n        .ulabel-night #toolbox .annotation-list-item {\n            border-bottom-color: rgba(255, 255, 255, 0.2);\n        }\n\n        .ulabel-night #toolbox .annotation-list-item:hover {\n            background-color: rgba(100, 149, 237, 0.2);\n        }\n\n        .ulabel-night #toolbox .annotation-list-item.highlighted {\n            background-color: rgba(100, 149, 237, 0.3);\n        }\n\n        .ulabel-night #toolbox .annotation-list-class-group-header {\n            background-color: rgba(255, 255, 255, 0.1);\n        }\n\n        .annotation-navigation-toast {\n            position: fixed;\n            top: 20px;\n            left: 50%;\n            transform: translateX(-50%);\n            background-color: rgba(0, 0, 0, 0.85);\n            color: white;\n            padding: 12px 24px;\n            border-radius: 8px;\n            font-size: 16px;\n            font-weight: 600;\n            pointer-events: none;\n            z-index: 10000;\n            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);\n            opacity: 0;\n            transition: opacity 0.3s ease-in-out;\n        }\n\n        .annotation-navigation-toast.show {\n            opacity: 1;\n        }\n\n        .ulabel-night .annotation-navigation-toast {\n            background-color: rgba(255, 255, 255, 0.9);\n            color: black;\n            box-shadow: 0 4px 12px rgba(255, 255, 255, 0.3);\n        }\n        ";
+        var css = "\n        #toolbox .annotation-list-toolbox-item {\n            padding: 0.5rem 0;\n        }\n\n        #toolbox .annotation-list-header {\n            display: flex;\n            justify-content: space-between;\n            align-items: center;\n            padding: 0 1.5rem;\n            cursor: pointer;\n        }\n\n        #toolbox .annotation-list-title {\n            margin: 0.5rem 0;\n            font-size: 1rem;\n            font-weight: 600;\n        }\n\n        #toolbox .annotation-list-toggle-btn {\n            background: none;\n            border: none;\n            color: inherit;\n            font-size: 1rem;\n            cursor: pointer;\n            padding: 0.25rem;\n            width: 24px;\n            height: 24px;\n        }\n\n        #toolbox .annotation-list-toggle-btn:hover {\n            background-color: rgba(0, 128, 255, 0.1);\n        }\n\n        #toolbox .annotation-list-content {\n            display: block;\n            padding: 0 1rem;\n        }\n\n        #toolbox .annotation-list-options {\n            display: flex;\n            flex-direction: column;\n            gap: 0.5rem;\n            padding: 0.5rem;\n            font-size: 0.85rem;\n        }\n\n        #toolbox .annotation-list-option {\n            display: flex;\n            align-items: center;\n            gap: 0.5rem;\n        }\n\n        #toolbox .annotation-list-option input[type=\"checkbox\"] {\n            cursor: pointer;\n        }\n\n        #toolbox .annotation-list-option label {\n            cursor: pointer;\n            user-select: none;\n        }\n\n        #toolbox .annotation-list-container {\n            max-height: 300px;\n            overflow-y: auto;\n            border: 1px solid rgba(128, 128, 128, 0.3);\n            border-radius: 4px;\n            margin: 0.5rem 0;\n        }\n\n        #toolbox .annotation-list-empty {\n            padding: 1rem;\n            text-align: center;\n            color: gray;\n            font-style: italic;\n        }\n\n        #toolbox .annotation-list-item {\n            padding: 0.5rem;\n            border-bottom: 1px solid rgba(128, 128, 128, 0.2);\n            cursor: pointer;\n            transition: background-color 150ms;\n        }\n\n        #toolbox .annotation-list-item:last-child {\n            border-bottom: none;\n        }\n\n        #toolbox .annotation-list-item:hover {\n            background-color: rgba(0, 128, 255, 0.1);\n        }\n\n        #toolbox .annotation-list-item.highlighted {\n            background-color: rgba(0, 128, 255, 0.2);\n        }\n\n        #toolbox .annotation-list-item-header {\n            display: flex;\n            align-items: center;\n            gap: 0.5rem;\n        }\n\n        #toolbox .annotation-list-item-icon {\n            width: 20px;\n            height: 20px;\n            flex-shrink: 0;\n            display: flex;\n            align-items: center;\n            justify-content: center;\n        }\n\n        #toolbox .annotation-list-item-icon svg {\n            width: 100%;\n            height: 100%;\n        }\n\n        #toolbox .annotation-list-item-text {\n            flex: 1;\n            font-size: 0.85rem;\n        }\n\n        #toolbox .annotation-list-item-class {\n            font-weight: 600;\n        }\n\n        #toolbox .annotation-list-item-id {\n            color: gray;\n            font-size: 0.75rem;\n        }\n\n        #toolbox .annotation-list-class-group {\n            margin-bottom: 0.5rem;\n        }\n\n        #toolbox .annotation-list-class-group-header {\n            display: flex;\n            align-items: center;\n            gap: 0.5rem;\n            padding: 0.5rem;\n            background-color: rgba(128, 128, 128, 0.1);\n            font-weight: 600;\n            font-size: 0.9rem;\n        }\n\n        #toolbox .annotation-list-class-group-color {\n            width: 14px;\n            height: 14px;\n            border-radius: 2px;\n            flex-shrink: 0;\n        }\n\n        #toolbox .annotation-list-class-group-count {\n            margin-left: auto;\n            color: gray;\n            font-size: 0.8rem;\n            font-weight: normal;\n        }\n\n        .ulabel-night #toolbox .annotation-list-container {\n            border-color: rgba(255, 255, 255, 0.3);\n        }\n\n        .ulabel-night #toolbox .annotation-list-item {\n            border-bottom-color: rgba(255, 255, 255, 0.2);\n        }\n\n        .ulabel-night #toolbox .annotation-list-item:hover {\n            background-color: rgba(100, 149, 237, 0.2);\n        }\n\n        .ulabel-night #toolbox .annotation-list-item.highlighted {\n            background-color: rgba(100, 149, 237, 0.3);\n        }\n\n        .ulabel-night #toolbox .annotation-list-class-group-header {\n            background-color: rgba(255, 255, 255, 0.1);\n        }\n\n        .annotation-navigation-toast {\n            position: fixed;\n            top: 20px;\n            left: 50%;\n            transform: translateX(-50%);\n            background-color: rgba(0, 0, 0, 0.85);\n            color: white;\n            padding: 12px 24px;\n            border-radius: 8px;\n            font-size: 16px;\n            font-weight: 600;\n            pointer-events: none;\n            z-index: 10000;\n            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);\n            opacity: 0;\n            transition: opacity 0.3s ease-in-out;\n        }\n\n        .annotation-navigation-toast.show {\n            opacity: 1;\n        }\n\n        .ulabel-night .annotation-navigation-toast {\n            background-color: rgba(255, 255, 255, 0.9);\n            color: black;\n            box-shadow: 0 4px 12px rgba(255, 255, 255, 0.3);\n        }\n        ";
         var style_id = "annotation-list-toolbox-styles";
         if (document.getElementById(style_id))
             return;
@@ -1139,16 +1138,6 @@ var AnnotationListToolboxItem = /** @class */ (function (_super) {
         $(document).on("change.ulabel", "#annotation-list-group-by-class", function (e) {
             _this.group_by_class = e.target.checked;
             _this.update_list();
-        });
-        // Show labels checkbox
-        $(document).on("change.ulabel", "#annotation-list-show-labels", function (e) {
-            _this.show_labels = e.target.checked;
-            if (_this.show_labels) {
-                _this.render_all_labels();
-            }
-            else {
-                _this.clear_all_labels();
-            }
         });
         // Click on annotation list item to fly to it
         $(document).on("click.ulabel", ".annotation-list-item", function (e) {
@@ -1193,83 +1182,6 @@ var AnnotationListToolboxItem = /** @class */ (function (_super) {
                 $(".annotation-list-item").removeClass("highlighted");
             }
         });
-    };
-    /**
-     * Render labels on all annotations
-     */
-    AnnotationListToolboxItem.prototype.render_all_labels = function () {
-        // Clear existing labels first
-        this.clear_all_labels();
-        var current_subtask = this.ulabel.get_current_subtask();
-        if (!current_subtask)
-            return;
-        var annotations = this.get_filtered_annotations(current_subtask);
-        for (var i = 0; i < annotations.length; i++) {
-            var annotation = annotations[i];
-            this.render_annotation_label(annotation, i);
-        }
-    };
-    /**
-     * Render a label for a single annotation
-     */
-    AnnotationListToolboxItem.prototype.render_annotation_label = function (annotation, display_idx) {
-        // Skip if annotation doesn't have a containing box
-        if (!annotation.containing_box)
-            return;
-        var bbox = annotation.containing_box;
-        var class_id = this.get_annotation_class_id(annotation);
-        var current_subtask = this.ulabel.get_current_subtask();
-        var class_def = current_subtask.class_defs.find(function (def) { return def.id === class_id; });
-        var class_name = class_def ? class_def.name : "Unknown";
-        // Calculate scale using the same method as get_empirical_scale
-        var imwrap_width = $("#" + this.ulabel.config.imwrap_id).width();
-        var scale = imwrap_width / this.ulabel.config.image_width;
-        var annbox = $("#" + this.ulabel.config.annbox_id);
-        var x = bbox.tlx * scale - annbox.scrollLeft();
-        var y = bbox.tly * scale - annbox.scrollTop();
-        // Create label element
-        var label = document.createElement("div");
-        label.className = "annotation-label";
-        label.id = "annotation-label-".concat(annotation.id);
-        label.textContent = "".concat(class_name, " #").concat(display_idx);
-        label.style.left = "".concat(x, "px");
-        label.style.top = "".concat(y - 20, "px"); // Position above the annotation
-        // Add to annbox
-        annbox.append(label);
-    };
-    /**
-     * Clear all annotation labels
-     */
-    AnnotationListToolboxItem.prototype.clear_all_labels = function () {
-        $(".annotation-label").remove();
-    };
-    /**
-     * Update labels when zooming/panning
-     */
-    AnnotationListToolboxItem.prototype.update_label_positions = function () {
-        if (!this.show_labels)
-            return;
-        var current_subtask = this.ulabel.get_current_subtask();
-        if (!current_subtask)
-            return;
-        var annotations = this.get_filtered_annotations(current_subtask);
-        // Calculate scale using the same method as get_empirical_scale
-        var imwrap_width = $("#" + this.ulabel.config.imwrap_id).width();
-        var scale = imwrap_width / this.ulabel.config.image_width;
-        var annbox = $("#" + this.ulabel.config.annbox_id);
-        for (var i = 0; i < annotations.length; i++) {
-            var annotation = annotations[i];
-            if (!annotation.containing_box)
-                continue;
-            var bbox = annotation.containing_box;
-            var x = bbox.tlx * scale - annbox.scrollLeft();
-            var y = bbox.tly * scale - annbox.scrollTop();
-            var label = document.getElementById("annotation-label-".concat(annotation.id));
-            if (label) {
-                label.style.left = "".concat(x, "px");
-                label.style.top = "".concat(y - 20, "px");
-            }
-        }
     };
     /**
      * Build and update the annotation list display
@@ -1447,7 +1359,7 @@ var AnnotationListToolboxItem = /** @class */ (function (_super) {
      * Get the HTML for this toolbox item
      */
     AnnotationListToolboxItem.prototype.get_html = function () {
-        return "\n        <div id=\"annotation-list-container-outer\" class=\"annotation-list-toolbox-item\">\n            <div class=\"toolbox-divider\"></div>\n            <div class=\"annotation-list-header\">\n                <h3 class=\"annotation-list-title\">Annotation List</h3>\n                <button id=\"annotation-list-toggle\" class=\"annotation-list-toggle-btn\">\u25B2</button>\n            </div>\n            <div id=\"annotation-list-content\" class=\"annotation-list-content\">\n                <div class=\"annotation-list-options\">\n                    <div class=\"annotation-list-option\">\n                        <input type=\"checkbox\" id=\"annotation-list-show-deprecated\" />\n                        <label for=\"annotation-list-show-deprecated\">Show Deprecated</label>\n                    </div>\n                    <div class=\"annotation-list-option\">\n                        <input type=\"checkbox\" id=\"annotation-list-group-by-class\" />\n                        <label for=\"annotation-list-group-by-class\">Group by Class</label>\n                    </div>\n                    <div class=\"annotation-list-option\">\n                        <input type=\"checkbox\" id=\"annotation-list-show-labels\" />\n                        <label for=\"annotation-list-show-labels\">Show Labels on Canvas</label>\n                    </div>\n                </div>\n                <div id=\"annotation-list-container\" class=\"annotation-list-container\">\n                    <div class=\"annotation-list-empty\">No annotations</div>\n                </div>\n            </div>\n        </div>\n        ";
+        return "\n        <div id=\"annotation-list-container-outer\" class=\"annotation-list-toolbox-item\">\n            <div class=\"toolbox-divider\"></div>\n            <div class=\"annotation-list-header\">\n                <h3 class=\"annotation-list-title\">Annotation List</h3>\n                <button id=\"annotation-list-toggle\" class=\"annotation-list-toggle-btn\">\u25B2</button>\n            </div>\n            <div id=\"annotation-list-content\" class=\"annotation-list-content\">\n                <div class=\"annotation-list-options\">\n                    <div class=\"annotation-list-option\">\n                        <input type=\"checkbox\" id=\"annotation-list-show-deprecated\" />\n                        <label for=\"annotation-list-show-deprecated\">Show Deprecated</label>\n                    </div>\n                    <div class=\"annotation-list-option\">\n                        <input type=\"checkbox\" id=\"annotation-list-group-by-class\" />\n                        <label for=\"annotation-list-group-by-class\">Group by Class</label>\n                    </div>\n                </div>\n                <div id=\"annotation-list-container\" class=\"annotation-list-container\">\n                    <div class=\"annotation-list-empty\">No annotations</div>\n                </div>\n            </div>\n        </div>\n        ";
     };
     /**
      * Returns a unique string for this toolbox item
@@ -1468,9 +1380,6 @@ var AnnotationListToolboxItem = /** @class */ (function (_super) {
     AnnotationListToolboxItem.prototype.redraw_update = function () {
         this.update_list();
         this.sync_highlight_from_canvas();
-        if (this.show_labels) {
-            this.render_all_labels();
-        }
     };
     /**
      * Update the list when frame changes
@@ -1478,9 +1387,6 @@ var AnnotationListToolboxItem = /** @class */ (function (_super) {
     AnnotationListToolboxItem.prototype.frame_update = function () {
         this.update_list();
         this.sync_highlight_from_canvas();
-        if (this.show_labels) {
-            this.render_all_labels();
-        }
     };
     /**
      * Sync highlighting from canvas hover to list
@@ -49009,11 +48915,11 @@ class ULabel {
             toast.classList.add("show");
         }, 10);
 
-        // Hide the toast after 1.5 seconds
+        // Hide the toast after a delay
         this.annotation_navigation_toast_timeout = setTimeout(() => {
             toast.classList.remove("show");
             this.annotation_navigation_toast_timeout = null;
-        }, 1500);
+        }, 1000);
     }
 
     // Shake the screen
