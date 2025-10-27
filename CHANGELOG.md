@@ -2,9 +2,28 @@
 
 All notable changes to this project will be documented here.
 
-## [unreleased]
+## [unreleased]https://github.com/SenteraLLC/ulabel/pull/233
 
-Nothing yet.
+## [0.20.0] - Oct 15th, 2025
+- Add `fly-to` functions, which sets the zoom and focus to a specific annotation
+  - `fly_to_next_annotation()`
+  - `fly_to_annotation_id()`
+  - `fly_to_annotation()`
+- Add `Tab` and `Tab+Shift` default keybinds to fly-to the next/previous annotation, respectively
+  - Keybinds are configurable:
+    - `fly_to_next_annotation_keybind`
+    - `fly_to_previous_annotation_keybind` 
+- Add `ImageFilters` toolbox item to expose sliders for the following image css filters:
+  - brightness
+  - contrast
+  - hue rotate
+  - invert
+  - saturate
+- Removed redundant dependencies that were being unnecessarily installed by users using npm to install ulabel
+- Updated webpack build process to properly provide both a minified (default) and unminified build (for better debugging)
+  - Added package `exports` field with options: `.` (minified), `./min` (minified), `./debug` (unminified)
+- Add test coverage for both minified and unminified builds
+- Update dependencies and fix 12 security vulnerabilities
 
 ## [0.19.1] - Oct 9th, 2025
 - Add automated testing to the repo

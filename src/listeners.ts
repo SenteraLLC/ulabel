@@ -221,8 +221,8 @@ function handle_keydown_event(
         return false;
     } else {
         const current_subtask = ulabel.get_current_subtask();
-        switch (keydown_event.key) {
-            case "Escape":
+        switch (keydown_event.key.toLowerCase()) {
+            case "escape":
                 // If in erase or brush mode, cancel the brush
                 if (current_subtask.state.is_in_erase_mode) {
                     ulabel.toggle_erase_mode();
@@ -234,6 +234,23 @@ function handle_keydown_event(
                 } else if (current_subtask.state.is_in_progress) {
                     // If in the middle of drawing an annotation, cancel the annotation
                     ulabel.cancel_annotation();
+                }
+                break;
+            case ulabel.config.fly_to_next_annotation_keybind.toLowerCase():
+                // For 'tab', prevent default
+                if (keydown_event.key.toLowerCase() === "tab") {
+                    keydown_event.preventDefault();
+                }
+
+                if (ulabel.config.fly_to_previous_annotation_keybind === null && shift) {
+                    ulabel.fly_to_next_annotation(-1, ulabel.config.fly_to_max_zoom);
+                } else if (!shift) {
+                    ulabel.fly_to_next_annotation(1, ulabel.config.fly_to_max_zoom);
+                }
+                break;
+            case ulabel.config.fly_to_previous_annotation_keybind.toLowerCase():
+                if (ulabel.config.fly_to_previous_annotation_keybind !== null) {
+                    ulabel.fly_to_next_annotation(-1, ulabel.config.fly_to_max_zoom);
                 }
                 break;
         }

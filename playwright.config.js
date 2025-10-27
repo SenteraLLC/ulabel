@@ -17,6 +17,7 @@ export default defineConfig({
     },
 
     projects: [
+        // Test with unminified build
         {
             name: "chromium",
             use: { ...devices["Desktop Chrome"] },
@@ -28,6 +29,38 @@ export default defineConfig({
         {
             name: "webkit",
             use: { ...devices["Desktop Safari"] },
+        },
+        // Test with minified build
+        {
+            name: "chromium-minified",
+            use: {
+                ...devices["Desktop Chrome"],
+                // Use context option to intercept and replace ulabel.js with ulabel.min.js
+                contextOptions: {
+                    serviceWorkers: "block",
+                },
+            },
+            testMatch: /.*\.spec\.js/,
+        },
+        {
+            name: "firefox-minified",
+            use: {
+                ...devices["Desktop Firefox"],
+                contextOptions: {
+                    serviceWorkers: "block",
+                },
+            },
+            testMatch: /.*\.spec\.js/,
+        },
+        {
+            name: "webkit-minified",
+            use: {
+                ...devices["Desktop Safari"],
+                contextOptions: {
+                    serviceWorkers: "block",
+                },
+            },
+            testMatch: /.*\.spec\.js/,
         },
     ],
 

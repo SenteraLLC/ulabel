@@ -26,7 +26,7 @@ jobs:
     - name: Install dependencies
       run: npm install
     
-    - name: Run unit tests
+    - name: Build and run unit tests (both builds)
       run: npm run build-and-test
 
   e2e-tests:
@@ -50,7 +50,7 @@ jobs:
     - name: Build project
       run: npm run build
     
-    - name: Run E2E tests
+    - name: Run E2E tests (all browsers, both builds)
       run: npm run test:e2e
     
     - name: Upload Playwright report

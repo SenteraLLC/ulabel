@@ -85,6 +85,19 @@ export type RecolorActiveConfig = {
 };
 
 /**
+ * Config object for the ImageFilters ToolboxItem.
+ */
+export type ImageFiltersConfig = {
+    default_values?: {
+        brightness?: number;
+        contrast?: number;
+        hueRotate?: number;
+        invert?: number;
+        saturate?: number;
+    };
+};
+
+/**
  * Config object for the FilterPointDistanceFromRow ToolboxItem.
  */
 export type FilterDistanceConfig = {
@@ -320,6 +333,9 @@ export class ULabel {
         force_filter_all?: boolean,
         offset?: Offset,
     ): void;
+    public fly_to_next_annotation(increment: number, max_zoom?: number): boolean;
+    public fly_to_annotation_id(annotation_id: string, subtask_key?: string, max_zoom?: number): boolean;
+    public fly_to_annotation(annotation: ULabelAnnotation, subtask_key?: string, max_zoom?: number): boolean;
 
     // Brush
     // TODO (joshua-dean): should these actually be optional?
