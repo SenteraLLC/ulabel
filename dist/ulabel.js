@@ -1099,6 +1099,7 @@ var AnnotationListToolboxItem = /** @class */ (function (_super) {
         _this.group_by_class = false;
         _this.is_collapsed = false;
         _this.show_labels = false;
+        _this.sync_scheduled = false;
         _this.ulabel = ulabel;
         _this.add_styles();
         _this.add_event_listeners();
@@ -1175,13 +1176,23 @@ var AnnotationListToolboxItem = /** @class */ (function (_super) {
             _this.ulabel.hide_global_edit_suggestion();
             _this.ulabel.hide_edit_suggestion();
         });
-        // Listen for canvas hover changes to sync list highlighting
-        // This creates bidirectional highlighting between canvas and list
-        $(document).on("mousemove.ulabel", "#".concat(this.ulabel.config.canvas_fid_pfx, "--").concat(this.ulabel.state.current_subtask), function () {
-            // Delay the sync slightly to allow suggest_edits to update first
-            setTimeout(function () {
-                _this.sync_highlight_from_canvas();
-            }, 10);
+        // Listen for mousemove on the annbox to sync list highlighting from canvas
+        $(document).on("mousemove.ulabel", "#".concat(this.ulabel.config.annbox_id), function () {
+            // Use requestAnimationFrame to avoid excessive calls
+            if (!_this.sync_scheduled) {
+                _this.sync_scheduled = true;
+                requestAnimationFrame(function () {
+                    _this.sync_highlight_from_canvas();
+                    _this.sync_scheduled = false;
+                });
+            }
+        });
+        // Also listen for mouseleave on annbox to clear highlights when leaving the canvas area
+        $(document).on("mouseleave.ulabel", "#".concat(this.ulabel.config.annbox_id), function () {
+            // Don't clear if we're hovering over a list item
+            if (!$(".annotation-list-item:hover").length) {
+                $(".annotation-list-item").removeClass("highlighted");
+            }
         });
     };
     /**
