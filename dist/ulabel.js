@@ -1201,7 +1201,7 @@ var AnnotationListToolboxItem = /** @class */ (function (_super) {
             return;
         }
         nav_indicator.style.display = "block";
-        nav_indicator.textContent = "".concat(current_idx + 1, " / ").concat(total);
+        nav_indicator.textContent = "".concat(current_idx, " / ").concat(total - 1);
         // Hide the indicator after 2 seconds
         setTimeout(function () {
             nav_indicator.style.display = "none";
@@ -1219,7 +1219,7 @@ var AnnotationListToolboxItem = /** @class */ (function (_super) {
         var annotations = this.get_filtered_annotations(current_subtask);
         for (var i = 0; i < annotations.length; i++) {
             var annotation = annotations[i];
-            this.render_annotation_label(annotation, i + 1);
+            this.render_annotation_label(annotation, i);
         }
     };
     /**
@@ -1344,7 +1344,7 @@ var AnnotationListToolboxItem = /** @class */ (function (_super) {
             var class_def = subtask.class_defs.find(function (def) { return def.id === class_id; });
             var class_name = class_def ? class_def.name : "Unknown";
             var color = this_1.ulabel.color_info[class_id] || "#cccccc";
-            html += "\n                <div class=\"annotation-list-item\" data-annotation-id=\"".concat(annotation.id, "\" data-annotation-idx=\"").concat(i, "\">\n                    <div class=\"annotation-list-item-header\">\n                        <div class=\"annotation-list-item-color\" style=\"background-color: ").concat(color, ";\"></div>\n                        <div class=\"annotation-list-item-text\">\n                            <span class=\"annotation-list-item-class\">").concat(class_name, "</span>\n                            <span class=\"annotation-list-item-id\">#").concat(i + 1, "</span>\n                        </div>\n                    </div>\n                </div>\n            ");
+            html += "\n                <div class=\"annotation-list-item\" data-annotation-id=\"".concat(annotation.id, "\" data-annotation-idx=\"").concat(i, "\">\n                    <div class=\"annotation-list-item-header\">\n                        <div class=\"annotation-list-item-color\" style=\"background-color: ").concat(color, ";\"></div>\n                        <div class=\"annotation-list-item-text\">\n                            <span class=\"annotation-list-item-class\">").concat(class_name, "</span>\n                            <span class=\"annotation-list-item-id\">#").concat(i, "</span>\n                        </div>\n                    </div>\n                </div>\n            ");
         };
         var this_1 = this;
         for (var i = 0; i < annotations.length; i++) {
@@ -1378,7 +1378,7 @@ var AnnotationListToolboxItem = /** @class */ (function (_super) {
             for (var i = 0; i < group_annotations.length; i++) {
                 var annotation = group_annotations[i];
                 var overall_idx = annotations.indexOf(annotation);
-                html += "\n                    <div class=\"annotation-list-item\" data-annotation-id=\"".concat(annotation.id, "\" data-annotation-idx=\"").concat(overall_idx, "\">\n                        <div class=\"annotation-list-item-header\">\n                            <div class=\"annotation-list-item-text\" style=\"padding-left: 1.5rem;\">\n                                <span class=\"annotation-list-item-id\">#").concat(i + 1, "</span>\n                            </div>\n                        </div>\n                    </div>\n                ");
+                html += "\n                    <div class=\"annotation-list-item\" data-annotation-id=\"".concat(annotation.id, "\" data-annotation-idx=\"").concat(overall_idx, "\">\n                        <div class=\"annotation-list-item-header\">\n                            <div class=\"annotation-list-item-text\" style=\"padding-left: 1.5rem;\">\n                                <span class=\"annotation-list-item-id\">#").concat(i, "</span>\n                            </div>\n                        </div>\n                    </div>\n                ");
             }
             html += "</div>";
         };

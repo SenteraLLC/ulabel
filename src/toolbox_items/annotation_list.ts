@@ -328,7 +328,7 @@ export class AnnotationListToolboxItem extends ToolboxItem {
         }
 
         nav_indicator.style.display = "block";
-        nav_indicator.textContent = `${current_idx + 1} / ${total}`;
+        nav_indicator.textContent = `${current_idx} / ${total - 1}`;
 
         // Hide the indicator after 2 seconds
         setTimeout(() => {
@@ -350,7 +350,7 @@ export class AnnotationListToolboxItem extends ToolboxItem {
 
         for (let i = 0; i < annotations.length; i++) {
             const annotation = annotations[i];
-            this.render_annotation_label(annotation, i + 1);
+            this.render_annotation_label(annotation, i);
         }
     }
 
@@ -502,7 +502,7 @@ export class AnnotationListToolboxItem extends ToolboxItem {
                         <div class="annotation-list-item-color" style="background-color: ${color};"></div>
                         <div class="annotation-list-item-text">
                             <span class="annotation-list-item-class">${class_name}</span>
-                            <span class="annotation-list-item-id">#${i + 1}</span>
+                            <span class="annotation-list-item-id">#${i}</span>
                         </div>
                     </div>
                 </div>
@@ -553,7 +553,7 @@ export class AnnotationListToolboxItem extends ToolboxItem {
                     <div class="annotation-list-item" data-annotation-id="${annotation.id}" data-annotation-idx="${overall_idx}">
                         <div class="annotation-list-item-header">
                             <div class="annotation-list-item-text" style="padding-left: 1.5rem;">
-                                <span class="annotation-list-item-id">#${i + 1}</span>
+                                <span class="annotation-list-item-id">#${i}</span>
                             </div>
                         </div>
                     </div>
