@@ -287,8 +287,8 @@ export class AnnotationListToolboxItem extends ToolboxItem {
                 $(".annotation-list-item").removeClass("highlighted");
                 $(e.currentTarget).addClass("highlighted");
 
-                // Show the edit suggestion for this annotation on the canvas
-                this.ulabel.suggest_edits(null, annotation_id, true);
+                // Show the global edit suggestion (ID dialog)
+                this.ulabel.show_global_edit_suggestion(annotation_id, null, null);
             }
         });
 

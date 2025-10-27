@@ -4719,6 +4719,7 @@ export class ULabel {
             best: null,
         };
         let minsize = Infinity;
+        let found_containing_annotation = false;
         // TODO(3d)
         for (let edi = 0; edi < this.get_current_subtask()["annotations"]["ordering"].length; edi++) {
             const annotation_id = this.get_current_subtask()["annotations"]["ordering"][edi];
@@ -4751,13 +4752,13 @@ export class ULabel {
                 (this.state["current_frame"] >= cbox["tlz"]) &&
                 (this.state["current_frame"] <= cbox["brz"])
             ) {
-                let found_perfect_match = false;
-                let boxsize;
+                let is_a_containing_annotation = false;
+                let boxsize = (cbox["brx"] - cbox["tlx"]) * (cbox["bry"] - cbox["tly"]);
                 switch (spatial_type) {
                     case "polygon":
                         // Check if the mouse is within the polygon
                         if (GeometricUtils.point_is_within_polygon_annotation([gblx, gbly], annotation)) {
-                            found_perfect_match = true;
+                            is_a_containing_annotation = true;
                         }
                         break;
                     case "bbox":
@@ -4768,29 +4769,38 @@ export class ULabel {
                             gbly >= cbox["tly"] &&
                             gbly <= cbox["bry"]
                         ) {
-                            found_perfect_match = true;
+                            is_a_containing_annotation = true;
                         }
                         break;
                     default:
-                        boxsize = (cbox["brx"] - cbox["tlx"]) * (cbox["bry"] - cbox["tly"]);
+
+                        break;
+                }
+
+                // First time we find a containing annotation, clear previous candidates
+                if (is_a_containing_annotation && !found_containing_annotation) {
+                    found_containing_annotation = true;
+                    minsize = Infinity;
+                    ret["candidate_ids"] = [];
+                }
+
+                if (found_containing_annotation) {
+                    if (is_a_containing_annotation) {
+                        // Prefer containing annotations
                         if (boxsize < minsize) {
                             minsize = boxsize;
+                            ret["candidate_ids"] = [annotation_id];
                             ret["best"] = {
                                 annid: annotation_id,
                             };
                         }
-                        break;
-                }
-
-                if (!found_perfect_match) {
+                    }
+                } else if (boxsize < minsize) {
                     ret["candidate_ids"].push(annotation_id);
-                } else {
-                    // This should be the only candidate
-                    ret["candidate_ids"] = [annotation_id];
+                    minsize = boxsize;
                     ret["best"] = {
                         annid: annotation_id,
                     };
-                    break;
                 }
             }
         }
@@ -5688,6 +5698,12 @@ export class ULabel {
 
         // Center on the annotation
         this.rezoom((bbox["tlx"] + bbox["brx"]) / 2, (bbox["tly"] + bbox["bry"]) / 2, true);
+
+        // Suggest edits at the centered annotation
+        this.suggest_edits({
+            pageX: annbox.width() / 2,
+            pageY: annbox.height() / 2,
+        });
 
         return true;
     }
