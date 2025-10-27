@@ -13,6 +13,7 @@ All notable changes to this project will be documented here.
     - Toggle show/hide deprecated annotations (default: hidden)
     - Group annotations by class
   - Collapsible interface to maximize toolbox space
+- Add automated package deployment via GHA
 
 ## [0.20.0] - Oct 15th, 2025
 - Add `fly-to` functions, which sets the zoom and focus to a specific annotation
