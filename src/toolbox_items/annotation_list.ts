@@ -2,6 +2,18 @@ import type { ULabel } from "../index";
 import { ToolboxItem } from "../toolbox";
 import { ULabelAnnotation } from "../annotation";
 import { ULabelSubtask } from "../subtask";
+import {
+    BBOX_SVG,
+    DELETE_BBOX_SVG,
+    BBOX3_SVG,
+    POINT_SVG,
+    POLYGON_SVG,
+    DELETE_POLYGON_SVG,
+    CONTOUR_SVG,
+    TBAR_SVG,
+    POLYLINE_SVG,
+    WHOLE_IMAGE_SVG,
+} from "../../src/blobs";
 
 /**
  * Toolbox item for displaying and navigating annotations in a list
@@ -136,11 +148,18 @@ export class AnnotationListToolboxItem extends ToolboxItem {
             gap: 0.5rem;
         }
 
-        #toolbox .annotation-list-item-color {
-            width: 12px;
-            height: 12px;
-            border-radius: 2px;
+        #toolbox .annotation-list-item-icon {
+            width: 20px;
+            height: 20px;
             flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #toolbox .annotation-list-item-icon svg {
+            width: 100%;
+            height: 100%;
         }
 
         #toolbox .annotation-list-item-text {
@@ -507,11 +526,12 @@ export class AnnotationListToolboxItem extends ToolboxItem {
             const class_def = subtask.class_defs.find((def) => def.id === class_id);
             const class_name = class_def ? class_def.name : "Unknown";
             const color = this.ulabel.color_info[class_id] || "#cccccc";
+            const svg = this.get_spatial_type_svg(annotation.spatial_type, color);
 
             html += `
                 <div class="annotation-list-item" data-annotation-id="${annotation.id}" data-annotation-idx="${i}">
                     <div class="annotation-list-item-header">
-                        <div class="annotation-list-item-color" style="background-color: ${color};"></div>
+                        <div class="annotation-list-item-icon">${svg}</div>
                         <div class="annotation-list-item-text">
                             <span class="annotation-list-item-class">${class_name}</span>
                             <span class="annotation-list-item-id">#${i}</span>
@@ -561,10 +581,13 @@ export class AnnotationListToolboxItem extends ToolboxItem {
             for (let i = 0; i < group_annotations.length; i++) {
                 const annotation = group_annotations[i];
                 const overall_idx = annotations.indexOf(annotation);
+                const svg = this.get_spatial_type_svg(annotation.spatial_type, color);
+
                 html += `
                     <div class="annotation-list-item" data-annotation-id="${annotation.id}" data-annotation-idx="${overall_idx}">
                         <div class="annotation-list-item-header">
-                            <div class="annotation-list-item-text" style="padding-left: 1.5rem;">
+                            <div class="annotation-list-item-icon" style="margin-left: 0.5rem;">${svg}</div>
+                            <div class="annotation-list-item-text">
                                 <span class="annotation-list-item-id">#${i}</span>
                             </div>
                         </div>
@@ -576,6 +599,57 @@ export class AnnotationListToolboxItem extends ToolboxItem {
         }
 
         return html;
+    }
+
+    /**
+     * Get the SVG icon for a given spatial type
+     */
+    private get_spatial_type_svg(spatial_type: string, color: string): string {
+        let svg = "";
+
+        switch (spatial_type) {
+            case "bbox":
+                svg = BBOX_SVG;
+                break;
+            case "delete_bbox":
+                svg = DELETE_BBOX_SVG;
+                break;
+            case "bbox3":
+                svg = BBOX3_SVG;
+                break;
+            case "point":
+                svg = POINT_SVG;
+                break;
+            case "polygon":
+                svg = POLYGON_SVG;
+                break;
+            case "delete_polygon":
+                svg = DELETE_POLYGON_SVG;
+                break;
+            case "contour":
+                svg = CONTOUR_SVG;
+                break;
+            case "tbar":
+                svg = TBAR_SVG;
+                break;
+            case "polyline":
+                svg = POLYLINE_SVG;
+                break;
+            case "whole-image":
+            case "global":
+                svg = WHOLE_IMAGE_SVG;
+                break;
+            default:
+                svg = BBOX_SVG; // fallback
+                break;
+        }
+
+        // Color the SVG by replacing stroke/fill colors
+        // The SVGs use various colors, so we'll replace common ones
+        svg = svg.replace(/stroke:#[0-9a-fA-F]{6}/g, `stroke:${color}`);
+        svg = svg.replace(/fill:#[0-9a-fA-F]{6}/g, `fill:${color}`);
+
+        return svg;
     }
 
     /**

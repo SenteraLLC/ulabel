@@ -30,10 +30,10 @@ Create an annotation list toolbox item that displays all annotations in a list f
   - [x] Integrate with existing "fly to" functionality from PR #230
   - [x] Add click handlers to list items
   - [ ] Display "current idx / total" indicator
-- [ ] 5. Implement hover highlighting
+- [x] 5. Implement hover highlighting
   - [x] Add hover handlers to list items
   - [x] Integrate with existing annotation highlighting system
-  - [ ] Ensure bidirectional highlighting (list hover → canvas, canvas hover → list)
+  - [x] Ensure bidirectional highlighting (list hover → canvas, canvas hover → list)
 - [x] 6. Implement annotation label display
   - [x] Add option to show labels on annotations
   - [ ] Support persistent label display on canvas

@@ -1088,6 +1088,7 @@ var __extends = (this && this.__extends) || (function () {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.AnnotationListToolboxItem = void 0;
 var toolbox_1 = __webpack_require__(3045);
+var blobs_1 = __webpack_require__(2748);
 /**
  * Toolbox item for displaying and navigating annotations in a list
  */
@@ -1109,7 +1110,7 @@ var AnnotationListToolboxItem = /** @class */ (function (_super) {
      * Create the css for this ToolboxItem and append it to the page.
      */
     AnnotationListToolboxItem.prototype.add_styles = function () {
-        var css = "\n        #toolbox .annotation-list-toolbox-item {\n            padding: 0.5rem 0;\n        }\n\n        #toolbox .annotation-list-header {\n            display: flex;\n            justify-content: space-between;\n            align-items: center;\n            padding: 0 1.5rem;\n            cursor: pointer;\n        }\n\n        #toolbox .annotation-list-title {\n            margin: 0.5rem 0;\n            font-size: 1rem;\n            font-weight: 600;\n        }\n\n        #toolbox .annotation-list-toggle-btn {\n            background: none;\n            border: none;\n            color: inherit;\n            font-size: 1rem;\n            cursor: pointer;\n            padding: 0.25rem;\n            width: 24px;\n            height: 24px;\n        }\n\n        #toolbox .annotation-list-toggle-btn:hover {\n            background-color: rgba(0, 128, 255, 0.1);\n        }\n\n        #toolbox .annotation-list-content {\n            display: block;\n            padding: 0 1rem;\n        }\n\n        #toolbox .annotation-list-options {\n            display: flex;\n            flex-direction: column;\n            gap: 0.5rem;\n            padding: 0.5rem;\n            font-size: 0.85rem;\n        }\n\n        #toolbox .annotation-list-option {\n            display: flex;\n            align-items: center;\n            gap: 0.5rem;\n        }\n\n        #toolbox .annotation-list-option input[type=\"checkbox\"] {\n            cursor: pointer;\n        }\n\n        #toolbox .annotation-list-option label {\n            cursor: pointer;\n            user-select: none;\n        }\n\n        #toolbox .annotation-list-container {\n            max-height: 300px;\n            overflow-y: auto;\n            border: 1px solid rgba(128, 128, 128, 0.3);\n            border-radius: 4px;\n            margin: 0.5rem 0;\n        }\n\n        #toolbox .annotation-list-navigation {\n            padding: 0.5rem;\n            text-align: center;\n            font-size: 0.85rem;\n            color: gray;\n            border-bottom: 1px solid rgba(128, 128, 128, 0.2);\n        }\n\n        #toolbox .annotation-list-empty {\n            padding: 1rem;\n            text-align: center;\n            color: gray;\n            font-style: italic;\n        }\n\n        #toolbox .annotation-list-item {\n            padding: 0.5rem;\n            border-bottom: 1px solid rgba(128, 128, 128, 0.2);\n            cursor: pointer;\n            transition: background-color 150ms;\n        }\n\n        #toolbox .annotation-list-item:last-child {\n            border-bottom: none;\n        }\n\n        #toolbox .annotation-list-item:hover {\n            background-color: rgba(0, 128, 255, 0.1);\n        }\n\n        #toolbox .annotation-list-item.highlighted {\n            background-color: rgba(0, 128, 255, 0.2);\n        }\n\n        #toolbox .annotation-list-item-header {\n            display: flex;\n            align-items: center;\n            gap: 0.5rem;\n        }\n\n        #toolbox .annotation-list-item-color {\n            width: 12px;\n            height: 12px;\n            border-radius: 2px;\n            flex-shrink: 0;\n        }\n\n        #toolbox .annotation-list-item-text {\n            flex: 1;\n            font-size: 0.85rem;\n        }\n\n        #toolbox .annotation-list-item-class {\n            font-weight: 600;\n        }\n\n        #toolbox .annotation-list-item-id {\n            color: gray;\n            font-size: 0.75rem;\n        }\n\n        #toolbox .annotation-list-class-group {\n            margin-bottom: 0.5rem;\n        }\n\n        #toolbox .annotation-list-class-group-header {\n            display: flex;\n            align-items: center;\n            gap: 0.5rem;\n            padding: 0.5rem;\n            background-color: rgba(128, 128, 128, 0.1);\n            font-weight: 600;\n            font-size: 0.9rem;\n        }\n\n        #toolbox .annotation-list-class-group-color {\n            width: 14px;\n            height: 14px;\n            border-radius: 2px;\n            flex-shrink: 0;\n        }\n\n        #toolbox .annotation-list-class-group-count {\n            margin-left: auto;\n            color: gray;\n            font-size: 0.8rem;\n            font-weight: normal;\n        }\n\n        .annotation-label {\n            position: absolute;\n            background-color: rgba(0, 0, 0, 0.7);\n            color: white;\n            padding: 2px 6px;\n            border-radius: 3px;\n            font-size: 12px;\n            font-weight: bold;\n            pointer-events: none;\n            z-index: 1000;\n            white-space: nowrap;\n        }\n\n        .ulabel-night .annotation-label {\n            background-color: rgba(255, 255, 255, 0.8);\n            color: black;\n        }\n\n        .ulabel-night #toolbox .annotation-list-container {\n            border-color: rgba(255, 255, 255, 0.3);\n        }\n\n        .ulabel-night #toolbox .annotation-list-item {\n            border-bottom-color: rgba(255, 255, 255, 0.2);\n        }\n\n        .ulabel-night #toolbox .annotation-list-item:hover {\n            background-color: rgba(100, 149, 237, 0.2);\n        }\n\n        .ulabel-night #toolbox .annotation-list-item.highlighted {\n            background-color: rgba(100, 149, 237, 0.3);\n        }\n\n        .ulabel-night #toolbox .annotation-list-class-group-header {\n            background-color: rgba(255, 255, 255, 0.1);\n        }\n        ";
+        var css = "\n        #toolbox .annotation-list-toolbox-item {\n            padding: 0.5rem 0;\n        }\n\n        #toolbox .annotation-list-header {\n            display: flex;\n            justify-content: space-between;\n            align-items: center;\n            padding: 0 1.5rem;\n            cursor: pointer;\n        }\n\n        #toolbox .annotation-list-title {\n            margin: 0.5rem 0;\n            font-size: 1rem;\n            font-weight: 600;\n        }\n\n        #toolbox .annotation-list-toggle-btn {\n            background: none;\n            border: none;\n            color: inherit;\n            font-size: 1rem;\n            cursor: pointer;\n            padding: 0.25rem;\n            width: 24px;\n            height: 24px;\n        }\n\n        #toolbox .annotation-list-toggle-btn:hover {\n            background-color: rgba(0, 128, 255, 0.1);\n        }\n\n        #toolbox .annotation-list-content {\n            display: block;\n            padding: 0 1rem;\n        }\n\n        #toolbox .annotation-list-options {\n            display: flex;\n            flex-direction: column;\n            gap: 0.5rem;\n            padding: 0.5rem;\n            font-size: 0.85rem;\n        }\n\n        #toolbox .annotation-list-option {\n            display: flex;\n            align-items: center;\n            gap: 0.5rem;\n        }\n\n        #toolbox .annotation-list-option input[type=\"checkbox\"] {\n            cursor: pointer;\n        }\n\n        #toolbox .annotation-list-option label {\n            cursor: pointer;\n            user-select: none;\n        }\n\n        #toolbox .annotation-list-container {\n            max-height: 300px;\n            overflow-y: auto;\n            border: 1px solid rgba(128, 128, 128, 0.3);\n            border-radius: 4px;\n            margin: 0.5rem 0;\n        }\n\n        #toolbox .annotation-list-navigation {\n            padding: 0.5rem;\n            text-align: center;\n            font-size: 0.85rem;\n            color: gray;\n            border-bottom: 1px solid rgba(128, 128, 128, 0.2);\n        }\n\n        #toolbox .annotation-list-empty {\n            padding: 1rem;\n            text-align: center;\n            color: gray;\n            font-style: italic;\n        }\n\n        #toolbox .annotation-list-item {\n            padding: 0.5rem;\n            border-bottom: 1px solid rgba(128, 128, 128, 0.2);\n            cursor: pointer;\n            transition: background-color 150ms;\n        }\n\n        #toolbox .annotation-list-item:last-child {\n            border-bottom: none;\n        }\n\n        #toolbox .annotation-list-item:hover {\n            background-color: rgba(0, 128, 255, 0.1);\n        }\n\n        #toolbox .annotation-list-item.highlighted {\n            background-color: rgba(0, 128, 255, 0.2);\n        }\n\n        #toolbox .annotation-list-item-header {\n            display: flex;\n            align-items: center;\n            gap: 0.5rem;\n        }\n\n        #toolbox .annotation-list-item-icon {\n            width: 20px;\n            height: 20px;\n            flex-shrink: 0;\n            display: flex;\n            align-items: center;\n            justify-content: center;\n        }\n\n        #toolbox .annotation-list-item-icon svg {\n            width: 100%;\n            height: 100%;\n        }\n\n        #toolbox .annotation-list-item-text {\n            flex: 1;\n            font-size: 0.85rem;\n        }\n\n        #toolbox .annotation-list-item-class {\n            font-weight: 600;\n        }\n\n        #toolbox .annotation-list-item-id {\n            color: gray;\n            font-size: 0.75rem;\n        }\n\n        #toolbox .annotation-list-class-group {\n            margin-bottom: 0.5rem;\n        }\n\n        #toolbox .annotation-list-class-group-header {\n            display: flex;\n            align-items: center;\n            gap: 0.5rem;\n            padding: 0.5rem;\n            background-color: rgba(128, 128, 128, 0.1);\n            font-weight: 600;\n            font-size: 0.9rem;\n        }\n\n        #toolbox .annotation-list-class-group-color {\n            width: 14px;\n            height: 14px;\n            border-radius: 2px;\n            flex-shrink: 0;\n        }\n\n        #toolbox .annotation-list-class-group-count {\n            margin-left: auto;\n            color: gray;\n            font-size: 0.8rem;\n            font-weight: normal;\n        }\n\n        .annotation-label {\n            position: absolute;\n            background-color: rgba(0, 0, 0, 0.7);\n            color: white;\n            padding: 2px 6px;\n            border-radius: 3px;\n            font-size: 12px;\n            font-weight: bold;\n            pointer-events: none;\n            z-index: 1000;\n            white-space: nowrap;\n        }\n\n        .ulabel-night .annotation-label {\n            background-color: rgba(255, 255, 255, 0.8);\n            color: black;\n        }\n\n        .ulabel-night #toolbox .annotation-list-container {\n            border-color: rgba(255, 255, 255, 0.3);\n        }\n\n        .ulabel-night #toolbox .annotation-list-item {\n            border-bottom-color: rgba(255, 255, 255, 0.2);\n        }\n\n        .ulabel-night #toolbox .annotation-list-item:hover {\n            background-color: rgba(100, 149, 237, 0.2);\n        }\n\n        .ulabel-night #toolbox .annotation-list-item.highlighted {\n            background-color: rgba(100, 149, 237, 0.3);\n        }\n\n        .ulabel-night #toolbox .annotation-list-class-group-header {\n            background-color: rgba(255, 255, 255, 0.1);\n        }\n        ";
         var style_id = "annotation-list-toolbox-styles";
         if (document.getElementById(style_id))
             return;
@@ -1355,7 +1356,8 @@ var AnnotationListToolboxItem = /** @class */ (function (_super) {
             var class_def = subtask.class_defs.find(function (def) { return def.id === class_id; });
             var class_name = class_def ? class_def.name : "Unknown";
             var color = this_1.ulabel.color_info[class_id] || "#cccccc";
-            html += "\n                <div class=\"annotation-list-item\" data-annotation-id=\"".concat(annotation.id, "\" data-annotation-idx=\"").concat(i, "\">\n                    <div class=\"annotation-list-item-header\">\n                        <div class=\"annotation-list-item-color\" style=\"background-color: ").concat(color, ";\"></div>\n                        <div class=\"annotation-list-item-text\">\n                            <span class=\"annotation-list-item-class\">").concat(class_name, "</span>\n                            <span class=\"annotation-list-item-id\">#").concat(i, "</span>\n                        </div>\n                    </div>\n                </div>\n            ");
+            var svg = this_1.get_spatial_type_svg(annotation.spatial_type, color);
+            html += "\n                <div class=\"annotation-list-item\" data-annotation-id=\"".concat(annotation.id, "\" data-annotation-idx=\"").concat(i, "\">\n                    <div class=\"annotation-list-item-header\">\n                        <div class=\"annotation-list-item-icon\">").concat(svg, "</div>\n                        <div class=\"annotation-list-item-text\">\n                            <span class=\"annotation-list-item-class\">").concat(class_name, "</span>\n                            <span class=\"annotation-list-item-id\">#").concat(i, "</span>\n                        </div>\n                    </div>\n                </div>\n            ");
         };
         var this_1 = this;
         for (var i = 0; i < annotations.length; i++) {
@@ -1389,7 +1391,8 @@ var AnnotationListToolboxItem = /** @class */ (function (_super) {
             for (var i = 0; i < group_annotations.length; i++) {
                 var annotation = group_annotations[i];
                 var overall_idx = annotations.indexOf(annotation);
-                html += "\n                    <div class=\"annotation-list-item\" data-annotation-id=\"".concat(annotation.id, "\" data-annotation-idx=\"").concat(overall_idx, "\">\n                        <div class=\"annotation-list-item-header\">\n                            <div class=\"annotation-list-item-text\" style=\"padding-left: 1.5rem;\">\n                                <span class=\"annotation-list-item-id\">#").concat(i, "</span>\n                            </div>\n                        </div>\n                    </div>\n                ");
+                var svg = this_2.get_spatial_type_svg(annotation.spatial_type, color);
+                html += "\n                    <div class=\"annotation-list-item\" data-annotation-id=\"".concat(annotation.id, "\" data-annotation-idx=\"").concat(overall_idx, "\">\n                        <div class=\"annotation-list-item-header\">\n                            <div class=\"annotation-list-item-icon\" style=\"margin-left: 0.5rem;\">").concat(svg, "</div>\n                            <div class=\"annotation-list-item-text\">\n                                <span class=\"annotation-list-item-id\">#").concat(i, "</span>\n                            </div>\n                        </div>\n                    </div>\n                ");
             }
             html += "</div>";
         };
@@ -1398,6 +1401,53 @@ var AnnotationListToolboxItem = /** @class */ (function (_super) {
             _loop_2(class_id_str);
         }
         return html;
+    };
+    /**
+     * Get the SVG icon for a given spatial type
+     */
+    AnnotationListToolboxItem.prototype.get_spatial_type_svg = function (spatial_type, color) {
+        var svg = "";
+        switch (spatial_type) {
+            case "bbox":
+                svg = blobs_1.BBOX_SVG;
+                break;
+            case "delete_bbox":
+                svg = blobs_1.DELETE_BBOX_SVG;
+                break;
+            case "bbox3":
+                svg = blobs_1.BBOX3_SVG;
+                break;
+            case "point":
+                svg = blobs_1.POINT_SVG;
+                break;
+            case "polygon":
+                svg = blobs_1.POLYGON_SVG;
+                break;
+            case "delete_polygon":
+                svg = blobs_1.DELETE_POLYGON_SVG;
+                break;
+            case "contour":
+                svg = blobs_1.CONTOUR_SVG;
+                break;
+            case "tbar":
+                svg = blobs_1.TBAR_SVG;
+                break;
+            case "polyline":
+                svg = blobs_1.POLYLINE_SVG;
+                break;
+            case "whole-image":
+            case "global":
+                svg = blobs_1.WHOLE_IMAGE_SVG;
+                break;
+            default:
+                svg = blobs_1.BBOX_SVG; // fallback
+                break;
+        }
+        // Color the SVG by replacing stroke/fill colors
+        // The SVGs use various colors, so we'll replace common ones
+        svg = svg.replace(/stroke:#[0-9a-fA-F]{6}/g, "stroke:".concat(color));
+        svg = svg.replace(/fill:#[0-9a-fA-F]{6}/g, "fill:".concat(color));
+        return svg;
     };
     /**
      * Get the primary class ID for an annotation
@@ -47994,8 +48044,7 @@ class ULabel {
                         }
                         break;
                     default:
-                       
-                        
+
                         break;
                 }
 
@@ -48005,7 +48054,7 @@ class ULabel {
                     minsize = Infinity;
                     ret["candidate_ids"] = [];
                 }
-                
+
                 if (found_containing_annotation) {
                     if (is_a_containing_annotation) {
                         // Prefer containing annotations
@@ -48925,7 +48974,7 @@ class ULabel {
         this.suggest_edits({
             pageX: annbox.width() / 2,
             pageY: annbox.height() / 2,
-        });                              
+        });
 
         return true;
     }
