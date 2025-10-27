@@ -21,7 +21,7 @@ test.describe("Annotation List UI", () => {
 
         // Check annotation list is visible
         await expect(page.locator(".annotation-list-toolbox-item")).toBeVisible();
-        await expect(page.locator(".annotation-list-title")).toHaveText("Annotations");
+        await expect(page.locator(".annotation-list-title")).toHaveText("Annotation List");
 
         // Check that show deprecated and group by class checkboxes are visible
         await expect(page.locator("#annotation-list-show-deprecated")).toBeVisible();
@@ -80,6 +80,7 @@ test.describe("Annotation List Navigation", () => {
         expect(parseFloat(opacity)).toBeLessThan(0.5);
 
         // Move mouse back over the first annotation in the canvas
+        await page.keyboard.press("r");
         await page.mouse.move(150, 150);
         // Expect list item to be highlighted (has .highlighted class)
         await expect(first_item).toHaveClass(/highlighted/);
@@ -99,7 +100,7 @@ test.describe("Annotation List Grouping", () => {
         await draw_bbox(page, [300, 300], [400, 400]);
 
         // Should have no group headers
-        const group_headers = page.locator(".annotation-list-group-header");
+        const group_headers = page.locator(".annotation-list-class-group-header");
         expect(await group_headers.count()).toBe(0);
 
         // Toggle group by class
@@ -116,7 +117,7 @@ test.describe("Annotation List Grouping", () => {
 
         // Should have the two classes that we used
         for (let i = 0; i <= 1; i++) {
-            const header = page.locator(".annotation-list-group-header", { hasText: classes[i].name });
+            const header = page.locator(".annotation-list-class-group-header", { hasText: classes[i].name });
             expect(await header.count()).toBeGreaterThan(0);
         }
     });
