@@ -923,6 +923,7 @@ var Configuration = /** @class */ (function () {
         // Default toolbox order used when the user doesn't specify one
         this.toolbox_order = [
             AllowedToolboxItem.ModeSelect,
+            AllowedToolboxItem.AnnotationList,
             AllowedToolboxItem.Brush,
             AllowedToolboxItem.ImageFilters,
             AllowedToolboxItem.ZoomPan,
@@ -930,7 +931,6 @@ var Configuration = /** @class */ (function () {
             AllowedToolboxItem.AnnotationID,
             AllowedToolboxItem.RecolorActive,
             AllowedToolboxItem.ClassCounter,
-            AllowedToolboxItem.AnnotationList,
             AllowedToolboxItem.KeypointSlider,
             AllowedToolboxItem.SubmitButtons,
         ];

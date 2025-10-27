@@ -140,6 +140,7 @@ export class Configuration {
     // Default toolbox order used when the user doesn't specify one
     public toolbox_order: AllowedToolboxItem[] = [
         AllowedToolboxItem.ModeSelect,
+        AllowedToolboxItem.AnnotationList,
         AllowedToolboxItem.Brush,
         AllowedToolboxItem.ImageFilters,
         AllowedToolboxItem.ZoomPan,
@@ -147,7 +148,6 @@ export class Configuration {
         AllowedToolboxItem.AnnotationID,
         AllowedToolboxItem.RecolorActive,
         AllowedToolboxItem.ClassCounter,
-        AllowedToolboxItem.AnnotationList,
         AllowedToolboxItem.KeypointSlider,
         AllowedToolboxItem.SubmitButtons,
     ];
