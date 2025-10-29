@@ -157,6 +157,30 @@ export class KeybindsToolboxItem extends ToolboxItem {
             margin-bottom: 0.5rem;
             padding: 0.25rem 0.5rem;
             color: rgba(0, 128, 255, 0.9);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        #toolbox .keybind-category:hover {
+            background-color: rgba(0, 128, 255, 0.05);
+        }
+
+        #toolbox .keybind-category-toggle {
+            font-size: 0.8rem;
+            margin-left: 0.5rem;
+        }
+
+        #toolbox .keybind-section-items {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        #toolbox .keybind-section-items.collapsed {
+            display: none;
         }
         `;
 
@@ -399,7 +423,13 @@ export class KeybindsToolboxItem extends ToolboxItem {
 
         // Configurable keybinds (non-class)
         if (configurable.length > 0) {
-            keybinds_html += "<div class=\"keybind-category\">Configurable Keybinds</div>";
+            keybinds_html += `
+                <div class="keybind-category" data-section="configurable">
+                    <span>Configurable Keybinds</span>
+                    <span class="keybind-category-toggle">▼</span>
+                </div>
+                <div class="keybind-section-items" data-section="configurable">
+            `;
             for (const keybind of configurable) {
                 const has_collision = this.has_collision(keybind.key, all_keybinds);
                 const collision_class = has_collision ? " collision" : "";
@@ -412,11 +442,18 @@ export class KeybindsToolboxItem extends ToolboxItem {
                     </div>
                 `;
             }
+            keybinds_html += "</div>";
         }
 
         // Class keybinds
         if (class_keybinds.length > 0) {
-            keybinds_html += "<div class=\"keybind-category\">Class Keybinds</div>";
+            keybinds_html += `
+                <div class="keybind-category" data-section="class">
+                    <span>Class Keybinds</span>
+                    <span class="keybind-category-toggle">▼</span>
+                </div>
+                <div class="keybind-section-items" data-section="class">
+            `;
             for (const keybind of class_keybinds) {
                 const has_collision = this.has_collision(keybind.key, all_keybinds);
                 const collision_class = has_collision ? " collision" : "";
@@ -429,11 +466,18 @@ export class KeybindsToolboxItem extends ToolboxItem {
                     </div>
                 `;
             }
+            keybinds_html += "</div>";
         }
 
         // Other keybinds
         if (other.length > 0) {
-            keybinds_html += "<div class=\"keybind-category\">Other</div>";
+            keybinds_html += `
+                <div class="keybind-category" data-section="other">
+                    <span>Other</span>
+                    <span class="keybind-category-toggle">▼</span>
+                </div>
+                <div class="keybind-section-items" data-section="other">
+            `;
             for (const keybind of other) {
                 const has_collision = this.has_collision(keybind.key, all_keybinds);
                 const collision_class = has_collision ? " collision" : "";
@@ -445,6 +489,7 @@ export class KeybindsToolboxItem extends ToolboxItem {
                     </div>
                 `;
             }
+            keybinds_html += "</div>";
         }
 
         return keybinds_html;
@@ -498,6 +543,16 @@ export class KeybindsToolboxItem extends ToolboxItem {
             $(".keybinds-toggle-btn").text("▲");
         }
         // Default is collapsed, so no need to do anything if stored_state is "true" or null
+
+        // Restore category section states
+        const sections = ["configurable", "class", "other"];
+        for (const section of sections) {
+            const section_state = get_local_storage_item(`ulabel_keybind_section_${section}_collapsed`);
+            if (section_state === "true") {
+                $(`.keybind-section-items[data-section="${section}"]`).addClass("collapsed");
+                $(`.keybind-category[data-section="${section}"] .keybind-category-toggle`).text("▶");
+            }
+        }
     }
 
     /**
@@ -590,6 +645,25 @@ export class KeybindsToolboxItem extends ToolboxItem {
                 content.addClass("expanded");
                 toggle_btn.text("▲");
                 set_local_storage_item("ulabel_keybinds_collapsed", "false");
+            }
+        });
+
+        // Toggle collapse/expand for category sections
+        $(document).on("click.ulabel", ".keybind-category", (e) => {
+            e.stopPropagation();
+            const category = $(e.currentTarget);
+            const section = category.data("section");
+            const items = $(`.keybind-section-items[data-section="${section}"]`);
+            const toggle = category.find(".keybind-category-toggle");
+
+            if (items.hasClass("collapsed")) {
+                items.removeClass("collapsed");
+                toggle.text("▼");
+                set_local_storage_item(`ulabel_keybind_section_${section}_collapsed`, "false");
+            } else {
+                items.addClass("collapsed");
+                toggle.text("▶");
+                set_local_storage_item(`ulabel_keybind_section_${section}_collapsed`, "true");
             }
         });
 

@@ -142,6 +142,7 @@ export class Configuration {
 
     // Default toolbox order used when the user doesn't specify one
     public toolbox_order: AllowedToolboxItem[] = [
+        AllowedToolboxItem.Keybinds,
         AllowedToolboxItem.ModeSelect,
         AllowedToolboxItem.AnnotationList,
         AllowedToolboxItem.Keybinds,
