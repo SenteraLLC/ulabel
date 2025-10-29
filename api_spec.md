@@ -73,7 +73,7 @@ class ULabel({
     increase_brush_size_keybind: string,
     decrease_brush_size_keybind: string,
     fly_to_next_annotation_keybind: string,
-    fly_to_previous_annotation_keybind: string | null,
+    fly_to_previous_annotation_keybind: string,
     fly_to_max_zoom: number,
     n_annos_per_canvas: number
 })
@@ -480,7 +480,7 @@ Keybind to decrease the brush size. Default is `[`. Requires the active subtask 
 Keybind to set the zoom to focus on the next annotation. Default is `Tab`, which also will disable any default browser behavior for `Tab`.
 
 ### `fly_to_previous_annotation_keybind`
-Keybind to set the zoom to focus on the previous annotation. Default is `<null>`, which will default to `Shift+<fly_to_next_annotation_keybind>`.
+Keybind to set the zoom to focus on the previous annotation. Default is `shift+tab`. Supports chord keybinds (e.g., `shift+p`, `ctrl+alt+n`).
 
 ### `fly_to_max_zoom`
 Maximum zoom factor used when flying-to an annotation. Default is `10`, value must be > `0`. 

@@ -17,15 +17,19 @@
   - [x] Add collision detection and red highlighting
   - [x] Implement editing for configurable keybinds
   - [x] Test functionality
-- [ ] Add support for keybind "chords" (ie, "shift+i")
+- [x] Add support for keybind "chords" (ie, "shift+i")
   - [x] Update keybind edit handler to capture modifier keys (shift, ctrl, alt)
   - [x] Create chord string format (e.g., "shift+i", "ctrl+alt+d")
   - [x] Update key comparison logic in listeners to support chords
   - [x] Update display to show chords properly (displays captured chord automatically)
-  - [ ] Test chord functionality
+  - [x] Test chord functionality
 - [ ] Store collapse/expand for applicable toolbox items
   - [ ] Keybinds
   - [ ] Annotation List
   - [ ] Image Filters
+- [ ] Make all keybinds configurable
+- [ ] Minor changes to existing keybinds
+  - [ ] Rename "Change Zoom" keybind to "Reset Zoom"
+  - [ ] Change "Toggle Mode" label in the keybind toolbox item to "Toggle Annotation Mode"
 
 

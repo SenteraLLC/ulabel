@@ -201,10 +201,9 @@ export class Configuration {
 
     public decrease_brush_size_keybind: string = "[";
 
-    public fly_to_next_annotation_keybind: string = "Tab";
+    public fly_to_next_annotation_keybind: string = "tab";
 
-    // null -> Shift+fly_to_next_annotation_keybind
-    public fly_to_previous_annotation_keybind: string | null = null;
+    public fly_to_previous_annotation_keybind: string = "shift+tab";
 
     public fly_to_max_zoom: number = 10;
 

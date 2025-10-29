@@ -303,22 +303,14 @@ function handle_keydown_event(
 
     // Handle fly to next annotation
     if (event_matches_keybind(keydown_event, ulabel.config.fly_to_next_annotation_keybind)) {
-        // For 'tab', prevent default
-        if (keydown_event.key.toLowerCase() === "tab") {
-            keydown_event.preventDefault();
-        }
-
-        if (ulabel.config.fly_to_previous_annotation_keybind === null && shift) {
-            ulabel.fly_to_next_annotation(-1, ulabel.config.fly_to_max_zoom);
-        } else if (!shift) {
-            ulabel.fly_to_next_annotation(1, ulabel.config.fly_to_max_zoom);
-        }
+        keydown_event.preventDefault();
+        ulabel.fly_to_next_annotation(1, ulabel.config.fly_to_max_zoom);
         return false;
     }
 
     // Handle fly to previous annotation
-    if (ulabel.config.fly_to_previous_annotation_keybind !== null &&
-        event_matches_keybind(keydown_event, ulabel.config.fly_to_previous_annotation_keybind)) {
+    if (event_matches_keybind(keydown_event, ulabel.config.fly_to_previous_annotation_keybind)) {
+        keydown_event.preventDefault();
         ulabel.fly_to_next_annotation(-1, ulabel.config.fly_to_max_zoom);
         return false;
     }

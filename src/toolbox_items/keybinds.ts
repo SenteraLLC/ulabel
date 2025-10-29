@@ -266,15 +266,13 @@ export class KeybindsToolboxItem extends ToolboxItem {
             config_key: "fly_to_next_annotation_keybind",
         });
 
-        if (config.fly_to_previous_annotation_keybind !== null) {
-            keybinds.push({
-                key: config.fly_to_previous_annotation_keybind,
-                label: "Previous Annotation",
-                description: "Fly to previous annotation",
-                configurable: true,
-                config_key: "fly_to_previous_annotation_keybind",
-            });
-        }
+        keybinds.push({
+            key: config.fly_to_previous_annotation_keybind,
+            label: "Previous Annotation",
+            description: "Fly to previous annotation",
+            configurable: true,
+            config_key: "fly_to_previous_annotation_keybind",
+        });
 
         // Resize keybinds from default_keybinds
         if (config.default_keybinds) {
@@ -328,14 +326,6 @@ export class KeybindsToolboxItem extends ToolboxItem {
                 }
             }
         }
-
-        // Non-configurable keybinds (hardcoded in listeners)
-        keybinds.push({
-            key: "Shift+Tab",
-            label: "Previous Annotation",
-            description: "Fly to previous annotation (if fly_to_previous_annotation_keybind is null)",
-            configurable: false,
-        });
 
         return keybinds;
     }
