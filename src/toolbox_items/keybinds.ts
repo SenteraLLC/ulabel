@@ -1012,14 +1012,55 @@ export class KeybindsToolboxItem extends ToolboxItem {
                     const class_def = current_subtask.class_defs.find((cd) => cd.id === class_id);
                     if (class_def) {
                         class_def.keybind = new_key;
-                        // Save class keybind to localStorage
-                        this.save_class_keybind_to_storage(class_id, new_key);
+
+                        // Only save to localStorage if different from default
+                        const original_class_keybinds = this.get_original_class_keybinds();
+                        const default_value = original_class_keybinds[class_id];
+                        if (new_key !== default_value) {
+                            this.save_class_keybind_to_storage(class_id, new_key);
+                        } else {
+                            // If it matches the default, remove it from localStorage
+                            const stored = get_local_storage_item("ulabel_custom_class_keybinds");
+                            if (stored) {
+                                try {
+                                    const custom_class_keybinds = JSON.parse(stored);
+                                    delete custom_class_keybinds[class_id];
+                                    if (Object.keys(custom_class_keybinds).length > 0) {
+                                        set_local_storage_item("ulabel_custom_class_keybinds", JSON.stringify(custom_class_keybinds));
+                                    } else {
+                                        localStorage.removeItem("ulabel_custom_class_keybinds");
+                                    }
+                                } catch (e) {
+                                    log_message(`Failed to update custom class keybinds: ${e}`, LogLevel.ERROR, true);
+                                }
+                            }
+                        }
                     }
                 } else {
                     // Update the config
                     this.ulabel.config[config_key] = new_key;
-                    // Save regular keybind to localStorage
-                    this.save_keybind_to_storage(config_key, new_key);
+
+                    // Only save to localStorage if different from default
+                    const default_value = this.get_default_keybind(config_key);
+                    if (new_key !== default_value) {
+                        this.save_keybind_to_storage(config_key, new_key);
+                    } else {
+                        // If it matches the default, remove it from localStorage
+                        const stored = get_local_storage_item("ulabel_custom_keybinds");
+                        if (stored) {
+                            try {
+                                const custom_keybinds = JSON.parse(stored);
+                                delete custom_keybinds[config_key];
+                                if (Object.keys(custom_keybinds).length > 0) {
+                                    set_local_storage_item("ulabel_custom_keybinds", JSON.stringify(custom_keybinds));
+                                } else {
+                                    localStorage.removeItem("ulabel_custom_keybinds");
+                                }
+                            } catch (e) {
+                                log_message(`Failed to update custom keybinds: ${e}`, LogLevel.ERROR, true);
+                            }
+                        }
+                    }
                 }
 
                 // Update the display
