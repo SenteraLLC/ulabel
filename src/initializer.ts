@@ -60,11 +60,36 @@ function make_image_canvases(
 }
 
 /**
+ * Store original class keybinds before customization
+ *
+ * @param ulabel ULabel instance to store original keybinds for
+ */
+function store_original_class_keybinds(ulabel: ULabel) {
+    // Store original class keybinds in the ULabel state for later reference
+    const original_keybinds: { [class_id: number]: string } = {};
+    for (const subtask_key in ulabel.subtasks) {
+        const subtask = ulabel.subtasks[subtask_key];
+        if (subtask.class_defs) {
+            for (const class_def of subtask.class_defs) {
+                if (class_def.keybind !== null) {
+                    original_keybinds[class_def.id] = class_def.keybind;
+                }
+            }
+        }
+    }
+    // Store in ULabel state for toolbox access
+    ulabel.state["original_class_keybinds"] = original_keybinds;
+}
+
+/**
  * Restore custom keybinds from localStorage
  *
  * @param ulabel ULabel instance to restore keybinds for
  */
 function restore_custom_keybinds(ulabel: ULabel) {
+    // First, store the original class keybinds before applying customizations
+    store_original_class_keybinds(ulabel);
+
     // Restore regular keybinds
     const stored_keybinds = get_local_storage_item("ulabel_custom_keybinds");
     if (stored_keybinds) {

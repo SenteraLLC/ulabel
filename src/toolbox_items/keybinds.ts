@@ -158,7 +158,7 @@ export class KeybindsToolboxItem extends ToolboxItem {
             padding: 0.2rem 0.4rem;
             font-size: 0.75rem;
             border-radius: 3px;
-            opacity: 0;
+            opacity: 0.5;
             transition: opacity 0.2s;
         }
 
@@ -198,6 +198,16 @@ export class KeybindsToolboxItem extends ToolboxItem {
 
         .ulabel-night #toolbox .keybind-key {
             background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        #toolbox .keybind-key.customized {
+            background-color: rgba(255, 255, 0, 0.2);
+            border: 1px solid rgba(255, 200, 0, 0.5);
+        }
+
+        .ulabel-night #toolbox .keybind-key.customized {
+            background-color: rgba(255, 255, 0, 0.15);
+            border-color: rgba(255, 200, 0, 0.4);
         }
 
         #toolbox .keybind-key.collision {
@@ -520,38 +530,40 @@ export class KeybindsToolboxItem extends ToolboxItem {
      * Get original class keybinds (before customization)
      */
     private get_original_class_keybinds(): { [class_id: number]: string } {
-        const stored = get_local_storage_item("ulabel_original_class_keybinds");
-        if (stored) {
-            try {
-                return JSON.parse(stored);
-            } catch (e) {
-                console.error("Failed to parse original class keybinds:", e);
-                return {};
-            }
-        }
-        return {};
+        // Get from ULabel state (stored during initialization)
+        return this.ulabel.state["original_class_keybinds"] || {};
     }
 
     /**
-     * Store original class keybinds (before customization)
+     * Check if a regular keybind is customized (different from default)
      */
-    private store_original_class_keybinds(): void {
-        // Only store if not already stored
-        const stored = get_local_storage_item("ulabel_original_class_keybinds");
+    private is_keybind_customized(config_key: string): boolean {
+        const stored = get_local_storage_item("ulabel_custom_keybinds");
         if (stored) {
-            return; // Already stored
-        }
-
-        const current_subtask = this.ulabel.get_current_subtask();
-        if (current_subtask && current_subtask.class_defs) {
-            const original_keybinds: { [class_id: number]: string } = {};
-            for (const class_def of current_subtask.class_defs) {
-                if (class_def.keybind !== null) {
-                    original_keybinds[class_def.id] = class_def.keybind;
-                }
+            try {
+                const custom_keybinds = JSON.parse(stored);
+                return config_key in custom_keybinds;
+            } catch {
+                return false;
             }
-            set_local_storage_item("ulabel_original_class_keybinds", JSON.stringify(original_keybinds));
         }
+        return false;
+    }
+
+    /**
+     * Check if a class keybind is customized (different from default)
+     */
+    private is_class_keybind_customized(class_id: number): boolean {
+        const stored = get_local_storage_item("ulabel_custom_class_keybinds");
+        if (stored) {
+            try {
+                const custom_class_keybinds = JSON.parse(stored);
+                return class_id in custom_class_keybinds;
+            } catch {
+                return false;
+            }
+        }
+        return false;
     }
 
     /**
@@ -652,15 +664,18 @@ export class KeybindsToolboxItem extends ToolboxItem {
             `;
             for (const keybind of configurable) {
                 const has_collision = this.has_collision(keybind.key, all_keybinds);
+                const is_customized = this.is_keybind_customized(keybind.config_key);
                 const collision_class = has_collision ? " collision" : "";
+                const customized_class = is_customized ? " customized" : "";
                 const display_key = keybind.key !== null && keybind.key !== undefined ? keybind.key : "none";
+                const reset_button = is_customized ? `<button class="keybind-reset-btn" data-config-key="${keybind.config_key}" title="Reset to default">↺</button>` : "";
 
                 keybinds_html += `
                     <div class="keybind-item" title="${keybind.description}">
                         <span class="keybind-description">${keybind.label}</span>
                         <div class="keybind-controls">
-                            <span class="keybind-key keybind-editable${collision_class}" data-config-key="${keybind.config_key}">${display_key}</span>
-                            <button class="keybind-reset-btn" data-config-key="${keybind.config_key}" title="Reset to default">↺</button>
+                            <span class="keybind-key keybind-editable${collision_class}${customized_class}" data-config-key="${keybind.config_key}">${display_key}</span>
+                            ${reset_button}
                         </div>
                     </div>
                 `;
@@ -679,15 +694,18 @@ export class KeybindsToolboxItem extends ToolboxItem {
             `;
             for (const keybind of class_keybinds) {
                 const has_collision = this.has_collision(keybind.key, all_keybinds);
+                const is_customized = this.is_class_keybind_customized(keybind.class_id);
                 const collision_class = has_collision ? " collision" : "";
+                const customized_class = is_customized ? " customized" : "";
                 const display_key = keybind.key !== null && keybind.key !== undefined ? keybind.key : "none";
+                const reset_button = is_customized ? `<button class="keybind-reset-btn" data-class-id="${keybind.class_id}" data-original-keybind="${keybind.default_key}" title="Reset to default">↺</button>` : "";
 
                 keybinds_html += `
                     <div class="keybind-item" title="${keybind.description}">
                         <span class="keybind-description">${keybind.label}</span>
                         <div class="keybind-controls">
-                            <span class="keybind-key keybind-editable${collision_class}" data-class-id="${keybind.class_id}">${display_key}</span>
-                            <button class="keybind-reset-btn" data-class-id="${keybind.class_id}" data-original-keybind="${keybind.default_key}" title="Reset to default">↺</button>
+                            <span class="keybind-key keybind-editable${collision_class}${customized_class}" data-class-id="${keybind.class_id}">${display_key}</span>
+                            ${reset_button}
                         </div>
                     </div>
                 `;
@@ -756,7 +774,6 @@ export class KeybindsToolboxItem extends ToolboxItem {
      * Called after ULabel initialization is complete
      */
     public after_init(): void {
-        this.store_original_class_keybinds();
         this.add_event_listeners();
         this.restore_collapsed_state();
     }
