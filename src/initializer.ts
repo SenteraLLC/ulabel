@@ -82,9 +82,7 @@ function store_original_keybinds(ulabel: ULabel) {
         const subtask = ulabel.subtasks[subtask_key];
         if (subtask.class_defs) {
             for (const class_def of subtask.class_defs) {
-                if (class_def.keybind !== null) {
-                    original_class_keybinds[class_def.id] = class_def.keybind;
-                }
+                original_class_keybinds[class_def.id] = class_def?.keybind;
             }
         }
     }

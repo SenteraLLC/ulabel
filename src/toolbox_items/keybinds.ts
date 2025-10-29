@@ -2,6 +2,7 @@ import type { ULabel } from "../index";
 import { ToolboxItem } from "../toolbox";
 import { Configuration } from "../configuration";
 import { get_local_storage_item, set_local_storage_item } from "../utilities";
+import { DELETE_CLASS_ID } from "../annotation";
 
 interface KeybindInfo {
     key: string;
@@ -426,16 +427,17 @@ export class KeybindsToolboxItem extends ToolboxItem {
             const original_class_keybinds = this.get_original_class_keybinds();
 
             for (const class_def of current_subtask.class_defs) {
-                if (class_def.keybind !== null) {
-                    keybinds.push({
-                        key: class_def.keybind,
-                        label: class_def.name,
-                        description: `Select class: ${class_def.name}`,
-                        configurable: true,
-                        class_id: class_def.id,
-                        default_key: original_class_keybinds[class_def.id] || class_def.keybind,
-                    });
-                }
+                // Skip delete class
+                if (class_def.id === DELETE_CLASS_ID) continue;
+
+                keybinds.push({
+                    key: class_def.keybind,
+                    label: class_def.name,
+                    description: `Select class: ${class_def.name}`,
+                    configurable: true,
+                    class_id: class_def.id,
+                    default_key: original_class_keybinds[class_def.id] || class_def?.keybind,
+                });
             }
         }
 
@@ -760,7 +762,7 @@ export class KeybindsToolboxItem extends ToolboxItem {
      * Returns a unique string identifier for this toolbox item type
      */
     public get_toolbox_item_type(): string {
-        return "keybinds";
+        return "Keybinds";
     }
 
     /**
@@ -1048,7 +1050,7 @@ export class KeybindsToolboxItem extends ToolboxItem {
     /**
      * Refresh the keybinds display to show updated keys and collision detection
      */
-    private refresh_keybinds_display(): void {
+    public refresh_keybinds_display(): void {
         const keybinds_list = $(".keybinds-list");
         if (keybinds_list.length === 0) {
             return;
