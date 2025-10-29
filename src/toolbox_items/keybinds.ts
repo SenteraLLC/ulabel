@@ -648,14 +648,22 @@ export class KeybindsToolboxItem extends ToolboxItem {
         const class_keybinds = all_keybinds.filter((kb) => kb.class_id !== undefined);
         const other = all_keybinds.filter((kb) => !kb.configurable);
 
+        // Check collapsed states from localStorage
+        const configurable_collapsed = get_local_storage_item("ulabel_keybind_section_configurable_collapsed") === "true";
+        const class_collapsed = get_local_storage_item("ulabel_keybind_section_class_collapsed") === "true";
+        const other_collapsed = get_local_storage_item("ulabel_keybind_section_other_collapsed") === "true";
+
         // Configurable keybinds (non-class)
         if (configurable.length > 0) {
+            const toggle_icon = configurable_collapsed ? "▶" : "▼";
+            const section_class = configurable_collapsed ? " collapsed" : "";
+
             keybinds_html += `
                 <div class="keybind-category" data-section="configurable">
                     <span>Configurable Keybinds</span>
-                    <span class="keybind-category-toggle">▼</span>
+                    <span class="keybind-category-toggle">${toggle_icon}</span>
                 </div>
-                <div class="keybind-section-items" data-section="configurable">
+                <div class="keybind-section-items${section_class}" data-section="configurable">
             `;
             for (const keybind of configurable) {
                 const has_collision = this.has_collision(keybind.key, all_keybinds);
@@ -680,12 +688,15 @@ export class KeybindsToolboxItem extends ToolboxItem {
 
         // Class keybinds
         if (class_keybinds.length > 0) {
+            const toggle_icon = class_collapsed ? "▶" : "▼";
+            const section_class = class_collapsed ? " collapsed" : "";
+
             keybinds_html += `
                 <div class="keybind-category" data-section="class">
                     <span>Class Keybinds</span>
-                    <span class="keybind-category-toggle">▼</span>
+                    <span class="keybind-category-toggle">${toggle_icon}</span>
                 </div>
-                <div class="keybind-section-items" data-section="class">
+                <div class="keybind-section-items${section_class}" data-section="class">
             `;
             for (const keybind of class_keybinds) {
                 const has_collision = this.has_collision(keybind.key, all_keybinds);
@@ -710,12 +721,15 @@ export class KeybindsToolboxItem extends ToolboxItem {
 
         // Other keybinds
         if (other.length > 0) {
+            const toggle_icon = other_collapsed ? "▶" : "▼";
+            const section_class = other_collapsed ? " collapsed" : "";
+
             keybinds_html += `
                 <div class="keybind-category" data-section="other">
                     <span>Other</span>
-                    <span class="keybind-category-toggle">▼</span>
+                    <span class="keybind-category-toggle">${toggle_icon}</span>
                 </div>
-                <div class="keybind-section-items" data-section="other">
+                <div class="keybind-section-items${section_class}" data-section="other">
             `;
             for (const keybind of other) {
                 const has_collision = this.has_collision(keybind.key, all_keybinds);

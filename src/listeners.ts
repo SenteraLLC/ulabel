@@ -20,7 +20,7 @@ function event_matches_keybind(
     keyEvent: JQuery.KeyDownEvent | JQuery.KeyPressEvent,
     keybind: string,
 ): boolean {
-    if (!keybind) {
+    if (!keybind || typeof keybind !== "string") {
         return false;
     }
 
