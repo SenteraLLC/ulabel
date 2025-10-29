@@ -156,14 +156,6 @@ export class Configuration {
         AllowedToolboxItem.SubmitButtons,
     ];
 
-    public default_keybinds = {
-        annotation_size_small: "s",
-        annotation_size_large: "l",
-        annotation_size_plus: "=",
-        annotation_size_minus: "-",
-        annotation_vanish: "v",
-    };
-
     // Config for RecolorActiveItem
     public recolor_active_toolbox_item: RecolorActiveConfig = {
         gradient_turned_on: false,
@@ -200,6 +192,16 @@ export class Configuration {
     public increase_brush_size_keybind: string = "]";
 
     public decrease_brush_size_keybind: string = "[";
+
+    public annotation_size_small_keybind: string = "s";
+
+    public annotation_size_large_keybind: string = "l";
+
+    public annotation_size_plus_keybind: string = "=";
+
+    public annotation_size_minus_keybind: string = "-";
+
+    public annotation_vanish_keybind: string = "v";
 
     public fly_to_next_annotation_keybind: string = "tab";
 

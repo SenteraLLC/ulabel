@@ -1200,16 +1200,12 @@ export class ClassCounterToolboxItem extends ToolboxItem {
 export class AnnotationResizeItem extends ToolboxItem {
     public cached_size: number = 1.5;
     public html: string;
-    private keybind_configuration: { [key: string]: string };
     private ulabel: ULabel;
 
     constructor(ulabel: ULabel) {
         super();
 
         this.ulabel = ulabel;
-
-        // Get default keybinds
-        this.keybind_configuration = ulabel.config.default_keybinds;
 
         // First check for a size cookie, if one isn't found then check the config
         // for a default annotation size. If neither are found it will use the size
@@ -1331,22 +1327,22 @@ export class AnnotationResizeItem extends ToolboxItem {
             const current_subtask = this.ulabel.get_current_subtask();
 
             switch (event.key) {
-                case this.keybind_configuration.annotation_vanish.toUpperCase():
+                case this.ulabel.config.annotation_vanish_keybind.toUpperCase():
                     this.update_all_subtask_annotation_size(this.ulabel, ValidResizeValues.VANISH);
                     break;
-                case this.keybind_configuration.annotation_vanish.toLowerCase():
+                case this.ulabel.config.annotation_vanish_keybind.toLowerCase():
                     this.update_annotation_size(this.ulabel, current_subtask, ValidResizeValues.VANISH);
                     break;
-                case this.keybind_configuration.annotation_size_small:
+                case this.ulabel.config.annotation_size_small_keybind:
                     this.update_annotation_size(this.ulabel, current_subtask, ValidResizeValues.SMALL);
                     break;
-                case this.keybind_configuration.annotation_size_large:
+                case this.ulabel.config.annotation_size_large_keybind:
                     this.update_annotation_size(this.ulabel, current_subtask, ValidResizeValues.LARGE);
                     break;
-                case this.keybind_configuration.annotation_size_minus:
+                case this.ulabel.config.annotation_size_minus_keybind:
                     this.update_annotation_size(this.ulabel, current_subtask, ValidResizeValues.DECREMENT);
                     break;
-                case this.keybind_configuration.annotation_size_plus:
+                case this.ulabel.config.annotation_size_plus_keybind:
                     this.update_annotation_size(this.ulabel, current_subtask, ValidResizeValues.INCREMENT);
                     break;
                 default:

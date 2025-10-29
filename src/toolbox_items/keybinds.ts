@@ -275,43 +275,45 @@ export class KeybindsToolboxItem extends ToolboxItem {
             config_key: "fly_to_previous_annotation_keybind",
         });
 
-        // Resize keybinds from default_keybinds
-        if (config.default_keybinds) {
-            keybinds.push({
-                key: config.default_keybinds.annotation_size_small,
-                label: "Size: Small",
-                description: "Set annotation size to small",
-                configurable: false,
-            });
+        keybinds.push({
+            key: config.annotation_size_small_keybind,
+            label: "Size: Small",
+            description: "Set annotation size to small",
+            configurable: true,
+            config_key: "annotation_size_small_keybind",
+        });
 
-            keybinds.push({
-                key: config.default_keybinds.annotation_size_large,
-                label: "Size: Large",
-                description: "Set annotation size to large",
-                configurable: false,
-            });
+        keybinds.push({
+            key: config.annotation_size_large_keybind,
+            label: "Size: Large",
+            description: "Set annotation size to large",
+            configurable: true,
+            config_key: "annotation_size_large_keybind",
+        });
 
-            keybinds.push({
-                key: config.default_keybinds.annotation_size_plus,
-                label: "Size: Increase",
-                description: "Increase annotation size",
-                configurable: false,
-            });
+        keybinds.push({
+            key: config.annotation_size_plus_keybind,
+            label: "Size: Increase",
+            description: "Increase annotation size",
+            configurable: true,
+            config_key: "annotation_size_plus_keybind",
+        });
 
-            keybinds.push({
-                key: config.default_keybinds.annotation_size_minus,
-                label: "Size: Decrease",
-                description: "Decrease annotation size",
-                configurable: false,
-            });
+        keybinds.push({
+            key: config.annotation_size_minus_keybind,
+            label: "Size: Decrease",
+            description: "Decrease annotation size",
+            configurable: true,
+            config_key: "annotation_size_minus_keybind",
+        });
 
-            keybinds.push({
-                key: config.default_keybinds.annotation_vanish,
-                label: "Toggle Vanish",
-                description: "Toggle annotation vanish mode",
-                configurable: false,
-            });
-        }
+        keybinds.push({
+            key: config.annotation_vanish_keybind,
+            label: "Toggle Vanish",
+            description: "Toggle annotation vanish mode",
+            configurable: true,
+            config_key: "annotation_vanish_keybind",
+        });
 
         // Add class keybinds
         const current_subtask = this.ulabel.get_current_subtask();
@@ -350,14 +352,9 @@ export class KeybindsToolboxItem extends ToolboxItem {
         // Group keybinds by category
         const configurable = all_keybinds.filter((kb) => kb.configurable);
         const class_binds = all_keybinds.filter((kb) => kb.description.startsWith("Select class:"));
-        const resize_binds = all_keybinds.filter((kb) =>
-            kb.description.includes("annotation size") || kb.description.includes("vanish"),
-        );
         const other = all_keybinds.filter((kb) =>
             !kb.configurable &&
-            !kb.description.startsWith("Select class:") &&
-            !kb.description.includes("annotation size") &&
-            !kb.description.includes("vanish"),
+            !kb.description.startsWith("Select class:"),
         );
 
         // Configurable keybinds
@@ -380,22 +377,6 @@ export class KeybindsToolboxItem extends ToolboxItem {
         if (class_binds.length > 0) {
             keybinds_html += "<div class=\"keybind-category\">Class Selection</div>";
             for (const keybind of class_binds) {
-                const has_collision = this.has_collision(keybind.key, all_keybinds);
-                const collision_class = has_collision ? " collision" : "";
-                const display_key = keybind.key !== null && keybind.key !== undefined ? keybind.key : "none";
-                keybinds_html += `
-                    <div class="keybind-item" title="${keybind.description}">
-                        <span class="keybind-description">${keybind.label}</span>
-                        <span class="keybind-key${collision_class}">${display_key}</span>
-                    </div>
-                `;
-            }
-        }
-
-        // Resize/vanish keybinds
-        if (resize_binds.length > 0) {
-            keybinds_html += "<div class=\"keybind-category\">Annotation Display</div>";
-            for (const keybind of resize_binds) {
                 const has_collision = this.has_collision(keybind.key, all_keybinds);
                 const collision_class = has_collision ? " collision" : "";
                 const display_key = keybind.key !== null && keybind.key !== undefined ? keybind.key : "none";

@@ -50,13 +50,6 @@ class ULabel({
     initial_line_size: number,
     instructions_url: string,
     toolbox_order: AllowedToolboxItem[],
-    default_keybinds = {
-        "annotation_size_small": string,
-        "annotation_size_large": string,
-        "annotation_size_plus": string,
-        "annotation_size_minus": string,
-        "annotation_vanish": string
-    },
     distance_filter_toolbox_item: FilterDistanceConfig,
     image_filters_toolbox_item: ImageFiltersConfig,
     change_zoom_keybind: string,
@@ -74,6 +67,11 @@ class ULabel({
     decrease_brush_size_keybind: string,
     fly_to_next_annotation_keybind: string,
     fly_to_previous_annotation_keybind: string,
+    annotation_size_small_keybind: string,
+    annotation_size_large_keybind: string,
+    annotation_size_plus_keybind: string,
+    annotation_size_minus_keybind: string,
+    annotation_vanish_keybind: string,
     fly_to_max_zoom: number,
     n_annos_per_canvas: number
 })
@@ -356,18 +354,6 @@ You can access the AllowedToolboxItem enum by calling the static method:
 const AllowedToolboxItem = ULabel.get_allowed_toolbox_item_enum();
 ```
 
-### `default_keybinds`
-Keybinds can be set to control the annotation session. The default values are:
-```javascript
-{
-    "annotation_size_small": "s",
-    "annotation_size_large": "l",
-    "annotation_size_plus": "=",
-    "annotation_size_minus": "-",
-    "annotation_vanish": "v"
-}
-```
-
 ### `distance_filter_toolbox_item`
 Configuration object for the `FilterDistance` toolbox item with the following custom definitions:
 ```javascript
@@ -481,6 +467,21 @@ Keybind to set the zoom to focus on the next annotation. Default is `Tab`, which
 
 ### `fly_to_previous_annotation_keybind`
 Keybind to set the zoom to focus on the previous annotation. Default is `shift+tab`. Supports chord keybinds (e.g., `shift+p`, `ctrl+alt+n`).
+
+### `annotation_size_small_keybind`
+Keybind to set the annotation size to small for the current subtask. Default is `s`.
+
+### `annotation_size_large_keybind`
+Keybind to set the annotation size to large for the current subtask. Default is `l`.
+
+### `annotation_size_plus_keybind`
+Keybind to increment the annotation size for the current subtask. Default is `=`.
+
+### `annotation_size_minus_keybind`
+Keybind to decrement the annotation size for the current subtask. Default is `-`.
+
+### `annotation_vanish_keybind`
+Keybind to toggle vanish mode for annotations in the current subtask (lowercase toggles current subtask, uppercase toggles all subtasks). Default is `v`.
 
 ### `fly_to_max_zoom`
 Maximum zoom factor used when flying-to an annotation. Default is `10`, value must be > `0`. 
