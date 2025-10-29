@@ -45,6 +45,11 @@
   - [x] Make KEYBIND_CONFIG_KEYS dynamically generated from Configuration class properties
   - [x] Rename create_bbox_on_initial_crop to create_bbox_on_initial_crop_keybind for consistency
 - [x] Replace any console outputs with `log_message`
+- [x] Replace the "reset_zoom_keybind" with two separate keybinds:
+  - [x] Add "show_full_image_keybind" property to Configuration
+  - [x] Update listeners.ts to use both keybinds independently
+  - [x] Update toolbox.ts to use both keybinds independently
+  - [x] Update api_spec.md to document both keybinds
 - [ ] Write e2e tests for the keybind toolbox item
   - [ ] Ability to set keybind to a chord
   - [ ] Ability to reset keybind

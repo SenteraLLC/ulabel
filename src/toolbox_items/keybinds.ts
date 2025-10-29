@@ -293,6 +293,14 @@ export class KeybindsToolboxItem extends ToolboxItem {
         });
 
         keybinds.push({
+            key: config.show_full_image_keybind,
+            label: "Show Full Image",
+            description: "Show the full image",
+            configurable: true,
+            config_key: "show_full_image_keybind",
+        });
+
+        keybinds.push({
             key: config.create_point_annotation_keybind,
             label: "Create Point",
             description: "Create point annotation at mouse location (in point mode)",

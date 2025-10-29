@@ -945,10 +945,10 @@ export class ZoomPanToolboxItem extends ToolboxItem {
         });
 
         $(document).on("keypress.ulabel", (e) => {
-            if (e.key == this.ulabel.config.reset_zoom_keybind.toLowerCase()) {
+            if (e.key == this.ulabel.config.reset_zoom_keybind) {
                 document.getElementById("recenter-button").click();
             }
-            if (e.key == this.ulabel.config.reset_zoom_keybind.toUpperCase()) {
+            if (e.key == this.ulabel.config.show_full_image_keybind) {
                 document.getElementById("recenter-whole-image-button").click();
             }
         });

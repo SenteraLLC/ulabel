@@ -53,6 +53,7 @@ class ULabel({
     distance_filter_toolbox_item: FilterDistanceConfig,
     image_filters_toolbox_item: ImageFiltersConfig,
     reset_zoom_keybind: string,
+    show_full_image_keybind: string,
     create_point_annotation_keybind: string,
     default_annotation_size: number,
     delete_annotation_keybind: string,
@@ -424,7 +425,10 @@ The `AnnotationList` toolbox item displays all annotations in the current subtas
 This toolbox item requires no configuration and can be added to the `toolbox_order` array using `AllowedToolboxItem.AnnotationList`.
 
 ### `reset_zoom_keybind`
-Keybind to reset the zoom level. Must be a letter, and the lowercase version of the letter will set the zoom level to the `initial_crop`, while the capitalized version will show the full image. Default is `r`.
+Keybind to reset the zoom level to the `initial_crop`. Default is `r`.
+
+### `show_full_image_keybind`
+Keybind to set the zoom level to show the full image. Default is `shift+r`.
 
 ### `create_point_annotation_keybind`
 Keybind to create a point annotation at the mouse location. Default is `c`. Requires the active subtask to have a `point` mode.

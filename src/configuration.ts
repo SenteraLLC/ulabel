@@ -193,6 +193,8 @@ export class Configuration {
 
     public reset_zoom_keybind: string = "r";
 
+    public show_full_image_keybind: string = "shift+r";
+
     public create_point_annotation_keybind: string = "c";
 
     public default_annotation_size: number = 6;

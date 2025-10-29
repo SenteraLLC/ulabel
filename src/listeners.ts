@@ -132,14 +132,14 @@ function handle_keypress_event(
         return;
     }
 
-    // Show initial crop (lowercase reset zoom keybind)
-    if (event_matches_keybind(keypress_event, ulabel.config.reset_zoom_keybind.toLowerCase())) {
+    // Reset zoom to initial crop
+    if (event_matches_keybind(keypress_event, ulabel.config.reset_zoom_keybind)) {
         ulabel.show_initial_crop();
         return;
     }
 
-    // Show whole image (uppercase reset zoom keybind)
-    if (event_matches_keybind(keypress_event, ulabel.config.reset_zoom_keybind.toUpperCase())) {
+    // Show full image
+    if (event_matches_keybind(keypress_event, ulabel.config.show_full_image_keybind)) {
         ulabel.show_whole_image();
         return;
     }
