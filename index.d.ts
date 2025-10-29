@@ -252,6 +252,8 @@ export class ULabel {
         last_brush_stroke: [number, number];
         line_size: number;
         anno_scaling_mode: AnnoScalingMode;
+        // Keybind editing state
+        is_editing_keybind: boolean;
         // Render state
         // TODO (joshua-dean): this is never assigned, is it used?
         demo_canvas_context: CanvasRenderingContext2D;

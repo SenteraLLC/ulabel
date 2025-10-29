@@ -587,6 +587,9 @@ export class ULabel {
             line_size: this.config.initial_line_size,
             anno_scaling_mode: this.config.anno_scaling_mode,
 
+            // Keybind editing state
+            is_editing_keybind: false,
+
             // Renderings state
             demo_canvas_context: null,
             edited: false,

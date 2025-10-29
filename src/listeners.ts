@@ -23,6 +23,11 @@ function handle_keypress_event(
     keypress_event: JQuery.KeyPressEvent,
     ulabel: ULabel,
 ) {
+    // Don't handle keypresses if editing a keybind
+    if (ulabel.state.is_editing_keybind) {
+        return;
+    }
+
     const current_subtask = ulabel.get_current_subtask();
     switch (keypress_event.key) {
         // Create a point annotation at the mouse's current location
@@ -204,6 +209,11 @@ function handle_keydown_event(
     keydown_event: JQuery.KeyDownEvent,
     ulabel: ULabel,
 ): boolean {
+    // Don't handle keydown events if editing a keybind
+    if (ulabel.state.is_editing_keybind) {
+        return false;
+    }
+
     const shift = keydown_event.shiftKey;
     const ctrl = keydown_event.ctrlKey || keydown_event.metaKey;
     const key_is_z = (

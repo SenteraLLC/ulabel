@@ -499,10 +499,14 @@ export class KeybindsToolboxItem extends ToolboxItem {
             target.addClass("editing");
             target.text("Press key...");
 
+            // Set the editing flag to prevent other key handlers from firing
+            this.ulabel.state.is_editing_keybind = true;
+
             // Create a one-time keydown handler to capture the new key
             const keyHandler = (keyEvent: JQuery.KeyDownEvent) => {
                 keyEvent.preventDefault();
                 keyEvent.stopPropagation();
+                keyEvent.stopImmediatePropagation();
 
                 let new_key = keyEvent.key;
 
@@ -512,6 +516,7 @@ export class KeybindsToolboxItem extends ToolboxItem {
                     target.removeClass("editing");
                     target.text(this.ulabel.config[config_key]);
                     $(document).off("keydown.keybind-edit");
+                    this.ulabel.state.is_editing_keybind = false;
                     return;
                 }
 
@@ -533,8 +538,9 @@ export class KeybindsToolboxItem extends ToolboxItem {
                 // Refresh the entire keybinds list to update collision detection
                 this.refresh_keybinds_display();
 
-                // Remove the keydown handler
+                // Remove the keydown handler and clear editing flag
                 $(document).off("keydown.keybind-edit");
+                this.ulabel.state.is_editing_keybind = false;
             };
 
             // Attach the keydown handler
@@ -550,6 +556,7 @@ export class KeybindsToolboxItem extends ToolboxItem {
                     editing_key.removeClass("editing");
                     editing_key.text(this.ulabel.config[config_key]);
                     $(document).off("keydown.keybind-edit");
+                    this.ulabel.state.is_editing_keybind = false;
                 }
             }
         });

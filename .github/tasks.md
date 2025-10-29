@@ -15,7 +15,7 @@
   - [x] Display list of all keybinds (the key) labeled with the name
   - [x] Add hover tooltips with detailed descriptions (using title attribute)
   - [x] Add collision detection and red highlighting
-  - [ ] Implement editing for configurable keybinds
+  - [x] Implement editing for configurable keybinds
   - [ ] Test functionality
 - [ ] Add support for keybind "chords" (ie, "shift+i")
 
