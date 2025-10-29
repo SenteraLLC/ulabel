@@ -5,6 +5,7 @@
 - Ensure changes build successfully by running `npm run build`.
 - Do not add new dependencies unless given explicit permission.
 - Do not modify the `package.json` or `package-lock.json` files unless instructed.
+- Use `log_message` instead of `console.<method>` for logging messages.
 
 
 ## Task Tracking

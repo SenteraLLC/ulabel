@@ -11,7 +11,6 @@ interface KeybindInfo {
     configurable: boolean;
     config_key?: string;
     class_id?: number; // For class keybinds
-    default_key?: string; // Default value for the keybind
 }
 
 /**
@@ -423,9 +422,6 @@ export class KeybindsToolboxItem extends ToolboxItem {
         // Add class keybinds
         const current_subtask = this.ulabel.get_current_subtask();
         if (current_subtask && current_subtask.class_defs) {
-            // Get original keybinds from subtask config before any customization
-            const original_class_keybinds = this.get_original_class_keybinds();
-
             for (const class_def of current_subtask.class_defs) {
                 // Skip delete class
                 if (class_def.id === DELETE_CLASS_ID) continue;
@@ -436,7 +432,6 @@ export class KeybindsToolboxItem extends ToolboxItem {
                     description: `Select class: ${class_def.name}`,
                     configurable: true,
                     class_id: class_def.id,
-                    default_key: original_class_keybinds[class_def.id] || class_def?.keybind,
                 });
             }
         }
@@ -585,11 +580,12 @@ export class KeybindsToolboxItem extends ToolboxItem {
     /**
      * Reset a class keybind to its default value
      */
-    private reset_class_keybind_to_default(class_id: number, original_keybind: string): void {
+    private reset_class_keybind_to_default(class_id: number): void {
         const current_subtask = this.ulabel.get_current_subtask();
         const class_def = current_subtask.class_defs.find((cd) => cd.id === class_id);
         if (class_def) {
-            class_def.keybind = original_keybind;
+            const original_class_keybinds = this.get_original_class_keybinds();
+            class_def.keybind = original_class_keybinds[class_id];
         }
 
         // Remove from localStorage
@@ -703,8 +699,8 @@ export class KeybindsToolboxItem extends ToolboxItem {
                 const is_customized = this.is_class_keybind_customized(keybind.class_id);
                 const collision_class = has_collision ? " collision" : "";
                 const customized_class = is_customized ? " customized" : "";
-                const display_key = keybind.key !== null && keybind.key !== undefined ? keybind.key : "none";
-                const reset_button = is_customized ? `<button class="keybind-reset-btn" data-class-id="${keybind.class_id}" data-original-keybind="${keybind.default_key}" title="Reset to default">↺</button>` : "";
+                const display_key = keybind.key != null ? keybind.key : "none";
+                const reset_button = is_customized ? `<button class="keybind-reset-btn" data-class-id="${keybind.class_id}" title="Reset to default">↺</button>` : "";
 
                 keybinds_html += `
                     <div class="keybind-item" title="${keybind.description}">
@@ -929,11 +925,10 @@ export class KeybindsToolboxItem extends ToolboxItem {
             const button = $(e.currentTarget);
             const config_key = button.data("config-key") as string;
             const class_id = button.data("class-id") as number;
-            const original_keybind = button.data("original-keybind") as string;
 
             if (class_id !== undefined) {
                 // Reset class keybind
-                this.reset_class_keybind_to_default(class_id, original_keybind);
+                this.reset_class_keybind_to_default(class_id);
             } else if (config_key) {
                 // Reset regular keybind
                 this.reset_keybind_to_default(config_key);
