@@ -3,6 +3,7 @@ import { ToolboxItem } from "../toolbox";
 import { Configuration } from "../configuration";
 import { get_local_storage_item, set_local_storage_item } from "../utilities";
 import { DELETE_CLASS_ID } from "../annotation";
+import { log_message, LogLevel } from "../error_logging";
 
 interface KeybindInfo {
     key: string;
@@ -532,7 +533,7 @@ export class KeybindsToolboxItem extends ToolboxItem {
                     localStorage.removeItem("ulabel_custom_keybinds");
                 }
             } catch (e) {
-                console.error("Failed to update custom keybinds:", e);
+                log_message(`Failed to update custom keybinds: ${e}`, LogLevel.ERROR, true);
             }
         }
     }
@@ -601,7 +602,7 @@ export class KeybindsToolboxItem extends ToolboxItem {
                     localStorage.removeItem("ulabel_custom_class_keybinds");
                 }
             } catch (e) {
-                console.error("Failed to update custom class keybinds:", e);
+                log_message(`Failed to update custom class keybinds: ${e}`, LogLevel.ERROR, true);
             }
         }
     }

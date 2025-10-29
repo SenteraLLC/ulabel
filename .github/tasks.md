@@ -44,7 +44,7 @@
   - [x] Centralize keybind config property names in Configuration.KEYBIND_CONFIG_KEYS constant
   - [x] Make KEYBIND_CONFIG_KEYS dynamically generated from Configuration class properties
   - [x] Rename create_bbox_on_initial_crop to create_bbox_on_initial_crop_keybind for consistency
-- [ ] Replace any console outputs with `log_message`
+- [x] Replace any console outputs with `log_message`
 - [ ] Write e2e tests for the keybind toolbox item
   - [ ] Ability to set keybind to a chord
   - [ ] Ability to reset keybind
