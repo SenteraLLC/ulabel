@@ -72,6 +72,29 @@ export const DEFAULT_IMAGE_FILTERS_CONFIG: ImageFiltersConfig = {
 };
 
 export class Configuration {
+    /**
+     * Dynamically get all keybind configuration property names.
+     * Scans the Configuration class for properties ending in "_keybind" or known keybind properties.
+     * Use this to iterate over keybind properties without maintaining a hardcoded list.
+     */
+    public static get KEYBIND_CONFIG_KEYS(): readonly string[] {
+        // Get all properties from a Configuration instance
+        const config = new Configuration();
+        const keybind_keys: string[] = [];
+
+        for (const key in config) {
+            // Include all properties ending with "_keybind"
+            if (key.endsWith("_keybind")) {
+                // Verify it's a string property (keybinds should be strings)
+                if (typeof config[key] === "string") {
+                    keybind_keys.push(key);
+                }
+            }
+        }
+
+        return keybind_keys;
+    }
+
     // Values useful for generating HTML for tool
     public container_id: string = "container";
     public px_per_px: number = 1;
@@ -184,7 +207,7 @@ export class Configuration {
 
     public toggle_annotation_mode_keybind: string = "u";
 
-    public create_bbox_on_initial_crop: string = "f";
+    public create_bbox_on_initial_crop_keybind: string = "f";
 
     public toggle_brush_mode_keybind: string = "g";
 

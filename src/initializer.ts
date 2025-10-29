@@ -7,6 +7,7 @@
 // Import ULabel from ../src/index - TypeScript will find ../src/index.d.ts for types
 import { ULabel } from "../src/index";
 import { initialize_annotation_canvases } from "./canvas_utils";
+import { Configuration } from "./configuration";
 import { NightModeCookie } from "./cookies";
 import { add_style_to_document, build_confidence_dialog, build_edit_suggestion, build_id_dialogs, prep_window_html } from "./html_builder";
 import { create_ulabel_listeners } from "./listeners";
@@ -67,27 +68,8 @@ function make_image_canvases(
 function store_original_keybinds(ulabel: ULabel) {
     // Store original config keybinds (from constructor, before localStorage)
     const original_config_keybinds: { [config_key: string]: string } = {};
-    const keybind_keys = [
-        "reset_zoom_keybind",
-        "create_point_annotation_keybind",
-        "delete_annotation_keybind",
-        "switch_subtask_keybind",
-        "toggle_annotation_mode_keybind",
-        "create_bbox_on_initial_crop",
-        "toggle_brush_mode_keybind",
-        "toggle_erase_mode_keybind",
-        "increase_brush_size_keybind",
-        "decrease_brush_size_keybind",
-        "fly_to_next_annotation_keybind",
-        "fly_to_previous_annotation_keybind",
-        "annotation_size_small_keybind",
-        "annotation_size_large_keybind",
-        "annotation_size_plus_keybind",
-        "annotation_size_minus_keybind",
-        "annotation_vanish_keybind",
-    ];
 
-    for (const key of keybind_keys) {
+    for (const key of Configuration.KEYBIND_CONFIG_KEYS) {
         if (key in ulabel.config) {
             original_config_keybinds[key] = ulabel.config[key] as string;
         }

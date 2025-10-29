@@ -60,7 +60,7 @@ class ULabel({
     filter_annotations_on_load: boolean,
     switch_subtask_keybind: string,
     toggle_annotation_mode_keybind: string,
-    create_bbox_on_initial_crop: string,
+    create_bbox_on_initial_crop_keybind: string,
     toggle_brush_mode_keybind: string,
     toggle_erase_mode_keybind: string,
     increase_brush_size_keybind: string,
@@ -447,7 +447,7 @@ Keybind to switch between subtasks. Default is `z`.
 ### `toggle_annotation_mode_keybind`
 Keybind to toggle between annotation and selection modes. Default is `u`.
 
-### `create_bbox_on_initial_crop`
+### `create_bbox_on_initial_crop_keybind`
 Keybind to create a bounding box annotation around the `initial_crop`. Default is `f`. Requires the active subtask to have a `bbox` mode.
 
 ### `toggle_brush_mode_keybind`

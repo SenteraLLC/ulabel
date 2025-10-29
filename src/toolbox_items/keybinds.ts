@@ -1,5 +1,6 @@
 import type { ULabel } from "../index";
 import { ToolboxItem } from "../toolbox";
+import { Configuration } from "../configuration";
 import { get_local_storage_item, set_local_storage_item } from "../utilities";
 
 interface KeybindInfo {
@@ -323,11 +324,11 @@ export class KeybindsToolboxItem extends ToolboxItem {
         });
 
         keybinds.push({
-            key: config.create_bbox_on_initial_crop,
+            key: config.create_bbox_on_initial_crop_keybind,
             label: "Create BBox on Crop",
             description: "Create bbox annotation on initial crop area",
             configurable: true,
-            config_key: "create_bbox_on_initial_crop",
+            config_key: "create_bbox_on_initial_crop_keybind",
         });
 
         keybinds.push({
@@ -611,29 +612,8 @@ export class KeybindsToolboxItem extends ToolboxItem {
      * Reset all keybinds to their default values
      */
     private reset_all_keybinds_to_default(): void {
-        // Get all keybind config keys
-        const keybind_keys = [
-            "reset_zoom_keybind",
-            "create_point_annotation_keybind",
-            "delete_annotation_keybind",
-            "switch_subtask_keybind",
-            "toggle_annotation_mode_keybind",
-            "create_bbox_on_initial_crop",
-            "toggle_brush_mode_keybind",
-            "toggle_erase_mode_keybind",
-            "increase_brush_size_keybind",
-            "decrease_brush_size_keybind",
-            "fly_to_next_annotation_keybind",
-            "fly_to_previous_annotation_keybind",
-            "annotation_size_small_keybind",
-            "annotation_size_large_keybind",
-            "annotation_size_plus_keybind",
-            "annotation_size_minus_keybind",
-            "annotation_vanish_keybind",
-        ];
-
         // Reset all regular keybinds
-        for (const key of keybind_keys) {
+        for (const key of Configuration.KEYBIND_CONFIG_KEYS) {
             const default_value = this.get_default_keybind(key);
             this.ulabel.config[key] = default_value;
         }

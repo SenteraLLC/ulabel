@@ -41,4 +41,7 @@
   - [x] Only show the reset to default for keybinds with user settings, not on those already at the default
   - [x] Make sure the class keybinds also are included in the keybind collision checks
   - [x] Fix reset to default to use constructor-provided config values instead of hardcoded Configuration defaults
+  - [x] Centralize keybind config property names in Configuration.KEYBIND_CONFIG_KEYS constant
+  - [x] Make KEYBIND_CONFIG_KEYS dynamically generated from Configuration class properties
+  - [x] Rename create_bbox_on_initial_crop to create_bbox_on_initial_crop_keybind for consistency
 

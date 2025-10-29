@@ -78,7 +78,7 @@ function handle_keypress_event(
 
     // Create a bbox annotation around the initial_crop,
     // or the whole image if inital_crop does not exist
-    if (event_matches_keybind(keypress_event, ulabel.config.create_bbox_on_initial_crop)) {
+    if (event_matches_keybind(keypress_event, ulabel.config.create_bbox_on_initial_crop_keybind)) {
         if (current_subtask.state.annotation_mode === "bbox") {
             // Default to an annotation with size of image
             // Create the coordinates for the bbox's spatial payload
