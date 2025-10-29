@@ -463,6 +463,78 @@ export class KeybindsToolboxItem extends ToolboxItem {
     }
 
     /**
+     * Build a keybind chord string from a keyboard event
+     */
+    private build_chord_string(keyEvent: JQuery.KeyDownEvent): string {
+        const modifiers: string[] = [];
+        const key = keyEvent.key;
+
+        // Don't treat modifier keys themselves as part of the chord
+        if (key === "Control" || key === "Shift" || key === "Alt" || key === "Meta") {
+            return null;
+        }
+
+        // Build modifier list in a consistent order
+        if (keyEvent.ctrlKey || keyEvent.metaKey) {
+            modifiers.push("ctrl");
+        }
+        if (keyEvent.altKey) {
+            modifiers.push("alt");
+        }
+        if (keyEvent.shiftKey) {
+            modifiers.push("shift");
+        }
+
+        // Normalize the key name
+        let normalized_key = key;
+        if (key === " ") {
+            normalized_key = "space";
+        } else if (key.length === 1) {
+            // Keep single character keys lowercase for consistency
+            normalized_key = key.toLowerCase();
+        }
+
+        // If there are modifiers, build a chord string
+        if (modifiers.length > 0) {
+            return modifiers.join("+") + "+" + normalized_key;
+        }
+
+        return normalized_key;
+    }
+
+    /**
+     * Check if a keyboard event matches a keybind (supports chords)
+     */
+    private event_matches_keybind(keyEvent: JQuery.KeyDownEvent | JQuery.KeyPressEvent, keybind: string): boolean {
+        if (!keybind) {
+            return false;
+        }
+
+        // Check if this is a chord (contains '+')
+        if (keybind.includes("+")) {
+            const parts = keybind.toLowerCase().split("+");
+            const modifiers = new Set(parts.slice(0, -1));
+            const key = parts[parts.length - 1];
+
+            // Check modifiers
+            const has_ctrl = (keyEvent.ctrlKey || keyEvent.metaKey) === modifiers.has("ctrl");
+            const has_alt = keyEvent.altKey === modifiers.has("alt");
+            const has_shift = keyEvent.shiftKey === modifiers.has("shift");
+
+            // Normalize event key
+            let event_key = keyEvent.key.toLowerCase();
+            if (event_key === " ") {
+                event_key = "space";
+            }
+
+            return has_ctrl && has_alt && has_shift && event_key === key;
+        }
+
+        // Simple key match (no modifiers)
+        return keyEvent.key === keybind || keyEvent.key.toLowerCase() === keybind.toLowerCase();
+    }
+
+    /**
      * Add event listeners for the keybinds toolbox item
      */
     private add_event_listeners(): void {
@@ -508,11 +580,8 @@ export class KeybindsToolboxItem extends ToolboxItem {
                 keyEvent.stopPropagation();
                 keyEvent.stopImmediatePropagation();
 
-                let new_key = keyEvent.key;
-
-                // Handle special keys
-                if (new_key === "Escape") {
-                    // Cancel editing
+                // Handle Escape to cancel
+                if (keyEvent.key === "Escape") {
                     target.removeClass("editing");
                     target.text(this.ulabel.config[config_key]);
                     $(document).off("keydown.keybind-edit");
@@ -520,12 +589,12 @@ export class KeybindsToolboxItem extends ToolboxItem {
                     return;
                 }
 
-                // Normalize key names
-                if (new_key === " ") {
-                    new_key = "Space";
-                } else if (new_key.length === 1) {
-                    // Keep single character keys lowercase for consistency
-                    new_key = new_key.toLowerCase();
+                // Build chord string (handles modifiers + key)
+                const new_key = this.build_chord_string(keyEvent);
+
+                // If null (user pressed only a modifier key), ignore
+                if (new_key === null) {
+                    return;
                 }
 
                 // Update the config

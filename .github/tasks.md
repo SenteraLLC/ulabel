@@ -8,7 +8,7 @@
   - [x] Move arrow to top of toolbox (instead of middle)
   - [x] Make annbox expand when toolbox is collapsed
   - [x] Make collapsed button visible
-- [ ] Create a keybinds toolbox item
+- [x] Create a keybinds toolbox item
   - [x] Research existing keybinds in the codebase
   - [x] Create basic keybinds toolbox item file
   - [x] Register keybinds toolbox item in configuration
@@ -16,7 +16,16 @@
   - [x] Add hover tooltips with detailed descriptions (using title attribute)
   - [x] Add collision detection and red highlighting
   - [x] Implement editing for configurable keybinds
-  - [ ] Test functionality
+  - [x] Test functionality
 - [ ] Add support for keybind "chords" (ie, "shift+i")
+  - [x] Update keybind edit handler to capture modifier keys (shift, ctrl, alt)
+  - [x] Create chord string format (e.g., "shift+i", "ctrl+alt+d")
+  - [x] Update key comparison logic in listeners to support chords
+  - [x] Update display to show chords properly (displays captured chord automatically)
+  - [ ] Test chord functionality
+- [ ] Store collapse/expand for applicable toolbox items
+  - [ ] Keybinds
+  - [ ] Annotation List
+  - [ ] Image Filters
 
 
