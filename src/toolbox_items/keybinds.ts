@@ -180,11 +180,11 @@ export class KeybindsToolboxItem extends ToolboxItem {
 
         // Configurable keybinds
         keybinds.push({
-            key: config.change_zoom_keybind,
-            label: "Change Zoom",
+            key: config.reset_zoom_keybind,
+            label: "Reset Zoom",
             description: "Change zoom mode (hold: drag zoom, release: single-click zoom)",
             configurable: true,
-            config_key: "change_zoom_keybind",
+            config_key: "reset_zoom_keybind",
         });
 
         keybinds.push({
@@ -213,7 +213,7 @@ export class KeybindsToolboxItem extends ToolboxItem {
 
         keybinds.push({
             key: config.toggle_annotation_mode_keybind,
-            label: "Toggle Mode",
+            label: "Toggle Annotation Mode",
             description: "Toggle between annotation modes",
             configurable: true,
             config_key: "toggle_annotation_mode_keybind",

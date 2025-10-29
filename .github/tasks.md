@@ -28,8 +28,9 @@
   - [x] Annotation List
   - [x] Image Filters
 - [x] Make all keybinds configurable
-- [ ] Minor changes to existing keybinds
-  - [ ] Rename "Change Zoom" keybind to "Reset Zoom"
-  - [ ] Change "Toggle Mode" label in the keybind toolbox item to "Toggle Annotation Mode"
+- [x] Minor changes to existing keybinds
+  - [x] Rename "Change Zoom" keybind to "Reset Zoom"
+  - [x] Change "Toggle Mode" label in the keybind toolbox item to "Toggle Annotation Mode"
+- [ ] Make class keybinds configurable in the keybinds toolbox item 
 
 

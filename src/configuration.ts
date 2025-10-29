@@ -167,7 +167,7 @@ export class Configuration {
     // Config for ImageFiltersToolboxItem
     public image_filters_toolbox_item: ImageFiltersConfig = DEFAULT_IMAGE_FILTERS_CONFIG;
 
-    public change_zoom_keybind: string = "r";
+    public reset_zoom_keybind: string = "r";
 
     public create_point_annotation_keybind: string = "c";
 
