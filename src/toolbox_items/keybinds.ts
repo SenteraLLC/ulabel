@@ -674,8 +674,8 @@ export class KeybindsToolboxItem extends ToolboxItem {
                     <div class="keybind-item" title="${keybind.description}">
                         <span class="keybind-description">${keybind.label}</span>
                         <div class="keybind-controls">
-                            <span class="keybind-key keybind-editable${collision_class}${customized_class}" data-config-key="${keybind.config_key}">${display_key}</span>
                             ${reset_button}
+                            <span class="keybind-key keybind-editable${collision_class}${customized_class}" data-config-key="${keybind.config_key}">${display_key}</span>
                         </div>
                     </div>
                 `;
@@ -707,8 +707,8 @@ export class KeybindsToolboxItem extends ToolboxItem {
                     <div class="keybind-item" title="${keybind.description}">
                         <span class="keybind-description">${keybind.label}</span>
                         <div class="keybind-controls">
-                            <span class="keybind-key keybind-editable${collision_class}${customized_class}" data-class-id="${keybind.class_id}">${display_key}</span>
                             ${reset_button}
+                            <span class="keybind-key keybind-editable${collision_class}${customized_class}" data-class-id="${keybind.class_id}">${display_key}</span>
                         </div>
                     </div>
                 `;
