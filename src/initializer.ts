@@ -13,6 +13,7 @@ import { create_ulabel_listeners } from "./listeners";
 import { ULabelLoader } from "./loader";
 import { ULabelSubtask } from "./subtask";
 import { ULabelAnnotation } from "./annotation";
+import { get_local_storage_item } from "./utilities";
 
 /**
  * Make canvases for each subtask
@@ -118,6 +119,16 @@ export async function ulabel_init(
 
     // Create listers to manipulate and export this object
     create_ulabel_listeners(ulabel);
+
+    // Restore toolbox collapsed state from localStorage
+    const is_collapsed = get_local_storage_item("ulabel_toolbox_collapsed");
+    if (is_collapsed === "true") {
+        const toolbox = $("#" + ulabel.config["toolbox_id"]);
+        const btn = toolbox.find(".toolbox-collapse-btn");
+        toolbox.addClass("collapsed");
+        btn.text("▶");
+        btn.attr("title", "Expand toolbox");
+    }
 
     ulabel.handle_toolbox_overflow();
 

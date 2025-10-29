@@ -110,6 +110,41 @@ export class Toolbox {
             position: absolute;
             top: 0;
             right: 0;
+            transition: transform 300ms ease-in-out;
+        }
+
+        #toolbox.collapsed {
+            transform: translateX(calc(100% - 30px));
+        }
+
+        .toolbox-collapse-btn {
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 30px;
+            height: 60px;
+            background-color: rgba(0, 128, 255, 0.7);
+            border: 1px solid rgba(128, 128, 128, 0.5);
+            border-right: none;
+            border-radius: 5px 0 0 5px;
+            color: white;
+            font-size: 1.2rem;
+            cursor: pointer;
+            z-index: 1000;
+            transition: background-color 250ms;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+        }
+
+        .toolbox-collapse-btn:hover {
+            background-color: rgba(0, 128, 255, 0.9);
+        }
+
+        #toolbox.collapsed .toolbox-collapse-btn {
+            left: -30px;
         }
 
         .ulabel-night #toolbox {
@@ -212,6 +247,7 @@ export class Toolbox {
                 </div>
             </div>
             <div id="${ulabel.config["toolbox_id"]}" class="toolbox_cls">
+                <button class="toolbox-collapse-btn" title="Collapse toolbox">◀</button>
                 <div class="toolbox-name-header">
                     <h1 class="toolname"><a class="repo-anchor" href="https://github.com/SenteraLLC/ulabel">ULabel</a> <span class="version-number">v${ULABEL_VERSION}</span></h1><!--
                     --><div class="night-button-cont">

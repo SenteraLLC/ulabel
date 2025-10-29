@@ -9,6 +9,7 @@
 import type { ULabel } from "..";
 import { NightModeCookie } from "./cookies";
 import { DELETE_CLASS_ID, DELETE_MODES, NONSPATIAL_MODES } from "./annotation";
+import { set_local_storage_item } from "./utilities";
 
 const ULABEL_NAMESPACE = ".ulabel";
 
@@ -537,7 +538,7 @@ export function create_ulabel_listeners(
         },
     );
 
-    // Button to save annotations
+    // Button to toggle night mode
     $(document).on(
         "click" + ULABEL_NAMESPACE,
         "#" + ulabel.config["toolbox_id"] + " a.night-button",
@@ -549,6 +550,28 @@ export function create_ulabel_listeners(
             } else {
                 root_container.addClass("ulabel-night");
                 NightModeCookie.set_cookie();
+            }
+        },
+    );
+
+    // Button to collapse/expand toolbox
+    $(document).on(
+        "click" + ULABEL_NAMESPACE,
+        "#" + ulabel.config["toolbox_id"] + " .toolbox-collapse-btn",
+        (e) => {
+            const toolbox = $("#" + ulabel.config["toolbox_id"]);
+            const btn = $(e.currentTarget);
+
+            if (toolbox.hasClass("collapsed")) {
+                toolbox.removeClass("collapsed");
+                btn.text("◀");
+                btn.attr("title", "Collapse toolbox");
+                set_local_storage_item("ulabel_toolbox_collapsed", "false");
+            } else {
+                toolbox.addClass("collapsed");
+                btn.text("▶");
+                btn.attr("title", "Expand toolbox");
+                set_local_storage_item("ulabel_toolbox_collapsed", "true");
             }
         },
     );
