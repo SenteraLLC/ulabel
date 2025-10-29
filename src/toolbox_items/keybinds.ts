@@ -3,6 +3,7 @@ import { ToolboxItem } from "../toolbox";
 
 interface KeybindInfo {
     key: string;
+    label: string;
     description: string;
     configurable: boolean;
     config_key?: string;
@@ -96,14 +97,27 @@ export class KeybindsToolboxItem extends ToolboxItem {
             background-color: rgba(0, 128, 255, 0.1);
         }
 
+        #toolbox .keybind-description {
+            flex: 1;
+            margin-right: 0.75rem;
+            color: #333;
+            font-weight: 500;
+        }
+
+        .ulabel-night #toolbox .keybind-description {
+            color: #ddd;
+        }
+
         #toolbox .keybind-key {
             font-family: monospace;
             font-weight: bold;
-            padding: 0.25rem 0.5rem;
+            font-size: 0.9rem;
+            padding: 0.3rem 0.6rem;
             background-color: rgba(0, 0, 0, 0.1);
-            border-radius: 3px;
-            min-width: 40px;
+            border-radius: 4px;
+            min-width: 30px;
             text-align: center;
+            white-space: nowrap;
         }
 
         .ulabel-night #toolbox .keybind-key {
@@ -117,20 +131,16 @@ export class KeybindsToolboxItem extends ToolboxItem {
 
         #toolbox .keybind-key.editable {
             cursor: pointer;
+            border: 1px solid transparent;
+        }
+
+        #toolbox .keybind-key.editable:hover {
+            background-color: rgba(0, 128, 255, 0.2);
+            border-color: rgba(0, 128, 255, 0.5);
         }
 
         #toolbox .keybind-key.editing {
             outline: 2px solid rgba(0, 128, 255, 0.7);
-        }
-
-        #toolbox .keybind-description {
-            flex: 1;
-            margin-left: 0.75rem;
-            color: #666;
-        }
-
-        .ulabel-night #toolbox .keybind-description {
-            color: #aaa;
         }
 
         #toolbox .keybind-category {
@@ -165,6 +175,7 @@ export class KeybindsToolboxItem extends ToolboxItem {
         // Configurable keybinds
         keybinds.push({
             key: config.change_zoom_keybind,
+            label: "Change Zoom",
             description: "Change zoom mode (hold: drag zoom, release: single-click zoom)",
             configurable: true,
             config_key: "change_zoom_keybind",
@@ -172,6 +183,7 @@ export class KeybindsToolboxItem extends ToolboxItem {
 
         keybinds.push({
             key: config.create_point_annotation_keybind,
+            label: "Create Point",
             description: "Create point annotation at mouse location (in point mode)",
             configurable: true,
             config_key: "create_point_annotation_keybind",
@@ -179,6 +191,7 @@ export class KeybindsToolboxItem extends ToolboxItem {
 
         keybinds.push({
             key: config.delete_annotation_keybind,
+            label: "Delete Annotation",
             description: "Delete (deprecate) the active annotation",
             configurable: true,
             config_key: "delete_annotation_keybind",
@@ -186,6 +199,7 @@ export class KeybindsToolboxItem extends ToolboxItem {
 
         keybinds.push({
             key: config.switch_subtask_keybind,
+            label: "Switch Subtask",
             description: "Switch to the next subtask",
             configurable: true,
             config_key: "switch_subtask_keybind",
@@ -193,6 +207,7 @@ export class KeybindsToolboxItem extends ToolboxItem {
 
         keybinds.push({
             key: config.toggle_annotation_mode_keybind,
+            label: "Toggle Mode",
             description: "Toggle between annotation modes",
             configurable: true,
             config_key: "toggle_annotation_mode_keybind",
@@ -200,6 +215,7 @@ export class KeybindsToolboxItem extends ToolboxItem {
 
         keybinds.push({
             key: config.create_bbox_on_initial_crop,
+            label: "Create BBox on Crop",
             description: "Create bbox annotation on initial crop area",
             configurable: true,
             config_key: "create_bbox_on_initial_crop",
@@ -207,6 +223,7 @@ export class KeybindsToolboxItem extends ToolboxItem {
 
         keybinds.push({
             key: config.toggle_brush_mode_keybind,
+            label: "Toggle Brush",
             description: "Toggle brush mode for polygon/contour annotation",
             configurable: true,
             config_key: "toggle_brush_mode_keybind",
@@ -214,6 +231,7 @@ export class KeybindsToolboxItem extends ToolboxItem {
 
         keybinds.push({
             key: config.toggle_erase_mode_keybind,
+            label: "Toggle Erase",
             description: "Toggle erase mode in brush",
             configurable: true,
             config_key: "toggle_erase_mode_keybind",
@@ -221,6 +239,7 @@ export class KeybindsToolboxItem extends ToolboxItem {
 
         keybinds.push({
             key: config.increase_brush_size_keybind,
+            label: "Increase Brush Size",
             description: "Increase brush size",
             configurable: true,
             config_key: "increase_brush_size_keybind",
@@ -228,6 +247,7 @@ export class KeybindsToolboxItem extends ToolboxItem {
 
         keybinds.push({
             key: config.decrease_brush_size_keybind,
+            label: "Decrease Brush Size",
             description: "Decrease brush size",
             configurable: true,
             config_key: "decrease_brush_size_keybind",
@@ -235,6 +255,7 @@ export class KeybindsToolboxItem extends ToolboxItem {
 
         keybinds.push({
             key: config.fly_to_next_annotation_keybind,
+            label: "Next Annotation",
             description: "Fly to next annotation",
             configurable: true,
             config_key: "fly_to_next_annotation_keybind",
@@ -243,6 +264,7 @@ export class KeybindsToolboxItem extends ToolboxItem {
         if (config.fly_to_previous_annotation_keybind !== null) {
             keybinds.push({
                 key: config.fly_to_previous_annotation_keybind,
+                label: "Previous Annotation",
                 description: "Fly to previous annotation",
                 configurable: true,
                 config_key: "fly_to_previous_annotation_keybind",
@@ -253,30 +275,35 @@ export class KeybindsToolboxItem extends ToolboxItem {
         if (config.default_keybinds) {
             keybinds.push({
                 key: config.default_keybinds.annotation_size_small,
+                label: "Size: Small",
                 description: "Set annotation size to small",
                 configurable: false,
             });
 
             keybinds.push({
                 key: config.default_keybinds.annotation_size_large,
+                label: "Size: Large",
                 description: "Set annotation size to large",
                 configurable: false,
             });
 
             keybinds.push({
                 key: config.default_keybinds.annotation_size_plus,
+                label: "Size: Increase",
                 description: "Increase annotation size",
                 configurable: false,
             });
 
             keybinds.push({
                 key: config.default_keybinds.annotation_size_minus,
+                label: "Size: Decrease",
                 description: "Decrease annotation size",
                 configurable: false,
             });
 
             keybinds.push({
                 key: config.default_keybinds.annotation_vanish,
+                label: "Toggle Vanish",
                 description: "Toggle annotation vanish mode",
                 configurable: false,
             });
@@ -289,6 +316,7 @@ export class KeybindsToolboxItem extends ToolboxItem {
                 if (class_def.keybind !== null) {
                     keybinds.push({
                         key: class_def.keybind,
+                        label: class_def.name,
                         description: `Select class: ${class_def.name}`,
                         configurable: false,
                     });
@@ -299,6 +327,7 @@ export class KeybindsToolboxItem extends ToolboxItem {
         // Non-configurable keybinds (hardcoded in listeners)
         keybinds.push({
             key: "Shift+Tab",
+            label: "Previous Annotation",
             description: "Fly to previous annotation (if fly_to_previous_annotation_keybind is null)",
             configurable: false,
         });
@@ -343,8 +372,8 @@ export class KeybindsToolboxItem extends ToolboxItem {
                 const collision_class = has_collision ? " collision" : "";
                 keybinds_html += `
                     <div class="keybind-item" title="${keybind.description}">
+                        <span class="keybind-description">${keybind.label}</span>
                         <span class="keybind-key editable${collision_class}" data-config-key="${keybind.config_key}">${keybind.key}</span>
-                        <span class="keybind-description">${keybind.description}</span>
                     </div>
                 `;
             }
@@ -358,8 +387,8 @@ export class KeybindsToolboxItem extends ToolboxItem {
                 const collision_class = has_collision ? " collision" : "";
                 keybinds_html += `
                     <div class="keybind-item" title="${keybind.description}">
+                        <span class="keybind-description">${keybind.label}</span>
                         <span class="keybind-key${collision_class}">${keybind.key}</span>
-                        <span class="keybind-description">${keybind.description}</span>
                     </div>
                 `;
             }
@@ -373,8 +402,8 @@ export class KeybindsToolboxItem extends ToolboxItem {
                 const collision_class = has_collision ? " collision" : "";
                 keybinds_html += `
                     <div class="keybind-item" title="${keybind.description}">
+                        <span class="keybind-description">${keybind.label}</span>
                         <span class="keybind-key${collision_class}">${keybind.key}</span>
-                        <span class="keybind-description">${keybind.description}</span>
                     </div>
                 `;
             }
@@ -388,8 +417,8 @@ export class KeybindsToolboxItem extends ToolboxItem {
                 const collision_class = has_collision ? " collision" : "";
                 keybinds_html += `
                     <div class="keybind-item" title="${keybind.description}">
+                        <span class="keybind-description">${keybind.label}</span>
                         <span class="keybind-key${collision_class}">${keybind.key}</span>
-                        <span class="keybind-description">${keybind.description}</span>
                     </div>
                 `;
             }
