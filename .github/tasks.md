@@ -5,6 +5,9 @@
   - [x] Add click handler to toggle collapsed state
   - [x] Store collapsed state in localStorage
   - [x] Test functionality
+  - [x] Move arrow to top of toolbox (instead of middle)
+  - [ ] Make annbox expand when toolbox is collapsed
+  - [ ] Make collapsed button more visible (40px wide x 80px tall)
 - [ ] Create a keybinds toolbox item
   - [ ] Should show a list of ALL keybinds that have listeners, some configurable and some not
   - [ ] On hover, should provide a brief description of each keybind

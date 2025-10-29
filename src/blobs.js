@@ -2009,6 +2009,7 @@ div#${prntid} a.tbid-opt.sel {
 div#${prntid} div.toolbox-name-header {
    background-color: rgb(0, 128, 202);
    margin: 0;
+   flex: 7;
 }
 div#${prntid}.ulabel-night div.toolbox-name-header {
    background-color: rgb(0, 60, 95);
