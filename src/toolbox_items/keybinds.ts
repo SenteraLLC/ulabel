@@ -8,6 +8,7 @@ interface KeybindInfo {
     description: string;
     configurable: boolean;
     config_key?: string;
+    class_id?: number; // For class keybinds
 }
 
 /**
@@ -324,7 +325,8 @@ export class KeybindsToolboxItem extends ToolboxItem {
                         key: class_def.keybind,
                         label: class_def.name,
                         description: `Select class: ${class_def.name}`,
-                        configurable: false,
+                        configurable: true,
+                        class_id: class_def.id,
                     });
                 }
             }
@@ -342,20 +344,15 @@ export class KeybindsToolboxItem extends ToolboxItem {
     }
 
     /**
-     * Generate HTML for the toolbox item
+     * Generate the keybinds list HTML
      */
-    public get_html(): string {
+    private generate_keybinds_list_html(): string {
         const all_keybinds = this.get_all_keybinds();
-
         let keybinds_html = "";
 
         // Group keybinds by category
         const configurable = all_keybinds.filter((kb) => kb.configurable);
-        const class_binds = all_keybinds.filter((kb) => kb.description.startsWith("Select class:"));
-        const other = all_keybinds.filter((kb) =>
-            !kb.configurable &&
-            !kb.description.startsWith("Select class:"),
-        );
+        const other = all_keybinds.filter((kb) => !kb.configurable);
 
         // Configurable keybinds
         if (configurable.length > 0) {
@@ -364,26 +361,16 @@ export class KeybindsToolboxItem extends ToolboxItem {
                 const has_collision = this.has_collision(keybind.key, all_keybinds);
                 const collision_class = has_collision ? " collision" : "";
                 const display_key = keybind.key !== null && keybind.key !== undefined ? keybind.key : "none";
-                keybinds_html += `
-                    <div class="keybind-item" title="${keybind.description}">
-                        <span class="keybind-description">${keybind.label}</span>
-                        <span class="keybind-key keybind-editable${collision_class}" data-config-key="${keybind.config_key}">${display_key}</span>
-                    </div>
-                `;
-            }
-        }
 
-        // Class keybinds
-        if (class_binds.length > 0) {
-            keybinds_html += "<div class=\"keybind-category\">Class Selection</div>";
-            for (const keybind of class_binds) {
-                const has_collision = this.has_collision(keybind.key, all_keybinds);
-                const collision_class = has_collision ? " collision" : "";
-                const display_key = keybind.key !== null && keybind.key !== undefined ? keybind.key : "none";
+                // Use class_id for class keybinds, config_key for regular keybinds
+                const data_attr = keybind.class_id !== undefined ?
+                    `data-class-id="${keybind.class_id}"` :
+                    `data-config-key="${keybind.config_key}"`;
+
                 keybinds_html += `
                     <div class="keybind-item" title="${keybind.description}">
                         <span class="keybind-description">${keybind.label}</span>
-                        <span class="keybind-key${collision_class}">${display_key}</span>
+                        <span class="keybind-key keybind-editable${collision_class}" ${data_attr}>${display_key}</span>
                     </div>
                 `;
             }
@@ -404,6 +391,15 @@ export class KeybindsToolboxItem extends ToolboxItem {
                 `;
             }
         }
+
+        return keybinds_html;
+    }
+
+    /**
+     * Generate HTML for the toolbox item
+     */
+    public get_html(): string {
+        const keybinds_html = this.generate_keybinds_list_html();
 
         return `
             <div class="keybinds-toolbox-item">
@@ -547,6 +543,8 @@ export class KeybindsToolboxItem extends ToolboxItem {
             e.stopPropagation();
             const target = $(e.currentTarget);
             const config_key = target.data("config-key") as string;
+            const class_id = target.data("class-id") as number;
+            const is_class_keybind = class_id !== undefined;
 
             // If already editing this key, do nothing
             if (target.hasClass("editing")) {
@@ -558,6 +556,7 @@ export class KeybindsToolboxItem extends ToolboxItem {
 
             // Add editing class to this key
             target.addClass("editing");
+            const original_value = target.text();
             target.text("Press key...");
 
             // Set the editing flag to prevent other key handlers from firing
@@ -572,7 +571,7 @@ export class KeybindsToolboxItem extends ToolboxItem {
                 // Handle Escape to cancel
                 if (keyEvent.key === "Escape") {
                     target.removeClass("editing");
-                    target.text(this.ulabel.config[config_key]);
+                    target.text(original_value);
                     $(document).off("keydown.keybind-edit");
                     this.ulabel.state.is_editing_keybind = false;
                     return;
@@ -586,8 +585,18 @@ export class KeybindsToolboxItem extends ToolboxItem {
                     return;
                 }
 
-                // Update the config
-                this.ulabel.config[config_key] = new_key;
+                // Update the config or class definition
+                if (is_class_keybind) {
+                    // Update the class definition keybind
+                    const current_subtask = this.ulabel.get_current_subtask();
+                    const class_def = current_subtask.class_defs.find((cd) => cd.id === class_id);
+                    if (class_def) {
+                        class_def.keybind = new_key;
+                    }
+                } else {
+                    // Update the config
+                    this.ulabel.config[config_key] = new_key;
+                }
 
                 // Update the display
                 target.removeClass("editing");
@@ -611,8 +620,20 @@ export class KeybindsToolboxItem extends ToolboxItem {
                 const editing_key = $(".keybind-key.editing");
                 if (editing_key.length > 0) {
                     const config_key = editing_key.data("config-key") as string;
+                    const class_id = editing_key.data("class-id") as number;
                     editing_key.removeClass("editing");
-                    editing_key.text(this.ulabel.config[config_key]);
+
+                    // Restore the original value
+                    if (class_id !== undefined) {
+                        const current_subtask = this.ulabel.get_current_subtask();
+                        const class_def = current_subtask.class_defs.find((cd) => cd.id === class_id);
+                        if (class_def) {
+                            editing_key.text(class_def.keybind);
+                        }
+                    } else {
+                        editing_key.text(this.ulabel.config[config_key]);
+                    }
+
                     $(document).off("keydown.keybind-edit");
                     this.ulabel.state.is_editing_keybind = false;
                 }
@@ -629,86 +650,7 @@ export class KeybindsToolboxItem extends ToolboxItem {
             return;
         }
 
-        const all_keybinds = this.get_all_keybinds();
-        let keybinds_html = "";
-
-        // Group keybinds by category
-        const configurable = all_keybinds.filter((kb) => kb.configurable);
-        const class_binds = all_keybinds.filter((kb) => kb.description.startsWith("Select class:"));
-        const resize_binds = all_keybinds.filter((kb) =>
-            kb.description.includes("annotation size") || kb.description.includes("vanish"),
-        );
-        const other = all_keybinds.filter((kb) =>
-            !kb.configurable &&
-            !kb.description.startsWith("Select class:") &&
-            !kb.description.includes("annotation size") &&
-            !kb.description.includes("vanish"),
-        );
-
-        // Configurable keybinds
-        if (configurable.length > 0) {
-            keybinds_html += "<div class=\"keybind-category\">Configurable Keybinds</div>";
-            for (const keybind of configurable) {
-                const has_collision = this.has_collision(keybind.key, all_keybinds);
-                const collision_class = has_collision ? " collision" : "";
-                const display_key = keybind.key !== null && keybind.key !== undefined ? keybind.key : "none";
-                keybinds_html += `
-                    <div class="keybind-item" title="${keybind.description}">
-                        <span class="keybind-description">${keybind.label}</span>
-                        <span class="keybind-key keybind-editable${collision_class}" data-config-key="${keybind.config_key}">${display_key}</span>
-                    </div>
-                `;
-            }
-        }
-
-        // Class keybinds
-        if (class_binds.length > 0) {
-            keybinds_html += "<div class=\"keybind-category\">Class Selection</div>";
-            for (const keybind of class_binds) {
-                const has_collision = this.has_collision(keybind.key, all_keybinds);
-                const collision_class = has_collision ? " collision" : "";
-                const display_key = keybind.key !== null && keybind.key !== undefined ? keybind.key : "none";
-                keybinds_html += `
-                    <div class="keybind-item" title="${keybind.description}">
-                        <span class="keybind-description">${keybind.label}</span>
-                        <span class="keybind-key${collision_class}">${display_key}</span>
-                    </div>
-                `;
-            }
-        }
-
-        // Resize/vanish keybinds
-        if (resize_binds.length > 0) {
-            keybinds_html += "<div class=\"keybind-category\">Annotation Display</div>";
-            for (const keybind of resize_binds) {
-                const has_collision = this.has_collision(keybind.key, all_keybinds);
-                const collision_class = has_collision ? " collision" : "";
-                const display_key = keybind.key !== null && keybind.key !== undefined ? keybind.key : "none";
-                keybinds_html += `
-                    <div class="keybind-item" title="${keybind.description}">
-                        <span class="keybind-description">${keybind.label}</span>
-                        <span class="keybind-key${collision_class}">${display_key}</span>
-                    </div>
-                `;
-            }
-        }
-
-        // Other keybinds
-        if (other.length > 0) {
-            keybinds_html += "<div class=\"keybind-category\">Other</div>";
-            for (const keybind of other) {
-                const has_collision = this.has_collision(keybind.key, all_keybinds);
-                const collision_class = has_collision ? " collision" : "";
-                const display_key = keybind.key !== null && keybind.key !== undefined ? keybind.key : "none";
-                keybinds_html += `
-                    <div class="keybind-item" title="${keybind.description}">
-                        <span class="keybind-description">${keybind.label}</span>
-                        <span class="keybind-key${collision_class}">${display_key}</span>
-                    </div>
-                `;
-            }
-        }
-
+        const keybinds_html = this.generate_keybinds_list_html();
         keybinds_list.html(keybinds_html);
     }
 }
