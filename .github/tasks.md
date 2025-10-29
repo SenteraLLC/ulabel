@@ -39,5 +39,6 @@
   - [x] Add a light yellow highlight on keybinds that are using a user setting instead of a default
   - [x] Make sure that we update collison highlights after resetting a keybind to default
   - [x] Only show the reset to default for keybinds with user settings, not on those already at the default
-  - [ ] Make sure the class keybinds also are included in the keybind collision checks
+  - [x] Make sure the class keybinds also are included in the keybind collision checks
+  - [x] Fix reset to default to use constructor-provided config values instead of hardcoded Configuration defaults
 

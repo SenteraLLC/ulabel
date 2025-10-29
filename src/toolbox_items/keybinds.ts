@@ -1,7 +1,6 @@
 import type { ULabel } from "../index";
 import { ToolboxItem } from "../toolbox";
 import { get_local_storage_item, set_local_storage_item } from "../utilities";
-import { Configuration } from "../configuration";
 
 interface KeybindInfo {
     key: string;
@@ -468,7 +467,18 @@ export class KeybindsToolboxItem extends ToolboxItem {
      * Check if a key has collisions with other keybinds
      */
     private has_collision(key: string, all_keybinds: KeybindInfo[]): boolean {
-        const occurrences = all_keybinds.filter((kb) => kb.key === key).length;
+        // Skip null/undefined keys
+        if (!key) return false;
+
+        // Normalize key for comparison (case-insensitive)
+        const normalized_key = String(key).toLowerCase();
+
+        const occurrences = all_keybinds.filter((kb) => {
+            // Skip null/undefined keybinds
+            if (!kb.key) return false;
+            const kb_normalized = String(kb.key).toLowerCase();
+            return kb_normalized === normalized_key;
+        }).length;
         return occurrences > 1;
     }
 
@@ -493,12 +503,15 @@ export class KeybindsToolboxItem extends ToolboxItem {
     }
 
     /**
-     * Get the default value for a keybind
+     * Get the default value for a keybind (from constructor, not hardcoded defaults)
      */
     private get_default_keybind(config_key: string): string {
-        // Create a new configuration instance to get defaults
-        const default_config = new Configuration();
-        return default_config[config_key] as string;
+        const original_config_keybinds = this.ulabel.state["original_config_keybinds"];
+        if (original_config_keybinds && config_key in original_config_keybinds) {
+            return original_config_keybinds[config_key];
+        }
+        // Fallback to current config value if not found in original keybinds
+        return this.ulabel.config[config_key] as string;
     }
 
     /**

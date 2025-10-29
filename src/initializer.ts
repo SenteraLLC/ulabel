@@ -60,25 +60,53 @@ function make_image_canvases(
 }
 
 /**
- * Store original class keybinds before customization
+ * Store original keybinds before customization
  *
  * @param ulabel ULabel instance to store original keybinds for
  */
-function store_original_class_keybinds(ulabel: ULabel) {
+function store_original_keybinds(ulabel: ULabel) {
+    // Store original config keybinds (from constructor, before localStorage)
+    const original_config_keybinds: { [config_key: string]: string } = {};
+    const keybind_keys = [
+        "reset_zoom_keybind",
+        "create_point_annotation_keybind",
+        "delete_annotation_keybind",
+        "switch_subtask_keybind",
+        "toggle_annotation_mode_keybind",
+        "create_bbox_on_initial_crop",
+        "toggle_brush_mode_keybind",
+        "toggle_erase_mode_keybind",
+        "increase_brush_size_keybind",
+        "decrease_brush_size_keybind",
+        "fly_to_next_annotation_keybind",
+        "fly_to_previous_annotation_keybind",
+        "annotation_size_small_keybind",
+        "annotation_size_large_keybind",
+        "annotation_size_plus_keybind",
+        "annotation_size_minus_keybind",
+        "annotation_vanish_keybind",
+    ];
+
+    for (const key of keybind_keys) {
+        if (key in ulabel.config) {
+            original_config_keybinds[key] = ulabel.config[key] as string;
+        }
+    }
+    ulabel.state["original_config_keybinds"] = original_config_keybinds;
+
     // Store original class keybinds in the ULabel state for later reference
-    const original_keybinds: { [class_id: number]: string } = {};
+    const original_class_keybinds: { [class_id: number]: string } = {};
     for (const subtask_key in ulabel.subtasks) {
         const subtask = ulabel.subtasks[subtask_key];
         if (subtask.class_defs) {
             for (const class_def of subtask.class_defs) {
                 if (class_def.keybind !== null) {
-                    original_keybinds[class_def.id] = class_def.keybind;
+                    original_class_keybinds[class_def.id] = class_def.keybind;
                 }
             }
         }
     }
-    // Store in ULabel state for toolbox access
-    ulabel.state["original_class_keybinds"] = original_keybinds;
+    ulabel.state["original_class_keybinds"] = original_class_keybinds;
 }
 
 /**
@@ -87,8 +115,8 @@ function store_original_class_keybinds(ulabel: ULabel) {
  * @param ulabel ULabel instance to restore keybinds for
  */
 function restore_custom_keybinds(ulabel: ULabel) {
-    // First, store the original class keybinds before applying customizations
-    store_original_class_keybinds(ulabel);
+    // First, store the original keybinds before applying customizations
+    store_original_keybinds(ulabel);
 
     // Restore regular keybinds
     const stored_keybinds = get_local_storage_item("ulabel_custom_keybinds");
