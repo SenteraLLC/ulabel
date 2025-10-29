@@ -60,6 +60,48 @@ function make_image_canvases(
 }
 
 /**
+ * Restore custom keybinds from localStorage
+ *
+ * @param ulabel ULabel instance to restore keybinds for
+ */
+function restore_custom_keybinds(ulabel: ULabel) {
+    // Restore regular keybinds
+    const stored_keybinds = get_local_storage_item("ulabel_custom_keybinds");
+    if (stored_keybinds) {
+        try {
+            const custom_keybinds = JSON.parse(stored_keybinds);
+            for (const [config_key, value] of Object.entries(custom_keybinds)) {
+                if (config_key in ulabel.config) {
+                    ulabel.config[config_key] = value as string;
+                }
+            }
+        } catch (e) {
+            console.error("Failed to parse custom keybinds from localStorage:", e);
+        }
+    }
+
+    // Restore class keybinds
+    const stored_class_keybinds = get_local_storage_item("ulabel_custom_class_keybinds");
+    if (stored_class_keybinds) {
+        try {
+            const custom_class_keybinds = JSON.parse(stored_class_keybinds);
+            for (const subtask_key in ulabel.subtasks) {
+                const subtask = ulabel.subtasks[subtask_key];
+                if (subtask.class_defs) {
+                    for (const class_def of subtask.class_defs) {
+                        if (class_def.id in custom_class_keybinds) {
+                            class_def.keybind = custom_class_keybinds[class_def.id];
+                        }
+                    }
+                }
+            }
+        } catch (e) {
+            console.error("Failed to parse custom class keybinds from localStorage:", e);
+        }
+    }
+}
+
+/**
  * ULabel initializer logic.
  * Async to ensure correct processing order; many steps are dependent on knowing the image/canvas size.
  *
@@ -72,6 +114,9 @@ export async function ulabel_init(
 ) {
     // Add stylesheet
     add_style_to_document(ulabel);
+
+    // Restore custom keybinds from localStorage
+    restore_custom_keybinds(ulabel);
 
     // Set current subtask to first subtask
     ulabel.state["current_subtask"] = Object.keys(ulabel.subtasks)[0];

@@ -332,6 +332,28 @@ export class KeybindsToolboxItem extends ToolboxItem {
             }
         }
 
+        // Non-configurable keybinds
+        keybinds.push({
+            key: "ctrl+z",
+            label: "Undo",
+            description: "Undo the last action",
+            configurable: false,
+        });
+
+        keybinds.push({
+            key: "ctrl+shift+z",
+            label: "Redo",
+            description: "Redo the last undone action",
+            configurable: false,
+        });
+
+        keybinds.push({
+            key: "Escape",
+            label: "Cancel",
+            description: "Cancel current action, exit brush/erase mode, or cancel annotation in progress",
+            configurable: false,
+        });
+
         return keybinds;
     }
 
@@ -344,6 +366,26 @@ export class KeybindsToolboxItem extends ToolboxItem {
     }
 
     /**
+     * Save a regular keybind to localStorage
+     */
+    private save_keybind_to_storage(config_key: string, value: string): void {
+        const stored = get_local_storage_item("ulabel_custom_keybinds");
+        const custom_keybinds = stored ? JSON.parse(stored) : {};
+        custom_keybinds[config_key] = value;
+        set_local_storage_item("ulabel_custom_keybinds", JSON.stringify(custom_keybinds));
+    }
+
+    /**
+     * Save a class keybind to localStorage
+     */
+    private save_class_keybind_to_storage(class_id: number, value: string): void {
+        const stored = get_local_storage_item("ulabel_custom_class_keybinds");
+        const custom_class_keybinds = stored ? JSON.parse(stored) : {};
+        custom_class_keybinds[class_id] = value;
+        set_local_storage_item("ulabel_custom_class_keybinds", JSON.stringify(custom_class_keybinds));
+    }
+
+    /**
      * Generate the keybinds list HTML
      */
     private generate_keybinds_list_html(): string {
@@ -351,10 +393,11 @@ export class KeybindsToolboxItem extends ToolboxItem {
         let keybinds_html = "";
 
         // Group keybinds by category
-        const configurable = all_keybinds.filter((kb) => kb.configurable);
+        const configurable = all_keybinds.filter((kb) => kb.configurable && kb.class_id === undefined);
+        const class_keybinds = all_keybinds.filter((kb) => kb.class_id !== undefined);
         const other = all_keybinds.filter((kb) => !kb.configurable);
 
-        // Configurable keybinds
+        // Configurable keybinds (non-class)
         if (configurable.length > 0) {
             keybinds_html += "<div class=\"keybind-category\">Configurable Keybinds</div>";
             for (const keybind of configurable) {
@@ -362,15 +405,27 @@ export class KeybindsToolboxItem extends ToolboxItem {
                 const collision_class = has_collision ? " collision" : "";
                 const display_key = keybind.key !== null && keybind.key !== undefined ? keybind.key : "none";
 
-                // Use class_id for class keybinds, config_key for regular keybinds
-                const data_attr = keybind.class_id !== undefined ?
-                    `data-class-id="${keybind.class_id}"` :
-                    `data-config-key="${keybind.config_key}"`;
+                keybinds_html += `
+                    <div class="keybind-item" title="${keybind.description}">
+                        <span class="keybind-description">${keybind.label}</span>
+                        <span class="keybind-key keybind-editable${collision_class}" data-config-key="${keybind.config_key}">${display_key}</span>
+                    </div>
+                `;
+            }
+        }
+
+        // Class keybinds
+        if (class_keybinds.length > 0) {
+            keybinds_html += "<div class=\"keybind-category\">Class Keybinds</div>";
+            for (const keybind of class_keybinds) {
+                const has_collision = this.has_collision(keybind.key, all_keybinds);
+                const collision_class = has_collision ? " collision" : "";
+                const display_key = keybind.key !== null && keybind.key !== undefined ? keybind.key : "none";
 
                 keybinds_html += `
                     <div class="keybind-item" title="${keybind.description}">
                         <span class="keybind-description">${keybind.label}</span>
-                        <span class="keybind-key keybind-editable${collision_class}" ${data_attr}>${display_key}</span>
+                        <span class="keybind-key keybind-editable${collision_class}" data-class-id="${keybind.class_id}">${display_key}</span>
                     </div>
                 `;
             }
@@ -592,10 +647,14 @@ export class KeybindsToolboxItem extends ToolboxItem {
                     const class_def = current_subtask.class_defs.find((cd) => cd.id === class_id);
                     if (class_def) {
                         class_def.keybind = new_key;
+                        // Save class keybind to localStorage
+                        this.save_class_keybind_to_storage(class_id, new_key);
                     }
                 } else {
                     // Update the config
                     this.ulabel.config[config_key] = new_key;
+                    // Save regular keybind to localStorage
+                    this.save_keybind_to_storage(config_key, new_key);
                 }
 
                 // Update the display

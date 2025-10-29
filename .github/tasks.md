@@ -32,7 +32,7 @@
   - [x] Rename "Change Zoom" keybind to "Reset Zoom"
   - [x] Change "Toggle Mode" label in the keybind toolbox item to "Toggle Annotation Mode"
 - [x] Make class keybinds configurable in the keybinds toolbox item
-- [ ] Store keybinds in local storage
-  - [ ] Only save them when a user explicitly sets it
+- [x] Store keybinds in local storage
+  - [x] Only save them when a user explicitly sets it
 
 
