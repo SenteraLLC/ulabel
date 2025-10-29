@@ -6,13 +6,17 @@
   - [x] Store collapsed state in localStorage
   - [x] Test functionality
   - [x] Move arrow to top of toolbox (instead of middle)
-  - [ ] Make annbox expand when toolbox is collapsed
-  - [ ] Make collapsed button more visible (40px wide x 80px tall)
+  - [x] Make annbox expand when toolbox is collapsed
+  - [x] Make collapsed button visible
 - [ ] Create a keybinds toolbox item
-  - [ ] Should show a list of ALL keybinds that have listeners, some configurable and some not
-  - [ ] On hover, should provide a brief description of each keybind
-  - [ ] For configurable keybinds (those that can currently be set in the ulabel config), the user should be able to edit them by inputting a new keybind
-  - [ ] Keybinds that collide with existing ones can be allowed, but should be highlighted red
+  - [x] Research existing keybinds in the codebase
+  - [x] Create basic keybinds toolbox item file
+  - [x] Register keybinds toolbox item in configuration
+  - [ ] Display list of all keybinds (the key) labeled with the name
+  - [x] Add hover tooltips with detailed descriptions (using title attribute)
+  - [x] Add collision detection and red highlighting
+  - [ ] Implement editing for configurable keybinds
+  - [ ] Test functionality
 - [ ] Add support for keybind "chords" (ie, "shift+i")
 
 

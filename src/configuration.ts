@@ -22,6 +22,7 @@ import {
 import { SubmitButtons } from "./toolbox_items/submit_buttons";
 import { ImageFiltersToolboxItem } from "./toolbox_items/image_filters";
 import { AnnotationListToolboxItem } from "./toolbox_items/annotation_list";
+import { KeybindsToolboxItem } from "./toolbox_items/keybinds";
 import { is_object_and_not_array } from "./utilities";
 
 /* eslint-disable @stylistic/no-multi-spaces */
@@ -38,6 +39,7 @@ export enum AllowedToolboxItem {
     Brush,            // 9
     ImageFilters,     // 10
     AnnotationList,   // 11
+    Keybinds,         // 12
 }
 /* eslint-enable @stylistic/no-multi-spaces */
 
@@ -135,12 +137,14 @@ export class Configuration {
         [AllowedToolboxItem.Brush, BrushToolboxItem],
         [AllowedToolboxItem.ImageFilters, ImageFiltersToolboxItem],
         [AllowedToolboxItem.AnnotationList, AnnotationListToolboxItem],
+        [AllowedToolboxItem.Keybinds, KeybindsToolboxItem],
     ]);
 
     // Default toolbox order used when the user doesn't specify one
     public toolbox_order: AllowedToolboxItem[] = [
         AllowedToolboxItem.ModeSelect,
         AllowedToolboxItem.AnnotationList,
+        AllowedToolboxItem.Keybinds,
         AllowedToolboxItem.Brush,
         AllowedToolboxItem.ImageFilters,
         AllowedToolboxItem.ZoomPan,
