@@ -34,5 +34,8 @@
 - [x] Make class keybinds configurable in the keybinds toolbox item
 - [x] Store keybinds in local storage
   - [x] Only save them when a user explicitly sets it
-
+  - [x] For keybinds using a user setting, add a button to reset that keybind to default (should change keybind and delete stored keybind)
+  - [x] Add "Reset All to Default" button in the keybinds toolbox item that resets all keybinds and deletes stored user keybinds
+  - [ ] Add a light yellow highlight on keybinds that are using a user setting instead of a default
+  - [ ] Make sure that we update collison highlights after resetting a keybind to default
 

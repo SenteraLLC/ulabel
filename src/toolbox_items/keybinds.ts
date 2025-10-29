@@ -1,6 +1,7 @@
 import type { ULabel } from "../index";
 import { ToolboxItem } from "../toolbox";
 import { get_local_storage_item, set_local_storage_item } from "../utilities";
+import { Configuration } from "../configuration";
 
 interface KeybindInfo {
     key: string;
@@ -9,6 +10,7 @@ interface KeybindInfo {
     configurable: boolean;
     config_key?: string;
     class_id?: number; // For class keybinds
+    default_key?: string; // Default value for the keybind
 }
 
 /**
@@ -74,6 +76,38 @@ export class KeybindsToolboxItem extends ToolboxItem {
             display: block;
         }
 
+        #toolbox .keybinds-reset-all {
+            padding: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        #toolbox .keybinds-reset-all-btn {
+            width: 100%;
+            padding: 0.5rem;
+            background-color: rgba(255, 0, 0, 0.1);
+            border: 1px solid rgba(255, 0, 0, 0.3);
+            color: #d00;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        #toolbox .keybinds-reset-all-btn:hover {
+            background-color: rgba(255, 0, 0, 0.2);
+            border-color: rgba(255, 0, 0, 0.5);
+        }
+
+        .ulabel-night #toolbox .keybinds-reset-all-btn {
+            color: #f66;
+            border-color: rgba(255, 102, 102, 0.3);
+        }
+
+        .ulabel-night #toolbox .keybinds-reset-all-btn:hover {
+            background-color: rgba(255, 102, 102, 0.2);
+            border-color: rgba(255, 102, 102, 0.5);
+        }
+
         #toolbox .keybinds-list {
             display: flex;
             flex-direction: column;
@@ -108,6 +142,41 @@ export class KeybindsToolboxItem extends ToolboxItem {
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
+        }
+
+        #toolbox .keybind-controls {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        #toolbox .keybind-reset-btn {
+            background: none;
+            border: none;
+            color: #666;
+            cursor: pointer;
+            padding: 0.2rem 0.4rem;
+            font-size: 0.75rem;
+            border-radius: 3px;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        #toolbox .keybind-item:hover .keybind-reset-btn {
+            opacity: 1;
+        }
+
+        #toolbox .keybind-reset-btn:hover {
+            background-color: rgba(255, 0, 0, 0.1);
+            color: #d00;
+        }
+
+        .ulabel-night #toolbox .keybind-reset-btn {
+            color: #aaa;
+        }
+
+        .ulabel-night #toolbox .keybind-reset-btn:hover {
+            color: #f66;
         }
 
         .ulabel-night #toolbox .keybind-description {
@@ -343,6 +412,9 @@ export class KeybindsToolboxItem extends ToolboxItem {
         // Add class keybinds
         const current_subtask = this.ulabel.get_current_subtask();
         if (current_subtask && current_subtask.class_defs) {
+            // Get original keybinds from subtask config before any customization
+            const original_class_keybinds = this.get_original_class_keybinds();
+
             for (const class_def of current_subtask.class_defs) {
                 if (class_def.keybind !== null) {
                     keybinds.push({
@@ -351,6 +423,7 @@ export class KeybindsToolboxItem extends ToolboxItem {
                         description: `Select class: ${class_def.name}`,
                         configurable: true,
                         class_id: class_def.id,
+                        default_key: original_class_keybinds[class_def.id] || class_def.keybind,
                     });
                 }
             }
@@ -410,6 +483,153 @@ export class KeybindsToolboxItem extends ToolboxItem {
     }
 
     /**
+     * Get the default value for a keybind
+     */
+    private get_default_keybind(config_key: string): string {
+        // Create a new configuration instance to get defaults
+        const default_config = new Configuration();
+        return default_config[config_key] as string;
+    }
+
+    /**
+     * Reset a keybind to its default value
+     */
+    private reset_keybind_to_default(config_key: string): void {
+        const default_value = this.get_default_keybind(config_key);
+        this.ulabel.config[config_key] = default_value;
+
+        // Remove from localStorage
+        const stored = get_local_storage_item("ulabel_custom_keybinds");
+        if (stored) {
+            try {
+                const custom_keybinds = JSON.parse(stored);
+                delete custom_keybinds[config_key];
+                if (Object.keys(custom_keybinds).length > 0) {
+                    set_local_storage_item("ulabel_custom_keybinds", JSON.stringify(custom_keybinds));
+                } else {
+                    // Remove the key entirely if empty
+                    localStorage.removeItem("ulabel_custom_keybinds");
+                }
+            } catch (e) {
+                console.error("Failed to update custom keybinds:", e);
+            }
+        }
+    }
+
+    /**
+     * Get original class keybinds (before customization)
+     */
+    private get_original_class_keybinds(): { [class_id: number]: string } {
+        const stored = get_local_storage_item("ulabel_original_class_keybinds");
+        if (stored) {
+            try {
+                return JSON.parse(stored);
+            } catch (e) {
+                console.error("Failed to parse original class keybinds:", e);
+                return {};
+            }
+        }
+        return {};
+    }
+
+    /**
+     * Store original class keybinds (before customization)
+     */
+    private store_original_class_keybinds(): void {
+        // Only store if not already stored
+        const stored = get_local_storage_item("ulabel_original_class_keybinds");
+        if (stored) {
+            return; // Already stored
+        }
+
+        const current_subtask = this.ulabel.get_current_subtask();
+        if (current_subtask && current_subtask.class_defs) {
+            const original_keybinds: { [class_id: number]: string } = {};
+            for (const class_def of current_subtask.class_defs) {
+                if (class_def.keybind !== null) {
+                    original_keybinds[class_def.id] = class_def.keybind;
+                }
+            }
+            set_local_storage_item("ulabel_original_class_keybinds", JSON.stringify(original_keybinds));
+        }
+    }
+
+    /**
+     * Reset a class keybind to its default value
+     */
+    private reset_class_keybind_to_default(class_id: number, original_keybind: string): void {
+        const current_subtask = this.ulabel.get_current_subtask();
+        const class_def = current_subtask.class_defs.find((cd) => cd.id === class_id);
+        if (class_def) {
+            class_def.keybind = original_keybind;
+        }
+
+        // Remove from localStorage
+        const stored = get_local_storage_item("ulabel_custom_class_keybinds");
+        if (stored) {
+            try {
+                const custom_class_keybinds = JSON.parse(stored);
+                delete custom_class_keybinds[class_id];
+                if (Object.keys(custom_class_keybinds).length > 0) {
+                    set_local_storage_item("ulabel_custom_class_keybinds", JSON.stringify(custom_class_keybinds));
+                } else {
+                    // Remove the key entirely if empty
+                    localStorage.removeItem("ulabel_custom_class_keybinds");
+                }
+            } catch (e) {
+                console.error("Failed to update custom class keybinds:", e);
+            }
+        }
+    }
+
+    /**
+     * Reset all keybinds to their default values
+     */
+    private reset_all_keybinds_to_default(): void {
+        // Get all keybind config keys
+        const keybind_keys = [
+            "reset_zoom_keybind",
+            "create_point_annotation_keybind",
+            "delete_annotation_keybind",
+            "switch_subtask_keybind",
+            "toggle_annotation_mode_keybind",
+            "create_bbox_on_initial_crop",
+            "toggle_brush_mode_keybind",
+            "toggle_erase_mode_keybind",
+            "increase_brush_size_keybind",
+            "decrease_brush_size_keybind",
+            "fly_to_next_annotation_keybind",
+            "fly_to_previous_annotation_keybind",
+            "annotation_size_small_keybind",
+            "annotation_size_large_keybind",
+            "annotation_size_plus_keybind",
+            "annotation_size_minus_keybind",
+            "annotation_vanish_keybind",
+        ];
+
+        // Reset all regular keybinds
+        for (const key of keybind_keys) {
+            const default_value = this.get_default_keybind(key);
+            this.ulabel.config[key] = default_value;
+        }
+
+        // Reset all class keybinds
+        const original_class_keybinds = this.get_original_class_keybinds();
+        const current_subtask = this.ulabel.get_current_subtask();
+        if (current_subtask && current_subtask.class_defs) {
+            for (const class_def of current_subtask.class_defs) {
+                if (class_def.id in original_class_keybinds) {
+                    class_def.keybind = original_class_keybinds[class_def.id];
+                }
+            }
+        }
+
+        // Clear localStorage
+        localStorage.removeItem("ulabel_custom_keybinds");
+        localStorage.removeItem("ulabel_custom_class_keybinds");
+    }
+
+    /**
      * Generate the keybinds list HTML
      */
     private generate_keybinds_list_html(): string {
@@ -438,7 +658,10 @@ export class KeybindsToolboxItem extends ToolboxItem {
                 keybinds_html += `
                     <div class="keybind-item" title="${keybind.description}">
                         <span class="keybind-description">${keybind.label}</span>
-                        <span class="keybind-key keybind-editable${collision_class}" data-config-key="${keybind.config_key}">${display_key}</span>
+                        <div class="keybind-controls">
+                            <span class="keybind-key keybind-editable${collision_class}" data-config-key="${keybind.config_key}">${display_key}</span>
+                            <button class="keybind-reset-btn" data-config-key="${keybind.config_key}" title="Reset to default">↺</button>
+                        </div>
                     </div>
                 `;
             }
@@ -462,7 +685,10 @@ export class KeybindsToolboxItem extends ToolboxItem {
                 keybinds_html += `
                     <div class="keybind-item" title="${keybind.description}">
                         <span class="keybind-description">${keybind.label}</span>
-                        <span class="keybind-key keybind-editable${collision_class}" data-class-id="${keybind.class_id}">${display_key}</span>
+                        <div class="keybind-controls">
+                            <span class="keybind-key keybind-editable${collision_class}" data-class-id="${keybind.class_id}">${display_key}</span>
+                            <button class="keybind-reset-btn" data-class-id="${keybind.class_id}" data-original-keybind="${keybind.default_key}" title="Reset to default">↺</button>
+                        </div>
                     </div>
                 `;
             }
@@ -508,6 +734,9 @@ export class KeybindsToolboxItem extends ToolboxItem {
                     <button class="keybinds-toggle-btn">▼</button>
                 </div>
                 <div class="keybinds-content">
+                    <div class="keybinds-reset-all">
+                        <button class="keybinds-reset-all-btn">Reset All to Default</button>
+                    </div>
                     <div class="keybinds-list">
                         ${keybinds_html}
                     </div>
@@ -527,6 +756,7 @@ export class KeybindsToolboxItem extends ToolboxItem {
      * Called after ULabel initialization is complete
      */
     public after_init(): void {
+        this.store_original_class_keybinds();
         this.add_event_listeners();
         this.restore_collapsed_state();
     }
@@ -664,6 +894,37 @@ export class KeybindsToolboxItem extends ToolboxItem {
                 items.addClass("collapsed");
                 toggle.text("▶");
                 set_local_storage_item(`ulabel_keybind_section_${section}_collapsed`, "true");
+            }
+        });
+
+        // Reset individual keybind to default
+        $(document).on("click.ulabel", ".keybind-reset-btn", (e) => {
+            e.stopPropagation();
+            const button = $(e.currentTarget);
+            const config_key = button.data("config-key") as string;
+            const class_id = button.data("class-id") as number;
+            const original_keybind = button.data("original-keybind") as string;
+
+            if (class_id !== undefined) {
+                // Reset class keybind
+                this.reset_class_keybind_to_default(class_id, original_keybind);
+            } else if (config_key) {
+                // Reset regular keybind
+                this.reset_keybind_to_default(config_key);
+            }
+
+            // Refresh the display
+            this.refresh_keybinds_display();
+        });
+
+        // Reset all keybinds to default
+        $(document).on("click.ulabel", ".keybinds-reset-all-btn", (e) => {
+            e.stopPropagation();
+
+            // Confirm with user
+            if (confirm("Reset all keybinds to their default values?")) {
+                this.reset_all_keybinds_to_default();
+                this.refresh_keybinds_display();
             }
         });
 
