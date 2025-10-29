@@ -87,6 +87,7 @@ export class KeybindsToolboxItem extends ToolboxItem {
             border-radius: 4px;
             background-color: rgba(0, 0, 0, 0.05);
             font-size: 0.85rem;
+            gap: 0.5rem;
         }
 
         .ulabel-night #toolbox .keybind-item {
@@ -98,10 +99,13 @@ export class KeybindsToolboxItem extends ToolboxItem {
         }
 
         #toolbox .keybind-description {
-            flex: 1;
+            flex: 0 1 auto;
             margin-right: 0.75rem;
             color: #333;
             font-weight: 500;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
         .ulabel-night #toolbox .keybind-description {
@@ -118,6 +122,7 @@ export class KeybindsToolboxItem extends ToolboxItem {
             min-width: 30px;
             text-align: center;
             white-space: nowrap;
+            flex-shrink: 0;
         }
 
         .ulabel-night #toolbox .keybind-key {
@@ -129,12 +134,12 @@ export class KeybindsToolboxItem extends ToolboxItem {
             border: 1px solid red;
         }
 
-        #toolbox .keybind-key.editable {
+        #toolbox .keybind-key.keybind-editable {
             cursor: pointer;
             border: 1px solid transparent;
         }
 
-        #toolbox .keybind-key.editable:hover {
+        #toolbox .keybind-key.keybind-editable:hover {
             background-color: rgba(0, 128, 255, 0.2);
             border-color: rgba(0, 128, 255, 0.5);
         }
@@ -370,10 +375,11 @@ export class KeybindsToolboxItem extends ToolboxItem {
             for (const keybind of configurable) {
                 const has_collision = this.has_collision(keybind.key, all_keybinds);
                 const collision_class = has_collision ? " collision" : "";
+                const display_key = keybind.key !== null && keybind.key !== undefined ? keybind.key : "none";
                 keybinds_html += `
                     <div class="keybind-item" title="${keybind.description}">
                         <span class="keybind-description">${keybind.label}</span>
-                        <span class="keybind-key editable${collision_class}" data-config-key="${keybind.config_key}">${keybind.key}</span>
+                        <span class="keybind-key keybind-editable${collision_class}" data-config-key="${keybind.config_key}">${display_key}</span>
                     </div>
                 `;
             }
@@ -385,10 +391,11 @@ export class KeybindsToolboxItem extends ToolboxItem {
             for (const keybind of class_binds) {
                 const has_collision = this.has_collision(keybind.key, all_keybinds);
                 const collision_class = has_collision ? " collision" : "";
+                const display_key = keybind.key !== null && keybind.key !== undefined ? keybind.key : "none";
                 keybinds_html += `
                     <div class="keybind-item" title="${keybind.description}">
                         <span class="keybind-description">${keybind.label}</span>
-                        <span class="keybind-key${collision_class}">${keybind.key}</span>
+                        <span class="keybind-key${collision_class}">${display_key}</span>
                     </div>
                 `;
             }
@@ -400,10 +407,11 @@ export class KeybindsToolboxItem extends ToolboxItem {
             for (const keybind of resize_binds) {
                 const has_collision = this.has_collision(keybind.key, all_keybinds);
                 const collision_class = has_collision ? " collision" : "";
+                const display_key = keybind.key !== null && keybind.key !== undefined ? keybind.key : "none";
                 keybinds_html += `
                     <div class="keybind-item" title="${keybind.description}">
                         <span class="keybind-description">${keybind.label}</span>
-                        <span class="keybind-key${collision_class}">${keybind.key}</span>
+                        <span class="keybind-key${collision_class}">${display_key}</span>
                     </div>
                 `;
             }
@@ -415,10 +423,11 @@ export class KeybindsToolboxItem extends ToolboxItem {
             for (const keybind of other) {
                 const has_collision = this.has_collision(keybind.key, all_keybinds);
                 const collision_class = has_collision ? " collision" : "";
+                const display_key = keybind.key !== null && keybind.key !== undefined ? keybind.key : "none";
                 keybinds_html += `
                     <div class="keybind-item" title="${keybind.description}">
                         <span class="keybind-description">${keybind.label}</span>
-                        <span class="keybind-key${collision_class}">${keybind.key}</span>
+                        <span class="keybind-key${collision_class}">${display_key}</span>
                     </div>
                 `;
             }
@@ -472,13 +481,169 @@ export class KeybindsToolboxItem extends ToolboxItem {
             }
         });
 
-        // TODO: Implement edit functionality for configurable keybinds
-        $(document).on("click.ulabel", ".keybind-key.editable", (e) => {
+        // Edit functionality for configurable keybinds
+        $(document).on("click.ulabel", ".keybind-key.keybind-editable", (e) => {
+            e.stopPropagation();
             const target = $(e.currentTarget);
-            const config_key = target.data("config-key");
+            const config_key = target.data("config-key") as string;
 
-            // For now, just show an alert
-            alert(`Editing keybind for: ${config_key}\n\nThis feature is not yet fully implemented.`);
+            // If already editing this key, do nothing
+            if (target.hasClass("editing")) {
+                return;
+            }
+
+            // Remove editing class from any other key
+            $(".keybind-key.editing").removeClass("editing");
+
+            // Add editing class to this key
+            target.addClass("editing");
+            target.text("Press key...");
+
+            // Create a one-time keydown handler to capture the new key
+            const keyHandler = (keyEvent: JQuery.KeyDownEvent) => {
+                keyEvent.preventDefault();
+                keyEvent.stopPropagation();
+
+                let new_key = keyEvent.key;
+
+                // Handle special keys
+                if (new_key === "Escape") {
+                    // Cancel editing
+                    target.removeClass("editing");
+                    target.text(this.ulabel.config[config_key]);
+                    $(document).off("keydown.keybind-edit");
+                    return;
+                }
+
+                // Normalize key names
+                if (new_key === " ") {
+                    new_key = "Space";
+                } else if (new_key.length === 1) {
+                    // Keep single character keys lowercase for consistency
+                    new_key = new_key.toLowerCase();
+                }
+
+                // Update the config
+                this.ulabel.config[config_key] = new_key;
+
+                // Update the display
+                target.removeClass("editing");
+                target.text(new_key);
+
+                // Refresh the entire keybinds list to update collision detection
+                this.refresh_keybinds_display();
+
+                // Remove the keydown handler
+                $(document).off("keydown.keybind-edit");
+            };
+
+            // Attach the keydown handler
+            $(document).on("keydown.keybind-edit", keyHandler);
         });
+
+        // Click outside to cancel editing
+        $(document).on("click.ulabel", (e) => {
+            if (!$(e.target).hasClass("keybind-key")) {
+                const editing_key = $(".keybind-key.editing");
+                if (editing_key.length > 0) {
+                    const config_key = editing_key.data("config-key") as string;
+                    editing_key.removeClass("editing");
+                    editing_key.text(this.ulabel.config[config_key]);
+                    $(document).off("keydown.keybind-edit");
+                }
+            }
+        });
+    }
+
+    /**
+     * Refresh the keybinds display to show updated keys and collision detection
+     */
+    private refresh_keybinds_display(): void {
+        const keybinds_list = $(".keybinds-list");
+        if (keybinds_list.length === 0) {
+            return;
+        }
+
+        const all_keybinds = this.get_all_keybinds();
+        let keybinds_html = "";
+
+        // Group keybinds by category
+        const configurable = all_keybinds.filter((kb) => kb.configurable);
+        const class_binds = all_keybinds.filter((kb) => kb.description.startsWith("Select class:"));
+        const resize_binds = all_keybinds.filter((kb) =>
+            kb.description.includes("annotation size") || kb.description.includes("vanish"),
+        );
+        const other = all_keybinds.filter((kb) =>
+            !kb.configurable &&
+            !kb.description.startsWith("Select class:") &&
+            !kb.description.includes("annotation size") &&
+            !kb.description.includes("vanish"),
+        );
+
+        // Configurable keybinds
+        if (configurable.length > 0) {
+            keybinds_html += "<div class=\"keybind-category\">Configurable Keybinds</div>";
+            for (const keybind of configurable) {
+                const has_collision = this.has_collision(keybind.key, all_keybinds);
+                const collision_class = has_collision ? " collision" : "";
+                const display_key = keybind.key !== null && keybind.key !== undefined ? keybind.key : "none";
+                keybinds_html += `
+                    <div class="keybind-item" title="${keybind.description}">
+                        <span class="keybind-description">${keybind.label}</span>
+                        <span class="keybind-key keybind-editable${collision_class}" data-config-key="${keybind.config_key}">${display_key}</span>
+                    </div>
+                `;
+            }
+        }
+
+        // Class keybinds
+        if (class_binds.length > 0) {
+            keybinds_html += "<div class=\"keybind-category\">Class Selection</div>";
+            for (const keybind of class_binds) {
+                const has_collision = this.has_collision(keybind.key, all_keybinds);
+                const collision_class = has_collision ? " collision" : "";
+                const display_key = keybind.key !== null && keybind.key !== undefined ? keybind.key : "none";
+                keybinds_html += `
+                    <div class="keybind-item" title="${keybind.description}">
+                        <span class="keybind-description">${keybind.label}</span>
+                        <span class="keybind-key${collision_class}">${display_key}</span>
+                    </div>
+                `;
+            }
+        }
+
+        // Resize/vanish keybinds
+        if (resize_binds.length > 0) {
+            keybinds_html += "<div class=\"keybind-category\">Annotation Display</div>";
+            for (const keybind of resize_binds) {
+                const has_collision = this.has_collision(keybind.key, all_keybinds);
+                const collision_class = has_collision ? " collision" : "";
+                const display_key = keybind.key !== null && keybind.key !== undefined ? keybind.key : "none";
+                keybinds_html += `
+                    <div class="keybind-item" title="${keybind.description}">
+                        <span class="keybind-description">${keybind.label}</span>
+                        <span class="keybind-key${collision_class}">${display_key}</span>
+                    </div>
+                `;
+            }
+        }
+
+        // Other keybinds
+        if (other.length > 0) {
+            keybinds_html += "<div class=\"keybind-category\">Other</div>";
+            for (const keybind of other) {
+                const has_collision = this.has_collision(keybind.key, all_keybinds);
+                const collision_class = has_collision ? " collision" : "";
+                const display_key = keybind.key !== null && keybind.key !== undefined ? keybind.key : "none";
+                keybinds_html += `
+                    <div class="keybind-item" title="${keybind.description}">
+                        <span class="keybind-description">${keybind.label}</span>
+                        <span class="keybind-key${collision_class}">${display_key}</span>
+                    </div>
+                `;
+            }
+        }
+
+        keybinds_list.html(keybinds_html);
     }
 }
