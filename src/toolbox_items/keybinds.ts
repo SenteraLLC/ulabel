@@ -1,5 +1,6 @@
 import type { ULabel } from "../index";
 import { ToolboxItem } from "../toolbox";
+import { get_local_storage_item, set_local_storage_item } from "../utilities";
 
 interface KeybindInfo {
     key: string;
@@ -426,8 +427,8 @@ export class KeybindsToolboxItem extends ToolboxItem {
         return `
             <div class="keybinds-toolbox-item">
                 <div class="keybinds-header">
-                    <h3 class="keybinds-title">Keybinds</h3>
-                    <button class="keybinds-toggle-btn">▶</button>
+                    <span class="keybinds-title">Keybinds</span>
+                    <button class="keybinds-toggle-btn">▼</button>
                 </div>
                 <div class="keybinds-content">
                     <div class="keybinds-list">
@@ -450,6 +451,21 @@ export class KeybindsToolboxItem extends ToolboxItem {
      */
     public after_init(): void {
         this.add_event_listeners();
+        this.restore_collapsed_state();
+    }
+
+    /**
+     * Restore the collapsed/expanded state from localStorage
+     */
+    private restore_collapsed_state(): void {
+        const stored_state = get_local_storage_item("ulabel_keybinds_collapsed");
+        if (stored_state === "false") {
+            // If stored as expanded, expand it
+            this.is_collapsed = false;
+            $(".keybinds-content").addClass("expanded");
+            $(".keybinds-toggle-btn").text("▲");
+        }
+        // Default is collapsed, so no need to do anything if stored_state is "true" or null
     }
 
     /**
@@ -536,10 +552,12 @@ export class KeybindsToolboxItem extends ToolboxItem {
 
             if (this.is_collapsed) {
                 content.removeClass("expanded");
-                toggle_btn.text("▶");
+                toggle_btn.text("▼");
+                set_local_storage_item("ulabel_keybinds_collapsed", "true");
             } else {
                 content.addClass("expanded");
-                toggle_btn.text("▼");
+                toggle_btn.text("▲");
+                set_local_storage_item("ulabel_keybinds_collapsed", "false");
             }
         });
 

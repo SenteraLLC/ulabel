@@ -23,10 +23,10 @@
   - [x] Update key comparison logic in listeners to support chords
   - [x] Update display to show chords properly (displays captured chord automatically)
   - [x] Test chord functionality
-- [ ] Store collapse/expand for applicable toolbox items
-  - [ ] Keybinds
-  - [ ] Annotation List
-  - [ ] Image Filters
+- [x] Store collapse/expand for applicable toolbox items
+  - [x] Keybinds
+  - [x] Annotation List
+  - [x] Image Filters
 - [ ] Make all keybinds configurable
 - [ ] Minor changes to existing keybinds
   - [ ] Rename "Change Zoom" keybind to "Reset Zoom"
