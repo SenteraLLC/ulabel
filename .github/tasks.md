@@ -51,8 +51,9 @@
   - [x] Update toolbox.ts to use both keybinds independently
   - [x] Update api_spec.md to document both keybinds
 - [ ] Write e2e tests for the keybind toolbox item
-  - [ ] Ability to set keybind to a chord
-  - [ ] Ability to reset keybind
-  - [ ] Ability to set a class keybind
+  - [x] Ability to set keybind to a chord
+  - [x] Ability to reset keybind
+  - [x] Ability to set a class keybind
+  - [ ] Run tests to verify they pass
 - [ ] Write a e2e test for each keybind
 
