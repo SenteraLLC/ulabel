@@ -8,7 +8,7 @@ This should eventually be replaced with a more comprehensive approach to documen
 - `ctrl+shift+z` or `cmd+shift+z`: Redo
 - `scroll`: Zoom -- up for in, down for out
 - `ctrl+scroll` or `shift+scroll` or `cmd+scroll`: Change frame -- down for next, up for previous
-- `scrollclick+drag` or `ctrl+drag`: Pan
+- `scrollclick+drag`: Pan
 - Hold `shift` when closing a polygon to continue annotating a new region or hole.
 - Hold `shift` when moving the cursor inside a polygon to begin annotating a new region or hole.
 - Press `Escape` or `crtl+z` to cancel the start of a new region or hole.

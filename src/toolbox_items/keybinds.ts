@@ -187,7 +187,7 @@ export class KeybindsToolboxItem extends ToolboxItem {
         #toolbox .keybind-key {
             font-family: monospace;
             font-weight: bold;
-            font-size: 0.9rem;
+            font-size: 0.75rem;
             padding: 0.3rem 0.6rem;
             background-color: rgba(0, 0, 0, 0.1);
             border-radius: 4px;
@@ -464,6 +464,43 @@ export class KeybindsToolboxItem extends ToolboxItem {
             key: "Escape",
             label: "Cancel",
             description: "Cancel current action, exit brush/erase mode, or cancel annotation in progress",
+            configurable: false,
+        });
+
+        // Mouse + Modifier combinations
+        keybinds.push({
+            key: "Middle Click",
+            label: "Pan",
+            description: "Pan the image by dragging with middle mouse button",
+            configurable: false,
+        });
+
+        keybinds.push({
+            key: "Shift + Click Drag",
+            label: "Zoom Drag",
+            description: "Zoom in/out by holding Shift and dragging with left mouse button up/down",
+            configurable: false,
+        });
+
+        // Scroll combinations
+        keybinds.push({
+            key: "Scroll",
+            label: "Zoom",
+            description: "Zoom in/out using mouse scroll wheel",
+            configurable: false,
+        });
+
+        keybinds.push({
+            key: "Alt + Scroll",
+            label: "Brush Size",
+            description: "Change brush size using Alt + scroll wheel (when in brush mode)",
+            configurable: false,
+        });
+
+        keybinds.push({
+            key: "Ctrl/Shift + Scroll",
+            label: "Frame",
+            description: "Navigate between frames using Ctrl or Shift + scroll wheel (multi-frame images)",
             configurable: false,
         });
 
