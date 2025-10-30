@@ -525,14 +525,41 @@ test.describe("Keybind Functionality Tests", () => {
         expect(count).toBe(1);
     });
 
-    test("escape keybind should exit brush mode and erase mode", async ({ page }) => {
+    test("escape keybind should cancel in-progress annotation, exit brush mode, and exit erase mode", async ({ page }) => {
         await wait_for_ulabel_init(page);
 
-        // Switch to polygon mode (required for brush/erase mode)
+        // Switch to polygon mode
         await page.click("a#md-btn--polygon");
         await page.waitForTimeout(200);
 
-        // Test 1: Exit brush mode
+        // Test 1: Cancel annotation in progress
+        const canvas = page.locator("#annbox");
+
+        // Start drawing a polygon by clicking first point
+        await canvas.click({ position: { x: 200, y: 200 } });
+        await page.waitForTimeout(100);
+
+        // Verify annotation is in progress
+        let is_in_progress = await page.evaluate(() => {
+            return window.ulabel.get_current_subtask().state.is_in_progress;
+        });
+        expect(is_in_progress).toBe(true);
+
+        // Press escape to cancel
+        await press_keybind(page, "escape");
+        await page.waitForTimeout(200);
+
+        // Verify annotation was cancelled
+        is_in_progress = await page.evaluate(() => {
+            return window.ulabel.get_current_subtask().state.is_in_progress;
+        });
+        expect(is_in_progress).toBe(false);
+
+        // Verify annotation is now deprecated
+        const annotation = await get_annotation_by_index(page, 0);
+        expect(annotation.deprecated).toBe(true);
+
+        // Test 2: Exit brush mode
         // Enter brush mode
         const toggle_brush_keybind = await get_keybind_value(page, "Toggle Brush");
         await press_keybind(page, toggle_brush_keybind);
@@ -563,7 +590,7 @@ test.describe("Keybind Functionality Tests", () => {
         });
         expect(brush_state.is_in_brush_mode).toBe(false);
 
-        // Test 2: Exit erase mode
+        // Test 3: Exit erase mode
         // Enter erase mode
         const toggle_erase_keybind = await get_keybind_value(page, "Toggle Erase");
         await press_keybind(page, toggle_erase_keybind);
