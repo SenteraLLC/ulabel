@@ -492,4 +492,105 @@ test.describe("Keybind Functionality Tests", () => {
         brush_state = await get_brush_state();
         expect(brush_state.is_in_erase_mode).toBe(false);
     });
+
+    test("undo and redo keybinds (ctrl+z and ctrl+shift+z) should undo and redo actions", async ({ page }) => {
+        await wait_for_ulabel_init(page);
+
+        // Get initial annotation count
+        let count = await get_annotation_count(page);
+        expect(count).toBe(0);
+
+        // Create an annotation
+        await draw_bbox(page, [200, 200], [400, 400]);
+        await page.waitForTimeout(200);
+
+        // Verify annotation was created
+        count = await get_annotation_count(page);
+        expect(count).toBe(1);
+
+        // Press ctrl+z to undo
+        await press_keybind(page, "ctrl+z");
+        await page.waitForTimeout(200);
+
+        // Verify annotation was undone (removed from ordering)
+        count = await get_annotation_count(page);
+        expect(count).toBe(0);
+
+        // Press ctrl+shift+z to redo
+        await press_keybind(page, "ctrl+shift+z");
+        await page.waitForTimeout(200);
+
+        // Verify annotation was restored
+        count = await get_annotation_count(page);
+        expect(count).toBe(1);
+    });
+
+    test("escape keybind should exit brush mode and erase mode", async ({ page }) => {
+        await wait_for_ulabel_init(page);
+
+        // Switch to polygon mode (required for brush/erase mode)
+        await page.click("a#md-btn--polygon");
+        await page.waitForTimeout(200);
+
+        // Test 1: Exit brush mode
+        // Enter brush mode
+        const toggle_brush_keybind = await get_keybind_value(page, "Toggle Brush");
+        await press_keybind(page, toggle_brush_keybind);
+        await page.waitForTimeout(200);
+
+        // Verify we're in brush mode
+        let brush_state = await page.evaluate(() => {
+            const subtask = window.ulabel.get_current_subtask();
+            return {
+                is_in_brush_mode: subtask.state.is_in_brush_mode,
+                is_in_erase_mode: subtask.state.is_in_erase_mode,
+            };
+        });
+        expect(brush_state.is_in_brush_mode).toBe(true);
+        expect(brush_state.is_in_erase_mode).toBe(false);
+
+        // Press escape to exit brush mode
+        await press_keybind(page, "escape");
+        await page.waitForTimeout(200);
+
+        // Verify we exited brush mode
+        brush_state = await page.evaluate(() => {
+            const subtask = window.ulabel.get_current_subtask();
+            return {
+                is_in_brush_mode: subtask.state.is_in_brush_mode,
+                is_in_erase_mode: subtask.state.is_in_erase_mode,
+            };
+        });
+        expect(brush_state.is_in_brush_mode).toBe(false);
+
+        // Test 2: Exit erase mode
+        // Enter erase mode
+        const toggle_erase_keybind = await get_keybind_value(page, "Toggle Erase");
+        await press_keybind(page, toggle_erase_keybind);
+        await page.waitForTimeout(300);
+
+        // Verify we're in erase mode
+        brush_state = await page.evaluate(() => {
+            const subtask = window.ulabel.get_current_subtask();
+            return {
+                is_in_brush_mode: subtask.state.is_in_brush_mode,
+                is_in_erase_mode: subtask.state.is_in_erase_mode,
+            };
+        });
+        expect(brush_state.is_in_erase_mode).toBe(true);
+
+        // Press escape to exit erase mode
+        await press_keybind(page, "escape");
+        await page.waitForTimeout(200);
+
+        // Verify we exited erase mode
+        brush_state = await page.evaluate(() => {
+            const subtask = window.ulabel.get_current_subtask();
+            return {
+                is_in_brush_mode: subtask.state.is_in_brush_mode,
+                is_in_erase_mode: subtask.state.is_in_erase_mode,
+            };
+        });
+        expect(brush_state.is_in_erase_mode).toBe(false);
+    });
 });
