@@ -368,7 +368,7 @@ test.describe("Keybind Functionality Tests", () => {
         });
         expect(second_anno_zoom).not.toBe(first_anno_zoom);
 
-        // Presss the keybind to fly to previous annotation - should go back to first annotation
+        // Press the keybind to fly to previous annotation - should go back to first annotation
         await press_keybind(page, fly_to_prev_keybind);
         await page.waitForTimeout(300);
         const back_to_first_zoom = await page.evaluate(() => {

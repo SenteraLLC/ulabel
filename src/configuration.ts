@@ -168,7 +168,6 @@ export class Configuration {
         AllowedToolboxItem.Keybinds,
         AllowedToolboxItem.ModeSelect,
         AllowedToolboxItem.AnnotationList,
-        AllowedToolboxItem.Keybinds,
         AllowedToolboxItem.Brush,
         AllowedToolboxItem.ImageFilters,
         AllowedToolboxItem.ZoomPan,
