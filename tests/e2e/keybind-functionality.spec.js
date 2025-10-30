@@ -1,7 +1,7 @@
 // End-to-end tests for individual keybind functionality
 import { test, expect } from "./fixtures";
 import { wait_for_ulabel_init } from "../testing-utils/init_utils";
-import { get_annotation_count, get_annotation_by_index } from "../testing-utils/annotation_utils";
+import { get_annotation_count, get_annotation_by_index, get_annotation_class_id } from "../testing-utils/annotation_utils";
 import { draw_bbox } from "../testing-utils/drawing_utils";
 import { get_current_subtask_key } from "../testing-utils/subtask_utils";
 
@@ -619,5 +619,93 @@ test.describe("Keybind Functionality Tests", () => {
             };
         });
         expect(brush_state.is_in_erase_mode).toBe(false);
+    });
+
+    test("class keybinds should be settable, work, and reset to null/none", async ({ page }) => {
+        // Use multi-class demo which has classes with and without keybinds
+        await page.goto("demo/multi-class.html");
+        await wait_for_ulabel_init(page);
+
+        // Expand the keybinds toolbox
+        const keybinds_header = page.locator(".keybinds-header");
+        await keybinds_header.click();
+        await page.waitForTimeout(200);
+
+        // Scroll down in the keybinds list to find class keybinds
+        const keybinds_list = page.locator(".keybinds-list");
+        await keybinds_list.evaluate((el) => {
+            el.scrollTop = el.scrollHeight;
+        });
+        await page.waitForTimeout(200);
+
+        // Find the "Truck" class keybind item (starts with no keybind)
+        const truck_keybind_item = page.locator(".keybind-item").filter({ hasText: "Truck" });
+        await expect(truck_keybind_item).toBeVisible();
+
+        // Verify initial keybind is "none" or empty
+        let truck_key = truck_keybind_item.locator(".keybind-key");
+        let initial_keybind = await truck_key.textContent();
+        expect(initial_keybind.trim().toLowerCase()).toMatch(/none|^$/);
+
+        // Click to set a new keybind
+        await truck_key.click();
+        await page.waitForTimeout(100);
+
+        // Press a key to set the keybind
+        await page.keyboard.press("3");
+        await page.waitForTimeout(200);
+
+        // Verify the keybind was set
+        let new_keybind = await truck_key.textContent();
+        expect(new_keybind.trim()).toBe("3");
+
+        // Test that the keybind works - create an annotation and press the keybind
+        await page.click("a#md-btn--bbox");
+        await page.waitForTimeout(200);
+
+        // Draw a bbox
+        await draw_bbox(page, [200, 200], [400, 400]);
+        await page.waitForTimeout(200);
+
+        // Hover over the created annotation to select it
+        await page.mouse.move(300, 300);
+        await page.waitForTimeout(200);
+
+        // Get the annotation and verify initial class
+        let annotation = await get_annotation_by_index(page, 0);
+        expect(get_annotation_class_id(annotation)).toBe(10); // Sedan
+
+        // Press the keybind to select the Truck class
+        await press_keybind(page, "3");
+        await page.waitForTimeout(200);
+
+        // Verify the active class changed to Truck (id: 12)
+        annotation = await get_annotation_by_index(page, 0);
+        expect(get_annotation_class_id(annotation)).toBe(12);
+
+        // Hit the reset button to clear the Truck keybind
+        const reset_button = truck_keybind_item.locator(".keybind-reset-btn");
+        await reset_button.click();
+        await page.waitForTimeout(200);
+
+        // Verify keybind was reset to none
+        const reset_keybind = await truck_key.textContent();
+        expect(reset_keybind.trim().toLowerCase()).toMatch(/none|^$/);
+
+        // Hover over the annotation and press "1" to select Sedan
+        await page.mouse.move(300, 300);
+        await page.waitForTimeout(200);
+        await page.keyboard.press("1");
+        await page.waitForTimeout(200);
+
+        // Verify active class is now Sedan (id: 10)
+        annotation = await get_annotation_by_index(page, 0);
+        expect(get_annotation_class_id(annotation)).toBe(10);
+
+        // Verify the keybind no longer works - press "3" and check active class doesn't change to Truck
+        await page.keyboard.press("3");
+        await page.waitForTimeout(200);
+        annotation = await get_annotation_by_index(page, 0);
+        expect(get_annotation_class_id(annotation)).toBe(10); // Still Sedan
     });
 });
