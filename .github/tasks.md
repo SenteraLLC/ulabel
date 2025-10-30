@@ -50,10 +50,28 @@
   - [x] Update listeners.ts to use both keybinds independently
   - [x] Update toolbox.ts to use both keybinds independently
   - [x] Update api_spec.md to document both keybinds
-- [ ] Write e2e tests for the keybind toolbox item
+- [x] Write e2e tests for the keybind toolbox item
   - [x] Ability to set keybind to a chord
   - [x] Ability to reset keybind
   - [x] Ability to set a class keybind
-  - [ ] Run tests to verify they pass
-- [ ] Write a e2e test for each keybind
+  - [x] Run tests to verify they pass
+- [x] Write a e2e test for each keybind
+  - [x] reset_zoom_keybind (r)
+  - [x] show_full_image_keybind (shift+r)
+  - [x] create_point_annotation_keybind (c)
+  - [x] delete_annotation_keybind (d)
+  - [x] switch_subtask_keybind (z)
+  - [x] toggle_annotation_mode_keybind (u)
+  - [x] create_bbox_on_initial_crop_keybind (f)
+  - [x] toggle_brush_mode_keybind (g)
+  - [x] toggle_erase_mode_keybind (e)
+  - [x] increase_brush_size_keybind (])
+  - [x] decrease_brush_size_keybind ([)
+  - [x] annotation_size_small_keybind (s)
+  - [x] annotation_size_large_keybind (l)
+  - [x] annotation_size_plus_keybind (=)
+  - [x] annotation_size_minus_keybind (-)
+  - [x] annotation_vanish_keybind (v)
+  - [x] fly_to_next_annotation_keybind (tab)
+  - [x] fly_to_previous_annotation_keybind (shift+tab)
 

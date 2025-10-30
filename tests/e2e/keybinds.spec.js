@@ -175,7 +175,6 @@ test.describe("Keybinds Toolbox Item", () => {
         // Get two different keybinds
         const deleteKeybindItem = page.locator(".keybind-item").filter({ hasText: "Delete Annotation" });
         const deleteKeybindKey = deleteKeybindItem.locator(".keybind-key");
-        const originalDeleteValue = await deleteKeybindKey.textContent();
 
         const createPointItem = page.locator(".keybind-item").filter({ hasText: "Create Point" });
         const createPointKey = createPointItem.locator(".keybind-key");
