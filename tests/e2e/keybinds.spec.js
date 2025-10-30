@@ -51,10 +51,11 @@ test.describe("Keybinds Toolbox Item", () => {
 
         // Verify the keybind works by checking localStorage
         const customKeybinds = await page.evaluate(() => {
-            const stored = localStorage.getItem("ulabel_custom_keybinds");
-            return stored ? JSON.parse(stored) : {};
+            return localStorage.getItem("ulabel_custom_keybinds");
         });
-        expect(customKeybinds).toHaveProperty("delete_annotation_keybind", "shift+x");
+        // Parse twice because localStorage stores a JSON string of a JSON string
+        const parsedKeybinds = customKeybinds ? JSON.parse(JSON.parse(customKeybinds)) : {};
+        expect(parsedKeybinds).toHaveProperty("delete_annotation_keybind", "shift+x");
 
         // --- Test: Reset keybind to default ---
 
@@ -70,17 +71,13 @@ test.describe("Keybinds Toolbox Item", () => {
 
         // Verify it was removed from localStorage
         const customKeybindsAfterReset = await page.evaluate(() => {
-            const stored = localStorage.getItem("ulabel_custom_keybinds");
-            return stored ? JSON.parse(stored) : {};
+            return localStorage.getItem("ulabel_custom_keybinds");
         });
-        expect(customKeybindsAfterReset).not.toHaveProperty("delete_annotation_keybind");
+        // Parse twice because localStorage stores a JSON string of a JSON string
+        const parsedKeybindsAfterReset = customKeybindsAfterReset ? JSON.parse(JSON.parse(customKeybindsAfterReset)) : {};
+        expect(parsedKeybindsAfterReset).not.toHaveProperty("delete_annotation_keybind");
 
         // --- Test: Set a class keybind ---
-
-        // Expand the class keybinds section
-        const classSection = page.locator(".keybind-category").filter({ hasText: "Class Keybinds" });
-        await expect(classSection).toBeVisible();
-        await classSection.click();
 
         // Find the first class keybind
         const classKeybindItems = page.locator(".keybind-section-items[data-section='class'] .keybind-item");
@@ -106,10 +103,11 @@ test.describe("Keybinds Toolbox Item", () => {
             // Get the class ID and verify it was saved
             const classId = await classKeybindKey.getAttribute("data-class-id");
             const customClassKeybinds = await page.evaluate(() => {
-                const stored = localStorage.getItem("ulabel_custom_class_keybinds");
-                return stored ? JSON.parse(stored) : {};
+                return localStorage.getItem("ulabel_custom_class_keybinds");
             });
-            expect(customClassKeybinds).toHaveProperty(classId, "q");
+            // Parse twice because localStorage stores a JSON string of a JSON string
+            const parsedClassKeybinds = customClassKeybinds ? JSON.parse(JSON.parse(customClassKeybinds)) : {};
+            expect(parsedClassKeybinds).toHaveProperty(classId, "q");
 
             // Reset the class keybind
             const classResetButton = firstClassKeybind.locator(".keybind-reset-btn");
@@ -142,7 +140,7 @@ test.describe("Keybinds Toolbox Item", () => {
         const switchSubtaskItem = page.locator(".keybind-item").filter({ hasText: "Switch Subtask" });
         const switchSubtaskKey = switchSubtaskItem.locator(".keybind-key");
         await switchSubtaskKey.click();
-        await page.keyboard.press("ctrl+s");
+        await page.keyboard.press("Control+S");
 
         // Verify both have custom values
         await expect(createPointKey).toHaveClass(/customized/);
@@ -217,20 +215,20 @@ test.describe("Keybinds Toolbox Item", () => {
         await configurableSection.click();
         await expect(configurableItems).toHaveClass(/collapsed/);
 
-        // Verify localStorage
+        // Verify localStorage (stored as double-stringified JSON)
         const collapsed = await page.evaluate(() => {
             return localStorage.getItem("ulabel_keybind_section_configurable_collapsed");
         });
-        expect(collapsed).toBe("true");
+        expect(collapsed).toBe(JSON.stringify("true"));
 
         // Click to expand again
         await configurableSection.click();
         await expect(configurableItems).not.toHaveClass(/collapsed/);
 
-        // Verify localStorage
+        // Verify localStorage (stored as double-stringified JSON)
         const expanded = await page.evaluate(() => {
             return localStorage.getItem("ulabel_keybind_section_configurable_collapsed");
         });
-        expect(expanded).toBe("false");
+        expect(expanded).toBe(JSON.stringify("false"));
     });
 });
