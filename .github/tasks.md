@@ -1,36 +1,77 @@
 ## Tasks
-- [x] Read the description in [#234](https://github.com/SenteraLLC/ulabel/issues/234)
-  - [x] Write a clear summary of the requested change
-  - [x] Break the requested feature down into concrete steps. Add the steps to the tasks list, and then start working on then one by one.
+- [x] Add a sideways, clickable arrow to minimize the entire toolbox
+  - [x] Add collapse button to toolbox HTML
+  - [x] Add CSS styles for collapsed state
+  - [x] Add click handler to toggle collapsed state
+  - [x] Store collapsed state in localStorage
+  - [x] Test functionality
+  - [x] Move arrow to top of toolbox (instead of middle)
+  - [x] Make annbox expand when toolbox is collapsed
+  - [x] Make collapsed button visible
+- [x] Create a keybinds toolbox item
+  - [x] Research existing keybinds in the codebase
+  - [x] Create basic keybinds toolbox item file
+  - [x] Register keybinds toolbox item in configuration
+  - [x] Display list of all keybinds (the key) labeled with the name
+  - [x] Add hover tooltips with detailed descriptions (using title attribute)
+  - [x] Add collision detection and red highlighting
+  - [x] Implement editing for configurable keybinds
+  - [x] Test functionality
+- [x] Add support for keybind "chords" (ie, "shift+i")
+  - [x] Update keybind edit handler to capture modifier keys (shift, ctrl, alt)
+  - [x] Create chord string format (e.g., "shift+i", "ctrl+alt+d")
+  - [x] Update key comparison logic in listeners to support chords
+  - [x] Update display to show chords properly (displays captured chord automatically)
+  - [x] Test chord functionality
+- [x] Store collapse/expand for applicable toolbox items
+  - [x] Keybinds
+  - [x] Annotation List
+  - [x] Image Filters
+- [x] Make all keybinds configurable
+- [x] Minor changes to existing keybinds
+  - [x] Rename "Change Zoom" keybind to "Reset Zoom"
+  - [x] Change "Toggle Mode" label in the keybind toolbox item to "Toggle Annotation Mode"
+- [x] Make class keybinds configurable in the keybinds toolbox item
+- [x] Store keybinds in local storage
+  - [x] Only save them when a user explicitly sets it
+  - [x] For keybinds using a user setting, add a button to reset that keybind to default (should change keybind and delete stored keybind)
+  - [x] Add "Reset All to Default" button in the keybinds toolbox item that resets all keybinds and deletes stored user keybinds
+  - [x] Add a light yellow highlight on keybinds that are using a user setting instead of a default
+  - [x] Make sure that we update collison highlights after resetting a keybind to default
+  - [x] Only show the reset to default for keybinds with user settings, not on those already at the default
+  - [x] Make sure the class keybinds also are included in the keybind collision checks
+  - [x] Fix reset to default to use constructor-provided config values instead of hardcoded Configuration defaults
+  - [x] Centralize keybind config property names in Configuration.KEYBIND_CONFIG_KEYS constant
+  - [x] Make KEYBIND_CONFIG_KEYS dynamically generated from Configuration class properties
+  - [x] Rename create_bbox_on_initial_crop to create_bbox_on_initial_crop_keybind for consistency
+- [x] Replace any console outputs with `log_message`
+- [x] Replace the "reset_zoom_keybind" with two separate keybinds:
+  - [x] Add "show_full_image_keybind" property to Configuration
+  - [x] Update listeners.ts to use both keybinds independently
+  - [x] Update toolbox.ts to use both keybinds independently
+  - [x] Update api_spec.md to document both keybinds
+- [x] Write e2e tests for the keybind toolbox item
+  - [x] Ability to set keybind to a chord
+  - [x] Ability to reset keybind
+  - [x] Ability to set a class keybind
+  - [x] Run tests to verify they pass
+- [x] Write a e2e test for each keybind
+  - [x] reset_zoom_keybind (r)
+  - [x] show_full_image_keybind (shift+r)
+  - [x] create_point_annotation_keybind (c)
+  - [x] delete_annotation_keybind (d)
+  - [x] switch_subtask_keybind (z)
+  - [x] toggle_annotation_mode_keybind (u)
+  - [x] create_bbox_on_initial_crop_keybind (f)
+  - [x] toggle_brush_mode_keybind (g)
+  - [x] toggle_erase_mode_keybind (e)
+  - [x] increase_brush_size_keybind (])
+  - [x] decrease_brush_size_keybind ([)
+  - [x] annotation_size_small_keybind (s)
+  - [x] annotation_size_large_keybind (l)
+  - [x] annotation_size_plus_keybind (=)
+  - [x] annotation_size_minus_keybind (-)
+  - [x] annotation_vanish_keybind (v)
+  - [x] fly_to_next_annotation_keybind (tab)
+  - [x] fly_to_previous_annotation_keybind (shift+tab)
 
-### Summary
-Create an annotation list toolbox item that displays all annotations in a list format, similar to other annotation tools. The list should:
-- Display each annotation (by ID or index)
-- Allow show/hide of deprecated annotations (default: hide)
-- Support grouping by class
-- Enable clicking to "fly to" the annotation
-- Show annotation labels/IDs (on hover or drawn on canvas)
-- Display "current idx / total" when navigating through annotations
-- Highlight annotations when hovering in the list
-
-### Implementation Steps
-- [x] 1. Research existing toolbox items and understand the toolbox structure
-  - [x] Read `src/toolbox.ts` to understand how toolbox items work
-  - [x] Review existing toolbox items in `src/toolbox_items/`
-  - [x] Understand how annotation data is accessed and structured
-- [x] 2. Create the basic annotation list toolbox item
-  - [x] Create new file `src/toolbox_items/annotation_list.ts`
-  - [x] Implement basic UI structure (container, list elements)
-  - [x] Register the toolbox item in the main toolbox
-- [x] 3. Implement core list functionality
-  - [x] Display all annotations with their ID/index
-  - [x] Add show/hide toggle for deprecated annotations (default: hide)
-  - [x] Add option to group by class
-- [x] 4. Implement click-to-fly functionality
-  - [x] Integrate with existing "fly to" functionality from PR #230
-  - [x] Add click handlers to list items
-  - [x] Display "current idx / total" indicator
-- [x] 5. Implement hover highlighting
-  - [x] Add hover handlers to list items
-  - [x] Integrate with existing annotation highlighting system
-  - [x] Ensure bidirectional highlighting (list hover → canvas, canvas hover → list)

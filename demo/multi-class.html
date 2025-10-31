@@ -51,7 +51,6 @@
                             "name": "Truck",
                             "color": "orange",
                             "id": 12,
-                            "keybind": "3",
                         },
                     ],
                     "allowed_modes": ["bbox", "polygon", "contour", "polyline", "point", "tbar", "delete_polygon", "delete_bbox"],
@@ -65,7 +64,8 @@
                         {
                             "name": "Blurry",
                             "color": "gray",
-                            "id": 20
+                            "id": 20,
+                            "keybind": "5",
                         },
                         {
                             "name": "Occluded",
@@ -119,6 +119,7 @@
                 "initial_line_size": 2,
                 "toolbox_order": [
                     AllowedToolboxItem.SubmitButtons,
+                    AllowedToolboxItem.Keybinds,
                     AllowedToolboxItem.ModeSelect,
                     AllowedToolboxItem.AnnotationList,
                     AllowedToolboxItem.ImageFilters,
@@ -131,7 +132,7 @@
                     AllowedToolboxItem.RecolorActive,
                 ],
                 "toggle_brush_mode_keybind": "f",
-                "create_bbox_on_initial_crop": "|",
+                "create_bbox_on_initial_crop_keybind": "|",
                 "click_and_drag_poly_annotations": false,
                 "anno_scaling_mode": "fixed",
                 "allow_annotations_outside_image": false,

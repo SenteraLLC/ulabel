@@ -2,6 +2,7 @@ import type { ULabel } from "../index";
 import { ToolboxItem } from "../toolbox";
 import { ULabelAnnotation } from "../annotation";
 import { ULabelSubtask } from "../subtask";
+import { get_local_storage_item, set_local_storage_item } from "../utilities";
 import {
     BBOX_SVG,
     DELETE_BBOX_SVG,
@@ -264,6 +265,7 @@ export class AnnotationListToolboxItem extends ToolboxItem {
         // Toggle button to show/hide annotation list
         $(document).on("click.ulabel", "#annotation-list-toggle", () => {
             this.is_collapsed = !this.is_collapsed;
+            set_local_storage_item("ulabel_annotation_list_collapsed", this.is_collapsed ? "true" : "false");
             this.update_list();
         });
 
@@ -587,8 +589,23 @@ export class AnnotationListToolboxItem extends ToolboxItem {
      * Code called after all of ULabel's constructor and initialization code is called
      */
     public after_init(): void {
+        // Restore collapsed state from localStorage
+        this.restore_collapsed_state();
+
         // Initial list update
         this.update_list();
+    }
+
+    /**
+     * Restore the collapsed state from localStorage
+     */
+    private restore_collapsed_state(): void {
+        const stored_state = get_local_storage_item("ulabel_annotation_list_collapsed");
+        if (stored_state === "false") {
+            this.is_collapsed = false;
+        } else if (stored_state === "true") {
+            this.is_collapsed = true;
+        }
     }
 
     /**
