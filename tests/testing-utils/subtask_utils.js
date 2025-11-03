@@ -13,6 +13,15 @@ export async function get_current_subtask_key(page) {
 }
 
 /**
+ * Get the current subtask
+ * @param {Page} page - The Playwright page object
+ * @returns {Promise<Object>} The current subtask
+ */
+export async function get_current_subtask(page) {
+    return await page.evaluate(() => window.ulabel.get_current_subtask());
+}
+
+/**
  * Switch to a subtask by its index.
  * @param {Page} page - The Playwright page object
  * @param {number} index - The index of the subtask tab
