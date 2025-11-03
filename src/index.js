@@ -595,6 +595,7 @@ export class ULabel {
             // Renderings state
             demo_canvas_context: null,
             edited: false,
+            all_subtasks_vanished: false,
         };
 
         // Create a place on ulabel to store resize observer objects

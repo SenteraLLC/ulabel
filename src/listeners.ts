@@ -317,7 +317,21 @@ function handle_keydown_event(
     }
 
     // Handle annotation resizing keybinds
-    // TODO: vanish all subtasks?
+
+    if (event_matches_keybind(keydown_event, ulabel.config.annotation_vanish_all_keybind)) {
+        keydown_event.preventDefault();
+        // Toggle global vanish flag
+        ulabel.state.all_subtasks_vanished = !ulabel.state.all_subtasks_vanished;
+
+        // For each subtask, toggle vanished state if needed
+        for (const subtask_key in ulabel.subtasks) {
+            if (ulabel.subtasks[subtask_key].state.is_vanished !== ulabel.state.all_subtasks_vanished) {
+                AnnotationResizeItem.toggle_subtask_vanished(ulabel, subtask_key);
+            }
+        }
+        return false;
+    }
+
     if (event_matches_keybind(keydown_event, ulabel.config.annotation_vanish_keybind)) {
         keydown_event.preventDefault();
         AnnotationResizeItem.toggle_subtask_vanished(ulabel, ulabel.get_current_subtask_key());

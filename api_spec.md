@@ -481,7 +481,10 @@ Keybind to increment the annotation size for the current subtask. Default is `=`
 Keybind to decrement the annotation size for the current subtask. Default is `-`.
 
 ### `annotation_vanish_keybind`
-Keybind to toggle vanish mode for annotations in the current subtask (lowercase toggles current subtask, uppercase toggles all subtasks). Default is `v`.
+Keybind to toggle vanish mode for annotations in the current subtask. Default is `v`.
+
+### `annotation_vanish_all_keybind`
+Keybind to toggle vanish mode for all subtasks. Default is `shift+v`
 
 ### `fly_to_max_zoom`
 Maximum zoom factor used when flying-to an annotation. Default is `10`, value must be > `0`. 
