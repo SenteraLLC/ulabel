@@ -4837,6 +4837,7 @@ export class ULabel {
         // Don't show any dialogs when currently drawing/editing an annotation,
         // And hide just edit dialogs when moving
         if (
+            current_subtask["state"]["is_vanished"] ||
             current_subtask["state"]["is_in_progress"] ||
             current_subtask["state"]["starting_complex_polygon"] ||
             current_subtask["state"]["is_in_brush_mode"] ||

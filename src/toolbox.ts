@@ -1412,6 +1412,9 @@ export class AnnotationResizeItem extends ToolboxItem {
 
         // Redraw the annotations
         ulabel.redraw_all_annotations(subtask_key, null, false);
+
+        // Show/hide dialogs
+        ulabel.suggest_edits();
     }
 
     private set_size_cookie(cookie_value, subtask) {
