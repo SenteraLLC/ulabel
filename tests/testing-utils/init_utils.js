@@ -12,4 +12,6 @@
 export async function wait_for_ulabel_init(page, url = "/multi-class.html") {
     await page.goto(url);
     await page.waitForFunction(() => window.ulabel && window.ulabel.is_init);
+    // Return the ulabel instance for convenience
+    return await page.evaluate(() => window.ulabel);
 }

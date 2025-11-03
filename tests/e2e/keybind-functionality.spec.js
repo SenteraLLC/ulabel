@@ -378,14 +378,14 @@ test.describe("Keybind Functionality Tests", () => {
     });
 
     test("annotation_size keybinds should control annotation display size", async ({ page }) => {
-        await wait_for_ulabel_init(page);
+        const ulabel = await wait_for_ulabel_init(page);
 
         // Get all annotation size keybinds from the toolbox
         const small_keybind = await get_keybind_value(page, "Size: Small");
         const large_keybind = await get_keybind_value(page, "Size: Large");
         const plus_keybind = await get_keybind_value(page, "Size: Increase");
         const minus_keybind = await get_keybind_value(page, "Size: Decrease");
-        const vanish_keybind = await get_keybind_value(page, "Toggle Vanish");
+        const vanish_keybind = await get_keybind_value(page, "Toggle Vanish All");
 
         // Create an annotation
         await draw_bbox(page, [200, 200], [400, 400]);
@@ -416,12 +416,11 @@ test.describe("Keybind Functionality Tests", () => {
         annotation = await get_annotation_by_index(page, 0);
         expect(annotation.line_size).toBe(size_before_minus - 0.5);
 
-        // Test vanish keybind - should set size to 0.01 (vanished)
-        const size_before_vanish = annotation.line_size;
+        // Test vanish keybind - should toggle vanish mode
+        const vanish_state_before = ulabel.get_current_subtask().state.is_vanished;
         await press_keybind(page, vanish_keybind);
         await page.waitForTimeout(200);
-        annotation = await get_annotation_by_index(page, 0);
-        expect(annotation.line_size).toBe(0.01);
+        expect(ulabel.get_current_subtask().state.is_vanished).not.toBe(vanish_state_before);
 
         // Press vanish again to restore - should go back to previous size
         await press_keybind(page, vanish_keybind);
