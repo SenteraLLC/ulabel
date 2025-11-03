@@ -270,7 +270,7 @@ export class ULabel {
                 if (
                     (cand.line_size === undefined) || (cand.line_size == null)
                 ) {
-                    cand.line_size = ul.get_subtask_line_size(subtask_key);
+                    cand.line_size = ul.config.initial_line_size;
                 }
 
                 // Add created by attribute if there is none
