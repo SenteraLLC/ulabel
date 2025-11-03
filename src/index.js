@@ -30,7 +30,6 @@ import { remove_ulabel_listeners } from "../build/listeners";
 import { log_message, LogLevel } from "../build/error_logging";
 import { initialize_annotation_canvases } from "../build/canvas_utils";
 import { record_action, record_finish, record_finish_edit, record_finish_move, undo, redo } from "../build/actions";
-import { DEFAULT_ANNOTATION_SIZE } from "../build/toolbox";
 
 import $ from "jquery";
 const jQuery = $;
@@ -523,7 +522,7 @@ export class ULabel {
             annotation_meta: arguments[6] ?? {},
             px_per_px: arguments[7] ?? 1,
             initial_crop: arguments[8] ?? null,
-            initial_line_size: arguments[9] ?? DEFAULT_ANNOTATION_SIZE,
+            initial_line_size: arguments[9] ?? 5,
             config_data: arguments[10] ?? null,
             toolbox_order: arguments[11] ?? null,
         };

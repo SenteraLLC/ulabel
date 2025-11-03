@@ -124,7 +124,7 @@ export class Configuration {
     public allow_soft_id: boolean = false;
     public default_annotation_color: string = "#fa9d2a";
     public username: string = "ULabelUser";
-    public initial_line_size: number = 4;
+    public initial_line_size: number = 5;
 
     // ID Dialog config
     public cl_opacity: number = 0.4;

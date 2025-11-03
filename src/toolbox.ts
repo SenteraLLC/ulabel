@@ -39,7 +39,6 @@ export const SMALL_ANNOTATION_SIZE = 1.5;
 export const LARGE_ANNOTATION_SIZE = 5.0;
 export const INCREMENT_ANNOTATION_SIZE = 0.5;
 export const MINIMUM_ANNOTATION_SIZE = 0.01;
-export const DEFAULT_ANNOTATION_SIZE = 5.0;
 
 const toolboxDividerDiv = "<div class=toolbox-divider></div>";
 
@@ -1215,14 +1214,7 @@ export class AnnotationResizeItem extends ToolboxItem {
 
         // First check for a size cookie, if one isn't found then check the config
         for (const subtask_key in ulabel.subtasks) {
-            const size_cookie = this.read_size_cookie(ulabel.subtasks[subtask_key]);
-            if ((size_cookie != null) && size_cookie != "NaN") {
-                AnnotationResizeItem.update_annotation_size(ulabel, subtask_key, Number(size_cookie), false, false);
-            } else if (ulabel.config.initial_line_size != undefined) {
-                AnnotationResizeItem.update_annotation_size(ulabel, subtask_key, ulabel.config.initial_line_size, false, false);
-            } else {
-                AnnotationResizeItem.update_annotation_size(ulabel, subtask_key, DEFAULT_ANNOTATION_SIZE, false, false);
-            }
+            AnnotationResizeItem.update_annotation_size(ulabel, subtask_key, ulabel.config.initial_line_size, false, false);
         }
 
         this.add_styles();
@@ -1415,38 +1407,6 @@ export class AnnotationResizeItem extends ToolboxItem {
 
         // Show/hide dialogs
         ulabel.suggest_edits();
-    }
-
-    private set_size_cookie(cookie_value, subtask) {
-        const d = new Date();
-        d.setTime(d.getTime() + (10000 * 24 * 60 * 60 * 1000));
-
-        const subtask_name = subtask.display_name.replaceLowerConcat(" ", "_");
-
-        document.cookie = subtask_name + "_size=" + cookie_value + ";" + d.toUTCString() + ";path=/";
-    }
-
-    private read_size_cookie(subtask) {
-        const subtask_name = subtask.display_name.replaceLowerConcat(" ", "_");
-
-        const cookie_name = subtask_name + "_size=";
-
-        const cookie_array = document.cookie.split(";");
-
-        for (let i = 0; i < cookie_array.length; i++) {
-            let current_cookie = cookie_array[i];
-
-            // while there's whitespace at the front of the cookie, loop through and remove it
-            while (current_cookie.charAt(0) == " ") {
-                current_cookie = current_cookie.substring(1);
-            }
-
-            if (current_cookie.indexOf(cookie_name) == 0) {
-                return current_cookie.substring(cookie_name.length, current_cookie.length);
-            }
-        }
-
-        return null;
     }
 
     public get_html() {
