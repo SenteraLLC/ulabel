@@ -24,6 +24,7 @@ import {
     get_local_storage_item,
     set_local_storage_item,
 } from "./utilities";
+import { log_message, LogLevel } from "./error_logging";
 
 // For ResizeToolboxItem
 enum ValidResizeValues {
@@ -34,8 +35,13 @@ enum ValidResizeValues {
     DECREMENT = "dec",
 }
 
+export const SMALL_ANNOTATION_SIZE = 1.5;
+export const LARGE_ANNOTATION_SIZE = 5.0;
+export const INCREMENT_ANNOTATION_SIZE = 0.5;
+export const MINIMUM_ANNOTATION_SIZE = 0.01;
+export const DEFAULT_ANNOTATION_SIZE = 5.0;
+
 const toolboxDividerDiv = "<div class=toolbox-divider></div>";
-const vanish_size = 0.01;
 
 /** Chains the replaceAll method and the toLowerCase method.
  *  Optionally concatenates a string at the end of the method.
@@ -1208,21 +1214,14 @@ export class AnnotationResizeItem extends ToolboxItem {
         this.ulabel = ulabel;
 
         // First check for a size cookie, if one isn't found then check the config
-        // for a default annotation size. If neither are found it will use the size
-        // that the annotation was saved as.
-        for (const subtask in ulabel.subtasks) {
-            const cached_size_property = ulabel.subtasks[subtask].display_name.replaceLowerConcat(" ", "-", "-cached-size");
-            const size_cookie = this.read_size_cookie(ulabel.subtasks[subtask]);
+        for (const subtask_key in ulabel.subtasks) {
+            const size_cookie = this.read_size_cookie(ulabel.subtasks[subtask_key]);
             if ((size_cookie != null) && size_cookie != "NaN") {
-                this.update_annotation_size(ulabel, ulabel.subtasks[subtask], Number(size_cookie));
-                this[cached_size_property] = Number(size_cookie);
-            } else if (ulabel.config.default_annotation_size != undefined) {
-                this.update_annotation_size(ulabel, ulabel.subtasks[subtask], ulabel.config.default_annotation_size);
-                this[cached_size_property] = ulabel.config.default_annotation_size;
+                AnnotationResizeItem.update_annotation_size(ulabel, subtask_key, Number(size_cookie), false, false);
+            } else if (ulabel.config.initial_line_size != undefined) {
+                AnnotationResizeItem.update_annotation_size(ulabel, subtask_key, ulabel.config.initial_line_size, false, false);
             } else {
-                const DEFAULT_SIZE = 5;
-                this.update_annotation_size(ulabel, ulabel.subtasks[subtask], DEFAULT_SIZE);
-                this[cached_size_property] = DEFAULT_SIZE;
+                AnnotationResizeItem.update_annotation_size(ulabel, subtask_key, DEFAULT_ANNOTATION_SIZE, false, false);
             }
         }
 
@@ -1308,181 +1307,111 @@ export class AnnotationResizeItem extends ToolboxItem {
         $(document).on("click.ulabel", ".annotation-resize-button", (event) => {
             // Get the current subtask
             const current_subtask_key = this.ulabel.get_current_subtask_key();
-            const current_subtask = this.ulabel.get_current_subtask();
 
             // Get the clicked button
             const button = $(event.currentTarget);
 
             // Use the button id to get what size to resize the annotations to
-            const annotation_size = <ValidResizeValues> button.attr("id").slice(18);
+            const button_value = <ValidResizeValues> button.attr("id").slice(18);
 
-            // Update the size of all annotations in the subtask
-            this.update_annotation_size(this.ulabel, current_subtask, annotation_size);
-
-            this.ulabel.redraw_all_annotations(current_subtask_key, null, false);
-        });
-
-        $(document).on("keydown.ulabel", (event) => {
-            // Get the current subtask
-            const current_subtask = this.ulabel.get_current_subtask();
-
-            switch (event.key) {
-                case this.ulabel.config.annotation_vanish_keybind.toUpperCase():
-                    this.update_all_subtask_annotation_size(this.ulabel, ValidResizeValues.VANISH);
+            let annotation_size: number;
+            let increment: boolean = false;
+            switch (button_value) {
+                case ValidResizeValues.SMALL:
+                    annotation_size = SMALL_ANNOTATION_SIZE;
                     break;
-                case this.ulabel.config.annotation_vanish_keybind.toLowerCase():
-                    this.update_annotation_size(this.ulabel, current_subtask, ValidResizeValues.VANISH);
+                case ValidResizeValues.LARGE:
+                    annotation_size = LARGE_ANNOTATION_SIZE;
                     break;
-                case this.ulabel.config.annotation_size_small_keybind:
-                    this.update_annotation_size(this.ulabel, current_subtask, ValidResizeValues.SMALL);
+                case ValidResizeValues.INCREMENT:
+                    annotation_size = INCREMENT_ANNOTATION_SIZE;
+                    increment = true;
                     break;
-                case this.ulabel.config.annotation_size_large_keybind:
-                    this.update_annotation_size(this.ulabel, current_subtask, ValidResizeValues.LARGE);
+                case ValidResizeValues.DECREMENT:
+                    annotation_size = -INCREMENT_ANNOTATION_SIZE;
+                    increment = true;
                     break;
-                case this.ulabel.config.annotation_size_minus_keybind:
-                    this.update_annotation_size(this.ulabel, current_subtask, ValidResizeValues.DECREMENT);
-                    break;
-                case this.ulabel.config.annotation_size_plus_keybind:
-                    this.update_annotation_size(this.ulabel, current_subtask, ValidResizeValues.INCREMENT);
-                    break;
-                default:
-                    // Return if no valid keybind was pressed
+                case ValidResizeValues.VANISH:
+                    // Toggle the vanished flag for the current subtask and return
+                    AnnotationResizeItem.toggle_subtask_vanished(this.ulabel, current_subtask_key);
                     return;
+                default:
+                    log_message(`Invalid Resize Value: ${button_value}`, LogLevel.ERROR, true);
+                    break;
             }
 
-            // If the sizes were updated resize the annotations
-            this.ulabel.redraw_all_annotations(null, null, false);
+            // Update the size of all annotations in the subtask
+            AnnotationResizeItem.update_annotation_size(this.ulabel, current_subtask_key, annotation_size, increment);
         });
     }
 
     /**
-     * Takes in either a number or a ValidResizeValues.value. If given a number it will resize all annotations in the subtask to
-     * be that size. The ValidResizeValues will either set the size of all annotations to set values or increment/decrement the
-     * current size of the annotations.
+     * Update the size of all annotations in a subtask.
      *
-     * @param subtask Subtask which holds the annotations to act on
-     * @param size How to resize the annotations
+     * @param {ULabel} ulabel ULabel instance
+     * @param {string} subtask_key Key of the subtask to update
+     * @param {number} size Size to set/increment/decrement the annotations
+     * @param {boolean} increment Whether or not to increment (true) or set (false) the size
+     * @param {boolean} redraw Whether to redraw the annotation
      */
-    public update_annotation_size(ulabel: ULabel, subtask: ULabelSubtask, size: number | ValidResizeValues): void {
+    public static update_annotation_size(ulabel: ULabel, subtask_key: string, size: number, increment: boolean = false, redraw: boolean = true): void {
+        const subtask = ulabel.subtasks[subtask_key];
         if (subtask === null) return;
 
-        const small_size = 1.5;
-        const large_size = 5;
-        const increment_size = 0.5;
-        const subtask_cached_size = subtask.display_name.replaceLowerConcat(" ", "-", "-cached-size");
-        const subtask_vanished_flag = subtask.display_name.replaceLowerConcat(" ", "-", "-vanished");
+        // If the annotations are currently vanished, don't resize them
+        if (subtask.state.is_vanished) return;
 
-        // If the annotations are currently vanished and a button other than the vanish button is
-        // pressed, then we want to ignore the input
-        if (this[subtask_vanished_flag] && size !== "v") return;
+        // Set the size of the annotations to the given size
+        AnnotationResizeItem.loop_through_annotations(subtask, size, increment);
 
-        // If a number was passed in, set all annotations to be the size of the number
-        if (typeof (size) === "number") {
-            this.loop_through_annotations(subtask, size, "=");
-            return;
-        }
-
-        // Otherwise handle each ValidResizeValues case here
-        switch (size) {
-            case ValidResizeValues.SMALL:
-                this.loop_through_annotations(subtask, small_size, "=");
-                this[subtask_cached_size] = small_size;
-                break;
-            case ValidResizeValues.LARGE:
-                this.loop_through_annotations(subtask, large_size, "=");
-                this[subtask_cached_size] = large_size;
-                break;
-            case ValidResizeValues.DECREMENT:
-                this.loop_through_annotations(subtask, increment_size, "-");
-                if (this[subtask_cached_size] - increment_size > vanish_size) {
-                    this[subtask_cached_size] -= increment_size;
-                } else {
-                    this[subtask_cached_size] = vanish_size;
-                }
-                break;
-            case ValidResizeValues.INCREMENT:
-                this.loop_through_annotations(subtask, increment_size, "+");
-                this[subtask_cached_size] += increment_size;
-                break;
-            case ValidResizeValues.VANISH:
-                if (this[subtask_vanished_flag]) {
-                    // Re-apply the cashed annotation size
-                    this.loop_through_annotations(subtask, this[subtask_cached_size], "=");
-
-                    // Filp the state
-                    this[subtask_vanished_flag] = !this[subtask_vanished_flag];
-
-                    // Unlock the vanish button
-                    $("#annotation-resize-v").removeClass("locked");
-                } else {
-                    // Apply the vanish size to make the annotations to small to see
-                    this.loop_through_annotations(subtask, vanish_size, "=");
-
-                    // Filp the state
-                    this[subtask_vanished_flag] = !this[subtask_vanished_flag];
-
-                    // Lock the vanish button
-                    $("#annotation-resize-v").addClass("locked");
-                }
-                break;
-            default:
-                console.error("update_annotation_size called with unknown size");
-        }
-
-        // Store the new size as the default if we should be tracking it
-        if (ulabel.state.line_size !== null) {
-            ulabel.state.line_size = this[subtask_cached_size];
+        // If the sizes were updated, resize the annotations
+        if (redraw) {
+            ulabel.redraw_all_annotations(subtask_key, null, false);
         }
     }
 
     // Loop through all annotations in a subtask and change their line size
-    public loop_through_annotations(subtask: ULabelSubtask, size: number, operation: "=" | "+" | "-") {
-        for (const annotation_id in subtask.annotations.access) {
-            switch (operation) {
-                case "=":
-                    subtask.annotations.access[annotation_id].line_size = size;
-                    break;
-                case "+":
-                    subtask.annotations.access[annotation_id].line_size += size;
-                    break;
-                case "-":
-                    // Check to make sure annotation line size won't go 0 or negative.
-                    // If it would, set it equal to a small positive number
-                    if (subtask.annotations.access[annotation_id].line_size - size <= vanish_size) {
-                        subtask.annotations.access[annotation_id].line_size = vanish_size;
-                    } else {
-                        subtask.annotations.access[annotation_id].line_size -= size;
-                    }
-                    break;
-                default:
-                    throw Error("Invalid Operation given to loop_through_annotations");
+    public static loop_through_annotations(subtask: ULabelSubtask, size: number, increment: boolean) {
+        // Update subtask line size
+        if (increment) {
+            // Guard against the line size going too small or negative
+            if (subtask.state.line_size + size < MINIMUM_ANNOTATION_SIZE) {
+                subtask.state.line_size = MINIMUM_ANNOTATION_SIZE;
+            } else {
+                subtask.state.line_size += size;
             }
+        } else {
+            // Set the line size to the given size
+            subtask.state.line_size = size;
         }
 
-        if (subtask.annotations.ordering.length > 0) {
-            const line_size = subtask.annotations.access[subtask.annotations.ordering[0]].line_size;
-            if (line_size !== vanish_size) {
-                this.set_size_cookie(line_size, subtask);
-            }
+        for (const annotation of Object.values(subtask.annotations.access)) {
+            // Update each annotation's line size
+            // TODO: do individual annotations need their own line_size property?
+            annotation.line_size = subtask.state.line_size;
         }
     }
 
-    // Loop through all subtasks and apply a size to them all
-    public update_all_subtask_annotation_size(ulabel, size) {
-        for (const subtask in ulabel.subtasks) {
-            this.update_annotation_size(ulabel, ulabel.subtasks[subtask], size);
-        }
-    }
+    /**
+     * Set the vanished flag for a subtask and update the vanish button
+     *
+     * @param {ULabel} ulabel ULabel
+     * @param {string} subtask_key Key of the subtask to update
+     */
+    public static toggle_subtask_vanished(ulabel: ULabel, subtask_key: string) {
+        // Toggle the vanished flag for the subtask
+        const new_value = !ulabel.subtasks[subtask_key].state.is_vanished;
+        ulabel.subtasks[subtask_key].state.is_vanished = new_value;
 
-    public redraw_update(ulabel: ULabel): void {
-        // Ensure the vanish button reflects the vanish state of the current subtask
-        const current_subtask = ulabel.get_current_subtask();
-        const subtask_vanished_flag = current_subtask.display_name.replaceLowerConcat(" ", "-", "-vanished");
-        if (this[subtask_vanished_flag]) {
+        // Lock/unlock the vanish button
+        if (new_value) {
             $("#annotation-resize-v").addClass("locked");
         } else {
             $("#annotation-resize-v").removeClass("locked");
         }
+
+        // Redraw the annotations
+        ulabel.redraw_all_annotations(subtask_key, null, false);
     }
 
     private set_size_cookie(cookie_value, subtask) {

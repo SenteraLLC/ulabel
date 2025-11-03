@@ -196,8 +196,6 @@ export class Configuration {
 
     public create_point_annotation_keybind: string = "c";
 
-    public default_annotation_size: number = 6;
-
     public delete_annotation_keybind: string = "d";
 
     public keypoint_slider_default_value: number;

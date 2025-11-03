@@ -55,7 +55,6 @@ class ULabel({
     reset_zoom_keybind: string,
     show_full_image_keybind: string,
     create_point_annotation_keybind: string,
-    default_annotation_size: number,
     delete_annotation_keybind: string,
     keypoint_slider_default_value: number,
     filter_annotations_on_load: boolean,
@@ -316,7 +315,7 @@ In some cases, you may want the annotations to render at a higher or lower resol
 
 ### `initial_line_size`
 
-The line width with which new annotations are drawn initially. Units are pixels in the underlying image. When this value is not included, the default value of `4` is used.
+The line width with which new annotations are drawn initially. Units are pixels in the underlying image. When this value is not included, the default value of `5` is used.
 
 ### `anno_scaling_mode`
 
@@ -432,9 +431,6 @@ Keybind to set the zoom level to show the full image. Default is `shift+r`.
 
 ### `create_point_annotation_keybind`
 Keybind to create a point annotation at the mouse location. Default is `c`. Requires the active subtask to have a `point` mode.
-
-### `default_annotation_size`
-Default size of annotations in pixels. Default is `6`.
 
 ### `delete_annotation_keybind`
 Keybind to delete the annotation that the mouse is hovering over. Default is `d`.
