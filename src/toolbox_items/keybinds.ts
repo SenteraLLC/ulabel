@@ -768,7 +768,7 @@ export class KeybindsToolboxItem extends ToolboxItem {
 
             keybinds_html += `
                 <div class="keybind-category" data-section="other">
-                    <span>Other</span>
+                    <span>Other (Non-Configurable)</span>
                     <span class="keybind-category-toggle">${toggle_icon}</span>
                 </div>
                 <div class="keybind-section-items${section_class}" data-section="other">
