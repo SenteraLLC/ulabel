@@ -129,7 +129,7 @@ export class Toolbox {
             top: 10px;
             right: 10px;
             z-index: 1000;
-            border-radius: 5px 0 0 5px;
+            border-radius: 5px;
             color: white;
             font-size: 1.5rem;
             padding: 5px 10px;
