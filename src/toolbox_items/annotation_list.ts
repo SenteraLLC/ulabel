@@ -657,8 +657,11 @@ export class AnnotationListToolboxItem extends ToolboxItem {
             const list_item = $(`.annotation-list-item[data-annotation-id="${edit_candidate.annid}"]`);
             if (list_item.length > 0) {
                 list_item.addClass("highlighted");
-                // Optionally scroll the item into view
-                list_item[0].scrollIntoView({ block: "nearest", behavior: "smooth" });
+                // Only scroll into view if toolbox is not collapsed
+                const toolbox = $("#" + this.ulabel.config["toolbox_id"]);
+                if (!toolbox.hasClass("collapsed")) {
+                    list_item[0].scrollIntoView({ block: "nearest", behavior: "smooth" });
+                }
             }
         }
     }
@@ -675,8 +678,11 @@ export class AnnotationListToolboxItem extends ToolboxItem {
         const list_item = $(`.annotation-list-item[data-annotation-id="${annotation_id}"]`);
         if (list_item.length > 0) {
             list_item.addClass("highlighted");
-            // Scroll the item into view
-            list_item[0].scrollIntoView({ block: "nearest", behavior: "smooth" });
+            // Only scroll into view if toolbox is not collapsed
+            const toolbox = $("#" + this.ulabel.config["toolbox_id"]);
+            if (!toolbox.hasClass("collapsed")) {
+                list_item[0].scrollIntoView({ block: "nearest", behavior: "smooth" });
+            }
         }
     }
 }
