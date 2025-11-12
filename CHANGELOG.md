@@ -23,7 +23,7 @@ All notable changes to this project will be documented here.
 - Store collapse/expand state for Keybinds, Annotation List, and Image Filters toolbox items
 - Add comprehensive e2e tests for keybind functionality and keybind toolbox item
 
-## [0.21.0] - Oct 27th 2025
+## [0.21.0] - Oct 27th, 2025
 - Add toast notification that shows on `fly_to` calls and shows annotation position in the ordering (e.g., "3 / 10")
 - Add `AnnotationList` toolbox item for managing and navigating annotations
   - Displays all annotations in a scrollable list with spatial type icons and class names
