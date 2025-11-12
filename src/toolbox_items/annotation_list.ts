@@ -297,13 +297,28 @@ export class AnnotationListToolboxItem extends ToolboxItem {
 
                 // Show the global edit suggestion (ID dialog)
                 this.ulabel.show_global_edit_suggestion(annotation_id, null, null);
+
+                // Set edit_candidate to allow delete keybind to work
+                const current_subtask = this.ulabel.get_current_subtask();
+                const annotation = current_subtask.annotations.access[annotation_id];
+                if (annotation && !annotation.deprecated) {
+                    current_subtask.state.edit_candidate = {
+                        annid: annotation.id,
+                        spatial_type: annotation.spatial_type,
+                        access: null,
+                        distance: null,
+                        point: null,
+                    };
+                }
             }
         });
 
         // Remove highlight when mouse leaves the list item
         $(document).on("mouseleave.ulabel", ".annotation-list-item", () => {
             $(".annotation-list-item").removeClass("highlighted");
-            // Clear the edit suggestion
+            // Clear the edit candidate and edit suggestion
+            const current_subtask = this.ulabel.get_current_subtask();
+            current_subtask.state.edit_candidate = null;
             this.ulabel.hide_global_edit_suggestion();
             this.ulabel.hide_edit_suggestion();
         });
