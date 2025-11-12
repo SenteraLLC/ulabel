@@ -262,8 +262,8 @@ export class AnnotationListToolboxItem extends ToolboxItem {
      * Initialize event listeners for this toolbox item
      */
     private add_event_listeners() {
-        // Toggle button to show/hide annotation list
-        $(document).on("click.ulabel", "#annotation-list-toggle", () => {
+        // Toggle button to show/hide annotation list (click anywhere on header)
+        $(document).on("click.ulabel", ".annotation-list-header", () => {
             this.is_collapsed = !this.is_collapsed;
             set_local_storage_item("ulabel_annotation_list_collapsed", this.is_collapsed ? "true" : "false");
             this.update_list();
