@@ -108,22 +108,40 @@ export class Toolbox {
             background-color: white;
             overflow-y: hidden;
             position: absolute;
-            top: 0;
+            top: 35px;
             right: 0;
-            transition: transform 300ms ease-in-out;
         }
 
         #toolbox.collapsed {
-            transform: translateX(calc(100% - 40px));
+            display: none;
         }
 
         .annbox_cls {
-            transition: width 300ms ease-in-out;
+            width: calc(100% - 320px);
         }
 
-        #toolbox.collapsed ~ * .annbox_cls,
-        .full_ulabel_container_:has(#toolbox.collapsed) .annbox_cls {
-            width: calc(100% - 40px) !important;
+        .full_ulabel_container_.toolbox-collapsed .annbox_cls {
+            width: 100% !important;
+        }
+
+        .toolbox-collapse-btn {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            z-index: 1000;
+            border-radius: 5px 0 0 5px;
+            color: white;
+            font-size: 1.5rem;
+            padding: 5px 10px;
+            width: 40px;
+            background-color: rgba(0, 128, 255, 0.7);
+            border: 1px solid rgba(128, 128, 128, 0.5);
+            cursor: pointer;
+            display: block;
+        }
+
+        .toolbox-collapse-btn:hover {
+            background-color: rgba(0, 128, 255, 0.9);
         }
 
         .toolbox-header-container {
@@ -133,24 +151,6 @@ export class Toolbox {
 
         .ulabel-night .toolbox-header-container {
             background-color: rgb(0, 60, 95);
-        }
-
-        .toolbox-collapse-btn {
-            flex: 1;
-            flex-shrink: 0;
-            border-radius: 5px 0 0 5px;
-            color: white;
-            font-size: 1.2rem;
-            transition: all 300ms ease-in-out;
-            padding: 5px 10px;
-        }
-
-        .toolbox-collapse-btn:hover {
-            background-color: rgba(0, 128, 255, 0.9);
-        }
-
-        #toolbox.collapsed .toolbox-collapse-btn {
-            font-size: 1.2rem;
         }
 
         .ulabel-night #toolbox {
@@ -252,12 +252,12 @@ export class Toolbox {
                     ${images}
                 </div>
             </div>
+            <button class="toolbox-collapse-btn" title="Collapse toolbox">◀</button>
             <div id="${ulabel.config["toolbox_id"]}" class="toolbox_cls">
                 <div class="toolbox-header-container">
-                    <button class="toolbox-collapse-btn" title="Collapse toolbox">◀</button>
                     <div class="toolbox-name-header">
-                        <h1 class="toolname"><a class="repo-anchor" href="https://github.com/SenteraLLC/ulabel">ULabel</a> <span class="version-number">v${ULABEL_VERSION}</span></h1><!--
-                        --><div class="night-button-cont">
+                        <h1 class="toolname"><a class="repo-anchor" href="https://github.com/SenteraLLC/ulabel">ULabel</a> <span class="version-number">v${ULABEL_VERSION}</span></h1>
+                        <div class="night-button-cont">
                             <a href="#" class="night-button">
                                 <div class="night-button-track">
                                     <div class="night-status"></div>
