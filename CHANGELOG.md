@@ -4,7 +4,7 @@ All notable changes to this project will be documented here.
 
 ## [unreleased]
 
-## [0.21.0] - Oct 27th 2025
+## [0.21.0] - Oct 27th, 2025
 - Add toast notification that shows on `fly_to` calls and shows annotation position in the ordering (e.g., "3 / 10")
 - Add `AnnotationList` toolbox item for managing and navigating annotations
   - Displays all annotations in a scrollable list with spatial type icons and class names
