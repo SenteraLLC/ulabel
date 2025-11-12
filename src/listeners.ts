@@ -624,13 +624,13 @@ export function create_ulabel_listeners(
             if (toolbox.hasClass("collapsed")) {
                 toolbox.removeClass("collapsed");
                 container.removeClass("toolbox-collapsed");
-                btn.text("◀");
+                btn.text("▶");
                 btn.attr("title", "Collapse toolbox");
                 set_local_storage_item("ulabel_toolbox_collapsed", "false");
             } else {
                 toolbox.addClass("collapsed");
                 container.addClass("toolbox-collapsed");
-                btn.text("▶");
+                btn.text("◀");
                 btn.attr("title", "Expand toolbox");
                 set_local_storage_item("ulabel_toolbox_collapsed", "true");
             }

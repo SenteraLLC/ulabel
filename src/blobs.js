@@ -2037,7 +2037,7 @@ div#${prntid}.ulabel-night div.toolbox-name-header h1 span.version-number {
    color: rgb(190, 190, 190);
 }
 div#${prntid} div.night-button-cont {
-   text-align: right;
+   text-align: left;
    display: inline-block;
    vertical-align: middle;
    position: relative;

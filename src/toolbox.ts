@@ -108,7 +108,7 @@ export class Toolbox {
             background-color: white;
             overflow-y: hidden;
             position: absolute;
-            top: 35px;
+            top: 0;
             right: 0;
         }
 
@@ -126,27 +126,31 @@ export class Toolbox {
 
         .toolbox-collapse-btn {
             position: fixed;
-            top: 10px;
-            right: 10px;
+            top: 0;
+            right: 0;
             z-index: 1000;
             border-radius: 5px;
             color: white;
-            font-size: 1.5rem;
-            padding: 5px 10px;
-            width: 40px;
-            background-color: rgba(0, 128, 255, 0.7);
-            border: 1px solid rgba(128, 128, 128, 0.5);
+            font-size: 1.2rem;
+            width: 37px;
+            height: 37px;
+            padding: 0;
+            background-color: rgba(255, 166, 0, 0.739);
+            border: 1px solid rgba(0, 128, 128, 0.5);
             cursor: pointer;
-            display: block;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .toolbox-collapse-btn:hover {
-            background-color: rgba(0, 128, 255, 0.9);
+            background-color: rgba(255, 166, 0, 0.9);
         }
 
         .toolbox-header-container {
             display: flex;
             align-items: flex-start;
+            height: 40px;
         }
 
         .ulabel-night .toolbox-header-container {
@@ -252,12 +256,12 @@ export class Toolbox {
                     ${images}
                 </div>
             </div>
-            <button class="toolbox-collapse-btn" title="Collapse toolbox">◀</button>
+            <button class="toolbox-collapse-btn" title="Collapse toolbox">▶</button>
             <div id="${ulabel.config["toolbox_id"]}" class="toolbox_cls">
                 <div class="toolbox-header-container">
                     <div class="toolbox-name-header">
-                        <h1 class="toolname"><a class="repo-anchor" href="https://github.com/SenteraLLC/ulabel">ULabel</a> <span class="version-number">v${ULABEL_VERSION}</span></h1>
-                        <div class="night-button-cont">
+                        <h1 class="toolname"><a class="repo-anchor" href="https://github.com/SenteraLLC/ulabel">ULabel</a> <span class="version-number">v${ULABEL_VERSION}</span></h1><!--
+                        --><div class="night-button-cont">
                             <a href="#" class="night-button">
                                 <div class="night-button-track">
                                     <div class="night-status"></div>
