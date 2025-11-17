@@ -43,11 +43,13 @@ export class ULabelSubtask {
         starting_complex_polygon: boolean;
         is_in_brush_mode: boolean;
         is_in_erase_mode: boolean;
+        is_vanished: boolean;
         visible_dialogs: {
             [key: string]: ULabelDialogPosition;
         };
         spatial_type: ULabelSpatialType;
         fly_to_idx: number | null;
+        line_size: number;
     };
 
     constructor(

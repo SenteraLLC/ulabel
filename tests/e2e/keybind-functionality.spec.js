@@ -3,7 +3,7 @@ import { test, expect } from "./fixtures";
 import { wait_for_ulabel_init } from "../testing-utils/init_utils";
 import { get_annotation_count, get_annotation_by_index, get_annotation_class_id } from "../testing-utils/annotation_utils";
 import { draw_bbox } from "../testing-utils/drawing_utils";
-import { get_current_subtask_key } from "../testing-utils/subtask_utils";
+import { get_current_subtask_key, get_current_subtask } from "../testing-utils/subtask_utils";
 
 /**
  * Helper function to press a keybind with modifiers
@@ -385,7 +385,7 @@ test.describe("Keybind Functionality Tests", () => {
         const large_keybind = await get_keybind_value(page, "Size: Large");
         const plus_keybind = await get_keybind_value(page, "Size: Increase");
         const minus_keybind = await get_keybind_value(page, "Size: Decrease");
-        const vanish_keybind = await get_keybind_value(page, "Toggle Vanish");
+        const vanish_keybind = await get_keybind_value(page, "Toggle Vanish All");
 
         // Create an annotation
         await draw_bbox(page, [200, 200], [400, 400]);
@@ -416,18 +416,16 @@ test.describe("Keybind Functionality Tests", () => {
         annotation = await get_annotation_by_index(page, 0);
         expect(annotation.line_size).toBe(size_before_minus - 0.5);
 
-        // Test vanish keybind - should set size to 0.01 (vanished)
-        const size_before_vanish = annotation.line_size;
+        // Test vanish keybind - should toggle vanish mode
+        const vanish_state_before = (await get_current_subtask(page)).state.is_vanished;
         await press_keybind(page, vanish_keybind);
         await page.waitForTimeout(200);
-        annotation = await get_annotation_by_index(page, 0);
-        expect(annotation.line_size).toBe(0.01);
+        expect((await get_current_subtask(page)).state.is_vanished).not.toBe(vanish_state_before);
 
-        // Press vanish again to restore - should go back to previous size
+        // Press vanish again to restore - should go back to previous state
         await press_keybind(page, vanish_keybind);
         await page.waitForTimeout(200);
-        annotation = await get_annotation_by_index(page, 0);
-        expect(annotation.line_size).toBe(size_before_vanish);
+        expect((await get_current_subtask(page)).state.is_vanished).toBe(vanish_state_before);
     });
 
     test("brush mode keybinds should control brush state and size", async ({ page }) => {

@@ -423,9 +423,17 @@ export class KeybindsToolboxItem extends ToolboxItem {
         keybinds.push({
             key: config.annotation_vanish_keybind,
             label: "Toggle Vanish",
-            description: "Toggle annotation vanish mode",
+            description: "Toggle annotation vanish mode for current subtask",
             configurable: true,
             config_key: "annotation_vanish_keybind",
+        });
+
+        keybinds.push({
+            key: config.annotation_vanish_all_keybind,
+            label: "Toggle Vanish All",
+            description: "Toggle vanish mode for all subtasks",
+            configurable: true,
+            config_key: "annotation_vanish_all_keybind",
         });
 
         // Add class keybinds

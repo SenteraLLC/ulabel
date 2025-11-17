@@ -124,7 +124,7 @@ export class Configuration {
     public allow_soft_id: boolean = false;
     public default_annotation_color: string = "#fa9d2a";
     public username: string = "ULabelUser";
-    public initial_line_size: number = 4;
+    public initial_line_size: number = 5;
 
     // ID Dialog config
     public cl_opacity: number = 0.4;
@@ -196,8 +196,6 @@ export class Configuration {
 
     public create_point_annotation_keybind: string = "c";
 
-    public default_annotation_size: number = 6;
-
     public delete_annotation_keybind: string = "d";
 
     public keypoint_slider_default_value: number;
@@ -227,6 +225,8 @@ export class Configuration {
     public annotation_size_minus_keybind: string = "-";
 
     public annotation_vanish_keybind: string = "v";
+
+    public annotation_vanish_all_keybind: string = "shift+v";
 
     public fly_to_next_annotation_keybind: string = "tab";
 

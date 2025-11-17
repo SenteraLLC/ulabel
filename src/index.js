@@ -270,7 +270,7 @@ export class ULabel {
                 if (
                     (cand.line_size === undefined) || (cand.line_size == null)
                 ) {
-                    cand.line_size = ul.get_initial_line_size();
+                    cand.line_size = ul.config.initial_line_size;
                 }
 
                 // Add created by attribute if there is none
@@ -446,9 +446,11 @@ export class ULabel {
                 starting_complex_polygon: false,
                 is_in_brush_mode: false,
                 is_in_erase_mode: false,
+                is_vanished: false,
                 edit_candidate: null,
                 move_candidate: null,
                 fly_to_idx: null,
+                line_size: ul.config.initial_line_size,
 
                 // Rendering context
                 front_context: null,
@@ -520,7 +522,7 @@ export class ULabel {
             annotation_meta: arguments[6] ?? {},
             px_per_px: arguments[7] ?? 1,
             initial_crop: arguments[8] ?? null,
-            initial_line_size: arguments[9] ?? 4,
+            initial_line_size: arguments[9] ?? 5,
             config_data: arguments[10] ?? null,
             toolbox_order: arguments[11] ?? null,
         };
@@ -584,7 +586,6 @@ export class ULabel {
             // Global annotation state (subtasks also maintain an annotation state)
             current_subtask: null, // The key of the current subtask
             last_brush_stroke: null,
-            line_size: this.config.initial_line_size,
             anno_scaling_mode: this.config.anno_scaling_mode,
 
             // Keybind editing state
@@ -593,6 +594,7 @@ export class ULabel {
             // Renderings state
             demo_canvas_context: null,
             edited: false,
+            all_subtasks_vanished: false,
         };
 
         // Create a place on ulabel to store resize observer objects
@@ -1906,6 +1908,10 @@ export class ULabel {
     redraw_all_annotations_in_annotation_context(canvas_id, subtask, offset = null, annotation_ids_to_offset = null) {
         // Clear the canvas
         this.clear_annotation_canvas(canvas_id, subtask);
+
+        // If the subtask is vanished, don't draw anything
+        if (this.subtasks[subtask]["state"]["is_vanished"]) return;
+
         // Handle redraw of each annotation in the context
         for (const annid of this.subtasks[subtask]["state"]["annotation_contexts"][canvas_id]["annotation_ids"]) {
             // Only draw with offset if the annotation is in the list of annotations to offset, or if the list is null
@@ -2994,7 +3000,7 @@ export class ULabel {
             spatial_payload: spatial_payload,
             classification_payloads: this.get_init_id_payload(spatial_type),
             text_payload: "",
-            line_size: this.get_initial_line_size(),
+            line_size: this.get_subtask_line_size(),
             canvas_id: this.get_init_canvas_context_id(unique_id),
         };
 
@@ -3282,7 +3288,7 @@ export class ULabel {
         if ("line_size" in annotation && annotation["line_size"] !== null) {
             line_size = annotation["line_size"];
         } else {
-            line_size = this.get_initial_line_size();
+            line_size = this.get_subtask_line_size();
         }
 
         // fixed: line size is independent of zoom level
@@ -3297,8 +3303,11 @@ export class ULabel {
         return line_size;
     }
 
-    get_initial_line_size() {
-        return this.state.line_size;
+    get_subtask_line_size(subtask_key = null) {
+        if (subtask_key === null) {
+            subtask_key = this.get_current_subtask_key();
+        }
+        return this.subtasks[subtask_key]["state"]["line_size"];
     }
 
     // Action Stream Events
@@ -3394,7 +3403,7 @@ export class ULabel {
 
         if (redo_payload === null) {
             annotation_id = this.make_new_annotation_id();
-            line_size = this.get_initial_line_size();
+            line_size = this.get_subtask_line_size(subtask_key);
             annotation_mode = current_subtask["state"]["annotation_mode"];
             [gmx, gmy] = this.get_image_aware_mouse_x_y(mouse_event);
             init_spatial = this.get_init_spatial(gmx, gmy, annotation_mode, mouse_event);
@@ -4827,6 +4836,7 @@ export class ULabel {
         // Don't show any dialogs when currently drawing/editing an annotation,
         // And hide just edit dialogs when moving
         if (
+            current_subtask["state"]["is_vanished"] ||
             current_subtask["state"]["is_in_progress"] ||
             current_subtask["state"]["starting_complex_polygon"] ||
             current_subtask["state"]["is_in_brush_mode"] ||
