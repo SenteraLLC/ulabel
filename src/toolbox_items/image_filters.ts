@@ -1,6 +1,7 @@
 import type { ULabel } from "../index";
 import { SliderHandler } from "../html_builder";
 import { ToolboxItem } from "../toolbox";
+import { get_local_storage_item, set_local_storage_item } from "../utilities";
 
 export interface ImageFilterValues {
     brightness: number;
@@ -29,6 +30,7 @@ export class ImageFiltersToolboxItem extends ToolboxItem {
     private invert_slider: SliderHandler;
     private saturate_slider: SliderHandler;
     private ulabel: ULabel;
+    private is_collapsed: boolean = false;
 
     constructor(ulabel: ULabel) {
         super();
@@ -232,23 +234,48 @@ export class ImageFiltersToolboxItem extends ToolboxItem {
      * Code called after all of ULabel's constructor and initialization code is called
      */
     public after_init(): void {
+        // Restore collapsed state from localStorage
+        this.restore_collapsed_state();
+
         // Apply the initial filter values from config
         this.apply_filters();
+    }
+
+    /**
+     * Restore the collapsed state from localStorage
+     */
+    private restore_collapsed_state(): void {
+        const stored_state = get_local_storage_item("ulabel_image_filters_collapsed");
+        if (stored_state === "false") {
+            this.is_collapsed = false;
+        } else if (stored_state === "true") {
+            this.is_collapsed = true;
+        }
+
+        // Apply the stored state to the UI
+        const content = document.querySelector<HTMLDivElement>("#image-filters-content");
+        const toggle_btn = document.querySelector<HTMLButtonElement>("#image-filters-toggle");
+
+        if (content && toggle_btn) {
+            content.style.display = this.is_collapsed ? "none" : "block";
+            toggle_btn.innerText = this.is_collapsed ? "▼" : "▲";
+        }
     }
 
     /**
      * Initialize event listeners for this toolbox item
      */
     public init_listeners() {
-        // Toggle button to show/hide filter controls
-        $(document).on("click.ulabel", "#image-filters-toggle", () => {
+        // Toggle button to show/hide filter controls (click anywhere on header)
+        $(document).on("click.ulabel", ".image-filters-header", () => {
             const content = document.querySelector<HTMLDivElement>("#image-filters-content");
             const toggle_btn = document.querySelector<HTMLButtonElement>("#image-filters-toggle");
 
             if (content && toggle_btn) {
-                const is_hidden = content.style.display === "none";
-                content.style.display = is_hidden ? "block" : "none";
-                toggle_btn.innerText = is_hidden ? "▲" : "▼";
+                this.is_collapsed = !this.is_collapsed;
+                set_local_storage_item("ulabel_image_filters_collapsed", this.is_collapsed ? "true" : "false");
+                content.style.display = this.is_collapsed ? "none" : "block";
+                toggle_btn.innerText = this.is_collapsed ? "▼" : "▲";
             }
         });
 

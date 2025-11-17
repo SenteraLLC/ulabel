@@ -587,6 +587,9 @@ export class ULabel {
             line_size: this.config.initial_line_size,
             anno_scaling_mode: this.config.anno_scaling_mode,
 
+            // Keybind editing state
+            is_editing_keybind: false,
+
             // Renderings state
             demo_canvas_context: null,
             edited: false,
@@ -939,10 +942,14 @@ export class ULabel {
 
     update_current_class() {
         this.update_id_toolbox_display();
-        // $("a.tbid-opt.sel").attr("href", "#");
-        // $("a.tbid-opt.sel").removeClass("sel");
-        // $("a#toolbox_sel_" + this.subtasks[this.state["current_subtask"]]["state"]["annotation_mode"]).addClass("sel");
-        // $("a#toolbox_sel_" + this.subtasks[this.state["current_subtask"]]["state"]["annotation_mode"]).removeAttr("href");
+        this.update_keybind_toolbox_display();
+    }
+
+    update_keybind_toolbox_display() {
+        // Call refresh_keybinds_display if keybind toolbox item exists
+        if (this.config.toolbox_order.includes(AllowedToolboxItem.Keybinds)) {
+            this.toolbox.items.find((item) => item.get_toolbox_item_type() === "Keybinds").refresh_keybinds_display();
+        }
     }
 
     /**

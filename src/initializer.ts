@@ -7,12 +7,14 @@
 // Import ULabel from ../src/index - TypeScript will find ../src/index.d.ts for types
 import { ULabel } from "../src/index";
 import { initialize_annotation_canvases } from "./canvas_utils";
+import { Configuration } from "./configuration";
 import { NightModeCookie } from "./cookies";
 import { add_style_to_document, build_confidence_dialog, build_edit_suggestion, build_id_dialogs, prep_window_html } from "./html_builder";
 import { create_ulabel_listeners } from "./listeners";
 import { ULabelLoader } from "./loader";
 import { ULabelSubtask } from "./subtask";
 import { ULabelAnnotation } from "./annotation";
+import { get_local_storage_item } from "./utilities";
 
 /**
  * Make canvases for each subtask
@@ -59,6 +61,80 @@ function make_image_canvases(
 }
 
 /**
+ * Store original keybinds before customization
+ *
+ * @param ulabel ULabel instance to store original keybinds for
+ */
+function store_original_keybinds(ulabel: ULabel) {
+    // Store original config keybinds (from constructor, before localStorage)
+    const original_config_keybinds: { [config_key: string]: string } = {};
+
+    for (const key of Configuration.KEYBIND_CONFIG_KEYS) {
+        if (key in ulabel.config) {
+            original_config_keybinds[key] = ulabel.config[key] as string;
+        }
+    }
+    ulabel.state["original_config_keybinds"] = original_config_keybinds;
+
+    // Store original class keybinds in the ULabel state for later reference
+    const original_class_keybinds: { [class_id: number]: string } = {};
+    for (const subtask_key in ulabel.subtasks) {
+        const subtask = ulabel.subtasks[subtask_key];
+        if (subtask.class_defs) {
+            for (const class_def of subtask.class_defs) {
+                original_class_keybinds[class_def.id] = class_def?.keybind;
+            }
+        }
+    }
+    ulabel.state["original_class_keybinds"] = original_class_keybinds;
+}
+
+/**
+ * Restore custom keybinds from localStorage
+ *
+ * @param ulabel ULabel instance to restore keybinds for
+ */
+function restore_custom_keybinds(ulabel: ULabel) {
+    // First, store the original keybinds before applying customizations
+    store_original_keybinds(ulabel);
+
+    // Restore regular keybinds
+    const stored_keybinds = get_local_storage_item("ulabel_custom_keybinds");
+    if (stored_keybinds) {
+        try {
+            const custom_keybinds = JSON.parse(stored_keybinds);
+            for (const [config_key, value] of Object.entries(custom_keybinds)) {
+                if (config_key in ulabel.config) {
+                    ulabel.config[config_key] = value as string;
+                }
+            }
+        } catch (e) {
+            console.error("Failed to parse custom keybinds from localStorage:", e);
+        }
+    }
+
+    // Restore class keybinds
+    const stored_class_keybinds = get_local_storage_item("ulabel_custom_class_keybinds");
+    if (stored_class_keybinds) {
+        try {
+            const custom_class_keybinds = JSON.parse(stored_class_keybinds);
+            for (const subtask_key in ulabel.subtasks) {
+                const subtask = ulabel.subtasks[subtask_key];
+                if (subtask.class_defs) {
+                    for (const class_def of subtask.class_defs) {
+                        if (class_def.id in custom_class_keybinds) {
+                            class_def.keybind = custom_class_keybinds[class_def.id];
+                        }
+                    }
+                }
+            }
+        } catch (e) {
+            console.error("Failed to parse custom class keybinds from localStorage:", e);
+        }
+    }
+}
+
+/**
  * ULabel initializer logic.
  * Async to ensure correct processing order; many steps are dependent on knowing the image/canvas size.
  *
@@ -71,6 +147,9 @@ export async function ulabel_init(
 ) {
     // Add stylesheet
     add_style_to_document(ulabel);
+
+    // Restore custom keybinds from localStorage
+    restore_custom_keybinds(ulabel);
 
     // Set current subtask to first subtask
     ulabel.state["current_subtask"] = Object.keys(ulabel.subtasks)[0];
@@ -118,6 +197,18 @@ export async function ulabel_init(
 
     // Create listers to manipulate and export this object
     create_ulabel_listeners(ulabel);
+
+    // Restore toolbox collapsed state from localStorage
+    const is_collapsed = get_local_storage_item("ulabel_toolbox_collapsed");
+    if (is_collapsed === "true") {
+        const toolbox = $("#" + ulabel.config["toolbox_id"]);
+        const container = $(".full_ulabel_container_");
+        const btn = $(".toolbox-collapse-btn");
+        toolbox.addClass("collapsed");
+        container.addClass("toolbox-collapsed");
+        btn.text("▶");
+        btn.attr("title", "Expand toolbox");
+    }
 
     ulabel.handle_toolbox_overflow();
 

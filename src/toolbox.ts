@@ -112,6 +112,51 @@ export class Toolbox {
             right: 0;
         }
 
+        #toolbox.collapsed {
+            display: none;
+        }
+
+        .annbox_cls {
+            width: calc(100% - 320px);
+        }
+
+        .full_ulabel_container_.toolbox-collapsed .annbox_cls {
+            width: 100% !important;
+        }
+
+        .toolbox-collapse-btn {
+            position: fixed;
+            top: 0;
+            right: 0;
+            z-index: 1000;
+            border-radius: 5px;
+            color: white;
+            font-size: 1.2rem;
+            width: 37px;
+            height: 37px;
+            padding: 0;
+            background-color: rgba(255, 166, 0, 0.739);
+            border: 1px solid rgba(0, 128, 128, 0.5);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .toolbox-collapse-btn:hover {
+            background-color: rgba(255, 166, 0, 0.9);
+        }
+
+        .toolbox-header-container {
+            display: flex;
+            align-items: flex-start;
+            height: 40px;
+        }
+
+        .ulabel-night .toolbox-header-container {
+            background-color: rgb(0, 60, 95);
+        }
+
         .ulabel-night #toolbox {
             color: white;
         }
@@ -211,15 +256,18 @@ export class Toolbox {
                     ${images}
                 </div>
             </div>
+            <button class="toolbox-collapse-btn" title="Collapse toolbox">▶</button>
             <div id="${ulabel.config["toolbox_id"]}" class="toolbox_cls">
-                <div class="toolbox-name-header">
-                    <h1 class="toolname"><a class="repo-anchor" href="https://github.com/SenteraLLC/ulabel">ULabel</a> <span class="version-number">v${ULABEL_VERSION}</span></h1><!--
-                    --><div class="night-button-cont">
-                        <a href="#" class="night-button">
-                            <div class="night-button-track">
-                                <div class="night-status"></div>
-                            </div>
-                        </a>
+                <div class="toolbox-header-container">
+                    <div class="toolbox-name-header">
+                        <h1 class="toolname"><a class="repo-anchor" href="https://github.com/SenteraLLC/ulabel">ULabel</a> <span class="version-number">v${ULABEL_VERSION}</span></h1><!--
+                        --><div class="night-button-cont">
+                            <a href="#" class="night-button">
+                                <div class="night-button-track">
+                                    <div class="night-status"></div>
+                                </div>
+                            </a>
+                        </div>
                     </div>
                 </div>
                 <div class="toolbox_inner_cls">
@@ -901,10 +949,10 @@ export class ZoomPanToolboxItem extends ToolboxItem {
         });
 
         $(document).on("keypress.ulabel", (e) => {
-            if (e.key == this.ulabel.config.change_zoom_keybind.toLowerCase()) {
+            if (e.key == this.ulabel.config.reset_zoom_keybind) {
                 document.getElementById("recenter-button").click();
             }
-            if (e.key == this.ulabel.config.change_zoom_keybind.toUpperCase()) {
+            if (e.key == this.ulabel.config.show_full_image_keybind) {
                 document.getElementById("recenter-whole-image-button").click();
             }
         });
@@ -1156,16 +1204,12 @@ export class ClassCounterToolboxItem extends ToolboxItem {
 export class AnnotationResizeItem extends ToolboxItem {
     public cached_size: number = 1.5;
     public html: string;
-    private keybind_configuration: { [key: string]: string };
     private ulabel: ULabel;
 
     constructor(ulabel: ULabel) {
         super();
 
         this.ulabel = ulabel;
-
-        // Get default keybinds
-        this.keybind_configuration = ulabel.config.default_keybinds;
 
         // First check for a size cookie, if one isn't found then check the config
         // for a default annotation size. If neither are found it will use the size
@@ -1287,22 +1331,22 @@ export class AnnotationResizeItem extends ToolboxItem {
             const current_subtask = this.ulabel.get_current_subtask();
 
             switch (event.key) {
-                case this.keybind_configuration.annotation_vanish.toUpperCase():
+                case this.ulabel.config.annotation_vanish_keybind.toUpperCase():
                     this.update_all_subtask_annotation_size(this.ulabel, ValidResizeValues.VANISH);
                     break;
-                case this.keybind_configuration.annotation_vanish.toLowerCase():
+                case this.ulabel.config.annotation_vanish_keybind.toLowerCase():
                     this.update_annotation_size(this.ulabel, current_subtask, ValidResizeValues.VANISH);
                     break;
-                case this.keybind_configuration.annotation_size_small:
+                case this.ulabel.config.annotation_size_small_keybind:
                     this.update_annotation_size(this.ulabel, current_subtask, ValidResizeValues.SMALL);
                     break;
-                case this.keybind_configuration.annotation_size_large:
+                case this.ulabel.config.annotation_size_large_keybind:
                     this.update_annotation_size(this.ulabel, current_subtask, ValidResizeValues.LARGE);
                     break;
-                case this.keybind_configuration.annotation_size_minus:
+                case this.ulabel.config.annotation_size_minus_keybind:
                     this.update_annotation_size(this.ulabel, current_subtask, ValidResizeValues.DECREMENT);
                     break;
-                case this.keybind_configuration.annotation_size_plus:
+                case this.ulabel.config.annotation_size_plus_keybind:
                     this.update_annotation_size(this.ulabel, current_subtask, ValidResizeValues.INCREMENT);
                     break;
                 default:

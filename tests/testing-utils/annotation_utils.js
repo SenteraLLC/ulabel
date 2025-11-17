@@ -42,3 +42,22 @@ export async function get_all_annotations(page) {
         );
     });
 }
+
+/**
+ * Get the class ID of an annotation based on highest confidence.
+ * @param {Object} annotation - The annotation object
+ * @returns {number|null} The class ID with highest confidence or null
+ */
+export function get_annotation_class_id(annotation) {
+    // Classification with highest confidence
+    if (
+        annotation.classification_payloads &&
+        annotation.classification_payloads.length > 0
+    ) {
+        const sorted = annotation.classification_payloads.sort(
+            (a, b) => b.confidence - a.confidence,
+        );
+        return sorted[0].class_id;
+    }
+    return null;
+}

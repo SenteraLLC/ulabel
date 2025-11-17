@@ -4,6 +4,25 @@ All notable changes to this project will be documented here.
 
 ## [unreleased]
 
+## [0.22.0] - Oct 30th, 2025
+- Add collapsible toolbox with arrow button at top
+  - Toolbox collapse state persists in browser
+  - Annotation canvas expands to fill space when toolbox is collapsed
+- Add `Keybinds` toolbox item for viewing and customizing keybinds
+  - Display all configurable keybinds with labels and descriptions
+  - Edit keybinds by clicking and pressing new key combination
+  - Support for modifier key chords (shift, ctrl, alt, meta)
+  - Collision detection with red highlighting for duplicate keybinds
+  - Reset individual keybinds or all keybinds to defaults
+  - Visual indicator (yellow highlight) for user-customized keybinds
+  - User keybind settings persist in browser
+- Rename `create_bbox_on_initial_crop` to `create_bbox_on_initial_crop_keybind` for consistency
+- Split `change_zoom_keybind` into two separate keybinds:
+  - `reset_zoom_keybind` (default: `r`) - Reset zoom to fit image
+  - `show_full_image_keybind` (default: `shift+r`) - Zoom to show full image
+- Store collapse/expand state for Keybinds, Annotation List, and Image Filters toolbox items
+- Add comprehensive e2e tests for keybind functionality and keybind toolbox item
+
 ## [0.21.0] - Oct 27th, 2025
 - Add toast notification that shows on `fly_to` calls and shows annotation position in the ordering (e.g., "3 / 10")
 - Add `AnnotationList` toolbox item for managing and navigating annotations

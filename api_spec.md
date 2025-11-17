@@ -8,7 +8,7 @@ This should eventually be replaced with a more comprehensive approach to documen
 - `ctrl+shift+z` or `cmd+shift+z`: Redo
 - `scroll`: Zoom -- up for in, down for out
 - `ctrl+scroll` or `shift+scroll` or `cmd+scroll`: Change frame -- down for next, up for previous
-- `scrollclick+drag` or `ctrl+drag`: Pan
+- `scrollclick+drag`: Pan
 - Hold `shift` when closing a polygon to continue annotating a new region or hole.
 - Hold `shift` when moving the cursor inside a polygon to begin annotating a new region or hole.
 - Press `Escape` or `crtl+z` to cancel the start of a new region or hole.
@@ -50,16 +50,10 @@ class ULabel({
     initial_line_size: number,
     instructions_url: string,
     toolbox_order: AllowedToolboxItem[],
-    default_keybinds = {
-        "annotation_size_small": string,
-        "annotation_size_large": string,
-        "annotation_size_plus": string,
-        "annotation_size_minus": string,
-        "annotation_vanish": string
-    },
     distance_filter_toolbox_item: FilterDistanceConfig,
     image_filters_toolbox_item: ImageFiltersConfig,
-    change_zoom_keybind: string,
+    reset_zoom_keybind: string,
+    show_full_image_keybind: string,
     create_point_annotation_keybind: string,
     default_annotation_size: number,
     delete_annotation_keybind: string,
@@ -67,13 +61,18 @@ class ULabel({
     filter_annotations_on_load: boolean,
     switch_subtask_keybind: string,
     toggle_annotation_mode_keybind: string,
-    create_bbox_on_initial_crop: string,
+    create_bbox_on_initial_crop_keybind: string,
     toggle_brush_mode_keybind: string,
     toggle_erase_mode_keybind: string,
     increase_brush_size_keybind: string,
     decrease_brush_size_keybind: string,
     fly_to_next_annotation_keybind: string,
-    fly_to_previous_annotation_keybind: string | null,
+    fly_to_previous_annotation_keybind: string,
+    annotation_size_small_keybind: string,
+    annotation_size_large_keybind: string,
+    annotation_size_plus_keybind: string,
+    annotation_size_minus_keybind: string,
+    annotation_vanish_keybind: string,
     fly_to_max_zoom: number,
     n_annos_per_canvas: number
 })
@@ -348,24 +347,13 @@ enum AllowedToolboxItem {
     FilterDistance,   // 8
     Brush,            // 9
     ImageFilters,     // 10
-    AnnotationList    // 11
+    AnnotationList,   // 11
+    Keybinds,         // 12
 }
 ```
 You can access the AllowedToolboxItem enum by calling the static method:
 ```javascript
 const AllowedToolboxItem = ULabel.get_allowed_toolbox_item_enum();
-```
-
-### `default_keybinds`
-Keybinds can be set to control the annotation session. The default values are:
-```javascript
-{
-    "annotation_size_small": "s",
-    "annotation_size_large": "l",
-    "annotation_size_plus": "=",
-    "annotation_size_minus": "-",
-    "annotation_vanish": "v"
-}
 ```
 
 ### `distance_filter_toolbox_item`
@@ -437,8 +425,11 @@ The `AnnotationList` toolbox item displays all annotations in the current subtas
 
 This toolbox item requires no configuration and can be added to the `toolbox_order` array using `AllowedToolboxItem.AnnotationList`.
 
-### `change_zoom_keybind`
-Keybind to change the zoom level. Must be a letter, and the lowercase version of the letter will set the zoom level to the `initial_crop`, while the capitalized version will show the full image. Default is `r`.
+### `reset_zoom_keybind`
+Keybind to reset the zoom level to the `initial_crop`. Default is `r`.
+
+### `show_full_image_keybind`
+Keybind to set the zoom level to show the full image. Default is `shift+r`.
 
 ### `create_point_annotation_keybind`
 Keybind to create a point annotation at the mouse location. Default is `c`. Requires the active subtask to have a `point` mode.
@@ -461,7 +452,7 @@ Keybind to switch between subtasks. Default is `z`.
 ### `toggle_annotation_mode_keybind`
 Keybind to toggle between annotation and selection modes. Default is `u`.
 
-### `create_bbox_on_initial_crop`
+### `create_bbox_on_initial_crop_keybind`
 Keybind to create a bounding box annotation around the `initial_crop`. Default is `f`. Requires the active subtask to have a `bbox` mode.
 
 ### `toggle_brush_mode_keybind`
@@ -480,7 +471,22 @@ Keybind to decrease the brush size. Default is `[`. Requires the active subtask 
 Keybind to set the zoom to focus on the next annotation. Default is `Tab`, which also will disable any default browser behavior for `Tab`.
 
 ### `fly_to_previous_annotation_keybind`
-Keybind to set the zoom to focus on the previous annotation. Default is `<null>`, which will default to `Shift+<fly_to_next_annotation_keybind>`.
+Keybind to set the zoom to focus on the previous annotation. Default is `shift+tab`. Supports chord keybinds (e.g., `shift+p`, `ctrl+alt+n`).
+
+### `annotation_size_small_keybind`
+Keybind to set the annotation size to small for the current subtask. Default is `s`.
+
+### `annotation_size_large_keybind`
+Keybind to set the annotation size to large for the current subtask. Default is `l`.
+
+### `annotation_size_plus_keybind`
+Keybind to increment the annotation size for the current subtask. Default is `=`.
+
+### `annotation_size_minus_keybind`
+Keybind to decrement the annotation size for the current subtask. Default is `-`.
+
+### `annotation_vanish_keybind`
+Keybind to toggle vanish mode for annotations in the current subtask (lowercase toggles current subtask, uppercase toggles all subtasks). Default is `v`.
 
 ### `fly_to_max_zoom`
 Maximum zoom factor used when flying-to an annotation. Default is `10`, value must be > `0`. 
