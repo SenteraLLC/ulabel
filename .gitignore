@@ -5,3 +5,4 @@ build/*
 output.txt
 test-results/
 playwright-report/
+dist

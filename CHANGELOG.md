@@ -2,7 +2,18 @@
 
 All notable changes to this project will be documented here.
 
-## [unreleased]https://github.com/SenteraLLC/ulabel/pull/233
+## [unreleased]
+
+## [0.21.0] - Oct 27th, 2025
+- Add toast notification that shows on `fly_to` calls and shows annotation position in the ordering (e.g., "3 / 10")
+- Add `AnnotationList` toolbox item for managing and navigating annotations
+  - Displays all annotations in a scrollable list with spatial type icons and class names
+  - Bidirectional hover highlighting between list and canvas
+  - Filter options:
+    - Toggle show/hide deprecated annotations (default: hidden)
+    - Group annotations by class
+  - Collapsible interface to maximize toolbox space
+- Add automated package deployment via GHA
 
 ## [0.20.0] - Oct 15th, 2025
 - Add `fly-to` functions, which sets the zoom and focus to a specific annotation
