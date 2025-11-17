@@ -4,7 +4,7 @@ All notable changes to this project will be documented here.
 
 ## [unreleased]
 
-## [0.22.0] - Oct 30th 2025
+## [0.22.0] - Oct 30th, 2025
 - Add collapsible toolbox with arrow button at top
   - Toolbox collapse state persists in browser
   - Annotation canvas expands to fill space when toolbox is collapsed
