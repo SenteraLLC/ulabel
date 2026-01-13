@@ -1389,12 +1389,6 @@ export class AnnotationResizeItem extends ToolboxItem {
             // Set the line size to the given size
             subtask.state.line_size = size;
         }
-
-        for (const annotation of Object.values(subtask.annotations.access)) {
-            // Update each annotation's line size
-            // TODO: do individual annotations need their own line_size property?
-            annotation.line_size = subtask.state.line_size;
-        }
     }
 
     /**

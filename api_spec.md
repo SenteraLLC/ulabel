@@ -195,9 +195,6 @@ As you can see, each subtask will have a corresponding list of annotation object
         }
     ],
 
-    // size in underlying image pixels
-    "line_size": "<number>", 
-
     // (nullable) frame ann was created for
     "frame": "<int>", 
     
