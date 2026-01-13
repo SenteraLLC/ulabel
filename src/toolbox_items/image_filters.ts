@@ -266,8 +266,8 @@ export class ImageFiltersToolboxItem extends ToolboxItem {
      * Initialize event listeners for this toolbox item
      */
     public init_listeners() {
-        // Toggle button to show/hide filter controls
-        $(document).on("click.ulabel", "#image-filters-toggle", () => {
+        // Toggle button to show/hide filter controls (click anywhere on header)
+        $(document).on("click.ulabel", ".image-filters-header", () => {
             const content = document.querySelector<HTMLDivElement>("#image-filters-content");
             const toggle_btn = document.querySelector<HTMLButtonElement>("#image-filters-toggle");
 

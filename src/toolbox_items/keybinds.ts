@@ -343,7 +343,7 @@ export class KeybindsToolboxItem extends ToolboxItem {
         keybinds.push({
             key: config.toggle_brush_mode_keybind,
             label: "Toggle Brush",
-            description: "Toggle brush mode for polygon/contour annotation",
+            description: "Toggle brush mode for polygon annotation",
             configurable: true,
             config_key: "toggle_brush_mode_keybind",
         });
@@ -351,7 +351,7 @@ export class KeybindsToolboxItem extends ToolboxItem {
         keybinds.push({
             key: config.toggle_erase_mode_keybind,
             label: "Toggle Erase",
-            description: "Toggle erase mode in brush",
+            description: "Toggle erase mode in for polygon annotation",
             configurable: true,
             config_key: "toggle_erase_mode_keybind",
         });
@@ -776,7 +776,7 @@ export class KeybindsToolboxItem extends ToolboxItem {
 
             keybinds_html += `
                 <div class="keybind-category" data-section="other">
-                    <span>Other</span>
+                    <span>Other (Non-Configurable)</span>
                     <span class="keybind-category-toggle">${toggle_icon}</span>
                 </div>
                 <div class="keybind-section-items${section_class}" data-section="other">

@@ -262,8 +262,8 @@ export class AnnotationListToolboxItem extends ToolboxItem {
      * Initialize event listeners for this toolbox item
      */
     private add_event_listeners() {
-        // Toggle button to show/hide annotation list
-        $(document).on("click.ulabel", "#annotation-list-toggle", () => {
+        // Toggle button to show/hide annotation list (click anywhere on header)
+        $(document).on("click.ulabel", ".annotation-list-header", () => {
             this.is_collapsed = !this.is_collapsed;
             set_local_storage_item("ulabel_annotation_list_collapsed", this.is_collapsed ? "true" : "false");
             this.update_list();
@@ -299,13 +299,28 @@ export class AnnotationListToolboxItem extends ToolboxItem {
 
                 // Show the global edit suggestion (ID dialog)
                 this.ulabel.show_global_edit_suggestion(annotation_id, null, null);
+
+                // Set edit_candidate to allow delete keybind to work
+                const current_subtask = this.ulabel.get_current_subtask();
+                const annotation = current_subtask.annotations.access[annotation_id];
+                if (annotation && !annotation.deprecated) {
+                    current_subtask.state.edit_candidate = {
+                        annid: annotation.id,
+                        spatial_type: annotation.spatial_type,
+                        access: null,
+                        distance: null,
+                        point: null,
+                    };
+                }
             }
         });
 
         // Remove highlight when mouse leaves the list item
         $(document).on("mouseleave.ulabel", ".annotation-list-item", () => {
             $(".annotation-list-item").removeClass("highlighted");
-            // Clear the edit suggestion
+            // Clear the edit candidate and edit suggestion
+            const current_subtask = this.ulabel.get_current_subtask();
+            current_subtask.state.edit_candidate = null;
             this.ulabel.hide_global_edit_suggestion();
             this.ulabel.hide_edit_suggestion();
         });
@@ -642,8 +657,11 @@ export class AnnotationListToolboxItem extends ToolboxItem {
             const list_item = $(`.annotation-list-item[data-annotation-id="${edit_candidate.annid}"]`);
             if (list_item.length > 0) {
                 list_item.addClass("highlighted");
-                // Optionally scroll the item into view
-                list_item[0].scrollIntoView({ block: "nearest", behavior: "smooth" });
+                // Only scroll into view if toolbox is not collapsed
+                const toolbox = $("#" + this.ulabel.config["toolbox_id"]);
+                if (!toolbox.hasClass("collapsed")) {
+                    list_item[0].scrollIntoView({ block: "nearest", behavior: "smooth" });
+                }
             }
         }
     }
@@ -660,8 +678,11 @@ export class AnnotationListToolboxItem extends ToolboxItem {
         const list_item = $(`.annotation-list-item[data-annotation-id="${annotation_id}"]`);
         if (list_item.length > 0) {
             list_item.addClass("highlighted");
-            // Scroll the item into view
-            list_item[0].scrollIntoView({ block: "nearest", behavior: "smooth" });
+            // Only scroll into view if toolbox is not collapsed
+            const toolbox = $("#" + this.ulabel.config["toolbox_id"]);
+            if (!toolbox.hasClass("collapsed")) {
+                list_item[0].scrollIntoView({ block: "nearest", behavior: "smooth" });
+            }
         }
     }
 }

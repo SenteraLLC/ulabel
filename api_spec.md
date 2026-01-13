@@ -346,7 +346,8 @@ enum AllowedToolboxItem {
     FilterDistance,   // 8
     Brush,            // 9
     ImageFilters,     // 10
-    AnnotationList    // 11
+    AnnotationList,   // 11
+    Keybinds,         // 12
 }
 ```
 You can access the AllowedToolboxItem enum by calling the static method:

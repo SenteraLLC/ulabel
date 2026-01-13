@@ -662,19 +662,22 @@ export function create_ulabel_listeners(
     // Button to collapse/expand toolbox
     $(document).on(
         "click" + ULABEL_NAMESPACE,
-        "#" + ulabel.config["toolbox_id"] + " .toolbox-collapse-btn",
+        ".toolbox-collapse-btn",
         (e) => {
             const toolbox = $("#" + ulabel.config["toolbox_id"]);
+            const container = $(".full_ulabel_container_");
             const btn = $(e.currentTarget);
 
             if (toolbox.hasClass("collapsed")) {
                 toolbox.removeClass("collapsed");
-                btn.text("◀");
+                container.removeClass("toolbox-collapsed");
+                btn.text("▶");
                 btn.attr("title", "Collapse toolbox");
                 set_local_storage_item("ulabel_toolbox_collapsed", "false");
             } else {
                 toolbox.addClass("collapsed");
-                btn.text("▶");
+                container.addClass("toolbox-collapsed");
+                btn.text("◀");
                 btn.attr("title", "Expand toolbox");
                 set_local_storage_item("ulabel_toolbox_collapsed", "true");
             }

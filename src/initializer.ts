@@ -202,8 +202,10 @@ export async function ulabel_init(
     const is_collapsed = get_local_storage_item("ulabel_toolbox_collapsed");
     if (is_collapsed === "true") {
         const toolbox = $("#" + ulabel.config["toolbox_id"]);
-        const btn = toolbox.find(".toolbox-collapse-btn");
+        const container = $(".full_ulabel_container_");
+        const btn = $(".toolbox-collapse-btn");
         toolbox.addClass("collapsed");
+        container.addClass("toolbox-collapsed");
         btn.text("▶");
         btn.attr("title", "Expand toolbox");
     }
