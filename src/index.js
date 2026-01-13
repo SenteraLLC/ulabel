@@ -5854,9 +5854,7 @@ export class ULabel {
             this.subtasks[q[i]]["state"]["is_in_move"] = false;
             this.subtasks[q[i]]["state"]["is_in_progress"] = false;
             this.subtasks[q[i]]["state"]["active_id"] = null;
-            // TODO (joshua-dean): this line was probably a mistake
-            // It's at least 3 years old, and is a nop as far as I can tell
-            // this.show
+            this.subtasks[q[i]]["state"]["fly_to_idx"] = null;
         }
         this.drag_state = {
             active_key: null,
