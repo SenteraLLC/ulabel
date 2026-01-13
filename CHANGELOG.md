@@ -11,7 +11,6 @@ All notable changes to this project will be documented here.
   - Remove annotation size cookie, since it was tracking just one size per annotation session
 - Deprecated the `default_annotation_size` argument in the configuration object. Use the `initial_line_size` argument instead. See api_spec.md for details.
 - Fix toolbox collapse arrow positioning, and make frame annotation dialogs disappear on collapse
-- Deprecated the `default_annotation_size` argument in the configuration object. Use the `initial_line_size` argument instead. See api_spec.md for details.
 - Removed the `line_size` property from annotation objects. `subtask.state.line_size` determined the size of drawn annotations within a subtask.
 
 ## [0.22.0] - Oct 30th, 2025
