@@ -108,6 +108,11 @@ export class Toolbox {
 
     static add_styles() {
         const css = `
+        .full_ulabel_container_ {
+            position: relative;
+            height: 100%;
+        }
+
         #toolbox {
             width: 320px;
             background-color: white;
@@ -130,7 +135,7 @@ export class Toolbox {
         }
 
         .toolbox-collapse-btn {
-            position: fixed;
+            position: absolute;
             top: 0;
             right: 0;
             z-index: 1000;
