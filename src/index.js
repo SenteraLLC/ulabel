@@ -2964,6 +2964,12 @@ export class ULabel {
     create_annotation(spatial_type, spatial_payload, unique_id = null, is_redo = false) {
         // Grab constants for convenience
         const current_subtask = this.get_current_subtask();
+
+        // Exit if subtask is vanished
+        if (current_subtask["state"]["is_vanished"]) {
+            return;
+        }
+
         const annotation_access = current_subtask["annotations"]["access"];
         const annotation_ordering = current_subtask["annotations"]["ordering"];
 
@@ -5284,8 +5290,11 @@ export class ULabel {
     handle_mouse_down(mouse_event) {
         const drag_key = ULabel.get_drag_key_start(mouse_event, this);
         if (drag_key != null) {
-            // Don't start new drag while id_dialog is visible
-            if (this.get_current_subtask()["state"]["idd_visible"] && !this.get_current_subtask()["state"]["idd_thumbnail"]) {
+            // Don't start new drag while id_dialog is visible or subtask is vanished
+            if (
+                (this.get_current_subtask()["state"]["idd_visible"] && !this.get_current_subtask()["state"]["idd_thumbnail"]) ||
+                this.get_current_subtask()["state"]["is_vanished"]
+            ) {
                 return;
             }
             mouse_event.preventDefault();

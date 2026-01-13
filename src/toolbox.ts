@@ -1339,10 +1339,10 @@ export class AnnotationResizeItem extends ToolboxItem {
                 case ValidResizeValues.VANISH:
                     // Toggle the vanished flag for the current subtask and return
                     AnnotationResizeItem.toggle_subtask_vanished(this.ulabel, current_subtask_key);
-                    return;
+                    break;
                 default:
                     log_message(`Invalid Resize Value: ${button_value}`, LogLevel.ERROR, true);
-                    break;
+                    return;
             }
 
             // Update the size of all annotations in the subtask
