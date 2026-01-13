@@ -134,6 +134,10 @@ export class Toolbox {
             width: 100% !important;
         }
 
+        .full_ulabel_container_.toolbox-collapsed div.frame_annotation_dialog {
+            display: none !important;
+        }
+
         .toolbox-collapse-btn {
             position: absolute;
             top: 0;
