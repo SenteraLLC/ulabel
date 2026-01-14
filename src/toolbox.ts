@@ -1366,8 +1366,8 @@ export class AnnotationResizeItem extends ToolboxItem {
         // If the annotations are currently vanished, don't resize them
         if (subtask.state.is_vanished) return;
 
-        // Set the size of the annotations to the given size
-        AnnotationResizeItem.loop_through_annotations(subtask, size, increment);
+        // Set the size of the subtask to the given size
+        AnnotationResizeItem.update_subtask_line_size(subtask, size, increment);
 
         // If the sizes were updated, resize the annotations
         if (redraw) {
@@ -1375,8 +1375,8 @@ export class AnnotationResizeItem extends ToolboxItem {
         }
     }
 
-    // Loop through all annotations in a subtask and change their line size
-    public static loop_through_annotations(subtask: ULabelSubtask, size: number, increment: boolean) {
+    // Update the line size for a subtask
+    public static update_subtask_line_size(subtask: ULabelSubtask, size: number, increment: boolean) {
         // Update subtask line size
         if (increment) {
             // Guard against the line size going too small or negative
