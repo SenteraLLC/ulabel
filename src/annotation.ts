@@ -37,7 +37,6 @@ export class ULabelAnnotation {
         public created_by?: string,
         public distance_from?: DistanceFromPolylineClasses,
         public frame?: number,
-        public line_size?: number,
         public id?: string,
         public canvas_id?: string,
         // Polygons use complex spatial payloads

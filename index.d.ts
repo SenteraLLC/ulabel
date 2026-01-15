@@ -258,6 +258,7 @@ export class ULabel {
         // TODO (joshua-dean): this is never assigned, is it used?
         demo_canvas_context: CanvasRenderingContext2D;
         edited: boolean;
+        all_subtasks_vanished: boolean;
     };
 
     config: Configuration;

@@ -39,7 +39,6 @@
                       {"class_id": 11, "confidence": 1.0},
                       {"class_id": 10, "confidence": 0.0},
                     ],
-                    "line_size": 4
                   },
                   {
                     "id": "4a586dc4-0efa-4563-a42b-8eea3dd5b04b", 
@@ -48,7 +47,6 @@
                     "classification_payloads": [
                       {"class_id": 10, "confidence": 1.0},
                     ],
-                    "line_size": 4
                   },
                   {
                     "id": "4a686dc4-0efa-4563-a42b-8eea3dd5b04b", 
@@ -57,7 +55,6 @@
                     "classification_payloads": [
                       {"class_id": 12, "confidence": 1.0},
                     ],
-                    "line_size": 4
                   },
                   {
                     "id": "4a186dc4-0efa-4563-a42b-8eea3dd5b04b",
@@ -185,7 +182,6 @@
                             "confidence": 0
                         }
                     ],
-                    "line_size": 3,
                     "text_payload": "",
                     "annotation_meta": null
                     },
@@ -224,7 +220,6 @@
                             "confidence": 0
                         }
                     ],
-                    "line_size": 4,
                     "text_payload": "",
                     "annotation_meta": null
                     } 
@@ -299,8 +294,26 @@
 
             });
         </script>
+        <style>
+            body {
+                margin: 0;
+                padding: 0;
+            }
+            .test-banner {
+                background-color: #333;
+                color: white;
+                padding: 2px;
+                text-align: center;
+                font-family: sans-serif;
+            }
+        </style>
     </head>
     <body>
-        <div id="container" style="width: 100%; height: 100vh; position: absolute; top: 0; left: 0;"></div>
+        <div class="test-banner">
+            <h2>Test Banner - This tests that the collapse button respects container positioning</h2>
+        </div>
+        <div id="wrapper">
+            <div id="container" style="width: 100%; height: calc(100vh - 140px);"></div>
+        </div>
     </body>
 </html>

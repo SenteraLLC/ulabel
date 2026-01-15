@@ -55,7 +55,6 @@ class ULabel({
     reset_zoom_keybind: string,
     show_full_image_keybind: string,
     create_point_annotation_keybind: string,
-    default_annotation_size: number,
     delete_annotation_keybind: string,
     keypoint_slider_default_value: number,
     filter_annotations_on_load: boolean,
@@ -196,9 +195,6 @@ As you can see, each subtask will have a corresponding list of annotation object
         }
     ],
 
-    // size in underlying image pixels
-    "line_size": "<number>", 
-
     // (nullable) frame ann was created for
     "frame": "<int>", 
     
@@ -316,7 +312,7 @@ In some cases, you may want the annotations to render at a higher or lower resol
 
 ### `initial_line_size`
 
-The line width with which new annotations are drawn initially. Units are pixels in the underlying image. When this value is not included, the default value of `4` is used.
+The line width with which new annotations are drawn initially. Units are pixels in the underlying image. When this value is not included, the default value of `5` is used.
 
 ### `anno_scaling_mode`
 
@@ -434,9 +430,6 @@ Keybind to set the zoom level to show the full image. Default is `shift+r`.
 ### `create_point_annotation_keybind`
 Keybind to create a point annotation at the mouse location. Default is `c`. Requires the active subtask to have a `point` mode.
 
-### `default_annotation_size`
-Default size of annotations in pixels. Default is `6`.
-
 ### `delete_annotation_keybind`
 Keybind to delete the annotation that the mouse is hovering over. Default is `d`.
 
@@ -486,7 +479,10 @@ Keybind to increment the annotation size for the current subtask. Default is `=`
 Keybind to decrement the annotation size for the current subtask. Default is `-`.
 
 ### `annotation_vanish_keybind`
-Keybind to toggle vanish mode for annotations in the current subtask (lowercase toggles current subtask, uppercase toggles all subtasks). Default is `v`.
+Keybind to toggle vanish mode for annotations in the current subtask. Default is `v`.
+
+### `annotation_vanish_all_keybind`
+Keybind to toggle vanish mode for all subtasks. Default is `shift+v`
 
 ### `fly_to_max_zoom`
 Maximum zoom factor used when flying-to an annotation. Default is `10`, value must be > `0`. 

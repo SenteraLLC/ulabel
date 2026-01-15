@@ -10,6 +10,7 @@ import type { ULabel } from "..";
 import { NightModeCookie } from "./cookies";
 import { DELETE_CLASS_ID, DELETE_MODES, NONSPATIAL_MODES } from "./annotation";
 import { set_local_storage_item } from "./utilities";
+import { AnnotationResizeItem, SMALL_ANNOTATION_SIZE, LARGE_ANNOTATION_SIZE, INCREMENT_ANNOTATION_SIZE } from "./toolbox";
 
 const ULABEL_NAMESPACE = ".ulabel";
 
@@ -312,6 +313,52 @@ function handle_keydown_event(
     if (event_matches_keybind(keydown_event, ulabel.config.fly_to_previous_annotation_keybind)) {
         keydown_event.preventDefault();
         ulabel.fly_to_next_annotation(-1, ulabel.config.fly_to_max_zoom);
+        return false;
+    }
+
+    // Handle annotation resizing keybinds
+
+    if (event_matches_keybind(keydown_event, ulabel.config.annotation_vanish_all_keybind)) {
+        keydown_event.preventDefault();
+        // Toggle global vanish flag
+        ulabel.state.all_subtasks_vanished = !ulabel.state.all_subtasks_vanished;
+
+        // For each subtask, toggle vanished state if needed
+        for (const subtask_key in ulabel.subtasks) {
+            if (ulabel.subtasks[subtask_key].state.is_vanished !== ulabel.state.all_subtasks_vanished) {
+                AnnotationResizeItem.toggle_subtask_vanished(ulabel, subtask_key);
+            }
+        }
+        return false;
+    }
+
+    if (event_matches_keybind(keydown_event, ulabel.config.annotation_vanish_keybind)) {
+        keydown_event.preventDefault();
+        AnnotationResizeItem.toggle_subtask_vanished(ulabel, ulabel.get_current_subtask_key());
+        return false;
+    }
+
+    if (event_matches_keybind(keydown_event, ulabel.config.annotation_size_small_keybind)) {
+        keydown_event.preventDefault();
+        AnnotationResizeItem.update_annotation_size(ulabel, ulabel.get_current_subtask_key(), SMALL_ANNOTATION_SIZE);
+        return false;
+    }
+
+    if (event_matches_keybind(keydown_event, ulabel.config.annotation_size_large_keybind)) {
+        keydown_event.preventDefault();
+        AnnotationResizeItem.update_annotation_size(ulabel, ulabel.get_current_subtask_key(), LARGE_ANNOTATION_SIZE);
+        return false;
+    }
+
+    if (event_matches_keybind(keydown_event, ulabel.config.annotation_size_minus_keybind)) {
+        keydown_event.preventDefault();
+        AnnotationResizeItem.update_annotation_size(ulabel, ulabel.get_current_subtask_key(), -INCREMENT_ANNOTATION_SIZE, true);
+        return false;
+    }
+
+    if (event_matches_keybind(keydown_event, ulabel.config.annotation_size_plus_keybind)) {
+        keydown_event.preventDefault();
+        AnnotationResizeItem.update_annotation_size(ulabel, ulabel.get_current_subtask_key(), INCREMENT_ANNOTATION_SIZE, true);
         return false;
     }
 }

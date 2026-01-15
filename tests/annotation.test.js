@@ -63,7 +63,6 @@ describe("Annotation Processing", () => {
             expect(annotation.classification_payloads).toEqual([{ class_id: 1, confidence: 1.0 }]);
 
             // Other properties
-            expect(annotation.line_size).toBe(ulabel_with_resume.config.initial_line_size);
             expect(annotation.created_by).toBe("unknown");
             expect(annotation.created_at).toBe(null);
             expect(annotation.last_edited_by).toBe("unknown");
