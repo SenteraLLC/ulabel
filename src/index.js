@@ -3111,6 +3111,125 @@ export class ULabel {
     }
 
     /**
+     * Delete a vertex from a polygon or polyline annotation
+     * @param {string} annotation_id - The ID of the annotation
+     * @param {string|array} access_str - Access string identifying the vertex to delete
+     * @param {boolean} redoing - Whether this is a redo operation
+     * @param {boolean} should_record_action - Whether to record this action in the action stream
+     */
+    delete_vertex(annotation_id, access_str, redoing = false, should_record_action = true) {
+        const current_subtask = this.get_current_subtask();
+        const annotation = current_subtask["annotations"]["access"][annotation_id];
+        const spatial_type = annotation["spatial_type"];
+
+        // Only allow vertex deletion for polygons and polylines
+        if (spatial_type !== "polygon" && spatial_type !== "polyline") {
+            return;
+        }
+
+        let spatial_payload = annotation["spatial_payload"];
+        let layer_index = 0;
+        let vertex_index;
+        let active_spatial_payload = spatial_payload;
+        let should_delete = false;
+
+        // Parse access string based on spatial type
+        if (spatial_type === "polygon") {
+            // For polygons, access_str is [layer_index, vertex_index]
+            layer_index = parseInt(access_str[0], 10);
+            active_spatial_payload = spatial_payload[layer_index];
+            vertex_index = parseInt(access_str[1], 10);
+        } else {
+            // For polylines, access_str is just the vertex_index
+            vertex_index = parseInt(access_str, 10);
+        }
+
+        // Store the old state for undo
+        const old_spatial_payload = JSON.parse(JSON.stringify(spatial_payload));
+
+        // Delete the vertex
+        if (spatial_type === "polygon") {
+            // For polygons, handle the special case of first/last point
+            const n_points = active_spatial_payload.length;
+            if (vertex_index === 0 || vertex_index === n_points - 1) {
+                // First and last points are the same in a closed polygon
+                // Remove both
+                active_spatial_payload.splice(n_points - 1, 1);
+                active_spatial_payload.splice(0, 1);
+                // Make the new first point also the last point
+                if (active_spatial_payload.length > 0) {
+                    active_spatial_payload.push([...active_spatial_payload[0]]);
+                }
+            } else {
+                // Remove the vertex
+                active_spatial_payload.splice(vertex_index, 1);
+            }
+
+            // Check if the layer should be removed (fewer than 3 points means fewer than 4 including duplicate)
+            if (active_spatial_payload.length < 4) {
+                // Remove the entire layer
+                spatial_payload.splice(layer_index, 1);
+
+                // If no layers remain, delete the entire annotation
+                if (spatial_payload.length === 0) {
+                    should_delete = true;
+                }
+            }
+        } else {
+            // For polylines
+            active_spatial_payload.splice(vertex_index, 1);
+
+            // If only one point remains, delete the entire polyline
+            if (active_spatial_payload.length <= 1) {
+                should_delete = true;
+            }
+        }
+
+        // Clear any active edit state
+        if (current_subtask["state"]["active_id"] === annotation_id) {
+            current_subtask["state"]["active_id"] = null;
+            current_subtask["state"]["is_in_edit"] = false;
+        }
+
+        let frame = this.state["current_frame"];
+        if (MODES_3D.includes(spatial_type)) {
+            frame = null;
+        }
+
+        // Record the action
+        record_action(this, {
+            act_type: "delete_vertex",
+            annotation_id: annotation_id,
+            frame: frame,
+            undo_payload: {
+                old_spatial_payload: old_spatial_payload,
+                deleted: should_delete,
+            },
+            redo_payload: {
+                access_str: access_str,
+            },
+        }, redoing, should_record_action);
+
+        // If the entire annotation should be deleted, do so
+        if (should_delete) {
+            this.delete_annotation(annotation_id, false, false);
+        }
+    }
+
+    delete_vertex__undo(annotation_id, undo_payload) {
+        const annotation = this.get_current_subtask()["annotations"]["access"][annotation_id];
+        annotation["spatial_payload"] = undo_payload.old_spatial_payload;
+
+        if (undo_payload.deleted) {
+            this.delete_annotation__undo(annotation_id);
+        }
+    }
+
+    delete_vertex__redo(annotation_id, redo_payload) {
+        this.delete_vertex(annotation_id, redo_payload.access_str, true);
+    }
+
+    /**
      * Get the annotation with nearest active keypoint (e.g. corners for a bbox, endpoints for polylines) to a point
      * @param {*} global_x
      * @param {*} global_y
