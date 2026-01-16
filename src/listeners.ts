@@ -609,8 +609,8 @@ export function create_ulabel_listeners(
                 const current_subtask = ulabel.get_current_subtask();
                 const edit_cand = current_subtask.state.edit_candidate;
 
-                // Check if we have an edit candidate
-                if (edit_cand !== null) {
+                // Only delete if we have an edit candidate that is an actual vertex (not a segment point)
+                if (edit_cand !== null && edit_cand.is_vertex === true) {
                     ulabel.delete_vertex(edit_cand.annid, edit_cand.access);
                 }
             }

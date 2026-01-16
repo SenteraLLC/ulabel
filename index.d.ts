@@ -234,6 +234,7 @@ export type ULabelActionCandidate = {
     point: [number, number]; // Mouse location
     spatial_type: ULabelSpatialType;
     offset?: Offset; // Optional offset for move actions
+    is_vertex?: boolean; // True if hovering over an actual vertex, false if hovering over a segment
 };
 
 export type ULabelSubtasks = { [key: string]: ULabelSubtask };

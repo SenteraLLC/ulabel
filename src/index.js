@@ -3243,6 +3243,7 @@ export class ULabel {
             access: null,
             distance: max_dist / this.get_empirical_scale(),
             point: null,
+            is_vertex: true,
         };
         if (candidates === null) {
             candidates = this.get_current_subtask()["annotations"]["ordering"];
@@ -3346,6 +3347,7 @@ export class ULabel {
             access: null,
             distance: max_dist / this.get_empirical_scale(),
             point: null,
+            is_vertex: false,
         };
         if (candidates === null) {
             candidates = this.get_current_subtask()["annotations"]["ordering"];
