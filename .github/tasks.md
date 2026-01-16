@@ -5,6 +5,6 @@
   - [x] Delete the vertex when pressed when dragging/editing the vertex
   - [x] For polylines, if only one point remains in the polyline, it should delete the polyline
   - [x] For polygons, if fewer than 3 points remain in a polygon layer, the layer should be removed
-- [ ] Add a test for the keybind in keybind-functionality.spec.js
+- [x] Add a test for the keybind in keybind-functionality.spec.js
 - [ ] Update the api_spec and changelog
 

@@ -2,7 +2,7 @@
 import { test, expect } from "./fixtures";
 import { wait_for_ulabel_init } from "../testing-utils/init_utils";
 import { get_annotation_count, get_annotation_by_index, get_annotation_class_id } from "../testing-utils/annotation_utils";
-import { draw_bbox } from "../testing-utils/drawing_utils";
+import { draw_bbox, draw_polygon, draw_polyline } from "../testing-utils/drawing_utils";
 import { get_current_subtask_key, get_current_subtask } from "../testing-utils/subtask_utils";
 
 /**
@@ -705,5 +705,107 @@ test.describe("Keybind Functionality Tests", () => {
         await page.waitForTimeout(200);
         annotation = await get_annotation_by_index(page, 0);
         expect(get_annotation_class_id(annotation)).toBe(10); // Still Sedan
+    });
+
+    test("delete_vertex_keybind should delete a vertex from a polygon when hovering", async ({ page }) => {
+        await wait_for_ulabel_init(page);
+
+        // Get the delete vertex keybind from the toolbox
+        const keybind = await get_keybind_value(page, "Delete Vertex");
+
+        // Draw a polygon with 4 points (square)
+        await draw_polygon(page, [
+            [200, 200],
+            [400, 200],
+            [400, 400],
+            [200, 400],
+        ]);
+        await page.waitForTimeout(200);
+
+        // Get the annotation and verify it has 5 points (4 + duplicate first/last)
+        let annotation = await get_annotation_by_index(page, 0);
+        expect(annotation.spatial_payload[0].length).toBe(5);
+
+        // Move mouse to hover over a vertex (point 4)
+        await page.mouse.move(200, 400);
+        await page.waitForTimeout(200);
+
+        // Verify edit suggestion is showing and it's a vertex
+        let edit_candidate = await page.evaluate(() => {
+            return window.ulabel.get_current_subtask().state.edit_candidate;
+        });
+        expect(edit_candidate).not.toBeNull();
+        expect(edit_candidate.is_vertex).toBe(true);
+
+        // Press the delete vertex keybind
+        await press_keybind(page, keybind);
+        await page.waitForTimeout(200);
+
+        // Verify the polygon now has 4 points (3 + duplicate first/last)
+        annotation = await get_annotation_by_index(page, 0);
+        expect(annotation.spatial_payload[0].length).toBe(4);
+
+        // Move mouse to hover over a segment (midpoint between two vertices)
+        await page.mouse.move(300, 200); // Midpoint of top edge
+        await page.waitForTimeout(200);
+
+        // Verify edit suggestion is showing but it's NOT a vertex
+        edit_candidate = await page.evaluate(() => {
+            return window.ulabel.get_current_subtask().state.edit_candidate;
+        });
+        expect(edit_candidate).not.toBeNull();
+        expect(edit_candidate.is_vertex).toBe(false);
+
+        // Press the delete vertex keybind
+        await press_keybind(page, keybind);
+        await page.waitForTimeout(200);
+
+        // Verify the polygon still has the same number of points (not deleted)
+        annotation = await get_annotation_by_index(page, 0);
+        expect(annotation.spatial_payload[0].length).toBe(4);
+
+        // Move mouse to hover over a vertex
+        await page.mouse.move(400, 200);
+        await page.waitForTimeout(200);
+
+        // Press the delete vertex keybind
+        await press_keybind(page, keybind);
+        await page.waitForTimeout(200);
+
+        // Verify the polygon is now deprecated
+        annotation = await get_annotation_by_index(page, 0);
+        expect(annotation.deprecated).toBe(true);
+    });
+
+    test("delete_vertex_keybind should delete entire polyline when only 1 point remains", async ({ page }) => {
+        await wait_for_ulabel_init(page);
+
+        // Get the delete vertex keybind from the toolbox
+        const keybind = await get_keybind_value(page, "Delete Vertex");
+
+        // Draw a polyline with 2 points
+        await draw_polyline(page, [
+            [200, 200],
+            [400, 400],
+        ]);
+        await page.waitForTimeout(200);
+
+        // Verify polyline exists with 2 points
+        let annotation = await get_annotation_by_index(page, 0);
+        expect(annotation.spatial_type).toBe("polyline");
+        expect(annotation.spatial_payload.length).toBe(2);
+        expect(annotation.deprecated).toBe(false);
+
+        // Move mouse to hover over a vertex
+        await page.mouse.move(200, 200);
+        await page.waitForTimeout(300);
+
+        // Press the delete vertex keybind
+        await press_keybind(page, keybind);
+        await page.waitForTimeout(200);
+
+        // Verify the polyline is now deprecated (deleted)
+        annotation = await get_annotation_by_index(page, 0);
+        expect(annotation.deprecated).toBe(true);
     });
 });
