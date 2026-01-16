@@ -435,7 +435,7 @@ Keybind to create a point annotation at the mouse location. Default is `c`. Requ
 Keybind to delete the annotation that the mouse is hovering over. Default is `d`.
 
 ### `delete_vertex_keybind`
-Keybind to delete a vertex of a polygon or polyline annotation. The vertex must be the one currently being hovered (showing an edit suggestion) or actively being edited. For polylines, if only one point remains after deletion, the entire polyline is deleted. For polygons, if fewer than 3 points remain in a layer after deletion, that layer is removed. Default is `x`.
+Keybind to delete a vertex of a polygon or polyline annotation. The vertex must be the one currently being hovered (showing an edit suggestion) or actively being edited. For polylines, if only one point remains after deletion, the entire polyline is deleted. For polygons, if fewer than 3 points remain in a layer after deletion, that layer is removed. Default is `shift+d`.
 
 ### `keypoint_slider_default_value`
 Default value for the keypoint slider. Must be a number between 0 and 1. Default is `0`.
