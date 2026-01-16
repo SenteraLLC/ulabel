@@ -3087,6 +3087,15 @@ export class ULabel {
             current_subtask["state"]["starting_complex_polygon"] = false;
         }
 
+        // Clear drag state if we're in the middle of a drag
+        if (this.drag_state["active_key"] !== null) {
+            this.drag_state["active_key"] = null;
+            this.drag_state["release_button"] = null;
+        }
+
+        // Clear edit candidate
+        current_subtask["state"]["edit_candidate"] = null;
+
         let frame = this.state["current_frame"];
         if (MODES_3D.includes(spatial_type)) {
             frame = null;
@@ -3190,6 +3199,15 @@ export class ULabel {
             current_subtask["state"]["active_id"] = null;
             current_subtask["state"]["is_in_edit"] = false;
         }
+
+        // Clear drag state if we're in the middle of a drag
+        if (this.drag_state["active_key"] !== null) {
+            this.drag_state["active_key"] = null;
+            this.drag_state["release_button"] = null;
+        }
+
+        // Clear edit candidate
+        current_subtask["state"]["edit_candidate"] = null;
 
         let frame = this.state["current_frame"];
         if (MODES_3D.includes(spatial_type)) {
