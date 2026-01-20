@@ -253,6 +253,10 @@ function trigger_action_listeners(
             action: on_annotation_deletion,
             undo: on_finish_annotation_spatial_modification,
         },
+        delete_vertex: {
+            action: on_finish_annotation_spatial_modification,
+            undo: on_finish_annotation_spatial_modification,
+        },
         assign_annotation_id: {
             action: on_annotation_id_change,
             undo: on_annotation_id_change,
@@ -570,6 +574,9 @@ function undo_action(ulabel: ULabel, action: ULabelAction) {
         case "delete_annotation":
             ulabel.delete_annotation__undo(action.annotation_id);
             break;
+        case "delete_vertex":
+            ulabel.delete_vertex__undo(action.annotation_id, undo_payload);
+            break;
         case "cancel_annotation":
             ulabel.cancel_annotation__undo(action.annotation_id, undo_payload);
             break;
@@ -643,6 +650,9 @@ export function redo_action(ulabel: ULabel, action: ULabelAction) {
             break;
         case "delete_annotation":
             ulabel.delete_annotation__redo(action.annotation_id);
+            break;
+        case "delete_vertex":
+            ulabel.delete_vertex__redo(action.annotation_id, redo_payload);
             break;
         case "cancel_annotation":
             ulabel.cancel_annotation(action.annotation_id);

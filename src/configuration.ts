@@ -198,6 +198,8 @@ export class Configuration {
 
     public delete_annotation_keybind: string = "d";
 
+    public delete_vertex_keybind: string = "x";
+
     public keypoint_slider_default_value: number;
 
     public filter_annotations_on_load: boolean = true;

@@ -317,6 +317,14 @@ export class KeybindsToolboxItem extends ToolboxItem {
         });
 
         keybinds.push({
+            key: config.delete_vertex_keybind,
+            label: "Delete Vertex",
+            description: "Delete a vertex from polygon/polyline (hover or drag)",
+            configurable: true,
+            config_key: "delete_vertex_keybind",
+        });
+
+        keybinds.push({
             key: config.switch_subtask_keybind,
             label: "Switch Subtask",
             description: "Switch to the next subtask",

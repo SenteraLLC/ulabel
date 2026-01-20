@@ -604,6 +604,16 @@ export function create_ulabel_listeners(
                     ulabel.delete_annotation(edit_cand.annid);
                 }
             }
+            // Check the key pressed against the delete vertex keybind in the config
+            if (event_matches_keybind(keypress_event, ulabel.config.delete_vertex_keybind)) {
+                const current_subtask = ulabel.get_current_subtask();
+                const edit_cand = current_subtask.state.edit_candidate;
+
+                // Only delete if we have an edit candidate that is an actual vertex (not a segment point)
+                if (edit_cand !== null && edit_cand.is_vertex === true) {
+                    ulabel.delete_vertex(edit_cand.annid, edit_cand.access);
+                }
+            }
         },
     );
 

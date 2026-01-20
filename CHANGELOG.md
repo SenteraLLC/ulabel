@@ -4,6 +4,14 @@ All notable changes to this project will be documented here.
 
 ## [unreleased]
 
+## [0.23.0] - Jan 16th, 2026
+- Add vertex deletion keybind for polygon and polyline annotations
+  - New configurable `delete_vertex_keybind` (default: `x`)
+  - Delete individual vertices by hovering over them and pressing the keybind
+  - Automatically deletes entire polyline if only 1 point remains after deletion
+  - Automatically removes polygon layer if fewer than 3 points remain after deletion
+- Fixed bug where deleting an annotation mid-edit would cause the ULabel state to be stuck in edit mode.
+
 ## [0.22.1] - Jan 13th, 2026
 - Don't draw annotations when a subtask is vanished
 - Add configurable `annotation_vanish_all_keybind`

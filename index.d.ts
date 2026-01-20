@@ -194,6 +194,7 @@ export type ULabelActionType = "create_nonspatial_annotation" |
     "finish_move" |
     "cancel_annotation" |
     "delete_annotation" |
+    "delete_vertex" |
     "delete_annotations_in_polygon" |
     "start_complex_polygon" |
     "merge_polygon_complex_layer" |
@@ -233,6 +234,7 @@ export type ULabelActionCandidate = {
     point: [number, number]; // Mouse location
     spatial_type: ULabelSpatialType;
     offset?: Offset; // Optional offset for move actions
+    is_vertex?: boolean; // True if hovering over an actual vertex, false if hovering over a segment
 };
 
 export type ULabelSubtasks = { [key: string]: ULabelSubtask };
@@ -377,6 +379,12 @@ export class ULabel {
         redoing?: boolean,
         should_record_action?: boolean,
     ): void;
+    public delete_vertex(
+        annotation_id: string,
+        access_str: string | number | [number, number],
+        redoing?: boolean,
+        should_record_action?: boolean,
+    ): void;
     public cancel_annotation(annotation_id?: string): void;
     public assign_annotation_id(annotation_id?: string, redo_payload?: object): void;
     public create_point_annotation_at_mouse_location(): void;
@@ -414,6 +422,7 @@ export class ULabel {
     public begin_edit__undo(annotation_id: string, undo_payload: object): void;
     public begin_move__undo(annotation_id: string, undo_payload: object): void;
     public delete_annotation__undo(annotation_id: string): void;
+    public delete_vertex__undo(annotation_id: string, undo_payload: object): void;
     public cancel_annotation__undo(annotation_id: string, undo_payload: object): void;
     public assign_annotation_id__undo(annotation_id: string, undo_payload: object): void;
     public create_annotation__undo(annotation_id: string): void;
@@ -431,6 +440,7 @@ export class ULabel {
     public begin_edit__redo(annotation_id: string, redo_payload: object): void;
     public begin_move__redo(annotation_id: string, redo_payload: object): void;
     public delete_annotation__redo(annotation_id: string): void;
+    public delete_vertex__redo(annotation_id: string, redo_payload: object): void;
     public create_annotation__redo(annotation_id: string, redo_payload: object): void;
     public finish_modify_annotation__redo(annotation_id: string, redo_payload: object): void;
 
