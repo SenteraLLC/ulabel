@@ -6,5 +6,5 @@
   - [x] For polylines, if only one point remains in the polyline, it should delete the polyline
   - [x] For polygons, if fewer than 3 points remain in a polygon layer, the layer should be removed
 - [x] Add a test for the keybind in keybind-functionality.spec.js
-- [ ] Update the api_spec and changelog
+- [x] Update the api_spec and changelog
 
