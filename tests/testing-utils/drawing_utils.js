@@ -54,7 +54,7 @@ export async function draw_point(page, position) {
 }
 
 /**
- * Draw a polyline and return its spatial payload.
+ * Draw a polygon and return its spatial payload.
  *
  * @param {Page} page
  * @param {[number, number][]} points
@@ -75,12 +75,15 @@ export async function draw_polygon(page, points) {
     await page.waitForTimeout(200);
 
     // Convert coordinates to image space
+    // Polygon spatial payload is an array of layers, where each layer has points with first/last duplicated
     return await page.evaluate((pts) => {
         const image_points = pts.map((pt) =>
             window.ulabel.get_image_aware_mouse_x_y(
                 { pageX: pt[0], pageY: pt[1] },
             ),
         );
+        // Duplicate the first point at the end to close the polygon (ulabel format)
+        image_points.push([...image_points[0]]);
         return [image_points];
     }, points);
 }
