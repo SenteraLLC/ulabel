@@ -25,7 +25,7 @@ import {
     mark_deprecated,
     update_distance_from_line_to_each_point,
 } from "../build/annotation_operators";
-import { AnnotationResizeItem } from "../build/toolbox";
+import { AnnotationResizeItem, BrushToolboxItem } from "../build/toolbox";
 import { remove_ulabel_listeners } from "../build/listeners";
 import { log_message, LogLevel } from "../build/error_logging";
 import { initialize_annotation_canvases } from "../build/canvas_utils";
@@ -48,7 +48,6 @@ import {
     BACK_Z_INDEX,
 } from "./blobs";
 import { ULABEL_VERSION } from "./version";
-import { BrushToolboxItem } from "../build/toolbox";
 import { ulabel_init } from "../build/initializer";
 
 jQuery.fn.outer_html = function () {
