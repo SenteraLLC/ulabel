@@ -100,7 +100,10 @@ describe("ULabel Core Functionality", () => {
         test("should return resize toolbox item class", () => {
             const resize_item_class = ULabel.get_resize_toolbox_item();
             expect(typeof resize_item_class).toBe("function");
-            expect(resize_item_class.name).toBe("AnnotationResizeItem");
+            // Verify class methods
+            expect(typeof resize_item_class.update_annotation_size).toBe("function");
+            expect(typeof resize_item_class.update_subtask_line_size).toBe("function");
+            expect(typeof resize_item_class.toggle_subtask_vanished).toBe("function");
         });
     });
 
