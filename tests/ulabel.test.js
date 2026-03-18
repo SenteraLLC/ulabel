@@ -96,6 +96,12 @@ describe("ULabel Core Functionality", () => {
             const enum_obj = ULabel.get_allowed_toolbox_item_enum();
             expect(typeof enum_obj).toBe("object");
         });
+
+        test("should return resize toolbox item class", () => {
+            const resize_item_class = ULabel.get_resize_toolbox_item();
+            expect(typeof resize_item_class).toBe("function");
+            expect(resize_item_class.name).toBe("AnnotationResizeItem");
+        });
     });
 
     describe("Class Processing", () => {
