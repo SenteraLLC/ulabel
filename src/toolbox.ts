@@ -2372,20 +2372,31 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
      * @returns An object mapping class identifiers to their distance values, or null if no sliders are found
      */
     public get_current_values(): DistanceFromPolylineClasses | null {
-        const container_id = this.multi_class_mode ? "filter-multi-class-mode" : "filter-single-class-mode";
-        const container = document.getElementById(container_id);
-        if (container === null) return null;
+        // Always read the single-class slider for closest_row
+        const single_container = document.getElementById("filter-single-class-mode");
+        if (single_container === null) return null;
 
-        const sliders = container.querySelectorAll<HTMLInputElement>(".filter-row-distance-slider");
-        if (sliders.length === 0) return null;
+        const single_slider = single_container.querySelector<HTMLInputElement>(".filter-row-distance-slider");
+        if (single_slider === null) return null;
 
-        const filter_values: DistanceFromPolylineClasses = { closest_row: undefined };
-        for (let idx = 0; idx < sliders.length; idx++) {
-            const slider_class_name = /[^-]*$/.exec(sliders[idx].id)[0];
-            filter_values[slider_class_name] = {
-                distance: sliders[idx].valueAsNumber,
-            };
+        const filter_values: DistanceFromPolylineClasses = {
+            closest_row: { distance: single_slider.valueAsNumber },
+        };
+
+        // In multi-class mode, also read the per-class sliders
+        if (this.multi_class_mode) {
+            const multi_container = document.getElementById("filter-multi-class-mode");
+            if (multi_container !== null) {
+                const sliders = multi_container.querySelectorAll<HTMLInputElement>(".filter-row-distance-slider");
+                for (let idx = 0; idx < sliders.length; idx++) {
+                    const slider_class_name = /[^-]*$/.exec(sliders[idx].id)[0];
+                    filter_values[slider_class_name] = {
+                        distance: sliders[idx].valueAsNumber,
+                    };
+                }
+            }
         }
+
         return filter_values;
     }
 
