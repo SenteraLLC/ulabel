@@ -10,7 +10,7 @@ import type {
 // Import ULabel from ../src/index - TypeScript will find ../src/index.d.ts for types
 import { ULabel } from "../src/index";
 
-import { ULabelAnnotation } from "./annotation";
+import { ULabelAnnotation, DELETE_CLASS_ID } from "./annotation";
 import { ULabelSubtask } from "./subtask";
 
 /**
@@ -582,6 +582,8 @@ export function findAllPolylineClassDefinitions(ulabel: ULabel) {
         if (subtask.allowed_modes.includes("polyline")) {
             // Loop through all the classes in the subtask
             subtask.class_defs.forEach((current_class_def) => {
+                // Skip the reserved delete class
+                if (current_class_def.id === DELETE_CLASS_ID) return;
                 potential_class_defs.push(current_class_def);
             });
         }
