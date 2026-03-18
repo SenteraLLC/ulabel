@@ -353,6 +353,18 @@ You can access the AllowedToolboxItem enum by calling the static method:
 const AllowedToolboxItem = ULabel.get_allowed_toolbox_item_enum();
 ```
 
+### `AnnotationResizeItem`
+The `AnnotationResizeItem` can be used to programmatically control annotation size for subtasks. It can be accessed with the static method:
+```javascript
+const AnnotationResizeItem = ULabel.get_resize_toolbox_item();
+```
+Using the class, you can call any of its static methods by passing in your `ULabel` instance, the key of the subtask you want to modify, and any other required arguments. For example:
+
+```javascript
+AnnotationResizeItem.toggle_subtask_vanished(ulabel, subtask_key);
+```
+Note that in order to work, the `AnnotationResize` toolbox item MUST be present in your `ULabel` instance.
+
 ### `distance_filter_toolbox_item`
 Configuration object for the `FilterDistance` toolbox item with the following custom definitions:
 ```javascript

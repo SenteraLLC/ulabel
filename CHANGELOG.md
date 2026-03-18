@@ -4,6 +4,10 @@ All notable changes to this project will be documented here.
 
 ## [unreleased]
 
+## [0.23.1] - Mar 18th, 2026
+- Fix export of typescript types
+- Add `ULabel.get_resize_toolbox_item()` static method to get the `AnnotationResizeItem` class, which has static methods that allow for programmatic control of annotation size for subtasks.
+
 ## [0.23.0] - Jan 16th, 2026
 - Add vertex deletion keybind for polygon and polyline annotations
   - New configurable `delete_vertex_keybind` (default: `x`)
