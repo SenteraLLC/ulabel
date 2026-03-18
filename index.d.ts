@@ -2,7 +2,7 @@ import { ULabelAnnotation } from "./src/annotation";
 import { AllowedToolboxItem, Configuration } from "./src/configuration";
 import { FilterDistanceOverlay } from "./src/overlays";
 import { ULabelSubtask } from "./src/subtask";
-import { Toolbox } from "./src/toolbox";
+import { Toolbox, AnnotationResizeItem } from "./src/toolbox";
 
 export type DistanceFromPolyline = {
     distance: number;
@@ -361,6 +361,7 @@ export class ULabel {
     // Static functions
     static get_time(): string;
     static get_allowed_toolbox_item_enum(): AllowedToolboxItem;
+    static get_resize_toolbox_item(): AnnotationResizeItem;
     static process_classes(ulabel_obj: ULabel, arg1: string, subtask_obj: ULabelSubtask): void;
     static build_id_dialogs(ulabel_obj: ULabel): void;
 

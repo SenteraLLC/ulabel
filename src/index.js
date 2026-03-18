@@ -25,7 +25,7 @@ import {
     mark_deprecated,
     update_distance_from_line_to_each_point,
 } from "../build/annotation_operators";
-
+import { AnnotationResizeItem } from "../build/toolbox";
 import { remove_ulabel_listeners } from "../build/listeners";
 import { log_message, LogLevel } from "../build/error_logging";
 import { initialize_annotation_canvases } from "../build/canvas_utils";
@@ -69,6 +69,10 @@ export class ULabel {
 
     static get_allowed_toolbox_item_enum() {
         return AllowedToolboxItem;
+    }
+
+    static get_resize_toolbox_item() {
+        return AnnotationResizeItem;
     }
 
     /*
