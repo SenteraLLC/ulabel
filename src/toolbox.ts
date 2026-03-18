@@ -1947,6 +1947,17 @@ export class KeypointSliderItem extends ToolboxItem {
         `;
     }
 
+    /**
+     * Get the current keypoint slider value by reading the DOM slider element.
+     *
+     * @returns The current slider value as a number between 0 and 1, or null if the slider is not found
+     */
+    public get_current_value(): number | null {
+        const slider: HTMLInputElement = document.querySelector(`#${this.slider_bar_id}`);
+        if (slider === null) return null;
+        return slider.valueAsNumber / 100;
+    }
+
     public after_init() {
         // This toolbox item doesn't need to do anything after initialization
     }
@@ -2353,6 +2364,25 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
 
     public after_init() {
         // This toolbox item doesn't need to do anything after initialization
+    }
+
+    /**
+     * Get the current distance filter slider values by reading the DOM slider elements.
+     *
+     * @returns An object mapping class identifiers to their distance values, or null if no sliders are found
+     */
+    public get_current_values(): DistanceFromPolylineClasses | null {
+        const sliders: NodeListOf<HTMLInputElement> = document.querySelectorAll(".filter-row-distance-slider");
+        if (sliders.length === 0) return null;
+
+        const filter_values: DistanceFromPolylineClasses = { closest_row: undefined };
+        for (let idx = 0; idx < sliders.length; idx++) {
+            const slider_class_name = /[^-]*$/.exec(sliders[idx].id)[0];
+            filter_values[slider_class_name] = {
+                distance: sliders[idx].valueAsNumber,
+            };
+        }
+        return filter_values;
     }
 
     public get_toolbox_item_type() {

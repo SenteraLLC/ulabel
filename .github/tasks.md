@@ -7,4 +7,11 @@
   - [x] For polygons, if fewer than 3 points remain in a polygon layer, the layer should be removed
 - [x] Add a test for the keybind in keybind-functionality.spec.js
 - [x] Update the api_spec and changelog
+- [ ] Add public API methods to expose keypoint slider and distance filter slider values
+  - [x] Add `get_current_value()` to `KeypointSliderItem` in toolbox.ts
+  - [x] Add `get_current_values()` to `FilterPointDistanceFromRow` in toolbox.ts
+  - [x] Add `get_keypoint_slider_value()` and `get_distance_filter_value()` to ULabel in index.js
+  - [x] Update type definitions in index.d.ts
+  - [x] Update api_spec.md and CHANGELOG.md
+  - [ ] Build and lint
 
