@@ -1,13 +1,23 @@
 {
   "name": "ulabel",
   "description": "An image annotation tool.",
-  "version": "0.23.0",
+  "version": "0.23.1",
   "main": "dist/ulabel.min.js",
   "module": "dist/ulabel.min.js",
+  "types": "index.d.ts",
   "exports": {
-    ".": "./dist/ulabel.min.js",
-    "./min": "./dist/ulabel.min.js",
-    "./debug": "./dist/ulabel.js"
+    ".": {
+      "types": "./index.d.ts",
+      "default": "./dist/ulabel.min.js"
+    },
+    "./min": {
+      "types": "./index.d.ts",
+      "default": "./dist/ulabel.min.js"
+    },
+    "./debug": {
+      "types": "./index.d.ts",
+      "default": "./dist/ulabel.js"
+    }
   },
   "scripts": {
     "test": "cross-env NODE_OPTIONS=\"--max-old-space-size=8192\" jest",
