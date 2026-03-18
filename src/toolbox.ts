@@ -2372,7 +2372,11 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
      * @returns An object mapping class identifiers to their distance values, or null if no sliders are found
      */
     public get_current_values(): DistanceFromPolylineClasses | null {
-        const sliders = document.querySelectorAll<HTMLInputElement>(".filter-row-distance-slider");
+        const container_id = this.multi_class_mode ? "filter-multi-class-mode" : "filter-single-class-mode";
+        const container = document.getElementById(container_id);
+        if (container === null) return null;
+
+        const sliders = container.querySelectorAll<HTMLInputElement>(".filter-row-distance-slider");
         if (sliders.length === 0) return null;
 
         const filter_values: DistanceFromPolylineClasses = { closest_row: undefined };
