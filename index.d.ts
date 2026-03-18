@@ -338,6 +338,8 @@ export class ULabel {
         force_filter_all?: boolean,
         offset?: Offset,
     ): void;
+    public get_keypoint_slider_value(): number | null;
+    public get_distance_filter_value(): DistanceFromPolylineClasses | null;
     public fly_to_next_annotation(increment: number, max_zoom?: number): boolean;
     public fly_to_annotation_id(annotation_id: string, subtask_key?: string, max_zoom?: number): boolean;
     public fly_to_annotation(annotation: ULabelAnnotation, subtask_key?: string, max_zoom?: number): boolean;

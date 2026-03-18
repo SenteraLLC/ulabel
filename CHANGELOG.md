@@ -4,6 +4,10 @@ All notable changes to this project will be documented here.
 
 ## [unreleased]
 
+## [0.23.3] - Mar 18th, 2026
+- Add `get_keypoint_slider_value()` public API method to get the current keypoint slider value (0-1).
+- Add `get_distance_filter_value()` public API method to get the current distance filter slider values.
+
 ## [0.23.2] - Mar 18th, 2026
 - Fix bug where multiple spaces in a submit button name would cause the button hook to not fire.
 

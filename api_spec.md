@@ -559,6 +559,14 @@ Sets the zoom to focus on the provided annotation id, and switches to its subtas
 ### `fly_to_annotation(annotation, subtask_key, max_zoom)`
 Sets the zoom to focus on the provided annotation, and switches to its subtask if provided. Returns `true` on success and `false` on failure (eg, annotation doesn't exist in subtask, is not a spatial annotation, or is deprecated).
 
+### `get_keypoint_slider_value()`
+
+*() => number | null* -- Returns the current keypoint slider value as a number between 0 and 1. Returns `null` if the KeypointSlider toolbox item is not active or the slider element is not found.
+
+### `get_distance_filter_value()`
+
+*() => object | null* -- Returns an object mapping class identifiers to their distance filter values (in pixels). The object always includes a `closest_row` key for the single-class slider. In multi-class mode, additional keys correspond to each class ID. Returns `null` if the FilterDistance toolbox item is not active or no sliders are found.
+
 ## Generic Callbacks
 
 Callbacks can be provided by calling `.on(fn, callback)` on a `ULabel` object.

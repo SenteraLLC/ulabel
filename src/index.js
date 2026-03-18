@@ -1020,6 +1020,32 @@ export class ULabel {
         }
     }
 
+    /**
+     * Get the current keypoint slider value.
+     *
+     * @returns {number|null} The current slider value as a number between 0 and 1,
+     *   or null if the KeypointSlider toolbox item is not active or the slider is not found
+     */
+    get_keypoint_slider_value() {
+        if (!this.config.toolbox_order.includes(AllowedToolboxItem.KeypointSlider)) return null;
+        const item = this.toolbox.items.find((item) => item.get_toolbox_item_type() === "KeypointSlider");
+        if (item === undefined) return null;
+        return item.get_current_value();
+    }
+
+    /**
+     * Get the current distance filter slider values.
+     *
+     * @returns {object|null} An object mapping class identifiers to their distance values,
+     *   or null if the FilterDistance toolbox item is not active or no sliders are found
+     */
+    get_distance_filter_value() {
+        if (!this.config.toolbox_order.includes(AllowedToolboxItem.FilterDistance)) return null;
+        const item = this.toolbox.items.find((item) => item.get_toolbox_item_type() === "FilterDistance");
+        if (item === undefined) return null;
+        return item.get_current_values();
+    }
+
     // Show annotation mode
     show_annotation_mode(el = null) {
         if (el === null) {
