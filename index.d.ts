@@ -334,20 +334,20 @@ export class ULabel {
 
     // Annotations
     public get_annotations(subtask: string): ULabelAnnotation[];
-    public set_annotations(annotations: ULabelAnnotation[], subtask: string);
-    public set_saved(saved: boolean);
+    public set_annotations(annotations: ULabelAnnotation[], subtask: string): void;
+    public set_saved(saved: boolean): void;
     public draw_annotation_from_id(id: string, offset?: Offset, subtask?: string): void;
     public redraw_annotation(annotation_id: string, subtask?: string, offset?: Offset): void;
     public redraw_all_annotations(
         subtask?: string, // TODO (joshua-dean): THIS IS SUBTASK KEY, NAME PROPERLY
         offset?: number,
         spatial_only?: boolean,
-    );
-    public redraw_multiple_spatial_annotations(annotation_ids: string[], subtask?: string, offset?: Offset);
+    ): void;
+    public redraw_multiple_spatial_annotations(annotation_ids: string[], subtask?: string, offset?: Offset): void;
     public clear_nonspatial_annotation(annotation_id: string): void;
     public show_annotation_mode(
         target_jq?: JQuery<HTMLElement>, // TODO (joshua-dean): validate this type
-    );
+    ): void;
     public update_frame(delta?: number, new_frame?: number): void;
     public rebuild_containing_box(actid: string, ignore_final?: boolean, subtask?: string): void;
     public update_filter_distance_during_polyline_move(
@@ -510,7 +510,7 @@ export class ULabel {
         annid: string,
         access_str: string,
         as_though_pre_splice: boolean,
-    );
+    ): unknown;
 
     // Drawing
     public rezoom(
@@ -562,3 +562,5 @@ declare global {
         replaceLowerConcat(before: string, after: string, concat_string?: string): string;
     }
 }
+
+export default ULabel;

@@ -1,7 +1,7 @@
 {
   "name": "ulabel",
   "description": "An image annotation tool.",
-  "version": "0.23.3",
+  "version": "0.23.4",
   "main": "dist/ulabel.min.js",
   "module": "dist/ulabel.min.js",
   "types": "index.d.ts",
