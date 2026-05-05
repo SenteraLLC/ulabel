@@ -1670,7 +1670,11 @@ export class RecolorActiveItem extends ToolboxItem {
             const color: string = event.target.id.slice(13);
 
             // Get the currently selected class id
-            const active_class_id: number = get_active_class_id(this.ulabel)!;
+            const active_class_id = get_active_class_id(this.ulabel);
+            if (active_class_id === undefined) {
+                log_message("Cannot change color: no active class id found", LogLevel.WARNING);
+                return;
+            }
 
             // Overwrite the color info with the new color
             this.update_color(active_class_id, color);
@@ -1686,7 +1690,11 @@ export class RecolorActiveItem extends ToolboxItem {
             const color: string = event.currentTarget.value;
 
             // Get the currently selected class id
-            const active_class_id: number = get_active_class_id(this.ulabel)!;
+            const active_class_id = get_active_class_id(this.ulabel);
+            if (active_class_id === undefined) {
+                log_message("Cannot change color: no active class id found", LogLevel.WARNING);
+                return;
+            }
 
             // Update the color for this class
             this.update_color(active_class_id, color);
