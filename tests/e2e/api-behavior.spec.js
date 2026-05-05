@@ -165,31 +165,38 @@ test.describe("ULabel API Behavior", () => {
         // Create a point annotation near the polyline
         await draw_point(page, [200, 250]);
 
-        // Trigger distance filter recalculation
+        // Force the distance filter to recalculate all point-to-line distances
         await page.evaluate(() => {
-            window.ulabel.filter_points_distance_from_line();
+            window.ulabel.update_filter_distance(null, false, true);
         });
 
         const result = await page.evaluate(() => {
             const subtask = window.ulabel.get_current_subtask();
             const annotations = subtask.annotations;
 
-            // Check that point annotations with distance_from have numeric distance
+            // Find point annotations that should have distance_from assigned
             for (const id of annotations.ordering) {
                 const ann = annotations.access[id];
-                if (ann.distance_from && ann.distance_from.closest_row) {
-                    if (typeof ann.distance_from.closest_row.distance !== "number") {
-                        return { valid: false, error: "distance is not a number" };
+                if (ann.spatial_type === "point" && ann.distance_from) {
+                    if (!ann.distance_from.closest_row) {
+                        return { valid: false, error: "closest_row missing from distance_from" };
                     }
-                    if (!isFinite(ann.distance_from.closest_row.distance) && ann.distance_from.closest_row.distance !== Infinity) {
+                    if (typeof ann.distance_from.closest_row.distance !== "number") {
+                        return { valid: false, error: "distance is not a number, got: " + typeof ann.distance_from.closest_row.distance };
+                    }
+                    if (Number.isNaN(ann.distance_from.closest_row.distance)) {
                         return { valid: false, error: "distance is NaN" };
                     }
+                    // The point is 50px below the line, so distance should be positive
+                    return { valid: true, distance: ann.distance_from.closest_row.distance };
                 }
             }
-            return { valid: true };
+            return { valid: false, error: "no point annotation with distance_from found" };
         });
 
         expect(result.valid).toBe(true);
+        // The point at y=250 is ~50px from the line at y=200
+        expect(result.distance).toBeGreaterThan(0);
     });
 
     test("show_annotation_mode with null should use default selector", async ({ page }) => {
