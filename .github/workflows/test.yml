@@ -60,3 +60,39 @@ jobs:
         name: playwright-report
         path: playwright-report/
         retention-days: 30
+
+  type-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm install
+
+    - name: Build project
+      run: npm run build
+
+    - name: Pack tarball
+      run: npm pack
+
+    - name: Install tarball in temp consumer project
+      run: |
+        mkdir /tmp/type-test-consumer
+        cp tests/types/index.test-d.ts /tmp/type-test-consumer/
+        cp tests/types/tsconfig.json /tmp/type-test-consumer/
+        cd /tmp/type-test-consumer
+        npm init -y
+        npm install $GITHUB_WORKSPACE/ulabel-*.tgz
+        npm install --save-dev typescript @types/jquery
+
+    - name: Verify type declarations compile
+      run: |
+        cd /tmp/type-test-consumer
+        npx tsc --noEmit

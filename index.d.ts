@@ -4,6 +4,8 @@ import { FilterDistanceOverlay } from "./src/overlays";
 import { ULabelSubtask } from "./src/subtask";
 import { Toolbox, AnnotationResizeItem } from "./src/toolbox";
 
+export { ULabelAnnotation, AllowedToolboxItem, Configuration, FilterDistanceOverlay, ULabelSubtask, Toolbox, AnnotationResizeItem };
+
 export type DistanceFromPolyline = {
     distance: number;
     polyline_id?: string;
@@ -239,6 +241,23 @@ export type ULabelActionCandidate = {
 
 export type ULabelSubtasks = { [key: string]: ULabelSubtask };
 
+export type ULabelConstructorArgs = {
+    container_id: string;
+    image_data: string | string[];
+    username: string;
+    submit_buttons: ULabelSubmitButton[];
+    subtasks: ULabelSubtasks;
+    task_meta?: object;
+    annotation_meta?: object;
+    px_per_px?: number;
+    initial_crop?: InitialCrop;
+    initial_line_size?: number;
+    instructions_url?: string;
+    toolbox_order?: AllowedToolboxItem[];
+    /** @deprecated Use top-level properties instead. */
+    config_data?: object;
+};
+
 export class ULabel {
     subtasks: ULabelSubtasks;
     state: {
@@ -272,9 +291,13 @@ export class ULabel {
     begining_time: number;
     is_init: boolean;
     resize_observers: ResizeObserver[];
+
     /**
      * @link https://github.com/SenteraLLC/ulabel/blob/main/api_spec.md#ulabel-constructor
      */
+    constructor(kwargs: ULabelConstructorArgs);
+
+    /** @deprecated Pass a single kwargs object instead of positional arguments. */
     constructor(
         container_id: string,
         image_data: string | string[],
@@ -294,6 +317,7 @@ export class ULabel {
     /**
      * @link https://github.com/SenteraLLC/ulabel/blob/main/api_spec.md#display-utility-functions
      */
+    public version(): string;
     public init(callback: () => void): void;
     public after_init(): void;
     public show_initial_crop(): void;
@@ -309,8 +333,8 @@ export class ULabel {
     public switch_to_next_subtask(): void;
 
     // Annotations
-    public get_annotations(subtask: ULabelSubtask): ULabelAnnotation[];
-    public set_annotations(annotations: ULabelAnnotation[], subtask: ULabelSubtask);
+    public get_annotations(subtask: string): ULabelAnnotation[];
+    public set_annotations(annotations: ULabelAnnotation[], subtask: string);
     public set_saved(saved: boolean);
     public draw_annotation_from_id(id: string, offset?: Offset, subtask?: string): void;
     public redraw_annotation(annotation_id: string, subtask?: string, offset?: Offset): void;
@@ -361,9 +385,10 @@ export class ULabel {
     public remove_listeners(): void;
 
     // Static functions
+    static version(): string;
     static get_time(): string;
-    static get_allowed_toolbox_item_enum(): AllowedToolboxItem;
-    static get_resize_toolbox_item(): AnnotationResizeItem;
+    static get_allowed_toolbox_item_enum(): typeof AllowedToolboxItem;
+    static get_resize_toolbox_item(): typeof AnnotationResizeItem;
     static process_classes(ulabel_obj: ULabel, arg1: string, subtask_obj: ULabelSubtask): void;
     static build_id_dialogs(ulabel_obj: ULabel): void;
 
