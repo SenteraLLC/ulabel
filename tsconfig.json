@@ -3,12 +3,13 @@
         "target": "es5",
         "module": "commonjs",
         "sourceMap": false,
-        "declaration": true,
-        "declarationMap": true,
         "lib": [
             "ES2021.String",
             "DOM",
         ],
         "outDir": "./build",
     },
+    "exclude": [
+        "tests/types",
+    ],
 }
