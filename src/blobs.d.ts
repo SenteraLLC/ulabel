@@ -1,0 +1,17 @@
+export const BBOX_SVG: string;
+export const DELETE_BBOX_SVG: string;
+export const BBOX3_SVG: string;
+export const POINT_SVG: string;
+export const POLYGON_SVG: string;
+export const DELETE_POLYGON_SVG: string;
+export const CONTOUR_SVG: string;
+export const TBAR_SVG: string;
+export const POLYLINE_SVG: string;
+export const WHOLE_IMAGE_SVG: string;
+export const GLOBAL_SVG: string;
+export const DEMO_ANNOTATION: object;
+export function get_init_style(ulabel_id: string): string;
+export const COLORS: string[];
+export const BUTTON_LOADER_HTML: string;
+export const FRONT_Z_INDEX: number;
+export const BACK_Z_INDEX: number;

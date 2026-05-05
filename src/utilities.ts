@@ -43,7 +43,7 @@ export function time_function<T, R>(
     return replacement_method;
 }
 
-export function get_active_class_id(ulabel: ULabel): number {
+export function get_active_class_id(ulabel: ULabel): number | undefined {
     // Grab the current subtask from the ulabel object
     const current_subtask_key: string = ulabel.state.current_subtask;
     const current_subtask: ULabelSubtask = ulabel.subtasks[current_subtask_key];

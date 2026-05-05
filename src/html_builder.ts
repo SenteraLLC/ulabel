@@ -42,7 +42,7 @@ export function add_style_to_document(ulabel: ULabel) {
  * @param subtasks ULabel's Subtasks object
  * @returns html for a mode button
  */
-function get_md_button(md_key, md_name, svg_blob, cur_md, subtasks): string {
+function get_md_button(md_key: string, md_name: string, svg_blob: string, cur_md: string, subtasks: object): string {
     let sel: string = "";
     let href: string = ` href="#"`;
     if (cur_md == md_key) {
@@ -138,7 +138,7 @@ function get_frame_annotation_dialogs(ulabel: ULabel): string {
     return frame_annotation_dialog;
 }
 
-export function prep_window_html(ulabel: ULabel, toolbox_item_order: unknown[] = null): boolean | void {
+export function prep_window_html(ulabel: ULabel, toolbox_item_order: unknown[] | null = null): boolean | void {
     // Bring image and annotation scaffolding in
     // TODO multi-image with spacing etc.
 
@@ -162,7 +162,7 @@ export function prep_window_html(ulabel: ULabel, toolbox_item_order: unknown[] =
     // Set the container's html to the toolbox html we just created
     $("#" + ulabel.config["container_id"]).html(tool_html);
     const container = document.getElementById(ulabel.config["container_id"]);
-    ULabelLoader.add_loader_div(container);
+    ULabelLoader.add_loader_div(container!);
 
     // Build toolbox for the current subtask only
     const current_subtask: string = Object.keys(ulabel.subtasks)[0];
@@ -188,10 +188,10 @@ export function prep_window_html(ulabel: ULabel, toolbox_item_order: unknown[] =
     $("#" + sp_id + " .toolbox_inner_cls .mode-selection").append(md_buttons.join("<!-- -->"));
 
     // Show current mode label
-    ulabel.show_annotation_mode(null);
+    ulabel.show_annotation_mode(undefined);
 
     // Make sure that entire toolbox is shown
-    if ($("#" + ulabel.config["toolbox_id"] + " .toolbox_inner_cls").height() > $("#" + ulabel.config["container_id"]).height()) {
+    if ($("#" + ulabel.config["toolbox_id"] + " .toolbox_inner_cls").height()! > $("#" + ulabel.config["container_id"]).height()!) {
         $("#" + ulabel.config["toolbox_id"]).css("overflow-y", "scroll");
     }
 
@@ -214,7 +214,7 @@ export function prep_window_html(ulabel: ULabel, toolbox_item_order: unknown[] =
     };
 
     // Check if initial_crop exists and has the appropriate properties
-    const initial_crop_is_valid = function (initial_crop) {
+    const initial_crop_is_valid = function (initial_crop: unknown) {
         // If initial_crop doesn't exist, return false
         if (initial_crop == null) return false;
 
@@ -243,11 +243,11 @@ export function prep_window_html(ulabel: ULabel, toolbox_item_order: unknown[] =
         if (initial_crop_is_valid(ulabel.config.initial_crop)) {
             // Grab the initial crop button and rename it
             const initial_crop_button = document.getElementById("recenter-button");
-            initial_crop_button.innerHTML = "Initial Crop";
+            initial_crop_button!.innerHTML = "Initial Crop";
         } else {
             // Grab the whole image button and set its display to none
-            const whole_image_button = document.getElementById("recenter-whole-image-button");
-            whole_image_button.style.display = "none";
+            const whole_image_button = document.getElementById("recenter-whole-image-button") as HTMLElement;
+            whole_image_button!.style.display = "none";
         }
     }
 }
@@ -401,13 +401,13 @@ export function build_id_dialogs(ulabel: ULabel) {
         let toolbox_html: string = `<div id="tb-id-app--${st}" class="tb-id-app">`;
         const class_ids: number[] = JSON.parse(JSON.stringify(ulabel.subtasks[st]["class_ids"]));
         // Add the reserved DELETE_CLASS_ID if it is present in the class_defs
-        if (ulabel.subtasks[st]["class_defs"].at(-1)["id"] === DELETE_CLASS_ID) {
+        if (ulabel.subtasks[st]["class_defs"][ulabel.subtasks[st]["class_defs"].length - 1]["id"] === DELETE_CLASS_ID) {
             class_ids.push(DELETE_CLASS_ID);
         }
 
         for (let i = 0; i < class_ids.length; i++) {
             const this_id: string = class_ids[i].toString();
-            const this_color: string = ulabel.color_info[this_id];
+            const this_color: string = ulabel.color_info[this_id as unknown as number];
             // let this_color: string = ulabel.subtasks[st]["class_defs"][i]["color"];
             const this_name: string = ulabel.subtasks[st]["class_defs"][i]["name"];
 
@@ -572,7 +572,7 @@ export class SliderHandler {
     slider_event: (slider_val: number | string) => void;
     class?: string;
     label_units?: string = "";
-    main_label: string;
+    main_label!: string;
     min: string = "0";
     max: string = "100";
     step: string = "1";
@@ -674,8 +674,8 @@ export class SliderHandler {
     }
 
     private updateLabel() {
-        const slider: HTMLInputElement = document.querySelector(`#${this.id}`);
-        const label: HTMLLabelElement = document.querySelector(`#${this.id}-value-label`);
+        const slider: HTMLInputElement = document.querySelector(`#${this.id}`)!;
+        const label: HTMLLabelElement = document.querySelector(`#${this.id}-value-label`)!;
 
         // Set the label as a concatenation of the value and the units
         label.innerText = slider.value + this.label_units;
@@ -687,7 +687,7 @@ export class SliderHandler {
      */
     private incrementSlider() {
         // Get the slider element
-        const slider: HTMLInputElement = document.querySelector(`#${this.id}`);
+        const slider: HTMLInputElement = document.querySelector(`#${this.id}`)!;
 
         // Add the step value
         const new_value = slider.valueAsNumber + this.step_as_number;
@@ -708,7 +708,7 @@ export class SliderHandler {
      */
     private decrementSlider() {
         // Get the slider element
-        const slider: HTMLInputElement = document.querySelector(`#${this.id}`);
+        const slider: HTMLInputElement = document.querySelector(`#${this.id}`)!;
 
         // Add the step value
         const new_value = slider.valueAsNumber - this.step_as_number;

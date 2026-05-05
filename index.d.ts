@@ -17,7 +17,7 @@ export type DistanceFromPolyline = {
  */
 export type DistanceFromPolylineClasses = {
     closest_row: DistanceFromPolyline;
-    [key: number]: DistanceFromPolyline;
+    [key: string]: DistanceFromPolyline;
 };
 
 export type AbstractPoint = {

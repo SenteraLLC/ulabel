@@ -72,6 +72,9 @@ export const DEFAULT_IMAGE_FILTERS_CONFIG: ImageFiltersConfig = {
 };
 
 export class Configuration {
+    // Index signature to allow string indexing for dynamic property access
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    [key: string]: any;
     /**
      * Dynamically get all keybind configuration property names.
      * Scans the Configuration class for properties ending in "_keybind" or known keybind properties.
@@ -99,7 +102,7 @@ export class Configuration {
     public container_id: string = "container";
     public px_per_px: number = 1;
     public anno_scaling_mode: AnnoScalingMode = "fixed";
-    public initial_crop: InitialCrop = null;
+    public initial_crop: InitialCrop | null = null;
     public annbox_id: string = "annbox";
     public imwrap_id: string = "imwrap";
     public canvas_fid_pfx: string = "front-canvas";
@@ -111,8 +114,8 @@ export class Configuration {
     public toolbox_id: string = "toolbox";
 
     // Dimensions of various components of the tool
-    public image_width: number = null;
-    public image_height: number = null;
+    public image_width: number | null = null;
+    public image_height: number | null = null;
     public demo_width: number = 120;
     public demo_height: number = 40;
     public polygon_ender_size: number = 15;
@@ -120,7 +123,7 @@ export class Configuration {
     public brush_size: number = 60;
 
     // Configuration for the annotation task itself
-    public image_data: ImageData = null;
+    public image_data: ImageData | null = null;
     public allow_soft_id: boolean = false;
     public default_annotation_color: string = "#fa9d2a";
     public username: string = "ULabelUser";
@@ -132,14 +135,14 @@ export class Configuration {
     public inner_prop: number = 0.3;
 
     // Behavior on special interactions
-    public instructions_url: string = null;
+    public instructions_url: string | null = null;
     public submit_buttons: ULabelSubmitButton[] = [];
 
     // Passthrough
     public task_meta: object = {};
     public annotation_meta: object = {};
 
-    public subtasks: object = null;
+    public subtasks: object | null = null;
 
     /**
      * Map from AllowedToolboxItem enum to the class that implements it.
@@ -147,7 +150,8 @@ export class Configuration {
      * [abstract construct signature](https://www.typescriptlang.org/docs/handbook/2/classes.html#abstract-construct-signatures)
      * to handle the different constructors for each toolbox item.
      */
-    public toolbox_map = new Map<AllowedToolboxItem, new (..._) => ToolboxItem>([
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    public toolbox_map = new Map<AllowedToolboxItem, new (..._: any[]) => ToolboxItem>([
         [AllowedToolboxItem.ModeSelect, ModeSelectionToolboxItem],
         [AllowedToolboxItem.ZoomPan, ZoomPanToolboxItem],
         [AllowedToolboxItem.AnnotationResize, AnnotationResizeItem],
@@ -200,7 +204,7 @@ export class Configuration {
 
     public delete_vertex_keybind: string = "x";
 
-    public keypoint_slider_default_value: number;
+    public keypoint_slider_default_value: number = 0;
 
     public filter_annotations_on_load: boolean = true;
 

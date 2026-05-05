@@ -7,14 +7,14 @@ import { ULabelSpatialPayload2D } from "./geometric_utils";
  * Basic class to hold generic methods useful for creating overlays.
  */
 class ULabelOverlay {
-    canvas: HTMLCanvasElement;
-    context: CanvasRenderingContext2D;
+    canvas!: HTMLCanvasElement;
+    context!: CanvasRenderingContext2D;
     protected px_per_px: number; // Resolution compared to the
 
     constructor(canvas_width: number, canvas_height: number, px_per_px: number) {
         this.create_canvas(canvas_width, canvas_height);
 
-        this.context = this.canvas.getContext("2d");
+        this.context = this.canvas.getContext("2d")!;
 
         this.px_per_px = px_per_px;
 
@@ -46,7 +46,7 @@ class ULabelOverlay {
         head.appendChild(style);
     }
 
-    public create_canvas(canvas_width, canvas_height): void {
+    public create_canvas(canvas_width: number, canvas_height: number): void {
         // Create the canvas element
         this.canvas = document.createElement("canvas");
 
@@ -126,9 +126,9 @@ class ULabelOverlay {
 
 export class FilterDistanceOverlay extends ULabelOverlay {
     private polyline_annotations: ULabelAnnotation[]; // Set of polyline annotations the overlay will be drawn based on
-    private distances: DistanceFromPolylineClasses = { closest_row: undefined }; // The current distance from a line annotation
-    private multi_class_mode: boolean;
-    private display_overlay: boolean; // Whether or not the overlay should currently be displayed
+    private distances: DistanceFromPolylineClasses = { closest_row: { distance: 0 } }; // The current distance from a line annotation
+    private multi_class_mode: boolean = false;
+    private display_overlay: boolean = false; // Whether or not the overlay should currently be displayed
 
     constructor(canvas_width: number, canvas_height: number, polyline_annotations: ULabelAnnotation[], px_per_px: number) {
         super(canvas_width, canvas_height, px_per_px);
@@ -148,7 +148,7 @@ export class FilterDistanceOverlay extends ULabelOverlay {
      * @param endpoint_2
      * @returns A normal vector
      */
-    private calculate_normal_vector(endpoint_1: AbstractPoint, endpoint_2: AbstractPoint): AbstractPoint {
+    private calculate_normal_vector(endpoint_1: AbstractPoint, endpoint_2: AbstractPoint): AbstractPoint | null {
         // Calculate the x and y of the normal vector
         let normal_x: number = endpoint_1.y - endpoint_2.y;
         let normal_y: number = endpoint_2.x - endpoint_1.x;
@@ -235,7 +235,7 @@ export class FilterDistanceOverlay extends ULabelOverlay {
      *
      * @param offset Used when an annotation is currently being moved. Offset to be added to the annotation with the matching id to the id inside of the Offset object
      */
-    public draw_overlay(offset: Offset = null): void {
+    public draw_overlay(offset: Offset | null = null): void {
         // Clear the canvas in order to have a clean slate to re-draw from
         this.clear_canvas();
 
@@ -261,7 +261,7 @@ export class FilterDistanceOverlay extends ULabelOverlay {
             const annotation_class_id: string = get_annotation_class_id(annotation);
 
             // Use the class id if in multi-class mode, otherwise use the single class distance
-            const distance: number = this.multi_class_mode ? this.distances[annotation_class_id].distance : this.distances.closest_row.distance;
+            const distance: number = this.multi_class_mode ? this.distances[annotation_class_id as unknown as number].distance : this.distances.closest_row.distance;
 
             // length - 1 because the final endpoint doesn't have another endpoint to form a pair with
             for (let idx = 0; idx < spatial_payload.length - 1; idx++) {
