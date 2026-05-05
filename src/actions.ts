@@ -28,7 +28,7 @@ import { log_message, LogLevel } from "./error_logging";
 export function record_action(ulabel: ULabel, raw_action: ULabelActionRaw, is_redo: boolean = false, add_to_action_stream: boolean = true) {
     ulabel.set_saved(false);
     const current_subtask = ulabel.get_current_subtask();
-    const annotation = current_subtask.annotations.access[raw_action.annotation_id];
+    const annotation = current_subtask.annotations.access[raw_action.annotation_id!];
 
     // After a new action, you can no longer redo old actions
     if (add_to_action_stream && !is_redo) {
@@ -45,7 +45,7 @@ export function record_action(ulabel: ULabel, raw_action: ULabelActionRaw, is_re
         redo_payload: JSON.stringify(raw_action.redo_payload),
         prev_timestamp: annotation?.last_edited_at || null,
         prev_user: annotation?.last_edited_by || "unknown",
-    };
+    } as ULabelAction;
 
     // Add to stream
     if (add_to_action_stream) {
@@ -72,7 +72,7 @@ export function record_action(ulabel: ULabel, raw_action: ULabelActionRaw, is_re
 export function record_finish(ulabel: ULabel, active_id: string) {
     // Set up constants for convenience
     const current_subtask = ulabel.get_current_subtask();
-    const action = current_subtask.actions.stream.pop();
+    const action = current_subtask.actions.stream.pop()!;
 
     // Parse and complete the redo payload
     const redo_payload = JSON.parse(action.redo_payload);
@@ -145,7 +145,7 @@ export function record_finish_move(
 ) {
     // Set up constants for convenience
     const current_subtask = ulabel.get_current_subtask();
-    const action = current_subtask.actions.stream.pop();
+    const action = current_subtask.actions.stream.pop()!;
 
     // Parse and complete the redo/undo payloads
     const redo_payload = JSON.parse(action.redo_payload);
@@ -169,7 +169,7 @@ export function record_finish_move(
     // undo/redo the move
     record_action(ulabel, {
         act_type: "finish_move",
-        annotation_id: action.annotation_id,
+        annotation_id: action.annotation_id!,
         frame: ulabel.state.current_frame,
         undo_payload: {},
         redo_payload: {},
@@ -293,11 +293,11 @@ function trigger_action_listeners(
             // For actions without a specific "redo" listener, call the "action" listener instead
             (is_redo && !("redo" in action_map[action.act_type]) && "action" in action_map[action.act_type])
         ) {
-            action_map[action.act_type].action(ulabel, action);
+            action_map[action.act_type].action!(ulabel, action);
         } else if (is_undo && "undo" in action_map[action.act_type]) {
-            action_map[action.act_type].undo(ulabel, action, is_undo);
+            action_map[action.act_type].undo!(ulabel, action, is_undo);
         } else if (is_redo && "redo" in action_map[action.act_type]) {
-            action_map[action.act_type].redo(ulabel, action);
+            action_map[action.act_type].redo!(ulabel, action);
         }
     }
 }
@@ -316,7 +316,7 @@ function on_start_annotation_spatial_modification(
     is_undo: boolean = false,
 ) {
     // Draw new annotation
-    ulabel.draw_annotation_from_id(action.annotation_id);
+    ulabel.draw_annotation_from_id(action.annotation_id!);
 }
 
 /**
@@ -335,16 +335,16 @@ function on_in_progress_annotation_spatial_modification(
     const subtask_key = ulabel.get_current_subtask_key();
     const current_subtask = ulabel.subtasks[subtask_key];
     const offset: Offset = current_subtask.state.move_candidate?.offset || {
-        id: action.annotation_id,
+        id: action.annotation_id!,
         diffX: 0,
         diffY: 0,
         diffZ: 0,
     };
     // Update the toolbox filter distance
-    ulabel.update_filter_distance_during_polyline_move(action.annotation_id, true, false, offset);
+    ulabel.update_filter_distance_during_polyline_move(action.annotation_id!, true, false, offset);
     // Update the annotation rendering
-    ulabel.rebuild_containing_box(action.annotation_id, false, subtask_key);
-    ulabel.redraw_annotation(action.annotation_id, subtask_key, offset);
+    ulabel.rebuild_containing_box(action.annotation_id!, false, subtask_key);
+    ulabel.redraw_annotation(action.annotation_id!, subtask_key, offset);
     // Update dialogs
     ulabel.suggest_edits();
 }
@@ -364,15 +364,15 @@ function on_finish_annotation_spatial_modification(
     is_undo: boolean = false,
 ) {
     // Update annotation rendering
-    ulabel.rebuild_containing_box(action.annotation_id);
-    ulabel.redraw_annotation(action.annotation_id);
+    ulabel.rebuild_containing_box(action.annotation_id!);
+    ulabel.redraw_annotation(action.annotation_id!);
     // Update dialogs
-    ulabel.suggest_edits(null, null, true);
+    ulabel.suggest_edits(undefined, undefined, true);
     // Update the toolbox
-    ulabel.update_filter_distance(action.annotation_id);
+    ulabel.update_filter_distance(action.annotation_id!);
     ulabel.toolbox.redraw_update_items(ulabel);
     // Ensure there are no lingering enders
-    ulabel.destroy_polygon_ender(action.annotation_id);
+    ulabel.destroy_polygon_ender(action.annotation_id!);
 }
 
 /**
@@ -392,24 +392,24 @@ function on_annotation_deletion(
     // Check if it still exists, because if so we need to redraw
     const current_subtask = ulabel.get_current_subtask();
     const annotations = current_subtask.annotations.access;
-    if (action.annotation_id in annotations) {
-        const spatial_type = annotations[action.annotation_id]?.spatial_type;
-        if (NONSPATIAL_MODES.includes(spatial_type)) {
+    if (action.annotation_id! in annotations) {
+        const spatial_type = annotations[action.annotation_id!]?.spatial_type;
+        if (NONSPATIAL_MODES.includes(spatial_type!)) {
             // Render the change
-            ulabel.clear_nonspatial_annotation(action.annotation_id);
+            ulabel.clear_nonspatial_annotation(action.annotation_id!);
         } else {
-            ulabel.redraw_annotation(action.annotation_id);
+            ulabel.redraw_annotation(action.annotation_id!);
             // Force filter points if necessary
-            if (annotations[action.annotation_id].spatial_type === "polyline") {
-                ulabel.update_filter_distance(action.annotation_id, false, true);
+            if (annotations[action.annotation_id!].spatial_type === "polyline") {
+                ulabel.update_filter_distance(action.annotation_id!, false, true);
             }
         }
     }
 
     // Ensure there are no lingering enders
-    ulabel.destroy_polygon_ender(action.annotation_id);
+    ulabel.destroy_polygon_ender(action.annotation_id!);
     // Update dialogs
-    ulabel.suggest_edits(null, null, true);
+    ulabel.suggest_edits(undefined, undefined, true);
     // Update the toolbox
     ulabel.toolbox.redraw_update_items(ulabel);
 }
@@ -427,7 +427,7 @@ function on_annotation_id_change(
     is_undo: boolean = false,
 ) {
     // Update the annotation rendering
-    ulabel.redraw_annotation(action.annotation_id);
+    ulabel.redraw_annotation(action.annotation_id!);
     ulabel.recolor_active_polygon_ender();
     ulabel.recolor_brush_circle();
 
@@ -436,13 +436,13 @@ function on_annotation_id_change(
         // Hide the large ID dialog after the user has made a selection
         ulabel.hide_id_dialog();
     }
-    ulabel.suggest_edits(null, null, true);
+    ulabel.suggest_edits(undefined, undefined, true);
 
     // Determine if we need to update the filter distance
     // If the filter_distance_toolbox_item exists,
     // Check if the FilterDistance ToolboxItem is in this ULabel instance
     if (ulabel.config.toolbox_order.includes(AllowedToolboxItem.FilterDistance)) {
-        const spatial_type = ulabel.get_current_subtask().annotations.access[action.annotation_id].spatial_type;
+        const spatial_type = ulabel.get_current_subtask().annotations.access[action.annotation_id!].spatial_type;
         if (spatial_type === "polyline") {
             // Get the toolbox item
             const filter_distance_toolbox_item = ulabel.toolbox.items.find((item) => item.get_toolbox_item_type() === "FilterDistance") as FilterPointDistanceFromRow | undefined;
@@ -473,7 +473,7 @@ function on_annotation_revert(
     is_undo: boolean = false,
 ) {
     // Redraw the annotation
-    ulabel.redraw_annotation(action.annotation_id);
+    ulabel.redraw_annotation(action.annotation_id!);
 }
 
 // ================= Undo / Redo =================
@@ -497,7 +497,7 @@ export function undo(ulabel: ULabel, is_internal_undo: boolean = false) {
         ulabel.hide_id_dialog();
     }
 
-    let undo_candidate = action_stream.pop();
+    let undo_candidate = action_stream.pop()!;
 
     // Finish action if it is marked as unfinished
     if (JSON.parse(undo_candidate.redo_payload).finished === false) {
@@ -505,7 +505,7 @@ export function undo(ulabel: ULabel, is_internal_undo: boolean = false) {
         // TODO: better way of doing this?
         action_stream.push(undo_candidate);
         finish_action(ulabel, undo_candidate);
-        undo_candidate = action_stream.pop();
+        undo_candidate = action_stream.pop()!;
     }
 
     // Set internal undo status
@@ -531,7 +531,7 @@ export function redo(ulabel: ULabel) {
     if (undone_stack.length === 0) return;
 
     // Redo the action
-    const redo_candidate = undone_stack.pop();
+    const redo_candidate = undone_stack.pop()!;
     redo_action(ulabel, redo_candidate);
 }
 
@@ -542,13 +542,14 @@ export function redo(ulabel: ULabel) {
  * @param action Action to undo
  */
 function undo_action(ulabel: ULabel, action: ULabelAction) {
-    ulabel.update_frame(null, action.frame);
+    ulabel.update_frame(undefined, action.frame);
     const undo_payload = JSON.parse(action.undo_payload);
     const annotations = ulabel.get_current_subtask().annotations.access;
+    const annotation_id = action.annotation_id!;
 
     // For some actions like delete_annotations_in_polygon, the annotation may no longer exist
-    if (action.annotation_id in annotations) {
-        const annotation = annotations[action.annotation_id];
+    if (annotation_id in annotations) {
+        const annotation = annotations[annotation_id];
 
         // Revert the annotation's last edited info
         annotation.last_edited_at = action.prev_timestamp;
@@ -557,43 +558,43 @@ function undo_action(ulabel: ULabel, action: ULabelAction) {
 
     switch (action.act_type) {
         case "begin_annotation":
-            ulabel.begin_annotation__undo(action.annotation_id);
+            ulabel.begin_annotation__undo(annotation_id);
             break;
         case "continue_annotation":
-            ulabel.continue_annotation__undo(action.annotation_id);
+            ulabel.continue_annotation__undo(annotation_id);
             break;
         case "finish_annotation":
-            ulabel.finish_annotation__undo(action.annotation_id);
+            ulabel.finish_annotation__undo(annotation_id);
             break;
         case "begin_edit":
-            ulabel.begin_edit__undo(action.annotation_id, undo_payload);
+            ulabel.begin_edit__undo(annotation_id, undo_payload);
             break;
         case "begin_move":
-            ulabel.begin_move__undo(action.annotation_id, undo_payload);
+            ulabel.begin_move__undo(annotation_id, undo_payload);
             break;
         case "delete_annotation":
-            ulabel.delete_annotation__undo(action.annotation_id);
+            ulabel.delete_annotation__undo(annotation_id);
             break;
         case "delete_vertex":
-            ulabel.delete_vertex__undo(action.annotation_id, undo_payload);
+            ulabel.delete_vertex__undo(annotation_id, undo_payload);
             break;
         case "cancel_annotation":
-            ulabel.cancel_annotation__undo(action.annotation_id, undo_payload);
+            ulabel.cancel_annotation__undo(annotation_id, undo_payload);
             break;
         case "assign_annotation_id":
-            ulabel.assign_annotation_id__undo(action.annotation_id, undo_payload);
+            ulabel.assign_annotation_id__undo(annotation_id, undo_payload);
             break;
         case "create_annotation":
-            ulabel.create_annotation__undo(action.annotation_id);
+            ulabel.create_annotation__undo(annotation_id);
             break;
         case "create_nonspatial_annotation":
-            ulabel.create_nonspatial_annotation__undo(action.annotation_id);
+            ulabel.create_nonspatial_annotation__undo(annotation_id);
             break;
         case "start_complex_polygon":
-            ulabel.start_complex_polygon__undo(action.annotation_id);
+            ulabel.start_complex_polygon__undo(annotation_id);
             break;
         case "merge_polygon_complex_layer":
-            ulabel.merge_polygon_complex_layer__undo(action.annotation_id, undo_payload);
+            ulabel.merge_polygon_complex_layer__undo(annotation_id, undo_payload);
             // If the undo was triggered by the user, they
             // expect ctrl+z to undo the previous action as well
             if (!action.is_internal_undo) {
@@ -601,7 +602,7 @@ function undo_action(ulabel: ULabel, action: ULabelAction) {
             }
             break;
         case "simplify_polygon_complex_layer":
-            ulabel.simplify_polygon_complex_layer__undo(action.annotation_id, undo_payload);
+            ulabel.simplify_polygon_complex_layer__undo(annotation_id, undo_payload);
             // If the undo was triggered by the user, they
             // expect ctrl+z to undo the previous action as well
             if (!action.is_internal_undo) {
@@ -612,10 +613,10 @@ function undo_action(ulabel: ULabel, action: ULabelAction) {
             ulabel.delete_annotations_in_polygon__undo(undo_payload);
             break;
         case "begin_brush":
-            ulabel.begin_brush__undo(action.annotation_id, undo_payload);
+            ulabel.begin_brush__undo(annotation_id, undo_payload);
             break;
         case "finish_modify_annotation":
-            ulabel.finish_modify_annotation__undo(action.annotation_id, undo_payload);
+            ulabel.finish_modify_annotation__undo(annotation_id, undo_payload);
             break;
         default:
             log_message(`Action type not recognized for undo: ${action.act_type}`, LogLevel.WARNING);
@@ -630,58 +631,59 @@ function undo_action(ulabel: ULabel, action: ULabelAction) {
  * @param action Action to redo
  */
 export function redo_action(ulabel: ULabel, action: ULabelAction) {
-    ulabel.update_frame(null, action.frame);
+    ulabel.update_frame(undefined, action.frame);
     const redo_payload = JSON.parse(action.redo_payload);
+    const annotation_id = action.annotation_id!;
     switch (action.act_type) {
         case "begin_annotation":
-            ulabel.begin_annotation(null, action.annotation_id, redo_payload);
+            ulabel.begin_annotation(undefined, annotation_id, redo_payload);
             break;
         case "continue_annotation":
-            ulabel.continue_annotation(null, null, action.annotation_id, redo_payload);
+            ulabel.continue_annotation(undefined, undefined, annotation_id, redo_payload);
             break;
         case "finish_annotation":
-            ulabel.finish_annotation__redo(action.annotation_id);
+            ulabel.finish_annotation__redo(annotation_id);
             break;
         case "begin_edit":
-            ulabel.begin_edit__redo(action.annotation_id, redo_payload);
+            ulabel.begin_edit__redo(annotation_id, redo_payload);
             break;
         case "begin_move":
-            ulabel.begin_move__redo(action.annotation_id, redo_payload);
+            ulabel.begin_move__redo(annotation_id, redo_payload);
             break;
         case "delete_annotation":
-            ulabel.delete_annotation__redo(action.annotation_id);
+            ulabel.delete_annotation__redo(annotation_id);
             break;
         case "delete_vertex":
-            ulabel.delete_vertex__redo(action.annotation_id, redo_payload);
+            ulabel.delete_vertex__redo(annotation_id, redo_payload);
             break;
         case "cancel_annotation":
-            ulabel.cancel_annotation(action.annotation_id);
+            ulabel.cancel_annotation(annotation_id);
             break;
         case "assign_annotation_id":
-            ulabel.assign_annotation_id(action.annotation_id, redo_payload);
+            ulabel.assign_annotation_id(annotation_id, redo_payload);
             break;
         case "create_annotation":
-            ulabel.create_annotation__redo(action.annotation_id, redo_payload);
+            ulabel.create_annotation__redo(annotation_id, redo_payload);
             break;
         case "create_nonspatial_annotation":
-            ulabel.create_nonspatial_annotation(action.annotation_id, redo_payload);
+            ulabel.create_nonspatial_annotation(annotation_id, redo_payload);
             break;
         case "start_complex_polygon":
-            ulabel.start_complex_polygon(action.annotation_id);
+            ulabel.start_complex_polygon(annotation_id);
             break;
         case "merge_polygon_complex_layer":
-            ulabel.merge_polygon_complex_layer(action.annotation_id, redo_payload.layer_idx, false, true);
+            ulabel.merge_polygon_complex_layer(annotation_id, redo_payload.layer_idx, false, true);
             break;
         case "simplify_polygon_complex_layer":
-            ulabel.simplify_polygon_complex_layer(action.annotation_id, redo_payload.active_idx, true);
+            ulabel.simplify_polygon_complex_layer(annotation_id, redo_payload.active_idx, true);
             // Since this is an internal operation, user expects redo of the next action
             ulabel.redo();
             break;
         case "delete_annotations_in_polygon":
-            ulabel.delete_annotations_in_polygon(action.annotation_id, redo_payload);
+            ulabel.delete_annotations_in_polygon(annotation_id, redo_payload);
             break;
         case "finish_modify_annotation":
-            ulabel.finish_modify_annotation__redo(action.annotation_id, redo_payload);
+            ulabel.finish_modify_annotation__redo(annotation_id, redo_payload);
             break;
         default:
             log_message(`Action type not recognized for redo: ${action.act_type}`, LogLevel.WARNING);

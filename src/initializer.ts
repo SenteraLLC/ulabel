@@ -37,13 +37,13 @@ function make_image_canvases(
             <canvas 
                 id="${ulabel.subtasks[st]["canvas_bid"]}" 
                 class="${ulabel.config["canvas_class"]} ${ulabel.config["imgsz_class"]} canvas_cls" 
-                height=${ulabel.config["image_height"] * ulabel.config["px_per_px"]} 
-                width=${ulabel.config["image_width"] * ulabel.config["px_per_px"]}></canvas>
+                height=${ulabel.config["image_height"]! * ulabel.config["px_per_px"]} 
+                width=${ulabel.config["image_width"]! * ulabel.config["px_per_px"]}></canvas>
             <canvas 
                 id="${ulabel.subtasks[st]["canvas_fid"]}" 
                 class="${ulabel.config["canvas_class"]} ${ulabel.config["imgsz_class"]} canvas_cls" 
-                height=${ulabel.config["image_height"] * ulabel.config["px_per_px"]} 
-                width=${ulabel.config["image_width"] * ulabel.config["px_per_px"]} 
+                height=${ulabel.config["image_height"]! * ulabel.config["px_per_px"]} 
+                width=${ulabel.config["image_width"]! * ulabel.config["px_per_px"]} 
                 oncontextmenu="return false"></canvas>
             <div id="dialogs__${st}" class="dialogs_container"></div>
         </div>
@@ -55,8 +55,8 @@ function make_image_canvases(
         // Get canvas contexts
         const canvas_bid = <HTMLCanvasElement>document.getElementById(ulabel.subtasks[st]["canvas_bid"]);
         const canvas_fid = <HTMLCanvasElement>document.getElementById(ulabel.subtasks[st]["canvas_fid"]);
-        ulabel.subtasks[st]["state"]["back_context"] = canvas_bid.getContext("2d");
-        ulabel.subtasks[st]["state"]["front_context"] = canvas_fid.getContext("2d");
+        ulabel.subtasks[st]["state"]["back_context"] = canvas_bid.getContext("2d")!;
+        ulabel.subtasks[st]["state"]["front_context"] = canvas_fid.getContext("2d")!;
     }
 }
 
@@ -82,7 +82,7 @@ function store_original_keybinds(ulabel: ULabel) {
         const subtask = ulabel.subtasks[subtask_key];
         if (subtask.class_defs) {
             for (const class_def of subtask.class_defs) {
-                original_class_keybinds[class_def.id] = class_def?.keybind;
+                original_class_keybinds[class_def.id] = class_def.keybind || "";
             }
         }
     }
@@ -175,7 +175,7 @@ export async function ulabel_init(
         const image_width = ulabel.config["image_width"];
         for (const subtask of Object.values(ulabel.subtasks) as ULabelSubtask[]) {
             for (const anno of Object.values(subtask.annotations.access) as ULabelAnnotation[]) {
-                anno.clamp_annotation_to_image_bounds(image_width, image_height);
+                anno.clamp_annotation_to_image_bounds(image_width!, image_height!);
             }
         }
     }

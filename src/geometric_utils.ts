@@ -144,12 +144,12 @@ export class GeometricUtils {
 
     // Check if two line segments are on the same line
     public static line_segments_are_on_same_line(line1: LineSegment2D, line2: LineSegment2D): boolean {
-        const eq1: LineEquation = GeometricUtils.get_line_equation_through_points(line1[0], line1[1]);
-        const eq2: LineEquation = GeometricUtils.get_line_equation_through_points(line2[0], line2[1]);
+        const eq1: LineEquation | null = GeometricUtils.get_line_equation_through_points(line1[0], line1[1]);
+        const eq2: LineEquation | null = GeometricUtils.get_line_equation_through_points(line2[0], line2[1]);
         return (
-            (eq1["a"] === eq2["a"]) &&
-            (eq1["b"] === eq2["b"]) &&
-            (eq1["c"] === eq2["c"])
+            (eq1!["a"] === eq2!["a"]) &&
+            (eq1!["b"] === eq2!["b"]) &&
+            (eq1!["c"] === eq2!["c"])
         );
     }
 
@@ -187,7 +187,7 @@ export class GeometricUtils {
 
         // Discard the parts of the line that are inside the polygon
         const remaining_splits = turf.featureCollection(
-            split.features.filter((feature) => {
+            split.features.filter((feature: { geometry: { coordinates: Point2D[] } }) => {
                 // If the point at the middle of the lineString is inside the polygon, discard it
                 const middle_pt_idx = Math.floor(feature.geometry.coordinates.length / 2);
                 return !GeometricUtils.point_is_within_simple_polygon(
@@ -198,7 +198,7 @@ export class GeometricUtils {
         );
 
         // Sort the remaining splits by length
-        remaining_splits.features.sort((a, b) => {
+        remaining_splits.features.sort((a: unknown, b: unknown) => {
             return turf.length(b) - turf.length(a);
         });
 
@@ -214,7 +214,7 @@ export class GeometricUtils {
         poly2: ULabelSpatialPayload2D,
     ): ULabelSpatialPayload2D[] | null {
         // Find the intersection, if it exists
-        const intersection: ULabelSpatialPayload2D = GeometricUtils.get_polygon_intersection_single(poly1, poly2);
+        const intersection: ULabelSpatialPayload2D | null = GeometricUtils.get_polygon_intersection_single(poly1, poly2);
         // If there's no intersection, return null
         if (intersection === null) {
             return null;
@@ -329,8 +329,8 @@ export class GeometricUtils {
             for (let kpi: number = 0; kpi < poly_pts.length - 1; kpi++) {
                 const kp1: Point2D = poly_pts[kpi];
                 const kp2: Point2D = poly_pts[kpi + 1];
-                const eq: { a: number; b: number; c: number } = GeometricUtils.get_line_equation_through_points(kp1, kp2);
-                const nr: { dst: number; prop: number } = GeometricUtils.get_nearest_point_on_segment(ref_x, ref_y, eq, kp1, kp2);
+                const eq: { a: number; b: number; c: number } | null = GeometricUtils.get_line_equation_through_points(kp1, kp2);
+                const nr: { dst: number; prop: number } | null = GeometricUtils.get_nearest_point_on_segment(ref_x, ref_y, eq, kp1, kp2);
                 if ((nr != null) && (nr["dst"] < dstmax) && (ret["distance"] === null || nr["dst"] < ret["distance"])) {
                     ret["access"] = "" + (kpi + nr["prop"]);
                     ret["distance"] = nr["dst"];

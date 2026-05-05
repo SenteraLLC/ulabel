@@ -59,8 +59,8 @@ export class SubmitButtons extends ToolboxItem {
                 button.appendChild(animation);
 
                 // Create the submit payload
-                const submit_payload = {
-                    task_meta: ulabel.config["task_meta"],
+                const submit_payload: { task_meta: object; annotations: Record<string, ULabelAnnotation[]> } = {
+                    task_meta: ulabel.config["task_meta"] || {},
                     annotations: {},
                 };
 
@@ -69,7 +69,7 @@ export class SubmitButtons extends ToolboxItem {
                     submit_payload["annotations"][stkey] = [];
 
                     // Add all of the annotations in that subtask
-                    let annotation: ULabelAnnotation;
+                    let annotation: ULabelAnnotation | null = null;
                     let temp_annotation: ULabelAnnotation | object;
                     for (let i = 0; i < ulabel.subtasks[stkey]["annotations"]["ordering"].length; i++) {
                         temp_annotation = ulabel.subtasks[stkey]["annotations"]["access"][ulabel.subtasks[stkey]["annotations"]["ordering"][i]];
@@ -89,12 +89,12 @@ export class SubmitButtons extends ToolboxItem {
                         }
 
                         // Skip any delete modes
-                        if (DELETE_MODES.includes(annotation.spatial_type)) {
+                        if (DELETE_MODES.includes(annotation.spatial_type!)) {
                             continue;
                         }
 
                         // Skip spatial annotations that have an empty spatial payload
-                        if (NONSPATIAL_MODES.includes(annotation.spatial_type) ||
+                        if (NONSPATIAL_MODES.includes(annotation.spatial_type!) ||
                             annotation.spatial_payload.length === 0) {
                             continue;
                         }
@@ -102,8 +102,8 @@ export class SubmitButtons extends ToolboxItem {
                         // Ensure annotation is within the image if required
                         if (!ulabel.config.allow_annotations_outside_image) {
                             annotation.clamp_annotation_to_image_bounds(
-                                ulabel.config["image_width"],
-                                ulabel.config["image_height"],
+                                ulabel.config["image_width"]!,
+                                ulabel.config["image_height"]!,
                             );
                         }
 

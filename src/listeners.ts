@@ -85,8 +85,8 @@ function handle_keypress_event(
             // Create the coordinates for the bbox's spatial payload
             let bbox_top_left: [number, number] = [0, 0];
             let bbox_bottom_right: [number, number] = [
-                ulabel.config.image_width,
-                ulabel.config.image_height,
+                ulabel.config.image_width!,
+                ulabel.config.image_height!,
             ];
 
             // If an initial crop exists, use that instead
@@ -149,7 +149,7 @@ function handle_keypress_event(
     if (!DELETE_MODES.includes(current_subtask.state.spatial_type)) {
         for (let i = 0; i < current_subtask.class_defs.length; i++) {
             const class_def = current_subtask.class_defs[i];
-            if (class_def.keybind !== null && event_matches_keybind(keypress_event, class_def.keybind)) {
+            if (class_def.keybind !== null && event_matches_keybind(keypress_event, class_def.keybind!)) {
                 const st_key = ulabel.get_current_subtask_key();
                 const class_button = $(`#tb-id-app--${st_key} a.tbid-opt`).eq(i);
                 if (class_button.hasClass("sel")) {
@@ -197,10 +197,10 @@ function handle_soft_id_toolbox_button_click(
         const current_id_button = $(pfx + " a.tbid-opt.sel");
         current_id_button.attr("href", "#");
         current_id_button.removeClass("sel");
-        const old_id = parseInt(current_id_button.attr("id").split("_").at(-1));
+        const old_id = parseInt(current_id_button.attr("id")!.split("_").at(-1)!);
         tgt_jq.addClass("sel");
         tgt_jq.removeAttr("href");
-        const idarr = tgt_jq.attr("id").split("_");
+        const idarr = tgt_jq.attr("id")!.split("_");
         const rawid = parseInt(idarr[idarr.length - 1]);
         ulabel.set_id_dialog_payload_nopin(
             current_subtask["class_ids"].indexOf(rawid),
@@ -361,6 +361,8 @@ function handle_keydown_event(
         AnnotationResizeItem.update_annotation_size(ulabel, ulabel.get_current_subtask_key(), INCREMENT_ANNOTATION_SIZE, true);
         return false;
     }
+
+    return false;
 }
 
 /**
@@ -422,7 +424,8 @@ export function create_ulabel_listeners(
 
     // ================= Uncategorized =================
 
-    $(document).on(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- jQuery overloads don't support namespaced event strings
+    ($(document) as any).on(
         "keypress" + ULABEL_NAMESPACE,
         (keypress_event: JQuery.KeyPressEvent) => {
             handle_keypress_event(keypress_event, ulabel);
@@ -435,7 +438,7 @@ export function create_ulabel_listeners(
     // Detection ctrl+scroll
     document.getElementById(
         ulabel.config["annbox_id"],
-    ).addEventListener(
+    )!.addEventListener(
         "wheel",
         (wheel_event) => ulabel.handle_wheel(wheel_event),
     );
@@ -447,7 +450,7 @@ export function create_ulabel_listeners(
 
     // Observe the changes on the imwrap_id element
     dialog_resize_observer.observe(
-        document.getElementById(ulabel.config["imwrap_id"]),
+        document.getElementById(ulabel.config["imwrap_id"])!,
     );
 
     // Store a reference
@@ -460,14 +463,15 @@ export function create_ulabel_listeners(
 
     // Observe the changes on the ulabel container
     tb_overflow_resize_observer.observe(
-        document.getElementById(ulabel.config["container_id"]),
+        document.getElementById(ulabel.config["container_id"])!,
     );
 
     // Store a reference
     ulabel.resize_observers.push(tb_overflow_resize_observer);
 
     // create_soft_id_toolbox_button_listener(ulabel);
-    $(document).on(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- jQuery overloads don't support namespaced event strings
+    ($(document) as any).on(
         "click" + ULABEL_NAMESPACE,
         `#${ulabel.config["toolbox_id"]} a.tbid-opt`,
         (click_event: JQuery.ClickEvent) => {
@@ -479,7 +483,7 @@ export function create_ulabel_listeners(
         "click" + ULABEL_NAMESPACE,
         "a.tb-st-switch[href]",
         (click_event) => {
-            const switch_to = $(click_event.target).attr("id").split("--")[1];
+            const switch_to = $(click_event.target).attr("id")!.split("--")[1];
 
             // Ignore if in the middle of annotation
             if (ulabel.get_current_subtask()["state"]["is_in_progress"]) return;
@@ -489,7 +493,8 @@ export function create_ulabel_listeners(
     );
 
     // Keybind to switch active subtask
-    $(document).on(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- jQuery overloads don't support namespaced event strings
+    ($(document) as any).on(
         "keypress" + ULABEL_NAMESPACE,
         (keypress_event: JQuery.KeyPressEvent) => {
             // Ignore if in the middle of annotation
@@ -557,8 +562,8 @@ export function create_ulabel_listeners(
         (click_event) => {
             // Show idd
             ulabel.show_id_dialog(
-                click_event.pageX,
-                click_event.pageY,
+                click_event.pageX!,
+                click_event.pageY!,
                 click_event.target.id.substring("reclf__".length),
                 false,
                 true,
@@ -572,8 +577,8 @@ export function create_ulabel_listeners(
         (mouse_event) => {
             // Show thumbnail for idd
             ulabel.suggest_edits(
-                null,
-                $(mouse_event.currentTarget).attr("id").substring("row__".length),
+                undefined,
+                $(mouse_event.currentTarget).attr("id")!.substring("row__".length),
             );
         },
     );
@@ -589,11 +594,12 @@ export function create_ulabel_listeners(
             ) {
                 return;
             }
-            ulabel.suggest_edits(null);
+            ulabel.suggest_edits(undefined);
         },
     );
 
-    $(document).on(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- jQuery overloads don't support namespaced event strings
+    ($(document) as any).on(
         "keypress" + ULABEL_NAMESPACE,
         (keypress_event: JQuery.KeyPressEvent) => {
             // Check the key pressed against the delete annotation keybind in the config
@@ -649,7 +655,7 @@ export function create_ulabel_listeners(
         "#" + ulabel.config["annbox_id"] + " .delete_suggestion",
         () => {
             const crst = ulabel.get_current_subtask();
-            ulabel.delete_annotation(crst["state"]["move_candidate"]["annid"]);
+            ulabel.delete_annotation(crst["state"]["move_candidate"]!["annid"]);
         },
     );
 
@@ -695,7 +701,8 @@ export function create_ulabel_listeners(
     );
 
     // Keyboard only events
-    $(document).on(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- jQuery overloads don't support namespaced event strings
+    ($(document) as any).on(
         "keydown" + ULABEL_NAMESPACE,
         (keydown_event: JQuery.KeyDownEvent) => {
             handle_keydown_event(keydown_event, ulabel);

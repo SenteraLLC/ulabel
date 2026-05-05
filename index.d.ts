@@ -275,6 +275,9 @@ export class ULabel {
         anno_scaling_mode: AnnoScalingMode;
         // Keybind editing state
         is_editing_keybind: boolean;
+        // Original keybind storage
+        original_config_keybinds?: { [config_key: string]: string };
+        original_class_keybinds?: { [class_id: number]: string };
         // Render state
         // TODO (joshua-dean): this is never assigned, is it used?
         demo_canvas_context: CanvasRenderingContext2D;
@@ -400,8 +403,8 @@ export class ULabel {
 
     // Annotation lifecycle
     // TODO (joshua-dean): type for redo_payload
-    public begin_annotation(mouse_event: JQuery.TriggeredEvent, annotation_id?: string, redo_payload?: object): void;
-    public continue_annotation(mouse_event: JQuery.TriggeredEvent, is_click?: boolean, annotation_id?: string, redo_payload?: object): void;
+    public begin_annotation(mouse_event: JQuery.TriggeredEvent | undefined, annotation_id?: string, redo_payload?: object): void;
+    public continue_annotation(mouse_event: JQuery.TriggeredEvent | undefined, is_click?: boolean, annotation_id?: string, redo_payload?: object): void;
     public delete_annotation(
         annotation_id: string,
         redoing?: boolean,

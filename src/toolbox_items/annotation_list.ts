@@ -285,7 +285,7 @@ export class AnnotationListToolboxItem extends ToolboxItem {
         $(document).on("click.ulabel", ".annotation-list-item", (e) => {
             const annotation_id = $(e.currentTarget).data("annotation-id");
             if (annotation_id) {
-                this.ulabel.fly_to_annotation_id(annotation_id, null, this.ulabel.config.fly_to_max_zoom);
+                this.ulabel.fly_to_annotation_id(annotation_id, undefined, this.ulabel.config.fly_to_max_zoom);
             }
         });
 
@@ -298,18 +298,18 @@ export class AnnotationListToolboxItem extends ToolboxItem {
                 $(e.currentTarget).addClass("highlighted");
 
                 // Show the global edit suggestion (ID dialog)
-                this.ulabel.show_global_edit_suggestion(annotation_id, null, null);
+                this.ulabel.show_global_edit_suggestion(annotation_id, undefined, undefined);
 
                 // Set edit_candidate to allow delete keybind to work
                 const current_subtask = this.ulabel.get_current_subtask();
                 const annotation = current_subtask.annotations.access[annotation_id];
                 if (annotation && !annotation.deprecated) {
                     current_subtask.state.edit_candidate = {
-                        annid: annotation.id,
-                        spatial_type: annotation.spatial_type,
-                        access: null,
-                        distance: null,
-                        point: null,
+                        annid: annotation.id!,
+                        spatial_type: annotation.spatial_type!,
+                        access: 0,
+                        distance: 0,
+                        point: [0, 0],
                     };
                 }
             }
@@ -415,7 +415,7 @@ export class AnnotationListToolboxItem extends ToolboxItem {
             const class_def = subtask.class_defs.find((def) => def.id === class_id);
             const class_name = class_def ? class_def.name : "Unknown";
             const color = this.ulabel.color_info[class_id] || "#cccccc";
-            const svg = this.get_spatial_type_svg(annotation.spatial_type, color);
+            const svg = this.get_spatial_type_svg(annotation.spatial_type!, color);
 
             html += `
                 <div class="annotation-list-item" data-annotation-id="${annotation.id}" data-annotation-idx="${i}">
@@ -470,7 +470,7 @@ export class AnnotationListToolboxItem extends ToolboxItem {
             for (let i = 0; i < group_annotations.length; i++) {
                 const annotation = group_annotations[i];
                 const overall_idx = annotations.indexOf(annotation);
-                const svg = this.get_spatial_type_svg(annotation.spatial_type, color);
+                const svg = this.get_spatial_type_svg(annotation.spatial_type!, color);
 
                 html += `
                     <div class="annotation-list-item" data-annotation-id="${annotation.id}" data-annotation-idx="${overall_idx}">

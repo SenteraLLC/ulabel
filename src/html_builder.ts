@@ -42,7 +42,7 @@ export function add_style_to_document(ulabel: ULabel) {
  * @param subtasks ULabel's Subtasks object
  * @returns html for a mode button
  */
-function get_md_button(md_key: string, md_name: string, svg_blob: string, cur_md: string, subtasks: object): string {
+function get_md_button(md_key: string, md_name: string, svg_blob: string, cur_md: string, subtasks: Record<string, { allowed_modes: string[] }>): string {
     let sel: string = "";
     let href: string = ` href="#"`;
     if (cur_md == md_key) {
@@ -72,14 +72,14 @@ function get_images_html(ulabel: ULabel): string {
     let images_html: string = "";
 
     let display: string;
-    for (let i = 0; i < ulabel.config["image_data"].frames.length; i++) {
+    for (let i = 0; i < ulabel.config["image_data"]!.frames.length; i++) {
         if (i != 0) {
             display = "none";
         } else {
             display = "block";
         }
         images_html += `
-            <img id="${ulabel.config["image_id_pfx"]}__${i}" src="${ulabel.config["image_data"].frames[i]}" class="imwrap_cls ${ulabel.config["imgsz_class"]} image_frame" style="z-index: 50; display: ${display};" />
+            <img id="${ulabel.config["image_id_pfx"]}__${i}" src="${ulabel.config["image_data"]!.frames[i]}" class="imwrap_cls ${ulabel.config["imgsz_class"]} image_frame" style="z-index: 50; display: ${display};" />
         `;
     }
     return images_html;
@@ -149,7 +149,7 @@ export function prep_window_html(ulabel: ULabel, toolbox_item_order: unknown[] |
     // const toolbox = configuration.create_toolbox();
     const toolbox: Toolbox = new Toolbox(
         [],
-        Toolbox.create_toolbox(ulabel, toolbox_item_order),
+        Toolbox.create_toolbox(ulabel, toolbox_item_order!),
     );
 
     const tool_html: string = toolbox.setup_toolbox_html(
@@ -220,10 +220,10 @@ export function prep_window_html(ulabel: ULabel, toolbox_item_order: unknown[] |
 
         // If initial_crop has the appropriate properties, return true
         if (
-            "width" in initial_crop &&
-            "height" in initial_crop &&
-            "left" in initial_crop &&
-            "top" in initial_crop
+            "width" in (initial_crop as object) &&
+            "height" in (initial_crop as object) &&
+            "left" in (initial_crop as object) &&
+            "top" in (initial_crop as object)
         ) {
             return true;
         }
