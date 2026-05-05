@@ -198,4 +198,38 @@ describe("ULabel Core Functionality", () => {
             expect(ulabel.config.task_meta).toBeNull();
         });
     });
+
+    describe("String.prototype.replaceLowerConcat", () => {
+        // This method was changed from replaceAll to split/join
+        // Ensure behavior is identical for the patterns used in the codebase
+        beforeAll(() => {
+            // Loading ULabel attaches replaceLowerConcat to String.prototype
+            require("./testing-utils/build_loader");
+        });
+
+        test("should replace spaces with dashes and lowercase", () => {
+            const result = "Keypoint Slider".replaceLowerConcat(" ", "-");
+            expect(result).toBe("keypoint-slider");
+        });
+
+        test("should replace spaces with underscores and concat suffix", () => {
+            const result = "Keypoint Slider".replaceLowerConcat(" ", "_", "_default_value");
+            expect(result).toBe("keypoint_slider_default_value");
+        });
+
+        test("should handle strings with no match for before", () => {
+            const result = "noSpaces".replaceLowerConcat(" ", "-");
+            expect(result).toBe("nospaces");
+        });
+
+        test("should handle multiple spaces", () => {
+            const result = "Filter Point Distance".replaceLowerConcat(" ", "-");
+            expect(result).toBe("filter-point-distance");
+        });
+
+        test("should return lowercase without concat when concat_string is null", () => {
+            const result = "Test String".replaceLowerConcat(" ", "-", null);
+            expect(result).toBe("test-string");
+        });
+    });
 });

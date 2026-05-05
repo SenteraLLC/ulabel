@@ -6,7 +6,7 @@
  * behaves correctly.
  */
 import { test, expect } from "./fixtures";
-import { draw_bbox, draw_point } from "../testing-utils/drawing_utils";
+import { draw_bbox, draw_point, draw_polyline } from "../testing-utils/drawing_utils";
 import { wait_for_ulabel_init } from "../testing-utils/init_utils";
 
 test.describe("ULabel API Behavior", () => {
@@ -127,5 +127,130 @@ test.describe("ULabel API Behavior", () => {
                 expect(entry.keybind_is_undefined).toBe(false);
             }
         }
+    });
+
+    test("annotation class_id derived from classification_payloads should be a valid number string", async ({ page }) => {
+        await wait_for_ulabel_init(page);
+
+        // Create a point annotation
+        await draw_point(page, [150, 150]);
+
+        const result = await page.evaluate(() => {
+            const subtask = window.ulabel.get_current_subtask();
+            const annotation_id = subtask.annotations.ordering[0];
+            const annotation = subtask.annotations.access[annotation_id];
+
+            return {
+                has_classification: annotation.classification_payloads != null,
+                payload_length: annotation.classification_payloads?.length,
+                first_class_id: annotation.classification_payloads?.[0]?.class_id,
+                class_id_type: typeof annotation.classification_payloads?.[0]?.class_id,
+            };
+        });
+
+        // classification_payloads must exist and have at least one entry
+        expect(result.has_classification).toBe(true);
+        expect(result.payload_length).toBeGreaterThan(0);
+        // class_id must be a number (not undefined or "0" from default)
+        expect(result.class_id_type).toBe("number");
+        expect(result.first_class_id).toBeGreaterThan(0);
+    });
+
+    test("distance_from property should have numeric distance values", async ({ page }) => {
+        await wait_for_ulabel_init(page);
+
+        // Create a polyline (acts as the "row")
+        await draw_polyline(page, [[100, 200], [300, 200], [500, 200]]);
+
+        // Create a point annotation near the polyline
+        await draw_point(page, [200, 250]);
+
+        // Trigger distance filter recalculation
+        await page.evaluate(() => {
+            window.ulabel.filter_points_distance_from_line();
+        });
+
+        const result = await page.evaluate(() => {
+            const subtask = window.ulabel.get_current_subtask();
+            const annotations = subtask.annotations;
+
+            // Check that point annotations with distance_from have numeric distance
+            for (const id of annotations.ordering) {
+                const ann = annotations.access[id];
+                if (ann.distance_from && ann.distance_from.closest_row) {
+                    if (typeof ann.distance_from.closest_row.distance !== "number") {
+                        return { valid: false, error: "distance is not a number" };
+                    }
+                    if (!isFinite(ann.distance_from.closest_row.distance) && ann.distance_from.closest_row.distance !== Infinity) {
+                        return { valid: false, error: "distance is NaN" };
+                    }
+                }
+            }
+            return { valid: true };
+        });
+
+        expect(result.valid).toBe(true);
+    });
+
+    test("show_annotation_mode with null should use default selector", async ({ page }) => {
+        await wait_for_ulabel_init(page);
+
+        // show_annotation_mode(null) should select the current mode button via jQuery
+        // and update the .current_mode label without throwing
+        const result = await page.evaluate(() => {
+            try {
+                window.ulabel.show_annotation_mode(null);
+                const mode_label = document.querySelector(".current_mode");
+                return {
+                    success: true,
+                    has_label: mode_label !== null,
+                    label_text: mode_label ? mode_label.innerHTML : null,
+                };
+            } catch (e) {
+                return { success: false, error: e.message };
+            }
+        });
+
+        expect(result.success).toBe(true);
+        expect(result.has_label).toBe(true);
+        // Label should contain the name of the current mode
+        expect(result.label_text).toBeTruthy();
+    });
+
+    test("redraw_all_annotations with null offset should not throw", async ({ page }) => {
+        await wait_for_ulabel_init(page);
+
+        await draw_bbox(page, [100, 100], [200, 200]);
+
+        const result = await page.evaluate(() => {
+            try {
+                // First arg is subtask key, second is offset (null = no offset)
+                const subtask_key = Object.keys(window.ulabel.subtasks)[0];
+                window.ulabel.redraw_all_annotations(subtask_key, null, false);
+                return { success: true };
+            } catch (e) {
+                return { success: false, error: e.message };
+            }
+        });
+
+        expect(result.success).toBe(true);
+    });
+
+    test("redraw_all_annotations with null subtask should redraw all subtasks", async ({ page }) => {
+        await wait_for_ulabel_init(page);
+
+        await draw_bbox(page, [100, 100], [200, 200]);
+
+        const result = await page.evaluate(() => {
+            try {
+                // null subtask means "redraw all subtasks"
+                window.ulabel.redraw_all_annotations(null, null, false);
+                return { success: true };
+            } catch (e) {
+                return { success: false, error: e.message };
+            }
+        });
+
+        expect(result.success).toBe(true);
     });
 });

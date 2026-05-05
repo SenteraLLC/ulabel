@@ -161,4 +161,36 @@ describe("Annotation Processing", () => {
             expect(id1.length).toBeGreaterThan(0);
         });
     });
+
+    describe("Annotation Classification", () => {
+        test("classification_payloads should determine class_id correctly", () => {
+            const resume_config = {
+                ...mock_config,
+                subtasks: {
+                    test_task: {
+                        ...mock_config.subtasks.test_task,
+                        resume_from: [
+                            {
+                                spatial_type: "point",
+                                spatial_payload: [[10, 10]],
+                                classification_payloads: [
+                                    { class_id: 1, confidence: 0.9 },
+                                ],
+                            },
+                        ],
+                    },
+                },
+            };
+
+            const ulabel = new ULabel(resume_config);
+            const annotation = ulabel.subtasks.test_task.annotations.access[
+                ulabel.subtasks.test_task.annotations.ordering[0]
+            ];
+
+            // classification_payloads should be preserved exactly
+            expect(annotation.classification_payloads).toEqual([
+                { class_id: 1, confidence: 0.9 },
+            ]);
+        });
+    });
 });

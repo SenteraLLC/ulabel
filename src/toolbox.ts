@@ -1371,7 +1371,7 @@ export class AnnotationResizeItem extends ToolboxItem {
 
         // If the sizes were updated, resize the annotations
         if (redraw) {
-            ulabel.redraw_all_annotations(subtask_key, undefined, false);
+            ulabel.redraw_all_annotations(subtask_key, null, false);
         }
     }
 
@@ -1410,7 +1410,7 @@ export class AnnotationResizeItem extends ToolboxItem {
         }
 
         // Redraw the annotations
-        ulabel.redraw_all_annotations(subtask_key, undefined, false);
+        ulabel.redraw_all_annotations(subtask_key, null, false);
 
         // Show/hide dialogs
         ulabel.suggest_edits();

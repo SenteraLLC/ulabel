@@ -188,7 +188,7 @@ export function prep_window_html(ulabel: ULabel, toolbox_item_order: unknown[] |
     $("#" + sp_id + " .toolbox_inner_cls .mode-selection").append(md_buttons.join("<!-- -->"));
 
     // Show current mode label
-    ulabel.show_annotation_mode(undefined);
+    ulabel.show_annotation_mode(null);
 
     // Make sure that entire toolbox is shown
     if ($("#" + ulabel.config["toolbox_id"] + " .toolbox_inner_cls").height()! > $("#" + ulabel.config["container_id"]).height()!) {
