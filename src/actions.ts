@@ -367,7 +367,7 @@ function on_finish_annotation_spatial_modification(
     ulabel.rebuild_containing_box(action.annotation_id!);
     ulabel.redraw_annotation(action.annotation_id!);
     // Update dialogs
-    ulabel.suggest_edits(undefined, undefined, true);
+    ulabel.suggest_edits(null, null, true);
     // Update the toolbox
     ulabel.update_filter_distance(action.annotation_id!);
     ulabel.toolbox.redraw_update_items(ulabel);
@@ -409,7 +409,7 @@ function on_annotation_deletion(
     // Ensure there are no lingering enders
     ulabel.destroy_polygon_ender(action.annotation_id!);
     // Update dialogs
-    ulabel.suggest_edits(undefined, undefined, true);
+    ulabel.suggest_edits(null, null, true);
     // Update the toolbox
     ulabel.toolbox.redraw_update_items(ulabel);
 }
@@ -436,7 +436,7 @@ function on_annotation_id_change(
         // Hide the large ID dialog after the user has made a selection
         ulabel.hide_id_dialog();
     }
-    ulabel.suggest_edits(undefined, undefined, true);
+    ulabel.suggest_edits(null, null, true);
 
     // Determine if we need to update the filter distance
     // If the filter_distance_toolbox_item exists,

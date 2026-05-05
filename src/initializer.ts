@@ -77,12 +77,12 @@ function store_original_keybinds(ulabel: ULabel) {
     ulabel.state["original_config_keybinds"] = original_config_keybinds;
 
     // Store original class keybinds in the ULabel state for later reference
-    const original_class_keybinds: { [class_id: number]: string } = {};
+    const original_class_keybinds: { [class_id: number]: string | null } = {};
     for (const subtask_key in ulabel.subtasks) {
         const subtask = ulabel.subtasks[subtask_key];
         if (subtask.class_defs) {
             for (const class_def of subtask.class_defs) {
-                original_class_keybinds[class_def.id] = class_def.keybind || "";
+                original_class_keybinds[class_def.id] = class_def.keybind;
             }
         }
     }

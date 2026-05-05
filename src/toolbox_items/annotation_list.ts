@@ -285,7 +285,7 @@ export class AnnotationListToolboxItem extends ToolboxItem {
         $(document).on("click.ulabel", ".annotation-list-item", (e) => {
             const annotation_id = $(e.currentTarget).data("annotation-id");
             if (annotation_id) {
-                this.ulabel.fly_to_annotation_id(annotation_id, undefined, this.ulabel.config.fly_to_max_zoom);
+                this.ulabel.fly_to_annotation_id(annotation_id, null, this.ulabel.config.fly_to_max_zoom);
             }
         });
 
@@ -298,7 +298,7 @@ export class AnnotationListToolboxItem extends ToolboxItem {
                 $(e.currentTarget).addClass("highlighted");
 
                 // Show the global edit suggestion (ID dialog)
-                this.ulabel.show_global_edit_suggestion(annotation_id, undefined, undefined);
+                this.ulabel.show_global_edit_suggestion(annotation_id, null, null);
 
                 // Set edit_candidate to allow delete keybind to work
                 const current_subtask = this.ulabel.get_current_subtask();

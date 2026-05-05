@@ -577,7 +577,7 @@ export function create_ulabel_listeners(
         (mouse_event) => {
             // Show thumbnail for idd
             ulabel.suggest_edits(
-                undefined,
+                null,
                 $(mouse_event.currentTarget).attr("id")!.substring("row__".length),
             );
         },
@@ -594,7 +594,7 @@ export function create_ulabel_listeners(
             ) {
                 return;
             }
-            ulabel.suggest_edits(undefined);
+            ulabel.suggest_edits(null);
         },
     );
 

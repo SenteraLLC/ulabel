@@ -59,8 +59,8 @@ export class SubmitButtons extends ToolboxItem {
                 button.appendChild(animation);
 
                 // Create the submit payload
-                const submit_payload: { task_meta: object; annotations: Record<string, ULabelAnnotation[]> } = {
-                    task_meta: ulabel.config["task_meta"] || {},
+                const submit_payload: { task_meta: object | null; annotations: Record<string, ULabelAnnotation[]> } = {
+                    task_meta: ulabel.config["task_meta"],
                     annotations: {},
                 };
 

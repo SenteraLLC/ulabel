@@ -602,7 +602,7 @@ export class KeybindsToolboxItem extends ToolboxItem {
     /**
      * Get original class keybinds (before customization)
      */
-    private get_original_class_keybinds(): { [class_id: number]: string } {
+    private get_original_class_keybinds(): { [class_id: number]: string | null } {
         // Get from ULabel state (stored during initialization)
         return this.ulabel.state["original_class_keybinds"] || {};
     }

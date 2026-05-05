@@ -65,7 +65,7 @@ export type ClassDefinition = {
     name: string;
     id: number;
     color: string;
-    keybind?: string;
+    keybind: string | null;
 };
 
 export type SliderInfo = {
@@ -135,7 +135,7 @@ export type ULabelAnnotations = { [key: string]: ULabelAnnotation[] };
 
 export type ULabelSubmitData = {
     annotations: ULabelAnnotations;
-    task_meta: object;
+    task_meta: object | null;
 };
 export type ULabelSubmitHandler = (submitData: ULabelSubmitData) => void;
 
@@ -277,7 +277,7 @@ export class ULabel {
         is_editing_keybind: boolean;
         // Original keybind storage
         original_config_keybinds?: { [config_key: string]: string };
-        original_class_keybinds?: { [class_id: number]: string };
+        original_class_keybinds?: { [class_id: number]: string | null };
         // Render state
         // TODO (joshua-dean): this is never assigned, is it used?
         demo_canvas_context: CanvasRenderingContext2D;
@@ -351,7 +351,7 @@ export class ULabel {
     public show_annotation_mode(
         target_jq?: JQuery<HTMLElement>, // TODO (joshua-dean): validate this type
     ): void;
-    public update_frame(delta?: number, new_frame?: number): void;
+    public update_frame(delta?: number | null, new_frame?: number | null): void;
     public rebuild_containing_box(actid: string, ignore_final?: boolean, subtask?: string): void;
     public update_filter_distance_during_polyline_move(
         annotation_id: string,
@@ -368,7 +368,7 @@ export class ULabel {
     public get_keypoint_slider_value(): number | null;
     public get_distance_filter_value(): DistanceFromPolylineClasses | null;
     public fly_to_next_annotation(increment: number, max_zoom?: number): boolean;
-    public fly_to_annotation_id(annotation_id: string, subtask_key?: string, max_zoom?: number): boolean;
+    public fly_to_annotation_id(annotation_id: string, subtask_key?: string | null, max_zoom?: number): boolean;
     public fly_to_annotation(annotation: ULabelAnnotation, subtask_key?: string, max_zoom?: number): boolean;
 
     // Brush
@@ -403,8 +403,8 @@ export class ULabel {
 
     // Annotation lifecycle
     // TODO (joshua-dean): type for redo_payload
-    public begin_annotation(mouse_event: JQuery.TriggeredEvent | undefined, annotation_id?: string, redo_payload?: object): void;
-    public continue_annotation(mouse_event: JQuery.TriggeredEvent | undefined, is_click?: boolean, annotation_id?: string, redo_payload?: object): void;
+    public begin_annotation(mouse_event: JQuery.TriggeredEvent | null | undefined, annotation_id?: string | null, redo_payload?: object | null): void;
+    public continue_annotation(mouse_event: JQuery.TriggeredEvent | null | undefined, is_click?: boolean, annotation_id?: string | null, redo_payload?: object | null): void;
     public delete_annotation(
         annotation_id: string,
         redoing?: boolean,
@@ -496,14 +496,14 @@ export class ULabel {
 
     // Edit suggestions
     public suggest_edits(
-        mouse_event?: JQuery.TriggeredEvent,
-        nonspatial_id?: string,
+        mouse_event?: JQuery.TriggeredEvent | null,
+        nonspatial_id?: string | null,
         force_refresh?: boolean,
     ): void;
     public show_global_edit_suggestion(
         annid: string,
-        offset?: Offset,
-        nonspatial_id?: string,
+        offset?: Offset | null,
+        nonspatial_id?: string | null,
     ): void;
     public hide_global_edit_suggestion(): void;
     public hide_edit_suggestion(): void;

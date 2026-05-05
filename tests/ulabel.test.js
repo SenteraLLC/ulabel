@@ -142,4 +142,60 @@ describe("ULabel Core Functionality", () => {
             expect(typeof new_id).toBe("number");
         });
     });
+
+    describe("Class Keybind Storage", () => {
+        test("class_def.keybind should be null when not provided", () => {
+            const ulabel = new ULabel(mock_config);
+            const class_defs = ulabel.subtasks.test_task.class_defs;
+
+            // Class without keybind should have null, not undefined or ""
+            expect(class_defs[0].keybind).toBe(null);
+        });
+
+        test("class_def.keybind should preserve provided value", () => {
+            const config = {
+                ...mock_config,
+                subtasks: {
+                    test_task: {
+                        display_name: "Test Task",
+                        classes: [
+                            { name: "Class1", id: 1, color: "red", keybind: "1" },
+                            { name: "Class2", id: 2, color: "blue", keybind: "2" },
+                        ],
+                        allowed_modes: ["bbox", "polygon", "point"],
+                    },
+                },
+            };
+            const ulabel = new ULabel(config);
+            const class_defs = ulabel.subtasks.test_task.class_defs;
+
+            expect(class_defs[0].keybind).toBe("1");
+            expect(class_defs[1].keybind).toBe("2");
+        });
+    });
+
+    describe("Configuration Defaults", () => {
+        test("task_meta should default to empty object when not configured", () => {
+            const ulabel = new ULabel(mock_config);
+            expect(ulabel.config.task_meta).toEqual({});
+        });
+
+        test("task_meta should preserve configured value", () => {
+            const config_with_meta = {
+                ...mock_config,
+                task_meta: { project: "test" },
+            };
+            const ulabel = new ULabel(config_with_meta);
+            expect(ulabel.config.task_meta).toEqual({ project: "test" });
+        });
+
+        test("task_meta null should be preserved when explicitly set", () => {
+            const config_with_null_meta = {
+                ...mock_config,
+                task_meta: null,
+            };
+            const ulabel = new ULabel(config_with_null_meta);
+            expect(ulabel.config.task_meta).toBeNull();
+        });
+    });
 });
