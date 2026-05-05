@@ -6,6 +6,10 @@ import { Toolbox, AnnotationResizeItem } from "./src/toolbox";
 
 export { ULabelAnnotation, AllowedToolboxItem, Configuration, FilterDistanceOverlay, ULabelSubtask, Toolbox, AnnotationResizeItem };
 
+// Ambient module declarations for dependencies that consumers don't install
+declare module "@turf/turf";
+declare module "polygon-clipping";
+
 export type DistanceFromPolyline = {
     distance: number;
     polyline_id?: string;
