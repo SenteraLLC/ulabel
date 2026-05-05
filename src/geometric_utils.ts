@@ -1,3 +1,5 @@
+// eslint-disable-next-line @typescript-eslint/triple-slash-reference -- required for consumer type resolution
+/// <reference path="./ambient.d.ts" />
 import * as turf from "@turf/turf";
 import * as polygonClipping from "polygon-clipping";
 
