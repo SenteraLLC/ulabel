@@ -204,8 +204,10 @@ export class GeometricUtils {
             return turf.length(b) - turf.length(a);
         });
 
-        // Return the longest remaining split
-        // TODO: split into multiple polylines?
+        // Return the longest remaining split, or empty if all parts were inside the polygon
+        if (remaining_splits.features.length === 0) {
+            return [];
+        }
         return <ULabelSpatialPayload2D>remaining_splits.features[0].geometry.coordinates;
     }
 
