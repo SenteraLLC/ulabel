@@ -175,6 +175,57 @@ test.describe("Zoom and Pan Interactions", () => {
         expect(after_zoom).toBeGreaterThan(before_zoom);
     });
 
+    test("middle-click drag still pans when subtask is vanished and does not start an annotation drag", async ({ page }) => {
+        await wait_for_ulabel_init(page);
+
+        // Zoom in so the image overflows the viewport (otherwise scroll positions
+        // cannot change anyway, which would make the assertion meaningless).
+        await page.mouse.move(400, 400);
+        await page.mouse.wheel(0, -300);
+        await page.waitForTimeout(50);
+
+        // Vanish the current subtask
+        await page.evaluate(() => {
+            window.ulabel.get_current_subtask().state.is_vanished = true;
+        });
+
+        // Record annotation count and observe drag_state.active_key during the drag
+        // by patching start_drag — this lets us catch any annotation drag that may
+        // start before mouseup clears active_key back to null.
+        const initial_annotation_count = await page.evaluate(() => {
+            const st = window.ulabel.get_current_subtask();
+            return Object.keys(st.annotations.access).length;
+        });
+        await page.evaluate(() => {
+            window.__observed_drag_keys = [];
+            const ul = window.ulabel;
+            const original_start_drag = ul.start_drag.bind(ul);
+            ul.start_drag = function (drag_key, mouse_button, mouse_event) {
+                window.__observed_drag_keys.push(drag_key);
+                return original_start_drag(drag_key, mouse_button, mouse_event);
+            };
+        });
+
+        const before = await get_annbox_scroll(page);
+        await click_drag(page, { x: 500, y: 400 }, { x: 300, y: 250 }, { button: "middle" });
+        await page.waitForTimeout(50);
+        const after = await get_annbox_scroll(page);
+
+        // Pan must have moved the annbox scroll position
+        expect(after.left !== before.left || after.top !== before.top).toBe(true);
+
+        // Only a "pan" drag should have started — no annotation drag
+        const observed = await page.evaluate(() => window.__observed_drag_keys);
+        expect(observed).toEqual(["pan"]);
+
+        // No annotation should have been created
+        const final_annotation_count = await page.evaluate(() => {
+            const st = window.ulabel.get_current_subtask();
+            return Object.keys(st.annotations.access).length;
+        });
+        expect(final_annotation_count).toBe(initial_annotation_count);
+    });
+
     test("annotation drag is blocked when subtask is vanished", async ({ page }) => {
         await wait_for_ulabel_init(page);
 
