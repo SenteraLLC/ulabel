@@ -452,7 +452,7 @@ export class KeybindsToolboxItem extends ToolboxItem {
                 if (class_def.id === DELETE_CLASS_ID) continue;
 
                 keybinds.push({
-                    key: class_def.keybind,
+                    key: class_def.keybind!,
                     label: class_def.name,
                     description: `Select class: ${class_def.name}`,
                     configurable: true,
@@ -602,7 +602,7 @@ export class KeybindsToolboxItem extends ToolboxItem {
     /**
      * Get original class keybinds (before customization)
      */
-    private get_original_class_keybinds(): { [class_id: number]: string } {
+    private get_original_class_keybinds(): { [class_id: number]: string | null } {
         // Get from ULabel state (stored during initialization)
         return this.ulabel.state["original_class_keybinds"] || {};
     }
@@ -725,7 +725,7 @@ export class KeybindsToolboxItem extends ToolboxItem {
             `;
             for (const keybind of configurable) {
                 const has_collision = this.has_collision(keybind.key, all_keybinds);
-                const is_customized = this.is_keybind_customized(keybind.config_key);
+                const is_customized = this.is_keybind_customized(keybind.config_key!);
                 const collision_class = has_collision ? " collision" : "";
                 const customized_class = is_customized ? " customized" : "";
                 const display_key = keybind.key !== null && keybind.key !== undefined ? keybind.key : "none";
@@ -758,7 +758,7 @@ export class KeybindsToolboxItem extends ToolboxItem {
             `;
             for (const keybind of class_keybinds) {
                 const has_collision = this.has_collision(keybind.key, all_keybinds);
-                const is_customized = this.is_class_keybind_customized(keybind.class_id);
+                const is_customized = this.is_class_keybind_customized(keybind.class_id!);
                 const collision_class = has_collision ? " collision" : "";
                 const customized_class = is_customized ? " customized" : "";
                 const display_key = keybind.key != null ? keybind.key : "none";
@@ -872,7 +872,7 @@ export class KeybindsToolboxItem extends ToolboxItem {
     /**
      * Build a keybind chord string from a keyboard event
      */
-    private build_chord_string(keyEvent: JQuery.KeyDownEvent): string {
+    private build_chord_string(keyEvent: JQuery.KeyDownEvent): string | null {
         const modifiers: string[] = [];
         const key = keyEvent.key;
 
@@ -1129,7 +1129,8 @@ export class KeybindsToolboxItem extends ToolboxItem {
             };
 
             // Attach the keydown handler
-            $(document).on("keydown.keybind-edit", keyHandler);
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- jQuery overloads don't support namespaced event strings
+            ($(document) as any).on("keydown.keybind-edit", keyHandler);
         });
 
         // Click outside to cancel editing
@@ -1146,7 +1147,7 @@ export class KeybindsToolboxItem extends ToolboxItem {
                         const current_subtask = this.ulabel.get_current_subtask();
                         const class_def = current_subtask.class_defs.find((cd) => cd.id === class_id);
                         if (class_def) {
-                            editing_key.text(class_def.keybind);
+                            editing_key.text(class_def.keybind!);
                         }
                     } else {
                         editing_key.text(this.ulabel.config[config_key]);

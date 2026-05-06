@@ -19,7 +19,7 @@ export type PolygonSpatialData = {
     spatial_payload: [number[]][];
     spatial_payload_holes: boolean[];
     spatial_payload_child_indices: number[][];
-    containing_box: ULabelContainingBox;
+    containing_box: ULabelContainingBox | null;
 };
 
 export class ULabelAnnotation {
@@ -60,7 +60,7 @@ export class ULabelAnnotation {
         let remaining_confidence = 1.0;
 
         // Filter out any classification payloads items that use the DELETE_CLASS_ID
-        this.classification_payloads = this.classification_payloads.filter((payload) => {
+        this.classification_payloads = this.classification_payloads!.filter((payload) => {
             return payload.class_id !== DELETE_CLASS_ID;
         });
 
@@ -158,7 +158,7 @@ export class ULabelAnnotation {
                 try {
                     this.spatial_payload[i] = GeometricUtils.turf_simplify_complex_polygon([layer])[0];
                 } catch (error) {
-                    log_message(`Error simplifying polygon layer ${i} of id ${this.id}. Removing layer. Error: ${error.message}`, LogLevel.WARNING, true);
+                    log_message(`Error simplifying polygon layer ${i} of id ${this.id}. Removing layer. Error: ${(error as Error).message}`, LogLevel.WARNING, true);
                     indices_to_remove.push(i);
                 }
             }
@@ -213,10 +213,10 @@ export class ULabelAnnotation {
      */
     public is_delete_annotation(): boolean {
         // Check if the annotation is a delete annotation
-        return this.classification_payloads[0]["class_id"] === DELETE_CLASS_ID;
+        return this.classification_payloads![0]["class_id"] === DELETE_CLASS_ID;
     }
 
-    public static from_json(json_block: object): ULabelAnnotation {
+    public static from_json(json_block: object): ULabelAnnotation | null {
         const ret = new ULabelAnnotation();
         Object.assign(ret, json_block);
         // Convert deprecated spatial payloads if necessary

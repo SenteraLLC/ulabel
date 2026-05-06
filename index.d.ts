@@ -4,6 +4,8 @@ import { FilterDistanceOverlay } from "./src/overlays";
 import { ULabelSubtask } from "./src/subtask";
 import { Toolbox, AnnotationResizeItem } from "./src/toolbox";
 
+export { ULabelAnnotation, AllowedToolboxItem, Configuration, FilterDistanceOverlay, ULabelSubtask, Toolbox, AnnotationResizeItem };
+
 export type DistanceFromPolyline = {
     distance: number;
     polyline_id?: string;
@@ -15,7 +17,7 @@ export type DistanceFromPolyline = {
  */
 export type DistanceFromPolylineClasses = {
     closest_row: DistanceFromPolyline;
-    [key: number]: DistanceFromPolyline;
+    [key: string]: DistanceFromPolyline;
 };
 
 export type AbstractPoint = {
@@ -63,7 +65,7 @@ export type ClassDefinition = {
     name: string;
     id: number;
     color: string;
-    keybind?: string;
+    keybind: string | null;
 };
 
 export type SliderInfo = {
@@ -133,7 +135,7 @@ export type ULabelAnnotations = { [key: string]: ULabelAnnotation[] };
 
 export type ULabelSubmitData = {
     annotations: ULabelAnnotations;
-    task_meta: object;
+    task_meta: object | null;
 };
 export type ULabelSubmitHandler = (submitData: ULabelSubmitData) => void;
 
@@ -239,6 +241,23 @@ export type ULabelActionCandidate = {
 
 export type ULabelSubtasks = { [key: string]: ULabelSubtask };
 
+export type ULabelConstructorArgs = {
+    container_id: string;
+    image_data: string | string[];
+    username: string;
+    submit_buttons: ULabelSubmitButton[];
+    subtasks: ULabelSubtasks;
+    task_meta?: object;
+    annotation_meta?: object;
+    px_per_px?: number;
+    initial_crop?: InitialCrop;
+    initial_line_size?: number;
+    instructions_url?: string;
+    toolbox_order?: AllowedToolboxItem[];
+    /** @deprecated Use top-level properties instead. */
+    config_data?: object;
+};
+
 export class ULabel {
     subtasks: ULabelSubtasks;
     state: {
@@ -256,6 +275,9 @@ export class ULabel {
         anno_scaling_mode: AnnoScalingMode;
         // Keybind editing state
         is_editing_keybind: boolean;
+        // Original keybind storage
+        original_config_keybinds?: { [config_key: string]: string };
+        original_class_keybinds?: { [class_id: number]: string | null };
         // Render state
         // TODO (joshua-dean): this is never assigned, is it used?
         demo_canvas_context: CanvasRenderingContext2D;
@@ -272,9 +294,13 @@ export class ULabel {
     begining_time: number;
     is_init: boolean;
     resize_observers: ResizeObserver[];
+
     /**
      * @link https://github.com/SenteraLLC/ulabel/blob/main/api_spec.md#ulabel-constructor
      */
+    constructor(kwargs: ULabelConstructorArgs);
+
+    /** @deprecated Pass a single kwargs object instead of positional arguments. */
     constructor(
         container_id: string,
         image_data: string | string[],
@@ -294,6 +320,7 @@ export class ULabel {
     /**
      * @link https://github.com/SenteraLLC/ulabel/blob/main/api_spec.md#display-utility-functions
      */
+    public version(): string;
     public init(callback: () => void): void;
     public after_init(): void;
     public show_initial_crop(): void;
@@ -309,22 +336,22 @@ export class ULabel {
     public switch_to_next_subtask(): void;
 
     // Annotations
-    public get_annotations(subtask: ULabelSubtask): ULabelAnnotation[];
-    public set_annotations(annotations: ULabelAnnotation[], subtask: ULabelSubtask);
-    public set_saved(saved: boolean);
+    public get_annotations(subtask: string): ULabelAnnotation[];
+    public set_annotations(annotations: ULabelAnnotation[], subtask: string): void;
+    public set_saved(saved: boolean): void;
     public draw_annotation_from_id(id: string, offset?: Offset, subtask?: string): void;
     public redraw_annotation(annotation_id: string, subtask?: string, offset?: Offset): void;
     public redraw_all_annotations(
-        subtask?: string, // TODO (joshua-dean): THIS IS SUBTASK KEY, NAME PROPERLY
-        offset?: number,
+        subtask?: string,
+        offset?: number | null,
         spatial_only?: boolean,
-    );
-    public redraw_multiple_spatial_annotations(annotation_ids: string[], subtask?: string, offset?: Offset);
+    ): void;
+    public redraw_multiple_spatial_annotations(annotation_ids: string[], subtask?: string, offset?: Offset): void;
     public clear_nonspatial_annotation(annotation_id: string): void;
     public show_annotation_mode(
-        target_jq?: JQuery<HTMLElement>, // TODO (joshua-dean): validate this type
-    );
-    public update_frame(delta?: number, new_frame?: number): void;
+        target_jq?: JQuery<HTMLElement> | null, // TODO (joshua-dean): validate this type
+    ): void;
+    public update_frame(delta?: number | null, new_frame?: number | null): void;
     public rebuild_containing_box(actid: string, ignore_final?: boolean, subtask?: string): void;
     public update_filter_distance_during_polyline_move(
         annotation_id: string,
@@ -341,7 +368,7 @@ export class ULabel {
     public get_keypoint_slider_value(): number | null;
     public get_distance_filter_value(): DistanceFromPolylineClasses | null;
     public fly_to_next_annotation(increment: number, max_zoom?: number): boolean;
-    public fly_to_annotation_id(annotation_id: string, subtask_key?: string, max_zoom?: number): boolean;
+    public fly_to_annotation_id(annotation_id: string, subtask_key?: string | null, max_zoom?: number): boolean;
     public fly_to_annotation(annotation: ULabelAnnotation, subtask_key?: string, max_zoom?: number): boolean;
 
     // Brush
@@ -361,9 +388,10 @@ export class ULabel {
     public remove_listeners(): void;
 
     // Static functions
+    static version(): string;
     static get_time(): string;
-    static get_allowed_toolbox_item_enum(): AllowedToolboxItem;
-    static get_resize_toolbox_item(): AnnotationResizeItem;
+    static get_allowed_toolbox_item_enum(): typeof AllowedToolboxItem;
+    static get_resize_toolbox_item(): typeof AnnotationResizeItem;
     static process_classes(ulabel_obj: ULabel, arg1: string, subtask_obj: ULabelSubtask): void;
     static build_id_dialogs(ulabel_obj: ULabel): void;
 
@@ -375,8 +403,8 @@ export class ULabel {
 
     // Annotation lifecycle
     // TODO (joshua-dean): type for redo_payload
-    public begin_annotation(mouse_event: JQuery.TriggeredEvent, annotation_id?: string, redo_payload?: object): void;
-    public continue_annotation(mouse_event: JQuery.TriggeredEvent, is_click?: boolean, annotation_id?: string, redo_payload?: object): void;
+    public begin_annotation(mouse_event: JQuery.TriggeredEvent | null | undefined, annotation_id?: string | null, redo_payload?: object | null): void;
+    public continue_annotation(mouse_event: JQuery.TriggeredEvent | null | undefined, is_click?: boolean, annotation_id?: string | null, redo_payload?: object | null): void;
     public delete_annotation(
         annotation_id: string,
         redoing?: boolean,
@@ -468,14 +496,14 @@ export class ULabel {
 
     // Edit suggestions
     public suggest_edits(
-        mouse_event?: JQuery.TriggeredEvent,
-        nonspatial_id?: string,
+        mouse_event?: JQuery.TriggeredEvent | null,
+        nonspatial_id?: string | null,
         force_refresh?: boolean,
     ): void;
     public show_global_edit_suggestion(
         annid: string,
-        offset?: Offset,
-        nonspatial_id?: string,
+        offset?: Offset | null,
+        nonspatial_id?: string | null,
     ): void;
     public hide_global_edit_suggestion(): void;
     public hide_edit_suggestion(): void;
@@ -485,7 +513,7 @@ export class ULabel {
         annid: string,
         access_str: string,
         as_though_pre_splice: boolean,
-    );
+    ): unknown;
 
     // Drawing
     public rezoom(
@@ -537,3 +565,5 @@ declare global {
         replaceLowerConcat(before: string, after: string, concat_string?: string): string;
     }
 }
+
+export default ULabel;

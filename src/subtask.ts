@@ -13,14 +13,16 @@ export type ULabelDialogPosition = {
 export class ULabelSubtask {
     public actions: { stream: ULabelAction[]; undone_stack: ULabelAction[] };
     public class_ids: number[] = [];
-    public class_defs: ClassDefinition[];
-    public annotations: {
+    public class_defs!: ClassDefinition[];
+    public annotations!: {
         access: { [key: string]: ULabelAnnotation };
         ordering: string[];
     };
 
-    public single_class_mode: boolean;
-    public state: {
+    public canvas_bid!: string;
+    public canvas_fid!: string;
+    public single_class_mode!: boolean;
+    public state!: {
         active_id: string;
         annotation_mode: string;
         back_context: CanvasRenderingContext2D;
@@ -75,7 +77,8 @@ export class ULabelSubtask {
         };
     }
 
-    public static from_json(subtask_key: string, subtask_json: object): ULabelSubtask {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    public static from_json(subtask_key: string, subtask_json: Record<string, any>): ULabelSubtask {
         const ret = new ULabelSubtask(
             subtask_json["display_name"],
             subtask_json["classes"],

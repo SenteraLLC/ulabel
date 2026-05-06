@@ -24,11 +24,11 @@ const DEFAULT_FILTER_VALUES: ImageFilterValues = {
  */
 export class ImageFiltersToolboxItem extends ToolboxItem {
     private filter_values: ImageFilterValues;
-    private brightness_slider: SliderHandler;
-    private contrast_slider: SliderHandler;
-    private hue_rotate_slider: SliderHandler;
-    private invert_slider: SliderHandler;
-    private saturate_slider: SliderHandler;
+    private brightness_slider!: SliderHandler;
+    private contrast_slider!: SliderHandler;
+    private hue_rotate_slider!: SliderHandler;
+    private invert_slider!: SliderHandler;
+    private saturate_slider!: SliderHandler;
     private ulabel: ULabel;
     private is_collapsed: boolean = false;
 

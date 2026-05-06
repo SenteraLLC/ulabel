@@ -42,7 +42,7 @@ function dynamically_set_n_annos_per_canvas(
  */
 export function initialize_annotation_canvases(
     ulabel: ULabel,
-    subtask_key: string = null,
+    subtask_key: string | null = null,
 ) {
     if (subtask_key === null) {
         dynamically_set_n_annos_per_canvas(
@@ -60,10 +60,10 @@ export function initialize_annotation_canvases(
     const subtask = ulabel.subtasks[subtask_key];
     for (const annotation_id in subtask.annotations.access) {
         const annotation = subtask.annotations.access[annotation_id];
-        if (!NONSPATIAL_MODES.includes(annotation.spatial_type)) {
+        if (!NONSPATIAL_MODES.includes(annotation.spatial_type!)) {
             annotation["canvas_id"] = ulabel.get_init_canvas_context_id(
                 annotation_id,
-                subtask_key,
+                subtask_key!,
             );
         }
     }

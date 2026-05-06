@@ -4,6 +4,11 @@ All notable changes to this project will be documented here.
 
 ## [unreleased]
 
+## [0.23.4] - May 5th, 2026
+- Fix type declarations for npm consumers
+- Add `"files"` field to `package.json` to explicitly control published package contents.
+- Add CI type-test job that validates type declarations against a packed tarball.
+
 ## [0.23.3] - Mar 18th, 2026
 - Add `get_keypoint_slider_value()` public API method to get the current keypoint slider value (0-1).
 - Add `get_distance_filter_value()` public API method to get the current distance filter slider values.

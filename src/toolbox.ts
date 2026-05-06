@@ -45,12 +45,12 @@ const toolboxDividerDiv = "<div class=toolbox-divider></div>";
 /** Chains the replaceAll method and the toLowerCase method.
  *  Optionally concatenates a string at the end of the method.
   */
-String.prototype.replaceLowerConcat = function (before: string, after: string, concat_string: string = null) {
+String.prototype.replaceLowerConcat = function (before: string, after: string, concat_string: string | null = null) {
     if (typeof (concat_string) === "string") {
-        return this.replaceAll(before, after).toLowerCase().concat(concat_string);
+        return this.split(before).join(after).toLowerCase().concat(concat_string);
     }
 
-    return this.replaceAll(before, after).toLowerCase();
+    return this.split(before).join(after).toLowerCase();
 };
 
 /**
@@ -81,7 +81,7 @@ export class Toolbox {
         const toolbox_instance_list = [];
         // Go through the items in toolbox_item_order and add their instance to the toolbox instance list
         for (let i = 0; i < toolbox_item_order.length; i++) {
-            let args: object, toolbox_key: number;
+            let args: object | null = null, toolbox_key: number;
 
             // If the value of toolbox_item_order[i] is a number then that means the it is one of the
             // enumerated toolbox items, so set it to the key, otherwise the element must be an array
@@ -90,11 +90,11 @@ export class Toolbox {
             if (typeof (toolbox_item_order[i]) === "number") {
                 toolbox_key = <number> toolbox_item_order[i];
             } else {
-                toolbox_key = toolbox_item_order[i][0];
-                args = toolbox_item_order[i][1];
+                toolbox_key = (toolbox_item_order[i] as [number, object])[0];
+                args = (toolbox_item_order[i] as [number, object])[1];
             }
 
-            const toolbox_item_class = ulabel.config.toolbox_map.get(toolbox_key);
+            const toolbox_item_class = ulabel.config.toolbox_map.get(toolbox_key)!;
 
             if (args == null) {
                 toolbox_instance_list.push(new toolbox_item_class(ulabel));
@@ -408,7 +408,7 @@ export class ModeSelectionToolboxItem extends ToolboxItem {
             if (target_jq.hasClass("sel") || current_subtask["state"]["is_in_progress"]) return;
 
             // Get the new mode and set it to ulabel's current mode
-            const new_mode = target_jq.attr("id").split("--")[1];
+            const new_mode = target_jq.attr("id")!.split("--")[1];
             current_subtask["state"]["annotation_mode"] = new_mode;
 
             // Show the BrushToolboxItem when polygon mode is selected
@@ -461,7 +461,7 @@ export class ModeSelectionToolboxItem extends ToolboxItem {
                 // Grab the currently selected mode button
                 const selected_mode_button = <HTMLAnchorElement> Array.from(document.getElementsByClassName("md-btn sel"))[0]; // There's only ever going to be one element in this array, so grab the first one
 
-                let new_button_index: number;
+                let new_button_index: number = 0;
 
                 // Loop through all of the mode select buttons that are currently displayed
                 // to find which one is the currently selected button.  Once its found add 1
@@ -579,7 +579,7 @@ export class ModeSelectionToolboxItem extends ToolboxItem {
  * Toolbox item for resizing all annotations
  */
 export class BrushToolboxItem extends ToolboxItem {
-    public html: string;
+    public html!: string;
     private ulabel: ULabel;
     /**
      * CSS class indicating the brush button is active
@@ -648,7 +648,7 @@ export class BrushToolboxItem extends ToolboxItem {
             const button = $(event.currentTarget);
 
             // Use the button id to get what size to resize the annotations to
-            const button_id: string = button.attr("id");
+            const button_id: string = button.attr("id") || "";
 
             switch (button_id) {
                 case "brush-mode":
@@ -711,7 +711,7 @@ export class BrushToolboxItem extends ToolboxItem {
  * Toolbox item for zooming and panning.
  */
 export class ZoomPanToolboxItem extends ToolboxItem {
-    public frame_range: string;
+    public frame_range!: string;
     constructor(
         public ulabel: ULabel,
     ) {
@@ -887,7 +887,7 @@ export class ZoomPanToolboxItem extends ToolboxItem {
     }
 
     private add_event_listeners() {
-        const frames_exist = this.ulabel.config["image_data"].frames.length > 1;
+        const frames_exist = this.ulabel.config["image_data"]!.frames.length > 1;
 
         $(document).on("click.ulabel", ".ulabel-zoom-button", (event) => {
             if ($(event.currentTarget).hasClass("ulabel-zoom-out")) {
@@ -905,13 +905,13 @@ export class ZoomPanToolboxItem extends ToolboxItem {
         $(document).on("click.ulabel", ".ulabel-pan", (event) => {
             const annbox = $("#" + this.ulabel.config.annbox_id);
             if ($(event.currentTarget).hasClass("ulabel-pan-up")) {
-                annbox.scrollTop(annbox.scrollTop() - 20);
+                annbox.scrollTop(annbox.scrollTop()! - 20);
             } else if ($(event.currentTarget).hasClass("ulabel-pan-down")) {
-                annbox.scrollTop(annbox.scrollTop() + 20);
+                annbox.scrollTop(annbox.scrollTop()! + 20);
             } else if ($(event.currentTarget).hasClass("ulabel-pan-left")) {
-                annbox.scrollLeft(annbox.scrollLeft() - 20);
+                annbox.scrollLeft(annbox.scrollLeft()! - 20);
             } else if ($(event.currentTarget).hasClass("ulabel-pan-right")) {
-                annbox.scrollLeft(annbox.scrollLeft() + 20);
+                annbox.scrollLeft(annbox.scrollLeft()! + 20);
             }
         });
 
@@ -934,19 +934,19 @@ export class ZoomPanToolboxItem extends ToolboxItem {
                 const annbox = $("#" + this.ulabel.config.annbox_id);
                 switch (event.key) {
                     case "ArrowLeft":
-                        annbox.scrollLeft(annbox.scrollLeft() - 20);
+                        annbox.scrollLeft(annbox.scrollLeft()! - 20);
                         event.preventDefault();
                         break;
                     case "ArrowRight":
-                        annbox.scrollLeft(annbox.scrollLeft() + 20);
+                        annbox.scrollLeft(annbox.scrollLeft()! + 20);
                         event.preventDefault();
                         break;
                     case "ArrowUp":
-                        annbox.scrollTop(annbox.scrollTop() - 20);
+                        annbox.scrollTop(annbox.scrollTop()! - 20);
                         event.preventDefault();
                         break;
                     case "ArrowDown":
-                        annbox.scrollTop(annbox.scrollTop() + 20);
+                        annbox.scrollTop(annbox.scrollTop()! + 20);
                         event.preventDefault();
                         break;
                     default:
@@ -964,16 +964,16 @@ export class ZoomPanToolboxItem extends ToolboxItem {
 
         $(document).on("keypress.ulabel", (e) => {
             if (e.key == this.ulabel.config.reset_zoom_keybind) {
-                document.getElementById("recenter-button").click();
+                document.getElementById("recenter-button")!.click();
             }
             if (e.key == this.ulabel.config.show_full_image_keybind) {
-                document.getElementById("recenter-whole-image-button").click();
+                document.getElementById("recenter-whole-image-button")!.click();
             }
         });
     }
 
-    private set_frame_range(ulabel) {
-        if (ulabel.config["image_data"]["frames"].length == 1) {
+    private set_frame_range(ulabel: ULabel) {
+        if (ulabel.config["image_data"]!["frames"].length == 1) {
             this.frame_range = ``;
             return;
         }
@@ -983,7 +983,7 @@ export class ZoomPanToolboxItem extends ToolboxItem {
                 <div class="zpcont">
                     <div class="lblpyldcont">
                         <span class="pzlbl htblbl">Frame</span> &nbsp;
-                        <input class="frame_input" type="range" min=0 max=${ulabel.config["image_data"].frames.length - 1} value=0 />
+                        <input class="frame_input" type="range" min=0 max=${ulabel.config["image_data"]!.frames.length - 1} value=0 />
                     </div>
                 </div>
             </div>
@@ -1036,7 +1036,7 @@ export class ZoomPanToolboxItem extends ToolboxItem {
  * Toolbox item for selection Annotation ID.
  */
 export class AnnotationIDToolboxItem extends ToolboxItem {
-    instructions: string;
+    instructions!: string;
     constructor(
         public ulabel: ULabel,
     ) {
@@ -1111,12 +1111,12 @@ export class AnnotationIDToolboxItem extends ToolboxItem {
 }
 
 export class ClassCounterToolboxItem extends ToolboxItem {
-    public html: string;
+    public html!: string;
     public inner_HTML: string;
 
     // TODO (joshua-dean): Find the correct way to handle this
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    constructor(...args) {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any
+    constructor(...args: any[]) {
         super();
         this.inner_HTML = `<p class="tb-header">Annotation Count</p>`;
         this.add_styles();
@@ -1158,7 +1158,7 @@ export class ClassCounterToolboxItem extends ToolboxItem {
         }
         const class_ids = subtask.class_ids;
         let i: number, j: number;
-        const class_counts = {};
+        const class_counts: Record<number, number> = {};
         for (i = 0; i < class_ids.length; i++) {
             class_counts[class_ids[i]] = 0;
         }
@@ -1168,8 +1168,8 @@ export class ClassCounterToolboxItem extends ToolboxItem {
         for (i = 0; i < annotation_ids.length; i++) {
             current_annotation = annotations[annotation_ids[i]];
             if (current_annotation.deprecated === false) {
-                for (j = 0; j < current_annotation.classification_payloads.length; j++) {
-                    current_payload = current_annotation.classification_payloads[j];
+                for (j = 0; j < current_annotation.classification_payloads!.length; j++) {
+                    current_payload = current_annotation.classification_payloads![j];
                     if (current_payload.confidence > 0.0) {
                         class_counts[current_payload.class_id] += 1;
                         break;
@@ -1217,7 +1217,7 @@ export class ClassCounterToolboxItem extends ToolboxItem {
  */
 export class AnnotationResizeItem extends ToolboxItem {
     public cached_size: number = 1.5;
-    public html: string;
+    public html!: string;
     private ulabel: ULabel;
 
     constructor(ulabel: ULabel) {
@@ -1317,7 +1317,7 @@ export class AnnotationResizeItem extends ToolboxItem {
             const button = $(event.currentTarget);
 
             // Use the button id to get what size to resize the annotations to
-            const button_value = <ValidResizeValues> button.attr("id").slice(18);
+            const button_value = <ValidResizeValues> button.attr("id")!.slice(18);
 
             let annotation_size: number;
             let increment: boolean = false;
@@ -1339,7 +1339,7 @@ export class AnnotationResizeItem extends ToolboxItem {
                 case ValidResizeValues.VANISH:
                     // Toggle the vanished flag for the current subtask and return
                     AnnotationResizeItem.toggle_subtask_vanished(this.ulabel, current_subtask_key);
-                    break;
+                    return;
                 default:
                     log_message(`Invalid Resize Value: ${button_value}`, LogLevel.ERROR, true);
                     return;
@@ -1548,7 +1548,7 @@ export class RecolorActiveItem extends ToolboxItem {
 
     private update_color(class_id: number | string, color: string, need_to_save: boolean = true): void {
         // Update the color_info for annotations appropriately
-        this.ulabel.color_info[class_id] = color;
+        (this.ulabel.color_info as Record<string | number, string>)[class_id] = color;
 
         // Update the color in the AnnotationId button for this class
         const button_color_square = <HTMLDivElement> document.querySelector(`#toolbox_sel_${class_id} > div`);
@@ -1670,7 +1670,11 @@ export class RecolorActiveItem extends ToolboxItem {
             const color: string = event.target.id.slice(13);
 
             // Get the currently selected class id
-            const active_class_id: number = get_active_class_id(this.ulabel);
+            const active_class_id = get_active_class_id(this.ulabel);
+            if (active_class_id === undefined) {
+                log_message("Cannot change color: no active class id found", LogLevel.WARNING);
+                return;
+            }
 
             // Overwrite the color info with the new color
             this.update_color(active_class_id, color);
@@ -1686,7 +1690,11 @@ export class RecolorActiveItem extends ToolboxItem {
             const color: string = event.currentTarget.value;
 
             // Get the currently selected class id
-            const active_class_id: number = get_active_class_id(this.ulabel);
+            const active_class_id = get_active_class_id(this.ulabel);
+            if (active_class_id === undefined) {
+                log_message("Cannot change color: no active class id found", LogLevel.WARNING);
+                return;
+            }
 
             // Update the color for this class
             this.update_color(active_class_id, color);
@@ -1780,7 +1788,7 @@ export class RecolorActiveItem extends ToolboxItem {
 }
 
 export class KeypointSliderItem extends ToolboxItem {
-    public html: string;
+    public html!: string;
     public inner_HTML: string;
     public name: string;
     public slider_bar_id: string;
@@ -1882,7 +1890,7 @@ export class KeypointSliderItem extends ToolboxItem {
      * @param redraw whether or not to redraw the annotations after filtering
      * @returns Annotations that were modified, organized by subtask key
      */
-    private filter_annotations(ulabel: ULabel, filter_value: number = null, redraw: boolean = false): void {
+    private filter_annotations(ulabel: ULabel, filter_value: number | null = null, redraw: boolean = false): void {
         if (filter_value === null) {
             // Use stored filter value if none is passed in
             filter_value = Math.round(this.filter_value * 100);
@@ -1912,7 +1920,7 @@ export class KeypointSliderItem extends ToolboxItem {
             ) {
                 // Mark this annotation as either deprecated or undeprecated by the confidence filter
                 this.mark_deprecated(annotation, should_deprecate, "confidence_filter");
-                annotations_ids_to_redraw_by_subtask[annotation.subtask_key].push(annotation.id);
+                annotations_ids_to_redraw_by_subtask[annotation.subtask_key!].push(annotation.id!);
             }
         }
 
@@ -1933,9 +1941,9 @@ export class KeypointSliderItem extends ToolboxItem {
             class: "keypoint-slider",
             default_value: Math.round(this.filter_value * 100).toString(),
             label_units: "%",
-            slider_event: (slider_value: number) => {
+            slider_event: (slider_value: number | string) => {
                 // Filter the annotations, then redraw them
-                this.filter_annotations(this.ulabel, slider_value, true);
+                this.filter_annotations(this.ulabel, Number(slider_value), true);
             },
         });
 
@@ -1968,28 +1976,28 @@ export class KeypointSliderItem extends ToolboxItem {
 }
 
 export class FilterPointDistanceFromRow extends ToolboxItem {
-    name: string; // Component name shown to users
-    component_name: string; // Internal component name
-    default_values: DistanceFromPolylineClasses; // Values sliders are set to on page load
-    filter_min: number; // Minimum value slider may be set to
-    filter_max: number; // Maximum value slider may be set to
-    step_value: number; // Value slider increments by
-    filter_on_load: boolean; // Whether or not to filter annotations on page load
-    multi_class_mode: boolean; // Whether or not the component is currently in multi-class mode
-    disable_multi_class_mode: boolean; // Whether or not to disable the checkbox to enable multi-class mode
-    show_options: boolean; // Whether or not the options dialog will be visable
+    name!: string; // Component name shown to users
+    component_name!: string; // Internal component name
+    default_values!: DistanceFromPolylineClasses; // Values sliders are set to on page load
+    filter_min!: number; // Minimum value slider may be set to
+    filter_max!: number; // Maximum value slider may be set to
+    step_value!: number; // Value slider increments by
+    filter_on_load!: boolean; // Whether or not to filter annotations on page load
+    multi_class_mode!: boolean; // Whether or not the component is currently in multi-class mode
+    disable_multi_class_mode!: boolean; // Whether or not to disable the checkbox to enable multi-class mode
+    show_options!: boolean; // Whether or not the options dialog will be visable
     collapse_options: boolean; // Whether or not the options is in a collapsed state
-    show_overlay: boolean; // Whether or not the overlay will be shown
-    toggle_overlay_keybind: string;
-    filter_during_polyline_move: boolean; // Whether or not to filter annotations during a pending mode/edit of a polyline
-    overlay: FilterDistanceOverlay;
+    show_overlay!: boolean; // Whether or not the overlay will be shown
+    toggle_overlay_keybind!: string;
+    filter_during_polyline_move!: boolean; // Whether or not to filter annotations during a pending mode/edit of a polyline
+    overlay!: FilterDistanceOverlay;
 
     ulabel: ULabel; // The ULabel object. Must be passed in
     config: FilterDistanceConfig; // This object's config object
 
     // TODO (joshua-dean): Resolve kwargs usage and narrow any
     // eslint-disable-next-line @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any
-    constructor(ulabel: ULabel, kwargs: { [name: string]: any } = null) {
+    constructor(ulabel: ULabel, kwargs: { [name: string]: any } | null = null) {
         super();
 
         this.ulabel = ulabel;
@@ -2000,13 +2008,15 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
         // For each key missing from the config, set the default value
         for (const key in DEFAULT_FILTER_DISTANCE_CONFIG) {
             if (!Object.prototype.hasOwnProperty.call(this.config, key)) {
-                this.config[key] = DEFAULT_FILTER_DISTANCE_CONFIG[key];
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                (this.config as any)[key] = (DEFAULT_FILTER_DISTANCE_CONFIG as any)[key];
             }
         }
 
         // Set the component's properties to be the same as the config's properties
         for (const property in this.config) {
-            this[property] = this.config[property];
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (this as any)[property] = (this.config as any)[property];
         }
 
         // Force disable multi-class mode if the config doesn't allow it
@@ -2161,7 +2171,7 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
             if (event.key !== this.toggle_overlay_keybind) return;
 
             // Grab the show overlay checkbox and click it
-            const show_overlay_checkbox: HTMLInputElement = document.querySelector("#filter-slider-distance-toggle-overlay-checkbox");
+            const show_overlay_checkbox: HTMLInputElement = document.querySelector("#filter-slider-distance-toggle-overlay-checkbox")!;
             show_overlay_checkbox.click();
         });
     }
@@ -2193,7 +2203,7 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
         const line_annotations: ULabelAnnotation[] = get_point_and_line_annotations(this.ulabel)[1];
 
         // Initialize an object to hold the distances points are allowed to be from each class as well as any line
-        const filter_values: DistanceFromPolylineClasses = { closest_row: undefined };
+        const filter_values: DistanceFromPolylineClasses = { closest_row: { distance: 0 } };
 
         // Grab all filter-distance-sliders on the page
         const sliders: NodeListOf<HTMLInputElement> = document.querySelectorAll(".filter-row-distance-slider");
@@ -2201,7 +2211,7 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
         // Loop through each slider and populate filter_values
         for (let idx = 0; idx < sliders.length; idx++) {
             // Use a regex to get the string after the final - character in the slider id (Which is the class id or the string "closest_row")
-            const slider_class_name = /[^-]*$/.exec(sliders[idx].id)[0];
+            const slider_class_name = /[^-]*$/.exec(sliders[idx].id)![0];
 
             // Use the class id as a key to store the slider's value
             filter_values[slider_class_name] = {
@@ -2211,8 +2221,8 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
 
         // Create and assign an overlay class instance to ulabel to be able to access it
         this.overlay = new FilterDistanceOverlay(
-            this.ulabel.config["image_width"] * this.ulabel.config["px_per_px"],
-            this.ulabel.config["image_height"] * this.ulabel.config["px_per_px"],
+            this.ulabel.config["image_width"]! * this.ulabel.config["px_per_px"],
+            this.ulabel.config["image_height"]! * this.ulabel.config["px_per_px"],
             line_annotations,
             this.ulabel.config["px_per_px"],
         );
@@ -2389,7 +2399,7 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
             if (multi_container !== null) {
                 const sliders = multi_container.querySelectorAll<HTMLInputElement>(".filter-row-distance-slider");
                 for (let idx = 0; idx < sliders.length; idx++) {
-                    const slider_class_name = /[^-]*$/.exec(sliders[idx].id)[0];
+                    const slider_class_name = /[^-]*$/.exec(sliders[idx].id)![0];
                     filter_values[slider_class_name] = {
                         distance: sliders[idx].valueAsNumber,
                     };

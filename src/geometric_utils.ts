@@ -1,3 +1,5 @@
+// eslint-disable-next-line @typescript-eslint/triple-slash-reference -- required for consumer type resolution
+/// <reference path="./ambient.d.ts" />
 import * as turf from "@turf/turf";
 import * as polygonClipping from "polygon-clipping";
 
@@ -7,9 +9,9 @@ export type LineSegment2D = [Point2D, Point2D];
 export type ULabelSpatialPayload2D = Point2D[];
 export type ULabelSpatialPayload3D = Point3D[];
 export type PointAccessObject = {
-    access: string | number; // Access string or number that acts as the index of the point in the original spatial payload
-    distance: number;
-    point: Point2D;
+    access: string | number | null; // Access string or number that acts as the index of the point in the original spatial payload
+    distance: number | null;
+    point: Point2D | null;
 };
 export type LineEquation = {
     a: number;
@@ -76,7 +78,7 @@ export class GeometricUtils {
 
     // Given two points, return the line that goes through them in the form of
     //    ax + by + c = 0
-    public static get_line_equation_through_points(p1: Point2D, p2: Point2D): LineEquation {
+    public static get_line_equation_through_points(p1: Point2D, p2: Point2D): LineEquation | null {
         const a: number = (p2[1] - p1[1]);
         const b: number = (p1[0] - p2[0]);
 
@@ -97,10 +99,10 @@ export class GeometricUtils {
     public static get_nearest_point_on_segment(
         ref_x: number,
         ref_y: number,
-        eq: LineEquation,
+        eq: LineEquation | null,
         kp1: Point2D,
         kp2: Point2D,
-    ): { dst: number; prop: number } {
+    ): { dst: number; prop: number } | null {
         // Check to make sure eq exists
         if (eq === null) return null;
 
@@ -144,12 +146,12 @@ export class GeometricUtils {
 
     // Check if two line segments are on the same line
     public static line_segments_are_on_same_line(line1: LineSegment2D, line2: LineSegment2D): boolean {
-        const eq1: LineEquation = GeometricUtils.get_line_equation_through_points(line1[0], line1[1]);
-        const eq2: LineEquation = GeometricUtils.get_line_equation_through_points(line2[0], line2[1]);
+        const eq1: LineEquation | null = GeometricUtils.get_line_equation_through_points(line1[0], line1[1]);
+        const eq2: LineEquation | null = GeometricUtils.get_line_equation_through_points(line2[0], line2[1]);
         return (
-            (eq1["a"] === eq2["a"]) &&
-            (eq1["b"] === eq2["b"]) &&
-            (eq1["c"] === eq2["c"])
+            (eq1!["a"] === eq2!["a"]) &&
+            (eq1!["b"] === eq2!["b"]) &&
+            (eq1!["c"] === eq2!["c"])
         );
     }
 
@@ -187,7 +189,7 @@ export class GeometricUtils {
 
         // Discard the parts of the line that are inside the polygon
         const remaining_splits = turf.featureCollection(
-            split.features.filter((feature) => {
+            split.features.filter((feature: { geometry: { coordinates: Point2D[] } }) => {
                 // If the point at the middle of the lineString is inside the polygon, discard it
                 const middle_pt_idx = Math.floor(feature.geometry.coordinates.length / 2);
                 return !GeometricUtils.point_is_within_simple_polygon(
@@ -198,12 +200,14 @@ export class GeometricUtils {
         );
 
         // Sort the remaining splits by length
-        remaining_splits.features.sort((a, b) => {
+        remaining_splits.features.sort((a: unknown, b: unknown) => {
             return turf.length(b) - turf.length(a);
         });
 
-        // Return the longest remaining split
-        // TODO: split into multiple polylines?
+        // Return the longest remaining split, or empty if all parts were inside the polygon
+        if (remaining_splits.features.length === 0) {
+            return [];
+        }
         return <ULabelSpatialPayload2D>remaining_splits.features[0].geometry.coordinates;
     }
 
@@ -212,9 +216,9 @@ export class GeometricUtils {
     public static merge_polygons_at_intersection(
         poly1: ULabelSpatialPayload2D,
         poly2: ULabelSpatialPayload2D,
-    ): ULabelSpatialPayload2D[] {
+    ): ULabelSpatialPayload2D[] | null {
         // Find the intersection, if it exists
-        const intersection: ULabelSpatialPayload2D = GeometricUtils.get_polygon_intersection_single(poly1, poly2);
+        const intersection: ULabelSpatialPayload2D | null = GeometricUtils.get_polygon_intersection_single(poly1, poly2);
         // If there's no intersection, return null
         if (intersection === null) {
             return null;
@@ -244,7 +248,8 @@ export class GeometricUtils {
         ).geometry.coordinates;
         // When the two polygons have no intersection, turf.union returns a quad nested list instead of a triple nested list
         // So we can just return complex_poly1
-        if (ret[0][0][0][0] === undefined) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        if ((ret as any)[0][0][0][0] === undefined) {
             return GeometricUtils.turf_simplify_complex_polygon(ret);
         } else {
             return complex_poly1;
@@ -255,7 +260,7 @@ export class GeometricUtils {
     public static subtract_polygons(
         complex_poly1: ULabelSpatialPayload2D[],
         complex_poly2: ULabelSpatialPayload2D[],
-    ): ULabelSpatialPayload2D[] {
+    ): ULabelSpatialPayload2D[] | null {
         let ret: ULabelSpatialPayload2D[];
         complex_poly1 = GeometricUtils.ensure_valid_turf_complex_polygon(complex_poly1);
         complex_poly2 = GeometricUtils.ensure_valid_turf_complex_polygon(complex_poly2);
@@ -272,7 +277,8 @@ export class GeometricUtils {
 
         // When turf.difference creates a fill, it adds it as a new polygon, ie [complex_poly, fill] instead of just complex_poly
         // so we need to append the fill to the complex_poly and return that when turf returns a quad nested list instead of a triple nested list
-        if (temp_coords[0][0][0][0] === undefined) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        if ((temp_coords as any)[0][0][0][0] === undefined) {
             ret = temp_coords;
         } else {
             // TODO (joshua-dean): See if this casting can be better
@@ -327,8 +333,8 @@ export class GeometricUtils {
             for (let kpi: number = 0; kpi < poly_pts.length - 1; kpi++) {
                 const kp1: Point2D = poly_pts[kpi];
                 const kp2: Point2D = poly_pts[kpi + 1];
-                const eq: { a: number; b: number; c: number } = GeometricUtils.get_line_equation_through_points(kp1, kp2);
-                const nr: { dst: number; prop: number } = GeometricUtils.get_nearest_point_on_segment(ref_x, ref_y, eq, kp1, kp2);
+                const eq: { a: number; b: number; c: number } | null = GeometricUtils.get_line_equation_through_points(kp1, kp2);
+                const nr: { dst: number; prop: number } | null = GeometricUtils.get_nearest_point_on_segment(ref_x, ref_y, eq, kp1, kp2);
                 if ((nr != null) && (nr["dst"] < dstmax) && (ret["distance"] === null || nr["dst"] < ret["distance"])) {
                     ret["access"] = "" + (kpi + nr["prop"]);
                     ret["distance"] = nr["dst"];
@@ -343,7 +349,7 @@ export class GeometricUtils {
     public static get_polygon_intersection_single(
         poly1: ULabelSpatialPayload2D,
         poly2: ULabelSpatialPayload2D,
-    ): ULabelSpatialPayload2D {
+    ): ULabelSpatialPayload2D | null {
         // Convert to turf polygons
         try {
             const poly1_turf = turf.polygon([poly1]);
@@ -378,7 +384,7 @@ export class GeometricUtils {
         let ret: boolean = false;
         if (poly.length > 2) {
             try {
-                ret = poly[0][0] === poly.at(-1)[0] && poly[0][1] === poly.at(-1)[1];
+                ret = poly[0][0] === poly[poly.length - 1][0] && poly[0][1] === poly[poly.length - 1][1];
             } catch { /* empty */ }
         }
         return ret;
@@ -437,8 +443,8 @@ export class GeometricUtils {
     // Scale a polygon about a center point, or the centroid if no center is provided
     public static scale_polygon(
         poly: ULabelSpatialPayload2D,
-        scale,
-        center: Point2D = null,
+        scale: number,
+        center: Point2D | null = null,
     ): ULabelSpatialPayload2D {
         const ret: ULabelSpatialPayload2D = [];
         if (center === null) {
@@ -523,7 +529,8 @@ export class GeometricUtils {
     }
 
     // Check if a point is within a ulabel complex polygon
-    public static point_is_within_polygon_annotation(point: Point2D, annotation_object: object): boolean {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    public static point_is_within_polygon_annotation(point: Point2D, annotation_object: Record<string, any>): boolean {
         // Check if a point is within any of the filled regions (non-holes)
         for (let i = 0; i < annotation_object["spatial_payload"].length; i++) {
             if (
