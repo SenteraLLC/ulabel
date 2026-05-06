@@ -1,6 +1,7 @@
 import type { AbstractPoint, DistanceFromPolylineClasses, Offset } from "..";
 import { ULabelAnnotation } from "./annotation";
 import { get_annotation_class_id } from "./annotation_operators";
+import { log_message, LogLevel } from "./error_logging";
 import { ULabelSpatialPayload2D } from "./geometric_utils";
 
 /**
@@ -160,7 +161,7 @@ export class FilterDistanceOverlay extends ULabelOverlay {
         if (scalar === 0) {
             // This will happen when point 1 and point 2 are the same point
             // In which case the concept of a normal vector doesn't really apply
-            console.error("claculateNormalVector divide by 0 error");
+            log_message("calculateNormalVector divide by 0 error", LogLevel.WARNING);
             return null;
         }
 
