@@ -5458,14 +5458,15 @@ export class ULabel {
     handle_mouse_down(mouse_event) {
         const drag_key = ULabel.get_drag_key_start(mouse_event, this);
         if (drag_key != null) {
+            // Suppress browser defaults (e.g. middle-click auto-scroll)
+            mouse_event.preventDefault();
             // Don't start new drag while id_dialog is visible or subtask is vanished
             if (
                 (this.get_current_subtask()["state"]["idd_visible"] && !this.get_current_subtask()["state"]["idd_thumbnail"]) ||
-                this.get_current_subtask()["state"]["is_vanished"]
+                (this.get_current_subtask()["state"]["is_vanished"] && drag_key !== "pan" && drag_key !== "zoom")
             ) {
                 return;
             }
-            mouse_event.preventDefault();
             if (this.drag_state["active_key"] === null) {
                 this.start_drag(drag_key, mouse_event.button, mouse_event);
             }
