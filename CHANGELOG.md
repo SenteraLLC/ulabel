@@ -4,6 +4,9 @@ All notable changes to this project will be documented here.
 
 ## [unreleased]
 
+## [0.23.5] - May 6th, 2026
+- Fix bug where on some browsers, middle-click-drag when annotations were vanished would trigger auto-scroll rather than the normal pan behavior.
+
 ## [0.23.4] - May 5th, 2026
 - Fix type declarations for npm consumers
 - Add `"files"` field to `package.json` to explicitly control published package contents.
