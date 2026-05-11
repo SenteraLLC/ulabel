@@ -272,12 +272,14 @@ export class AnnotationListToolboxItem extends ToolboxItem {
         // Show/hide deprecated annotations checkbox
         $(document).on("change.ulabel", "#annotation-list-show-deprecated", (e) => {
             this.show_deprecated = (e.target as HTMLInputElement).checked;
+            set_local_storage_item("ulabel_annotation_list_show_deprecated", this.show_deprecated ? "true" : "false");
             this.update_list();
         });
 
         // Group by class checkbox
         $(document).on("change.ulabel", "#annotation-list-group-by-class", (e) => {
             this.group_by_class = (e.target as HTMLInputElement).checked;
+            set_local_storage_item("ulabel_annotation_list_group_by_class", this.group_by_class ? "true" : "false");
             this.update_list();
         });
 
@@ -448,11 +450,30 @@ export class AnnotationListToolboxItem extends ToolboxItem {
             groups[class_id].push(annotation);
         }
 
+        // Build the render order: first walk class_defs in declared order so the
+        // group headers appear in the same order as the AnnotationIDToolboxItem.
+        // Then append any orphan class_ids (not in class_defs) as a defensive
+        // fallback so we never silently drop annotations.
+        const ordered_class_ids: number[] = [];
+        const seen_class_ids: Set<number> = new Set();
+        for (const def of subtask.class_defs) {
+            if (groups[def.id]) {
+                ordered_class_ids.push(def.id);
+                seen_class_ids.add(def.id);
+            }
+        }
+        const orphan_class_ids = Object.keys(groups)
+            .map((id_str) => parseInt(id_str))
+            .filter((id) => !seen_class_ids.has(id))
+            .sort((a, b) => a - b);
+        for (const id of orphan_class_ids) {
+            ordered_class_ids.push(id);
+        }
+
         // Build HTML for each group
         let html = "";
 
-        for (const class_id_str in groups) {
-            const class_id = parseInt(class_id_str);
+        for (const class_id of ordered_class_ids) {
             const group_annotations = groups[class_id];
             const class_def = subtask.class_defs.find((def) => def.id === class_id);
             const class_name = class_def ? class_def.name : "Unknown";
@@ -604,23 +625,43 @@ export class AnnotationListToolboxItem extends ToolboxItem {
      * Code called after all of ULabel's constructor and initialization code is called
      */
     public after_init(): void {
-        // Restore collapsed state from localStorage
-        this.restore_collapsed_state();
+        // Restore persisted UI state from localStorage
+        this.restore_persisted_state();
 
         // Initial list update
         this.update_list();
     }
 
     /**
-     * Restore the collapsed state from localStorage
+     * Restore persisted UI state (collapsed flag + checkbox toggles) from localStorage.
      */
-    private restore_collapsed_state(): void {
-        const stored_state = get_local_storage_item("ulabel_annotation_list_collapsed");
-        if (stored_state === "false") {
+    private restore_persisted_state(): void {
+        const stored_collapsed = get_local_storage_item("ulabel_annotation_list_collapsed");
+        if (stored_collapsed === "false") {
             this.is_collapsed = false;
-        } else if (stored_state === "true") {
+        } else if (stored_collapsed === "true") {
             this.is_collapsed = true;
         }
+
+        const stored_show_deprecated = get_local_storage_item("ulabel_annotation_list_show_deprecated");
+        if (stored_show_deprecated === "true") {
+            this.show_deprecated = true;
+        } else if (stored_show_deprecated === "false") {
+            this.show_deprecated = false;
+        }
+
+        const stored_group_by_class = get_local_storage_item("ulabel_annotation_list_group_by_class");
+        if (stored_group_by_class === "true") {
+            this.group_by_class = true;
+        } else if (stored_group_by_class === "false") {
+            this.group_by_class = false;
+        }
+
+        // Reflect restored values into the checkbox DOM so the UI matches state.
+        const show_deprecated_input = document.querySelector<HTMLInputElement>("#annotation-list-show-deprecated");
+        if (show_deprecated_input) show_deprecated_input.checked = this.show_deprecated;
+        const group_by_class_input = document.querySelector<HTMLInputElement>("#annotation-list-group-by-class");
+        if (group_by_class_input) group_by_class_input.checked = this.group_by_class;
     }
 
     /**
