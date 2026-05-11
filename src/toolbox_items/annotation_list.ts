@@ -409,12 +409,13 @@ export class AnnotationListToolboxItem extends ToolboxItem {
      * Build HTML for flat (non-grouped) list
      */
     private build_flat_list_html(annotations: ULabelAnnotation[], subtask: ULabelSubtask): string {
+        const class_def_by_id = this.build_class_def_by_id(subtask);
         let html = "";
 
         for (let i = 0; i < annotations.length; i++) {
             const annotation = annotations[i];
             const class_id = this.get_annotation_class_id(annotation);
-            const class_def = subtask.class_defs.find((def) => def.id === class_id);
+            const class_def = class_def_by_id.get(class_id);
             const class_name = class_def ? class_def.name : "Unknown";
             const color = this.ulabel.color_info[class_id] || "#cccccc";
             const svg = this.get_spatial_type_svg(annotation.spatial_type!, color);
@@ -439,6 +440,8 @@ export class AnnotationListToolboxItem extends ToolboxItem {
      * Build HTML for grouped (by class) list
      */
     private build_grouped_list_html(annotations: ULabelAnnotation[], subtask: ULabelSubtask): string {
+        const class_def_by_id = this.build_class_def_by_id(subtask);
+
         // Group annotations by class
         const groups: { [class_id: number]: ULabelAnnotation[] } = {};
 
@@ -475,7 +478,7 @@ export class AnnotationListToolboxItem extends ToolboxItem {
 
         for (const class_id of ordered_class_ids) {
             const group_annotations = groups[class_id];
-            const class_def = subtask.class_defs.find((def) => def.id === class_id);
+            const class_def = class_def_by_id.get(class_id);
             const class_name = class_def ? class_def.name : "Unknown";
             const color = this.ulabel.color_info[class_id] || "#cccccc";
 
@@ -582,6 +585,20 @@ export class AnnotationListToolboxItem extends ToolboxItem {
         }
 
         return class_id;
+    }
+
+    /**
+     * Build a Map from class id to ClassDefinition for the given subtask. The
+     * returned map is intended to be used for the duration of a single render so
+     * that per-annotation class lookups don't repeat a linear search through
+     * `subtask.class_defs`.
+     */
+    private build_class_def_by_id(subtask: ULabelSubtask): Map<number, ULabelSubtask["class_defs"][number]> {
+        const map = new Map<number, ULabelSubtask["class_defs"][number]>();
+        for (const def of subtask.class_defs) {
+            map.set(def.id, def);
+        }
+        return map;
     }
 
     /**
