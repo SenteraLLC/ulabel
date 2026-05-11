@@ -4,6 +4,10 @@ All notable changes to this project will be documented here.
 
 ## [unreleased]
 
+## [0.23.6] - May 11th, 2026
+- Fix `AnnotationList` class ordering to match the `AnnotationID` toolbox item ordering, which is based on the configured class definition order in the subtask's `classes` array
+- Add local storage of checkbox options for the `AnnotationList` toolbox item
+
 ## [0.23.5] - May 6th, 2026
 - Fix bug where on some browsers, middle-click-drag when annotations were vanished would trigger auto-scroll rather than the normal pan behavior.
 

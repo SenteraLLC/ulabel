@@ -121,4 +121,44 @@ test.describe("Annotation List Grouping", () => {
             expect(await header.count()).toBeGreaterThan(0);
         }
     });
+
+    test("class group headers appear in class_defs order, not numeric class id order", async ({ page }) => {
+        await wait_for_ulabel_init(page);
+
+        // multi-class.html defines class_defs as [Sedan(10), SUV(11), Truck(12)].
+        // Use Sedan + SUV here because those are the two classes with default
+        // keybinds ("1" and "2") in the demo. Truck (id 12) has no default
+        // keybind, so pressing "3" would be a no-op and silently leave the
+        // active class unchanged.
+        await draw_bbox(page, [100, 100], [200, 200]);
+        await page.mouse.move(300, 300);
+        await page.keyboard.press("2");
+        await draw_bbox(page, [300, 300], [400, 400]);
+
+        // Enable group-by-class and confirm the natural ordering matches
+        // class_defs (Sedan before SUV).
+        await toggle_group_by_class(page, true);
+        let header_texts = await page.locator(".annotation-list-class-group-header").allTextContents();
+        // headers contain the class name plus a count like "(1)"; strip whitespace
+        let names_in_order = header_texts.map((t) => t.trim().split(/\s+/)[0]);
+        expect(names_in_order).toEqual(["Sedan", "SUV"]);
+
+        // Now reverse class_defs at runtime. With the old (buggy) implementation
+        // the headers would still appear in ascending numeric class_id order
+        // ([Sedan(10), SUV(11)]). With the fix they should follow the new
+        // class_defs order ([SUV, Sedan]).
+        await page.evaluate(() => {
+            const subtask = window.ulabel.subtasks[window.ulabel.state.current_subtask];
+            subtask.class_defs.reverse();
+        });
+
+        // Force the list to re-render. Toggling the checkbox off + on triggers
+        // build_grouped_list_html.
+        await toggle_group_by_class(page, false);
+        await toggle_group_by_class(page, true);
+
+        header_texts = await page.locator(".annotation-list-class-group-header").allTextContents();
+        names_in_order = header_texts.map((t) => t.trim().split(/\s+/)[0]);
+        expect(names_in_order).toEqual(["SUV", "Sedan"]);
+    });
 });
