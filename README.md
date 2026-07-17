@@ -4,7 +4,7 @@ A browser-based tool for annotating images.
 
 [Demo Gif](https://ulabel.s3.us-east-2.amazonaws.com/output.gif)
 
-[Interactive Demo](https://ulabel.s3.us-east-2.amazonaws.com/live_demo.html)
+[Interactive Demo](https://senterallc.github.io/ulabel/)
 
 ## Usage
 
