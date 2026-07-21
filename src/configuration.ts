@@ -6,7 +6,7 @@ import type {
     RecolorActiveConfig,
     ULabelSubmitButton,
     AnnoScalingMode,
-} from "..";
+} from "../index";
 import {
     ModeSelectionToolboxItem,
     ZoomPanToolboxItem,

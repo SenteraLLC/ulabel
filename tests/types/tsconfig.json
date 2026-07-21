@@ -5,6 +5,7 @@
         "noEmit": true,
         "esModuleInterop": true,
         "skipLibCheck": true,
+        "strict": true,
         "types": ["jquery"]
     },
     "files": ["index.test-d.ts"]

@@ -12,5 +12,6 @@
     },
     "exclude": [
         "tests/types",
+        "dist",
     ],
 }

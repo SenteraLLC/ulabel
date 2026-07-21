@@ -1,4 +1,4 @@
-import type { AbstractPoint, DistanceFromPolylineClasses, Offset } from "..";
+import type { AbstractPoint, DistanceFromPolylineClasses, Offset } from "../index";
 import { ULabelAnnotation } from "./annotation";
 import { get_annotation_class_id } from "./annotation_operators";
 import { log_message, LogLevel } from "./error_logging";
