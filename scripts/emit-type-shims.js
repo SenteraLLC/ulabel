@@ -14,10 +14,8 @@
 // under dist/types/ still reference "..", "../index" and "../src/index" (which
 // point at the root index.d.ts / src bridge in the source tree). We add small
 // shims so those specifiers resolve to the published entry within dist/.
-//
-// eslint-disable-next-line @typescript-eslint/no-require-imports
+
 const fs = require("fs");
-// eslint-disable-next-line @typescript-eslint/no-require-imports
 const path = require("path");
 
 const root_dir = path.resolve(__dirname, "..");
@@ -39,4 +37,3 @@ fs.writeFileSync(path.join(dist_dir, "index.d.ts"), published_entry);
 // - dist/types/**/*.d.ts import ULabel from "../src/index" (and "../../src/index").
 fs.writeFileSync(path.join(types_dir, "index.d.ts"), "export * from \"..\";\n");
 fs.writeFileSync(path.join(src_dir, "index.d.ts"), "export * from \"../index\";\n");
-

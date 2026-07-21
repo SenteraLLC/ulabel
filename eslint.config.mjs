@@ -11,7 +11,6 @@ export default [
             "node_modules",
             "dist",
             "build",
-            "scripts",
             "demo.js",
             "webpack.config.js",
         ],
@@ -98,6 +97,19 @@ export default [
             "@typescript-eslint/no-unused-vars": "warn",
             // Allow unused expressions in test setup (for side effects)
             "@typescript-eslint/no-unused-expressions": "off",
+        },
+    },
+    {
+        // Node-specific config for build/release tooling scripts
+        files: ["scripts/**/*.{js,mjs,cjs}"],
+        languageOptions: {
+            globals: {
+                ...globals.node,
+            },
+        },
+        rules: {
+            // Build scripts use CommonJS require()
+            "@typescript-eslint/no-require-imports": "off",
         },
     },
 ];
