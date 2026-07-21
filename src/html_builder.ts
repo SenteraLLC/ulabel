@@ -1,4 +1,4 @@
-import type { SliderInfo } from "..";
+import type { SliderInfo } from "../index";
 // Import ULabel from ../src/index - TypeScript will find ../src/index.d.ts for types
 import { ULabel } from "../src/index";
 import { Toolbox, ZoomPanToolboxItem } from "./toolbox";

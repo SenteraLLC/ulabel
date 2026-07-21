@@ -4,6 +4,10 @@ All notable changes to this project will be documented here.
 
 ## [unreleased]
 
+## [0.23.7] - July 21st, 2026
+- Ship generated `.d.ts` declarations (`dist/types/`) and a generated type entry (`dist/index.d.ts`) instead of pointing consumers' type resolution at the raw `.ts` source. This stops downstream TypeScript projects from compiling ULabel's source under their own (stricter) `tsconfig`.
+- Stop publishing the `src/` directory in the npm package (`files` now ships `dist/` only).
+
 ## [0.23.6] - May 11th, 2026
 - Fix `AnnotationList` class ordering to match the `AnnotationID` toolbox item ordering, which is based on the configured class definition order in the subtask's `classes` array
 - Add local storage of checkbox options for the `AnnotationList` toolbox item

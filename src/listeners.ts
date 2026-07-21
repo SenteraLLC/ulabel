@@ -6,7 +6,7 @@
  * Long handlers are broken out into separate functions.
  */
 
-import type { ULabel } from "..";
+import type { ULabel } from "../index";
 import { NightModeCookie } from "./cookies";
 import { DELETE_CLASS_ID, DELETE_MODES, NONSPATIAL_MODES } from "./annotation";
 import { set_local_storage_item } from "./utilities";

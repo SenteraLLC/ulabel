@@ -4,7 +4,7 @@ import type {
     ULabelClassificationPayload,
     ULabelContainingBox,
     ULabelSpatialType,
-} from "..";
+} from "../index";
 import { GeometricUtils } from "./geometric_utils";
 import { log_message, LogLevel } from "./error_logging";
 

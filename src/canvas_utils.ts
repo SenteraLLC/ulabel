@@ -3,7 +3,7 @@
  * TODO (joshua-dean): Pull the rest of the canvas functions into here
  */
 
-import type { ULabel, ULabelSubtasks } from "..";
+import type { ULabel, ULabelSubtasks } from "../index";
 import { NONSPATIAL_MODES } from "./annotation";
 import { Configuration, DEFAULT_N_ANNOS_PER_CANVAS, TARGET_MAX_N_CANVASES_PER_SUBTASK } from "./configuration";
 

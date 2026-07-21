@@ -1,26 +1,24 @@
 {
   "name": "ulabel",
   "description": "An image annotation tool.",
-  "version": "0.23.6",
+  "version": "0.23.7",
   "main": "dist/ulabel.min.js",
   "module": "dist/ulabel.min.js",
-  "types": "index.d.ts",
+  "types": "dist/index.d.ts",
   "files": [
-    "dist/",
-    "src/",
-    "index.d.ts"
+    "dist/"
   ],
   "exports": {
     ".": {
-      "types": "./index.d.ts",
+      "types": "./dist/index.d.ts",
       "default": "./dist/ulabel.min.js"
     },
     "./min": {
-      "types": "./index.d.ts",
+      "types": "./dist/index.d.ts",
       "default": "./dist/ulabel.min.js"
     },
     "./debug": {
-      "types": "./index.d.ts",
+      "types": "./dist/index.d.ts",
       "default": "./dist/ulabel.js"
     }
   },
@@ -33,8 +31,8 @@
     "test:e2e": "playwright test",
     "demo": "node demo.js",
     "clean": "node -e \"require('fs').rmSync('dist', {recursive: true, force: true})\"",
-    "build": "npm run clean && tsc && webpack --mode production",
-    "build-dev": "npm run clean && tsc && webpack --mode development",
+    "build": "npm run clean && tsc && tsc -p tsconfig.types.json && node scripts/emit-type-shims.js && webpack --mode production",
+    "build-dev": "npm run clean && tsc && tsc -p tsconfig.types.json && node scripts/emit-type-shims.js && webpack --mode development",
     "build-and-demo": "npm run build && npm run demo",
     "build-dev-and-demo": "npm run build-dev && npm run demo",
     "build-and-test": "npm run build && npm run test:both",

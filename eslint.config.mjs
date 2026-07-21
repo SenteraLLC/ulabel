@@ -11,6 +11,7 @@ export default [
             "node_modules",
             "dist",
             "build",
+            "scripts",
             "demo.js",
             "webpack.config.js",
         ],
