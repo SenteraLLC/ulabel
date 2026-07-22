@@ -453,20 +453,16 @@ Any annotation with a confidence at or above the threshold is shown; any below i
 
 Configuration object with the following custom definitions:
 ```javascript
-type ConfidenceThreshold = {
-    confidence: number // Percentage threshold (0-100)
-}
-
 type ConfidenceSliderClasses = {
-    "all": ConfidenceThreshold, // value used by the single global slider
-    [key: number]?: ConfidenceThreshold // per-class-id values used in per-class mode
+    "all": number, // percentage threshold (0-100) used by the single global slider
+    [classId: string]?: number // per-class-id thresholds (class id as a string key)
 }
 
 type ConfidenceSliderConfig = {
     "name"?: string, // Default: "Confidence Filter"
     "filter_min"?: number, // Default: 0 (%)
     "filter_max"?: number, // Default: 100 (%)
-    "default_values"?: ConfidenceSliderClasses, // Default: {"all": {"confidence": 0}}
+    "default_values"?: ConfidenceSliderClasses, // Default: {"all": 0}
     "step_value"?: number, // Default: 1 (%)
     "class_filter_mode"?: "toggle" | "all-only" | "class-only", // Default: "toggle"
     "filter_on_load"?: boolean, // Default: true

@@ -86,8 +86,7 @@ test.describe("Slider Public API", () => {
 
             // Should have the "all" key with the default threshold of 0
             expect(value).not.toBeNull();
-            expect(value.all).toBeDefined();
-            expect(value.all.confidence).toBe(0);
+            expect(value.all).toBe(0);
         });
 
         test("should reflect value after moving the slider", async ({ page }) => {
@@ -102,7 +101,7 @@ test.describe("Slider Public API", () => {
 
             const value = await page.evaluate(() => window.ulabel.get_confidence_slider_value());
 
-            expect(value.all.confidence).toBe(60);
+            expect(value.all).toBe(60);
         });
 
         test("should return an object with an all key", async ({ page }) => {
@@ -112,7 +111,7 @@ test.describe("Slider Public API", () => {
 
             expect(typeof value).toBe("object");
             expect(value).toHaveProperty("all");
-            expect(typeof value.all.confidence).toBe("number");
+            expect(typeof value.all).toBe("number");
         });
     });
 });

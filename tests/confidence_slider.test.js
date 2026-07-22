@@ -5,6 +5,8 @@
 // `confidence_slider` first hits the circular import before `ToolboxItem` is defined.
 const { Configuration, AllowedToolboxItem } = require("../build/configuration");
 const { ConfidenceSlider } = require("../build/toolbox_items/confidence_slider");
+// Loaded from the bundled build to exercise the ULabel public API method directly.
+const { ULabel } = require("./testing-utils/build_loader");
 
 /**
  * Build a minimal annotation-like object.
@@ -95,7 +97,7 @@ describe("ConfidenceSlider", () => {
             const low = make_annotation("low", "bbox", [{ class_id: 10, confidence: 0.1 }]);
             const ulabel = make_ulabel([high, mid, low], {
                 class_filter_mode: "all-only",
-                default_values: { all: { confidence: 60 } },
+                default_values: { all: 60 },
                 filter_on_load: false,
             });
             const cs = new ConfidenceSlider(ulabel);
@@ -112,7 +114,7 @@ describe("ConfidenceSlider", () => {
             const low = make_annotation("low", "bbox", [{ class_id: 10, confidence: 0.1 }]);
             const cs = new ConfidenceSlider(make_ulabel([low], {
                 class_filter_mode: "all-only",
-                default_values: { all: { confidence: 0 } },
+                default_values: { all: 0 },
                 filter_on_load: false,
             }));
 
@@ -125,7 +127,7 @@ describe("ConfidenceSlider", () => {
             const low = make_annotation("low", "bbox", [{ class_id: 10, confidence: 0.1 }]);
             const cs = new ConfidenceSlider(make_ulabel([low], {
                 class_filter_mode: "all-only",
-                default_values: { all: { confidence: 50 } },
+                default_values: { all: 50 },
                 filter_on_load: false,
             }));
 
@@ -133,7 +135,7 @@ describe("ConfidenceSlider", () => {
             expect(low.deprecated).toBe(true);
 
             // Lower the threshold and re-filter
-            cs.default_values.all.confidence = 0;
+            cs.default_values.all = 0;
             cs.filter_annotations(false);
 
             expect(low.deprecated).toBe(false);
@@ -148,7 +150,7 @@ describe("ConfidenceSlider", () => {
             const other = make_annotation("other", "bbox", [{ class_id: 12, confidence: 0.5 }]);
             const cs = new ConfidenceSlider(make_ulabel([car, truck, other], {
                 class_filter_mode: "class-only",
-                default_values: { all: { confidence: 0 }, 10: { confidence: 60 }, 11: { confidence: 30 } },
+                default_values: { all: 0, 10: 60, 11: 30 },
                 filter_on_load: false,
             }));
 
@@ -167,7 +169,7 @@ describe("ConfidenceSlider", () => {
             ]);
             const cs = new ConfidenceSlider(make_ulabel([anno], {
                 class_filter_mode: "class-only",
-                default_values: { all: { confidence: 0 }, 10: { confidence: 90 }, 11: { confidence: 50 } },
+                default_values: { all: 0, 10: 90, 11: 50 },
                 filter_on_load: false,
             }));
 
@@ -175,6 +177,23 @@ describe("ConfidenceSlider", () => {
 
             // 80 >= 50 (class-11 threshold) -> shown, even though 80 would fail class 10's 90
             expect(anno.deprecated).toBe(false);
+        });
+
+        test("does not filter classes excluded from target_class_ids, even if present in default_values", () => {
+            const targeted = make_annotation("targeted", "bbox", [{ class_id: 10, confidence: 0.1 }]);
+            const untargeted = make_annotation("untargeted", "bbox", [{ class_id: 11, confidence: 0.1 }]);
+            const cs = new ConfidenceSlider(make_ulabel([targeted, untargeted], {
+                class_filter_mode: "class-only",
+                target_class_ids: [10],
+                // class 11 has a threshold but is NOT targeted (no slider is rendered for it)
+                default_values: { all: 0, 10: 50, 11: 90 },
+                filter_on_load: false,
+            }));
+
+            cs.filter_annotations(false);
+
+            expect(targeted.deprecated).toBe(true); // class 10 targeted: 10% < 50%
+            expect(untargeted.deprecated).toBe(false); // class 11 not targeted: must be ignored
         });
     });
 
@@ -184,7 +203,7 @@ describe("ConfidenceSlider", () => {
             const box = make_annotation("b", "bbox", [{ class_id: 10, confidence: 0.1 }]);
             const cs = new ConfidenceSlider(make_ulabel([point, box], {
                 class_filter_mode: "all-only",
-                default_values: { all: { confidence: 50 } },
+                default_values: { all: 50 },
                 target_spatial_types: ["bbox"],
                 filter_on_load: false,
             }));
@@ -205,7 +224,7 @@ describe("ConfidenceSlider", () => {
             });
             const cs = new ConfidenceSlider(make_ulabel([anno], {
                 class_filter_mode: "all-only",
-                default_values: { all: { confidence: 0 } },
+                default_values: { all: 0 },
                 filter_on_load: false,
             }));
 
@@ -221,7 +240,7 @@ describe("ConfidenceSlider", () => {
             const low = make_annotation("low", "bbox", [{ class_id: 10, confidence: 0.1 }]);
             new ConfidenceSlider(make_ulabel([low], {
                 class_filter_mode: "all-only",
-                default_values: { all: { confidence: 50 } },
+                default_values: { all: 50 },
                 filter_on_load: true,
             }));
 
@@ -232,7 +251,7 @@ describe("ConfidenceSlider", () => {
             const low = make_annotation("low", "bbox", [{ class_id: 10, confidence: 0.1 }]);
             new ConfidenceSlider(make_ulabel([low], {
                 class_filter_mode: "all-only",
-                default_values: { all: { confidence: 50 } },
+                default_values: { all: 50 },
                 filter_on_load: false,
             }));
 
@@ -245,7 +264,7 @@ describe("ConfidenceSlider", () => {
             const low = make_annotation("low", "bbox", [{ class_id: 10, confidence: 0.1 }]);
             const ulabel = make_ulabel([low], {
                 class_filter_mode: "all-only",
-                default_values: { all: { confidence: 50 } },
+                default_values: { all: 50 },
                 filter_on_load: false,
             });
             const cs = new ConfidenceSlider(ulabel);
@@ -267,7 +286,7 @@ describe("ConfidenceSlider", () => {
             const cs = new ConfidenceSlider(make_ulabel([], { class_filter_mode: "all-only", filter_on_load: false }));
             document.body.innerHTML = `<input id="confidence-slider-all" class="confidence-slider-input" type="range" min="0" max="100" value="40">`;
 
-            expect(cs.get_current_values()).toEqual({ all: { confidence: 40 } });
+            expect(cs.get_current_values()).toEqual({ all: 40 });
         });
 
         test("reads per-class slider values in class mode", () => {
@@ -278,8 +297,8 @@ describe("ConfidenceSlider", () => {
             `;
 
             expect(cs.get_current_values()).toEqual({
-                all: { confidence: 40 },
-                10: { confidence: 30 },
+                all: 40,
+                10: 30,
             });
         });
     });
@@ -313,5 +332,31 @@ describe("Default toolbox order", () => {
         const config = new Configuration();
         expect(config.toolbox_order).toContain(AllowedToolboxItem.ConfidenceSlider);
         expect(config.toolbox_order).not.toContain(AllowedToolboxItem.KeypointSlider);
+    });
+});
+
+describe("get_confidence_slider_value (tuple-safe lookup)", () => {
+    const slider_item = {
+        get_toolbox_item_type: () => "ConfidenceSlider",
+        get_current_values: () => ({ all: 25 }),
+    };
+    const invoke = (toolbox_order, items) =>
+        ULabel.prototype.get_confidence_slider_value.call({
+            config: { toolbox_order },
+            toolbox: { items },
+        });
+
+    test("finds the item when configured as a plain enum entry", () => {
+        expect(invoke([AllowedToolboxItem.ConfidenceSlider], [slider_item]))
+            .toEqual({ all: 25 });
+    });
+
+    test("finds the item when configured as an [enum, kwargs] tuple", () => {
+        expect(invoke([[AllowedToolboxItem.ConfidenceSlider, { step_value: 5 }]], [slider_item]))
+            .toEqual({ all: 25 });
+    });
+
+    test("returns null when the item is not active", () => {
+        expect(invoke([AllowedToolboxItem.ConfidenceSlider], [])).toBeNull();
     });
 });

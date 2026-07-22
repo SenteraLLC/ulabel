@@ -1054,7 +1054,9 @@ export class ULabel {
      *   are found
      */
     get_confidence_slider_value() {
-        if (!this.config.toolbox_order.includes(AllowedToolboxItem.ConfidenceSlider)) return null;
+        // Note: we intentionally don't check `toolbox_order.includes(...)` because toolbox items
+        // can be configured as [enum, kwargs] tuples, which `includes` would miss. The built
+        // `toolbox.items` list is the authoritative source of active items.
         const item = this.toolbox.items.find((item) => item.get_toolbox_item_type() === "ConfidenceSlider");
         if (item === undefined) return null;
         return item.get_current_values();

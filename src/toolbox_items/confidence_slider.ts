@@ -208,17 +208,20 @@ export class ConfidenceSlider extends ToolboxItem {
      * @returns A map of class identifiers (and "all") to their threshold values
      */
     public get_filter_values(): ConfidenceSliderClasses {
-        // Seed with defaults so filtering works before the sliders are rendered (e.g. on load)
-        const values: ConfidenceSliderClasses = { all: { confidence: this.default_values.all.confidence } };
+        // Seed with defaults so filtering works before the sliders are rendered (e.g. on load).
+        // Only seed per-class thresholds for targeted classes (those that get a slider), so that
+        // filtering stays consistent with what is rendered and reported by get_current_values().
+        const values: ConfidenceSliderClasses = { all: this.default_values.all };
         for (const key in this.default_values) {
             if (key === "all") continue;
-            values[key] = { confidence: this.default_values[key].confidence };
+            if (this.target_class_ids !== null && !this.target_class_ids.includes(Number(key))) continue;
+            values[key] = this.default_values[key];
         }
 
         // Read the single-class slider if present
         const all_slider = document.querySelector<HTMLInputElement>(`#${this.component_prefix}-all`);
         if (all_slider !== null) {
-            values.all = { confidence: all_slider.valueAsNumber };
+            values.all = all_slider.valueAsNumber;
         }
 
         // Read the per-class sliders if present
@@ -226,7 +229,7 @@ export class ConfidenceSlider extends ToolboxItem {
         for (let idx = 0; idx < sliders.length; idx++) {
             const slider_class_name = /[^-]*$/.exec(sliders[idx].id)![0];
             if (slider_class_name === "all") continue;
-            values[slider_class_name] = { confidence: sliders[idx].valueAsNumber };
+            values[slider_class_name] = sliders[idx].valueAsNumber;
         }
 
         return values;
@@ -256,12 +259,12 @@ export class ConfidenceSlider extends ToolboxItem {
                 const class_id = Number(get_annotation_class_id(annotation));
                 if (values[class_id] !== undefined) {
                     const confidence = Math.round(get_annotation_confidence_for_class(annotation, class_id) * 100);
-                    should_deprecate = this.filter_function(confidence, values[class_id].confidence);
+                    should_deprecate = this.filter_function(confidence, values[class_id]);
                 }
             } else {
                 // In single-class mode, filter all targeted annotations by their highest confidence
                 const confidence = Math.round(this.get_confidence(annotation) * 100);
-                should_deprecate = this.filter_function(confidence, values.all.confidence);
+                should_deprecate = this.filter_function(confidence, values.all);
             }
 
             // Mark deprecated and, if the visible state changed, queue a redraw
@@ -290,8 +293,8 @@ export class ConfidenceSlider extends ToolboxItem {
         for (const class_def of class_defs) {
             const default_value = (
                 this.default_values[class_def.id] !== undefined ?
-                    this.default_values[class_def.id].confidence :
-                    this.default_values.all.confidence
+                    this.default_values[class_def.id] :
+                    this.default_values.all
             ).toString();
 
             const slider = new SliderHandler({
@@ -318,7 +321,7 @@ export class ConfidenceSlider extends ToolboxItem {
         const single_class_slider = new SliderHandler({
             id: `${this.component_prefix}-all`, // "all" is extracted using regex
             class: this.slider_class,
-            default_value: this.default_values.all.confidence.toString(),
+            default_value: this.default_values.all.toString(),
             min: this.filter_min.toString(),
             max: this.filter_max.toString(),
             step: this.step_value.toString(),
@@ -373,7 +376,7 @@ export class ConfidenceSlider extends ToolboxItem {
         const all_slider = document.querySelector<HTMLInputElement>(`#${this.component_prefix}-all`);
         if (all_slider === null) return null;
 
-        const values: ConfidenceSliderClasses = { all: { confidence: all_slider.valueAsNumber } };
+        const values: ConfidenceSliderClasses = { all: all_slider.valueAsNumber };
 
         // In class-only mode, also read the per-class sliders
         if (this.is_class_mode) {
@@ -381,7 +384,7 @@ export class ConfidenceSlider extends ToolboxItem {
             for (let idx = 0; idx < sliders.length; idx++) {
                 const slider_class_name = /[^-]*$/.exec(sliders[idx].id)![0];
                 if (slider_class_name === "all") continue;
-                values[slider_class_name] = { confidence: sliders[idx].valueAsNumber };
+                values[slider_class_name] = sliders[idx].valueAsNumber;
             }
         }
 

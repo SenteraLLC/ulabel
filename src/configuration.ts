@@ -67,7 +67,7 @@ export const DEFAULT_CONFIDENCE_SLIDER_CONFIG: ConfidenceSliderConfig = {
     name: "Confidence Filter",
     filter_min: 0,
     filter_max: 100,
-    default_values: { all: { confidence: 0 } },
+    default_values: { all: 0 },
     step_value: 1,
     class_filter_mode: "toggle",
     filter_on_load: true,

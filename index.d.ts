@@ -119,18 +119,14 @@ export type FilterDistanceConfig = {
     filter_during_polyline_move?: boolean;
 };
 
-export type ConfidenceThreshold = {
-    confidence: number; // Percentage threshold (0-100)
-};
-
 /**
- * Stores the current confidence slider threshold values.
+ * Stores the current confidence slider threshold values (percentages, 0-100).
  * The key is the class id. "all" is a special key that stores the threshold applied to
  * all annotations in single-class mode.
  */
 export type ConfidenceSliderClasses = {
-    all: ConfidenceThreshold;
-    [key: string]: ConfidenceThreshold;
+    all: number;
+    [key: string]: number;
 };
 
 /**
