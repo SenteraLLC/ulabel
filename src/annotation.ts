@@ -14,6 +14,23 @@ export const DELETE_CLASS_ID = -1;
 export const MODES_3D = ["global", "bbox3"];
 export const NONSPATIAL_MODES = ["whole-image", "global"];
 
+// A record enumerating every ULabelSpatialType. Adding a member to the union without updating this
+// record is a compile error, which keeps ALL_SPATIAL_TYPES in sync with the type.
+const SPATIAL_TYPE_SET: Record<ULabelSpatialType, true> = {
+    "contour": true,
+    "polygon": true,
+    "polyline": true,
+    "bbox": true,
+    "tbar": true,
+    "bbox3": true,
+    "whole-image": true,
+    "global": true,
+    "point": true,
+};
+
+// Every ULabelSpatialType (spatial and non-spatial modes) as a runtime array.
+export const ALL_SPATIAL_TYPES = Object.keys(SPATIAL_TYPE_SET) as ULabelSpatialType[];
+
 export type PolygonSpatialData = {
     // TODO (joshua-dean): validate this type
     spatial_payload: [number[]][];

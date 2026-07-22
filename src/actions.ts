@@ -4,8 +4,6 @@ import type {
     ULabelActionRaw,
     ULabelActionType,
 } from "../index";
-// Import ULabel from ../src/index - TypeScript will find ../src/index.d.ts for types
-// and resolve to ../src/index.js at runtime after compilation
 import { ULabel } from "../src/index";
 import { FilterPointDistanceFromRow } from "./toolbox";
 import { AllowedToolboxItem } from "./configuration";

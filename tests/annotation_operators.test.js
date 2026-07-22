@@ -4,6 +4,7 @@ const {
     get_spatial_annotations_with_confidence,
     findAllClassDefinitions,
     findAllPolylineClassDefinitions,
+    CONFIDENCE_FILTERABLE_SPATIAL_TYPES,
 } = require("../build/annotation_operators");
 
 function make_annotation(spatial_type, classification_payloads, extra = {}) {
@@ -37,6 +38,16 @@ describe("get_annotation_confidence_for_class", () => {
     test("returns -1 (does not throw) when classification_payloads is missing", () => {
         expect(get_annotation_confidence_for_class({ classification_payloads: null }, 1)).toBe(-1);
         expect(get_annotation_confidence_for_class({}, 1)).toBe(-1);
+    });
+});
+
+describe("CONFIDENCE_FILTERABLE_SPATIAL_TYPES", () => {
+    test("includes the spatial modes and excludes the non-spatial modes", () => {
+        expect(CONFIDENCE_FILTERABLE_SPATIAL_TYPES).toEqual(
+            expect.arrayContaining(["contour", "polygon", "polyline", "bbox", "tbar", "bbox3", "point"]),
+        );
+        expect(CONFIDENCE_FILTERABLE_SPATIAL_TYPES).not.toContain("whole-image");
+        expect(CONFIDENCE_FILTERABLE_SPATIAL_TYPES).not.toContain("global");
     });
 });
 

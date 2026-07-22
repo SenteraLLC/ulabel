@@ -27,7 +27,7 @@ import {
  * Supports two modes:
  * - Single-class mode: one slider applies a confidence threshold to all targeted spatial
  *   annotations across every subtask, using each annotation's highest confidence.
- * - Multi-class mode: one slider per targeted class id. Each slider filters only the annotations
+ * - Class mode: one slider per targeted class id. Each slider filters only the annotations
  *   whose assigned (highest-confidence) class matches, using that class's confidence.
  *
  * The `class_filter_mode` config controls whether the mode is user-toggleable (`"toggle"`), or

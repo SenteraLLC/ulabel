@@ -3,7 +3,6 @@ import type {
     FilterDistanceConfig,
     RecolorActiveConfig,
 } from "../index";
-// Import ULabel from ../src/index - TypeScript will find ../src/index.d.ts for types
 import { ULabel } from "../src/index";
 import { DEFAULT_FILTER_DISTANCE_CONFIG, AllowedToolboxItem } from "./configuration";
 import { ULabelAnnotation } from "./annotation";

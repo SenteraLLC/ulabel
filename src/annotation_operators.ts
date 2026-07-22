@@ -7,10 +7,9 @@ import type {
     ValidDeprecatedBy,
     ClassDefinition,
 } from "../index";
-// Import ULabel from ../src/index - TypeScript will find ../src/index.d.ts for types
 import { ULabel } from "../src/index";
 
-import { ULabelAnnotation, DELETE_CLASS_ID } from "./annotation";
+import { ULabelAnnotation, DELETE_CLASS_ID, ALL_SPATIAL_TYPES, NONSPATIAL_MODES } from "./annotation";
 import { ULabelSubtask } from "./subtask";
 
 /**
@@ -434,12 +433,11 @@ export function get_point_and_line_annotations(ulabel: ULabel): [ULabelAnnotatio
 }
 
 /**
- * The spatial annotation types that can be filtered by confidence.
- * Excludes the non-spatial modes (`whole-image` and `global`).
+ * The spatial annotation types that can be filtered by confidence: every spatial type except the
+ * non-spatial modes (`whole-image` and `global`).
  */
-export const CONFIDENCE_FILTERABLE_SPATIAL_TYPES: ULabelSpatialType[] = [
-    "contour", "polygon", "polyline", "bbox", "tbar", "bbox3", "point",
-];
+export const CONFIDENCE_FILTERABLE_SPATIAL_TYPES: ULabelSpatialType[] =
+    ALL_SPATIAL_TYPES.filter((type) => !NONSPATIAL_MODES.includes(type));
 
 /**
  * Gathers all spatial annotations across every subtask that have a confidence payload and whose
