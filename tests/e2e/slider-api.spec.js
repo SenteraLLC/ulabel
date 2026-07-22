@@ -78,11 +78,11 @@ test.describe("Slider Public API", () => {
         });
     });
 
-    test.describe("get_confidence_filter_value", () => {
-        test("should return default confidence filter value after init", async ({ page }) => {
+    test.describe("get_confidence_slider_value", () => {
+        test("should return default confidence slider value after init", async ({ page }) => {
             await wait_for_ulabel_init(page);
 
-            const value = await page.evaluate(() => window.ulabel.get_confidence_filter_value());
+            const value = await page.evaluate(() => window.ulabel.get_confidence_slider_value());
 
             // Should have the "all" key with the default threshold of 0
             expect(value).not.toBeNull();
@@ -95,12 +95,12 @@ test.describe("Slider Public API", () => {
 
             // Set the single-class confidence slider to 60
             await page.evaluate(() => {
-                const slider = document.querySelector("#confidence-filter-all");
+                const slider = document.querySelector("#confidence-slider-all");
                 slider.value = "60";
                 slider.dispatchEvent(new Event("input", { bubbles: true }));
             });
 
-            const value = await page.evaluate(() => window.ulabel.get_confidence_filter_value());
+            const value = await page.evaluate(() => window.ulabel.get_confidence_slider_value());
 
             expect(value.all.confidence).toBe(60);
         });
@@ -108,7 +108,7 @@ test.describe("Slider Public API", () => {
         test("should return an object with an all key", async ({ page }) => {
             await wait_for_ulabel_init(page);
 
-            const value = await page.evaluate(() => window.ulabel.get_confidence_filter_value());
+            const value = await page.evaluate(() => window.ulabel.get_confidence_slider_value());
 
             expect(typeof value).toBe("object");
             expect(value).toHaveProperty("all");

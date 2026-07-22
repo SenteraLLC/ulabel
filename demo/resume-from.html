@@ -36,7 +36,7 @@
                     "spatial_payload": [[300, 300]], 
                     "classification_payloads": [
                       {"class_id": 12, "confidence": 0.0},
-                      {"class_id": 11, "confidence": 1.0},
+                      {"class_id": 11, "confidence": 0.9},
                       {"class_id": 10, "confidence": 0.0},
                     ],
                   },
@@ -45,7 +45,7 @@
                     "spatial_type": "point", 
                     "spatial_payload": [[400, 300]], 
                     "classification_payloads": [
-                      {"class_id": 10, "confidence": 1.0},
+                      {"class_id": 10, "confidence": 0.25},
                     ],
                   },
                   {
@@ -53,7 +53,7 @@
                     "spatial_type": "point", 
                     "spatial_payload": [[300, 400]], 
                     "classification_payloads": [
-                      {"class_id": 12, "confidence": 1.0},
+                      {"class_id": 12, "confidence": 0.55},
                     ],
                   },
                   {
@@ -102,7 +102,7 @@
                         ]
                     ],
                     "classification_payloads": [
-                        {"class_id": 11, "confidence": 1.0},
+                        {"class_id": 11, "confidence": 0.75},
                         {"class_id": -1, "confidence": 0.0}
                     ],
                   },
@@ -175,7 +175,7 @@
                     "classification_payloads": [
                         {
                             "class_id": 10,
-                            "confidence": 1
+                            "confidence": 0.15
                         },
                         {
                             "class_id": 11,
@@ -209,7 +209,7 @@
                     "classification_payloads": [
                         {
                             "class_id": 10,
-                            "confidence": 1
+                            "confidence": 0.6
                         },
                         {
                             "class_id": 11,
@@ -275,6 +275,7 @@
                 };
 
                 // Initial ULabel configuration
+                const AllowedToolboxItem = ULabel.get_allowed_toolbox_item_enum();
                 let ulabel = new ULabel({
                     "container_id": "container",
                     "image_data": "https://ulabel.s3.us-east-2.amazonaws.com/cs-demo-0.png",
@@ -285,7 +286,16 @@
                     "allow_annotations_outside_image": false,
                     "fly_to_next_annotation_keybind": "w",
                     "fly_to_previous_annotation_keybind": "`",
-                    "fly_to_max_zoom": 6
+                    "fly_to_max_zoom": 6,
+                    "toolbox_order": [
+                        AllowedToolboxItem.ModeSelect,
+                        AllowedToolboxItem.ZoomPan,
+                        AllowedToolboxItem.AnnotationID,
+                        AllowedToolboxItem.ClassCounter,
+                        AllowedToolboxItem.AnnotationResize,
+                        AllowedToolboxItem.ConfidenceSlider,
+                        AllowedToolboxItem.SubmitButtons,
+                    ],
                 });
                 // Wait for ULabel instance to finish initialization
                 ulabel.init(function() {

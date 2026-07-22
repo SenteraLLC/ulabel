@@ -1,6 +1,6 @@
 import type {
     FilterDistanceConfig,
-    ConfidenceFilterConfig,
+    ConfidenceSliderConfig,
     ImageFiltersConfig,
     InitialCrop,
     ImageData,
@@ -15,12 +15,11 @@ import {
     ClassCounterToolboxItem,
     AnnotationResizeItem,
     RecolorActiveItem,
-    KeypointSliderItem,
-    ConfidenceFilterItem,
     FilterPointDistanceFromRow,
     BrushToolboxItem,
     ToolboxItem,
 } from "./toolbox";
+import { ConfidenceSlider, KeypointSliderItem } from "./toolbox_items/confidence_slider";
 import { SubmitButtons } from "./toolbox_items/submit_buttons";
 import { ImageFiltersToolboxItem } from "./toolbox_items/image_filters";
 import { AnnotationListToolboxItem } from "./toolbox_items/annotation_list";
@@ -42,7 +41,7 @@ export enum AllowedToolboxItem {
     ImageFilters,     // 10
     AnnotationList,   // 11
     Keybinds,         // 12
-    ConfidenceFilter, // 13
+    ConfidenceSlider, // 13
 }
 /* eslint-enable @stylistic/no-multi-spaces */
 
@@ -64,14 +63,13 @@ export const DEFAULT_FILTER_DISTANCE_CONFIG: FilterDistanceConfig = {
     filter_during_polyline_move: true,
 };
 
-export const DEFAULT_CONFIDENCE_FILTER_CONFIG: ConfidenceFilterConfig = {
-    name: "Filter Annotations By Confidence",
+export const DEFAULT_CONFIDENCE_SLIDER_CONFIG: ConfidenceSliderConfig = {
+    name: "Confidence Filter",
     filter_min: 0,
     filter_max: 100,
     default_values: { all: { confidence: 0 } },
     step_value: 1,
-    multi_class_mode: false,
-    disable_multi_class_mode: false,
+    multi_class_mode: "toggle",
     filter_on_load: true,
     show_options: true,
 };
@@ -180,7 +178,7 @@ export class Configuration {
         [AllowedToolboxItem.ImageFilters, ImageFiltersToolboxItem],
         [AllowedToolboxItem.AnnotationList, AnnotationListToolboxItem],
         [AllowedToolboxItem.Keybinds, KeybindsToolboxItem],
-        [AllowedToolboxItem.ConfidenceFilter, ConfidenceFilterItem],
+        [AllowedToolboxItem.ConfidenceSlider, ConfidenceSlider],
     ]);
 
     // Default toolbox order used when the user doesn't specify one
@@ -207,8 +205,8 @@ export class Configuration {
     // Config for FilterDistanceToolboxItem
     public distance_filter_toolbox_item: FilterDistanceConfig = DEFAULT_FILTER_DISTANCE_CONFIG;
 
-    // Config for ConfidenceFilterToolboxItem
-    public confidence_filter_toolbox_item: ConfidenceFilterConfig = DEFAULT_CONFIDENCE_FILTER_CONFIG;
+    // Config for ConfidenceSlider
+    public confidence_slider_toolbox_item: ConfidenceSliderConfig = DEFAULT_CONFIDENCE_SLIDER_CONFIG;
 
     // Config for ImageFiltersToolboxItem
     public image_filters_toolbox_item: ImageFiltersConfig = DEFAULT_IMAGE_FILTERS_CONFIG;

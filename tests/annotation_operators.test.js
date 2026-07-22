@@ -1,4 +1,4 @@
-// Unit tests for confidence-filter-related annotation operators
+// Unit tests for confidence-slider-related annotation operators
 const {
     get_annotation_confidence_for_class,
     get_spatial_annotations_with_confidence,
