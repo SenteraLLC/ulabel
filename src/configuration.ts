@@ -1,5 +1,6 @@
 import type {
     FilterDistanceConfig,
+    ConfidenceFilterConfig,
     ImageFiltersConfig,
     InitialCrop,
     ImageData,
@@ -15,6 +16,7 @@ import {
     AnnotationResizeItem,
     RecolorActiveItem,
     KeypointSliderItem,
+    ConfidenceFilterItem,
     FilterPointDistanceFromRow,
     BrushToolboxItem,
     ToolboxItem,
@@ -40,6 +42,7 @@ export enum AllowedToolboxItem {
     ImageFilters,     // 10
     AnnotationList,   // 11
     Keybinds,         // 12
+    ConfidenceFilter, // 13
 }
 /* eslint-enable @stylistic/no-multi-spaces */
 
@@ -59,6 +62,18 @@ export const DEFAULT_FILTER_DISTANCE_CONFIG: FilterDistanceConfig = {
     show_overlay: false,
     toggle_overlay_keybind: "p",
     filter_during_polyline_move: true,
+};
+
+export const DEFAULT_CONFIDENCE_FILTER_CONFIG: ConfidenceFilterConfig = {
+    name: "Filter Annotations By Confidence",
+    filter_min: 0,
+    filter_max: 100,
+    default_values: { all: { confidence: 0 } },
+    step_value: 1,
+    multi_class_mode: false,
+    disable_multi_class_mode: false,
+    filter_on_load: true,
+    show_options: true,
 };
 
 export const DEFAULT_IMAGE_FILTERS_CONFIG: ImageFiltersConfig = {
@@ -165,6 +180,7 @@ export class Configuration {
         [AllowedToolboxItem.ImageFilters, ImageFiltersToolboxItem],
         [AllowedToolboxItem.AnnotationList, AnnotationListToolboxItem],
         [AllowedToolboxItem.Keybinds, KeybindsToolboxItem],
+        [AllowedToolboxItem.ConfidenceFilter, ConfidenceFilterItem],
     ]);
 
     // Default toolbox order used when the user doesn't specify one
@@ -190,6 +206,9 @@ export class Configuration {
 
     // Config for FilterDistanceToolboxItem
     public distance_filter_toolbox_item: FilterDistanceConfig = DEFAULT_FILTER_DISTANCE_CONFIG;
+
+    // Config for ConfidenceFilterToolboxItem
+    public confidence_filter_toolbox_item: ConfidenceFilterConfig = DEFAULT_CONFIDENCE_FILTER_CONFIG;
 
     // Config for ImageFiltersToolboxItem
     public image_filters_toolbox_item: ImageFiltersConfig = DEFAULT_IMAGE_FILTERS_CONFIG;

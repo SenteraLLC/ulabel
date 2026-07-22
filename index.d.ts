@@ -36,12 +36,13 @@ export type Offset = {
 /**
  * Valid keys for the DeprecatedBy type
  */
-export type ValidDeprecatedBy = "human" | "confidence_filter" | "distance_from_row";
+export type ValidDeprecatedBy = "human" | "confidence_filter" | "distance_from_row" | "spatial_confidence_filter";
 
 export type DeprecatedBy = {
     human?: boolean;
     confidence_filter?: boolean;
     distance_from_row?: boolean;
+    spatial_confidence_filter?: boolean;
 };
 
 /**
@@ -116,6 +117,43 @@ export type FilterDistanceConfig = {
     show_overlay?: boolean;
     toggle_overlay_keybind?: string;
     filter_during_polyline_move?: boolean;
+};
+
+export type ConfidenceThreshold = {
+    confidence: number; // Percentage threshold (0-100)
+};
+
+/**
+ * Stores the current confidence filter threshold values.
+ * The key is the class id. "all" is a special key that stores the threshold applied to
+ * all annotations in single-class mode.
+ */
+export type ConfidenceFilterClasses = {
+    all: ConfidenceThreshold;
+    [key: string]: ConfidenceThreshold;
+};
+
+/**
+ * Config object for the ConfidenceFilterItem ToolboxItem.
+ */
+export type ConfidenceFilterConfig = {
+    name?: string;
+    filter_min?: number;
+    filter_max?: number;
+    default_values?: ConfidenceFilterClasses;
+    step_value?: number;
+    multi_class_mode?: boolean;
+    disable_multi_class_mode?: boolean;
+    filter_on_load?: boolean;
+    show_options?: boolean;
+    // The spatial types to filter. Defaults to all confidence-filterable spatial types.
+    target_spatial_types?: ULabelSpatialType[];
+    // The class ids to create sliders for in multi-class mode. Defaults to all class ids.
+    target_class_ids?: number[];
+    keybinds?: {
+        increment: string;
+        decrement: string;
+    };
 };
 
 export type ULabelSubmitButton = {
@@ -367,6 +405,7 @@ export class ULabel {
     ): void;
     public get_keypoint_slider_value(): number | null;
     public get_distance_filter_value(): DistanceFromPolylineClasses | null;
+    public get_confidence_filter_value(): ConfidenceFilterClasses | null;
     public fly_to_next_annotation(increment: number, max_zoom?: number): boolean;
     public fly_to_annotation_id(annotation_id: string, subtask_key?: string | null, max_zoom?: number): boolean;
     public fly_to_annotation(annotation: ULabelAnnotation, subtask_key?: string, max_zoom?: number): boolean;
