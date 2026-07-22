@@ -36,12 +36,13 @@ export type Offset = {
 /**
  * Valid keys for the DeprecatedBy type
  */
-export type ValidDeprecatedBy = "human" | "confidence_filter" | "distance_from_row";
+export type ValidDeprecatedBy = "human" | "confidence_filter" | "distance_from_row" | "confidence_slider";
 
 export type DeprecatedBy = {
     human?: boolean;
     confidence_filter?: boolean;
     distance_from_row?: boolean;
+    confidence_slider?: boolean;
 };
 
 /**
@@ -116,6 +117,45 @@ export type FilterDistanceConfig = {
     show_overlay?: boolean;
     toggle_overlay_keybind?: string;
     filter_during_polyline_move?: boolean;
+};
+
+/**
+ * Stores the current confidence slider threshold values (percentages, 0-100).
+ * The key is the class id. "all" is a special key that stores the threshold applied to
+ * all annotations in single-class mode.
+ */
+export type ConfidenceSliderClasses = {
+    all: number;
+    [key: string]: number;
+};
+
+/**
+ * Controls how the ConfidenceSlider ToolboxItem filters by class:
+ * - "toggle": a checkbox lets the user switch between the single "all" slider and per-class sliders
+ * - "all-only": only a single global slider (keyed "all") is shown, filtering every targeted annotation
+ * - "class-only": only per-class sliders are shown
+ */
+export type ConfidenceSliderClassFilterMode = "toggle" | "all-only" | "class-only";
+
+/**
+ * Config object for the ConfidenceSlider ToolboxItem.
+ */
+export type ConfidenceSliderConfig = {
+    name?: string;
+    filter_min?: number;
+    filter_max?: number;
+    default_values?: ConfidenceSliderClasses;
+    step_value?: number;
+    class_filter_mode?: ConfidenceSliderClassFilterMode;
+    filter_on_load?: boolean;
+    // The spatial types to filter. Defaults to all confidence-filterable spatial types.
+    target_spatial_types?: ULabelSpatialType[];
+    // The class ids to create sliders for in class-only/toggle mode. Defaults to all class ids.
+    target_class_ids?: number[];
+    keybinds?: {
+        increment: string;
+        decrement: string;
+    };
 };
 
 export type ULabelSubmitButton = {
@@ -367,6 +407,7 @@ export class ULabel {
     ): void;
     public get_keypoint_slider_value(): number | null;
     public get_distance_filter_value(): DistanceFromPolylineClasses | null;
+    public get_confidence_slider_value(): ConfidenceSliderClasses | null;
     public fly_to_next_annotation(increment: number, max_zoom?: number): boolean;
     public fly_to_annotation_id(annotation_id: string, subtask_key?: string | null, max_zoom?: number): boolean;
     public fly_to_annotation(annotation: ULabelAnnotation, subtask_key?: string, max_zoom?: number): boolean;

@@ -127,7 +127,8 @@
                     AllowedToolboxItem.AnnotationID, 
                     AllowedToolboxItem.ClassCounter,
                     AllowedToolboxItem.AnnotationResize, 
-                    AllowedToolboxItem.KeypointSlider,  
+                    AllowedToolboxItem.KeypointSlider,
+                    AllowedToolboxItem.ConfidenceSlider,
                     AllowedToolboxItem.FilterDistance,
                     AllowedToolboxItem.RecolorActive,
                 ],
@@ -140,6 +141,9 @@
                     "default_values": {
                         "brightness": 120
                     },
+                },
+                "confidence_slider_toolbox_item": {
+                    "step_value": 5,
                 },
             });
             // Wait for ULabel instance to finish initialization

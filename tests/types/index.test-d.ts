@@ -86,4 +86,5 @@ const all_items: AllowedToolboxItem[] = [
     AllowedToolboxItem.ImageFilters,
     AllowedToolboxItem.AnnotationList,
     AllowedToolboxItem.Keybinds,
+    AllowedToolboxItem.ConfidenceSlider,
 ];

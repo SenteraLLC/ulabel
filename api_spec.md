@@ -346,6 +346,7 @@ enum AllowedToolboxItem {
     ImageFilters,     // 10
     AnnotationList,   // 11
     Keybinds,         // 12
+    ConfidenceSlider, // 13
 }
 ```
 You can access the AllowedToolboxItem enum by calling the static method:
@@ -434,6 +435,44 @@ The `AnnotationList` toolbox item displays all annotations in the current subtas
 
 This toolbox item requires no configuration and can be added to the `toolbox_order` array using `AllowedToolboxItem.AnnotationList`.
 
+### `confidence_slider_toolbox_item`
+
+The `ConfidenceSlider` toolbox item (added to `toolbox_order` via `AllowedToolboxItem.ConfidenceSlider`) deprecates (hides) or shows spatial annotations based on their confidence values. Unlike the deprecated `KeypointSlider`, it works with **all** spatial annotation types that have a confidence payload (`bbox`, `bbox3`, `polygon`, `polyline`, `contour`, `tbar`, and `point`), across every subtask.
+
+It supports two modes:
+
+- **"all" mode** (default): a single slider applies one confidence threshold to every targeted spatial annotation across all subtasks, using each annotation's highest confidence value.
+- **Per-class mode**: one slider is shown per targeted class id. Each slider only filters annotations whose assigned (highest-confidence) class matches that slider, using that class's confidence value.
+
+The `class_filter_mode` config controls whether these modes are user-toggleable:
+- `"toggle"` (default): a checkbox lets the user switch between the two modes.
+- `"all-only"`: only the single global "all" slider is shown.
+- `"class-only"`: only the per-class sliders are shown.
+
+Any annotation with a confidence at or above the threshold is shown; any below is deprecated. Thresholds are expressed as percentages, and the slider's range and increment are configurable via `filter_min`, `filter_max`, and `step_value`.
+
+Configuration object with the following custom definitions:
+```javascript
+type ConfidenceSliderClasses = {
+    "all": number, // percentage threshold (0-100) used by the single global slider
+    [classId: string]?: number // per-class-id thresholds (class id as a string key)
+}
+
+type ConfidenceSliderConfig = {
+    "name"?: string, // Default: "Confidence Filter"
+    "filter_min"?: number, // Default: 0 (%)
+    "filter_max"?: number, // Default: 100 (%)
+    "default_values"?: ConfidenceSliderClasses, // Default: {"all": 0}
+    "step_value"?: number, // Default: 1 (%)
+    "class_filter_mode"?: "toggle" | "all-only" | "class-only", // Default: "toggle"
+    "filter_on_load"?: boolean, // Default: true
+    // The spatial types to filter. Defaults to all confidence-filterable spatial types.
+    "target_spatial_types"?: ULabelSpatialType[],
+    // The class ids to create sliders for in class-only/toggle mode. Defaults to all class ids.
+    "target_class_ids"?: number[],
+}
+```
+
 ### `reset_zoom_keybind`
 Keybind to reset the zoom level to the `initial_crop`. Default is `r`.
 
@@ -451,6 +490,8 @@ Keybind to delete a vertex of a polygon or polyline annotation. The vertex must 
 
 ### `keypoint_slider_default_value`
 Default value for the keypoint slider. Must be a number between 0 and 1. Default is `0`.
+
+> **Deprecated:** The `KeypointSlider` toolbox item only filters `point` annotations. Use the `ConfidenceSlider` toolbox item (`confidence_slider_toolbox_item`) instead, which filters all spatial annotation types and supports per-class targeting and multiple sliders.
 
 ### `filter_annotations_on_load`
 If true, the annotations will be filtered on load based on the `keypoint_slider_default_value`. Default is `true`.
@@ -563,9 +604,15 @@ Sets the zoom to focus on the provided annotation, and switches to its subtask i
 
 *() => number | null* -- Returns the current keypoint slider value as a number between 0 and 1. Returns `null` if the KeypointSlider toolbox item is not active or the slider element is not found.
 
+> **Deprecated:** Prefer `get_confidence_slider_value()` with the `ConfidenceSlider` toolbox item.
+
 ### `get_distance_filter_value()`
 
 *() => object | null* -- Returns an object mapping class identifiers to their distance filter values (in pixels). The object always includes a `closest_row` key for the single-class slider. In multi-class mode, additional keys correspond to each class ID. Returns `null` if the FilterDistance toolbox item is not active or no sliders are found.
+
+### `get_confidence_slider_value()`
+
+*() => object | null* -- Returns an object mapping class identifiers to their confidence threshold values (as percentages, 0–100). The object always includes an `all` key for the single global slider. In per-class mode, additional keys correspond to each class ID. Returns `null` if the ConfidenceSlider toolbox item is not active or no sliders are found.
 
 ## Generic Callbacks
 

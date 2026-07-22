@@ -77,4 +77,41 @@ test.describe("Slider Public API", () => {
             expect(typeof value.closest_row.distance).toBe("number");
         });
     });
+
+    test.describe("get_confidence_slider_value", () => {
+        test("should return default confidence slider value after init", async ({ page }) => {
+            await wait_for_ulabel_init(page);
+
+            const value = await page.evaluate(() => window.ulabel.get_confidence_slider_value());
+
+            // Should have the "all" key with the default threshold of 0
+            expect(value).not.toBeNull();
+            expect(value.all).toBe(0);
+        });
+
+        test("should reflect value after moving the slider", async ({ page }) => {
+            await wait_for_ulabel_init(page);
+
+            // Set the single-class confidence slider to 60
+            await page.evaluate(() => {
+                const slider = document.querySelector("#confidence-slider-all");
+                slider.value = "60";
+                slider.dispatchEvent(new Event("input", { bubbles: true }));
+            });
+
+            const value = await page.evaluate(() => window.ulabel.get_confidence_slider_value());
+
+            expect(value.all).toBe(60);
+        });
+
+        test("should return an object with an all key", async ({ page }) => {
+            await wait_for_ulabel_init(page);
+
+            const value = await page.evaluate(() => window.ulabel.get_confidence_slider_value());
+
+            expect(typeof value).toBe("object");
+            expect(value).toHaveProperty("all");
+            expect(typeof value.all).toBe("number");
+        });
+    });
 });

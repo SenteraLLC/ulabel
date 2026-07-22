@@ -4,7 +4,6 @@
  * This also includes "staggered" initializers to test loading.
  */
 
-// Import ULabel from ../src/index - TypeScript will find ../src/index.d.ts for types
 import { ULabel } from "../src/index";
 import { initialize_annotation_canvases } from "./canvas_utils";
 import { Configuration } from "./configuration";

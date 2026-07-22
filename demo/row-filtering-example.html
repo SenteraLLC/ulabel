@@ -745,7 +745,7 @@
                     AllowedToolboxItem.ZoomPan,
                     AllowedToolboxItem.AnnotationID, 
                     AllowedToolboxItem.ClassCounter, 
-                    AllowedToolboxItem.KeypointSlider,  
+                    AllowedToolboxItem.ConfidenceSlider,  
                     AllowedToolboxItem.FilterDistance,
                     AllowedToolboxItem.AnnotationResize,
                     AllowedToolboxItem.SubmitButtons,
@@ -761,7 +761,13 @@
                     // "disable_multi_class_mode": true,
                     // "filter_during_polyline_move": false,
                 },
-                "keypoint_slider_default_value": 0.2,
+                "confidence_slider_toolbox_item": {
+                    "class_filter_mode": "class-only",
+                    "target_class_ids": [10], // Plant only
+                    "default_values": {
+                        "all": 20, // %
+                    },
+                },
             });
             // Wait for ULabel instance to finish initialization
             ulabel.init(function () {

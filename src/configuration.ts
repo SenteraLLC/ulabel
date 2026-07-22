@@ -1,5 +1,6 @@
 import type {
     FilterDistanceConfig,
+    ConfidenceSliderConfig,
     ImageFiltersConfig,
     InitialCrop,
     ImageData,
@@ -14,11 +15,11 @@ import {
     ClassCounterToolboxItem,
     AnnotationResizeItem,
     RecolorActiveItem,
-    KeypointSliderItem,
     FilterPointDistanceFromRow,
     BrushToolboxItem,
     ToolboxItem,
 } from "./toolbox";
+import { ConfidenceSlider, KeypointSliderItem } from "./toolbox_items/confidence_slider";
 import { SubmitButtons } from "./toolbox_items/submit_buttons";
 import { ImageFiltersToolboxItem } from "./toolbox_items/image_filters";
 import { AnnotationListToolboxItem } from "./toolbox_items/annotation_list";
@@ -40,6 +41,7 @@ export enum AllowedToolboxItem {
     ImageFilters,     // 10
     AnnotationList,   // 11
     Keybinds,         // 12
+    ConfidenceSlider, // 13
 }
 /* eslint-enable @stylistic/no-multi-spaces */
 
@@ -59,6 +61,16 @@ export const DEFAULT_FILTER_DISTANCE_CONFIG: FilterDistanceConfig = {
     show_overlay: false,
     toggle_overlay_keybind: "p",
     filter_during_polyline_move: true,
+};
+
+export const DEFAULT_CONFIDENCE_SLIDER_CONFIG: ConfidenceSliderConfig = {
+    name: "Confidence Filter",
+    filter_min: 0,
+    filter_max: 100,
+    default_values: { all: 0 },
+    step_value: 1,
+    class_filter_mode: "toggle",
+    filter_on_load: true,
 };
 
 export const DEFAULT_IMAGE_FILTERS_CONFIG: ImageFiltersConfig = {
@@ -165,6 +177,7 @@ export class Configuration {
         [AllowedToolboxItem.ImageFilters, ImageFiltersToolboxItem],
         [AllowedToolboxItem.AnnotationList, AnnotationListToolboxItem],
         [AllowedToolboxItem.Keybinds, KeybindsToolboxItem],
+        [AllowedToolboxItem.ConfidenceSlider, ConfidenceSlider],
     ]);
 
     // Default toolbox order used when the user doesn't specify one
@@ -179,7 +192,7 @@ export class Configuration {
         AllowedToolboxItem.AnnotationID,
         AllowedToolboxItem.RecolorActive,
         AllowedToolboxItem.ClassCounter,
-        AllowedToolboxItem.KeypointSlider,
+        AllowedToolboxItem.ConfidenceSlider,
         AllowedToolboxItem.SubmitButtons,
     ];
 
@@ -190,6 +203,9 @@ export class Configuration {
 
     // Config for FilterDistanceToolboxItem
     public distance_filter_toolbox_item: FilterDistanceConfig = DEFAULT_FILTER_DISTANCE_CONFIG;
+
+    // Config for ConfidenceSlider
+    public confidence_slider_toolbox_item: ConfidenceSliderConfig = DEFAULT_CONFIDENCE_SLIDER_CONFIG;
 
     // Config for ImageFiltersToolboxItem
     public image_filters_toolbox_item: ImageFiltersConfig = DEFAULT_IMAGE_FILTERS_CONFIG;

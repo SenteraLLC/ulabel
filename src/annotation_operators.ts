@@ -7,10 +7,9 @@ import type {
     ValidDeprecatedBy,
     ClassDefinition,
 } from "../index";
-// Import ULabel from ../src/index - TypeScript will find ../src/index.d.ts for types
 import { ULabel } from "../src/index";
 
-import { ULabelAnnotation, DELETE_CLASS_ID } from "./annotation";
+import { ULabelAnnotation, DELETE_CLASS_ID, ALL_SPATIAL_TYPES, NONSPATIAL_MODES } from "./annotation";
 import { ULabelSubtask } from "./subtask";
 
 /**
@@ -28,6 +27,22 @@ export function get_annotation_confidence(annotation: ULabelAnnotation) {
         }
     }
     return current_confidence;
+}
+
+/**
+ * Returns the confidence that the passed in ULabelAnnotation is a specific class id.
+ *
+ * @param annotation ULabelAnnotation
+ * @param class_id The class id to get the confidence for
+ * @returns The confidence for the given class id, or -1 if the class id is not present
+ */
+export function get_annotation_confidence_for_class(annotation: ULabelAnnotation, class_id: number): number {
+    for (const payload of annotation.classification_payloads ?? []) {
+        if (payload.class_id === class_id) {
+            return payload.confidence;
+        }
+    }
+    return -1;
 }
 
 /**
@@ -418,6 +433,48 @@ export function get_point_and_line_annotations(ulabel: ULabel): [ULabelAnnotatio
 }
 
 /**
+ * The spatial annotation types that can be filtered by confidence: every spatial type except the
+ * non-spatial modes (`whole-image` and `global`).
+ */
+export const CONFIDENCE_FILTERABLE_SPATIAL_TYPES: ULabelSpatialType[] =
+    ALL_SPATIAL_TYPES.filter((type) => !NONSPATIAL_MODES.includes(type));
+
+/**
+ * Gathers all spatial annotations across every subtask that have a confidence payload and whose
+ * spatial type is included in `spatial_types`. Each returned annotation has its `subtask_key` set.
+ *
+ * @param ulabel ULabel object
+ * @param spatial_types The spatial types to include. Defaults to all confidence-filterable spatial types.
+ * @returns A list of spatial annotations that can be filtered by confidence
+ */
+export function get_spatial_annotations_with_confidence(
+    ulabel: ULabel,
+    spatial_types: ULabelSpatialType[] = CONFIDENCE_FILTERABLE_SPATIAL_TYPES,
+): ULabelAnnotation[] {
+    const annotations: ULabelAnnotation[] = [];
+
+    // Loop through each subtask
+    for (const [subtask_key, subtask] of Object.entries(ulabel.subtasks) as [string, ULabelSubtask][]) {
+        // Then go through each annotation in the subtask
+        for (const annotation_key in subtask.annotations.access) {
+            const annotation: ULabelAnnotation = subtask.annotations.access[annotation_key];
+
+            // Skip annotations without a spatial type we're targeting
+            if (annotation.spatial_type == null || !spatial_types.includes(annotation.spatial_type)) continue;
+
+            // Skip annotations that lack a classification payload with confidence
+            if (annotation.classification_payloads == null || annotation.classification_payloads.length === 0) continue;
+
+            // Note the annotation's subtask and add it to the set
+            annotation.subtask_key = subtask_key;
+            annotations.push(annotation);
+        }
+    }
+
+    return annotations;
+}
+
+/**
  * Using the value of the FilterPointDistanceFromRow's slider, filter all point annotations based on their distance
  * from a polyline annotation.
  *
@@ -567,27 +624,47 @@ export function filter_points_distance_from_line(ulabel: ULabel, recalculate_dis
 }
 
 /**
+ * Goes through all subtasks and finds all class definitions that annotations can be. Optionally
+ * restricts to subtasks that allow at least one of the provided `allowed_modes`. Class definitions
+ * are de-duplicated by id, and the reserved delete class is skipped.
+ *
+ * @param ulabel ULabel object
+ * @param allowed_modes If provided, only include subtasks that allow at least one of these modes
+ * @returns A de-duplicated list of class definitions
+ */
+export function findAllClassDefinitions(ulabel: ULabel, allowed_modes: ULabelSpatialType[] | null = null): ClassDefinition[] {
+    // Initialize potential class definitions and a set to track seen ids
+    const class_defs: ClassDefinition[] = [];
+    const seen_ids = new Set<number>();
+
+    for (const subtask_key in ulabel.subtasks) {
+        const subtask = ulabel.subtasks[subtask_key];
+
+        // If allowed_modes is provided, skip subtasks that don't allow any of them
+        if (allowed_modes !== null && !allowed_modes.some((mode) => subtask.allowed_modes.includes(mode))) {
+            continue;
+        }
+
+        // Loop through all the classes in the subtask
+        subtask.class_defs.forEach((current_class_def) => {
+            // Skip the reserved delete class
+            if (current_class_def.id === DELETE_CLASS_ID) return;
+            // Skip classes we've already added (de-duplicate by id)
+            if (seen_ids.has(current_class_def.id)) return;
+
+            seen_ids.add(current_class_def.id);
+            class_defs.push(current_class_def);
+        });
+    }
+
+    return class_defs;
+}
+
+/**
  * Goes through all subtasks and finds all classes that polylines can be. Then returns a list of them.
  *
  * @returns A list of all classes which can be polylines
  */
 export function findAllPolylineClassDefinitions(ulabel: ULabel) {
-    // Initialize potential class definitions
-    const potential_class_defs: ClassDefinition[] = [];
-
-    // Check each subtask to see if polyline is one of its allowed modes
-    for (const subtask_key in ulabel.subtasks) {
-        // Grab the subtask
-        const subtask = ulabel.subtasks[subtask_key];
-
-        if (subtask.allowed_modes.includes("polyline")) {
-            // Loop through all the classes in the subtask
-            subtask.class_defs.forEach((current_class_def) => {
-                // Skip the reserved delete class
-                if (current_class_def.id === DELETE_CLASS_ID) return;
-                potential_class_defs.push(current_class_def);
-            });
-        }
-    }
-    return potential_class_defs;
+    return findAllClassDefinitions(ulabel, ["polyline"]);
 }

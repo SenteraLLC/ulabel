@@ -18,6 +18,11 @@ module.exports = {
     coverageReporters: ["text", "lcov", "html"],
     moduleNameMapper: {
         "^@/(.*)$": "<rootDir>/src/$1",
+        // The `build/` CJS modules reference the raw ESM sources `src/version.js` and
+        // `src/blobs.js`, which jest cannot transform. Stub them for unit tests that load
+        // `build/` modules (e.g. the ConfidenceSlider toolbox item via html_builder).
+        "src/version(\\.js)?$": "<rootDir>/tests/testing-utils/version_stub.js",
+        "src/blobs(\\.js)?$": "<rootDir>/tests/testing-utils/blobs_stub.js",
     },
     transform: {
         "^.+\\.(js|ts)$": "babel-jest",

@@ -4,6 +4,15 @@ All notable changes to this project will be documented here.
 
 ## [unreleased]
 
+## [0.24.0] - July 22nd, 2026
+- Add `ConfidenceSlider` toolbox item (`AllowedToolboxItem.ConfidenceSlider`) that deprecates (hides) or shows spatial annotations based on their confidence values. Unlike the now-deprecated `KeypointSlider`, it works with all spatial annotation types that have a confidence payload (`bbox`, `bbox3`, `polygon`, `polyline`, `contour`, `tbar`, and `point`), across every subtask.
+  - Supports a single global "all" slider and/or per-class sliders, controlled by `class_filter_mode` (`"toggle"`, `"all-only"`, or `"class-only"`).
+  - Configurable via `confidence_slider_toolbox_item`, including `filter_min`/`filter_max`/`step_value`, per-class `default_values`, `target_spatial_types`, and `target_class_ids`.
+- Add `get_confidence_slider_value()` public API method to get the current confidence slider values.
+- The default `toolbox_order` (used when none is provided) now includes `ConfidenceSlider` instead of `KeypointSlider`.
+- Log a warning when both the `KeypointSlider` and `ConfidenceSlider` toolbox items are enabled at once.
+- Deprecate the `KeypointSlider` toolbox item and `get_keypoint_slider_value()` in favor of the `ConfidenceSlider` and `get_confidence_slider_value()`. The `KeypointSlider` is retained for backwards compatibility and continues to filter only `point` annotations. It will be removed in a future release.
+
 ## [0.23.7] - July 21st, 2026
 - Ship generated `.d.ts` declarations (`dist/types/`) and a generated type entry (`dist/index.d.ts`) instead of pointing consumers' type resolution at the raw `.ts` source. This stops downstream TypeScript projects from compiling ULabel's source under their own (stricter) `tsconfig`.
 - Stop publishing the `src/` directory in the npm package (`files` now ships `dist/` only).

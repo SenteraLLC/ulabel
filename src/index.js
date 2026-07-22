@@ -1046,6 +1046,19 @@ export class ULabel {
         return item.get_current_values();
     }
 
+    /**
+     * Get the current confidence slider values.
+     *
+     * @returns {object|null} An object mapping class identifiers (and "all") to their confidence
+     *   threshold values, or null if the ConfidenceSlider toolbox item is not active or no sliders
+     *   are found
+     */
+    get_confidence_slider_value() {
+        const item = this.toolbox.items.find((item) => item.get_toolbox_item_type() === "ConfidenceSlider");
+        if (item === undefined) return null;
+        return item.get_current_values();
+    }
+
     // Show annotation mode
     show_annotation_mode(el = null) {
         if (el === null) {

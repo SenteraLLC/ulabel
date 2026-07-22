@@ -2,17 +2,12 @@ import type {
     DistanceFromPolylineClasses,
     FilterDistanceConfig,
     RecolorActiveConfig,
-    ValidDeprecatedBy,
 } from "../index";
-// Import ULabel from ../src/index - TypeScript will find ../src/index.d.ts for types
 import { ULabel } from "../src/index";
-import { DEFAULT_FILTER_DISTANCE_CONFIG } from "./configuration";
+import { DEFAULT_FILTER_DISTANCE_CONFIG, AllowedToolboxItem } from "./configuration";
 import { ULabelAnnotation } from "./annotation";
 import { ULabelSubtask } from "./subtask";
 import {
-    get_annotation_confidence,
-    value_is_lower_than_filter,
-    mark_deprecated,
     filter_points_distance_from_line,
     findAllPolylineClassDefinitions,
     get_point_and_line_annotations,
@@ -74,6 +69,22 @@ export class Toolbox {
         // error isn't strictly neccesary.
         if (toolbox_item_order.length === 0) {
             throw new Error("No Toolbox Items Given");
+        }
+
+        // Warn if both the deprecated KeypointSlider and the ConfidenceSlider are enabled, since
+        // they overlap in functionality and use different deprecation keys.
+        const toolbox_keys = toolbox_item_order.map((item) =>
+            typeof item === "number" ? item : (item as [number, object])[0],
+        );
+        if (
+            toolbox_keys.includes(AllowedToolboxItem.KeypointSlider) &&
+            toolbox_keys.includes(AllowedToolboxItem.ConfidenceSlider)
+        ) {
+            log_message(
+                "Both the deprecated KeypointSlider and the ConfidenceSlider toolbox items are enabled. " +
+                "The KeypointSlider is deprecated; consider using only the ConfidenceSlider.",
+                LogLevel.WARNING,
+            );
         }
 
         this.add_styles();
@@ -1787,193 +1798,8 @@ export class RecolorActiveItem extends ToolboxItem {
     }
 }
 
-export class KeypointSliderItem extends ToolboxItem {
-    public html!: string;
-    public inner_HTML: string;
-    public name: string;
-    public slider_bar_id: string;
-    public filter_function: (value: number, filter: number) => boolean;
-    public get_confidence: (annotation: ULabelAnnotation) => number;
-    public mark_deprecated: (
-        annotation: ULabelAnnotation,
-        deprecated: boolean,
-        deprecated_by_key?: ValidDeprecatedBy,
-    ) => void;
-
-    filter_value: number = 0;
-    ulabel: ULabel;
-    keybinds: {
-        increment: string;
-        decrement: string;
-    };
-
-    // TODO (joshua-dean): See if we can narrow this any
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    constructor(ulabel: ULabel, kwargs: { [name: string]: any }) {
-        super();
-        this.inner_HTML = `<p class="tb-header">Keypoint Slider</p>`;
-        this.ulabel = ulabel;
-
-        // Use properties in kwargs if kwargs is present
-        if (kwargs !== undefined) {
-            this.name = kwargs.name;
-            this.filter_function = kwargs.filter_function;
-            this.get_confidence = kwargs.confidence_function;
-            this.mark_deprecated = kwargs.mark_deprecated;
-            this.keybinds = kwargs.keybinds;
-        } else {
-            // Otherwise use defaults
-            this.name = "Keypoint Slider";
-            this.filter_function = value_is_lower_than_filter;
-            this.get_confidence = get_annotation_confidence;
-            this.mark_deprecated = mark_deprecated;
-            this.keybinds = {
-                increment: "2",
-                decrement: "1",
-            };
-            kwargs = {};
-        }
-
-        // Create slider bar id
-        this.slider_bar_id = this.name.replaceLowerConcat(" ", "-");
-
-        // If the config has a default value override the filter_value
-        const has_filter_override = Object.prototype.hasOwnProperty.call(
-            this.ulabel.config,
-            this.name.replaceLowerConcat(" ", "_", "_default_value"),
-        );
-        if (has_filter_override) {
-            // Set the filter value
-            this.filter_value = this.ulabel.config[this.name.replaceLowerConcat(" ", "_", "_default_value")];
-        }
-
-        // Check the config to see if we should update the annotations with the default filter on load
-        if (this.ulabel.config.filter_annotations_on_load) {
-            this.filter_annotations(this.ulabel);
-        }
-
-        this.add_styles();
-    }
-
-    /**
-     * Create the css for this ToolboxItem and append it to the page.
-     */
-    protected add_styles() {
-        // Define the css
-        const css = `
-        /* Component has no css?? */
-        `;
-        // Create an id so this specific style tag can be referenced
-        const style_id = "keypoint-slider-toolbox-item-styles";
-
-        // Don't add the style tag if its already been added once
-        if (document.getElementById(style_id)) return;
-
-        // Grab the document's head and create a style tag
-        const head = document.head || document.querySelector("head");
-        const style = document.createElement("style");
-
-        // Add the css and id to the style tag
-        style.appendChild(document.createTextNode(css));
-        style.id = style_id;
-
-        // Add the style tag to the document's head
-        head.appendChild(style);
-    }
-
-    /**
-     * Given the ulabel object and a filter value, go through each annotation and decide whether or
-     * not to deprecate it.
-     *
-     * @param ulabel ULabel object
-     * @param filter_value The number between 0-100 which annotation's confidence is compared against
-     * @param redraw whether or not to redraw the annotations after filtering
-     * @returns Annotations that were modified, organized by subtask key
-     */
-    private filter_annotations(ulabel: ULabel, filter_value: number | null = null, redraw: boolean = false): void {
-        if (filter_value === null) {
-            // Use stored filter value if none is passed in
-            filter_value = Math.round(this.filter_value * 100);
-        }
-        // Store which annotations need to be redrawn
-        const annotations_ids_to_redraw_by_subtask: { [key: string]: string[] } = {};
-        // Initialize the object with the subtask keys
-        for (const subtask_key in ulabel.subtasks) {
-            annotations_ids_to_redraw_by_subtask[subtask_key] = [];
-        }
-
-        // Get all point annotations
-        const point_and_line_annotations = get_point_and_line_annotations(ulabel);
-        for (const annotation of point_and_line_annotations[0]) {
-            // Get the annotation's confidence as decimal between 0-1
-            let confidence: number = this.get_confidence(annotation);
-
-            // filter_value will be a number between 0-100, so convert the confidence to a percentage as well
-            confidence = Math.round(confidence * 100);
-
-            // Compare the confidence value against the filter value
-            const should_deprecate: boolean = this.filter_function(confidence, filter_value);
-            // Check if an annotation should be deprecated or undeprecated, else do nothing
-            if (
-                (should_deprecate && !annotation.deprecated) ||
-                (!should_deprecate && annotation.deprecated)
-            ) {
-                // Mark this annotation as either deprecated or undeprecated by the confidence filter
-                this.mark_deprecated(annotation, should_deprecate, "confidence_filter");
-                annotations_ids_to_redraw_by_subtask[annotation.subtask_key!].push(annotation.id!);
-            }
-        }
-
-        if (redraw) {
-            // Redraw each subtask's annotations
-            for (const subtask_key in annotations_ids_to_redraw_by_subtask) {
-                ulabel.redraw_multiple_spatial_annotations(annotations_ids_to_redraw_by_subtask[subtask_key], subtask_key);
-            }
-            // Update class counter
-            ulabel.toolbox.redraw_update_items(ulabel);
-        }
-    }
-
-    public get_html() {
-        // Create a SliderHandler instance to handle slider interactions
-        const slider_handler = new SliderHandler({
-            id: this.name.replaceLowerConcat(" ", "-"),
-            class: "keypoint-slider",
-            default_value: Math.round(this.filter_value * 100).toString(),
-            label_units: "%",
-            slider_event: (slider_value: number | string) => {
-                // Filter the annotations, then redraw them
-                this.filter_annotations(this.ulabel, Number(slider_value), true);
-            },
-        });
-
-        return `
-        <div class="keypoint-slider">
-            <p class="tb-header">${this.name}</p>
-            ` + slider_handler.getSliderHTML() + `
-        </div>
-        `;
-    }
-
-    /**
-     * Get the current keypoint slider value by reading the DOM slider element.
-     *
-     * @returns The current slider value as a number between 0 and 1, or null if the slider is not found
-     */
-    public get_current_value(): number | null {
-        const slider = document.querySelector<HTMLInputElement>(`#${this.slider_bar_id}`);
-        if (slider === null) return null;
-        return slider.valueAsNumber / 100;
-    }
-
-    public after_init() {
-        // This toolbox item doesn't need to do anything after initialization
-    }
-
-    public get_toolbox_item_type() {
-        return "KeypointSlider";
-    }
-}
+/* ConfidenceSlider and the deprecated KeypointSliderItem now live in
+ * ./toolbox_items/confidence_slider.ts */
 
 export class FilterPointDistanceFromRow extends ToolboxItem {
     name!: string; // Component name shown to users
