@@ -134,12 +134,12 @@ export type ConfidenceSliderClasses = {
 };
 
 /**
- * Controls the multi-class mode of the ConfidenceSlider ToolboxItem:
- * - "toggle": a checkbox lets the user switch between single- and multi-class filtering
- * - "single-only": only a single global slider is shown
- * - "multi-only": only per-class sliders are shown
+ * Controls how the ConfidenceSlider ToolboxItem filters by class:
+ * - "toggle": a checkbox lets the user switch between the single "all" slider and per-class sliders
+ * - "all-only": only a single global slider (keyed "all") is shown, filtering every targeted annotation
+ * - "class-only": only per-class sliders are shown
  */
-export type ConfidenceSliderMultiClassMode = "toggle" | "single-only" | "multi-only";
+export type ConfidenceSliderClassFilterMode = "toggle" | "all-only" | "class-only";
 
 /**
  * Config object for the ConfidenceSlider ToolboxItem.
@@ -150,12 +150,11 @@ export type ConfidenceSliderConfig = {
     filter_max?: number;
     default_values?: ConfidenceSliderClasses;
     step_value?: number;
-    multi_class_mode?: ConfidenceSliderMultiClassMode;
+    class_filter_mode?: ConfidenceSliderClassFilterMode;
     filter_on_load?: boolean;
-    show_options?: boolean;
     // The spatial types to filter. Defaults to all confidence-filterable spatial types.
     target_spatial_types?: ULabelSpatialType[];
-    // The class ids to create sliders for in multi-class mode. Defaults to all class ids.
+    // The class ids to create sliders for in class-only/toggle mode. Defaults to all class ids.
     target_class_ids?: number[];
     keybinds?: {
         increment: string;

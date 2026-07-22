@@ -441,13 +441,13 @@ The `ConfidenceSlider` toolbox item (added to `toolbox_order` via `AllowedToolbo
 
 It supports two modes:
 
-- **Single-class mode** (default): a single slider applies one confidence threshold to every targeted spatial annotation across all subtasks, using each annotation's highest confidence value.
-- **Multi-class mode**: one slider is shown per targeted class id. Each slider only filters annotations whose assigned (highest-confidence) class matches that slider, using that class's confidence value.
+- **"all" mode** (default): a single slider applies one confidence threshold to every targeted spatial annotation across all subtasks, using each annotation's highest confidence value.
+- **Per-class mode**: one slider is shown per targeted class id. Each slider only filters annotations whose assigned (highest-confidence) class matches that slider, using that class's confidence value.
 
-The `multi_class_mode` config controls whether these modes are user-toggleable:
-- `"toggle"` (default): a "Multi-Class Filtering" checkbox lets the user switch between the two modes.
-- `"single-only"`: only the single global slider is shown.
-- `"multi-only"`: only the per-class sliders are shown.
+The `class_filter_mode` config controls whether these modes are user-toggleable:
+- `"toggle"` (default): a checkbox lets the user switch between the two modes.
+- `"all-only"`: only the single global "all" slider is shown.
+- `"class-only"`: only the per-class sliders are shown.
 
 Any annotation with a confidence at or above the threshold is shown; any below is deprecated. Thresholds are expressed as percentages, and the slider's range and increment are configurable via `filter_min`, `filter_max`, and `step_value`.
 
@@ -458,8 +458,8 @@ type ConfidenceThreshold = {
 }
 
 type ConfidenceSliderClasses = {
-    "all": ConfidenceThreshold, // value used by the single-class slider
-    [key: number]?: ConfidenceThreshold // per-class-id values used in multi-class mode
+    "all": ConfidenceThreshold, // value used by the single global slider
+    [key: number]?: ConfidenceThreshold // per-class-id values used in per-class mode
 }
 
 type ConfidenceSliderConfig = {
@@ -468,12 +468,11 @@ type ConfidenceSliderConfig = {
     "filter_max"?: number, // Default: 100 (%)
     "default_values"?: ConfidenceSliderClasses, // Default: {"all": {"confidence": 0}}
     "step_value"?: number, // Default: 1 (%)
-    "multi_class_mode"?: "toggle" | "single-only" | "multi-only", // Default: "toggle"
+    "class_filter_mode"?: "toggle" | "all-only" | "class-only", // Default: "toggle"
     "filter_on_load"?: boolean, // Default: true
-    "show_options"?: boolean, // Default: true
     // The spatial types to filter. Defaults to all confidence-filterable spatial types.
     "target_spatial_types"?: ULabelSpatialType[],
-    // The class ids to create sliders for in multi-class mode. Defaults to all class ids.
+    // The class ids to create sliders for in class-only/toggle mode. Defaults to all class ids.
     "target_class_ids"?: number[],
 }
 ```
@@ -617,7 +616,7 @@ Sets the zoom to focus on the provided annotation, and switches to its subtask i
 
 ### `get_confidence_slider_value()`
 
-*() => object | null* -- Returns an object mapping class identifiers to their confidence threshold values (as percentages, 0–100). The object always includes an `all` key for the single-class slider. In multi-class mode, additional keys correspond to each class ID. Returns `null` if the ConfidenceSlider toolbox item is not active or no sliders are found.
+*() => object | null* -- Returns an object mapping class identifiers to their confidence threshold values (as percentages, 0–100). The object always includes an `all` key for the single global slider. In per-class mode, additional keys correspond to each class ID. Returns `null` if the ConfidenceSlider toolbox item is not active or no sliders are found.
 
 ## Generic Callbacks
 

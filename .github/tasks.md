@@ -9,5 +9,4 @@
 - [x] Add support for configurable step size and min/max values for the confidence slider
 - [x] Add config options such that users can either enforce, disable, or leave toggleable the multi-class mode for the confidence slider
 - [x] Should we raise a warning if a KeypointSlider is used alongside a ConfidenceFilter?
-- [ ] Discuss with the user: How could we implement an option to only filter specific classes rather than either all at once or all classes individually? Basically, I want a multi-class option where the user can enable/disable specific classes in the config
 - [ ] I notice that if no toolbox order is provided, the Keypoint Slider is included. Can we replace it with a Confidence Slider?

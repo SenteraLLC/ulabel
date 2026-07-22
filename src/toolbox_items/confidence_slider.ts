@@ -30,8 +30,8 @@ import {
  * - Multi-class mode: one slider per targeted class id. Each slider filters only the annotations
  *   whose assigned (highest-confidence) class matches, using that class's confidence.
  *
- * The `multi_class_mode` config controls whether the mode is user-toggleable (`"toggle"`), or
- * locked to `"single-only"` or `"multi-only"`.
+ * The `class_filter_mode` config controls whether the mode is user-toggleable (`"toggle"`), or
+ * locked to `"all-only"` (single global slider) or `"class-only"` (per-class sliders).
  */
 export class ConfidenceSlider extends ToolboxItem {
     public ulabel: ULabel;
@@ -41,15 +41,14 @@ export class ConfidenceSlider extends ToolboxItem {
     public filter_max!: number;
     public step_value!: number;
     public default_values!: ConfidenceSliderClasses;
-    public show_options!: boolean;
     public filter_on_load!: boolean;
     public target_spatial_types!: ULabelSpatialType[];
     public target_class_ids!: number[] | null;
     public collapse_options: boolean = false;
 
-    // Whether the multi-class toggle is shown, and the current runtime mode
-    public show_multi_toggle!: boolean;
-    public is_multi_class!: boolean;
+    // Whether the class-filter-mode toggle is shown, and whether per-class sliders are active
+    public show_class_toggle!: boolean;
+    public is_class_mode!: boolean;
 
     public filter_function: (value: number, filter: number) => boolean;
     public get_confidence: (annotation: ULabelAnnotation) => number;
@@ -95,15 +94,14 @@ export class ConfidenceSlider extends ToolboxItem {
         this.filter_max = this.config.filter_max!;
         this.step_value = this.config.step_value!;
         this.default_values = this.config.default_values!;
-        this.show_options = this.config.show_options!;
         this.filter_on_load = this.config.filter_on_load!;
         this.target_spatial_types = this.config.target_spatial_types ?? CONFIDENCE_FILTERABLE_SPATIAL_TYPES;
         this.target_class_ids = this.config.target_class_ids ?? null;
 
-        // Resolve the multi-class mode option into runtime state
-        const multi_class_mode = this.config.multi_class_mode!;
-        this.show_multi_toggle = multi_class_mode === "toggle";
-        this.is_multi_class = multi_class_mode === "multi-only";
+        // Resolve the class-filter-mode option into runtime state
+        const class_filter_mode = this.config.class_filter_mode!;
+        this.show_class_toggle = class_filter_mode === "toggle";
+        this.is_class_mode = class_filter_mode === "class-only";
 
         this.add_styles();
         this.add_event_listeners();
@@ -179,9 +177,9 @@ export class ConfidenceSlider extends ToolboxItem {
         // Toggle the options fieldset when its legend is clicked
         $(document).on("click.ulabel", "fieldset.confidence-slider-options > legend", () => this.toggleCollapsedOptions());
 
-        // Switch between single-class and multi-class filtering when the checkbox is clicked
+        // Switch between the "all" slider and the per-class sliders when the checkbox is clicked
         $(document).on("click.ulabel", `#${this.component_prefix}-multi-checkbox`, (event) => {
-            this.is_multi_class = event.currentTarget.checked;
+            this.is_class_mode = event.currentTarget.checked;
             $(`#${this.component_prefix}-single-class-mode`).toggleClass("ulabel-hidden");
             $(`#${this.component_prefix}-multi-class-mode`).toggleClass("ulabel-hidden");
             this.filter_annotations(true);
@@ -253,8 +251,8 @@ export class ConfidenceSlider extends ToolboxItem {
         for (const annotation of annotations) {
             let should_deprecate = false;
 
-            if (this.is_multi_class) {
-                // In multi-class mode, only filter annotations whose assigned class has a slider
+            if (this.is_class_mode) {
+                // In class-only mode, only filter annotations whose assigned class has a slider
                 const class_id = Number(get_annotation_class_id(annotation));
                 if (values[class_id] !== undefined) {
                     const confidence = Math.round(get_annotation_confidence_for_class(annotation, class_id) * 100);
@@ -329,11 +327,10 @@ export class ConfidenceSlider extends ToolboxItem {
         });
 
         let options_html = ``;
-        if (this.show_multi_toggle) {
+        if (this.show_class_toggle) {
             options_html = `
             <fieldset class="
                     confidence-slider-options
-                    ${this.show_options ? "" : "ulabel-hidden"}
                     ${this.collapse_options ? "ulabel-collapsed" : ""}
                 ">
                 <legend>Options ˅</legend>
@@ -342,12 +339,12 @@ export class ConfidenceSlider extends ToolboxItem {
                         type="checkbox"
                         id="${this.component_prefix}-multi-checkbox"
                         class="confidence-slider-options-checkbox"
-                        ${this.is_multi_class ? "checked" : ""}
+                        ${this.is_class_mode ? "checked" : ""}
                     />
                     <label
                         for="${this.component_prefix}-multi-checkbox"
                         class="confidence-slider-label">
-                        Multi-Class Filtering
+                        Per-Class Filtering
                     </label>
                 </div>
             </fieldset>`;
@@ -357,10 +354,10 @@ export class ConfidenceSlider extends ToolboxItem {
         <div class="confidence-slider">
             <p class="tb-header">${this.name}</p>
             ${options_html}
-            <div id="${this.component_prefix}-single-class-mode" class="${!this.is_multi_class ? "" : "ulabel-hidden"}">
+            <div id="${this.component_prefix}-single-class-mode" class="${!this.is_class_mode ? "" : "ulabel-hidden"}">
                 ${single_class_slider.getSliderHTML()}
             </div>
-            <div id="${this.component_prefix}-multi-class-mode" class="${this.is_multi_class ? "" : "ulabel-hidden"}">
+            <div id="${this.component_prefix}-multi-class-mode" class="${this.is_class_mode ? "" : "ulabel-hidden"}">
                 ${multi_class_html}
             </div>
         </div>
@@ -378,8 +375,8 @@ export class ConfidenceSlider extends ToolboxItem {
 
         const values: ConfidenceSliderClasses = { all: { confidence: all_slider.valueAsNumber } };
 
-        // In multi-class mode, also read the per-class sliders
-        if (this.is_multi_class) {
+        // In class-only mode, also read the per-class sliders
+        if (this.is_class_mode) {
             const sliders = document.querySelectorAll<HTMLInputElement>(`.${this.slider_class}`);
             for (let idx = 0; idx < sliders.length; idx++) {
                 const slider_class_name = /[^-]*$/.exec(sliders[idx].id)![0];

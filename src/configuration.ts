@@ -69,9 +69,8 @@ export const DEFAULT_CONFIDENCE_SLIDER_CONFIG: ConfidenceSliderConfig = {
     filter_max: 100,
     default_values: { all: { confidence: 0 } },
     step_value: 1,
-    multi_class_mode: "toggle",
+    class_filter_mode: "toggle",
     filter_on_load: true,
-    show_options: true,
 };
 
 export const DEFAULT_IMAGE_FILTERS_CONFIG: ImageFiltersConfig = {
