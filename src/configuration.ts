@@ -192,7 +192,7 @@ export class Configuration {
         AllowedToolboxItem.AnnotationID,
         AllowedToolboxItem.RecolorActive,
         AllowedToolboxItem.ClassCounter,
-        AllowedToolboxItem.KeypointSlider,
+        AllowedToolboxItem.ConfidenceSlider,
         AllowedToolboxItem.SubmitButtons,
     ];
 
