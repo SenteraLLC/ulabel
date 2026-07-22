@@ -207,6 +207,21 @@ describe("ConfidenceSlider", () => {
             expect(targeted.deprecated).toBe(true); // class 10 targeted: 10% < 50%
             expect(untargeted.deprecated).toBe(false); // class 11 not targeted: must be ignored
         });
+
+        test("filters on load using the 'all' fallback when per-class defaults are omitted", () => {
+            const car = make_annotation("car", "bbox", [{ class_id: 10, confidence: 0.1 }]);
+            const truck = make_annotation("truck", "bbox", [{ class_id: 11, confidence: 0.1 }]);
+            // filter_on_load runs during construction, before any DOM sliders exist
+            new ConfidenceSlider(make_ulabel([car, truck], {
+                class_filter_mode: "class-only",
+                default_values: { all: 50 }, // no explicit per-class thresholds
+                filter_on_load: true,
+            }));
+
+            // Both classes should be filtered by the "all" fallback (10% < 50%)
+            expect(car.deprecated).toBe(true);
+            expect(truck.deprecated).toBe(true);
+        });
     });
 
     describe("target_spatial_types", () => {

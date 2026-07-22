@@ -211,13 +211,16 @@ export class ConfidenceSlider extends ToolboxItem {
      */
     public get_filter_values(): ConfidenceSliderClasses {
         // Seed with defaults so filtering works before the sliders are rendered (e.g. on load).
-        // Only seed per-class thresholds for targeted classes (those that get a slider), so that
-        // filtering stays consistent with what is rendered and reported by get_current_values().
         const values: ConfidenceSliderClasses = { all: this.default_values.all };
-        for (const key in this.default_values) {
-            if (key === "all") continue;
-            if (this.target_class_ids !== null && !this.target_class_ids.includes(Number(key))) continue;
-            values[key] = this.default_values[key];
+
+        // In class mode, seed every targeted class (those that get a slider) with its explicit
+        // default or the "all" fallback. This matches the rendered slider defaults from
+        // createMultiFilterHTML(), so class-mode filter-on-load behaves consistently before the
+        // DOM sliders exist.
+        if (this.is_class_mode) {
+            for (const class_def of this.get_target_class_defs()) {
+                values[class_def.id] = this.default_values[class_def.id] ?? this.default_values.all;
+            }
         }
 
         // Read the single-class slider if present
@@ -226,7 +229,7 @@ export class ConfidenceSlider extends ToolboxItem {
             values.all = all_slider.valueAsNumber;
         }
 
-        // Read the per-class sliders if present
+        // Read the per-class sliders if present (override the seeded defaults)
         const sliders = document.querySelectorAll<HTMLInputElement>(`.${this.slider_class}`);
         for (let idx = 0; idx < sliders.length; idx++) {
             const slider_class_name = /[^-]*$/.exec(sliders[idx].id)![0];
