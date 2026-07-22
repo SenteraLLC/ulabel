@@ -93,7 +93,9 @@ export class ConfidenceSlider extends ToolboxItem {
         this.filter_min = this.config.filter_min!;
         this.filter_max = this.config.filter_max!;
         this.step_value = this.config.step_value!;
-        this.default_values = this.config.default_values!;
+        // Always ensure an "all" threshold exists (used by the global slider and as the per-class
+        // fallback), even if a user supplies default_values with only per-class keys.
+        this.default_values = { all: 0, ...this.config.default_values };
         this.filter_on_load = this.config.filter_on_load!;
         this.target_spatial_types = this.config.target_spatial_types ?? CONFIDENCE_FILTERABLE_SPATIAL_TYPES;
         this.target_class_ids = this.config.target_class_ids ?? null;
@@ -316,7 +318,10 @@ export class ConfidenceSlider extends ToolboxItem {
     }
 
     public get_html(): string {
-        const multi_class_html = this.createMultiFilterHTML();
+        // Only build per-class sliders when they can actually be shown (class-only or toggle mode).
+        // In all-only mode the multi-class container is never revealed, so skip the wasted DOM and
+        // SliderHandler event listeners.
+        const multi_class_html = (this.is_class_mode || this.show_class_toggle) ? this.createMultiFilterHTML() : "";
 
         const single_class_slider = new SliderHandler({
             id: `${this.component_prefix}-all`, // "all" is extracted using regex

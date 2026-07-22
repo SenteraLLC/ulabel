@@ -38,7 +38,7 @@ export function get_annotation_confidence(annotation: ULabelAnnotation) {
  * @returns The confidence for the given class id, or -1 if the class id is not present
  */
 export function get_annotation_confidence_for_class(annotation: ULabelAnnotation, class_id: number): number {
-    for (const payload of annotation.classification_payloads!) {
+    for (const payload of annotation.classification_payloads ?? []) {
         if (payload.class_id === class_id) {
             return payload.confidence;
         }

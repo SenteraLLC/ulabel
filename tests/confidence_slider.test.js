@@ -88,6 +88,18 @@ describe("ConfidenceSlider", () => {
             expect(cs.filter_min).toBe(0); // default
             expect(cs.step_value).toBe(1); // default
         });
+
+        test("defaults an 'all' threshold when default_values omits it", () => {
+            const cs = new ConfidenceSlider(make_ulabel([], {
+                class_filter_mode: "class-only",
+                default_values: { 10: 60 }, // no "all" key
+                filter_on_load: false,
+            }));
+            expect(cs.default_values.all).toBe(0);
+            expect(cs.default_values[10]).toBe(60);
+            // get_html must not throw when "all" was omitted by the user
+            expect(() => cs.get_html()).not.toThrow();
+        });
     });
 
     describe("filter_annotations - all mode", () => {
@@ -322,6 +334,15 @@ describe("ConfidenceSlider", () => {
 
             expect(html).toContain("confidence-slider-all");
             expect(html).toContain("confidence-slider-10");
+            expect(html).not.toContain("confidence-slider-11");
+        });
+
+        test("does not render per-class sliders in all-only mode", () => {
+            const cs = new ConfidenceSlider(make_ulabel([], { class_filter_mode: "all-only", filter_on_load: false }));
+            const html = cs.get_html();
+
+            expect(html).toContain("confidence-slider-all");
+            expect(html).not.toContain("confidence-slider-10");
             expect(html).not.toContain("confidence-slider-11");
         });
     });

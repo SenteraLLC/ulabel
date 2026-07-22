@@ -33,6 +33,11 @@ describe("get_annotation_confidence_for_class", () => {
         const annotation = make_annotation("bbox", [{ class_id: 1, confidence: 0.9 }]);
         expect(get_annotation_confidence_for_class(annotation, 99)).toBe(-1);
     });
+
+    test("returns -1 (does not throw) when classification_payloads is missing", () => {
+        expect(get_annotation_confidence_for_class({ classification_payloads: null }, 1)).toBe(-1);
+        expect(get_annotation_confidence_for_class({}, 1)).toBe(-1);
+    });
 });
 
 describe("get_spatial_annotations_with_confidence", () => {
