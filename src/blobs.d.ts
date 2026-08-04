@@ -9,6 +9,7 @@ export const TBAR_SVG: string;
 export const POLYLINE_SVG: string;
 export const WHOLE_IMAGE_SVG: string;
 export const GLOBAL_SVG: string;
+export const BITMASK_SVG: string;
 export const DEMO_ANNOTATION: object;
 export function get_init_style(ulabel_id: string): string;
 export const COLORS: string[];

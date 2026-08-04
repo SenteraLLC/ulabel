@@ -30,6 +30,7 @@ import { remove_ulabel_listeners } from "../build/listeners";
 import { log_message, LogLevel } from "../build/error_logging";
 import { initialize_annotation_canvases } from "../build/canvas_utils";
 import { record_action, record_finish, record_finish_edit, record_finish_move, undo, redo } from "../build/actions";
+import { ULabelMask } from "../build/mask_utils";
 
 import $ from "jquery";
 const jQuery = $;
@@ -674,6 +675,12 @@ export class ULabel {
         // Perform the after_init method for each toolbox item
         for (const toolbox_item of this.toolbox.items) {
             toolbox_item.after_init();
+        }
+
+        // If bitmask is the initial mode, enable its brush right away
+        if (this.get_current_subtask()["state"]["annotation_mode"] === "bitmask") {
+            BrushToolboxItem.show_brush_toolbox_item();
+            this.enable_bitmask_brush();
         }
     }
 
@@ -1732,6 +1739,123 @@ export class ULabel {
         }
     }
 
+    /**
+     * Get (and lazily decode/cache) the runtime ULabelMask for a bitmask annotation.
+     * The decoded mask is stored as a non-enumerable property so it is not included
+     * when annotations are serialized (e.g. via `get_annotations`).
+     *
+     * @param {object} annotation_object bitmask annotation
+     * @returns {ULabelMask} decoded mask
+     */
+    get_bitmask(annotation_object) {
+        if (annotation_object["_mask"] == null) {
+            let mask;
+            const payload = annotation_object["spatial_payload"];
+            if (payload != null && payload["counts"] !== undefined) {
+                mask = ULabelMask.from_rle(payload);
+            } else {
+                mask = ULabelMask.create_empty(this.config["image_width"], this.config["image_height"]);
+            }
+            this.set_bitmask(annotation_object, mask);
+        }
+        return annotation_object["_mask"];
+    }
+
+    // Attach a decoded mask to an annotation as a non-enumerable property so it is
+    // excluded from serialization.
+    set_bitmask(annotation_object, mask) {
+        Object.defineProperty(annotation_object, "_mask", {
+            value: mask,
+            enumerable: false,
+            writable: true,
+            configurable: true,
+        });
+    }
+
+    // Replace an annotation's cached mask from an RLE payload (or empty if null).
+    set_bitmask_from_rle(annotation_object, rle) {
+        let mask;
+        if (rle != null && rle["counts"] !== undefined) {
+            mask = ULabelMask.from_rle(rle);
+        } else {
+            mask = ULabelMask.create_empty(this.config["image_width"], this.config["image_height"]);
+        }
+        this.set_bitmask(annotation_object, mask);
+        return mask;
+    }
+
+    // Recompute a bitmask annotation's containing box from its mask.
+    rebuild_bitmask_containing_box(annotation_object) {
+        const bbox = this.get_bitmask(annotation_object).get_bounding_box();
+        if (bbox === null) {
+            annotation_object["containing_box"] = null;
+        } else {
+            annotation_object["containing_box"] = { tlx: bbox.tlx, tly: bbox.tly, brx: bbox.brx, bry: bbox.bry };
+        }
+    }
+
+    // Parse a "#rrggbb" hex color into [r, g, b]. Falls back to the default color on failure.
+    hex_to_rgb(color_hex) {
+        if (typeof color_hex === "string" && color_hex[0] === "#" && color_hex.length >= 7) {
+            const r = parseInt(color_hex.slice(1, 3), 16);
+            const g = parseInt(color_hex.slice(3, 5), 16);
+            const b = parseInt(color_hex.slice(5, 7), 16);
+            if (!isNaN(r) && !isNaN(g) && !isNaN(b)) {
+                return [r, g, b];
+            }
+        }
+        return [250, 157, 42];
+    }
+
+    draw_bitmask(annotation_object, ctx, offset = null) {
+        const px_per_px = this.config["px_per_px"];
+        const image_width = this.config["image_width"];
+        const image_height = this.config["image_height"];
+
+        const mask = this.get_bitmask(annotation_object);
+        if (mask === null || image_width == null || image_height == null) return;
+
+        // Build an ImageData at native image resolution from the mask, tinted by class color
+        const [r, g, b] = this.hex_to_rgb(this.get_annotation_color(annotation_object));
+        const alpha = Math.round(255 * this.config["mask_annotation_opacity"]);
+
+        const offscreen = document.createElement("canvas");
+        offscreen.width = image_width;
+        offscreen.height = image_height;
+        const offscreen_ctx = offscreen.getContext("2d");
+        const image_data = offscreen_ctx.createImageData(image_width, image_height);
+        const data = image_data.data;
+        const mask_data = mask.data;
+        for (let i = 0; i < mask_data.length; i++) {
+            if (mask_data[i] !== 0) {
+                const j = i * 4;
+                data[j] = r;
+                data[j + 1] = g;
+                data[j + 2] = b;
+                data[j + 3] = alpha;
+            }
+        }
+        offscreen_ctx.putImageData(image_data, 0, 0);
+
+        // Draw the native-resolution mask scaled onto the target context, honoring any offset
+        let diffX = 0;
+        let diffY = 0;
+        if (offset != null) {
+            diffX = offset["diffX"];
+            diffY = offset["diffY"];
+        }
+        ctx.imageSmoothingEnabled = false;
+        ctx.globalCompositeOperation = "source-over";
+        ctx.globalAlpha = 1.0;
+        ctx.drawImage(
+            offscreen,
+            diffX * px_per_px,
+            diffY * px_per_px,
+            image_width * px_per_px,
+            image_height * px_per_px,
+        );
+    }
+
     draw_contour(annotation_object, ctx, offset = null) {
         const px_per_px = this.config["px_per_px"];
         let diffX = 0;
@@ -1901,6 +2025,9 @@ export class ULabel {
                 break;
             case "tbar":
                 this.draw_tbar(annotation_object, context, offset);
+                break;
+            case "bitmask":
+                this.draw_bitmask(annotation_object, context, offset);
                 break;
             case "whole-image":
                 this.draw_whole_image_annotation(annotation_object, subtask);
@@ -2223,6 +2350,16 @@ export class ULabel {
     toggle_brush_mode(mouse_event) {
         // Try and switch to polygon annotation if not already in it
         const current_subtask = this.get_current_subtask_key();
+        // In bitmask mode the brush is always active; "brush" selects paint (non-erase)
+        if (this.subtasks[current_subtask]["state"]["annotation_mode"] === "bitmask") {
+            const state = this.subtasks[current_subtask]["state"];
+            state["is_in_brush_mode"] = true;
+            state["is_in_erase_mode"] = false;
+            $("#brush-mode").addClass(BrushToolboxItem.BRUSH_BTN_ACTIVE_CLS);
+            $("#erase-mode").removeClass(BrushToolboxItem.BRUSH_BTN_ACTIVE_CLS);
+            this.recolor_brush_circle();
+            return;
+        }
         let is_in_polygon_mode = this.subtasks[current_subtask]["state"]["annotation_mode"] === "polygon";
         // Try and switch to polygon mode if not already in it
         if (!is_in_polygon_mode) {
@@ -2261,6 +2398,22 @@ export class ULabel {
 
     toggle_erase_mode(mouse_event) {
         const current_subtask = this.get_current_subtask();
+        // In bitmask mode the brush is always active; only the paint/erase toggle changes
+        if (current_subtask["state"]["annotation_mode"] === "bitmask") {
+            current_subtask["state"]["is_in_brush_mode"] = true;
+            current_subtask["state"]["is_in_erase_mode"] = !current_subtask["state"]["is_in_erase_mode"];
+            if (current_subtask["state"]["is_in_erase_mode"]) {
+                $("#erase-mode").addClass(BrushToolboxItem.BRUSH_BTN_ACTIVE_CLS);
+                $("#brush-mode").removeClass(BrushToolboxItem.BRUSH_BTN_ACTIVE_CLS);
+            } else {
+                $("#erase-mode").removeClass(BrushToolboxItem.BRUSH_BTN_ACTIVE_CLS);
+                $("#brush-mode").addClass(BrushToolboxItem.BRUSH_BTN_ACTIVE_CLS);
+            }
+            $("#brush_circle").css({
+                "background-color": current_subtask["state"]["is_in_erase_mode"] ? "red" : this.get_active_class_color(),
+            });
+            return;
+        }
         // If not in brush mode, turn it on
         if (!current_subtask["state"]["is_in_brush_mode"]) {
             this.toggle_brush_mode(mouse_event);
@@ -2292,6 +2445,27 @@ export class ULabel {
         ) {
             this.toggle_brush_mode();
         }
+    }
+
+    // Enable the brush for bitmask mode (painting is the only interaction)
+    enable_bitmask_brush() {
+        const state = this.get_current_subtask()["state"];
+        state["is_in_brush_mode"] = true;
+        state["is_in_erase_mode"] = false;
+        $("#brush-mode").addClass(BrushToolboxItem.BRUSH_BTN_ACTIVE_CLS);
+        $("#erase-mode").removeClass(BrushToolboxItem.BRUSH_BTN_ACTIVE_CLS);
+        // Create the brush circle; it will follow the cursor on the next mouse move
+        this.create_brush_circle(0, 0);
+    }
+
+    // Disable the brush when leaving bitmask mode
+    disable_bitmask_brush() {
+        const state = this.get_current_subtask()["state"];
+        state["is_in_brush_mode"] = false;
+        state["is_in_erase_mode"] = false;
+        $("#brush-mode").removeClass(BrushToolboxItem.BRUSH_BTN_ACTIVE_CLS);
+        $("#erase-mode").removeClass(BrushToolboxItem.BRUSH_BTN_ACTIVE_CLS);
+        this.destroy_brush_circle();
     }
 
     // Create a brush circle at the mouse location
@@ -3711,6 +3885,12 @@ export class ULabel {
             return;
         }
 
+        // Bitmask annotations derive their containing box from the mask's bounding box.
+        if (spatial_type === "bitmask") {
+            this.rebuild_bitmask_containing_box(this.subtasks[subtask]["annotations"]["access"][actid]);
+            return;
+        }
+
         let spatial_payload = [];
         if (spatial_type === "polygon") {
             // Collapse the list[list[points]] into a single list of points
@@ -4031,6 +4211,11 @@ export class ULabel {
     // Start annotating or erasing with the brush
     begin_brush(mouse_event) {
         const current_subtask = this.get_current_subtask();
+        // Raster bitmask mode uses its own brush painting pipeline
+        if (current_subtask["state"]["annotation_mode"] === "bitmask") {
+            this.begin_bitmask(mouse_event);
+            return;
+        }
         // First, we check if there is an annotation touching the brush
         let brush_cand_active_id = null;
         const global_x = this.get_global_mouse_x(mouse_event);
@@ -4109,6 +4294,11 @@ export class ULabel {
     }
 
     continue_brush(mouse_event) {
+        // Raster bitmask mode uses its own brush painting pipeline
+        if (this.get_current_subtask()["state"]["annotation_mode"] === "bitmask") {
+            this.continue_bitmask(mouse_event);
+            return;
+        }
         // Get global mouse position
         const gmx = this.get_global_mouse_x(mouse_event);
         const gmy = this.get_global_mouse_y(mouse_event);
@@ -4196,6 +4386,274 @@ export class ULabel {
                 }, false, false);
             }
         }
+    }
+
+    // ================= Bitmask (raster segmentation) brush =================
+
+    // Create a new, empty bitmask annotation and return its id.
+    create_bitmask_annotation() {
+        const subtask_key = this.get_current_subtask_key();
+        const current_subtask = this.subtasks[subtask_key];
+        const annotation_id = this.make_new_annotation_id();
+        const canvas_id = this.get_init_canvas_context_id(annotation_id, subtask_key);
+        const init_id_payload = this.get_init_id_payload("bitmask");
+
+        current_subtask["annotations"]["access"][annotation_id] = {
+            id: annotation_id,
+            created_by: this.config.username,
+            created_at: ULabel.get_time(),
+            last_edited_at: ULabel.get_time(),
+            last_edited_by: this.config.username,
+            deprecated: false,
+            deprecated_by: { human: false },
+            spatial_type: "bitmask",
+            spatial_payload: null,
+            classification_payloads: init_id_payload,
+            containing_box: null,
+            frame: this.state["current_frame"],
+            canvas_id: canvas_id,
+            text_payload: "",
+            annotation_meta: this.config["annotation_meta"],
+        };
+        current_subtask["annotations"]["ordering"].push(annotation_id);
+
+        // Attach a fresh, empty mask
+        this.get_bitmask(current_subtask["annotations"]["access"][annotation_id]);
+        return annotation_id;
+    }
+
+    // Find the topmost undeprecated bitmask annotation with foreground under the brush.
+    find_bitmask_under_brush(imx, imy, radius) {
+        const current_subtask = this.get_current_subtask();
+        const ordering = current_subtask["annotations"]["ordering"];
+        const access = current_subtask["annotations"]["access"];
+        for (let i = ordering.length - 1; i >= 0; i--) {
+            const annotation = access[ordering[i]];
+            if (annotation["deprecated"] || annotation["spatial_type"] !== "bitmask") continue;
+            if (this.get_bitmask(annotation).has_foreground_in_circle(imx, imy, radius)) {
+                return ordering[i];
+            }
+        }
+        return null;
+    }
+
+    // Paint (or erase) a stroke as a series of interpolated circles between two image points.
+    paint_bitmask_line(mask, x0, y0, x1, y1, radius, value) {
+        const dx = x1 - x0;
+        const dy = y1 - y0;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        const step = Math.max(1, radius / 2);
+        const steps = Math.max(1, Math.ceil(dist / step));
+        let changed = false;
+        for (let s = 0; s <= steps; s++) {
+            const t = s / steps;
+            if (mask.paint_circle(x0 + dx * t, y0 + dy * t, radius, value)) {
+                changed = true;
+            }
+        }
+        return changed;
+    }
+
+    begin_bitmask(mouse_event) {
+        const current_subtask = this.get_current_subtask();
+        const annotations = current_subtask["annotations"]["access"];
+        const gmx = this.get_global_mouse_x(mouse_event);
+        const gmy = this.get_global_mouse_y(mouse_event);
+        const imx = gmx / this.config["px_per_px"];
+        const imy = gmy / this.config["px_per_px"];
+        const radius = this.config["brush_size"] / 2;
+        const is_erase = current_subtask["state"]["is_in_erase_mode"];
+        const in_bounds = GeometricUtils.point_is_within_image_bounds(
+            [imx, imy],
+            this.config["image_width"],
+            this.config["image_height"],
+        );
+
+        let target_id = this.find_bitmask_under_brush(imx, imy, radius);
+        let was_new = false;
+
+        if (is_erase) {
+            // Nothing to erase under the brush
+            if (target_id === null) {
+                this.move_brush_circle(gmx, gmy);
+                return;
+            }
+        } else {
+            // Don't start a new annotation fully outside the image
+            if (!in_bounds) {
+                this.shake_screen();
+                this.move_brush_circle(gmx, gmy);
+                return;
+            }
+            // Only continue an existing annotation if it matches the active class
+            if (target_id !== null && get_annotation_class_id(annotations[target_id]) !== this.get_active_class_id()) {
+                target_id = null;
+            }
+            if (target_id === null) {
+                target_id = this.create_bitmask_annotation();
+                was_new = true;
+            }
+        }
+
+        current_subtask["state"]["active_id"] = target_id;
+        current_subtask["state"]["is_in_progress"] = true;
+        current_subtask["state"]["id_payload"] = JSON.parse(JSON.stringify(annotations[target_id]["classification_payloads"]));
+        this.update_id_toolbox_display();
+        this.recolor_brush_circle();
+
+        // Snapshot state for a single-stroke undo
+        current_subtask["state"]["bitmask_stroke"] = {
+            annotation_id: target_id,
+            was_new: was_new,
+            before_rle: was_new ? null : this.get_bitmask(annotations[target_id]).to_rle(),
+            last_point: null,
+        };
+
+        this.state["last_brush_stroke"] = null;
+        this.continue_bitmask(mouse_event);
+    }
+
+    continue_bitmask(mouse_event) {
+        const gmx = this.get_global_mouse_x(mouse_event);
+        const gmy = this.get_global_mouse_y(mouse_event);
+        this.move_brush_circle(gmx, gmy);
+
+        // Throttle dabs based on distance moved
+        const min_brush_distance = this.config["brush_size"] / 8;
+        if (this.state["last_brush_stroke"] !== null) {
+            const [last_gmx, last_gmy] = this.state["last_brush_stroke"];
+            if (Math.abs(gmx - last_gmx) < min_brush_distance && Math.abs(gmy - last_gmy) < min_brush_distance) {
+                return;
+            }
+        }
+        this.state["last_brush_stroke"] = [gmx, gmy];
+
+        const current_subtask = this.get_current_subtask();
+        const active_id = current_subtask["state"]["active_id"];
+        const stroke = current_subtask["state"]["bitmask_stroke"];
+        if (active_id === null || stroke == null) return;
+
+        const annotation = current_subtask["annotations"]["access"][active_id];
+        const mask = this.get_bitmask(annotation);
+        const imx = gmx / this.config["px_per_px"];
+        const imy = gmy / this.config["px_per_px"];
+        const radius = this.config["brush_size"] / 2;
+        const value = current_subtask["state"]["is_in_erase_mode"] ? 0 : 1;
+
+        let changed;
+        if (stroke.last_point !== null) {
+            changed = this.paint_bitmask_line(mask, stroke.last_point[0], stroke.last_point[1], imx, imy, radius, value);
+        } else {
+            changed = mask.paint_circle(imx, imy, radius, value);
+        }
+        stroke.last_point = [imx, imy];
+
+        if (changed) {
+            this.redraw_annotation(active_id);
+        }
+    }
+
+    finish_bitmask() {
+        const current_subtask = this.get_current_subtask();
+        const annotations = current_subtask["annotations"]["access"];
+        const active_id = current_subtask["state"]["active_id"];
+        const stroke = current_subtask["state"]["bitmask_stroke"];
+
+        this.state["last_brush_stroke"] = null;
+        current_subtask["state"]["is_in_progress"] = false;
+        current_subtask["state"]["active_id"] = null;
+        current_subtask["state"]["bitmask_stroke"] = null;
+
+        if (active_id == null || stroke == null) return;
+
+        const annotation = annotations[active_id];
+        const mask = this.get_bitmask(annotation);
+        const after_empty = mask.is_empty();
+
+        // Encode the mask to an RLE payload and update the containing box
+        annotation["spatial_payload"] = mask.to_rle();
+        this.rebuild_bitmask_containing_box(annotation);
+
+        // If the stroke erased the whole mask, deprecate the annotation (ULabel's delete semantics)
+        if (after_empty) {
+            mark_deprecated(annotation, true);
+        }
+
+        if (current_subtask["single_class_mode"]) {
+            annotation["classification_payloads"] = [
+                {
+                    class_id: current_subtask["class_defs"][0]["id"],
+                    confidence: 1.0,
+                },
+            ];
+        }
+
+        // Record the whole stroke as a single undoable action. Both payloads carry the
+        // full before/after state so undo and redo can each reconstruct it.
+        const stroke_payload = {
+            before_rle: stroke.before_rle,
+            after_rle: annotation["spatial_payload"],
+            was_new: stroke.was_new,
+            after_empty: after_empty,
+        };
+        record_action(this, {
+            act_type: "bitmask_stroke",
+            annotation_id: active_id,
+            frame: this.state["current_frame"],
+            undo_payload: stroke_payload,
+            redo_payload: stroke_payload,
+        });
+
+        this.redraw_annotation(active_id);
+        this.suggest_edits(null, null, true);
+        this.toolbox.redraw_update_items(this);
+    }
+
+    bitmask_stroke__undo(annotation_id, undo_payload) {
+        const annotations = this.get_current_subtask()["annotations"]["access"];
+        const annotation = annotations[annotation_id];
+        if (annotation === undefined) return;
+
+        if (undo_payload.was_new) {
+            // Undo creation of a brand-new annotation
+            this.set_bitmask_from_rle(annotation, null);
+            annotation["spatial_payload"] = null;
+            annotation["containing_box"] = null;
+            mark_deprecated(annotation, true);
+        } else {
+            this.set_bitmask_from_rle(annotation, undo_payload.before_rle);
+            annotation["spatial_payload"] = undo_payload.before_rle;
+            mark_deprecated(annotation, false);
+            this.rebuild_bitmask_containing_box(annotation);
+        }
+
+        this.redraw_annotation(annotation_id);
+        this.suggest_edits(null, null, true);
+        this.toolbox.redraw_update_items(this);
+    }
+
+    bitmask_stroke__redo(annotation_id, redo_payload) {
+        const annotations = this.get_current_subtask()["annotations"]["access"];
+        const annotation = annotations[annotation_id];
+        if (annotation === undefined) return;
+
+        this.set_bitmask_from_rle(annotation, redo_payload.after_rle);
+        annotation["spatial_payload"] = redo_payload.after_rle;
+        mark_deprecated(annotation, redo_payload.after_empty === true);
+        this.rebuild_bitmask_containing_box(annotation);
+
+        this.redraw_annotation(annotation_id);
+        this.suggest_edits(null, null, true);
+        this.toolbox.redraw_update_items(this);
+
+        // Re-record so the stroke can be undone again
+        record_action(this, {
+            act_type: "bitmask_stroke",
+            annotation_id: annotation_id,
+            frame: this.state["current_frame"],
+            undo_payload: redo_payload,
+            redo_payload: redo_payload,
+        }, true);
     }
 
     /**
@@ -4491,6 +4949,13 @@ export class ULabel {
         // Initialize required variables
         let active_id = current_subtask["state"]["active_id"];
         let annotation = annotations[active_id];
+
+        // Raster bitmask strokes are finalized by their own pipeline
+        if (annotation != null && annotation["spatial_type"] === "bitmask") {
+            this.finish_bitmask();
+            return;
+        }
+
         let spatial_payload = annotation["spatial_payload"];
         let active_spatial_payload = spatial_payload;
         let should_record_action = false;

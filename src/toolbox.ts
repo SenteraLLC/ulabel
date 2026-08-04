@@ -419,21 +419,35 @@ export class ModeSelectionToolboxItem extends ToolboxItem {
             if (target_jq.hasClass("sel") || current_subtask["state"]["is_in_progress"]) return;
 
             // Get the new mode and set it to ulabel's current mode
+            const prev_mode = current_subtask["state"]["annotation_mode"];
             const new_mode = target_jq.attr("id")!.split("--")[1];
             current_subtask["state"]["annotation_mode"] = new_mode;
 
-            // Show the BrushToolboxItem when polygon mode is selected
+            // Show the BrushToolboxItem when polygon or bitmask mode is selected
             if (new_mode === "polygon") {
                 BrushToolboxItem.show_brush_toolbox_item();
+                // Leaving bitmask requires tearing down its brush state
+                if (prev_mode === "bitmask") {
+                    ulabel.disable_bitmask_brush();
+                }
+            } else if (new_mode === "bitmask") {
+                BrushToolboxItem.show_brush_toolbox_item();
+                // Bitmask painting always uses the brush
+                ulabel.enable_bitmask_brush();
             } else {
                 BrushToolboxItem.hide_brush_toolbox_item();
-                // Turn off erase mode if it's on
-                if (current_subtask["state"]["is_in_erase_mode"]) {
-                    ulabel.toggle_erase_mode(e);
-                }
-                // Turn off brush mode if it's on
-                if (current_subtask["state"]["is_in_brush_mode"]) {
-                    ulabel.toggle_brush_mode(e);
+                if (prev_mode === "bitmask") {
+                    // Tear down the bitmask brush without forcing a polygon switch
+                    ulabel.disable_bitmask_brush();
+                } else {
+                    // Turn off erase mode if it's on
+                    if (current_subtask["state"]["is_in_erase_mode"]) {
+                        ulabel.toggle_erase_mode(e);
+                    }
+                    // Turn off brush mode if it's on
+                    if (current_subtask["state"]["is_in_brush_mode"]) {
+                        ulabel.toggle_brush_mode(e);
+                    }
                 }
             }
 

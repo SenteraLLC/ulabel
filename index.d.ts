@@ -182,7 +182,7 @@ export type ULabelSubmitHandler = (submitData: ULabelSubmitData) => void;
 /**
  * @link https://github.com/SenteraLLC/ulabel/blob/main/api_spec.md#subtasks
  */
-export type ULabelSpatialType = "contour" | "polygon" | "polyline" | "bbox" | "tbar" | "bbox3" | "whole-image" | "global" | "point";
+export type ULabelSpatialType = "contour" | "polygon" | "polyline" | "bbox" | "tbar" | "bbox3" | "whole-image" | "global" | "point" | "bitmask";
 
 // A 2D spatial payload is a list of 2D points
 export type ULabelSpatialPayload = [number, number][];
@@ -243,6 +243,7 @@ export type ULabelActionType = "create_nonspatial_annotation" |
     "simplify_polygon_complex_layer" |
     "begin_brush" |
     "continue_brush" |
+    "bitmask_stroke" |
     "finish_modify_annotation" |
     "assign_annotation_id";
 
@@ -416,6 +417,8 @@ export class ULabel {
     // TODO (joshua-dean): should these actually be optional?
     public toggle_erase_mode(mouse_event?: JQuery.TriggeredEvent): void;
     public toggle_brush_mode(mouse_event?: JQuery.TriggeredEvent): void;
+    public enable_bitmask_brush(): void;
+    public disable_bitmask_brush(): void;
     public toggle_delete_class_id_in_toolbox(): void;
     public change_brush_size(scale_factor: number): void;
     public recolor_brush_circle(): void;
@@ -504,11 +507,13 @@ export class ULabel {
     public simplify_polygon_complex_layer__undo(annotation_id: string, undo_payload: object): void;
     public delete_annotations_in_polygon__undo(undo_payload: object): void;
     public begin_brush__undo(annotation_id: string, undo_payload: object): void;
+    public bitmask_stroke__undo(annotation_id: string, undo_payload: object): void;
     public finish_modify_annotation__undo(annotation_id: string, undo_payload: object): void;
 
     // Redo
     public redo(): void;
     public finish_annotation__redo(annotation_id: string): void;
+    public bitmask_stroke__redo(annotation_id: string, redo_payload: object): void;
     public begin_edit__redo(annotation_id: string, redo_payload: object): void;
     public begin_move__redo(annotation_id: string, redo_payload: object): void;
     public delete_annotation__redo(annotation_id: string): void;

@@ -2228,8 +2228,25 @@ const COLORS = [
     "fuchsia",
 ];
 
+// Simple icon representing a raster/bitmask segmentation mode (a filled pixel grid)
+const BITMASK_SVG = `
+<svg xmlns="http://www.w3.org/2000/svg" width="100mm" height="100mm" viewBox="0 0 100 100" version="1.1">
+  <g>
+    <rect x="10" y="10" width="24" height="24"/>
+    <rect x="38" y="10" width="24" height="24"/>
+    <rect x="66" y="10" width="24" height="24" fill="none" stroke="currentColor" stroke-width="4"/>
+    <rect x="10" y="38" width="24" height="24" fill="none" stroke="currentColor" stroke-width="4"/>
+    <rect x="38" y="38" width="24" height="24"/>
+    <rect x="66" y="38" width="24" height="24"/>
+    <rect x="10" y="66" width="24" height="24"/>
+    <rect x="38" y="66" width="24" height="24" fill="none" stroke="currentColor" stroke-width="4"/>
+    <rect x="66" y="66" width="24" height="24"/>
+  </g>
+</svg>`;
+
 export {
     BBOX_SVG, DELETE_BBOX_SVG, BBOX3_SVG, POINT_SVG, POLYGON_SVG, DELETE_POLYGON_SVG, CONTOUR_SVG, TBAR_SVG, POLYLINE_SVG, WHOLE_IMAGE_SVG, GLOBAL_SVG,
+    BITMASK_SVG,
     DEMO_ANNOTATION,
     get_init_style,
     COLORS, BUTTON_LOADER_HTML,

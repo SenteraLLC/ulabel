@@ -279,6 +279,10 @@ function trigger_action_listeners(
         begin_brush: {
             undo: on_annotation_revert,
         },
+        bitmask_stroke: {
+            // Undo/redo handling and re-rendering are managed by the
+            // bitmask_stroke__undo / bitmask_stroke__redo methods directly.
+        },
         delete_annotations_in_polygon: {
             // No listener for this action.
             // It handles the re-rendering of the affected annotations itself.
@@ -613,6 +617,9 @@ function undo_action(ulabel: ULabel, action: ULabelAction) {
         case "begin_brush":
             ulabel.begin_brush__undo(annotation_id, undo_payload);
             break;
+        case "bitmask_stroke":
+            ulabel.bitmask_stroke__undo(annotation_id, undo_payload);
+            break;
         case "finish_modify_annotation":
             ulabel.finish_modify_annotation__undo(annotation_id, undo_payload);
             break;
@@ -682,6 +689,9 @@ export function redo_action(ulabel: ULabel, action: ULabelAction) {
             break;
         case "finish_modify_annotation":
             ulabel.finish_modify_annotation__redo(annotation_id, redo_payload);
+            break;
+        case "bitmask_stroke":
+            ulabel.bitmask_stroke__redo(annotation_id, redo_payload);
             break;
         default:
             log_message(`Action type not recognized for redo: ${action.act_type}`, LogLevel.WARNING);
