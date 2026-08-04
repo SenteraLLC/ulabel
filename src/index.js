@@ -4431,13 +4431,18 @@ export class ULabel {
     }
 
     // Find the topmost undeprecated bitmask annotation with foreground under the brush.
-    find_bitmask_under_brush(imx, imy, radius) {
+    // Find the topmost undeprecated bitmask annotation with foreground under the brush.
+    // When `class_id` is provided, only annotations of that class are considered.
+    find_bitmask_under_brush(imx, imy, radius, class_id = null) {
         const current_subtask = this.get_current_subtask();
         const ordering = current_subtask["annotations"]["ordering"];
         const access = current_subtask["annotations"]["access"];
         for (let i = ordering.length - 1; i >= 0; i--) {
             const annotation = access[ordering[i]];
             if (annotation["deprecated"] || annotation["spatial_type"] !== "bitmask") continue;
+            // Optionally only join annotations that match the given class
+            // (get_annotation_class_id returns a string, so coerce for comparison)
+            if (class_id !== null && get_annotation_class_id(annotation) !== String(class_id)) continue;
             if (this.get_bitmask(annotation).has_foreground_in_circle(imx, imy, radius)) {
                 return ordering[i];
             }
@@ -4477,18 +4482,22 @@ export class ULabel {
             this.config["image_height"],
         );
 
-        let target_id = this.find_bitmask_under_brush(imx, imy, radius);
+        let target_id;
         let was_new = false;
 
         if (is_erase) {
+            // Erase whatever mask is under the brush, regardless of class
+            target_id = this.find_bitmask_under_brush(imx, imy, radius);
             // Nothing to erase under the brush
             if (target_id === null) {
                 this.move_brush_circle(gmx, gmy);
                 return;
             }
         } else {
-            // Extend whichever bitmask annotation the stroke starts over (option b:
-            // brushing over an existing mask adds to it). Otherwise, start a new one.
+            // Only join an existing mask of the currently-selected class; otherwise start
+            // a new mask of that class (so painting a different class over another mask
+            // creates a new annotation rather than joining the one underneath).
+            target_id = this.find_bitmask_under_brush(imx, imy, radius, this.get_active_class_id());
             if (target_id === null) {
                 // Don't start a new annotation fully outside the image
                 if (!in_bounds) {

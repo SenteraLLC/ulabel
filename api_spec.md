@@ -299,7 +299,7 @@ The `"bitmask"` mode enables raster (per-pixel) segmentation. Each bitmask annot
 **Interaction**
 
 - Painting uses the brush, shared with the `polygon` brush. Toggle the brush with `toggle_brush_mode_keybind` (default `g`) or the Brush toolbox item, erase with `toggle_erase_mode_keybind` (default `e`), and resize the brush with `increase_brush_size_keybind` / `decrease_brush_size_keybind` (defaults `]` / `[`) or `alt+scroll`.
-- Starting a stroke over an existing bitmask adds to that mask; starting over empty space creates a new bitmask annotation.
+- Starting a paint stroke over an existing bitmask of the **currently-selected class** adds to that mask; otherwise (a different class is selected, or you start over empty space) a new bitmask annotation of the selected class is created. Erasing is class-agnostic — it removes from whichever mask is under the brush. (This class-aware joining differs from the `polygon` brush, which joins any polygon under the brush.)
 - With the brush off, hovering a mask surfaces the usual edit dialogs: change its class via the ID dialog, or move/delete it like any other spatial annotation. Erasing a mask entirely deprecates the annotation (ULabel's delete semantics).
 - Requires the `Brush` toolbox item (`AllowedToolboxItem.Brush`) to be present.
 
