@@ -657,12 +657,6 @@ export class BrushToolboxItem extends ToolboxItem {
             text-align: center;
         }
 
-        #toolbox div.brush div.brush-overlap .brush-overlap-label {
-            display: block;
-            font-size: 0.8rem;
-            margin-bottom: 0.25rem;
-        }
-
         #toolbox div.brush div.brush-overlap span.brush-overlap-buttons {
             display: flex;
             justify-content: center;
@@ -724,20 +718,20 @@ export class BrushToolboxItem extends ToolboxItem {
             <p class="tb-header">Brush Tool</p>
             <div class="brush-button-holder">
                 <span class="brush-mode">
-                    <button class="brush-button" id="brush-mode">Brush</button>
-                    <button class="brush-button" id="erase-mode">Erase</button>
+                    <button class="brush-button" id="brush-mode" title="Toggle brush mode (paint)">Brush</button>
+                    <button class="brush-button" id="erase-mode" title="Toggle erase mode">Erase</button>
                 </span>
                 <span class="brush-inc increment">
-                    <button class="brush-button circle inc" id="brush-inc">+</button>
-                    <button class="brush-button circle dec" id="brush-dec">-</button>
+                    <button class="brush-button circle inc" id="brush-inc" title="Increase brush size">+</button>
+                    <button class="brush-button circle dec" id="brush-dec" title="Decrease brush size">-</button>
                 </span>
             </div>
             <div class="brush-overlap">
-                <span class="brush-overlap-label">Overlap</span>
+                <p class="tb-header">Overlap</p>
                 <span class="brush-overlap-buttons">
-                    <button class="brush-button brush-overlap-button" id="brush-overlap-none">None</button>
-                    <button class="brush-button brush-overlap-button" id="brush-overlap-exclude">Exclude</button>
-                    <button class="brush-button brush-overlap-button" id="brush-overlap-overwrite">Overwrite</button>
+                    <button class="brush-button brush-overlap-button" id="brush-overlap-none" title="Overlap: none — painted pixels may overlap other masks">None</button>
+                    <button class="brush-button brush-overlap-button" id="brush-overlap-exclude" title="Overlap: exclude — don't paint over pixels owned by other masks">Exclude</button>
+                    <button class="brush-button brush-overlap-button" id="brush-overlap-overwrite" title="Overlap: overwrite — remove painted pixels from other masks">Overwrite</button>
                 </span>
             </div>
         </div>
