@@ -223,6 +223,10 @@ export type ImageData = {
 
 export type AnnoScalingMode = "fixed" | "inverse-zoom" | "match-zoom";
 
+// How the brush resolves overlap with other undeprecated bitmask annotations
+// when painting. Resolution is deferred to the end of a stroke.
+export type BrushOverlapMode = "none" | "exclude" | "overwrite";
+
 export type ULabelActionType = "create_nonspatial_annotation" |
     "create_annotation" |
     "begin_annotation" |
@@ -418,6 +422,9 @@ export class ULabel {
     public toggle_erase_mode(mouse_event?: JQuery.TriggeredEvent): void;
     public toggle_brush_mode(mouse_event?: JQuery.TriggeredEvent): void;
     public disable_bitmask_brush(): void;
+    public load_brush_overlap_mode(): void;
+    public get_brush_overlap_mode(): BrushOverlapMode;
+    public set_brush_overlap_mode(mode: string): void;
     public toggle_delete_class_id_in_toolbox(): void;
     public change_brush_size(scale_factor: number): void;
     public recolor_brush_circle(): void;

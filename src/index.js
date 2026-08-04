@@ -56,6 +56,10 @@ jQuery.fn.outer_html = function () {
 };
 
 export class ULabel {
+    // Valid brush overlap modes and the localStorage key used to persist the global choice
+    static BRUSH_OVERLAP_MODES = ["none", "exclude", "overwrite"];
+    static BRUSH_OVERLAP_STORAGE_KEY = "ulabel_brush_overlap_mode";
+
     static version() {
         return ULABEL_VERSION;
     }
@@ -569,6 +573,9 @@ export class ULabel {
 
         // Create the config and add ulabel dependent data
         this.config = new Configuration(kwargs);
+
+        // Seed the global brush overlap mode from localStorage (falling back to the config default)
+        this.load_brush_overlap_mode();
 
         // Useful for the efficient redraw of nonspatial annotations
         this.tmp_nonspatial_element_ids = {};
@@ -2432,6 +2439,41 @@ export class ULabel {
         $("#brush-mode").removeClass(BrushToolboxItem.BRUSH_BTN_ACTIVE_CLS);
         $("#erase-mode").removeClass(BrushToolboxItem.BRUSH_BTN_ACTIVE_CLS);
         this.destroy_brush_circle();
+    }
+
+    // ================= Brush overlap mode (global, localStorage-persisted) =================
+
+    // Load the global brush overlap mode from localStorage, falling back to the config default.
+    load_brush_overlap_mode() {
+        let mode = this.config["default_brush_overlap_mode"];
+        try {
+            const stored = window.localStorage.getItem(ULabel.BRUSH_OVERLAP_STORAGE_KEY);
+            if (stored !== null && ULabel.BRUSH_OVERLAP_MODES.includes(stored)) {
+                mode = stored;
+            }
+        } catch {
+            // localStorage may be unavailable; fall back to the config default
+        }
+        this.config["brush_overlap_mode"] = mode;
+    }
+
+    get_brush_overlap_mode() {
+        return this.config["brush_overlap_mode"];
+    }
+
+    // Set the global brush overlap mode, persist it, and update the toolbox buttons.
+    set_brush_overlap_mode(mode) {
+        if (!ULabel.BRUSH_OVERLAP_MODES.includes(mode)) {
+            log_message(`Invalid brush overlap mode: ${mode}`, LogLevel.WARNING);
+            return;
+        }
+        this.config["brush_overlap_mode"] = mode;
+        try {
+            window.localStorage.setItem(ULabel.BRUSH_OVERLAP_STORAGE_KEY, mode);
+        } catch {
+            // Ignore persistence failures (e.g. localStorage unavailable)
+        }
+        BrushToolboxItem.update_overlap_mode_buttons(mode);
     }
 
     // Create a brush circle at the mouse location
@@ -4469,6 +4511,7 @@ export class ULabel {
         current_subtask["state"]["bitmask_stroke"] = {
             annotation_id: target_id,
             was_new: was_new,
+            is_erase: is_erase,
             before_rle: was_new ? null : this.get_bitmask(annotations[target_id]).to_rle(),
             last_point: null,
         };
@@ -4532,6 +4575,23 @@ export class ULabel {
 
         const annotation = annotations[active_id];
         const mask = this.get_bitmask(annotation);
+
+        // Resolve overlap with other bitmask annotations (deferred to end of stroke).
+        // Only paint strokes are resolved; erase is unaffected.
+        let other_edits = [];
+        const overlap_mode = this.get_brush_overlap_mode();
+        if (!stroke.is_erase && overlap_mode !== "none") {
+            // Compute the pixels this stroke added (delta = current AND NOT before)
+            const before_mask = stroke.before_rle != null ?
+                ULabelMask.from_rle(stroke.before_rle) :
+                ULabelMask.create_empty(this.config["image_width"], this.config["image_height"]);
+            const delta = mask.clone();
+            delta.subtract(before_mask);
+            if (!delta.is_empty()) {
+                other_edits = this.resolve_bitmask_overlap(active_id, delta, overlap_mode);
+            }
+        }
+
         const after_empty = mask.is_empty();
 
         // Encode the mask to an RLE payload
@@ -4552,12 +4612,14 @@ export class ULabel {
         }
 
         // Record the whole stroke as a single undoable action. Both payloads carry the
-        // full before/after state so undo and redo can each reconstruct it.
+        // full before/after state so undo and redo can each reconstruct it. `other_edits`
+        // captures any masks carved by "overwrite" so they can be restored too.
         const stroke_payload = {
             before_rle: stroke.before_rle,
             after_rle: annotation["spatial_payload"],
             was_new: stroke.was_new,
             after_empty: after_empty,
+            other_edits: other_edits,
         };
         record_action(this, {
             act_type: "bitmask_stroke",
@@ -4566,33 +4628,127 @@ export class ULabel {
             undo_payload: stroke_payload,
             redo_payload: stroke_payload,
         });
+
+        // The active annotation is re-rendered by the action listener; render the others here
+        this.render_bitmask_other_edits(other_edits);
+    }
+
+    // Ids of all undeprecated bitmask annotations except the given one.
+    get_other_bitmask_ids(active_id) {
+        const current_subtask = this.get_current_subtask();
+        const access = current_subtask["annotations"]["access"];
+        const ids = [];
+        for (const oid of current_subtask["annotations"]["ordering"]) {
+            if (oid === active_id) continue;
+            const ann = access[oid];
+            if (!ann["deprecated"] && ann["spatial_type"] === "bitmask") {
+                ids.push(oid);
+            }
+        }
+        return ids;
+    }
+
+    // Apply the brush overlap mode to the pixels a stroke added (`delta`).
+    // - exclude: clip the active mask so the new pixels don't cover other masks.
+    // - overwrite: carve the new pixels out of every other mask.
+    // Returns the list of edits made to other annotations (empty for exclude/none).
+    resolve_bitmask_overlap(active_id, delta, overlap_mode) {
+        const access = this.get_current_subtask()["annotations"]["access"];
+        const other_ids = this.get_other_bitmask_ids(active_id);
+
+        if (overlap_mode === "exclude") {
+            const active_mask = this.get_bitmask(access[active_id]);
+            for (const oid of other_ids) {
+                const other_mask = this.get_bitmask(access[oid]);
+                // Remove only the newly-added pixels that land on this other mask
+                const to_remove = delta.clone();
+                to_remove.intersect(other_mask);
+                active_mask.subtract(to_remove);
+            }
+            return [];
+        }
+
+        // overwrite
+        const other_edits = [];
+        for (const oid of other_ids) {
+            const other_mask = this.get_bitmask(access[oid]);
+            if (!other_mask.intersects(delta)) continue;
+            const before_rle = other_mask.to_rle();
+            other_mask.subtract(delta);
+            const after_empty = other_mask.is_empty();
+            access[oid]["spatial_payload"] = other_mask.to_rle();
+            if (after_empty) {
+                mark_deprecated(access[oid], true);
+            }
+            other_edits.push({
+                annotation_id: oid,
+                before_rle: before_rle,
+                after_rle: access[oid]["spatial_payload"],
+                after_empty: after_empty,
+            });
+        }
+        return other_edits;
+    }
+
+    // Rebuild boxes and redraw the annotations carved by an overwrite stroke.
+    render_bitmask_other_edits(other_edits) {
+        if (!other_edits || other_edits.length === 0) return;
+        const access = this.get_current_subtask()["annotations"]["access"];
+        for (const edit of other_edits) {
+            if (access[edit.annotation_id] === undefined) continue;
+            this.rebuild_bitmask_containing_box(access[edit.annotation_id]);
+            this.redraw_annotation(edit.annotation_id);
+        }
+        this.toolbox.redraw_update_items(this);
     }
 
     bitmask_stroke__undo(annotation_id, undo_payload) {
         const annotations = this.get_current_subtask()["annotations"]["access"];
         const annotation = annotations[annotation_id];
-        if (annotation === undefined) return;
-
-        if (undo_payload.was_new) {
-            // Undo creation of a brand-new annotation
-            this.set_bitmask_from_rle(annotation, null);
-            annotation["spatial_payload"] = null;
-            mark_deprecated(annotation, true);
-        } else {
-            this.set_bitmask_from_rle(annotation, undo_payload.before_rle);
-            annotation["spatial_payload"] = undo_payload.before_rle;
-            mark_deprecated(annotation, false);
+        if (annotation !== undefined) {
+            if (undo_payload.was_new) {
+                // Undo creation of a brand-new annotation
+                this.set_bitmask_from_rle(annotation, null);
+                annotation["spatial_payload"] = null;
+                mark_deprecated(annotation, true);
+            } else {
+                this.set_bitmask_from_rle(annotation, undo_payload.before_rle);
+                annotation["spatial_payload"] = undo_payload.before_rle;
+                mark_deprecated(annotation, false);
+            }
+        }
+        // Restore any other masks carved by an overwrite stroke (they were undeprecated before)
+        const other_edits = undo_payload.other_edits || [];
+        for (const edit of other_edits) {
+            const other = annotations[edit.annotation_id];
+            if (other === undefined) continue;
+            this.set_bitmask_from_rle(other, edit.before_rle);
+            other["spatial_payload"] = edit.before_rle;
+            mark_deprecated(other, false);
+            this.rebuild_bitmask_containing_box(other);
+            this.redraw_annotation(edit.annotation_id);
         }
     }
 
     bitmask_stroke__redo(annotation_id, redo_payload) {
         const annotations = this.get_current_subtask()["annotations"]["access"];
         const annotation = annotations[annotation_id];
-        if (annotation === undefined) return;
-
-        this.set_bitmask_from_rle(annotation, redo_payload.after_rle);
-        annotation["spatial_payload"] = redo_payload.after_rle;
-        mark_deprecated(annotation, redo_payload.after_empty === true);
+        if (annotation !== undefined) {
+            this.set_bitmask_from_rle(annotation, redo_payload.after_rle);
+            annotation["spatial_payload"] = redo_payload.after_rle;
+            mark_deprecated(annotation, redo_payload.after_empty === true);
+        }
+        // Re-apply the carve to any other masks
+        const other_edits = redo_payload.other_edits || [];
+        for (const edit of other_edits) {
+            const other = annotations[edit.annotation_id];
+            if (other === undefined) continue;
+            this.set_bitmask_from_rle(other, edit.after_rle);
+            other["spatial_payload"] = edit.after_rle;
+            mark_deprecated(other, edit.after_empty === true);
+            this.rebuild_bitmask_containing_box(other);
+            this.redraw_annotation(edit.annotation_id);
+        }
 
         // Re-record so the stroke can be undone again
         record_action(this, {

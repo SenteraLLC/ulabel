@@ -3,6 +3,11 @@
 All notable changes to this project will be documented here.
 
 ## [unreleased]
+- Add brush **overlap modes** for bitmask painting, controlled globally and persisted to localStorage: `none` (default), `exclude`, and `overwrite`.
+  - `exclude`: newly-painted pixels never cover pixels owned by other undeprecated bitmask annotations (existing masks win).
+  - `overwrite`: newly-painted pixels are removed from any other bitmask annotation that owned them (the new mask wins); a mask fully carved away is deprecated.
+  - Resolution is deferred to the end of a stroke (you see the active mask cover others, then it snaps to the resolved result on release) and only affects the pixels a stroke adds; erase is unaffected.
+  - Selectable via the Brush toolbox item (shown in bitmask mode) and keybinds `set_brush_overlap_none_keybind` / `set_brush_overlap_exclude_keybind` / `set_brush_overlap_overwrite_keybind` (defaults `shift+n` / `shift+e` / `shift+o`). Initial value configurable via `default_brush_overlap_mode`.
 
 ## [0.25.0] - Aug 5th, 2026
 - Add a `bitmask` annotation mode for raster (per-pixel) segmentation, selectable via `allowed_modes: ["bitmask", ...]`.

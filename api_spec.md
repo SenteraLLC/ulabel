@@ -67,6 +67,10 @@ class ULabel({
     increase_brush_size_keybind: string,
     decrease_brush_size_keybind: string,
     mask_annotation_opacity: number,
+    default_brush_overlap_mode: BrushOverlapMode,
+    set_brush_overlap_none_keybind: string,
+    set_brush_overlap_exclude_keybind: string,
+    set_brush_overlap_overwrite_keybind: string,
     fly_to_next_annotation_keybind: string,
     fly_to_previous_annotation_keybind: string,
     annotation_size_small_keybind: string,
@@ -298,6 +302,16 @@ The `"bitmask"` mode enables raster (per-pixel) segmentation. Each bitmask annot
 - Starting a stroke over an existing bitmask adds to that mask; starting over empty space creates a new bitmask annotation.
 - With the brush off, hovering a mask surfaces the usual edit dialogs: change its class via the ID dialog, or move/delete it like any other spatial annotation. Erasing a mask entirely deprecates the annotation (ULabel's delete semantics).
 - Requires the `Brush` toolbox item (`AllowedToolboxItem.Brush`) to be present.
+
+**Overlap modes**
+
+When painting, the brush can enforce mutual exclusivity with *other* undeprecated bitmask annotations. The mode is a single **global** value, persisted to localStorage, and is chosen via the Brush toolbox item (shown in bitmask mode) or the overlap keybinds. Its initial value comes from [`default_brush_overlap_mode`](#default_brush_overlap_mode).
+
+- `"none"` (default): painting only adds to the active mask; other masks are untouched (pixels may be owned by multiple annotations).
+- `"exclude"`: newly-painted pixels never cover pixels owned by other bitmask annotations (existing masks win).
+- `"overwrite"`: newly-painted pixels are removed from any other bitmask annotation that owned them (the new mask wins); a mask fully carved away is deprecated.
+
+Resolution is **deferred to the end of a stroke** and only affects the pixels the stroke adds (pre-existing overlaps are left alone). Erase strokes are unaffected. These modes govern *new strokes only* — they do not retroactively de-overlap already-imported masks.
 
 **Serialization**
 
@@ -551,7 +565,19 @@ Keybind to increase the brush size. Default is `]`. Requires the active subtask 
 Keybind to decrease the brush size. Default is `[`. Requires the active subtask to have a `polygon` or `bitmask` mode.
 
 ### `mask_annotation_opacity`
-The fill opacity (`0`-`1`) used when rendering `bitmask` (raster segmentation) annotations. Default is `0.45`.
+The fill opacity (`0`-`1`) used when rendering `bitmask` (raster segmentation) annotations. Default is `0.4`.
+
+### `default_brush_overlap_mode`
+The initial [brush overlap mode](#overlap-modes) for bitmask painting: `"none"` (default), `"exclude"`, or `"overwrite"`. The live value is global and persisted to localStorage, so a user's last choice takes precedence over this default on subsequent sessions.
+
+### `set_brush_overlap_none_keybind`
+Keybind to set the brush overlap mode to `none`. Default is `shift+n`.
+
+### `set_brush_overlap_exclude_keybind`
+Keybind to set the brush overlap mode to `exclude`. Default is `shift+e`.
+
+### `set_brush_overlap_overwrite_keybind`
+Keybind to set the brush overlap mode to `overwrite`. Default is `shift+o`.
 
 ### `fly_to_next_annotation_keybind`
 Keybind to set the zoom to focus on the next annotation. Default is `Tab`, which also will disable any default browser behavior for `Tab`.

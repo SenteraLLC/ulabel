@@ -426,15 +426,19 @@ export class ModeSelectionToolboxItem extends ToolboxItem {
             // Show the BrushToolboxItem when polygon or bitmask mode is selected
             if (new_mode === "polygon") {
                 BrushToolboxItem.show_brush_toolbox_item();
+                // Overlap modes are bitmask-only for now
+                BrushToolboxItem.hide_overlap_controls();
                 // Leaving bitmask requires tearing down its brush state
                 if (prev_mode === "bitmask") {
                     ulabel.disable_bitmask_brush();
                 }
             } else if (new_mode === "bitmask") {
                 BrushToolboxItem.show_brush_toolbox_item();
+                BrushToolboxItem.show_overlap_controls();
                 // Brush starts off so edit/id dialogs remain usable; the user toggles it to paint
             } else {
                 BrushToolboxItem.hide_brush_toolbox_item();
+                BrushToolboxItem.hide_overlap_controls();
                 if (prev_mode === "bitmask") {
                     // Tear down the bitmask brush without forcing a polygon switch
                     ulabel.disable_bitmask_brush();
@@ -647,6 +651,23 @@ export class BrushToolboxItem extends ToolboxItem {
         #toolbox div.brush button.brush-button.${BrushToolboxItem.BRUSH_BTN_ACTIVE_CLS} {
             background-color: #1c2d4d;
         }
+
+        #toolbox div.brush div.brush-overlap {
+            margin-top: 0.5rem;
+            text-align: center;
+        }
+
+        #toolbox div.brush div.brush-overlap .brush-overlap-label {
+            display: block;
+            font-size: 0.8rem;
+            margin-bottom: 0.25rem;
+        }
+
+        #toolbox div.brush div.brush-overlap span.brush-overlap-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+        }
         `;
         // Create an id so this specific style tag can be referenced
         const style_id = "brush-toolbox-item-styles";
@@ -689,6 +710,12 @@ export class BrushToolboxItem extends ToolboxItem {
                     break;
             };
         });
+
+        // Overlap mode selection (bitmask only)
+        $(document).on("click.ulabel", ".brush-overlap-button", (event) => {
+            const mode = ($(event.currentTarget).attr("id") || "").replace("brush-overlap-", "");
+            this.ulabel.set_brush_overlap_mode(mode);
+        });
     }
 
     public get_html() {
@@ -705,6 +732,14 @@ export class BrushToolboxItem extends ToolboxItem {
                     <button class="brush-button circle dec" id="brush-dec">-</button>
                 </span>
             </div>
+            <div class="brush-overlap">
+                <span class="brush-overlap-label">Overlap</span>
+                <span class="brush-overlap-buttons">
+                    <button class="brush-button brush-overlap-button" id="brush-overlap-none">None</button>
+                    <button class="brush-button brush-overlap-button" id="brush-overlap-exclude">Exclude</button>
+                    <button class="brush-button brush-overlap-button" id="brush-overlap-overwrite">Overwrite</button>
+                </span>
+            </div>
         </div>
         `;
     }
@@ -719,10 +754,32 @@ export class BrushToolboxItem extends ToolboxItem {
         $(".brush").addClass("ulabel-hidden");
     }
 
+    // Show/hide the overlap-mode controls (bitmask only)
+    public static show_overlap_controls() {
+        $(".brush-overlap").removeClass("ulabel-hidden");
+    }
+
+    public static hide_overlap_controls() {
+        $(".brush-overlap").addClass("ulabel-hidden");
+    }
+
+    // Reflect the active overlap mode on the toolbox buttons
+    public static update_overlap_mode_buttons(mode: string) {
+        $(".brush-overlap-button").removeClass(BrushToolboxItem.BRUSH_BTN_ACTIVE_CLS);
+        $(`#brush-overlap-${mode}`).addClass(BrushToolboxItem.BRUSH_BTN_ACTIVE_CLS);
+    }
+
     public after_init() {
-        // Only show BrushToolboxItem if the current mode is polygon
-        if (this.ulabel.get_current_subtask().state["annotation_mode"] !== "polygon") {
+        // Reflect the persisted overlap mode on the buttons
+        BrushToolboxItem.update_overlap_mode_buttons(this.ulabel.get_brush_overlap_mode());
+        // Only show BrushToolboxItem if the current mode is polygon or bitmask
+        const mode = this.ulabel.get_current_subtask().state["annotation_mode"];
+        if (mode !== "polygon" && mode !== "bitmask") {
             BrushToolboxItem.hide_brush_toolbox_item();
+        }
+        // Overlap controls are bitmask-only
+        if (mode !== "bitmask") {
+            BrushToolboxItem.hide_overlap_controls();
         }
     }
 

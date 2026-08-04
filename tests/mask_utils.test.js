@@ -155,4 +155,76 @@ describe("ULabelMask", () => {
             expect(Array.from(restored.data)).toEqual(Array.from(mask.data));
         });
     });
+
+    describe("boolean operations", () => {
+        test("clone produces an independent copy", () => {
+            const mask = ULabelMask.create_empty(4, 4);
+            mask.set_pixel(1, 1, 1);
+            const copy = mask.clone();
+            copy.set_pixel(2, 2, 1);
+            expect(mask.get_pixel(2, 2)).toBe(0);
+            expect(copy.get_pixel(1, 1)).toBe(1);
+        });
+
+        test("subtract removes the other mask's pixels and reports change", () => {
+            const a = ULabelMask.create_empty(4, 4);
+            a.set_pixel(1, 1, 1);
+            a.set_pixel(2, 2, 1);
+            const b = ULabelMask.create_empty(4, 4);
+            b.set_pixel(2, 2, 1);
+            const changed = a.subtract(b);
+            expect(changed).toBe(true);
+            expect(a.get_pixel(1, 1)).toBe(1);
+            expect(a.get_pixel(2, 2)).toBe(0);
+        });
+
+        test("subtract returns false when nothing overlaps", () => {
+            const a = ULabelMask.create_empty(4, 4);
+            a.set_pixel(0, 0, 1);
+            const b = ULabelMask.create_empty(4, 4);
+            b.set_pixel(3, 3, 1);
+            expect(a.subtract(b)).toBe(false);
+            expect(a.get_pixel(0, 0)).toBe(1);
+        });
+
+        test("add_mask unions the other mask in", () => {
+            const a = ULabelMask.create_empty(4, 4);
+            a.set_pixel(0, 0, 1);
+            const b = ULabelMask.create_empty(4, 4);
+            b.set_pixel(3, 3, 1);
+            a.add_mask(b);
+            expect(a.get_pixel(0, 0)).toBe(1);
+            expect(a.get_pixel(3, 3)).toBe(1);
+        });
+
+        test("intersect keeps only shared pixels", () => {
+            const a = ULabelMask.create_empty(4, 4);
+            a.set_pixel(1, 1, 1);
+            a.set_pixel(2, 2, 1);
+            const b = ULabelMask.create_empty(4, 4);
+            b.set_pixel(2, 2, 1);
+            b.set_pixel(3, 3, 1);
+            a.intersect(b);
+            expect(a.get_pixel(1, 1)).toBe(0);
+            expect(a.get_pixel(2, 2)).toBe(1);
+            expect(a.get_pixel(3, 3)).toBe(0);
+        });
+
+        test("intersects detects any shared pixel", () => {
+            const a = ULabelMask.create_empty(4, 4);
+            a.set_pixel(1, 1, 1);
+            const b = ULabelMask.create_empty(4, 4);
+            b.set_pixel(1, 1, 1);
+            const c = ULabelMask.create_empty(4, 4);
+            c.set_pixel(3, 3, 1);
+            expect(a.intersects(b)).toBe(true);
+            expect(a.intersects(c)).toBe(false);
+        });
+
+        test("boolean ops throw on dimension mismatch", () => {
+            const a = ULabelMask.create_empty(4, 4);
+            const b = ULabelMask.create_empty(5, 4);
+            expect(() => a.subtract(b)).toThrow();
+        });
+    });
 });

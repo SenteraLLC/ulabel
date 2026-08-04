@@ -162,6 +162,65 @@ export class ULabelMask {
         return shifted;
     }
 
+    // Return a copy of this mask.
+    public clone(): ULabelMask {
+        return new ULabelMask(this.width, this.height, this.data.slice());
+    }
+
+    // Ensure another mask has the same dimensions as this one.
+    private assert_same_dims(other: ULabelMask): void {
+        if (other.width !== this.width || other.height !== this.height) {
+            throw new Error(
+                `Mask dimension mismatch: ${this.width}x${this.height} vs ${other.width}x${other.height}`,
+            );
+        }
+    }
+
+    // Remove another mask's foreground from this one (this = this AND NOT other).
+    // Returns true if any pixel changed.
+    public subtract(other: ULabelMask): boolean {
+        this.assert_same_dims(other);
+        let changed = false;
+        for (let i = 0; i < this.data.length; i++) {
+            if (this.data[i] !== 0 && other.data[i] !== 0) {
+                this.data[i] = 0;
+                changed = true;
+            }
+        }
+        return changed;
+    }
+
+    // Add another mask's foreground into this one (this = this OR other).
+    public add_mask(other: ULabelMask): void {
+        this.assert_same_dims(other);
+        for (let i = 0; i < this.data.length; i++) {
+            if (other.data[i] !== 0) {
+                this.data[i] = 1;
+            }
+        }
+    }
+
+    // Keep only pixels present in both masks (this = this AND other).
+    public intersect(other: ULabelMask): void {
+        this.assert_same_dims(other);
+        for (let i = 0; i < this.data.length; i++) {
+            if (other.data[i] === 0) {
+                this.data[i] = 0;
+            }
+        }
+    }
+
+    // True if this mask shares any foreground pixel with another.
+    public intersects(other: ULabelMask): boolean {
+        this.assert_same_dims(other);
+        for (let i = 0; i < this.data.length; i++) {
+            if (this.data[i] !== 0 && other.data[i] !== 0) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     // Encode to COCO-style, column-major run-length counts.
     public to_rle(): ULabelMaskPayload {
         const counts: number[] = [];
