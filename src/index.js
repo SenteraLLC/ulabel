@@ -2345,85 +2345,52 @@ export class ULabel {
     }
 
     toggle_brush_mode(mouse_event) {
-        // Try and switch to polygon annotation if not already in it
+        // The brush is only valid in polygon or bitmask mode
         const current_subtask = this.get_current_subtask_key();
-        // In bitmask mode, the brush toggles on/off (so edit/id dialogs remain usable when off)
-        if (this.subtasks[current_subtask]["state"]["annotation_mode"] === "bitmask") {
-            const state = this.subtasks[current_subtask]["state"];
-            state["is_in_brush_mode"] = !state["is_in_brush_mode"];
-            if (state["is_in_brush_mode"]) {
-                // Hide edit/id dialogs while painting
-                this.suggest_edits();
-                state["move_candidate"] = null;
-                $("#brush-mode").addClass(BrushToolboxItem.BRUSH_BTN_ACTIVE_CLS);
-                const gmx = this.get_global_mouse_x(mouse_event);
-                const gmy = this.get_global_mouse_y(mouse_event);
-                this.create_brush_circle(gmx, gmy);
-            } else {
-                // Turning the brush off also exits erase mode
-                state["is_in_erase_mode"] = false;
-                $("#brush-mode").removeClass(BrushToolboxItem.BRUSH_BTN_ACTIVE_CLS);
-                $("#erase-mode").removeClass(BrushToolboxItem.BRUSH_BTN_ACTIVE_CLS);
-                this.destroy_brush_circle();
-            }
-            return;
-        }
-        let is_in_polygon_mode = this.subtasks[current_subtask]["state"]["annotation_mode"] === "polygon";
-        // Try and switch to polygon mode if not already in it
-        if (!is_in_polygon_mode) {
+        const state = this.subtasks[current_subtask]["state"];
+        let is_in_polygon_mode = state["annotation_mode"] === "polygon";
+        let is_in_bitmask_mode = state["annotation_mode"] === "bitmask";
+
+        // If in neither mode, try to switch to one (preferring polygon)
+        if (!is_in_polygon_mode && !is_in_bitmask_mode) {
             is_in_polygon_mode = this.set_and_update_annotation_mode("polygon");
+            if (!is_in_polygon_mode) {
+                is_in_bitmask_mode = this.set_and_update_annotation_mode("bitmask");
+            }
+            // Bail if neither brush-compatible mode is allowed
+            if (!is_in_polygon_mode && !is_in_bitmask_mode) {
+                return;
+            }
             $("#brush-mode").removeClass(BrushToolboxItem.BRUSH_BTN_ACTIVE_CLS);
             $("#erase-mode").removeClass(BrushToolboxItem.BRUSH_BTN_ACTIVE_CLS);
         }
-        // If we're in polygon mode, toggle brush mode
-        if (is_in_polygon_mode) {
-            // If in erase mode, turn it off
-            if (this.subtasks[current_subtask]["state"]["is_in_erase_mode"]) {
-                this.toggle_erase_mode();
+
+        // If in erase mode, turn it off first
+        if (state["is_in_erase_mode"]) {
+            this.toggle_erase_mode();
+        }
+
+        // Toggle brush mode
+        state["is_in_brush_mode"] = !state["is_in_brush_mode"];
+        if (state["is_in_brush_mode"]) {
+            // Hide edit/id dialogs and clear any move candidate while painting
+            this.suggest_edits();
+            state["move_candidate"] = null;
+            // Polygon-only: end an in-progress complex polygon by undoing
+            if (is_in_polygon_mode && state["starting_complex_polygon"]) {
+                undo(this, true);
             }
-            // Toggle brush mode
-            this.subtasks[current_subtask]["state"]["is_in_brush_mode"] = !this.subtasks[current_subtask]["state"]["is_in_brush_mode"];
-            if (this.subtasks[current_subtask]["state"]["is_in_brush_mode"]) {
-                // Hide edit/id dialogs
-                this.suggest_edits();
-                // Clear any move candidates
-                this.subtasks[current_subtask]["state"]["move_candidate"] = null;
-                // If in starting_complex_polygon mode, end it by undoing
-                if (this.subtasks[current_subtask]["state"]["starting_complex_polygon"]) {
-                    undo(this, true);
-                }
-                // Show brush circle
-                let gmx = this.get_global_mouse_x(mouse_event);
-                let gmy = this.get_global_mouse_y(mouse_event);
-                this.create_brush_circle(gmx, gmy);
-                $("#brush-mode").addClass(BrushToolboxItem.BRUSH_BTN_ACTIVE_CLS);
-            } else {
-                this.destroy_brush_circle();
-                $("#brush-mode").removeClass(BrushToolboxItem.BRUSH_BTN_ACTIVE_CLS);
-            }
+            // Show the brush circle
+            this.create_brush_circle(this.get_global_mouse_x(mouse_event), this.get_global_mouse_y(mouse_event));
+            $("#brush-mode").addClass(BrushToolboxItem.BRUSH_BTN_ACTIVE_CLS);
+        } else {
+            this.destroy_brush_circle();
+            $("#brush-mode").removeClass(BrushToolboxItem.BRUSH_BTN_ACTIVE_CLS);
         }
     }
 
     toggle_erase_mode(mouse_event) {
         const current_subtask = this.get_current_subtask();
-        // In bitmask mode, erasing is a subset of the brush; ensure the brush is on
-        if (current_subtask["state"]["annotation_mode"] === "bitmask") {
-            if (!current_subtask["state"]["is_in_brush_mode"]) {
-                this.toggle_brush_mode(mouse_event);
-            }
-            current_subtask["state"]["is_in_erase_mode"] = !current_subtask["state"]["is_in_erase_mode"];
-            if (current_subtask["state"]["is_in_erase_mode"]) {
-                $("#erase-mode").addClass(BrushToolboxItem.BRUSH_BTN_ACTIVE_CLS);
-                $("#brush-mode").removeClass(BrushToolboxItem.BRUSH_BTN_ACTIVE_CLS);
-            } else {
-                $("#erase-mode").removeClass(BrushToolboxItem.BRUSH_BTN_ACTIVE_CLS);
-                $("#brush-mode").addClass(BrushToolboxItem.BRUSH_BTN_ACTIVE_CLS);
-            }
-            $("#brush_circle").css({
-                "background-color": current_subtask["state"]["is_in_erase_mode"] ? "red" : this.get_active_class_color(),
-            });
-            return;
-        }
         // If not in brush mode, turn it on
         if (!current_subtask["state"]["is_in_brush_mode"]) {
             this.toggle_brush_mode(mouse_event);
