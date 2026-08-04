@@ -280,8 +280,8 @@ function trigger_action_listeners(
             undo: on_annotation_revert,
         },
         bitmask_stroke: {
-            // Undo/redo handling and re-rendering are managed by the
-            // bitmask_stroke__undo / bitmask_stroke__redo methods directly.
+            action: on_finish_annotation_spatial_modification,
+            undo: on_finish_annotation_spatial_modification,
         },
         delete_annotations_in_polygon: {
             // No listener for this action.

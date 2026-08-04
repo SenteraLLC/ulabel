@@ -140,6 +140,28 @@ export class ULabelMask {
         return { tlx: min_x, tly: min_y, brx: max_x, bry: max_y };
     }
 
+    // Return a new mask with all foreground pixels shifted by (dx, dy) image pixels.
+    // Pixels shifted outside the image are dropped.
+    public translate(dx: number, dy: number): ULabelMask {
+        const shifted = new ULabelMask(this.width, this.height);
+        const idx = Math.round(dx);
+        const idy = Math.round(dy);
+        for (let y = 0; y < this.height; y++) {
+            const ny = y + idy;
+            if (ny < 0 || ny >= this.height) continue;
+            const src_row = y * this.width;
+            const dst_row = ny * this.width;
+            for (let x = 0; x < this.width; x++) {
+                if (this.data[src_row + x] !== 0) {
+                    const nx = x + idx;
+                    if (nx < 0 || nx >= this.width) continue;
+                    shifted.data[dst_row + nx] = 1;
+                }
+            }
+        }
+        return shifted;
+    }
+
     // Encode to COCO-style, column-major run-length counts.
     public to_rle(): ULabelMaskPayload {
         const counts: number[] = [];

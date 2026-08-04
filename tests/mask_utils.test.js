@@ -77,6 +77,30 @@ describe("ULabelMask", () => {
         });
     });
 
+    describe("translate", () => {
+        test("shifts foreground pixels by the given offset", () => {
+            const mask = ULabelMask.create_empty(6, 6);
+            mask.set_pixel(1, 1, 1);
+            const shifted = mask.translate(2, 3);
+            expect(shifted.get_pixel(1, 1)).toBe(0);
+            expect(shifted.get_pixel(3, 4)).toBe(1);
+        });
+
+        test("drops pixels shifted outside the image", () => {
+            const mask = ULabelMask.create_empty(4, 4);
+            mask.set_pixel(0, 0, 1);
+            const shifted = mask.translate(-1, -1);
+            expect(shifted.is_empty()).toBe(true);
+        });
+
+        test("rounds fractional offsets", () => {
+            const mask = ULabelMask.create_empty(6, 6);
+            mask.set_pixel(2, 2, 1);
+            const shifted = mask.translate(1.4, -0.6);
+            expect(shifted.get_pixel(3, 1)).toBe(1);
+        });
+    });
+
     describe("RLE round-trip", () => {
         test("encodes an empty mask as a single background run", () => {
             const mask = ULabelMask.create_empty(3, 2);

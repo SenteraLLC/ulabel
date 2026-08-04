@@ -432,8 +432,7 @@ export class ModeSelectionToolboxItem extends ToolboxItem {
                 }
             } else if (new_mode === "bitmask") {
                 BrushToolboxItem.show_brush_toolbox_item();
-                // Bitmask painting always uses the brush
-                ulabel.enable_bitmask_brush();
+                // Brush starts off so edit/id dialogs remain usable; the user toggles it to paint
             } else {
                 BrushToolboxItem.hide_brush_toolbox_item();
                 if (prev_mode === "bitmask") {

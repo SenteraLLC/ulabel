@@ -417,7 +417,6 @@ export class ULabel {
     // TODO (joshua-dean): should these actually be optional?
     public toggle_erase_mode(mouse_event?: JQuery.TriggeredEvent): void;
     public toggle_brush_mode(mouse_event?: JQuery.TriggeredEvent): void;
-    public enable_bitmask_brush(): void;
     public disable_bitmask_brush(): void;
     public toggle_delete_class_id_in_toolbox(): void;
     public change_brush_size(scale_factor: number): void;
