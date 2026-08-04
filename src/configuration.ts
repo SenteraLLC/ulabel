@@ -135,7 +135,7 @@ export class Configuration {
     public brush_size: number = 60;
 
     // Fill opacity (0-1) used when rendering bitmask (raster segmentation) annotations
-    public mask_annotation_opacity: number = 0.45;
+    public mask_annotation_opacity: number = 0.2;
 
     // Configuration for the annotation task itself
     public image_data: ImageData | null = null;

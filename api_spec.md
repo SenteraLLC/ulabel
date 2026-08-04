@@ -66,6 +66,7 @@ class ULabel({
     toggle_erase_mode_keybind: string,
     increase_brush_size_keybind: string,
     decrease_brush_size_keybind: string,
+    mask_annotation_opacity: number,
     fly_to_next_annotation_keybind: string,
     fly_to_previous_annotation_keybind: string,
     annotation_size_small_keybind: string,
@@ -178,7 +179,9 @@ As you can see, each subtask will have a corresponding list of annotation object
     "spatial_type": "<string>", 
     
     // (nullable) e.g. [[x1, y1], [x2, y2], ...]
-    "spatial_payload": "<array>", 
+    // For "bitmask" annotations this is instead a run-length-encoded object:
+    // { "counts": <number[]>, "size": [<height>, <width>] }. See Bitmask annotations.
+    "spatial_payload": "<array | object>", 
     
     // The class associated with the annotation
     "classification_payloads": [ 
@@ -281,8 +284,38 @@ The full list of `"allowed_modes"` that are currently supported is:
 - `"whole-image"`: A label to be applied to an entire frame
 - `"global"`: A label to be applied to the entire series of frames
 - `"point"`: A keypoint within a single frame
+- `"bitmask"`: A raster (per-pixel) segmentation mask, painted with the brush. See [Bitmask annotations](#bitmask-annotations).
 - `"delete_polygon"`: Allows drawing a polygon around an area, and all annotations within that area will be deleted
 - `"delete_bbox"`: Allows drawing a bounding box around an area, and all annotations within that area will be deleted
+
+#### Bitmask annotations
+
+The `"bitmask"` mode enables raster (per-pixel) segmentation. Each bitmask annotation stores a single binary mask the size of the image.
+
+**Interaction**
+
+- Painting uses the brush, shared with the `polygon` brush. Toggle the brush with `toggle_brush_mode_keybind` (default `g`) or the Brush toolbox item, erase with `toggle_erase_mode_keybind` (default `e`), and resize the brush with `increase_brush_size_keybind` / `decrease_brush_size_keybind` (defaults `]` / `[`) or `alt+scroll`.
+- Starting a stroke over an existing bitmask adds to that mask; starting over empty space creates a new bitmask annotation.
+- With the brush off, hovering a mask surfaces the usual edit dialogs: change its class via the ID dialog, or move/delete it like any other spatial annotation. Erasing a mask entirely deprecates the annotation (ULabel's delete semantics).
+- Requires the `Brush` toolbox item (`AllowedToolboxItem.Brush`) to be present.
+
+**Serialization**
+
+A bitmask's `spatial_payload` is a COCO-style, uncompressed run-length encoding:
+
+```javascript
+{
+    // Alternating run lengths in column-major (Fortran) order, always starting
+    // with a background (0) run. A leading foreground pixel is a leading 0.
+    "counts": [<number>, ...],
+    // [height, width] of the mask (matches COCO's size convention)
+    "size": [<height>, <width>]
+}
+```
+
+Note this is the *uncompressed* form (`counts` as an integer array), not the LEB128-packed string used by `pycocotools`. Masks import from and export to this same object shape.
+
+The render opacity of bitmask annotations is configurable via [`mask_annotation_opacity`](#mask_annotation_opacity).
 
 The `resume_from` attributes are used to import existing annotations into the annotation session for each subtask, respectively. Existing annotations must be provided as a list of annotations of the form specified above.
 
@@ -506,16 +539,19 @@ Keybind to toggle between annotation and selection modes. Default is `u`.
 Keybind to create a bounding box annotation around the `initial_crop`. Default is `f`. Requires the active subtask to have a `bbox` mode.
 
 ### `toggle_brush_mode_keybind`
-Keybind to toggle brush mode for polygon annotations. Default is `g`. Requires the active subtask to have a `polygon` mode.
+Keybind to toggle brush mode for `polygon` and `bitmask` annotations. Default is `g`. Requires the active subtask to have a `polygon` or `bitmask` mode.
 
 ### `toggle_erase_mode_keybind`
-Keybind to toggle erase mode for polygon annotations. Default is `e`. Requires the active subtask to have a `polygon` mode.
+Keybind to toggle erase mode for `polygon` and `bitmask` annotations. Default is `e`. Requires the active subtask to have a `polygon` or `bitmask` mode.
 
 ### `increase_brush_size_keybind`
-Keybind to increase the brush size. Default is `]`. Requires the active subtask to have a `polygon` mode.
+Keybind to increase the brush size. Default is `]`. Requires the active subtask to have a `polygon` or `bitmask` mode.
 
 ### `decrease_brush_size_keybind`
-Keybind to decrease the brush size. Default is `[`. Requires the active subtask to have a `polygon` mode.
+Keybind to decrease the brush size. Default is `[`. Requires the active subtask to have a `polygon` or `bitmask` mode.
+
+### `mask_annotation_opacity`
+The fill opacity (`0`-`1`) used when rendering `bitmask` (raster segmentation) annotations. Default is `0.45`.
 
 ### `fly_to_next_annotation_keybind`
 Keybind to set the zoom to focus on the next annotation. Default is `Tab`, which also will disable any default browser behavior for `Tab`.
