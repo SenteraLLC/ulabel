@@ -31,6 +31,7 @@ import { log_message, LogLevel } from "../build/error_logging";
 import { initialize_annotation_canvases } from "../build/canvas_utils";
 import { record_action, record_finish, record_finish_edit, record_finish_move, undo, redo } from "../build/actions";
 import { ULabelMask } from "../build/mask_utils";
+import { get_local_storage_item, set_local_storage_item } from "../build/utilities";
 
 import $ from "jquery";
 const jQuery = $;
@@ -55,11 +56,10 @@ jQuery.fn.outer_html = function () {
     return jQuery("<div />").append(this.eq(0).clone()).html();
 };
 
-export class ULabel {
-    // Valid brush overlap modes and the localStorage key used to persist the global choice
-    static BRUSH_OVERLAP_MODES = ["none", "exclude", "overwrite"];
-    static BRUSH_OVERLAP_STORAGE_KEY = "ulabel_brush_overlap_mode";
+// Valid brush overlap modes for bitmask painting (see set_brush_overlap_mode).
+const BRUSH_OVERLAP_MODES = ["none", "exclude", "overwrite"];
 
+export class ULabel {
     static version() {
         return ULABEL_VERSION;
     }
@@ -2526,13 +2526,9 @@ export class ULabel {
     // Load the global brush overlap mode from localStorage, falling back to the config default.
     load_brush_overlap_mode() {
         let mode = this.config["default_brush_overlap_mode"];
-        try {
-            const stored = window.localStorage.getItem(ULabel.BRUSH_OVERLAP_STORAGE_KEY);
-            if (stored !== null && ULabel.BRUSH_OVERLAP_MODES.includes(stored)) {
-                mode = stored;
-            }
-        } catch {
-            // localStorage may be unavailable; fall back to the config default
+        const stored = get_local_storage_item("ulabel_brush_overlap_mode");
+        if (stored !== null && BRUSH_OVERLAP_MODES.includes(stored)) {
+            mode = stored;
         }
         this.config["brush_overlap_mode"] = mode;
     }
@@ -2543,16 +2539,12 @@ export class ULabel {
 
     // Set the global brush overlap mode, persist it, and update the toolbox buttons.
     set_brush_overlap_mode(mode) {
-        if (!ULabel.BRUSH_OVERLAP_MODES.includes(mode)) {
+        if (!BRUSH_OVERLAP_MODES.includes(mode)) {
             log_message(`Invalid brush overlap mode: ${mode}`, LogLevel.WARNING);
             return;
         }
         this.config["brush_overlap_mode"] = mode;
-        try {
-            window.localStorage.setItem(ULabel.BRUSH_OVERLAP_STORAGE_KEY, mode);
-        } catch {
-            // Ignore persistence failures (e.g. localStorage unavailable)
-        }
+        set_local_storage_item("ulabel_brush_overlap_mode", mode);
         BrushToolboxItem.update_overlap_mode_buttons(mode);
     }
 
