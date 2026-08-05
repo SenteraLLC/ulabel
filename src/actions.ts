@@ -222,6 +222,9 @@ function trigger_action_listeners(
         continue_brush: {
             action: on_in_progress_annotation_spatial_modification,
         },
+        continue_bitmask: {
+            action: on_in_progress_annotation_spatial_modification,
+        },
         continue_annotation: {
             action: on_in_progress_annotation_spatial_modification,
         },
@@ -278,6 +281,10 @@ function trigger_action_listeners(
         },
         begin_brush: {
             undo: on_annotation_revert,
+        },
+        bitmask_stroke: {
+            action: on_finish_annotation_spatial_modification,
+            undo: on_finish_annotation_spatial_modification,
         },
         delete_annotations_in_polygon: {
             // No listener for this action.
@@ -613,6 +620,9 @@ function undo_action(ulabel: ULabel, action: ULabelAction) {
         case "begin_brush":
             ulabel.begin_brush__undo(annotation_id, undo_payload);
             break;
+        case "bitmask_stroke":
+            ulabel.bitmask_stroke__undo(annotation_id, undo_payload);
+            break;
         case "finish_modify_annotation":
             ulabel.finish_modify_annotation__undo(annotation_id, undo_payload);
             break;
@@ -682,6 +692,9 @@ export function redo_action(ulabel: ULabel, action: ULabelAction) {
             break;
         case "finish_modify_annotation":
             ulabel.finish_modify_annotation__redo(annotation_id, redo_payload);
+            break;
+        case "bitmask_stroke":
+            ulabel.bitmask_stroke__redo(annotation_id, redo_payload);
             break;
         default:
             log_message(`Action type not recognized for redo: ${action.act_type}`, LogLevel.WARNING);

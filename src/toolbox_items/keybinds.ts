@@ -381,6 +381,30 @@ export class KeybindsToolboxItem extends ToolboxItem {
         });
 
         keybinds.push({
+            key: config.set_brush_overlap_none_keybind,
+            label: "Brush: None",
+            description: "Set the bitmask brush overlap mode to none",
+            configurable: true,
+            config_key: "set_brush_overlap_none_keybind",
+        });
+
+        keybinds.push({
+            key: config.set_brush_overlap_exclude_keybind,
+            label: "Brush: Exclude",
+            description: "Set the bitmask brush overlap mode to exclude",
+            configurable: true,
+            config_key: "set_brush_overlap_exclude_keybind",
+        });
+
+        keybinds.push({
+            key: config.set_brush_overlap_overwrite_keybind,
+            label: "Brush: Overwrite",
+            description: "Set the bitmask brush overlap mode to overwrite",
+            configurable: true,
+            config_key: "set_brush_overlap_overwrite_keybind",
+        });
+
+        keybinds.push({
             key: config.fly_to_next_annotation_keybind,
             label: "Next Annotation",
             description: "Fly to next annotation",

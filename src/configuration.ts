@@ -7,6 +7,7 @@ import type {
     RecolorActiveConfig,
     ULabelSubmitButton,
     AnnoScalingMode,
+    BrushOverlapMode,
 } from "../index";
 import {
     ModeSelectionToolboxItem,
@@ -134,6 +135,13 @@ export class Configuration {
     public edit_handle_size: number = 30;
     public brush_size: number = 60;
 
+    // Fill opacity (0-1) used when rendering bitmask (raster segmentation) annotations
+    public mask_annotation_opacity: number = 0.4;
+    // How the bitmask brush resolves overlap with other undeprecated bitmask
+    // annotations when painting. Resolution is deferred to the end of a stroke.
+    // The live value is global and persisted to localStorage; this is the initial default.
+    public default_brush_overlap_mode: BrushOverlapMode = "none";
+    public brush_overlap_mode: BrushOverlapMode = "none";
     // Configuration for the annotation task itself
     public image_data: ImageData | null = null;
     public allow_soft_id: boolean = false;
@@ -237,6 +245,12 @@ export class Configuration {
     public increase_brush_size_keybind: string = "]";
 
     public decrease_brush_size_keybind: string = "[";
+
+    public set_brush_overlap_none_keybind: string = "shift+n";
+
+    public set_brush_overlap_exclude_keybind: string = "shift+e";
+
+    public set_brush_overlap_overwrite_keybind: string = "shift+o";
 
     public annotation_size_small_keybind: string = "s";
 

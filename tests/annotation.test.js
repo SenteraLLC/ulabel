@@ -1,5 +1,6 @@
 // Tests for annotation processing and manipulation
 const { ULabel } = require("./testing-utils/build_loader");
+const { ULabelMask } = require("../build/mask_utils");
 
 describe("Annotation Processing", () => {
     let mock_config;
@@ -70,6 +71,81 @@ describe("Annotation Processing", () => {
             expect(annotation.frame).toBe(0);
             expect(annotation.annotation_meta).toStrictEqual({});
             expect(annotation.deprecated).toBe(false);
+        });
+
+        test("should round-trip a bitmask annotation through resume_from without data loss", () => {
+            // Build a mask and encode it to an RLE payload (the "saved" form)
+            const mask = ULabelMask.create_empty(8, 6);
+            mask.paint_circle(4, 3, 2, 1);
+            mask.set_pixel(0, 0, 1);
+            mask.set_pixel(7, 5, 1);
+            const saved_payload = mask.to_rle();
+
+            const resume_config = {
+                ...mock_config,
+                subtasks: {
+                    test_task: {
+                        ...mock_config.subtasks.test_task,
+                        allowed_modes: ["bbox", "polygon", "point", "bitmask"],
+                        resume_from: [
+                            {
+                                spatial_type: "bitmask",
+                                // Deep copy so the input isn't mutated by processing
+                                spatial_payload: JSON.parse(JSON.stringify(saved_payload)),
+                                classification_payloads: [{ class_id: 1, confidence: 1.0 }],
+                            },
+                        ],
+                    },
+                },
+            };
+
+            const ulabel_with_resume = new ULabel(resume_config);
+            const annotations = ulabel_with_resume.subtasks.test_task.annotations;
+
+            expect(annotations.ordering).toHaveLength(1);
+            const annotation = annotations.access[annotations.ordering[0]];
+            expect(annotation.spatial_type).toBe("bitmask");
+            expect(annotation.deprecated).toBe(false);
+
+            // Emulate an export/save: JSON round-trip strips the non-enumerable `_mask` cache
+            const exported = JSON.parse(JSON.stringify(annotation));
+
+            // The RLE payload survived the load unchanged (no data lost)
+            expect(exported.spatial_payload.size).toEqual(saved_payload.size);
+            expect(exported.spatial_payload.counts).toEqual(saved_payload.counts);
+            // The runtime mask cache must not leak into the export
+            expect(exported._mask).toBeUndefined();
+
+            // The decoded mask matches the original pixel-for-pixel
+            const restored = ULabelMask.from_rle(exported.spatial_payload);
+            expect(Array.from(restored.data)).toEqual(Array.from(mask.data));
+
+            // The containing box was rebuilt from the mask's foreground bounds
+            expect(annotation.containing_box).toEqual({ tlx: 0, tly: 0, brx: 7, bry: 5 });
+        });
+
+        test("should skip a bitmask annotation with a malformed RLE payload", () => {
+            const resume_config = {
+                ...mock_config,
+                subtasks: {
+                    test_task: {
+                        ...mock_config.subtasks.test_task,
+                        allowed_modes: ["bbox", "polygon", "point", "bitmask"],
+                        resume_from: [
+                            {
+                                spatial_type: "bitmask",
+                                // Counts under-run the 8x6 mask (sum 5 != 48)
+                                spatial_payload: { counts: [1, 4], size: [6, 8] },
+                                classification_payloads: [{ class_id: 1, confidence: 1.0 }],
+                            },
+                        ],
+                    },
+                },
+            };
+
+            const ulabel_with_resume = new ULabel(resume_config);
+            // The malformed annotation is skipped rather than partially decoded
+            expect(ulabel_with_resume.subtasks.test_task.annotations.ordering).toHaveLength(0);
         });
 
         test("should throw an error for missing spatial_type", () => {

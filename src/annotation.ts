@@ -6,6 +6,7 @@ import type {
     ULabelSpatialType,
 } from "../index";
 import { GeometricUtils } from "./geometric_utils";
+import { ULabelMask } from "./mask_utils";
 import { log_message, LogLevel } from "./error_logging";
 
 // Modes used to draw an area in the which to delete all annotations
@@ -26,6 +27,7 @@ const SPATIAL_TYPE_SET: Record<ULabelSpatialType, true> = {
     "whole-image": true,
     "global": true,
     "point": true,
+    "bitmask": true,
 };
 
 // Every ULabelSpatialType (spatial and non-spatial modes) as a runtime array.
@@ -120,6 +122,15 @@ export class ULabelAnnotation {
 
     // ensure polygon spatial_payloads are updated to support complex polygons
     public ensure_compatible_spatial_payloads() {
+        if (this.spatial_type === "bitmask") {
+            // Reject malformed / corrupt raster payloads, surfacing the specific reason
+            try {
+                ULabelMask.validate_rle(this.spatial_payload);
+            } catch (error) {
+                log_message(`Skipping bitmask annotation id ${this.id}: ${(error as Error).message}`, LogLevel.WARNING, true);
+                return false;
+            }
+        }
         if (this.spatial_type === "polygon") {
             // Catch empty spatial payloads
             if (this.spatial_payload === undefined || this.spatial_payload.length === 0) {
@@ -199,6 +210,11 @@ export class ULabelAnnotation {
      */
     public clamp_annotation_to_image_bounds(image_width: number, image_height: number): ULabelAnnotation {
         if (!this.is_delete_annotation()) {
+            // Bitmask annotations store a raster payload (not point arrays) that is
+            // inherently within image bounds, so there is nothing to clamp.
+            if (this.spatial_type === "bitmask") {
+                return this;
+            }
             // Ensure each point in the payload is within the image
             // for polygons, we'll need to loop through all points
             let active_spatial_payload = this.spatial_payload;

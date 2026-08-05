@@ -4,6 +4,20 @@ All notable changes to this project will be documented here.
 
 ## [unreleased]
 
+## [0.25.0] - Aug 5th, 2026
+- Add a `bitmask` annotation mode for raster (per-pixel) segmentation, selectable via `allowed_modes: ["bitmask", ...]`.
+  - Painted with the brush (toggle with `toggle_brush_mode_keybind`, default `g`); erase with `toggle_erase_mode_keybind` (default `e`); resize the brush with `increase_brush_size_keybind` / `decrease_brush_size_keybind` (defaults `]` / `[`) or `alt+scroll`. The brush/erase toggles now apply to both `polygon` and `bitmask` modes.
+  - A paint stroke only joins an existing mask of the currently-selected class; painting a different class (or over empty space) starts a new mask of the selected class. Erase is class-agnostic. This differs from the `polygon` brush, which joins any polygon under the brush.
+  - Hover a mask (with the brush off) to change its class via the ID dialog, or move/delete it like any other spatial annotation.
+  - Each bitmask annotation stores a single binary mask. On export, `spatial_payload` is a COCO-style run-length-encoded object: `{ "counts": <number[]>, "size": [<height>, <width>] }` (column-major, starting with a background run). Fully-erased masks are deprecated (ULabel's delete semantics).
+  - Configurable render opacity for bitmask classes via `mask_annotation_opacity`.
+- Add brush **overlap modes** for bitmask painting, controlled globally and persisted to localStorage: `none` (default), `exclude`, and `overwrite`.
+  - `exclude`: newly-painted pixels never cover pixels owned by other undeprecated bitmask annotations (existing masks win).
+  - `overwrite`: newly-painted pixels are removed from any other bitmask annotation that owned them (the new mask wins); a mask fully carved away is deprecated.
+  - Resolution is deferred to the end of a stroke (you see the active mask cover others, then it snaps to the resolved result on release) and only affects the pixels a stroke adds; erase is unaffected.
+  - Selectable via the Brush toolbox item (shown in bitmask mode) and keybinds `set_brush_overlap_none_keybind` / `set_brush_overlap_exclude_keybind` / `set_brush_overlap_overwrite_keybind` (defaults `shift+n` / `shift+e` / `shift+o`), which also appear in the `Keybinds` toolbox item. Initial value configurable via `default_brush_overlap_mode`.
+  - Brush toolbox buttons have hover tooltips.
+
 ## [0.24.0] - July 22nd, 2026
 - Add `ConfidenceSlider` toolbox item (`AllowedToolboxItem.ConfidenceSlider`) that deprecates (hides) or shows spatial annotations based on their confidence values. Unlike the now-deprecated `KeypointSlider`, it works with all spatial annotation types that have a confidence payload (`bbox`, `bbox3`, `polygon`, `polyline`, `contour`, `tbar`, and `point`), across every subtask.
   - Supports a single global "all" slider and/or per-class sliders, controlled by `class_filter_mode` (`"toggle"`, `"all-only"`, or `"class-only"`).

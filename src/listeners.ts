@@ -133,6 +133,20 @@ function handle_keypress_event(
         return;
     }
 
+    // Set the brush overlap mode (bitmask). Persisted globally.
+    if (event_matches_keybind(keypress_event, ulabel.config.set_brush_overlap_none_keybind)) {
+        ulabel.set_brush_overlap_mode("none");
+        return;
+    }
+    if (event_matches_keybind(keypress_event, ulabel.config.set_brush_overlap_exclude_keybind)) {
+        ulabel.set_brush_overlap_mode("exclude");
+        return;
+    }
+    if (event_matches_keybind(keypress_event, ulabel.config.set_brush_overlap_overwrite_keybind)) {
+        ulabel.set_brush_overlap_mode("overwrite");
+        return;
+    }
+
     // Reset zoom to initial crop
     if (event_matches_keybind(keypress_event, ulabel.config.reset_zoom_keybind)) {
         ulabel.show_initial_crop();
