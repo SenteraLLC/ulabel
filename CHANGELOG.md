@@ -4,6 +4,9 @@ All notable changes to this project will be documented here.
 
 ## [unreleased]
 
+## [0.25.1] - Aug 5th, 2026
+- The `ConfidenceSlider` toolbox item now also filters `bitmask` annotations
+
 ## [0.25.0] - Aug 5th, 2026
 - Add a `bitmask` annotation mode for raster (per-pixel) segmentation, selectable via `allowed_modes: ["bitmask", ...]`.
   - Painted with the brush (toggle with `toggle_brush_mode_keybind`, default `g`); erase with `toggle_erase_mode_keybind` (default `e`); resize the brush with `increase_brush_size_keybind` / `decrease_brush_size_keybind` (defaults `]` / `[`) or `alt+scroll`. The brush/erase toggles now apply to both `polygon` and `bitmask` modes.

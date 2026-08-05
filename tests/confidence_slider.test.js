@@ -135,6 +135,22 @@ describe("ConfidenceSlider", () => {
             expect(low.deprecated).toBe(false);
         });
 
+        test("filters bitmask annotations by confidence like any other spatial type", () => {
+            const high_mask = make_annotation("high_mask", "bitmask", [{ class_id: 10, confidence: 0.9 }]);
+            const low_mask = make_annotation("low_mask", "bitmask", [{ class_id: 10, confidence: 0.1 }]);
+            const cs = new ConfidenceSlider(make_ulabel([high_mask, low_mask], {
+                class_filter_mode: "all-only",
+                default_values: { all: 60 },
+                filter_on_load: false,
+            }));
+
+            cs.filter_annotations(false);
+
+            expect(high_mask.deprecated).toBe(false);
+            expect(low_mask.deprecated).toBe(true);
+            expect(low_mask.deprecated_by.confidence_slider).toBe(true);
+        });
+
         test("lowering the threshold un-deprecates previously filtered annotations", () => {
             const low = make_annotation("low", "bbox", [{ class_id: 10, confidence: 0.1 }]);
             const cs = new ConfidenceSlider(make_ulabel([low], {

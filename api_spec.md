@@ -484,7 +484,7 @@ This toolbox item requires no configuration and can be added to the `toolbox_ord
 
 ### `confidence_slider_toolbox_item`
 
-The `ConfidenceSlider` toolbox item (added to `toolbox_order` via `AllowedToolboxItem.ConfidenceSlider`) deprecates (hides) or shows spatial annotations based on their confidence values. Unlike the deprecated `KeypointSlider`, it works with **all** spatial annotation types that have a confidence payload (`bbox`, `bbox3`, `polygon`, `polyline`, `contour`, `tbar`, and `point`), across every subtask.
+The `ConfidenceSlider` toolbox item (added to `toolbox_order` via `AllowedToolboxItem.ConfidenceSlider`) deprecates (hides) or shows spatial annotations based on their confidence values. Unlike the deprecated `KeypointSlider`, it works with **all** spatial annotation types that have a confidence payload (`bbox`, `bbox3`, `polygon`, `polyline`, `contour`, `tbar`, `point`, and `bitmask`), across every subtask.
 
 It supports two modes:
 
