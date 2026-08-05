@@ -190,6 +190,56 @@ export class ULabelMask {
         return changed;
     }
 
+    // Erase (set to 0) every foreground pixel whose integer coordinate falls inside the
+    // given simple polygon (a single ring of [x, y] image-space points). Uses an even-odd
+    // scanline fill and only touches the polygon's vertical extent. Returns true if any
+    // pixel changed. Used to apply ULabel's polygon/bbox delete modes to raster masks.
+    public subtract_polygon(polygon: [number, number][]): boolean {
+        if (polygon.length < 3) return false;
+
+        // Restrict work to the polygon's vertical extent, clamped to the image.
+        let min_py = Infinity;
+        let max_py = -Infinity;
+        for (let i = 0; i < polygon.length; i++) {
+            const py = polygon[i][1];
+            if (py < min_py) min_py = py;
+            if (py > max_py) max_py = py;
+        }
+        const y_start = Math.max(0, Math.ceil(min_py));
+        const y_end = Math.min(this.height - 1, Math.floor(max_py));
+
+        let changed = false;
+        const n = polygon.length;
+        const xs: number[] = [];
+        for (let y = y_start; y <= y_end; y++) {
+            // Collect x-intersections of polygon edges with the horizontal line at this row.
+            xs.length = 0;
+            for (let i = 0, j = n - 1; i < n; j = i++) {
+                const yi = polygon[i][1];
+                const yj = polygon[j][1];
+                if ((yi > y) !== (yj > y)) {
+                    const xi = polygon[i][0];
+                    const xj = polygon[j][0];
+                    xs.push(xi + ((y - yi) / (yj - yi)) * (xj - xi));
+                }
+            }
+            if (xs.length < 2) continue;
+            xs.sort((a, b) => a - b);
+            const row = y * this.width;
+            for (let k = 0; k + 1 < xs.length; k += 2) {
+                const x_start = Math.max(0, Math.ceil(xs[k]));
+                const x_end = Math.min(this.width - 1, Math.floor(xs[k + 1]));
+                for (let x = x_start; x <= x_end; x++) {
+                    if (this.data[row + x] !== 0) {
+                        this.data[row + x] = 0;
+                        changed = true;
+                    }
+                }
+            }
+        }
+        return changed;
+    }
+
     // Add another mask's foreground into this one (this = this OR other).
     public add_mask(other: ULabelMask): void {
         this.assert_same_dims(other);

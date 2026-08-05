@@ -2947,6 +2947,23 @@ export class ULabel {
                     }
                     break;
 
+                // Erase the delete polygon's region from the raster mask
+                case "bitmask": {
+                    const mask = this.get_bitmask(annotation);
+                    if (mask.subtract_polygon(delete_polygon)) {
+                        annotation["spatial_payload"] = mask.to_rle();
+                        if (mask.is_empty()) {
+                            mark_deprecated(annotation, true);
+                        }
+                        this.rebuild_bitmask_containing_box(annotation);
+                        // A full-annotation copy (taken above, pre-mutation) restores the
+                        // original mask and deprecation state on undo.
+                        modified_annotations[annid] = JSON.parse(JSON.stringify(og_annotation));
+                        needs_redraw = true;
+                    }
+                    break;
+                }
+
                 // TODO: handle other spatial types
             }
             // Redraw if needed

@@ -228,6 +228,53 @@ describe("ULabelMask", () => {
         });
     });
 
+    describe("subtract_polygon", () => {
+        test("erases foreground pixels inside a simple polygon", () => {
+            const mask = ULabelMask.create_empty(10, 10);
+            // Fill a 4x4 block from (2,2) to (5,5)
+            for (let y = 2; y <= 5; y++) {
+                for (let x = 2; x <= 5; x++) {
+                    mask.set_pixel(x, y, 1);
+                }
+            }
+            // Delete polygon covering the block's lower-right quadrant
+            const polygon = [[3, 3], [6, 3], [6, 6], [3, 6], [3, 3]];
+            const changed = mask.subtract_polygon(polygon);
+            expect(changed).toBe(true);
+            // Inside the delete polygon: erased
+            expect(mask.get_pixel(4, 4)).toBe(0);
+            expect(mask.get_pixel(5, 5)).toBe(0);
+            // Outside the delete polygon: preserved
+            expect(mask.get_pixel(2, 2)).toBe(1);
+            expect(mask.get_pixel(2, 5)).toBe(1);
+        });
+
+        test("returns false when the polygon covers no foreground", () => {
+            const mask = ULabelMask.create_empty(10, 10);
+            mask.set_pixel(1, 1, 1);
+            const polygon = [[5, 5], [8, 5], [8, 8], [5, 8], [5, 5]];
+            expect(mask.subtract_polygon(polygon)).toBe(false);
+            expect(mask.get_pixel(1, 1)).toBe(1);
+        });
+
+        test("can erase an entire mask", () => {
+            const mask = ULabelMask.create_empty(6, 6);
+            mask.set_pixel(2, 2, 1);
+            mask.set_pixel(3, 3, 1);
+            // Polygon covering the whole image
+            const polygon = [[-1, -1], [7, -1], [7, 7], [-1, 7], [-1, -1]];
+            expect(mask.subtract_polygon(polygon)).toBe(true);
+            expect(mask.is_empty()).toBe(true);
+        });
+
+        test("returns false for a degenerate polygon", () => {
+            const mask = ULabelMask.create_empty(6, 6);
+            mask.set_pixel(2, 2, 1);
+            expect(mask.subtract_polygon([[2, 2], [3, 2]])).toBe(false);
+            expect(mask.get_pixel(2, 2)).toBe(1);
+        });
+    });
+
     describe("RLE validation", () => {
         // A valid 2x2 mask: one background pixel then three foreground
         const valid = { counts: [1, 3], size: [2, 2] };
