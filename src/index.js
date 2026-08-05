@@ -1758,7 +1758,7 @@ export class ULabel {
             let mask;
             const payload = annotation_object["spatial_payload"];
             if (payload != null && payload["counts"] !== undefined) {
-                mask = ULabelMask.from_rle(payload);
+                mask = ULabelMask.from_rle(payload, false);
             } else {
                 mask = ULabelMask.create_empty(this.config["image_width"], this.config["image_height"]);
             }
@@ -1782,7 +1782,7 @@ export class ULabel {
     set_bitmask_from_rle(annotation_object, rle) {
         let mask;
         if (rle != null && rle["counts"] !== undefined) {
-            mask = ULabelMask.from_rle(rle);
+            mask = ULabelMask.from_rle(rle, false);
         } else {
             mask = ULabelMask.create_empty(this.config["image_width"], this.config["image_height"]);
         }
@@ -1790,8 +1790,66 @@ export class ULabel {
         return mask;
     }
 
+    // Attach an incremental containing-box hint to a bitmask annotation as a non-enumerable
+    // property (like `_mask`) so it is excluded from serialization.
+    set_bitmask_box_hint(annotation_object, hint) {
+        Object.defineProperty(annotation_object, "_bitmask_box_hint", {
+            value: hint,
+            enumerable: false,
+            writable: true,
+            configurable: true,
+        });
+    }
+
+    // Compute the clamped, integer image-space bounding box of a single brush dab
+    // (a circle, or the capsule swept between the previous and current dab centers).
+    get_bitmask_dab_box(prev_point, imx, imy, radius) {
+        const image_width = this.config["image_width"];
+        const image_height = this.config["image_height"];
+        let min_x = imx - radius;
+        let max_x = imx + radius;
+        let min_y = imy - radius;
+        let max_y = imy + radius;
+        if (prev_point !== null) {
+            min_x = Math.min(min_x, prev_point[0] - radius);
+            max_x = Math.max(max_x, prev_point[0] + radius);
+            min_y = Math.min(min_y, prev_point[1] - radius);
+            max_y = Math.max(max_y, prev_point[1] + radius);
+        }
+        return {
+            tlx: Math.max(0, Math.floor(min_x)),
+            tly: Math.max(0, Math.floor(min_y)),
+            brx: Math.min(image_width - 1, Math.ceil(max_x)),
+            bry: Math.min(image_height - 1, Math.ceil(max_y)),
+        };
+    }
+
     // Recompute a bitmask annotation's containing box from its mask.
+    // If an incremental hint was left on the annotation during an in-progress stroke,
+    // apply it in O(1) instead of rescanning the whole mask:
+    //  - { skip: true }: leave the (superset) box unchanged (used by erase dabs)
+    //  - a box { tlx, tly, brx, bry }: union it with the existing box (paint dabs)
     rebuild_bitmask_containing_box(annotation_object) {
+        const hint = annotation_object["_bitmask_box_hint"];
+        if (hint != null) {
+            // Clear the hint so subsequent full rebuilds (e.g. at stroke end) still run.
+            annotation_object["_bitmask_box_hint"] = null;
+            if (hint.skip) {
+                return;
+            }
+            const existing = annotation_object["containing_box"];
+            if (existing != null) {
+                annotation_object["containing_box"] = {
+                    tlx: Math.min(existing.tlx, hint.tlx),
+                    tly: Math.min(existing.tly, hint.tly),
+                    brx: Math.max(existing.brx, hint.brx),
+                    bry: Math.max(existing.bry, hint.bry),
+                };
+            } else {
+                annotation_object["containing_box"] = { tlx: hint.tlx, tly: hint.tly, brx: hint.brx, bry: hint.bry };
+            }
+            return;
+        }
         const bbox = this.get_bitmask(annotation_object).get_bounding_box();
         if (bbox === null) {
             annotation_object["containing_box"] = null;
@@ -1815,21 +1873,43 @@ export class ULabel {
         const mask = this.get_bitmask(annotation_object);
         if (mask === null || image_width == null || image_height == null) return;
 
-        // Build an opaque white stencil of the mask at native image resolution
+        // Only rasterize the mask's bounding box rather than the whole image. The containing
+        // box is maintained as a superset of the foreground (see rebuild_bitmask_containing_box),
+        // so every painted pixel is covered. Fall back to a full scan only if it is missing.
+        let box = annotation_object["containing_box"];
+        if (box == null) {
+            box = mask.get_bounding_box();
+            if (box === null) return; // Empty mask, nothing to draw
+        }
+
+        // Clamp the box to the image and compute its pixel dimensions
+        const tlx = Math.max(0, Math.floor(box.tlx));
+        const tly = Math.max(0, Math.floor(box.tly));
+        const brx = Math.min(image_width - 1, Math.ceil(box.brx));
+        const bry = Math.min(image_height - 1, Math.ceil(box.bry));
+        const box_width = brx - tlx + 1;
+        const box_height = bry - tly + 1;
+        if (box_width <= 0 || box_height <= 0) return;
+
+        // Build an opaque white stencil of just the box region at native resolution
         const offscreen = document.createElement("canvas");
-        offscreen.width = image_width;
-        offscreen.height = image_height;
+        offscreen.width = box_width;
+        offscreen.height = box_height;
         const offscreen_ctx = offscreen.getContext("2d");
-        const image_data = offscreen_ctx.createImageData(image_width, image_height);
+        const image_data = offscreen_ctx.createImageData(box_width, box_height);
         const data = image_data.data;
         const mask_data = mask.data;
-        for (let i = 0; i < mask_data.length; i++) {
-            if (mask_data[i] !== 0) {
-                const j = i * 4;
-                data[j] = 255;
-                data[j + 1] = 255;
-                data[j + 2] = 255;
-                data[j + 3] = 255;
+        for (let y = tly; y <= bry; y++) {
+            const mask_row = y * image_width;
+            const local_row = (y - tly) * box_width;
+            for (let x = tlx; x <= brx; x++) {
+                if (mask_data[mask_row + x] !== 0) {
+                    const j = (local_row + (x - tlx)) * 4;
+                    data[j] = 255;
+                    data[j + 1] = 255;
+                    data[j + 2] = 255;
+                    data[j + 3] = 255;
+                }
             }
         }
         offscreen_ctx.putImageData(image_data, 0, 0);
@@ -1838,9 +1918,9 @@ export class ULabel {
         // both named CSS colors (e.g. "green") and hex strings, matching every other draw fn.
         offscreen_ctx.globalCompositeOperation = "source-in";
         offscreen_ctx.fillStyle = this.get_annotation_color(annotation_object);
-        offscreen_ctx.fillRect(0, 0, image_width, image_height);
+        offscreen_ctx.fillRect(0, 0, box_width, box_height);
 
-        // Draw the native-resolution mask scaled onto the target context, honoring any offset
+        // Draw the box region scaled onto the target context at its image position, honoring any offset
         let diffX = 0;
         let diffY = 0;
         if (offset != null) {
@@ -1852,10 +1932,10 @@ export class ULabel {
         ctx.globalAlpha = this.config["mask_annotation_opacity"];
         ctx.drawImage(
             offscreen,
-            diffX * px_per_px,
-            diffY * px_per_px,
-            image_width * px_per_px,
-            image_height * px_per_px,
+            (tlx + diffX) * px_per_px,
+            (tly + diffY) * px_per_px,
+            box_width * px_per_px,
+            box_height * px_per_px,
         );
         ctx.globalAlpha = 1.0;
     }
@@ -4431,7 +4511,6 @@ export class ULabel {
     }
 
     // Find the topmost undeprecated bitmask annotation with foreground under the brush.
-    // Find the topmost undeprecated bitmask annotation with foreground under the brush.
     // When `class_id` is provided, only annotations of that class are considered.
     find_bitmask_under_brush(imx, imy, radius, class_id = null) {
         const current_subtask = this.get_current_subtask();
@@ -4556,16 +4635,32 @@ export class ULabel {
         const radius = this.config["brush_size"] / 2;
         const value = current_subtask["state"]["is_in_erase_mode"] ? 0 : 1;
 
+        const prev_point = stroke.last_point;
         let changed;
-        if (stroke.last_point !== null) {
-            changed = this.paint_bitmask_line(mask, stroke.last_point[0], stroke.last_point[1], imx, imy, radius, value);
+        if (prev_point !== null) {
+            changed = this.paint_bitmask_line(mask, prev_point[0], prev_point[1], imx, imy, radius, value);
         } else {
             changed = mask.paint_circle(imx, imy, radius, value);
         }
         stroke.last_point = [imx, imy];
 
         if (changed) {
-            this.redraw_annotation(active_id);
+            // Provide an incremental containing-box hint so the action listener can update
+            // the box in O(1) instead of rescanning the whole mask on each dab.
+            if (value === 0) {
+                // Erasing can only shrink the box; keep the current (superset) box until the
+                // stroke ends, when a full rebuild runs.
+                this.set_bitmask_box_hint(annotation, { skip: true });
+            } else {
+                this.set_bitmask_box_hint(annotation, this.get_bitmask_dab_box(prev_point, imx, imy, radius));
+            }
+            record_action(this, {
+                act_type: "continue_bitmask",
+                annotation_id: active_id,
+                frame: this.state["current_frame"],
+                undo_payload: {},
+                redo_payload: {},
+            }, false, false);
         }
     }
 
@@ -4592,7 +4687,7 @@ export class ULabel {
         if (!stroke.is_erase && overlap_mode !== "none") {
             // Compute the pixels this stroke added (delta = current AND NOT before)
             const before_mask = stroke.before_rle != null ?
-                ULabelMask.from_rle(stroke.before_rle) :
+                ULabelMask.from_rle(stroke.before_rle, false) :
                 ULabelMask.create_empty(this.config["image_width"], this.config["image_height"]);
             const delta = mask.clone();
             delta.subtract(before_mask);

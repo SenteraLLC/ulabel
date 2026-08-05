@@ -222,6 +222,9 @@ function trigger_action_listeners(
         continue_brush: {
             action: on_in_progress_annotation_spatial_modification,
         },
+        continue_bitmask: {
+            action: on_in_progress_annotation_spatial_modification,
+        },
         continue_annotation: {
             action: on_in_progress_annotation_spatial_modification,
         },

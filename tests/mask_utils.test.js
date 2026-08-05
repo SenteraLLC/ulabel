@@ -227,4 +227,51 @@ describe("ULabelMask", () => {
             expect(() => a.subtract(b)).toThrow();
         });
     });
+
+    describe("RLE validation", () => {
+        // A valid 2x2 mask: one background pixel then three foreground
+        const valid = { counts: [1, 3], size: [2, 2] };
+
+        test("accepts a well-formed payload", () => {
+            expect(() => ULabelMask.validate_rle(valid)).not.toThrow();
+            expect(() => ULabelMask.from_rle(valid)).not.toThrow();
+        });
+
+        test("rejects a non-object payload", () => {
+            expect(() => ULabelMask.validate_rle(null)).toThrow();
+            expect(() => ULabelMask.validate_rle(42)).toThrow();
+            expect(() => ULabelMask.from_rle(null)).toThrow();
+        });
+
+        test("rejects a malformed size", () => {
+            expect(() => ULabelMask.validate_rle({ counts: [4], size: [2] })).toThrow();
+            expect(() => ULabelMask.validate_rle({ counts: [4], size: [2, -2] })).toThrow();
+            expect(() => ULabelMask.validate_rle({ counts: [4], size: [2, 2.5] })).toThrow();
+            expect(() => ULabelMask.validate_rle({ counts: [4], size: "2x2" })).toThrow();
+        });
+
+        test("rejects non-array counts", () => {
+            expect(() => ULabelMask.validate_rle({ counts: 4, size: [2, 2] })).toThrow();
+        });
+
+        test("rejects negative run lengths", () => {
+            expect(() => ULabelMask.validate_rle({ counts: [-1, 5], size: [2, 2] })).toThrow();
+            expect(() => ULabelMask.from_rle({ counts: [-1, 5], size: [2, 2] })).toThrow();
+        });
+
+        test("rejects non-integer run lengths", () => {
+            expect(() => ULabelMask.validate_rle({ counts: [1.5, 2.5], size: [2, 2] })).toThrow();
+            expect(() => ULabelMask.from_rle({ counts: [1.5, 2.5], size: [2, 2] })).toThrow();
+        });
+
+        test("rejects counts that under-run the mask size", () => {
+            expect(() => ULabelMask.validate_rle({ counts: [1, 1], size: [2, 2] })).toThrow();
+            expect(() => ULabelMask.from_rle({ counts: [1, 1], size: [2, 2] })).toThrow();
+        });
+
+        test("rejects counts that over-run the mask size", () => {
+            expect(() => ULabelMask.validate_rle({ counts: [1, 99], size: [2, 2] })).toThrow();
+            expect(() => ULabelMask.from_rle({ counts: [1, 99], size: [2, 2] })).toThrow();
+        });
+    });
 });

@@ -6,6 +6,7 @@ import type {
     ULabelSpatialType,
 } from "../index";
 import { GeometricUtils } from "./geometric_utils";
+import { ULabelMask } from "./mask_utils";
 import { log_message, LogLevel } from "./error_logging";
 
 // Modes used to draw an area in the which to delete all annotations
@@ -121,6 +122,15 @@ export class ULabelAnnotation {
 
     // ensure polygon spatial_payloads are updated to support complex polygons
     public ensure_compatible_spatial_payloads() {
+        if (this.spatial_type === "bitmask") {
+            // Reject malformed / corrupt raster payloads, surfacing the specific reason
+            try {
+                ULabelMask.validate_rle(this.spatial_payload);
+            } catch (error) {
+                log_message(`Skipping bitmask annotation id ${this.id}: ${(error as Error).message}`, LogLevel.WARNING, true);
+                return false;
+            }
+        }
         if (this.spatial_type === "polygon") {
             // Catch empty spatial payloads
             if (this.spatial_payload === undefined || this.spatial_payload.length === 0) {

@@ -124,6 +124,30 @@ describe("Annotation Processing", () => {
             expect(annotation.containing_box).toEqual({ tlx: 0, tly: 0, brx: 7, bry: 5 });
         });
 
+        test("should skip a bitmask annotation with a malformed RLE payload", () => {
+            const resume_config = {
+                ...mock_config,
+                subtasks: {
+                    test_task: {
+                        ...mock_config.subtasks.test_task,
+                        allowed_modes: ["bbox", "polygon", "point", "bitmask"],
+                        resume_from: [
+                            {
+                                spatial_type: "bitmask",
+                                // Counts under-run the 8x6 mask (sum 5 != 48)
+                                spatial_payload: { counts: [1, 4], size: [6, 8] },
+                                classification_payloads: [{ class_id: 1, confidence: 1.0 }],
+                            },
+                        ],
+                    },
+                },
+            };
+
+            const ulabel_with_resume = new ULabel(resume_config);
+            // The malformed annotation is skipped rather than partially decoded
+            expect(ulabel_with_resume.subtasks.test_task.annotations.ordering).toHaveLength(0);
+        });
+
         test("should throw an error for missing spatial_type", () => {
             const invalid_resume_config = {
                 ...mock_config,

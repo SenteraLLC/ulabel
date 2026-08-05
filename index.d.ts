@@ -247,6 +247,7 @@ export type ULabelActionType = "create_nonspatial_annotation" |
     "simplify_polygon_complex_layer" |
     "begin_brush" |
     "continue_brush" |
+    "continue_bitmask" |
     "bitmask_stroke" |
     "finish_modify_annotation" |
     "assign_annotation_id";

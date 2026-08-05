@@ -245,17 +245,56 @@ export class ULabelMask {
         };
     }
 
+    // Validate a run-length payload before decoding. Throws with a descriptive
+    // message on any malformed shape. Used to guard against corrupt/untrusted
+    // imported (`resume_from`) data producing a silently partial mask.
+    public static validate_rle(payload: unknown): void {
+        if (payload === null || typeof payload !== "object") {
+            throw new Error("Invalid RLE payload: expected an object with `counts` and `size`");
+        }
+        const p = payload as { size?: unknown; counts?: unknown };
+        const size = p.size;
+        if (
+            !Array.isArray(size) ||
+            size.length !== 2 ||
+            !Number.isInteger(size[0]) ||
+            !Number.isInteger(size[1]) ||
+            size[0] < 0 ||
+            size[1] < 0
+        ) {
+            throw new Error(`Invalid RLE size: expected [height, width] of non-negative integers, got ${JSON.stringify(size)}`);
+        }
+        const counts = p.counts;
+        if (!Array.isArray(counts)) {
+            throw new Error("Invalid RLE counts: expected an array of run lengths");
+        }
+        const total = size[0] * size[1];
+        let sum = 0;
+        for (let i = 0; i < counts.length; i++) {
+            const run = counts[i];
+            if (typeof run !== "number" || !Number.isInteger(run) || run < 0) {
+                throw new Error(`Invalid RLE run length at index ${i}: expected a non-negative integer, got ${run}`);
+            }
+            sum += run;
+        }
+        if (sum !== total) {
+            throw new Error(`Invalid RLE: run lengths sum to ${sum} but mask has ${total} pixels (${size[0]}x${size[1]})`);
+        }
+    }
+
     // Decode a COCO-style RLE payload into a mask.
-    public static from_rle(payload: ULabelMaskPayload): ULabelMask {
+    public static from_rle(payload: ULabelMaskPayload, validate: boolean = true): ULabelMask {
+        if (validate) {
+            ULabelMask.validate_rle(payload);
+        }
         const [height, width] = payload.size;
         const mask = new ULabelMask(width, height);
         let idx = 0; // column-major index
         let value = 0;
-        const total = width * height;
         for (let c = 0; c < payload.counts.length; c++) {
             const run = payload.counts[c];
             if (value === 1) {
-                for (let k = 0; k < run && idx < total; k++) {
+                for (let k = 0; k < run; k++) {
                     const col_idx = idx + k;
                     const x = Math.floor(col_idx / height);
                     const y = col_idx % height;

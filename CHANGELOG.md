@@ -10,7 +10,7 @@ All notable changes to this project will be documented here.
   - A paint stroke only joins an existing mask of the currently-selected class; painting a different class (or over empty space) starts a new mask of the selected class. Erase is class-agnostic. This differs from the `polygon` brush, which joins any polygon under the brush.
   - Hover a mask (with the brush off) to change its class via the ID dialog, or move/delete it like any other spatial annotation.
   - Each bitmask annotation stores a single binary mask. On export, `spatial_payload` is a COCO-style run-length-encoded object: `{ "counts": <number[]>, "size": [<height>, <width>] }` (column-major, starting with a background run). Fully-erased masks are deprecated (ULabel's delete semantics).
-  - Configurable render opacity for bitmask classes via `mask_annotation_opacity` (default `0.2`).
+  - Configurable render opacity for bitmask classes via `mask_annotation_opacity`.
 - Add brush **overlap modes** for bitmask painting, controlled globally and persisted to localStorage: `none` (default), `exclude`, and `overwrite`.
   - `exclude`: newly-painted pixels never cover pixels owned by other undeprecated bitmask annotations (existing masks win).
   - `overwrite`: newly-painted pixels are removed from any other bitmask annotation that owned them (the new mask wins); a mask fully carved away is deprecated.
