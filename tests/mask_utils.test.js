@@ -427,4 +427,59 @@ describe("ULabelMask", () => {
             expect(() => a.subtract_in_box(b, box)).toThrow();
         });
     });
+
+    describe("mutation version counter", () => {
+        test("starts at 0 and is bumped by mutating methods", () => {
+            const a = ULabelMask.create_empty(8, 8);
+            expect(a.version).toBe(0);
+
+            a.set_pixel(1, 1, 1);
+            expect(a.version).toBe(1);
+
+            a.paint_circle(4, 4, 2, 1);
+            expect(a.version).toBe(2);
+
+            const b = ULabelMask.create_empty(8, 8);
+            b.set_pixel(1, 1, 1);
+            a.subtract(b);
+            expect(a.version).toBe(3);
+
+            a.add_mask(b);
+            expect(a.version).toBe(4);
+
+            a.intersect(b);
+            expect(a.version).toBe(5);
+
+            a.subtract_in_box(b, { tlx: 0, tly: 0, brx: 7, bry: 7 });
+            expect(a.version).toBe(6);
+
+            a.subtract_intersection_in_box(b, b, { tlx: 0, tly: 0, brx: 7, bry: 7 });
+            expect(a.version).toBe(7);
+        });
+
+        test("read-only ops and out-of-bounds writes do not bump the version", () => {
+            const a = ULabelMask.create_empty(8, 8);
+            a.set_pixel(2, 2, 1);
+            const v = a.version;
+
+            a.get_pixel(2, 2);
+            a.is_empty();
+            a.get_bounding_box();
+            a.to_rle();
+            a.clone();
+            const b = ULabelMask.create_empty(8, 8);
+            a.intersects(b);
+            a.set_pixel(-1, -1, 1); // out of bounds: no write
+
+            expect(a.version).toBe(v);
+        });
+
+        test("clone starts its own version at 0", () => {
+            const a = ULabelMask.create_empty(4, 4);
+            a.set_pixel(1, 1, 1);
+            a.set_pixel(2, 2, 1);
+            expect(a.version).toBe(2);
+            expect(a.clone().version).toBe(0);
+        });
+    });
 });

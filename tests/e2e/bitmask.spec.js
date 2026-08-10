@@ -174,4 +174,86 @@ test.describe("Bitmask overlap + move", () => {
         expect(res.cleared).toBe(true);
         expect(res.still_present).toBe(1);
     });
+
+    test("render cache is reused across redraws and rebuilt on edit / color change, but not on move offset", async ({ page }) => {
+        await wait_for_ulabel_init(page, "/bitmask-e2e.html");
+
+        const res = await page.evaluate(async () => {
+            const u = window.ulabel;
+            const { make, rebuild } = window.__mask_helpers(u);
+            await u.set_annotations([make("m", 1, 10, 10, 30, 30)], "a");
+            rebuild("a", "m");
+            u.set_subtask("a");
+            const ann = u.subtasks["a"].annotations.access["m"];
+
+            // First draw builds the cache
+            u.redraw_annotation("m", "a");
+            const r1 = ann._mask_render;
+            const created = r1 != null && r1.canvas != null;
+
+            // Redraw with no changes reuses the same cached render object
+            u.redraw_annotation("m", "a");
+            const reused = ann._mask_render === r1;
+
+            // Editing the mask bumps its version, which must rebuild the cache
+            u.get_bitmask(ann).paint_circle(20, 20, 3, 1);
+            rebuild("a", "m");
+            u.redraw_annotation("m", "a");
+            const r2 = ann._mask_render;
+            const rebuilt_on_edit = r2 !== r1 && r2 != null && r2.version === u.get_bitmask(ann).version;
+
+            // A color mismatch must rebuild the cache
+            r2.color = "__stale__";
+            u.redraw_annotation("m", "a");
+            const rebuilt_on_color = ann._mask_render !== r2;
+
+            // A move offset is applied at blit time and must NOT rebuild the cache
+            const r3 = ann._mask_render;
+            u.redraw_annotation("m", "a", { id: "m", diffX: 5, diffY: 5, diffZ: 0 });
+            const reused_on_offset = ann._mask_render === r3;
+
+            return {
+                created: created,
+                reused: reused,
+                rebuilt_on_edit: rebuilt_on_edit,
+                rebuilt_on_color: rebuilt_on_color,
+                reused_on_offset: reused_on_offset,
+            };
+        });
+
+        expect(res.created).toBe(true);
+        expect(res.reused).toBe(true);
+        expect(res.rebuilt_on_edit).toBe(true);
+        expect(res.rebuilt_on_color).toBe(true);
+        expect(res.reused_on_offset).toBe(true);
+    });
+
+    test("replacing a mask (undo/translate path) invalidates the render cache", async ({ page }) => {
+        await wait_for_ulabel_init(page, "/bitmask-e2e.html");
+
+        const res = await page.evaluate(async () => {
+            const u = window.ulabel;
+            const { make, rebuild } = window.__mask_helpers(u);
+            await u.set_annotations([make("m", 1, 10, 10, 30, 30)], "a");
+            rebuild("a", "m");
+            u.set_subtask("a");
+            const ann = u.subtasks["a"].annotations.access["m"];
+
+            u.redraw_annotation("m", "a");
+            const r1 = ann._mask_render;
+
+            // set_bitmask_from_rle swaps the mask object (as undo/redo do) and must clear the cache
+            u.set_bitmask_from_rle(ann, ann.spatial_payload);
+            const cleared = ann._mask_render == null;
+
+            rebuild("a", "m");
+            u.redraw_annotation("m", "a");
+            const rebuilt = ann._mask_render != null && ann._mask_render !== r1;
+
+            return { cleared: cleared, rebuilt: rebuilt };
+        });
+
+        expect(res.cleared).toBe(true);
+        expect(res.rebuilt).toBe(true);
+    });
 });

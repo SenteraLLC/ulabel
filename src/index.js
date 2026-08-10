@@ -1781,6 +1781,8 @@ export class ULabel {
             writable: true,
             configurable: true,
         });
+        // The cached render belonged to the previous mask; drop it so it rebuilds.
+        this.set_bitmask_render(annotation_object, null);
     }
 
     // Replace an annotation's cached mask from an RLE payload (or empty if null).
@@ -1878,23 +1880,59 @@ export class ULabel {
         const mask = this.get_bitmask(annotation_object);
         if (mask === null || image_width == null || image_height == null) return;
 
+        const color = this.get_annotation_color(annotation_object);
+
+        // Reuse a cached, pre-tinted native-resolution stencil when the mask and color are
+        // unchanged. The move/zoom/pan offset is applied at blit time, so it doesn't invalidate
+        // the cache; only a mask edit (version bump) or color change forces a rebuild.
+        let render = annotation_object["_mask_render"];
+        if (render == null || render.mask !== mask || render.version !== mask.version || render.color !== color) {
+            render = this.build_bitmask_render(annotation_object, mask, color);
+            if (render === null) return; // Empty mask, nothing to draw
+            this.set_bitmask_render(annotation_object, render);
+        }
+
+        let diffX = 0;
+        let diffY = 0;
+        if (offset != null) {
+            diffX = offset["diffX"];
+            diffY = offset["diffY"];
+        }
+        ctx.imageSmoothingEnabled = false;
+        ctx.globalCompositeOperation = "source-over";
+        ctx.globalAlpha = this.config["mask_annotation_opacity"];
+        ctx.drawImage(
+            render.canvas,
+            (render.tlx + diffX) * px_per_px,
+            (render.tly + diffY) * px_per_px,
+            render.box_width * px_per_px,
+            render.box_height * px_per_px,
+        );
+        ctx.globalAlpha = 1.0;
+    }
+
+    // Build a native-resolution, class-colored stencil for a bitmask's bounding box.
+    // Returns { canvas, tlx, tly, box_width, box_height, mask, version, color } or null if empty.
+    build_bitmask_render(annotation_object, mask, color) {
+        const image_width = this.config["image_width"];
+        const image_height = this.config["image_height"];
+
         // Only rasterize the mask's bounding box rather than the whole image. The containing
         // box is maintained as a superset of the foreground (see rebuild_bitmask_containing_box),
         // so every painted pixel is covered. Fall back to a full scan only if it is missing.
         let box = annotation_object["containing_box"];
         if (box == null) {
             box = mask.get_bounding_box();
-            if (box === null) return; // Empty mask, nothing to draw
+            if (box === null) return null;
         }
 
-        // Clamp the box to the image and compute its pixel dimensions
         const tlx = Math.max(0, Math.floor(box.tlx));
         const tly = Math.max(0, Math.floor(box.tly));
         const brx = Math.min(image_width - 1, Math.ceil(box.brx));
         const bry = Math.min(image_height - 1, Math.ceil(box.bry));
         const box_width = brx - tlx + 1;
         const box_height = bry - tly + 1;
-        if (box_width <= 0 || box_height <= 0) return;
+        if (box_width <= 0 || box_height <= 0) return null;
 
         // Build an opaque white stencil of just the box region at native resolution
         const offscreen = document.createElement("canvas");
@@ -1922,27 +1960,30 @@ export class ULabel {
         // Tint the stencil with the class color. Using fillStyle lets the canvas resolve
         // both named CSS colors (e.g. "green") and hex strings, matching every other draw fn.
         offscreen_ctx.globalCompositeOperation = "source-in";
-        offscreen_ctx.fillStyle = this.get_annotation_color(annotation_object);
+        offscreen_ctx.fillStyle = color;
         offscreen_ctx.fillRect(0, 0, box_width, box_height);
 
-        // Draw the box region scaled onto the target context at its image position, honoring any offset
-        let diffX = 0;
-        let diffY = 0;
-        if (offset != null) {
-            diffX = offset["diffX"];
-            diffY = offset["diffY"];
-        }
-        ctx.imageSmoothingEnabled = false;
-        ctx.globalCompositeOperation = "source-over";
-        ctx.globalAlpha = this.config["mask_annotation_opacity"];
-        ctx.drawImage(
-            offscreen,
-            (tlx + diffX) * px_per_px,
-            (tly + diffY) * px_per_px,
-            box_width * px_per_px,
-            box_height * px_per_px,
-        );
-        ctx.globalAlpha = 1.0;
+        return {
+            canvas: offscreen,
+            tlx: tlx,
+            tly: tly,
+            box_width: box_width,
+            box_height: box_height,
+            mask: mask,
+            version: mask.version,
+            color: color,
+        };
+    }
+
+    // Attach a cached render to a bitmask annotation as a non-enumerable property so it is
+    // excluded from serialization.
+    set_bitmask_render(annotation_object, render) {
+        Object.defineProperty(annotation_object, "_mask_render", {
+            value: render,
+            enumerable: false,
+            writable: true,
+            configurable: true,
+        });
     }
 
     draw_contour(annotation_object, ctx, offset = null) {

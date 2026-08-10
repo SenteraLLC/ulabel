@@ -34,6 +34,8 @@ export class ULabelMask {
     public data: Uint8Array;
     public readonly width: number;
     public readonly height: number;
+    // Bumped by every mutating method so render caches can detect changes by comparison.
+    public version: number = 0;
 
     constructor(width: number, height: number, data?: Uint8Array) {
         this.width = width;
@@ -66,12 +68,14 @@ export class ULabelMask {
         if (x < 0 || y < 0 || x >= this.width || y >= this.height) {
             return;
         }
+        this.version++;
         this.data[y * this.width + x] = value ? 1 : 0;
     }
 
     // Paint (value = 1) or erase (value = 0) a filled circle into the mask.
     // Returns true if any pixel changed.
     public paint_circle(cx: number, cy: number, radius: number, value: number): boolean {
+        this.version++;
         const v = value ? 1 : 0;
         const r = Math.max(0, radius);
         const min_x = clamp_int(cx - r, 0, this.width - 1);
@@ -188,6 +192,7 @@ export class ULabelMask {
     // Returns true if any pixel changed.
     public subtract(other: ULabelMask): boolean {
         this.assert_same_dims(other);
+        this.version++;
         let changed = false;
         for (let i = 0; i < this.data.length; i++) {
             if (this.data[i] !== 0 && other.data[i] !== 0) {
@@ -204,6 +209,7 @@ export class ULabelMask {
     // pixel changed. Used to apply ULabel's polygon/bbox delete modes to raster masks.
     public subtract_polygon(polygon: [number, number][]): boolean {
         if (polygon.length < 3) return false;
+        this.version++;
 
         // Restrict work to the polygon's vertical extent, clamped to the image.
         let min_py = Infinity;
@@ -251,6 +257,7 @@ export class ULabelMask {
     // Add another mask's foreground into this one (this = this OR other).
     public add_mask(other: ULabelMask): void {
         this.assert_same_dims(other);
+        this.version++;
         for (let i = 0; i < this.data.length; i++) {
             if (other.data[i] !== 0) {
                 this.data[i] = 1;
@@ -261,6 +268,7 @@ export class ULabelMask {
     // Keep only pixels present in both masks (this = this AND other).
     public intersect(other: ULabelMask): void {
         this.assert_same_dims(other);
+        this.version++;
         for (let i = 0; i < this.data.length; i++) {
             if (other.data[i] === 0) {
                 this.data[i] = 0;
@@ -310,6 +318,7 @@ export class ULabelMask {
         this.assert_same_dims(other);
         const b = this.clamp_box_to_image(box);
         if (b === null) return false;
+        this.version++;
         let changed = false;
         for (let y = b.y0; y <= b.y1; y++) {
             const row = y * this.width;
@@ -331,6 +340,7 @@ export class ULabelMask {
         this.assert_same_dims(b);
         const bx = this.clamp_box_to_image(box);
         if (bx === null) return false;
+        this.version++;
         let changed = false;
         for (let y = bx.y0; y <= bx.y1; y++) {
             const row = y * this.width;
