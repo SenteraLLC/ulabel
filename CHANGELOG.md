@@ -5,7 +5,7 @@ All notable changes to this project will be documented here.
 ## [unreleased]
 
 
-## [0.25.1] - Aug 5th, 2026
+## [0.25.1] - Aug 10th, 2026
 - The `ConfidenceSlider` toolbox item now also filters `bitmask` annotations
 - The `set_annotations()` and `swap_frame_image()` public API methods now display the loading spinner while they run and return a `Promise`
 - Bitmask brush **overlap modes** (`exclude` / `overwrite`) now resolve against bitmask annotations across **all subtasks**, not just the active one.
