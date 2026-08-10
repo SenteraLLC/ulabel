@@ -51,6 +51,7 @@ import {
 } from "./blobs";
 import { ULABEL_VERSION } from "./version";
 import { ulabel_init } from "../build/initializer";
+import { ULabelLoader } from "../build/loader";
 
 jQuery.fn.outer_html = function () {
     return jQuery("<div />").append(this.eq(0).clone()).html();
@@ -6702,9 +6703,23 @@ export class ULabel {
         }
     }
 
-    swap_frame_image(new_src, frame = 0) {
-        const ret = $(`img#${this.config["image_id_pfx"]}__${frame}`).attr("src");
-        $(`img#${this.config["image_id_pfx"]}__${frame}`).attr("src", new_src);
+    async swap_frame_image(new_src, frame = 0) {
+        const img = $(`img#${this.config["image_id_pfx"]}__${frame}`);
+        const ret = img.attr("src");
+
+        // Show the loader while the new image loads, similar to a new init
+        const container = document.getElementById(this.config["container_id"]);
+        ULabelLoader.add_loader_div(container);
+        // Yield so the browser can paint the loader before swapping the image
+        await ULabelLoader.wait_for_render();
+
+        try {
+            img.attr("src", new_src);
+            // Wait for the new image to be decoded and ready to display
+            await img[0].decode();
+        } finally {
+            ULabelLoader.remove_loader_div();
+        }
         return ret;
     }
 
@@ -6784,29 +6799,39 @@ export class ULabel {
         return JSON.parse(JSON.stringify(ret));
     }
 
-    set_annotations(new_annotations, subtask) {
-        // Undo/redo won't work through a get/set
-        this.reset_interaction_state();
-        this.subtasks[subtask]["actions"]["stream"] = [];
-        this.subtasks[subtask]["actions"]["undo_stack"] = [];
+    async set_annotations(new_annotations, subtask) {
+        // Show the loader while re-initializing annotations, since this is similar to a new init
+        const container = document.getElementById(this.config["container_id"]);
+        ULabelLoader.add_loader_div(container);
+        // Yield so the browser can paint the loader before the heavy synchronous work below
+        await ULabelLoader.wait_for_render();
 
-        // Remove canvases for spatial annotations
-        for (let i = 0; i < this.subtasks[subtask]["annotations"]["ordering"].length; i++) {
-            // If a spatial annotation, delete the canvas
-            let id = this.subtasks[subtask]["annotations"]["ordering"][i];
-            if (!NONSPATIAL_MODES.includes(this.subtasks[subtask]["annotations"]["access"][id]["spatial_type"])) {
-                this.destroy_annotation_context(id, subtask);
+        try {
+            // Undo/redo won't work through a get/set
+            this.reset_interaction_state();
+            this.subtasks[subtask]["actions"]["stream"] = [];
+            this.subtasks[subtask]["actions"]["undo_stack"] = [];
+
+            // Remove canvases for spatial annotations
+            for (let i = 0; i < this.subtasks[subtask]["annotations"]["ordering"].length; i++) {
+                // If a spatial annotation, delete the canvas
+                let id = this.subtasks[subtask]["annotations"]["ordering"][i];
+                if (!NONSPATIAL_MODES.includes(this.subtasks[subtask]["annotations"]["access"][id]["spatial_type"])) {
+                    this.destroy_annotation_context(id, subtask);
+                }
             }
+            // Set new annotations and initialize canvases
+            ULabel.process_resume_from(this, subtask, { resume_from: new_annotations });
+            initialize_annotation_canvases(this, subtask);
+            // Redraw all annotations to render them
+            this.redraw_all_annotations(subtask);
+            // Calculate distances for all annotations if FilterDistance is present
+            this.update_filter_distance(null, false, true);
+            // Update class counter in toolbox
+            this.toolbox.redraw_update_items(this);
+        } finally {
+            ULabelLoader.remove_loader_div();
         }
-        // Set new annotations and initialize canvases
-        ULabel.process_resume_from(this, subtask, { resume_from: new_annotations });
-        initialize_annotation_canvases(this, subtask);
-        // Redraw all annotations to render them
-        this.redraw_all_annotations(subtask);
-        // Calculate distances for all annotations if FilterDistance is present
-        this.update_filter_distance(null, false, true);
-        // Update class counter in toolbox
-        this.toolbox.redraw_update_items(this);
     }
 
     // Change frame

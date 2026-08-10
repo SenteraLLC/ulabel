@@ -35,7 +35,7 @@ test.describe("ConfidenceSlider", () => {
         });
 
         // Inject two bboxes with known confidences
-        await page.evaluate(({ stk, cid }) => {
+        await page.evaluate(async ({ stk, cid }) => {
             const annotations = [
                 {
                     id: "conf-test-low",
@@ -50,7 +50,7 @@ test.describe("ConfidenceSlider", () => {
                     classification_payloads: [{ class_id: cid, confidence: 0.9 }],
                 },
             ];
-            window.ulabel.set_annotations(annotations, stk);
+            await window.ulabel.set_annotations(annotations, stk);
         }, { stk: subtask_key, cid: class_id });
 
         // Raise the single "all" slider to 50%
