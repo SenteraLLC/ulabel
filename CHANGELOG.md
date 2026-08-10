@@ -10,7 +10,7 @@ All notable changes to this project will be documented here.
 - The `set_annotations()` and `swap_frame_image()` public API methods now display the loading spinner while they run and return a `Promise`
 - Bitmask brush **overlap modes** (`exclude` / `overwrite`) now resolve against bitmask annotations across **all subtasks**, not just the active one.
 - Performance improvements for jobs with many large bitmask annotations:
-  - Overlap resolution (`exclude` / `overwrite`) now uses a bounding-box pre-filter and box-limited pixel operations, so its cost scales with the size of the brush stroke rather than the number and size of existing masks.
+  - Overlap resolution (`exclude` / `overwrite`) now uses a bounding-box pre-filter and box-limited pixel operations, skipping masks that don't overlap the stroke and touching only the overlapping region of the ones that do, instead of scanning the whole mask for each candidate.
   - Moving a bitmask renders only the moving mask over a cached snapshot of the others (throttled to one render per animation frame) instead of re-rasterizing every mask on the canvas each frame.
   - Each bitmask caches a pre-tinted render that is reused across redraws (brush dabs, moves, pan, zoom) and rebuilt only when the mask or its color changes, removing per-frame pixel-by-pixel rasterization.
 

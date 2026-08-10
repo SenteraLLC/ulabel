@@ -4837,17 +4837,24 @@ export class ULabel {
         this.render_bitmask_other_edits(other_edits);
     }
 
-    // {id, subtask} for all undeprecated bitmask annotations except the given one, across all subtasks.
+    // {id, subtask} for all undeprecated bitmask annotations except the given one, across all
+    // subtasks. Matches the render frame-gate (see draw_annotation_from_id): a stroke can only
+    // affect masks that are visible on the current frame.
     get_other_bitmask_ids(active_id) {
+        const active_st = this.get_current_subtask_key();
+        const current_frame = this.state["current_frame"];
         const ids = [];
         for (const st_key in this.subtasks) {
             const access = this.subtasks[st_key]["annotations"]["access"];
             for (const oid of this.subtasks[st_key]["annotations"]["ordering"]) {
-                if (oid === active_id) continue;
+                // ID collisions are only prevented within a subtask, so scope the active-skip
+                // to the active subtask.
+                if (st_key === active_st && oid === active_id) continue;
                 const ann = access[oid];
-                if (!ann["deprecated"] && ann["spatial_type"] === "bitmask") {
-                    ids.push({ id: oid, subtask: st_key });
-                }
+                if (ann["deprecated"] || ann["spatial_type"] !== "bitmask") continue;
+                const frame = ann["frame"];
+                if (frame != null && frame !== current_frame) continue;
+                ids.push({ id: oid, subtask: st_key });
             }
         }
         return ids;

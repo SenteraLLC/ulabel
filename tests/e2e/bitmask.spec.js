@@ -256,4 +256,66 @@ test.describe("Bitmask overlap + move", () => {
         expect(res.cleared).toBe(true);
         expect(res.rebuilt).toBe(true);
     });
+
+    test("cross-subtask overlap only skips the active mask in the active subtask (same ID in another subtask is still carved)", async ({ page }) => {
+        // process_resume_from only enforces ID uniqueness within a subtask, so two subtasks can
+        // legitimately hold masks with the same id; the active-skip must be scoped by subtask.
+        await wait_for_ulabel_init(page, "/bitmask-e2e.html");
+
+        const res = await page.evaluate(async () => {
+            const u = window.ulabel;
+            const { make, rebuild, pix } = window.__mask_helpers(u);
+            // Both subtasks have a mask with id "dup"; the one in "a" is active.
+            await u.set_annotations([make("dup", 1, 20, 20, 40, 40)], "a");
+            await u.set_annotations([make("dup", 2, 10, 10, 30, 30)], "b");
+            rebuild("a", "dup");
+            rebuild("b", "dup");
+
+            u.set_subtask("a");
+            u.subtasks["a"].state.active_id = "dup";
+            const delta = u.get_bitmask(u.subtasks["a"].annotations.access["dup"]);
+            u.resolve_bitmask_overlap("dup", delta, "overwrite");
+
+            return {
+                active_kept: pix("a", "dup", 35, 35), // active mask (subtask a) must be untouched
+                other_carved: pix("b", "dup", 25, 25), // same-ID mask in subtask b must be carved
+                other_kept: pix("b", "dup", 12, 12), // outside overlap: kept
+            };
+        });
+
+        expect(res.active_kept).toBe(1);
+        expect(res.other_carved).toBe(0);
+        expect(res.other_kept).toBe(1);
+    });
+
+    test("overlap resolution skips masks that are not on the current frame", async ({ page }) => {
+        // draw_annotation_from_id gates rendering by frame, so carving off-frame (invisible)
+        // masks would be a user-visible inconsistency.
+        await wait_for_ulabel_init(page, "/bitmask-e2e.html");
+
+        const res = await page.evaluate(async () => {
+            const u = window.ulabel;
+            const { make, rebuild, pix } = window.__mask_helpers(u);
+            await u.set_annotations([make("active", 1, 20, 20, 40, 40)], "a");
+            await u.set_annotations([make("other", 2, 10, 10, 30, 30)], "b");
+            rebuild("a", "active");
+            rebuild("b", "other");
+            // Move the other mask to a different frame than the stroke.
+            u.subtasks["b"].annotations.access["other"].frame = 3;
+            u.state.current_frame = 0;
+
+            u.set_subtask("a");
+            u.subtasks["a"].state.active_id = "active";
+            const delta = u.get_bitmask(u.subtasks["a"].annotations.access["active"]);
+            const edits = u.resolve_bitmask_overlap("active", delta, "overwrite");
+
+            return {
+                edits_count: edits.length,
+                other_kept: pix("b", "other", 25, 25), // off-frame mask is untouched
+            };
+        });
+
+        expect(res.edits_count).toBe(0);
+        expect(res.other_kept).toBe(1);
+    });
 });
