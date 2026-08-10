@@ -4747,16 +4747,17 @@ export class ULabel {
         this.render_bitmask_other_edits(other_edits);
     }
 
-    // Ids of all undeprecated bitmask annotations except the given one.
+    // {id, subtask} for all undeprecated bitmask annotations except the given one, across all subtasks.
     get_other_bitmask_ids(active_id) {
-        const current_subtask = this.get_current_subtask();
-        const access = current_subtask["annotations"]["access"];
         const ids = [];
-        for (const oid of current_subtask["annotations"]["ordering"]) {
-            if (oid === active_id) continue;
-            const ann = access[oid];
-            if (!ann["deprecated"] && ann["spatial_type"] === "bitmask") {
-                ids.push(oid);
+        for (const st_key in this.subtasks) {
+            const access = this.subtasks[st_key]["annotations"]["access"];
+            for (const oid of this.subtasks[st_key]["annotations"]["ordering"]) {
+                if (oid === active_id) continue;
+                const ann = access[oid];
+                if (!ann["deprecated"] && ann["spatial_type"] === "bitmask") {
+                    ids.push({ id: oid, subtask: st_key });
+                }
             }
         }
         return ids;
@@ -4767,13 +4768,13 @@ export class ULabel {
     // - overwrite: carve the new pixels out of every other mask.
     // Returns the list of edits made to other annotations (empty for exclude/none).
     resolve_bitmask_overlap(active_id, delta, overlap_mode) {
-        const access = this.get_current_subtask()["annotations"]["access"];
+        const active_access = this.get_current_subtask()["annotations"]["access"];
         const other_ids = this.get_other_bitmask_ids(active_id);
 
         if (overlap_mode === "exclude") {
-            const active_mask = this.get_bitmask(access[active_id]);
-            for (const oid of other_ids) {
-                const other_mask = this.get_bitmask(access[oid]);
+            const active_mask = this.get_bitmask(active_access[active_id]);
+            for (const { id: oid, subtask: st } of other_ids) {
+                const other_mask = this.get_bitmask(this.subtasks[st]["annotations"]["access"][oid]);
                 // Remove only the newly-added pixels that land on this other mask
                 const to_remove = delta.clone();
                 to_remove.intersect(other_mask);
@@ -4784,7 +4785,8 @@ export class ULabel {
 
         // overwrite
         const other_edits = [];
-        for (const oid of other_ids) {
+        for (const { id: oid, subtask: st } of other_ids) {
+            const access = this.subtasks[st]["annotations"]["access"];
             const other_mask = this.get_bitmask(access[oid]);
             if (!other_mask.intersects(delta)) continue;
             const before_rle = other_mask.to_rle();
@@ -4796,6 +4798,7 @@ export class ULabel {
             }
             other_edits.push({
                 annotation_id: oid,
+                subtask: st,
                 before_rle: before_rle,
                 after_rle: access[oid]["spatial_payload"],
                 after_empty: after_empty,
@@ -4807,11 +4810,11 @@ export class ULabel {
     // Rebuild boxes and redraw the annotations carved by an overwrite stroke.
     render_bitmask_other_edits(other_edits) {
         if (!other_edits || other_edits.length === 0) return;
-        const access = this.get_current_subtask()["annotations"]["access"];
         for (const edit of other_edits) {
+            const access = this.subtasks[edit.subtask]["annotations"]["access"];
             if (access[edit.annotation_id] === undefined) continue;
             this.rebuild_bitmask_containing_box(access[edit.annotation_id]);
-            this.redraw_annotation(edit.annotation_id);
+            this.redraw_annotation(edit.annotation_id, edit.subtask);
         }
         this.toolbox.redraw_update_items(this);
     }
@@ -4834,13 +4837,13 @@ export class ULabel {
         // Restore any other masks carved by an overwrite stroke (they were undeprecated before)
         const other_edits = undo_payload.other_edits || [];
         for (const edit of other_edits) {
-            const other = annotations[edit.annotation_id];
+            const other = this.subtasks[edit.subtask]["annotations"]["access"][edit.annotation_id];
             if (other === undefined) continue;
             this.set_bitmask_from_rle(other, edit.before_rle);
             other["spatial_payload"] = edit.before_rle;
             mark_deprecated(other, false);
             this.rebuild_bitmask_containing_box(other);
-            this.redraw_annotation(edit.annotation_id);
+            this.redraw_annotation(edit.annotation_id, edit.subtask);
         }
     }
 
@@ -4855,13 +4858,13 @@ export class ULabel {
         // Re-apply the carve to any other masks
         const other_edits = redo_payload.other_edits || [];
         for (const edit of other_edits) {
-            const other = annotations[edit.annotation_id];
+            const other = this.subtasks[edit.subtask]["annotations"]["access"][edit.annotation_id];
             if (other === undefined) continue;
             this.set_bitmask_from_rle(other, edit.after_rle);
             other["spatial_payload"] = edit.after_rle;
             mark_deprecated(other, edit.after_empty === true);
             this.rebuild_bitmask_containing_box(other);
-            this.redraw_annotation(edit.annotation_id);
+            this.redraw_annotation(edit.annotation_id, edit.subtask);
         }
 
         // Re-record so the stroke can be undone again
