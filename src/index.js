@@ -4888,6 +4888,7 @@ export class ULabel {
 
         // overwrite
         const other_edits = [];
+        const active_mask = this.get_bitmask(active_access[active_id]);
         for (const { id: oid, subtask: st } of other_ids) {
             const access = this.subtasks[st]["annotations"]["access"];
             const other_ann = access[oid];
@@ -4895,6 +4896,13 @@ export class ULabel {
             if (box === null) continue;
             const other_mask = this.get_bitmask(other_ann);
             if (!other_mask.intersects_in_box(delta, box)) continue;
+            // Read-only masks act as barriers: clip the active mask around them instead of
+            // carving them, preserving both the read-only contract and overwrite's mutual
+            // exclusion invariant on export.
+            if (this.subtasks[st]["read_only"]) {
+                active_mask.subtract_intersection_in_box(delta, other_mask, box);
+                continue;
+            }
             const before_rle = other_mask.to_rle();
             other_mask.subtract_in_box(delta, box);
             const after_empty = other_mask.is_empty();

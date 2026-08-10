@@ -318,4 +318,37 @@ test.describe("Bitmask overlap + move", () => {
         expect(res.edits_count).toBe(0);
         expect(res.other_kept).toBe(1);
     });
+
+    test("overwrite treats read-only subtasks as barriers: they are not mutated, and the active mask is clipped around them", async ({ page }) => {
+        await wait_for_ulabel_init(page, "/bitmask-e2e.html");
+
+        const res = await page.evaluate(async () => {
+            const u = window.ulabel;
+            const { make, rebuild, pix } = window.__mask_helpers(u);
+            await u.set_annotations([make("active", 1, 20, 20, 40, 40)], "a");
+            await u.set_annotations([make("ro", 2, 10, 10, 30, 30)], "b");
+            rebuild("a", "active");
+            rebuild("b", "ro");
+            u.subtasks["b"].read_only = true;
+
+            u.set_subtask("a");
+            u.subtasks["a"].state.active_id = "active";
+            const delta = u.get_bitmask(u.subtasks["a"].annotations.access["active"]);
+            const edits = u.resolve_bitmask_overlap("active", delta, "overwrite");
+
+            return {
+                edits_count: edits.length, // no other_edits: read-only was not mutated
+                ro_kept_in_overlap: pix("b", "ro", 25, 25), // barrier: read-only mask untouched
+                ro_kept_outside: pix("b", "ro", 12, 12), // outside overlap: untouched
+                active_clipped_in_overlap: pix("a", "active", 25, 25), // clipped where it hit the barrier
+                active_kept_outside: pix("a", "active", 35, 35), // outside overlap: kept
+            };
+        });
+
+        expect(res.edits_count).toBe(0);
+        expect(res.ro_kept_in_overlap).toBe(1);
+        expect(res.ro_kept_outside).toBe(1);
+        expect(res.active_clipped_in_overlap).toBe(0);
+        expect(res.active_kept_outside).toBe(1);
+    });
 });
