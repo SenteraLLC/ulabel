@@ -589,6 +589,10 @@ export class ULabel {
             last_move: null,
             current_frame: 0,
 
+            // Overlay snapshot + rAF flag used to keep in-progress bitmask moves cheap
+            bitmask_move_overlay: null,
+            move_raf_pending: false,
+
             // Global annotation state (subtasks also maintain an annotation state)
             current_subtask: null, // The key of the current subtask
             last_brush_stroke: null,
@@ -2166,6 +2170,51 @@ export class ULabel {
                 this.draw_annotation_from_id(annid, null, subtask);
             }
         }
+    }
+
+    // Redraw a context, skipping one annotation. Used to snapshot the static masks during a move.
+    redraw_annotation_context_excluding(canvas_id, subtask, exclude_id) {
+        this.clear_annotation_canvas(canvas_id, subtask);
+        if (this.subtasks[subtask]["state"]["is_vanished"]) return;
+        for (const annid of this.subtasks[subtask]["state"]["annotation_contexts"][canvas_id]["annotation_ids"]) {
+            if (annid === exclude_id) continue;
+            this.draw_annotation_from_id(annid, null, subtask);
+        }
+    }
+
+    // Snapshot the moving bitmask's canvas with the moving mask removed, so each move frame
+    // only has to blit the snapshot and redraw the single moving mask (not the whole context).
+    begin_bitmask_move(active_id, subtask) {
+        const canvas_id = this.subtasks[subtask]["annotations"]["access"][active_id]["canvas_id"];
+        const ctx = this.subtasks[subtask]["state"]["annotation_contexts"][canvas_id]["context"];
+        this.redraw_annotation_context_excluding(canvas_id, subtask, active_id);
+        const live = ctx.canvas;
+        const snapshot = document.createElement("canvas");
+        snapshot.width = live.width;
+        snapshot.height = live.height;
+        snapshot.getContext("2d").drawImage(live, 0, 0);
+        this.state["bitmask_move_overlay"] = { ctx: ctx, snapshot: snapshot };
+    }
+
+    // Per-frame render for an in-progress bitmask move: restore the snapshot, draw the moving mask.
+    render_bitmask_move(active_id, subtask, offset) {
+        const overlay = this.state["bitmask_move_overlay"];
+        if (overlay == null) {
+            // No snapshot (shouldn't happen); fall back to the generic redraw
+            this.rebuild_containing_box(active_id, false, subtask);
+            this.redraw_annotation(active_id, subtask, offset);
+            return;
+        }
+        const w = this.config["image_width"] * this.config["px_per_px"];
+        const h = this.config["image_height"] * this.config["px_per_px"];
+        overlay.ctx.clearRect(0, 0, w, h);
+        overlay.ctx.drawImage(overlay.snapshot, 0, 0);
+        this.draw_annotation_from_id(active_id, offset, subtask);
+    }
+
+    // Discard the move snapshot once a bitmask move ends.
+    end_bitmask_move() {
+        this.state["bitmask_move_overlay"] = null;
     }
 
     redraw_all_annotations_in_subtask(subtask, offset = null, nonspatial_only = false) {
@@ -4771,14 +4820,20 @@ export class ULabel {
         const active_access = this.get_current_subtask()["annotations"]["access"];
         const other_ids = this.get_other_bitmask_ids(active_id);
 
+        // Only the pixels this stroke added matter; use their bounding box to skip
+        // any mask whose containing box doesn't overlap, and to bound the pixel ops.
+        const delta_box = delta.get_bounding_box();
+        if (delta_box === null) return [];
+
         if (overlap_mode === "exclude") {
             const active_mask = this.get_bitmask(active_access[active_id]);
             for (const { id: oid, subtask: st } of other_ids) {
-                const other_mask = this.get_bitmask(this.subtasks[st]["annotations"]["access"][oid]);
+                const other_ann = this.subtasks[st]["annotations"]["access"][oid];
+                const box = this.intersect_boxes(delta_box, other_ann["containing_box"]);
+                if (box === null) continue;
+                const other_mask = this.get_bitmask(other_ann);
                 // Remove only the newly-added pixels that land on this other mask
-                const to_remove = delta.clone();
-                to_remove.intersect(other_mask);
-                active_mask.subtract(to_remove);
+                active_mask.subtract_intersection_in_box(delta, other_mask, box);
             }
             return [];
         }
@@ -4787,10 +4842,13 @@ export class ULabel {
         const other_edits = [];
         for (const { id: oid, subtask: st } of other_ids) {
             const access = this.subtasks[st]["annotations"]["access"];
-            const other_mask = this.get_bitmask(access[oid]);
-            if (!other_mask.intersects(delta)) continue;
+            const other_ann = access[oid];
+            const box = this.intersect_boxes(delta_box, other_ann["containing_box"]);
+            if (box === null) continue;
+            const other_mask = this.get_bitmask(other_ann);
+            if (!other_mask.intersects_in_box(delta, box)) continue;
             const before_rle = other_mask.to_rle();
-            other_mask.subtract(delta);
+            other_mask.subtract_in_box(delta, box);
             const after_empty = other_mask.is_empty();
             access[oid]["spatial_payload"] = other_mask.to_rle();
             if (after_empty) {
@@ -4805,6 +4863,17 @@ export class ULabel {
             });
         }
         return other_edits;
+    }
+
+    // Intersection of two {tlx, tly, brx, bry} boxes, or null if disjoint or either is missing.
+    intersect_boxes(a, b) {
+        if (a == null || b == null) return null;
+        const tlx = Math.max(a["tlx"], b["tlx"]);
+        const tly = Math.max(a["tly"], b["tly"]);
+        const brx = Math.min(a["brx"], b["brx"]);
+        const bry = Math.min(a["bry"], b["bry"]);
+        if (brx < tlx || bry < tly) return null;
+        return { tlx: tlx, tly: tly, brx: brx, bry: bry };
     }
 
     // Rebuild boxes and redraw the annotations carved by an overwrite stroke.
@@ -5378,7 +5447,26 @@ export class ULabel {
             },
         });
 
+        // Isolate the moving mask on a snapshot overlay so each frame is cheap
+        if (annotations[active_id]["spatial_type"] === "bitmask") {
+            this.begin_bitmask_move(active_id, this.get_current_subtask_key());
+        }
+
         this.continue_move(mouse_event);
+    }
+
+    // Coalesce rapid mousemove events into at most one move render per animation frame.
+    schedule_continue_move(mouse_event) {
+        this.state["last_move"] = mouse_event;
+        if (this.state["move_raf_pending"]) return;
+        this.state["move_raf_pending"] = true;
+        requestAnimationFrame(() => {
+            this.state["move_raf_pending"] = false;
+            // The move may have finished before this frame ran
+            if (this.get_current_subtask()["state"]["is_in_move"]) {
+                this.continue_move(this.state["last_move"]);
+            }
+        });
     }
 
     continue_move(mouse_event) {
@@ -5427,6 +5515,7 @@ export class ULabel {
             this.translate_bitmask(annotation, diffX, diffY);
             current_subtask["state"]["active_id"] = null;
             current_subtask["state"]["is_in_move"] = false;
+            this.end_bitmask_move();
             record_finish_move(this, diffX, diffY, diffZ, false);
             return;
         }
@@ -6262,7 +6351,7 @@ export class ULabel {
                     break;
                 case "move":
                     if (!idd_visible || idd_thumbnail) {
-                        this.continue_move(mouse_event);
+                        this.schedule_continue_move(mouse_event);
                     }
                     break;
             }

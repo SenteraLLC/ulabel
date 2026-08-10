@@ -14,6 +14,14 @@ export type ULabelMaskPayload = {
     size: [number, number];
 };
 
+// Axis-aligned bounding box in image pixel coordinates (inclusive bounds).
+export type BoundingBox = {
+    tlx: number;
+    tly: number;
+    brx: number;
+    bry: number;
+};
+
 // Clamp a value into the inclusive integer range [min, max].
 function clamp_int(value: number, min: number, max: number): number {
     const rounded = Math.round(value);
@@ -118,7 +126,7 @@ export class ULabelMask {
 
     // Axis-aligned bounding box of foreground pixels, or null if empty.
     // Returned as { tlx, tly, brx, bry } in image pixel coordinates.
-    public get_bounding_box(): { tlx: number; tly: number; brx: number; bry: number } | null {
+    public get_bounding_box(): BoundingBox | null {
         let min_x = this.width;
         let min_y = this.height;
         let max_x = -1;
@@ -269,6 +277,72 @@ export class ULabelMask {
             }
         }
         return false;
+    }
+
+    // Clamp a bounding box to the image, returning integer inclusive bounds or null if empty.
+    private clamp_box_to_image(box: BoundingBox): { x0: number; y0: number; x1: number; y1: number } | null {
+        const x0 = Math.max(0, Math.floor(box.tlx));
+        const y0 = Math.max(0, Math.floor(box.tly));
+        const x1 = Math.min(this.width - 1, Math.ceil(box.brx));
+        const y1 = Math.min(this.height - 1, Math.ceil(box.bry));
+        if (x1 < x0 || y1 < y0) return null;
+        return { x0, y0, x1, y1 };
+    }
+
+    // True if any pixel within `box` is foreground in both masks. O(box area).
+    public intersects_in_box(other: ULabelMask, box: BoundingBox): boolean {
+        this.assert_same_dims(other);
+        const b = this.clamp_box_to_image(box);
+        if (b === null) return false;
+        for (let y = b.y0; y <= b.y1; y++) {
+            const row = y * this.width;
+            for (let x = b.x0; x <= b.x1; x++) {
+                const i = row + x;
+                if (this.data[i] !== 0 && other.data[i] !== 0) return true;
+            }
+        }
+        return false;
+    }
+
+    // Remove another mask's foreground from this one within `box` (this = this AND NOT other).
+    // Returns true if any pixel changed. O(box area).
+    public subtract_in_box(other: ULabelMask, box: BoundingBox): boolean {
+        this.assert_same_dims(other);
+        const b = this.clamp_box_to_image(box);
+        if (b === null) return false;
+        let changed = false;
+        for (let y = b.y0; y <= b.y1; y++) {
+            const row = y * this.width;
+            for (let x = b.x0; x <= b.x1; x++) {
+                const i = row + x;
+                if (this.data[i] !== 0 && other.data[i] !== 0) {
+                    this.data[i] = 0;
+                    changed = true;
+                }
+            }
+        }
+        return changed;
+    }
+
+    // Clear pixels of this mask where both `a` and `b` are foreground, within `box`.
+    // Returns true if any pixel changed. O(box area).
+    public subtract_intersection_in_box(a: ULabelMask, b: ULabelMask, box: BoundingBox): boolean {
+        this.assert_same_dims(a);
+        this.assert_same_dims(b);
+        const bx = this.clamp_box_to_image(box);
+        if (bx === null) return false;
+        let changed = false;
+        for (let y = bx.y0; y <= bx.y1; y++) {
+            const row = y * this.width;
+            for (let x = bx.x0; x <= bx.x1; x++) {
+                const i = row + x;
+                if (this.data[i] !== 0 && a.data[i] !== 0 && b.data[i] !== 0) {
+                    this.data[i] = 0;
+                    changed = true;
+                }
+            }
+        }
+        return changed;
     }
 
     // Encode to COCO-style, column-major run-length counts.

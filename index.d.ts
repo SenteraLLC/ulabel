@@ -387,6 +387,7 @@ export class ULabel {
     public set_saved(saved: boolean): void;
     public draw_annotation_from_id(id: string, offset?: Offset, subtask?: string): void;
     public redraw_annotation(annotation_id: string, subtask?: string, offset?: Offset): void;
+    public render_bitmask_move(annotation_id: string, subtask: string, offset: Offset): void;
     public redraw_all_annotations(
         subtask?: string,
         offset?: number | null,
