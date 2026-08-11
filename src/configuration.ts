@@ -276,6 +276,8 @@ export class Configuration {
 
     public allow_annotations_outside_image: boolean = true;
 
+    public auto_destroy_on_detach: boolean = true;
+
     constructor(...kwargs: { [key: string]: unknown }[]) {
         this.modify_config(...kwargs);
     }

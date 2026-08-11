@@ -747,7 +747,13 @@ export function remove_ulabel_listeners(
     // Remove jquery event listeners with the ulabel namespace
     $(document).off(ULABEL_NAMESPACE);
     $(window).off(ULABEL_NAMESPACE);
-    $(".id_dialog").off(ULABEL_NAMESPACE);
+    // Scope id_dialog cleanup to this instance so a sibling ULabel keeps its handlers.
+    const container_id = ulabel?.config?.container_id;
+    if (container_id) {
+        $(`#${container_id} .id_dialog`).off(ULABEL_NAMESPACE);
+    } else {
+        $(".id_dialog").off(ULABEL_NAMESPACE);
+    }
 
     // Go through each resize observer and disconnect them
     if (ulabel.resize_observers != null) {

@@ -79,7 +79,8 @@ class ULabel({
     annotation_size_minus_keybind: string,
     annotation_vanish_keybind: string,
     fly_to_max_zoom: number,
-    n_annos_per_canvas: number
+    n_annos_per_canvas: number,
+    auto_destroy_on_detach: boolean
 })
 ```
 
@@ -615,6 +616,9 @@ If `true`, the user can click and drag to contiuously place points for polyline 
 ### `allow_annotations_outside_image`
 When `false`, new annotations will be limited to points within the image, and attempts to move annotations outside the image will bounce back to inside the image. Default is `true`. 
 
+### `auto_destroy_on_detach`
+When `true` (the default), ULabel installs a `MutationObserver` on the container's root and calls [`destroy()`](#destroy) automatically after the container is removed from the DOM. The observer holds the ULabel instance through a `WeakRef` (so it cannot pin the instance in memory on its own) and defers the teardown decision by one animation frame so brief detach/reattach cycles (portals, jQuery `.detach()`, layout reparenting) do not trigger a false-positive teardown. Set to `false` to opt out and manage teardown manually via [`destroy()`](#destroy).
+
 
 ## Display Utility Functions
 
@@ -652,6 +656,23 @@ Display utilities are provided for a constructed `ULabel` object.
 
 *() => void* -- Removes persistent event listeners from the document and window. Listeners attached directly to html elements are not explicitly removed.
 Note that ULabel will not function properly after this method is called. Designed for use in single-page applications before navigating away from the annotation page.
+
+> Prefer [`destroy()`](#destroy) for new code — it also releases the heavy per-annotation bitmask caches and the container DOM.
+
+### `destroy()`
+
+*() => void* -- Fully tears down this ULabel instance. Idempotent (subsequent calls are no-ops). Releases:
+
+- per-bitmask runtime state (`_mask` `Uint8Array`, `_mask_render` tinted stencil canvas, `_bitmask_box_hint`),
+- action stream and redo stack (which retain per-stroke `before_rle` / `after_rle` payloads),
+- toolbox item back-references to the instance,
+- resize observers and (if [`auto_destroy_on_detach`](#auto_destroy_on_detach) installed one) the auto-teardown `MutationObserver`,
+- pending toast/interaction timers,
+- all DOM under the configured container.
+
+After calling `destroy()` the instance MUST NOT be used again. `set_annotations()`, `get_annotations()`, and `redraw_all_annotations()` short-circuit with a warning if called on a destroyed instance.
+
+With [`auto_destroy_on_detach`](#auto_destroy_on_detach) enabled (the default), `destroy()` is called automatically after the container is removed from the DOM. Callers that opt out of the auto path should call `destroy()` explicitly during their unmount / teardown.
 
 ### `fly_to_next_annotation(increment)`
 Sets the zoom to focus on a non-deprecated, spatial annotation in the active subtask's ordering that is an `<increment>` number away from the previously focused annotation, if any. Returns `true` on success and `false` on failure (eg, no valid annotations exist, or an annotation is currently actively being edited).

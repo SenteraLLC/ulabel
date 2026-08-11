@@ -4,6 +4,15 @@ All notable changes to this project will be documented here.
 
 ## [unreleased]
 
+## [0.26.0] - Aug 11th, 2026
+- **Memory leak fix on teardown.** Bitmask annotations attach a decoded pixel `Uint8Array` (`_mask`) and a tinted stencil canvas (`_mask_render`) to each annotation object. These persisted after `remove_listeners()`, and consumers that rebuild ULabel per navigation could accumulate multi-GB retained heap. Changes:
+  - New `destroy()` method on `ULabel`. Idempotent; releases per-annotation bitmask caches, empties action/undo streams, breaks toolbox back-references, clears the resize-observer array, and wipes the container DOM. Callers should prefer `destroy()` over `remove_listeners()` going forward.
+  - `destroy_annotation_context()` now also drops `_mask` / `_mask_render` / `_bitmask_box_hint` on the destroyed annotation, so `set_annotations()` also frees mask memory when it recycles contexts.
+  - New `auto_destroy_on_detach` config option (default `true`). When enabled, ULabel installs a `MutationObserver` on the container's root and calls `destroy()` automatically after the container leaves the DOM.
+  - `set_annotations()`, `get_annotations()`, and `redraw_all_annotations()` now short-circuit with a warning if called after `destroy()`.
+  - Fixed a latent typo in `set_annotations()` that wrote to a non-existent `undo_stack` property instead of clearing the real `undone_stack`.
+  - `remove_ulabel_listeners()` now scopes its `.id_dialog` cleanup to the instance's container, so tearing down one ULabel no longer strips id-dialog handlers from siblings on the same page.
+
 
 ## [0.25.1] - Aug 10th, 2026
 - The `ConfidenceSlider` toolbox item now also filters `bitmask` annotations

@@ -439,6 +439,11 @@ export class ULabel {
     // Listeners
     public remove_listeners(): void;
 
+    // Full teardown: releases bitmask caches, action streams, toolbox refs, and container DOM.
+    public destroy(): void;
+    // True after destroy() has run; subsequent destroy() calls are no-ops.
+    is_destroyed: boolean;
+
     // Static functions
     static version(): string;
     static get_time(): string;
