@@ -209,5 +209,49 @@ describe("Teardown", () => {
             ulabel._install_auto_destroy_observer();
             expect(ulabel.mutation_observer).toBeNull();
         });
+
+        test("still destroys when the container is replaced with a same-id node", async () => {
+            const ulabel = build_ulabel_with_bitmask();
+            ulabel.config.auto_destroy_on_detach = true;
+            ulabel._install_auto_destroy_observer();
+
+            // SPA-style swap: remove ours, mount a fresh element with the same id.
+            const original = document.getElementById(container_id);
+            original.remove();
+            const replacement = document.createElement("div");
+            replacement.id = container_id;
+            const sentinel = document.createElement("span");
+            sentinel.textContent = "replacement content";
+            replacement.appendChild(sentinel);
+            document.body.appendChild(replacement);
+
+            await wait_microtask();
+            await wait_frame();
+            await wait_microtask();
+
+            // Old instance was torn down (our node isn't connected any more).
+            expect(ulabel.is_destroyed).toBe(true);
+            // The replacement's DOM was NOT nuked by our destroy path.
+            expect(document.getElementById(container_id)).toBe(replacement);
+            expect(replacement.contains(sentinel)).toBe(true);
+        });
+
+        test("manual destroy() does not clear a same-id replacement", () => {
+            const ulabel = build_ulabel_with_bitmask();
+            ulabel.config.auto_destroy_on_detach = true;
+            ulabel._install_auto_destroy_observer();
+
+            const original = document.getElementById(container_id);
+            original.remove();
+            const replacement = document.createElement("div");
+            replacement.id = container_id;
+            const sentinel = document.createElement("span");
+            replacement.appendChild(sentinel);
+            document.body.appendChild(replacement);
+
+            ulabel.destroy();
+
+            expect(replacement.contains(sentinel)).toBe(true);
+        });
     });
 });

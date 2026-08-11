@@ -201,11 +201,15 @@ export class ULabel {
         this.resize_observers = [];
 
         // 7. Wipe the container DOM (canvases, id dialogs, brush circle, enders, overlays).
-        const container_id = this.config?.["container_id"];
-        if (container_id) {
-            const container = document.getElementById(container_id);
-            if (container) container.innerHTML = "";
+        //    Prefer the captured owned-container node so a same-id replacement mounted by an SPA
+        //    between detach and this call is left untouched.
+        let container = this._owned_container;
+        if (container == null) {
+            const container_id = this.config?.["container_id"];
+            if (container_id) container = document.getElementById(container_id);
         }
+        if (container) container.innerHTML = "";
+        this._owned_container = null;
 
         this.is_init = false;
         this.is_destroyed = true;
@@ -751,6 +755,9 @@ export class ULabel {
         this.is_destroyed = false;
         // MutationObserver used by opt-in auto-teardown; may be null.
         this.mutation_observer = null;
+        // The specific container HTMLElement this instance owns. Captured at observer-install
+        // time so an SPA replacement using the same id can't be mistaken for our container.
+        this._owned_container = null;
     }
 
     init(callback) {
@@ -793,18 +800,18 @@ export class ULabel {
         const container = document.getElementById(container_id);
         if (container == null || !container.isConnected) return;
 
+        // Own this exact node from now on: node identity, not id equality.
+        this._owned_container = container;
         const root = typeof container.getRootNode === "function" ? container.getRootNode() : document;
         const weak = new WeakRef(this);
         const observer = new MutationObserver(() => {
             const self = weak.deref();
             if (!self || self.is_destroyed) return;
-            const c = document.getElementById(self.config?.["container_id"]);
-            if (c != null && c.isConnected) return;
+            if (container.isConnected) return;
             requestAnimationFrame(() => {
                 const s = weak.deref();
                 if (!s || s.is_destroyed) return;
-                const cc = document.getElementById(s.config?.["container_id"]);
-                if (cc != null && cc.isConnected) return;
+                if (container.isConnected) return;
                 try {
                     s.destroy();
                 } catch (err) {
