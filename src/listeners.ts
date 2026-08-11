@@ -390,7 +390,9 @@ export function create_ulabel_listeners(
     ulabel: ULabel,
 ) {
     // ================= Mouse Events in the ID Dialog =================
-    const id_dialog = $(".id_dialog");
+    // Scoped to this instance's container so multi-instance pages don't attach
+    // handlers onto sibling ULabels' dialogs (the teardown side is scoped the same way).
+    const id_dialog = $(`#${ulabel.config["container_id"]} .id_dialog`);
     id_dialog.on(
         "mousemove" + ULABEL_NAMESPACE,
         (mouse_event) => {

@@ -1614,7 +1614,8 @@ export class RecolorActiveItem extends ToolboxItem {
         // https://typescript-eslint.io/rules/no-this-alias/
         // eslint-disable-next-line @typescript-eslint/no-this-alias
         const that = this;
-        $(".id_dialog").on("mousemove.ulabel", function (mouse_event) {
+        // Scoped to this instance's container so we don't attach onto sibling ULabels' dialogs.
+        $(`#${that.ulabel.config.container_id} .id_dialog`).on("mousemove.ulabel", function (mouse_event) {
             if (!that.ulabel.subtasks[current_subtask_key].state.idd_thumbnail) {
                 that.ulabel.handle_id_dialog_hover(mouse_event);
             }

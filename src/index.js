@@ -784,6 +784,8 @@ export class ULabel {
      * (portals, jQuery `.detach()`, layout reparenting) does not trigger a false positive.
      */
     _install_auto_destroy_observer() {
+        if (this.is_destroyed) return;
+        if (this.mutation_observer != null) return;
         if (!this.config?.["auto_destroy_on_detach"]) return;
         if (typeof MutationObserver === "undefined" || typeof WeakRef === "undefined") return;
         const container_id = this.config?.["container_id"];

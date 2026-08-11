@@ -190,5 +190,24 @@ describe("Teardown", () => {
             expect(disconnect_spy).toHaveBeenCalled();
             expect(ulabel.mutation_observer).toBeNull();
         });
+
+        test("is idempotent: calling _install_auto_destroy_observer twice keeps a single observer", () => {
+            const ulabel = build_ulabel_with_bitmask();
+            ulabel.config.auto_destroy_on_detach = true;
+            ulabel._install_auto_destroy_observer();
+            const first = ulabel.mutation_observer;
+            expect(first).not.toBeNull();
+
+            ulabel._install_auto_destroy_observer();
+            expect(ulabel.mutation_observer).toBe(first);
+        });
+
+        test("does not install an observer on a destroyed instance", () => {
+            const ulabel = build_ulabel_with_bitmask();
+            ulabel.config.auto_destroy_on_detach = true;
+            ulabel.destroy();
+            ulabel._install_auto_destroy_observer();
+            expect(ulabel.mutation_observer).toBeNull();
+        });
     });
 });
