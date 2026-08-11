@@ -25,6 +25,26 @@ export class ULabelLoader {
         }
     }
 
+    /**
+     * Resolve after the browser has had a chance to paint.
+     *
+     * Uses a double requestAnimationFrame so a freshly-added loader is actually rendered
+     * before the caller runs heavy synchronous work. Races against a short timer so hidden
+     * documents (where requestAnimationFrame is throttled or paused) don't block indefinitely.
+     */
+    public static wait_for_render(): Promise<void> {
+        return new Promise((resolve) => {
+            let settled = false;
+            const finish = () => {
+                if (settled) return;
+                settled = true;
+                resolve();
+            };
+            requestAnimationFrame(() => requestAnimationFrame(finish));
+            setTimeout(finish, 50);
+        });
+    }
+
     public static build_loader_style(): HTMLStyleElement {
         const css = `
             .ulabel-loader-overlay {

@@ -345,6 +345,13 @@ function on_in_progress_annotation_spatial_modification(
         diffY: 0,
         diffZ: 0,
     };
+    // Fast path for in-progress bitmask moves: only the moving mask is redrawn (see begin_bitmask_move).
+    const in_progress_ann = current_subtask.annotations.access[action.annotation_id!];
+    if (action.act_type === "continue_move" && in_progress_ann?.spatial_type === "bitmask") {
+        ulabel.render_bitmask_move(action.annotation_id!, subtask_key, offset);
+        ulabel.suggest_edits();
+        return;
+    }
     // Update the toolbox filter distance
     ulabel.update_filter_distance_during_polyline_move(action.annotation_id!, true, false, offset);
     // Update the annotation rendering

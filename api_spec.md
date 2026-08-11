@@ -484,7 +484,7 @@ This toolbox item requires no configuration and can be added to the `toolbox_ord
 
 ### `confidence_slider_toolbox_item`
 
-The `ConfidenceSlider` toolbox item (added to `toolbox_order` via `AllowedToolboxItem.ConfidenceSlider`) deprecates (hides) or shows spatial annotations based on their confidence values. Unlike the deprecated `KeypointSlider`, it works with **all** spatial annotation types that have a confidence payload (`bbox`, `bbox3`, `polygon`, `polyline`, `contour`, `tbar`, and `point`), across every subtask.
+The `ConfidenceSlider` toolbox item (added to `toolbox_order` via `AllowedToolboxItem.ConfidenceSlider`) deprecates (hides) or shows spatial annotations based on their confidence values. Unlike the deprecated `KeypointSlider`, it works with **all** spatial annotation types that have a confidence payload (`bbox`, `bbox3`, `polygon`, `polyline`, `contour`, `tbar`, `point`, and `bitmask`), across every subtask.
 
 It supports two modes:
 
@@ -622,7 +622,7 @@ Display utilities are provided for a constructed `ULabel` object.
 
 ### `swap_frame_image(new_src, frame=0)`
 
-*(string, int) => string* -- Changes the image source for a given frame. Returns the old source.
+*(string, int) => Promise&lt;string&gt;* -- Changes the image source for a given frame. Displays the loading spinner while the new image loads. Returns a `Promise` that resolves with the old source once the new image has been decoded; `await` it if you need to run code after the swap completes.
 
 ### `swap_anno_bg_color(new_bg_color)`
 
@@ -642,7 +642,7 @@ Display utilities are provided for a constructed `ULabel` object.
 
 ### `set_annotations(new_annotations, subtask)`
 
-*(array, string) => void* -- Sets the annotations for the provided subtask.
+*(array, string) => Promise&lt;void&gt;* -- Sets the annotations for the provided subtask. Displays the loading spinner while re-initializing the annotations (similar to a new init). Returns a `Promise` that resolves once the annotations have been set and redrawn; `await` it if you need to run code after the update completes.
 
 ### `set_saved(saved)`
 

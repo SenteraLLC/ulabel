@@ -371,7 +371,7 @@ export class ULabel {
     public after_init(): void;
     public show_initial_crop(): void;
     public show_whole_image(): void;
-    public swap_frame_image(new_src: string, frame?: number): string;
+    public swap_frame_image(new_src: string, frame?: number): Promise<string>;
     public swap_anno_bg_color(new_bg_color: string): string;
 
     // Subtasks
@@ -383,10 +383,11 @@ export class ULabel {
 
     // Annotations
     public get_annotations(subtask: string): ULabelAnnotation[];
-    public set_annotations(annotations: ULabelAnnotation[], subtask: string): void;
+    public set_annotations(annotations: ULabelAnnotation[], subtask: string): Promise<void>;
     public set_saved(saved: boolean): void;
     public draw_annotation_from_id(id: string, offset?: Offset, subtask?: string): void;
     public redraw_annotation(annotation_id: string, subtask?: string, offset?: Offset): void;
+    public render_bitmask_move(annotation_id: string, subtask: string, offset: Offset): void;
     public redraw_all_annotations(
         subtask?: string,
         offset?: number | null,

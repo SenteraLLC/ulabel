@@ -14,6 +14,14 @@ export type ULabelMaskPayload = {
     size: [number, number];
 };
 
+// Axis-aligned bounding box in image pixel coordinates (inclusive bounds).
+export type BoundingBox = {
+    tlx: number;
+    tly: number;
+    brx: number;
+    bry: number;
+};
+
 // Clamp a value into the inclusive integer range [min, max].
 function clamp_int(value: number, min: number, max: number): number {
     const rounded = Math.round(value);
@@ -26,6 +34,8 @@ export class ULabelMask {
     public data: Uint8Array;
     public readonly width: number;
     public readonly height: number;
+    // Bumped by every mutating method so render caches can detect changes by comparison.
+    public version: number = 0;
 
     constructor(width: number, height: number, data?: Uint8Array) {
         this.width = width;
@@ -58,12 +68,14 @@ export class ULabelMask {
         if (x < 0 || y < 0 || x >= this.width || y >= this.height) {
             return;
         }
+        this.version++;
         this.data[y * this.width + x] = value ? 1 : 0;
     }
 
     // Paint (value = 1) or erase (value = 0) a filled circle into the mask.
     // Returns true if any pixel changed.
     public paint_circle(cx: number, cy: number, radius: number, value: number): boolean {
+        this.version++;
         const v = value ? 1 : 0;
         const r = Math.max(0, radius);
         const min_x = clamp_int(cx - r, 0, this.width - 1);
@@ -118,7 +130,7 @@ export class ULabelMask {
 
     // Axis-aligned bounding box of foreground pixels, or null if empty.
     // Returned as { tlx, tly, brx, bry } in image pixel coordinates.
-    public get_bounding_box(): { tlx: number; tly: number; brx: number; bry: number } | null {
+    public get_bounding_box(): BoundingBox | null {
         let min_x = this.width;
         let min_y = this.height;
         let max_x = -1;
@@ -180,6 +192,7 @@ export class ULabelMask {
     // Returns true if any pixel changed.
     public subtract(other: ULabelMask): boolean {
         this.assert_same_dims(other);
+        this.version++;
         let changed = false;
         for (let i = 0; i < this.data.length; i++) {
             if (this.data[i] !== 0 && other.data[i] !== 0) {
@@ -196,6 +209,7 @@ export class ULabelMask {
     // pixel changed. Used to apply ULabel's polygon/bbox delete modes to raster masks.
     public subtract_polygon(polygon: [number, number][]): boolean {
         if (polygon.length < 3) return false;
+        this.version++;
 
         // Restrict work to the polygon's vertical extent, clamped to the image.
         let min_py = Infinity;
@@ -243,6 +257,7 @@ export class ULabelMask {
     // Add another mask's foreground into this one (this = this OR other).
     public add_mask(other: ULabelMask): void {
         this.assert_same_dims(other);
+        this.version++;
         for (let i = 0; i < this.data.length; i++) {
             if (other.data[i] !== 0) {
                 this.data[i] = 1;
@@ -253,6 +268,7 @@ export class ULabelMask {
     // Keep only pixels present in both masks (this = this AND other).
     public intersect(other: ULabelMask): void {
         this.assert_same_dims(other);
+        this.version++;
         for (let i = 0; i < this.data.length; i++) {
             if (other.data[i] === 0) {
                 this.data[i] = 0;
@@ -269,6 +285,74 @@ export class ULabelMask {
             }
         }
         return false;
+    }
+
+    // Clamp a bounding box to the image, returning integer inclusive bounds or null if empty.
+    private clamp_box_to_image(box: BoundingBox): { x0: number; y0: number; x1: number; y1: number } | null {
+        const x0 = Math.max(0, Math.floor(box.tlx));
+        const y0 = Math.max(0, Math.floor(box.tly));
+        const x1 = Math.min(this.width - 1, Math.ceil(box.brx));
+        const y1 = Math.min(this.height - 1, Math.ceil(box.bry));
+        if (x1 < x0 || y1 < y0) return null;
+        return { x0, y0, x1, y1 };
+    }
+
+    // True if any pixel within `box` is foreground in both masks. O(box area).
+    public intersects_in_box(other: ULabelMask, box: BoundingBox): boolean {
+        this.assert_same_dims(other);
+        const b = this.clamp_box_to_image(box);
+        if (b === null) return false;
+        for (let y = b.y0; y <= b.y1; y++) {
+            const row = y * this.width;
+            for (let x = b.x0; x <= b.x1; x++) {
+                const i = row + x;
+                if (this.data[i] !== 0 && other.data[i] !== 0) return true;
+            }
+        }
+        return false;
+    }
+
+    // Remove another mask's foreground from this one within `box` (this = this AND NOT other).
+    // Returns true if any pixel changed. O(box area).
+    public subtract_in_box(other: ULabelMask, box: BoundingBox): boolean {
+        this.assert_same_dims(other);
+        const b = this.clamp_box_to_image(box);
+        if (b === null) return false;
+        this.version++;
+        let changed = false;
+        for (let y = b.y0; y <= b.y1; y++) {
+            const row = y * this.width;
+            for (let x = b.x0; x <= b.x1; x++) {
+                const i = row + x;
+                if (this.data[i] !== 0 && other.data[i] !== 0) {
+                    this.data[i] = 0;
+                    changed = true;
+                }
+            }
+        }
+        return changed;
+    }
+
+    // Clear pixels of this mask where both `a` and `b` are foreground, within `box`.
+    // Returns true if any pixel changed. O(box area).
+    public subtract_intersection_in_box(a: ULabelMask, b: ULabelMask, box: BoundingBox): boolean {
+        this.assert_same_dims(a);
+        this.assert_same_dims(b);
+        const bx = this.clamp_box_to_image(box);
+        if (bx === null) return false;
+        this.version++;
+        let changed = false;
+        for (let y = bx.y0; y <= bx.y1; y++) {
+            const row = y * this.width;
+            for (let x = bx.x0; x <= bx.x1; x++) {
+                const i = row + x;
+                if (this.data[i] !== 0 && a.data[i] !== 0 && b.data[i] !== 0) {
+                    this.data[i] = 0;
+                    changed = true;
+                }
+            }
+        }
+        return changed;
     }
 
     // Encode to COCO-style, column-major run-length counts.
