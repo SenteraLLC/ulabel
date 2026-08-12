@@ -166,7 +166,14 @@ export class ULabel {
         // In-progress bitmask move snapshot canvas (skipped by end_bitmask_move on interrupt).
         if (this.state) {
             this.state["bitmask_move_overlay"] = null;
+            // Any queued rAF from schedule_continue_move()/edit paths checks is_in_move on
+            // the current subtask; reset_interaction_state() flips those flags so those
+            // callbacks become no-ops when they fire.
+            this.state["last_move"] = null;
         }
+        try {
+            this.reset_interaction_state();
+        } catch { /* subtasks may be partially torn down; ignore */ }
 
         // 4. Drop bitmask caches on every annotation, in every subtask, and clear the
         //    action streams so retained RLE payloads (before/after) are collectible.
@@ -768,6 +775,8 @@ export class ULabel {
      * Code to be called after ULabel has finished initializing.
      */
     after_init() {
+        // A user_callback (called just before this) may have invoked destroy().
+        if (this.is_destroyed) return;
         // Perform the after_init method for each toolbox item
         for (const toolbox_item of this.toolbox.items) {
             toolbox_item.after_init();

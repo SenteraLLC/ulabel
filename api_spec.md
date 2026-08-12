@@ -621,6 +621,8 @@ When `false`, new annotations will be limited to points within the image, and at
 ### `auto_destroy_on_detach`
 When `true` (the default), ULabel installs a `MutationObserver` on the container's root and calls [`destroy()`](#destroy) automatically after the container is removed from the DOM. The observer holds the ULabel instance through a `WeakRef` (so it cannot pin the instance in memory on its own) and defers the teardown decision by one animation frame so brief detach/reattach cycles (portals, jQuery `.detach()`, layout reparenting) do not trigger a false-positive teardown. Set to `false` to opt out and manage teardown manually via [`destroy()`](#destroy).
 
+> **Same-id replacement caveat.** With the default `true`, the one-frame grace period means a caller who removes the old container and mounts a new `<div>` with the same `container_id` *within the same animation frame* can briefly have two `ULabel` instances attached to `document`; when the old instance's teardown runs it will remove `.ulabel`-namespaced document/window handlers belonging to the new instance too. If your SPA does synchronous same-id replacement, set `auto_destroy_on_detach: false` and call `oldUlabel.destroy()` yourself *before* mounting the replacement — `destroy()` is synchronous, so this ordering is race-free.
+
 
 ## Display Utility Functions
 

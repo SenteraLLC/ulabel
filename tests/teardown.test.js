@@ -116,6 +116,32 @@ describe("Teardown", () => {
             ulabel.destroy();
             await expect(ulabel.set_annotations([], "test_task")).resolves.toBeUndefined();
         });
+
+        test("destroy() clears interaction flags so pending rAF paths become no-ops", () => {
+            const ulabel = build_ulabel_with_bitmask();
+            // Simulate an in-progress move: schedule_continue_move sets is_in_move and last_move.
+            const subtask = ulabel.subtasks.test_task;
+            subtask.state.is_in_move = true;
+            subtask.state.is_in_edit = true;
+            subtask.state.is_in_progress = true;
+            subtask.state.active_id = "fake_id";
+            ulabel.state.last_move = { clientX: 0, clientY: 0 };
+
+            ulabel.destroy();
+
+            expect(subtask.state.is_in_move).toBe(false);
+            expect(subtask.state.is_in_edit).toBe(false);
+            expect(subtask.state.is_in_progress).toBe(false);
+            expect(subtask.state.active_id).toBeNull();
+            expect(ulabel.state.last_move).toBeNull();
+        });
+
+        test("after_init() on a destroyed instance is a no-op", () => {
+            const ulabel = build_ulabel_with_bitmask();
+            ulabel.destroy();
+            // toolbox is null after destroy; unguarded after_init() would throw.
+            expect(() => ulabel.after_init()).not.toThrow();
+        });
     });
 
     describe("auto-teardown observer", () => {
