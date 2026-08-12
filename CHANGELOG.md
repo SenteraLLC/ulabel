@@ -11,7 +11,6 @@ All notable changes to this project will be documented here.
   - New `auto_destroy_on_detach` config option (default `true`). When enabled, ULabel installs a `MutationObserver` on the container's root and calls `destroy()` automatically after the container leaves the DOM.
   - `set_annotations()`, `get_annotations()`, and `redraw_all_annotations()` now short-circuit with a warning if called after `destroy()`.
   - Fixed a latent typo in `set_annotations()` that wrote to a non-existent `undo_stack` property instead of clearing the real `undone_stack`.
-  - `remove_ulabel_listeners()` now scopes its `.id_dialog` cleanup to the instance's container, so tearing down one ULabel no longer strips id-dialog handlers from siblings on the same page.
 
 
 ## [0.25.1] - Aug 10th, 2026

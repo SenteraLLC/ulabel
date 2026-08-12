@@ -253,5 +253,24 @@ describe("Teardown", () => {
 
             expect(replacement.contains(sentinel)).toBe(true);
         });
+
+        test("manual destroy() (auto flag off) also spares a same-id replacement", () => {
+            const ulabel = build_ulabel_with_bitmask();
+            ulabel.config.auto_destroy_on_detach = false;
+            // Simulate what ulabel_init does: capture the owned container node before use.
+            ulabel._owned_container = document.getElementById(container_id);
+
+            const original = ulabel._owned_container;
+            original.remove();
+            const replacement = document.createElement("div");
+            replacement.id = container_id;
+            const sentinel = document.createElement("span");
+            replacement.appendChild(sentinel);
+            document.body.appendChild(replacement);
+
+            ulabel.destroy();
+
+            expect(replacement.contains(sentinel)).toBe(true);
+        });
     });
 });

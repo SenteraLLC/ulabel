@@ -159,6 +159,10 @@ export async function ulabel_init(
         ulabel.config.toolbox_order,
     );
 
+    // Own this specific node from now on so destroy() and the auto-teardown observer never
+    // mistake a same-id replacement mounted by an SPA for our container.
+    ulabel._owned_container = document.getElementById(ulabel.config["container_id"]);
+
     // Detect night cookie
     if (NightModeCookie.exists_in_document()) {
         $("#" + ulabel.config["container_id"]).addClass("ulabel-night");
@@ -234,6 +238,10 @@ export async function ulabel_init(
     ulabel.toolbox.redraw_update_items(ulabel);
 
     ULabelLoader.remove_loader_div();
+
+    // Arm auto-teardown before the user callback so a callback that synchronously removes
+    // the container still triggers destroy(). No-op when the flag is disabled.
+    ulabel._install_auto_destroy_observer();
 
     // Call the user-provided callback
     user_callback();

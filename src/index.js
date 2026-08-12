@@ -777,11 +777,6 @@ export class ULabel {
         if (this.get_current_subtask()["state"]["annotation_mode"] === "bitmask") {
             BrushToolboxItem.show_brush_toolbox_item();
         }
-
-        // Install the opt-in auto-teardown observer once the container is in the DOM.
-        if (this.config?.["auto_destroy_on_detach"]) {
-            this._install_auto_destroy_observer();
-        }
     }
 
     /**
@@ -795,13 +790,17 @@ export class ULabel {
         if (this.mutation_observer != null) return;
         if (!this.config?.["auto_destroy_on_detach"]) return;
         if (typeof MutationObserver === "undefined" || typeof WeakRef === "undefined") return;
-        const container_id = this.config?.["container_id"];
-        if (!container_id) return;
-        const container = document.getElementById(container_id);
-        if (container == null || !container.isConnected) return;
+        // _owned_container is captured by ulabel_init(); fall back to id lookup for direct callers.
+        let container = this._owned_container;
+        if (container == null) {
+            const container_id = this.config?.["container_id"];
+            if (!container_id) return;
+            container = document.getElementById(container_id);
+            if (container == null) return;
+            this._owned_container = container;
+        }
+        if (!container.isConnected) return;
 
-        // Own this exact node from now on: node identity, not id equality.
-        this._owned_container = container;
         const root = typeof container.getRootNode === "function" ? container.getRootNode() : document;
         const weak = new WeakRef(this);
         const observer = new MutationObserver(() => {
@@ -6994,6 +6993,10 @@ export class ULabel {
     }
 
     async swap_frame_image(new_src, frame = 0) {
+        if (this.is_destroyed) {
+            log_message("swap_frame_image called on a destroyed ULabel instance", LogLevel.WARNING, true);
+            return null;
+        }
         const img = $(`img#${this.config["image_id_pfx"]}__${frame}`);
         const ret = img.attr("src");
 
@@ -7002,6 +7005,12 @@ export class ULabel {
         ULabelLoader.add_loader_div(container);
         // Yield so the browser can paint the loader before swapping the image
         await ULabelLoader.wait_for_render();
+
+        // Recheck: destroy() may have run during the paint yield.
+        if (this.is_destroyed) {
+            log_message("swap_frame_image aborted; ULabel was destroyed during load", LogLevel.WARNING, true);
+            return null;
+        }
 
         try {
             img.attr("src", new_src);
@@ -7103,6 +7112,12 @@ export class ULabel {
         ULabelLoader.add_loader_div(container);
         // Yield so the browser can paint the loader before the heavy synchronous work below
         await ULabelLoader.wait_for_render();
+
+        // Recheck: destroy() (manual or auto) may have run during the paint yield.
+        if (this.is_destroyed) {
+            log_message("set_annotations aborted; ULabel was destroyed during load", LogLevel.WARNING, true);
+            return;
+        }
 
         try {
             // Undo/redo won't work through a get/set

@@ -32,6 +32,8 @@ ulabel.init(() => {/* behavior on ready */})
 
 `ULabel` is the only name that `ulabel.js` will add to the global namespace.
 
+> ULabel is designed for **a single instance per page**. Toolbox handlers, id dialogs, and global keybinds bind to shared DOM ids and delegated selectors on `document`, so mounting more than one `ULabel` simultaneously is not supported.
+
 The constructor is used to specify the configuration for an "annotation session". It has the following interface
 
 ```javascript
