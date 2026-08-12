@@ -142,6 +142,23 @@ describe("Teardown", () => {
             // toolbox is null after destroy; unguarded after_init() would throw.
             expect(() => ulabel.after_init()).not.toThrow();
         });
+
+        test("releases per-subtask canvas contexts and in-progress bitmask stroke state", () => {
+            const ulabel = build_ulabel_with_bitmask();
+            const subtask = ulabel.subtasks.test_task;
+            // Simulate a finished init + an interrupted bitmask stroke.
+            subtask.state.back_context = { canvas: document.createElement("canvas") };
+            subtask.state.front_context = { canvas: document.createElement("canvas") };
+            subtask.state.bitmask_stroke = { annotation_id: "id", before_rle: { counts: [1, 2, 3], size: [4, 4] } };
+            ulabel.state.last_brush_stroke = [10, 20];
+
+            ulabel.destroy();
+
+            expect(subtask.state.back_context).toBeNull();
+            expect(subtask.state.front_context).toBeNull();
+            expect(subtask.state.bitmask_stroke).toBeNull();
+            expect(ulabel.state.last_brush_stroke).toBeNull();
+        });
     });
 
     describe("auto-teardown observer", () => {

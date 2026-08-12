@@ -191,7 +191,16 @@ export class ULabel {
             }
             if (subtask.state) {
                 subtask.state["annotation_contexts"] = {};
+                // Front/back contexts each retain an image-sized canvas backing store; letting
+                // them go lets `container.innerHTML = ""` below actually release those pixels.
+                subtask.state["back_context"] = null;
+                subtask.state["front_context"] = null;
+                // A stroke interrupted before finish_bitmask() leaves a full pre-stroke RLE here.
+                subtask.state["bitmask_stroke"] = null;
             }
+        }
+        if (this.state) {
+            this.state["last_brush_stroke"] = null;
         }
 
         // 5. Break the toolbox <-> ulabel back-reference. Toolbox items keep a
