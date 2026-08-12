@@ -159,12 +159,23 @@ export async function ulabel_init(
         ulabel.config.toolbox_order,
     );
 
+    // Own this specific node from now on so destroy() and the auto-teardown observer never
+    // mistake a same-id replacement mounted by an SPA for our container.
+    ulabel._owned_container = document.getElementById(ulabel.config["container_id"]);
+
+    // Arm auto-teardown before the image decode await so a container removal during decode
+    // still triggers destroy() rather than silently leaving init running on a detached tree.
+    ulabel._install_auto_destroy_observer();
+
     // Detect night cookie
     if (NightModeCookie.exists_in_document()) {
         $("#" + ulabel.config["container_id"]).addClass("ulabel-night");
     }
     const first_bg_img = <HTMLImageElement>document.getElementById(`${ulabel.config["image_id_pfx"]}__0`);
     await first_bg_img.decode();
+
+    // Container may have been removed (and destroy() may have run) during decode.
+    if (ulabel.is_destroyed) return;
 
     make_image_canvases(ulabel, first_bg_img);
 

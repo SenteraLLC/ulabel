@@ -138,6 +138,99 @@ export class ULabel {
         remove_ulabel_listeners(this);
     }
 
+    /**
+     * Fully tear down this ULabel instance and release its heavy runtime state
+     * (bitmask masks, tinted stencil canvases, undo/redo streams, toolbox refs,
+     * DOM under the container). After calling this the instance MUST NOT be used
+     * again. Callers with a strong reference to the instance no longer keep the
+     * bitmask `Uint8Array`s alive. Safe to call more than once.
+     */
+    destroy() {
+        if (this.is_destroyed) return;
+
+        // 1. Disconnect the MutationObserver first so a mid-teardown throw can't
+        //    leave a live observer pinning `this` via the browser's observer registry.
+        if (this.mutation_observer != null) {
+            this.mutation_observer.disconnect();
+            this.mutation_observer = null;
+        }
+
+        // 2. Existing listener / observer cleanup.
+        this.remove_listeners();
+
+        // 3. Any pending toast/interaction timers hold `this` in their closure.
+        if (this.annotation_navigation_toast_timeout !== null) {
+            clearTimeout(this.annotation_navigation_toast_timeout);
+            this.annotation_navigation_toast_timeout = null;
+        }
+        // In-progress bitmask move snapshot canvas (skipped by end_bitmask_move on interrupt).
+        if (this.state) {
+            this.state["bitmask_move_overlay"] = null;
+            // Any queued rAF from schedule_continue_move()/edit paths checks is_in_move on
+            // the current subtask; reset_interaction_state() flips those flags so those
+            // callbacks become no-ops when they fire.
+            this.state["last_move"] = null;
+        }
+        try {
+            this.reset_interaction_state();
+        } catch { /* subtasks may be partially torn down; ignore */ }
+
+        // 4. Drop bitmask caches on every annotation, in every subtask, and clear the
+        //    action streams so retained RLE payloads (before/after) are collectible.
+        for (const subtask of Object.values(this.subtasks ?? {})) {
+            const access = subtask?.annotations?.access ?? {};
+            for (const anno of Object.values(access)) {
+                delete anno["_mask"];
+                delete anno["_mask_render"];
+                delete anno["_bitmask_box_hint"];
+            }
+            subtask.annotations = { ordering: [], access: {} };
+            if (subtask.actions) {
+                subtask.actions.stream = [];
+                subtask.actions.undone_stack = [];
+            }
+            if (subtask.state) {
+                subtask.state["annotation_contexts"] = {};
+                // Front/back contexts each retain an image-sized canvas backing store; letting
+                // them go lets `container.innerHTML = ""` below actually release those pixels.
+                subtask.state["back_context"] = null;
+                subtask.state["front_context"] = null;
+                // A stroke interrupted before finish_bitmask() leaves a full pre-stroke RLE here.
+                subtask.state["bitmask_stroke"] = null;
+            }
+        }
+        if (this.state) {
+            this.state["last_brush_stroke"] = null;
+        }
+
+        // 5. Break the toolbox <-> ulabel back-reference. Toolbox items keep a
+        //    `this.ulabel` and are stored on `this.toolbox.items`.
+        if (this.toolbox?.items) {
+            for (const item of this.toolbox.items) {
+                if (item) item.ulabel = null;
+            }
+            this.toolbox.items.length = 0;
+        }
+        this.toolbox = null;
+
+        // 6. Drop the resize-observer array so disconnected observers stop retaining state.
+        this.resize_observers = [];
+
+        // 7. Wipe the container DOM (canvases, id dialogs, brush circle, enders, overlays).
+        //    Prefer the captured owned-container node so a same-id replacement mounted by an SPA
+        //    between detach and this call is left untouched.
+        let container = this._owned_container;
+        if (container == null) {
+            const container_id = this.config?.["container_id"];
+            if (container_id) container = document.getElementById(container_id);
+        }
+        if (container) container.innerHTML = "";
+        this._owned_container = null;
+
+        this.is_init = false;
+        this.is_destroyed = true;
+    }
+
     static process_allowed_modes(ul, subtask_key, subtask) {
         // TODO(v1) check to make sure these are known modes
         ul.subtasks[subtask_key]["allowed_modes"] = subtask["allowed_modes"];
@@ -674,6 +767,13 @@ export class ULabel {
         // Track global state
         this.is_shaking = false;
         this.annotation_navigation_toast_timeout = null;
+        // Set true by destroy(); subsequent calls short-circuit.
+        this.is_destroyed = false;
+        // MutationObserver used by opt-in auto-teardown; may be null.
+        this.mutation_observer = null;
+        // The specific container HTMLElement this instance owns. Captured at observer-install
+        // time so an SPA replacement using the same id can't be mistaken for our container.
+        this._owned_container = null;
     }
 
     init(callback) {
@@ -684,6 +784,8 @@ export class ULabel {
      * Code to be called after ULabel has finished initializing.
      */
     after_init() {
+        // A user_callback (called just before this) may have invoked destroy().
+        if (this.is_destroyed) return;
         // Perform the after_init method for each toolbox item
         for (const toolbox_item of this.toolbox.items) {
             toolbox_item.after_init();
@@ -693,6 +795,49 @@ export class ULabel {
         if (this.get_current_subtask()["state"]["annotation_mode"] === "bitmask") {
             BrushToolboxItem.show_brush_toolbox_item();
         }
+    }
+
+    /**
+     * Watch for the container leaving the document and call `destroy()` when it does.
+     * Callback holds a WeakRef so this observer alone can't pin the instance in memory,
+     * and defers the teardown decision by one animation frame so brief detach/reattach
+     * (portals, jQuery `.detach()`, layout reparenting) does not trigger a false positive.
+     */
+    _install_auto_destroy_observer() {
+        if (this.is_destroyed) return;
+        if (this.mutation_observer != null) return;
+        if (!this.config?.["auto_destroy_on_detach"]) return;
+        if (typeof MutationObserver === "undefined" || typeof WeakRef === "undefined") return;
+        // _owned_container is captured by ulabel_init(); fall back to id lookup for direct callers.
+        let container = this._owned_container;
+        if (container == null) {
+            const container_id = this.config?.["container_id"];
+            if (!container_id) return;
+            container = document.getElementById(container_id);
+            if (container == null) return;
+            this._owned_container = container;
+        }
+        if (!container.isConnected) return;
+
+        const root = typeof container.getRootNode === "function" ? container.getRootNode() : document;
+        const weak = new WeakRef(this);
+        const observer = new MutationObserver(() => {
+            const self = weak.deref();
+            if (!self || self.is_destroyed) return;
+            if (container.isConnected) return;
+            requestAnimationFrame(() => {
+                const s = weak.deref();
+                if (!s || s.is_destroyed) return;
+                if (container.isConnected) return;
+                try {
+                    s.destroy();
+                } catch (err) {
+                    log_message(`auto-teardown destroy() threw: ${err}`, LogLevel.ERROR, true);
+                }
+            });
+        });
+        observer.observe(root, { childList: true, subtree: true });
+        this.mutation_observer = observer;
     }
 
     version() {
@@ -1318,8 +1463,10 @@ export class ULabel {
             subtask = this.get_current_subtask_key();
         }
 
+        const annotation = this.subtasks[subtask]["annotations"]["access"][annotation_id];
+
         // Remove the annotation_id from the canvas context list
-        const canvas_id = this.subtasks[subtask]["annotations"]["access"][annotation_id]["canvas_id"];
+        const canvas_id = annotation["canvas_id"];
         const canvas_context = this.subtasks[subtask]["state"]["annotation_contexts"][canvas_id];
         const annotation_ids = canvas_context["annotation_ids"];
         const idx = annotation_ids.indexOf(annotation_id);
@@ -1334,6 +1481,14 @@ export class ULabel {
         } else {
             // Otherwise, redraw the remaining annotations
             this.redraw_all_annotations_in_annotation_context(canvas_id, subtask);
+        }
+
+        // Release bitmask-only caches so the mask Uint8Array and tinted stencil canvas
+        // are collectible even if the annotation object outlives this call.
+        if (annotation["spatial_type"] === "bitmask") {
+            delete annotation["_mask"];
+            delete annotation["_mask_render"];
+            delete annotation["_bitmask_box_hint"];
         }
     }
 
@@ -2283,6 +2438,10 @@ export class ULabel {
      * @param {boolean} nonspatial_only if true, only redraw nonspatial annotations
      */
     redraw_all_annotations(subtask = null, offset = null, nonspatial_only = false) {
+        if (this.is_destroyed) {
+            log_message("redraw_all_annotations called on a destroyed ULabel instance", LogLevel.WARNING, true);
+            return;
+        }
         // TODO(3d)
         if (subtask === null) {
             for (const st in this.subtasks) {
@@ -6852,6 +7011,10 @@ export class ULabel {
     }
 
     async swap_frame_image(new_src, frame = 0) {
+        if (this.is_destroyed) {
+            log_message("swap_frame_image called on a destroyed ULabel instance", LogLevel.WARNING, true);
+            return null;
+        }
         const img = $(`img#${this.config["image_id_pfx"]}__${frame}`);
         const ret = img.attr("src");
 
@@ -6860,6 +7023,12 @@ export class ULabel {
         ULabelLoader.add_loader_div(container);
         // Yield so the browser can paint the loader before swapping the image
         await ULabelLoader.wait_for_render();
+
+        // Recheck: destroy() may have run during the paint yield.
+        if (this.is_destroyed) {
+            log_message("swap_frame_image aborted; ULabel was destroyed during load", LogLevel.WARNING, true);
+            return null;
+        }
 
         try {
             img.attr("src", new_src);
@@ -6937,6 +7106,10 @@ export class ULabel {
 
     // Allow for external access and modification of annotations within a subtask
     get_annotations(subtask) {
+        if (this.is_destroyed) {
+            log_message("get_annotations called on a destroyed ULabel instance", LogLevel.WARNING, true);
+            return [];
+        }
         let ret = [];
         for (let i = 0; i < this.subtasks[subtask]["annotations"]["ordering"].length; i++) {
             let id = this.subtasks[subtask]["annotations"]["ordering"][i];
@@ -6948,17 +7121,27 @@ export class ULabel {
     }
 
     async set_annotations(new_annotations, subtask) {
+        if (this.is_destroyed) {
+            log_message("set_annotations called on a destroyed ULabel instance", LogLevel.WARNING, true);
+            return;
+        }
         // Show the loader while re-initializing annotations, since this is similar to a new init
         const container = document.getElementById(this.config["container_id"]);
         ULabelLoader.add_loader_div(container);
         // Yield so the browser can paint the loader before the heavy synchronous work below
         await ULabelLoader.wait_for_render();
 
+        // Recheck: destroy() (manual or auto) may have run during the paint yield.
+        if (this.is_destroyed) {
+            log_message("set_annotations aborted; ULabel was destroyed during load", LogLevel.WARNING, true);
+            return;
+        }
+
         try {
             // Undo/redo won't work through a get/set
             this.reset_interaction_state();
             this.subtasks[subtask]["actions"]["stream"] = [];
-            this.subtasks[subtask]["actions"]["undo_stack"] = [];
+            this.subtasks[subtask]["actions"]["undone_stack"] = [];
 
             // Remove canvases for spatial annotations
             for (let i = 0; i < this.subtasks[subtask]["annotations"]["ordering"].length; i++) {

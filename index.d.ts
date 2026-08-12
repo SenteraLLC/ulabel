@@ -300,6 +300,7 @@ export type ULabelConstructorArgs = {
     initial_line_size?: number;
     instructions_url?: string;
     toolbox_order?: AllowedToolboxItem[];
+    auto_destroy_on_detach?: boolean;
     /** @deprecated Use top-level properties instead. */
     config_data?: object;
 };
@@ -438,6 +439,16 @@ export class ULabel {
 
     // Listeners
     public remove_listeners(): void;
+
+    // Full teardown: releases bitmask caches, action streams, toolbox refs, and container DOM.
+    public destroy(): void;
+    // True after destroy() has run; subsequent destroy() calls are no-ops.
+    is_destroyed: boolean;
+    // The container HTMLElement this instance owns, captured at init. Used by destroy() and
+    // the auto-teardown observer to avoid mistaking a same-id replacement for our container.
+    _owned_container: HTMLElement | null;
+    // Install the auto-teardown MutationObserver; called by init and idempotent.
+    _install_auto_destroy_observer(): void;
 
     // Static functions
     static version(): string;
