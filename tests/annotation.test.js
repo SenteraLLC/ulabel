@@ -124,6 +124,83 @@ describe("Annotation Processing", () => {
             expect(annotation.containing_box).toEqual({ tlx: 0, tly: 0, brx: 7, bry: 5 });
         });
 
+        test("should accept a raw Uint8Array bitmask payload and export it as RLE", () => {
+            // Build the same mask as the RLE test above, but pass the raw pixel buffer.
+            const mask = ULabelMask.create_empty(8, 6);
+            mask.paint_circle(4, 3, 2, 1);
+            mask.set_pixel(0, 0, 1);
+            mask.set_pixel(7, 5, 1);
+            const original_bytes = new Uint8Array(mask.data);
+            const expected_rle = mask.to_rle();
+
+            const raw_payload = { data: original_bytes, size: [6, 8] };
+            const resume_config = {
+                ...mock_config,
+                subtasks: {
+                    test_task: {
+                        ...mock_config.subtasks.test_task,
+                        allowed_modes: ["bbox", "polygon", "point", "bitmask"],
+                        resume_from: [
+                            {
+                                spatial_type: "bitmask",
+                                spatial_payload: raw_payload,
+                                classification_payloads: [{ class_id: 1, confidence: 1.0 }],
+                            },
+                        ],
+                    },
+                },
+            };
+
+            const ulabel_with_resume = new ULabel(resume_config);
+            const annotations = ulabel_with_resume.subtasks.test_task.annotations;
+            expect(annotations.ordering).toHaveLength(1);
+            const annotation = annotations.access[annotations.ordering[0]];
+            expect(annotation.spatial_type).toBe("bitmask");
+            expect(annotation.deprecated).toBe(false);
+
+            // Payload is still raw internally (no RLE encode has happened yet)
+            expect(annotation.spatial_payload.data).toBeInstanceOf(Uint8Array);
+            expect(annotation.spatial_payload.size).toEqual([6, 8]);
+
+            // Defensive copy: mutating the caller's buffer must not corrupt the internal mask.
+            original_bytes[0] = 0;
+            expect(annotation.spatial_payload.data[0]).toBe(1);
+
+            // get_annotations reads state.current_subtask, which init() would set.
+            ulabel_with_resume.state.current_subtask = "test_task";
+            // Emulate export: get_annotations materializes RLE before JSON round-trip.
+            const exported = ulabel_with_resume.get_annotations("test_task")[0];
+            expect(exported.spatial_payload.counts).toEqual(expected_rle.counts);
+            expect(exported.spatial_payload.size).toEqual(expected_rle.size);
+            expect(exported.spatial_payload.data).toBeUndefined();
+            expect(exported._mask).toBeUndefined();
+
+            // The containing box was rebuilt from the mask's foreground bounds
+            expect(annotation.containing_box).toEqual({ tlx: 0, tly: 0, brx: 7, bry: 5 });
+        });
+
+        test("should skip a bitmask annotation with a malformed raw payload", () => {
+            const resume_config = {
+                ...mock_config,
+                subtasks: {
+                    test_task: {
+                        ...mock_config.subtasks.test_task,
+                        allowed_modes: ["bbox", "polygon", "point", "bitmask"],
+                        resume_from: [
+                            {
+                                spatial_type: "bitmask",
+                                // Length doesn't match 6*8=48
+                                spatial_payload: { data: new Uint8Array(10), size: [6, 8] },
+                                classification_payloads: [{ class_id: 1, confidence: 1.0 }],
+                            },
+                        ],
+                    },
+                },
+            };
+            const ulabel_with_resume = new ULabel(resume_config);
+            expect(ulabel_with_resume.subtasks.test_task.annotations.ordering).toHaveLength(0);
+        });
+
         test("should skip a bitmask annotation with a malformed RLE payload", () => {
             const resume_config = {
                 ...mock_config,

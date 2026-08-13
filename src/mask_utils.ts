@@ -14,6 +14,24 @@ export type ULabelMaskPayload = {
     size: [number, number];
 };
 
+// Raw pixel-buffer form of a bitmask payload. Row-major, one byte per pixel
+// (non-zero = foreground). `size` is [height, width] to match ULabelMaskPayload.
+// Accepted as an alternative to the RLE form on load; callers that already have
+// the mask as a Uint8Array avoid the encode-then-decode round-trip.
+export type ULabelRawMaskPayload = {
+    data: Uint8Array;
+    size: [number, number];
+};
+
+// Duck-type check for the raw payload shape.
+export function is_raw_mask_payload(payload: unknown): payload is ULabelRawMaskPayload {
+    if (payload === null || typeof payload !== "object") return false;
+    const p = payload as { data?: unknown; size?: unknown };
+    if (!(p.data instanceof Uint8Array) && !(p.data instanceof Uint8ClampedArray)) return false;
+    if (!Array.isArray(p.size) || p.size.length !== 2) return false;
+    return Number.isInteger(p.size[0]) && Number.isInteger(p.size[1]);
+}
+
 // Axis-aligned bounding box in image pixel coordinates (inclusive bounds).
 export type BoundingBox = {
     tlx: number;
@@ -439,5 +457,32 @@ export class ULabelMask {
             value = value === 0 ? 1 : 0;
         }
         return mask;
+    }
+
+    // Validate a raw pixel-buffer payload before wrapping it in a mask.
+    public static validate_raw(payload: unknown): void {
+        if (!is_raw_mask_payload(payload)) {
+            throw new Error("Invalid raw mask payload: expected { data: Uint8Array, size: [height, width] }");
+        }
+        const [height, width] = payload.size;
+        if (height < 0 || width < 0) {
+            throw new Error(`Invalid raw mask size: expected non-negative integers, got [${height}, ${width}]`);
+        }
+        const expected = height * width;
+        if (payload.data.length !== expected) {
+            throw new Error(`Invalid raw mask data length: expected ${expected} bytes for ${height}x${width}, got ${payload.data.length}`);
+        }
+    }
+
+    // Wrap a raw pixel-buffer payload as a ULabelMask.
+    // By default copies the input so the caller can safely mutate their own array;
+    // pass `copy: false` when the caller (e.g. process_resume_from) already copied.
+    public static from_raw(payload: ULabelRawMaskPayload, validate: boolean = true, copy: boolean = true): ULabelMask {
+        if (validate) {
+            ULabelMask.validate_raw(payload);
+        }
+        const [height, width] = payload.size;
+        const data = copy ? new Uint8Array(payload.data) : payload.data;
+        return new ULabelMask(width, height, data);
     }
 }

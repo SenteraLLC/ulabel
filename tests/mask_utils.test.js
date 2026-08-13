@@ -322,6 +322,40 @@ describe("ULabelMask", () => {
         });
     });
 
+    describe("raw payload validation and construction", () => {
+        test("from_raw wraps a matching Uint8Array and copies by default", () => {
+            const data = new Uint8Array([1, 0, 1, 1]);
+            const mask = ULabelMask.from_raw({ data, size: [2, 2] });
+            expect(mask.width).toBe(2);
+            expect(mask.height).toBe(2);
+            expect(Array.from(mask.data)).toEqual([1, 0, 1, 1]);
+
+            // Default is copy: mutating the source doesn't affect the mask.
+            data[0] = 0;
+            expect(mask.data[0]).toBe(1);
+        });
+
+        test("from_raw with copy=false references the caller's buffer", () => {
+            const data = new Uint8Array([0, 0, 0, 0]);
+            const mask = ULabelMask.from_raw({ data, size: [2, 2] }, true, false);
+            data[0] = 1;
+            expect(mask.data[0]).toBe(1);
+        });
+
+        test("validate_raw rejects wrong-length buffers", () => {
+            expect(() => ULabelMask.validate_raw({ data: new Uint8Array(3), size: [2, 2] })).toThrow();
+        });
+
+        test("validate_raw rejects non-typed-array data", () => {
+            expect(() => ULabelMask.validate_raw({ data: [1, 0, 1, 0], size: [2, 2] })).toThrow();
+        });
+
+        test("validate_raw rejects a malformed size", () => {
+            expect(() => ULabelMask.validate_raw({ data: new Uint8Array(4), size: [2] })).toThrow();
+            expect(() => ULabelMask.validate_raw({ data: new Uint8Array(4), size: "2x2" })).toThrow();
+        });
+    });
+
     describe("box-limited boolean operations", () => {
         // Build a mask and set the given [x, y] pixels.
         const make = (w, h, pts) => {

@@ -30,7 +30,7 @@ import { remove_ulabel_listeners } from "../build/listeners";
 import { log_message, LogLevel } from "../build/error_logging";
 import { initialize_annotation_canvases } from "../build/canvas_utils";
 import { record_action, record_finish, record_finish_edit, record_finish_move, undo, redo } from "../build/actions";
-import { ULabelMask } from "../build/mask_utils";
+import { ULabelMask, is_raw_mask_payload } from "../build/mask_utils";
 import { get_local_storage_item, set_local_storage_item } from "../build/utilities";
 
 import $ from "jquery";
@@ -347,6 +347,32 @@ export class ULabel {
         }
     }
 
+    /**
+     * Deep-clone an incoming annotation from resume_from / set_annotations input.
+     *
+     * The default path is JSON.parse(JSON.stringify(...)), which is fine for RLE and
+     * polygon payloads but silently corrupts a raw Uint8Array bitmask payload (JSON
+     * turns a typed array into an object with numeric string keys). For the raw
+     * `{ data: Uint8Array, size: [h, w] }` shape we shallow-clone the annotation and
+     * copy the mask bytes separately so the typed array reference survives.
+     *
+     * @param {object} raw incoming annotation
+     * @returns {object} deep copy suitable for from_json / mutation by ULabel internals
+     */
+    static clone_incoming_annotation(raw) {
+        if (raw != null && raw.spatial_type === "bitmask" && is_raw_mask_payload(raw.spatial_payload)) {
+            const raw_payload = raw.spatial_payload;
+            const bare = { ...raw, spatial_payload: undefined };
+            const cloned = JSON.parse(JSON.stringify(bare));
+            cloned.spatial_payload = {
+                data: new Uint8Array(raw_payload.data),
+                size: [raw_payload.size[0], raw_payload.size[1]],
+            };
+            return cloned;
+        }
+        return JSON.parse(JSON.stringify(raw));
+    }
+
     static process_resume_from(ul, subtask_key, subtask) {
         // Initialize to no annotations
         ul.subtasks[subtask_key]["annotations"] = {
@@ -356,7 +382,7 @@ export class ULabel {
         if (subtask["resume_from"] != null) {
             for (var i = 0; i < subtask["resume_from"].length; i++) {
                 // Get copy of annotation to import for modification before incorporation
-                let cand = ULabelAnnotation.from_json(JSON.parse(JSON.stringify(subtask["resume_from"][i])));
+                let cand = ULabelAnnotation.from_json(ULabel.clone_incoming_annotation(subtask["resume_from"][i]));
                 if (cand === null) {
                     continue;
                 }
@@ -1919,6 +1945,9 @@ export class ULabel {
             const payload = annotation_object["spatial_payload"];
             if (payload != null && payload["counts"] !== undefined) {
                 mask = ULabelMask.from_rle(payload, false);
+            } else if (is_raw_mask_payload(payload)) {
+                // Raw payload was already copied by clone_incoming_annotation; skip a second copy.
+                mask = ULabelMask.from_raw(payload, false, false);
             } else {
                 mask = ULabelMask.create_empty(this.config["image_width"], this.config["image_height"]);
             }
@@ -7114,7 +7143,14 @@ export class ULabel {
         for (let i = 0; i < this.subtasks[subtask]["annotations"]["ordering"].length; i++) {
             let id = this.subtasks[subtask]["annotations"]["ordering"][i];
             if (id != this.get_current_subtask()["state"]["active_id"]) {
-                ret.push(this.subtasks[subtask]["annotations"]["access"][id]);
+                const anno = this.subtasks[subtask]["annotations"]["access"][id];
+                // Bitmasks loaded with a raw Uint8Array payload would be mangled by JSON.stringify
+                // (typed arrays become plain objects with numeric string keys). Materialize RLE
+                // in-place now; the annotation ends up normalized to RLE for all future exports.
+                if (anno.spatial_type === "bitmask" && is_raw_mask_payload(anno.spatial_payload)) {
+                    anno.spatial_payload = this.get_bitmask(anno).to_rle();
+                }
+                ret.push(anno);
             }
         }
         return JSON.parse(JSON.stringify(ret));
