@@ -332,6 +332,21 @@ A bitmask's `spatial_payload` is a COCO-style, uncompressed run-length encoding:
 
 Note this is the *uncompressed* form (`counts` as an integer array), not the LEB128-packed string used by `pycocotools`. Masks import from and export to this same object shape.
 
+**Raw payload (import only)**
+
+To skip the RLE encode step on the caller side, bitmask annotations may be imported with a raw pixel-buffer payload:
+
+```javascript
+{
+    // Row-major, one byte per pixel. Non-zero = foreground. Length must be height * width.
+    "data": <Uint8Array>,
+    // [height, width] of the mask
+    "size": [<height>, <width>]
+}
+```
+
+The `Uint8Array` is defensively copied on load. This shape is accepted for input only — `get_annotations()` always exports the RLE form so downstream consumers see one format. Internally, an annotation loaded with a raw payload is upgraded to RLE on first export or edit.
+
 The render opacity of bitmask annotations is configurable via [`mask_annotation_opacity`](#mask_annotation_opacity).
 
 The `resume_from` attributes are used to import existing annotations into the annotation session for each subtask, respectively. Existing annotations must be provided as a list of annotations of the form specified above.

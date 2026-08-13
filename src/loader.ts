@@ -2,27 +2,59 @@
  * Animated loader for initial loading screen.
  */
 export class ULabelLoader {
+    // Default delay before the loader becomes visible. Operations that finish
+    // in less than this never flash a loader on screen. See CHANGELOG for rationale.
+    public static readonly DEFAULT_REVEAL_DELAY_MS: number = 200;
+
+    // Non-null while a loader is pending or shown. Static because ULabel currently
+    // supports one instance per page (see api_spec.md); no per-instance tracking needed.
+    private static reveal_timer: ReturnType<typeof setTimeout> | null = null;
+    private static overlay: HTMLElement | null = null;
+
     public static add_loader_div(
         container: HTMLElement,
+        delay_ms: number = ULabelLoader.DEFAULT_REVEAL_DELAY_MS,
     ) {
+        // Tear down any prior overlay so overlapping ops don't stack DOM nodes.
+        ULabelLoader.remove_loader_div();
+
         const loader_overlay = document.createElement("div");
         loader_overlay.classList.add("ulabel-loader-overlay");
+        // Hidden until the reveal timer fires; fast ops never flash a loader.
+        loader_overlay.style.visibility = "hidden";
 
         const loader = document.createElement("div");
         loader.classList.add("ulabel-loader");
 
-        const style = ULabelLoader.build_loader_style();
-
         loader_overlay.appendChild(loader);
-        loader_overlay.appendChild(style);
+        loader_overlay.appendChild(ULabelLoader.build_loader_style());
         container.appendChild(loader_overlay);
+        ULabelLoader.overlay = loader_overlay;
+
+        if (delay_ms <= 0) {
+            loader_overlay.style.visibility = "visible";
+            return;
+        }
+        ULabelLoader.reveal_timer = setTimeout(() => {
+            if (ULabelLoader.overlay) {
+                ULabelLoader.overlay.style.visibility = "visible";
+            }
+            ULabelLoader.reveal_timer = null;
+        }, delay_ms);
     }
 
     public static remove_loader_div() {
-        const loader = document.querySelector(".ulabel-loader-overlay");
-        if (loader) {
-            loader.remove();
+        if (ULabelLoader.reveal_timer != null) {
+            clearTimeout(ULabelLoader.reveal_timer);
+            ULabelLoader.reveal_timer = null;
         }
+        if (ULabelLoader.overlay) {
+            ULabelLoader.overlay.remove();
+            ULabelLoader.overlay = null;
+        }
+        // Sweep any stray overlay (older code paths, hot reloads, etc.).
+        const stray = document.querySelector(".ulabel-loader-overlay");
+        if (stray) stray.remove();
     }
 
     /**

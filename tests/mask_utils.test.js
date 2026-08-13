@@ -154,6 +154,26 @@ describe("ULabelMask", () => {
             const restored = ULabelMask.from_rle(exported.spatial_payload);
             expect(Array.from(restored.data)).toEqual(Array.from(mask.data));
         });
+
+        test("encodes any non-zero byte as foreground (raw payloads with 2, 255, etc.)", () => {
+            // Raw imports may carry values beyond {0, 1}. Every non-zero byte must encode as fg.
+            // Layout (2x3): [1, 2, 0, 255, 3, 0]
+            //   Column-major traversal (x then y within column):
+            //     x=0: (0,0)=1, (0,1)=255  -> two foreground pixels
+            //     x=1: (1,0)=2, (1,1)=3    -> two foreground pixels
+            //     x=2: (2,0)=0, (2,1)=0    -> two background pixels
+            //   Expected runs (starting with bg): [0, 4, 2]
+            const data = new Uint8Array([1, 2, 0, 255, 3, 0]);
+            const mask = ULabelMask.from_raw({ data, size: [2, 3] }, true, false);
+            const rle = mask.to_rle();
+            expect(rle.size).toEqual([2, 3]);
+            expect(rle.counts).toEqual([0, 4, 2]);
+            // Decoding the RLE must produce the same foreground pattern.
+            const restored = ULabelMask.from_rle(rle);
+            const fg_pattern = Array.from(restored.data).map((b) => (b !== 0 ? 1 : 0));
+            const original_fg = Array.from(data).map((b) => (b !== 0 ? 1 : 0));
+            expect(fg_pattern).toEqual(original_fg);
+        });
     });
 
     describe("boolean operations", () => {
@@ -319,6 +339,40 @@ describe("ULabelMask", () => {
         test("rejects counts that over-run the mask size", () => {
             expect(() => ULabelMask.validate_rle({ counts: [1, 99], size: [2, 2] })).toThrow();
             expect(() => ULabelMask.from_rle({ counts: [1, 99], size: [2, 2] })).toThrow();
+        });
+    });
+
+    describe("raw payload validation and construction", () => {
+        test("from_raw wraps a matching Uint8Array and copies by default", () => {
+            const data = new Uint8Array([1, 0, 1, 1]);
+            const mask = ULabelMask.from_raw({ data, size: [2, 2] });
+            expect(mask.width).toBe(2);
+            expect(mask.height).toBe(2);
+            expect(Array.from(mask.data)).toEqual([1, 0, 1, 1]);
+
+            // Default is copy: mutating the source doesn't affect the mask.
+            data[0] = 0;
+            expect(mask.data[0]).toBe(1);
+        });
+
+        test("from_raw with copy=false references the caller's buffer", () => {
+            const data = new Uint8Array([0, 0, 0, 0]);
+            const mask = ULabelMask.from_raw({ data, size: [2, 2] }, true, false);
+            data[0] = 1;
+            expect(mask.data[0]).toBe(1);
+        });
+
+        test("validate_raw rejects wrong-length buffers", () => {
+            expect(() => ULabelMask.validate_raw({ data: new Uint8Array(3), size: [2, 2] })).toThrow();
+        });
+
+        test("validate_raw rejects non-typed-array data", () => {
+            expect(() => ULabelMask.validate_raw({ data: [1, 0, 1, 0], size: [2, 2] })).toThrow();
+        });
+
+        test("validate_raw rejects a malformed size", () => {
+            expect(() => ULabelMask.validate_raw({ data: new Uint8Array(4), size: [2] })).toThrow();
+            expect(() => ULabelMask.validate_raw({ data: new Uint8Array(4), size: "2x2" })).toThrow();
         });
     });
 

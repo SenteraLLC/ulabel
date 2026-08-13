@@ -6,7 +6,7 @@ import type {
     ULabelSpatialType,
 } from "../index";
 import { GeometricUtils } from "./geometric_utils";
-import { ULabelMask } from "./mask_utils";
+import { ULabelMask, is_raw_mask_payload } from "./mask_utils";
 import { log_message, LogLevel } from "./error_logging";
 
 // Modes used to draw an area in the which to delete all annotations
@@ -125,7 +125,11 @@ export class ULabelAnnotation {
         if (this.spatial_type === "bitmask") {
             // Reject malformed / corrupt raster payloads, surfacing the specific reason
             try {
-                ULabelMask.validate_rle(this.spatial_payload);
+                if (is_raw_mask_payload(this.spatial_payload)) {
+                    ULabelMask.validate_raw(this.spatial_payload);
+                } else {
+                    ULabelMask.validate_rle(this.spatial_payload);
+                }
             } catch (error) {
                 log_message(`Skipping bitmask annotation id ${this.id}: ${(error as Error).message}`, LogLevel.WARNING, true);
                 return false;

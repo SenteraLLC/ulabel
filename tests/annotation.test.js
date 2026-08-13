@@ -124,6 +124,83 @@ describe("Annotation Processing", () => {
             expect(annotation.containing_box).toEqual({ tlx: 0, tly: 0, brx: 7, bry: 5 });
         });
 
+        test("should accept a raw Uint8Array bitmask payload and export it as RLE", () => {
+            // Build the same mask as the RLE test above, but pass the raw pixel buffer.
+            const mask = ULabelMask.create_empty(8, 6);
+            mask.paint_circle(4, 3, 2, 1);
+            mask.set_pixel(0, 0, 1);
+            mask.set_pixel(7, 5, 1);
+            const original_bytes = new Uint8Array(mask.data);
+            const expected_rle = mask.to_rle();
+
+            const raw_payload = { data: original_bytes, size: [6, 8] };
+            const resume_config = {
+                ...mock_config,
+                subtasks: {
+                    test_task: {
+                        ...mock_config.subtasks.test_task,
+                        allowed_modes: ["bbox", "polygon", "point", "bitmask"],
+                        resume_from: [
+                            {
+                                spatial_type: "bitmask",
+                                spatial_payload: raw_payload,
+                                classification_payloads: [{ class_id: 1, confidence: 1.0 }],
+                            },
+                        ],
+                    },
+                },
+            };
+
+            const ulabel_with_resume = new ULabel(resume_config);
+            const annotations = ulabel_with_resume.subtasks.test_task.annotations;
+            expect(annotations.ordering).toHaveLength(1);
+            const annotation = annotations.access[annotations.ordering[0]];
+            expect(annotation.spatial_type).toBe("bitmask");
+            expect(annotation.deprecated).toBe(false);
+
+            // Payload is still raw internally (no RLE encode has happened yet)
+            expect(annotation.spatial_payload.data).toBeInstanceOf(Uint8Array);
+            expect(annotation.spatial_payload.size).toEqual([6, 8]);
+
+            // Defensive copy: mutating the caller's buffer must not corrupt the internal mask.
+            original_bytes[0] = 0;
+            expect(annotation.spatial_payload.data[0]).toBe(1);
+
+            // get_annotations reads state.current_subtask, which init() would set.
+            ulabel_with_resume.state.current_subtask = "test_task";
+            // Emulate export: get_annotations materializes RLE before JSON round-trip.
+            const exported = ulabel_with_resume.get_annotations("test_task")[0];
+            expect(exported.spatial_payload.counts).toEqual(expected_rle.counts);
+            expect(exported.spatial_payload.size).toEqual(expected_rle.size);
+            expect(exported.spatial_payload.data).toBeUndefined();
+            expect(exported._mask).toBeUndefined();
+
+            // The containing box was rebuilt from the mask's foreground bounds
+            expect(annotation.containing_box).toEqual({ tlx: 0, tly: 0, brx: 7, bry: 5 });
+        });
+
+        test("should skip a bitmask annotation with a malformed raw payload", () => {
+            const resume_config = {
+                ...mock_config,
+                subtasks: {
+                    test_task: {
+                        ...mock_config.subtasks.test_task,
+                        allowed_modes: ["bbox", "polygon", "point", "bitmask"],
+                        resume_from: [
+                            {
+                                spatial_type: "bitmask",
+                                // Length doesn't match 6*8=48
+                                spatial_payload: { data: new Uint8Array(10), size: [6, 8] },
+                                classification_payloads: [{ class_id: 1, confidence: 1.0 }],
+                            },
+                        ],
+                    },
+                },
+            };
+            const ulabel_with_resume = new ULabel(resume_config);
+            expect(ulabel_with_resume.subtasks.test_task.annotations.ordering).toHaveLength(0);
+        });
+
         test("should skip a bitmask annotation with a malformed RLE payload", () => {
             const resume_config = {
                 ...mock_config,
@@ -267,6 +344,141 @@ describe("Annotation Processing", () => {
             expect(annotation.classification_payloads).toEqual([
                 { class_id: 1, confidence: 0.9 },
             ]);
+        });
+    });
+
+    describe("set_annotations bulk teardown", () => {
+        function build_bitmask_config() {
+            const mask = ULabelMask.create_empty(8, 6);
+            mask.paint_circle(4, 3, 2, 1);
+            return {
+                ...mock_config,
+                subtasks: {
+                    test_task: {
+                        ...mock_config.subtasks.test_task,
+                        allowed_modes: ["bbox", "polygon", "point", "bitmask"],
+                        resume_from: [
+                            {
+                                spatial_type: "bitmask",
+                                spatial_payload: mask.to_rle(),
+                                classification_payloads: [{ class_id: 1, confidence: 1.0 }],
+                            },
+                        ],
+                    },
+                },
+            };
+        }
+
+        test("_clear_subtask_annotation_canvases drops bitmask caches, DOM canvases, and contexts", () => {
+            const ulabel = new ULabel(build_bitmask_config());
+            const anno_id = ulabel.subtasks.test_task.annotations.ordering[0];
+            const annotation = ulabel.subtasks.test_task.annotations.access[anno_id];
+
+            // Populate _mask cache and plant fake canvas DOM + contexts as init would.
+            ulabel.get_bitmask(annotation);
+            expect(annotation._mask).toBeDefined();
+
+            const canvasses = document.createElement("div");
+            canvasses.id = "canvasses__test_task";
+            document.body.appendChild(canvasses);
+            const fake_canvas = document.createElement("canvas");
+            fake_canvas.id = "canvas__fake";
+            canvasses.appendChild(fake_canvas);
+            ulabel.subtasks.test_task.state.annotation_contexts = {
+                canvas__fake: { annotation_ids: [anno_id], context: {} },
+            };
+
+            ulabel._clear_subtask_annotation_canvases("test_task");
+
+            // Bitmask caches released so the Uint8Array + tinted stencil become collectible.
+            expect(annotation._mask).toBeUndefined();
+            expect(annotation._mask_render).toBeUndefined();
+            expect(annotation._bitmask_box_hint).toBeUndefined();
+            // Canvas DOM subtree wiped.
+            expect(canvasses.children.length).toBe(0);
+            // Annotation-context bookkeeping reset.
+            expect(ulabel.subtasks.test_task.state.annotation_contexts).toEqual({});
+        });
+
+        test("reset_interaction_state scoped to a subtask preserves other subtasks", () => {
+            const two_subtask_config = {
+                ...mock_config,
+                subtasks: {
+                    subtask_a: {
+                        display_name: "A",
+                        classes: [{ name: "X", id: 1, color: "red" }],
+                        allowed_modes: ["bbox", "point"],
+                        resume_from: null,
+                    },
+                    subtask_b: {
+                        display_name: "B",
+                        classes: [{ name: "Y", id: 2, color: "blue" }],
+                        allowed_modes: ["bbox", "point"],
+                        resume_from: null,
+                    },
+                },
+            };
+            const ulabel = new ULabel(two_subtask_config);
+            ulabel.subtasks.subtask_a.state.is_in_edit = true;
+            ulabel.subtasks.subtask_a.state.is_in_move = true;
+            ulabel.subtasks.subtask_a.state.active_id = "a_id";
+            ulabel.subtasks.subtask_b.state.is_in_edit = true;
+            ulabel.subtasks.subtask_b.state.is_in_move = true;
+            ulabel.subtasks.subtask_b.state.active_id = "b_id";
+
+            ulabel.reset_interaction_state("subtask_a");
+
+            expect(ulabel.subtasks.subtask_a.state.is_in_edit).toBe(false);
+            expect(ulabel.subtasks.subtask_a.state.is_in_move).toBe(false);
+            expect(ulabel.subtasks.subtask_a.state.active_id).toBeNull();
+            // subtask_b is untouched.
+            expect(ulabel.subtasks.subtask_b.state.is_in_edit).toBe(true);
+            expect(ulabel.subtasks.subtask_b.state.is_in_move).toBe(true);
+            expect(ulabel.subtasks.subtask_b.state.active_id).toBe("b_id");
+        });
+
+        test("reset_interaction_state on a background subtask preserves drag_state", () => {
+            const two_subtask_config = {
+                ...mock_config,
+                subtasks: {
+                    subtask_a: {
+                        display_name: "A",
+                        classes: [{ name: "X", id: 1, color: "red" }],
+                        allowed_modes: ["bbox", "point"],
+                        resume_from: null,
+                    },
+                    subtask_b: {
+                        display_name: "B",
+                        classes: [{ name: "Y", id: 2, color: "blue" }],
+                        allowed_modes: ["bbox", "point"],
+                        resume_from: null,
+                    },
+                },
+            };
+            const ulabel = new ULabel(two_subtask_config);
+            // Simulate an in-progress drag on the current subtask (subtask_a).
+            ulabel.state.current_subtask = "subtask_a";
+            ulabel.drag_state.active_key = "move";
+            ulabel.drag_state.move.mouse_start = [100, 200];
+            ulabel.drag_state.move.zoom_val_start = 1;
+
+            ulabel.reset_interaction_state("subtask_b");
+
+            // Background reset must NOT clobber the current subtask's drag_state.
+            expect(ulabel.drag_state.active_key).toBe("move");
+            expect(ulabel.drag_state.move.mouse_start).toEqual([100, 200]);
+        });
+
+        test("reset_interaction_state on the current subtask does clear drag_state", () => {
+            const ulabel = new ULabel(mock_config);
+            ulabel.state.current_subtask = "test_task";
+            ulabel.drag_state.active_key = "move";
+            ulabel.drag_state.move.mouse_start = [100, 200];
+
+            ulabel.reset_interaction_state("test_task");
+
+            expect(ulabel.drag_state.active_key).toBeNull();
+            expect(ulabel.drag_state.move.mouse_start).toBeNull();
         });
     });
 });
