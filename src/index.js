@@ -7174,19 +7174,15 @@ export class ULabel {
         }
 
         try {
-            // Undo/redo won't work through a get/set
-            this.reset_interaction_state();
+            // Undo/redo won't work through a get/set. Scope the reset to the target subtask
+            // so unrelated subtasks keep their interaction state.
+            this.reset_interaction_state(subtask);
             this.subtasks[subtask]["actions"]["stream"] = [];
             this.subtasks[subtask]["actions"]["undone_stack"] = [];
 
-            // Remove canvases for spatial annotations
-            for (let i = 0; i < this.subtasks[subtask]["annotations"]["ordering"].length; i++) {
-                // If a spatial annotation, delete the canvas
-                let id = this.subtasks[subtask]["annotations"]["ordering"][i];
-                if (!NONSPATIAL_MODES.includes(this.subtasks[subtask]["annotations"]["access"][id]["spatial_type"])) {
-                    this.destroy_annotation_context(id, subtask);
-                }
-            }
+            // Bulk teardown of outgoing annotations: much cheaper than a per-annotation loop.
+            this._clear_subtask_annotation_canvases(subtask);
+
             // Set new annotations and initialize canvases
             ULabel.process_resume_from(this, subtask, { resume_from: new_annotations });
             initialize_annotation_canvases(this, subtask);
@@ -7199,6 +7195,26 @@ export class ULabel {
         } finally {
             ULabelLoader.remove_loader_div();
         }
+    }
+
+    /**
+     * Bulk-teardown of a subtask's spatial annotation canvases + bitmask caches.
+     * Faster than looping destroy_annotation_context() per annotation, which would
+     * redraw the remaining siblings on every removal — wasted work when the caller
+     * is about to replace everything and redraw once.
+     */
+    _clear_subtask_annotation_canvases(subtask) {
+        const access = this.subtasks[subtask]["annotations"]["access"];
+        for (const id of this.subtasks[subtask]["annotations"]["ordering"]) {
+            const anno = access[id];
+            if (anno?.spatial_type === "bitmask") {
+                delete anno["_mask"];
+                delete anno["_mask_render"];
+                delete anno["_bitmask_box_hint"];
+            }
+        }
+        $("#canvasses__" + subtask).empty();
+        this.subtasks[subtask]["state"]["annotation_contexts"] = {};
     }
 
     // Change frame

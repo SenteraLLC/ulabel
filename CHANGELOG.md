@@ -4,6 +4,8 @@ All notable changes to this project will be documented here.
 
 ## [unreleased]
 
+# [0.26.1] - Aug 13th, 2026
+
 ## [0.26.0] - Aug 11th, 2026
 - **Memory leak fix on teardown.** Bitmask annotations attach a decoded pixel `Uint8Array` (`_mask`) and a tinted stencil canvas (`_mask_render`) to each annotation object. These persisted after `remove_listeners()`, and consumers that rebuild ULabel per navigation could accumulate multi-GB retained heap. Changes:
   - New `destroy()` method on `ULabel`. Idempotent; releases per-annotation bitmask caches, empties action/undo streams, breaks toolbox back-references, clears the resize-observer array, and wipes the container DOM. Callers should prefer `destroy()` over `remove_listeners()` going forward.

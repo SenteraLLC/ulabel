@@ -346,4 +346,95 @@ describe("Annotation Processing", () => {
             ]);
         });
     });
+
+    describe("set_annotations bulk teardown", () => {
+        function build_bitmask_config() {
+            const mask = ULabelMask.create_empty(8, 6);
+            mask.paint_circle(4, 3, 2, 1);
+            return {
+                ...mock_config,
+                subtasks: {
+                    test_task: {
+                        ...mock_config.subtasks.test_task,
+                        allowed_modes: ["bbox", "polygon", "point", "bitmask"],
+                        resume_from: [
+                            {
+                                spatial_type: "bitmask",
+                                spatial_payload: mask.to_rle(),
+                                classification_payloads: [{ class_id: 1, confidence: 1.0 }],
+                            },
+                        ],
+                    },
+                },
+            };
+        }
+
+        test("_clear_subtask_annotation_canvases drops bitmask caches, DOM canvases, and contexts", () => {
+            const ulabel = new ULabel(build_bitmask_config());
+            const anno_id = ulabel.subtasks.test_task.annotations.ordering[0];
+            const annotation = ulabel.subtasks.test_task.annotations.access[anno_id];
+
+            // Populate _mask cache and plant fake canvas DOM + contexts as init would.
+            ulabel.get_bitmask(annotation);
+            expect(annotation._mask).toBeDefined();
+
+            const canvasses = document.createElement("div");
+            canvasses.id = "canvasses__test_task";
+            document.body.appendChild(canvasses);
+            const fake_canvas = document.createElement("canvas");
+            fake_canvas.id = "canvas__fake";
+            canvasses.appendChild(fake_canvas);
+            ulabel.subtasks.test_task.state.annotation_contexts = {
+                canvas__fake: { annotation_ids: [anno_id], context: {} },
+            };
+
+            ulabel._clear_subtask_annotation_canvases("test_task");
+
+            // Bitmask caches released so the Uint8Array + tinted stencil become collectible.
+            expect(annotation._mask).toBeUndefined();
+            expect(annotation._mask_render).toBeUndefined();
+            expect(annotation._bitmask_box_hint).toBeUndefined();
+            // Canvas DOM subtree wiped.
+            expect(canvasses.children.length).toBe(0);
+            // Annotation-context bookkeeping reset.
+            expect(ulabel.subtasks.test_task.state.annotation_contexts).toEqual({});
+        });
+
+        test("reset_interaction_state scoped to a subtask preserves other subtasks", () => {
+            const two_subtask_config = {
+                ...mock_config,
+                subtasks: {
+                    subtask_a: {
+                        display_name: "A",
+                        classes: [{ name: "X", id: 1, color: "red" }],
+                        allowed_modes: ["bbox", "point"],
+                        resume_from: null,
+                    },
+                    subtask_b: {
+                        display_name: "B",
+                        classes: [{ name: "Y", id: 2, color: "blue" }],
+                        allowed_modes: ["bbox", "point"],
+                        resume_from: null,
+                    },
+                },
+            };
+            const ulabel = new ULabel(two_subtask_config);
+            ulabel.subtasks.subtask_a.state.is_in_edit = true;
+            ulabel.subtasks.subtask_a.state.is_in_move = true;
+            ulabel.subtasks.subtask_a.state.active_id = "a_id";
+            ulabel.subtasks.subtask_b.state.is_in_edit = true;
+            ulabel.subtasks.subtask_b.state.is_in_move = true;
+            ulabel.subtasks.subtask_b.state.active_id = "b_id";
+
+            ulabel.reset_interaction_state("subtask_a");
+
+            expect(ulabel.subtasks.subtask_a.state.is_in_edit).toBe(false);
+            expect(ulabel.subtasks.subtask_a.state.is_in_move).toBe(false);
+            expect(ulabel.subtasks.subtask_a.state.active_id).toBeNull();
+            // subtask_b is untouched.
+            expect(ulabel.subtasks.subtask_b.state.is_in_edit).toBe(true);
+            expect(ulabel.subtasks.subtask_b.state.is_in_move).toBe(true);
+            expect(ulabel.subtasks.subtask_b.state.active_id).toBe("b_id");
+        });
+    });
 });
