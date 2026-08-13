@@ -60,9 +60,44 @@ async function get_annbox_rect(page) {
     });
 }
 
+/**
+ * Pre-zooms the image large enough that it overflows the annbox in BOTH axes,
+ * so subsequent `rezoom` calls are not silently clamped by the browser refusing
+ * to set a negative scroll position. Without this, `annbox.scrollTop` sticks at
+ * 0 whenever the image is shorter than the annbox and the focal-point invariant
+ * cannot hold in that axis (the fix is correct; the invariant just isn't testable
+ * when the axis has whitespace).
+ * @param {import('@playwright/test').Page} page
+ */
+async function pre_zoom_until_overflows(page) {
+    const annbox_rect = await get_annbox_rect(page);
+    const cx = annbox_rect.left + annbox_rect.width / 2;
+    const cy = annbox_rect.top + annbox_rect.height / 2;
+    await page.mouse.move(cx, cy);
+    // A few strong wheel-ins is enough on the demo image; 5 * -300 ≈ 2.5x zoom
+    for (let i = 0; i < 5; i++) {
+        await page.mouse.wheel(0, -300);
+    }
+    await page.waitForTimeout(50);
+    // Sanity: confirm we actually overflow. If not, keep zooming until we do.
+    for (let attempts = 0; attempts < 10; attempts++) {
+        const overflows = await page.evaluate(() => {
+            const ul = window.ulabel;
+            const annbox = document.getElementById(ul.config.annbox_id);
+            const imwrap = document.getElementById(ul.config.imwrap_id);
+            return imwrap.clientWidth > annbox.clientWidth &&
+                imwrap.clientHeight > annbox.clientHeight;
+        });
+        if (overflows) return;
+        await page.mouse.wheel(0, -300);
+        await page.waitForTimeout(30);
+    }
+}
+
 test.describe("Wheel-zoom focal point (offset container)", () => {
     test("wheel zoom keeps the pixel under the cursor anchored", async ({ page }) => {
         await wait_for_ulabel_init(page, "/offset-container.html");
+        await pre_zoom_until_overflows(page);
 
         const annbox_rect = await get_annbox_rect(page);
         // Pick a focal point comfortably inside the annbox but off-center so the
@@ -93,16 +128,9 @@ test.describe("Wheel-zoom focal point (offset container)", () => {
 
     test("wheel zoom out keeps the pixel under the cursor anchored", async ({ page }) => {
         await wait_for_ulabel_init(page, "/offset-container.html");
+        await pre_zoom_until_overflows(page);
 
-        // Zoom in a bit first so there is room to zoom out meaningfully
         const annbox_rect = await get_annbox_rect(page);
-        await page.mouse.move(
-            annbox_rect.left + annbox_rect.width * 0.5,
-            annbox_rect.top + annbox_rect.height * 0.5,
-        );
-        await page.mouse.wheel(0, -300);
-        await page.waitForTimeout(50);
-
         const focal = {
             x: annbox_rect.left + annbox_rect.width * 0.7,
             y: annbox_rect.top + annbox_rect.height * 0.3,
@@ -125,6 +153,7 @@ test.describe("Wheel-zoom focal point (offset container)", () => {
 
     test("shift+drag zoom keeps the mousedown pixel anchored", async ({ page }) => {
         await wait_for_ulabel_init(page, "/offset-container.html");
+        await pre_zoom_until_overflows(page);
 
         const annbox_rect = await get_annbox_rect(page);
         const start = {
@@ -177,6 +206,47 @@ test.describe("Wheel-zoom focal point (non-offset container regression)", () => 
         const after = await get_imwrap_state(page);
         expect(after.zoom_val).toBeGreaterThan(before.zoom_val);
 
+        const new_viewport = image_to_viewport(image_point.x, image_point.y, after);
+        expect(Math.abs(new_viewport.x - focal.x)).toBeLessThanOrEqual(2);
+        expect(Math.abs(new_viewport.y - focal.y)).toBeLessThanOrEqual(2);
+    });
+});
+
+test.describe("Wheel-zoom focal point (scaled ancestor)", () => {
+    test("wheel zoom anchors correctly under a CSS-scaled ancestor", async ({ page }) => {
+        // The offset demo already has an ancestor wrapper (#offset-wrapper) we can
+        // scale from the origin. Use scale(0.5) so the annbox's rendered size is
+        // half of its layout size; this exercises the scale-aware conversion in
+        // `viewport_to_annbox_local`.
+        await wait_for_ulabel_init(page, "/offset-container.html");
+        await page.evaluate(() => {
+            const wrap = document.getElementById("offset-wrapper");
+            wrap.style.transformOrigin = "0 0";
+            wrap.style.transform = "scale(0.5)";
+        });
+        // Give the layout a frame to settle after transform
+        await page.waitForTimeout(50);
+        await pre_zoom_until_overflows(page);
+
+        const annbox_rect = await get_annbox_rect(page);
+        const focal = {
+            x: annbox_rect.left + annbox_rect.width * 0.35,
+            y: annbox_rect.top + annbox_rect.height * 0.6,
+        };
+
+        const before = await get_imwrap_state(page);
+        const image_point = viewport_to_image(focal.x, focal.y, before);
+
+        await page.mouse.move(focal.x, focal.y);
+        await page.mouse.wheel(0, -100);
+        await page.waitForTimeout(50);
+
+        const after = await get_imwrap_state(page);
+        expect(after.zoom_val).toBeGreaterThan(before.zoom_val);
+
+        // Under scale(0.5) the annbox is half its layout size on screen, so a
+        // 1-layout-pixel drift is 0.5 rendered pixels. Keep tolerance loose in
+        // case cross-browser rounding differs.
         const new_viewport = image_to_viewport(image_point.x, image_point.y, after);
         expect(Math.abs(new_viewport.x - focal.x)).toBeLessThanOrEqual(2);
         expect(Math.abs(new_viewport.y - focal.y)).toBeLessThanOrEqual(2);

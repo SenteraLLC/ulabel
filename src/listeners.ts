@@ -483,6 +483,23 @@ export function create_ulabel_listeners(
     // Store a reference
     ulabel.resize_observers.push(tb_overflow_resize_observer);
 
+    // Re-clamp zoom to `min_zoom_fit_ratio` when the annbox resizes. `set_zoom_val`
+    // computes the floor from live viewport dimensions, so we just reapply the
+    // current value; if it lands above the new floor nothing changes.
+    const min_zoom_resize_observer = new ResizeObserver(() => {
+        if (!ulabel.is_init) return;
+        if (!(ulabel.config["min_zoom_fit_ratio"] > 0)) return;
+        const current = ulabel.state["zoom_val"];
+        ulabel.set_zoom_val(current);
+        if (ulabel.state["zoom_val"] !== current) {
+            ulabel.rezoom();
+        }
+    });
+    min_zoom_resize_observer.observe(
+        document.getElementById(ulabel.config["annbox_id"])!,
+    );
+    ulabel.resize_observers.push(min_zoom_resize_observer);
+
     // create_soft_id_toolbox_button_listener(ulabel);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- jQuery overloads don't support namespaced event strings
     ($(document) as any).on(
