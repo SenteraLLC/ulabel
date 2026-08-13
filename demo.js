@@ -14,4 +14,5 @@ console.log(`http://localhost:${port}/box-roi.html`);
 console.log(`http://localhost:${port}/resume-from.html`);
 console.log(`http://localhost:${port}/row-filtering-example.html`);
 console.log(`http://localhost:${port}/bitmask-example.html`);
+console.log(`http://localhost:${port}/set-annotations.html`);
 console.log(`http://localhost:${port}/live_demo.html`);
