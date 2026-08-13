@@ -7097,6 +7097,12 @@ export class ULabel {
             this.subtasks[q[i]]["state"]["active_id"] = null;
             this.subtasks[q[i]]["state"]["fly_to_idx"] = null;
         }
+        // drag_state is instance-wide, not per-subtask. Only clobber it when resetting the
+        // current subtask (or all subtasks) — otherwise an in-progress drag on the current
+        // subtask loses its mouse_start and the next continue_move throws on null[0].
+        if (subtask !== null && subtask !== this.state["current_subtask"]) {
+            return;
+        }
         this.drag_state = {
             active_key: null,
             release_button: null,
@@ -7185,6 +7191,14 @@ export class ULabel {
 
             // Set new annotations and initialize canvases
             ULabel.process_resume_from(this, subtask, { resume_from: new_annotations });
+
+            // Yield the event loop so the loader's reveal timer can fire if the load above
+            // (or everything before it) took long enough to cross the reveal threshold.
+            // Without this yield the remaining sync work would block the timer entirely and
+            // long swaps would show no loader at all.
+            await new Promise((resolve) => setTimeout(resolve, 0));
+            if (this.is_destroyed) return;
+
             initialize_annotation_canvases(this, subtask);
             // Redraw all annotations to render them
             this.redraw_all_annotations(subtask);

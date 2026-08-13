@@ -154,6 +154,26 @@ describe("ULabelMask", () => {
             const restored = ULabelMask.from_rle(exported.spatial_payload);
             expect(Array.from(restored.data)).toEqual(Array.from(mask.data));
         });
+
+        test("encodes any non-zero byte as foreground (raw payloads with 2, 255, etc.)", () => {
+            // Raw imports may carry values beyond {0, 1}. Every non-zero byte must encode as fg.
+            // Layout (2x3): [1, 2, 0, 255, 3, 0]
+            //   Column-major traversal (x then y within column):
+            //     x=0: (0,0)=1, (0,1)=255  -> two foreground pixels
+            //     x=1: (1,0)=2, (1,1)=3    -> two foreground pixels
+            //     x=2: (2,0)=0, (2,1)=0    -> two background pixels
+            //   Expected runs (starting with bg): [0, 4, 2]
+            const data = new Uint8Array([1, 2, 0, 255, 3, 0]);
+            const mask = ULabelMask.from_raw({ data, size: [2, 3] }, true, false);
+            const rle = mask.to_rle();
+            expect(rle.size).toEqual([2, 3]);
+            expect(rle.counts).toEqual([0, 4, 2]);
+            // Decoding the RLE must produce the same foreground pattern.
+            const restored = ULabelMask.from_rle(rle);
+            const fg_pattern = Array.from(restored.data).map((b) => (b !== 0 ? 1 : 0));
+            const original_fg = Array.from(data).map((b) => (b !== 0 ? 1 : 0));
+            expect(fg_pattern).toEqual(original_fg);
+        });
     });
 
     describe("boolean operations", () => {

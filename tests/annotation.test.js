@@ -436,5 +436,49 @@ describe("Annotation Processing", () => {
             expect(ulabel.subtasks.subtask_b.state.is_in_move).toBe(true);
             expect(ulabel.subtasks.subtask_b.state.active_id).toBe("b_id");
         });
+
+        test("reset_interaction_state on a background subtask preserves drag_state", () => {
+            const two_subtask_config = {
+                ...mock_config,
+                subtasks: {
+                    subtask_a: {
+                        display_name: "A",
+                        classes: [{ name: "X", id: 1, color: "red" }],
+                        allowed_modes: ["bbox", "point"],
+                        resume_from: null,
+                    },
+                    subtask_b: {
+                        display_name: "B",
+                        classes: [{ name: "Y", id: 2, color: "blue" }],
+                        allowed_modes: ["bbox", "point"],
+                        resume_from: null,
+                    },
+                },
+            };
+            const ulabel = new ULabel(two_subtask_config);
+            // Simulate an in-progress drag on the current subtask (subtask_a).
+            ulabel.state.current_subtask = "subtask_a";
+            ulabel.drag_state.active_key = "move";
+            ulabel.drag_state.move.mouse_start = [100, 200];
+            ulabel.drag_state.move.zoom_val_start = 1;
+
+            ulabel.reset_interaction_state("subtask_b");
+
+            // Background reset must NOT clobber the current subtask's drag_state.
+            expect(ulabel.drag_state.active_key).toBe("move");
+            expect(ulabel.drag_state.move.mouse_start).toEqual([100, 200]);
+        });
+
+        test("reset_interaction_state on the current subtask does clear drag_state", () => {
+            const ulabel = new ULabel(mock_config);
+            ulabel.state.current_subtask = "test_task";
+            ulabel.drag_state.active_key = "move";
+            ulabel.drag_state.move.mouse_start = [100, 200];
+
+            ulabel.reset_interaction_state("test_task");
+
+            expect(ulabel.drag_state.active_key).toBeNull();
+            expect(ulabel.drag_state.move.mouse_start).toBeNull();
+        });
     });
 });

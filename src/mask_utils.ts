@@ -376,16 +376,19 @@ export class ULabelMask {
     // Encode to COCO-style, column-major run-length counts.
     public to_rle(): ULabelMaskPayload {
         const counts: number[] = [];
-        let current = 0; // runs always start with background
+        // Runs always start with background (0). Compare foreground-truthiness rather
+        // than literal byte equality so raw imported payloads with any non-{0,1} values
+        // (e.g. 0/255 masks, multi-valued upstream buffers) still encode correctly.
+        let current_is_fg = false;
         let run = 0;
         for (let x = 0; x < this.width; x++) {
             for (let y = 0; y < this.height; y++) {
-                const value = this.data[y * this.width + x];
-                if (value === current) {
+                const is_fg = this.data[y * this.width + x] !== 0;
+                if (is_fg === current_is_fg) {
                     run++;
                 } else {
                     counts.push(run);
-                    current = value;
+                    current_is_fg = is_fg;
                     run = 1;
                 }
             }
