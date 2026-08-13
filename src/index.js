@@ -6643,7 +6643,14 @@ export class ULabel {
 
             // Apply new zoom
             this.state["zoom_val"] *= (1 - dlta / 5);
-            this.rezoom(wheel_event.clientX, wheel_event.clientY);
+            // `rezoom` expects the focal point in annbox-local coords, but the wheel event
+            // reports viewport coords; convert so zoom stays anchored to the cursor when
+            // the ULabel container is offset from the viewport origin.
+            const annbox_rect = document.getElementById(this.config["annbox_id"]).getBoundingClientRect();
+            this.rezoom(
+                wheel_event.clientX - annbox_rect.left,
+                wheel_event.clientY - annbox_rect.top,
+            );
 
             // Only try to update the overlay if it exists
             this.filter_distance_overlay?.draw_overlay();
@@ -6782,7 +6789,12 @@ export class ULabel {
                 1.1, -(aY - this.drag_state["zoom"]["mouse_start"][1]) / 10,
             ),
         );
-        this.rezoom(this.drag_state["zoom"]["mouse_start"][0], this.drag_state["zoom"]["mouse_start"][1]);
+        // `mouse_start` is stored in viewport coords; `rezoom` expects annbox-local coords.
+        const annbox_rect = document.getElementById(this.config["annbox_id"]).getBoundingClientRect();
+        this.rezoom(
+            this.drag_state["zoom"]["mouse_start"][0] - annbox_rect.left,
+            this.drag_state["zoom"]["mouse_start"][1] - annbox_rect.top,
+        );
     }
 
     // Set the zoom value in state and render accordingly
