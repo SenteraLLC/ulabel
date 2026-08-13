@@ -118,15 +118,17 @@ test.describe("min_zoom_fit_ratio", () => {
     });
 
     test("floor re-applies when the annbox resizes", async ({ page }) => {
-        // Start large so the fit_zoom is small, then park zoom_val right at the
-        // floor. Shrinking the viewport increases fit_zoom; the resize observer
-        // should re-clamp zoom_val up to the new floor without a user gesture.
-        await page.setViewportSize({ width: 1400, height: 900 });
+        // Start small so fit_zoom is (relatively) large, then park zoom_val at
+        // the floor. Growing the viewport enlarges the annbox, which raises
+        // fit_zoom (larger annbox needs more zoom to still fit the image), so
+        // the floor rises. The resize observer must lift zoom_val up to match
+        // without a user gesture.
+        await page.setViewportSize({ width: 700, height: 500 });
         await wait_for_ulabel_init(page);
         await set_min_zoom_fit_ratio(page, 1.0);
 
         // Zoom out to hit the floor
-        await page.mouse.move(400, 400);
+        await page.mouse.move(300, 300);
         for (let i = 0; i < 30; i++) {
             await page.mouse.wheel(0, 100);
         }
@@ -135,9 +137,9 @@ test.describe("min_zoom_fit_ratio", () => {
         const before = await get_zoom_state(page);
         expect(before.zoom_val).toBeGreaterThanOrEqual(before.fit_zoom - 1e-6);
 
-        // Shrink the viewport — fit_zoom must grow, and the observer must lift
+        // Grow the viewport — fit_zoom must grow, and the observer must lift
         // zoom_val to match.
-        await page.setViewportSize({ width: 700, height: 500 });
+        await page.setViewportSize({ width: 1400, height: 900 });
         // ResizeObserver fires asynchronously; give it a couple of frames
         await page.waitForTimeout(150);
 
@@ -147,12 +149,12 @@ test.describe("min_zoom_fit_ratio", () => {
     });
 
     test("resize observer is inert when min_zoom_fit_ratio is 0", async ({ page }) => {
-        await page.setViewportSize({ width: 1400, height: 900 });
+        await page.setViewportSize({ width: 700, height: 500 });
         await wait_for_ulabel_init(page);
         // Deliberately leave min_zoom_fit_ratio at 0 (default)
 
         // Zoom out below where any future floor would kick in
-        await page.mouse.move(400, 400);
+        await page.mouse.move(300, 300);
         for (let i = 0; i < 30; i++) {
             await page.mouse.wheel(0, 100);
         }
@@ -161,8 +163,8 @@ test.describe("min_zoom_fit_ratio", () => {
         const before = await get_zoom_state(page);
         expect(before.zoom_val).toBeLessThan(before.fit_zoom);
 
-        // Shrink the viewport — with the floor disabled, zoom_val must stay put.
-        await page.setViewportSize({ width: 700, height: 500 });
+        // Grow the viewport — with the floor disabled, zoom_val must stay put.
+        await page.setViewportSize({ width: 1400, height: 900 });
         await page.waitForTimeout(150);
 
         const after = await get_zoom_state(page);

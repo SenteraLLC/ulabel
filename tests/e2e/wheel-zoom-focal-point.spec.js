@@ -61,43 +61,34 @@ async function get_annbox_rect(page) {
 }
 
 /**
- * Pre-zooms the image large enough that it overflows the annbox in BOTH axes,
- * so subsequent `rezoom` calls are not silently clamped by the browser refusing
- * to set a negative scroll position. Without this, `annbox.scrollTop` sticks at
- * 0 whenever the image is shorter than the annbox and the focal-point invariant
- * cannot hold in that axis (the fix is correct; the invariant just isn't testable
- * when the axis has whitespace).
+ * Deterministically sets zoom_val to `mul` times the "whole image just fits"
+ * zoom and centers the image, so the imwrap comfortably overflows the annbox
+ * in both axes. Subsequent `rezoom` calls end up with scroll positions far from
+ * the browser's `[0, max]` clamp boundaries, letting the focal-point anchoring
+ * invariant be tested without confounds from browser scroll clamping.
  * @param {import('@playwright/test').Page} page
+ * @param {number} mul
  */
-async function pre_zoom_until_overflows(page) {
-    const annbox_rect = await get_annbox_rect(page);
-    const cx = annbox_rect.left + annbox_rect.width / 2;
-    const cy = annbox_rect.top + annbox_rect.height / 2;
-    await page.mouse.move(cx, cy);
-    // A few strong wheel-ins is enough on the demo image; 5 * -300 ≈ 2.5x zoom
-    for (let i = 0; i < 5; i++) {
-        await page.mouse.wheel(0, -300);
-    }
+async function setup_deterministic_zoom(page, mul = 4) {
+    await page.evaluate((m) => {
+        const ul = window.ulabel;
+        const annbox = document.getElementById(ul.config.annbox_id);
+        const fit_zoom = Math.min(
+            annbox.clientHeight / ul.config.image_height,
+            annbox.clientWidth / ul.config.image_width,
+        );
+        ul.state.zoom_val = fit_zoom * m;
+        // Center on the image center so scroll lands near the middle of its
+        // valid range (imwrap - annbox) / 2 in each axis.
+        ul.rezoom(ul.config.image_width / 2, ul.config.image_height / 2, true);
+    }, mul);
     await page.waitForTimeout(50);
-    // Sanity: confirm we actually overflow. If not, keep zooming until we do.
-    for (let attempts = 0; attempts < 10; attempts++) {
-        const overflows = await page.evaluate(() => {
-            const ul = window.ulabel;
-            const annbox = document.getElementById(ul.config.annbox_id);
-            const imwrap = document.getElementById(ul.config.imwrap_id);
-            return imwrap.clientWidth > annbox.clientWidth &&
-                imwrap.clientHeight > annbox.clientHeight;
-        });
-        if (overflows) return;
-        await page.mouse.wheel(0, -300);
-        await page.waitForTimeout(30);
-    }
 }
 
 test.describe("Wheel-zoom focal point (offset container)", () => {
     test("wheel zoom keeps the pixel under the cursor anchored", async ({ page }) => {
         await wait_for_ulabel_init(page, "/offset-container.html");
-        await pre_zoom_until_overflows(page);
+        await setup_deterministic_zoom(page);
 
         const annbox_rect = await get_annbox_rect(page);
         // Pick a focal point comfortably inside the annbox but off-center so the
@@ -128,7 +119,7 @@ test.describe("Wheel-zoom focal point (offset container)", () => {
 
     test("wheel zoom out keeps the pixel under the cursor anchored", async ({ page }) => {
         await wait_for_ulabel_init(page, "/offset-container.html");
-        await pre_zoom_until_overflows(page);
+        await setup_deterministic_zoom(page);
 
         const annbox_rect = await get_annbox_rect(page);
         const focal = {
@@ -153,7 +144,7 @@ test.describe("Wheel-zoom focal point (offset container)", () => {
 
     test("shift+drag zoom keeps the mousedown pixel anchored", async ({ page }) => {
         await wait_for_ulabel_init(page, "/offset-container.html");
-        await pre_zoom_until_overflows(page);
+        await setup_deterministic_zoom(page);
 
         const annbox_rect = await get_annbox_rect(page);
         const start = {
@@ -178,8 +169,11 @@ test.describe("Wheel-zoom focal point (offset container)", () => {
         expect(after.zoom_val).toBeGreaterThan(before.zoom_val);
 
         const new_viewport = image_to_viewport(image_point.x, image_point.y, after);
-        expect(Math.abs(new_viewport.x - start.x)).toBeLessThanOrEqual(2);
-        expect(Math.abs(new_viewport.y - start.y)).toBeLessThanOrEqual(2);
+        // Slightly looser than the 2 px used for a single wheel step: drag_rezoom runs
+        // for each of the ~10 dispatched mousemove events, so small per-iteration
+        // rounding is expected to accumulate a few pixels.
+        expect(Math.abs(new_viewport.x - start.x)).toBeLessThanOrEqual(5);
+        expect(Math.abs(new_viewport.y - start.y)).toBeLessThanOrEqual(5);
     });
 });
 
@@ -226,7 +220,7 @@ test.describe("Wheel-zoom focal point (scaled ancestor)", () => {
         });
         // Give the layout a frame to settle after transform
         await page.waitForTimeout(50);
-        await pre_zoom_until_overflows(page);
+        await setup_deterministic_zoom(page);
 
         const annbox_rect = await get_annbox_rect(page);
         const focal = {
