@@ -5,6 +5,10 @@ All notable changes to this project will be documented here.
 ## [unreleased]
 
 # [0.26.1] - Aug 13th, 2026
+- **Bitmask annotations can now be imported as raw `Uint8Array` payloads.** In addition to the existing RLE `{ counts, size }` shape, `spatial_payload` may now be `{ data: Uint8Array, size: [height, width] }`. This lets callers that already have the mask as a pixel buffer skip the RLE encode step before handing it to ULabel.
+- **Loader no longer flashes on fast operations.** `ULabelLoader.add_loader_div()` now appends the overlay hidden and reveals it only after a delay (200 ms by default). Callers can pass an explicit `delay_ms` — including `0` to opt back into immediate-show.
+- **Performance: bulk teardown in `set_annotations()`.** The old per-annotation `destroy_annotation_context` loop redrew remaining siblings on each canvas after every removal. The new path drops caches on outgoing annotations, empties the subtask's canvasses container in one shot, and resets `annotation_contexts`. Eliminates wasted redraws.
+- **Correctness: `reset_interaction_state()` in `set_annotations()` is now scoped to the target subtask.** Previously the reset ran on every subtask, wiping `is_in_edit` / `active_id` on subtasks the caller wasn't touching.
 
 ## [0.26.0] - Aug 11th, 2026
 - **Memory leak fix on teardown.** Bitmask annotations attach a decoded pixel `Uint8Array` (`_mask`) and a tinted stencil canvas (`_mask_render`) to each annotation object. These persisted after `remove_listeners()`, and consumers that rebuild ULabel per navigation could accumulate multi-GB retained heap. Changes:
