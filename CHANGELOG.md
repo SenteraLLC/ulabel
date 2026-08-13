@@ -4,6 +4,10 @@ All notable changes to this project will be documented here.
 
 ## [unreleased]
 
+## [0.26.2] - Aug 13th, 2026
+- **Fix regression in `set_annotations()` where hover feedback and the brush stopped working after a swap.** The 0.26.1 bulk-teardown path called `$("#canvasses__<subtask>").empty()`, which removed not just the per-annotation canvases but also the subtask's front canvas and the `#dialogs__<subtask>` container (which owns the brush circle and polygon ender). `state.front_context` was left pointing at a detached canvas so hover highlights painted into nothing, and the brush had no parent to attach to. The teardown now removes only `> canvas.annotation_canvas` children, leaving the front/back canvases and dialogs container intact.
+- New demo: [`demo/set-annotations.html`](demo/set-annotations.html) with buttons that swap through empty / small / medium / large / RLE-bitmask / raw-Uint8Array-bitmask presets so this regression stays visible.
+
 ## [0.26.1] - Aug 13th, 2026
 - **Bitmask annotations can now be imported as raw `Uint8Array` payloads.** In addition to the existing RLE `{ counts, size }` shape, `spatial_payload` may now be `{ data: Uint8Array, size: [height, width] }`. This lets callers that already have the mask as a pixel buffer skip the RLE encode step before handing it to ULabel.
 - **Loader no longer flashes on fast operations.** `ULabelLoader.add_loader_div()` now appends the overlay hidden and reveals it only after a delay (200 ms by default). Callers can pass an explicit `delay_ms` — including `0` to opt back into immediate-show.
