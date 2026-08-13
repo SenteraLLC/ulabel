@@ -7227,7 +7227,10 @@ export class ULabel {
                 delete anno["_bitmask_box_hint"];
             }
         }
-        $("#canvasses__" + subtask).empty();
+        // Only remove per-annotation canvases. The subtask's front/back canvases and the
+        // #dialogs__<subtask> container (which owns the brush circle, polygon ender, and
+        // id dialogs) live in the same parent and MUST survive.
+        $("#canvasses__" + subtask + " > canvas.annotation_canvas").remove();
         this.subtasks[subtask]["state"]["annotation_contexts"] = {};
     }
 
