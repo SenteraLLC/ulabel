@@ -966,9 +966,9 @@ export class ZoomPanToolboxItem extends ToolboxItem {
 
         $(document).on("click.ulabel", ".ulabel-zoom-button", (event) => {
             if ($(event.currentTarget).hasClass("ulabel-zoom-out")) {
-                this.ulabel.state.zoom_val /= 1.1;
+                this.ulabel.set_zoom_val(this.ulabel.state.zoom_val / 1.1);
             } else if ($(event.currentTarget).hasClass("ulabel-zoom-in")) {
-                this.ulabel.state.zoom_val *= 1.1;
+                this.ulabel.set_zoom_val(this.ulabel.state.zoom_val * 1.1);
             }
 
             this.ulabel.rezoom();

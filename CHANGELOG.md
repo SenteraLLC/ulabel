@@ -4,6 +4,10 @@ All notable changes to this project will be documented here.
 
 ## [unreleased]
 
+## [0.26.3] - Aug 13th, 2026
+- **Fix wheel-zoom and drag-zoom focal point when the ULabel container is offset from the viewport origin.** `handle_wheel` and `drag_rezoom` used to pass raw `clientX`/`clientY` (viewport coords) straight into `rezoom`, which treats its focal-point arguments as annbox-local. When the container sat at viewport `(0, 0)` the two frames coincided and the bug was invisible; anywhere else (e.g. hosted inside a centered dialog, a padded panel, or below a header) zoom would snap by roughly the annbox's screen offset. Both call sites now convert to annbox-local via `getBoundingClientRect()` before calling `rezoom`, so zoom stays anchored to the cursor / mousedown point regardless of how the host embeds ULabel.
+- **New config option `min_zoom_fit_ratio`.** Sets a zoom-out floor as a multiplier of the "whole image just fits the viewport" zoom. `0` (default) preserves the existing behavior (no floor). `1.0` prevents users from zooming out past the fit-to-viewport level. `>1` forces the image to always overflow. Zoom-in is unaffected. The floor recomputes from live annbox dimensions, so it adapts to browser resize.
+
 ## [0.26.2] - Aug 13th, 2026
 - **Fix regression in `set_annotations()` where hover feedback and the brush stopped working after a swap.** The 0.26.1 bulk-teardown path called `$("#canvasses__<subtask>").empty()`, which removed not just the per-annotation canvases but also the subtask's front canvas and the `#dialogs__<subtask>` container (which owns the brush circle and polygon ender). `state.front_context` was left pointing at a detached canvas so hover highlights painted into nothing, and the brush had no parent to attach to. The teardown now removes only `> canvas.annotation_canvas` children, leaving the front/back canvases and dialogs container intact.
 - New demo: [`demo/set-annotations.html`](demo/set-annotations.html) with buttons that swap through empty / small / medium / large / RLE-bitmask / raw-Uint8Array-bitmask presets so this regression stays visible.

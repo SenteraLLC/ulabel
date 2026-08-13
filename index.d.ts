@@ -586,6 +586,7 @@ export class ULabel {
         foc_y?: number,
         abs?: boolean,
     ): void;
+    public set_zoom_val(zoom_val: number): void;
     public reposition_dialogs(): void;
     public handle_toolbox_overflow(): void;
 

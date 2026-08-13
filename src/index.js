@@ -6642,7 +6642,7 @@ export class ULabel {
             const dlta = Math.sign(wheel_event.deltaY);
 
             // Apply new zoom
-            this.state["zoom_val"] *= (1 - dlta / 5);
+            this.set_zoom_val(this.state["zoom_val"] * (1 - dlta / 5));
             // `rezoom` expects the focal point in annbox-local coords, but the wheel event
             // reports viewport coords; convert so zoom stays anchored to the cursor when
             // the ULabel container is offset from the viewport origin.
@@ -6799,8 +6799,20 @@ export class ULabel {
 
     // Set the zoom value in state and render accordingly
     set_zoom_val(zoom_val) {
-        // Prevent zoom val <= 0
-        this.state["zoom_val"] = Math.max(zoom_val, 0.01);
+        let floor = 0.01;
+        // When min_zoom_fit_ratio > 0, refuse to zoom out past a multiple of the
+        // "whole image just fits" zoom (ratio 1.0 == exactly the fit level).
+        const fit_ratio = this.config["min_zoom_fit_ratio"];
+        if (fit_ratio > 0) {
+            const fit_zoom = Math.min(
+                this.get_viewport_height_ratio(this.config["image_height"]),
+                this.get_viewport_width_ratio(this.config["image_width"]),
+            );
+            if (Number.isFinite(fit_zoom) && fit_zoom > 0) {
+                floor = Math.max(floor, fit_zoom * fit_ratio);
+            }
+        }
+        this.state["zoom_val"] = Math.max(zoom_val, floor);
     }
 
     // Handle zooming at a certain focus
