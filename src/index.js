@@ -6802,7 +6802,32 @@ export class ULabel {
             this.drag_state["zoom"]["mouse_start"][0],
             this.drag_state["zoom"]["mouse_start"][1],
         );
-        this.rezoom(foc.x, foc.y);
+
+        // Compute scroll from the drag-start baseline
+        const annbox = $("#" + this.config["annbox_id"]);
+
+        const new_width = Math.round(this.config["image_width"] * this.state["zoom_val"]);
+        const new_height = Math.round(this.config["image_height"] * this.state["zoom_val"]);
+
+        // Resize
+        var toresize = $("." + this.config["imgsz_class"]);
+        toresize.css("width", new_width + "px");
+        toresize.css("height", new_height + "px");
+        this.filter_distance_overlay?.resize_canvas(new_width, new_height);
+        this.resize_active_polygon_ender();
+
+        // Scroll from drag-start baseline
+        const start_width = this.config["image_width"] * this.drag_state["zoom"]["zoom_val_start"];
+        const start_height = this.config["image_height"] * this.drag_state["zoom"]["zoom_val_start"];
+        const old_left = this.drag_state["zoom"]["offset_start"][0];
+        const old_top = this.drag_state["zoom"]["offset_start"][1];
+        annbox.scrollLeft((old_left + foc.x) * new_width / start_width - foc.x);
+        annbox.scrollTop((old_top + foc.y) * new_height / start_height - foc.y);
+
+        this.redraw_demo();
+        if (this.state.anno_scaling_mode === "inverse-zoom" || this.state.anno_scaling_mode === "match-zoom") {
+            this.redraw_all_annotations();
+        }
     }
 
     // Set the zoom value in state and render accordingly
