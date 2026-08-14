@@ -270,6 +270,8 @@ export class Configuration {
 
     public fly_to_max_zoom: number = 10;
 
+    public min_zoom_fit_ratio: number = 0;
+
     public n_annos_per_canvas: number = DEFAULT_N_ANNOS_PER_CANVAS;
 
     public click_and_drag_poly_annotations: boolean = true;

@@ -6642,12 +6642,28 @@ export class ULabel {
             const dlta = Math.sign(wheel_event.deltaY);
 
             // Apply new zoom
-            this.state["zoom_val"] *= (1 - dlta / 5);
-            this.rezoom(wheel_event.clientX, wheel_event.clientY);
+            this.set_zoom_val(this.state["zoom_val"] * (1 - dlta / 5));
+            const foc = this.viewport_to_annbox_local(wheel_event.clientX, wheel_event.clientY);
+            this.rezoom(foc.x, foc.y);
 
             // Only try to update the overlay if it exists
             this.filter_distance_overlay?.draw_overlay();
         }
+    }
+
+    // Convert a viewport-space point (e.g. `event.clientX`/`clientY`) into the annbox's
+    // unscaled layout coordinate system, which is what `rezoom` and `annbox.scrollLeft/Top`
+    // operate in. `getBoundingClientRect()` returns transformed dimensions, so we divide out
+    // any ancestor CSS scale by comparing rendered vs. layout size.
+    viewport_to_annbox_local(client_x, client_y) {
+        const annbox = document.getElementById(this.config["annbox_id"]);
+        const rect = annbox.getBoundingClientRect();
+        const scale_x = annbox.clientWidth > 0 ? rect.width / annbox.clientWidth : 1;
+        const scale_y = annbox.clientHeight > 0 ? rect.height / annbox.clientHeight : 1;
+        return {
+            x: (client_x - rect.left) / (scale_x || 1),
+            y: (client_y - rect.top) / (scale_y || 1),
+        };
     }
 
     // Start dragging to pan around image
@@ -6782,13 +6798,54 @@ export class ULabel {
                 1.1, -(aY - this.drag_state["zoom"]["mouse_start"][1]) / 10,
             ),
         );
-        this.rezoom(this.drag_state["zoom"]["mouse_start"][0], this.drag_state["zoom"]["mouse_start"][1]);
+        const foc = this.viewport_to_annbox_local(
+            this.drag_state["zoom"]["mouse_start"][0],
+            this.drag_state["zoom"]["mouse_start"][1],
+        );
+
+        // Compute scroll from the drag-start baseline
+        const annbox = $("#" + this.config["annbox_id"]);
+
+        const new_width = Math.round(this.config["image_width"] * this.state["zoom_val"]);
+        const new_height = Math.round(this.config["image_height"] * this.state["zoom_val"]);
+
+        // Resize
+        var toresize = $("." + this.config["imgsz_class"]);
+        toresize.css("width", new_width + "px");
+        toresize.css("height", new_height + "px");
+        this.filter_distance_overlay?.resize_canvas(new_width, new_height);
+        this.resize_active_polygon_ender();
+
+        // Scroll from drag-start baseline
+        const start_width = this.config["image_width"] * this.drag_state["zoom"]["zoom_val_start"];
+        const start_height = this.config["image_height"] * this.drag_state["zoom"]["zoom_val_start"];
+        const old_left = this.drag_state["zoom"]["offset_start"][0];
+        const old_top = this.drag_state["zoom"]["offset_start"][1];
+        annbox.scrollLeft((old_left + foc.x) * new_width / start_width - foc.x);
+        annbox.scrollTop((old_top + foc.y) * new_height / start_height - foc.y);
+
+        this.redraw_demo();
+        if (this.state.anno_scaling_mode === "inverse-zoom" || this.state.anno_scaling_mode === "match-zoom") {
+            this.redraw_all_annotations();
+        }
     }
 
     // Set the zoom value in state and render accordingly
     set_zoom_val(zoom_val) {
-        // Prevent zoom val <= 0
-        this.state["zoom_val"] = Math.max(zoom_val, 0.01);
+        let floor = 0.01;
+        // When min_zoom_fit_ratio > 0, refuse to zoom out past a multiple of the
+        // "whole image just fits" zoom (ratio 1.0 == exactly the fit level).
+        const fit_ratio = this.config["min_zoom_fit_ratio"];
+        if (fit_ratio > 0) {
+            const fit_zoom = Math.min(
+                this.get_viewport_height_ratio(this.config["image_height"]),
+                this.get_viewport_width_ratio(this.config["image_width"]),
+            );
+            if (Number.isFinite(fit_zoom) && fit_zoom > 0) {
+                floor = Math.max(floor, fit_zoom * fit_ratio);
+            }
+        }
+        this.state["zoom_val"] = Math.max(zoom_val, floor);
     }
 
     // Handle zooming at a certain focus

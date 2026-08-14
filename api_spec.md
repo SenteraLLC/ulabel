@@ -81,6 +81,7 @@ class ULabel({
     annotation_size_minus_keybind: string,
     annotation_vanish_keybind: string,
     fly_to_max_zoom: number,
+    min_zoom_fit_ratio: number,
     n_annos_per_canvas: number,
     auto_destroy_on_detach: boolean
 })
@@ -623,6 +624,9 @@ Keybind to toggle vanish mode for all subtasks. Default is `shift+v`
 
 ### `fly_to_max_zoom`
 Maximum zoom factor used when flying-to an annotation. Default is `10`, value must be > `0`. 
+
+### `min_zoom_fit_ratio`
+Zoom-out floor, expressed as a multiplier of the "whole image just fits the viewport" zoom (the same level reached by the `shift+r` keybind / the toolbox "show whole image" button). Default is `0`, which disables the floor. `1.0` prevents users from zooming out past the fit-to-viewport level. Values `> 1` force the image to always overflow the viewport by that factor. Zoom-in is unaffected. The floor recomputes from live annbox dimensions on every zoom, so it adapts to browser resize.
 
 ### `n_annos_per_canvas`
 The number of annotations to render on a single canvas. Default is `100`. Increasing this number may improve performance for jobs with a large number of annotations.
