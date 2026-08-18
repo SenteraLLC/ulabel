@@ -193,6 +193,36 @@ test.describe("Read-only subtask behavior", () => {
         expect(after_class).toEqual(before_class);
     });
 
+    test("clicking a class button does not reassign a hovered annotation's class", async ({ page }) => {
+        await wait_for_ulabel_init(page, "/read-only.html");
+
+        // Prime hover state so the class-button click handler would target this annotation
+        await page.evaluate(() => {
+            const u = window.ulabel;
+            u.get_current_subtask().state.edit_candidate = {
+                annid: "ro-bbox-1",
+                spatial_type: "bbox",
+            };
+            u.get_current_subtask().state.move_candidate = { annid: "ro-bbox-1" };
+        });
+
+        const before = await page.evaluate(() => {
+            const anno = window.ulabel.subtasks.car_detection.annotations.access["ro-bbox-1"];
+            return anno.classification_payloads.map((p) => ({ class_id: p.class_id, confidence: p.confidence }));
+        });
+
+        // Click a different class button in the toolbox (SUV, index 1)
+        const subtask_key = await page.evaluate(() => window.ulabel.get_current_subtask_key());
+        await page.locator(`#tb-id-app--${subtask_key} a.tbid-opt`).nth(1).click();
+        await page.waitForTimeout(100);
+
+        const after = await page.evaluate(() => {
+            const anno = window.ulabel.subtasks.car_detection.annotations.access["ro-bbox-1"];
+            return anno.classification_payloads.map((p) => ({ class_id: p.class_id, confidence: p.confidence }));
+        });
+        expect(after).toEqual(before);
+    });
+
     test("nonspatial annotation row has no reclassify or delete buttons and a readonly note", async ({ page }) => {
         await wait_for_ulabel_init(page, "/read-only.html");
 

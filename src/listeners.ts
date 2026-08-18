@@ -229,8 +229,8 @@ function handle_soft_id_toolbox_button_click(
         ulabel.update_id_dialog_display();
 
         // Update the class of the active annotation,
-        // except when toggling on the delete class
-        if (rawid !== DELETE_CLASS_ID) {
+        // except when toggling on the delete class or in a read-only subtask
+        if (rawid !== DELETE_CLASS_ID && !ulabel.is_current_subtask_read_only()) {
             // Get the active annotation, if any
             let target_id = null;
             if (current_subtask.state.active_id !== null) {
