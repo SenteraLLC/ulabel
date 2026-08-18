@@ -3519,6 +3519,11 @@ export class ULabel {
             let new_top = (cbox["tly"] + cbox["bry"] + 2 * diffY) / (2 * this.config["image_height"]);
             current_subtask["state"]["visible_dialogs"][esid]["left"] = new_lft;
             current_subtask["state"]["visible_dialogs"][esid]["top"] = new_top;
+            // Decide confidence card position from the un-offset cbox so it stays stable during moves
+            const cbox_center_y_screen = ((cbox["tly"] + cbox["bry"]) / 2) * this.state["zoom_val"];
+            const conf_id = `global_annotation_confidence__${subtask_key}`;
+            const flip_below = cbox_center_y_screen < 100;
+            $(`#${conf_id}`).css("margin-top", flip_below ? "-1em" : "-9.5em");
             this.reposition_dialogs();
             idd_x = (cbox["tlx"] + cbox["brx"] + 2 * diffX) / 2;
             idd_y = (cbox["tly"] + cbox["bry"] + 2 * diffY) / 2;

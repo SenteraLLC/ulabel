@@ -559,7 +559,9 @@ export function build_confidence_dialog(ulabel: ULabel) {
             "margin-top": "-9.5em",
             "border-radius": "0.5em",
             "font-size": "1.1em",
-            "margin-left": "-1.4em",
+            "position": "relative",
+            "left": "50%",
+            "transform": "translateX(-50%)",
             "pointer-events": "none",
         });
     }
