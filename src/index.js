@@ -110,8 +110,11 @@ export class ULabel {
                     if (mouse_event.ctrlKey || mouse_event.metaKey) {
                         return "pan";
                     }
-                    if (mouse_event.shiftKey) {
+                    if (mouse_event.shiftKey && !ul.get_current_subtask()["state"]["starting_complex_polygon"]) {
                         return "zoom";
+                    }
+                    if (ul.is_current_subtask_read_only()) {
+                        return null;
                     }
                     return "annotation";
                 } else if ($(mouse_event.target).hasClass("editable")) {
@@ -509,8 +512,6 @@ export class ULabel {
     }
 
     static initialize_subtasks(ul) {
-        let first_non_ro = null;
-
         // Initialize a place on the ulabel object to hold annotation color information
         ul.color_info = {};
 
@@ -522,10 +523,6 @@ export class ULabel {
             // For convenience, make a raw subtask var
             let raw_subtask = ul.config.subtasks[subtask_key];
             ul.subtasks[subtask_key] = ULabelSubtask.from_json(subtask_key, raw_subtask);
-
-            if (first_non_ro === null && !ul.subtasks[subtask_key]["read_only"]) {
-                first_non_ro = subtask_key;
-            }
 
             // Process allowed_modes
             // They are placed in ul.subtasks[subtask_key]["allowed_modes"]
@@ -567,6 +564,7 @@ export class ULabel {
                 is_vanished: false,
                 edit_candidate: null,
                 move_candidate: null,
+                hovered_annid: null,
                 fly_to_idx: null,
                 line_size: ul.config.initial_line_size,
 
@@ -582,12 +580,6 @@ export class ULabel {
             // Process imported annoations
             // They are placed in ul.subtasks[subtask_key]["annotations"]
             ULabel.process_resume_from(ul, subtask_key, raw_subtask);
-        }
-        if (first_non_ro === null) {
-            log_message(
-                "You must have at least one subtask without 'read_only' set to true.",
-                LogLevel.ERROR,
-            );
         }
     }
 
@@ -1043,6 +1035,14 @@ export class ULabel {
         return this.subtasks[this.get_current_subtask_key()];
     }
 
+    /**
+     * Whether the current subtask is marked read-only (no user mutations allowed).
+     * Programmatic mutations via public API (e.g., set_annotations) are still permitted.
+     */
+    is_current_subtask_read_only() {
+        return this.get_current_subtask()["read_only"] === true;
+    }
+
     readjust_subtask_opacities() {
         for (const st_key in this.subtasks) {
             let sliderval = $("#tb-st-range--" + st_key).val();
@@ -1052,6 +1052,18 @@ export class ULabel {
 
     set_subtask(st_key) {
         let old_st = this.get_current_subtask_key();
+
+        // Clear stale hover on the outgoing subtask so its white outline doesn't linger
+        // (its canvases stay visible at reduced opacity in the background).
+        const old_subtask = this.subtasks[old_st];
+        const old_hovered = old_subtask["state"]["hovered_annid"];
+        if (old_hovered !== null) {
+            old_subtask["state"]["hovered_annid"] = null;
+            const prev_ann = old_subtask["annotations"]["access"][old_hovered];
+            if (prev_ann && prev_ann["canvas_id"]) {
+                this.redraw_all_annotations_in_annotation_context(prev_ann["canvas_id"], old_st);
+            }
+        }
 
         // Change object state
         this.state["current_subtask"] = st_key;
@@ -1759,6 +1771,7 @@ export class ULabel {
         ctx.lineTo((sp[0] + diffX) * px_per_px, (sp[1] + diffY) * px_per_px);
         ctx.closePath();
         ctx.stroke();
+        this.draw_hover_outline(annotation_object, ctx, line_size + 4);
     }
 
     draw_point(annotation_object, ctx, offset = null) {
@@ -1792,6 +1805,7 @@ export class ULabel {
         ctx.arc((sp[0] + diffX) * px_per_px, (sp[1] + diffY) * px_per_px, line_size * px_per_px * 3, 0, 2 * Math.PI);
         ctx.closePath();
         ctx.stroke();
+        this.draw_hover_outline(annotation_object, ctx, line_size + 2);
     }
 
     draw_bbox3(annotation_object, ctx, offset = null) {
@@ -1843,6 +1857,8 @@ export class ULabel {
             ctx.fill();
             ctx.globalAlpha = 1.0;
         }
+
+        this.draw_hover_outline(annotation_object, ctx, line_size + 4);
     }
 
     draw_polygon(annotation_object, ctx, offset = null) {
@@ -1905,6 +1921,27 @@ export class ULabel {
                 ctx.globalCompositeOperation = "source-over";
                 ctx.globalAlpha = 1.0;
             }
+        }
+
+        // Draw hover outline behind the annotation strokes
+        if (this.is_annotation_hovered(annotation_object)) {
+            ctx.globalCompositeOperation = "destination-over";
+            ctx.strokeStyle = "white";
+            ctx.lineWidth = (line_size + 4) * px_per_px;
+            for (let i = 0; i < n_iters; i++) {
+                if (spatial_type === "polygon" && annotation_object["spatial_payload_holes"][i]) continue;
+                let hover_payload = spatial_type === "polygon" ? spatial_payload[i] : active_spatial_payload;
+                const pts = hover_payload;
+                if (pts.length > 0) {
+                    ctx.beginPath();
+                    ctx.moveTo((pts[0][0] + diffX) * px_per_px, (pts[0][1] + diffY) * px_per_px);
+                    for (let pti = 1; pti < pts.length; pti++) {
+                        ctx.lineTo((pts[pti][0] + diffX) * px_per_px, (pts[pti][1] + diffY) * px_per_px);
+                    }
+                    ctx.stroke();
+                }
+            }
+            ctx.globalCompositeOperation = "source-over";
         }
 
         if (
@@ -2093,6 +2130,29 @@ export class ULabel {
             render.box_height * px_per_px,
         );
         ctx.globalAlpha = 1.0;
+
+        if (this.is_annotation_hovered(annotation_object)) {
+            // Build a white contour by dilating the mask shape and cutting out the interior
+            const border = 2;
+            const ow = render.box_width + border * 2;
+            const oh = render.box_height + border * 2;
+            const outline = document.createElement("canvas");
+            outline.width = ow;
+            outline.height = oh;
+            const octx = outline.getContext("2d");
+            const dirs = [[-1, 0], [1, 0], [0, -1], [0, 1], [-1, -1], [-1, 1], [1, -1], [1, 1]];
+            for (const [ox, oy] of dirs) {
+                octx.drawImage(render.canvas, border + ox * border, border + oy * border);
+            }
+            octx.globalCompositeOperation = "source-in";
+            octx.fillStyle = "white";
+            octx.fillRect(0, 0, ow, oh);
+            octx.globalCompositeOperation = "destination-out";
+            octx.drawImage(render.canvas, border, border);
+            const blit_x = (render.tlx + diffX - border) * px_per_px;
+            const blit_y = (render.tly + diffY - border) * px_per_px;
+            ctx.drawImage(outline, blit_x, blit_y, ow * px_per_px, oh * px_per_px);
+        }
     }
 
     // Build a native-resolution, class-colored stencil for a bitmask's bounding box.
@@ -2199,6 +2259,7 @@ export class ULabel {
             ctx.lineTo((pts[pti][0] + diffX) * px_per_px, (pts[pti][1] + diffY) * px_per_px);
         }
         ctx.stroke();
+        this.draw_hover_outline(annotation_object, ctx, line_size + 4);
     }
 
     draw_tbar(annotation_object, ctx, offset = null) {
@@ -2249,6 +2310,23 @@ export class ULabel {
         ctx.lineTo((eb[0] + diffX) * px_per_px, (eb[1] + diffY) * px_per_px);
         ctx.stroke();
         ctx.lineCap = "round";
+
+        if (this.is_annotation_hovered(annotation_object)) {
+            ctx.globalCompositeOperation = "destination-over";
+            ctx.strokeStyle = "white";
+            ctx.lineWidth = (line_size + 4) * px_per_px;
+            // Re-stroke the main line
+            ctx.beginPath();
+            ctx.moveTo((sp[0] + diffX) * px_per_px, (sp[1] + diffY) * px_per_px);
+            ctx.lineTo((ep[0] + diffX) * px_per_px, (ep[1] + diffY) * px_per_px);
+            ctx.stroke();
+            // Re-stroke the cross
+            ctx.beginPath();
+            ctx.moveTo((sb[0] + diffX) * px_per_px, (sb[1] + diffY) * px_per_px);
+            ctx.lineTo((eb[0] + diffX) * px_per_px, (eb[1] + diffY) * px_per_px);
+            ctx.stroke();
+            ctx.globalCompositeOperation = "source-over";
+        }
     }
 
     draw_nonspatial_annotation(annotation_object, svg_obj, subtask = null) {
@@ -2257,19 +2335,27 @@ export class ULabel {
         }
         const annotation_id = annotation_object["id"];
         const element_id = this.get_nonspatial_annotation_element_id(annotation_id);
+        const is_read_only = this.subtasks[subtask]["read_only"] === true;
+        const note_readonly_attr = is_read_only ? " readonly" : "";
+        const reclf_button = is_read_only ?
+            "" :
+            `<div class="fad_inp_container button frst">
+                        <a href="#" id="reclf__${annotation_id}" class="fad_button reclf"></a>
+                    </div><!--
+                    -->`;
+        const delete_button = is_read_only ?
+            "" :
+            `<div class="fad_inp_container button">
+                        <a href="#" id="delete__${annotation_id}" class="fad_button delete">&#215;</a>
+                    </div>`;
         if ($(`div#${element_id}`).length === 0) {
             $(`div#fad_st__${subtask} div.fad_annotation_rows`).append(`
             <div id="row__${annotation_id}" class="fad_row">
                 <div class="fad_buttons">
                     <div class="fad_inp_container text">
-                        <textarea id="note__${annotation_id}" class="nonspatial_note" placeholder="Notes...">${annotation_object["text_payload"]}</textarea>
+                        <textarea id="note__${annotation_id}" class="nonspatial_note" placeholder="Notes..."${note_readonly_attr}>${annotation_object["text_payload"]}</textarea>
                     </div><!--
-                    --><div class="fad_inp_container button frst">
-                        <a href="#" id="reclf__${annotation_id}" class="fad_button reclf"></a>
-                    </div><!--
-                    --><div class="fad_inp_container button">
-                        <a href="#" id="delete__${annotation_id}" class="fad_button delete">&#215;</a>
-                    </div>
+                    -->${reclf_button}${delete_button}
                 </div><!--
                 --><div id="icon__${annotation_id}" class="fad_type_icon invert-this-svg" style="background-color: ${this.get_non_spatial_annotation_color(annotation_object["classification_payloads"], subtask)};">
                     ${svg_obj}
@@ -3372,6 +3458,8 @@ export class ULabel {
 
     // Edit suggestion: highlight a point in an annotation that can be edited
     show_edit_suggestion(edit_suggestion, currently_exists = false) {
+        // Vertex edit handle is a mutation affordance; skip it in read-only subtasks.
+        if (this.is_current_subtask_read_only()) return;
         let esid = "edit_suggestion__" + this.get_current_subtask_key();
         var esjq = $("#" + esid);
         esjq.css("display", "block");
@@ -3389,6 +3477,46 @@ export class ULabel {
         $(".edit_suggestion").css("display", "none");
     }
 
+    is_annotation_hovered(annotation_object) {
+        const subtask_key = this.get_current_subtask_key();
+        return this.subtasks[subtask_key]["state"]["hovered_annid"] === annotation_object["id"];
+    }
+
+    draw_hover_outline(annotation_object, ctx, border_width) {
+        if (!this.is_annotation_hovered(annotation_object)) return;
+        const px_per_px = this.config["px_per_px"];
+        ctx.globalCompositeOperation = "destination-over";
+        ctx.strokeStyle = "white";
+        ctx.lineWidth = border_width * px_per_px;
+        ctx.stroke();
+        ctx.globalCompositeOperation = "source-over";
+    }
+
+    set_hovered_annotation(annid) {
+        const subtask_key = this.get_current_subtask_key();
+        const current_subtask = this.subtasks[subtask_key];
+        const prev_annid = current_subtask["state"]["hovered_annid"];
+        if (prev_annid === annid) return;
+
+        // Clear previous hover
+        if (prev_annid !== null) {
+            const prev_ann = current_subtask["annotations"]["access"][prev_annid];
+            if (prev_ann && prev_ann["canvas_id"]) {
+                current_subtask["state"]["hovered_annid"] = null;
+                this.redraw_all_annotations_in_annotation_context(prev_ann["canvas_id"], subtask_key);
+            }
+        }
+
+        // Set and redraw new hover
+        current_subtask["state"]["hovered_annid"] = annid;
+        if (annid !== null) {
+            const ann = current_subtask["annotations"]["access"][annid];
+            if (ann && ann["canvas_id"]) {
+                this.redraw_all_annotations_in_annotation_context(ann["canvas_id"], subtask_key);
+            }
+        }
+    }
+
     // Global edit suggestion: id dialog, move button, and delete button
     show_global_edit_suggestion(annid, offset = null, nonspatial_id = null) {
         const subtask_key = this.get_current_subtask_key();
@@ -3403,18 +3531,29 @@ export class ULabel {
 
         let idd_x;
         let idd_y;
+        const is_read_only = this.is_current_subtask_read_only();
         if (nonspatial_id === null) {
             let esid = "global_edit_suggestion__" + subtask_key;
             var esjq = $("#" + esid);
             esjq.css("display", "block");
+            // Hide the move/reid/delete buttons on read-only subtasks; the confidence card still shows
+            esjq.find(".global_sub_suggestion").css("display", is_read_only ? "none" : "");
             let cbox = current_subtask["annotations"]["access"][annid]["containing_box"];
             let new_lft = (cbox["tlx"] + cbox["brx"] + 2 * diffX) / (2 * this.config["image_width"]);
             let new_top = (cbox["tly"] + cbox["bry"] + 2 * diffY) / (2 * this.config["image_height"]);
             current_subtask["state"]["visible_dialogs"][esid]["left"] = new_lft;
             current_subtask["state"]["visible_dialogs"][esid]["top"] = new_top;
+            // Decide confidence card position from the un-offset cbox so it stays stable during moves.
+            // Account for annbox scroll: what matters is the visible position, not the image-space position.
+            const cbox_center_y_imwrap = ((cbox["tly"] + cbox["bry"]) / 2) * this.state["zoom_val"];
+            const scroll_top = $("#" + this.config["annbox_id"]).scrollTop() || 0;
+            const conf_id = `global_annotation_confidence__${subtask_key}`;
+            const flip_below = (cbox_center_y_imwrap - scroll_top) < 100;
+            $(`#${conf_id}`).css("margin-top", flip_below ? "-1em" : "-9.5em");
             this.reposition_dialogs();
             idd_x = (cbox["tlx"] + cbox["brx"] + 2 * diffX) / 2;
             idd_y = (cbox["tly"] + cbox["bry"] + 2 * diffY) / 2;
+            this.set_hovered_annotation(annid);
         } else {
             // TODO(new3d)
             idd_x = $("#reclf__" + nonspatial_id).offset().left - 85;// this.get_global_element_center_x($("#reclf__" + nonspatial_id));
@@ -3422,7 +3561,7 @@ export class ULabel {
         }
 
         // let placeholder = $("#global_edit_suggestion a.reid_suggestion");
-        if (!current_subtask["single_class_mode"]) {
+        if (!current_subtask["single_class_mode"] && !is_read_only) {
             // Show id dialog thumbnail
             this.show_id_dialog(idd_x, idd_y, annid, true, nonspatial_id != null);
         }
@@ -3431,6 +3570,7 @@ export class ULabel {
     hide_global_edit_suggestion() {
         $(".global_edit_suggestion").css("display", "none");
         this.hide_id_dialog();
+        this.set_hovered_annotation(null);
     }
 
     // ID dialog: color wheel to change the ID of an annotation
@@ -5748,6 +5888,7 @@ export class ULabel {
         const diffZ = this.state["current_frame"] - this.drag_state["move"]["mouse_start"][2];
 
         const current_subtask = this.get_current_subtask();
+        const current_subtask_key = this.get_current_subtask_key();
         const active_id = current_subtask["state"]["active_id"];
         const annotation = current_subtask["annotations"]["access"][active_id];
         const spatial_type = annotation["spatial_type"];
@@ -5756,7 +5897,33 @@ export class ULabel {
 
         // Bitmask masks are translated wholesale rather than point-by-point
         if (spatial_type === "bitmask") {
+            // Bitmask storage is bounded by image dimensions; a translate that pushes
+            // pixels outside would silently drop them, so always bounce back in that case.
+            const cbox = annotation["containing_box"];
+            const idx = Math.round(diffX);
+            const idy = Math.round(diffY);
+            const bmask_out_of_bounds = cbox != null && (
+                cbox["tlx"] + idx < 0 ||
+                cbox["tly"] + idy < 0 ||
+                cbox["brx"] + idx > this.config["image_width"] - 1 ||
+                cbox["bry"] + idy > this.config["image_height"] - 1
+            );
+
+            if (bmask_out_of_bounds) {
+                current_subtask["state"]["active_id"] = null;
+                current_subtask["state"]["is_in_move"] = false;
+                this.end_bitmask_move();
+                // Redraw the mask at its original position (overlay was showing offset position)
+                this.redraw_all_annotations_in_annotation_context(annotation["canvas_id"], current_subtask_key);
+                record_finish_move(this, diffX, diffY, diffZ, true);
+                // Pop the begin_move off the stream so Ctrl+Z won't try to reverse a move that didn't happen
+                undo(this, true);
+                this.shake_screen();
+                return;
+            }
+
             this.translate_bitmask(annotation, diffX, diffY);
+            this.rebuild_bitmask_containing_box(annotation);
             current_subtask["state"]["active_id"] = null;
             current_subtask["state"]["is_in_move"] = false;
             this.end_bitmask_move();
@@ -5835,7 +6002,10 @@ export class ULabel {
 
         // Bitmask masks are translated wholesale rather than point-by-point
         if (spatial_type === "bitmask") {
+            // If the forward move was bounced back, nothing to reverse
+            if (undo_payload.move_not_allowed) return;
             this.translate_bitmask(annotations[annotation_id], diffX, diffY);
+            this.rebuild_bitmask_containing_box(annotations[annotation_id]);
             return;
         }
 
@@ -5883,6 +6053,7 @@ export class ULabel {
         // Bitmask masks are translated wholesale rather than point-by-point
         if (spatial_type === "bitmask") {
             this.translate_bitmask(annotations[annotation_id], diffX, diffY);
+            this.rebuild_bitmask_containing_box(annotations[annotation_id]);
         } else {
             // if a polygon, n_iters is the length the spatial payload
             // else n_iters is 1
@@ -6299,7 +6470,17 @@ export class ULabel {
             if (annid != null) {
                 let anpyld = this.get_current_subtask()["annotations"]["access"][annid]["classification_payloads"];
                 if (anpyld != null) {
-                    this.get_current_subtask()["state"]["id_payload"] = JSON.parse(JSON.stringify(anpyld));
+                    // Normalize to one entry per class_id so update_id_dialog_display
+                    // can index by position without out-of-bounds access.
+                    const class_ids = this.get_current_subtask()["class_ids"];
+                    const padded = class_ids.map((cid) => {
+                        const existing = anpyld.find((p) => p.class_id === cid);
+                        if (existing) {
+                            return JSON.parse(JSON.stringify(existing));
+                        }
+                        return { class_id: cid, confidence: 0 };
+                    });
+                    this.get_current_subtask()["state"]["id_payload"] = padded;
                     return;
                 }
             }
@@ -6494,21 +6675,39 @@ export class ULabel {
     update_confidence_dialog() {
         // Whenever the mouse makes the dialogs show up, update the displayed annotation confidence.
         const current_subtask = this.get_current_subtask();
+        const subtask_key = this.get_current_subtask_key();
         const active_annotation_id = current_subtask["state"]["edit_candidate"]["annid"];
         const active_annotation = current_subtask["annotations"]["access"][active_annotation_id];
         /** The active annotation's classification payloads. */
         const aacp = active_annotation["classification_payloads"];
 
-        // Keep track of highest payload confidence
-        let confidence = 0;
+        // Match get_annotation_class_id semantics: seed the first payload so all-zero confidences
+        // still pick a class instead of falling through to "Unknown".
+        let confidence;
+        let best_class_id = null;
         aacp.forEach((payload) => {
-            if (payload.confidence > confidence) {
+            if (confidence === undefined || payload.confidence > confidence) {
                 confidence = payload.confidence;
+                best_class_id = payload.class_id;
             }
         });
+        if (confidence === undefined) confidence = 0;
 
-        // Update the display dialog with the annotation's confidence
-        $(".annotation-confidence-value").text(confidence);
+        // Resolve class name from class_defs
+        let class_name = "Unknown";
+        if (best_class_id !== null) {
+            const class_def = current_subtask["class_defs"].find(
+                (cd) => cd.id === best_class_id || String(cd.id) === String(best_class_id),
+            );
+            if (class_def) {
+                class_name = class_def.name;
+            }
+        }
+
+        // Update the display dialog
+        const global_id = `global_annotation_confidence__${subtask_key}`;
+        $(`#${global_id} .annotation-confidence-classname`).text(class_name);
+        $(`#${global_id} .annotation-confidence-value`).text(`Confidence: ${confidence.toFixed(2)}`);
     }
 
     // ================= Viewer/Annotation Interaction Handlers  =================

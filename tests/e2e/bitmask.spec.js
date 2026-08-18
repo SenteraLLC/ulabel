@@ -352,3 +352,146 @@ test.describe("Bitmask overlap + move", () => {
         expect(res.active_kept_outside).toBe(1);
     });
 });
+
+// End-to-end coverage for the bitmask move bounce-back:
+//   - a move that would push any pixel outside the image is rejected (mask unchanged)
+//   - the rejected move is popped off the action stream, so subsequent undo/redo is a no-op
+//   - a valid move round-trips cleanly through undo and redo
+test.describe("Bitmask move bounce-back", () => {
+    // Simulate begin_move: push the begin_move action and prime state/drag_state/overlay.
+    // A no-op object works here — finish_move only reads clientX/clientY.
+    async function setup_move(page, tlx, tly, brx, bry) {
+        await page.evaluate(async (box) => {
+            const u = window.ulabel;
+            const { make, rebuild } = window.__mask_helpers(u);
+            await u.set_annotations([make("m", 1, box.tlx, box.tly, box.brx, box.bry)], "a");
+            rebuild("a", "m");
+            u.set_subtask("a");
+
+            const st = u.subtasks.a;
+            st.actions.stream = [];
+            st.actions.undone_stack = [];
+            st.state.active_id = "m";
+            st.state.is_in_move = true;
+            u.state.zoom_val = 1.0;
+            u.state.current_frame = 0;
+            u.drag_state.move.mouse_start = [100, 100, 0];
+
+            st.actions.stream.push({
+                act_type: "begin_move",
+                annotation_id: "m",
+                frame: 0,
+                undo_payload: JSON.stringify({ diffX: 0, diffY: 0, diffZ: 0 }),
+                redo_payload: JSON.stringify({ diffX: 0, diffY: 0, diffZ: 0, finished: false, move_not_allowed: false }),
+                prev_timestamp: null,
+                prev_user: "test",
+            });
+            u.begin_bitmask_move("m", "a");
+        }, { tlx, tly, brx, bry });
+    }
+
+    test("out-of-bounds move is rejected: mask stays put and action is popped off the stream", async ({ page }) => {
+        await wait_for_ulabel_init(page, "/bitmask-e2e.html");
+        // Mask hugs the left edge; a -50px shift would drop pixels off-image.
+        await setup_move(page, 0, 0, 10, 10);
+
+        const res = await page.evaluate(async () => {
+            const u = window.ulabel;
+            const { pix } = window.__mask_helpers(u);
+
+            u.finish_move({ clientX: 50, clientY: 100 });
+
+            const st = u.subtasks.a;
+            return {
+                pixel_at_5_5: pix("a", "m", 5, 5),
+                cbox: JSON.parse(JSON.stringify(u.subtasks.a.annotations.access.m.containing_box)),
+                is_in_move: st.state.is_in_move,
+                active_id: st.state.active_id,
+                stream_len: st.actions.stream.length,
+                undone_len: st.actions.undone_stack.length,
+                overlay_cleared: u.state.bitmask_move_overlay == null,
+            };
+        });
+
+        expect(res.pixel_at_5_5).toBe(1);
+        expect(res.cbox).toEqual({ tlx: 0, tly: 0, brx: 10, bry: 10 });
+        expect(res.is_in_move).toBe(false);
+        expect(res.active_id).toBeNull();
+        expect(res.stream_len).toBe(0);
+        expect(res.undone_len).toBe(1);
+        expect(res.overlay_cleared).toBe(true);
+    });
+
+    test("undo after a bounce-back does not move the mask", async ({ page }) => {
+        await wait_for_ulabel_init(page, "/bitmask-e2e.html");
+        await setup_move(page, 0, 0, 10, 10);
+
+        const res = await page.evaluate(async () => {
+            const u = window.ulabel;
+            const { pix } = window.__mask_helpers(u);
+
+            u.finish_move({ clientX: 50, clientY: 100 });
+            u.undo();
+            u.redo();
+
+            return {
+                pixel_at_5_5: pix("a", "m", 5, 5),
+                pixel_at_0_0: pix("a", "m", 0, 0),
+                pixel_at_10_10: pix("a", "m", 10, 10),
+                cbox: JSON.parse(JSON.stringify(u.subtasks.a.annotations.access.m.containing_box)),
+            };
+        });
+
+        expect(res.pixel_at_5_5).toBe(1);
+        expect(res.pixel_at_0_0).toBe(1);
+        expect(res.pixel_at_10_10).toBe(1);
+        expect(res.cbox).toEqual({ tlx: 0, tly: 0, brx: 10, bry: 10 });
+    });
+
+    test("valid move round-trips through undo and redo", async ({ page }) => {
+        await wait_for_ulabel_init(page, "/bitmask-e2e.html");
+        // Mask well inside the image so a +5px shift is safe.
+        await setup_move(page, 10, 10, 20, 20);
+
+        const res = await page.evaluate(async () => {
+            const u = window.ulabel;
+            const { pix } = window.__mask_helpers(u);
+
+            // +5 px in X: (10..20, 10..20) -> (15..25, 10..20)
+            u.finish_move({ clientX: 105, clientY: 100 });
+            const after_move = {
+                orig_edge_empty: pix("a", "m", 10, 15),
+                new_edge_full: pix("a", "m", 25, 15),
+                cbox: JSON.parse(JSON.stringify(u.subtasks.a.annotations.access.m.containing_box)),
+            };
+
+            u.undo();
+            const after_undo = {
+                orig_edge_full: pix("a", "m", 10, 15),
+                new_edge_empty: pix("a", "m", 25, 15),
+                cbox: JSON.parse(JSON.stringify(u.subtasks.a.annotations.access.m.containing_box)),
+            };
+
+            u.redo();
+            const after_redo = {
+                orig_edge_empty: pix("a", "m", 10, 15),
+                new_edge_full: pix("a", "m", 25, 15),
+                cbox: JSON.parse(JSON.stringify(u.subtasks.a.annotations.access.m.containing_box)),
+            };
+
+            return { after_move, after_undo, after_redo };
+        });
+
+        expect(res.after_move.orig_edge_empty).toBe(0);
+        expect(res.after_move.new_edge_full).toBe(1);
+        expect(res.after_move.cbox).toEqual({ tlx: 15, tly: 10, brx: 25, bry: 20 });
+
+        expect(res.after_undo.orig_edge_full).toBe(1);
+        expect(res.after_undo.new_edge_empty).toBe(0);
+        expect(res.after_undo.cbox).toEqual({ tlx: 10, tly: 10, brx: 20, bry: 20 });
+
+        expect(res.after_redo.orig_edge_empty).toBe(0);
+        expect(res.after_redo.new_edge_full).toBe(1);
+        expect(res.after_redo.cbox).toEqual({ tlx: 15, tly: 10, brx: 25, bry: 20 });
+    });
+});

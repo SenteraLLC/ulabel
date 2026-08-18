@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>ULabel - Read-Only Demo</title>
+
+        <!-- ULabel Library -->
+        <script src="/ulabel.js"></script>
+
+        <!-- JQuery Library -->
+        <script src="https://code.jquery.com/jquery-3.5.1.min.js" integrity="sha256-9/aliU8dGd2tb6OSsuzixeV4y/faTqgFtohetphbbj0=" crossorigin="anonymous"></script>
+
+        <!-- ULabel Usage -->
+        <script>
+            /* global $ */
+            /* global ULabel */
+
+            $(window).on("load", function() {
+
+                function on_submit(annotations) {
+                    var element = document.createElement("a");
+                    element.setAttribute(
+                        "href", ("data:text/plain;charset=utf-8," +
+                        encodeURIComponent(JSON.stringify(annotations, null, 2))),
+                    );
+                    element.setAttribute("download", "annotations.json");
+                    element.style.display = "none";
+                    document.body.appendChild(element);
+                    element.click();
+                    document.body.removeChild(element);
+                }
+
+                // A mix of spatial and nonspatial annotations to exercise every read-only surface:
+                //  - spatial hover shows the confidence card + hover border but no move/reid/delete buttons and no vertex handle
+                //  - nonspatial rows render without reclassify / delete buttons and with a readonly note field
+                let car_annotations = [
+                    {
+                        "id": "ro-point-1",
+                        "spatial_type": "point",
+                        "spatial_payload": [[300, 300]],
+                        "classification_payloads": [
+                            { "class_id": 12, "confidence": 0.0 },
+                            { "class_id": 11, "confidence": 0.9 },
+                            { "class_id": 10, "confidence": 0.0 },
+                        ],
+                    },
+                    {
+                        "id": "ro-bbox-1",
+                        "spatial_type": "bbox",
+                        "spatial_payload": [[500, 400], [800, 650]],
+                        "classification_payloads": [
+                            { "class_id": 10, "confidence": 0.82 },
+                        ],
+                    },
+                    {
+                        "id": "ro-polygon-1",
+                        "spatial_type": "polygon",
+                        "spatial_payload": [
+                            [
+                                [1073.79, 444.87],
+                                [1228.58, 254.65],
+                                [1390.43, 314.56],
+                                [1358.64, 593.99],
+                                [1200.00, 620.00],
+                                [1073.79, 444.87],
+                            ],
+                        ],
+                        "classification_payloads": [
+                            { "class_id": 12, "confidence": 0.65 },
+                        ],
+                    },
+                ];
+
+                let frame_review_annotations = [
+                    {
+                        "id": "ro-whole-image-1",
+                        "spatial_type": "whole-image",
+                        "spatial_payload": null,
+                        "text_payload": "Read-only note: this text area should be uneditable and the row should have no delete or reclassify buttons.",
+                        "classification_payloads": [
+                            { "class_id": 20, "confidence": 1.0 },
+                        ],
+                    },
+                ];
+
+                // Both subtasks are read-only, so no user-driven mutations should be possible.
+                let subtasks = {
+                    "car_detection": {
+                        "display_name": "Car Detection",
+                        "classes": [
+                            { "name": "Sedan", "color": "blue", "id": 10, "keybind": "1" },
+                            { "name": "SUV", "color": "green", "id": 11, "keybind": "2" },
+                            { "name": "Truck", "color": "orange", "id": 12, "keybind": "3" },
+                        ],
+                        "allowed_modes": ["bbox", "polygon", "point", "polyline"],
+                        "resume_from": car_annotations,
+                        "read_only": true,
+                        "task_meta": null,
+                        "annotation_meta": null,
+                    },
+                    "frame_review": {
+                        "display_name": "Frame Review",
+                        "classes": [
+                            { "name": "Blurry", "color": "gray", "id": 20 },
+                            { "name": "Occluded", "color": "red", "id": 21 },
+                        ],
+                        "allowed_modes": ["whole-image"],
+                        "resume_from": frame_review_annotations,
+                        "read_only": true,
+                        "task_meta": null,
+                        "annotation_meta": null,
+                    },
+                };
+
+                const AllowedToolboxItem = ULabel.get_allowed_toolbox_item_enum();
+                let ulabel = new ULabel({
+                    "container_id": "container",
+                    "image_data": "https://ulabel.s3.us-east-2.amazonaws.com/cs-demo-0.png",
+                    "username": "DemoUser",
+                    "submit_buttons": on_submit,
+                    "subtasks": subtasks,
+                    "toolbox_order": [
+                        AllowedToolboxItem.ModeSelect,
+                        AllowedToolboxItem.ZoomPan,
+                        AllowedToolboxItem.AnnotationID,
+                        AllowedToolboxItem.ClassCounter,
+                        AllowedToolboxItem.AnnotationResize,
+                        AllowedToolboxItem.ConfidenceSlider,
+                        AllowedToolboxItem.SubmitButtons,
+                    ],
+                });
+                ulabel.init(function() {
+                    // ULabel is now ready for use
+                });
+                // Expose the instance for e2e tests
+                window.ulabel = ulabel;
+            });
+        </script>
+        <style>
+            body { margin: 0; padding: 0; }
+            .test-banner {
+                background-color: #2b4b7a;
+                color: white;
+                padding: 6px 12px;
+                font-family: sans-serif;
+            }
+            .test-banner h2 { margin: 0; font-size: 1.1em; }
+            .test-banner p { margin: 4px 0 0 0; font-size: 0.85em; opacity: 0.85; }
+        </style>
+    </head>
+    <body>
+        <div class="test-banner">
+            <h2>Read-Only Demo</h2>
+            <p>
+                All subtasks are <code>read_only: true</code>. Hover shows the confidence card and hover outline, but
+                move/reclassify/delete buttons, vertex handles, and the id color-wheel are suppressed. Creation drags,
+                brush/erase mode, delete keybinds, and class-reassign keybinds are all blocked.
+            </p>
+        </div>
+        <div id="wrapper">
+            <div id="container" style="width: 100%; height: calc(100vh - 90px);"></div>
+        </div>
+    </body>
+</html>

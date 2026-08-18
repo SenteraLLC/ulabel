@@ -30,6 +30,7 @@ export class ULabelSubtask {
         move_candidate: ULabelActionCandidate | null;
         first_explicit_assignment: boolean;
         front_context: CanvasRenderingContext2D;
+        hovered_annid: string | null;
         id_payload: number[] | {
             class_id: number;
             confidence: number;

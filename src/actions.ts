@@ -156,6 +156,7 @@ export function record_finish_move(
     undo_payload.diffZ = -diffZ;
     redo_payload.finished = true;
     redo_payload.move_not_allowed = move_not_allowed;
+    undo_payload.move_not_allowed = move_not_allowed;
     action.redo_payload = JSON.stringify(redo_payload);
     action.undo_payload = JSON.stringify(undo_payload);
 
