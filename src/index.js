@@ -110,7 +110,7 @@ export class ULabel {
                     if (mouse_event.ctrlKey || mouse_event.metaKey) {
                         return "pan";
                     }
-                    if (mouse_event.shiftKey) {
+                    if (mouse_event.shiftKey && !ul.get_current_subtask()["state"]["starting_complex_polygon"]) {
                         return "zoom";
                     }
                     return "annotation";
@@ -1918,6 +1918,7 @@ export class ULabel {
             ctx.strokeStyle = "white";
             ctx.lineWidth = (line_size + 4) * px_per_px;
             for (let i = 0; i < n_iters; i++) {
+                if (spatial_type === "polygon" && annotation_object["spatial_payload_holes"][i]) continue;
                 let hover_payload = spatial_type === "polygon" ? spatial_payload[i] : active_spatial_payload;
                 const pts = hover_payload;
                 if (pts.length > 0) {
