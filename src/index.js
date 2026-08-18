@@ -5862,6 +5862,7 @@ export class ULabel {
         const diffZ = this.state["current_frame"] - this.drag_state["move"]["mouse_start"][2];
 
         const current_subtask = this.get_current_subtask();
+        const current_subtask_key = this.get_current_subtask_key();
         const active_id = current_subtask["state"]["active_id"];
         const annotation = current_subtask["annotations"]["access"][active_id];
         const spatial_type = annotation["spatial_type"];
@@ -5870,7 +5871,33 @@ export class ULabel {
 
         // Bitmask masks are translated wholesale rather than point-by-point
         if (spatial_type === "bitmask") {
+            // Bitmask storage is bounded by image dimensions; a translate that pushes
+            // pixels outside would silently drop them, so always bounce back in that case.
+            const cbox = annotation["containing_box"];
+            const idx = Math.round(diffX);
+            const idy = Math.round(diffY);
+            const bmask_out_of_bounds = cbox != null && (
+                cbox["tlx"] + idx < 0 ||
+                cbox["tly"] + idy < 0 ||
+                cbox["brx"] + idx > this.config["image_width"] - 1 ||
+                cbox["bry"] + idy > this.config["image_height"] - 1
+            );
+
+            if (bmask_out_of_bounds) {
+                current_subtask["state"]["active_id"] = null;
+                current_subtask["state"]["is_in_move"] = false;
+                this.end_bitmask_move();
+                // Redraw the mask at its original position (overlay was showing offset position)
+                this.redraw_all_annotations_in_annotation_context(annotation["canvas_id"], current_subtask_key);
+                record_finish_move(this, diffX, diffY, diffZ, true);
+                // Pop the begin_move off the stream so Ctrl+Z won't try to reverse a move that didn't happen
+                undo(this, true);
+                this.shake_screen();
+                return;
+            }
+
             this.translate_bitmask(annotation, diffX, diffY);
+            this.rebuild_bitmask_containing_box(annotation);
             current_subtask["state"]["active_id"] = null;
             current_subtask["state"]["is_in_move"] = false;
             this.end_bitmask_move();
@@ -5949,7 +5976,10 @@ export class ULabel {
 
         // Bitmask masks are translated wholesale rather than point-by-point
         if (spatial_type === "bitmask") {
+            // If the forward move was bounced back, nothing to reverse
+            if (undo_payload.move_not_allowed) return;
             this.translate_bitmask(annotations[annotation_id], diffX, diffY);
+            this.rebuild_bitmask_containing_box(annotations[annotation_id]);
             return;
         }
 
@@ -5997,6 +6027,7 @@ export class ULabel {
         // Bitmask masks are translated wholesale rather than point-by-point
         if (spatial_type === "bitmask") {
             this.translate_bitmask(annotations[annotation_id], diffX, diffY);
+            this.rebuild_bitmask_containing_box(annotations[annotation_id]);
         } else {
             // if a polygon, n_iters is the length the spatial payload
             // else n_iters is 1
