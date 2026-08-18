@@ -808,4 +808,57 @@ test.describe("Keybind Functionality Tests", () => {
         annotation = await get_annotation_by_index(page, 0);
         expect(annotation.deprecated).toBe(true);
     });
+
+    test("shift-hover on an existing polygon starts a new complex layer", async ({ page }) => {
+        await wait_for_ulabel_init(page);
+
+        // Draw a polygon large enough to hover safely inside
+        await draw_polygon(page, [
+            [200, 200],
+            [400, 200],
+            [400, 400],
+            [200, 400],
+        ]);
+        await page.waitForTimeout(200);
+
+        // Sanity: one annotation, one layer
+        let annotation = await get_annotation_by_index(page, 0);
+        expect(annotation.spatial_payload.length).toBe(1);
+
+        // Prime the id dialog / edit_candidate by hovering without shift
+        await page.mouse.move(300, 300);
+        await page.waitForTimeout(200);
+
+        // Shift-hover should trigger start_complex_polygon (bug pre-fix: no-op)
+        await page.keyboard.down("Shift");
+        await page.mouse.move(305, 305);
+        await page.waitForTimeout(200);
+
+        const hover_state = await page.evaluate(() => {
+            const st = window.ulabel.get_current_subtask().state;
+            return {
+                starting_complex_polygon: st.starting_complex_polygon,
+                is_in_progress: st.is_in_progress,
+            };
+        });
+        expect(hover_state.starting_complex_polygon).toBe(true);
+        expect(hover_state.is_in_progress).toBe(true);
+
+        // With shift still held, mousedown must be an "annotation" drag, not "zoom" (the bug we fixed)
+        await page.mouse.down({ button: "left" });
+        const drag_key = await page.evaluate(() => window.ulabel.drag_state.active_key);
+        expect(drag_key).toBe("annotation");
+        await page.mouse.up({ button: "left" });
+        await page.keyboard.up("Shift");
+
+        // Finish the new layer by clicking a couple more points and the ender
+        await page.mouse.click(320, 305);
+        await page.mouse.click(320, 320);
+        await page.click(".ender_outer");
+        await page.waitForTimeout(200);
+
+        // The annotation should now have two layers (original + new complex layer)
+        annotation = await get_annotation_by_index(page, 0);
+        expect(annotation.spatial_payload.length).toBe(2);
+    });
 });

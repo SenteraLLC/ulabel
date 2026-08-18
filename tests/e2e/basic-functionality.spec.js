@@ -105,4 +105,83 @@ test.describe("ULabel Basic Functionality", () => {
         expect(anno.spatial_payload).toEqual(point);
         expect(anno.created_by).toBe("DemoUser");
     });
+
+    test("hovered_annid tracks the annotation under the cursor", async ({ page }) => {
+        await wait_for_ulabel_init(page);
+
+        await draw_bbox(page, [200, 200], [300, 300]);
+        await page.waitForTimeout(100);
+
+        const initial_hovered = await page.evaluate(() => window.ulabel.get_current_subtask().state.hovered_annid);
+        expect(initial_hovered).toBeNull();
+
+        // Hover over the bbox
+        await page.mouse.move(250, 250);
+        await page.waitForTimeout(200);
+
+        const hovered_over_bbox = await page.evaluate(() => {
+            const st = window.ulabel.get_current_subtask();
+            const annid = st.state.hovered_annid;
+            return {
+                hovered_annid: annid,
+                matches_annotation: annid !== null && annid === st.annotations.ordering[0],
+            };
+        });
+        expect(hovered_over_bbox.hovered_annid).not.toBeNull();
+        expect(hovered_over_bbox.matches_annotation).toBe(true);
+
+        // Move cursor away from the annotation
+        await page.mouse.move(50, 50);
+        await page.waitForTimeout(200);
+
+        const hovered_after_leave = await page.evaluate(() => window.ulabel.get_current_subtask().state.hovered_annid);
+        expect(hovered_after_leave).toBeNull();
+    });
+
+    test("confidence card shows class name and confidence value on hover", async ({ page }) => {
+        await wait_for_ulabel_init(page);
+
+        await draw_bbox(page, [200, 200], [300, 300]);
+        await page.waitForTimeout(100);
+
+        // Hover to display the confidence card
+        await page.mouse.move(250, 250);
+        await page.waitForTimeout(200);
+
+        const subtask_key = await page.evaluate(() => window.ulabel.get_current_subtask_key());
+        const conf_id = `#global_annotation_confidence__${subtask_key}`;
+
+        const classname = (await page.locator(`${conf_id} .annotation-confidence-classname`).textContent()).trim();
+        const value = (await page.locator(`${conf_id} .annotation-confidence-value`).textContent()).trim();
+
+        // First class in multi-class.html's car_detection subtask is "Sedan"
+        expect(classname).toBe("Sedan");
+        // Manually-drawn annotations get confidence 1
+        expect(value).toBe("Confidence: 1.00");
+    });
+
+    test("confidence card flips below buttons when annotation is near the top of the image", async ({ page }) => {
+        await wait_for_ulabel_init(page);
+
+        const subtask_key = await page.evaluate(() => window.ulabel.get_current_subtask_key());
+        const conf_id = `#global_annotation_confidence__${subtask_key}`;
+
+        // Annotation well away from the top -> card above the buttons (default -9.5em)
+        await draw_bbox(page, [400, 400], [500, 500]);
+        await page.waitForTimeout(100);
+        await page.mouse.move(450, 450);
+        await page.waitForTimeout(200);
+
+        const margin_below_center = await page.locator(conf_id).evaluate((el) => el.style.marginTop);
+        expect(margin_below_center).toBe("-9.5em");
+
+        // Annotation near the top edge -> card flips below the buttons
+        await draw_bbox(page, [100, 5], [200, 30]);
+        await page.waitForTimeout(100);
+        await page.mouse.move(150, 15);
+        await page.waitForTimeout(200);
+
+        const margin_near_top = await page.locator(conf_id).evaluate((el) => el.style.marginTop);
+        expect(margin_near_top).toBe("-1em");
+    });
 });
