@@ -542,24 +542,25 @@ export function build_confidence_dialog(ulabel: ULabel) {
         }
         global_edit_suggestion_jq.append(`
             <div id="${global_id}" class="annotation-confidence gedit-target${mcm_ind}">
-                <p class="annotation-confidence-title" style="margin: 0.25em; margin-top: 1em; padding-top: 0.3em; opacity: 1;">Annotation Confidence:</p>
-                <p class="annotation-confidence-value" style="margin: 0.25em; opacity: 1;">
-                    N/A
+                <p class="annotation-confidence-classname" style="margin: 0.4em 0.6em 0.1em; opacity: 1; font-weight: 600;"></p>
+                <p class="annotation-confidence-value" style="margin: 0.1em 0.6em 0.4em; opacity: 0.85; font-size: 0.9em;">
                 </p>
             </div>
         `);
 
         // Style the dialog
         $("#" + global_id).css({
-            "background-color": "black",
+            "background-color": "rgba(0, 0, 0, 0.75)",
             "color": "white",
-            "opacity": "0.6",
-            "height": "3em",
-            "width": "14.5em",
+            "height": "auto",
+            "width": "auto",
+            "min-width": "8em",
+            "padding": "0.2em 0.4em",
             "margin-top": "-9.5em",
-            "border-radius": "1em",
-            "font-size": "1.2em",
+            "border-radius": "0.5em",
+            "font-size": "1.1em",
             "margin-left": "-1.4em",
+            "pointer-events": "none",
         });
     }
 }

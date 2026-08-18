@@ -567,6 +567,7 @@ export class ULabel {
                 is_vanished: false,
                 edit_candidate: null,
                 move_candidate: null,
+                hovered_annid: null,
                 fly_to_idx: null,
                 line_size: ul.config.initial_line_size,
 
@@ -1759,6 +1760,14 @@ export class ULabel {
         ctx.lineTo((sp[0] + diffX) * px_per_px, (sp[1] + diffY) * px_per_px);
         ctx.closePath();
         ctx.stroke();
+
+        if (this.is_annotation_hovered(annotation_object)) {
+            ctx.globalCompositeOperation = "destination-over";
+            ctx.strokeStyle = "white";
+            ctx.lineWidth = (line_size + 4) * px_per_px;
+            ctx.stroke();
+            ctx.globalCompositeOperation = "source-over";
+        }
     }
 
     draw_point(annotation_object, ctx, offset = null) {
@@ -1792,6 +1801,14 @@ export class ULabel {
         ctx.arc((sp[0] + diffX) * px_per_px, (sp[1] + diffY) * px_per_px, line_size * px_per_px * 3, 0, 2 * Math.PI);
         ctx.closePath();
         ctx.stroke();
+
+        if (this.is_annotation_hovered(annotation_object)) {
+            ctx.globalCompositeOperation = "destination-over";
+            ctx.strokeStyle = "white";
+            ctx.lineWidth = (line_size + 4) * px_per_px;
+            ctx.stroke();
+            ctx.globalCompositeOperation = "source-over";
+        }
     }
 
     draw_bbox3(annotation_object, ctx, offset = null) {
@@ -1842,6 +1859,14 @@ export class ULabel {
             ctx.globalAlpha = 0.2;
             ctx.fill();
             ctx.globalAlpha = 1.0;
+        }
+
+        if (this.is_annotation_hovered(annotation_object)) {
+            ctx.globalCompositeOperation = "destination-over";
+            ctx.strokeStyle = "white";
+            ctx.lineWidth = (line_size + 4) * px_per_px;
+            ctx.stroke();
+            ctx.globalCompositeOperation = "source-over";
         }
     }
 
@@ -1905,6 +1930,26 @@ export class ULabel {
                 ctx.globalCompositeOperation = "source-over";
                 ctx.globalAlpha = 1.0;
             }
+        }
+
+        // Draw hover outline behind the annotation strokes
+        if (this.is_annotation_hovered(annotation_object)) {
+            ctx.globalCompositeOperation = "destination-over";
+            ctx.strokeStyle = "white";
+            ctx.lineWidth = (line_size + 4) * px_per_px;
+            for (let i = 0; i < n_iters; i++) {
+                let hover_payload = spatial_type === "polygon" ? spatial_payload[i] : active_spatial_payload;
+                const pts = hover_payload;
+                if (pts.length > 0) {
+                    ctx.beginPath();
+                    ctx.moveTo((pts[0][0] + diffX) * px_per_px, (pts[0][1] + diffY) * px_per_px);
+                    for (let pti = 1; pti < pts.length; pti++) {
+                        ctx.lineTo((pts[pti][0] + diffX) * px_per_px, (pts[pti][1] + diffY) * px_per_px);
+                    }
+                    ctx.stroke();
+                }
+            }
+            ctx.globalCompositeOperation = "source-over";
         }
 
         if (
@@ -2093,6 +2138,29 @@ export class ULabel {
             render.box_height * px_per_px,
         );
         ctx.globalAlpha = 1.0;
+
+        if (this.is_annotation_hovered(annotation_object)) {
+            // Build a white contour by dilating the mask shape and cutting out the interior
+            const border = 2;
+            const ow = render.box_width + border * 2;
+            const oh = render.box_height + border * 2;
+            const outline = document.createElement("canvas");
+            outline.width = ow;
+            outline.height = oh;
+            const octx = outline.getContext("2d");
+            const dirs = [[-1, 0], [1, 0], [0, -1], [0, 1], [-1, -1], [-1, 1], [1, -1], [1, 1]];
+            for (const [ox, oy] of dirs) {
+                octx.drawImage(render.canvas, border + ox * border, border + oy * border);
+            }
+            octx.globalCompositeOperation = "source-in";
+            octx.fillStyle = "white";
+            octx.fillRect(0, 0, ow, oh);
+            octx.globalCompositeOperation = "destination-out";
+            octx.drawImage(render.canvas, border, border);
+            const blit_x = (render.tlx + diffX - border) * px_per_px;
+            const blit_y = (render.tly + diffY - border) * px_per_px;
+            ctx.drawImage(outline, blit_x, blit_y, ow * px_per_px, oh * px_per_px);
+        }
     }
 
     // Build a native-resolution, class-colored stencil for a bitmask's bounding box.
@@ -2199,6 +2267,14 @@ export class ULabel {
             ctx.lineTo((pts[pti][0] + diffX) * px_per_px, (pts[pti][1] + diffY) * px_per_px);
         }
         ctx.stroke();
+
+        if (this.is_annotation_hovered(annotation_object)) {
+            ctx.globalCompositeOperation = "destination-over";
+            ctx.strokeStyle = "white";
+            ctx.lineWidth = (line_size + 4) * px_per_px;
+            ctx.stroke();
+            ctx.globalCompositeOperation = "source-over";
+        }
     }
 
     draw_tbar(annotation_object, ctx, offset = null) {
@@ -2249,6 +2325,23 @@ export class ULabel {
         ctx.lineTo((eb[0] + diffX) * px_per_px, (eb[1] + diffY) * px_per_px);
         ctx.stroke();
         ctx.lineCap = "round";
+
+        if (this.is_annotation_hovered(annotation_object)) {
+            ctx.globalCompositeOperation = "destination-over";
+            ctx.strokeStyle = "white";
+            ctx.lineWidth = (line_size + 4) * px_per_px;
+            // Re-stroke the main line
+            ctx.beginPath();
+            ctx.moveTo((sp[0] + diffX) * px_per_px, (sp[1] + diffY) * px_per_px);
+            ctx.lineTo((ep[0] + diffX) * px_per_px, (ep[1] + diffY) * px_per_px);
+            ctx.stroke();
+            // Re-stroke the cross
+            ctx.beginPath();
+            ctx.moveTo((sb[0] + diffX) * px_per_px, (sb[1] + diffY) * px_per_px);
+            ctx.lineTo((eb[0] + diffX) * px_per_px, (eb[1] + diffY) * px_per_px);
+            ctx.stroke();
+            ctx.globalCompositeOperation = "source-over";
+        }
     }
 
     draw_nonspatial_annotation(annotation_object, svg_obj, subtask = null) {
@@ -3389,6 +3482,36 @@ export class ULabel {
         $(".edit_suggestion").css("display", "none");
     }
 
+    is_annotation_hovered(annotation_object) {
+        const subtask_key = this.get_current_subtask_key();
+        return this.subtasks[subtask_key]["state"]["hovered_annid"] === annotation_object["id"];
+    }
+
+    set_hovered_annotation(annid) {
+        const subtask_key = this.get_current_subtask_key();
+        const current_subtask = this.subtasks[subtask_key];
+        const prev_annid = current_subtask["state"]["hovered_annid"];
+        if (prev_annid === annid) return;
+
+        // Clear previous hover
+        if (prev_annid !== null) {
+            const prev_ann = current_subtask["annotations"]["access"][prev_annid];
+            if (prev_ann && prev_ann["canvas_id"]) {
+                current_subtask["state"]["hovered_annid"] = null;
+                this.redraw_all_annotations_in_annotation_context(prev_ann["canvas_id"], subtask_key);
+            }
+        }
+
+        // Set and redraw new hover
+        current_subtask["state"]["hovered_annid"] = annid;
+        if (annid !== null) {
+            const ann = current_subtask["annotations"]["access"][annid];
+            if (ann && ann["canvas_id"]) {
+                this.redraw_all_annotations_in_annotation_context(ann["canvas_id"], subtask_key);
+            }
+        }
+    }
+
     // Global edit suggestion: id dialog, move button, and delete button
     show_global_edit_suggestion(annid, offset = null, nonspatial_id = null) {
         const subtask_key = this.get_current_subtask_key();
@@ -3415,6 +3538,7 @@ export class ULabel {
             this.reposition_dialogs();
             idd_x = (cbox["tlx"] + cbox["brx"] + 2 * diffX) / 2;
             idd_y = (cbox["tly"] + cbox["bry"] + 2 * diffY) / 2;
+            this.set_hovered_annotation(annid);
         } else {
             // TODO(new3d)
             idd_x = $("#reclf__" + nonspatial_id).offset().left - 85;// this.get_global_element_center_x($("#reclf__" + nonspatial_id));
@@ -3431,6 +3555,7 @@ export class ULabel {
     hide_global_edit_suggestion() {
         $(".global_edit_suggestion").css("display", "none");
         this.hide_id_dialog();
+        this.set_hovered_annotation(null);
     }
 
     // ID dialog: color wheel to change the ID of an annotation
@@ -6494,21 +6619,37 @@ export class ULabel {
     update_confidence_dialog() {
         // Whenever the mouse makes the dialogs show up, update the displayed annotation confidence.
         const current_subtask = this.get_current_subtask();
+        const subtask_key = this.get_current_subtask_key();
         const active_annotation_id = current_subtask["state"]["edit_candidate"]["annid"];
         const active_annotation = current_subtask["annotations"]["access"][active_annotation_id];
         /** The active annotation's classification payloads. */
         const aacp = active_annotation["classification_payloads"];
 
-        // Keep track of highest payload confidence
+        // Find the highest confidence payload
         let confidence = 0;
+        let best_class_id = null;
         aacp.forEach((payload) => {
             if (payload.confidence > confidence) {
                 confidence = payload.confidence;
+                best_class_id = payload.class_id;
             }
         });
 
-        // Update the display dialog with the annotation's confidence
-        $(".annotation-confidence-value").text(confidence);
+        // Resolve class name from class_defs
+        let class_name = "Unknown";
+        if (best_class_id !== null) {
+            const class_def = current_subtask["class_defs"].find(
+                (cd) => cd.id === best_class_id || String(cd.id) === String(best_class_id),
+            );
+            if (class_def) {
+                class_name = class_def.name;
+            }
+        }
+
+        // Update the display dialog
+        const global_id = `global_annotation_confidence__${subtask_key}`;
+        $(`#${global_id} .annotation-confidence-classname`).text(class_name);
+        $(`#${global_id} .annotation-confidence-value`).text(`Confidence: ${confidence.toFixed(2)}`);
     }
 
     // ================= Viewer/Annotation Interaction Handlers  =================
