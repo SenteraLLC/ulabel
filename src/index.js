@@ -6458,7 +6458,17 @@ export class ULabel {
             if (annid != null) {
                 let anpyld = this.get_current_subtask()["annotations"]["access"][annid]["classification_payloads"];
                 if (anpyld != null) {
-                    this.get_current_subtask()["state"]["id_payload"] = JSON.parse(JSON.stringify(anpyld));
+                    // Normalize to one entry per class_id so update_id_dialog_display
+                    // can index by position without out-of-bounds access.
+                    const class_ids = this.get_current_subtask()["class_ids"];
+                    const padded = class_ids.map((cid) => {
+                        const existing = anpyld.find((p) => p.class_id === cid);
+                        if (existing) {
+                            return JSON.parse(JSON.stringify(existing));
+                        }
+                        return { class_id: cid, confidence: 0 };
+                    });
+                    this.get_current_subtask()["state"]["id_payload"] = padded;
                     return;
                 }
             }

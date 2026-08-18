@@ -191,23 +191,23 @@ test.describe("ULabel Basic Functionality", () => {
         const subtask_key = await page.evaluate(() => window.ulabel.get_current_subtask_key());
         const conf_id = `#global_annotation_confidence__${subtask_key}`;
 
-        // Middle-image annotation displays with card above (no flip)
-        await draw_bbox(page, [400, 400], [500, 500]);
+        // Upper-middle annotation displays with card above (no flip)
+        await draw_bbox(page, [400, 200], [500, 300]);
         await page.waitForTimeout(100);
-        await page.mouse.move(450, 450);
+        await page.mouse.move(450, 250);
         await page.waitForTimeout(200);
 
         const margin_unscrolled = await page.locator(conf_id).evaluate((el) => el.style.marginTop);
         expect(margin_unscrolled).toBe("-9.5em");
 
         // Zoom in enough for the imwrap to overflow the annbox so scrolling is possible
-        await page.mouse.move(450, 450);
+        await page.mouse.move(450, 250);
         for (let i = 0; i < 10; i++) {
             await page.mouse.wheel(0, -100);
         }
         await page.waitForTimeout(300);
 
-        // Scroll the annbox past the annotation's Y and re-trigger the position calculation
+        // Scroll the annbox so the annotation is near the top of the visible area
         const scroll_result = await page.evaluate(() => {
             const u = window.ulabel;
             const annbox = document.getElementById(u.config.annbox_id);
@@ -219,8 +219,9 @@ test.describe("ULabel Basic Functionality", () => {
             u.show_global_edit_suggestion(annid);
             return { scroll_top: annbox.scrollTop, cbox_y_scaled: cbox_y_scaled };
         });
-        // Sanity check: the scroll actually happened (didn't clamp to 0)
+        // Sanity: scroll happened and wasn't clamped far from the target
         expect(scroll_result.scroll_top).toBeGreaterThan(0);
+        expect(scroll_result.scroll_top).toBeGreaterThanOrEqual(scroll_result.cbox_y_scaled - 100);
         await page.waitForTimeout(100);
 
         const margin_scrolled = await page.locator(conf_id).evaluate((el) => el.style.marginTop);
@@ -243,11 +244,16 @@ test.describe("ULabel Basic Functionality", () => {
             anno.classification_payloads = [{ class_id: 10, confidence: 0 }];
         });
 
-        // Move away and back to force a fresh hover event
-        await page.mouse.move(50, 50);
+        // Trigger the confidence display programmatically
+        await page.evaluate(() => {
+            const u = window.ulabel;
+            const subtask = u.get_current_subtask();
+            const annid = subtask.annotations.ordering[0];
+            subtask.state.edit_candidate = { annid: annid };
+            u.show_global_edit_suggestion(annid);
+            u.update_confidence_dialog();
+        });
         await page.waitForTimeout(100);
-        await page.mouse.move(250, 250);
-        await page.waitForTimeout(200);
 
         const subtask_key = await page.evaluate(() => window.ulabel.get_current_subtask_key());
         const conf_id = `#global_annotation_confidence__${subtask_key}`;
