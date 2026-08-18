@@ -200,16 +200,27 @@ test.describe("ULabel Basic Functionality", () => {
         const margin_unscrolled = await page.locator(conf_id).evaluate((el) => el.style.marginTop);
         expect(margin_unscrolled).toBe("-9.5em");
 
-        // Scroll the annbox down so the annotation's visible top approaches viewport top,
-        // then re-trigger the position calculation (simulating a re-hover after scroll).
-        await page.evaluate(() => {
+        // Zoom in enough for the imwrap to overflow the annbox so scrolling is possible
+        await page.mouse.move(450, 450);
+        for (let i = 0; i < 10; i++) {
+            await page.mouse.wheel(0, -100);
+        }
+        await page.waitForTimeout(300);
+
+        // Scroll the annbox past the annotation's Y and re-trigger the position calculation
+        const scroll_result = await page.evaluate(() => {
             const u = window.ulabel;
             const annbox = document.getElementById(u.config.annbox_id);
-            annbox.scrollTop = 500;
             const annid = u.get_current_subtask().annotations.ordering[0];
+            const cbox = u.get_current_subtask().annotations.access[annid].containing_box;
+            const cbox_y_scaled = ((cbox.tly + cbox.bry) / 2) * u.state.zoom_val;
+            annbox.scrollTop = cbox_y_scaled;
             u.get_current_subtask().state.edit_candidate = { annid: annid };
             u.show_global_edit_suggestion(annid);
+            return { scroll_top: annbox.scrollTop, cbox_y_scaled: cbox_y_scaled };
         });
+        // Sanity check: the scroll actually happened (didn't clamp to 0)
+        expect(scroll_result.scroll_top).toBeGreaterThan(0);
         await page.waitForTimeout(100);
 
         const margin_scrolled = await page.locator(conf_id).evaluate((el) => el.style.marginTop);
@@ -219,22 +230,23 @@ test.describe("ULabel Basic Functionality", () => {
     test("confidence card picks a class name even when all confidences are 0", async ({ page }) => {
         await wait_for_ulabel_init(page);
 
-        // Directly install an annotation with zero confidence and trigger the confidence dialog.
-        // annotation.ts pads missing classes with confidence: 0.0, so this represents a common
-        // "no class info supplied" import case where earlier code showed "Unknown".
-        await page.evaluate(async () => {
-            const u = window.ulabel;
-            const anno = {
-                id: "test_zero",
-                spatial_type: "bbox",
-                spatial_payload: [[150, 150], [250, 250]],
-                classification_payloads: [{ class_id: 10, confidence: 0 }],
-            };
-            await u.set_annotations([anno], "car_detection");
-        });
+        // Draw a bbox using page coordinates (draw_bbox handles image-space mapping)
+        await draw_bbox(page, [200, 200], [300, 300]);
         await page.waitForTimeout(100);
 
-        await page.mouse.move(200, 200);
+        // Force a single classification payload with confidence 0 (represents an all-zero import;
+        // annotation.ts pads missing classes with 0.0, so this is a realistic scenario).
+        await page.evaluate(() => {
+            const u = window.ulabel;
+            const annid = u.get_current_subtask().annotations.ordering[0];
+            const anno = u.get_current_subtask().annotations.access[annid];
+            anno.classification_payloads = [{ class_id: 10, confidence: 0 }];
+        });
+
+        // Move away and back to force a fresh hover event
+        await page.mouse.move(50, 50);
+        await page.waitForTimeout(100);
+        await page.mouse.move(250, 250);
         await page.waitForTimeout(200);
 
         const subtask_key = await page.evaluate(() => window.ulabel.get_current_subtask_key());
@@ -242,6 +254,7 @@ test.describe("ULabel Basic Functionality", () => {
         const classname = (await page.locator(`${conf_id} .annotation-confidence-classname`).textContent()).trim();
         const value = (await page.locator(`${conf_id} .annotation-confidence-value`).textContent()).trim();
 
+        // Pre-fix: classname would be "Unknown" because the > 0 check never matched
         expect(classname).toBe("Sedan");
         expect(value).toBe("Confidence: 0.00");
     });
