@@ -66,9 +66,11 @@ function handle_keypress_event(
     }
 
     const current_subtask = ulabel.get_current_subtask();
+    const is_read_only = ulabel.is_current_subtask_read_only();
 
     // Create a point annotation at the mouse's current location
     if (event_matches_keybind(keypress_event, ulabel.config.create_point_annotation_keybind)) {
+        if (is_read_only) return;
         // Only allow keypress to create point annotations
         if (current_subtask.state.annotation_mode === "point") {
             // Create an annotation based on the last mouse position
@@ -80,6 +82,7 @@ function handle_keypress_event(
     // Create a bbox annotation around the initial_crop,
     // or the whole image if inital_crop does not exist
     if (event_matches_keybind(keypress_event, ulabel.config.create_bbox_on_initial_crop_keybind)) {
+        if (is_read_only) return;
         if (current_subtask.state.annotation_mode === "bbox") {
             // Default to an annotation with size of image
             // Create the coordinates for the bbox's spatial payload
@@ -111,12 +114,14 @@ function handle_keypress_event(
 
     // Change to brush mode (for now, polygon only)
     if (event_matches_keybind(keypress_event, ulabel.config.toggle_brush_mode_keybind)) {
+        if (is_read_only) return;
         ulabel.toggle_brush_mode(ulabel.state["last_move"]);
         return;
     }
 
     // Change to erase mode (will also set the is_in_brush_mode state)
     if (event_matches_keybind(keypress_event, ulabel.config.toggle_erase_mode_keybind)) {
+        if (is_read_only) return;
         ulabel.toggle_erase_mode(ulabel.state["last_move"]);
         return;
     }
@@ -164,6 +169,7 @@ function handle_keypress_event(
         for (let i = 0; i < current_subtask.class_defs.length; i++) {
             const class_def = current_subtask.class_defs[i];
             if (class_def.keybind !== null && event_matches_keybind(keypress_event, class_def.keybind!)) {
+                if (is_read_only) return;
                 const st_key = ulabel.get_current_subtask_key();
                 const class_button = $(`#tb-id-app--${st_key} a.tbid-opt`).eq(i);
                 if (class_button.hasClass("sel")) {
@@ -635,14 +641,17 @@ export function create_ulabel_listeners(
         (keypress_event: JQuery.KeyPressEvent) => {
             // Check the key pressed against the delete annotation keybind in the config
             if (event_matches_keybind(keypress_event, ulabel.config.delete_annotation_keybind)) {
+                if (ulabel.is_current_subtask_read_only()) return;
+                const current_subtask = ulabel.get_current_subtask();
                 // Check the edit_candidate to make sure its not null and isn't nonspatial
-                const edit_cand = ulabel.get_current_subtask().state.edit_candidate;
+                const edit_cand = current_subtask.state.edit_candidate;
                 if (edit_cand !== null && !NONSPATIAL_MODES.includes(edit_cand.spatial_type)) {
                     ulabel.delete_annotation(edit_cand.annid);
                 }
             }
             // Check the key pressed against the delete vertex keybind in the config
             if (event_matches_keybind(keypress_event, ulabel.config.delete_vertex_keybind)) {
+                if (ulabel.is_current_subtask_read_only()) return;
                 const current_subtask = ulabel.get_current_subtask();
                 const edit_cand = current_subtask.state.edit_candidate;
 

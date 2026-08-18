@@ -7,8 +7,9 @@ All notable changes to this project will be documented here.
 ## [0.27.0] - Aug 18th, 2026
 - Hovering a spatial annotation now draws a white outline that hugs its shape.
 - Polish and update the confidence card to include the class name and fix its positioning.
-- Fix shift-hover to properly start a new polygon complex layer
+- Fix shift-hover to properly start a new polygon complex layer.
 - Fix bitmask moves to the image edge that were permanently truncating the mask. Now a translated mask bounces back to its previous position if it would be moved outside the image bounds.
+- Improve read-only subtask handling. Subtasks marked `read_only: true` now actually prevent edits. Additionally, all subtasks may now be read-only (the previous "at least one non-read-only subtask" error has been removed).
 
 ## [0.26.3] - Aug 13th, 2026
 - **Fix wheel-zoom and drag-zoom focal point when the ULabel container is offset from the viewport origin.** `handle_wheel` and `drag_rezoom` used to pass raw `clientX`/`clientY` (viewport coords) straight into `rezoom`, which treats its focal-point arguments as annbox-local. When the container sat at viewport `(0, 0)` the two frames coincided and the bug was invisible; anywhere else (e.g. hosted inside a centered dialog, a padded panel, or below a header) zoom would snap by roughly the annbox's screen offset. Both call sites now convert to annbox-local via `getBoundingClientRect()` before calling `rezoom`, so zoom stays anchored to the cursor / mousedown point regardless of how the host embeds ULabel.

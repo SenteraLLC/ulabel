@@ -113,6 +113,9 @@ export class ULabel {
                     if (mouse_event.shiftKey && !ul.get_current_subtask()["state"]["starting_complex_polygon"]) {
                         return "zoom";
                     }
+                    if (ul.is_current_subtask_read_only()) {
+                        return null;
+                    }
                     return "annotation";
                 } else if ($(mouse_event.target).hasClass("editable")) {
                     return "edit";
@@ -509,8 +512,6 @@ export class ULabel {
     }
 
     static initialize_subtasks(ul) {
-        let first_non_ro = null;
-
         // Initialize a place on the ulabel object to hold annotation color information
         ul.color_info = {};
 
@@ -522,10 +523,6 @@ export class ULabel {
             // For convenience, make a raw subtask var
             let raw_subtask = ul.config.subtasks[subtask_key];
             ul.subtasks[subtask_key] = ULabelSubtask.from_json(subtask_key, raw_subtask);
-
-            if (first_non_ro === null && !ul.subtasks[subtask_key]["read_only"]) {
-                first_non_ro = subtask_key;
-            }
 
             // Process allowed_modes
             // They are placed in ul.subtasks[subtask_key]["allowed_modes"]
@@ -583,12 +580,6 @@ export class ULabel {
             // Process imported annoations
             // They are placed in ul.subtasks[subtask_key]["annotations"]
             ULabel.process_resume_from(ul, subtask_key, raw_subtask);
-        }
-        if (first_non_ro === null) {
-            log_message(
-                "You must have at least one subtask without 'read_only' set to true.",
-                LogLevel.ERROR,
-            );
         }
     }
 
@@ -1042,6 +1033,14 @@ export class ULabel {
      */
     get_current_subtask() {
         return this.subtasks[this.get_current_subtask_key()];
+    }
+
+    /**
+     * Whether the current subtask is marked read-only (no user mutations allowed).
+     * Programmatic mutations via public API (e.g., set_annotations) are still permitted.
+     */
+    is_current_subtask_read_only() {
+        return this.get_current_subtask()["read_only"] === true;
     }
 
     readjust_subtask_opacities() {
@@ -2336,19 +2335,27 @@ export class ULabel {
         }
         const annotation_id = annotation_object["id"];
         const element_id = this.get_nonspatial_annotation_element_id(annotation_id);
+        const is_read_only = this.subtasks[subtask]["read_only"] === true;
+        const note_readonly_attr = is_read_only ? " readonly" : "";
+        const reclf_button = is_read_only ?
+            "" :
+            `<div class="fad_inp_container button frst">
+                        <a href="#" id="reclf__${annotation_id}" class="fad_button reclf"></a>
+                    </div><!--
+                    -->`;
+        const delete_button = is_read_only ?
+            "" :
+            `<div class="fad_inp_container button">
+                        <a href="#" id="delete__${annotation_id}" class="fad_button delete">&#215;</a>
+                    </div>`;
         if ($(`div#${element_id}`).length === 0) {
             $(`div#fad_st__${subtask} div.fad_annotation_rows`).append(`
             <div id="row__${annotation_id}" class="fad_row">
                 <div class="fad_buttons">
                     <div class="fad_inp_container text">
-                        <textarea id="note__${annotation_id}" class="nonspatial_note" placeholder="Notes...">${annotation_object["text_payload"]}</textarea>
+                        <textarea id="note__${annotation_id}" class="nonspatial_note" placeholder="Notes..."${note_readonly_attr}>${annotation_object["text_payload"]}</textarea>
                     </div><!--
-                    --><div class="fad_inp_container button frst">
-                        <a href="#" id="reclf__${annotation_id}" class="fad_button reclf"></a>
-                    </div><!--
-                    --><div class="fad_inp_container button">
-                        <a href="#" id="delete__${annotation_id}" class="fad_button delete">&#215;</a>
-                    </div>
+                    -->${reclf_button}${delete_button}
                 </div><!--
                 --><div id="icon__${annotation_id}" class="fad_type_icon invert-this-svg" style="background-color: ${this.get_non_spatial_annotation_color(annotation_object["classification_payloads"], subtask)};">
                     ${svg_obj}
@@ -3451,6 +3458,8 @@ export class ULabel {
 
     // Edit suggestion: highlight a point in an annotation that can be edited
     show_edit_suggestion(edit_suggestion, currently_exists = false) {
+        // Vertex edit handle is a mutation affordance; skip it in read-only subtasks.
+        if (this.is_current_subtask_read_only()) return;
         let esid = "edit_suggestion__" + this.get_current_subtask_key();
         var esjq = $("#" + esid);
         esjq.css("display", "block");
@@ -3522,10 +3531,13 @@ export class ULabel {
 
         let idd_x;
         let idd_y;
+        const is_read_only = this.is_current_subtask_read_only();
         if (nonspatial_id === null) {
             let esid = "global_edit_suggestion__" + subtask_key;
             var esjq = $("#" + esid);
             esjq.css("display", "block");
+            // Hide the move/reid/delete buttons on read-only subtasks; the confidence card still shows
+            esjq.find(".global_sub_suggestion").css("display", is_read_only ? "none" : "");
             let cbox = current_subtask["annotations"]["access"][annid]["containing_box"];
             let new_lft = (cbox["tlx"] + cbox["brx"] + 2 * diffX) / (2 * this.config["image_width"]);
             let new_top = (cbox["tly"] + cbox["bry"] + 2 * diffY) / (2 * this.config["image_height"]);
@@ -3549,7 +3561,7 @@ export class ULabel {
         }
 
         // let placeholder = $("#global_edit_suggestion a.reid_suggestion");
-        if (!current_subtask["single_class_mode"]) {
+        if (!current_subtask["single_class_mode"] && !is_read_only) {
             // Show id dialog thumbnail
             this.show_id_dialog(idd_x, idd_y, annid, true, nonspatial_id != null);
         }

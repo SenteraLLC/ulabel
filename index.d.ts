@@ -378,6 +378,7 @@ export class ULabel {
     // Subtasks
     public get_current_subtask_key(): string;
     public get_current_subtask(): ULabelSubtask;
+    public is_current_subtask_read_only(): boolean;
     public readjust_subtask_opacities(): void;
     public set_subtask(st_key: string): void;
     public switch_to_next_subtask(): void;
