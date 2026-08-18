@@ -184,4 +184,96 @@ test.describe("ULabel Basic Functionality", () => {
         const margin_near_top = await page.locator(conf_id).evaluate((el) => el.style.marginTop);
         expect(margin_near_top).toBe("-1em");
     });
+
+    test("confidence card flip check accounts for annbox scroll position", async ({ page }) => {
+        await wait_for_ulabel_init(page);
+
+        const subtask_key = await page.evaluate(() => window.ulabel.get_current_subtask_key());
+        const conf_id = `#global_annotation_confidence__${subtask_key}`;
+
+        // Middle-image annotation displays with card above (no flip)
+        await draw_bbox(page, [400, 400], [500, 500]);
+        await page.waitForTimeout(100);
+        await page.mouse.move(450, 450);
+        await page.waitForTimeout(200);
+
+        const margin_unscrolled = await page.locator(conf_id).evaluate((el) => el.style.marginTop);
+        expect(margin_unscrolled).toBe("-9.5em");
+
+        // Scroll the annbox down so the annotation's visible top approaches viewport top,
+        // then re-trigger the position calculation (simulating a re-hover after scroll).
+        await page.evaluate(() => {
+            const u = window.ulabel;
+            const annbox = document.getElementById(u.config.annbox_id);
+            annbox.scrollTop = 500;
+            const annid = u.get_current_subtask().annotations.ordering[0];
+            u.get_current_subtask().state.edit_candidate = { annid: annid };
+            u.show_global_edit_suggestion(annid);
+        });
+        await page.waitForTimeout(100);
+
+        const margin_scrolled = await page.locator(conf_id).evaluate((el) => el.style.marginTop);
+        expect(margin_scrolled).toBe("-1em");
+    });
+
+    test("confidence card picks a class name even when all confidences are 0", async ({ page }) => {
+        await wait_for_ulabel_init(page);
+
+        // Directly install an annotation with zero confidence and trigger the confidence dialog.
+        // annotation.ts pads missing classes with confidence: 0.0, so this represents a common
+        // "no class info supplied" import case where earlier code showed "Unknown".
+        await page.evaluate(async () => {
+            const u = window.ulabel;
+            const anno = {
+                id: "test_zero",
+                spatial_type: "bbox",
+                spatial_payload: [[150, 150], [250, 250]],
+                classification_payloads: [{ class_id: 10, confidence: 0 }],
+            };
+            await u.set_annotations([anno], "car_detection");
+        });
+        await page.waitForTimeout(100);
+
+        await page.mouse.move(200, 200);
+        await page.waitForTimeout(200);
+
+        const subtask_key = await page.evaluate(() => window.ulabel.get_current_subtask_key());
+        const conf_id = `#global_annotation_confidence__${subtask_key}`;
+        const classname = (await page.locator(`${conf_id} .annotation-confidence-classname`).textContent()).trim();
+        const value = (await page.locator(`${conf_id} .annotation-confidence-value`).textContent()).trim();
+
+        expect(classname).toBe("Sedan");
+        expect(value).toBe("Confidence: 0.00");
+    });
+
+    test("switching subtasks clears hovered_annid on the outgoing subtask", async ({ page }) => {
+        await wait_for_ulabel_init(page);
+
+        await draw_bbox(page, [200, 200], [300, 300]);
+        await page.waitForTimeout(100);
+
+        // Hover to set hovered_annid on the current subtask
+        await page.mouse.move(250, 250);
+        await page.waitForTimeout(200);
+
+        const before = await page.evaluate(() => {
+            const u = window.ulabel;
+            const key = u.get_current_subtask_key();
+            return {
+                key: key,
+                hovered_annid: u.subtasks[key].state.hovered_annid,
+            };
+        });
+        expect(before.hovered_annid).not.toBeNull();
+
+        // Switch to the next subtask
+        await page.evaluate(() => window.ulabel.switch_to_next_subtask());
+        await page.waitForTimeout(100);
+
+        // The previous subtask's hovered_annid must be cleared so its stale outline doesn't linger
+        const after = await page.evaluate((old_key) => {
+            return window.ulabel.subtasks[old_key].state.hovered_annid;
+        }, before.key);
+        expect(after).toBeNull();
+    });
 });

@@ -1054,6 +1054,18 @@ export class ULabel {
     set_subtask(st_key) {
         let old_st = this.get_current_subtask_key();
 
+        // Clear stale hover on the outgoing subtask so its white outline doesn't linger
+        // (its canvases stay visible at reduced opacity in the background).
+        const old_subtask = this.subtasks[old_st];
+        const old_hovered = old_subtask["state"]["hovered_annid"];
+        if (old_hovered !== null) {
+            old_subtask["state"]["hovered_annid"] = null;
+            const prev_ann = old_subtask["annotations"]["access"][old_hovered];
+            if (prev_ann && prev_ann["canvas_id"]) {
+                this.redraw_all_annotations_in_annotation_context(prev_ann["canvas_id"], old_st);
+            }
+        }
+
         // Change object state
         this.state["current_subtask"] = st_key;
 
@@ -3519,10 +3531,12 @@ export class ULabel {
             let new_top = (cbox["tly"] + cbox["bry"] + 2 * diffY) / (2 * this.config["image_height"]);
             current_subtask["state"]["visible_dialogs"][esid]["left"] = new_lft;
             current_subtask["state"]["visible_dialogs"][esid]["top"] = new_top;
-            // Decide confidence card position from the un-offset cbox so it stays stable during moves
-            const cbox_center_y_screen = ((cbox["tly"] + cbox["bry"]) / 2) * this.state["zoom_val"];
+            // Decide confidence card position from the un-offset cbox so it stays stable during moves.
+            // Account for annbox scroll: what matters is the visible position, not the image-space position.
+            const cbox_center_y_imwrap = ((cbox["tly"] + cbox["bry"]) / 2) * this.state["zoom_val"];
+            const scroll_top = $("#" + this.config["annbox_id"]).scrollTop() || 0;
             const conf_id = `global_annotation_confidence__${subtask_key}`;
-            const flip_below = cbox_center_y_screen < 100;
+            const flip_below = (cbox_center_y_imwrap - scroll_top) < 100;
             $(`#${conf_id}`).css("margin-top", flip_below ? "-1em" : "-9.5em");
             this.reposition_dialogs();
             idd_x = (cbox["tlx"] + cbox["brx"] + 2 * diffX) / 2;
@@ -6645,15 +6659,17 @@ export class ULabel {
         /** The active annotation's classification payloads. */
         const aacp = active_annotation["classification_payloads"];
 
-        // Find the highest confidence payload
-        let confidence = 0;
+        // Match get_annotation_class_id semantics: seed the first payload so all-zero confidences
+        // still pick a class instead of falling through to "Unknown".
+        let confidence;
         let best_class_id = null;
         aacp.forEach((payload) => {
-            if (payload.confidence > confidence) {
+            if (confidence === undefined || payload.confidence > confidence) {
                 confidence = payload.confidence;
                 best_class_id = payload.class_id;
             }
         });
+        if (confidence === undefined) confidence = 0;
 
         // Resolve class name from class_defs
         let class_name = "Unknown";
