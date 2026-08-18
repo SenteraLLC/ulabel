@@ -1862,6 +1862,7 @@ div#${prntid} div.dialogs_container {
    position: absolute;
    top: 0;
    left: 0;
+   z-index: ${BACK_Z_INDEX + 1};
 }
 
 div.toolbox_inner_cls {

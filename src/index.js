@@ -1760,14 +1760,7 @@ export class ULabel {
         ctx.lineTo((sp[0] + diffX) * px_per_px, (sp[1] + diffY) * px_per_px);
         ctx.closePath();
         ctx.stroke();
-
-        if (this.is_annotation_hovered(annotation_object)) {
-            ctx.globalCompositeOperation = "destination-over";
-            ctx.strokeStyle = "white";
-            ctx.lineWidth = (line_size + 4) * px_per_px;
-            ctx.stroke();
-            ctx.globalCompositeOperation = "source-over";
-        }
+        this.draw_hover_outline(annotation_object, ctx, line_size + 4);
     }
 
     draw_point(annotation_object, ctx, offset = null) {
@@ -1801,14 +1794,7 @@ export class ULabel {
         ctx.arc((sp[0] + diffX) * px_per_px, (sp[1] + diffY) * px_per_px, line_size * px_per_px * 3, 0, 2 * Math.PI);
         ctx.closePath();
         ctx.stroke();
-
-        if (this.is_annotation_hovered(annotation_object)) {
-            ctx.globalCompositeOperation = "destination-over";
-            ctx.strokeStyle = "white";
-            ctx.lineWidth = (line_size + 4) * px_per_px;
-            ctx.stroke();
-            ctx.globalCompositeOperation = "source-over";
-        }
+        this.draw_hover_outline(annotation_object, ctx, line_size + 2);
     }
 
     draw_bbox3(annotation_object, ctx, offset = null) {
@@ -1861,13 +1847,7 @@ export class ULabel {
             ctx.globalAlpha = 1.0;
         }
 
-        if (this.is_annotation_hovered(annotation_object)) {
-            ctx.globalCompositeOperation = "destination-over";
-            ctx.strokeStyle = "white";
-            ctx.lineWidth = (line_size + 4) * px_per_px;
-            ctx.stroke();
-            ctx.globalCompositeOperation = "source-over";
-        }
+        this.draw_hover_outline(annotation_object, ctx, line_size + 4);
     }
 
     draw_polygon(annotation_object, ctx, offset = null) {
@@ -2267,14 +2247,7 @@ export class ULabel {
             ctx.lineTo((pts[pti][0] + diffX) * px_per_px, (pts[pti][1] + diffY) * px_per_px);
         }
         ctx.stroke();
-
-        if (this.is_annotation_hovered(annotation_object)) {
-            ctx.globalCompositeOperation = "destination-over";
-            ctx.strokeStyle = "white";
-            ctx.lineWidth = (line_size + 4) * px_per_px;
-            ctx.stroke();
-            ctx.globalCompositeOperation = "source-over";
-        }
+        this.draw_hover_outline(annotation_object, ctx, line_size + 4);
     }
 
     draw_tbar(annotation_object, ctx, offset = null) {
@@ -3485,6 +3458,16 @@ export class ULabel {
     is_annotation_hovered(annotation_object) {
         const subtask_key = this.get_current_subtask_key();
         return this.subtasks[subtask_key]["state"]["hovered_annid"] === annotation_object["id"];
+    }
+
+    draw_hover_outline(annotation_object, ctx, border_width) {
+        if (!this.is_annotation_hovered(annotation_object)) return;
+        const px_per_px = this.config["px_per_px"];
+        ctx.globalCompositeOperation = "destination-over";
+        ctx.strokeStyle = "white";
+        ctx.lineWidth = border_width * px_per_px;
+        ctx.stroke();
+        ctx.globalCompositeOperation = "source-over";
     }
 
     set_hovered_annotation(annid) {
