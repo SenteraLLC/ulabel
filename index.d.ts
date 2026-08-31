@@ -382,6 +382,17 @@ export class ULabel {
     public readjust_subtask_opacities(): void;
     public set_subtask(st_key: string): void;
     public switch_to_next_subtask(): void;
+    /**
+     * Swap in a new set of subtask specs without tearing the instance down,
+     * reusing the decoded image, canvases, toolbox and listeners. Subtasks
+     * whose annotations are already loaded are skipped.
+     *
+     * Resolves to the keys that were swapped, or to null — leaving the instance
+     * untouched — when the subtask keys, classes or allowed modes differ from
+     * what the instance was built with, since those are baked into the DOM and
+     * event bindings. Callers should rebuild the instance in that case.
+     */
+    public replace_subtasks(subtasks: ULabelSubtasks): Promise<string[] | null>;
 
     // Annotations
     public get_annotations(subtask: string): ULabelAnnotation[];

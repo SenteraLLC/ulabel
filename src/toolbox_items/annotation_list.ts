@@ -702,6 +702,9 @@ export class AnnotationListToolboxItem extends ToolboxItem {
      * Called when the edit_candidate changes on the canvas
      */
     private sync_highlight_from_canvas() {
+        // A frame scheduled by the annbox mousemove handler can still be
+        // pending when the instance is destroyed, which nulls this reference.
+        if (!this.ulabel) return;
         const current_subtask = this.ulabel.get_current_subtask();
         if (!current_subtask) return;
 

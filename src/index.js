@@ -60,6 +60,9 @@ jQuery.fn.outer_html = function () {
 // Valid brush overlap modes for bitmask painting (see set_brush_overlap_mode).
 const BRUSH_OVERLAP_MODES = ["none", "exclude", "overwrite"];
 
+// Width, in image pixels, of the contour drawn around a hovered bitmask.
+const BITMASK_OUTLINE_BORDER = 2;
+
 export class ULabel {
     static version() {
         return ULABEL_VERSION;
@@ -371,6 +374,11 @@ export class ULabel {
                 data: new Uint8Array(raw_payload.data),
                 size: [raw_payload.size[0], raw_payload.size[1]],
             };
+            // A cropped payload's box has to survive the clone, or the buffer would be
+            // misread as full-frame.
+            if (raw_payload.box !== undefined) {
+                cloned.spatial_payload.box = { ...raw_payload.box };
+            }
             return cloned;
         }
         return JSON.parse(JSON.stringify(raw));
@@ -2108,7 +2116,7 @@ export class ULabel {
         // the cache; only a mask edit (version bump) or color change forces a rebuild.
         let render = annotation_object["_mask_render"];
         if (render == null || render.mask !== mask || render.version !== mask.version || render.color !== color) {
-            render = this.build_bitmask_render(annotation_object, mask, color);
+            render = this.build_bitmask_render(mask, color);
             if (render === null) return; // Empty mask, nothing to draw
             this.set_bitmask_render(annotation_object, render);
         }
@@ -2132,53 +2140,53 @@ export class ULabel {
         ctx.globalAlpha = 1.0;
 
         if (this.is_annotation_hovered(annotation_object)) {
-            // Build a white contour by dilating the mask shape and cutting out the interior
-            const border = 2;
-            const ow = render.box_width + border * 2;
-            const oh = render.box_height + border * 2;
-            const outline = document.createElement("canvas");
-            outline.width = ow;
-            outline.height = oh;
-            const octx = outline.getContext("2d");
-            const dirs = [[-1, 0], [1, 0], [0, -1], [0, 1], [-1, -1], [-1, 1], [1, -1], [1, 1]];
-            for (const [ox, oy] of dirs) {
-                octx.drawImage(render.canvas, border + ox * border, border + oy * border);
-            }
-            octx.globalCompositeOperation = "source-in";
-            octx.fillStyle = "white";
-            octx.fillRect(0, 0, ow, oh);
-            octx.globalCompositeOperation = "destination-out";
-            octx.drawImage(render.canvas, border, border);
-            const blit_x = (render.tlx + diffX - border) * px_per_px;
-            const blit_y = (render.tly + diffY - border) * px_per_px;
-            ctx.drawImage(outline, blit_x, blit_y, ow * px_per_px, oh * px_per_px);
+            const outline = this.get_bitmask_outline(render);
+            const blit_x = (render.tlx + diffX - BITMASK_OUTLINE_BORDER) * px_per_px;
+            const blit_y = (render.tly + diffY - BITMASK_OUTLINE_BORDER) * px_per_px;
+            ctx.drawImage(outline, blit_x, blit_y, outline.width * px_per_px, outline.height * px_per_px);
         }
     }
 
-    // Build a native-resolution, class-colored stencil for a bitmask's bounding box.
-    // Returns { canvas, tlx, tly, box_width, box_height, mask, version, color } or null if empty.
-    build_bitmask_render(annotation_object, mask, color) {
-        const image_width = this.config["image_width"];
-        const image_height = this.config["image_height"];
+    // Build (once per render) a white contour by dilating the mask shape and cutting out the
+    // interior. Cached on the render, which is already discarded whenever the mask version or
+    // class color changes, so hovering never re-rasterizes.
+    get_bitmask_outline(render) {
+        if (render.outline != null) return render.outline;
 
-        // Only rasterize the mask's bounding box rather than the whole image. The containing
-        // box is maintained as a superset of the foreground (see rebuild_bitmask_containing_box),
-        // so every painted pixel is covered. Fall back to a full scan only if it is missing.
-        let box = annotation_object["containing_box"];
-        if (box == null) {
-            box = mask.get_bounding_box();
-            if (box === null) return null;
+        const border = BITMASK_OUTLINE_BORDER;
+        const ow = render.box_width + border * 2;
+        const oh = render.box_height + border * 2;
+        const outline = document.createElement("canvas");
+        outline.width = ow;
+        outline.height = oh;
+        const octx = outline.getContext("2d");
+        const dirs = [[-1, 0], [1, 0], [0, -1], [0, 1], [-1, -1], [-1, 1], [1, -1], [1, 1]];
+        for (const [ox, oy] of dirs) {
+            octx.drawImage(render.canvas, border + ox * border, border + oy * border);
         }
+        octx.globalCompositeOperation = "source-in";
+        octx.fillStyle = "white";
+        octx.fillRect(0, 0, ow, oh);
+        octx.globalCompositeOperation = "destination-out";
+        octx.drawImage(render.canvas, border, border);
 
-        const tlx = Math.max(0, Math.floor(box.tlx));
-        const tly = Math.max(0, Math.floor(box.tly));
-        const brx = Math.min(image_width - 1, Math.ceil(box.brx));
-        const bry = Math.min(image_height - 1, Math.ceil(box.bry));
-        const box_width = brx - tlx + 1;
-        const box_height = bry - tly + 1;
-        if (box_width <= 0 || box_height <= 0) return null;
+        render.outline = outline;
+        return outline;
+    }
 
-        // Build an opaque white stencil of just the box region at native resolution
+    // Build a native-resolution, class-colored stencil for a bitmask's stored window.
+    // Returns { canvas, tlx, tly, box_width, box_height, mask, version, color } or null if empty.
+    build_bitmask_render(mask, color) {
+        // A mask only holds pixels for its window, which is already a superset of the
+        // foreground, so the window is exactly the region worth rasterizing.
+        const box = mask.get_window_box();
+        if (box === null) return null; // Empty mask, nothing to draw
+
+        const box_width = mask.window_width;
+        const box_height = mask.window_height;
+
+        // Stencil the window at native resolution. Only alpha is written; the tint below
+        // fills color wherever alpha survives, so this is one store per foreground pixel.
         const offscreen = document.createElement("canvas");
         offscreen.width = box_width;
         offscreen.height = box_height;
@@ -2186,17 +2194,9 @@ export class ULabel {
         const image_data = offscreen_ctx.createImageData(box_width, box_height);
         const data = image_data.data;
         const mask_data = mask.data;
-        for (let y = tly; y <= bry; y++) {
-            const mask_row = y * image_width;
-            const local_row = (y - tly) * box_width;
-            for (let x = tlx; x <= brx; x++) {
-                if (mask_data[mask_row + x] !== 0) {
-                    const j = (local_row + (x - tlx)) * 4;
-                    data[j] = 255;
-                    data[j + 1] = 255;
-                    data[j + 2] = 255;
-                    data[j + 3] = 255;
-                }
+        for (let i = 0, j = 3; i < mask_data.length; i++, j += 4) {
+            if (mask_data[i] !== 0) {
+                data[j] = 255;
             }
         }
         offscreen_ctx.putImageData(image_data, 0, 0);
@@ -2209,8 +2209,8 @@ export class ULabel {
 
         return {
             canvas: offscreen,
-            tlx: tlx,
-            tly: tly,
+            tlx: box.tlx,
+            tly: box.tly,
             box_width: box_width,
             box_height: box_height,
             mask: mask,
@@ -7488,6 +7488,155 @@ export class ULabel {
         // id dialogs) live in the same parent and MUST survive.
         $("#canvasses__" + subtask + " > canvas.annotation_canvas").remove();
         this.subtasks[subtask]["state"]["annotation_contexts"] = {};
+    }
+
+    /**
+     * Whether `subtask_specs` describes the same subtask layer this instance was
+     * built with, differing only in annotations.
+     *
+     * Subtask keys, class definitions and allowed modes are baked into DOM ids,
+     * toolbox tabs and event bindings at init time, so those must match for an
+     * in-place swap to be safe.
+     */
+    _subtask_shape_matches(subtask_specs) {
+        const old_keys = Object.keys(this.subtasks);
+        const new_keys = Object.keys(subtask_specs);
+        if (old_keys.length !== new_keys.length) return false;
+
+        for (const st of new_keys) {
+            const current = this.subtasks[st];
+            if (current === undefined) return false;
+
+            const spec = subtask_specs[st];
+            const modes = spec["allowed_modes"] ?? [];
+            if (modes.length !== current["allowed_modes"].length) return false;
+            for (let i = 0; i < modes.length; i++) {
+                if (modes[i] !== current["allowed_modes"][i]) return false;
+            }
+
+            const classes = spec["classes"] ?? [];
+            const class_defs = current["class_defs"];
+            if (classes.length !== class_defs.length) return false;
+            for (let i = 0; i < classes.length; i++) {
+                const raw = classes[i];
+                // Classes may be given as bare ids, in which case only the id
+                // can differ from what was processed at init.
+                const id = typeof raw === "object" ? raw["id"] : raw;
+                if (id !== class_defs[i]["id"]) return false;
+                if (typeof raw !== "object") continue;
+                if (raw["name"] !== undefined && raw["name"] !== class_defs[i]["name"]) return false;
+                if (raw["color"] !== undefined && raw["color"] !== class_defs[i]["color"]) return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Whether `annotations` is the set already loaded on `subtask`, compared by
+     * id and order. Lets replace_subtasks skip untouched subtasks, so pushing a
+     * new spec for one class doesn't re-import and redraw its siblings.
+     */
+    _subtask_annotations_unchanged(subtask, annotations) {
+        const ordering = this.subtasks[subtask]["annotations"]["ordering"];
+        if (ordering.length !== annotations.length) return false;
+        for (let i = 0; i < ordering.length; i++) {
+            if (ordering[i] !== annotations[i]["id"]) return false;
+        }
+        return true;
+    }
+
+    /**
+     * Swap in a new set of subtask specs without tearing the instance down.
+     *
+     * Reuses the decoded image, the subtask canvases, the toolbox and every
+     * listener, rebuilding only the annotation layer — far cheaper than
+     * destroy() + new ULabel() + init() when a host application switches
+     * between views of the same image. Subtasks whose annotations are already
+     * loaded are left alone, so pushing a whole spec set costs only the
+     * subtasks that actually changed.
+     *
+     * Only annotations (and `read_only` / `inactive_opacity`) can change this
+     * way. If the subtask keys, classes or allowed modes differ, the DOM and
+     * toolbox no longer describe the incoming layer, so this returns false and
+     * leaves the instance untouched; the caller should rebuild instead.
+     *
+     * @param {object} subtask_specs Same shape as the constructor's `subtasks`.
+     * @returns {Promise<string[] | null>} the keys that were swapped, or null if
+     *     the caller must rebuild the instance.
+     */
+    async replace_subtasks(subtask_specs) {
+        if (this.is_destroyed) {
+            log_message("replace_subtasks called on a destroyed ULabel instance", LogLevel.WARNING, true);
+            return null;
+        }
+        if (!this.is_init) return null;
+        if (!this._subtask_shape_matches(subtask_specs)) return null;
+
+        const stale = [];
+        for (const st in subtask_specs) {
+            const incoming = subtask_specs[st]["resume_from"] ?? [];
+            if (!this._subtask_annotations_unchanged(st, incoming)) stale.push(st);
+        }
+        if (stale.length === 0) return [];
+
+        const container = document.getElementById(this.config["container_id"]);
+        ULabelLoader.add_loader_div(container);
+        // Yield so the browser can paint the loader before the heavy synchronous work below
+        await ULabelLoader.wait_for_render();
+
+        // Recheck: destroy() (manual or auto) may have run during the paint yield.
+        if (this.is_destroyed) return stale;
+
+        try {
+            for (const st of stale) {
+                const spec = subtask_specs[st];
+                // Undo/redo won't survive a wholesale annotation swap.
+                this.reset_interaction_state(st);
+                this.subtasks[st]["actions"]["stream"] = [];
+                this.subtasks[st]["actions"]["undone_stack"] = [];
+                this._clear_subtask_annotation_canvases(st);
+
+                ULabel.process_resume_from(this, st, { resume_from: spec["resume_from"] ?? [] });
+
+                if (spec["read_only"] !== undefined) {
+                    this.subtasks[st]["read_only"] = spec["read_only"];
+                }
+                if (spec["inactive_opacity"] !== undefined) {
+                    this.subtasks[st]["inactive_opacity"] = spec["inactive_opacity"];
+                }
+                // Keep the raw config in step so a later get/set round trip sees
+                // the annotations that are actually on screen.
+                this.config.subtasks[st] = spec;
+            }
+
+            // Yield the event loop so the loader's reveal timer can fire if the work above
+            // took long enough to cross the reveal threshold.
+            await new Promise((resolve) => setTimeout(resolve, 0));
+            if (this.is_destroyed) return stale;
+
+            if (!this.config.allow_annotations_outside_image) {
+                const image_width = this.config["image_width"];
+                const image_height = this.config["image_height"];
+                for (const st of stale) {
+                    for (const anno of Object.values(this.subtasks[st]["annotations"]["access"])) {
+                        anno.clamp_annotation_to_image_bounds(image_width, image_height);
+                    }
+                }
+            }
+
+            for (const st of stale) {
+                initialize_annotation_canvases(this, st);
+                this.redraw_all_annotations(st);
+            }
+            this.readjust_subtask_opacities();
+            // Calculate distances for all annotations if FilterDistance is present
+            this.update_filter_distance(null, false, true);
+            // Update class counter in toolbox
+            this.toolbox.redraw_update_items(this);
+        } finally {
+            ULabelLoader.remove_loader_div();
+        }
+        return stale;
     }
 
     // Change frame
