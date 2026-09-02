@@ -37,4 +37,64 @@ integration. Items 1/3/4/5 touch this repo; item 2 is model-registry only.
   - Verified in the browser: GT still renders after the move, heap 193 MB on a
     fresh load, no page errors.
 
+## Architecture: subtask per data set, class as class
+
+The viewer models GT/Pred/Diff as *per-class* subtasks whose set changes with
+the view mode, so a mode switch is a subtask-shape change and forces a rebuild.
+Diff goes further and replaces the class with the outcome (`FP`/`FN`/`TP`), so
+class identity is destroyed and "false negatives for Crop" is inexpressible.
+
+Target: three fixed subtasks (`groundtruth`, `prediction`, `diff`), each with
+the real class defs, present in every mode with only their annotations
+swapping. Outcome moves to annotation metadata. This is also what diff-driven
+groundtruth editing needs, since applying a diff region to a GT mask requires
+both loaded together with class identity intact.
+
+- [x] 6. Per-annotation color resolver
+  - `get_annotation_color` looks up `color_info[class_id]`. Add an optional
+    per-annotation hook so the diff subtask can color by outcome while keeping
+    real classes. Every draw path already funnels through this one function.
+  - Added `annotation_color_resolver` to `Configuration` and the constructor
+    args. Returning `null` falls back to the class color, and the confidence
+    gradient still applies either way.
+- [x] 7. Class-aware annotation canvases
+  - `get_next_available_canvas_id` packs annotations into the first non-full
+    canvas regardless of class, and per-subtask opacity/z-index is what dims
+    inactive layers today. Group canvases by class so the same CSS mechanism
+    gives per-class dimming and bring-to-front once classes share a subtask.
+  - Canvases now nest under a `div.class_canvasses` per class, and
+    `set_active_class_layer(subtask, class_id, inactive_opacity)` mirrors
+    `readjust_subtask_opacities` one level down. Verified: lint clean, 161
+    jest tests and 102 Chromium e2e tests pass.
+- [x] 8. `hidden_by` visibility map
+  - Mirror the keyed composition of `deprecated_by` for view filtering.
+    Separate from `deprecated`, which means "deleted" and is about to start
+    flowing back to Encord.
+  - Added `mark_hidden` plus a public `filter_annotations(hidden_by_key,
+    should_hide, subtask, redraw)`. Keys compose, so class/outcome/confidence
+    controls can be applied in any order. `hidden` gates drawing, edit
+    candidates, and annotation navigation, and also skips bulk polygon delete
+    so it can't remove something the user can't see. Export is untouched.
+- [x] 9. (model-registry) Rebuild subtask construction on the new model
+  - Three fixed subtasks, real class defs, `match_outcome` in
+    `annotation_meta`, Encord object hash carried on GT annotations, and class
+    chips driving filters rather than `set_subtask`.
+  - `buildViewSubtasks` replaces `buildClassSubtasks`/`buildDiffSubtasks`: all
+    three subtasks share one class list and one `allowed_modes` union derived
+    from the ontology, so the subtask shape no longer changes with the data.
+  - Diff layers by outcome instead of class, which class-keyed canvases alone
+    could not express. Added `annotation_canvas_group_resolver` to ULabel and
+    generalized `set_active_class_layer`'s `inactive_opacity` to accept a
+    per-key map, preserving the old fn 0.6 / fp 0.6 / tp 0.4 dim values.
+  - Sharing class ids across subtasks tripped ULabel's duplicate-id warning,
+    which checked the global `valid_class_ids`. Scoped the check to duplicates
+    within a subtask and made `valid_class_ids` a true set. Colors are written
+    idempotently and `findAllClassDefinitions` already de-duplicates by id, so
+    the confidence slider still shows one entry per class.
+  - Verified in browser on eval run #3: all three modes paint with no console
+    warnings; `canvasses__prediction` groups by class id (`0`/`1`/`2`) and
+    `canvasses__diff` by outcome (`tp`/`fp`/`fn`), with the selected layer at
+    opacity 1 / z-index 76 and the rest dimmed. GT shows polyline and bitmask
+    classes together in one subtask. Lint clean, 166 jest tests pass.
+
 

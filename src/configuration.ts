@@ -8,6 +8,7 @@ import type {
     ULabelSubmitButton,
     AnnoScalingMode,
     BrushOverlapMode,
+    ULabelAnnotation,
 } from "../index";
 import {
     ModeSelectionToolboxItem,
@@ -146,6 +147,14 @@ export class Configuration {
     public image_data: ImageData | null = null;
     public allow_soft_id: boolean = false;
     public default_annotation_color: string = "#fa9d2a";
+    // Override the color of individual annotations. Return null to fall back to
+    // the annotation's class color. Lets a subtask keep real class defs while
+    // rendering by some other property, e.g. a diff outcome.
+    public annotation_color_resolver: ((annotation: ULabelAnnotation) => string | null) | null = null;
+    // Override which canvas layer an annotation is grouped onto. Return null to
+    // fall back to its class id. Grouping decides what `set_active_class_layer`
+    // can dim or raise, so a diff subtask can layer by outcome instead of class.
+    public annotation_canvas_group_resolver: ((annotation: ULabelAnnotation) => string | null) | null = null;
     public username: string = "ULabelUser";
     public initial_line_size: number = 5;
 
