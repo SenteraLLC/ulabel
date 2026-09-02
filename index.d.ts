@@ -328,6 +328,11 @@ export type ULabelConstructorArgs = {
      * can dim or raise.
      */
     annotation_canvas_group_resolver?: (annotation: ULabelAnnotation) => string | null;
+    /**
+     * Override the name the hover card shows for an annotation. Return null to
+     * fall back to its class name.
+     */
+    annotation_display_name_resolver?: (annotation: ULabelAnnotation) => string | null;
     /** @deprecated Use top-level properties instead. */
     config_data?: object;
 };

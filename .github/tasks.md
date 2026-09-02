@@ -98,3 +98,40 @@ both loaded together with class identity intact.
     classes together in one subtask. Lint clean, 166 jest tests pass.
 
 
+
+- [x] 10. Show every diff outcome at once, and keep the hover card off the annotation
+  - (model-registry) Dropped the TP/FP/FN layer picker: diff mode now calls
+    `set_active_class_layer(key, null, 1)` so all three outcome groups stay at
+    full opacity. A null active layer is also what makes them all hover
+    targets, since `get_edit_candidates` skips groups that aren't active.
+    Passing the opacity explicitly matters: with no active class every group
+    takes the `inactive_opacity` branch, so the default would dim all of them.
+    The sidebar "Diff Colors" rows are now a legend plus recolor.
+  - Added `annotation_display_name_resolver` to ULabel, alongside the existing
+    color and canvas-group resolvers, so the hover card can name the diff
+    outcome instead of the class. Every diff annotation carries the same class,
+    which made the old class name useless there.
+  - The hover card was anchored at the containing box's centre, so it covered
+    whatever was under the cursor. It now clears the box by half its on-screen
+    height plus a gap, flipping below only when there isn't room above.
+    Offsets are divided by the dialog container's CSS scale (0.5 / 0.66666
+    from `.global_edit_suggestion`), which otherwise halves them.
+  - Verified in browser on eval run #3 item 503: `canvasses__diff` holds `fn`,
+    `fp` and `tp` all at opacity 1, each is hover-targetable, the card reads
+    "True Positive" / "False Negative", and it sits a 10 px gap above the
+    hovered box in every sampled position. Lint clean in both repos.
+
+- [x] 11. Hover on the annotation boundary, not its containing box
+  - `get_edit_candidates` already hit-tests exactly (`get_pixel` for bitmasks,
+    point-in-polygon for polygons), so this cost nothing extra. The stray
+    hovers came from the fallback underneath: when nothing contains the
+    cursor, it still picked the smallest annotation whose *containing box*
+    was within `dst_thresh`. That fallback exists so you can grab an
+    annotation to edit it, which a read-only subtask never needs.
+  - Now skipped when the subtask is read-only and the spatial type has an
+    exact test. Types without one (polyline, tbar, contour) keep the box
+    fallback, so they stay hoverable.
+  - Verified on run #3 item 503: across six probes the hover card appeared if
+    and only if the cursor was over a painted mask pixel, comparing against
+    the coordinates ULabel itself received. GT polylines still hover and read
+    "Row". 166 unit tests pass.

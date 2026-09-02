@@ -3658,11 +3658,29 @@ export class ULabel {
             current_subtask["state"]["visible_dialogs"][esid]["top"] = new_top;
             // Decide confidence card position from the un-offset cbox so it stays stable during moves.
             // Account for annbox scroll: what matters is the visible position, not the image-space position.
-            const cbox_center_y_imwrap = ((cbox["tly"] + cbox["bry"]) / 2) * this.state["zoom_val"];
             const scroll_top = $("#" + this.config["annbox_id"]).scrollTop() || 0;
             const conf_id = `global_annotation_confidence__${subtask_key}`;
-            const flip_below = (cbox_center_y_imwrap - scroll_top) < 100;
-            $(`#${conf_id}`).css("margin-top", flip_below ? "-1em" : "-9.5em");
+            const conf_jq = $(`#${conf_id}`);
+            // The dialog container is CSS-scaled about the anchor, so a margin
+            // set here lands `scale` times as far. `outerHeight` is already in
+            // that local space; the cbox measurements are in screen px.
+            const es_el = esjq[0];
+            const scale = es_el.offsetWidth > 0 ?
+                es_el.getBoundingClientRect().width / es_el.offsetWidth :
+                1;
+            const card_height = conf_jq.outerHeight() || 0;
+            const gap = 10;
+            // The anchor is the box centre, so clear it by half the on-screen
+            // box height or the card covers whatever is being hovered.
+            const half_height = Math.abs(cbox["bry"] - cbox["tly"]) / 2 * this.state["zoom_val"];
+            const box_top_visible = (cbox["tly"] * this.state["zoom_val"]) - scroll_top;
+            const flip_below = box_top_visible - (card_height * scale) - gap < 0;
+            conf_jq.css(
+                "margin-top",
+                flip_below ?
+                    `${(half_height + gap) / scale}px` :
+                    `${-((half_height + gap) / scale + card_height)}px`,
+            );
             this.reposition_dialogs();
             idd_x = (cbox["tlx"] + cbox["brx"] + 2 * diffX) / 2;
             idd_y = (cbox["tly"] + cbox["bry"] + 2 * diffY) / 2;
@@ -6236,6 +6254,14 @@ export class ULabel {
         let minsize = Infinity;
         let found_containing_annotation = false;
         const active_class_layer = this.get_current_subtask()["state"]["active_class_layer"] ?? null;
+        // A read-only subtask has nothing to grab, so the near-miss fallback
+        // below is just noise: require a real hit wherever one can be tested.
+        const require_exact_hit = this.is_current_subtask_read_only();
+        // One cursor pixel spans several image pixels when zoomed out, so the
+        // exact tests get that much slack. Without it a thin mask or the edge
+        // of a large one is unhittable: the pixel under the cursor is empty
+        // even though the downscaled render looks filled there.
+        const slack = 2 / this.get_empirical_scale();
         // TODO(3d)
         for (let edi = 0; edi < this.get_current_subtask()["annotations"]["ordering"].length; edi++) {
             const annotation_id = this.get_current_subtask()["annotations"]["ordering"][edi];
@@ -6273,6 +6299,9 @@ export class ULabel {
                 (this.state["current_frame"] <= cbox["brz"])
             ) {
                 let is_a_containing_annotation = false;
+                // Whether this spatial type can be hit-tested against its real
+                // boundary rather than just its containing box.
+                let has_exact_test = true;
                 let boxsize = (cbox["brx"] - cbox["tlx"]) * (cbox["bry"] - cbox["tly"]);
                 switch (spatial_type) {
                     case "polygon":
@@ -6292,14 +6321,28 @@ export class ULabel {
                             is_a_containing_annotation = true;
                         }
                         break;
+                    case "polyline":
+                        // Within the drawn stroke of the line itself
+                        if (GeometricUtils.point_is_near_polyline(
+                            [gblx, gbly],
+                            annotation["spatial_payload"],
+                            (annotation["line_size"] ?? this.get_subtask_line_size()) / 2 + slack,
+                        )) {
+                            is_a_containing_annotation = true;
+                        }
+                        break;
                     case "bitmask":
                         // The mouse must be over a painted pixel of the mask
-                        if (this.get_bitmask(annotation).get_pixel(Math.round(gblx), Math.round(gbly))) {
+                        if (this.get_bitmask(annotation).has_foreground_in_circle(
+                            Math.round(gblx),
+                            Math.round(gbly),
+                            slack,
+                        )) {
                             is_a_containing_annotation = true;
                         }
                         break;
                     default:
-
+                        has_exact_test = false;
                         break;
                 }
 
@@ -6321,7 +6364,7 @@ export class ULabel {
                             };
                         }
                     }
-                } else if (boxsize < minsize) {
+                } else if (!(require_exact_hit && has_exact_test) && boxsize < minsize) {
                     ret["candidate_ids"].push(annotation_id);
                     minsize = boxsize;
                     ret["best"] = {
@@ -6452,18 +6495,31 @@ export class ULabel {
 
     // ================= Mouse event interpreters =================
 
+    /**
+     * Page coordinates of the annbox's content origin, which is where the image
+     * starts. `offset()` gives the border box, so any border on the annbox would
+     * otherwise shift every position by its width.
+     */
+    get_annbox_content_origin() {
+        const annbox = $("#" + this.config["annbox_id"]);
+        const offset = annbox.offset();
+        const el = annbox[0];
+        return {
+            left: offset.left + (el?.clientLeft ?? 0) - annbox.scrollLeft(),
+            top: offset.top + (el?.clientTop ?? 0) - annbox.scrollTop(),
+        };
+    }
+
     // Get the mouse position on the screen
     get_global_mouse_x(mouse_event) {
         const scale = this.get_empirical_scale();
-        const annbox = $("#" + this.config["annbox_id"]);
-        const raw = (mouse_event.pageX - annbox.offset().left + annbox.scrollLeft()) / scale;
+        const raw = (mouse_event.pageX - this.get_annbox_content_origin().left) / scale;
         return raw;
     }
 
     get_global_mouse_y(mouse_event) {
         const scale = this.get_empirical_scale();
-        const annbox = $("#" + this.config["annbox_id"]);
-        const raw = (mouse_event.pageY - annbox.offset().top + annbox.scrollTop()) / scale;
+        const raw = (mouse_event.pageY - this.get_annbox_content_origin().top) / scale;
         return raw;
     }
 
@@ -6491,16 +6547,14 @@ export class ULabel {
 
     get_global_element_center_x(jqel) {
         const scale = this.get_empirical_scale();
-        const annbox = $("#" + this.config["annbox_id"]);
-        const raw = (jqel.offset().left + jqel.width() / 2 - annbox.offset().left + annbox.scrollLeft()) / scale;
+        const raw = (jqel.offset().left + jqel.width() / 2 - this.get_annbox_content_origin().left) / scale;
         // return Math.round(raw);
         return raw;
     }
 
     get_global_element_center_y(jqel) {
         const scale = this.get_empirical_scale();
-        const annbox = $("#" + this.config["annbox_id"]);
-        const raw = (jqel.offset().top + jqel.height() / 2 - annbox.offset().top + annbox.scrollTop()) / scale;
+        const raw = (jqel.offset().top + jqel.height() / 2 - this.get_annbox_content_origin().top) / scale;
         // return Math.round();
         return raw;
     }
@@ -6829,10 +6883,11 @@ export class ULabel {
                 class_name = class_def.name;
             }
         }
+        const display_name = this.config.annotation_display_name_resolver?.(active_annotation) ?? class_name;
 
         // Update the display dialog
         const global_id = `global_annotation_confidence__${subtask_key}`;
-        $(`#${global_id} .annotation-confidence-classname`).text(class_name);
+        $(`#${global_id} .annotation-confidence-classname`).text(display_name);
         $(`#${global_id} .annotation-confidence-value`).text(`Confidence: ${confidence.toFixed(2)}`);
     }
 

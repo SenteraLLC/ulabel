@@ -155,6 +155,9 @@ export class Configuration {
     // fall back to its class id. Grouping decides what `set_active_class_layer`
     // can dim or raise, so a diff subtask can layer by outcome instead of class.
     public annotation_canvas_group_resolver: ((annotation: ULabelAnnotation) => string | null) | null = null;
+    // Override the name the hover card shows for an annotation. Return null to
+    // fall back to its class name, so a diff subtask can label by outcome.
+    public annotation_display_name_resolver: ((annotation: ULabelAnnotation) => string | null) | null = null;
     public username: string = "ULabelUser";
     public initial_line_size: number = 5;
 
