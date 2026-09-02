@@ -1727,6 +1727,11 @@ div#${prntid} div.canvasses {
    padding-right: 100%;
    padding-bottom: 100%;
 }
+div#${prntid} div.class_canvasses {
+   position: absolute;
+   top: 0;
+   left: 0;
+}
 div#${prntid} canvas.canvas_cls {
    position: absolute;
    top: 0;
@@ -1862,7 +1867,8 @@ div#${prntid} div.dialogs_container {
    position: absolute;
    top: 0;
    left: 0;
-   z-index: ${BACK_Z_INDEX + 1};
+   /* Above the active class layer, which sits one above the resting canvases */
+   z-index: ${BACK_Z_INDEX + 2};
 }
 
 div.toolbox_inner_cls {

@@ -124,6 +124,12 @@ export class Toolbox {
             height: 100%;
         }
 
+        /* The image is inserted at its natural size and only scaled once the
+           initial crop lands, so keep it hidden until then. */
+        .full_ulabel_container_:not(.ulabel-cropped) .imwrap_cls {
+            visibility: hidden;
+        }
+
         #toolbox {
             width: 320px;
             background-color: white;
@@ -272,17 +278,26 @@ export class Toolbox {
         images: string,
         ULABEL_VERSION: string,
     ): string {
+        // Bake the persisted collapsed state into the markup. Applying it after
+        // init instead paints a frame with the toolbox expanded, which reads as
+        // a flicker every time the instance is rebuilt.
+        const is_collapsed = get_local_storage_item("ulabel_toolbox_collapsed") === "true";
+        const container_class = is_collapsed ? "full_ulabel_container_ toolbox-collapsed" : "full_ulabel_container_";
+        const toolbox_class = is_collapsed ? "toolbox_cls collapsed" : "toolbox_cls";
+        const collapse_arrow = is_collapsed ? "◀" : "▶";
+        const collapse_title = is_collapsed ? "Expand toolbox" : "Collapse toolbox";
+
         // Setup base div and ULabel version header
         let toolbox_html = `
-        <div class="full_ulabel_container_">
+        <div class="${container_class}">
             ${frame_annotation_dialogs}
             <div id="${ulabel.config["annbox_id"]}" class="annbox_cls">
                 <div id="${ulabel.config["imwrap_id"]}" class="imwrap_cls ${ulabel.config["imgsz_class"]}">
                     ${images}
                 </div>
             </div>
-            <button class="toolbox-collapse-btn" title="Collapse toolbox">▶</button>
-            <div id="${ulabel.config["toolbox_id"]}" class="toolbox_cls">
+            <button class="toolbox-collapse-btn" title="${collapse_title}">${collapse_arrow}</button>
+            <div id="${ulabel.config["toolbox_id"]}" class="${toolbox_class}">
                 <div class="toolbox-header-container">
                     <div class="toolbox-name-header">
                         <h1 class="toolname"><a class="repo-anchor" href="https://github.com/SenteraLLC/ulabel">ULabel</a> <span class="version-number">v${ULABEL_VERSION}</span></h1><!--

@@ -543,6 +543,48 @@ export class GeometricUtils {
         return false;
     }
 
+    /** Squared distance from a point to a line segment, endpoints included. */
+    public static point_segment_distance_squared(
+        point: Point2D,
+        kp1: Point2D,
+        kp2: Point2D,
+    ): number {
+        const dx: number = kp2[0] - kp1[0];
+        const dy: number = kp2[1] - kp1[1];
+        const len_sq: number = dx * dx + dy * dy;
+        let t: number = 0;
+        if (len_sq > 0) {
+            t = ((point[0] - kp1[0]) * dx + (point[1] - kp1[1]) * dy) / len_sq;
+            t = Math.max(0, Math.min(1, t));
+        }
+        const nx: number = kp1[0] + t * dx - point[0];
+        const ny: number = kp1[1] + t * dy - point[1];
+        return nx * nx + ny * ny;
+    }
+
+    /** Whether a point falls within `threshold` of a polyline's path. */
+    public static point_is_near_polyline(
+        point: Point2D,
+        polyline: ULabelSpatialPayload2D,
+        threshold: number,
+    ): boolean {
+        if (polyline.length === 0) return false;
+        const threshold_sq: number = threshold * threshold;
+        if (polyline.length === 1) {
+            const dx: number = polyline[0][0] - point[0];
+            const dy: number = polyline[0][1] - point[1];
+            return dx * dx + dy * dy <= threshold_sq;
+        }
+        for (let i = 0; i < polyline.length - 1; i++) {
+            if (
+                GeometricUtils.point_segment_distance_squared(point, polyline[i], polyline[i + 1]) <= threshold_sq
+            ) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     // Convert a bbox to a simple polygon by adding the last point
     public static bbox_to_simple_polygon(
         bbox: ULabelSpatialPayload2D,

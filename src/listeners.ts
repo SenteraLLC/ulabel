@@ -699,6 +699,20 @@ export function create_ulabel_listeners(
         },
     );
 
+    $(document).on(
+        "mouseleave" + ULABEL_NAMESPACE,
+        "#" + ulabel.config["annbox_id"],
+        () => {
+            // The suggestion dialogs live inside the annbox, so moving onto one
+            // of them doesn't count as leaving.
+            if (ulabel.drag_state["active_key"] !== null) return;
+            const state = ulabel.get_current_subtask()["state"];
+            // A clicked-open id dialog is its own interaction; don't yank it away
+            if (state["idd_visible"] && !state["idd_thumbnail"]) return;
+            ulabel.hide_and_clear_action_candidates();
+        },
+    );
+
     // Button to toggle night mode
     $(document).on(
         "click" + ULABEL_NAMESPACE,

@@ -46,6 +46,22 @@ export type DeprecatedBy = {
 };
 
 /**
+ * Valid keys for the HiddenBy type.
+ *
+ * Distinct from ValidDeprecatedBy on purpose: `deprecated` means the annotation
+ * has been deleted, while `hidden` only means it is filtered out of the current
+ * view. Conflating them loses data as soon as deprecation is persisted.
+ */
+export type ValidHiddenBy = "human" | "class_filter" | "outcome_filter" | "confidence_filter";
+
+export type HiddenBy = {
+    human?: boolean;
+    class_filter?: boolean;
+    outcome_filter?: boolean;
+    confidence_filter?: boolean;
+};
+
+/**
  * Info needed to filter distance from row without accessing the dom.
  * Primarily exists so that points can be filtered before the page loads.
  */
@@ -301,6 +317,22 @@ export type ULabelConstructorArgs = {
     instructions_url?: string;
     toolbox_order?: AllowedToolboxItem[];
     auto_destroy_on_detach?: boolean;
+    /**
+     * Override the color of individual annotations. Return null to fall back to
+     * the annotation's class color.
+     */
+    annotation_color_resolver?: (annotation: ULabelAnnotation) => string | null;
+    /**
+     * Override which canvas layer an annotation is grouped onto. Return null to
+     * fall back to its class id. Grouping decides what `set_active_class_layer`
+     * can dim or raise.
+     */
+    annotation_canvas_group_resolver?: (annotation: ULabelAnnotation) => string | null;
+    /**
+     * Override the name the hover card shows for an annotation. Return null to
+     * fall back to its class name.
+     */
+    annotation_display_name_resolver?: (annotation: ULabelAnnotation) => string | null;
     /** @deprecated Use top-level properties instead. */
     config_data?: object;
 };
@@ -334,6 +366,18 @@ export class ULabel {
 
     config: Configuration;
     toolbox: Toolbox;
+    drag_state: {
+        active_key: string | null;
+        release_button: number | null;
+    } & Record<
+        "annotation" | "brush" | "edit" | "pan" | "zoom" | "move" | "right",
+        {
+            mouse_start: [number, number] | null;
+            offset_start: [number, number] | null;
+            zoom_val_start: number | null;
+        }
+    >;
+
     color_info: { [key: number]: string };
     valid_class_ids: number[];
     toolbox_order?: number[];
@@ -380,8 +424,38 @@ export class ULabel {
     public get_current_subtask(): ULabelSubtask;
     public is_current_subtask_read_only(): boolean;
     public readjust_subtask_opacities(): void;
+    public set_active_class_layer(
+        subtask: string,
+        active_class_id: number | string | null,
+        inactive_opacity?: number | Record<string, number>,
+    ): void;
+    public get_annotation_canvas_group(annotation: ULabelAnnotation): string | null;
+    /**
+     * Hide or show annotations in a subtask under a named filter key. Filters
+     * compose, so independent controls can be applied in any order. Hiding is a
+     * view operation only and never marks an annotation deleted.
+     *
+     * @returns how many annotations changed visibility
+     */
+    public filter_annotations(
+        hidden_by_key: ValidHiddenBy,
+        should_hide: (annotation: ULabelAnnotation) => boolean,
+        subtask?: string | null,
+        redraw?: boolean,
+    ): number;
     public set_subtask(st_key: string): void;
     public switch_to_next_subtask(): void;
+    /**
+     * Swap in a new set of subtask specs without tearing the instance down,
+     * reusing the decoded image, canvases, toolbox and listeners. Subtasks
+     * whose annotations are already loaded are skipped.
+     *
+     * Resolves to the keys that were swapped, or to null — leaving the instance
+     * untouched — when the subtask keys, classes or allowed modes differ from
+     * what the instance was built with, since those are baked into the DOM and
+     * event bindings. Callers should rebuild the instance in that case.
+     */
+    public replace_subtasks(subtasks: ULabelSubtasks): Promise<string[] | null>;
 
     // Annotations
     public get_annotations(subtask: string): ULabelAnnotation[];
@@ -573,6 +647,7 @@ export class ULabel {
     ): void;
     public hide_global_edit_suggestion(): void;
     public hide_edit_suggestion(): void;
+    public hide_and_clear_action_candidates(): void;
 
     // Edit utils
     public get_with_access_string(
@@ -628,7 +703,10 @@ export class ULabel {
     public get_init_canvas_context_id(
         annotation_id: string,
         subtask?: string, // SUBTASK KEY
+        class_id?: number | string | null,
     ): string;
+    public get_canvas_class_key(class_id: number | string | null): string;
+    public get_class_canvasses_id(subtask: string, class_id: number | string | null): string;
 }
 
 declare global {

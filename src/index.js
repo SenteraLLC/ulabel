@@ -23,6 +23,7 @@ import {
     get_annotation_confidence,
     get_point_and_line_annotations,
     mark_deprecated,
+    mark_hidden,
     update_distance_from_line_to_each_point,
 } from "../build/annotation_operators";
 import { AnnotationResizeItem, BrushToolboxItem } from "../build/toolbox";
@@ -59,6 +60,9 @@ jQuery.fn.outer_html = function () {
 
 // Valid brush overlap modes for bitmask painting (see set_brush_overlap_mode).
 const BRUSH_OVERLAP_MODES = ["none", "exclude", "overwrite"];
+
+// Width, in image pixels, of the contour drawn around a hovered bitmask.
+const BITMASK_OUTLINE_BORDER = 2;
 
 export class ULabel {
     static version() {
@@ -304,8 +308,8 @@ export class ULabel {
                     // Only create an id if one wasn't provided
                     id = class_definition.id ?? ULabel.create_unused_class_id(ulabel);
 
-                    if (ulabel.valid_class_ids.includes(id)) {
-                        log_message(`Duplicate class id ${id} detected. This is not supported and may result in unintended side-effects.
+                    if (subtask.class_ids.includes(id)) {
+                        log_message(`Duplicate class id ${id} detected within subtask ${subtask_key}. This is not supported and may result in unintended side-effects.
                         This may be caused by mixing string and object class definitions, or by assigning the same id to two or more object class definitions.`,
                         LogLevel.WARNING);
                     }
@@ -331,8 +335,11 @@ export class ULabel {
             subtask.class_defs.push(modifed_class_definition);
             subtask.class_ids.push(modifed_class_definition.id);
 
-            // Also save the id and color_info on the ULabel object
-            ulabel.valid_class_ids.push(modifed_class_definition.id);
+            // Also save the id and color_info on the ULabel object. Subtasks may
+            // legitimately share a class, so this stays a set.
+            if (!ulabel.valid_class_ids.includes(modifed_class_definition.id)) {
+                ulabel.valid_class_ids.push(modifed_class_definition.id);
+            }
             ulabel.color_info[modifed_class_definition.id] = modifed_class_definition.color;
         }
 
@@ -345,7 +352,9 @@ export class ULabel {
                 color: COLORS[1],
                 keybind: null,
             });
-            ulabel.valid_class_ids.push(DELETE_CLASS_ID);
+            if (!ulabel.valid_class_ids.includes(DELETE_CLASS_ID)) {
+                ulabel.valid_class_ids.push(DELETE_CLASS_ID);
+            }
             ulabel.color_info[DELETE_CLASS_ID] = COLORS[1];
         }
     }
@@ -371,6 +380,11 @@ export class ULabel {
                 data: new Uint8Array(raw_payload.data),
                 size: [raw_payload.size[0], raw_payload.size[1]],
             };
+            // A cropped payload's box has to survive the clone, or the buffer would be
+            // misread as full-frame.
+            if (raw_payload.box !== undefined) {
+                cloned.spatial_payload.box = { ...raw_payload.box };
+            }
             return cloned;
         }
         return JSON.parse(JSON.stringify(raw));
@@ -1050,6 +1064,73 @@ export class ULabel {
         }
     }
 
+    /**
+     * Dim every class in a subtask except the active one, and raise the active
+     * one above its siblings. The per-subtask equivalent of `set_subtask`, for
+     * when one subtask holds several classes.
+     *
+     * @param {string} subtask subtask key
+     * @param {number|string|null} active_class_id class to bring to front, or null for none
+     * @param {number|object} inactive_opacity opacity for the other classes, either one
+     *     value for all of them or a map keyed by class, mirroring how each
+     *     subtask carries its own `inactive_opacity`
+     */
+    set_active_class_layer(subtask, active_class_id, inactive_opacity = 0.4) {
+        const active_key = this.get_canvas_class_key(active_class_id);
+        // Dimmed classes stop being hover/edit targets, so what's interactive
+        // matches what's legible. Guarded because callers can race a pending
+        // `replace_subtasks` and name a subtask that doesn't exist yet.
+        const subtask_state = this.subtasks[subtask]?.["state"];
+        if (subtask_state) {
+            subtask_state["active_class_layer"] = active_class_id === null ? null : active_key;
+        }
+        $("#canvasses__" + subtask + " > div.class_canvasses").each((_, el) => {
+            const key = $(el).attr("data-class-key");
+            const is_active = active_class_id !== null && key === active_key;
+            let dim = inactive_opacity;
+            if (typeof inactive_opacity !== "number") {
+                dim = inactive_opacity?.[key] ?? 0.4;
+            }
+            $(el).css("opacity", is_active ? 1 : dim);
+            $(el).css("z-index", is_active ? BACK_Z_INDEX + 1 : BACK_Z_INDEX);
+        });
+    }
+
+    /**
+     * Hide or show annotations in a subtask based on a predicate, under a named
+     * filter key. Filters compose: an annotation stays hidden while any key
+     * hides it, so independent controls (class, outcome, confidence) can be
+     * applied in any order without clobbering each other.
+     *
+     * Hiding is purely a view operation. Unlike deprecation it never marks an
+     * annotation deleted, and it survives export untouched.
+     *
+     * @param {string} hidden_by_key which filter is being applied
+     * @param {function} should_hide predicate receiving each annotation
+     * @param {string|null} subtask subtask key, or null for the current subtask
+     * @param {boolean} redraw whether to redraw the subtask afterwards
+     * @returns {number} how many annotations changed visibility
+     */
+    filter_annotations(hidden_by_key, should_hide, subtask = null, redraw = true) {
+        if (subtask === null) {
+            subtask = this.get_current_subtask_key();
+        }
+
+        const annotations = this.subtasks[subtask]["annotations"]["access"];
+        let changed = 0;
+        for (const annotation_id in annotations) {
+            const annotation = annotations[annotation_id];
+            const was_hidden = annotation["hidden"] === true;
+            mark_hidden(annotation, should_hide(annotation) === true, hidden_by_key);
+            if (annotation["hidden"] !== was_hidden) changed++;
+        }
+
+        if (redraw && changed > 0) {
+            this.redraw_all_annotations(subtask);
+        }
+        return changed;
+    }
+
     set_subtask(st_key) {
         let old_st = this.get_current_subtask_key();
 
@@ -1429,32 +1510,62 @@ export class ULabel {
      * @param {string} subtask subtask name
      * @returns {string} The ID of an available canvas
      */
-    get_next_available_canvas_id(subtask = null) {
+    get_next_available_canvas_id(subtask = null, class_id = null) {
         if (subtask === null) {
             subtask = this.get_current_subtask_key();
         }
-        const canvas_ids = Object.keys(this.subtasks[subtask]["state"]["annotation_contexts"]);
+        const contexts = this.subtasks[subtask]["state"]["annotation_contexts"];
+        const canvas_ids = Object.keys(contexts);
+        const key = this.get_canvas_class_key(class_id);
         for (let i = 0; i < canvas_ids.length; i++) {
-            // If the canvas has less than n_annos_per_canvas annotations, return its ID
-            if (this.subtasks[subtask]["state"]["annotation_contexts"][canvas_ids[i]]["annotation_ids"].length < this.config.n_annos_per_canvas) {
+            const context = contexts[canvas_ids[i]];
+            // Annotations are grouped onto canvases by class so that a whole
+            // class can be dimmed or raised with one CSS write.
+            if (context["class_key"] !== key) continue;
+            if (context["annotation_ids"].length < this.config.n_annos_per_canvas) {
                 return canvas_ids[i];
             }
         }
         // If no canvas has less than n_annos_per_canvas annotations, create a new canvas
-        return this.create_annotation_canvas(subtask);
+        return this.create_annotation_canvas(subtask, class_id);
+    }
+
+    // Normalize a class id into the suffix used for per-class canvas grouping.
+    get_canvas_class_key(class_id) {
+        return class_id === null || class_id === undefined ? "none" : String(class_id);
+    }
+
+    // Which canvas layer an annotation belongs to. Defaults to its class.
+    get_annotation_canvas_group(annotation) {
+        const resolved = this.config.annotation_canvas_group_resolver?.(annotation);
+        return resolved != null ? resolved : get_annotation_class_id(annotation);
+    }
+
+    // The div grouping one class's annotation canvases within a subtask.
+    get_class_canvasses_id(subtask, class_id) {
+        return `canvasses__${subtask}__cls__${this.get_canvas_class_key(class_id)}`;
     }
 
     /**
      * Create a new canvas and return its ID
      *
      * @param {string} subtask name
+     * @param {number|string|null} class_id class to group the canvas under
      * @returns {string} The ID of a new canvas
      */
-    create_annotation_canvas(subtask) {
+    create_annotation_canvas(subtask, class_id = null) {
         const canvas_id = `canvas__${this.make_new_annotation_id()}`;
+        const class_key = this.get_canvas_class_key(class_id);
+        const group_id = this.get_class_canvasses_id(subtask, class_id);
 
-        // Add canvas to the "canvasses__${subtask}" div
-        $("#canvasses__" + subtask).append(`
+        if ($("#" + group_id).length === 0) {
+            $("#canvasses__" + subtask).append(
+                `<div id="${group_id}" class="class_canvasses" data-class-key="${class_key}"></div>`,
+            );
+            $("#" + group_id).css("z-index", BACK_Z_INDEX);
+        }
+
+        $("#" + group_id).append(`
             <canvas 
                 id="${canvas_id}" 
                 class="${this.config["canvas_class"]} ${this.config["imgsz_class"]} canvas_cls annotation_canvas" 
@@ -1470,6 +1581,7 @@ export class ULabel {
         // Add the canvas context to the state
         this.subtasks[subtask]["state"]["annotation_contexts"][canvas_id] = {
             annotation_ids: [],
+            class_key: class_key,
             context: document.getElementById(canvas_id).getContext("2d"),
         };
 
@@ -1481,14 +1593,15 @@ export class ULabel {
      *
      * @param {string} annotation_id annotation ID
      * @param {string} subtask subtask name
+     * @param {number|string|null} class_id class to group the annotation under
      * @returns {string} The ID of the canvas context
      */
-    get_init_canvas_context_id(annotation_id, subtask = null) {
+    get_init_canvas_context_id(annotation_id, subtask = null, class_id = null) {
         if (subtask === null) {
             subtask = this.get_current_subtask_key();
         }
         // Get the next available canvas id
-        const canvas_id = this.get_next_available_canvas_id(subtask);
+        const canvas_id = this.get_next_available_canvas_id(subtask, class_id);
         // Add the annotation id to the canvas context
         this.subtasks[subtask]["state"]["annotation_contexts"][canvas_id]["annotation_ids"].push(annotation_id);
 
@@ -1692,6 +1805,13 @@ export class ULabel {
     }
 
     get_annotation_color(annotation) {
+        const gradient_val = $("#gradient-slider").val() / 100;
+
+        const resolved = this.config.annotation_color_resolver?.(annotation);
+        if (resolved != null) {
+            return get_gradient(annotation, resolved, get_annotation_confidence, gradient_val);
+        }
+
         // Use the annotation's class id to get the color of the annotation
         const class_id = get_annotation_class_id(annotation);
         const color = this.color_info[class_id];
@@ -1704,7 +1824,7 @@ export class ULabel {
 
         // Return the color after applying a gradient to it based on its confidence
         // If gradients are disabled, get_gradient will return the passed in color
-        return get_gradient(annotation, color, get_annotation_confidence, $("#gradient-slider").val() / 100);
+        return get_gradient(annotation, color, get_annotation_confidence, gradient_val);
     }
 
     get_active_class_color() {
@@ -2108,7 +2228,7 @@ export class ULabel {
         // the cache; only a mask edit (version bump) or color change forces a rebuild.
         let render = annotation_object["_mask_render"];
         if (render == null || render.mask !== mask || render.version !== mask.version || render.color !== color) {
-            render = this.build_bitmask_render(annotation_object, mask, color);
+            render = this.build_bitmask_render(mask, color);
             if (render === null) return; // Empty mask, nothing to draw
             this.set_bitmask_render(annotation_object, render);
         }
@@ -2132,53 +2252,53 @@ export class ULabel {
         ctx.globalAlpha = 1.0;
 
         if (this.is_annotation_hovered(annotation_object)) {
-            // Build a white contour by dilating the mask shape and cutting out the interior
-            const border = 2;
-            const ow = render.box_width + border * 2;
-            const oh = render.box_height + border * 2;
-            const outline = document.createElement("canvas");
-            outline.width = ow;
-            outline.height = oh;
-            const octx = outline.getContext("2d");
-            const dirs = [[-1, 0], [1, 0], [0, -1], [0, 1], [-1, -1], [-1, 1], [1, -1], [1, 1]];
-            for (const [ox, oy] of dirs) {
-                octx.drawImage(render.canvas, border + ox * border, border + oy * border);
-            }
-            octx.globalCompositeOperation = "source-in";
-            octx.fillStyle = "white";
-            octx.fillRect(0, 0, ow, oh);
-            octx.globalCompositeOperation = "destination-out";
-            octx.drawImage(render.canvas, border, border);
-            const blit_x = (render.tlx + diffX - border) * px_per_px;
-            const blit_y = (render.tly + diffY - border) * px_per_px;
-            ctx.drawImage(outline, blit_x, blit_y, ow * px_per_px, oh * px_per_px);
+            const outline = this.get_bitmask_outline(render);
+            const blit_x = (render.tlx + diffX - BITMASK_OUTLINE_BORDER) * px_per_px;
+            const blit_y = (render.tly + diffY - BITMASK_OUTLINE_BORDER) * px_per_px;
+            ctx.drawImage(outline, blit_x, blit_y, outline.width * px_per_px, outline.height * px_per_px);
         }
     }
 
-    // Build a native-resolution, class-colored stencil for a bitmask's bounding box.
-    // Returns { canvas, tlx, tly, box_width, box_height, mask, version, color } or null if empty.
-    build_bitmask_render(annotation_object, mask, color) {
-        const image_width = this.config["image_width"];
-        const image_height = this.config["image_height"];
+    // Build (once per render) a white contour by dilating the mask shape and cutting out the
+    // interior. Cached on the render, which is already discarded whenever the mask version or
+    // class color changes, so hovering never re-rasterizes.
+    get_bitmask_outline(render) {
+        if (render.outline != null) return render.outline;
 
-        // Only rasterize the mask's bounding box rather than the whole image. The containing
-        // box is maintained as a superset of the foreground (see rebuild_bitmask_containing_box),
-        // so every painted pixel is covered. Fall back to a full scan only if it is missing.
-        let box = annotation_object["containing_box"];
-        if (box == null) {
-            box = mask.get_bounding_box();
-            if (box === null) return null;
+        const border = BITMASK_OUTLINE_BORDER;
+        const ow = render.box_width + border * 2;
+        const oh = render.box_height + border * 2;
+        const outline = document.createElement("canvas");
+        outline.width = ow;
+        outline.height = oh;
+        const octx = outline.getContext("2d");
+        const dirs = [[-1, 0], [1, 0], [0, -1], [0, 1], [-1, -1], [-1, 1], [1, -1], [1, 1]];
+        for (const [ox, oy] of dirs) {
+            octx.drawImage(render.canvas, border + ox * border, border + oy * border);
         }
+        octx.globalCompositeOperation = "source-in";
+        octx.fillStyle = "white";
+        octx.fillRect(0, 0, ow, oh);
+        octx.globalCompositeOperation = "destination-out";
+        octx.drawImage(render.canvas, border, border);
 
-        const tlx = Math.max(0, Math.floor(box.tlx));
-        const tly = Math.max(0, Math.floor(box.tly));
-        const brx = Math.min(image_width - 1, Math.ceil(box.brx));
-        const bry = Math.min(image_height - 1, Math.ceil(box.bry));
-        const box_width = brx - tlx + 1;
-        const box_height = bry - tly + 1;
-        if (box_width <= 0 || box_height <= 0) return null;
+        render.outline = outline;
+        return outline;
+    }
 
-        // Build an opaque white stencil of just the box region at native resolution
+    // Build a native-resolution, class-colored stencil for a bitmask's stored window.
+    // Returns { canvas, tlx, tly, box_width, box_height, mask, version, color } or null if empty.
+    build_bitmask_render(mask, color) {
+        // A mask only holds pixels for its window, which is already a superset of the
+        // foreground, so the window is exactly the region worth rasterizing.
+        const box = mask.get_window_box();
+        if (box === null) return null; // Empty mask, nothing to draw
+
+        const box_width = mask.window_width;
+        const box_height = mask.window_height;
+
+        // Stencil the window at native resolution. Only alpha is written; the tint below
+        // fills color wherever alpha survives, so this is one store per foreground pixel.
         const offscreen = document.createElement("canvas");
         offscreen.width = box_width;
         offscreen.height = box_height;
@@ -2186,17 +2306,9 @@ export class ULabel {
         const image_data = offscreen_ctx.createImageData(box_width, box_height);
         const data = image_data.data;
         const mask_data = mask.data;
-        for (let y = tly; y <= bry; y++) {
-            const mask_row = y * image_width;
-            const local_row = (y - tly) * box_width;
-            for (let x = tlx; x <= brx; x++) {
-                if (mask_data[mask_row + x] !== 0) {
-                    const j = (local_row + (x - tlx)) * 4;
-                    data[j] = 255;
-                    data[j + 1] = 255;
-                    data[j + 2] = 255;
-                    data[j + 3] = 255;
-                }
+        for (let i = 0, j = 3; i < mask_data.length; i++, j += 4) {
+            if (mask_data[i] !== 0) {
+                data[j] = 255;
             }
         }
         offscreen_ctx.putImageData(image_data, 0, 0);
@@ -2209,8 +2321,8 @@ export class ULabel {
 
         return {
             canvas: offscreen,
-            tlx: tlx,
-            tly: tly,
+            tlx: box.tlx,
+            tly: box.tly,
             box_width: box_width,
             box_height: box_height,
             mask: mask,
@@ -2383,8 +2495,8 @@ export class ULabel {
     draw_annotation(annotation_object, offset = null, subtask = null) {
         // DEBUG left here for refactor reference, but I don't think it's needed moving forward
         //    there may be a use case for drawing depreacted annotations
-        // Don't draw if deprecated
-        if (annotation_object["deprecated"]) return;
+        // Don't draw if deprecated or filtered out of the current view
+        if (annotation_object["deprecated"] || annotation_object["hidden"]) return;
 
         // Get actual context from context key and subtask
         let context = null;
@@ -3214,8 +3326,9 @@ export class ULabel {
         let modified_annotations = {};
         // Loop through all annotations
         for (let [annid, annotation] of Object.entries(annotations)) {
-            // Skip deprecated annotations
-            if (annotation["deprecated"]) {
+            // Skip deprecated annotations, and hidden ones so a bulk delete
+            // can never remove something the user can't see
+            if (annotation["deprecated"] || annotation["hidden"]) {
                 continue;
             }
             // Skip non-spatial annotations and 3D annotations
@@ -3545,11 +3658,29 @@ export class ULabel {
             current_subtask["state"]["visible_dialogs"][esid]["top"] = new_top;
             // Decide confidence card position from the un-offset cbox so it stays stable during moves.
             // Account for annbox scroll: what matters is the visible position, not the image-space position.
-            const cbox_center_y_imwrap = ((cbox["tly"] + cbox["bry"]) / 2) * this.state["zoom_val"];
             const scroll_top = $("#" + this.config["annbox_id"]).scrollTop() || 0;
             const conf_id = `global_annotation_confidence__${subtask_key}`;
-            const flip_below = (cbox_center_y_imwrap - scroll_top) < 100;
-            $(`#${conf_id}`).css("margin-top", flip_below ? "-1em" : "-9.5em");
+            const conf_jq = $(`#${conf_id}`);
+            // The dialog container is CSS-scaled about the anchor, so a margin
+            // set here lands `scale` times as far. `outerHeight` is already in
+            // that local space; the cbox measurements are in screen px.
+            const es_el = esjq[0];
+            const scale = es_el.offsetWidth > 0 ?
+                es_el.getBoundingClientRect().width / es_el.offsetWidth :
+                1;
+            const card_height = conf_jq.outerHeight() || 0;
+            const gap = 10;
+            // The anchor is the box centre, so clear it by half the on-screen
+            // box height or the card covers whatever is being hovered.
+            const half_height = Math.abs(cbox["bry"] - cbox["tly"]) / 2 * this.state["zoom_val"];
+            const box_top_visible = (cbox["tly"] * this.state["zoom_val"]) - scroll_top;
+            const flip_below = box_top_visible - (card_height * scale) - gap < 0;
+            conf_jq.css(
+                "margin-top",
+                flip_below ?
+                    `${(half_height + gap) / scale}px` :
+                    `${-((half_height + gap) / scale + card_height)}px`,
+            );
             this.reposition_dialogs();
             idd_x = (cbox["tlx"] + cbox["brx"] + 2 * diffX) / 2;
             idd_y = (cbox["tly"] + cbox["bry"] + 2 * diffY) / 2;
@@ -4279,7 +4410,11 @@ export class ULabel {
             init_id_payload = redo_payload.init_payload;
         }
 
-        let canvas_id = this.get_init_canvas_context_id(annotation_id, subtask_key);
+        let canvas_id = this.get_init_canvas_context_id(
+            annotation_id,
+            subtask_key,
+            get_annotation_class_id({ classification_payloads: init_id_payload }),
+        );
 
         // TODO(3d)
         if (NONSPATIAL_MODES.includes(annotation_mode)) {
@@ -4911,8 +5046,12 @@ export class ULabel {
         const subtask_key = this.get_current_subtask_key();
         const current_subtask = this.subtasks[subtask_key];
         const annotation_id = this.make_new_annotation_id();
-        const canvas_id = this.get_init_canvas_context_id(annotation_id, subtask_key);
         const init_id_payload = this.get_init_id_payload("bitmask");
+        const canvas_id = this.get_init_canvas_context_id(
+            annotation_id,
+            subtask_key,
+            get_annotation_class_id({ classification_payloads: init_id_payload }),
+        );
 
         current_subtask["annotations"]["access"][annotation_id] = {
             id: annotation_id,
@@ -6114,11 +6253,24 @@ export class ULabel {
         };
         let minsize = Infinity;
         let found_containing_annotation = false;
+        const active_class_layer = this.get_current_subtask()["state"]["active_class_layer"] ?? null;
+        // A read-only subtask has nothing to grab, so the near-miss fallback
+        // below is just noise: require a real hit wherever one can be tested.
+        const require_exact_hit = this.is_current_subtask_read_only();
+        // One cursor pixel spans several image pixels when zoomed out, so the
+        // exact tests get that much slack. Without it a thin mask or the edge
+        // of a large one is unhittable: the pixel under the cursor is empty
+        // even though the downscaled render looks filled there.
+        const slack = 2 / this.get_empirical_scale();
         // TODO(3d)
         for (let edi = 0; edi < this.get_current_subtask()["annotations"]["ordering"].length; edi++) {
             const annotation_id = this.get_current_subtask()["annotations"]["ordering"][edi];
             let annotation = this.get_current_subtask()["annotations"]["access"][annotation_id];
-            if (annotation["deprecated"]) continue;
+            if (annotation["deprecated"] || annotation["hidden"]) continue;
+            if (
+                active_class_layer !== null &&
+                this.get_canvas_class_key(this.get_annotation_canvas_group(annotation)) !== active_class_layer
+            ) continue;
             let cbox = annotation["containing_box"];
             let frame = annotation["frame"];
             const spatial_type = annotation["spatial_type"];
@@ -6147,6 +6299,9 @@ export class ULabel {
                 (this.state["current_frame"] <= cbox["brz"])
             ) {
                 let is_a_containing_annotation = false;
+                // Whether this spatial type can be hit-tested against its real
+                // boundary rather than just its containing box.
+                let has_exact_test = true;
                 let boxsize = (cbox["brx"] - cbox["tlx"]) * (cbox["bry"] - cbox["tly"]);
                 switch (spatial_type) {
                     case "polygon":
@@ -6166,14 +6321,28 @@ export class ULabel {
                             is_a_containing_annotation = true;
                         }
                         break;
+                    case "polyline":
+                        // Within the drawn stroke of the line itself
+                        if (GeometricUtils.point_is_near_polyline(
+                            [gblx, gbly],
+                            annotation["spatial_payload"],
+                            (annotation["line_size"] ?? this.get_subtask_line_size()) / 2 + slack,
+                        )) {
+                            is_a_containing_annotation = true;
+                        }
+                        break;
                     case "bitmask":
                         // The mouse must be over a painted pixel of the mask
-                        if (this.get_bitmask(annotation).get_pixel(Math.round(gblx), Math.round(gbly))) {
+                        if (this.get_bitmask(annotation).has_foreground_in_circle(
+                            Math.round(gblx),
+                            Math.round(gbly),
+                            slack,
+                        )) {
                             is_a_containing_annotation = true;
                         }
                         break;
                     default:
-
+                        has_exact_test = false;
                         break;
                 }
 
@@ -6195,7 +6364,7 @@ export class ULabel {
                             };
                         }
                     }
-                } else if (boxsize < minsize) {
+                } else if (!(require_exact_hit && has_exact_test) && boxsize < minsize) {
                     ret["candidate_ids"].push(annotation_id);
                     minsize = boxsize;
                     ret["best"] = {
@@ -6326,18 +6495,31 @@ export class ULabel {
 
     // ================= Mouse event interpreters =================
 
+    /**
+     * Page coordinates of the annbox's content origin, which is where the image
+     * starts. `offset()` gives the border box, so any border on the annbox would
+     * otherwise shift every position by its width.
+     */
+    get_annbox_content_origin() {
+        const annbox = $("#" + this.config["annbox_id"]);
+        const offset = annbox.offset();
+        const el = annbox[0];
+        return {
+            left: offset.left + (el?.clientLeft ?? 0) - annbox.scrollLeft(),
+            top: offset.top + (el?.clientTop ?? 0) - annbox.scrollTop(),
+        };
+    }
+
     // Get the mouse position on the screen
     get_global_mouse_x(mouse_event) {
         const scale = this.get_empirical_scale();
-        const annbox = $("#" + this.config["annbox_id"]);
-        const raw = (mouse_event.pageX - annbox.offset().left + annbox.scrollLeft()) / scale;
+        const raw = (mouse_event.pageX - this.get_annbox_content_origin().left) / scale;
         return raw;
     }
 
     get_global_mouse_y(mouse_event) {
         const scale = this.get_empirical_scale();
-        const annbox = $("#" + this.config["annbox_id"]);
-        const raw = (mouse_event.pageY - annbox.offset().top + annbox.scrollTop()) / scale;
+        const raw = (mouse_event.pageY - this.get_annbox_content_origin().top) / scale;
         return raw;
     }
 
@@ -6365,16 +6547,14 @@ export class ULabel {
 
     get_global_element_center_x(jqel) {
         const scale = this.get_empirical_scale();
-        const annbox = $("#" + this.config["annbox_id"]);
-        const raw = (jqel.offset().left + jqel.width() / 2 - annbox.offset().left + annbox.scrollLeft()) / scale;
+        const raw = (jqel.offset().left + jqel.width() / 2 - this.get_annbox_content_origin().left) / scale;
         // return Math.round(raw);
         return raw;
     }
 
     get_global_element_center_y(jqel) {
         const scale = this.get_empirical_scale();
-        const annbox = $("#" + this.config["annbox_id"]);
-        const raw = (jqel.offset().top + jqel.height() / 2 - annbox.offset().top + annbox.scrollTop()) / scale;
+        const raw = (jqel.offset().top + jqel.height() / 2 - this.get_annbox_content_origin().top) / scale;
         // return Math.round();
         return raw;
     }
@@ -6703,10 +6883,11 @@ export class ULabel {
                 class_name = class_def.name;
             }
         }
+        const display_name = this.config.annotation_display_name_resolver?.(active_annotation) ?? class_name;
 
         // Update the display dialog
         const global_id = `global_annotation_confidence__${subtask_key}`;
-        $(`#${global_id} .annotation-confidence-classname`).text(class_name);
+        $(`#${global_id} .annotation-confidence-classname`).text(display_name);
         $(`#${global_id} .annotation-confidence-value`).text(`Confidence: ${confidence.toFixed(2)}`);
     }
 
@@ -7152,11 +7333,12 @@ export class ULabel {
     }
 
     fly_to_annotation(annotation, subtask_key = null, max_zoom = 10) {
-        // Handle null, deprecated, and non-spatial annotations
+        // Handle null, deprecated, hidden, and non-spatial annotations
         if (
             annotation === null ||
             annotation === undefined ||
             annotation["deprecated"] ||
+            annotation["hidden"] ||
             NONSPATIAL_MODES.includes(annotation["spatial_type"])
         ) {
             return false;
@@ -7224,7 +7406,7 @@ export class ULabel {
         let current_visible_idx = -1;
         for (let i = 0; i < ordering.length; i++) {
             const ann = current_subtask["annotations"]["access"][ordering[i]];
-            if (!ann["deprecated"]) {
+            if (!ann["deprecated"] && !ann["hidden"]) {
                 if (ordering[i] === annotation_id) {
                     current_visible_idx = visible_count;
                 }
@@ -7486,8 +7668,158 @@ export class ULabel {
         // Only remove per-annotation canvases. The subtask's front/back canvases and the
         // #dialogs__<subtask> container (which owns the brush circle, polygon ender, and
         // id dialogs) live in the same parent and MUST survive.
-        $("#canvasses__" + subtask + " > canvas.annotation_canvas").remove();
+        $("#canvasses__" + subtask + " canvas.annotation_canvas").remove();
+        $("#canvasses__" + subtask + " > div.class_canvasses").remove();
         this.subtasks[subtask]["state"]["annotation_contexts"] = {};
+    }
+
+    /**
+     * Whether `subtask_specs` describes the same subtask layer this instance was
+     * built with, differing only in annotations.
+     *
+     * Subtask keys, class definitions and allowed modes are baked into DOM ids,
+     * toolbox tabs and event bindings at init time, so those must match for an
+     * in-place swap to be safe.
+     */
+    _subtask_shape_matches(subtask_specs) {
+        const old_keys = Object.keys(this.subtasks);
+        const new_keys = Object.keys(subtask_specs);
+        if (old_keys.length !== new_keys.length) return false;
+
+        for (const st of new_keys) {
+            const current = this.subtasks[st];
+            if (current === undefined) return false;
+
+            const spec = subtask_specs[st];
+            const modes = spec["allowed_modes"] ?? [];
+            if (modes.length !== current["allowed_modes"].length) return false;
+            for (let i = 0; i < modes.length; i++) {
+                if (modes[i] !== current["allowed_modes"][i]) return false;
+            }
+
+            const classes = spec["classes"] ?? [];
+            const class_defs = current["class_defs"];
+            if (classes.length !== class_defs.length) return false;
+            for (let i = 0; i < classes.length; i++) {
+                const raw = classes[i];
+                // Classes may be given as bare ids, in which case only the id
+                // can differ from what was processed at init.
+                const id = typeof raw === "object" ? raw["id"] : raw;
+                if (id !== class_defs[i]["id"]) return false;
+                if (typeof raw !== "object") continue;
+                if (raw["name"] !== undefined && raw["name"] !== class_defs[i]["name"]) return false;
+                if (raw["color"] !== undefined && raw["color"] !== class_defs[i]["color"]) return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Whether `annotations` is the set already loaded on `subtask`, compared by
+     * id and order. Lets replace_subtasks skip untouched subtasks, so pushing a
+     * new spec for one class doesn't re-import and redraw its siblings.
+     */
+    _subtask_annotations_unchanged(subtask, annotations) {
+        const ordering = this.subtasks[subtask]["annotations"]["ordering"];
+        if (ordering.length !== annotations.length) return false;
+        for (let i = 0; i < ordering.length; i++) {
+            if (ordering[i] !== annotations[i]["id"]) return false;
+        }
+        return true;
+    }
+
+    /**
+     * Swap in a new set of subtask specs without tearing the instance down.
+     *
+     * Reuses the decoded image, the subtask canvases, the toolbox and every
+     * listener, rebuilding only the annotation layer — far cheaper than
+     * destroy() + new ULabel() + init() when a host application switches
+     * between views of the same image. Subtasks whose annotations are already
+     * loaded are left alone, so pushing a whole spec set costs only the
+     * subtasks that actually changed.
+     *
+     * Only annotations (and `read_only` / `inactive_opacity`) can change this
+     * way. If the subtask keys, classes or allowed modes differ, the DOM and
+     * toolbox no longer describe the incoming layer, so this returns false and
+     * leaves the instance untouched; the caller should rebuild instead.
+     *
+     * @param {object} subtask_specs Same shape as the constructor's `subtasks`.
+     * @returns {Promise<string[] | null>} the keys that were swapped, or null if
+     *     the caller must rebuild the instance.
+     */
+    async replace_subtasks(subtask_specs) {
+        if (this.is_destroyed) {
+            log_message("replace_subtasks called on a destroyed ULabel instance", LogLevel.WARNING, true);
+            return null;
+        }
+        if (!this.is_init) return null;
+        if (!this._subtask_shape_matches(subtask_specs)) return null;
+
+        const stale = [];
+        for (const st in subtask_specs) {
+            const incoming = subtask_specs[st]["resume_from"] ?? [];
+            if (!this._subtask_annotations_unchanged(st, incoming)) stale.push(st);
+        }
+        if (stale.length === 0) return [];
+
+        const container = document.getElementById(this.config["container_id"]);
+        ULabelLoader.add_loader_div(container);
+        // Yield so the browser can paint the loader before the heavy synchronous work below
+        await ULabelLoader.wait_for_render();
+
+        // Recheck: destroy() (manual or auto) may have run during the paint yield.
+        if (this.is_destroyed) return stale;
+
+        try {
+            for (const st of stale) {
+                const spec = subtask_specs[st];
+                // Undo/redo won't survive a wholesale annotation swap.
+                this.reset_interaction_state(st);
+                this.subtasks[st]["actions"]["stream"] = [];
+                this.subtasks[st]["actions"]["undone_stack"] = [];
+                this._clear_subtask_annotation_canvases(st);
+
+                ULabel.process_resume_from(this, st, { resume_from: spec["resume_from"] ?? [] });
+
+                if (spec["read_only"] !== undefined) {
+                    this.subtasks[st]["read_only"] = spec["read_only"];
+                }
+                if (spec["inactive_opacity"] !== undefined) {
+                    this.subtasks[st]["inactive_opacity"] = spec["inactive_opacity"];
+                }
+                // Keep the raw config in step so a later get/set round trip sees
+                // the annotations that are actually on screen.
+                this.config.subtasks[st] = spec;
+            }
+
+            // Yield the event loop so the loader's reveal timer can fire if the work above
+            // took long enough to cross the reveal threshold.
+            await new Promise((resolve) => setTimeout(resolve, 0));
+            if (this.is_destroyed) return stale;
+
+            if (!this.config.allow_annotations_outside_image) {
+                const image_width = this.config["image_width"];
+                const image_height = this.config["image_height"];
+                for (const st of stale) {
+                    for (const anno of Object.values(this.subtasks[st]["annotations"]["access"])) {
+                        anno.clamp_annotation_to_image_bounds(image_width, image_height);
+                    }
+                }
+            }
+
+            for (const st of stale) {
+                initialize_annotation_canvases(this, st);
+                this.redraw_all_annotations(st);
+            }
+            this.readjust_subtask_opacities();
+            // Calculate distances for all annotations if FilterDistance is present
+            this.update_filter_distance(null, false, true);
+            // Update class counter in toolbox
+            this.toolbox.redraw_update_items(this);
+        } finally {
+            ULabelLoader.remove_loader_div();
+        }
+        return stale;
     }
 
     // Change frame

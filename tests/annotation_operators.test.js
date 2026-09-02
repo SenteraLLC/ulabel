@@ -4,6 +4,7 @@ const {
     get_spatial_annotations_with_confidence,
     findAllClassDefinitions,
     findAllPolylineClassDefinitions,
+    mark_hidden,
     CONFIDENCE_FILTERABLE_SPATIAL_TYPES,
 } = require("../build/annotation_operators");
 
@@ -148,5 +149,65 @@ describe("findAllClassDefinitions", () => {
         const ids = result.map((cd) => cd.id);
 
         expect(ids).toEqual([1, 3]);
+    });
+});
+
+describe("mark_hidden", () => {
+    test("hides and unhides under a single key", () => {
+        const annotation = make_annotation("bbox", [{ class_id: 1, confidence: 0.9 }]);
+
+        mark_hidden(annotation, true, "class_filter");
+        expect(annotation.hidden).toBe(true);
+
+        mark_hidden(annotation, false, "class_filter");
+        expect(annotation.hidden).toBe(false);
+    });
+
+    test("stays hidden while any key hides it", () => {
+        const annotation = make_annotation("bbox", [{ class_id: 1, confidence: 0.9 }]);
+
+        mark_hidden(annotation, true, "class_filter");
+        mark_hidden(annotation, true, "confidence_filter");
+        expect(annotation.hidden).toBe(true);
+
+        // Clearing one filter must not reveal an annotation the other still hides
+        mark_hidden(annotation, false, "class_filter");
+        expect(annotation.hidden).toBe(true);
+
+        mark_hidden(annotation, false, "confidence_filter");
+        expect(annotation.hidden).toBe(false);
+    });
+
+    test("keys are independent of each other's order", () => {
+        const a = make_annotation("bbox", [{ class_id: 1, confidence: 0.9 }]);
+        const b = make_annotation("bbox", [{ class_id: 1, confidence: 0.9 }]);
+
+        mark_hidden(a, true, "outcome_filter");
+        mark_hidden(a, false, "class_filter");
+
+        mark_hidden(b, false, "class_filter");
+        mark_hidden(b, true, "outcome_filter");
+
+        expect(a.hidden).toBe(true);
+        expect(b.hidden).toBe(true);
+        expect(a.hidden_by).toEqual(b.hidden_by);
+    });
+
+    test("does not deprecate the annotation", () => {
+        const annotation = make_annotation("bbox", [{ class_id: 1, confidence: 0.9 }]);
+
+        mark_hidden(annotation, true, "class_filter");
+
+        // Hiding is a view concern; deprecation means deleted and must be untouched
+        expect(annotation.deprecated).toBe(false);
+        expect(annotation.deprecated_by).toBeUndefined();
+    });
+
+    test("defaults to the human key", () => {
+        const annotation = make_annotation("bbox", [{ class_id: 1, confidence: 0.9 }]);
+
+        mark_hidden(annotation, true);
+
+        expect(annotation.hidden_by).toEqual({ human: true });
     });
 });
