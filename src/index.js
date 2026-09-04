@@ -3610,8 +3610,7 @@ export class ULabel {
             var esjq = $("#" + esid);
             esjq.css("display", "block");
             // Hide the move/reid/delete buttons on read-only subtasks; use visibility rather than
-            // display so the buttons still occupy their flow space and the confidence card's
-            // margin-based position math stays valid.
+            // display so the button ring geometry stays measurable for the dialogs around it.
             esjq.find(".global_sub_suggestion").css("visibility", is_read_only ? "hidden" : "");
             let cbox = current_subtask["annotations"]["access"][annid]["containing_box"];
             let new_lft = (cbox["tlx"] + cbox["brx"] + 2 * diffX) / (2 * this.config["image_width"]);
@@ -3623,34 +3622,27 @@ export class ULabel {
             const scroll_top = $("#" + this.config["annbox_id"]).scrollTop() || 0;
             const conf_id = `global_annotation_confidence__${subtask_key}`;
             const conf_jq = $(`#${conf_id}`);
-            // The dialog container is CSS-scaled about the anchor, so a margin
-            // set here lands `scale` times as far. `outerHeight` is already in
-            // that local space; the cbox measurements are in screen px.
+            // The dialog container is CSS-scaled about the anchor, so offsets set
+            // here land `scale` times as far; the cbox measurements are in screen px.
             const es_el = esjq[0];
             const scale = es_el.offsetWidth > 0 ?
                 es_el.getBoundingClientRect().width / es_el.offsetWidth :
                 1;
             const card_height = conf_jq.outerHeight() || 0;
             const gap = 10;
-            // The card sits in flow below the button line box (even on read-only
-            // subtasks, where the buttons are visibility-hidden but keep their flow
-            // space, so the card lands in the same spot with or without buttons).
-            // offsetTop includes the current margin, so subtracting it gives the
-            // card's natural flow offset from the anchor in local units.
-            const conf_el = conf_jq[0];
-            const current_margin = parseFloat(conf_jq.css("margin-top")) || 0;
-            const natural_top = conf_el.offsetTop - current_margin;
             // The buttons ring the anchor (box centre) via translateY(-50%); hug the
             // ring by clearing half a button's height (local units) plus the gap.
-            const button_half = (esjq.find("a.global_sub_suggestion").outerHeight() || 60) / 2;
+            // The card is positioned absolutely against the 0-height anchor container:
+            // deriving the position from the card's own layout (offsetTop) feeds
+            // integer rounding back into the next mousemove and makes the card jitter.
+            const ring_clearance = (esjq.find("a.global_sub_suggestion").outerHeight() || 60) / 2 + gap / scale;
             const anchor_visible = ((cbox["tly"] + cbox["bry"]) / 2 * this.state["zoom_val"]) - scroll_top;
-            const card_top_visible = anchor_visible - (button_half + card_height) * scale - gap;
+            const card_top_visible = anchor_visible - (ring_clearance + card_height) * scale;
             const flip_below = card_top_visible < 0;
             conf_jq.css(
-                "margin-top",
                 flip_below ?
-                    `${button_half + gap / scale - natural_top}px` :
-                    `${-(button_half + gap / scale + card_height + natural_top)}px`,
+                        { top: `${ring_clearance}px`, bottom: "auto" } :
+                        { top: "auto", bottom: `${ring_clearance}px` },
             );
             this.reposition_dialogs();
             idd_x = (cbox["tlx"] + cbox["brx"] + 2 * diffX) / 2;
