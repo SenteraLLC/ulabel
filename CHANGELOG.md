@@ -4,6 +4,9 @@ All notable changes to this project will be documented here.
 
 ## [unreleased]
 
+## [0.28.0] - TBD
+- Removed unused per-subtask back canvas.
+
 ## [0.27.0] - Aug 18th, 2026
 - Hovering a spatial annotation now draws a white outline that hugs its shape.
 - Polish and update the confidence card to include the class name and fix its positioning.

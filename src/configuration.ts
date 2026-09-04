@@ -120,7 +120,6 @@ export class Configuration {
     public annbox_id: string = "annbox";
     public imwrap_id: string = "imwrap";
     public canvas_fid_pfx: string = "front-canvas";
-    public canvas_bid_pfx: string = "back-canvas";
     public canvas_did: string = "demo-canvas";
     public canvas_class: string = "easel";
     public image_id_pfx: string = "ann_image";

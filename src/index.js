@@ -198,9 +198,8 @@ export class ULabel {
             }
             if (subtask.state) {
                 subtask.state["annotation_contexts"] = {};
-                // Front/back contexts each retain an image-sized canvas backing store; letting
-                // them go lets `container.innerHTML = ""` below actually release those pixels.
-                subtask.state["back_context"] = null;
+                // The front context retains an image-sized canvas backing store; letting
+                // it go lets `container.innerHTML = ""` below actually release those pixels.
                 subtask.state["front_context"] = null;
                 // A stroke interrupted before finish_bitmask() leaves a full pre-stroke RLE here.
                 subtask.state["bitmask_stroke"] = null;
@@ -547,7 +546,6 @@ export class ULabel {
 
             // Label canvasses and initialize context with null
             ul.subtasks[subtask_key]["canvas_fid"] = ul.config["canvas_fid_pfx"] + "__" + subtask_key;
-            ul.subtasks[subtask_key]["canvas_bid"] = ul.config["canvas_bid_pfx"] + "__" + subtask_key;
 
             // Store state of ID dialog element
             // TODO much more here when full interaction is built
@@ -584,7 +582,6 @@ export class ULabel {
 
                 // Rendering context
                 front_context: null,
-                back_context: null,
                 annotation_contexts: {}, // {canvas_id: {context: ctx, annotation_ids: []}, ...}
 
                 // Generic dialogs
@@ -7676,7 +7673,7 @@ export class ULabel {
                 delete anno["_bitmask_box_hint"];
             }
         }
-        // Only remove per-annotation canvases. The subtask's front/back canvases and the
+        // Only remove per-annotation canvases. The subtask's front canvas and the
         // #dialogs__<subtask> container (which owns the brush circle, polygon ender, and
         // id dialogs) live in the same parent and MUST survive.
         $("#canvasses__" + subtask + " canvas.annotation_canvas").remove();

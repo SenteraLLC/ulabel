@@ -381,11 +381,8 @@ describe("Annotation Processing", () => {
             const canvasses = document.createElement("div");
             canvasses.id = "canvasses__test_task";
             document.body.appendChild(canvasses);
-            // Mirror the init-time DOM: back canvas, front canvas, dialogs container, then
+            // Mirror the init-time DOM: front canvas, dialogs container, then
             // per-annotation canvases (which are the only children we should be removing).
-            const back = document.createElement("canvas");
-            back.id = "back_canvas";
-            canvasses.appendChild(back);
             const front = document.createElement("canvas");
             front.id = "front_canvas";
             canvasses.appendChild(front);
@@ -408,10 +405,9 @@ describe("Annotation Processing", () => {
             expect(annotation._bitmask_box_hint).toBeUndefined();
             // Per-annotation canvas removed.
             expect(document.getElementById("canvas__anno")).toBeNull();
-            // Back/front canvases and the dialogs container MUST survive; otherwise hover
+            // The front canvas and the dialogs container MUST survive; otherwise hover
             // feedback (front canvas) and brush/polygon-ender attach points (dialogs div)
             // become detached-DOM ghosts.
-            expect(document.getElementById("back_canvas")).not.toBeNull();
             expect(document.getElementById("front_canvas")).not.toBeNull();
             expect(document.getElementById("dialogs__test_task")).not.toBeNull();
             // Annotation-context bookkeeping reset.
