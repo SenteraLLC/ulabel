@@ -165,15 +165,26 @@ test.describe("ULabel Basic Functionality", () => {
 
         const subtask_key = await page.evaluate(() => window.ulabel.get_current_subtask_key());
         const conf_id = `#global_annotation_confidence__${subtask_key}`;
+        const anchor_id = `#global_edit_suggestion__${subtask_key}`;
 
-        // Annotation well away from the top -> card above the buttons (default -9.5em)
+        // The edit-suggestion container is 0-height and pinned to the box centre,
+        // so its rect top IS the anchor. The card hugs the button ring: above the
+        // anchor normally, below it when there is no room above.
+        const card_and_anchor = async () => page.evaluate(({ conf, anchor }) => {
+            const card = document.querySelector(conf).getBoundingClientRect();
+            const anchor_y = document.querySelector(anchor).getBoundingClientRect().top;
+            return { card_top: card.top, card_bottom: card.bottom, anchor_y };
+        }, { conf: conf_id, anchor: anchor_id });
+
+        // Annotation well away from the top -> card above the buttons and box
         await draw_bbox(page, [400, 400], [500, 500]);
         await page.waitForTimeout(100);
         await page.mouse.move(450, 450);
         await page.waitForTimeout(200);
 
-        const margin_below_center = await page.locator(conf_id).evaluate((el) => el.style.marginTop);
-        expect(margin_below_center).toBe("-9.5em");
+        const mid = await card_and_anchor();
+        // Card hugs the button ring above the anchor regardless of box size
+        expect(mid.card_bottom).toBeLessThanOrEqual(mid.anchor_y - 5);
 
         // Annotation near the top edge -> card flips below the buttons
         await draw_bbox(page, [100, 5], [200, 30]);
@@ -181,8 +192,8 @@ test.describe("ULabel Basic Functionality", () => {
         await page.mouse.move(150, 15);
         await page.waitForTimeout(200);
 
-        const margin_near_top = await page.locator(conf_id).evaluate((el) => el.style.marginTop);
-        expect(margin_near_top).toBe("-1em");
+        const top_edge = await card_and_anchor();
+        expect(top_edge.card_top).toBeGreaterThanOrEqual(top_edge.anchor_y + 5);
     });
 
     test("confidence card flip check accounts for annbox scroll position", async ({ page }) => {
@@ -190,6 +201,13 @@ test.describe("ULabel Basic Functionality", () => {
 
         const subtask_key = await page.evaluate(() => window.ulabel.get_current_subtask_key());
         const conf_id = `#global_annotation_confidence__${subtask_key}`;
+        const anchor_id = `#global_edit_suggestion__${subtask_key}`;
+
+        const card_and_anchor = async () => page.evaluate(({ conf, anchor }) => {
+            const card = document.querySelector(conf).getBoundingClientRect();
+            const anchor_y = document.querySelector(anchor).getBoundingClientRect().top;
+            return { card_top: card.top, card_bottom: card.bottom, anchor_y };
+        }, { conf: conf_id, anchor: anchor_id });
 
         // Upper-middle annotation displays with card above (no flip)
         await draw_bbox(page, [400, 200], [500, 300]);
@@ -197,8 +215,8 @@ test.describe("ULabel Basic Functionality", () => {
         await page.mouse.move(450, 250);
         await page.waitForTimeout(200);
 
-        const margin_unscrolled = await page.locator(conf_id).evaluate((el) => el.style.marginTop);
-        expect(margin_unscrolled).toBe("-9.5em");
+        const unscrolled = await card_and_anchor();
+        expect(unscrolled.card_bottom).toBeLessThanOrEqual(unscrolled.anchor_y);
 
         // Zoom in enough for the imwrap to overflow the annbox so scrolling is possible
         await page.mouse.move(450, 250);
@@ -224,8 +242,9 @@ test.describe("ULabel Basic Functionality", () => {
         expect(scroll_result.scroll_top).toBeGreaterThanOrEqual(scroll_result.cbox_y_scaled - 100);
         await page.waitForTimeout(100);
 
-        const margin_scrolled = await page.locator(conf_id).evaluate((el) => el.style.marginTop);
-        expect(margin_scrolled).toBe("-1em");
+        // Near the top of the visible area, the card flips below the anchor
+        const scrolled = await card_and_anchor();
+        expect(scrolled.card_top).toBeGreaterThanOrEqual(scrolled.anchor_y);
     });
 
     test("confidence card picks a class name even when all confidences are 0", async ({ page }) => {

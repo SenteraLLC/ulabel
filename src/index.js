@@ -3672,16 +3672,25 @@ export class ULabel {
                 1;
             const card_height = conf_jq.outerHeight() || 0;
             const gap = 10;
-            // The anchor is the box centre, so clear it by half the on-screen
-            // box height or the card covers whatever is being hovered.
-            const half_height = Math.abs(cbox["bry"] - cbox["tly"]) / 2 * this.state["zoom_val"];
-            const box_top_visible = (cbox["tly"] * this.state["zoom_val"]) - scroll_top;
-            const flip_below = box_top_visible - (card_height * scale) - gap < 0;
+            // The card sits in flow below the button line box (even on read-only
+            // subtasks, where the buttons are visibility-hidden but keep their flow
+            // space, so the card lands in the same spot with or without buttons).
+            // offsetTop includes the current margin, so subtracting it gives the
+            // card's natural flow offset from the anchor in local units.
+            const conf_el = conf_jq[0];
+            const current_margin = parseFloat(conf_jq.css("margin-top")) || 0;
+            const natural_top = conf_el.offsetTop - current_margin;
+            // The buttons ring the anchor (box centre) via translateY(-50%); hug the
+            // ring by clearing half a button's height (local units) plus the gap.
+            const button_half = (esjq.find("a.global_sub_suggestion").outerHeight() || 60) / 2;
+            const anchor_visible = ((cbox["tly"] + cbox["bry"]) / 2 * this.state["zoom_val"]) - scroll_top;
+            const card_top_visible = anchor_visible - (button_half + card_height) * scale - gap;
+            const flip_below = card_top_visible < 0;
             conf_jq.css(
                 "margin-top",
                 flip_below ?
-                    `${(half_height + gap) / scale}px` :
-                    `${-((half_height + gap) / scale + card_height)}px`,
+                    `${button_half + gap / scale - natural_top}px` :
+                    `${-(button_half + gap / scale + card_height + natural_top)}px`,
             );
             this.reposition_dialogs();
             idd_x = (cbox["tlx"] + cbox["brx"] + 2 * diffX) / 2;
