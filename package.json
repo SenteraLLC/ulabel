@@ -36,7 +36,7 @@
     "build-and-demo": "npm run build && npm run demo",
     "build-dev-and-demo": "npm run build-dev && npm run demo",
     "build-and-test": "npm run build && npm run test:both",
-    "prepare": "husky",
+    "prepare": "node scripts/prepare.js",
     "lint": "tsc --noEmit && eslint . --no-fix"
   },
   "lint-staged": {
