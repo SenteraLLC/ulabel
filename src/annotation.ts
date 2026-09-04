@@ -1,7 +1,6 @@
 import type {
     DeprecatedBy,
     DistanceFromPolylineClasses,
-    HiddenBy,
     ULabelClassificationPayload,
     ULabelContainingBox,
     ULabelSpatialType,
@@ -71,10 +70,6 @@ export class ULabelAnnotation {
         // Lineage tracking fields
         public last_edited_by?: string,
         public last_edited_at?: string,
-        // View filtering. Unlike `deprecated`, these never mean "deleted", so they
-        // are left undefined unless something actually filters the annotation.
-        public hidden?: boolean,
-        public hidden_by?: HiddenBy,
     ) {}
 
     public ensure_compatible_classification_payloads(ulabel_class_ids: [number]) {

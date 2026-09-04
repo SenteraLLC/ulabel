@@ -64,7 +64,6 @@ export function initialize_annotation_canvases(
             annotation["canvas_id"] = ulabel.get_init_canvas_context_id(
                 annotation_id,
                 subtask_key!,
-                ulabel.get_annotation_canvas_group(annotation),
             );
         }
     }

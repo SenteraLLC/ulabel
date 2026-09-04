@@ -1,4 +1,5 @@
 import type {
+    ClassCounterConfig,
     DistanceFromPolylineClasses,
     FilterDistanceConfig,
     RecolorActiveConfig,
@@ -12,7 +13,7 @@ import {
     findAllPolylineClassDefinitions,
     get_point_and_line_annotations,
 } from "./annotation_operators";
-import { SliderHandler, get_idd_string } from "./html_builder";
+import { SliderHandler } from "./html_builder";
 import { FilterDistanceOverlay } from "./overlays";
 import {
     get_active_class_id,
@@ -1203,11 +1204,14 @@ export class AnnotationIDToolboxItem extends ToolboxItem {
 export class ClassCounterToolboxItem extends ToolboxItem {
     public html!: string;
     public inner_HTML: string;
+    public subtasks: string[] | "current";
+    public layout: "current" | "grouped" | "flat";
 
-    // TODO (joshua-dean): Find the correct way to handle this
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any
-    constructor(...args: any[]) {
+    constructor(ulabel?: ULabel) {
         super();
+        const config: ClassCounterConfig = ulabel?.config?.class_counter_toolbox_item ?? {};
+        this.subtasks = config.subtasks ?? "current";
+        this.layout = config.layout ?? "current";
         this.inner_HTML = `<p class="tb-header">Annotation Count</p>`;
         this.add_styles();
     }
@@ -1217,7 +1221,12 @@ export class ClassCounterToolboxItem extends ToolboxItem {
      */
     protected add_styles() {
         // Define the css
-        const css = ` /* ClassCounterToolboxItem currently requires no styling */ `;
+        const css = `
+        div.toolbox-class-counter p.tb-counter-subtask-header {
+            font-weight: bold;
+            margin-bottom: 0;
+        }
+        `;
 
         // Create an id so this specific style tag can be referenced
         const style_id = "class-counter-toolbox-item-styles";
@@ -1238,47 +1247,100 @@ export class ClassCounterToolboxItem extends ToolboxItem {
     }
 
     /**
-     * Update the Class Counter with the current number of active annotations.
-     *
-     * @param {ULabelSubtask} subtask Subtask to update the counter for.
+     * Update which subtasks are counted and how counts are laid out. The host's
+     * view mode owns this, so it must be changeable at runtime.
      */
-    update_toolbox_counter(subtask: ULabelSubtask): void {
-        if (subtask == null) {
-            return;
-        }
-        const class_ids = subtask.class_ids;
-        let i: number, j: number;
+    public set_options(options: ClassCounterConfig): void {
+        if (options.subtasks !== undefined) this.subtasks = options.subtasks;
+        if (options.layout !== undefined) this.layout = options.layout;
+    }
+
+    /**
+     * Count a subtask's non-deprecated annotations per class, in class_defs order.
+     * An annotation counts toward its first classification payload with confidence > 0.
+     */
+    private count_subtask(subtask: ULabelSubtask): { id: number; name: string; count: number }[] {
         const class_counts: Record<number, number> = {};
-        for (i = 0; i < class_ids.length; i++) {
-            class_counts[class_ids[i]] = 0;
+        for (const class_id of subtask.class_ids) {
+            class_counts[class_id] = 0;
         }
-        const annotations = subtask.annotations.access;
-        const annotation_ids = subtask.annotations.ordering;
-        let current_annotation: ULabelAnnotation, current_payload;
-        for (i = 0; i < annotation_ids.length; i++) {
-            current_annotation = annotations[annotation_ids[i]];
-            if (current_annotation.deprecated === false) {
-                for (j = 0; j < current_annotation.classification_payloads!.length; j++) {
-                    current_payload = current_annotation.classification_payloads![j];
-                    if (current_payload.confidence > 0.0) {
-                        class_counts[current_payload.class_id] += 1;
-                        break;
+        for (const annotation_id of subtask.annotations.ordering) {
+            const annotation = subtask.annotations.access[annotation_id];
+            if (annotation.deprecated) continue;
+            for (const payload of annotation.classification_payloads ?? []) {
+                if (payload.confidence > 0.0) {
+                    if (payload.class_id in class_counts) {
+                        class_counts[payload.class_id] += 1;
                     }
+                    break;
                 }
             }
         }
-        let f_string = "";
-        let class_name: string, class_count: number;
-        for (i = 0; i < class_ids.length; i++) {
-            class_name = subtask.class_defs[i].name;
-            // MF-Tassels Hack
-            if (class_name.includes("OVERWRITE")) {
-                continue;
-            }
-            class_count = class_counts[subtask.class_defs[i].id];
-            f_string += `${class_name}: ${class_count}<br>`;
+        return subtask.class_defs
+            // MF-Tassels Hack: OVERWRITE classes are internal and never displayed
+            .filter((class_def) => !class_def.name.includes("OVERWRITE"))
+            .map((class_def) => ({
+                id: class_def.id,
+                name: class_def.name,
+                count: class_counts[class_def.id],
+            }));
+    }
+
+    /**
+     * Update the Class Counter with the current number of active annotations.
+     *
+     * @param {ULabel} ulabel ULabel instance to count annotations for.
+     */
+    update_toolbox_counter(ulabel: ULabel): void {
+        if (ulabel == null) {
+            return;
         }
-        this.inner_HTML = `<p class="tb-header">Annotation Count</p>` + `<p>${f_string}</p>`;
+        let keys: string[];
+        if (this.subtasks === "current") {
+            keys = [ulabel.get_current_subtask_key()];
+        } else {
+            keys = this.subtasks.filter((key) => key in ulabel.subtasks);
+        }
+
+        let body = "";
+        if (this.layout === "grouped") {
+            for (const key of keys) {
+                const subtask = ulabel.subtasks[key];
+                let lines = "";
+                for (const row of this.count_subtask(subtask)) {
+                    lines += `${row.name}: ${row.count}<br>`;
+                }
+                body += `<p class="tb-counter-subtask-header">${subtask.display_name}</p><p>${lines}</p>`;
+            }
+        } else if (this.layout === "flat") {
+            // Merge shared class ids across subtasks: sum counts, keep first-seen order/name
+            const merged = new Map<number, { name: string; count: number }>();
+            for (const key of keys) {
+                for (const row of this.count_subtask(ulabel.subtasks[key])) {
+                    const existing = merged.get(row.id);
+                    if (existing !== undefined) {
+                        existing.count += row.count;
+                    } else {
+                        merged.set(row.id, { name: row.name, count: row.count });
+                    }
+                }
+            }
+            let lines = "";
+            merged.forEach((row) => {
+                lines += `${row.name}: ${row.count}<br>`;
+            });
+            body = `<p>${lines}</p>`;
+        } else {
+            // "current": the original rendering, one run of lines per counted subtask
+            let lines = "";
+            for (const key of keys) {
+                for (const row of this.count_subtask(ulabel.subtasks[key])) {
+                    lines += `${row.name}: ${row.count}<br>`;
+                }
+            }
+            body = `<p>${lines}</p>`;
+        }
+        this.inner_HTML = `<p class="tb-header">Annotation Count</p>` + body;
     }
 
     public get_html() {
@@ -1291,9 +1353,7 @@ export class ClassCounterToolboxItem extends ToolboxItem {
     }
 
     public redraw_update(ulabel: ULabel) {
-        this.update_toolbox_counter(
-            ulabel.get_current_subtask(),
-        );
+        this.update_toolbox_counter(ulabel);
         $("#" + ulabel.config["toolbox_id"] + " div.toolbox-class-counter").html(this.inner_HTML);
     }
 
@@ -1586,66 +1646,9 @@ export class RecolorActiveItem extends ToolboxItem {
         this.gradient_turned_on = get_local_storage_item("RecolorActiveItem-Gradient");
     }
 
-    private replace_color_pie(): void {
-        // Only the current subtask's color can be changed, so only the current subtask needs to be updated
-        const current_subtask_key: string = this.ulabel.state.current_subtask;
-        const current_subtask: ULabelSubtask = this.ulabel.subtasks[current_subtask_key];
-
-        // Get the back and front id dialog's ids
-        const id_dialog_id: string = current_subtask.state.idd_id;
-        const front_id_dialog_id = this.ulabel.subtasks[current_subtask_key].state.idd_id_front;
-
-        // Need the width and inner radius of the pie to re-build it
-        const width: number = this.ulabel.config.outer_diameter;
-        const inner_radius = this.ulabel.config.inner_prop * width / 2;
-
-        const color_info = this.ulabel.color_info;
-
-        // Grab the dialogs and their containers
-        const subtask_dialog_container_jq = $("#dialogs__" + current_subtask_key);
-        const id_dialog_container = $(`#id_dialog__${current_subtask_key}`);
-        const front_subtask_dialog_container_jq = $("#front_dialogs__" + current_subtask_key);
-        const front_id_dialog_container = $(`#id_front_dialog__${current_subtask_key}`);
-
-        // Build the html
-        const dialog_html_v2 = get_idd_string(
-            id_dialog_id, width, this.ulabel.subtasks[current_subtask_key].class_ids, inner_radius, color_info,
-        );
-        const front_dialog_html_v2 = get_idd_string(
-            front_id_dialog_id, width, this.ulabel.subtasks[current_subtask_key].class_ids, inner_radius, color_info,
-        );
-
-        // Remove the old pies
-        id_dialog_container.remove();
-        front_id_dialog_container.remove();
-
-        // Add dialog to the document inside their containers
-        front_subtask_dialog_container_jq.append(front_dialog_html_v2);
-        subtask_dialog_container_jq.append(dialog_html_v2);
-
-        // Re-add the event listener for changing the opacity on hover
-        // Set that = this because this references the element inside the event listener instead of the toolbox item
-        // TODO (joshua-dean): Don't alias this
-        // https://typescript-eslint.io/rules/no-this-alias/
-        // eslint-disable-next-line @typescript-eslint/no-this-alias
-        const that = this;
-        $(".id_dialog").on("mousemove.ulabel", function (mouse_event) {
-            if (!that.ulabel.subtasks[current_subtask_key].state.idd_thumbnail) {
-                that.ulabel.handle_id_dialog_hover(mouse_event);
-            }
-        });
-    }
-
     private update_color(class_id: number | string, color: string, need_to_save: boolean = true): void {
-        // Update the color_info for annotations appropriately
-        (this.ulabel.color_info as Record<string | number, string>)[class_id] = color;
-
-        // Update the color in the AnnotationId button for this class
-        const button_color_square = <HTMLDivElement> document.querySelector(`#toolbox_sel_${class_id} > div`);
-        if (button_color_square) button_color_square.style.backgroundColor = color;
-
-        // Update the id update pie
-        this.replace_color_pie();
+        // Write color_info and sync the toolbox swatch + id-dialog pies
+        this.ulabel.set_class_color(class_id, color, false);
 
         // Save the color to local storage if appropriate
         if (need_to_save) this.save_local_storage_color(class_id, color);

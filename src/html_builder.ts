@@ -548,7 +548,9 @@ export function build_confidence_dialog(ulabel: ULabel) {
             </div>
         `);
 
-        // Style the dialog
+        // Style the dialog. Absolutely positioned against the 0-height edit-suggestion
+        // container, whose top edge is the annotation's anchor; show_global_edit_suggestion
+        // sets top/bottom per hover to hug the button ring above or below the anchor.
         $("#" + global_id).css({
             "background-color": "rgba(0, 0, 0, 0.75)",
             "color": "white",
@@ -556,10 +558,10 @@ export function build_confidence_dialog(ulabel: ULabel) {
             "width": "auto",
             "min-width": "8em",
             "padding": "0.2em 0.4em",
-            "margin-top": "-9.5em",
             "border-radius": "0.5em",
             "font-size": "1.1em",
-            "position": "relative",
+            "position": "absolute",
+            "bottom": "40px",
             "left": "50%",
             "transform": "translateX(-50%)",
             "pointer-events": "none",

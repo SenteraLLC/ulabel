@@ -34,11 +34,6 @@ function make_image_canvases(
         $("#" + ulabel.config["imwrap_id"]).append(`
         <div id="canvasses__${st}" class="canvasses">
             <canvas 
-                id="${ulabel.subtasks[st]["canvas_bid"]}" 
-                class="${ulabel.config["canvas_class"]} ${ulabel.config["imgsz_class"]} canvas_cls" 
-                height=${ulabel.config["image_height"]! * ulabel.config["px_per_px"]} 
-                width=${ulabel.config["image_width"]! * ulabel.config["px_per_px"]}></canvas>
-            <canvas 
                 id="${ulabel.subtasks[st]["canvas_fid"]}" 
                 class="${ulabel.config["canvas_class"]} ${ulabel.config["imgsz_class"]} canvas_cls" 
                 height=${ulabel.config["image_height"]! * ulabel.config["px_per_px"]} 
@@ -52,9 +47,7 @@ function make_image_canvases(
         `);
 
         // Get canvas contexts
-        const canvas_bid = <HTMLCanvasElement>document.getElementById(ulabel.subtasks[st]["canvas_bid"]);
         const canvas_fid = <HTMLCanvasElement>document.getElementById(ulabel.subtasks[st]["canvas_fid"]);
-        ulabel.subtasks[st]["state"]["back_context"] = canvas_bid.getContext("2d")!;
         ulabel.subtasks[st]["state"]["front_context"] = canvas_fid.getContext("2d")!;
     }
 }

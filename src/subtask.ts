@@ -19,13 +19,11 @@ export class ULabelSubtask {
         ordering: string[];
     };
 
-    public canvas_bid!: string;
     public canvas_fid!: string;
     public single_class_mode!: boolean;
     public state!: {
         active_id: string;
         annotation_mode: string;
-        back_context: CanvasRenderingContext2D;
         edit_candidate: ULabelActionCandidate | null;
         move_candidate: ULabelActionCandidate | null;
         first_explicit_assignment: boolean;

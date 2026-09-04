@@ -54,6 +54,7 @@ class ULabel({
     toolbox_order: AllowedToolboxItem[],
     distance_filter_toolbox_item: FilterDistanceConfig,
     image_filters_toolbox_item: ImageFiltersConfig,
+    class_counter_toolbox_item: ClassCounterConfig,
     reset_zoom_keybind: string,
     show_full_image_keybind: string,
     create_point_annotation_keybind: string,
@@ -539,6 +540,24 @@ type ConfidenceSliderConfig = {
 }
 ```
 
+### `class_counter_toolbox_item`
+
+Options for the `ClassCounter` toolbox item (added to `toolbox_order` via `AllowedToolboxItem.ClassCounter`), which displays per-class counts of non-deprecated annotations.
+
+```javascript
+type ClassCounterConfig = {
+    // Which subtasks to count. "current" follows the active subtask. Default: "current"
+    "subtasks"?: string[] | "current",
+    // How counts are laid out. Default: "current"
+    // - "current": one plain per-class list per counted subtask
+    // - "grouped": adds a heading per counted subtask
+    // - "flat": merges shared class ids across subtasks into one summed list
+    "layout"?: "current" | "grouped" | "flat",
+}
+```
+
+Both options can also be changed at runtime via [`set_class_counter_options()`](#set_class_counter_optionsoptions-redrawtrue).
+
 ### `reset_zoom_keybind`
 Keybind to reset the zoom level to the `initial_crop`. Default is `r`.
 
@@ -651,6 +670,8 @@ Display utilities are provided for a constructed `ULabel` object.
 
 *(string, int) => Promise&lt;string&gt;* -- Changes the image source for a given frame. Displays the loading spinner while the new image loads. Returns a `Promise` that resolves with the old source once the new image has been decoded; `await` it if you need to run code after the swap completes.
 
+The new image must match the dimensions this instance was initialized with: the canvases, zoom math, and loaded annotations are all in the init-time image's coordinate space. On a mismatch the old image is restored and the returned `Promise` rejects. Rebuild the ULabel instance to change image dimensions.
+
 ### `swap_anno_bg_color(new_bg_color)`
 
 *(string) => string* -- Changes the background color for the annotation box. Returns the old color.
@@ -667,9 +688,23 @@ Display utilities are provided for a constructed `ULabel` object.
 
 *(string) => array* -- Gets the current list of annotations within the provided subtask.
 
-### `set_annotations(new_annotations, subtask)`
+### `set_annotations(new_annotations, subtask, skip_toolbox_update=false)`
 
-*(array, string) => Promise&lt;void&gt;* -- Sets the annotations for the provided subtask. Displays the loading spinner while re-initializing the annotations (similar to a new init). Returns a `Promise` that resolves once the annotations have been set and redrawn; `await` it if you need to run code after the update completes.
+*(array, string, bool) => Promise&lt;void&gt;* -- Sets the annotations for the provided subtask. Displays the loading spinner while re-initializing the annotations (similar to a new init). Returns a `Promise` that resolves once the annotations have been set and redrawn; `await` it if you need to run code after the update completes.
+
+When batching several per-subtask swaps, pass `skip_toolbox_update = true` on each call to suppress the per-call distance-filter and toolbox updates, then call [`refresh_toolbox()`](#refresh_toolbox) once at the end.
+
+### `refresh_toolbox()`
+
+*() => void* -- Runs the deferred half of a batched [`set_annotations()`](#set_annotationsnew_annotations-subtask-skip_toolbox_updatefalse) sequence: recomputes distance filtering and redraws the toolbox items once.
+
+### `set_class_color(class_id, color, redraw=true)`
+
+*(number | string, string, bool) => void* -- Sets a class's color and syncs every view of it: `color_info`, the id-toolbox swatch, and the id-dialog color pies. When `redraw` is `true`, annotations are redrawn immediately; pass `false` when batching several color changes, then call `redraw_all_annotations()` once at the end.
+
+### `set_class_counter_options(options, redraw=true)`
+
+*(ClassCounterConfig, bool) => bool* -- Updates the [`ClassCounter`](#class_counter_toolbox_item) toolbox item's options at runtime; omitted options keep their current values. When `redraw` is `true` the counter re-renders immediately. Returns whether the `ClassCounter` toolbox item was found.
 
 ### `set_saved(saved)`
 
