@@ -32,6 +32,7 @@ import { initialize_annotation_canvases } from "../build/canvas_utils";
 import { record_action, record_finish, record_finish_edit, record_finish_move, undo, redo } from "../build/actions";
 import { ULabelMask, is_raw_mask_payload } from "../build/mask_utils";
 import { get_local_storage_item, set_local_storage_item } from "../build/utilities";
+import { get_idd_string } from "../build/html_builder";
 
 import $ from "jquery";
 const jQuery = $;
@@ -1060,38 +1061,6 @@ export class ULabel {
         }
     }
 
-    /**
-     * Dim every class in a subtask except the active one, and raise the active
-     * one above its siblings. The per-subtask equivalent of `set_subtask`, for
-     * when one subtask holds several classes.
-     *
-     * @param {string} subtask subtask key
-     * @param {number|string|null} active_class_id class to bring to front, or null for none
-     * @param {number|object} inactive_opacity opacity for the other classes, either one
-     *     value for all of them or a map keyed by class, mirroring how each
-     *     subtask carries its own `inactive_opacity`
-     */
-    set_active_class_layer(subtask, active_class_id, inactive_opacity = 0.4) {
-        const active_key = this.get_canvas_class_key(active_class_id);
-        // Dimmed classes stop being hover/edit targets, so what's interactive
-        // matches what's legible. Guarded because callers can race a pending
-        // annotation swap and name a subtask that doesn't exist yet.
-        const subtask_state = this.subtasks[subtask]?.["state"];
-        if (subtask_state) {
-            subtask_state["active_class_layer"] = active_class_id === null ? null : active_key;
-        }
-        $("#canvasses__" + subtask + " > div.class_canvasses").each((_, el) => {
-            const key = $(el).attr("data-class-key");
-            const is_active = active_class_id !== null && key === active_key;
-            let dim = inactive_opacity;
-            if (typeof inactive_opacity !== "number") {
-                dim = inactive_opacity?.[key] ?? 0.4;
-            }
-            $(el).css("opacity", is_active ? 1 : dim);
-            $(el).css("z-index", is_active ? BACK_Z_INDEX + 1 : BACK_Z_INDEX);
-        });
-    }
-
     set_subtask(st_key) {
         let old_st = this.get_current_subtask_key();
 
@@ -1302,6 +1271,23 @@ export class ULabel {
         return item.get_current_values();
     }
 
+    /**
+     * Update the ClassCounter toolbox item's options at runtime.
+     *
+     * @param {object} options `{subtasks?: string[] | "current", layout?: "current" | "grouped" | "flat"}`
+     * @param {boolean} redraw whether to re-render the counter immediately
+     * @returns {boolean} whether the ClassCounter toolbox item was found
+     */
+    set_class_counter_options(options, redraw = true) {
+        const item = this.toolbox.items.find((item) => item.get_toolbox_item_type() === "ClassCounter");
+        if (item === undefined) return false;
+        item.set_options(options);
+        if (redraw) {
+            item.redraw_update(this);
+        }
+        return true;
+    }
+
     // Show annotation mode
     show_annotation_mode(el = null) {
         if (el === null) {
@@ -1471,62 +1457,31 @@ export class ULabel {
      * @param {string} subtask subtask name
      * @returns {string} The ID of an available canvas
      */
-    get_next_available_canvas_id(subtask = null, class_id = null) {
+    get_next_available_canvas_id(subtask = null) {
         if (subtask === null) {
             subtask = this.get_current_subtask_key();
         }
         const contexts = this.subtasks[subtask]["state"]["annotation_contexts"];
         const canvas_ids = Object.keys(contexts);
-        const key = this.get_canvas_class_key(class_id);
         for (let i = 0; i < canvas_ids.length; i++) {
-            const context = contexts[canvas_ids[i]];
-            // Annotations are grouped onto canvases by class so that a whole
-            // class can be dimmed or raised with one CSS write.
-            if (context["class_key"] !== key) continue;
-            if (context["annotation_ids"].length < this.config.n_annos_per_canvas) {
+            if (contexts[canvas_ids[i]]["annotation_ids"].length < this.config.n_annos_per_canvas) {
                 return canvas_ids[i];
             }
         }
         // If no canvas has less than n_annos_per_canvas annotations, create a new canvas
-        return this.create_annotation_canvas(subtask, class_id);
-    }
-
-    // Normalize a class id into the suffix used for per-class canvas grouping.
-    get_canvas_class_key(class_id) {
-        return class_id === null || class_id === undefined ? "none" : String(class_id);
-    }
-
-    // Which canvas layer an annotation belongs to. Defaults to its class.
-    get_annotation_canvas_group(annotation) {
-        const resolved = this.config.annotation_canvas_group_resolver?.(annotation);
-        return resolved != null ? resolved : get_annotation_class_id(annotation);
-    }
-
-    // The div grouping one class's annotation canvases within a subtask.
-    get_class_canvasses_id(subtask, class_id) {
-        return `canvasses__${subtask}__cls__${this.get_canvas_class_key(class_id)}`;
+        return this.create_annotation_canvas(subtask);
     }
 
     /**
      * Create a new canvas and return its ID
      *
      * @param {string} subtask name
-     * @param {number|string|null} class_id class to group the canvas under
      * @returns {string} The ID of a new canvas
      */
-    create_annotation_canvas(subtask, class_id = null) {
+    create_annotation_canvas(subtask) {
         const canvas_id = `canvas__${this.make_new_annotation_id()}`;
-        const class_key = this.get_canvas_class_key(class_id);
-        const group_id = this.get_class_canvasses_id(subtask, class_id);
 
-        if ($("#" + group_id).length === 0) {
-            $("#canvasses__" + subtask).append(
-                `<div id="${group_id}" class="class_canvasses" data-class-key="${class_key}"></div>`,
-            );
-            $("#" + group_id).css("z-index", BACK_Z_INDEX);
-        }
-
-        $("#" + group_id).append(`
+        $("#canvasses__" + subtask).append(`
             <canvas 
                 id="${canvas_id}" 
                 class="${this.config["canvas_class"]} ${this.config["imgsz_class"]} canvas_cls annotation_canvas" 
@@ -1542,7 +1497,6 @@ export class ULabel {
         // Add the canvas context to the state
         this.subtasks[subtask]["state"]["annotation_contexts"][canvas_id] = {
             annotation_ids: [],
-            class_key: class_key,
             context: document.getElementById(canvas_id).getContext("2d"),
         };
 
@@ -1554,15 +1508,14 @@ export class ULabel {
      *
      * @param {string} annotation_id annotation ID
      * @param {string} subtask subtask name
-     * @param {number|string|null} class_id class to group the annotation under
      * @returns {string} The ID of the canvas context
      */
-    get_init_canvas_context_id(annotation_id, subtask = null, class_id = null) {
+    get_init_canvas_context_id(annotation_id, subtask = null) {
         if (subtask === null) {
             subtask = this.get_current_subtask_key();
         }
         // Get the next available canvas id
-        const canvas_id = this.get_next_available_canvas_id(subtask, class_id);
+        const canvas_id = this.get_next_available_canvas_id(subtask);
         // Add the annotation id to the canvas context
         this.subtasks[subtask]["state"]["annotation_contexts"][canvas_id]["annotation_ids"].push(annotation_id);
 
@@ -1765,13 +1718,61 @@ export class ULabel {
         }
     }
 
+    /**
+     * Rebuild every subtask's id-dialog color pies from the current `color_info`.
+     */
+    rebuild_id_dialog_pies() {
+        const width = this.config["outer_diameter"];
+        const inner_radius = this.config["inner_prop"] * width / 2;
+        for (const subtask_key in this.subtasks) {
+            const subtask = this.subtasks[subtask_key];
+            const idd_id = subtask["state"]["idd_id"];
+            const idd_id_front = subtask["state"]["idd_id_front"];
+
+            const dialog_html = get_idd_string(idd_id, width, subtask["class_ids"], inner_radius, this.color_info);
+            const front_dialog_html = get_idd_string(idd_id_front, width, subtask["class_ids"], inner_radius, this.color_info);
+
+            $("#" + idd_id).remove();
+            $("#" + idd_id_front).remove();
+            $("#dialogs__" + subtask_key).append(dialog_html);
+            $("#front_dialogs__" + subtask_key).append(front_dialog_html);
+        }
+
+        // Replacing the pies dropped their hover listeners; re-add
+        $(".id_dialog").on("mousemove.ulabel", (mouse_event) => {
+            if (!this.get_current_subtask()["state"]["idd_thumbnail"]) {
+                this.handle_id_dialog_hover(mouse_event);
+            }
+        });
+    }
+
+    /**
+     * Set a class's color and sync every view of it: `color_info`, the
+     * id-toolbox swatch, and the id-dialog pies.
+     *
+     * @param {number|string} class_id class id to recolor
+     * @param {string} color new color
+     * @param {boolean} redraw whether to redraw annotations immediately. Pass
+     *     false when batching several color changes, then redraw once at the end.
+     */
+    set_class_color(class_id, color, redraw = true) {
+        this.color_info[class_id] = color;
+
+        // Toolbox swatch for this class
+        const button_color_square = document.querySelector(`#${this.config["toolbox_id"]}_sel_${class_id} > div`);
+        if (button_color_square) {
+            button_color_square.style.backgroundColor = color;
+        }
+
+        this.rebuild_id_dialog_pies();
+
+        if (redraw) {
+            this.redraw_all_annotations();
+        }
+    }
+
     get_annotation_color(annotation) {
         const gradient_val = $("#gradient-slider").val() / 100;
-
-        const resolved = this.config.annotation_color_resolver?.(annotation);
-        if (resolved != null) {
-            return get_gradient(annotation, resolved, get_annotation_confidence, gradient_val);
-        }
 
         // Use the annotation's class id to get the color of the annotation
         const class_id = get_annotation_class_id(annotation);
@@ -4383,7 +4384,6 @@ export class ULabel {
         let canvas_id = this.get_init_canvas_context_id(
             annotation_id,
             subtask_key,
-            get_annotation_class_id({ classification_payloads: init_id_payload }),
         );
 
         // TODO(3d)
@@ -5020,7 +5020,6 @@ export class ULabel {
         const canvas_id = this.get_init_canvas_context_id(
             annotation_id,
             subtask_key,
-            get_annotation_class_id({ classification_payloads: init_id_payload }),
         );
 
         current_subtask["annotations"]["access"][annotation_id] = {
@@ -6223,7 +6222,6 @@ export class ULabel {
         };
         let minsize = Infinity;
         let found_containing_annotation = false;
-        const active_class_layer = this.get_current_subtask()["state"]["active_class_layer"] ?? null;
         // A read-only subtask has nothing to grab, so the near-miss fallback
         // below is just noise: require a real hit wherever one can be tested.
         const require_exact_hit = this.is_current_subtask_read_only();
@@ -6237,10 +6235,6 @@ export class ULabel {
             const annotation_id = this.get_current_subtask()["annotations"]["ordering"][edi];
             let annotation = this.get_current_subtask()["annotations"]["access"][annotation_id];
             if (annotation["deprecated"]) continue;
-            if (
-                active_class_layer !== null &&
-                this.get_canvas_class_key(this.get_annotation_canvas_group(annotation)) !== active_class_layer
-            ) continue;
             let cbox = annotation["containing_box"];
             let frame = annotation["frame"];
             const spatial_type = annotation["spatial_type"];
@@ -6854,11 +6848,10 @@ export class ULabel {
                 class_name = class_def.name;
             }
         }
-        const display_name = this.config.annotation_display_name_resolver?.(active_annotation) ?? class_name;
 
         // Update the display dialog
         const global_id = `global_annotation_confidence__${subtask_key}`;
-        $(`#${global_id} .annotation-confidence-classname`).text(display_name);
+        $(`#${global_id} .annotation-confidence-classname`).text(class_name);
         $(`#${global_id} .annotation-confidence-value`).text(`Confidence: ${confidence.toFixed(2)}`);
     }
 
@@ -7663,7 +7656,6 @@ export class ULabel {
         // #dialogs__<subtask> container (which owns the brush circle, polygon ender, and
         // id dialogs) live in the same parent and MUST survive.
         $("#canvasses__" + subtask + " canvas.annotation_canvas").remove();
-        $("#canvasses__" + subtask + " > div.class_canvasses").remove();
         this.subtasks[subtask]["state"]["annotation_contexts"] = {};
     }
 

@@ -158,6 +158,20 @@ export type ConfidenceSliderConfig = {
     };
 };
 
+/**
+ * Config object for the ClassCounter ToolboxItem.
+ */
+export type ClassCounterConfig = {
+    /** Which subtasks to count. "current" follows the active subtask. Default "current". */
+    subtasks?: string[] | "current";
+    /**
+     * How counts are laid out. "current" keeps the plain per-class list,
+     * "grouped" adds a heading per counted subtask, "flat" merges shared class
+     * ids across subtasks into one summed list. Default "current".
+     */
+    layout?: "current" | "grouped" | "flat";
+};
+
 export type ULabelSubmitButton = {
     name: string;
     hook: (submit_data: ULabelSubmitData) => void;
@@ -301,22 +315,7 @@ export type ULabelConstructorArgs = {
     instructions_url?: string;
     toolbox_order?: AllowedToolboxItem[];
     auto_destroy_on_detach?: boolean;
-    /**
-     * Override the color of individual annotations. Return null to fall back to
-     * the annotation's class color.
-     */
-    annotation_color_resolver?: (annotation: ULabelAnnotation) => string | null;
-    /**
-     * Override which canvas layer an annotation is grouped onto. Return null to
-     * fall back to its class id. Grouping decides what `set_active_class_layer`
-     * can dim or raise.
-     */
-    annotation_canvas_group_resolver?: (annotation: ULabelAnnotation) => string | null;
-    /**
-     * Override the name the hover card shows for an annotation. Return null to
-     * fall back to its class name.
-     */
-    annotation_display_name_resolver?: (annotation: ULabelAnnotation) => string | null;
+    class_counter_toolbox_item?: ClassCounterConfig;
     /** @deprecated Use top-level properties instead. */
     config_data?: object;
 };
@@ -402,18 +401,18 @@ export class ULabel {
     public show_whole_image(): void;
     public swap_frame_image(new_src: string, frame?: number): Promise<string>;
     public swap_anno_bg_color(new_bg_color: string): string;
+    /**
+     * Set a class's color and sync every view of it: `color_info`, the
+     * id-toolbox swatch, and the id-dialog pies. Pass `redraw = false` when
+     * batching several color changes, then redraw once at the end.
+     */
+    public set_class_color(class_id: number | string, color: string, redraw?: boolean): void;
 
     // Subtasks
     public get_current_subtask_key(): string;
     public get_current_subtask(): ULabelSubtask;
     public is_current_subtask_read_only(): boolean;
     public readjust_subtask_opacities(): void;
-    public set_active_class_layer(
-        subtask: string,
-        active_class_id: number | string | null,
-        inactive_opacity?: number | Record<string, number>,
-    ): void;
-    public get_annotation_canvas_group(annotation: ULabelAnnotation): string | null;
     public set_subtask(st_key: string): void;
     public switch_to_next_subtask(): void;
 
@@ -457,6 +456,12 @@ export class ULabel {
     ): void;
     public get_keypoint_slider_value(): number | null;
     public get_distance_filter_value(): DistanceFromPolylineClasses | null;
+    /**
+     * Update the ClassCounter toolbox item's options at runtime.
+     *
+     * @returns whether the ClassCounter toolbox item was found
+     */
+    public set_class_counter_options(options: ClassCounterConfig, redraw?: boolean): boolean;
     public get_confidence_slider_value(): ConfidenceSliderClasses | null;
     public fly_to_next_annotation(increment: number, max_zoom?: number): boolean;
     public fly_to_annotation_id(annotation_id: string, subtask_key?: string | null, max_zoom?: number): boolean;
@@ -670,10 +675,7 @@ export class ULabel {
     public get_init_canvas_context_id(
         annotation_id: string,
         subtask?: string, // SUBTASK KEY
-        class_id?: number | string | null,
     ): string;
-    public get_canvas_class_key(class_id: number | string | null): string;
-    public get_class_canvasses_id(subtask: string, class_id: number | string | null): string;
 }
 
 declare global {

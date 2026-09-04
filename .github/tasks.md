@@ -154,12 +154,12 @@ its Phase 3 migration (frontend stays pinned until then).
   the gates in draw / suggest_edits / fly_to / nav toast / bulk delete.
   No consumer exists (verified in model-registry) and the new architecture
   covers visibility with subtask structure + vanish + layer dimming.
-- [ ] 1.4 Remove all three resolvers (`annotation_color_resolver`,
+- [x] 1.4 Remove all three resolvers (`annotation_color_resolver`,
   `annotation_canvas_group_resolver`, `annotation_display_name_resolver`).
   Every subtask is single-class with its own id, color, and name (outcome
   subtasks are literally named "True Positive" etc., so the hover card reads
-  the same through the plain class-name path). Keep class-grouped canvases +
-  `set_active_class_layer`.
+  the same through the plain class-name path). (Class-grouped canvases +
+  `set_active_class_layer` were initially kept, then removed in 2.3.)
 - [x] 1.5 Remove the per-subtask back canvas. VERIFIED vestigial: write-only
   since the first commit (Nov 2020) - assigned at init, nulled in destroy,
   zero draw calls ever; all rendering targets front/annotation/demo contexts
@@ -173,21 +173,29 @@ its Phase 3 migration (frontend stays pinned until then).
 
 ### Phase 2 - ULabel changes (this repo)
 
-- [ ] 2.1 `ClassCounter` options (config `class_counter_toolbox_item` + a
+- [x] 2.1 `ClassCounter` options (config `class_counter_toolbox_item` + a
   runtime setter, since view mode lives in the host):
   - `subtasks: string[] | "current"` - which subtasks to count
   - `layout: "current" | "grouped" | "flat"`
   ClassCounter has zero tests today - backfill current behavior (per-class
   counts, deprecated skipped) alongside the new options.
-- [ ] 2.2 Public `set_class_color(class_id, color, redraw = true)`: writes
+- [x] 2.2 Public `set_class_color(class_id, color, redraw = true)`: writes
   `color_info`, syncs the toolbox swatch + id-dialog pie, optional redraw.
   Refactor `RecolorActive.update_color` (private, does the same steps by
   hand) to call it; add to `index.d.ts`. Replaces raw `color_info` mutation
   in model-registry's recolor effect, which currently skips the pie sync.
   Unit tests: color_info write, swatch/pie sync, redraw flag both ways.
-- [ ] 2.3 Backfill unit tests for `set_active_class_layer` (kept public,
-  currently browser-verified only): dim/raise + z-index writes, per-key
-  opacity map, `active_class_layer` state gating edit candidates.
+- [x] 2.3 Remove `set_active_class_layer` and class-grouped canvases entirely
+  (supersedes the 1.4 "keep" decision). With every subtask single-class
+  (3.4), a subtask has exactly one canvas group, so within-subtask layer
+  dimming has nothing to act on; class visibility is expressed with subtasks
+  (vanish / `readjust_subtask_opacities`). Removes: the method + 
+  `active_class_layer` state and its `get_edit_candidates` gate, the
+  `div.class_canvasses` wrappers + CSS, `class_key` bookkeeping in
+  `annotation_contexts`, `get_canvas_class_key` / `get_class_canvasses_id` /
+  `get_annotation_canvas_group`, the class_id params on the canvas-creation
+  path, and the `index.d.ts` entries. Recoverable from git history if a
+  multi-class subtask ever returns.
 
 ### Phase 3 - model-registry
 
@@ -212,8 +220,9 @@ its Phase 3 migration (frontend stays pinned until then).
   `set_class_color` (2.2) - registry classes map by name, outcome classes by
   the fixed ids 0/1/2 -> `useDiffColors`; batch with `redraw = false` + one
   final redraw.
-- [ ] 3.6 Class chips: gt/pred -> `set_subtask(class_key)`; diff -> either
-  `set_active_class_layer` within outcome subtasks or chip-driven vanish.
+- [ ] 3.6 Class chips: gt/pred -> `set_subtask(class_key)`; diff -> chip-driven
+  annotation swap (only the active class's outcomes are loaded, per 3.4) or
+  vanish. (`set_active_class_layer` removed in 2.3.)
 - [ ] 3.7 Keep: ConfidenceSlider flow as-is (deprecation is intentional;
   latent-FN filter override is orthogonal), segmentation threshold scrubs as
   per-subtask swaps (only stale class subtasks re-import).
