@@ -4,12 +4,13 @@ All notable changes to this project will be documented here.
 
 ## [unreleased]
 
-## [0.28.0] - TBD
+## [0.28.0] - Sept 8th, 2026
 - Removed unused per-subtask back canvas.
 - `set_annotations()` gained a `skip_toolbox_update` parameter for batching several per-subtask swaps, plus a `refresh_toolbox()` method to run the deferred filter-distance + toolbox update once at the end.
 - `ClassCounter` toolbox item options via `class_counter_toolbox_item` config: `subtasks` (`string[] | "current"`) selects which subtasks to count, `layout` (`"current" | "grouped" | "flat"`) controls rendering (`grouped` adds a heading per subtask, `flat` merges shared class ids into one summed list). New `set_class_counter_options()` public API method changes them at runtime.
 - New `set_class_color(class_id, color, redraw?)` public API method: writes `color_info` and syncs the id-toolbox swatch and id-dialog color pies. Also fixes the front id-dialog pie not updating (and duplicating) on recolor via the `RecolorActive` toolbox item.
 - Fix the hover confidence card sitting on top of the hovered annotation: the card is now populated before it is measured and positioned, so it hugs the edit-button ring instead of drifting onto the anchor.
+- `swap_frame_image()` now rejects (and restores the old image) when the new image's dimensions don't match the ones the instance was initialized with, instead of silently misaligning annotations against the new frame. Changing image dimensions requires reinitializing the ULabel instance.
 
 ## [0.27.0] - Aug 18th, 2026
 - Hovering a spatial annotation now draws a white outline that hugs its shape.

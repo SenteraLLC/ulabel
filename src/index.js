@@ -7456,6 +7456,20 @@ export class ULabel {
             img.attr("src", new_src);
             // Wait for the new image to be decoded and ready to display
             await img[0].decode();
+            // The canvases, zoom math, and loaded annotations are all in the
+            // init-time image's coordinate space, so a different-size image
+            // would silently misalign everything. Restore the old image and reject.
+            const el = img[0];
+            if (el.naturalWidth !== this.config["image_width"] || el.naturalHeight !== this.config["image_height"]) {
+                img.attr("src", ret);
+                log_message(
+                    `swap_frame_image rejected: new image is ${el.naturalWidth}x${el.naturalHeight}, ` +
+                    `but this instance was initialized at ${this.config["image_width"]}x${this.config["image_height"]}. ` +
+                    `Rebuild the ULabel instance to change image dimensions.`,
+                    LogLevel.ERROR,
+                    true,
+                );
+            }
         } finally {
             ULabelLoader.remove_loader_div();
         }

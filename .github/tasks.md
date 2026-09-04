@@ -199,33 +199,39 @@ its Phase 3 migration (frontend stays pinned until then).
 
 ### Phase 3 - model-registry
 
-- [ ] 3.1 `buildViewSubtasks` -> per-class specs (single real class each,
-  narrow allowed_modes) + `tp`/`fp`/`fn` specs (full class list, union modes).
-  Keys derived from the run-selection label union (already shared GT/pred).
-- [ ] 3.2 Replace the monolithic `subtasks` memo with per-subtask annotation
+- [x] 3.1 `buildViewSubtasks` -> per-class specs (single real class each,
+  narrow allowed_modes) + `tp`/`fp`/`fn` specs (single outcome class each,
+  per 3.4). Keys derived from the run-selection label union via
+  `classSubtaskKeys` (slugified, deduped, never colliding with outcome keys).
+- [x] 3.2 Replace the monolithic `subtasks` memo with per-subtask annotation
   memos; push changes via `set_annotations(annos, key, skip_toolbox_update)`
-  per changed subtask (reference equality), final `refresh_toolbox()`.
-- [ ] 3.3 Mode switch: gt<->pred swaps class-subtask annotations; diff mode
-  uses `set_subtask` + vanish on non-relevant subtasks. Inactive-subtask
-  dimming keeps the existing behavior.
-- [ ] 3.4 Outcome subtasks are single-class: `tp`/`fp`/`fn` each carry one
-  class def (TP=0, FP=1, FN=2 - fixed ids first so they never shift with the
-  ontology), colors from `useDiffColors`. Real classes follow at 3..N+2.
-  All ids globally unique because `color_info` is id-keyed across subtasks.
-  Diff only ever loads the active class's outcomes, so outcome counts are
-  inherently per-class. Drop `match_outcome` metadata, `outcomeOf`, and all
-  resolver usage.
-- [ ] 3.5 Drop `color` from the `viewerKey` shape (keep keys/ids/names/modes)
-  so color changes stop forcing rebuilds. Rewrite the recolor effect on
-  `set_class_color` (2.2) - registry classes map by name, outcome classes by
-  the fixed ids 0/1/2 -> `useDiffColors`; batch with `redraw = false` + one
-  final redraw.
-- [ ] 3.6 Class chips: gt/pred -> `set_subtask(class_key)`; diff -> chip-driven
-  annotation swap (only the active class's outcomes are loaded, per 3.4) or
-  vanish. (`set_active_class_layer` removed in 2.3.)
-- [ ] 3.7 Keep: ConfidenceSlider flow as-is (deprecation is intentional;
-  latent-FN filter override is orthogonal), segmentation threshold scrubs as
-  per-subtask swaps (only stale class subtasks re-import).
+  per changed subtask (annotation-id signature diff in `UlabelCanvas`, since
+  ids are content-derived), final `refresh_toolbox()`.
+- [x] 3.3 Mode switch: gt<->pred swaps class-subtask annotations; diff mode
+  swaps outcome-subtask annotations. Explicit vanish proved unnecessary:
+  fetching is mode-gated, so the non-active mode's subtasks are swapped to
+  empty and render nothing. Inactive-subtask dimming keeps the old 0.4 for
+  class subtasks; outcome subtasks carry `inactive_opacity: 1` so all three
+  outcomes stay at full opacity (preserves item 10's behavior).
+- [x] 3.4 Outcome subtasks are single-class (TP=0, FP=1, FN=2 fixed ids
+  first; real classes at 3..N+2), colors from `useDiffColors`. Dropped
+  `match_outcome` metadata, `outcomeOf`, and all resolver usage; the hover
+  card names outcomes through the plain class-name path.
+- [x] 3.5 Dropped `color` from the `viewerKey` shape (keys/ids/names/modes
+  kept). Recolor effect rewritten on `set_class_color` (2.2): registry
+  classes by name, outcome classes by fixed id -> `useDiffColors`; batched
+  with `redraw = false` + one final `redraw_all_annotations()`.
+- [x] 3.6 Class chips: gt/pred -> `set_subtask(class_key)`; diff -> chip-driven
+  annotation swap (only the active class's outcomes are loaded, per 3.4).
+  The Diff Colors legend rows additionally select the current *outcome*
+  subtask, scoping hover + Tab navigation (hover is subtask-scoped now).
+  ClassCounter runs `layout: "flat"` over class subtasks in gt/pred and over
+  outcome subtasks in diff via `set_class_counter_options`.
+- [x] 3.7 Kept: ConfidenceSlider flow as-is (hidden DOM sliders driven from
+  the sidebar; latent-FN filter override untouched; per-class slider ids and
+  `default_values` moved to the 3..N+2 range with `target_class_ids` so
+  outcome classes never get sliders), segmentation threshold scrubs as
+  per-subtask swaps (only stale subtasks re-import via the signature diff).
 
 ### Verification
 
