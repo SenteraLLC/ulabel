@@ -46,22 +46,6 @@ export type DeprecatedBy = {
 };
 
 /**
- * Valid keys for the HiddenBy type.
- *
- * Distinct from ValidDeprecatedBy on purpose: `deprecated` means the annotation
- * has been deleted, while `hidden` only means it is filtered out of the current
- * view. Conflating them loses data as soon as deprecation is persisted.
- */
-export type ValidHiddenBy = "human" | "class_filter" | "outcome_filter" | "confidence_filter";
-
-export type HiddenBy = {
-    human?: boolean;
-    class_filter?: boolean;
-    outcome_filter?: boolean;
-    confidence_filter?: boolean;
-};
-
-/**
  * Info needed to filter distance from row without accessing the dom.
  * Primarily exists so that points can be filtered before the page loads.
  */
@@ -430,36 +414,19 @@ export class ULabel {
         inactive_opacity?: number | Record<string, number>,
     ): void;
     public get_annotation_canvas_group(annotation: ULabelAnnotation): string | null;
-    /**
-     * Hide or show annotations in a subtask under a named filter key. Filters
-     * compose, so independent controls can be applied in any order. Hiding is a
-     * view operation only and never marks an annotation deleted.
-     *
-     * @returns how many annotations changed visibility
-     */
-    public filter_annotations(
-        hidden_by_key: ValidHiddenBy,
-        should_hide: (annotation: ULabelAnnotation) => boolean,
-        subtask?: string | null,
-        redraw?: boolean,
-    ): number;
     public set_subtask(st_key: string): void;
     public switch_to_next_subtask(): void;
-    /**
-     * Swap in a new set of subtask specs without tearing the instance down,
-     * reusing the decoded image, canvases, toolbox and listeners. Subtasks
-     * whose annotations are already loaded are skipped.
-     *
-     * Resolves to the keys that were swapped, or to null — leaving the instance
-     * untouched — when the subtask keys, classes or allowed modes differ from
-     * what the instance was built with, since those are baked into the DOM and
-     * event bindings. Callers should rebuild the instance in that case.
-     */
-    public replace_subtasks(subtasks: ULabelSubtasks): Promise<string[] | null>;
 
     // Annotations
     public get_annotations(subtask: string): ULabelAnnotation[];
-    public set_annotations(annotations: ULabelAnnotation[], subtask: string): Promise<void>;
+    /**
+     * Replace a subtask's annotations in place. When batching several swaps, pass
+     * `skip_toolbox_update = true` on each call and run `refresh_toolbox()` once
+     * at the end.
+     */
+    public set_annotations(annotations: ULabelAnnotation[], subtask: string, skip_toolbox_update?: boolean): Promise<void>;
+    /** Deferred half of a batched `set_annotations` sequence: filter distances + toolbox redraw. */
+    public refresh_toolbox(): void;
     public set_saved(saved: boolean): void;
     public draw_annotation_from_id(id: string, offset?: Offset, subtask?: string): void;
     public redraw_annotation(annotation_id: string, subtask?: string, offset?: Offset): void;

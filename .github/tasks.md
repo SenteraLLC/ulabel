@@ -137,19 +137,19 @@ its Phase 3 migration (frontend stays pinned until then).
 
 ### Phase 1 - ULabel removals (this repo)
 
-- [ ] 1.1 Remove `replace_subtasks`, `_subtask_shape_matches`,
+- [x] 1.1 Remove `replace_subtasks`, `_subtask_shape_matches`,
   `_subtask_annotations_unchanged` and their `index.d.ts` entries.
   `set_annotations` becomes the single swap path. (Also moots the mid-yield
   destroy return-value bug and the `config.subtasks` retention concern from
   the branch review.) No tests to delete (browser-verified only); add a
   regression test for the frontend's pattern: N sequential per-subtask
   `set_annotations` swaps on a live instance.
-- [ ] 1.2 Add `skip_toolbox_update = false` param to `set_annotations` so the
+- [x] 1.2 Add `skip_toolbox_update = false` param to `set_annotations` so the
   frontend can batch N per-subtask swaps with one `update_filter_distance` +
   toolbox redraw at the end (expose a small `refresh_toolbox()` if needed).
   Unit tests: flag suppresses toolbox/filter updates; `refresh_toolbox()`
   triggers them once.
-- [ ] 1.3 Remove the dead `hidden` machinery: `hidden`/`hidden_by` fields,
+- [x] 1.3 Remove the dead `hidden` machinery: `hidden`/`hidden_by` fields,
   `mark_hidden`, `filter_annotations`, `HiddenBy`/`ValidHiddenBy` types, and
   the gates in draw / suggest_edits / fly_to / nav toast / bulk delete.
   No consumer exists (verified in model-registry) and the new architecture
@@ -169,7 +169,7 @@ its Phase 3 migration (frontend stays pinned until then).
   IMPLEMENTED: element creation, `canvas_bid_pfx`,
   `subtask.canvas_bid`, `state.back_context` (init/destroy/types), test
   fixtures, and stale comments removed; breaking-change CHANGELOG entry added.
-  - [ ] Validation owed: lint + build + jest + full e2e matrix.
+  - [x] Local validation: lint + build + 166 jest pass
 
 ### Phase 2 - ULabel changes (this repo)
 

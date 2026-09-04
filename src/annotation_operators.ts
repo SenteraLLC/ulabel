@@ -4,9 +4,7 @@ import type {
     DeprecatedBy,
     DistanceFromPolylineClasses,
     FilterDistanceOverride,
-    HiddenBy,
     ValidDeprecatedBy,
-    ValidHiddenBy,
     ClassDefinition,
 } from "../index";
 import { ULabel } from "../src/index";
@@ -100,30 +98,8 @@ export function mark_deprecated(
 }
 
 /**
- * Takes in an annotation and marks it either hidden or not hidden by a given key.
+ * If the value is less than the filter then return true, else return false.
  *
- * Hiding is a view concern and is kept separate from deprecation: a deprecated
- * annotation has been deleted, while a hidden one is merely filtered out of the
- * current view and must survive a round trip untouched.
- *
- * @param annotation ULabelAnnotation
- * @param hidden boolean
- * @param hidden_by_key which filter is hiding the annotation
- */
-export function mark_hidden(
-    annotation: ULabelAnnotation,
-    hidden: boolean,
-    hidden_by_key: ValidHiddenBy = "human",
-) {
-    if (annotation.hidden_by === undefined) {
-        annotation.hidden_by = <HiddenBy> {};
-    }
-
-    annotation.hidden_by[hidden_by_key] = hidden;
-
-    // Hidden by any filter means hidden overall
-    annotation.hidden = Object.values(annotation.hidden_by).some((x) => x);
-}
 
 /**
  * If the value is less than the filter then return true, else return false.

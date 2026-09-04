@@ -23,7 +23,6 @@ import {
     get_annotation_confidence,
     get_point_and_line_annotations,
     mark_deprecated,
-    mark_hidden,
     update_distance_from_line_to_each_point,
 } from "../build/annotation_operators";
 import { AnnotationResizeItem, BrushToolboxItem } from "../build/toolbox";
@@ -1076,7 +1075,7 @@ export class ULabel {
         const active_key = this.get_canvas_class_key(active_class_id);
         // Dimmed classes stop being hover/edit targets, so what's interactive
         // matches what's legible. Guarded because callers can race a pending
-        // `replace_subtasks` and name a subtask that doesn't exist yet.
+        // annotation swap and name a subtask that doesn't exist yet.
         const subtask_state = this.subtasks[subtask]?.["state"];
         if (subtask_state) {
             subtask_state["active_class_layer"] = active_class_id === null ? null : active_key;
@@ -1091,41 +1090,6 @@ export class ULabel {
             $(el).css("opacity", is_active ? 1 : dim);
             $(el).css("z-index", is_active ? BACK_Z_INDEX + 1 : BACK_Z_INDEX);
         });
-    }
-
-    /**
-     * Hide or show annotations in a subtask based on a predicate, under a named
-     * filter key. Filters compose: an annotation stays hidden while any key
-     * hides it, so independent controls (class, outcome, confidence) can be
-     * applied in any order without clobbering each other.
-     *
-     * Hiding is purely a view operation. Unlike deprecation it never marks an
-     * annotation deleted, and it survives export untouched.
-     *
-     * @param {string} hidden_by_key which filter is being applied
-     * @param {function} should_hide predicate receiving each annotation
-     * @param {string|null} subtask subtask key, or null for the current subtask
-     * @param {boolean} redraw whether to redraw the subtask afterwards
-     * @returns {number} how many annotations changed visibility
-     */
-    filter_annotations(hidden_by_key, should_hide, subtask = null, redraw = true) {
-        if (subtask === null) {
-            subtask = this.get_current_subtask_key();
-        }
-
-        const annotations = this.subtasks[subtask]["annotations"]["access"];
-        let changed = 0;
-        for (const annotation_id in annotations) {
-            const annotation = annotations[annotation_id];
-            const was_hidden = annotation["hidden"] === true;
-            mark_hidden(annotation, should_hide(annotation) === true, hidden_by_key);
-            if (annotation["hidden"] !== was_hidden) changed++;
-        }
-
-        if (redraw && changed > 0) {
-            this.redraw_all_annotations(subtask);
-        }
-        return changed;
     }
 
     set_subtask(st_key) {
@@ -2492,8 +2456,7 @@ export class ULabel {
     draw_annotation(annotation_object, offset = null, subtask = null) {
         // DEBUG left here for refactor reference, but I don't think it's needed moving forward
         //    there may be a use case for drawing depreacted annotations
-        // Don't draw if deprecated or filtered out of the current view
-        if (annotation_object["deprecated"] || annotation_object["hidden"]) return;
+        if (annotation_object["deprecated"]) return;
 
         // Get actual context from context key and subtask
         let context = null;
@@ -3323,9 +3286,8 @@ export class ULabel {
         let modified_annotations = {};
         // Loop through all annotations
         for (let [annid, annotation] of Object.entries(annotations)) {
-            // Skip deprecated annotations, and hidden ones so a bulk delete
-            // can never remove something the user can't see
-            if (annotation["deprecated"] || annotation["hidden"]) {
+            // Skip deprecated annotations
+            if (annotation["deprecated"]) {
                 continue;
             }
             // Skip non-spatial annotations and 3D annotations
@@ -6274,7 +6236,7 @@ export class ULabel {
         for (let edi = 0; edi < this.get_current_subtask()["annotations"]["ordering"].length; edi++) {
             const annotation_id = this.get_current_subtask()["annotations"]["ordering"][edi];
             let annotation = this.get_current_subtask()["annotations"]["access"][annotation_id];
-            if (annotation["deprecated"] || annotation["hidden"]) continue;
+            if (annotation["deprecated"]) continue;
             if (
                 active_class_layer !== null &&
                 this.get_canvas_class_key(this.get_annotation_canvas_group(annotation)) !== active_class_layer
@@ -6473,11 +6435,12 @@ export class ULabel {
         }
 
         // Both spatial/non-spatial can have the global suggestions
-        this.show_global_edit_suggestion(best_candidate.annid, null, nonspatial_id);
         current_subtask["state"]["edit_candidate"] = best_candidate;
 
-        // Must be called after active_annotation is updated
+        // Populate the confidence card before showing the dialog: its position is
+        // computed from its measured height, so the text must be in place first.
         this.update_confidence_dialog();
+        this.show_global_edit_suggestion(best_candidate.annid, null, nonspatial_id);
     }
 
     hide_edits() {
@@ -7341,12 +7304,11 @@ export class ULabel {
     }
 
     fly_to_annotation(annotation, subtask_key = null, max_zoom = 10) {
-        // Handle null, deprecated, hidden, and non-spatial annotations
+        // Handle null, deprecated, and non-spatial annotations
         if (
             annotation === null ||
             annotation === undefined ||
             annotation["deprecated"] ||
-            annotation["hidden"] ||
             NONSPATIAL_MODES.includes(annotation["spatial_type"])
         ) {
             return false;
@@ -7414,7 +7376,7 @@ export class ULabel {
         let current_visible_idx = -1;
         for (let i = 0; i < ordering.length; i++) {
             const ann = current_subtask["annotations"]["access"][ordering[i]];
-            if (!ann["deprecated"] && !ann["hidden"]) {
+            if (!ann["deprecated"]) {
                 if (ordering[i] === annotation_id) {
                     current_visible_idx = visible_count;
                 }
@@ -7608,7 +7570,16 @@ export class ULabel {
         return JSON.parse(JSON.stringify(ret));
     }
 
-    async set_annotations(new_annotations, subtask) {
+    /**
+     * Replace a subtask's annotations in place.
+     *
+     * @param {object[]} new_annotations annotations in `resume_from` form
+     * @param {string} subtask subtask key
+     * @param {boolean} skip_toolbox_update when batching several swaps, pass true on
+     *     each call and run `refresh_toolbox()` once at the end instead of paying
+     *     the filter-distance + toolbox redraw per subtask.
+     */
+    async set_annotations(new_annotations, subtask, skip_toolbox_update = false) {
         if (this.is_destroyed) {
             log_message("set_annotations called on a destroyed ULabel instance", LogLevel.WARNING, true);
             return;
@@ -7648,13 +7619,28 @@ export class ULabel {
             initialize_annotation_canvases(this, subtask);
             // Redraw all annotations to render them
             this.redraw_all_annotations(subtask);
-            // Calculate distances for all annotations if FilterDistance is present
-            this.update_filter_distance(null, false, true);
-            // Update class counter in toolbox
-            this.toolbox.redraw_update_items(this);
+            if (!skip_toolbox_update) {
+                this.refresh_toolbox();
+            }
         } finally {
             ULabelLoader.remove_loader_div();
         }
+    }
+
+    /**
+     * Recompute filter distances (when the FilterDistance item is present) and
+     * redraw every toolbox item. The deferred half of a batched
+     * `set_annotations(..., skip_toolbox_update = true)` sequence.
+     */
+    refresh_toolbox() {
+        if (this.is_destroyed) {
+            log_message("refresh_toolbox called on a destroyed ULabel instance", LogLevel.WARNING, true);
+            return;
+        }
+        // Calculate distances for all annotations if FilterDistance is present
+        this.update_filter_distance(null, false, true);
+        // Update class counter in toolbox
+        this.toolbox.redraw_update_items(this);
     }
 
     /**
@@ -7679,155 +7665,6 @@ export class ULabel {
         $("#canvasses__" + subtask + " canvas.annotation_canvas").remove();
         $("#canvasses__" + subtask + " > div.class_canvasses").remove();
         this.subtasks[subtask]["state"]["annotation_contexts"] = {};
-    }
-
-    /**
-     * Whether `subtask_specs` describes the same subtask layer this instance was
-     * built with, differing only in annotations.
-     *
-     * Subtask keys, class definitions and allowed modes are baked into DOM ids,
-     * toolbox tabs and event bindings at init time, so those must match for an
-     * in-place swap to be safe.
-     */
-    _subtask_shape_matches(subtask_specs) {
-        const old_keys = Object.keys(this.subtasks);
-        const new_keys = Object.keys(subtask_specs);
-        if (old_keys.length !== new_keys.length) return false;
-
-        for (const st of new_keys) {
-            const current = this.subtasks[st];
-            if (current === undefined) return false;
-
-            const spec = subtask_specs[st];
-            const modes = spec["allowed_modes"] ?? [];
-            if (modes.length !== current["allowed_modes"].length) return false;
-            for (let i = 0; i < modes.length; i++) {
-                if (modes[i] !== current["allowed_modes"][i]) return false;
-            }
-
-            const classes = spec["classes"] ?? [];
-            const class_defs = current["class_defs"];
-            if (classes.length !== class_defs.length) return false;
-            for (let i = 0; i < classes.length; i++) {
-                const raw = classes[i];
-                // Classes may be given as bare ids, in which case only the id
-                // can differ from what was processed at init.
-                const id = typeof raw === "object" ? raw["id"] : raw;
-                if (id !== class_defs[i]["id"]) return false;
-                if (typeof raw !== "object") continue;
-                if (raw["name"] !== undefined && raw["name"] !== class_defs[i]["name"]) return false;
-                if (raw["color"] !== undefined && raw["color"] !== class_defs[i]["color"]) return false;
-            }
-        }
-        return true;
-    }
-
-    /**
-     * Whether `annotations` is the set already loaded on `subtask`, compared by
-     * id and order. Lets replace_subtasks skip untouched subtasks, so pushing a
-     * new spec for one class doesn't re-import and redraw its siblings.
-     */
-    _subtask_annotations_unchanged(subtask, annotations) {
-        const ordering = this.subtasks[subtask]["annotations"]["ordering"];
-        if (ordering.length !== annotations.length) return false;
-        for (let i = 0; i < ordering.length; i++) {
-            if (ordering[i] !== annotations[i]["id"]) return false;
-        }
-        return true;
-    }
-
-    /**
-     * Swap in a new set of subtask specs without tearing the instance down.
-     *
-     * Reuses the decoded image, the subtask canvases, the toolbox and every
-     * listener, rebuilding only the annotation layer — far cheaper than
-     * destroy() + new ULabel() + init() when a host application switches
-     * between views of the same image. Subtasks whose annotations are already
-     * loaded are left alone, so pushing a whole spec set costs only the
-     * subtasks that actually changed.
-     *
-     * Only annotations (and `read_only` / `inactive_opacity`) can change this
-     * way. If the subtask keys, classes or allowed modes differ, the DOM and
-     * toolbox no longer describe the incoming layer, so this returns false and
-     * leaves the instance untouched; the caller should rebuild instead.
-     *
-     * @param {object} subtask_specs Same shape as the constructor's `subtasks`.
-     * @returns {Promise<string[] | null>} the keys that were swapped, or null if
-     *     the caller must rebuild the instance.
-     */
-    async replace_subtasks(subtask_specs) {
-        if (this.is_destroyed) {
-            log_message("replace_subtasks called on a destroyed ULabel instance", LogLevel.WARNING, true);
-            return null;
-        }
-        if (!this.is_init) return null;
-        if (!this._subtask_shape_matches(subtask_specs)) return null;
-
-        const stale = [];
-        for (const st in subtask_specs) {
-            const incoming = subtask_specs[st]["resume_from"] ?? [];
-            if (!this._subtask_annotations_unchanged(st, incoming)) stale.push(st);
-        }
-        if (stale.length === 0) return [];
-
-        const container = document.getElementById(this.config["container_id"]);
-        ULabelLoader.add_loader_div(container);
-        // Yield so the browser can paint the loader before the heavy synchronous work below
-        await ULabelLoader.wait_for_render();
-
-        // Recheck: destroy() (manual or auto) may have run during the paint yield.
-        if (this.is_destroyed) return stale;
-
-        try {
-            for (const st of stale) {
-                const spec = subtask_specs[st];
-                // Undo/redo won't survive a wholesale annotation swap.
-                this.reset_interaction_state(st);
-                this.subtasks[st]["actions"]["stream"] = [];
-                this.subtasks[st]["actions"]["undone_stack"] = [];
-                this._clear_subtask_annotation_canvases(st);
-
-                ULabel.process_resume_from(this, st, { resume_from: spec["resume_from"] ?? [] });
-
-                if (spec["read_only"] !== undefined) {
-                    this.subtasks[st]["read_only"] = spec["read_only"];
-                }
-                if (spec["inactive_opacity"] !== undefined) {
-                    this.subtasks[st]["inactive_opacity"] = spec["inactive_opacity"];
-                }
-                // Keep the raw config in step so a later get/set round trip sees
-                // the annotations that are actually on screen.
-                this.config.subtasks[st] = spec;
-            }
-
-            // Yield the event loop so the loader's reveal timer can fire if the work above
-            // took long enough to cross the reveal threshold.
-            await new Promise((resolve) => setTimeout(resolve, 0));
-            if (this.is_destroyed) return stale;
-
-            if (!this.config.allow_annotations_outside_image) {
-                const image_width = this.config["image_width"];
-                const image_height = this.config["image_height"];
-                for (const st of stale) {
-                    for (const anno of Object.values(this.subtasks[st]["annotations"]["access"])) {
-                        anno.clamp_annotation_to_image_bounds(image_width, image_height);
-                    }
-                }
-            }
-
-            for (const st of stale) {
-                initialize_annotation_canvases(this, st);
-                this.redraw_all_annotations(st);
-            }
-            this.readjust_subtask_opacities();
-            // Calculate distances for all annotations if FilterDistance is present
-            this.update_filter_distance(null, false, true);
-            // Update class counter in toolbox
-            this.toolbox.redraw_update_items(this);
-        } finally {
-            ULabelLoader.remove_loader_div();
-        }
-        return stale;
     }
 
     // Change frame
