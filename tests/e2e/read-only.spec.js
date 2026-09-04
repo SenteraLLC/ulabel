@@ -42,12 +42,13 @@ test.describe("Read-only subtask behavior", () => {
         const container_display = await page.locator(global_id).evaluate((el) => el.style.display);
         expect(container_display).toBe("block");
 
-        // All action buttons inside are display:none
-        const button_displays = await page.locator(`${global_id} .global_sub_suggestion`).evaluateAll(
-            (els) => els.map((el) => el.style.display),
+        // All action buttons inside are visibility:hidden (preserves flow space so the
+        // confidence card's margin-based position math stays valid)
+        const button_visibilities = await page.locator(`${global_id} .global_sub_suggestion`).evaluateAll(
+            (els) => els.map((el) => el.style.visibility),
         );
-        expect(button_displays.length).toBeGreaterThan(0);
-        for (const d of button_displays) expect(d).toBe("none");
+        expect(button_visibilities.length).toBeGreaterThan(0);
+        for (const v of button_visibilities) expect(v).toBe("hidden");
 
         // ID dialog thumbnail is not shown
         const idd_visible = await page.evaluate(() => window.ulabel.get_current_subtask().state.idd_visible);

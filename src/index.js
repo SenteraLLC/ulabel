@@ -3649,8 +3649,10 @@ export class ULabel {
             let esid = "global_edit_suggestion__" + subtask_key;
             var esjq = $("#" + esid);
             esjq.css("display", "block");
-            // Hide the move/reid/delete buttons on read-only subtasks; the confidence card still shows
-            esjq.find(".global_sub_suggestion").css("display", is_read_only ? "none" : "");
+            // Hide the move/reid/delete buttons on read-only subtasks; use visibility rather than
+            // display so the buttons still occupy their flow space and the confidence card's
+            // margin-based position math stays valid.
+            esjq.find(".global_sub_suggestion").css("visibility", is_read_only ? "hidden" : "");
             let cbox = current_subtask["annotations"]["access"][annid]["containing_box"];
             let new_lft = (cbox["tlx"] + cbox["brx"] + 2 * diffX) / (2 * this.config["image_width"]);
             let new_top = (cbox["tly"] + cbox["bry"] + 2 * diffY) / (2 * this.config["image_height"]);
