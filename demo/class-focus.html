@@ -165,7 +165,7 @@
                             "color": "orange",
                             "id": 11,
                             "keybind": "2",
-                            "allowed_modes": ["bbox", "polygon"],
+                            "allowed_modes": ["bbox", "polygon", "bitmask"],
                         },
                         {
                             "name": "Lane",
@@ -177,7 +177,7 @@
                     ],
                     // The union of the classes' modes, plus delete modes to
                     // exercise the focus freeze + focus-gated bulk delete
-                    "allowed_modes": ["bbox", "polygon", "polyline", "delete_polygon", "delete_bbox"],
+                    "allowed_modes": ["bbox", "polygon", "polyline", "bitmask", "delete_polygon", "delete_bbox"],
                     "resume_from": vehicle_annotations,
                     "task_meta": null,
                     "annotation_meta": null,

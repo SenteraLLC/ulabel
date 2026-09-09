@@ -1497,9 +1497,8 @@ export class ULabel {
         // Delete modes are exempt: they remove annotations rather than create them
         if (!DELETE_MODES.includes(annotation_mode)) {
             const class_id = get_active_class_id(this);
+            // Silent: callers probe modes (e.g. brush toggle) and expect false
             if (!this.get_class_allowed_modes(class_id).includes(annotation_mode)) {
-                // Callers probe modes and expect false, so this must not alert.
-                log_message(`Annotation mode ${annotation_mode} is not allowed for class ${class_id}`, LogLevel.WARNING, true);
                 return false;
             }
         }

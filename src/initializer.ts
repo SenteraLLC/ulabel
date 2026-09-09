@@ -12,7 +12,7 @@ import { add_style_to_document, build_confidence_dialog, build_edit_suggestion, 
 import { create_ulabel_listeners } from "./listeners";
 import { ULabelLoader } from "./loader";
 import { ULabelSubtask } from "./subtask";
-import { ULabelAnnotation } from "./annotation";
+import { ULabelAnnotation, NONSPATIAL_MODES } from "./annotation";
 import { get_local_storage_item } from "./utilities";
 
 /**
@@ -176,9 +176,14 @@ export async function ulabel_init(
     if (!ulabel.config.allow_annotations_outside_image) {
         const image_height = ulabel.config["image_height"];
         const image_width = ulabel.config["image_width"];
-        for (const subtask of Object.values(ulabel.subtasks) as ULabelSubtask[]) {
+        for (const subtask_key in ulabel.subtasks) {
+            const subtask: ULabelSubtask = ulabel.subtasks[subtask_key];
             for (const anno of Object.values(subtask.annotations.access) as ULabelAnnotation[]) {
+                if (NONSPATIAL_MODES.includes(anno.spatial_type!)) continue;
                 anno.clamp_annotation_to_image_bounds(image_width!, image_height!);
+                // The containing box was built from the pre-clamp payload; a stale
+                // box anchors the hover dialogs (and hit-testing) off the image
+                ulabel.rebuild_containing_box(anno.id!, false, subtask_key);
             }
         }
     }
