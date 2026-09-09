@@ -81,3 +81,61 @@ describe("set_class_color", () => {
         expect(ulabel.redraw_all_annotations).toHaveBeenCalledTimes(1);
     });
 });
+
+describe("set_class_colors", () => {
+    beforeEach(() => {
+        document.body.innerHTML = "";
+    });
+
+    test("applies every color in the map", () => {
+        const ulabel = new ULabel(mock_config);
+        scaffold_dom(ulabel);
+
+        ulabel.set_class_colors({ 1: "#123456", 2: "#654321" }, false);
+
+        expect(ulabel.color_info[1]).toBe("#123456");
+        expect(ulabel.color_info[2]).toBe("#654321");
+    });
+
+    test("rebuilds the id-dialog pies once for the whole map", () => {
+        const ulabel = new ULabel(mock_config);
+        scaffold_dom(ulabel);
+        ulabel.rebuild_id_dialog_pies = jest.fn();
+
+        ulabel.set_class_colors({ 1: "#123456", 2: "#654321" }, false);
+
+        expect(ulabel.rebuild_id_dialog_pies).toHaveBeenCalledTimes(1);
+    });
+
+    test("syncs the toolbox swatch", () => {
+        const ulabel = new ULabel(mock_config);
+        scaffold_dom(ulabel);
+
+        ulabel.set_class_colors({ 1: "rgb(18, 52, 86)" }, false);
+
+        const swatch = document.querySelector(`#${ulabel.config.toolbox_id}_sel_1 > div`);
+        expect(swatch.style.backgroundColor).toBe("rgb(18, 52, 86)");
+    });
+
+    test("redraws once, not once per class", () => {
+        const ulabel = new ULabel(mock_config);
+        scaffold_dom(ulabel);
+        ulabel.redraw_all_annotations = jest.fn();
+
+        ulabel.set_class_colors({ 1: "#123456", 2: "#654321" });
+
+        expect(ulabel.redraw_all_annotations).toHaveBeenCalledTimes(1);
+    });
+
+    test("does no work for an empty map", () => {
+        const ulabel = new ULabel(mock_config);
+        scaffold_dom(ulabel);
+        ulabel.rebuild_id_dialog_pies = jest.fn();
+        ulabel.redraw_all_annotations = jest.fn();
+
+        ulabel.set_class_colors({});
+
+        expect(ulabel.rebuild_id_dialog_pies).not.toHaveBeenCalled();
+        expect(ulabel.redraw_all_annotations).not.toHaveBeenCalled();
+    });
+});

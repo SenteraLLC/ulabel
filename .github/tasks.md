@@ -280,3 +280,281 @@ its Phase 3 migration (frontend stays pinned until then).
     and only if the cursor was over a painted mask pixel, comparing against
     the coordinates ULabel itself received. GT polylines still hover and read
     "Row". 166 unit tests pass.
+
+## Plan: three fixed subtasks, outcome as class, filter as subtask state
+
+Supersedes the subtask-per-class + subtask-per-outcome plan (phases 0-3).
+Branch `three-fixed-subtasks`, cut from `cropped-bitmasks-prepare`.
+
+The viewer slices three ways - source (GT / a run's predictions), class, and
+diff outcome - but ULabel has two structural slots (subtask, class within
+subtask). Every layout so far is a different way of cramming three into two:
+
+- Per-class subtasks whose set changed with the mode (pre-256), so every mode
+  switch was a `destroy()` + `init()`: flicker, and zoom lost.
+- Three fixed subtasks with outcome in `annotation_meta` (256). The diff
+  subtask told ULabel its annotations were crops and used resolvers to draw
+  them as FPs, so `ClassCounter`, the confidence slider, the colour swatch and
+  the id dialog all disagreed with the canvas.
+- One subtask per class plus `tp`/`fp`/`fn` (257). Every subtask is
+  single-class, so `single_class_mode` disables the reclassify pie, force-
+  overwrites `classification_payloads` after edits, fragments undo into N
+  stacks, and scopes hover to the pre-selected class. Subtask count grows
+  with the ontology.
+
+Target - three subtasks, fixed at construction, never rebuilt:
+
+| key | classes | ids | read_only | contents |
+| --- | --- | --- | --- | --- |
+| `groundtruth` | all real classes | 3..N+2 | no | GT; never swapped |
+| `prediction` | all real classes | 3..N+2 | yes | selected run's predictions |
+| `diff` | TP / FP / FN | 0/1/2 | yes | diff(GT, run), filtered class |
+
+Why this shape:
+
+- `groundtruth` is multi-class, so `single_class_mode` stays false: the
+  reclassify pie works, undo is one stream, and any annotation is grabbable
+  without first selecting its class. Every layout except 256 failed this, and
+  it is the whole point of editing in ULabel rather than a viewer.
+- `diff`'s classes *are* the outcomes, so colour, `ClassCounter`, the id
+  dialog and the hover card agree with the canvas through the plain class
+  path. No resolvers, no `match_outcome`.
+- `groundtruth` is never swapped, because `actions.stream` points into it.
+  Everything else is read-only, so swapping there costs nothing.
+- Diff is always GT vs one run, never run vs run, so one `prediction` and one
+  `diff` slot suffice. Switching runs swaps their contents at fixed zoom - a
+  blink comparator, which beats side-by-side for spotting differences.
+- Three image-sized front canvases regardless of ontology size, which settles
+  the V2 memory question instead of leaving it assumed.
+
+Class focus becomes subtask *state*, not structure and not a per-annotation
+flag. State survives `set_annotations`, so swapped-in annotations are filtered
+the moment they land - the bug `layerEpoch` existed to paper over - and
+changing the filter is a field write rather than a pass over every annotation.
+Do not call it "active class": `get_active_class_id` already means the class
+assigned to newly drawn annotations.
+
+### Phase 4 - ULabel: filtering and layer control
+
+- [x] 4.1 `state.class_filter: number | null` plus
+  `set_class_filter(subtask_key, class_id | null)`. Gate on it in
+  `draw_annotation`, `get_edit_candidates`, `fly_to_annotation`, the
+  visible-count loop, and `annotation_list`. Explicitly *not* in the bitmask
+  geometry paths (`merge/join`, `resolve_bitmask_overlap`): a filtered mask is
+  still real data and must keep acting as a stroke barrier, or painting over
+  hidden pixels silently breaks the no-overlap invariant.
+  - **Superseded by 4.5**: renamed to `set_class_focus` / `focused_class` /
+    `is_annotation_defocused`, and the draw gate dims instead of hiding. The
+    five gate sites and the geometry carve-out are unchanged.
+  - Added `is_annotation_filtered(annotation, subtask_key)` as the single
+    gate, and both methods to `index.d.ts`. Setting a filter drops
+    `hovered_annid` and `fly_to_idx`, which may now point off screen.
+  - Rejects a class id the subtask doesn't declare, so a stale host-side id
+    can't silently blank a layer.
+  - Tests in `tests/class_focus.test.js`, including the property that
+    motivated state over a per-annotation flag: annotations swapped in after
+    the focus is set are scoped on arrival, with no re-application step.
+  - Local validation: lint + build + 196 jest pass.
+- [x] 4.2 `set_subtask_opacity(subtask_key, value)` wrapping
+  `readjust_subtask_opacities`, which already drives `div#canvasses__{key}`
+  from the toolbox slider. Lets the host dim backing layers at runtime and
+  retires the `inactive_opacity: 1` construction hack from 3.3.
+  - Writes `inactive_opacity` as well as the DOM, because `set_subtask`
+    resets every non-current slider from that field; without it a host-set
+    opacity silently reverts on the next subtask switch. 6 tests in
+    `tests/set_subtask_opacity.test.js`, one of which is exactly that.
+- [x] 4.3 `set_annotations_batch(Record<subtask_key, annotations>)` - one
+  loader show/hide, one filter + opacity pass, one toolbox update. Today N
+  subtasks means N spinner cycles and 2N awaits; a run switch swaps
+  `prediction` and `diff` and has to be one atomic, flicker-free update for
+  the blink comparator to work. Removes the host's `pushChainRef`.
+  - Extracted the per-subtask swap body into `_swap_subtask_annotations` so
+    `set_annotations` and the batch share it; `set_annotations` keeps its
+    signature and behaviour.
+  - Unknown subtask keys are dropped with a warning rather than aborting, so
+    one stale key can't lose the whole swap. An all-unknown map does not
+    cycle the loader.
+  - 8 tests in `tests/set_annotations_batch.test.js` covering the batching
+    contract (one loader, one `refresh_toolbox`, destroyed-mid-swap
+    unwinding). The swap body itself stays covered by the bitmask e2e specs.
+- [x] 4.4 `set_class_colors(Record<class_id, color>)` - one
+  `rebuild_id_dialog_pies()` for the whole map. `set_class_color` rebuilds
+  every subtask's pies on each call even with `redraw = false`, so the host's
+  batched recolor loop is O(N^2) DOM churn.
+  - Split the cheap half (`color_info` + toolbox swatch) into
+    `_apply_class_color`; both entry points share it and `set_class_color` is
+    unchanged externally.
+  - Also fixed the same quadratic loop *inside* ULabel:
+    `RecolorActiveItem.read_local_storage` called `set_class_color` per class
+    at construction, rebuilding every subtask's pies once per class.
+  - 5 tests added to `tests/set_class_color.test.js`.
+- [x] 4.5 Class focus dims rather than hides. 4.1 skipped non-focused
+  annotations outright, which was a behaviour regression: the N+3 layout drew
+  every class and only dimmed the inactive ones. Renamed `class_filter` ->
+  `focused_class`, `set_class_filter` -> `set_class_focus`,
+  `is_annotation_filtered` -> `is_annotation_defocused`. Only the
+  `draw_annotation` gate changed meaning; the four input/navigation gates
+  still skip, so hover, Tab and the annotation list stay scoped to one class
+  while the rest remain visible.
+  - `state.defocused_opacity` (default 0.4, settable per subtask at
+    construction or via `set_defocused_opacity`). **0 restores 4.1's skip**,
+    so a wide segmentation ontology can still opt out of the extra draws.
+  - Defocused annotations render to one shared scratch canvas and are blitted
+    back as a single layer. Two reasons, both load-bearing: canvases pack
+    annotations by fill order rather than by class, so a defocused annotation
+    can otherwise composite *over* a focused one; and blitting once means
+    overlapping defocused annotations dim as a group instead of compounding
+    alpha. It also avoids threading an alpha argument through every
+    `draw_*` primitive - several of them assign and reset `globalAlpha`
+    themselves (`draw_bounding_box`, `draw_polygon`, `draw_bitmask`) and
+    would each have had to multiply instead.
+  - `draw_annotation` only draws a defocused annotation inside that pass, so
+    the direct-draw callers (undo/redo, in-progress edits) can't leak one at
+    full alpha.
+  - 9 more tests in `tests/class_focus.test.js` (20 total) covering pass
+    ordering, the blit alpha, the 0 opacity skip, and live-context restore on
+    a throwing draw.
+
+### Phase 5 - ULabel: class to spatial type binding
+
+Motivation: a merged `groundtruth` allows the union of the ontology's modes,
+so nothing stops a user drawing a polyline "Crop". Per-class subtasks enforced
+this structurally - the pre-256 `buildClassSubtasks` even threaded a `modeFor`
+callback - and collapsing to three subtasks gives that up unless ULabel can
+express it. A polyline crop is a data-corruption bug better caught at draw
+time than at save time.
+
+- [x] 5.1 Optional `allowed_modes?: ULabelSpatialType[]` on
+  `ClassDefinition`. Undefined inherits the subtask's list, so every existing
+  consumer is unaffected.
+  - A class can only *narrow*: a mode the subtask doesn't allow is dropped
+    with a warning, and a class whose every declared mode is invalid falls
+    back to the subtask's list rather than being undrawable.
+  - The key is only attached when the class actually narrows, so `class_defs`
+    keeps its existing shape for the common case.
+  - `get_class_allowed_modes(class_id, subtask_key?)` is the single resolver.
+- [x] 5.2 Enforce it both ways: changing class auto-switches to that class's
+  mode, and the modes it disallows are disabled in the toolbox.
+  `set_and_update_annotation_mode` rejects a disallowed mode for callers that
+  bypass the buttons.
+  - `sync_annotation_modes_to_active_class()` does both, called from
+    `set_subtask`, `after_init` (the configured initial mode may not suit the
+    initial class) and the class-button handler.
+  - Delete modes are exempt in both places: they can't create a wrong-typed
+    annotation, and hiding them would make the delete class unreachable.
+  - Re-entrancy guarded, because switching mode can trigger the delete-class
+    toggle, which clicks a class button, which re-enters the sync.
+  - 13 tests in `tests/class_allowed_modes.test.js`.
+- [x] 5.3 Narrow `findAllClassDefinitions`, which filters class defs by
+  *subtask* modes today only because per-class modes were not expressible.
+  - Now asks each class first, falling back to its subtask. The subtask-level
+    early-out is gone: it would have masked the per-class check.
+
+### Phase 6 - ULabel: defects found in review
+
+- [x] 6.1 Unterminated `/**` block in `annotation_operators.ts`, left behind
+  by the 1.3 `mark_hidden` removal.
+- [ ] 6.2 Mask barrier escape hatch. Read-only bitmasks still participate in
+  `resolve_bitmask_overlap`, so a `prediction` or `diff` mask invisibly clips
+  a GT brush stroke. Needed before segmentation editing ships.
+- [ ] 6.3 (only if live GT editing during diff review is required) Apply an
+  edit to a non-current subtask and record it in that subtask's undo stream.
+  `set_subtask` clears hover and `fly_to_idx`, so a review queue cannot
+  resolve into GT without losing its place. Prefer 7.9 and skip this.
+  - Why it is needed at all: currency does triple duty. `record_action` and
+    `undo` both resolve through `get_current_subtask()`, and
+    `get_edit_candidates` and Tab only search the current subtask. So
+    "Tab walks FNs in `diff`" and "my correction lands on `groundtruth`'s
+    undo stream" are not simultaneously expressible - review and edit are
+    separate modes unless this ships.
+  - Note the undo stream is *not* the fragile part: `class_filter` changes
+    swap nothing, and a run switch leaves `groundtruth` untouched, so GT's
+    stream is continuous across both. The fragile part is that `diff` is
+    derived from (GT, run) and goes stale the moment GT is edited - the
+    resolved FN keeps rendering as an FN. That is a repaint problem, which
+    is what 7.9 solves without client-side rematching.
+- [ ] 6.4 Two different `get_active_class_id` implementations disagree. The
+  `ULabel` *method* (`index.js`) parses the selected toolbox anchor's id out
+  of the DOM; the *utility* of the same name (`utilities.ts`) reads
+  `state.id_payload`. The method throws outright before the toolbox has
+  rendered, and the two can diverge whenever state changes without a DOM
+  sync. Phase 5 uses the state-based one; the method's four remaining call
+  sites should follow, and one of the two names should go.
+
+### Phase 7 - model-registry (branch `three-fixed-subtasks` off `cropped-bitmasks-trevor`)
+
+- [x] 7.1 `buildViewSubtasks` back to three specs. Deleted `classSubtaskKeys`
+  and its slug/dedup path, and the `classKeys[i]` threading through
+  `ImageViewer`'s call sites. `classAllowedModesFor` **kept**: it is now fed
+  to ULabel as per-class `allowed_modes` (5.1) so a class still narrows the
+  subtask's union to its own geometry. Keys are `groundtruth` / `prediction` /
+  `diff` (`VIEW_SUBTASK_KEYS`), with `SUBTASK_FOR_MODE` mapping the view mode
+  onto the layer.
+- [x] 7.2 `diff` declares TP/FP/FN at ids 0/1/2; real classes keep
+  `REAL_CLASS_ID_OFFSET = 3`, since `color_info` is instance-wide. Real class
+  travels as `annotation_meta.diff_class` on both diff paths (segmentation
+  and matches-doc), which are already scoped to one class.
+- [x] 7.3 Class chips drive `set_class_focus` on `groundtruth` / `prediction`;
+  Diff Colors legend rows drive `set_class_focus("diff", ...)`. One
+  `set_subtask` per *mode*, not per chip. Non-focused classes dim rather than
+  disappear (see 4.5), so this keeps the old layout's visual context while
+  still scoping hover and Tab to one class.
+- [x] 7.4 Run switch swaps `prediction` + `diff` in one
+  `set_annotations_batch`; `groundtruth` is untouched. **Not yet verified in
+  a browser** - zoom/scroll survival and the single-frame read still need a
+  manual pass.
+- [ ] 7.5 **Deliberately not done.** `pushChainRef` is kept. Batching makes a
+  swap one call, but `set_annotations_batch` still yields internally (loader
+  paint + `setTimeout`), so two overlapping batches touching the same subtask
+  can still interleave clear/init and leave duplicate stacked canvases.
+  Batching shrinks the window; it does not close it. Dropping the chain needs
+  a re-entrancy guard inside ULabel, not just fewer calls. `subtaskSig` /
+  `contentKey` re-checked and unchanged - both are per-key and three stable
+  keys only make them cheaper.
+- [x] 7.6 Recolor through one `set_class_colors` call; the per-class
+  `set_class_color` + trailing `redraw_all_annotations` loop is gone.
+- [x] 7.7 `viewerKey` falls back to `[null, annoEvalItemId]` when
+  `effectiveImgDims` is null, so two differently-sized items can no longer
+  share a key.
+- [x] 7.8 `ClassCounter` back to `subtasks: "current"` - the current subtask
+  already carries the right classes in every mode.
+- [ ] 7.9 Resolution overlay for the review queue: record accept / reject /
+  confirm per item app-side and reconcile on save, letting the server
+  recompute the diff. Task-type agnostic, so it removes the segmentation
+  (derived client-side) vs keypoint (fetched per threshold) asymmetry, avoids
+  reimplementing bipartite matching in the worker, and makes 6.3 unnecessary.
+- [ ] 7.10 Unpin the ulabel git SHA to a published `^0.28.x` before merge.
+  Currently still pinned to `#7a2c7b3`; the local build is staged into
+  `node_modules/ulabel/dist` so type-check and build see the Phase 4/5 API.
+  **That staging does not survive `npm ci`** - repin before anyone else runs
+  the branch.
+- [ ] 7.11 `groundtruth` ships `read_only: true` behind an
+  `editableGroundtruth` flag (default off). The shape supports editing - it is
+  multi-class, never swapped on a run switch, and owns its own undo stream -
+  but there is no save path yet, so an editable layer would be a data-loss
+  footgun. Flip the flag when 7.9 lands.
+
+### Phase 8 - history
+
+- [ ] 8.1 At merge, retarget rather than stack: `gh pr edit 257 --base main`
+  and close 256, likewise 12 and 10. Both branches are linear descendants of
+  main with zero divergence, so retargeting needs no rebase and cancels the
+  add-then-delete churn (resolvers, `hidden`, `replace_subtasks`,
+  class-grouped canvases) out of main's history and `git blame`.
+- [ ] 8.2 Optional, only if the combined diff is too large to review well:
+  re-slice by nature rather than chronology - bitmask perf (items 1/3/5 plus
+  the back-canvas removal) as a PR that can land immediately, architecture as
+  another. Manual work, since `cropped-bitmasks`'s three commits mix both.
+
+### Verification
+
+- [ ] V3 ULabel: lint + jest + e2e green after each phase; 4.1-4.4 and
+  5.1-5.3 carry their own tests.
+- [ ] V4 model-registry on eval run #3: run and mode switches produce zero
+  rebuilds and preserve zoom with no visible flicker; Tab in `diff` walks
+  only the filtered outcome; `ClassCounter` reads TP/FP/FN in diff; three
+  front canvases, heap at or below the N+3 baseline.
+- [ ] V5 The edit test, which every layout except 256 failed: a misclassified
+  GT annotation is corrected *in place* by the reclassify pie, keeping its
+  id, `encord_object_hash` and undo coherence - no delete-and-recreate across
+  subtasks. Must pass before the edit path ships.

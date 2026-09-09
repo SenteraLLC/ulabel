@@ -1633,14 +1633,15 @@ export class RecolorActiveItem extends ToolboxItem {
 
     private read_local_storage(): void {
         // Loop through every valid id and see if a color has been saved for it in local storage
+        const saved_colors: Record<string, string> = {};
         for (const class_id of this.ulabel.valid_class_ids) {
             // Get the color from local storage based on the current class id
             const color = get_local_storage_item(`RecolorActiveItem-${class_id}`);
 
-            // Update the color if its not null
-            // Additionally no need to save the color to local storage since we got it from reading local storage
-            if (color !== null) this.update_color(class_id, color, false);
+            // No need to save the color back; we just read it from local storage
+            if (color !== null) saved_colors[class_id] = color;
         }
+        this.ulabel.set_class_colors(saved_colors, false);
 
         // Then read whether or not the gradient should be on by default
         this.gradient_turned_on = get_local_storage_item("RecolorActiveItem-Gradient");

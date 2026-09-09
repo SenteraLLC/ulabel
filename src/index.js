@@ -31,7 +31,7 @@ import { log_message, LogLevel } from "../build/error_logging";
 import { initialize_annotation_canvases } from "../build/canvas_utils";
 import { record_action, record_finish, record_finish_edit, record_finish_move, undo, redo } from "../build/actions";
 import { ULabelMask, is_raw_mask_payload } from "../build/mask_utils";
-import { get_local_storage_item, set_local_storage_item } from "../build/utilities";
+import { get_active_class_id, get_local_storage_item, set_local_storage_item } from "../build/utilities";
 import { get_idd_string } from "../build/html_builder";
 
 import $ from "jquery";
@@ -63,6 +63,9 @@ const BRUSH_OVERLAP_MODES = ["none", "exclude", "overwrite"];
 
 // Width, in image pixels, of the contour drawn around a hovered bitmask.
 const BITMASK_OUTLINE_BORDER = 2;
+
+// Opacity of annotations outside a subtask's focused class. 0 skips them.
+const DEFAULT_DEFOCUSED_OPACITY = 0.4;
 
 export class ULabel {
     static version() {
@@ -272,6 +275,20 @@ export class ULabel {
         // Set to single class mode if applicable
         subtask.single_class_mode = (raw_subtask_json.classes.length === 1);
 
+        // A class may narrow the subtask's spatial types, but never widen them.
+        const narrow_allowed_modes = (raw_modes, class_name) => {
+            if (!Array.isArray(raw_modes)) return null;
+            const narrowed = raw_modes.filter((mode) => {
+                if (subtask.allowed_modes.includes(mode)) return true;
+                log_message(
+                    `Class "${class_name}" in subtask "${subtask_key}" allows mode ${mode}, which the subtask does not. Ignoring it.`,
+                    LogLevel.WARNING,
+                );
+                return false;
+            });
+            return narrowed.length > 0 ? narrowed : null;
+        };
+
         // Populate allowed classes vars
         // TODO might be nice to recognize duplicate classes and assign same color... idk
         // TODO better handling of default class ids would definitely be a good idea
@@ -282,7 +299,7 @@ export class ULabel {
         for (const class_definition of raw_subtask_json.classes) {
             // Create a class definition based on the provided class_definition that will be saved to the subtask
             let modifed_class_definition = {};
-            let name, id, color, keybind;
+            let name, id, color, keybind, class_allowed_modes;
             switch (typeof class_definition) {
                 case "string":
                     modifed_class_definition = {
@@ -325,6 +342,12 @@ export class ULabel {
                         color: color,
                         keybind: keybind,
                     };
+
+                    // Only present when the class actually narrows the subtask
+                    class_allowed_modes = narrow_allowed_modes(class_definition.allowed_modes, name);
+                    if (class_allowed_modes !== null) {
+                        modifed_class_definition.allowed_modes = class_allowed_modes;
+                    }
                     break;
                 default:
                     log_message(`Entry in classes not understood: ${class_definition}\n${class_definition} must either be a string or an object.`, LogLevel.ERROR);
@@ -578,6 +601,8 @@ export class ULabel {
                 move_candidate: null,
                 hovered_annid: null,
                 fly_to_idx: null,
+                focused_class: null,
+                defocused_opacity: raw_subtask["defocused_opacity"] ?? DEFAULT_DEFOCUSED_OPACITY,
                 line_size: ul.config.initial_line_size,
 
                 // Rendering context
@@ -820,6 +845,9 @@ export class ULabel {
             toolbox_item.after_init();
         }
 
+        // The configured initial mode may not be one the initial class allows
+        this.sync_annotation_modes_to_active_class();
+
         // Show the brush toolbox if bitmask is the initial mode (brush starts off; toggle to paint)
         if (this.get_current_subtask()["state"]["annotation_mode"] === "bitmask") {
             BrushToolboxItem.show_brush_toolbox_item();
@@ -1061,6 +1089,90 @@ export class ULabel {
         }
     }
 
+    /**
+     * Set a subtask's layer opacity. Also writes `inactive_opacity` so the value
+     * survives a subtask switch, which otherwise resets every slider.
+     * @param {string} subtask_key
+     * @param {number} opacity between 0 and 1
+     */
+    set_subtask_opacity(subtask_key, opacity) {
+        const subtask = this.subtasks[subtask_key];
+        if (subtask === undefined) {
+            log_message(`set_subtask_opacity: unknown subtask key ${subtask_key}`, LogLevel.WARNING);
+            return;
+        }
+        const clamped = Math.min(Math.max(opacity, 0), 1);
+        subtask["inactive_opacity"] = clamped;
+        $("input#tb-st-range--" + subtask_key).val(Math.round(100 * clamped));
+        $("div#canvasses__" + subtask_key).css("opacity", clamped);
+    }
+
+    /**
+     * Whether a class focus is active on a subtask and this annotation is not in it.
+     * Affects drawing and input targeting only: a defocused annotation is still
+     * real data, so geometry (bitmask overlap, merges) must ignore this.
+     * @param {object} annotation
+     * @param {string} subtask_key
+     * @returns {boolean}
+     */
+    is_annotation_defocused(annotation, subtask_key) {
+        const subtask = this.subtasks[subtask_key];
+        if (subtask == null) return false;
+        const focused_class = subtask["state"]["focused_class"];
+        if (focused_class == null) return false;
+        return get_annotation_class_id(annotation) !== String(focused_class);
+    }
+
+    /**
+     * Focus a subtask on a single class. Other classes stay visible but dim to
+     * `defocused_opacity` and drop out of hover, Tab and the annotation list.
+     * @param {string} subtask_key
+     * @param {number|null} class_id null clears the focus
+     * @param {boolean} redraw
+     */
+    set_class_focus(subtask_key, class_id = null, redraw = true) {
+        const subtask = this.subtasks[subtask_key];
+        if (subtask === undefined) {
+            log_message(`set_class_focus: unknown subtask key ${subtask_key}`, LogLevel.WARNING);
+            return;
+        }
+        if (class_id !== null && !subtask["class_ids"].includes(class_id)) {
+            log_message(
+                `set_class_focus: class id ${class_id} is not in subtask ${subtask_key}`,
+                LogLevel.WARNING,
+            );
+            return;
+        }
+        subtask["state"]["focused_class"] = class_id;
+
+        // Whatever was hovered or mid-fly-to may no longer be interactive.
+        subtask["state"]["hovered_annid"] = null;
+        subtask["state"]["fly_to_idx"] = null;
+
+        if (redraw) {
+            this.redraw_all_annotations(subtask_key);
+        }
+    }
+
+    /**
+     * Opacity for annotations outside the focused class. 0 skips drawing them
+     * entirely, which is cheaper but loses them as visual context.
+     * @param {string} subtask_key
+     * @param {number} opacity
+     * @param {boolean} redraw
+     */
+    set_defocused_opacity(subtask_key, opacity, redraw = true) {
+        const subtask = this.subtasks[subtask_key];
+        if (subtask === undefined) {
+            log_message(`set_defocused_opacity: unknown subtask key ${subtask_key}`, LogLevel.WARNING);
+            return;
+        }
+        subtask["state"]["defocused_opacity"] = Math.min(Math.max(opacity, 0), 1);
+        if (redraw) {
+            this.redraw_all_annotations(subtask_key);
+        }
+    }
+
     set_subtask(st_key) {
         let old_st = this.get_current_subtask_key();
 
@@ -1090,6 +1202,7 @@ export class ULabel {
         // Show appropriate set of annotation modes
         $("a.md-btn").css("display", "none");
         $("a.md-btn.md-en4--" + st_key).css("display", "inline-block");
+        this.sync_annotation_modes_to_active_class();
 
         // Show appropriate set of class options
         $("div.tb-id-app").css("display", "none");
@@ -1367,9 +1480,70 @@ export class ULabel {
             log_message(`Annotation mode ${annotation_mode} is not allowed for subtask ${this.get_current_subtask_key()}`, LogLevel.WARNING);
             return false;
         }
+        // Delete modes are exempt: they remove annotations rather than create them
+        if (!DELETE_MODES.includes(annotation_mode)) {
+            const class_id = get_active_class_id(this);
+            if (!this.get_class_allowed_modes(class_id).includes(annotation_mode)) {
+                log_message(`Annotation mode ${annotation_mode} is not allowed for class ${class_id}`, LogLevel.WARNING);
+                return false;
+            }
+        }
         // Set the new mode via the toolbox
         document.getElementById("md-btn--" + annotation_mode).click();
         return true;
+    }
+
+    /**
+     * The spatial types a class may be drawn as, falling back to the subtask's
+     * list for classes that don't narrow it.
+     *
+     * @param {number} class_id
+     * @param {string|null} subtask_key defaults to the current subtask
+     * @returns {string[]}
+     */
+    get_class_allowed_modes(class_id, subtask_key = null) {
+        const subtask = this.subtasks[subtask_key ?? this.get_current_subtask_key()];
+        if (subtask === undefined) return [];
+        const class_def = subtask["class_defs"].find((def) => def["id"] === class_id);
+        const class_modes = class_def == null ? null : class_def["allowed_modes"];
+        if (class_modes == null || class_modes.length === 0) return subtask["allowed_modes"];
+        return class_modes;
+    }
+
+    /**
+     * Hide the mode buttons the active class disallows and, if the current mode
+     * is one of them, switch to a mode the class does allow. Without this a
+     * multi-class subtask lets any class be drawn as any of its spatial types.
+     *
+     * Delete modes are exempt: they can't produce a wrong-typed annotation, and
+     * hiding them would make the delete class unreachable.
+     */
+    sync_annotation_modes_to_active_class() {
+        // Switching modes can re-enter this through the delete-class toggle
+        if (this._is_syncing_modes_to_class) return;
+
+        const subtask = this.get_current_subtask();
+        // State, not the toolbox DOM: this runs before the toolbox has rendered
+        const class_id = get_active_class_id(this);
+        if (class_id === undefined || class_id === DELETE_CLASS_ID) return;
+
+        const allowed = this.get_class_allowed_modes(class_id);
+        this._is_syncing_modes_to_class = true;
+        try {
+            for (const mode of subtask["allowed_modes"]) {
+                if (DELETE_MODES.includes(mode)) continue;
+                $("a#md-btn--" + mode).css("display", allowed.includes(mode) ? "inline-block" : "none");
+            }
+
+            const current_mode = subtask["state"]["annotation_mode"];
+            if (DELETE_MODES.includes(current_mode) || allowed.includes(current_mode)) return;
+
+            const fallback = allowed.find((mode) => !DELETE_MODES.includes(mode));
+            if (fallback === undefined) return;
+            document.getElementById("md-btn--" + fallback)?.click();
+        } finally {
+            this._is_syncing_modes_to_class = false;
+        }
     }
 
     // Draw demo annotation in demo canvas
@@ -1756,18 +1930,47 @@ export class ULabel {
      *     false when batching several color changes, then redraw once at the end.
      */
     set_class_color(class_id, color, redraw = true) {
+        this._apply_class_color(class_id, color);
+        this.rebuild_id_dialog_pies();
+
+        if (redraw) {
+            this.redraw_all_annotations();
+        }
+    }
+
+    /**
+     * Recolor several classes as one update. The id-dialog pies are rebuilt
+     * once for the whole map rather than once per class, which is what makes a
+     * recolor loop quadratic in DOM work.
+     *
+     * @param {Record<number|string, string>} colors_by_class_id class id to color
+     * @param {boolean} redraw whether to redraw annotations immediately
+     */
+    set_class_colors(colors_by_class_id, redraw = true) {
+        const class_ids = Object.keys(colors_by_class_id);
+        if (class_ids.length === 0) return;
+
+        for (const class_id of class_ids) {
+            this._apply_class_color(class_id, colors_by_class_id[class_id]);
+        }
+        this.rebuild_id_dialog_pies();
+
+        if (redraw) {
+            this.redraw_all_annotations();
+        }
+    }
+
+    /**
+     * The cheap half of a recolor. Leaves the id-dialog pies to the caller so a
+     * batch can pay for that rebuild once.
+     */
+    _apply_class_color(class_id, color) {
         this.color_info[class_id] = color;
 
         // Toolbox swatch for this class
         const button_color_square = document.querySelector(`#${this.config["toolbox_id"]}_sel_${class_id} > div`);
         if (button_color_square) {
             button_color_square.style.backgroundColor = color;
-        }
-
-        this.rebuild_id_dialog_pies();
-
-        if (redraw) {
-            this.redraw_all_annotations();
         }
     }
 
@@ -2458,6 +2661,9 @@ export class ULabel {
         // DEBUG left here for refactor reference, but I don't think it's needed moving forward
         //    there may be a use case for drawing depreacted annotations
         if (annotation_object["deprecated"]) return;
+        // Defocused annotations are only drawn by the scratch pass, which dims
+        // them as a layer; anything else reaching here would draw at full alpha.
+        if (!this.state["drawing_defocused"] && this.is_annotation_defocused(annotation_object, subtask)) return;
 
         // Get actual context from context key and subtask
         let context = null;
@@ -2545,25 +2751,96 @@ export class ULabel {
         // If the subtask is vanished, don't draw anything
         if (this.subtasks[subtask]["state"]["is_vanished"]) return;
 
-        // Handle redraw of each annotation in the context
-        for (const annid of this.subtasks[subtask]["state"]["annotation_contexts"][canvas_id]["annotation_ids"]) {
+        const draw = (annid) => {
             // Only draw with offset if the annotation is in the list of annotations to offset, or if the list is null
             if (annotation_ids_to_offset === null || annotation_ids_to_offset.includes(annid)) {
                 this.draw_annotation_from_id(annid, offset, subtask);
             } else {
                 this.draw_annotation_from_id(annid, null, subtask);
             }
-        }
+        };
+        this.draw_context_in_focus_passes(canvas_id, subtask, draw);
     }
 
     // Redraw a context, skipping one annotation. Used to snapshot the static masks during a move.
     redraw_annotation_context_excluding(canvas_id, subtask, exclude_id) {
         this.clear_annotation_canvas(canvas_id, subtask);
         if (this.subtasks[subtask]["state"]["is_vanished"]) return;
-        for (const annid of this.subtasks[subtask]["state"]["annotation_contexts"][canvas_id]["annotation_ids"]) {
-            if (annid === exclude_id) continue;
+        this.draw_context_in_focus_passes(canvas_id, subtask, (annid) => {
+            if (annid === exclude_id) return;
             this.draw_annotation_from_id(annid, null, subtask);
+        });
+    }
+
+    /**
+     * Draw a whole annotation context, honouring the subtask's class focus.
+     *
+     * Defocused annotations go to a scratch canvas first and are blitted back as
+     * one layer, so they dim as a group rather than compounding alpha, and they
+     * land underneath the focused ones. Canvases pack annotations by fill order,
+     * not by class, so without the separate pass a defocused annotation drawn
+     * later would composite over a focused one.
+     *
+     * @param {string} canvas_id
+     * @param {string} subtask
+     * @param {(annid: string) => void} draw draws one annotation into the live context
+     */
+    draw_context_in_focus_passes(canvas_id, subtask, draw) {
+        const context_entry = this.subtasks[subtask]["state"]["annotation_contexts"][canvas_id];
+        const annotation_ids = context_entry["annotation_ids"];
+        const focused_class = this.subtasks[subtask]["state"]["focused_class"];
+        if (focused_class == null) {
+            for (const annid of annotation_ids) draw(annid);
+            return;
         }
+
+        const access = this.subtasks[subtask]["annotations"]["access"];
+        const defocused = [];
+        const focused = [];
+        for (const annid of annotation_ids) {
+            if (this.is_annotation_defocused(access[annid], subtask)) {
+                defocused.push(annid);
+            } else {
+                focused.push(annid);
+            }
+        }
+
+        const defocused_opacity = this.subtasks[subtask]["state"]["defocused_opacity"];
+        if (defocused.length > 0 && defocused_opacity > 0) {
+            const live = context_entry["context"];
+            const scratch = this.get_defocus_scratch_context(live.canvas);
+            // Redirect draws at the scratch: the draw primitives resolve their
+            // context through this entry rather than taking it as an argument.
+            context_entry["context"] = scratch;
+            this.state["drawing_defocused"] = true;
+            try {
+                for (const annid of defocused) draw(annid);
+            } finally {
+                this.state["drawing_defocused"] = false;
+                context_entry["context"] = live;
+            }
+            live.globalAlpha = defocused_opacity;
+            live.drawImage(scratch.canvas, 0, 0);
+            live.globalAlpha = 1.0;
+        }
+        for (const annid of focused) draw(annid);
+    }
+
+    // One scratch canvas per instance; every defocus pass blits and finishes
+    // before the next begins, so it can be shared across subtasks.
+    get_defocus_scratch_context(live_canvas) {
+        let scratch = this.state["defocus_scratch"];
+        if (scratch == null) {
+            scratch = document.createElement("canvas").getContext("2d");
+            this.state["defocus_scratch"] = scratch;
+        }
+        if (scratch.canvas.width !== live_canvas.width || scratch.canvas.height !== live_canvas.height) {
+            scratch.canvas.width = live_canvas.width;
+            scratch.canvas.height = live_canvas.height;
+        } else {
+            scratch.clearRect(0, 0, scratch.canvas.width, scratch.canvas.height);
+        }
+        return scratch;
     }
 
     // Snapshot the moving bitmask's canvas with the moving mask removed, so each move frame
@@ -6217,6 +6494,7 @@ export class ULabel {
         // A read-only subtask has nothing to grab, so the near-miss fallback
         // below is just noise: require a real hit wherever one can be tested.
         const require_exact_hit = this.is_current_subtask_read_only();
+        const current_subtask_key = this.get_current_subtask_key();
         // One cursor pixel spans several image pixels when zoomed out, so the
         // exact tests get that much slack. Without it a thin mask or the edge
         // of a large one is unhittable: the pixel under the cursor is empty
@@ -6227,6 +6505,7 @@ export class ULabel {
             const annotation_id = this.get_current_subtask()["annotations"]["ordering"][edi];
             let annotation = this.get_current_subtask()["annotations"]["access"][annotation_id];
             if (annotation["deprecated"]) continue;
+            if (this.is_annotation_defocused(annotation, current_subtask_key)) continue;
             let cbox = annotation["containing_box"];
             let frame = annotation["frame"];
             const spatial_type = annotation["spatial_type"];
@@ -7299,6 +7578,11 @@ export class ULabel {
             return false;
         }
 
+        // Navigation should only visit what's on screen
+        if (this.is_annotation_defocused(annotation, subtask_key ?? this.get_current_subtask_key())) {
+            return false;
+        }
+
         // Set the current subtask if necessary
         if (subtask_key !== null && subtask_key !== this.state.current_subtask) {
             this.set_subtask(subtask_key);
@@ -7359,9 +7643,10 @@ export class ULabel {
         // Count non-deprecated annotations up to and including this one
         let visible_count = 0;
         let current_visible_idx = -1;
+        const current_subtask_key = this.get_current_subtask_key();
         for (let i = 0; i < ordering.length; i++) {
             const ann = current_subtask["annotations"]["access"][ordering[i]];
-            if (!ann["deprecated"]) {
+            if (!ann["deprecated"] && !this.is_annotation_defocused(ann, current_subtask_key)) {
                 if (ordering[i] === annotation_id) {
                     current_visible_idx = visible_count;
                 }
@@ -7596,34 +7881,85 @@ export class ULabel {
         }
 
         try {
-            // Undo/redo won't work through a get/set. Scope the reset to the target subtask
-            // so unrelated subtasks keep their interaction state.
-            this.reset_interaction_state(subtask);
-            this.subtasks[subtask]["actions"]["stream"] = [];
-            this.subtasks[subtask]["actions"]["undone_stack"] = [];
-
-            // Bulk teardown of outgoing annotations: much cheaper than a per-annotation loop.
-            this._clear_subtask_annotation_canvases(subtask);
-
-            // Set new annotations and initialize canvases
-            ULabel.process_resume_from(this, subtask, { resume_from: new_annotations });
-
-            // Yield the event loop so the loader's reveal timer can fire if the load above
-            // (or everything before it) took long enough to cross the reveal threshold.
-            // Without this yield the remaining sync work would block the timer entirely and
-            // long swaps would show no loader at all.
-            await new Promise((resolve) => setTimeout(resolve, 0));
-            if (this.is_destroyed) return;
-
-            initialize_annotation_canvases(this, subtask);
-            // Redraw all annotations to render them
-            this.redraw_all_annotations(subtask);
-            if (!skip_toolbox_update) {
+            const swapped = await this._swap_subtask_annotations(new_annotations, subtask);
+            if (swapped && !skip_toolbox_update) {
                 this.refresh_toolbox();
             }
         } finally {
             ULabelLoader.remove_loader_div();
         }
+    }
+
+    /**
+     * Replace several subtasks' annotations as a single update: one loader cycle
+     * and one toolbox refresh for the whole set. Swapping layers one call at a
+     * time cycles the loader per subtask, which reads as a flicker.
+     *
+     * @param {Record<string, object[]>} annotations_by_subtask subtask key to
+     *     annotations in `resume_from` form
+     */
+    async set_annotations_batch(annotations_by_subtask) {
+        if (this.is_destroyed) {
+            log_message("set_annotations_batch called on a destroyed ULabel instance", LogLevel.WARNING, true);
+            return;
+        }
+
+        const subtask_keys = Object.keys(annotations_by_subtask).filter((subtask_key) => {
+            if (this.subtasks[subtask_key] !== undefined) return true;
+            log_message(`set_annotations_batch: unknown subtask key ${subtask_key}`, LogLevel.WARNING);
+            return false;
+        });
+        if (subtask_keys.length === 0) return;
+
+        const container = document.getElementById(this.config["container_id"]);
+        ULabelLoader.add_loader_div(container);
+        await ULabelLoader.wait_for_render();
+
+        if (this.is_destroyed) {
+            log_message("set_annotations_batch aborted; ULabel was destroyed during load", LogLevel.WARNING, true);
+            return;
+        }
+
+        try {
+            for (const subtask_key of subtask_keys) {
+                const swapped = await this._swap_subtask_annotations(annotations_by_subtask[subtask_key], subtask_key);
+                if (!swapped) return;
+            }
+            this.refresh_toolbox();
+        } finally {
+            ULabelLoader.remove_loader_div();
+        }
+    }
+
+    /**
+     * The per-subtask half of an annotation swap, without the loader or the
+     * toolbox refresh so a batched caller can pay for those once.
+     * @returns {Promise<boolean>} false if the instance was destroyed mid-swap
+     */
+    async _swap_subtask_annotations(new_annotations, subtask) {
+        // Undo/redo won't work through a get/set. Scope the reset to the target subtask
+        // so unrelated subtasks keep their interaction state.
+        this.reset_interaction_state(subtask);
+        this.subtasks[subtask]["actions"]["stream"] = [];
+        this.subtasks[subtask]["actions"]["undone_stack"] = [];
+
+        // Bulk teardown of outgoing annotations: much cheaper than a per-annotation loop.
+        this._clear_subtask_annotation_canvases(subtask);
+
+        // Set new annotations and initialize canvases
+        ULabel.process_resume_from(this, subtask, { resume_from: new_annotations });
+
+        // Yield the event loop so the loader's reveal timer can fire if the load above
+        // (or everything before it) took long enough to cross the reveal threshold.
+        // Without this yield the remaining sync work would block the timer entirely and
+        // long swaps would show no loader at all.
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        if (this.is_destroyed) return false;
+
+        initialize_annotation_canvases(this, subtask);
+        // Redraw all annotations to render them
+        this.redraw_all_annotations(subtask);
+        return true;
     }
 
     /**

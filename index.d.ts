@@ -67,6 +67,11 @@ export type ClassDefinition = {
     id: number;
     color: string;
     keybind: string | null;
+    /**
+     * Spatial types this class may be drawn as, narrowing the subtask's
+     * `allowed_modes`. Undefined or null inherits the subtask's list.
+     */
+    allowed_modes?: ULabelSpatialType[] | null;
 };
 
 export type SliderInfo = {
@@ -407,6 +412,11 @@ export class ULabel {
      * batching several color changes, then redraw once at the end.
      */
     public set_class_color(class_id: number | string, color: string, redraw?: boolean): void;
+    /**
+     * Recolor several classes as one update, rebuilding the id-dialog pies once
+     * for the whole map instead of once per class.
+     */
+    public set_class_colors(colors_by_class_id: Record<string, string>, redraw?: boolean): void;
 
     // Subtasks
     public get_current_subtask_key(): string;
@@ -415,6 +425,30 @@ export class ULabel {
     public readjust_subtask_opacities(): void;
     public set_subtask(st_key: string): void;
     public switch_to_next_subtask(): void;
+    /**
+     * Focus a subtask on a single class. Other classes dim to the subtask's
+     * `defocused_opacity` and drop out of hover/grab, annotation navigation and
+     * the annotation list; geometry still sees every annotation. `null` clears.
+     */
+    public set_class_focus(subtask_key: string, class_id?: number | null, redraw?: boolean): void;
+    public is_annotation_defocused(annotation: ULabelAnnotation, subtask_key: string): boolean;
+    /**
+     * Opacity for annotations outside the focused class. 0 skips drawing them
+     * entirely, which is cheaper but loses them as visual context.
+     */
+    public set_defocused_opacity(subtask_key: string, opacity: number, redraw?: boolean): void;
+    /**
+     * Set a subtask's layer opacity. Also writes `inactive_opacity` so the value
+     * survives a subtask switch.
+     */
+    public set_subtask_opacity(subtask_key: string, opacity: number): void;
+    /** The spatial types a class may be drawn as; falls back to the subtask's list. */
+    public get_class_allowed_modes(class_id: number, subtask_key?: string | null): ULabelSpatialType[];
+    /**
+     * Hide the mode buttons the active class disallows and switch off a mode it
+     * disallows. Delete modes are exempt.
+     */
+    public sync_annotation_modes_to_active_class(): void;
 
     // Annotations
     public get_annotations(subtask: string): ULabelAnnotation[];
@@ -424,6 +458,11 @@ export class ULabel {
      * at the end.
      */
     public set_annotations(annotations: ULabelAnnotation[], subtask: string, skip_toolbox_update?: boolean): Promise<void>;
+    /**
+     * Replace several subtasks' annotations as a single update: one loader cycle
+     * and one toolbox refresh, so a multi-layer swap doesn't flicker.
+     */
+    public set_annotations_batch(annotations_by_subtask: Record<string, ULabelAnnotation[]>): Promise<void>;
     /** Deferred half of a batched `set_annotations` sequence: filter distances + toolbox redraw. */
     public refresh_toolbox(): void;
     public set_saved(saved: boolean): void;

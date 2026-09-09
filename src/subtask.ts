@@ -50,6 +50,9 @@ export class ULabelSubtask {
         };
         spatial_type: ULabelSpatialType;
         fly_to_idx: number | null;
+        // Presentation/input only. Defocused annotations are still real data.
+        focused_class: number | null;
+        defocused_opacity: number;
         line_size: number;
     };
 

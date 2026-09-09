@@ -266,6 +266,8 @@ function handle_soft_id_toolbox_button_click(
         ) {
             $("#toolbox_sel_" + DELETE_CLASS_ID).trigger("click");
         }
+
+        ulabel.sync_annotation_modes_to_active_class();
     }
 }
 
