@@ -524,15 +524,20 @@ time than at save time.
   (derived client-side) vs keypoint (fetched per threshold) asymmetry, avoids
   reimplementing bipartite matching in the worker, and makes 6.3 unnecessary.
 - [ ] 7.10 Unpin the ulabel git SHA to a published `^0.28.x` before merge.
-  Currently still pinned to `#7a2c7b3`; the local build is staged into
-  `node_modules/ulabel/dist` so type-check and build see the Phase 4/5 API.
-  **That staging does not survive `npm ci`** - repin before anyone else runs
-  the branch.
+  Now pinned to `#275509f` on the pushed `three-fixed-subtasks` branch, so a
+  fresh `npm ci` resolves correctly. Still a branch SHA, not a release.
 - [ ] 7.11 `groundtruth` ships `read_only: true` behind an
   `editableGroundtruth` flag (default off). The shape supports editing - it is
   multi-class, never swapped on a run switch, and owns its own undo stream -
   but there is no save path yet, so an editable layer would be a data-loss
   footgun. Flip the flag when 7.9 lands.
+- [x] 7.12 `classAllowedModesFor` short-circuited to `["bitmask"]` for every
+  class on a segmentation run, discarding the backend's
+  `class_spatial_types`. Weeds-Soybean declares `Row: polyline` and the GT for
+  an item really does load 10 Row polylines alongside 89 Crop bitmasks, so
+  focusing Row would have forced bitmask mode and made those polylines
+  uneditable. Dropped the short-circuit; the general path already unions the
+  class's own geometry with the fallback its diff artifacts render as.
 
 ### Phase 8 - history
 
