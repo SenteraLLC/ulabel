@@ -85,7 +85,9 @@ class ULabel({
     fly_to_max_zoom: number,
     min_zoom_fit_ratio: number,
     n_annos_per_canvas: number,
-    auto_destroy_on_detach: boolean
+    auto_destroy_on_detach: boolean,
+    on_active_class_change: function,
+    on_subtask_change: function
 })
 ```
 
@@ -664,6 +666,12 @@ When `false`, new annotations will be limited to points within the image, and at
 When `true` (the default), ULabel installs a `MutationObserver` on the container's root and calls [`destroy()`](#destroy) automatically after the container is removed from the DOM. The observer holds the ULabel instance through a `WeakRef` (so it cannot pin the instance in memory on its own) and defers the teardown decision by one animation frame so brief detach/reattach cycles (portals, jQuery `.detach()`, layout reparenting) do not trigger a false-positive teardown. Set to `false` to opt out and manage teardown manually via [`destroy()`](#destroy).
 
 > **Same-id replacement caveat.** With the default `true`, the one-frame grace period means a caller who removes the old container and mounts a new `<div>` with the same `container_id` *within the same animation frame* can briefly have two `ULabel` instances attached to `document`; when the old instance's teardown runs it will remove `.ulabel`-namespaced document/window handlers belonging to the new instance too. If your SPA does synchronous same-id replacement, set `auto_destroy_on_detach: false` and call `oldUlabel.destroy()` yourself *before* mounting the replacement — `destroy()` is synchronous, so this ordering is race-free.
+
+### `on_active_class_change`
+*(subtask_key: string, class_id: number) => void* -- Called after a subtask's active class actually changes, whatever the writer: `set_active_class`, a toolbox class-button click, or a class-select keybind (including keybinds users customize through the `Keybinds` toolbox item). Not called for no-op re-selections, rejected ids, or delete-mode toggles (which freeze the selection). Default is `null`.
+
+### `on_subtask_change`
+*(subtask_key: string, old_subtask_key: string) => void* -- Called after the current subtask actually changes, whatever the writer: `set_subtask`, a toolbox tab click, or the `switch_subtask_keybind`. Not called when the target subtask is already current. Default is `null`.
 
 
 ## Display Utility Functions

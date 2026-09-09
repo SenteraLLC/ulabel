@@ -158,6 +158,10 @@ export class Configuration {
     public instructions_url: string | null = null;
     public submit_buttons: ULabelSubmitButton[] = [];
 
+    // Host notification callbacks; each fires only when the value actually changes
+    public on_active_class_change: ((subtask_key: string, class_id: number) => void) | null = null;
+    public on_subtask_change: ((subtask_key: string, old_subtask_key: string) => void) | null = null;
+
     // Passthrough
     public task_meta: object = {};
     public annotation_meta: object = {};

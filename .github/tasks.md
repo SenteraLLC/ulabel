@@ -648,6 +648,12 @@ opt-in, and give "set the active class" a real API instead of DOM clicks.
   (`process_resume_from` only errors on *missing* type/payload); checking
   against the class's effective modes covers both levels since class modes
   are already a subset of the subtask's.
+- [x] 9.9 Host callbacks `on_active_class_change(subtask_key, class_id)` and
+  `on_subtask_change(subtask_key, old_subtask_key)` config options, fired
+  from the single writers (`set_active_class` / `set_subtask`) only on
+  actual change. Needed because the Keybinds toolbox item lets users bind
+  class-select keys at runtime, so ULabel-side class changes are reachable
+  even when the host ships `keybind: null` and no id toolbox.
 
 ### Verification
 

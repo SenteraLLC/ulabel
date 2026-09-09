@@ -1245,6 +1245,10 @@ export class ULabel {
 
         // Redraw demo
         this.redraw_demo();
+
+        if (st_key !== old_st) {
+            this.config.on_subtask_change?.(st_key, old_st);
+        }
     }
 
     /**

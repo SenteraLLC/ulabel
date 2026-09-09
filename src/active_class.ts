@@ -32,6 +32,8 @@ export function get_selected_class_id(ulabel: ULabel, subtask_key: string): numb
  * replaces. For a non-current subtask only state is written; `set_subtask`
  * reconciles the DOM on activation.
  *
+ * Fires `config.on_active_class_change` when the remembered selection changes.
+ *
  * @param ulabel ULabel instance
  * @param class_id class to select (the reserved delete class is accepted but
  *     never becomes the remembered selection, so focus freezes across it)
@@ -89,6 +91,10 @@ export function set_active_class(
             // Toolbox items filter on the focus, so they go stale otherwise.
             ulabel.toolbox?.redraw_update_items(ulabel);
         }
+    }
+
+    if (class_id !== DELETE_CLASS_ID && previous_selected !== class_id) {
+        ulabel.config.on_active_class_change?.(subtask_key, class_id);
     }
     return true;
 }
