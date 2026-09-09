@@ -109,6 +109,20 @@ describe("ClassCounterToolboxItem", () => {
             expect(item.inner_HTML).toContain("Crop: 1");
             expect(item.inner_HTML).not.toContain("OVERWRITE");
         });
+
+        test("hides the reserved delete class", () => {
+            // Subtasks with delete modes get a "Delete" class def appended, but it
+            // is never in class_ids, so it would otherwise render "Delete: undefined"
+            const subtask = make_subtask("A", [CROP], [make_annotation(1)]);
+            subtask.class_defs.push({ name: "Delete", id: -1, color: "crimson" });
+            const ulabel = make_ulabel({ st: subtask }, "st");
+            const item = new ClassCounterToolboxItem(ulabel);
+
+            item.update_toolbox_counter(ulabel);
+
+            expect(item.inner_HTML).toContain("Crop: 1");
+            expect(item.inner_HTML).not.toContain("Delete");
+        });
     });
 
     describe("subtasks option", () => {

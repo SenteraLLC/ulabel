@@ -8,7 +8,7 @@
 
 import type { ULabel } from "../index";
 import { NightModeCookie } from "./cookies";
-import { DELETE_CLASS_ID, DELETE_MODES, NONSPATIAL_MODES } from "./annotation";
+import { DELETE_MODES, NONSPATIAL_MODES } from "./annotation";
 import { set_local_storage_item } from "./utilities";
 import { AnnotationResizeItem, SMALL_ANNOTATION_SIZE, LARGE_ANNOTATION_SIZE, INCREMENT_ANNOTATION_SIZE } from "./toolbox";
 
@@ -191,8 +191,8 @@ function handle_keypress_event(
                         );
                     }
                 } else {
-                    // Click the class button if not already selected
-                    class_button.trigger("click");
+                    // Select the class if not already selected
+                    ulabel.set_active_class(class_def.id);
                 }
                 return;
             }
@@ -201,7 +201,8 @@ function handle_keypress_event(
 }
 
 /**
- * Handle a click on a soft ID toolbox button.
+ * Handle a click on a soft ID toolbox button. Thin wrapper: the selection
+ * logic lives in `set_active_class`, of which this click is one caller.
  *
  * @param click_event Click event
  * @param ulabel ULabel instance
@@ -211,64 +212,10 @@ function handle_soft_id_toolbox_button_click(
     ulabel: ULabel,
 ) {
     const tgt_jq = $(click_event.currentTarget);
-    const pfx = "div#tb-id-app--" + ulabel.get_current_subtask_key();
-    const current_subtask = ulabel.get_current_subtask();
-    if (tgt_jq.attr("href") === "#") {
-        const current_id_button = $(pfx + " a.tbid-opt.sel");
-        current_id_button.attr("href", "#");
-        current_id_button.removeClass("sel");
-        const old_id = parseInt(current_id_button.attr("id")!.split("_").at(-1)!);
-        tgt_jq.addClass("sel");
-        tgt_jq.removeAttr("href");
-        const idarr = tgt_jq.attr("id")!.split("_");
-        const rawid = parseInt(idarr[idarr.length - 1]);
-        ulabel.set_id_dialog_payload_nopin(
-            current_subtask["class_ids"].indexOf(rawid),
-            1.0,
-        );
-        ulabel.update_id_dialog_display();
-
-        // Update the class of the active annotation,
-        // except when toggling on the delete class or in a read-only subtask
-        if (rawid !== DELETE_CLASS_ID && !ulabel.is_current_subtask_read_only()) {
-            // Get the active annotation, if any
-            let target_id = null;
-            if (current_subtask.state.active_id !== null) {
-                target_id = current_subtask.state.active_id;
-            } else if (current_subtask.state.move_candidate !== null) {
-                target_id = current_subtask.state.move_candidate["annid"];
-            }
-
-            // Update the class of the active annotation
-            if (target_id !== null) {
-                // Set the annotation's class to the selected class
-                ulabel.handle_id_dialog_click(
-                    ulabel.state["last_move"],
-                    target_id,
-                    ulabel.get_active_class_id_idx(),
-                );
-            } else {
-                // If there is not active annotation,
-                // still update the brush circle if in brush mode
-                ulabel.recolor_brush_circle();
-            }
-        }
-
-        /*
-        If toggling off a delete class while still in delete mode,
-        re-toggle the delete class.
-        This occurs when using a keybind to change a hovered annotation's
-        class while in delete mode.
-        */
-        if (
-            old_id === DELETE_CLASS_ID &&
-            DELETE_MODES.includes(current_subtask.state.annotation_mode)
-        ) {
-            $("#toolbox_sel_" + DELETE_CLASS_ID).trigger("click");
-        }
-
-        ulabel.sync_annotation_modes_to_active_class();
-    }
+    // The selected button has no href; clicking it is a no-op
+    if (tgt_jq.attr("href") !== "#") return;
+    const idarr = tgt_jq.attr("id")!.split("_");
+    ulabel.set_active_class(parseInt(idarr[idarr.length - 1]));
 }
 
 /**

@@ -6,7 +6,7 @@ import type {
 } from "../index";
 import { ULabel } from "../src/index";
 import { DEFAULT_FILTER_DISTANCE_CONFIG, AllowedToolboxItem } from "./configuration";
-import { ULabelAnnotation } from "./annotation";
+import { ULabelAnnotation, DELETE_CLASS_ID } from "./annotation";
 import { ULabelSubtask } from "./subtask";
 import {
     filter_points_distance_from_line,
@@ -1277,6 +1277,8 @@ export class ClassCounterToolboxItem extends ToolboxItem {
             }
         }
         return subtask.class_defs
+            // The reserved delete class is a mode implement, not a real class
+            .filter((class_def) => class_def.id !== DELETE_CLASS_ID)
             // MF-Tassels Hack: OVERWRITE classes are internal and never displayed
             .filter((class_def) => !class_def.name.includes("OVERWRITE"))
             .map((class_def) => ({

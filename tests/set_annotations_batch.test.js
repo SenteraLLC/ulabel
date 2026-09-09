@@ -109,12 +109,14 @@ describe("set_annotations_batch", () => {
         expect(ulabel._swap_subtask_annotations).not.toHaveBeenCalled();
     });
 
-    test("leaves class filters in place, so a swapped-in layer arrives filtered", async () => {
+    test("leaves class focus in place, so a swapped-in layer arrives scoped", async () => {
         const ulabel = make_ulabel();
-        ulabel.set_class_focus("a", 1, false);
+        ulabel.subtasks.a.focus_active_class = true;
 
         await ulabel.set_annotations_batch({ a: [], b: [] });
 
-        expect(ulabel.subtasks.a.state.focused_class).toBe(1);
+        // Selection (and therefore focus) survives the swap untouched
+        expect(ulabel.get_selected_class_id("a")).toBe(1);
+        expect(ulabel.subtasks.a.focus_active_class).toBe(true);
     });
 });

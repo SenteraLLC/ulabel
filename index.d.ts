@@ -426,12 +426,21 @@ export class ULabel {
     public set_subtask(st_key: string): void;
     public switch_to_next_subtask(): void;
     /**
-     * Focus a subtask on a single class. Other classes dim to the subtask's
-     * `defocused_opacity` and drop out of hover/grab, annotation navigation and
-     * the annotation list; geometry still sees every annotation. `null` clears.
+     * Set a subtask's active class: id payload, toolbox selection, per-class
+     * mode sync, and - on subtasks with `focus_active_class` - the class focus
+     * (other classes dim to `defocused_opacity` and drop out of hover/grab,
+     * annotation navigation, bulk delete and the annotation list; geometry
+     * still sees every annotation). Returns whether the class was accepted.
      */
-    public set_class_focus(subtask_key: string, class_id?: number | null, redraw?: boolean): void;
+    public set_active_class(class_id: number, subtask_key?: string | null, redraw?: boolean): boolean;
+    /**
+     * The last non-delete class selected on a subtask. Delete-mode toggles
+     * don't move it, so class focus stays put while deleting.
+     */
+    public get_selected_class_id(subtask_key?: string | null): number | null;
     public is_annotation_defocused(annotation: ULabelAnnotation, subtask_key: string): boolean;
+    /** Turn focus-follows-active-class on or off for a subtask at runtime. */
+    public set_focus_active_class(subtask_key: string, enabled: boolean, redraw?: boolean): void;
     /**
      * Opacity for annotations outside the focused class. 0 skips drawing them
      * entirely, which is cheaper but loses them as visual context.

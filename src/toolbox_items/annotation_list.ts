@@ -390,17 +390,17 @@ export class AnnotationListToolboxItem extends ToolboxItem {
      */
     private get_filtered_annotations(subtask: ULabelSubtask): ULabelAnnotation[] {
         const annotations: ULabelAnnotation[] = [];
-        const focused_class = subtask.state.focused_class;
+        const subtask_key = this.ulabel.get_current_subtask_key();
 
         for (const annotation_id of subtask.annotations.ordering) {
             const annotation = subtask.annotations.access[annotation_id];
 
-            // Skip deprecated if option is disabled
+            // Skip deprecated annotations unless the option to show them is enabled
             if (!this.show_deprecated && annotation.deprecated) {
                 continue;
             }
 
-            if (focused_class != null && this.get_annotation_class_id(annotation) !== focused_class) {
+            if (this.ulabel.is_annotation_defocused(annotation, subtask_key)) {
                 continue;
             }
 

@@ -50,8 +50,9 @@ export class ULabelSubtask {
         };
         spatial_type: ULabelSpatialType;
         fly_to_idx: number | null;
-        // Presentation/input only. Defocused annotations are still real data.
-        focused_class: number | null;
+        // The last non-delete class selected; what class focus follows when
+        // `focus_active_class` is set. Defocused annotations are still real data.
+        selected_class_id: number | null;
         defocused_opacity: number;
         line_size: number;
     };
@@ -72,6 +73,8 @@ export class ULabelSubtask {
         public annotation_meta: object | string,
         public read_only?: boolean,
         public inactive_opacity: number = 0.4,
+        /** Focus follows the active class: other classes dim and drop out of input. */
+        public focus_active_class: boolean = false,
     ) {
         this.actions = {
             stream: [],
@@ -90,6 +93,7 @@ export class ULabelSubtask {
             subtask_json["annotation_meta"],
         );
         ret.read_only = ("read_only" in subtask_json) && (subtask_json["read_only"] === true);
+        ret.focus_active_class = subtask_json["focus_active_class"] === true;
         if ("inactive_opacity" in subtask_json && typeof subtask_json["inactive_opacity"] == "number") {
             ret.inactive_opacity = Math.min(Math.max(subtask_json["inactive_opacity"], 0.0), 1.0);
         }

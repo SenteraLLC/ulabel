@@ -3,6 +3,9 @@
 All notable changes to this project will be documented here.
 
 ## [unreleased]
+- New `set_active_class(class_id, subtask_key?, redraw?)` public API method: sets a subtask's active class (id payload, toolbox selection, id-dialog display, per-class mode sync) — previously only reachable by clicking the toolbox class button. All internal class-selection paths (delete-mode toggles, keybinds, id-dialog syncing) now route through it. New `get_selected_class_id(subtask_key?)` returns the last non-delete class selected.
+- New per-subtask `focus_active_class` option (default `false`): the selected class becomes the focused class — other classes dim to `defocused_opacity` and drop out of hover, Tab navigation, the annotation list, and bulk delete. Replaces the separate `set_class_focus()` API (never released), so selection and focus can no longer disagree. The selection (and therefore focus) freezes at the last real class while a delete mode is active. Toggleable at runtime via `set_focus_active_class(subtask_key, enabled, redraw?)`.
+- Bulk delete (`delete_polygon`/`delete_bbox`) now skips defocused annotations, so a focus-scoped view cannot delete what it has dimmed.
 
 ## [0.28.0] - Sept 8th, 2026
 - Removed unused per-subtask back canvas.

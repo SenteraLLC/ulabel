@@ -572,6 +572,61 @@ time than at save time.
   the back-canvas removal) as a PR that can land immediately, architecture as
   another. Manual work, since `cropped-bitmasks`'s three commits mix both.
 
+## Plan: fold class focus into class selection (edit-mode prep)
+
+Verified starting facts: `focused_class` is written only by `set_class_focus`
+(host API; nothing in ULabel's UI touches it), toolbox class selection
+(`id_payload`) is an independent axis, and model-registry never exercises the
+null-focus state - `activeDiffLabel` falls back to `labels[0]` and
+`activeOutcome` defaults `"tp"`, with no deselect gesture, so exactly one
+class/outcome is focused at all times. Two axes that must always agree is
+drift waiting for edit mode: the user could draw with a class that is
+currently defocused. Fold focus into the selection under a per-subtask
+opt-in, and give "set the active class" a real API instead of DOM clicks.
+
+### Phase 9 - ULabel: `set_active_class` + `focus_active_class`
+
+- [ ] 9.1 Public `set_active_class(class_id, subtask_key?)`: extract the body
+  of `handle_soft_id_toolbox_button_click` (the `sel` swap,
+  `set_id_dialog_payload_nopin`, dialog display update, active-annotation
+  reclass, delete re-toggle, and the trailing
+  `sync_annotation_modes_to_active_class`) into the method; the DOM click
+  handler becomes a thin wrapper. Mode buttons stay correct because the sync
+  is the handler's last unconditional statement today. For a non-current
+  subtask, skip the button/DOM sync - `set_subtask` already runs the sync on
+  activation, so state is written now and the DOM reconciles on switch.
+  Subsumes 6.4: the state-based `get_active_class_id` (utilities) becomes
+  canonical and the DOM-parsing method's call sites migrate.
+- [ ] 9.2 Migrate the internal DOM-click workarounds to `set_active_class`:
+  `toggle_delete_class_id_in_toolbox` (3 trigger sites: delete-class on
+  entry; first class or hovered annotation's class on exit),
+  `update_id_toolbox_display` (state -> click -> handler -> state round
+  trip), the class keybind handler (`listeners.ts` class_button click), and
+  the soft-id handler's delete re-toggle. model-registry has no workarounds
+  to migrate (verified: zero `toolbox_sel`/`id_payload` references).
+- [ ] 9.3 Per-subtask `focus_active_class: boolean` (default false, so no
+  behavior change for vanilla consumers - the defocus gates restrict
+  hover/Tab/list, not just drawing, and must not engage unasked). When true,
+  focus derives from the *persistent* selection: a new
+  `get_selected_class_id(subtask)` resolves from `id_payload` and skips
+  `get_active_class_id`'s delete-mode `DELETE_CLASS_ID` short-circuit, so
+  focus freezes at the selected class during delete modes (no saved/restored
+  state, no dim flicker; precedent: the mode sync already bails on
+  `DELETE_CLASS_ID`). The delete-class button is excluded from the focus
+  path. Remove `set_class_focus` / `focused_class` as an independent axis;
+  migrate the `class_focus` tests to selection-driven focus.
+- [ ] 9.4 Focus-gate the bulk-delete collection loop
+  (`delete_polygon`/`delete_bbox`) on `is_annotation_defocused`. Restores
+  the protection the removed `hidden` machinery had, and is what makes
+  freeze-during-delete safe: focus scopes what is legible, interactive,
+  navigable - and deletable. Single-annotation delete is already gated via
+  hover (`get_edit_candidates` skips defocused).
+- [ ] 9.5 model-registry: sidebar class rows / outcome legend call
+  `set_active_class` instead of `set_class_focus`; all three subtasks set
+  `focus_active_class: true`. Matches the UI's actual invariant (always
+  exactly one focused class); the null-focus branch was only reachable with
+  an empty ontology.
+
 ### Verification
 
 - [ ] V3 ULabel: lint + jest + e2e green after each phase; 4.1-4.4 and
@@ -584,3 +639,8 @@ time than at save time.
   GT annotation is corrected *in place* by the reclassify pie, keeping its
   id, `encord_object_hash` and undo coherence - no delete-and-recreate across
   subtasks. Must pass before the edit path ships.
+- [ ] V6 Phase 9: with `focus_active_class` on, selecting a class (API,
+  toolbox button, or keybind) moves focus, dimming and mode buttons together;
+  entering a delete mode changes none of them; a delete polygon removes only
+  focused-class annotations. Vanilla configs (flag off) show zero behavior
+  change across the whole suite.

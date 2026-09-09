@@ -32,6 +32,7 @@ import { initialize_annotation_canvases } from "../build/canvas_utils";
 import { record_action, record_finish, record_finish_edit, record_finish_move, undo, redo } from "../build/actions";
 import { ULabelMask, is_raw_mask_payload } from "../build/mask_utils";
 import { get_active_class_id, get_local_storage_item, set_local_storage_item } from "../build/utilities";
+import { set_active_class, get_selected_class_id, set_focus_active_class, set_defocused_opacity } from "../build/active_class";
 import { get_idd_string } from "../build/html_builder";
 
 import $ from "jquery";
@@ -603,7 +604,8 @@ export class ULabel {
                 move_candidate: null,
                 hovered_annid: null,
                 fly_to_idx: null,
-                focused_class: null,
+                // The last non-delete class selected; what class focus follows
+                selected_class_id: ul.subtasks[subtask_key]["class_ids"][0] ?? null,
                 defocused_opacity: raw_subtask["defocused_opacity"] ?? DEFAULT_DEFOCUSED_OPACITY,
                 line_size: ul.config.initial_line_size,
 
@@ -1119,44 +1121,44 @@ export class ULabel {
      */
     is_annotation_defocused(annotation, subtask_key) {
         const subtask = this.subtasks[subtask_key];
-        if (subtask == null) return false;
-        const focused_class = subtask["state"]["focused_class"];
-        if (focused_class == null) return false;
-        return get_annotation_class_id(annotation) !== String(focused_class);
+        if (subtask == null || !subtask["focus_active_class"]) return false;
+        const selected_class_id = get_selected_class_id(this, subtask_key);
+        if (selected_class_id == null) return false;
+        return get_annotation_class_id(annotation) !== String(selected_class_id);
     }
 
     /**
-     * Focus a subtask on a single class. Other classes stay visible but dim to
-     * `defocused_opacity` and drop out of hover, Tab and the annotation list.
+     * Set a subtask's active class: id payload, toolbox selection, per-class
+     * mode sync, and - on subtasks with `focus_active_class` - the class focus.
+     *
+     * @param {number} class_id class to select
+     * @param {string|null} subtask_key defaults to the current subtask
+     * @param {boolean} redraw whether a focus change repaints immediately
+     * @returns {boolean} whether the class was accepted
+     */
+    set_active_class(class_id, subtask_key = null, redraw = true) {
+        return set_active_class(this, class_id, subtask_key, redraw);
+    }
+
+    /**
+     * The last non-delete class selected on a subtask. Delete-mode toggles
+     * don't move it, so class focus stays put while deleting.
+     *
+     * @param {string|null} subtask_key defaults to the current subtask
+     * @returns {number|null}
+     */
+    get_selected_class_id(subtask_key = null) {
+        return get_selected_class_id(this, subtask_key ?? this.get_current_subtask_key());
+    }
+
+    /**
+     * Turn focus-follows-active-class on or off for a subtask at runtime.
      * @param {string} subtask_key
-     * @param {number|null} class_id null clears the focus
+     * @param {boolean} enabled
      * @param {boolean} redraw
      */
-    set_class_focus(subtask_key, class_id = null, redraw = true) {
-        const subtask = this.subtasks[subtask_key];
-        if (subtask === undefined) {
-            log_message(`set_class_focus: unknown subtask key ${subtask_key}`, LogLevel.WARNING, true);
-            return;
-        }
-        if (class_id !== null && !subtask["class_ids"].includes(class_id)) {
-            log_message(
-                `set_class_focus: class id ${class_id} is not in subtask ${subtask_key}`,
-                LogLevel.WARNING,
-                true,
-            );
-            return;
-        }
-        subtask["state"]["focused_class"] = class_id;
-
-        // Whatever was hovered or mid-fly-to may no longer be interactive.
-        subtask["state"]["hovered_annid"] = null;
-        subtask["state"]["fly_to_idx"] = null;
-
-        if (redraw) {
-            this.redraw_all_annotations(subtask_key);
-            // Toolbox items filter on focused_class, so they go stale otherwise.
-            this.toolbox?.redraw_update_items(this);
-        }
+    set_focus_active_class(subtask_key, enabled, redraw = true) {
+        set_focus_active_class(this, subtask_key, enabled, redraw);
     }
 
     /**
@@ -1167,15 +1169,7 @@ export class ULabel {
      * @param {boolean} redraw
      */
     set_defocused_opacity(subtask_key, opacity, redraw = true) {
-        const subtask = this.subtasks[subtask_key];
-        if (subtask === undefined) {
-            log_message(`set_defocused_opacity: unknown subtask key ${subtask_key}`, LogLevel.WARNING, true);
-            return;
-        }
-        subtask["state"]["defocused_opacity"] = Math.min(Math.max(opacity, 0), 1);
-        if (redraw) {
-            this.redraw_all_annotations(subtask_key);
-        }
+        set_defocused_opacity(this, subtask_key, opacity, redraw);
     }
 
     set_subtask(st_key) {
@@ -1430,12 +1424,12 @@ export class ULabel {
         if (show_delete) {
             // Show the delete class id in the toolbox
             $("a#toolbox_sel_" + DELETE_CLASS_ID).css("display", "inline-block");
-            // Select the delete class id in the toolbox by clicking it
-            $("a#toolbox_sel_" + DELETE_CLASS_ID).trigger("click");
+            // Select the delete class id in the toolbox
+            this.set_active_class(DELETE_CLASS_ID);
         } else {
             // Hide the delete class id in the toolbox
             $("a#toolbox_sel_" + DELETE_CLASS_ID).css("display", "none");
-            // If the delete class id is selected, select the first class id in the toolbox
+            // If the delete class id is selected, select a real class instead
             if ($("a#toolbox_sel_" + DELETE_CLASS_ID).hasClass("sel")) {
                 // Check if we are hovering an annotation
                 let target_id = null;
@@ -1444,9 +1438,9 @@ export class ULabel {
                 } else if (current_subtask.state.move_candidate !== null) {
                     target_id = current_subtask.state.move_candidate["annid"];
                 }
-                // If we are not hovering an annotation, select default to the first class
+                // If we are not hovering an annotation, default to the first class
                 if (target_id === null) {
-                    $("a.tbid-opt").first().trigger("click");
+                    this.set_active_class(current_subtask["class_ids"][0]);
                 } else {
                     // If we are hovering an annotation, select the class id of the annotation
                     // which is the class with the highest confidence
@@ -1454,7 +1448,7 @@ export class ULabel {
                     const target_class_id = classification_payloads.reduce((acc, curr) => {
                         return curr.confidence > acc.confidence ? curr : acc;
                     })["class_id"];
-                    $("a#toolbox_sel_" + target_class_id).trigger("click");
+                    this.set_active_class(target_class_id);
                 }
             }
         }
@@ -2794,8 +2788,7 @@ export class ULabel {
     draw_context_in_focus_passes(canvas_id, subtask, draw) {
         const context_entry = this.subtasks[subtask]["state"]["annotation_contexts"][canvas_id];
         const annotation_ids = context_entry["annotation_ids"];
-        const focused_class = this.subtasks[subtask]["state"]["focused_class"];
-        if (focused_class == null) {
+        if (!this.subtasks[subtask]["focus_active_class"]) {
             for (const annid of annotation_ids) draw(annid);
             return;
         }
@@ -3564,6 +3557,7 @@ export class ULabel {
 
         // Get the list of annotations
         const annotations = this.get_current_subtask()["annotations"]["access"];
+        const current_subtask_key = this.get_current_subtask_key();
         // Track the ids of deprecated annotations for undo
         let deprecated_ids = [];
         // Track id and annotation pairs of modified annotations for undo
@@ -3572,6 +3566,10 @@ export class ULabel {
         for (let [annid, annotation] of Object.entries(annotations)) {
             // Skip deprecated annotations
             if (annotation["deprecated"]) {
+                continue;
+            }
+            // A focus-scoped view must not delete what it has dimmed
+            if (this.is_annotation_defocused(annotation, current_subtask_key)) {
                 continue;
             }
             // Skip non-spatial annotations and 3D annotations
@@ -6871,11 +6869,9 @@ export class ULabel {
         }
     }
 
-    // Grab the active class id from the toolbox
+    // Grab the active class id from the id payload state
     get_active_class_id() {
-        const pfx = "div#tb-id-app--" + this.get_current_subtask_key();
-        const idarr = $(pfx + " a.tbid-opt.sel").attr("id").split("_");
-        return parseInt(idarr[idarr.length - 1]);
+        return get_active_class_id(this);
     }
 
     get_active_class_id_idx() {
@@ -7000,10 +6996,13 @@ export class ULabel {
                 }
                 // Get the index of the new class
                 new_class_idx = class_ids.indexOf(new_class_id);
+                // Init-time numeric payloads carry no selection yet; the first
+                // class is the default (matching get_active_class_id)
+                if (new_class_idx === -1) new_class_idx = 0;
             }
 
-            // Select the desired class by clicking on the toolbox selector
-            $(`#toolbox_sel_${class_ids[new_class_idx]}`).trigger("click");
+            // Select the desired class
+            this.set_active_class(class_ids[new_class_idx]);
         }
     }
 
