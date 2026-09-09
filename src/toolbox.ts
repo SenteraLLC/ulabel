@@ -1515,8 +1515,8 @@ export class AnnotationResizeItem extends ToolboxItem {
         const subtask = ulabel.subtasks[subtask_key];
         if (subtask === null) return;
 
-        // If the annotations are currently vanished, don't resize them
-        if (subtask.state.is_vanished) return;
+        // If the annotations are currently hidden (vanished or opacity 0), don't resize them
+        if (ulabel.is_subtask_hidden(subtask_key)) return;
 
         // Set the size of the subtask to the given size
         AnnotationResizeItem.update_subtask_line_size(subtask, size, increment);

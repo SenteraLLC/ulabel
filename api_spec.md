@@ -71,6 +71,7 @@ class ULabel({
     decrease_brush_size_keybind: string,
     mask_annotation_opacity: number,
     default_brush_overlap_mode: BrushOverlapMode,
+    brush_overlap_across_subtasks: boolean,
     set_brush_overlap_none_keybind: string,
     set_brush_overlap_exclude_keybind: string,
     set_brush_overlap_overwrite_keybind: string,
@@ -313,7 +314,7 @@ The `"bitmask"` mode enables raster (per-pixel) segmentation. Each bitmask annot
 
 **Overlap modes**
 
-When painting, the brush can enforce mutual exclusivity with *other* undeprecated bitmask annotations. The mode is a single **global** value, persisted to localStorage, and is chosen via the Brush toolbox item (shown in bitmask mode) or the overlap keybinds. Its initial value comes from [`default_brush_overlap_mode`](#default_brush_overlap_mode).
+When painting, the brush can enforce mutual exclusivity with *other* undeprecated bitmask annotations. The mode is a single **global** value, persisted to localStorage, and is chosen via the Brush toolbox item (shown in bitmask mode) or the overlap keybinds. Its initial value comes from [`default_brush_overlap_mode`](#default_brush_overlap_mode). Resolution stays within the active subtask unless [`brush_overlap_across_subtasks`](#brush_overlap_across_subtasks) is set.
 
 - `"none"` (default): painting only adds to the active mask; other masks are untouched (pixels may be owned by multiple annotations).
 - `"exclude"`: newly-painted pixels never cover pixels owned by other bitmask annotations (existing masks win).
@@ -610,6 +611,9 @@ The fill opacity (`0`-`1`) used when rendering `bitmask` (raster segmentation) a
 
 ### `default_brush_overlap_mode`
 The initial [brush overlap mode](#overlap-modes) for bitmask painting: `"none"` (default), `"exclude"`, or `"overwrite"`. The live value is global and persisted to localStorage, so a user's last choice takes precedence over this default on subsequent sessions.
+
+### `brush_overlap_across_subtasks`
+When `true`, [brush overlap resolution](#overlap-modes) also reaches undeprecated bitmask annotations in *other* subtasks: `"exclude"` clips the stroke against them, and `"overwrite"` carves them — except masks in `read_only` subtasks, which act as barriers (the stroke is clipped around them instead). Default is `false`: a stroke only interacts with masks in the active subtask.
 
 ### `set_brush_overlap_none_keybind`
 Keybind to set the brush overlap mode to `none`. Default is `shift+n`.

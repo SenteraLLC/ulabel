@@ -454,9 +454,12 @@ time than at save time.
 
 - [x] 6.1 Unterminated `/**` block in `annotation_operators.ts`, left behind
   by the 1.3 `mark_hidden` removal.
-- [ ] 6.2 Mask barrier escape hatch. Read-only bitmasks still participate in
-  `resolve_bitmask_overlap`, so a `prediction` or `diff` mask invisibly clips
-  a GT brush stroke. Needed before segmentation editing ships.
+- [x] 6.2 Brush strokes no longer interact with other subtasks' masks by
+  default: new `brush_overlap_across_subtasks` config flag (default false)
+  scopes overlap resolution to the active subtask. Supersedes the planned
+  read-only "barrier escape hatch": with the flag off a `prediction` or
+  `diff` mask cannot invisibly clip a GT stroke at all; with it on,
+  read-only masks still act as barriers under overwrite.
 - [ ] 6.3 (only if live GT editing during diff review is required) Apply an
   edit to a non-current subtask and record it in that subtask's undo stream.
   `set_subtask` clears hover and `fly_to_idx`, so a review queue cannot
@@ -473,13 +476,27 @@ time than at save time.
     derived from (GT, run) and goes stale the moment GT is edited - the
     resolved FN keeps rendering as an FN. That is a repaint problem, which
     is what 7.9 solves without client-side rematching.
-- [ ] 6.4 Two different `get_active_class_id` implementations disagree. The
+- [x] 6.4 Two different `get_active_class_id` implementations disagree. The
   `ULabel` *method* (`index.js`) parses the selected toolbox anchor's id out
   of the DOM; the *utility* of the same name (`utilities.ts`) reads
   `state.id_payload`. The method throws outright before the toolbox has
   rendered, and the two can diverge whenever state changes without a DOM
   sync. Phase 5 uses the state-based one; the method's four remaining call
   sites should follow, and one of the two names should go.
+  RESOLVED in Phase 9: the method is now a thin delegate to the state-based
+  utility, so there is a single implementation (the DOM parse is gone).
+- [x] 6.5 Switching subtasks left the Brush toolbox buttons lit: brush state
+  is per-subtask but the buttons are global, and `set_subtask` never tore the
+  outgoing brush down. Button display is now centralized in
+  `update_brush_toolbox_display()` (derived from current-subtask state) and
+  `set_subtask` disables the outgoing brush while it is still current.
+- [x] 6.6 An opacity-0 subtask was still fully interactive (invisible
+  annotations could be created/edited). Vanish mode already encodes
+  "invisible implies non-interactive"; its gates (create, suggest_edits,
+  drag start, resize) now check a shared `is_subtask_hidden()` helper
+  (vanished OR opacity slider at 0). Draw gates deliberately still check
+  only `is_vanished`: opacity is CSS-only, so content must stay drawn for
+  the slider to reveal it without a redraw.
 
 ### Phase 7 - model-registry (branch `three-fixed-subtasks` off `cropped-bitmasks-trevor`)
 

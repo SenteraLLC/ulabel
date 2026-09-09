@@ -321,6 +321,8 @@ export type ULabelConstructorArgs = {
     toolbox_order?: AllowedToolboxItem[];
     auto_destroy_on_detach?: boolean;
     class_counter_toolbox_item?: ClassCounterConfig;
+    /** Let bitmask brush overlap resolution reach masks in other subtasks. Default false. */
+    brush_overlap_across_subtasks?: boolean;
     /** Fired after a subtask's active class changes, from any writer (API, toolbox click, class keybind). */
     on_active_class_change?: (subtask_key: string, class_id: number) => void;
     /** Fired after the current subtask changes, from any writer (API, tab click, switch keybind). */
@@ -426,6 +428,8 @@ export class ULabel {
     public get_current_subtask_key(): string;
     public get_current_subtask(): ULabelSubtask;
     public is_current_subtask_read_only(): boolean;
+    /** Whether a subtask's annotations are hidden: vanished, or layer opacity 0. Hidden implies non-interactive. */
+    public is_subtask_hidden(subtask_key?: string): boolean;
     public readjust_subtask_opacities(): void;
     public set_subtask(st_key: string): void;
     public switch_to_next_subtask(): void;

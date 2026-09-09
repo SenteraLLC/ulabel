@@ -142,6 +142,9 @@ export class Configuration {
     // The live value is global and persisted to localStorage; this is the initial default.
     public default_brush_overlap_mode: BrushOverlapMode = "none";
     public brush_overlap_mode: BrushOverlapMode = "none";
+    // Whether stroke overlap resolution reaches masks in other subtasks; off, a
+    // stroke only interacts with masks in the active subtask.
+    public brush_overlap_across_subtasks: boolean = false;
     // Configuration for the annotation task itself
     public image_data: ImageData | null = null;
     public allow_soft_id: boolean = false;

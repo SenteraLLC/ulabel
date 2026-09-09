@@ -1101,6 +1101,21 @@ export class ULabel {
         return this.get_current_subtask()["read_only"] === true;
     }
 
+    /**
+     * Whether a subtask's annotations are hidden from view: vanished, or its
+     * layer opacity slider is at 0. Hidden implies non-interactive, so the
+     * interaction gates check this rather than `is_vanished` alone.
+     * @param {string} subtask_key defaults to the current subtask
+     */
+    is_subtask_hidden(subtask_key = null) {
+        subtask_key ??= this.get_current_subtask_key();
+        const subtask = this.subtasks[subtask_key];
+        if (subtask == null) return false;
+        if (subtask["state"]["is_vanished"]) return true;
+        const sliderval = $("#tb-st-range--" + subtask_key).val();
+        return sliderval !== undefined && Number(sliderval) === 0;
+    }
+
     readjust_subtask_opacities() {
         for (const st_key in this.subtasks) {
             let sliderval = $("#tb-st-range--" + st_key).val();
@@ -1200,6 +1215,12 @@ export class ULabel {
             if (prev_ann && prev_ann["canvas_id"]) {
                 this.redraw_all_annotations_in_annotation_context(prev_ann["canvas_id"], old_st);
             }
+        }
+
+        // Brush state is per-subtask, so tear the outgoing brush down while it is
+        // still current; otherwise the global toolbox buttons stay lit for it.
+        if (old_subtask["state"]["is_in_brush_mode"]) {
+            this.disable_bitmask_brush();
         }
 
         // Change object state
@@ -3192,8 +3213,6 @@ export class ULabel {
             if (!is_in_polygon_mode && !is_in_bitmask_mode) {
                 return;
             }
-            $("#brush-mode").removeClass(BrushToolboxItem.BRUSH_BTN_ACTIVE_CLS);
-            $("#erase-mode").removeClass(BrushToolboxItem.BRUSH_BTN_ACTIVE_CLS);
         }
 
         // If in erase mode, turn it off first
@@ -3213,11 +3232,10 @@ export class ULabel {
             }
             // Show the brush circle
             this.create_brush_circle(this.get_global_mouse_x(mouse_event), this.get_global_mouse_y(mouse_event));
-            $("#brush-mode").addClass(BrushToolboxItem.BRUSH_BTN_ACTIVE_CLS);
         } else {
             this.destroy_brush_circle();
-            $("#brush-mode").removeClass(BrushToolboxItem.BRUSH_BTN_ACTIVE_CLS);
         }
+        this.update_brush_toolbox_display();
     }
 
     toggle_erase_mode(mouse_event) {
@@ -3228,17 +3246,8 @@ export class ULabel {
         }
 
         // Toggle erase mode
-        if (current_subtask["state"]["is_in_erase_mode"]) {
-            $("#erase-mode").removeClass(BrushToolboxItem.BRUSH_BTN_ACTIVE_CLS);
-            // "Erase mode" is a subset of "brush mode"
-            if (current_subtask["state"]["is_in_brush_mode"]) {
-                $("#brush-mode").addClass(BrushToolboxItem.BRUSH_BTN_ACTIVE_CLS);
-            }
-        } else {
-            $("#erase-mode").addClass(BrushToolboxItem.BRUSH_BTN_ACTIVE_CLS);
-            $("#brush-mode").removeClass(BrushToolboxItem.BRUSH_BTN_ACTIVE_CLS);
-        }
         current_subtask["state"]["is_in_erase_mode"] = !current_subtask["state"]["is_in_erase_mode"];
+        this.update_brush_toolbox_display();
 
         // Update brush circle color
         const brush_circle_id = "brush_circle";
@@ -3260,9 +3269,20 @@ export class ULabel {
         const state = this.get_current_subtask()["state"];
         state["is_in_brush_mode"] = false;
         state["is_in_erase_mode"] = false;
-        $("#brush-mode").removeClass(BrushToolboxItem.BRUSH_BTN_ACTIVE_CLS);
-        $("#erase-mode").removeClass(BrushToolboxItem.BRUSH_BTN_ACTIVE_CLS);
+        this.update_brush_toolbox_display();
         this.destroy_brush_circle();
+    }
+
+    // Sync the Brush toolbox buttons to the current subtask's brush state.
+    // The buttons are global (one Brush toolbox item), so every brush-state
+    // change must route through here or they go stale.
+    update_brush_toolbox_display() {
+        const state = this.get_current_subtask()["state"];
+        $("#brush-mode").toggleClass(
+            BrushToolboxItem.BRUSH_BTN_ACTIVE_CLS,
+            state["is_in_brush_mode"] && !state["is_in_erase_mode"],
+        );
+        $("#erase-mode").toggleClass(BrushToolboxItem.BRUSH_BTN_ACTIVE_CLS, state["is_in_erase_mode"] === true);
     }
 
     // ================= Brush overlap mode (global, localStorage-persisted) =================
@@ -4157,8 +4177,8 @@ export class ULabel {
         // Grab constants for convenience
         const current_subtask = this.get_current_subtask();
 
-        // Exit if subtask is vanished
-        if (current_subtask["state"]["is_vanished"]) {
+        // Exit if the subtask is hidden (vanished or opacity 0)
+        if (this.is_subtask_hidden()) {
             return;
         }
 
@@ -5631,14 +5651,17 @@ export class ULabel {
         this.render_bitmask_other_edits(other_edits);
     }
 
-    // {id, subtask} for all undeprecated bitmask annotations except the given one, across all
-    // subtasks. Matches the render frame-gate (see draw_annotation_from_id): a stroke can only
-    // affect masks that are visible on the current frame.
+    // {id, subtask} for all undeprecated bitmask annotations except the given one. Scoped to the
+    // active subtask unless `brush_overlap_across_subtasks` is set. Matches the render frame-gate
+    // (see draw_annotation_from_id): a stroke can only affect masks visible on the current frame.
     get_other_bitmask_ids(active_id) {
         const active_st = this.get_current_subtask_key();
         const current_frame = this.state["current_frame"];
+        const subtask_keys = this.config["brush_overlap_across_subtasks"] ?
+            Object.keys(this.subtasks) :
+                [active_st];
         const ids = [];
-        for (const st_key in this.subtasks) {
+        for (const st_key of subtask_keys) {
             const access = this.subtasks[st_key]["annotations"]["access"];
             for (const oid of this.subtasks[st_key]["annotations"]["ordering"]) {
                 // ID collisions are only prevented within a subtask, so scope the active-skip
@@ -6712,7 +6735,7 @@ export class ULabel {
         // Don't show any dialogs when currently drawing/editing an annotation,
         // And hide just edit dialogs when moving
         if (
-            current_subtask["state"]["is_vanished"] ||
+            this.is_subtask_hidden() ||
             current_subtask["state"]["is_in_progress"] ||
             current_subtask["state"]["starting_complex_polygon"] ||
             current_subtask["state"]["is_in_brush_mode"] ||
@@ -7242,10 +7265,10 @@ export class ULabel {
         if (drag_key != null) {
             // Suppress browser defaults (e.g. middle-click auto-scroll)
             mouse_event.preventDefault();
-            // Don't start new drag while id_dialog is visible or subtask is vanished
+            // Don't start new drag while id_dialog is visible or subtask is hidden
             if (
                 (this.get_current_subtask()["state"]["idd_visible"] && !this.get_current_subtask()["state"]["idd_thumbnail"]) ||
-                (this.get_current_subtask()["state"]["is_vanished"] && drag_key !== "pan" && drag_key !== "zoom")
+                (this.is_subtask_hidden() && drag_key !== "pan" && drag_key !== "zoom")
             ) {
                 return;
             }
