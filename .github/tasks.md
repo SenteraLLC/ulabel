@@ -539,6 +539,27 @@ time than at save time.
   uneditable. Dropped the short-circuit; the general path already unions the
   class's own geometry with the fallback its diff artifacts render as.
 
+### Phase 7b - review fixes
+
+- [x] 7b.1 `set_class_focus` only called `redraw_all_annotations`, which does
+  not touch the toolbox, but the same change taught
+  `AnnotationListToolboxItem.get_filtered_annotations` to filter on
+  `subtask.state.focused_class`. The list kept showing defocused annotations
+  until some unrelated action refreshed it. Now calls
+  `toolbox?.redraw_update_items` under the existing `redraw` flag -
+  `redraw_update_items` rather than `refresh_toolbox` because a focus change
+  cannot alter filter distances.
+- [x] 7b.2 `destroy()` left `state["defocus_scratch"]` holding an image-sized
+  canvas backing store, the exact leak `front_context = null` exists to
+  prevent. Nulled alongside `last_brush_stroke`.
+- [x] 7b.3 New `LogLevel.WARNING` calls on host-driven APIs
+  (`set_subtask_opacity`, `set_class_focus`, `set_defocused_opacity`,
+  `set_annotations_batch`) omitted `hide_alert`, so an ordinary labels/
+  subtasks race in the host popped a modal `alert()`. All now pass `true`.
+  Same fix on the new per-class check in `set_and_update_annotation_mode`,
+  which is reached from a probe that *expects* false. Init-time config
+  validation keeps alerting.
+
 ### Phase 8 - history
 
 - [ ] 8.1 At merge, retarget rather than stack: `gh pr edit 257 --base main`

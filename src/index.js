@@ -210,6 +210,8 @@ export class ULabel {
         }
         if (this.state) {
             this.state["last_brush_stroke"] = null;
+            // Image-sized scratch canvas used to composite defocused annotations.
+            this.state["defocus_scratch"] = null;
         }
 
         // 5. Break the toolbox <-> ulabel back-reference. Toolbox items keep a
@@ -1098,7 +1100,7 @@ export class ULabel {
     set_subtask_opacity(subtask_key, opacity) {
         const subtask = this.subtasks[subtask_key];
         if (subtask === undefined) {
-            log_message(`set_subtask_opacity: unknown subtask key ${subtask_key}`, LogLevel.WARNING);
+            log_message(`set_subtask_opacity: unknown subtask key ${subtask_key}`, LogLevel.WARNING, true);
             return;
         }
         const clamped = Math.min(Math.max(opacity, 0), 1);
@@ -1133,13 +1135,14 @@ export class ULabel {
     set_class_focus(subtask_key, class_id = null, redraw = true) {
         const subtask = this.subtasks[subtask_key];
         if (subtask === undefined) {
-            log_message(`set_class_focus: unknown subtask key ${subtask_key}`, LogLevel.WARNING);
+            log_message(`set_class_focus: unknown subtask key ${subtask_key}`, LogLevel.WARNING, true);
             return;
         }
         if (class_id !== null && !subtask["class_ids"].includes(class_id)) {
             log_message(
                 `set_class_focus: class id ${class_id} is not in subtask ${subtask_key}`,
                 LogLevel.WARNING,
+                true,
             );
             return;
         }
@@ -1151,6 +1154,8 @@ export class ULabel {
 
         if (redraw) {
             this.redraw_all_annotations(subtask_key);
+            // Toolbox items filter on focused_class, so they go stale otherwise.
+            this.toolbox?.redraw_update_items(this);
         }
     }
 
@@ -1164,7 +1169,7 @@ export class ULabel {
     set_defocused_opacity(subtask_key, opacity, redraw = true) {
         const subtask = this.subtasks[subtask_key];
         if (subtask === undefined) {
-            log_message(`set_defocused_opacity: unknown subtask key ${subtask_key}`, LogLevel.WARNING);
+            log_message(`set_defocused_opacity: unknown subtask key ${subtask_key}`, LogLevel.WARNING, true);
             return;
         }
         subtask["state"]["defocused_opacity"] = Math.min(Math.max(opacity, 0), 1);
@@ -1484,7 +1489,8 @@ export class ULabel {
         if (!DELETE_MODES.includes(annotation_mode)) {
             const class_id = get_active_class_id(this);
             if (!this.get_class_allowed_modes(class_id).includes(annotation_mode)) {
-                log_message(`Annotation mode ${annotation_mode} is not allowed for class ${class_id}`, LogLevel.WARNING);
+                // Callers probe modes and expect false, so this must not alert.
+                log_message(`Annotation mode ${annotation_mode} is not allowed for class ${class_id}`, LogLevel.WARNING, true);
                 return false;
             }
         }
@@ -7906,7 +7912,7 @@ export class ULabel {
 
         const subtask_keys = Object.keys(annotations_by_subtask).filter((subtask_key) => {
             if (this.subtasks[subtask_key] !== undefined) return true;
-            log_message(`set_annotations_batch: unknown subtask key ${subtask_key}`, LogLevel.WARNING);
+            log_message(`set_annotations_batch: unknown subtask key ${subtask_key}`, LogLevel.WARNING, true);
             return false;
         });
         if (subtask_keys.length === 0) return;
