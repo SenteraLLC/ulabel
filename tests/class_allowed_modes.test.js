@@ -195,3 +195,250 @@ describe("findAllClassDefinitions", () => {
         expect(names).toEqual(["Crop", "Row", "Any"]);
     });
 });
+
+describe("reclassification gate", () => {
+    // A polyline Row annotation: Crop (bbox-only) must refuse it
+    function load_polyline(ulabel) {
+        const annotation = {
+            id: "row0",
+            spatial_type: "polyline",
+            spatial_payload: [[0, 0], [10, 10]],
+            classification_payloads: [
+                { class_id: 1, confidence: 0 },
+                { class_id: 2, confidence: 1 },
+                { class_id: 3, confidence: 0 },
+            ],
+            deprecated: false,
+        };
+        ulabel.subtasks.st.annotations = {
+            access: { row0: annotation },
+            ordering: ["row0"],
+        };
+        return annotation;
+    }
+
+    function make_gated_ulabel() {
+        const ulabel = make_ulabel(make_config([CROP, ROW, ANY]));
+        ulabel.assign_annotation_id = jest.fn();
+        return ulabel;
+    }
+
+    test("blocks an explicit reclass to a class that disallows the spatial type", () => {
+        const ulabel = make_gated_ulabel();
+        load_polyline(ulabel);
+
+        // Crop is index 0 (bbox only)
+        ulabel.handle_id_dialog_click(null, "row0", 0);
+
+        expect(ulabel.assign_annotation_id).not.toHaveBeenCalled();
+    });
+
+    test("allows a reclass the class's modes permit", () => {
+        const ulabel = make_gated_ulabel();
+        load_polyline(ulabel);
+
+        // Any inherits the subtask's modes, which include polyline
+        ulabel.handle_id_dialog_click(null, "row0", 2);
+
+        expect(ulabel.assign_annotation_id).toHaveBeenCalledWith("row0");
+    });
+
+    test("blocks a pie click resolved from the mouse position", () => {
+        const ulabel = make_gated_ulabel();
+        load_polyline(ulabel);
+        ulabel.subtasks.st.state.idd_associated_annotation = "row0";
+        // Wedge under the cursor is Crop
+        ulabel.lookup_id_dialog_mouse_pos = jest.fn().mockReturnValue({ class_ind: 0, dist_prop: 1.0 });
+
+        ulabel.handle_id_dialog_click({});
+
+        expect(ulabel.assign_annotation_id).not.toHaveBeenCalled();
+    });
+
+    test("a dialog click with no associated annotation is a safe no-op", () => {
+        const ulabel = make_gated_ulabel();
+        load_polyline(ulabel);
+        ulabel.subtasks.st.state.idd_associated_annotation = null;
+
+        expect(() => ulabel.handle_id_dialog_click({})).not.toThrow();
+        expect(ulabel.assign_annotation_id).not.toHaveBeenCalled();
+    });
+
+    test("undo/redo path stays ungated", () => {
+        const ulabel = make_ulabel(make_config([CROP, ROW, ANY]));
+        const annotation = load_polyline(ulabel);
+        // Replaying redraws the annotation and toolbox; only the gate bypass is under test
+        ulabel.redraw_annotation = jest.fn();
+        ulabel.toolbox = { redraw_update_items: jest.fn() };
+
+        // Replaying history writes the payload regardless of class modes
+        ulabel.assign_annotation_id("row0", {
+            old_id_payload: annotation.classification_payloads,
+            new_id_payload: [
+                { class_id: 1, confidence: 1 },
+                { class_id: 2, confidence: 0 },
+                { class_id: 3, confidence: 0 },
+            ],
+        });
+
+        expect(annotation.classification_payloads[0].confidence).toBe(1);
+    });
+});
+
+describe("pie class exclusion", () => {
+    function load_annotation(ulabel, spatial_type) {
+        const annotation = {
+            id: "a0",
+            spatial_type,
+            spatial_payload: [[0, 0], [10, 10]],
+            classification_payloads: [
+                { class_id: 1, confidence: 0 },
+                { class_id: 2, confidence: 1 },
+                { class_id: 3, confidence: 0 },
+            ],
+            deprecated: false,
+        };
+        ulabel.subtasks.st.annotations = {
+            access: { a0: annotation },
+            ordering: ["a0"],
+        };
+        return annotation;
+    }
+
+    // show_id_dialog's non-suppressed path needs the reid button + dialog DOM
+    function scaffold_dialog_dom(ulabel) {
+        const idd_id = ulabel.subtasks.st.state.idd_id;
+        const idd_id_front = ulabel.subtasks.st.state.idd_id_front;
+        document.body.innerHTML = `
+            <div id="dialogs__st"><div id="${idd_id}" class="id_dialog"></div></div>
+            <div id="front_dialogs__st"><div id="${idd_id_front}" class="id_dialog"></div></div>
+            <div id="global_edit_suggestion__st"><a class="reid_suggestion global_sub_suggestion"></a></div>
+        `;
+    }
+
+    test("the pie only offers classes compatible with the annotation", () => {
+        const ulabel = make_ulabel(make_config([CROP, ROW, ANY]));
+        load_annotation(ulabel, "polyline");
+        scaffold_dialog_dom(ulabel);
+
+        ulabel.show_id_dialog(10, 10, "a0", true);
+
+        // Crop (bbox-only) is excluded; Row and Any remain
+        expect(ulabel.subtasks.st.state.idd_displayed_class_ids).toEqual([2, 3]);
+        const idd_id = ulabel.subtasks.st.state.idd_id;
+        expect(document.querySelector(`#${idd_id}__circ_1`)).toBeNull();
+        expect(document.querySelector(`#${idd_id}__circ_2`)).not.toBeNull();
+        expect(ulabel.subtasks.st.state.idd_visible).toBe(true);
+    });
+
+    test("no dialog appears when only one class can take the type", () => {
+        // Crop is the only bbox-capable class here
+        const ulabel = make_ulabel(make_config([CROP, ROW], ["bbox", "polyline"]));
+        load_annotation(ulabel, "bbox");
+        scaffold_dialog_dom(ulabel);
+
+        ulabel.show_id_dialog(10, 10, "a0", true);
+
+        expect(ulabel.subtasks.st.state.idd_visible).toBe(false);
+    });
+
+    test("wedge hit-testing maps back to the full class list", () => {
+        const ulabel = make_ulabel(make_config([CROP, ROW, ANY]));
+        load_annotation(ulabel, "polyline");
+        // Pie shows [2, 3]; the wedge math must return full-list indices
+        ulabel.subtasks.st.state.idd_displayed_class_ids = [2, 3];
+        const idd_id = ulabel.subtasks.st.state.idd_id;
+        document.body.innerHTML = `<div id="${idd_id}" style="width: 200px; height: 200px;"></div>`;
+        const dialog = document.getElementById(idd_id);
+        dialog.getBoundingClientRect = () => ({ left: 0, top: 0, width: 200, height: 200 });
+
+        // Hover on the right side of the ring (angle 0 -> first wedge = class 2)
+        const pos_evt = ulabel.lookup_id_dialog_mouse_pos({ pageX: 180, pageY: 100 }, false);
+
+        expect(pos_evt).not.toBeNull();
+        // class 2 sits at index 1 of the full class list
+        expect(pos_evt.class_ind).toBe(1);
+    });
+
+    test("the button ring collapses like single-class mode when nothing can be reassigned", () => {
+        const ulabel = make_ulabel(make_config([CROP, ROW, ANY]));
+        // bbox: only Crop and Any qualify (2 targets); polyline: Row and Any (2 targets);
+        // narrow Any to make bbox single-target
+        ulabel.subtasks.st.class_defs[2].allowed_modes = ["polyline"];
+        const annotation = load_annotation(ulabel, "bbox");
+        annotation.classification_payloads = [
+            { class_id: 1, confidence: 1 },
+            { class_id: 2, confidence: 0 },
+            { class_id: 3, confidence: 0 },
+        ];
+        annotation.containing_box = { tlx: 0, tly: 0, brx: 10, bry: 10 };
+        document.body.innerHTML = `
+            <div id="global_edit_suggestion__st" class="global_edit_suggestion mcm">
+                <a class="move_suggestion global_sub_suggestion"></a>
+                <a class="reid_suggestion global_sub_suggestion"></a>
+                <a class="delete_suggestion global_sub_suggestion"></a>
+            </div>
+        `;
+        ulabel.subtasks.st.state.visible_dialogs["global_edit_suggestion__st"] = { left: 0, top: 0, pin: "center" };
+        ulabel.config.image_width = 100;
+        ulabel.config.image_height = 100;
+
+        // bbox can only be Crop -> compact ring, no reid button
+        ulabel.show_global_edit_suggestion("a0");
+
+        const container = document.getElementById("global_edit_suggestion__st");
+        expect(container.classList.contains("mcm")).toBe(false);
+        expect(document.querySelector("a.reid_suggestion").style.display).toBe("none");
+    });
+
+    test("a thumbnail from the previous hover hides when the next annotation has no targets", () => {
+        const ulabel = make_ulabel(make_config([CROP, ROW, ANY]));
+        ulabel.subtasks.st.class_defs[2].allowed_modes = ["polyline"];
+        const annotation = load_annotation(ulabel, "bbox");
+        annotation.classification_payloads = [{ class_id: 1, confidence: 1 }];
+        annotation.containing_box = { tlx: 0, tly: 0, brx: 10, bry: 10 };
+        document.body.innerHTML = `<div id="global_edit_suggestion__st" class="global_edit_suggestion mcm"></div>`;
+        ulabel.subtasks.st.state.visible_dialogs["global_edit_suggestion__st"] = { left: 0, top: 0, pin: "center" };
+        ulabel.config.image_width = 100;
+        ulabel.config.image_height = 100;
+        // A pie left visible by the previously hovered annotation
+        ulabel.subtasks.st.state.idd_visible = true;
+        ulabel.subtasks.st.state.idd_associated_annotation = "other";
+
+        ulabel.show_global_edit_suggestion("a0");
+
+        expect(ulabel.subtasks.st.state.idd_visible).toBe(false);
+        expect(ulabel.subtasks.st.state.idd_associated_annotation).toBeNull();
+    });
+});
+
+describe("load-time class/type validation", () => {
+    test("warns when an imported annotation's class disallows its spatial type", () => {
+        const config = make_config([CROP, ROW, ANY]);
+        // A polyline claiming to be Crop (bbox-only)
+        config.subtasks.st.resume_from = [{
+            spatial_type: "polyline",
+            spatial_payload: [[0, 0], [10, 10]],
+            classification_payloads: [{ class_id: 1, confidence: 1 }],
+        }];
+
+        const ulabel = new ULabel(config);
+
+        // Warn, never drop: the data must round-trip on export
+        expect(ulabel.subtasks.st.annotations.ordering).toHaveLength(1);
+        expect(console.warn).toHaveBeenCalledWith(expect.stringContaining("does not allow"));
+    });
+
+    test("stays quiet for a compatible import", () => {
+        const config = make_config([CROP, ROW, ANY]);
+        config.subtasks.st.resume_from = [{
+            spatial_type: "polyline",
+            spatial_payload: [[0, 0], [10, 10]],
+            classification_payloads: [{ class_id: 2, confidence: 1 }],
+        }];
+
+        new ULabel(config);
+
+        expect(console.warn).not.toHaveBeenCalled();
+    });
+});

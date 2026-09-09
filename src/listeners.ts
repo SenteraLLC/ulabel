@@ -164,6 +164,13 @@ function handle_keypress_event(
         return;
     }
 
+    // Toggle class focus (focus follows the active class) on the current subtask
+    if (event_matches_keybind(keypress_event, ulabel.config.toggle_class_focus_keybind)) {
+        const st_key = ulabel.get_current_subtask_key();
+        ulabel.set_focus_active_class(st_key, !ulabel.subtasks[st_key].focus_active_class);
+        return;
+    }
+
     // Check for class keybinds
     if (!DELETE_MODES.includes(current_subtask.state.spatial_type)) {
         for (let i = 0; i < current_subtask.class_defs.length; i++) {
@@ -629,6 +636,9 @@ export function create_ulabel_listeners(
         (click_event) => {
             const crst = ulabel.get_current_subtask();
             const annid = crst["state"]["idd_associated_annotation"];
+            // No association means no dialog to open (e.g. it was suppressed
+            // because the annotation has no valid reassignment targets)
+            if (annid == null) return;
             ulabel.hide_global_edit_suggestion();
             ulabel.show_id_dialog(
                 ulabel.get_global_mouse_x(click_event),

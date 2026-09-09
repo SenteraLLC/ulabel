@@ -207,7 +207,7 @@
                     "annotation_meta": null,
                     "focus_active_class": true,
                     // Make the dimming more dramatic than the 0.4 default
-                    "defocused_opacity": 0.15,
+                    "defocused_opacity": 0.2,
                 }
             };
 
@@ -225,6 +225,7 @@
                 "subtasks": subtasks,
                 "initial_line_size": 3,
                 "toolbox_order": [
+                    AllowedToolboxItem.Keybinds,
                     AllowedToolboxItem.SubmitButtons,
                     AllowedToolboxItem.ModeSelect,
                     AllowedToolboxItem.ZoomPan,
@@ -239,15 +240,21 @@
                 console.log(ulabel);
             });
 
-            // External control: toggle focus-follows-active-class on both subtasks
-            let focus_on = true;
+            // External control: toggle focus-follows-active-class on both subtasks.
+            // Derives from instance state so the shift+f keybind stays in sync.
+            function update_focus_label() {
+                const on = Object.keys(subtasks).some((key) => ulabel.subtasks[key].focus_active_class);
+                $("#toggle-focus").text("Class focus: " + (on ? "ON" : "OFF"));
+            }
             $("#toggle-focus").on("click", function () {
-                focus_on = !focus_on;
+                const next = !Object.keys(subtasks).every((key) => ulabel.subtasks[key].focus_active_class);
                 for (const subtask_key of Object.keys(subtasks)) {
-                    ulabel.set_focus_active_class(subtask_key, focus_on);
+                    ulabel.set_focus_active_class(subtask_key, next);
                 }
-                $(this).text("Class focus: " + (focus_on ? "ON" : "OFF"));
+                update_focus_label();
             });
+            // The keybind toggles only the current subtask; keep the label honest
+            $(document).on("keyup", update_focus_label);
 
             // Expose ulabel instance globally for testing
             window.ulabel = ulabel;

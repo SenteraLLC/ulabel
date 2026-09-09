@@ -136,6 +136,23 @@ describe("set_active_class", () => {
         expect(console.warn).not.toHaveBeenCalled();
         expect(ulabel.get_selected_class_id("st")).toBe(1);
     });
+
+    test("a hovered annotation's dialog does not change what class draws next", () => {
+        const ulabel = new ULabel(mock_config);
+        ulabel.state.current_subtask = "st";
+        ulabel.set_active_class(1, "st", false);
+        const weed = make_annotation(2);
+        load(ulabel, [weed]);
+
+        // The dialog borrows id_payload to display the hovered annotation's class
+        ulabel.set_id_dialog_payload_to_init(weed.id);
+        // ...and hiding it must hand the payload back to the selection
+        ulabel.hide_id_dialog();
+
+        const payload = ulabel.subtasks.st.state.id_payload;
+        expect(payload.find((p) => p.class_id === 1).confidence).toBe(1);
+        expect(ulabel.get_selected_class_id("st")).toBe(1);
+    });
 });
 
 describe("delete modes freeze the selection", () => {

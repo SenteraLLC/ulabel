@@ -267,6 +267,8 @@ export class Configuration {
 
     public annotation_vanish_all_keybind: string = "shift+v";
 
+    public toggle_class_focus_keybind: string = "shift+f";
+
     public fly_to_next_annotation_keybind: string = "tab";
 
     public fly_to_previous_annotation_keybind: string = "shift+tab";

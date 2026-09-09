@@ -38,6 +38,8 @@ export class ULabelSubtask {
         idd_id_front: string;
         idd_thumbnail: boolean;
         idd_visible: boolean;
+        // Class ids currently rendered in the pies (compatible-class subset)
+        idd_displayed_class_ids: number[];
         is_in_edit: boolean;
         is_in_move: boolean;
         is_in_progress: boolean;

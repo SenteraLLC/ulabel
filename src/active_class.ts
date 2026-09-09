@@ -9,7 +9,7 @@
  * than the mechanism itself.
  */
 
-import type { ULabel } from "../index";
+import type { ULabel, ULabelSpatialType } from "../index";
 import { DELETE_CLASS_ID, DELETE_MODES } from "./annotation";
 import { ULabelSubtask } from "./subtask";
 import { log_message, LogLevel } from "./error_logging";
@@ -148,6 +148,22 @@ export function set_defocused_opacity(
     if (redraw) {
         ulabel.redraw_all_annotations(subtask_key);
     }
+}
+
+/**
+ * Whether an annotation's spatial type is allowed by a class's modes, i.e.
+ * whether the annotation may be reclassified to that class.
+ */
+export function can_annotation_be_class(
+    ulabel: ULabel,
+    annotation: { spatial_type?: string },
+    class_id: number,
+    subtask_key: string | null = null,
+): boolean {
+    if (annotation.spatial_type == null) return false;
+    return ulabel
+        .get_class_allowed_modes(class_id, subtask_key ?? ulabel.get_current_subtask_key())
+        .includes(annotation.spatial_type as ULabelSpatialType);
 }
 
 /**

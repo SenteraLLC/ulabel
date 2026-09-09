@@ -81,6 +81,7 @@ class ULabel({
     annotation_size_plus_keybind: string,
     annotation_size_minus_keybind: string,
     annotation_vanish_keybind: string,
+    toggle_class_focus_keybind: string,
     fly_to_max_zoom: number,
     min_zoom_fit_ratio: number,
     n_annos_per_canvas: number,
@@ -640,6 +641,9 @@ Keybind to toggle vanish mode for annotations in the current subtask. Default is
 
 ### `annotation_vanish_all_keybind`
 Keybind to toggle vanish mode for all subtasks. Default is `shift+v`
+
+### `toggle_class_focus_keybind`
+Keybind to toggle `focus_active_class` on the current subtask: with it on, classes other than the active one dim to `defocused_opacity` and drop out of hover, navigation, the annotation list, and bulk delete. Default is `shift+f`.
 
 ### `fly_to_max_zoom`
 Maximum zoom factor used when flying-to an annotation. Default is `10`, value must be > `0`. 

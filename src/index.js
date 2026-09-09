@@ -32,7 +32,7 @@ import { initialize_annotation_canvases } from "../build/canvas_utils";
 import { record_action, record_finish, record_finish_edit, record_finish_move, undo, redo } from "../build/actions";
 import { ULabelMask, is_raw_mask_payload } from "../build/mask_utils";
 import { get_active_class_id, get_local_storage_item, set_local_storage_item } from "../build/utilities";
-import { set_active_class, get_selected_class_id, set_focus_active_class, set_defocused_opacity } from "../build/active_class";
+import { set_active_class, get_selected_class_id, set_focus_active_class, set_defocused_opacity, can_annotation_be_class } from "../build/active_class";
 import { get_idd_string } from "../build/html_builder";
 
 import $ from "jquery";
@@ -523,6 +523,18 @@ export class ULabel {
                     },
                 );
 
+                // Warn (never drop: the data is authoritative and round-trips on
+                // export) when the class doesn't allow the annotation's spatial type
+                const cand_class_id = parseInt(get_annotation_class_id(cand));
+                if (!ul.get_class_allowed_modes(cand_class_id, subtask_key).includes(cand.spatial_type)) {
+                    log_message(
+                        `Annotation ${cand.id} has spatial type ${cand.spatial_type}, ` +
+                        `which class ${cand_class_id} in subtask "${subtask_key}" does not allow`,
+                        LogLevel.WARNING,
+                        true,
+                    );
+                }
+
                 // Push to ordering and add to access
                 ul.subtasks[subtask_key]["annotations"]["ordering"].push(cand.id);
                 ul.subtasks[subtask_key]["annotations"]["access"][cand.id] = cand;
@@ -588,6 +600,9 @@ export class ULabel {
                 idd_thumbnail: false,
                 id_payload: id_payload,
                 delete_mode_id_payload: [{ class_id: -1, confidence: 1 }],
+                // Class ids currently rendered in this subtask's pies; shrinks to
+                // the classes compatible with the dialog's annotation
+                idd_displayed_class_ids: [...ul.subtasks[subtask_key]["class_ids"]],
                 first_explicit_assignment: false,
 
                 // Annotation state
@@ -1893,27 +1908,39 @@ export class ULabel {
     }
 
     /**
-     * Rebuild every subtask's id-dialog color pies from the current `color_info`.
+     * Rebuild every subtask's id-dialog color pies from the current `color_info`,
+     * keeping each pie's current class subset.
      */
     rebuild_id_dialog_pies() {
+        for (const subtask_key in this.subtasks) {
+            this._rebuild_subtask_pies(subtask_key);
+        }
+    }
+
+    /**
+     * Rebuild one subtask's id-dialog pies, showing only `displayed_class_ids`
+     * (defaults to the subset already rendered).
+     */
+    _rebuild_subtask_pies(subtask_key, displayed_class_ids = null) {
+        const subtask = this.subtasks[subtask_key];
+        displayed_class_ids ??= subtask["state"]["idd_displayed_class_ids"];
+        subtask["state"]["idd_displayed_class_ids"] = displayed_class_ids;
+
         const width = this.config["outer_diameter"];
         const inner_radius = this.config["inner_prop"] * width / 2;
-        for (const subtask_key in this.subtasks) {
-            const subtask = this.subtasks[subtask_key];
-            const idd_id = subtask["state"]["idd_id"];
-            const idd_id_front = subtask["state"]["idd_id_front"];
+        const idd_id = subtask["state"]["idd_id"];
+        const idd_id_front = subtask["state"]["idd_id_front"];
 
-            const dialog_html = get_idd_string(idd_id, width, subtask["class_ids"], inner_radius, this.color_info);
-            const front_dialog_html = get_idd_string(idd_id_front, width, subtask["class_ids"], inner_radius, this.color_info);
+        const dialog_html = get_idd_string(idd_id, width, displayed_class_ids, inner_radius, this.color_info);
+        const front_dialog_html = get_idd_string(idd_id_front, width, displayed_class_ids, inner_radius, this.color_info);
 
-            $("#" + idd_id).remove();
-            $("#" + idd_id_front).remove();
-            $("#dialogs__" + subtask_key).append(dialog_html);
-            $("#front_dialogs__" + subtask_key).append(front_dialog_html);
-        }
+        $("#" + idd_id).remove();
+        $("#" + idd_id_front).remove();
+        $("#dialogs__" + subtask_key).append(dialog_html);
+        $("#front_dialogs__" + subtask_key).append(front_dialog_html);
 
         // Replacing the pies dropped their hover listeners; re-add
-        $(".id_dialog").on("mousemove.ulabel", (mouse_event) => {
+        $("#" + idd_id + ", #" + idd_id_front).on("mousemove.ulabel", (mouse_event) => {
             if (!this.get_current_subtask()["state"]["idd_thumbnail"]) {
                 this.handle_id_dialog_hover(mouse_event);
             }
@@ -3886,10 +3913,21 @@ export class ULabel {
         let idd_x;
         let idd_y;
         const is_read_only = this.is_current_subtask_read_only();
+        // With fewer than two compatible classes there is nothing to reassign
+        // to, so the reid button and the pie thumbnail don't apply (the same
+        // treatment single_class_mode gives every annotation)
+        const can_reassign = this._get_compatible_class_ids(
+            current_subtask["annotations"]["access"][annid],
+        ).length > 1;
         if (nonspatial_id === null) {
             let esid = "global_edit_suggestion__" + subtask_key;
             var esjq = $("#" + esid);
             esjq.css("display", "block");
+            // Collapse to the compact single-class ring when there is nothing to
+            // reassign to: `mcm` carries the wide 3-slot width and scale, and the
+            // reid button drops out of flow so move/delete close the gap.
+            esjq.toggleClass("mcm", !current_subtask["single_class_mode"] && can_reassign);
+            esjq.find("a.reid_suggestion").css("display", can_reassign ? "" : "none");
             // Hide the move/reid/delete buttons on read-only subtasks; use visibility rather than
             // display so the button ring geometry stays measurable for the dialogs around it.
             esjq.find(".global_sub_suggestion").css("visibility", is_read_only ? "hidden" : "");
@@ -3936,9 +3974,13 @@ export class ULabel {
         }
 
         // let placeholder = $("#global_edit_suggestion a.reid_suggestion");
-        if (!current_subtask["single_class_mode"] && !is_read_only) {
+        if (!current_subtask["single_class_mode"] && !is_read_only && can_reassign) {
             // Show id dialog thumbnail
             this.show_id_dialog(idd_x, idd_y, annid, true, nonspatial_id != null);
+        } else {
+            // can_reassign varies per annotation, so a thumbnail shown for the
+            // previously hovered annotation must not linger over this one
+            this.hide_id_dialog();
         }
     }
 
@@ -3948,9 +3990,36 @@ export class ULabel {
         this.set_hovered_annotation(null);
     }
 
+    /**
+     * Class ids in the current subtask that can take an annotation's spatial
+     * type. A null annotation places no restriction.
+     */
+    _get_compatible_class_ids(annotation = null) {
+        const class_ids = this.get_current_subtask()["class_ids"];
+        if (annotation == null) return class_ids;
+        return class_ids.filter((class_id) => can_annotation_be_class(this, annotation, class_id));
+    }
+
     // ID dialog: color wheel to change the ID of an annotation
     show_id_dialog(gbx, gby, active_ann, thumbnail = false, nonspatial = false) {
         let stkey = this.get_current_subtask_key();
+
+        // Only offer classes that can take this annotation's spatial type. With
+        // fewer than two options there is nothing to choose: no dialog at all.
+        const displayed_class_ids = this._get_compatible_class_ids(
+            this.get_current_subtask()["annotations"]["access"][active_ann] ?? null,
+        );
+        if (displayed_class_ids.length <= 1) {
+            this.hide_id_dialog();
+            return;
+        }
+        const rendered = this.get_current_subtask()["state"]["idd_displayed_class_ids"];
+        if (
+            displayed_class_ids.length !== rendered.length ||
+            displayed_class_ids.some((class_id, idx) => class_id !== rendered[idx])
+        ) {
+            this._rebuild_subtask_pies(stkey, displayed_class_ids);
+        }
 
         // Record which annotation this dialog is associated with
         // TODO
@@ -4037,12 +4106,25 @@ export class ULabel {
     }
 
     hide_id_dialog() {
-        let idd_id = this.get_current_subtask()["state"]["idd_id"];
-        let idd_id_front = this.get_current_subtask()["state"]["idd_id_front"];
-        this.get_current_subtask()["state"]["idd_visible"] = false;
-        this.get_current_subtask()["state"]["idd_associated_annotation"] = null;
+        const current_subtask = this.get_current_subtask();
+        let idd_id = current_subtask["state"]["idd_id"];
+        let idd_id_front = current_subtask["state"]["idd_id_front"];
+        current_subtask["state"]["idd_visible"] = false;
+        current_subtask["state"]["idd_associated_annotation"] = null;
         $("#" + idd_id).css("display", "none");
         $("#" + idd_id_front).css("display", "none");
+
+        // The dialog borrows id_payload as its display model (it holds the shown
+        // annotation's classes while open); restore the persistent selection so
+        // the next draw uses the selected class, not the last-hovered one.
+        // Delete modes keep their own payload.
+        if (!DELETE_MODES.includes(current_subtask["state"]["annotation_mode"])) {
+            const selected_class_id = get_selected_class_id(this, this.get_current_subtask_key());
+            const selected_idx = current_subtask["class_ids"].indexOf(selected_class_id);
+            if (selected_idx !== -1) {
+                this.set_id_dialog_payload_nopin(selected_idx, 1.0);
+            }
+        }
     }
 
     // ================= Annotation Utilities =================
@@ -6830,17 +6912,18 @@ export class ULabel {
             return null;
         }
 
-        // Get array of classes by name in the dialog
-        //    TODO handle nesting case
-        //    TODO this is not efficient
-        let class_ids = this.get_current_subtask()["class_ids"];
+        // Get array of classes shown in the dialog (a subset when some classes
+        // can't take the dialog's annotation's spatial type)
+        const displayed_class_ids = this.get_current_subtask()["state"]["idd_displayed_class_ids"];
 
-        // Get the index of that class currently hovering over
-        const class_ind = (
+        // Get the index of the wedge currently hovered, then translate it back
+        // to the subtask's full class list for the callers
+        const wedge_ind = (
             -1 * Math.floor(
-                Math.atan2(idd_y, idd_x) / (2 * Math.PI) * class_ids.length,
-            ) + class_ids.length
-        ) % class_ids.length;
+                Math.atan2(idd_y, idd_x) / (2 * Math.PI) * displayed_class_ids.length,
+            ) + displayed_class_ids.length
+        ) % displayed_class_ids.length;
+        const class_ind = this.get_current_subtask()["class_ids"].indexOf(displayed_class_ids[wedge_ind]);
 
         // Get the distance proportion of the hover
         let dist_prop = (mouse_rad - inner_rad) / (outer_rad - inner_rad);
@@ -6930,13 +7013,15 @@ export class ULabel {
     update_id_dialog_display(front = false) {
         const inner_rad = this.config["inner_prop"] * this.config["outer_diameter"] / 2;
         const outer_rad = 0.5 * this.config["outer_diameter"];
-        let class_ids = this.get_current_subtask()["class_ids"];
-        for (var i = 0; i < class_ids.length; i++) {
-            // Skip
-            let srt_prop = this.get_current_subtask()["state"]["id_payload"][i]["confidence"];
+        const class_ids = this.get_current_subtask()["class_ids"];
+        // The pie may show a subset; its geometry is sized to that subset
+        const displayed_class_ids = this.get_current_subtask()["state"]["idd_displayed_class_ids"];
+        for (var i = 0; i < displayed_class_ids.length; i++) {
+            const payload = this.get_current_subtask()["state"]["id_payload"][class_ids.indexOf(displayed_class_ids[i])];
+            let srt_prop = payload?.["confidence"] ?? 0;
 
-            let cum_prop = i / class_ids.length;
-            let srk_prop = 1 / class_ids.length;
+            let cum_prop = i / displayed_class_ids.length;
+            let srk_prop = 1 / displayed_class_ids.length;
             let gap_prop = 1.0 - srk_prop;
 
             let rad_frnt = inner_rad + srt_prop * (outer_rad - inner_rad) / 2;
@@ -6947,24 +7032,13 @@ export class ULabel {
             let gap_frnt = 2 * Math.PI * rad_frnt * gap_prop;
             let off_frnt = 2 * Math.PI * rad_frnt * cum_prop;
 
-            // TODO this is kind of a mess. If it works as is, the commented region below should be deleted
-            // var circ = document.getElementById("circ_" + class_ids[i]);
-            // circ.setAttribute("r", rad_frnt);
-            // circ.setAttribute("stroke-dasharray", `${srk_frnt} ${gap_frnt}`);
-            // circ.setAttribute("stroke-dashoffset", off_frnt);
-            // circ.setAttribute("stroke-width", wdt_frnt);
             let idd_id;
             if (!front) {
                 idd_id = this.get_current_subtask()["state"]["idd_id"];
             } else {
                 idd_id = this.get_current_subtask()["state"]["idd_id_front"];
             }
-            var circ = $(`#${idd_id}__circ_` + class_ids[i]);
-            // circ.attr("r", rad_frnt);
-            // circ.attr("stroke-dasharray", `${srk_frnt} ${gap_frnt}`)
-            // circ.attr("stroke-dashoffset", off_frnt)
-            // circ.attr("stroke-width", wdt_frnt)
-            // circ = $(`#${idd_id}__circ_` + class_ids[i])
+            var circ = $(`#${idd_id}__circ_` + displayed_class_ids[i]);
             circ.attr("r", rad_frnt);
             circ.attr("stroke-dasharray", `${srk_frnt} ${gap_frnt}`);
             circ.attr("stroke-dashoffset", off_frnt);
@@ -7081,6 +7155,33 @@ export class ULabel {
 
     handle_id_dialog_click(mouse_event, annotation_id = null, new_class_idx = null) {
         const current_subtask = this.get_current_subtask();
+
+        // Reject a class that doesn't allow the annotation's spatial type. Only
+        // user gestures route through here; undo/redo replay through
+        // assign_annotation_id directly and stay faithful to history.
+        const target_annotation_id = annotation_id ?? current_subtask["state"]["idd_associated_annotation"];
+        const annotation = current_subtask["annotations"]["access"][target_annotation_id];
+        if (annotation == null) {
+            // A stale dialog (e.g. shown before its association was cleared) must
+            // not fall through to an assignment with no target
+            log_message("handle_id_dialog_click: no annotation is associated with the id dialog", LogLevel.WARNING, true);
+            return;
+        }
+        let target_idx = new_class_idx;
+        if (target_idx === null) {
+            // Pie click: resolve the wedge from the click position rather than
+            // id_payload, which the (gated) hover may not have updated
+            const front = current_subtask["state"]["idd_which"] === "front";
+            target_idx = this.lookup_id_dialog_mouse_pos(mouse_event, front)?.class_ind ?? null;
+        }
+        if (target_idx !== null) {
+            const target_class_id = current_subtask["class_ids"][target_idx];
+            // Silently refuse a class that doesn't allow the annotation's spatial
+            // type (reachable via class keybinds; the pie excludes such classes)
+            if (!can_annotation_be_class(this, annotation, target_class_id)) {
+                return;
+            }
+        }
 
         // Handle explicitly setting the class
         if (new_class_idx !== null) {

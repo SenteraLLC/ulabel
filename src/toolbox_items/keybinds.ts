@@ -341,6 +341,14 @@ export class KeybindsToolboxItem extends ToolboxItem {
         });
 
         keybinds.push({
+            key: config.toggle_class_focus_keybind,
+            label: "Toggle Class Focus",
+            description: "Focus the active class: other classes dim and drop out of hover and navigation",
+            configurable: true,
+            config_key: "toggle_class_focus_keybind",
+        });
+
+        keybinds.push({
             key: config.create_bbox_on_initial_crop_keybind,
             label: "Create BBox on Crop",
             description: "Create bbox annotation on initial crop area",

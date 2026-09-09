@@ -586,7 +586,7 @@ opt-in, and give "set the active class" a real API instead of DOM clicks.
 
 ### Phase 9 - ULabel: `set_active_class` + `focus_active_class`
 
-- [ ] 9.1 Public `set_active_class(class_id, subtask_key?)`: extract the body
+- [x] 9.1 Public `set_active_class(class_id, subtask_key?)`: extract the body
   of `handle_soft_id_toolbox_button_click` (the `sel` swap,
   `set_id_dialog_payload_nopin`, dialog display update, active-annotation
   reclass, delete re-toggle, and the trailing
@@ -597,14 +597,14 @@ opt-in, and give "set the active class" a real API instead of DOM clicks.
   activation, so state is written now and the DOM reconciles on switch.
   Subsumes 6.4: the state-based `get_active_class_id` (utilities) becomes
   canonical and the DOM-parsing method's call sites migrate.
-- [ ] 9.2 Migrate the internal DOM-click workarounds to `set_active_class`:
+- [x] 9.2 Migrate the internal DOM-click workarounds to `set_active_class`:
   `toggle_delete_class_id_in_toolbox` (3 trigger sites: delete-class on
   entry; first class or hovered annotation's class on exit),
   `update_id_toolbox_display` (state -> click -> handler -> state round
   trip), the class keybind handler (`listeners.ts` class_button click), and
   the soft-id handler's delete re-toggle. model-registry has no workarounds
   to migrate (verified: zero `toolbox_sel`/`id_payload` references).
-- [ ] 9.3 Per-subtask `focus_active_class: boolean` (default false, so no
+- [x] 9.3 Per-subtask `focus_active_class: boolean` (default false, so no
   behavior change for vanilla consumers - the defocus gates restrict
   hover/Tab/list, not just drawing, and must not engage unasked). When true,
   focus derives from the *persistent* selection: a new
@@ -615,17 +615,39 @@ opt-in, and give "set the active class" a real API instead of DOM clicks.
   `DELETE_CLASS_ID`). The delete-class button is excluded from the focus
   path. Remove `set_class_focus` / `focused_class` as an independent axis;
   migrate the `class_focus` tests to selection-driven focus.
-- [ ] 9.4 Focus-gate the bulk-delete collection loop
+- [x] 9.4 Focus-gate the bulk-delete collection loop
   (`delete_polygon`/`delete_bbox`) on `is_annotation_defocused`. Restores
   the protection the removed `hidden` machinery had, and is what makes
   freeze-during-delete safe: focus scopes what is legible, interactive,
   navigable - and deletable. Single-annotation delete is already gated via
   hover (`get_edit_candidates` skips defocused).
-- [ ] 9.5 model-registry: sidebar class rows / outcome legend call
+- [x] 9.5 model-registry: sidebar class rows / outcome legend call
   `set_active_class` instead of `set_class_focus`; all three subtasks set
   `focus_active_class: true`. Matches the UI's actual invariant (always
   exactly one focused class); the null-focus branch was only reachable with
   an empty ontology.
+- [x] 9.6 Enforce per-class modes on *reclassification*. The id-dialog pie,
+  the class keybind (already-selected branch), and `set_active_class`'s
+  reclass branch all funnel through `handle_id_dialog_click`, so one gate
+  there covers every gesture; `assign_annotation_id` stays ungated so
+  undo/redo replay history faithfully. New predicate
+  `can_annotation_be_class(annotation, class_id)` over
+  `get_class_allowed_modes`. Rejection: `shake_screen()` + quiet warning.
+  The gate checks only the *target* class, so an annotation whose current
+  class/type pairing is already invalid (bad import) can still be
+  reclassified to a valid class.
+- [x] 9.7 The pie only offers classes compatible with the dialog's
+  annotation's spatial type (rebuilt per show when the compatible subset
+  changes; wedge hit-testing runs over the displayed subset and maps back to
+  the full class list). When fewer than two classes are compatible there is
+  nothing to choose, so no dialog appears at all. No shake on rejection -
+  the 9.6 gate stays as a warning-only backstop for keybind paths.
+- [x] 9.8 Load-time validation: warn (never drop - the data is authoritative
+  and round-trips on export) when an imported annotation's class does not
+  allow its spatial type. NOTE: no subtask-level load check exists either
+  (`process_resume_from` only errors on *missing* type/payload); checking
+  against the class's effective modes covers both levels since class modes
+  are already a subset of the subtask's.
 
 ### Verification
 
