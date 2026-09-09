@@ -176,10 +176,12 @@ function handle_keypress_event(
         for (let i = 0; i < current_subtask.class_defs.length; i++) {
             const class_def = current_subtask.class_defs[i];
             if (class_def.keybind !== null && event_matches_keybind(keypress_event, class_def.keybind!)) {
-                if (is_read_only) return;
                 const st_key = ulabel.get_current_subtask_key();
                 const class_button = $(`#tb-id-app--${st_key} a.tbid-opt`).eq(i);
                 if (class_button.hasClass("sel")) {
+                    // Reclassifying the active annotation is an edit; the
+                    // selection branch below is not, so it stays available
+                    if (is_read_only) return;
                     // If the class button is already selected,
                     // check if there is an active annotation, and if so, get it
                     let target_id = null;

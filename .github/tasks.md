@@ -497,6 +497,13 @@ time than at save time.
   (vanished OR opacity slider at 0). Draw gates deliberately still check
   only `is_vanished`: opacity is CSS-only, so content must stay drawn for
   the slider to reveal it without a redraw.
+- [x] 6.7 Class keybinds edited live in the Keybinds toolbox item only wrote
+  the current subtask's class defs, while storage and the init restore are
+  id-keyed across all subtasks — shared-id classes (model-registry GT/pred)
+  showed the bind but didn't respond until a reload. Edits/resets now write
+  every subtask holding the id (`set_class_keybind_in_all_subtasks`). The
+  keypress listener's read-only gate also moved inside the reclass branch,
+  so selection keybinds work on read-only subtasks.
 
 ### Phase 7 - model-registry (branch `three-fixed-subtasks` off `cropped-bitmasks-trevor`)
 
