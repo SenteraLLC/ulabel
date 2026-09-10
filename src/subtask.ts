@@ -50,12 +50,13 @@ export class ULabelSubtask {
         visible_dialogs: {
             [key: string]: ULabelDialogPosition;
         };
-        spatial_type: ULabelSpatialType;
         fly_to_idx: number | null;
         // The last non-delete class selected; what class focus follows when
         // `focus_active_class` is set. Defocused annotations are still real data.
         selected_class_id: number | null;
         defocused_opacity: number;
+        // Cache of the layer opacity slider, synced by readjust_subtask_opacities
+        layer_opacity: number;
         line_size: number;
     };
 

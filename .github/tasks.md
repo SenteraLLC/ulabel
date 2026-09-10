@@ -524,6 +524,12 @@ time than at save time.
   `state.spatial_type` (now `annotation_mode`), `set_subtask` clears the
   outgoing subtask's move/edit candidates, and `set_class_counter_options` /
   `set_class_color(s)` gained `is_destroyed` guards.
+- [x] 6.11 Layer opacity is cached in subtask state (`state.layer_opacity`)
+  instead of read from the slider DOM on every mousemove:
+  `readjust_subtask_opacities` is the DOM-to-state sync point (it already
+  runs on every slider input and at the end of `set_subtask`, covering all
+  slider writers) and `set_subtask_opacity` writes the cache directly. Also
+  removed the never-assigned `state.spatial_type` type field (the 6.10 trap).
 
 ### Phase 7 - model-registry (branch `three-fixed-subtasks` off `cropped-bitmasks-trevor`)
 

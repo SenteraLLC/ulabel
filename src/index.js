@@ -622,6 +622,8 @@ export class ULabel {
                 // The last non-delete class selected; what class focus follows
                 selected_class_id: ul.subtasks[subtask_key]["class_ids"][0] ?? null,
                 defocused_opacity: raw_subtask["defocused_opacity"] ?? DEFAULT_DEFOCUSED_OPACITY,
+                // Cache of the layer opacity slider, synced by readjust_subtask_opacities
+                layer_opacity: 1,
                 line_size: ul.config.initial_line_size,
 
                 // Rendering context
@@ -1112,14 +1114,20 @@ export class ULabel {
         const subtask = this.subtasks[subtask_key];
         if (subtask == null) return false;
         if (subtask["state"]["is_vanished"]) return true;
-        const sliderval = $("#tb-st-range--" + subtask_key).val();
-        return sliderval !== undefined && Number(sliderval) === 0;
+        return subtask["state"]["layer_opacity"] === 0;
     }
 
     readjust_subtask_opacities() {
         for (const st_key in this.subtasks) {
-            let sliderval = $("#tb-st-range--" + st_key).val();
-            $("div#canvasses__" + st_key).css("opacity", sliderval / 100);
+            const sliderval = $("#tb-st-range--" + st_key).val();
+            // Pre-init there are no sliders yet; keep the state defaults
+            if (sliderval === undefined) continue;
+            const opacity = Number(sliderval) / 100;
+            // Cached for is_subtask_hidden, which runs on every mousemove and
+            // shouldn't pay a DOM read; this sync runs on every slider input
+            // and at the end of set_subtask, covering all slider writers.
+            this.subtasks[st_key]["state"]["layer_opacity"] = opacity;
+            $("div#canvasses__" + st_key).css("opacity", opacity);
         }
     }
 
@@ -1137,6 +1145,7 @@ export class ULabel {
         }
         const clamped = Math.min(Math.max(opacity, 0), 1);
         subtask["inactive_opacity"] = clamped;
+        subtask["state"]["layer_opacity"] = clamped;
         $("input#tb-st-range--" + subtask_key).val(Math.round(100 * clamped));
         $("div#canvasses__" + subtask_key).css("opacity", clamped);
     }

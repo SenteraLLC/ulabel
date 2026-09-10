@@ -45,13 +45,25 @@ describe("is_subtask_hidden", () => {
         expect(ulabel.is_subtask_hidden("st")).toBe(true);
     });
 
-    test("tracks the opacity slider: hidden at 0, visible above it", () => {
+    test("tracks the opacity slider through readjust_subtask_opacities", () => {
         const ulabel = make_ulabel();
         document.body.innerHTML = "<input id=\"tb-st-range--st\" type=\"range\" value=\"0\" />";
 
+        ulabel.readjust_subtask_opacities();
         expect(ulabel.is_subtask_hidden("st")).toBe(true);
 
         $("#tb-st-range--st").val(40);
+        ulabel.readjust_subtask_opacities();
+        expect(ulabel.is_subtask_hidden("st")).toBe(false);
+    });
+
+    test("set_subtask_opacity(0) hides the subtask", () => {
+        const ulabel = make_ulabel();
+
+        ulabel.set_subtask_opacity("st", 0);
+        expect(ulabel.is_subtask_hidden("st")).toBe(true);
+
+        ulabel.set_subtask_opacity("st", 0.5);
         expect(ulabel.is_subtask_hidden("st")).toBe(false);
     });
 
@@ -65,10 +77,10 @@ describe("is_subtask_hidden", () => {
 });
 
 describe("hidden-subtask interaction gates", () => {
-    test("create_annotation is a no-op when the opacity slider is at 0", () => {
+    test("create_annotation is a no-op when the layer opacity is 0", () => {
         const ulabel = make_ulabel();
         ulabel.subtasks.st.annotations = { access: {}, ordering: [] };
-        document.body.innerHTML = "<input id=\"tb-st-range--st\" type=\"range\" value=\"0\" />";
+        ulabel.subtasks.st.state.layer_opacity = 0;
 
         ulabel.create_annotation("bbox", [[0, 0], [10, 10]]);
 
@@ -89,7 +101,7 @@ describe("hidden-subtask interaction gates", () => {
 
     test("mousedown starts no drag when hidden, except pan/zoom", () => {
         const ulabel = make_ulabel();
-        document.body.innerHTML = "<input id=\"tb-st-range--st\" type=\"range\" value=\"0\" />";
+        ulabel.subtasks.st.state.layer_opacity = 0;
         // An active annotation makes button 0 an "annotation" drag and button 1 a pan
         ulabel.subtasks.st.state.active_id = "anno_x";
         ulabel.start_drag = jest.fn();
