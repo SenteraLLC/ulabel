@@ -60,3 +60,40 @@ describe("set_subtask brush teardown", () => {
         expect(ulabel.destroy_brush_circle).not.toHaveBeenCalled();
     });
 });
+
+describe("update_brush_toolbox_display", () => {
+    const ACTIVE_CLS = "brush-button-active";
+
+    function with_buttons(ulabel) {
+        document.body.innerHTML = "<button id=\"brush-mode\"></button><button id=\"erase-mode\"></button>";
+        return ulabel;
+    }
+
+    test("derives both buttons' lit state from the current subtask", () => {
+        const ulabel = with_buttons(make_switchable_ulabel());
+        const state = ulabel.subtasks.first.state;
+
+        state.is_in_brush_mode = true;
+        ulabel.update_brush_toolbox_display();
+        expect($("#brush-mode").hasClass(ACTIVE_CLS)).toBe(true);
+        expect($("#erase-mode").hasClass(ACTIVE_CLS)).toBe(false);
+
+        state.is_in_erase_mode = true;
+        ulabel.update_brush_toolbox_display();
+        expect($("#brush-mode").hasClass(ACTIVE_CLS)).toBe(false);
+        expect($("#erase-mode").hasClass(ACTIVE_CLS)).toBe(true);
+    });
+
+    test("disable_bitmask_brush unlights both buttons", () => {
+        const ulabel = with_buttons(make_switchable_ulabel());
+        const state = ulabel.subtasks.first.state;
+        state.is_in_brush_mode = true;
+        ulabel.update_brush_toolbox_display();
+
+        ulabel.disable_bitmask_brush();
+
+        expect($("#brush-mode").hasClass(ACTIVE_CLS)).toBe(false);
+        expect($("#erase-mode").hasClass(ACTIVE_CLS)).toBe(false);
+        expect(state.is_in_brush_mode).toBe(false);
+    });
+});

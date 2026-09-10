@@ -102,6 +102,30 @@ describe("set_active_class", () => {
         expect(ulabel.subtasks.st.state.fly_to_idx).toBeNull();
     });
 
+    test("drops the hover when the hovered annotation is defocused by the change", () => {
+        const ulabel = new ULabel(focus_config);
+        const annotation = make_annotation(1);
+        load(ulabel, [annotation]);
+        ulabel.subtasks.st.state.hovered_annid = annotation.id;
+
+        ulabel.set_active_class(2, "st", false);
+
+        expect(ulabel.subtasks.st.state.hovered_annid).toBeNull();
+    });
+
+    test("keeps the hover when the hovered annotation is in the new focus", () => {
+        // A keybind reclass of the hovered annotation lands here: it follows
+        // the selection into focus, so its outline must survive.
+        const ulabel = new ULabel(focus_config);
+        const annotation = make_annotation(2);
+        load(ulabel, [annotation]);
+        ulabel.subtasks.st.state.hovered_annid = annotation.id;
+
+        ulabel.set_active_class(2, "st", false);
+
+        expect(ulabel.subtasks.st.state.hovered_annid).toBe(annotation.id);
+    });
+
     test("with focus_active_class, redraws the subtask unless told not to", () => {
         const ulabel = new ULabel(focus_config);
         ulabel.redraw_all_annotations = jest.fn();

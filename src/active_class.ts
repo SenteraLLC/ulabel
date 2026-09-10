@@ -84,7 +84,16 @@ export function set_active_class(
         class_id !== DELETE_CLASS_ID &&
         previous_selected !== class_id
     ) {
-        subtask.state.hovered_annid = null;
+        // Keep the hover when the hovered annotation follows the selection into
+        // focus (a keybind reclass of the hovered annotation lands here): it
+        // stayed interactive, so its outline should survive the redraw.
+        const hovered_annid = subtask.state.hovered_annid;
+        if (hovered_annid != null) {
+            const hovered = subtask.annotations.access[hovered_annid];
+            if (hovered == null || ulabel.is_annotation_defocused(hovered, subtask_key)) {
+                subtask.state.hovered_annid = null;
+            }
+        }
         subtask.state.fly_to_idx = null;
         if (redraw) {
             ulabel.redraw_all_annotations(subtask_key);

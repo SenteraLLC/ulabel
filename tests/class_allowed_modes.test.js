@@ -255,6 +255,33 @@ describe("reclassification gate", () => {
         expect(ulabel.assign_annotation_id).not.toHaveBeenCalled();
     });
 
+    test("a pie click assigns the clicked wedge, not the stale hovered payload", () => {
+        const ulabel = make_gated_ulabel();
+        load_polyline(ulabel);
+        ulabel.subtasks.st.state.idd_associated_annotation = "row0";
+        // Stale hover left the payload pointing at Crop; the click lands on Any
+        activate_class(ulabel, 1);
+        ulabel.lookup_id_dialog_mouse_pos = jest.fn().mockReturnValue({ class_ind: 2, dist_prop: 1.0 });
+
+        ulabel.handle_id_dialog_click({});
+
+        expect(ulabel.assign_annotation_id).toHaveBeenCalled();
+        const payload = ulabel.subtasks.st.state.id_payload;
+        expect(payload.find((p) => p.class_id === 3).confidence).toBe(1);
+        expect(payload.find((p) => p.class_id === 1).confidence).toBe(0);
+    });
+
+    test("a pie click outside every wedge is a no-op", () => {
+        const ulabel = make_gated_ulabel();
+        load_polyline(ulabel);
+        ulabel.subtasks.st.state.idd_associated_annotation = "row0";
+        ulabel.lookup_id_dialog_mouse_pos = jest.fn().mockReturnValue(null);
+
+        ulabel.handle_id_dialog_click({});
+
+        expect(ulabel.assign_annotation_id).not.toHaveBeenCalled();
+    });
+
     test("a dialog click with no associated annotation is a safe no-op", () => {
         const ulabel = make_gated_ulabel();
         load_polyline(ulabel);

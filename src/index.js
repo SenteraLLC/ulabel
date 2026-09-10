@@ -7193,28 +7193,27 @@ export class ULabel {
             log_message("handle_id_dialog_click: no annotation is associated with the id dialog", LogLevel.WARNING, true);
             return;
         }
-        let target_idx = new_class_idx;
-        if (target_idx === null) {
+        let pos_evt = null;
+        if (new_class_idx !== null) {
+            pos_evt = { class_ind: new_class_idx, dist_prop: 1.0 };
+        } else {
             // Pie click: resolve the wedge from the click position rather than
             // id_payload, which the (gated) hover may not have updated
             const front = current_subtask["state"]["idd_which"] === "front";
-            target_idx = this.lookup_id_dialog_mouse_pos(mouse_event, front)?.class_ind ?? null;
+            pos_evt = this.lookup_id_dialog_mouse_pos(mouse_event, front);
+            // The click landed on no wedge (center hole or outside the ring)
+            if (pos_evt == null) return;
         }
-        if (target_idx !== null) {
-            const target_class_id = current_subtask["class_ids"][target_idx];
-            // Silently refuse a class that doesn't allow the annotation's spatial
-            // type (reachable via class keybinds; the pie excludes such classes)
-            if (!can_annotation_be_class(this, annotation, target_class_id)) {
-                return;
-            }
+        const target_class_id = current_subtask["class_ids"][pos_evt.class_ind];
+        // Silently refuse a class that doesn't allow the annotation's spatial
+        // type (reachable via class keybinds; the pie excludes such classes)
+        if (!can_annotation_be_class(this, annotation, target_class_id)) {
+            return;
         }
 
-        // Handle explicitly setting the class
-        if (new_class_idx !== null) {
-            const pos_evt = { class_ind: new_class_idx, dist_prop: 1.0 };
-            this.handle_id_dialog_hover(mouse_event, pos_evt);
-        }
-        // TODO need to differentiate between first click and a reassign -- potentially with global state
+        // Write the chosen wedge into the payload; the assignment below reads it.
+        // Without this, a click with no preceding hover would assign stale state.
+        this.handle_id_dialog_hover(mouse_event, pos_evt);
         this.assign_annotation_id(annotation_id);
         current_subtask["state"]["first_explicit_assignment"] = false;
     }

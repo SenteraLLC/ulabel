@@ -1,6 +1,10 @@
 // A subtask is "hidden" when vanished or when its layer opacity slider is at
 // 0; hidden implies non-interactive, matching vanish mode's existing gates.
 const { ULabel } = require("./testing-utils/build_loader");
+// Require `configuration` before the toolbox so the `ToolboxItem` base class
+// initializes first (circular-import note in class_counter.test.js).
+require("../build/configuration");
+const { AnnotationResizeItem } = require("../build/toolbox");
 
 const mock_config = {
     container_id: "container",
@@ -69,5 +73,49 @@ describe("hidden-subtask interaction gates", () => {
         ulabel.create_annotation("bbox", [[0, 0], [10, 10]]);
 
         expect(ulabel.subtasks.st.annotations.ordering).toHaveLength(0);
+    });
+
+    test("suggest_edits hides the dialogs instead of suggesting when hidden", () => {
+        const ulabel = make_ulabel();
+        ulabel.subtasks.st.state.is_vanished = true;
+        ulabel.hide_edits = jest.fn();
+        ulabel.show_global_edit_suggestion = jest.fn();
+
+        ulabel.suggest_edits();
+
+        expect(ulabel.hide_edits).toHaveBeenCalled();
+        expect(ulabel.show_global_edit_suggestion).not.toHaveBeenCalled();
+    });
+
+    test("mousedown starts no drag when hidden, except pan/zoom", () => {
+        const ulabel = make_ulabel();
+        document.body.innerHTML = "<input id=\"tb-st-range--st\" type=\"range\" value=\"0\" />";
+        // An active annotation makes button 0 an "annotation" drag and button 1 a pan
+        ulabel.subtasks.st.state.active_id = "anno_x";
+        ulabel.start_drag = jest.fn();
+
+        ulabel.handle_mouse_down({ button: 0, preventDefault: jest.fn(), target: {} });
+        expect(ulabel.start_drag).not.toHaveBeenCalled();
+
+        ulabel.handle_mouse_down({ button: 1, preventDefault: jest.fn(), target: {} });
+        expect(ulabel.start_drag).toHaveBeenCalledWith("pan", 1, expect.anything());
+    });
+
+    test("annotation resize is a no-op when hidden", () => {
+        const ulabel = make_ulabel();
+        ulabel.redraw_all_annotations = jest.fn();
+        ulabel.subtasks.st.state.line_size = 4;
+        ulabel.subtasks.st.state.is_vanished = true;
+
+        AnnotationResizeItem.update_annotation_size(ulabel, "st", 10);
+
+        expect(ulabel.subtasks.st.state.line_size).toBe(4);
+        expect(ulabel.redraw_all_annotations).not.toHaveBeenCalled();
+
+        ulabel.subtasks.st.state.is_vanished = false;
+        AnnotationResizeItem.update_annotation_size(ulabel, "st", 10);
+
+        expect(ulabel.subtasks.st.state.line_size).toBe(10);
+        expect(ulabel.redraw_all_annotations).toHaveBeenCalled();
     });
 });

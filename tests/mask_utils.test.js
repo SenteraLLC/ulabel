@@ -389,6 +389,28 @@ describe("ULabelMask", () => {
             expect(() => ULabelMask.validate_raw({ data: new Uint8Array(4), size: [2] })).toThrow();
             expect(() => ULabelMask.validate_raw({ data: new Uint8Array(4), size: "2x2" })).toThrow();
         });
+
+        test("validate_raw rejects a box reversed on both axes", () => {
+            // Two negative extents multiply to a positive expected length (16),
+            // so only an explicit bounds-order check can catch this
+            const payload = {
+                data: new Uint8Array(16),
+                size: [16, 16],
+                box: { tlx: 10, tly: 10, brx: 5, bry: 5 },
+            };
+
+            expect(() => ULabelMask.validate_raw(payload)).toThrow(/box/i);
+        });
+
+        test("validate_raw rejects a box reversed on one axis", () => {
+            const payload = {
+                data: new Uint8Array(24),
+                size: [16, 16],
+                box: { tlx: 10, tly: 2, brx: 5, bry: 5 },
+            };
+
+            expect(() => ULabelMask.validate_raw(payload)).toThrow(/box/i);
+        });
     });
 
     describe("box-limited boolean operations", () => {

@@ -767,7 +767,12 @@ export class ULabelMask {
         }
         if (payload.box !== undefined) {
             const box = payload.box;
-            if (box.tlx < 0 || box.tly < 0 || box.brx >= width || box.bry >= height) {
+            if (
+                box.tlx < 0 || box.tly < 0 || box.brx >= width || box.bry >= height ||
+                // Reversed on both axes would pass the length check below
+                // (two negative extents multiply to a positive expected size)
+                box.brx < box.tlx || box.bry < box.tly
+            ) {
                 throw new Error(`Invalid raw mask box [${box.tlx}, ${box.tly}, ${box.brx}, ${box.bry}] for ${height}x${width}`);
             }
             const expected = (box.brx - box.tlx + 1) * (box.bry - box.tly + 1);
