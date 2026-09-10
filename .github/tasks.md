@@ -504,6 +504,10 @@ time than at save time.
   every subtask holding the id (`set_class_keybind_in_all_subtasks`). The
   keypress listener's read-only gate also moved inside the reclass branch,
   so selection keybinds work on read-only subtasks.
+- [x] 6.8 Optional `show_loader = true` parameter on `set_annotations` /
+  `set_annotations_batch`: hosts pass false when every changed subtask is a
+  background layer, so the loading overlay doesn't flash over an unchanged
+  on-screen view.
 
 ### Phase 7 - model-registry (branch `three-fixed-subtasks` off `cropped-bitmasks-trevor`)
 

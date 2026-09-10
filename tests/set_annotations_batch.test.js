@@ -70,6 +70,35 @@ describe("set_annotations_batch", () => {
         expect(document.querySelectorAll(".ulabel-loader")).toHaveLength(0);
     });
 
+    test("show_loader = false swaps without the loading overlay", async () => {
+        const ulabel = make_ulabel();
+        let peak_loaders = 0;
+        ulabel._swap_subtask_annotations = jest.fn().mockImplementation(async () => {
+            peak_loaders = Math.max(peak_loaders, document.querySelectorAll(".ulabel-loader").length);
+            return true;
+        });
+
+        await ulabel.set_annotations_batch({ a: [], b: [] }, false);
+
+        expect(peak_loaders).toBe(0);
+        expect(ulabel._swap_subtask_annotations).toHaveBeenCalledTimes(2);
+        expect(ulabel.refresh_toolbox).toHaveBeenCalledTimes(1);
+    });
+
+    test("set_annotations also honors show_loader = false", async () => {
+        const ulabel = make_ulabel();
+        let peak_loaders = 0;
+        ulabel._swap_subtask_annotations = jest.fn().mockImplementation(async () => {
+            peak_loaders = Math.max(peak_loaders, document.querySelectorAll(".ulabel-loader").length);
+            return true;
+        });
+
+        await ulabel.set_annotations([], "a", false, false);
+
+        expect(peak_loaders).toBe(0);
+        expect(ulabel.refresh_toolbox).toHaveBeenCalledTimes(1);
+    });
+
     test("skips unknown subtask keys but still applies the known ones", async () => {
         const ulabel = make_ulabel();
 

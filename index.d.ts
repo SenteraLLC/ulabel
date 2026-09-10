@@ -474,12 +474,12 @@ export class ULabel {
      * `skip_toolbox_update = true` on each call and run `refresh_toolbox()` once
      * at the end.
      */
-    public set_annotations(annotations: ULabelAnnotation[], subtask: string, skip_toolbox_update?: boolean): Promise<void>;
+    public set_annotations(annotations: ULabelAnnotation[], subtask: string, skip_toolbox_update?: boolean, show_loader?: boolean): Promise<void>;
     /**
      * Replace several subtasks' annotations as a single update: one loader cycle
      * and one toolbox refresh, so a multi-layer swap doesn't flicker.
      */
-    public set_annotations_batch(annotations_by_subtask: Record<string, ULabelAnnotation[]>): Promise<void>;
+    public set_annotations_batch(annotations_by_subtask: Record<string, ULabelAnnotation[]>, show_loader?: boolean): Promise<void>;
     /** Deferred half of a batched `set_annotations` sequence: filter distances + toolbox redraw. */
     public refresh_toolbox(): void;
     public set_saved(saved: boolean): void;

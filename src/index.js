@@ -7994,17 +7994,21 @@ export class ULabel {
      * @param {boolean} skip_toolbox_update when batching several swaps, pass true on
      *     each call and run `refresh_toolbox()` once at the end instead of paying
      *     the filter-distance + toolbox redraw per subtask.
+     * @param {boolean} show_loader pass false to swap without the loading overlay,
+     *     e.g. when the target subtask isn't the one on screen.
      */
-    async set_annotations(new_annotations, subtask, skip_toolbox_update = false) {
+    async set_annotations(new_annotations, subtask, skip_toolbox_update = false, show_loader = true) {
         if (this.is_destroyed) {
             log_message("set_annotations called on a destroyed ULabel instance", LogLevel.WARNING, true);
             return;
         }
         // Show the loader while re-initializing annotations, since this is similar to a new init
-        const container = document.getElementById(this.config["container_id"]);
-        ULabelLoader.add_loader_div(container);
-        // Yield so the browser can paint the loader before the heavy synchronous work below
-        await ULabelLoader.wait_for_render();
+        if (show_loader) {
+            const container = document.getElementById(this.config["container_id"]);
+            ULabelLoader.add_loader_div(container);
+            // Yield so the browser can paint the loader before the heavy synchronous work below
+            await ULabelLoader.wait_for_render();
+        }
 
         // Recheck: destroy() (manual or auto) may have run during the paint yield.
         if (this.is_destroyed) {
@@ -8018,7 +8022,9 @@ export class ULabel {
                 this.refresh_toolbox();
             }
         } finally {
-            ULabelLoader.remove_loader_div();
+            if (show_loader) {
+                ULabelLoader.remove_loader_div();
+            }
         }
     }
 
@@ -8029,8 +8035,10 @@ export class ULabel {
      *
      * @param {Record<string, object[]>} annotations_by_subtask subtask key to
      *     annotations in `resume_from` form
+     * @param {boolean} show_loader pass false to swap without the loading overlay,
+     *     e.g. when every changed subtask is a background layer.
      */
-    async set_annotations_batch(annotations_by_subtask) {
+    async set_annotations_batch(annotations_by_subtask, show_loader = true) {
         if (this.is_destroyed) {
             log_message("set_annotations_batch called on a destroyed ULabel instance", LogLevel.WARNING, true);
             return;
@@ -8043,9 +8051,11 @@ export class ULabel {
         });
         if (subtask_keys.length === 0) return;
 
-        const container = document.getElementById(this.config["container_id"]);
-        ULabelLoader.add_loader_div(container);
-        await ULabelLoader.wait_for_render();
+        if (show_loader) {
+            const container = document.getElementById(this.config["container_id"]);
+            ULabelLoader.add_loader_div(container);
+            await ULabelLoader.wait_for_render();
+        }
 
         if (this.is_destroyed) {
             log_message("set_annotations_batch aborted; ULabel was destroyed during load", LogLevel.WARNING, true);
@@ -8059,7 +8069,9 @@ export class ULabel {
             }
             this.refresh_toolbox();
         } finally {
-            ULabelLoader.remove_loader_div();
+            if (show_loader) {
+                ULabelLoader.remove_loader_div();
+            }
         }
     }
 

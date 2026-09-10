@@ -704,11 +704,15 @@ The new image must match the dimensions this instance was initialized with: the 
 
 *(string) => array* -- Gets the current list of annotations within the provided subtask.
 
-### `set_annotations(new_annotations, subtask, skip_toolbox_update=false)`
+### `set_annotations(new_annotations, subtask, skip_toolbox_update=false, show_loader=true)`
 
-*(array, string, bool) => Promise&lt;void&gt;* -- Sets the annotations for the provided subtask. Displays the loading spinner while re-initializing the annotations (similar to a new init). Returns a `Promise` that resolves once the annotations have been set and redrawn; `await` it if you need to run code after the update completes.
+*(array, string, bool, bool) => Promise&lt;void&gt;* -- Sets the annotations for the provided subtask. Displays the loading spinner while re-initializing the annotations (similar to a new init); pass `show_loader = false` to swap silently, e.g. when the target subtask isn't the one on screen. Returns a `Promise` that resolves once the annotations have been set and redrawn; `await` it if you need to run code after the update completes.
 
-When batching several per-subtask swaps, pass `skip_toolbox_update = true` on each call to suppress the per-call distance-filter and toolbox updates, then call [`refresh_toolbox()`](#refresh_toolbox) once at the end.
+When batching several per-subtask swaps, prefer [`set_annotations_batch()`](#set_annotations_batchannotations_by_subtask-show_loadertrue); alternatively pass `skip_toolbox_update = true` on each call to suppress the per-call distance-filter and toolbox updates, then call [`refresh_toolbox()`](#refresh_toolbox) once at the end.
+
+### `set_annotations_batch(annotations_by_subtask, show_loader=true)`
+
+*(object, bool) => Promise&lt;void&gt;* -- Replaces several subtasks' annotations as a single update: one loader cycle and one toolbox refresh for the whole set (per-subtask calls would flash the loader once per layer). `annotations_by_subtask` maps subtask keys to annotation arrays in `resume_from` form; unknown keys are warned and skipped. Pass `show_loader = false` to swap silently, e.g. when every changed subtask is a background layer.
 
 ### `refresh_toolbox()`
 
