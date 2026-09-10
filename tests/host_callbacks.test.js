@@ -59,6 +59,42 @@ describe("on_active_class_change", () => {
     });
 });
 
+describe("on_focus_active_class_change", () => {
+    test("fires with the subtask key and new flag value on a real change", () => {
+        const on_focus_active_class_change = jest.fn();
+        const ulabel = new ULabel({ ...mock_config, on_focus_active_class_change });
+
+        ulabel.set_focus_active_class("first", true, false);
+
+        expect(on_focus_active_class_change).toHaveBeenCalledTimes(1);
+        expect(on_focus_active_class_change).toHaveBeenCalledWith("first", true);
+    });
+
+    test("does not fire when the flag is already at the target value", () => {
+        const on_focus_active_class_change = jest.fn();
+        const ulabel = new ULabel({ ...mock_config, on_focus_active_class_change });
+
+        ulabel.set_focus_active_class("first", false, false); // false is the default
+
+        expect(on_focus_active_class_change).not.toHaveBeenCalled();
+    });
+
+    test("re-syncing another subtask from the callback converges", () => {
+        const ulabel = new ULabel({
+            ...mock_config,
+            on_focus_active_class_change: (subtask_key, enabled) => {
+                const other = subtask_key === "first" ? "second" : "first";
+                ulabel.set_focus_active_class(other, enabled, false);
+            },
+        });
+
+        ulabel.set_focus_active_class("first", true, false);
+
+        expect(ulabel.subtasks.first.focus_active_class).toBe(true);
+        expect(ulabel.subtasks.second.focus_active_class).toBe(true);
+    });
+});
+
 describe("on_subtask_change", () => {
     // `set_subtask` reconciles toolbox DOM that unit tests don't build
     function make_switchable_ulabel(config) {

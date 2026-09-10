@@ -327,6 +327,8 @@ export type ULabelConstructorArgs = {
     on_active_class_change?: (subtask_key: string, class_id: number) => void;
     /** Fired after the current subtask changes, from any writer (API, tab click, switch keybind). */
     on_subtask_change?: (subtask_key: string, old_subtask_key: string) => void;
+    /** Fired after a subtask's `focus_active_class` flag changes, from any writer (API, focus keybind). */
+    on_focus_active_class_change?: (subtask_key: string, enabled: boolean) => void;
     /** @deprecated Use top-level properties instead. */
     config_data?: object;
 };

@@ -88,7 +88,8 @@ class ULabel({
     n_annos_per_canvas: number,
     auto_destroy_on_detach: boolean,
     on_active_class_change: function,
-    on_subtask_change: function
+    on_subtask_change: function,
+    on_focus_active_class_change: function
 })
 ```
 
@@ -676,6 +677,9 @@ When `true` (the default), ULabel installs a `MutationObserver` on the container
 
 ### `on_subtask_change`
 *(subtask_key: string, old_subtask_key: string) => void* -- Called after the current subtask actually changes, whatever the writer: `set_subtask`, a toolbox tab click, or the `switch_subtask_keybind`. Not called when the target subtask is already current. Default is `null`.
+
+### `on_focus_active_class_change`
+*(subtask_key: string, enabled: boolean) => void* -- Called after a subtask's `focus_active_class` flag actually changes, whatever the writer: `set_focus_active_class` or the `toggle_class_focus_keybind`. Not called when the flag is already at the target value, so a host may re-sync other subtasks from the callback without recursing. Default is `null`.
 
 
 ## Display Utility Functions

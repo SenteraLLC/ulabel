@@ -508,6 +508,11 @@ time than at save time.
   `set_annotations_batch`: hosts pass false when every changed subtask is a
   background layer, so the loading overlay doesn't flash over an unchanged
   on-screen view.
+- [x] 6.9 Host callback `on_focus_active_class_change(subtask_key, enabled)`
+  config option, fired from the single writer (`set_focus_active_class`,
+  which the focus keybind also funnels through) only on actual change — the
+  guard is what lets a host re-sync other subtasks from the callback
+  without recursing.
 
 ### Phase 7 - model-registry (branch `three-fixed-subtasks` off `cropped-bitmasks-trevor`)
 

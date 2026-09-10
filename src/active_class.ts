@@ -118,6 +118,7 @@ export function set_focus_active_class(
         log_message(`set_focus_active_class: unknown subtask key ${subtask_key}`, LogLevel.WARNING, true);
         return;
     }
+    const previous = subtask.focus_active_class === true;
     subtask.focus_active_class = enabled === true;
 
     // What's hovered or mid-fly-to may have just gained or lost interactivity
@@ -127,6 +128,11 @@ export function set_focus_active_class(
     if (redraw) {
         ulabel.redraw_all_annotations(subtask_key);
         ulabel.toolbox?.redraw_update_items(ulabel);
+    }
+
+    // The guard lets a host re-sync other subtasks from the callback without recursing
+    if (previous !== subtask.focus_active_class) {
+        ulabel.config.on_focus_active_class_change?.(subtask_key, subtask.focus_active_class);
     }
 }
 
