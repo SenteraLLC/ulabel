@@ -1862,7 +1862,8 @@ div#${prntid} div.dialogs_container {
    position: absolute;
    top: 0;
    left: 0;
-   z-index: ${BACK_Z_INDEX + 1};
+   /* Above the annotation canvases */
+   z-index: ${BACK_Z_INDEX + 2};
 }
 
 div.toolbox_inner_cls {

@@ -48,6 +48,23 @@
                         "resume_from": null,
                         "task_meta": null,
                         "annotation_meta": null
+                    },
+                    // Second mask layer for trying brush_overlap_across_subtasks:
+                    // paint here, switch back, and brush over it with exclude/overwrite.
+                    "reference": {
+                        "display_name": "Reference",
+                        "classes": [
+                            {
+                                "name": "Reference",
+                                "color": "#888888",
+                                "id": 20
+                            }
+                        ],
+                        "allowed_modes": ["bitmask"],
+                        "resume_from": null,
+                        "task_meta": null,
+                        "annotation_meta": null,
+                        "inactive_opacity": 0.6
                     }
                 };
 
@@ -61,7 +78,13 @@
                 });
                 // Wait for ULabel instance to finish initialization
                 ulabel.init(function() {
-                    // ULabel is now ready for use
+                    // The gate reads the config live, so these apply to the next stroke
+                    document.getElementById("across-subtasks").addEventListener("change", function() {
+                        ulabel.config.brush_overlap_across_subtasks = this.checked;
+                    });
+                    document.getElementById("reference-read-only").addEventListener("change", function() {
+                        ulabel.subtasks.reference.read_only = this.checked;
+                    });
                 });
 
             });
@@ -69,5 +92,10 @@
     </head>
     <body>
         <div id="container" style="width: 100%; height: 100vh; position: absolute; top: 0; left: 0;"></div>
+        <div style="position: fixed; top: 10px; right: 320px; z-index: 1000; background: #fff; border: 1px solid #ccc; border-radius: 4px; padding: 8px 12px; font-family: sans-serif; font-size: 13px;">
+            <label style="display: block;"><input type="checkbox" id="across-subtasks"> Brush overlap across subtasks</label>
+            <label style="display: block;"><input type="checkbox" id="reference-read-only"> Reference layer read-only (overwrite barrier)</label>
+            <div style="color: #666; margin-top: 4px;">Paint in Reference, switch back, then brush over it with overlap exclude (shift+e) or overwrite (shift+o).</div>
+        </div>
     </body>
 </html>

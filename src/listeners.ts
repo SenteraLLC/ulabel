@@ -8,7 +8,7 @@
 
 import type { ULabel } from "../index";
 import { NightModeCookie } from "./cookies";
-import { DELETE_CLASS_ID, DELETE_MODES, NONSPATIAL_MODES } from "./annotation";
+import { DELETE_MODES, NONSPATIAL_MODES } from "./annotation";
 import { set_local_storage_item } from "./utilities";
 import { AnnotationResizeItem, SMALL_ANNOTATION_SIZE, LARGE_ANNOTATION_SIZE, INCREMENT_ANNOTATION_SIZE } from "./toolbox";
 
@@ -164,15 +164,24 @@ function handle_keypress_event(
         return;
     }
 
+    // Toggle class focus (focus follows the active class) on the current subtask
+    if (event_matches_keybind(keypress_event, ulabel.config.toggle_class_focus_keybind)) {
+        const st_key = ulabel.get_current_subtask_key();
+        ulabel.set_focus_active_class(st_key, !ulabel.subtasks[st_key].focus_active_class);
+        return;
+    }
+
     // Check for class keybinds
-    if (!DELETE_MODES.includes(current_subtask.state.spatial_type)) {
+    if (!DELETE_MODES.includes(current_subtask.state.annotation_mode)) {
         for (let i = 0; i < current_subtask.class_defs.length; i++) {
             const class_def = current_subtask.class_defs[i];
             if (class_def.keybind !== null && event_matches_keybind(keypress_event, class_def.keybind!)) {
-                if (is_read_only) return;
                 const st_key = ulabel.get_current_subtask_key();
                 const class_button = $(`#tb-id-app--${st_key} a.tbid-opt`).eq(i);
                 if (class_button.hasClass("sel")) {
+                    // Reclassifying the active annotation is an edit; the
+                    // selection branch below is not, so it stays available
+                    if (is_read_only) return;
                     // If the class button is already selected,
                     // check if there is an active annotation, and if so, get it
                     let target_id = null;
@@ -191,8 +200,8 @@ function handle_keypress_event(
                         );
                     }
                 } else {
-                    // Click the class button if not already selected
-                    class_button.trigger("click");
+                    // Select the class if not already selected
+                    ulabel.set_active_class(class_def.id);
                 }
                 return;
             }
@@ -201,7 +210,8 @@ function handle_keypress_event(
 }
 
 /**
- * Handle a click on a soft ID toolbox button.
+ * Handle a click on a soft ID toolbox button. Thin wrapper: the selection
+ * logic lives in `set_active_class`, of which this click is one caller.
  *
  * @param click_event Click event
  * @param ulabel ULabel instance
@@ -211,62 +221,10 @@ function handle_soft_id_toolbox_button_click(
     ulabel: ULabel,
 ) {
     const tgt_jq = $(click_event.currentTarget);
-    const pfx = "div#tb-id-app--" + ulabel.get_current_subtask_key();
-    const current_subtask = ulabel.get_current_subtask();
-    if (tgt_jq.attr("href") === "#") {
-        const current_id_button = $(pfx + " a.tbid-opt.sel");
-        current_id_button.attr("href", "#");
-        current_id_button.removeClass("sel");
-        const old_id = parseInt(current_id_button.attr("id")!.split("_").at(-1)!);
-        tgt_jq.addClass("sel");
-        tgt_jq.removeAttr("href");
-        const idarr = tgt_jq.attr("id")!.split("_");
-        const rawid = parseInt(idarr[idarr.length - 1]);
-        ulabel.set_id_dialog_payload_nopin(
-            current_subtask["class_ids"].indexOf(rawid),
-            1.0,
-        );
-        ulabel.update_id_dialog_display();
-
-        // Update the class of the active annotation,
-        // except when toggling on the delete class or in a read-only subtask
-        if (rawid !== DELETE_CLASS_ID && !ulabel.is_current_subtask_read_only()) {
-            // Get the active annotation, if any
-            let target_id = null;
-            if (current_subtask.state.active_id !== null) {
-                target_id = current_subtask.state.active_id;
-            } else if (current_subtask.state.move_candidate !== null) {
-                target_id = current_subtask.state.move_candidate["annid"];
-            }
-
-            // Update the class of the active annotation
-            if (target_id !== null) {
-                // Set the annotation's class to the selected class
-                ulabel.handle_id_dialog_click(
-                    ulabel.state["last_move"],
-                    target_id,
-                    ulabel.get_active_class_id_idx(),
-                );
-            } else {
-                // If there is not active annotation,
-                // still update the brush circle if in brush mode
-                ulabel.recolor_brush_circle();
-            }
-        }
-
-        /*
-        If toggling off a delete class while still in delete mode,
-        re-toggle the delete class.
-        This occurs when using a keybind to change a hovered annotation's
-        class while in delete mode.
-        */
-        if (
-            old_id === DELETE_CLASS_ID &&
-            DELETE_MODES.includes(current_subtask.state.annotation_mode)
-        ) {
-            $("#toolbox_sel_" + DELETE_CLASS_ID).trigger("click");
-        }
-    }
+    // The selected button has no href; clicking it is a no-op
+    if (tgt_jq.attr("href") !== "#") return;
+    const idarr = tgt_jq.attr("id")!.split("_");
+    ulabel.set_active_class(parseInt(idarr[idarr.length - 1]));
 }
 
 /**
@@ -680,6 +638,9 @@ export function create_ulabel_listeners(
         (click_event) => {
             const crst = ulabel.get_current_subtask();
             const annid = crst["state"]["idd_associated_annotation"];
+            // No association means no dialog to open (e.g. it was suppressed
+            // because the annotation has no valid reassignment targets)
+            if (annid == null) return;
             ulabel.hide_global_edit_suggestion();
             ulabel.show_id_dialog(
                 ulabel.get_global_mouse_x(click_event),
@@ -696,6 +657,20 @@ export function create_ulabel_listeners(
         () => {
             const crst = ulabel.get_current_subtask();
             ulabel.delete_annotation(crst["state"]["move_candidate"]!["annid"]);
+        },
+    );
+
+    $(document).on(
+        "mouseleave" + ULABEL_NAMESPACE,
+        "#" + ulabel.config["annbox_id"],
+        () => {
+            // The suggestion dialogs live inside the annbox, so moving onto one
+            // of them doesn't count as leaving.
+            if (ulabel.drag_state["active_key"] !== null) return;
+            const state = ulabel.get_current_subtask()["state"];
+            // A clicked-open id dialog is its own interaction; don't yank it away
+            if (state["idd_visible"] && !state["idd_thumbnail"]) return;
+            ulabel.hide_and_clear_action_candidates();
         },
     );
 

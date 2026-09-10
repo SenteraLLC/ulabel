@@ -1,6 +1,7 @@
 import type {
     FilterDistanceConfig,
     ConfidenceSliderConfig,
+    ClassCounterConfig,
     ImageFiltersConfig,
     InitialCrop,
     ImageData,
@@ -119,7 +120,6 @@ export class Configuration {
     public annbox_id: string = "annbox";
     public imwrap_id: string = "imwrap";
     public canvas_fid_pfx: string = "front-canvas";
-    public canvas_bid_pfx: string = "back-canvas";
     public canvas_did: string = "demo-canvas";
     public canvas_class: string = "easel";
     public image_id_pfx: string = "ann_image";
@@ -142,6 +142,9 @@ export class Configuration {
     // The live value is global and persisted to localStorage; this is the initial default.
     public default_brush_overlap_mode: BrushOverlapMode = "none";
     public brush_overlap_mode: BrushOverlapMode = "none";
+    // Whether stroke overlap resolution reaches masks in other subtasks; off, a
+    // stroke only interacts with masks in the active subtask.
+    public brush_overlap_across_subtasks: boolean = false;
     // Configuration for the annotation task itself
     public image_data: ImageData | null = null;
     public allow_soft_id: boolean = false;
@@ -157,6 +160,11 @@ export class Configuration {
     // Behavior on special interactions
     public instructions_url: string | null = null;
     public submit_buttons: ULabelSubmitButton[] = [];
+
+    // Host notification callbacks; each fires only when the value actually changes
+    public on_active_class_change: ((subtask_key: string, class_id: number) => void) | null = null;
+    public on_subtask_change: ((subtask_key: string, old_subtask_key: string) => void) | null = null;
+    public on_focus_active_class_change: ((subtask_key: string, enabled: boolean) => void) | null = null;
 
     // Passthrough
     public task_meta: object = {};
@@ -215,6 +223,9 @@ export class Configuration {
     // Config for ConfidenceSlider
     public confidence_slider_toolbox_item: ConfidenceSliderConfig = DEFAULT_CONFIDENCE_SLIDER_CONFIG;
 
+    // Config for ClassCounterToolboxItem. Option defaults resolve in the item.
+    public class_counter_toolbox_item: ClassCounterConfig = {};
+
     // Config for ImageFiltersToolboxItem
     public image_filters_toolbox_item: ImageFiltersConfig = DEFAULT_IMAGE_FILTERS_CONFIG;
 
@@ -263,6 +274,8 @@ export class Configuration {
     public annotation_vanish_keybind: string = "v";
 
     public annotation_vanish_all_keybind: string = "shift+v";
+
+    public toggle_class_focus_keybind: string = "shift+f";
 
     public fly_to_next_annotation_keybind: string = "tab";
 

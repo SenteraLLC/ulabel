@@ -160,20 +160,47 @@ test.describe("ULabel Basic Functionality", () => {
         expect(value).toBe("Confidence: 1.00");
     });
 
+    // The edit-suggestion container is 0-height and pinned to the box centre, so
+    // its rect top IS the anchor. The card hugs the button ring: above the anchor
+    // normally, below it when there is no room above. `ring_max` is the furthest
+    // the card's near edge may sit from the anchor (half a button + gap + slack),
+    // catching regressions where the card drifts away from the ring.
+    const get_card_geometry = async (page, conf_id, anchor_id) => {
+        return page.evaluate(({ conf, anchor }) => {
+            const card = document.querySelector(conf).getBoundingClientRect();
+            const es_el = document.querySelector(anchor);
+            const anchor_y = es_el.getBoundingClientRect().top;
+            const scale = es_el.offsetWidth > 0 ?
+                es_el.getBoundingClientRect().width / es_el.offsetWidth :
+                1;
+            const button = es_el.querySelector("a.global_sub_suggestion");
+            const button_half = (button ? button.offsetHeight : 60) / 2;
+            return {
+                card_top: card.top,
+                card_bottom: card.bottom,
+                anchor_y,
+                ring_max: button_half * scale + 10 + 8,
+            };
+        }, { conf: conf_id, anchor: anchor_id });
+    };
+
     test("confidence card flips below buttons when annotation is near the top of the image", async ({ page }) => {
         await wait_for_ulabel_init(page);
 
         const subtask_key = await page.evaluate(() => window.ulabel.get_current_subtask_key());
         const conf_id = `#global_annotation_confidence__${subtask_key}`;
+        const anchor_id = `#global_edit_suggestion__${subtask_key}`;
 
-        // Annotation well away from the top -> card above the buttons (default -9.5em)
+        // Annotation well away from the top -> card above the buttons and box
         await draw_bbox(page, [400, 400], [500, 500]);
         await page.waitForTimeout(100);
         await page.mouse.move(450, 450);
         await page.waitForTimeout(200);
 
-        const margin_below_center = await page.locator(conf_id).evaluate((el) => el.style.marginTop);
-        expect(margin_below_center).toBe("-9.5em");
+        const mid = await get_card_geometry(page, conf_id, anchor_id);
+        // Card hugs the button ring above the anchor regardless of box size
+        expect(mid.card_bottom).toBeLessThanOrEqual(mid.anchor_y - 5);
+        expect(mid.anchor_y - mid.card_bottom).toBeLessThanOrEqual(mid.ring_max);
 
         // Annotation near the top edge -> card flips below the buttons
         await draw_bbox(page, [100, 5], [200, 30]);
@@ -181,8 +208,61 @@ test.describe("ULabel Basic Functionality", () => {
         await page.mouse.move(150, 15);
         await page.waitForTimeout(200);
 
-        const margin_near_top = await page.locator(conf_id).evaluate((el) => el.style.marginTop);
-        expect(margin_near_top).toBe("-1em");
+        const top_edge = await get_card_geometry(page, conf_id, anchor_id);
+        expect(top_edge.card_top).toBeGreaterThanOrEqual(top_edge.anchor_y + 5);
+        expect(top_edge.card_top - top_edge.anchor_y).toBeLessThanOrEqual(top_edge.ring_max);
+    });
+
+    test("confidence card sits in the same spot when the subtask is read-only", async ({ page }) => {
+        await wait_for_ulabel_init(page);
+
+        const subtask_key = await page.evaluate(() => window.ulabel.get_current_subtask_key());
+        const conf_id = `#global_annotation_confidence__${subtask_key}`;
+        const anchor_id = `#global_edit_suggestion__${subtask_key}`;
+
+        await draw_bbox(page, [400, 400], [500, 500]);
+        await page.waitForTimeout(100);
+        await page.mouse.move(450, 450);
+        await page.waitForTimeout(200);
+        const editable = await get_card_geometry(page, conf_id, anchor_id);
+
+        // Leave the annotation, flip the subtask to read-only, and re-hover
+        await page.mouse.move(700, 650);
+        await page.waitForTimeout(200);
+        await page.evaluate(() => {
+            window.ulabel.get_current_subtask().read_only = true;
+        });
+        await page.mouse.move(450, 450);
+        await page.waitForTimeout(200);
+        const read_only = await get_card_geometry(page, conf_id, anchor_id);
+
+        // Buttons are hidden with `visibility` so their flow space survives and the
+        // card lands in the exact same place (sub-pixel slack only).
+        const button_visibility = await page.evaluate(({ anchor }) => {
+            return getComputedStyle(
+                document.querySelector(anchor).querySelector("a.global_sub_suggestion"),
+            ).visibility;
+        }, { anchor: anchor_id });
+        expect(button_visibility).toBe("hidden");
+        expect(Math.abs(read_only.card_top - editable.card_top)).toBeLessThanOrEqual(1);
+        expect(Math.abs(read_only.card_bottom - editable.card_bottom)).toBeLessThanOrEqual(1);
+    });
+
+    test("confidence card hugs the ring on the single-class demo (0.666 dialog scale)", async ({ page }) => {
+        await wait_for_ulabel_init(page, "/single-class.html");
+
+        const subtask_key = await page.evaluate(() => window.ulabel.get_current_subtask_key());
+        const conf_id = `#global_annotation_confidence__${subtask_key}`;
+        const anchor_id = `#global_edit_suggestion__${subtask_key}`;
+
+        await draw_bbox(page, [400, 400], [500, 500]);
+        await page.waitForTimeout(100);
+        await page.mouse.move(450, 450);
+        await page.waitForTimeout(200);
+
+        const geom = await get_card_geometry(page, conf_id, anchor_id);
+        expect(geom.card_bottom).toBeLessThanOrEqual(geom.anchor_y - 5);
+        expect(geom.anchor_y - geom.card_bottom).toBeLessThanOrEqual(geom.ring_max);
     });
 
     test("confidence card flip check accounts for annbox scroll position", async ({ page }) => {
@@ -190,6 +270,13 @@ test.describe("ULabel Basic Functionality", () => {
 
         const subtask_key = await page.evaluate(() => window.ulabel.get_current_subtask_key());
         const conf_id = `#global_annotation_confidence__${subtask_key}`;
+        const anchor_id = `#global_edit_suggestion__${subtask_key}`;
+
+        const card_and_anchor = async () => page.evaluate(({ conf, anchor }) => {
+            const card = document.querySelector(conf).getBoundingClientRect();
+            const anchor_y = document.querySelector(anchor).getBoundingClientRect().top;
+            return { card_top: card.top, card_bottom: card.bottom, anchor_y };
+        }, { conf: conf_id, anchor: anchor_id });
 
         // Upper-middle annotation displays with card above (no flip)
         await draw_bbox(page, [400, 200], [500, 300]);
@@ -197,8 +284,8 @@ test.describe("ULabel Basic Functionality", () => {
         await page.mouse.move(450, 250);
         await page.waitForTimeout(200);
 
-        const margin_unscrolled = await page.locator(conf_id).evaluate((el) => el.style.marginTop);
-        expect(margin_unscrolled).toBe("-9.5em");
+        const unscrolled = await card_and_anchor();
+        expect(unscrolled.card_bottom).toBeLessThanOrEqual(unscrolled.anchor_y);
 
         // Zoom in enough for the imwrap to overflow the annbox so scrolling is possible
         await page.mouse.move(450, 250);
@@ -224,8 +311,9 @@ test.describe("ULabel Basic Functionality", () => {
         expect(scroll_result.scroll_top).toBeGreaterThanOrEqual(scroll_result.cbox_y_scaled - 100);
         await page.waitForTimeout(100);
 
-        const margin_scrolled = await page.locator(conf_id).evaluate((el) => el.style.marginTop);
-        expect(margin_scrolled).toBe("-1em");
+        // Near the top of the visible area, the card flips below the anchor
+        const scrolled = await card_and_anchor();
+        expect(scrolled.card_top).toBeGreaterThanOrEqual(scrolled.anchor_y);
     });
 
     test("confidence card picks a class name even when all confidences are 0", async ({ page }) => {

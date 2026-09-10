@@ -55,6 +55,12 @@ jobs:
         path: ~/.cache/ms-playwright
         key: playwright-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}
 
+    # playwright's dep install runs apt-get update, which fails outright when any
+    # configured repo is mid-republish (hash mismatch). The runner image ships
+    # Google's and Microsoft's repos; this job needs neither, so drop them.
+    - name: Remove unneeded third-party apt repos
+      run: sudo rm -f /etc/apt/sources.list.d/google-chrome.list /etc/apt/sources.list.d/microsoft-prod.list
+
     - name: Install Playwright browsers
       if: steps.playwright-cache.outputs.cache-hit != 'true'
       run: npx playwright install --with-deps

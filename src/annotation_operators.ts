@@ -625,11 +625,12 @@ export function filter_points_distance_from_line(ulabel: ULabel, recalculate_dis
 
 /**
  * Goes through all subtasks and finds all class definitions that annotations can be. Optionally
- * restricts to subtasks that allow at least one of the provided `allowed_modes`. Class definitions
- * are de-duplicated by id, and the reserved delete class is skipped.
+ * restricts to classes that allow at least one of the provided `allowed_modes`, honouring a
+ * class's own `allowed_modes` where it narrows its subtask's. Class definitions are
+ * de-duplicated by id, and the reserved delete class is skipped.
  *
  * @param ulabel ULabel object
- * @param allowed_modes If provided, only include subtasks that allow at least one of these modes
+ * @param allowed_modes If provided, only include classes that allow at least one of these modes
  * @returns A de-duplicated list of class definitions
  */
 export function findAllClassDefinitions(ulabel: ULabel, allowed_modes: ULabelSpatialType[] | null = null): ClassDefinition[] {
@@ -640,17 +641,18 @@ export function findAllClassDefinitions(ulabel: ULabel, allowed_modes: ULabelSpa
     for (const subtask_key in ulabel.subtasks) {
         const subtask = ulabel.subtasks[subtask_key];
 
-        // If allowed_modes is provided, skip subtasks that don't allow any of them
-        if (allowed_modes !== null && !allowed_modes.some((mode) => subtask.allowed_modes.includes(mode))) {
-            continue;
-        }
-
         // Loop through all the classes in the subtask
         subtask.class_defs.forEach((current_class_def) => {
             // Skip the reserved delete class
             if (current_class_def.id === DELETE_CLASS_ID) return;
             // Skip classes we've already added (de-duplicate by id)
             if (seen_ids.has(current_class_def.id)) return;
+
+            // A class may narrow the subtask's modes, so ask the class first
+            if (allowed_modes !== null) {
+                const class_modes = current_class_def.allowed_modes ?? subtask.allowed_modes;
+                if (!allowed_modes.some((mode) => class_modes.includes(mode))) return;
+            }
 
             seen_ids.add(current_class_def.id);
             class_defs.push(current_class_def);

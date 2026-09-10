@@ -390,12 +390,17 @@ export class AnnotationListToolboxItem extends ToolboxItem {
      */
     private get_filtered_annotations(subtask: ULabelSubtask): ULabelAnnotation[] {
         const annotations: ULabelAnnotation[] = [];
+        const subtask_key = this.ulabel.get_current_subtask_key();
 
         for (const annotation_id of subtask.annotations.ordering) {
             const annotation = subtask.annotations.access[annotation_id];
 
-            // Skip deprecated if option is disabled
+            // Skip deprecated annotations unless the option to show them is enabled
             if (!this.show_deprecated && annotation.deprecated) {
+                continue;
+            }
+
+            if (this.ulabel.is_annotation_defocused(annotation, subtask_key)) {
                 continue;
             }
 
@@ -702,6 +707,9 @@ export class AnnotationListToolboxItem extends ToolboxItem {
      * Called when the edit_candidate changes on the canvas
      */
     private sync_highlight_from_canvas() {
+        // A frame scheduled by the annbox mousemove handler can still be
+        // pending when the instance is destroyed, which nulls this reference.
+        if (!this.ulabel) return;
         const current_subtask = this.ulabel.get_current_subtask();
         if (!current_subtask) return;
 

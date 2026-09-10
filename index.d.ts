@@ -67,6 +67,11 @@ export type ClassDefinition = {
     id: number;
     color: string;
     keybind: string | null;
+    /**
+     * Spatial types this class may be drawn as, narrowing the subtask's
+     * `allowed_modes`. Undefined or null inherits the subtask's list.
+     */
+    allowed_modes?: ULabelSpatialType[] | null;
 };
 
 export type SliderInfo = {
@@ -156,6 +161,20 @@ export type ConfidenceSliderConfig = {
         increment: string;
         decrement: string;
     };
+};
+
+/**
+ * Config object for the ClassCounter ToolboxItem.
+ */
+export type ClassCounterConfig = {
+    /** Which subtasks to count. "current" follows the active subtask. Default "current". */
+    subtasks?: string[] | "current";
+    /**
+     * How counts are laid out. "current" keeps the plain per-class list,
+     * "grouped" adds a heading per counted subtask, "flat" merges shared class
+     * ids across subtasks into one summed list. Default "current".
+     */
+    layout?: "current" | "grouped" | "flat";
 };
 
 export type ULabelSubmitButton = {
@@ -301,6 +320,15 @@ export type ULabelConstructorArgs = {
     instructions_url?: string;
     toolbox_order?: AllowedToolboxItem[];
     auto_destroy_on_detach?: boolean;
+    class_counter_toolbox_item?: ClassCounterConfig;
+    /** Let bitmask brush overlap resolution reach masks in other subtasks. Default false. */
+    brush_overlap_across_subtasks?: boolean;
+    /** Fired after a subtask's active class changes, from any writer (API, toolbox click, class keybind). */
+    on_active_class_change?: (subtask_key: string, class_id: number) => void;
+    /** Fired after the current subtask changes, from any writer (API, tab click, switch keybind). */
+    on_subtask_change?: (subtask_key: string, old_subtask_key: string) => void;
+    /** Fired after a subtask's `focus_active_class` flag changes, from any writer (API, focus keybind). */
+    on_focus_active_class_change?: (subtask_key: string, enabled: boolean) => void;
     /** @deprecated Use top-level properties instead. */
     config_data?: object;
 };
@@ -334,6 +362,18 @@ export class ULabel {
 
     config: Configuration;
     toolbox: Toolbox;
+    drag_state: {
+        active_key: string | null;
+        release_button: number | null;
+    } & Record<
+        "annotation" | "brush" | "edit" | "pan" | "zoom" | "move" | "right",
+        {
+            mouse_start: [number, number] | null;
+            offset_start: [number, number] | null;
+            zoom_val_start: number | null;
+        }
+    >;
+
     color_info: { [key: number]: string };
     valid_class_ids: number[];
     toolbox_order?: number[];
@@ -374,18 +414,76 @@ export class ULabel {
     public show_whole_image(): void;
     public swap_frame_image(new_src: string, frame?: number): Promise<string>;
     public swap_anno_bg_color(new_bg_color: string): string;
+    /**
+     * Set a class's color and sync every view of it: `color_info`, the
+     * id-toolbox swatch, and the id-dialog pies. Pass `redraw = false` when
+     * batching several color changes, then redraw once at the end.
+     */
+    public set_class_color(class_id: number | string, color: string, redraw?: boolean): void;
+    /**
+     * Recolor several classes as one update, rebuilding the id-dialog pies once
+     * for the whole map instead of once per class.
+     */
+    public set_class_colors(colors_by_class_id: Record<string, string>, redraw?: boolean): void;
 
     // Subtasks
     public get_current_subtask_key(): string;
     public get_current_subtask(): ULabelSubtask;
     public is_current_subtask_read_only(): boolean;
+    /** Whether a subtask's annotations are hidden: vanished, or layer opacity 0. Hidden implies non-interactive. */
+    public is_subtask_hidden(subtask_key?: string): boolean;
     public readjust_subtask_opacities(): void;
     public set_subtask(st_key: string): void;
     public switch_to_next_subtask(): void;
+    /**
+     * Set a subtask's active class: id payload, toolbox selection, per-class
+     * mode sync, and - on subtasks with `focus_active_class` - the class focus
+     * (other classes dim to `defocused_opacity` and drop out of hover/grab,
+     * annotation navigation, bulk delete and the annotation list; geometry
+     * still sees every annotation). Returns whether the class was accepted.
+     */
+    public set_active_class(class_id: number, subtask_key?: string | null, redraw?: boolean): boolean;
+    /**
+     * The last non-delete class selected on a subtask. Delete-mode toggles
+     * don't move it, so class focus stays put while deleting.
+     */
+    public get_selected_class_id(subtask_key?: string | null): number | null;
+    public is_annotation_defocused(annotation: ULabelAnnotation, subtask_key: string): boolean;
+    /** Turn focus-follows-active-class on or off for a subtask at runtime. */
+    public set_focus_active_class(subtask_key: string, enabled: boolean, redraw?: boolean): void;
+    /**
+     * Opacity for annotations outside the focused class. 0 skips drawing them
+     * entirely, which is cheaper but loses them as visual context.
+     */
+    public set_defocused_opacity(subtask_key: string, opacity: number, redraw?: boolean): void;
+    /**
+     * Set a subtask's layer opacity. Also writes `inactive_opacity` so the value
+     * survives a subtask switch.
+     */
+    public set_subtask_opacity(subtask_key: string, opacity: number): void;
+    /** The spatial types a class may be drawn as; falls back to the subtask's list. */
+    public get_class_allowed_modes(class_id: number, subtask_key?: string | null): ULabelSpatialType[];
+    /**
+     * Hide the mode buttons the active class disallows and switch off a mode it
+     * disallows. Delete modes are exempt.
+     */
+    public sync_annotation_modes_to_active_class(): void;
 
     // Annotations
     public get_annotations(subtask: string): ULabelAnnotation[];
-    public set_annotations(annotations: ULabelAnnotation[], subtask: string): Promise<void>;
+    /**
+     * Replace a subtask's annotations in place. When batching several swaps, pass
+     * `skip_toolbox_update = true` on each call and run `refresh_toolbox()` once
+     * at the end.
+     */
+    public set_annotations(annotations: ULabelAnnotation[], subtask: string, skip_toolbox_update?: boolean, show_loader?: boolean): Promise<void>;
+    /**
+     * Replace several subtasks' annotations as a single update: one loader cycle
+     * and one toolbox refresh, so a multi-layer swap doesn't flicker.
+     */
+    public set_annotations_batch(annotations_by_subtask: Record<string, ULabelAnnotation[]>, show_loader?: boolean): Promise<void>;
+    /** Deferred half of a batched `set_annotations` sequence: filter distances + toolbox redraw. */
+    public refresh_toolbox(): void;
     public set_saved(saved: boolean): void;
     public draw_annotation_from_id(id: string, offset?: Offset, subtask?: string): void;
     public redraw_annotation(annotation_id: string, subtask?: string, offset?: Offset): void;
@@ -416,6 +514,12 @@ export class ULabel {
     ): void;
     public get_keypoint_slider_value(): number | null;
     public get_distance_filter_value(): DistanceFromPolylineClasses | null;
+    /**
+     * Update the ClassCounter toolbox item's options at runtime.
+     *
+     * @returns whether the ClassCounter toolbox item was found
+     */
+    public set_class_counter_options(options: ClassCounterConfig, redraw?: boolean): boolean;
     public get_confidence_slider_value(): ConfidenceSliderClasses | null;
     public fly_to_next_annotation(increment: number, max_zoom?: number): boolean;
     public fly_to_annotation_id(annotation_id: string, subtask_key?: string | null, max_zoom?: number): boolean;
@@ -573,6 +677,7 @@ export class ULabel {
     ): void;
     public hide_global_edit_suggestion(): void;
     public hide_edit_suggestion(): void;
+    public hide_and_clear_action_candidates(): void;
 
     // Edit utils
     public get_with_access_string(

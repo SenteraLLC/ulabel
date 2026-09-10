@@ -12,7 +12,7 @@ import { add_style_to_document, build_confidence_dialog, build_edit_suggestion, 
 import { create_ulabel_listeners } from "./listeners";
 import { ULabelLoader } from "./loader";
 import { ULabelSubtask } from "./subtask";
-import { ULabelAnnotation } from "./annotation";
+import { ULabelAnnotation, NONSPATIAL_MODES } from "./annotation";
 import { get_local_storage_item } from "./utilities";
 
 /**
@@ -34,11 +34,6 @@ function make_image_canvases(
         $("#" + ulabel.config["imwrap_id"]).append(`
         <div id="canvasses__${st}" class="canvasses">
             <canvas 
-                id="${ulabel.subtasks[st]["canvas_bid"]}" 
-                class="${ulabel.config["canvas_class"]} ${ulabel.config["imgsz_class"]} canvas_cls" 
-                height=${ulabel.config["image_height"]! * ulabel.config["px_per_px"]} 
-                width=${ulabel.config["image_width"]! * ulabel.config["px_per_px"]}></canvas>
-            <canvas 
                 id="${ulabel.subtasks[st]["canvas_fid"]}" 
                 class="${ulabel.config["canvas_class"]} ${ulabel.config["imgsz_class"]} canvas_cls" 
                 height=${ulabel.config["image_height"]! * ulabel.config["px_per_px"]} 
@@ -52,9 +47,7 @@ function make_image_canvases(
         `);
 
         // Get canvas contexts
-        const canvas_bid = <HTMLCanvasElement>document.getElementById(ulabel.subtasks[st]["canvas_bid"]);
         const canvas_fid = <HTMLCanvasElement>document.getElementById(ulabel.subtasks[st]["canvas_fid"]);
-        ulabel.subtasks[st]["state"]["back_context"] = canvas_bid.getContext("2d")!;
         ulabel.subtasks[st]["state"]["front_context"] = canvas_fid.getContext("2d")!;
     }
 }
@@ -183,9 +176,14 @@ export async function ulabel_init(
     if (!ulabel.config.allow_annotations_outside_image) {
         const image_height = ulabel.config["image_height"];
         const image_width = ulabel.config["image_width"];
-        for (const subtask of Object.values(ulabel.subtasks) as ULabelSubtask[]) {
+        for (const subtask_key in ulabel.subtasks) {
+            const subtask: ULabelSubtask = ulabel.subtasks[subtask_key];
             for (const anno of Object.values(subtask.annotations.access) as ULabelAnnotation[]) {
+                if (NONSPATIAL_MODES.includes(anno.spatial_type!)) continue;
                 anno.clamp_annotation_to_image_bounds(image_width!, image_height!);
+                // The containing box was built from the pre-clamp payload; a stale
+                // box anchors the hover dialogs (and hit-testing) off the image
+                ulabel.rebuild_containing_box(anno.id!, false, subtask_key);
             }
         }
     }
@@ -208,18 +206,6 @@ export async function ulabel_init(
     // Create listers to manipulate and export this object
     create_ulabel_listeners(ulabel);
 
-    // Restore toolbox collapsed state from localStorage
-    const is_collapsed = get_local_storage_item("ulabel_toolbox_collapsed");
-    if (is_collapsed === "true") {
-        const toolbox = $("#" + ulabel.config["toolbox_id"]);
-        const container = $(".full_ulabel_container_");
-        const btn = $(".toolbox-collapse-btn");
-        toolbox.addClass("collapsed");
-        container.addClass("toolbox-collapsed");
-        btn.text("▶");
-        btn.attr("title", "Expand toolbox");
-    }
-
     ulabel.handle_toolbox_overflow();
 
     // Set the canvas elements in the correct stacking order given current subtask
@@ -233,6 +219,7 @@ export async function ulabel_init(
     ulabel.is_init = true;
 
     ulabel.show_initial_crop();
+    $(".full_ulabel_container_").addClass("ulabel-cropped");
     ulabel.update_frame();
 
     // Draw demo annotation

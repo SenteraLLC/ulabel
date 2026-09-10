@@ -60,6 +60,8 @@ test.describe("Bitmask overlap + move", () => {
             await u.set_annotations([make("other", 2, 10, 10, 30, 30)], "b");
             ["active", "far"].forEach((id) => rebuild("a", id));
             rebuild("b", "other");
+            // Cross-subtask reach is opt-in
+            u.config.brush_overlap_across_subtasks = true;
 
             u.set_subtask("a");
             u.subtasks["a"].state.active_id = "active";
@@ -93,6 +95,7 @@ test.describe("Bitmask overlap + move", () => {
 
             u.set_subtask("a");
             u.subtasks["a"].state.active_id = "active";
+            u.config.brush_overlap_across_subtasks = true;
             const delta = u.get_bitmask(u.subtasks["a"].annotations.access["active"]);
             u.resolve_bitmask_overlap("active", delta, "exclude");
 
@@ -121,6 +124,7 @@ test.describe("Bitmask overlap + move", () => {
 
             u.set_subtask("a");
             u.subtasks["a"].state.active_id = "active";
+            u.config.brush_overlap_across_subtasks = true;
             const active_ann = u.subtasks["a"].annotations.access["active"];
             const active_before = active_ann.spatial_payload;
             const delta = u.get_bitmask(active_ann);
@@ -273,6 +277,7 @@ test.describe("Bitmask overlap + move", () => {
 
             u.set_subtask("a");
             u.subtasks["a"].state.active_id = "dup";
+            u.config.brush_overlap_across_subtasks = true;
             const delta = u.get_bitmask(u.subtasks["a"].annotations.access["dup"]);
             u.resolve_bitmask_overlap("dup", delta, "overwrite");
 
@@ -303,6 +308,7 @@ test.describe("Bitmask overlap + move", () => {
             // Move the other mask to a different frame than the stroke.
             u.subtasks["b"].annotations.access["other"].frame = 3;
             u.state.current_frame = 0;
+            u.config.brush_overlap_across_subtasks = true;
 
             u.set_subtask("a");
             u.subtasks["a"].state.active_id = "active";
@@ -330,6 +336,7 @@ test.describe("Bitmask overlap + move", () => {
             rebuild("a", "active");
             rebuild("b", "ro");
             u.subtasks["b"].read_only = true;
+            u.config.brush_overlap_across_subtasks = true;
 
             u.set_subtask("a");
             u.subtasks["a"].state.active_id = "active";
@@ -350,6 +357,34 @@ test.describe("Bitmask overlap + move", () => {
         expect(res.ro_kept_outside).toBe(1);
         expect(res.active_clipped_in_overlap).toBe(0);
         expect(res.active_kept_outside).toBe(1);
+    });
+
+    test("by default overlap resolution stays within the active subtask", async ({ page }) => {
+        await wait_for_ulabel_init(page, "/bitmask-e2e.html");
+
+        const res = await page.evaluate(async () => {
+            const u = window.ulabel;
+            const { make, rebuild, pix } = window.__mask_helpers(u);
+            await u.set_annotations([make("active", 1, 20, 20, 40, 40), make("same_st", 1, 10, 10, 30, 30)], "a");
+            await u.set_annotations([make("other_st", 2, 10, 10, 30, 30)], "b");
+            ["active", "same_st"].forEach((id) => rebuild("a", id));
+            rebuild("b", "other_st");
+
+            u.set_subtask("a");
+            u.subtasks["a"].state.active_id = "active";
+            const delta = u.get_bitmask(u.subtasks["a"].annotations.access["active"]);
+            const edits = u.resolve_bitmask_overlap("active", delta, "overwrite");
+
+            return {
+                same_st_carved: pix("a", "same_st", 25, 25), // same subtask still resolves -> 0
+                other_st_kept: pix("b", "other_st", 25, 25), // other subtask untouched -> 1
+                edits_subtasks: edits.map((e) => e.subtask),
+            };
+        });
+
+        expect(res.same_st_carved).toBe(0);
+        expect(res.other_st_kept).toBe(1);
+        expect(res.edits_subtasks).toEqual(["a"]);
     });
 });
 

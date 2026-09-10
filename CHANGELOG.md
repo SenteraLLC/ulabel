@@ -2,7 +2,23 @@
 
 All notable changes to this project will be documented here.
 
-## [unreleased]
+## [0.28.0] - Sept 10th, 2026
+- New `set_active_class(class_id, subtask_key?, redraw?)` and `get_selected_class_id(subtask_key?)` public API methods; all internal class-selection paths (toolbox clicks, keybinds, delete-mode toggles) route through `set_active_class`.
+- New per-subtask `focus_active_class` option (default `false`): the selected class is the focused class — other classes dim to `defocused_opacity` and drop out of hover, Tab navigation, the annotation list, and bulk delete. Toggleable via `set_focus_active_class()` or `toggle_class_focus_keybind` (default `shift+f`).
+- Per-class `allowed_modes` are now enforced on reclassification: the id-dialog pie only offers classes compatible with the annotation's spatial type; with fewer than two, no pie appears and the edit ring collapses. Importing an incompatible annotation logs a warning but still loads.
+- New host callback config options `on_active_class_change`, `on_subtask_change`, and `on_focus_active_class_change`: fired from any writer (API, toolbox, keybind), and only when the value actually changes.
+- New `brush_overlap_across_subtasks` config option (default `false`). **Behavior change**: brush overlap resolution now stays within the active subtask; reaching masks in other subtasks (including read-only barriers) is opt-in.
+- `set_annotations()` and `set_annotations_batch()` gained an optional `show_loader` parameter (default `true`); pass `false` to swap background layers without flashing the loading overlay.
+- A subtask with its layer opacity slider at 0 is now non-interactive, matching vanish mode (new `is_subtask_hidden()` helper).
+- Fix the Brush/Erase toolbox buttons staying lit after a subtask switch.
+- Fix class keybinds edited in the Keybinds toolbox item not applying to other subtasks sharing the class id until a reload; class-select keybinds now also work in read-only subtasks, and are correctly inert while a delete mode is active (the gate for this read a field that was never assigned).
+- Fix stale containing boxes when `allow_annotations_outside_image = false` clamps loaded annotations at init.
+- Removed unused per-subtask back canvas.
+- `set_annotations()` gained a `skip_toolbox_update` parameter for batching several per-subtask swaps, plus a `refresh_toolbox()` method to run the deferred filter-distance + toolbox update once at the end.
+- `ClassCounter` toolbox item options via `class_counter_toolbox_item` config: `subtasks` (`string[] | "current"`) selects which subtasks to count, `layout` (`"current" | "grouped" | "flat"`) controls rendering (`grouped` adds a heading per subtask, `flat` merges shared class ids into one summed list). New `set_class_counter_options()` public API method changes them at runtime.
+- New `set_class_color(class_id, color, redraw?)` public API method: writes `color_info` and syncs the id-toolbox swatch and id-dialog color pies. Also fixes the front id-dialog pie not updating (and duplicating) on recolor via the `RecolorActive` toolbox item.
+- Fix the hover confidence card sitting on top of the hovered annotation: the card is now populated before it is measured and positioned, so it hugs the edit-button ring instead of drifting onto the anchor.
+- `swap_frame_image()` now rejects (and restores the old image) when the new image's dimensions don't match the ones the instance was initialized with, instead of silently misaligning annotations against the new frame. Changing image dimensions requires reinitializing the ULabel instance.
 
 ## [0.27.0] - Aug 18th, 2026
 - Hovering a spatial annotation now draws a white outline that hugs its shape.

@@ -381,11 +381,8 @@ describe("Annotation Processing", () => {
             const canvasses = document.createElement("div");
             canvasses.id = "canvasses__test_task";
             document.body.appendChild(canvasses);
-            // Mirror the init-time DOM: back canvas, front canvas, dialogs container, then
+            // Mirror the init-time DOM: front canvas, dialogs container, then
             // per-annotation canvases (which are the only children we should be removing).
-            const back = document.createElement("canvas");
-            back.id = "back_canvas";
-            canvasses.appendChild(back);
             const front = document.createElement("canvas");
             front.id = "front_canvas";
             canvasses.appendChild(front);
@@ -408,10 +405,9 @@ describe("Annotation Processing", () => {
             expect(annotation._bitmask_box_hint).toBeUndefined();
             // Per-annotation canvas removed.
             expect(document.getElementById("canvas__anno")).toBeNull();
-            // Back/front canvases and the dialogs container MUST survive; otherwise hover
+            // The front canvas and the dialogs container MUST survive; otherwise hover
             // feedback (front canvas) and brush/polygon-ender attach points (dialogs div)
             // become detached-DOM ghosts.
-            expect(document.getElementById("back_canvas")).not.toBeNull();
             expect(document.getElementById("front_canvas")).not.toBeNull();
             expect(document.getElementById("dialogs__test_task")).not.toBeNull();
             // Annotation-context bookkeeping reset.
@@ -497,6 +493,105 @@ describe("Annotation Processing", () => {
 
             expect(ulabel.drag_state.active_key).toBeNull();
             expect(ulabel.drag_state.move.mouse_start).toBeNull();
+        });
+    });
+
+    describe("set_annotations batching", () => {
+        const two_subtask_config = () => ({
+            ...mock_config,
+            subtasks: {
+                subtask_a: {
+                    display_name: "A",
+                    classes: [{ name: "X", id: 1, color: "red" }],
+                    allowed_modes: ["bbox", "point"],
+                    resume_from: null,
+                },
+                subtask_b: {
+                    display_name: "B",
+                    classes: [{ name: "Y", id: 2, color: "blue" }],
+                    allowed_modes: ["bbox", "point"],
+                    resume_from: null,
+                },
+            },
+        });
+
+        const make_bbox = (class_id) => ({
+            spatial_type: "bbox",
+            spatial_payload: [[10, 10], [20, 20]],
+            classification_payloads: [{ class_id, confidence: 1.0 }],
+        });
+
+        // A 2d context stub that tolerates any method call the redraw path makes.
+        const make_mock_context = () => new Proxy({}, {
+            get(target, prop) {
+                if (!(prop in target)) target[prop] = jest.fn();
+                return target[prop];
+            },
+        });
+
+        // set_annotations normally runs on an init-ed instance; provide the minimal
+        // DOM + state that init would have created.
+        function scaffold_live_instance(ulabel) {
+            // jest's resetMocks wipes jest-canvas-mock's getContext implementation, so
+            // dynamically created annotation canvases need it re-mocked per test.
+            const canvas_proto = Object.getPrototypeOf(document.createElement("canvas"));
+            jest.spyOn(canvas_proto, "getContext").mockImplementation(make_mock_context);
+
+            ulabel.config.image_width = 100;
+            ulabel.config.image_height = 100;
+            ulabel.state.current_subtask = "subtask_a";
+            for (const st of Object.keys(ulabel.subtasks)) {
+                const canvasses = document.createElement("div");
+                canvasses.id = `canvasses__${st}`;
+                document.body.appendChild(canvasses);
+                ulabel.subtasks[st].state.front_context = {
+                    clearRect: jest.fn(),
+                };
+            }
+            ulabel.toolbox = { redraw_update_items: jest.fn() };
+            return ulabel;
+        }
+
+        test("N sequential per-subtask swaps land all annotations (frontend pattern)", async () => {
+            const ulabel = scaffold_live_instance(new ULabel(two_subtask_config()));
+
+            await ulabel.set_annotations([make_bbox(1)], "subtask_a", true);
+            await ulabel.set_annotations([make_bbox(2), make_bbox(2)], "subtask_b", true);
+            ulabel.refresh_toolbox();
+
+            expect(ulabel.subtasks.subtask_a.annotations.ordering).toHaveLength(1);
+            expect(ulabel.subtasks.subtask_b.annotations.ordering).toHaveLength(2);
+            // Canvases were created for the imported annotations
+            expect(Object.keys(ulabel.subtasks.subtask_a.state.annotation_contexts).length).toBeGreaterThan(0);
+            expect(Object.keys(ulabel.subtasks.subtask_b.state.annotation_contexts).length).toBeGreaterThan(0);
+            // The batched flag deferred the toolbox update to the single refresh call
+            expect(ulabel.toolbox.redraw_update_items).toHaveBeenCalledTimes(1);
+        });
+
+        test("swapping one subtask leaves the other's annotations untouched", async () => {
+            const ulabel = scaffold_live_instance(new ULabel(two_subtask_config()));
+
+            await ulabel.set_annotations([make_bbox(2)], "subtask_b", true);
+            const b_id = ulabel.subtasks.subtask_b.annotations.ordering[0];
+
+            await ulabel.set_annotations([make_bbox(1)], "subtask_a", true);
+
+            expect(ulabel.subtasks.subtask_b.annotations.ordering).toEqual([b_id]);
+        });
+
+        test("default call updates the toolbox once per swap", async () => {
+            const ulabel = scaffold_live_instance(new ULabel(two_subtask_config()));
+
+            await ulabel.set_annotations([make_bbox(1)], "subtask_a");
+            await ulabel.set_annotations([make_bbox(2)], "subtask_b");
+
+            expect(ulabel.toolbox.redraw_update_items).toHaveBeenCalledTimes(2);
+        });
+
+        test("refresh_toolbox no-ops on a destroyed instance", () => {
+            const ulabel = scaffold_live_instance(new ULabel(two_subtask_config()));
+            ulabel.destroy();
+            expect(() => ulabel.refresh_toolbox()).not.toThrow();
         });
     });
 });

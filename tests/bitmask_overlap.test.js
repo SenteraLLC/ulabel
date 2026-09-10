@@ -90,3 +90,58 @@ describe("bitmask overlap semantics (mask level)", () => {
             .toEqual(Array.from(ULabelMask.from_rle(other_before, false).data));
     });
 });
+
+// The candidate-collection gate: which subtasks' masks a stroke may interact with.
+describe("brush overlap subtask scoping (get_other_bitmask_ids)", () => {
+    const { ULabel } = require("./testing-utils/build_loader");
+
+    const make_annotation = (id) => ({
+        id,
+        spatial_type: "bitmask",
+        deprecated: false,
+    });
+
+    function make_two_subtask_ulabel(extra_config = {}) {
+        const subtask = (name) => ({
+            display_name: name,
+            classes: [{ name: "Mask", id: 1, color: "green" }],
+            allowed_modes: ["bitmask"],
+            resume_from: null,
+        });
+        const ulabel = new ULabel({
+            container_id: "container",
+            image_data: "test.jpg",
+            username: "test_user",
+            submit_buttons: [{ name: "Submit", hook: jest.fn() }],
+            subtasks: { a: subtask("A"), b: subtask("B") },
+            ...extra_config,
+        });
+        ulabel.state.current_subtask = "a"; // normally set during init
+        ulabel.subtasks.a.annotations = {
+            access: { active: make_annotation("active"), same_st: make_annotation("same_st") },
+            ordering: ["active", "same_st"],
+        };
+        ulabel.subtasks.b.annotations = {
+            access: { other_st: make_annotation("other_st") },
+            ordering: ["other_st"],
+        };
+        return ulabel;
+    }
+
+    test("defaults to masks in the active subtask only", () => {
+        const ulabel = make_two_subtask_ulabel();
+
+        expect(ulabel.get_other_bitmask_ids("active")).toEqual([
+            { id: "same_st", subtask: "a" },
+        ]);
+    });
+
+    test("brush_overlap_across_subtasks reaches other subtasks", () => {
+        const ulabel = make_two_subtask_ulabel({ brush_overlap_across_subtasks: true });
+
+        expect(ulabel.get_other_bitmask_ids("active")).toEqual([
+            { id: "same_st", subtask: "a" },
+            { id: "other_st", subtask: "b" },
+        ]);
+    });
+});

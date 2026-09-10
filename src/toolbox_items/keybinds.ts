@@ -341,6 +341,14 @@ export class KeybindsToolboxItem extends ToolboxItem {
         });
 
         keybinds.push({
+            key: config.toggle_class_focus_keybind,
+            label: "Toggle Class Focus",
+            description: "Focus the active class: other classes dim and drop out of hover and navigation",
+            configurable: true,
+            config_key: "toggle_class_focus_keybind",
+        });
+
+        keybinds.push({
             key: config.create_bbox_on_initial_crop_keybind,
             label: "Create BBox on Crop",
             description: "Create bbox annotation on initial crop area",
@@ -664,15 +672,30 @@ export class KeybindsToolboxItem extends ToolboxItem {
     }
 
     /**
+     * Write a class keybind into every subtask holding the id. Class ids can
+     * be shared across subtasks and both the storage key and the init-time
+     * restore are id-keyed, so a live edit must match that scope.
+     *
+     * @returns whether any class def matched the id
+     */
+    private set_class_keybind_in_all_subtasks(class_id: number, value: string | null): boolean {
+        let changed = false;
+        for (const subtask_key in this.ulabel.subtasks) {
+            const class_def = this.ulabel.subtasks[subtask_key].class_defs?.find((cd) => cd.id === class_id);
+            if (class_def) {
+                class_def.keybind = value;
+                changed = true;
+            }
+        }
+        return changed;
+    }
+
+    /**
      * Reset a class keybind to its default value
      */
     private reset_class_keybind_to_default(class_id: number): void {
-        const current_subtask = this.ulabel.get_current_subtask();
-        const class_def = current_subtask.class_defs.find((cd) => cd.id === class_id);
-        if (class_def) {
-            const original_class_keybinds = this.get_original_class_keybinds();
-            class_def.keybind = original_class_keybinds[class_id];
-        }
+        const original_class_keybinds = this.get_original_class_keybinds();
+        this.set_class_keybind_in_all_subtasks(class_id, original_class_keybinds[class_id] ?? null);
 
         // Remove from localStorage
         const stored = get_local_storage_item("ulabel_custom_class_keybinds");
@@ -704,13 +727,9 @@ export class KeybindsToolboxItem extends ToolboxItem {
 
         // Reset all class keybinds
         const original_class_keybinds = this.get_original_class_keybinds();
-        const current_subtask = this.ulabel.get_current_subtask();
-        if (current_subtask && current_subtask.class_defs) {
-            for (const class_def of current_subtask.class_defs) {
-                if (class_def.id in original_class_keybinds) {
-                    class_def.keybind = original_class_keybinds[class_def.id];
-                }
-            }
+        for (const class_id_key in original_class_keybinds) {
+            const class_id = Number(class_id_key);
+            this.set_class_keybind_in_all_subtasks(class_id, original_class_keybinds[class_id]);
         }
 
         // Clear localStorage
@@ -1084,15 +1103,13 @@ export class KeybindsToolboxItem extends ToolboxItem {
 
                 // Update the config or class definition
                 if (is_class_keybind) {
-                    // Update the class definition keybind
-                    const current_subtask = this.ulabel.get_current_subtask();
-                    const class_def = current_subtask.class_defs.find((cd) => cd.id === class_id);
-                    if (class_def) {
-                        class_def.keybind = new_key;
-
+                    // Update every subtask sharing the class id, matching the
+                    // id-keyed storage restore
+                    const changed = this.set_class_keybind_in_all_subtasks(class_id!, new_key);
+                    if (changed) {
                         // Only save to localStorage if different from default
                         const original_class_keybinds = this.get_original_class_keybinds();
-                        const default_value = original_class_keybinds[class_id];
+                        const default_value = original_class_keybinds[class_id!];
                         if (new_key !== default_value) {
                             this.save_class_keybind_to_storage(class_id, new_key);
                         } else {

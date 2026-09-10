@@ -54,6 +54,7 @@ class ULabel({
     toolbox_order: AllowedToolboxItem[],
     distance_filter_toolbox_item: FilterDistanceConfig,
     image_filters_toolbox_item: ImageFiltersConfig,
+    class_counter_toolbox_item: ClassCounterConfig,
     reset_zoom_keybind: string,
     show_full_image_keybind: string,
     create_point_annotation_keybind: string,
@@ -70,6 +71,7 @@ class ULabel({
     decrease_brush_size_keybind: string,
     mask_annotation_opacity: number,
     default_brush_overlap_mode: BrushOverlapMode,
+    brush_overlap_across_subtasks: boolean,
     set_brush_overlap_none_keybind: string,
     set_brush_overlap_exclude_keybind: string,
     set_brush_overlap_overwrite_keybind: string,
@@ -80,10 +82,14 @@ class ULabel({
     annotation_size_plus_keybind: string,
     annotation_size_minus_keybind: string,
     annotation_vanish_keybind: string,
+    toggle_class_focus_keybind: string,
     fly_to_max_zoom: number,
     min_zoom_fit_ratio: number,
     n_annos_per_canvas: number,
-    auto_destroy_on_detach: boolean
+    auto_destroy_on_detach: boolean,
+    on_active_class_change: function,
+    on_subtask_change: function,
+    on_focus_active_class_change: function
 })
 ```
 
@@ -309,7 +315,7 @@ The `"bitmask"` mode enables raster (per-pixel) segmentation. Each bitmask annot
 
 **Overlap modes**
 
-When painting, the brush can enforce mutual exclusivity with *other* undeprecated bitmask annotations. The mode is a single **global** value, persisted to localStorage, and is chosen via the Brush toolbox item (shown in bitmask mode) or the overlap keybinds. Its initial value comes from [`default_brush_overlap_mode`](#default_brush_overlap_mode).
+When painting, the brush can enforce mutual exclusivity with *other* undeprecated bitmask annotations. The mode is a single **global** value, persisted to localStorage, and is chosen via the Brush toolbox item (shown in bitmask mode) or the overlap keybinds. Its initial value comes from [`default_brush_overlap_mode`](#default_brush_overlap_mode). Resolution stays within the active subtask unless [`brush_overlap_across_subtasks`](#brush_overlap_across_subtasks) is set.
 
 - `"none"` (default): painting only adds to the active mask; other masks are untouched (pixels may be owned by multiple annotations).
 - `"exclude"`: newly-painted pixels never cover pixels owned by other bitmask annotations (existing masks win).
@@ -539,6 +545,24 @@ type ConfidenceSliderConfig = {
 }
 ```
 
+### `class_counter_toolbox_item`
+
+Options for the `ClassCounter` toolbox item (added to `toolbox_order` via `AllowedToolboxItem.ClassCounter`), which displays per-class counts of non-deprecated annotations.
+
+```javascript
+type ClassCounterConfig = {
+    // Which subtasks to count. "current" follows the active subtask. Default: "current"
+    "subtasks"?: string[] | "current",
+    // How counts are laid out. Default: "current"
+    // - "current": one plain per-class list per counted subtask
+    // - "grouped": adds a heading per counted subtask
+    // - "flat": merges shared class ids across subtasks into one summed list
+    "layout"?: "current" | "grouped" | "flat",
+}
+```
+
+Both options can also be changed at runtime via [`set_class_counter_options()`](#set_class_counter_optionsoptions-redrawtrue).
+
 ### `reset_zoom_keybind`
 Keybind to reset the zoom level to the `initial_crop`. Default is `r`.
 
@@ -589,6 +613,9 @@ The fill opacity (`0`-`1`) used when rendering `bitmask` (raster segmentation) a
 ### `default_brush_overlap_mode`
 The initial [brush overlap mode](#overlap-modes) for bitmask painting: `"none"` (default), `"exclude"`, or `"overwrite"`. The live value is global and persisted to localStorage, so a user's last choice takes precedence over this default on subsequent sessions.
 
+### `brush_overlap_across_subtasks`
+When `true`, [brush overlap resolution](#overlap-modes) also reaches undeprecated bitmask annotations in *other* subtasks: `"exclude"` clips the stroke against them, and `"overwrite"` carves them — except masks in `read_only` subtasks, which act as barriers (the stroke is clipped around them instead). Default is `false`: a stroke only interacts with masks in the active subtask.
+
 ### `set_brush_overlap_none_keybind`
 Keybind to set the brush overlap mode to `none`. Default is `shift+n`.
 
@@ -622,6 +649,9 @@ Keybind to toggle vanish mode for annotations in the current subtask. Default is
 ### `annotation_vanish_all_keybind`
 Keybind to toggle vanish mode for all subtasks. Default is `shift+v`
 
+### `toggle_class_focus_keybind`
+Keybind to toggle `focus_active_class` on the current subtask: with it on, classes other than the active one dim to `defocused_opacity` and drop out of hover, navigation, the annotation list, and bulk delete. Default is `shift+f`.
+
 ### `fly_to_max_zoom`
 Maximum zoom factor used when flying-to an annotation. Default is `10`, value must be > `0`. 
 
@@ -642,6 +672,15 @@ When `true` (the default), ULabel installs a `MutationObserver` on the container
 
 > **Same-id replacement caveat.** With the default `true`, the one-frame grace period means a caller who removes the old container and mounts a new `<div>` with the same `container_id` *within the same animation frame* can briefly have two `ULabel` instances attached to `document`; when the old instance's teardown runs it will remove `.ulabel`-namespaced document/window handlers belonging to the new instance too. If your SPA does synchronous same-id replacement, set `auto_destroy_on_detach: false` and call `oldUlabel.destroy()` yourself *before* mounting the replacement — `destroy()` is synchronous, so this ordering is race-free.
 
+### `on_active_class_change`
+*(subtask_key: string, class_id: number) => void* -- Called after a subtask's active class actually changes, whatever the writer: `set_active_class`, a toolbox class-button click, or a class-select keybind (including keybinds users customize through the `Keybinds` toolbox item). Not called for no-op re-selections, rejected ids, or delete-mode toggles (which freeze the selection). Default is `null`.
+
+### `on_subtask_change`
+*(subtask_key: string, old_subtask_key: string) => void* -- Called after the current subtask actually changes, whatever the writer: `set_subtask`, a toolbox tab click, or the `switch_subtask_keybind`. Not called when the target subtask is already current. Default is `null`.
+
+### `on_focus_active_class_change`
+*(subtask_key: string, enabled: boolean) => void* -- Called after a subtask's `focus_active_class` flag actually changes, whatever the writer: `set_focus_active_class` or the `toggle_class_focus_keybind`. Not called when the flag is already at the target value, so a host may re-sync other subtasks from the callback without recursing. Default is `null`.
+
 
 ## Display Utility Functions
 
@@ -650,6 +689,8 @@ Display utilities are provided for a constructed `ULabel` object.
 ### `swap_frame_image(new_src, frame=0)`
 
 *(string, int) => Promise&lt;string&gt;* -- Changes the image source for a given frame. Displays the loading spinner while the new image loads. Returns a `Promise` that resolves with the old source once the new image has been decoded; `await` it if you need to run code after the swap completes.
+
+The new image must match the dimensions this instance was initialized with: the canvases, zoom math, and loaded annotations are all in the init-time image's coordinate space. On a mismatch the old image is restored and the returned `Promise` rejects. Rebuild the ULabel instance to change image dimensions.
 
 ### `swap_anno_bg_color(new_bg_color)`
 
@@ -667,9 +708,27 @@ Display utilities are provided for a constructed `ULabel` object.
 
 *(string) => array* -- Gets the current list of annotations within the provided subtask.
 
-### `set_annotations(new_annotations, subtask)`
+### `set_annotations(new_annotations, subtask, skip_toolbox_update=false, show_loader=true)`
 
-*(array, string) => Promise&lt;void&gt;* -- Sets the annotations for the provided subtask. Displays the loading spinner while re-initializing the annotations (similar to a new init). Returns a `Promise` that resolves once the annotations have been set and redrawn; `await` it if you need to run code after the update completes.
+*(array, string, bool, bool) => Promise&lt;void&gt;* -- Sets the annotations for the provided subtask. Displays the loading spinner while re-initializing the annotations (similar to a new init); pass `show_loader = false` to swap silently, e.g. when the target subtask isn't the one on screen. Returns a `Promise` that resolves once the annotations have been set and redrawn; `await` it if you need to run code after the update completes.
+
+When batching several per-subtask swaps, prefer [`set_annotations_batch()`](#set_annotations_batchannotations_by_subtask-show_loadertrue); alternatively pass `skip_toolbox_update = true` on each call to suppress the per-call distance-filter and toolbox updates, then call [`refresh_toolbox()`](#refresh_toolbox) once at the end.
+
+### `set_annotations_batch(annotations_by_subtask, show_loader=true)`
+
+*(object, bool) => Promise&lt;void&gt;* -- Replaces several subtasks' annotations as a single update: one loader cycle and one toolbox refresh for the whole set (per-subtask calls would flash the loader once per layer). `annotations_by_subtask` maps subtask keys to annotation arrays in `resume_from` form; unknown keys are warned and skipped. Pass `show_loader = false` to swap silently, e.g. when every changed subtask is a background layer.
+
+### `refresh_toolbox()`
+
+*() => void* -- Runs the deferred half of a batched [`set_annotations()`](#set_annotationsnew_annotations-subtask-skip_toolbox_updatefalse) sequence: recomputes distance filtering and redraws the toolbox items once.
+
+### `set_class_color(class_id, color, redraw=true)`
+
+*(number | string, string, bool) => void* -- Sets a class's color and syncs every view of it: `color_info`, the id-toolbox swatch, and the id-dialog color pies. When `redraw` is `true`, annotations are redrawn immediately; pass `false` when batching several color changes, then call `redraw_all_annotations()` once at the end.
+
+### `set_class_counter_options(options, redraw=true)`
+
+*(ClassCounterConfig, bool) => bool* -- Updates the [`ClassCounter`](#class_counter_toolbox_item) toolbox item's options at runtime; omitted options keep their current values. When `redraw` is `true` the counter re-renders immediately. Returns whether the `ClassCounter` toolbox item was found.
 
 ### `set_saved(saved)`
 

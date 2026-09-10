@@ -7,8 +7,11 @@ describe("ULabelMask", () => {
             const mask = ULabelMask.create_empty(4, 3);
             expect(mask.width).toBe(4);
             expect(mask.height).toBe(3);
-            expect(mask.data.length).toBe(12);
             expect(mask.is_empty()).toBe(true);
+            // Storage is windowed to the foreground, so an empty mask holds no
+            // pixels at all -- that is what keeps hundreds of objects viable.
+            expect(mask.get_window_box()).toBeNull();
+            expect(mask.data.length).toBe(0);
         });
 
         test("throws when provided data length mismatches dimensions", () => {
@@ -168,10 +171,18 @@ describe("ULabelMask", () => {
             const rle = mask.to_rle();
             expect(rle.size).toEqual([2, 3]);
             expect(rle.counts).toEqual([0, 4, 2]);
-            // Decoding the RLE must produce the same foreground pattern.
+            // Decoding the RLE must produce the same foreground pattern. Compare
+            // in image coordinates: storage is windowed to the bounding box, so
+            // the two masks' buffers need not share a layout.
             const restored = ULabelMask.from_rle(rle);
-            const fg_pattern = Array.from(restored.data).map((b) => (b !== 0 ? 1 : 0));
-            const original_fg = Array.from(data).map((b) => (b !== 0 ? 1 : 0));
+            const fg_pattern = [];
+            const original_fg = [];
+            for (let y = 0; y < 2; y++) {
+                for (let x = 0; x < 3; x++) {
+                    fg_pattern.push(restored.get_pixel(x, y) !== 0 ? 1 : 0);
+                    original_fg.push(data[y * 3 + x] !== 0 ? 1 : 0);
+                }
+            }
             expect(fg_pattern).toEqual(original_fg);
         });
     });
@@ -356,10 +367,14 @@ describe("ULabelMask", () => {
         });
 
         test("from_raw with copy=false references the caller's buffer", () => {
+            // Zero-copy needs an already-cropped payload: without a `box` the
+            // mask has to crop the full frame down to its window, which by
+            // definition allocates.
             const data = new Uint8Array([0, 0, 0, 0]);
-            const mask = ULabelMask.from_raw({ data, size: [2, 2] }, true, false);
+            const box = { tlx: 0, tly: 0, brx: 1, bry: 1 };
+            const mask = ULabelMask.from_raw({ data, size: [2, 2], box }, true, false);
             data[0] = 1;
-            expect(mask.data[0]).toBe(1);
+            expect(mask.get_pixel(0, 0)).toBe(1);
         });
 
         test("validate_raw rejects wrong-length buffers", () => {
@@ -373,6 +388,28 @@ describe("ULabelMask", () => {
         test("validate_raw rejects a malformed size", () => {
             expect(() => ULabelMask.validate_raw({ data: new Uint8Array(4), size: [2] })).toThrow();
             expect(() => ULabelMask.validate_raw({ data: new Uint8Array(4), size: "2x2" })).toThrow();
+        });
+
+        test("validate_raw rejects a box reversed on both axes", () => {
+            // Two negative extents multiply to a positive expected length (16),
+            // so only an explicit bounds-order check can catch this
+            const payload = {
+                data: new Uint8Array(16),
+                size: [16, 16],
+                box: { tlx: 10, tly: 10, brx: 5, bry: 5 },
+            };
+
+            expect(() => ULabelMask.validate_raw(payload)).toThrow(/box/i);
+        });
+
+        test("validate_raw rejects a box reversed on one axis", () => {
+            const payload = {
+                data: new Uint8Array(24),
+                size: [16, 16],
+                box: { tlx: 10, tly: 2, brx: 5, bry: 5 },
+            };
+
+            expect(() => ULabelMask.validate_raw(payload)).toThrow(/box/i);
         });
     });
 
