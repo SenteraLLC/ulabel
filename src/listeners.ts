@@ -172,7 +172,7 @@ function handle_keypress_event(
     }
 
     // Check for class keybinds
-    if (!DELETE_MODES.includes(current_subtask.state.spatial_type)) {
+    if (!DELETE_MODES.includes(current_subtask.state.annotation_mode)) {
         for (let i = 0; i < current_subtask.class_defs.length; i++) {
             const class_def = current_subtask.class_defs[i];
             if (class_def.keybind !== null && event_matches_keybind(keypress_event, class_def.keybind!)) {

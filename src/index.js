@@ -1216,6 +1216,10 @@ export class ULabel {
                 this.redraw_all_annotations_in_annotation_context(prev_ann["canvas_id"], old_st);
             }
         }
+        // Stale action candidates must not survive the switch: a later keybind
+        // reclass reads move_candidate and would target an unhovered annotation.
+        old_subtask["state"]["move_candidate"] = null;
+        old_subtask["state"]["edit_candidate"] = null;
 
         // Brush state is per-subtask, so tear the outgoing brush down while it is
         // still current; otherwise the global toolbox buttons stay lit for it.
@@ -1431,6 +1435,10 @@ export class ULabel {
      * @returns {boolean} whether the ClassCounter toolbox item was found
      */
     set_class_counter_options(options, redraw = true) {
+        if (this.is_destroyed) {
+            log_message("set_class_counter_options called on a destroyed ULabel instance", LogLevel.WARNING, true);
+            return false;
+        }
         const item = this.toolbox.items.find((item) => item.get_toolbox_item_type() === "ClassCounter");
         if (item === undefined) return false;
         item.set_options(options);
@@ -1981,6 +1989,10 @@ export class ULabel {
      *     false when batching several color changes, then redraw once at the end.
      */
     set_class_color(class_id, color, redraw = true) {
+        if (this.is_destroyed) {
+            log_message("set_class_color called on a destroyed ULabel instance", LogLevel.WARNING, true);
+            return;
+        }
         this._apply_class_color(class_id, color);
         this.rebuild_id_dialog_pies();
 
@@ -1998,6 +2010,10 @@ export class ULabel {
      * @param {boolean} redraw whether to redraw annotations immediately
      */
     set_class_colors(colors_by_class_id, redraw = true) {
+        if (this.is_destroyed) {
+            log_message("set_class_colors called on a destroyed ULabel instance", LogLevel.WARNING, true);
+            return;
+        }
         const class_ids = Object.keys(colors_by_class_id);
         if (class_ids.length === 0) return;
 
@@ -6985,7 +7001,11 @@ export class ULabel {
 
     get_active_class_id_idx() {
         const class_ids = this.get_current_subtask()["class_ids"];
-        return class_ids.indexOf(this.get_active_class_id());
+        const idx = class_ids.indexOf(this.get_active_class_id());
+        if (idx >= 0) return idx;
+        // Delete modes resolve the active class to DELETE_CLASS_ID, which has no
+        // index; fall back to the frozen real selection so callers never see -1.
+        return Math.max(class_ids.indexOf(this.get_selected_class_id()), 0);
     }
 
     set_id_dialog_payload_to_init(annid, pyld = null) {
@@ -7205,6 +7225,9 @@ export class ULabel {
             if (pos_evt == null) return;
         }
         const target_class_id = current_subtask["class_ids"][pos_evt.class_ind];
+        // An out-of-range index resolves to no class; assigning it would zero
+        // the annotation's entire payload
+        if (target_class_id === undefined) return;
         // Silently refuse a class that doesn't allow the annotation's spatial
         // type (reachable via class keybinds; the pie excludes such classes)
         if (!can_annotation_be_class(this, annotation, target_class_id)) {

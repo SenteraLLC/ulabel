@@ -11,7 +11,7 @@ All notable changes to this project will be documented here.
 - `set_annotations()` and `set_annotations_batch()` gained an optional `show_loader` parameter (default `true`); pass `false` to swap background layers without flashing the loading overlay.
 - A subtask with its layer opacity slider at 0 is now non-interactive, matching vanish mode (new `is_subtask_hidden()` helper).
 - Fix the Brush/Erase toolbox buttons staying lit after a subtask switch.
-- Fix class keybinds edited in the Keybinds toolbox item not applying to other subtasks sharing the class id until a reload; class-select keybinds now also work in read-only subtasks.
+- Fix class keybinds edited in the Keybinds toolbox item not applying to other subtasks sharing the class id until a reload; class-select keybinds now also work in read-only subtasks, and are correctly inert while a delete mode is active (the gate for this read a field that was never assigned).
 - Fix stale containing boxes when `allow_annotations_outside_image = false` clamps loaded annotations at init.
 - Removed unused per-subtask back canvas.
 - `set_annotations()` gained a `skip_toolbox_update` parameter for batching several per-subtask swaps, plus a `refresh_toolbox()` method to run the deferred filter-distance + toolbox update once at the end.

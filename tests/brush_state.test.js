@@ -59,6 +59,17 @@ describe("set_subtask brush teardown", () => {
 
         expect(ulabel.destroy_brush_circle).not.toHaveBeenCalled();
     });
+
+    test("clears the outgoing subtask's action candidates", () => {
+        const ulabel = make_switchable_ulabel();
+        ulabel.subtasks.first.state.move_candidate = { annid: "x" };
+        ulabel.subtasks.first.state.edit_candidate = { annid: "x" };
+
+        ulabel.set_subtask("second");
+
+        expect(ulabel.subtasks.first.state.move_candidate).toBeNull();
+        expect(ulabel.subtasks.first.state.edit_candidate).toBeNull();
+    });
 });
 
 describe("update_brush_toolbox_display", () => {

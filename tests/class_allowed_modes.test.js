@@ -282,6 +282,26 @@ describe("reclassification gate", () => {
         expect(ulabel.assign_annotation_id).not.toHaveBeenCalled();
     });
 
+    test("an out-of-range class index never reaches assignment", () => {
+        // Regression: a -1 index used to zero the annotation's whole payload
+        const ulabel = make_gated_ulabel();
+        load_polyline(ulabel);
+
+        ulabel.handle_id_dialog_click(null, "row0", -1);
+
+        expect(ulabel.assign_annotation_id).not.toHaveBeenCalled();
+    });
+
+    test("get_active_class_id_idx falls back to the frozen selection in delete modes", () => {
+        // The active class resolves to DELETE_CLASS_ID there, which has no index;
+        // callers use the result as an index, so -1 must never escape
+        const ulabel = make_ulabel(make_config([CROP, ROW, ANY], ["bbox", "polyline", "delete_polygon"]));
+        ulabel.set_active_class(2, "st", false);
+        ulabel.subtasks.st.state.annotation_mode = "delete_polygon";
+
+        expect(ulabel.get_active_class_id_idx()).toBe(1);
+    });
+
     test("a dialog click with no associated annotation is a safe no-op", () => {
         const ulabel = make_gated_ulabel();
         load_polyline(ulabel);

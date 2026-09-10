@@ -513,6 +513,17 @@ time than at save time.
   which the focus keybind also funnels through) only on actual change — the
   guard is what lets a host re-sync other subtasks from the callback
   without recursing.
+- [x] 6.10 Review fixes: `get_active_class_id_idx()` returned -1 in delete
+  modes (the active class resolves to DELETE_CLASS_ID, which has no index)
+  and three callers used it as an index — a class keybind press (through the
+  dead gate below) or an API `set_active_class` during a delete mode with an
+  annotation hovered zeroed its classification (class buttons are hidden in
+  delete modes, so no button path). Now falls back to the frozen real
+  selection, and `handle_id_dialog_click` rejects out-of-range indices.
+  Also: the class-keybind delete-mode gate read the never-assigned
+  `state.spatial_type` (now `annotation_mode`), `set_subtask` clears the
+  outgoing subtask's move/edit candidates, and `set_class_counter_options` /
+  `set_class_color(s)` gained `is_destroyed` guards.
 
 ### Phase 7 - model-registry (branch `three-fixed-subtasks` off `cropped-bitmasks-trevor`)
 
@@ -674,7 +685,7 @@ opt-in, and give "set the active class" a real API instead of DOM clicks.
   changes; wedge hit-testing runs over the displayed subset and maps back to
   the full class list). When fewer than two classes are compatible there is
   nothing to choose, so no dialog appears at all. No shake on rejection -
-  the 9.6 gate stays as a warning-only backstop for keybind paths.
+  the 9.6 gate stays as a silent backstop for keybind paths.
 - [x] 9.8 Load-time validation: warn (never drop - the data is authoritative
   and round-trips on export) when an imported annotation's class does not
   allow its spatial type. NOTE: no subtask-level load check exists either
