@@ -143,15 +143,14 @@ export class ULabel {
     /**
      * Whether a left mousedown on the canvas should move the hovered annotation
      * rather than start a draw: body move enabled, not a delete mode (whose
-     * drags start over the annotations they target), the force-draw modifier
-     * not held, and the hover candidate a real containing hit (not the
-     * near-miss box fallback).
+     * drags start over the annotations they target), Alt not held, and the
+     * hover candidate a real containing hit (not the near-miss box fallback).
      */
     static is_body_move_start(mouse_event, ul) {
         if (!ul.config["allow_body_move"]) return false;
         const current_subtask = ul.get_current_subtask();
         if (DELETE_MODES.includes(current_subtask["state"]["annotation_mode"])) return false;
-        if (mouse_event[ul.config["force_draw_modifier"] + "Key"]) return false;
+        if (mouse_event.altKey) return false;
         const move_candidate = current_subtask["state"]["move_candidate"];
         return move_candidate != null && move_candidate["containing"] === true;
     }

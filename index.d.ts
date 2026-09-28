@@ -324,8 +324,8 @@ export type ULabelConstructorArgs = {
     class_counter_toolbox_item?: ClassCounterConfig;
     /** Let bitmask brush overlap resolution reach masks in other subtasks. Default false. */
     brush_overlap_across_subtasks?: boolean;
+    /** Left-drag inside a spatial annotation's body moves it; Alt+drag draws instead. Default true. */
     allow_body_move?: boolean;
-    force_draw_modifier?: "alt" | "ctrl" | "shift" | "meta";
     /** Fired after a subtask's active class changes, from any writer (API, toolbox click, class keybind). */
     on_active_class_change?: (subtask_key: string, class_id: number) => void;
     /** Fired after the current subtask changes, from any writer (API, tab click, switch keybind). */

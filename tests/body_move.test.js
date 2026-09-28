@@ -79,15 +79,6 @@ describe("get_drag_key_start body move", () => {
         expect(ULabel.get_drag_key_start(canvas_mousedown(ulabel, { altKey: true }), ulabel)).toBe("annotation");
     });
 
-    test("force_draw_modifier is configurable", () => {
-        const ulabel = make_ulabel(make_config({ force_draw_modifier: "meta" }));
-        hover(ulabel, true);
-
-        expect(ULabel.get_drag_key_start(canvas_mousedown(ulabel, { altKey: true }), ulabel)).toBe("move");
-        // meta still pans first: the canvas ctrl/meta check wins
-        expect(ULabel.get_drag_key_start(canvas_mousedown(ulabel, { metaKey: true }), ulabel)).toBe("pan");
-    });
-
     test("allow_body_move: false restores draw-everywhere", () => {
         const ulabel = make_ulabel(make_config({ allow_body_move: false }));
         hover(ulabel, true);

@@ -77,13 +77,16 @@ Verified facts the tickets get wrong, for the record:
   hit or clicking near a polygon on empty canvas would drag it.
 - [x] 228.2 `get_drag_key_start`: for button 0 on the canvas of an editable
   subtask, after the existing ctrl (pan) / shift (zoom) / read-only checks:
-  `force_draw_modifier` held -> `"annotation"`; `move_candidate` is a
+  Alt held -> `"annotation"`; `move_candidate` is a
   containing hit and `allow_body_move` -> `"move"`; else `"annotation"`.
   Delete the `.movable` branch. `.editable` (vertex handle) is a different
   target element, so vertex precedence is unchanged.
-- [x] 228.3 Config: `allow_body_move: boolean = true`,
-  `force_draw_modifier: "alt" | "ctrl" | "shift" | "meta" = "alt"`
-  (documented that ctrl/shift collide with pan/zoom on the canvas).
+- [x] 228.3 Config: `allow_body_move: boolean = true`. Alt is hardcoded as
+  the draw-over modifier (a `force_draw_modifier` option was dropped:
+  ctrl/meta/shift are claimed by pan/zoom first, and the keybinds toolbox
+  can't record a bare modifier). Listed as a non-configurable
+  "Alt + Click Drag" entry in the Keybinds toolbox item when
+  `allow_body_move` is on.
 - [x] 228.4 Remove the ring: move/reid/delete anchors and their click
   listeners, the `mcm` / `can_reassign` toggling in
   `show_global_edit_suggestion`, the ring CSS. Keep

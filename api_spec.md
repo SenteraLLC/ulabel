@@ -73,7 +73,6 @@ class ULabel({
     default_brush_overlap_mode: BrushOverlapMode,
     brush_overlap_across_subtasks: boolean,
     allow_body_move: boolean,
-    force_draw_modifier: "alt" | "ctrl" | "shift" | "meta",
     set_brush_overlap_none_keybind: string,
     set_brush_overlap_exclude_keybind: string,
     set_brush_overlap_overwrite_keybind: string,
@@ -619,10 +618,7 @@ The initial [brush overlap mode](#overlap-modes) for bitmask painting: `"none"` 
 When `true`, [brush overlap resolution](#overlap-modes) also reaches undeprecated bitmask annotations in *other* subtasks: `"exclude"` clips the stroke against them, and `"overwrite"` carves them — except masks in `read_only` subtasks, which act as barriers (the stroke is clipped around them instead). Default is `false`: a stroke only interacts with masks in the active subtask.
 
 ### `allow_body_move`
-When `true` (the default), a plain left-drag that starts inside a spatial annotation's body moves that annotation. The cursor must actually be inside the shape (a polygon's fill, a bbox, a point's handle, a polyline's stroke, a bitmask's pixels) — being merely near its bounding box still starts a new annotation. A vertex edit handle under the cursor takes precedence and edits that vertex. Hold [`force_draw_modifier`](#force_draw_modifier) to start a new annotation on top of an existing body instead. Delete modes and read-only subtasks are unaffected. Set to `false` to make every canvas drag start a new annotation.
-
-### `force_draw_modifier`
-The modifier key that, when held during a left-drag on an annotation's body, starts a new annotation instead of moving it. One of `"alt"` (default), `"ctrl"`, `"shift"`, or `"meta"`. Note that `ctrl`/`meta` (pan) and `shift` (zoom) already have meanings on canvas mousedown and are checked first, so only `"alt"` works without conflicts.
+When `true` (the default), a plain left-drag that starts inside a spatial annotation's body moves that annotation. The cursor must actually be inside the shape (a polygon's fill, a bbox, a point's handle, a polyline's stroke, a bitmask's pixels) — being merely near its bounding box still starts a new annotation. A vertex edit handle under the cursor takes precedence and edits that vertex. Hold `Alt` to start a new annotation on top of an existing body instead. Delete modes and read-only subtasks are unaffected. Set to `false` to make every canvas drag start a new annotation.
 
 ### `set_brush_overlap_none_keybind`
 Keybind to set the brush overlap mode to `none`. Default is `shift+n`.
