@@ -3986,7 +3986,8 @@ export class ULabel {
             current_subtask["state"]["visible_dialogs"][esid]["top"] = new_top;
             // Decide confidence card position from the un-offset cbox so it stays stable during moves.
             // Account for annbox scroll: what matters is the visible position, not the image-space position.
-            const scroll_top = $("#" + this.config["annbox_id"]).scrollTop() || 0;
+            const annbox_jq = $("#" + this.config["annbox_id"]);
+            const scroll_top = annbox_jq.scrollTop() || 0;
             const conf_id = `global_annotation_confidence__${subtask_key}`;
             const conf_jq = $(`#${conf_id}`);
             // The dialog container is CSS-scaled about the anchor, so offsets set
@@ -4012,6 +4013,19 @@ export class ULabel {
                         { top: "auto", bottom: `${ring_clearance}px` },
             );
             this.reposition_dialogs();
+            if (annbox_jq.length && conf_jq.length) {
+                const annbox_el = annbox_jq[0];
+                const visible_left = annbox_el.getBoundingClientRect().left + annbox_el.clientLeft;
+                const visible_right = visible_left + annbox_el.clientWidth;
+                const anchor_rect = es_el.getBoundingClientRect();
+                const anchor_x = anchor_rect.left + anchor_rect.width / 2;
+                const card_half_width = (conf_jq.outerWidth() || 0) * scale / 2;
+                const card_center = Math.max(
+                    visible_left + gap + card_half_width,
+                    Math.min(anchor_x, visible_right - gap - card_half_width),
+                );
+                conf_jq.css("transform", `translateX(calc(-50% + ${(card_center - anchor_x) / scale}px))`);
+            }
             idd_x = (cbox["tlx"] + cbox["brx"] + 2 * diffX) / 2;
             idd_y = (cbox["tly"] + cbox["bry"] + 2 * diffY) / 2;
             this.set_hovered_annotation(annid);

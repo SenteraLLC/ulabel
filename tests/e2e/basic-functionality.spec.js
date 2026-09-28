@@ -265,6 +265,38 @@ test.describe("ULabel Basic Functionality", () => {
         expect(geom.anchor_y - geom.card_bottom).toBeLessThanOrEqual(geom.ring_max);
     });
 
+    for (const demo_path of ["/multi-class.html", "/single-class.html"]) {
+        test(`confidence card stays inside the side edges and recenters on ${demo_path}`, async ({ page }) => {
+            await wait_for_ulabel_init(page, demo_path);
+
+            const subtask_key = await get_current_subtask_key(page);
+            const conf_id = `#global_annotation_confidence__${subtask_key}`;
+            const bounds = await page.evaluate(() => {
+                const annbox = document.getElementById(window.ulabel.config.annbox_id);
+                const rect = annbox.getBoundingClientRect();
+                return {
+                    left: rect.left + annbox.clientLeft,
+                    right: rect.left + annbox.clientLeft + annbox.clientWidth,
+                    top: rect.top + annbox.clientTop,
+                };
+            });
+
+            for (const anchor_x of [bounds.left + 12, bounds.right - 12, (bounds.left + bounds.right) / 2]) {
+                const anchor_y = bounds.top + 220;
+                await draw_bbox(page, [anchor_x - 8, anchor_y - 20], [anchor_x + 8, anchor_y + 20]);
+                await page.mouse.move(anchor_x, anchor_y);
+                await expect(page.locator(conf_id)).toBeVisible();
+
+                const card = await page.locator(conf_id).boundingBox();
+                expect(card.x).toBeGreaterThanOrEqual(bounds.left);
+                expect(card.x + card.width).toBeLessThanOrEqual(bounds.right);
+                if (anchor_x === (bounds.left + bounds.right) / 2) {
+                    expect(Math.abs(card.x + card.width / 2 - anchor_x)).toBeLessThanOrEqual(1);
+                }
+            }
+        });
+    }
+
     test("confidence card flip check accounts for annbox scroll position", async ({ page }) => {
         await wait_for_ulabel_init(page);
 

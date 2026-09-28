@@ -1,5 +1,7 @@
 ## Tasks
 
+- [x] Diagnose local Playwright startup with one Chromium initialization E2E test (2026-09-24): port 8080 initially reused Model Registry. After stopping it, the S3 demo PNG redirected to Zscaler HTML and image decoding stalled initialization. Temporarily fetching the same PNG through Node made the test pass (1 test, 4.0s total); diagnostic changes removed. Permanent image handling remains unchanged. A separate CommonJS `exports is not defined` browser error did not fail this test.
+
 Bitmask/segmentation viewer performance work, driven by the model-registry
 integration. Items 1/3/4/5 touch this repo; item 2 is model-registry only.
 
@@ -119,6 +121,13 @@ removals ship in a ULabel version that model-registry adopts in the same PR as
 its Phase 3 migration (frontend stays pinned until then).
 
 ### Phase 0 - confidence card positioning (in progress)
+
+- [x] 0.4 Keep the hover confidence card inside the visible horizontal bounds.
+  - [x] Add side-edge regression coverage for both dialog scales.
+  - [x] Clamp horizontal placement while preserving top-edge flipping.
+  - [x] Verify focused unit tests (33 passed), lint, and production build.
+  - Browser regression execution deferred to CI: local Playwright is blocked
+    by corporate Zscaler.
 
 - [x] 0.1 Fix card geometry: include the card's natural flow offset
   (`offsetTop - margin`) and hug the button ring (`button_half + gap`) in
