@@ -22,7 +22,7 @@ function make_ulabel({ read_only = false, compatible = [1, 2], annotation = make
         read_only,
         class_defs: [{ id: 1, name: "Crop" }, { id: 2, name: "Weed" }],
         annotations: { access: { [annotation.id]: annotation } },
-        state: { edit_candidate: { annid: annotation.id }, move_candidate: null },
+        state: { edit_candidate: { annid: annotation.id }, move_candidate: null, isolated_annid: null },
     };
     const ulabel = {
         config: { container_id: "container" },
@@ -32,6 +32,10 @@ function make_ulabel({ read_only = false, compatible = [1, 2], annotation = make
         _get_compatible_class_ids: jest.fn(() => compatible),
         show_id_dialog: jest.fn(),
         delete_annotation: jest.fn(),
+        isolate_annotation: jest.fn((annid) => {
+            subtask.state.isolated_annid = annid;
+            hide_context_menu(ulabel);
+        }),
         hide_and_clear_action_candidates: jest.fn(() => {
             subtask.state.edit_candidate = null;
         }),
@@ -53,10 +57,10 @@ function click_item(label) {
 }
 
 describe("context menu items", () => {
-    test("editable subtask with compatible classes shows all three", () => {
+    test("editable subtask with compatible classes shows all four", () => {
         const ulabel = make_ulabel();
         expect(show_context_menu(ulabel, "a0", 100, 100)).toBe(true);
-        expect(item_labels()).toEqual(["Change class", "Delete", "Details"]);
+        expect(item_labels()).toEqual(["Change class", "Delete", "Isolate", "Details"]);
         expect(is_context_menu_open(ulabel)).toBe(true);
         expect(menu_element().style.display).toBe("block");
     });
@@ -64,13 +68,20 @@ describe("context menu items", () => {
     test("fewer than two compatible classes hides Change class", () => {
         const ulabel = make_ulabel({ compatible: [2] });
         show_context_menu(ulabel, "a0", 100, 100);
-        expect(item_labels()).toEqual(["Delete", "Details"]);
+        expect(item_labels()).toEqual(["Delete", "Isolate", "Details"]);
     });
 
-    test("read-only subtask shows only Details", () => {
+    test("read-only subtask shows only Isolate and Details", () => {
         const ulabel = make_ulabel({ read_only: true });
         show_context_menu(ulabel, "a0", 100, 100);
-        expect(item_labels()).toEqual(["Details"]);
+        expect(item_labels()).toEqual(["Isolate", "Details"]);
+    });
+
+    test("the isolate item reads Show all while the target is isolated", () => {
+        const ulabel = make_ulabel({ read_only: true });
+        ulabel.get_current_subtask().state.isolated_annid = "a0";
+        show_context_menu(ulabel, "a0", 100, 100);
+        expect(item_labels()).toEqual(["Show all", "Details"]);
     });
 
     test("unknown or deprecated target opens nothing", () => {
@@ -100,6 +111,19 @@ describe("context menu actions", () => {
 
         expect(is_context_menu_open(ulabel)).toBe(false);
         expect(ulabel.delete_annotation).toHaveBeenCalledWith("a0");
+    });
+
+    test("Isolate and Show all toggle isolation of the target", () => {
+        const ulabel = make_ulabel();
+        show_context_menu(ulabel, "a0", 100, 100);
+        click_item("Isolate");
+        expect(ulabel.isolate_annotation).toHaveBeenCalledWith("a0");
+        expect(is_context_menu_open(ulabel)).toBe(false);
+
+        show_context_menu(ulabel, "a0", 100, 100);
+        click_item("Show all");
+        expect(ulabel.isolate_annotation).toHaveBeenLastCalledWith(null);
+        expect(is_context_menu_open(ulabel)).toBe(false);
     });
 
     test("Details replaces the items with read-only rows, text-escaped", () => {
