@@ -293,38 +293,33 @@ export class AnnotationListToolboxItem extends ToolboxItem {
 
         // Hover on annotation list item to highlight annotation on canvas
         $(document).on("mouseenter.ulabel", ".annotation-list-item", (e) => {
+            if (this.ulabel.is_context_menu_open()) return;
             const annotation_id = $(e.currentTarget).data("annotation-id");
             if (annotation_id) {
-                // Highlight this list item
-                $(".annotation-list-item").removeClass("highlighted");
-                $(e.currentTarget).addClass("highlighted");
-
-                // Show the hover outline and confidence card on the canvas
-                this.ulabel.show_global_edit_suggestion(annotation_id, null, null);
-
-                // Set edit_candidate to allow delete keybind to work
-                const current_subtask = this.ulabel.get_current_subtask();
-                const annotation = current_subtask.annotations.access[annotation_id];
-                if (annotation && !annotation.deprecated) {
-                    current_subtask.state.edit_candidate = {
-                        annid: annotation.id!,
-                        spatial_type: annotation.spatial_type!,
-                        access: 0,
-                        distance: 0,
-                        point: [0, 0],
-                    };
-                }
+                this.highlight_from_list(String(annotation_id));
             }
         });
 
         // Remove highlight when mouse leaves the list item
         $(document).on("mouseleave.ulabel", ".annotation-list-item", () => {
+            // The menu holds the highlight until it closes
+            if (this.ulabel.is_context_menu_open()) return;
             $(".annotation-list-item").removeClass("highlighted");
             // Clear the edit candidate and edit suggestion
             const current_subtask = this.ulabel.get_current_subtask();
             current_subtask.state.edit_candidate = null;
             this.ulabel.hide_global_edit_suggestion();
             this.ulabel.hide_edit_suggestion();
+        });
+
+        // Right-click a list item for its context menu. The mousedown just before
+        // dismissed any open menu (and its hover), so re-highlight first.
+        $(document).on("contextmenu.ulabel", ".annotation-list-item", (e) => {
+            e.preventDefault();
+            const annotation_id = $(e.currentTarget).data("annotation-id");
+            if (!annotation_id || this.ulabel.get_current_subtask().state.active_id != null) return;
+            this.highlight_from_list(String(annotation_id));
+            this.ulabel.show_context_menu(String(annotation_id), e.clientX!, e.clientY!);
         });
 
         // Listen for mousemove on the annbox to sync list highlighting from canvas
@@ -700,6 +695,29 @@ export class AnnotationListToolboxItem extends ToolboxItem {
     public frame_update(): void {
         this.update_list();
         this.sync_highlight_from_canvas();
+    }
+
+    /**
+     * Make a list entry the hovered annotation: list highlight, canvas outline
+     * and card, and the edit candidate the keybinds act on.
+     */
+    private highlight_from_list(annotation_id: string) {
+        $(".annotation-list-item").removeClass("highlighted");
+        $(`.annotation-list-item[data-annotation-id="${annotation_id}"]`).addClass("highlighted");
+
+        this.ulabel.show_global_edit_suggestion(annotation_id, null, null);
+
+        const current_subtask = this.ulabel.get_current_subtask();
+        const annotation = current_subtask.annotations.access[annotation_id];
+        if (annotation && !annotation.deprecated) {
+            current_subtask.state.edit_candidate = {
+                annid: annotation.id!,
+                spatial_type: annotation.spatial_type!,
+                access: 0,
+                distance: 0,
+                point: [0, 0],
+            };
+        }
     }
 
     /**

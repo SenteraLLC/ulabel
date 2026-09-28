@@ -33,6 +33,7 @@ import { record_action, record_finish, record_finish_edit, record_finish_move, u
 import { ULabelMask, is_raw_mask_payload } from "../build/mask_utils";
 import { get_active_class_id, get_local_storage_item, set_local_storage_item } from "../build/utilities";
 import { set_active_class, get_selected_class_id, set_focus_active_class, set_defocused_opacity, can_annotation_be_class } from "../build/active_class";
+import { show_context_menu, hide_context_menu, is_context_menu_open } from "../build/context_menu";
 import { get_idd_string } from "../build/html_builder";
 
 import $ from "jquery";
@@ -776,6 +777,8 @@ export class ULabel {
             move_raf_pending: false,
             // Saved/undone state captured in begin_move so a zero-diff click can be unwound
             move_snapshot: null,
+            // Annotation the right-click context menu is open for, if any
+            context_menu_annid: null,
 
             // Global annotation state (subtasks also maintain an annotation state)
             current_subtask: null, // The key of the current subtask
@@ -1196,6 +1199,27 @@ export class ULabel {
     }
 
     /**
+     * Open the right-click context menu for an annotation in the current
+     * subtask at a viewport position.
+     *
+     * @param {string} annotation_id
+     * @param {number} client_x
+     * @param {number} client_y
+     * @returns {boolean} whether the menu was shown
+     */
+    show_context_menu(annotation_id, client_x, client_y) {
+        return show_context_menu(this, annotation_id, client_x, client_y);
+    }
+
+    hide_context_menu() {
+        hide_context_menu(this);
+    }
+
+    is_context_menu_open() {
+        return is_context_menu_open(this);
+    }
+
+    /**
      * The last non-delete class selected on a subtask. Delete-mode toggles
      * don't move it, so class focus stays put while deleting.
      *
@@ -1229,6 +1253,7 @@ export class ULabel {
 
     set_subtask(st_key) {
         let old_st = this.get_current_subtask_key();
+        this.hide_context_menu();
 
         // Clear stale hover on the outgoing subtask so its white outline doesn't linger
         // (its canvases stay visible at reduced opacity in the background).
@@ -4284,6 +4309,10 @@ export class ULabel {
         const annotations = current_subtask["annotations"]["access"];
         const spatial_type = annotations[annotation_id]["spatial_type"];
 
+        if (this.state["context_menu_annid"] === annotation_id) {
+            this.hide_context_menu();
+        }
+
         // Deprecate the annotation and redraw it
         mark_deprecated(annotations[annotation_id], true);
 
@@ -7302,6 +7331,11 @@ export class ULabel {
     // ================= Viewer/Annotation Interaction Handlers  =================
 
     handle_mouse_down(mouse_event) {
+        // Like a native menu, the click that dismisses the menu does nothing else
+        if (this.is_context_menu_open()) {
+            this.hide_context_menu();
+            return;
+        }
         const drag_key = ULabel.get_drag_key_start(mouse_event, this);
         if (drag_key != null) {
             // Suppress browser defaults (e.g. middle-click auto-scroll)
@@ -7327,7 +7361,7 @@ export class ULabel {
         // If the ID dialog is visible, let it's own handler take care of this
         // If not dragging...
         if (this.drag_state["active_key"] === null) {
-            if (idd_visible) {
+            if (idd_visible || this.is_context_menu_open()) {
                 return;
             }
             // If polygon is in progress, redirect last segment
@@ -7637,6 +7671,7 @@ export class ULabel {
 
     // Handle zooming at a certain focus
     rezoom(foc_x = null, foc_y = null, abs = false) {
+        this.hide_context_menu();
         // JQuery convenience
         var imwrap = $("#" + this.config["imwrap_id"]);
         var annbox = $("#" + this.config["annbox_id"]);
@@ -7942,6 +7977,7 @@ export class ULabel {
     }
 
     reset_interaction_state(subtask = null) {
+        this.hide_context_menu();
         let q = [];
         if (subtask === null) {
             for (let st in this.subtasks) {

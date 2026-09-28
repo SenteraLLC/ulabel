@@ -1,0 +1,168 @@
+/**
+ * Right-click context menu for annotations.
+ *
+ * One fixed-position element per ULabel instance, mounted under the container
+ * and rebuilt on every open. Actions route through the same `ULabel` methods
+ * the keybinds use (`show_id_dialog`, `delete_annotation`) so undo and the
+ * per-class mode gate are unchanged. While the menu is open the target stays
+ * the hover candidate; closing clears it.
+ */
+
+import type { ULabel } from "../index";
+import { ULabelAnnotation } from "./annotation";
+import { get_annotation_class_id } from "./annotation_operators";
+
+const MENU_CLASS = "ulabel-context-menu";
+const VIEWPORT_MARGIN = 4;
+
+// Static 16x16 stroke icons; `currentColor` follows the menu's text color
+const SVG_ATTRS = `xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"`;
+const ICON_CHANGE_CLASS = `<svg ${SVG_ATTRS}><path d="M2 2h5.5l6.5 6.5-5.5 5.5L2 7.5z"/><circle cx="5" cy="5" r="1"/></svg>`;
+const ICON_DELETE = `<svg ${SVG_ATTRS}><path d="M2.5 4h11M6 4V2.5h4V4M3.5 4l.8 9.5h7.4l.8-9.5M6.5 7v4M9.5 7v4"/></svg>`;
+const ICON_DETAILS = `<svg ${SVG_ATTRS}><circle cx="8" cy="8" r="6"/><path d="M8 7.5v4M8 5v.01"/></svg>`;
+
+function get_menu_element(ulabel: ULabel): HTMLDivElement | null {
+    return document.getElementById(`${MENU_CLASS}__${ulabel.config.container_id}`) as HTMLDivElement | null;
+}
+
+function ensure_menu_element(ulabel: ULabel): HTMLDivElement | null {
+    let menu = get_menu_element(ulabel);
+    if (menu != null) return menu;
+    const container = document.getElementById(ulabel.config.container_id);
+    if (container == null) return null;
+    menu = document.createElement("div");
+    menu.id = `${MENU_CLASS}__${ulabel.config.container_id}`;
+    menu.className = MENU_CLASS;
+    // A mousedown inside the menu must not reach the annbox/document handlers
+    menu.addEventListener("mousedown", (mouse_event) => mouse_event.stopPropagation());
+    menu.addEventListener("contextmenu", (mouse_event) => mouse_event.preventDefault());
+    container.appendChild(menu);
+    return menu;
+}
+
+function add_item(menu: HTMLDivElement, label: string, icon_svg: string, on_click: () => void): void {
+    const item = document.createElement("div");
+    item.className = `${MENU_CLASS}-item`;
+    const icon = document.createElement("span");
+    icon.className = `${MENU_CLASS}-item-icon`;
+    icon.innerHTML = icon_svg;
+    const text = document.createElement("span");
+    text.textContent = label;
+    item.appendChild(icon);
+    item.appendChild(text);
+    item.addEventListener("click", (click_event) => {
+        click_event.stopPropagation();
+        on_click();
+    });
+    menu.appendChild(item);
+}
+
+function add_detail_row(menu: HTMLDivElement, label: string, value: unknown): void {
+    const row = document.createElement("div");
+    row.className = `${MENU_CLASS}-detail`;
+    const key = document.createElement("span");
+    key.className = `${MENU_CLASS}-detail-key`;
+    key.textContent = label;
+    const val = document.createElement("span");
+    val.className = `${MENU_CLASS}-detail-value`;
+    val.textContent = format_detail_value(value);
+    row.appendChild(key);
+    row.appendChild(val);
+    menu.appendChild(row);
+}
+
+function format_detail_value(value: unknown): string {
+    if (value == null) return "";
+    if (typeof value === "object") return JSON.stringify(value);
+    return String(value);
+}
+
+/** Keep the menu inside the viewport, preferring to hang right/below the cursor. */
+function position_menu(menu: HTMLDivElement, client_x: number, client_y: number): void {
+    menu.style.display = "block";
+    menu.style.left = `${client_x}px`;
+    menu.style.top = `${client_y}px`;
+    const rect = menu.getBoundingClientRect();
+    const max_left = window.innerWidth - rect.width - VIEWPORT_MARGIN;
+    const max_top = window.innerHeight - rect.height - VIEWPORT_MARGIN;
+    if (rect.left > max_left) menu.style.left = `${Math.max(VIEWPORT_MARGIN, max_left)}px`;
+    if (rect.top > max_top) menu.style.top = `${Math.max(VIEWPORT_MARGIN, max_top)}px`;
+}
+
+function render_details(ulabel: ULabel, menu: HTMLDivElement, annotation: ULabelAnnotation): void {
+    menu.replaceChildren();
+    const subtask = ulabel.get_current_subtask();
+    const class_id = Number(get_annotation_class_id(annotation));
+    const class_def = subtask.class_defs.find((cd) => cd.id === class_id);
+    add_detail_row(menu, "id", annotation.id);
+    add_detail_row(menu, "class", class_def != null ? `${class_def.name} (${class_id})` : String(class_id));
+    add_detail_row(menu, "type", annotation.spatial_type);
+    add_detail_row(menu, "edited by", annotation.last_edited_by);
+    add_detail_row(menu, "edited at", annotation.last_edited_at);
+    const meta = annotation.annotation_meta;
+    if (meta != null && typeof meta === "object") {
+        for (const [key, value] of Object.entries(meta)) {
+            add_detail_row(menu, key, value);
+        }
+    }
+}
+
+/**
+ * Open the menu for an annotation in the current subtask at a viewport
+ * position. Items: Change class (editable subtask with at least two
+ * compatible classes), Delete (editable subtask), Details (always).
+ *
+ * @returns whether the menu was shown
+ */
+export function show_context_menu(ulabel: ULabel, annid: string, client_x: number, client_y: number): boolean {
+    const subtask = ulabel.get_current_subtask();
+    const annotation = subtask.annotations.access[annid];
+    if (annotation == null || annotation.deprecated) {
+        hide_context_menu(ulabel);
+        return false;
+    }
+    const menu = ensure_menu_element(ulabel);
+    if (menu == null) return false;
+    menu.replaceChildren();
+
+    const read_only = ulabel.is_current_subtask_read_only();
+    if (!read_only && ulabel._get_compatible_class_ids(annotation).length >= 2) {
+        add_item(menu, "Change class", ICON_CHANGE_CLASS, () => {
+            hide_context_menu(ulabel);
+            const cbox = annotation.containing_box;
+            if (cbox != null) {
+                ulabel.show_id_dialog((cbox.tlx + cbox.brx) / 2, (cbox.tly + cbox.bry) / 2, annid, false);
+            } else {
+                ulabel.show_id_dialog(0, 0, annid, true);
+            }
+        });
+    }
+    if (!read_only) {
+        add_item(menu, "Delete", ICON_DELETE, () => {
+            hide_context_menu(ulabel);
+            ulabel.delete_annotation(annid);
+        });
+    }
+    add_item(menu, "Details", ICON_DETAILS, () => render_details(ulabel, menu, annotation));
+
+    ulabel.state.context_menu_annid = annid;
+    position_menu(menu, client_x, client_y);
+    return true;
+}
+
+/** Close the menu and drop the hover it was holding. No-op when closed. */
+export function hide_context_menu(ulabel: ULabel): void {
+    if (ulabel.state.context_menu_annid == null) return;
+    ulabel.state.context_menu_annid = null;
+    const menu = get_menu_element(ulabel);
+    if (menu != null) {
+        menu.style.display = "none";
+        menu.replaceChildren();
+    }
+    $(".annotation-list-item").removeClass("highlighted");
+    ulabel.hide_and_clear_action_candidates();
+}
+
+export function is_context_menu_open(ulabel: ULabel): boolean {
+    return ulabel.state.context_menu_annid != null;
+}

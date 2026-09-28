@@ -265,8 +265,13 @@ function handle_keydown_event(
 
     // Handle Escape key
     if (keydown_event.key.toLowerCase() === "escape") {
-        // If in erase or brush mode, cancel the brush
-        if (current_subtask.state.is_in_erase_mode) {
+        if (ulabel.is_context_menu_open()) {
+            ulabel.hide_context_menu();
+        } else if (current_subtask.state.idd_visible) {
+            // A clicked-open id dialog has no other dismissal
+            ulabel.hide_id_dialog();
+        } else if (current_subtask.state.is_in_erase_mode) {
+            // If in erase or brush mode, cancel the brush
             ulabel.toggle_erase_mode();
         } else if (current_subtask.state.is_in_brush_mode) {
             ulabel.toggle_brush_mode();
@@ -396,6 +401,31 @@ export function create_ulabel_listeners(
     annbox.on(
         "mousemove" + ULABEL_NAMESPACE,
         (move_event) => ulabel.handle_mouse_move(move_event),
+    );
+
+    // Right-click opens the context menu for the hovered annotation. While an
+    // annotation is in progress button 2 belongs to the draw (mouseup finishes
+    // a polyline), so no menu then.
+    annbox.on(
+        "contextmenu" + ULABEL_NAMESPACE,
+        (context_event) => {
+            context_event.preventDefault();
+            const state = ulabel.get_current_subtask()["state"];
+            if (state["active_id"] != null || state["idd_visible"]) return;
+            // The mousedown just before this dismissed any open menu (and its
+            // hover), so re-resolve the candidate under the cursor
+            ulabel.suggest_edits(context_event);
+            const edit_candidate = state["edit_candidate"];
+            if (edit_candidate != null) {
+                ulabel.show_context_menu(edit_candidate.annid, context_event.clientX!, context_event.clientY!);
+            }
+        },
+    );
+
+    // A mousedown anywhere outside the menu dismisses it (the menu stops its own)
+    $(document).on(
+        "mousedown" + ULABEL_NAMESPACE,
+        () => ulabel.hide_context_menu(),
     );
 
     // ================= Uncategorized =================
@@ -632,8 +662,8 @@ export function create_ulabel_listeners(
             // of them doesn't count as leaving.
             if (ulabel.drag_state["active_key"] !== null) return;
             const state = ulabel.get_current_subtask()["state"];
-            // A clicked-open id dialog is its own interaction; don't yank it away
-            if (state["idd_visible"]) return;
+            // A clicked-open id dialog or context menu is its own interaction; don't yank it away
+            if (state["idd_visible"] || ulabel.is_context_menu_open()) return;
             ulabel.hide_and_clear_action_candidates();
         },
     );

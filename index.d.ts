@@ -361,6 +361,8 @@ export class ULabel {
         demo_canvas_context: CanvasRenderingContext2D;
         edited: boolean;
         all_subtasks_vanished: boolean;
+        /** Annotation the right-click context menu is open for, if any. */
+        context_menu_annid: string | null;
     };
 
     config: Configuration;
@@ -466,6 +468,16 @@ export class ULabel {
     public set_subtask_opacity(subtask_key: string, opacity: number): void;
     /** The spatial types a class may be drawn as; falls back to the subtask's list. */
     public get_class_allowed_modes(class_id: number, subtask_key?: string | null): ULabelSpatialType[];
+    /** Class ids in the current subtask that can take an annotation's spatial type. */
+    public _get_compatible_class_ids(annotation?: ULabelAnnotation | null): number[];
+    /**
+     * Open the right-click context menu (Change class / Delete / Details) for an
+     * annotation in the current subtask at a viewport position. Returns whether
+     * the menu was shown.
+     */
+    public show_context_menu(annotation_id: string, client_x: number, client_y: number): boolean;
+    public hide_context_menu(): void;
+    public is_context_menu_open(): boolean;
     /**
      * Hide the mode buttons the active class disallows and switch off a mode it
      * disallows. Delete modes are exempt.

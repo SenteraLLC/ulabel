@@ -129,44 +129,55 @@ Verified facts the tickets get wrong, for the record:
 
 ### Phase 229 - right-click context menu
 
-- [ ] 229.1 New `src/context_menu.ts` (free functions + thin `ULabel`
+- [x] 229.1 New `src/context_menu.ts` (free functions + thin `ULabel`
   methods, like `active_class.ts`): `show_context_menu(annid, client_x,
   client_y)`, `hide_context_menu()`, `is_context_menu_open()`. One
   fixed-position `div` under the container, z-index above the dialogs.
   Built with DOM APIs / `textContent`, never `innerHTML` with annotation
-  data.
-- [ ] 229.2 Trigger: `contextmenu` listener on the annbox. When
+  data. Open state lives in `ulabel.state.context_menu_annid`.
+- [x] 229.2 Trigger: `contextmenu` listener on the annbox. When
   `active_id != null` (draw in progress) do nothing new - the existing
   `"right"` mouseup path finishes a polyline. Otherwise, if
   `edit_candidate` is set open the menu for it; else close any open menu.
   Same listener on `.annotation-list-item`, keyed off `data-annotation-id`.
-- [ ] 229.3 Items and visibility: Change class (hidden when read-only or
+  Note: the preceding mousedown already closed any open menu and cleared
+  the hover, so both listeners re-resolve the target first (annbox via
+  `suggest_edits(event)`, list via a new private `highlight_from_list`).
+- [x] 229.3 Items and visibility: Change class (hidden when read-only or
   `_get_compatible_class_ids(ann).length < 2`), Delete (hidden when
   read-only), Details (always). On a read-only subtask only Details shows.
-- [ ] 229.4 Actions: Change class -> hide menu, `show_id_dialog(cx, cy,
+- [x] 229.4 Actions: Change class -> hide menu, `show_id_dialog(cx, cy,
   annid, false)` at the containing-box centre (goes through
   `handle_id_dialog_click`, so undo + the 9.6 mode gate come for free).
   Delete -> `delete_annotation(annid)`. Details -> 229.5.
-- [ ] 229.5 Details panel: replaces the menu content in place; rows for id,
+- [x] 229.5 Details panel: replaces the menu content in place; rows for id,
   class name (+ id), spatial type, `last_edited_by`, `last_edited_at`, then
   one row per `annotation_meta` key (non-primitive values
   `JSON.stringify`'d). Read-only, no inputs.
-- [ ] 229.6 Close on: any action, Escape (first branch of the keydown
+- [x] 229.6 Close on: any action, Escape (first branch of the keydown
   handler), mousedown outside the menu, wheel / rezoom, `set_subtask`,
   `_swap_subtask_annotations`, `delete_annotation` of the target,
-  `destroy()`.
-- [ ] 229.7 Keep the target highlighted while the menu is open: the list's
+  `destroy()`. Implemented as: `handle_mouse_down` closes the menu and
+  swallows that click; document `mousedown.ulabel`; `rezoom`;
+  `reset_interaction_state` (covers swap + destroy); `set_subtask`;
+  `delete_annotation`. Scope expansion: Escape now also closes a
+  clicked-open id dialog, which previously had no dismissal path.
+- [x] 229.7 Keep the target highlighted while the menu is open: the list's
   `mouseleave` and the annbox `mouseleave` currently clear
   `edit_candidate` and hide the outline; guard both on
-  `is_context_menu_open()`, and clear on menu close instead.
-- [ ] 229.8 Tests: jest for visibility rules, close conditions, delete via
+  `is_context_menu_open()`, and clear on menu close instead. Also guarded
+  the list `mouseenter` and the non-drag `handle_mouse_move` branch.
+- [x] 229.8 Tests: jest for visibility rules, close conditions, delete via
   menu records an undoable action, details escapes text; e2e on a
   two-class demo: right-click -> Change class -> pie -> class changes and
   `get_annotations()` reflects it, undo reverts; right-click list entry ->
   Delete removes from canvas and list, undo restores; right-click mid
   polyline still finishes it and opens no menu.
-- [ ] 229.9 Docs: README section, CHANGELOG, `index.d.ts` for the three
-  methods.
+  (`tests/context_menu.test.js`, `tests/e2e/context-menu.spec.js`; e2e
+  verified locally on chromium.)
+- [x] 229.9 Docs: README section, CHANGELOG, `index.d.ts` for the three
+  methods. README has no interaction docs, so the shortcut and the three
+  methods went into `api_spec.md` instead.
 
 ### Phase 230 - isolate one annotation from the list
 

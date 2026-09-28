@@ -15,6 +15,8 @@ This should eventually be replaced with a more comprehensive approach to documen
 - Press `Escape` to exit brush/erase mode.
 - Press `Tab` to set the zoom to focus on the next annotation
 - Press `Shift+Tab` to set the zoom to focus on the previous annotation
+- Right-click a hovered annotation (or its entry in the `AnnotationList` toolbox item) to open a context menu with `Change class`, `Delete`, and `Details`. `Change class` opens the class pie for that annotation; `Details` lists its id, class, spatial type, last editor/edit time, and `annotation_meta` entries. Read-only subtasks only offer `Details`. Press `Escape` or click anywhere to close it. A right-click while drawing a polyline still finishes the polyline and opens no menu.
+- Press `Escape` to close an open class pie or context menu.
 
 ## ULabel Constructor
 
@@ -768,6 +770,18 @@ Sets the zoom to focus on the provided annotation id, and switches to its subtas
 
 ### `fly_to_annotation(annotation, subtask_key, max_zoom)`
 Sets the zoom to focus on the provided annotation, and switches to its subtask if provided. Returns `true` on success and `false` on failure (eg, annotation doesn't exist in subtask, is not a spatial annotation, or is deprecated).
+
+### `show_context_menu(annotation_id, client_x, client_y)`
+
+*(annotation_id: string, client_x: number, client_y: number) => boolean* -- Opens the right-click context menu for the given annotation in the current subtask at the given viewport position (clamped to stay on screen). Returns `false` and opens nothing if the annotation is unknown or deprecated. Any open menu is replaced.
+
+### `hide_context_menu()`
+
+*() => void* -- Closes the context menu if open and clears the hover highlight it was holding. No-op otherwise. Called internally on Escape, any mousedown, zoom, `set_subtask`, and when the target annotation is deleted.
+
+### `is_context_menu_open()`
+
+*() => boolean* -- Whether the context menu is currently open.
 
 ### `get_keypoint_slider_value()`
 

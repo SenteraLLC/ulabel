@@ -1943,6 +1943,70 @@ div#${prntid} div.global_edit_suggestion {
    overflow: visible;
 }
 
+div#${prntid} div.ulabel-context-menu {
+   display: none;
+   position: fixed;
+   z-index: 3000;
+   min-width: 0;
+   max-width: 320px;
+   padding: 2px 0;
+   background-color: white;
+   color: #222;
+   border: 1px solid rgba(0, 0, 0, 0.2);
+   border-radius: 4px;
+   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+   font-family: sans-serif;
+   font-size: 13px;
+   line-height: 1.2;
+   user-select: none;
+}
+div#${prntid}.ulabel-night div.ulabel-context-menu {
+   background-color: #2b2b2b;
+   color: #eee;
+   border-color: rgba(255, 255, 255, 0.2);
+}
+div#${prntid} div.ulabel-context-menu-item {
+   display: flex;
+   align-items: center;
+   justify-content: flex-start;
+   gap: 6px;
+   padding: 4px 8px;
+   cursor: pointer;
+   white-space: nowrap;
+}
+div#${prntid} span.ulabel-context-menu-item-icon {
+   display: inline-flex;
+   width: 14px;
+   height: 14px;
+   opacity: 0.75;
+}
+div#${prntid} span.ulabel-context-menu-item-icon svg {
+   width: 100%;
+   height: 100%;
+}
+div#${prntid} div.ulabel-context-menu-item:hover {
+   background-color: rgba(0, 128, 255, 0.15);
+}
+div#${prntid} div.ulabel-context-menu-detail {
+   display: flex;
+   gap: 8px;
+   padding: 2px 8px;
+   font-size: 12px;
+}
+div#${prntid} span.ulabel-context-menu-detail-key {
+   flex: 0 0 auto;
+   color: #777;
+}
+div#${prntid}.ulabel-night span.ulabel-context-menu-detail-key {
+   color: #aaa;
+}
+div#${prntid} span.ulabel-context-menu-detail-value {
+   flex: 1 1 auto;
+   font-family: monospace;
+   word-break: break-all;
+   text-align: right;
+}
+
 div#${prntid} a.tbid-opt {
    display: inline-block;
    text-decoration: none;
