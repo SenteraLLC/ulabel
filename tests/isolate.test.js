@@ -342,3 +342,87 @@ describe("clears", () => {
         expect(on_isolate_change).toHaveBeenLastCalledWith("st", null);
     });
 });
+
+describe("isolation follows bitmask deprecation", () => {
+    function make_mask(id) {
+        return { ...make_annotation(), id, spatial_type: "bitmask", spatial_payload: null, containing_box: null };
+    }
+
+    function make_bitmask_ulabel() {
+        const on_isolate_change = jest.fn();
+        const ulabel = make_ulabel({ ...mock_config, on_isolate_change });
+        ulabel.config.image_width = 8;
+        ulabel.config.image_height = 8;
+        ulabel.redraw_annotation = jest.fn();
+        const base = make_annotation();
+        const mask = make_mask("mask");
+        load(ulabel, [base, mask]);
+        return { ulabel, base, mask, on_isolate_change };
+    }
+
+    function expect_cleared({ ulabel, base, on_isolate_change }, subtask_key = "st") {
+        expect(ulabel.subtasks[subtask_key].state.isolated_annid).toBeNull();
+        expect(ulabel.is_annotation_defocused(base, subtask_key)).toBe(false);
+        expect(ulabel.redraw_all_annotations).toHaveBeenCalledWith(subtask_key);
+        expect(on_isolate_change).toHaveBeenLastCalledWith(subtask_key, null);
+    }
+
+    test("undoing the first stroke of the isolated mask clears the isolation", () => {
+        const fixture = make_bitmask_ulabel();
+        const { ulabel, mask } = fixture;
+        ulabel.isolate_annotation("mask");
+        ulabel.redraw_all_annotations.mockClear();
+
+        ulabel.bitmask_stroke__undo("mask", { was_new: true, before_rle: null, other_edits: [] });
+
+        expect(mask.deprecated).toBe(true);
+        expect_cleared(fixture);
+    });
+
+    test("redoing a stroke that erased the isolated mask clears the isolation", () => {
+        const fixture = make_bitmask_ulabel();
+        const { ulabel, mask } = fixture;
+        ulabel.isolate_annotation("mask");
+        ulabel.redraw_all_annotations.mockClear();
+
+        ulabel.bitmask_stroke__redo("mask", { after_rle: null, after_empty: true, other_edits: [] });
+
+        expect(mask.deprecated).toBe(true);
+        expect_cleared(fixture);
+    });
+
+    test("finishing a stroke that erases the whole isolated mask clears the isolation", () => {
+        const fixture = make_bitmask_ulabel();
+        const { ulabel, mask } = fixture;
+        ulabel.isolate_annotation("mask");
+        ulabel.redraw_all_annotations.mockClear();
+        ulabel.subtasks.st.state.active_id = "mask";
+        ulabel.subtasks.st.state.bitmask_stroke = { is_erase: true, was_new: false, before_rle: null };
+
+        ulabel.finish_bitmask();
+
+        expect(mask.deprecated).toBe(true);
+        expect_cleared(fixture);
+    });
+
+    test("redoing an overwrite that empties an isolated mask in another subtask clears that subtask's isolation", () => {
+        const fixture = make_bitmask_ulabel();
+        const { ulabel } = fixture;
+        ulabel.subtasks.other = { ...ulabel.subtasks.st, state: { ...ulabel.subtasks.st.state }, read_only: false };
+        const other_base = make_annotation();
+        const victim = make_mask("victim");
+        load(ulabel, [other_base, victim], "other");
+        ulabel.isolate_annotation("victim", "other");
+        ulabel.redraw_all_annotations.mockClear();
+
+        ulabel.bitmask_stroke__redo("mask", {
+            after_rle: null,
+            after_empty: false,
+            other_edits: [{ annotation_id: "victim", subtask: "other", after_rle: null, after_empty: true }],
+        });
+
+        expect(victim.deprecated).toBe(true);
+        expect_cleared({ ...fixture, base: other_base }, "other");
+        expect(ulabel.subtasks.st.state.isolated_annid).toBeNull();
+    });
+});

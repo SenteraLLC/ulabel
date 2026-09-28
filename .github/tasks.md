@@ -2,7 +2,7 @@
 
 ## PR Re-review: release/0.29.0 -> main
 
-- [x] Reassess fixes and nearby regression coverage against review head `9f56e76`.
+- [x] Reassess fixes and nearby regression coverage against review head `9b4f977`.
 - [x] Update the PR review with current findings and validation results.
 
 History through v0.28.0 (bitmask perf, three-fixed-subtasks architecture,
@@ -266,6 +266,14 @@ Verified facts the tickets get wrong, for the record:
   crossbar endpoints so the preliminary gate no longer rejects crossbar
   hits. Tbar unit test builds the box through production code and hits
   the crossbar well outside the stem padding. jest 342/342.
+- [x] F8 (re-review) Bitmask paths deprecate without `delete_annotation`
+  (first-stroke undo, full erasure in `finish_bitmask`, erasure redo,
+  overwrite victims incl. other subtasks). New
+  `release_isolation_if_deprecated(annotation_id, subtask_key)` called at
+  each `mark_deprecated(..., true)` site. Tests: 4 jest cases in
+  `tests/isolate.test.js`; e2e "Bitmask isolation lifecycle" in
+  `tests/e2e/bitmask.spec.js` with real brush dabs + Ctrl+Z / Ctrl+Shift+Z.
+  jest 346/346, bitmask e2e 15/15.
 
 ### Release
 

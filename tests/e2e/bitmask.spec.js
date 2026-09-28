@@ -530,3 +530,104 @@ test.describe("Bitmask move bounce-back", () => {
         expect(res.after_redo.cbox).toEqual({ tlx: 15, tly: 10, brx: 25, bry: 20 });
     });
 });
+
+test.describe("Bitmask isolation lifecycle", () => {
+    // Paint (or erase) one brush dab at the centre of the annotation canvas
+    async function dab(page) {
+        const center = await page.evaluate(() => {
+            const u = window.ulabel;
+            const rect = document.getElementById(u.get_current_subtask().canvas_fid).getBoundingClientRect();
+            return [rect.x + rect.width / 2, rect.y + rect.height / 2];
+        });
+        await page.mouse.move(center[0], center[1]);
+        await page.mouse.down();
+        await page.mouse.move(center[0] + 2, center[1] + 2, { steps: 2 });
+        await page.mouse.up();
+        await page.waitForTimeout(100);
+    }
+
+    async function state(page) {
+        return await page.evaluate(() => {
+            const u = window.ulabel;
+            const st = u.get_current_subtask();
+            const fresh_id = st.annotations.ordering.at(-1);
+            return {
+                count: st.annotations.ordering.length,
+                fresh_id: fresh_id,
+                fresh_deprecated: st.annotations.access[fresh_id].deprecated,
+                isolated: u.get_isolated_annotation_id(),
+                base_defocused: u.is_annotation_defocused(st.annotations.access.base, "a"),
+                last_action: st.actions.stream.at(-1)?.act_type ?? null,
+                cleared_calls: window.__isolate_calls.filter((c) => c[1] === null).length,
+            };
+        });
+    }
+
+    async function isolate_fresh(page) {
+        await page.evaluate(() => {
+            const u = window.ulabel;
+            u.isolate_annotation(u.get_current_subtask().annotations.ordering.at(-1));
+        });
+    }
+
+    test.beforeEach(async ({ page }) => {
+        await wait_for_ulabel_init(page, "/bitmask-e2e.html");
+        await page.evaluate(async () => {
+            const u = window.ulabel;
+            const { make, rebuild } = window.__mask_helpers(u);
+            await u.set_annotations([make("base", 1, 2, 2, 8, 8)], "a");
+            rebuild("a", "base");
+            window.__isolate_calls = [];
+            u.config.on_isolate_change = (key, id) => window.__isolate_calls.push([key, id]);
+            u.set_subtask("a");
+            u.toggle_brush_mode({ pageX: 0, pageY: 0 });
+        });
+        await dab(page);
+        expect((await state(page)).count).toBe(2);
+    });
+
+    test("undoing the first stroke of the isolated mask clears the isolation", async ({ page }) => {
+        await isolate_fresh(page);
+        expect((await state(page)).base_defocused).toBe(true);
+
+        await page.keyboard.press("Control+z");
+        await page.waitForTimeout(100);
+
+        const after = await state(page);
+        expect(after.fresh_deprecated).toBe(true);
+        expect(after.isolated).toBeNull();
+        expect(after.base_defocused).toBe(false);
+        expect(after.cleared_calls).toBe(1);
+    });
+
+    test("erasing the whole isolated mask, and redoing that erasure, clears the isolation", async ({ page }) => {
+        await isolate_fresh(page);
+        // A wider erase brush over the same spot wipes the single paint dab
+        await page.evaluate(() => {
+            window.ulabel.config.brush_size *= 3;
+            window.ulabel.toggle_erase_mode({ pageX: 0, pageY: 0 });
+        });
+        await dab(page);
+
+        let after = await state(page);
+        expect(after.last_action).toBe("bitmask_stroke");
+        expect(after.fresh_deprecated).toBe(true);
+        expect(after.isolated).toBeNull();
+        expect(after.base_defocused).toBe(false);
+        expect(after.cleared_calls).toBe(1);
+
+        // Undo the erasure, isolate the restored mask, then redo the erasure
+        await page.keyboard.press("Control+z");
+        await page.waitForTimeout(100);
+        expect((await state(page)).fresh_deprecated).toBe(false);
+        await isolate_fresh(page);
+        await page.keyboard.press("Control+Shift+z");
+        await page.waitForTimeout(100);
+
+        after = await state(page);
+        expect(after.fresh_deprecated).toBe(true);
+        expect(after.isolated).toBeNull();
+        expect(after.base_defocused).toBe(false);
+        expect(after.cleared_calls).toBe(2);
+    });
+});

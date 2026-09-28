@@ -3872,6 +3872,18 @@ export class ULabel {
         }
     }
 
+    // Clear a subtask's isolation when its target has just been deprecated
+    // by a path that bypasses delete_annotation (bitmask strokes, undo/redo)
+    release_isolation_if_deprecated(annotation_id, subtask_key = null) {
+        subtask_key = subtask_key ?? this.get_current_subtask_key();
+        const subtask = this.subtasks[subtask_key];
+        if (subtask["state"]["isolated_annid"] !== annotation_id) return;
+        const annotation = subtask["annotations"]["access"][annotation_id];
+        if (annotation === undefined || annotation["deprecated"]) {
+            this.isolate_annotation(null, subtask_key);
+        }
+    }
+
     // Remove all recorded events associated with a specific annotation id
     remove_recorded_events_for_annotation(annotation_id) {
         // filter action stream
@@ -5648,6 +5660,7 @@ export class ULabel {
         // If the stroke erased the whole mask, deprecate the annotation (ULabel's delete semantics)
         if (after_empty) {
             mark_deprecated(annotation, true);
+            this.release_isolation_if_deprecated(active_id);
         }
 
         if (current_subtask["single_class_mode"]) {
@@ -5756,6 +5769,7 @@ export class ULabel {
             access[oid]["spatial_payload"] = other_mask.to_rle();
             if (after_empty) {
                 mark_deprecated(access[oid], true);
+                this.release_isolation_if_deprecated(oid, st);
             }
             other_edits.push({
                 annotation_id: oid,
@@ -5800,6 +5814,7 @@ export class ULabel {
                 this.set_bitmask_from_rle(annotation, null);
                 annotation["spatial_payload"] = null;
                 mark_deprecated(annotation, true);
+                this.release_isolation_if_deprecated(annotation_id);
             } else {
                 this.set_bitmask_from_rle(annotation, undo_payload.before_rle);
                 annotation["spatial_payload"] = undo_payload.before_rle;
@@ -5826,6 +5841,7 @@ export class ULabel {
             this.set_bitmask_from_rle(annotation, redo_payload.after_rle);
             annotation["spatial_payload"] = redo_payload.after_rle;
             mark_deprecated(annotation, redo_payload.after_empty === true);
+            this.release_isolation_if_deprecated(annotation_id);
         }
         // Re-apply the carve to any other masks
         const other_edits = redo_payload.other_edits || [];
@@ -5835,6 +5851,7 @@ export class ULabel {
             this.set_bitmask_from_rle(other, edit.after_rle);
             other["spatial_payload"] = edit.after_rle;
             mark_deprecated(other, edit.after_empty === true);
+            this.release_isolation_if_deprecated(edit.annotation_id, edit.subtask);
             this.rebuild_bitmask_containing_box(other);
             this.redraw_annotation(edit.annotation_id, edit.subtask);
         }
