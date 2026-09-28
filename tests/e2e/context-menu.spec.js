@@ -38,7 +38,7 @@ test.describe("context menu", () => {
         await right_click(page, [250, 250]);
         const menu = page.locator(MENU);
         await expect(menu).toBeVisible();
-        await expect(menu.locator(ITEM)).toHaveText(["Change class", "Delete", "Details"]);
+        await expect(menu.locator(ITEM)).toHaveText(["Change class", "Delete", "Isolate", "Details"]);
 
         await click_item(page, "Change class");
         await expect(menu).toBeHidden();
@@ -144,10 +144,29 @@ test.describe("context menu", () => {
         expect(in_progress).toBe(false);
     });
 
-    test("read-only subtask offers Details only", async ({ page }) => {
+    test("read-only subtask offers Isolate and Details only", async ({ page }) => {
         await wait_for_ulabel_init(page, "/read-only.html");
         const opened = await page.evaluate(() => window.ulabel.show_context_menu("ro-bbox-1", 300, 300));
         expect(opened).toBe(true);
-        await expect(page.locator(MENU).locator(ITEM)).toHaveText(["Details"]);
+        await expect(page.locator(MENU).locator(ITEM)).toHaveText(["Isolate", "Details"]);
+    });
+
+    test("Isolate toggles isolation and relabels to Show all", async ({ page }) => {
+        await wait_for_ulabel_init(page);
+        await draw_bbox(page, [200, 200], [300, 300]);
+        await draw_bbox(page, [400, 200], [500, 300]);
+        const annotation_id = (await get_annotation_by_index(page, 0)).id;
+        const isolated_id = () => page.evaluate(() => window.ulabel.get_isolated_annotation_id());
+
+        await right_click(page, [250, 250]);
+        await click_item(page, "Isolate");
+        await expect(page.locator(MENU)).toBeHidden();
+        expect(await isolated_id()).toBe(annotation_id);
+
+        await right_click(page, [250, 250]);
+        await expect(page.locator(MENU).locator(ITEM, { hasText: "Show all" })).toHaveCount(1);
+        await click_item(page, "Show all");
+        await expect(page.locator(MENU)).toBeHidden();
+        expect(await isolated_id()).toBeNull();
     });
 });

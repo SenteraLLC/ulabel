@@ -181,33 +181,47 @@ Verified facts the tickets get wrong, for the record:
 
 ### Phase 230 - isolate one annotation from the list
 
-- [ ] 230.1 `state.isolated_annid: string | null` per subtask (type in
+- [x] 230.1 `state.isolated_annid: string | null` per subtask (type in
   `subtask.ts`, initialised alongside `focused` state).
-- [ ] 230.2 Public `isolate_annotation(annotation_id | null, subtask_key?)`
+- [x] 230.2 Public `isolate_annotation(annotation_id | null, subtask_key?)`
   + `index.d.ts`: rejects unknown / deprecated ids with a quiet warning,
   writes the state, drops `hovered_annid` and `fly_to_idx`, redraws and
   `toolbox.redraw_update_items()`, fires `config.on_isolate_change?.(
   subtask_key, annotation_id | null)` only on actual change.
-- [ ] 230.3 Gates: extend `is_annotation_defocused` to also return true for
+  Lives in new `src/isolate.ts` (like `active_class.ts`). Also drops
+  `edit_candidate` / `move_candidate` and closes the context menu; added
+  `get_isolated_annotation_id(subtask_key?)` for the list UI and hosts.
+- [x] 230.3 Gates: extend `is_annotation_defocused` to also return true for
   "isolated-out" (another annotation is isolated in that subtask), which
   covers hover, Tab, fly-to, the list, active-class hover and bulk delete
   in one place. Drawing must *hide* rather than dim: early-return in
   `draw_annotation` and skip in the defocused-pass collection. Explicitly
   not in the bitmask geometry paths (same carve-out as focus).
-- [ ] 230.4 Clears: `set_subtask` (outgoing subtask),
+- [x] 230.4 Clears: `set_subtask` (outgoing subtask),
   `_swap_subtask_annotations`, `delete_annotation` of the isolated id,
   Escape (after the context-menu branch, before the in-progress ones).
   View-only: no `record_action`, `state.edited` untouched.
-- [ ] 230.5 Annotation list UI: per-entry isolate icon button
+  Added: creating a new annotation (`begin_annotation`, `create_annotation`,
+  `create_nonspatial_annotation`, `create_bitmask_annotation`) also clears,
+  otherwise the new annotation would be drawn hidden. Escape branch sits
+  after the id-dialog dismissal.
+- [x] 230.5 Annotation list UI: per-entry isolate icon button
   (`stopPropagation` so click-to-fly is intact; active state styled), and a
   "Show all" button in the header while isolated. While isolated the list
-  shows only that entry (falls out of the 230.3 gate).
-- [ ] 230.6 Tests: `tests/isolate.test.js` for state write, draw skip,
+  shows only that entry (falls out of the 230.3 gate). Eye SVG icon;
+  clicking the active button clears.
+- [x] 230.6 Tests: `tests/isolate.test.js` for state write, draw skip,
   hover skip, each clear path, callback fires only on change,
   `get_annotations()` length unchanged, isolated + defocused class draws
   nothing; e2e on a 20+ annotation demo per the ticket's acceptance list
   (isolate -> only it drawn -> delete via context menu -> isolation clears).
-- [ ] 230.7 Docs: README (control, method, callback), CHANGELOG.
+  `tests/e2e/isolate.spec.js` loads a 24-box grid via `set_annotations`
+  on multi-class.html and checks painted-pixel counts; the `set_subtask`
+  and `set_annotations` clears are covered there (need full init), the
+  rest in jest. Verified locally on chromium.
+- [x] 230.7 Docs: README (control, method, callback), CHANGELOG. README has
+  no interaction docs; went into `api_spec.md` (AnnotationList section,
+  methods, `on_isolate_change`) and CHANGELOG.
 
 ### Release
 

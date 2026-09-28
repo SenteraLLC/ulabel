@@ -34,6 +34,7 @@ import { ULabelMask, is_raw_mask_payload } from "../build/mask_utils";
 import { get_active_class_id, get_local_storage_item, set_local_storage_item } from "../build/utilities";
 import { set_active_class, get_selected_class_id, set_focus_active_class, set_defocused_opacity, can_annotation_be_class } from "../build/active_class";
 import { show_context_menu, hide_context_menu, is_context_menu_open } from "../build/context_menu";
+import { isolate_annotation, is_annotation_isolated_out } from "../build/isolate";
 import { get_idd_string } from "../build/html_builder";
 
 import $ from "jquery";
@@ -636,6 +637,7 @@ export class ULabel {
                 fly_to_idx: null,
                 // The last non-delete class selected; what class focus follows
                 selected_class_id: ul.subtasks[subtask_key]["class_ids"][0] ?? null,
+                isolated_annid: null,
                 defocused_opacity: raw_subtask["defocused_opacity"] ?? DEFAULT_DEFOCUSED_OPACITY,
                 // Cache of the layer opacity slider, synced by readjust_subtask_opacities
                 layer_opacity: 1,
@@ -806,45 +808,7 @@ export class ULabel {
         // TODO(v1)
         // There can only be one drag, yes? Maybe pare this down...
         // Would be nice to consolidate this with global state also
-        this.drag_state = {
-            active_key: null,
-            release_button: null,
-            annotation: {
-                mouse_start: null, // Screen coordinates where the current mouse drag started
-                offset_start: null, // Scroll values where the current mouse drag started
-                zoom_val_start: null, // zoom_val when the dragging interaction started
-            },
-            brush: {
-                mouse_start: null, // Screen coordinates where the current mouse drag started
-                offset_start: null, // Scroll values where the current mouse drag started
-                zoom_val_start: null, // zoom_val when the dragging interaction started
-            },
-            edit: {
-                mouse_start: null, // Screen coordinates where the current mouse drag started
-                offset_start: null, // Scroll values where the current mouse drag started
-                zoom_val_start: null, // zoom_val when the dragging interaction started
-            },
-            pan: {
-                mouse_start: null, // Screen coordinates where the current mouse drag started
-                offset_start: null, // Scroll values where the current mouse drag started
-                zoom_val_start: null, // zoom_val when the dragging interaction started
-            },
-            zoom: {
-                mouse_start: null, // Screen coordinates where the current mouse drag started
-                offset_start: null, // Scroll values where the current mouse drag started
-                zoom_val_start: null, // zoom_val when the dragging interaction started
-            },
-            move: {
-                mouse_start: null, // Screen coordinates where the current mouse drag started
-                offset_start: null, // Scroll values where the current mouse drag started
-                zoom_val_start: null, // zoom_val when the dragging interaction started
-            },
-            right: {
-                mouse_start: null, // Screen coordinates where the current mouse drag started
-                offset_start: null, // Scroll values where the current mouse drag started
-                zoom_val_start: null, // zoom_val when the dragging interaction started
-            },
-        };
+        this.drag_state = ULabel.build_initial_drag_state();
 
         for (const st in this.subtasks) {
             for (let i = 0; i < this.subtasks[st]["annotations"]["ordering"].length; i++) {
@@ -1179,10 +1143,34 @@ export class ULabel {
      */
     is_annotation_defocused(annotation, subtask_key) {
         const subtask = this.subtasks[subtask_key];
-        if (subtask == null || !subtask["focus_active_class"]) return false;
+        if (subtask == null) return false;
+        // Isolation hides rather than dims, but shares every input gate
+        if (is_annotation_isolated_out(this, annotation, subtask_key)) return true;
+        if (!subtask["focus_active_class"]) return false;
         const selected_class_id = get_selected_class_id(this, subtask_key);
         if (selected_class_id == null) return false;
         return get_annotation_class_id(annotation) !== String(selected_class_id);
+    }
+
+    /**
+     * Isolate one annotation in a subtask (hide all others), or pass `null`
+     * to show all again. View-only: not recorded, does not mark edited.
+     *
+     * @param {string|null} annotation_id
+     * @param {string|null} subtask_key defaults to the current subtask
+     * @param {boolean} redraw
+     * @returns {boolean} whether the request was accepted
+     */
+    isolate_annotation(annotation_id, subtask_key = null, redraw = true) {
+        return isolate_annotation(this, annotation_id, subtask_key, redraw);
+    }
+
+    /**
+     * @param {string|null} subtask_key defaults to the current subtask
+     * @returns {string|null} the isolated annotation id, if any
+     */
+    get_isolated_annotation_id(subtask_key = null) {
+        return this.subtasks[subtask_key ?? this.get_current_subtask_key()]?.["state"]["isolated_annid"] ?? null;
     }
 
     /**
@@ -1254,6 +1242,8 @@ export class ULabel {
     set_subtask(st_key) {
         let old_st = this.get_current_subtask_key();
         this.hide_context_menu();
+        // Isolation is a per-subtask view; leaving the subtask ends it
+        this.isolate_annotation(null, old_st);
 
         // Clear stale hover on the outgoing subtask so its white outline doesn't linger
         // (its canvases stay visible at reduced opacity in the background).
@@ -2776,6 +2766,8 @@ export class ULabel {
         // DEBUG left here for refactor reference, but I don't think it's needed moving forward
         //    there may be a use case for drawing depreacted annotations
         if (annotation_object["deprecated"]) return;
+        // Isolated-out annotations are hidden outright, never dimmed
+        if (is_annotation_isolated_out(this, annotation_object, subtask)) return;
         // Defocused annotations are only drawn by the scratch pass, which dims
         // them as a layer; anything else reaching here would draw at full alpha.
         if (!this.state["drawing_defocused"] && this.is_annotation_defocused(annotation_object, subtask)) return;
@@ -2902,13 +2894,16 @@ export class ULabel {
      */
     draw_context_in_focus_passes(canvas_id, subtask, draw) {
         const context_entry = this.subtasks[subtask]["state"]["annotation_contexts"][canvas_id];
-        const annotation_ids = context_entry["annotation_ids"];
+        const access = this.subtasks[subtask]["annotations"]["access"];
+        // Isolation hides, so it never enters the dimming pass
+        const annotation_ids = context_entry["annotation_ids"].filter(
+            (annid) => !is_annotation_isolated_out(this, access[annid], subtask),
+        );
         if (!this.subtasks[subtask]["focus_active_class"]) {
             for (const annid of annotation_ids) draw(annid);
             return;
         }
 
-        const access = this.subtasks[subtask]["annotations"]["access"];
         const defocused = [];
         const focused = [];
         for (const annid of annotation_ids) {
@@ -4202,6 +4197,8 @@ export class ULabel {
         if (this.is_subtask_hidden()) {
             return;
         }
+        // A new annotation would be hidden by an active isolation
+        this.isolate_annotation(null);
 
         const annotation_access = current_subtask["annotations"]["access"];
         const annotation_ordering = current_subtask["annotations"]["ordering"];
@@ -4311,6 +4308,10 @@ export class ULabel {
 
         if (this.state["context_menu_annid"] === annotation_id) {
             this.hide_context_menu();
+        }
+        // Deleting the isolated annotation must bring the others back
+        if (current_subtask["state"]["isolated_annid"] === annotation_id) {
+            this.isolate_annotation(null);
         }
 
         // Deprecate the annotation and redraw it
@@ -4686,6 +4687,8 @@ export class ULabel {
 
     create_nonspatial_annotation(annotation_id = null, redo_payload = null) {
         const current_subtask = this.get_current_subtask();
+        // A new annotation would be hidden by an active isolation
+        this.isolate_annotation(null);
         let redoing = false;
         let annotation_mode = null;
         let init_idpyld = null;
@@ -4767,6 +4770,8 @@ export class ULabel {
 
         const subtask_key = this.get_current_subtask_key();
         const current_subtask = this.subtasks[subtask_key];
+        // A new annotation would be hidden by an active isolation
+        this.isolate_annotation(null);
 
         if (redo_payload === null) {
             annotation_id = this.make_new_annotation_id();
@@ -5418,6 +5423,8 @@ export class ULabel {
     create_bitmask_annotation() {
         const subtask_key = this.get_current_subtask_key();
         const current_subtask = this.subtasks[subtask_key];
+        // A new annotation would be hidden by an active isolation
+        this.isolate_annotation(null);
         const annotation_id = this.make_new_annotation_id();
         const init_id_payload = this.get_init_id_payload("bitmask");
         const canvas_id = this.get_init_canvas_context_id(
@@ -8003,40 +8010,22 @@ export class ULabel {
         if (subtask !== null && subtask !== this.state["current_subtask"]) {
             return;
         }
-        this.drag_state = {
+        this.drag_state = ULabel.build_initial_drag_state();
+    }
+
+    static build_initial_drag_state() {
+        const drag_state = {
             active_key: null,
             release_button: null,
-            annotation: {
-                mouse_start: null, // Screen coordinates where the current mouse drag started
-                offset_start: null, // Scroll values where the current mouse drag started
-                zoom_val_start: null, // zoom_val when the dragging interaction started
-            },
-            edit: {
-                mouse_start: null, // Screen coordinates where the current mouse drag started
-                offset_start: null, // Scroll values where the current mouse drag started
-                zoom_val_start: null, // zoom_val when the dragging interaction started
-            },
-            pan: {
-                mouse_start: null, // Screen coordinates where the current mouse drag started
-                offset_start: null, // Scroll values where the current mouse drag started
-                zoom_val_start: null, // zoom_val when the dragging interaction started
-            },
-            zoom: {
-                mouse_start: null, // Screen coordinates where the current mouse drag started
-                offset_start: null, // Scroll values where the current mouse drag started
-                zoom_val_start: null, // zoom_val when the dragging interaction started
-            },
-            move: {
-                mouse_start: null, // Screen coordinates where the current mouse drag started
-                offset_start: null, // Scroll values where the current mouse drag started
-                zoom_val_start: null, // zoom_val when the dragging interaction started
-            },
-            right: {
-                mouse_start: null, // Screen coordinates where the current mouse drag started
-                offset_start: null, // Scroll values where the current mouse drag started
-                zoom_val_start: null, // zoom_val when the dragging interaction started
-            },
         };
+        for (const drag_key of ["annotation", "brush", "edit", "pan", "zoom", "move", "right"]) {
+            drag_state[drag_key] = {
+                mouse_start: null, // Screen coordinates where the current mouse drag started
+                offset_start: null, // Scroll values where the current mouse drag started
+                zoom_val_start: null, // zoom_val when the dragging interaction started
+            };
+        }
+        return drag_state;
     }
 
     // Allow for external access and modification of annotations within a subtask
@@ -8162,6 +8151,8 @@ export class ULabel {
         this.reset_interaction_state(subtask);
         this.subtasks[subtask]["actions"]["stream"] = [];
         this.subtasks[subtask]["actions"]["undone_stack"] = [];
+        // The isolated id is about to stop existing; the redraw below repaints
+        this.isolate_annotation(null, subtask, false);
 
         // Bulk teardown of outgoing annotations: much cheaper than a per-annotation loop.
         this._clear_subtask_annotation_canvases(subtask);

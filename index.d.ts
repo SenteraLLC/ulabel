@@ -332,6 +332,8 @@ export type ULabelConstructorArgs = {
     on_subtask_change?: (subtask_key: string, old_subtask_key: string) => void;
     /** Fired after a subtask's `focus_active_class` flag changes, from any writer (API, focus keybind). */
     on_focus_active_class_change?: (subtask_key: string, enabled: boolean) => void;
+    /** Fired after a subtask's isolated annotation changes (`null` when cleared), from any writer (API, list button, Escape). */
+    on_isolate_change?: (subtask_key: string, annotation_id: string | null) => void;
     /** @deprecated Use top-level properties instead. */
     config_data?: object;
 };
@@ -461,6 +463,15 @@ export class ULabel {
      * entirely, which is cheaper but loses them as visual context.
      */
     public set_defocused_opacity(subtask_key: string, opacity: number, redraw?: boolean): void;
+    /**
+     * Isolate one annotation in a subtask: every other annotation is hidden
+     * from the canvas and from input until cleared with `null`. View-only
+     * state (not recorded, does not mark edited). Returns whether the request
+     * was accepted (unknown or deprecated ids are rejected).
+     */
+    public isolate_annotation(annotation_id: string | null, subtask_key?: string | null, redraw?: boolean): boolean;
+    /** The isolated annotation id in a subtask, if any. */
+    public get_isolated_annotation_id(subtask_key?: string | null): string | null;
     /**
      * Set a subtask's layer opacity. Also writes `inactive_opacity` so the value
      * survives a subtask switch.

@@ -53,6 +53,8 @@ export class ULabelSubtask {
         // The last non-delete class selected; what class focus follows when
         // `focus_active_class` is set. Defocused annotations are still real data.
         selected_class_id: number | null;
+        // When set, every other annotation in the subtask is hidden (view-only)
+        isolated_annid: string | null;
         defocused_opacity: number;
         // Cache of the layer opacity slider, synced by readjust_subtask_opacities
         layer_opacity: number;

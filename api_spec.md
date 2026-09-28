@@ -15,7 +15,7 @@ This should eventually be replaced with a more comprehensive approach to documen
 - Press `Escape` to exit brush/erase mode.
 - Press `Tab` to set the zoom to focus on the next annotation
 - Press `Shift+Tab` to set the zoom to focus on the previous annotation
-- Right-click a hovered annotation (or its entry in the `AnnotationList` toolbox item) to open a context menu with `Change class`, `Delete`, and `Details`. `Change class` opens the class pie for that annotation; `Details` lists its id, class, spatial type, last editor/edit time, and `annotation_meta` entries. Read-only subtasks only offer `Details`. Press `Escape` or click anywhere to close it. A right-click while drawing a polyline still finishes the polyline and opens no menu.
+- Right-click a hovered annotation (or its entry in the `AnnotationList` toolbox item) to open a context menu with `Change class`, `Delete`, `Isolate` / `Show all`, and `Details`. `Change class` opens the class pie for that annotation; `Isolate` hides every other annotation in the subtask (see [`isolate_annotation`](#isolate_annotationannotation_id-subtask_key-redraw)) and reads `Show all` while that annotation is isolated; `Details` lists its id, class, spatial type, last editor/edit time, and `annotation_meta` entries. Read-only subtasks only offer `Isolate` and `Details`. Press `Escape` or click anywhere to close it. A right-click while drawing a polyline still finishes the polyline and opens no menu.
 - Press `Escape` to close an open class pie or context menu.
 
 ## ULabel Constructor
@@ -92,7 +92,8 @@ class ULabel({
     auto_destroy_on_detach: boolean,
     on_active_class_change: function,
     on_subtask_change: function,
-    on_focus_active_class_change: function
+    on_focus_active_class_change: function,
+    on_isolate_change: function
 })
 ```
 
@@ -508,6 +509,11 @@ The `AnnotationList` toolbox item displays all annotations in the current subtas
 - Hover over an annotation in the list to highlight it on the canvas (outline and confidence card)
 - Hover over an annotation on the canvas to highlight its corresponding entry in the list
 
+**Isolation:**
+- Each entry has an eye button that isolates that annotation: every other annotation in the subtask is hidden from the canvas and from hover, Tab, fly-to, the list, and bulk delete. The list shows only the isolated entry and a **Show all** button appears in the header.
+- Clear it with **Show all**, the active eye button, `Escape`, or programmatically with [`isolate_annotation(null)`](#isolate_annotationannotation_id-subtask_key-redraw). It also clears when the isolated annotation is deleted, when a new annotation is created, on subtask switch, and on `set_annotations()`.
+- Isolation is a view-only state: nothing is recorded in the action stream and `get_annotations()` is unaffected.
+
 This toolbox item requires no configuration and can be added to the `toolbox_order` array using `AllowedToolboxItem.AnnotationList`.
 
 ### `confidence_slider_toolbox_item`
@@ -687,6 +693,9 @@ When `true` (the default), ULabel installs a `MutationObserver` on the container
 ### `on_focus_active_class_change`
 *(subtask_key: string, enabled: boolean) => void* -- Called after a subtask's `focus_active_class` flag actually changes, whatever the writer: `set_focus_active_class` or the `toggle_class_focus_keybind`. Not called when the flag is already at the target value, so a host may re-sync other subtasks from the callback without recursing. Default is `null`.
 
+### `on_isolate_change`
+*(subtask_key: string, annotation_id: string | null) => void* -- Called after a subtask's isolated annotation actually changes, whatever the writer: `isolate_annotation`, the list's eye button, `Show all`, `Escape`, or one of the automatic clears (deletion, creation, subtask switch, `set_annotations`). `annotation_id` is `null` when the isolation clears. Default is `null`.
+
 
 ## Display Utility Functions
 
@@ -782,6 +791,14 @@ Sets the zoom to focus on the provided annotation, and switches to its subtask i
 ### `is_context_menu_open()`
 
 *() => boolean* -- Whether the context menu is currently open.
+
+### `isolate_annotation(annotation_id, subtask_key?, redraw?)`
+
+*(annotation_id: string | null, subtask_key?: string | null, redraw?: boolean) => boolean* -- Isolate one annotation in a subtask (default: the current one): every other annotation is hidden from the canvas and from input until cleared by passing `null`. Returns `false` and changes nothing for an unknown subtask or an unknown/deprecated annotation. View-only: not recorded, does not mark the session edited. Fires [`on_isolate_change`](#on_isolate_change) on an actual change.
+
+### `get_isolated_annotation_id(subtask_key?)`
+
+*(subtask_key?: string | null) => string | null* -- The isolated annotation id in a subtask (default: the current one), or `null`.
 
 ### `get_keypoint_slider_value()`
 

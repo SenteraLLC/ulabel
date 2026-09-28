@@ -168,6 +168,7 @@ export class Configuration {
     public on_active_class_change: ((subtask_key: string, class_id: number) => void) | null = null;
     public on_subtask_change: ((subtask_key: string, old_subtask_key: string) => void) | null = null;
     public on_focus_active_class_change: ((subtask_key: string, enabled: boolean) => void) | null = null;
+    public on_isolate_change: ((subtask_key: string, annotation_id: string | null) => void) | null = null;
 
     // Passthrough
     public task_meta: object = {};

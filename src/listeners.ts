@@ -270,6 +270,8 @@ function handle_keydown_event(
         } else if (current_subtask.state.idd_visible) {
             // A clicked-open id dialog has no other dismissal
             ulabel.hide_id_dialog();
+        } else if (current_subtask.state.isolated_annid != null) {
+            ulabel.isolate_annotation(null);
         } else if (current_subtask.state.is_in_erase_mode) {
             // If in erase or brush mode, cancel the brush
             ulabel.toggle_erase_mode();

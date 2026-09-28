@@ -20,6 +20,7 @@ const SVG_ATTRS = `xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="
 const ICON_CHANGE_CLASS = `<svg ${SVG_ATTRS}><path d="M2 2h5.5l6.5 6.5-5.5 5.5L2 7.5z"/><circle cx="5" cy="5" r="1"/></svg>`;
 const ICON_DELETE = `<svg ${SVG_ATTRS}><path d="M2.5 4h11M6 4V2.5h4V4M3.5 4l.8 9.5h7.4l.8-9.5M6.5 7v4M9.5 7v4"/></svg>`;
 const ICON_DETAILS = `<svg ${SVG_ATTRS}><circle cx="8" cy="8" r="6"/><path d="M8 7.5v4M8 5v.01"/></svg>`;
+const ICON_ISOLATE = `<svg ${SVG_ATTRS}><path d="M1.5 8s2.5-4.5 6.5-4.5S14.5 8 14.5 8s-2.5 4.5-6.5 4.5S1.5 8 1.5 8z"/><circle cx="8" cy="8" r="2"/></svg>`;
 
 function get_menu_element(ulabel: ULabel): HTMLDivElement | null {
     return document.getElementById(`${MENU_CLASS}__${ulabel.config.container_id}`) as HTMLDivElement | null;
@@ -110,7 +111,8 @@ function render_details(ulabel: ULabel, menu: HTMLDivElement, annotation: ULabel
 /**
  * Open the menu for an annotation in the current subtask at a viewport
  * position. Items: Change class (editable subtask with at least two
- * compatible classes), Delete (editable subtask), Details (always).
+ * compatible classes), Delete (editable subtask), Isolate / Show all
+ * (always; view-only), Details (always).
  *
  * @returns whether the menu was shown
  */
@@ -143,6 +145,11 @@ export function show_context_menu(ulabel: ULabel, annid: string, client_x: numbe
             ulabel.delete_annotation(annid);
         });
     }
+    // isolate_annotation closes the menu itself
+    const is_isolated = subtask.state.isolated_annid === annid;
+    add_item(menu, is_isolated ? "Show all" : "Isolate", ICON_ISOLATE, () => {
+        ulabel.isolate_annotation(is_isolated ? null : annid);
+    });
     add_item(menu, "Details", ICON_DETAILS, () => render_details(ulabel, menu, annotation));
 
     ulabel.state.context_menu_annid = annid;

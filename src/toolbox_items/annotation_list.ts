@@ -16,6 +16,9 @@ import {
     WHOLE_IMAGE_SVG,
 } from "../../src/blobs";
 
+// Eye icon for the per-entry isolate button; `currentColor` follows the theme
+const ISOLATE_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 8s2.5-4.5 6.5-4.5S14.5 8 14.5 8s-2.5 4.5-6.5 4.5S1.5 8 1.5 8z"/><circle cx="8" cy="8" r="2"/></svg>`;
+
 /**
  * Toolbox item for displaying and navigating annotations in a list
  */
@@ -70,6 +73,52 @@ export class AnnotationListToolboxItem extends ToolboxItem {
 
         #toolbox .annotation-list-toggle-btn:hover {
             background-color: rgba(0, 128, 255, 0.1);
+        }
+
+        #toolbox .annotation-list-show-all-btn {
+            display: none;
+            margin-left: auto;
+            margin-right: 0.5rem;
+            padding: 0.15rem 0.5rem;
+            border: 1px solid rgba(128, 128, 128, 0.5);
+            border-radius: 4px;
+            background: none;
+            color: inherit;
+            font-size: 0.75rem;
+            cursor: pointer;
+        }
+
+        #toolbox .annotation-list-show-all-btn:hover {
+            background-color: rgba(0, 128, 255, 0.1);
+        }
+
+        #toolbox .annotation-list-item-isolate {
+            display: inline-flex;
+            flex-shrink: 0;
+            width: 20px;
+            height: 20px;
+            padding: 2px;
+            border: none;
+            border-radius: 4px;
+            background: none;
+            color: inherit;
+            opacity: 0.4;
+            cursor: pointer;
+        }
+
+        #toolbox .annotation-list-item-isolate svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        #toolbox .annotation-list-item-isolate:hover {
+            opacity: 1;
+            background-color: rgba(0, 128, 255, 0.15);
+        }
+
+        #toolbox .annotation-list-item-isolate.active {
+            opacity: 1;
+            color: rgb(0, 128, 255);
         }
 
         #toolbox .annotation-list-content {
@@ -291,6 +340,21 @@ export class AnnotationListToolboxItem extends ToolboxItem {
             }
         });
 
+        // Per-entry isolate toggle; must not bubble into the fly-to click above
+        $(document).on("click.ulabel", ".annotation-list-item-isolate", (e) => {
+            e.stopPropagation();
+            const annotation_id = $(e.currentTarget).closest(".annotation-list-item").data("annotation-id");
+            if (!annotation_id) return;
+            const id = String(annotation_id);
+            this.ulabel.isolate_annotation(this.ulabel.get_isolated_annotation_id() === id ? null : id);
+        });
+
+        // Header button; must not bubble into the collapse toggle
+        $(document).on("click.ulabel", "#annotation-list-show-all", (e) => {
+            e.stopPropagation();
+            this.ulabel.isolate_annotation(null);
+        });
+
         // Hover on annotation list item to highlight annotation on canvas
         $(document).on("mouseenter.ulabel", ".annotation-list-item", (e) => {
             if (this.ulabel.is_context_menu_open()) return;
@@ -351,6 +415,11 @@ export class AnnotationListToolboxItem extends ToolboxItem {
         const toggle_btn = document.querySelector<HTMLButtonElement>("#annotation-list-toggle");
 
         if (!content || !toggle_btn) return;
+
+        const show_all_btn = document.querySelector<HTMLButtonElement>("#annotation-list-show-all");
+        if (show_all_btn) {
+            show_all_btn.style.display = this.ulabel.get_isolated_annotation_id() != null ? "inline-block" : "none";
+        }
 
         // Update toggle button
         toggle_btn.innerText = this.is_collapsed ? "▼" : "▲";
@@ -428,6 +497,7 @@ export class AnnotationListToolboxItem extends ToolboxItem {
                             <span class="annotation-list-item-class">${class_name}</span>
                             <span class="annotation-list-item-id">#${i}</span>
                         </div>
+                        ${this.build_isolate_button_html(annotation)}
                     </div>
                 </div>
             `;
@@ -503,6 +573,7 @@ export class AnnotationListToolboxItem extends ToolboxItem {
                             <div class="annotation-list-item-text">
                                 <span class="annotation-list-item-id">#${i}</span>
                             </div>
+                            ${this.build_isolate_button_html(annotation)}
                         </div>
                     </div>
                 `;
@@ -512,6 +583,12 @@ export class AnnotationListToolboxItem extends ToolboxItem {
         }
 
         return html;
+    }
+
+    private build_isolate_button_html(annotation: ULabelAnnotation): string {
+        const active = this.ulabel.get_isolated_annotation_id() === annotation.id;
+        const title = active ? "Show all annotations" : "Isolate this annotation";
+        return `<button class="annotation-list-item-isolate${active ? " active" : ""}" title="${title}">${ISOLATE_SVG}</button>`;
     }
 
     /**
@@ -610,6 +687,7 @@ export class AnnotationListToolboxItem extends ToolboxItem {
             <div class="toolbox-divider"></div>
             <div class="annotation-list-header">
                 <h3 class="annotation-list-title">Annotation List</h3>
+                <button id="annotation-list-show-all" class="annotation-list-show-all-btn">Show all</button>
                 <button id="annotation-list-toggle" class="annotation-list-toggle-btn">▲</button>
             </div>
             <div id="annotation-list-content" class="annotation-list-content">
