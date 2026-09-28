@@ -223,11 +223,43 @@ Verified facts the tickets get wrong, for the record:
   no interaction docs; went into `api_spec.md` (AnnotationList section,
   methods, `on_isolate_change`) and CHANGELOG.
 
+### PR review fixes (PR_REVIEW_0.29.0.md, all four findings confirmed)
+
+- [x] F1 Zero-diff `finish_move` vs `undo()`: `undo()` pops `begin_move`,
+  pushes it back, `finish_action` -> `finish_move` pops it again (zero diff)
+  and swaps `actions.undone_stack`; `undo()` then pops the *previous* action
+  (or `undefined` -> TypeError) into a detached redo array. Fix: have
+  `finish_action` report whether the action was dropped and bail out of
+  `undo()`; restore the snapshot's redo stack in place rather than by
+  reference swap. Tests: Ctrl+Z mid stationary click with and without
+  prior history, redo still works. Done: `undo()` bails when the
+  top-of-stack action is no longer the undo candidate; `finish_move`
+  restores `undone_stack` in place.
+- [x] F2 Body move for `contour`, `tbar`, `bbox3`: `get_edit_candidates`
+  has no exact test for them, so `containing` is never true and
+  `is_body_move_start` refuses. Add: contour -> near-stroke like polyline;
+  tbar -> near either segment; bbox3 -> inside x/y box. Tests in
+  `tests/body_move.test.js`. Done (`GeometricUtils.tbar_cross_segment`
+  shared with `draw_tbar`).
+- [x] F3 Stale `isolated_annid` after undoing creation: only
+  `delete_annotation` clears it; `create_annotation__undo` and
+  `begin_annotation__undo` go through `remove_annotation_from_access_and_ordering`.
+  Clear there (with `on_isolate_change(null)` + full redraw). Test:
+  create -> isolate -> undo -> others visible, callback got null. Done
+  (jest + e2e).
+- [x] F4 Details panel: re-run `position_menu` after `render_details` and
+  add `max-height` + `overflow-y: auto` to `.ulabel-context-menu`. Tests:
+  details near the bottom edge stays in the viewport; tall metadata scrolls.
+  Done (`box-sizing: border-box` needed so the border fits in `max-height`).
+- [x] F5 lint + build + jest + affected e2e; CHANGELOG bullet for F2
+  (contour/tbar/bbox3 move) - F1/F3/F4 are fixes to unreleased code.
+  Done: lint clean, jest 341/341, context-menu + isolate e2e 17/17.
+
 ### Release
 
-- [ ] R1 CHANGELOG `[0.29.0]` section covering 228/229/230 plus the
+- [x] R1 CHANGELOG `[0.29.0]` section covering 228/229/230 plus the
   confidence-card fix already on the branch.
-- [ ] R2 `package.json` version bump to 0.29.0 (needs explicit go-ahead).
+- [x] R2 `package.json` version bump to 0.29.0 (done by user).
 - [ ] R3 lint + build + jest + e2e green; PR `release/0.29.0` -> `main`,
   tag `v0.29.0`.
 - [x] R4 Update CVML-228 / 229 / 230 descriptions to match the decisions

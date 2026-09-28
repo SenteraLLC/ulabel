@@ -585,6 +585,21 @@ export class GeometricUtils {
         return false;
     }
 
+    /**
+     * The cross bar of a tbar with stem `sp` -> `ep`: centred on `sp`,
+     * perpendicular to the stem, as long as the stem.
+     */
+    public static tbar_cross_segment(sp: Point2D, ep: Point2D): ULabelSpatialPayload2D {
+        const halflen: number = Math.sqrt(
+            (sp[0] - ep[0]) * (sp[0] - ep[0]) + (sp[1] - ep[1]) * (sp[1] - ep[1]),
+        ) / 2;
+        const theta: number = Math.atan((ep[1] - sp[1]) / (ep[0] - sp[0]));
+        return [
+            [sp[0] + halflen * Math.sin(theta), sp[1] - halflen * Math.cos(theta)],
+            [sp[0] - halflen * Math.sin(theta), sp[1] + halflen * Math.cos(theta)],
+        ];
+    }
+
     // Convert a bbox to a simple polygon by adding the last point
     public static bbox_to_simple_polygon(
         bbox: ULabelSpatialPayload2D,

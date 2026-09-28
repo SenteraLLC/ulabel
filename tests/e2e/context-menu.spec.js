@@ -104,6 +104,32 @@ test.describe("context menu", () => {
         await expect(values.nth(2)).toHaveText("bbox");
     });
 
+    test("Details opened at the viewport corner stays inside it and scrolls when tall", async ({ page }) => {
+        await wait_for_ulabel_init(page);
+        await draw_bbox(page, [200, 200], [300, 300]);
+        const annotation = await get_annotation_by_index(page, 0);
+        const viewport = page.viewportSize();
+        await page.evaluate(([annid, n]) => {
+            const meta = {};
+            for (let i = 0; i < n; i++) meta[`field_${i}`] = "x".repeat(60);
+            window.ulabel.get_current_subtask().annotations.access[annid].annotation_meta = meta;
+            window.ulabel.show_context_menu(annid, window.innerWidth - 10, window.innerHeight - 10);
+        }, [annotation.id, 80]);
+
+        const menu = page.locator(MENU);
+        await expect(menu).toBeVisible();
+        await click_item(page, "Details");
+        await expect(menu.locator(ITEM)).toHaveCount(0);
+
+        const box = await menu.boundingBox();
+        expect(box.x).toBeGreaterThanOrEqual(0);
+        expect(box.y).toBeGreaterThanOrEqual(0);
+        expect(box.x + box.width).toBeLessThanOrEqual(viewport.width);
+        expect(box.y + box.height).toBeLessThanOrEqual(viewport.height);
+        const scrolls = await menu.evaluate((el) => el.scrollHeight > el.clientHeight);
+        expect(scrolls).toBe(true);
+    });
+
     test("Escape and a click elsewhere close the menu without side effects", async ({ page }) => {
         await wait_for_ulabel_init(page);
         await draw_bbox(page, [200, 200], [300, 300]);

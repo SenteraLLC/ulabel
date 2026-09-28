@@ -178,6 +178,27 @@ test.describe("isolate annotation", () => {
         expect(await isolated_id(page)).toBeNull();
     });
 
+    test("undoing the creation of the isolated annotation clears the isolation", async ({ page }) => {
+        const all_painted = await painted_pixel_count(page);
+        // Draw a new box in the empty area below the grid, then isolate it
+        await page.mouse.move(150, 450);
+        await page.mouse.down();
+        await page.mouse.move(200, 500, { steps: 5 });
+        await page.mouse.up();
+        await page.waitForTimeout(100);
+        expect(await get_annotation_count(page)).toBe(COLS * ROWS + 1);
+        const fresh_id = await page.evaluate(() => window.ulabel.get_current_subtask().annotations.ordering.at(-1));
+        await page.evaluate((id) => window.ulabel.isolate_annotation(id), fresh_id);
+        expect(await isolated_id(page)).toBe(fresh_id);
+
+        await page.keyboard.press("Control+z");
+        await page.waitForTimeout(100);
+
+        expect(await get_annotation_count(page)).toBe(COLS * ROWS);
+        expect(await isolated_id(page)).toBeNull();
+        expect(await painted_pixel_count(page)).toBe(all_painted);
+    });
+
     test("on_isolate_change fires on change only, and the API rejects bad ids", async ({ page }) => {
         const calls = await page.evaluate(() => {
             const u = window.ulabel;

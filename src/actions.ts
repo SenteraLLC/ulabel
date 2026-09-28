@@ -516,6 +516,9 @@ export function undo(ulabel: ULabel, is_internal_undo: boolean = false) {
         // TODO: better way of doing this?
         action_stream.push(undo_candidate);
         finish_action(ulabel, undo_candidate);
+        // A zero-diff move drops its own begin_move on finish; there is
+        // nothing left to undo
+        if (action_stream[action_stream.length - 1] !== undo_candidate) return;
         undo_candidate = action_stream.pop()!;
     }
 

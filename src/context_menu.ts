@@ -90,7 +90,13 @@ function position_menu(menu: HTMLDivElement, client_x: number, client_y: number)
     if (rect.top > max_top) menu.style.top = `${Math.max(VIEWPORT_MARGIN, max_top)}px`;
 }
 
-function render_details(ulabel: ULabel, menu: HTMLDivElement, annotation: ULabelAnnotation): void {
+function render_details(
+    ulabel: ULabel,
+    menu: HTMLDivElement,
+    annotation: ULabelAnnotation,
+    client_x: number,
+    client_y: number,
+): void {
     menu.replaceChildren();
     const subtask = ulabel.get_current_subtask();
     const class_id = Number(get_annotation_class_id(annotation));
@@ -106,6 +112,8 @@ function render_details(ulabel: ULabel, menu: HTMLDivElement, annotation: ULabel
             add_detail_row(menu, key, value);
         }
     }
+    // The panel is taller than the item list; re-clamp from the original anchor
+    position_menu(menu, client_x, client_y);
 }
 
 /**
@@ -150,7 +158,7 @@ export function show_context_menu(ulabel: ULabel, annid: string, client_x: numbe
     add_item(menu, is_isolated ? "Show all" : "Isolate", ICON_ISOLATE, () => {
         ulabel.isolate_annotation(is_isolated ? null : annid);
     });
-    add_item(menu, "Details", ICON_DETAILS, () => render_details(ulabel, menu, annotation));
+    add_item(menu, "Details", ICON_DETAILS, () => render_details(ulabel, menu, annotation, client_x, client_y));
 
     ulabel.state.context_menu_annid = annid;
     position_menu(menu, client_x, client_y);

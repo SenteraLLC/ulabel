@@ -296,4 +296,31 @@ describe("clears", () => {
 
         expect(ulabel.subtasks.st.state.isolated_annid).toBeNull();
     });
+
+    test("undoing the creation of the isolated annotation clears the isolation", () => {
+        const on_isolate_change = jest.fn();
+        const ulabel = make_ulabel({ ...mock_config, on_isolate_change });
+        const base = make_annotation();
+        load(ulabel, [base]);
+        ulabel.redraw_annotation = jest.fn();
+        ulabel.rebuild_containing_box = jest.fn();
+        ulabel.update_filter_distance = jest.fn();
+        ulabel.suggest_edits = jest.fn();
+        ulabel.destroy_polygon_ender = jest.fn();
+        ulabel.destroy_annotation_context = jest.fn();
+        ulabel.hide_id_dialog = jest.fn();
+        ulabel.get_init_canvas_context_id = jest.fn(() => "c0");
+        ulabel.subtasks.st.state.annotation_contexts = { c0: { context: {}, annotation_ids: [] } };
+        ulabel.create_annotation("bbox", [[0, 0], [5, 5]], "fresh");
+        ulabel.isolate_annotation("fresh");
+        ulabel.redraw_all_annotations.mockClear();
+
+        ulabel.undo();
+
+        expect(ulabel.subtasks.st.annotations.access.fresh).toBeUndefined();
+        expect(ulabel.subtasks.st.state.isolated_annid).toBeNull();
+        expect(ulabel.is_annotation_defocused(base, "st")).toBe(false);
+        expect(ulabel.redraw_all_annotations).toHaveBeenCalledWith("st");
+        expect(on_isolate_change).toHaveBeenLastCalledWith("st", null);
+    });
 });

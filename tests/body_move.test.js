@@ -120,6 +120,63 @@ describe("get_drag_key_start body move", () => {
     });
 });
 
+describe("get_edit_candidates containing hits per spatial type", () => {
+    function load(ulabel, annotation) {
+        ulabel.subtasks.st.annotations = {
+            access: { [annotation.id]: annotation },
+            ordering: [annotation.id],
+        };
+        ulabel.get_empirical_scale = () => 1;
+        ulabel.get_subtask_line_size = () => 4;
+        ulabel.state.current_frame = 0;
+    }
+
+    function containing_at(ulabel, x, y) {
+        return ulabel.get_edit_candidates(x, y, 20).best?.containing ?? null;
+    }
+
+    test("contour: on the stroke moves, inside its box but off the stroke does not", () => {
+        const ulabel = make_ulabel();
+        load(ulabel, {
+            id: "c", spatial_type: "contour", deprecated: false,
+            spatial_payload: [[10, 10], [50, 10], [50, 50]],
+            containing_box: { tlx: 10, tly: 10, brx: 50, bry: 50 },
+            classification_payloads: [{ class_id: 1, confidence: 1 }],
+        });
+
+        expect(containing_at(ulabel, 30, 11)).toBe(true);
+        expect(containing_at(ulabel, 20, 40)).toBe(false);
+    });
+
+    test("tbar: stem and cross bar move, the empty quadrant does not", () => {
+        const ulabel = make_ulabel();
+        // Stem from (50,50) straight down to (50,90); cross bar spans x 30..70 at y=50
+        load(ulabel, {
+            id: "t", spatial_type: "tbar", deprecated: false,
+            spatial_payload: [[50, 50], [50, 90]],
+            containing_box: { tlx: 30, tly: 50, brx: 70, bry: 90 },
+            classification_payloads: [{ class_id: 1, confidence: 1 }],
+        });
+
+        expect(containing_at(ulabel, 50, 70)).toBe(true);
+        expect(containing_at(ulabel, 35, 50)).toBe(true);
+        expect(containing_at(ulabel, 65, 80)).toBe(false);
+    });
+
+    test("bbox3: inside the x/y box on a covered frame moves", () => {
+        const ulabel = make_ulabel();
+        load(ulabel, {
+            id: "b3", spatial_type: "bbox3", deprecated: false,
+            spatial_payload: [[10, 10, 0], [50, 50, 2]],
+            containing_box: { tlx: 10, tly: 10, brx: 50, bry: 50 },
+            classification_payloads: [{ class_id: 1, confidence: 1 }],
+        });
+
+        expect(containing_at(ulabel, 30, 30)).toBe(true);
+        expect(containing_at(ulabel, 55, 30)).toBe(false);
+    });
+});
+
 describe("zero-diff body click", () => {
     function load_bbox(ulabel) {
         const annotation = {
@@ -187,5 +244,55 @@ describe("zero-diff body click", () => {
         expect(ulabel.subtasks.st.actions.stream.map((a) => a.act_type)).toEqual(["begin_move"]);
         expect(ulabel.state.edited).toBe(true);
         expect(annotation.spatial_payload).toEqual([[30, 20], [70, 60]]);
+    });
+
+    // Ctrl+Z while the mouse is still held finishes the pending begin_move
+    // first; with no movement that drops it, and undo must stop there.
+    function hold_body(ulabel) {
+        hover(ulabel, true);
+        ulabel.drag_state.move.mouse_start = [100, 100, 0];
+        ulabel.drag_state.active_key = "move";
+        ulabel.state.last_move = { clientX: 100, clientY: 100 };
+        ulabel.begin_move({ clientX: 100, clientY: 100 });
+    }
+
+    test("undo during a stationary body click with no history does not throw", () => {
+        const ulabel = make_ulabel();
+        load_bbox(ulabel);
+        stub_rendering(ulabel);
+        ulabel.hide_id_dialog = jest.fn();
+
+        hold_body(ulabel);
+        expect(() => ulabel.undo()).not.toThrow();
+
+        expect(ulabel.subtasks.st.actions.stream).toEqual([]);
+        expect(ulabel.subtasks.st.actions.undone_stack).toEqual([]);
+        expect(ulabel.subtasks.st.state.is_in_move).toBe(false);
+    });
+
+    test("undo during a stationary body click leaves the preceding action and its redo intact", () => {
+        const ulabel = make_ulabel();
+        load_bbox(ulabel);
+        stub_rendering(ulabel);
+        ulabel.hide_id_dialog = jest.fn();
+        ulabel.destroy_annotation_context = jest.fn();
+        ulabel.get_init_canvas_context_id = jest.fn(() => "c0");
+        ulabel.subtasks.st.state.annotation_contexts = { c0: { context: {}, annotation_ids: [] } };
+        ulabel.create_annotation("bbox", [[60, 60], [80, 80]], "a1");
+        expect(ulabel.subtasks.st.actions.stream.map((a) => a.act_type)).toEqual(["create_annotation"]);
+
+        hold_body(ulabel);
+        ulabel.undo();
+
+        // Only the pending move was cancelled; a1 is still there
+        expect(ulabel.subtasks.st.actions.stream.map((a) => a.act_type)).toEqual(["create_annotation"]);
+        expect(ulabel.subtasks.st.annotations.access.a1).toBeDefined();
+        expect(ulabel.subtasks.st.actions.undone_stack).toEqual([]);
+
+        // A second undo then removes a1, and redo brings it back
+        ulabel.undo();
+        expect(ulabel.subtasks.st.annotations.access.a1).toBeUndefined();
+        ulabel.redo();
+        expect(ulabel.subtasks.st.annotations.access.a1).toBeDefined();
     });
 });

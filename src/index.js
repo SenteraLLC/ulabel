@@ -2673,18 +2673,7 @@ export class ULabel {
         ctx.stroke();
 
         // Draw the cross of the tbar
-        let halflen = Math.sqrt(
-            (sp[0] - ep[0]) * (sp[0] - ep[0]) + (sp[1] - ep[1]) * (sp[1] - ep[1]),
-        ) / 2;
-        let theta = Math.atan((ep[1] - sp[1]) / (ep[0] - sp[0]));
-        let sb = [
-            sp[0] + halflen * Math.sin(theta),
-            sp[1] - halflen * Math.cos(theta),
-        ];
-        let eb = [
-            sp[0] - halflen * Math.sin(theta),
-            sp[1] + halflen * Math.cos(theta),
-        ];
+        const [sb, eb] = GeometricUtils.tbar_cross_segment(sp, ep);
 
         ctx.lineCap = "square";
         ctx.beginPath();
@@ -3870,6 +3859,11 @@ export class ULabel {
     // Remove an annotation from access and ordering
     remove_annotation_from_access_and_ordering(annotation_id) {
         const current_subtask = this.get_current_subtask();
+        // Undoing a creation bypasses delete_annotation; the isolation must
+        // not outlive its target
+        if (current_subtask["state"]["isolated_annid"] === annotation_id) {
+            this.isolate_annotation(null);
+        }
         if (annotation_id in current_subtask["annotations"]["access"]) {
             // Remove the annotation from access
             delete current_subtask["annotations"]["access"][annotation_id];
@@ -6432,7 +6426,10 @@ export class ULabel {
             const snapshot = this.state["move_snapshot"];
             if (snapshot != null) {
                 this.set_saved(!snapshot["edited"]);
-                current_subtask["actions"]["undone_stack"] = snapshot["undone_stack"];
+                // In place: undo() may hold a reference to this array
+                const undone_stack = current_subtask["actions"]["undone_stack"];
+                undone_stack.length = 0;
+                undone_stack.push(...snapshot["undone_stack"]);
                 this.state["move_snapshot"] = null;
             }
             current_subtask["state"]["active_id"] = null;
@@ -6720,6 +6717,7 @@ export class ULabel {
                         break;
                     case "bbox":
                     case "point":
+                    case "bbox3":
                         if (
                             gblx >= cbox["tlx"] &&
                             gblx <= cbox["brx"] &&
@@ -6730,6 +6728,7 @@ export class ULabel {
                         }
                         break;
                     case "polyline":
+                    case "contour":
                         // Within the drawn stroke of the line itself
                         if (GeometricUtils.point_is_near_polyline(
                             [gblx, gbly],
@@ -6739,6 +6738,19 @@ export class ULabel {
                             is_a_containing_annotation = true;
                         }
                         break;
+                    case "tbar": {
+                        // Within the stroke of either the stem or the cross bar
+                        const stroke = (annotation["line_size"] ?? this.get_subtask_line_size()) / 2 + slack;
+                        const [sp, ep] = annotation["spatial_payload"];
+                        const cross = GeometricUtils.tbar_cross_segment(sp, ep);
+                        if (
+                            GeometricUtils.point_is_near_polyline([gblx, gbly], [sp, ep], stroke) ||
+                            GeometricUtils.point_is_near_polyline([gblx, gbly], cross, stroke)
+                        ) {
+                            is_a_containing_annotation = true;
+                        }
+                        break;
+                    }
                     case "bitmask":
                         // The mouse must be over a painted pixel of the mask
                         if (this.get_bitmask(annotation).has_foreground_in_circle(

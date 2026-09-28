@@ -1949,6 +1949,9 @@ div#${prntid} div.ulabel-context-menu {
    z-index: 3000;
    min-width: 0;
    max-width: 320px;
+   max-height: calc(100vh - 8px);
+   overflow-y: auto;
+   box-sizing: border-box;
    padding: 2px 0;
    background-color: white;
    color: #222;
