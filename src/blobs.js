@@ -1732,6 +1732,9 @@ div#${prntid} canvas.canvas_cls {
    top: 0;
    left: 0;
 }
+div#${prntid} canvas.canvas_cls.movable_hover {
+   cursor: move;
+}
 div#${prntid} canvas.annotation_canvas {
    pointer-events: none;
 }
@@ -1933,53 +1936,11 @@ div#${prntid} div.global_edit_suggestion {
    display: none;
    position: absolute;
    width: 150px;
-   /*height: 75px;*/
    height: 0px;
    text-align: center;
    z-index: 1;
-   /* background-color: white; */
    transform: scale(0.66666);
    overflow: visible;
-}
-div#${prntid} div.global_edit_suggestion.mcm {
-   width: 225px;
-   transform: scale(0.5);
-}
-div#${prntid} a.global_sub_suggestion {
-   width: 60px;
-   height: 60px;
-   margin-left: 7.5px;
-   margin-right: 7.5px;
-   display: inline-block;
-   border-radius: 37.5px;
-   background-color: white;
-   overflow: hidden;
-   transform: translateY(-50%);
-}
-div#${prntid} a.global_sub_suggestion img {
-   display: block;
-   width: 40px;
-   height: 40px;
-   padding: 10px;
-}
-div#${prntid} a.global_sub_suggestion span.bigx {
-   position: absolute;
-   display: block;
-   font-size: 4em;
-   text-align: center;
-   width: 60px;
-   top: 50%;
-   -ms-transform: translateY(-50%);
-   transform: translateY(-50%);
-   color: black;
-   text-decoration: none;
-}
-div#${prntid} a.global_sub_suggestion.reid_suggestion {
-   opacity: 0.3;
-   background-color: black;
-}
-div#${prntid} a.global_sub_suggestion.reid_suggestion:hover {
-   opacity: 0; 
 }
 
 div#${prntid} a.tbid-opt {

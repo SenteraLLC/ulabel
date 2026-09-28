@@ -124,12 +124,12 @@ export class ULabel {
                     if (ul.is_current_subtask_read_only()) {
                         return null;
                     }
+                    if (ULabel.is_body_move_start(mouse_event, ul)) {
+                        return "move";
+                    }
                     return "annotation";
                 } else if ($(mouse_event.target).hasClass("editable")) {
                     return "edit";
-                } else if ($(mouse_event.target).hasClass("movable")) {
-                    mouse_event.preventDefault();
-                    return "move";
                 } else {
                     return null;
                 }
@@ -138,6 +138,22 @@ export class ULabel {
             case 2:
                 return null;
         }
+    }
+
+    /**
+     * Whether a left mousedown on the canvas should move the hovered annotation
+     * rather than start a draw: body move enabled, not a delete mode (whose
+     * drags start over the annotations they target), the force-draw modifier
+     * not held, and the hover candidate a real containing hit (not the
+     * near-miss box fallback).
+     */
+    static is_body_move_start(mouse_event, ul) {
+        if (!ul.config["allow_body_move"]) return false;
+        const current_subtask = ul.get_current_subtask();
+        if (DELETE_MODES.includes(current_subtask["state"]["annotation_mode"])) return false;
+        if (mouse_event[ul.config["force_draw_modifier"] + "Key"]) return false;
+        const move_candidate = current_subtask["state"]["move_candidate"];
+        return move_candidate != null && move_candidate["containing"] === true;
     }
 
     /**
@@ -597,7 +613,6 @@ export class ULabel {
                 idd_id_front: "id_dialog_front__" + subtask_key,
                 idd_visible: false,
                 idd_associated_annotation: null,
-                idd_thumbnail: false,
                 id_payload: id_payload,
                 delete_mode_id_payload: [{ class_id: -1, confidence: 1 }],
                 // Class ids currently rendered in this subtask's pies; shrinks to
@@ -760,6 +775,8 @@ export class ULabel {
             // Overlay snapshot + rAF flag used to keep in-progress bitmask moves cheap
             bitmask_move_overlay: null,
             move_raf_pending: false,
+            // Saved/undone state captured in begin_move so a zero-diff click can be unwound
+            move_snapshot: null,
 
             // Global annotation state (subtasks also maintain an annotation state)
             current_subtask: null, // The key of the current subtask
@@ -1982,9 +1999,7 @@ export class ULabel {
 
         // Replacing the pies dropped their hover listeners; re-add
         $("#" + idd_id + ", #" + idd_id_front).on("mousemove.ulabel", (mouse_event) => {
-            if (!this.get_current_subtask()["state"]["idd_thumbnail"]) {
-                this.handle_id_dialog_hover(mouse_event);
-            }
+            this.handle_id_dialog_hover(mouse_event);
         });
     }
 
@@ -3948,6 +3963,9 @@ export class ULabel {
 
     // Global edit suggestion: id dialog, move button, and delete button
     show_global_edit_suggestion(annid, offset = null, nonspatial_id = null) {
+        // Nonspatial annotations have no outline or confidence card on the canvas
+        if (nonspatial_id !== null) return;
+
         const subtask_key = this.get_current_subtask_key();
         const current_subtask = this.subtasks[subtask_key];
 
@@ -3958,97 +3976,61 @@ export class ULabel {
             diffY = offset["diffY"];
         }
 
-        let idd_x;
-        let idd_y;
-        const is_read_only = this.is_current_subtask_read_only();
-        // With fewer than two compatible classes there is nothing to reassign
-        // to, so the reid button and the pie thumbnail don't apply (the same
-        // treatment single_class_mode gives every annotation)
-        const can_reassign = this._get_compatible_class_ids(
-            current_subtask["annotations"]["access"][annid],
-        ).length > 1;
-        if (nonspatial_id === null) {
-            let esid = "global_edit_suggestion__" + subtask_key;
-            var esjq = $("#" + esid);
-            esjq.css("display", "block");
-            // Collapse to the compact single-class ring when there is nothing to
-            // reassign to: `mcm` carries the wide 3-slot width and scale, and the
-            // reid button drops out of flow so move/delete close the gap.
-            esjq.toggleClass("mcm", !current_subtask["single_class_mode"] && can_reassign);
-            esjq.find("a.reid_suggestion").css("display", can_reassign ? "" : "none");
-            // Hide the move/reid/delete buttons on read-only subtasks; use visibility rather than
-            // display so the button ring geometry stays measurable for the dialogs around it.
-            esjq.find(".global_sub_suggestion").css("visibility", is_read_only ? "hidden" : "");
-            let cbox = current_subtask["annotations"]["access"][annid]["containing_box"];
-            let new_lft = (cbox["tlx"] + cbox["brx"] + 2 * diffX) / (2 * this.config["image_width"]);
-            let new_top = (cbox["tly"] + cbox["bry"] + 2 * diffY) / (2 * this.config["image_height"]);
-            current_subtask["state"]["visible_dialogs"][esid]["left"] = new_lft;
-            current_subtask["state"]["visible_dialogs"][esid]["top"] = new_top;
-            // Decide confidence card position from the un-offset cbox so it stays stable during moves.
-            // Account for annbox scroll: what matters is the visible position, not the image-space position.
-            const annbox_jq = $("#" + this.config["annbox_id"]);
-            const scroll_top = annbox_jq.scrollTop() || 0;
-            const conf_id = `global_annotation_confidence__${subtask_key}`;
-            const conf_jq = $(`#${conf_id}`);
-            // The dialog container is CSS-scaled about the anchor, so offsets set
-            // here land `scale` times as far; the cbox measurements are in screen px.
-            const es_el = esjq[0];
-            const scale = es_el.offsetWidth > 0 ?
-                es_el.getBoundingClientRect().width / es_el.offsetWidth :
-                1;
-            const card_height = conf_jq.outerHeight() || 0;
-            const gap = 10;
-            // The buttons ring the anchor (box centre) via translateY(-50%); hug the
-            // ring by clearing half a button's height (local units) plus the gap.
-            // The card is positioned absolutely against the 0-height anchor container:
-            // deriving the position from the card's own layout (offsetTop) feeds
-            // integer rounding back into the next mousemove and makes the card jitter.
-            const ring_clearance = (esjq.find("a.global_sub_suggestion").outerHeight() || 60) / 2 + gap / scale;
-            const anchor_visible = ((cbox["tly"] + cbox["bry"]) / 2 * this.state["zoom_val"]) - scroll_top;
-            const card_top_visible = anchor_visible - (ring_clearance + card_height) * scale;
-            const flip_below = card_top_visible < 0;
-            conf_jq.css(
-                flip_below ?
-                        { top: `${ring_clearance}px`, bottom: "auto" } :
-                        { top: "auto", bottom: `${ring_clearance}px` },
+        const esid = "global_edit_suggestion__" + subtask_key;
+        const esjq = $("#" + esid);
+        esjq.css("display", "block");
+        const cbox = current_subtask["annotations"]["access"][annid]["containing_box"];
+        const new_lft = (cbox["tlx"] + cbox["brx"] + 2 * diffX) / (2 * this.config["image_width"]);
+        const new_top = (cbox["tly"] + cbox["bry"] + 2 * diffY) / (2 * this.config["image_height"]);
+        current_subtask["state"]["visible_dialogs"][esid]["left"] = new_lft;
+        current_subtask["state"]["visible_dialogs"][esid]["top"] = new_top;
+        // Decide confidence card position from the un-offset cbox so it stays stable during moves.
+        // Account for annbox scroll: what matters is the visible position, not the image-space position.
+        const annbox_jq = $("#" + this.config["annbox_id"]);
+        const scroll_top = annbox_jq.scrollTop() || 0;
+        const conf_id = `global_annotation_confidence__${subtask_key}`;
+        const conf_jq = $(`#${conf_id}`);
+        // The dialog container is CSS-scaled about the anchor, so offsets set
+        // here land `scale` times as far; the cbox measurements are in screen px.
+        const es_el = esjq[0];
+        const scale = es_el.offsetWidth > 0 ?
+            es_el.getBoundingClientRect().width / es_el.offsetWidth :
+            1;
+        const card_height = conf_jq.outerHeight() || 0;
+        const gap = 10;
+        // The anchor is the box centre; hug the box by clearing half its on-screen
+        // height plus the gap, converted to the container's local units.
+        // The card is positioned absolutely against the 0-height anchor container:
+        // deriving the position from the card's own layout (offsetTop) feeds
+        // integer rounding back into the next mousemove and makes the card jitter.
+        const box_clearance = ((cbox["bry"] - cbox["tly"]) / 2 * this.state["zoom_val"] + gap) / scale;
+        const anchor_visible = ((cbox["tly"] + cbox["bry"]) / 2 * this.state["zoom_val"]) - scroll_top;
+        const card_top_visible = anchor_visible - (box_clearance + card_height) * scale;
+        const flip_below = card_top_visible < 0;
+        conf_jq.css(
+            flip_below ?
+                    { top: `${box_clearance}px`, bottom: "auto" } :
+                    { top: "auto", bottom: `${box_clearance}px` },
+        );
+        this.reposition_dialogs();
+        if (annbox_jq.length && conf_jq.length) {
+            const annbox_el = annbox_jq[0];
+            const visible_left = annbox_el.getBoundingClientRect().left + annbox_el.clientLeft;
+            const visible_right = visible_left + annbox_el.clientWidth;
+            const anchor_rect = es_el.getBoundingClientRect();
+            const anchor_x = anchor_rect.left + anchor_rect.width / 2;
+            const card_half_width = (conf_jq.outerWidth() || 0) * scale / 2;
+            const card_center = Math.max(
+                visible_left + gap + card_half_width,
+                Math.min(anchor_x, visible_right - gap - card_half_width),
             );
-            this.reposition_dialogs();
-            if (annbox_jq.length && conf_jq.length) {
-                const annbox_el = annbox_jq[0];
-                const visible_left = annbox_el.getBoundingClientRect().left + annbox_el.clientLeft;
-                const visible_right = visible_left + annbox_el.clientWidth;
-                const anchor_rect = es_el.getBoundingClientRect();
-                const anchor_x = anchor_rect.left + anchor_rect.width / 2;
-                const card_half_width = (conf_jq.outerWidth() || 0) * scale / 2;
-                const card_center = Math.max(
-                    visible_left + gap + card_half_width,
-                    Math.min(anchor_x, visible_right - gap - card_half_width),
-                );
-                conf_jq.css("transform", `translateX(calc(-50% + ${(card_center - anchor_x) / scale}px))`);
-            }
-            idd_x = (cbox["tlx"] + cbox["brx"] + 2 * diffX) / 2;
-            idd_y = (cbox["tly"] + cbox["bry"] + 2 * diffY) / 2;
-            this.set_hovered_annotation(annid);
-        } else {
-            // TODO(new3d)
-            idd_x = $("#reclf__" + nonspatial_id).offset().left - 85;// this.get_global_element_center_x($("#reclf__" + nonspatial_id));
-            idd_y = $("#reclf__" + nonspatial_id).offset().top - 85;// this.get_global_element_center_y($("#reclf__" + nonspatial_id));
+            conf_jq.css("transform", `translateX(calc(-50% + ${(card_center - anchor_x) / scale}px))`);
         }
-
-        // let placeholder = $("#global_edit_suggestion a.reid_suggestion");
-        if (!current_subtask["single_class_mode"] && !is_read_only && can_reassign) {
-            // Show id dialog thumbnail
-            this.show_id_dialog(idd_x, idd_y, annid, true, nonspatial_id != null);
-        } else {
-            // can_reassign varies per annotation, so a thumbnail shown for the
-            // previously hovered annotation must not linger over this one
-            this.hide_id_dialog();
-        }
+        this.set_hovered_annotation(annid);
     }
 
     hide_global_edit_suggestion() {
         $(".global_edit_suggestion").css("display", "none");
-        this.hide_id_dialog();
         this.set_hovered_annotation(null);
     }
 
@@ -4063,7 +4045,7 @@ export class ULabel {
     }
 
     // ID dialog: color wheel to change the ID of an annotation
-    show_id_dialog(gbx, gby, active_ann, thumbnail = false, nonspatial = false) {
+    show_id_dialog(gbx, gby, active_ann, nonspatial = false) {
         let stkey = this.get_current_subtask_key();
 
         // Only offer classes that can take this annotation's spatial type. With
@@ -4087,19 +4069,16 @@ export class ULabel {
         // TODO
         // am_dialog_associated_ann = active_ann;
         this.get_current_subtask()["state"]["idd_visible"] = true;
-        this.get_current_subtask()["state"]["idd_thumbnail"] = thumbnail;
         this.get_current_subtask()["state"]["idd_associated_annotation"] = active_ann;
         this.get_current_subtask()["state"]["idd_which"] = "back";
 
         let idd_id = this.get_current_subtask()["state"]["idd_id"];
         let idd_niu_id = this.get_current_subtask()["state"]["idd_id_front"];
-        let new_height = $(`#global_edit_suggestion__${stkey} a.reid_suggestion`)[0].getBoundingClientRect().height;
 
         if (nonspatial) {
             this.get_current_subtask()["state"]["idd_which"] = "front";
             idd_id = this.get_current_subtask()["state"]["idd_id_front"];
             idd_niu_id = this.get_current_subtask()["state"]["idd_id"];
-            new_height = 28;
         } else {
             // Add this id to the list of dialogs with managed positions
             // TODO actually only do this when calling append()
@@ -4114,14 +4093,11 @@ export class ULabel {
         if (nonspatial) {
             let new_home = $(`#reclf__${active_ann}`);
             let fad_st = $(`#fad_st__${stkey} div.front_dialogs`);
-            let ofst = -100;
-            let zidx = 2000;
-            if (thumbnail) {
-                zidx = -1;
-                // ofst = -100;
-            }
-            let top_c = new_home.offset().top - fad_st.offset().top + ofst + new_height / 2;
-            let left_c = new_home.offset().left - fad_st.offset().left + ofst + 1 + new_height / 2;
+            // Centre the pie over the reclf button (28px tall)
+            const ofst = -100 + 14;
+            const zidx = 2000;
+            let top_c = new_home.offset().top - fad_st.offset().top + ofst;
+            let left_c = new_home.offset().left - fad_st.offset().left + ofst + 1;
             idd.css({
                 "display": "block",
                 "position": "absolute",
@@ -4132,24 +4108,6 @@ export class ULabel {
             idd.parent().css({
                 "z-index": zidx,
             });
-        }
-
-        // Add or remove thumbnail class if necessary
-        let scale_ratio = new_height / this.config["outer_diameter"];
-        if (thumbnail) {
-            if (!idd.hasClass("thumb")) {
-                idd.addClass("thumb");
-            }
-            $("#" + idd_id + ".thumb").css({
-                transform: `scale(${scale_ratio})`,
-            });
-        } else {
-            $("#" + idd_id + ".thumb").css({
-                transform: `scale(1.0)`,
-            });
-            if (idd.hasClass("thumb")) {
-                idd.removeClass("thumb");
-            }
         }
 
         this.reposition_dialogs();
@@ -6341,6 +6299,13 @@ export class ULabel {
             frame = null;
         }
 
+        // A body click that never drags is unwound in finish_move; keep what
+        // record_action is about to clobber.
+        this.state["move_snapshot"] = {
+            edited: this.state["edited"],
+            undone_stack: current_subtask["actions"]["undone_stack"].slice(),
+        };
+
         record_action(this, {
             act_type: "begin_move",
             annotation_id: active_id,
@@ -6422,6 +6387,28 @@ export class ULabel {
         const spatial_type = annotation["spatial_type"];
         let spatial_payload = annotation["spatial_payload"];
         let active_spatial_payload = spatial_payload;
+
+        // A click with no drag is not an edit: drop the begin_move so neither
+        // undo nor redo ever see it, and leave the saved state as it was.
+        if (diffX === 0 && diffY === 0 && diffZ === 0) {
+            const action = current_subtask["actions"]["stream"].pop();
+            annotation["last_edited_at"] = action["prev_timestamp"];
+            annotation["last_edited_by"] = action["prev_user"];
+            const snapshot = this.state["move_snapshot"];
+            if (snapshot != null) {
+                this.set_saved(!snapshot["edited"]);
+                current_subtask["actions"]["undone_stack"] = snapshot["undone_stack"];
+                this.state["move_snapshot"] = null;
+            }
+            current_subtask["state"]["active_id"] = null;
+            current_subtask["state"]["is_in_move"] = false;
+            if (spatial_type === "bitmask") {
+                this.end_bitmask_move();
+            }
+            this.redraw_all_annotations_in_annotation_context(annotation["canvas_id"], current_subtask_key);
+            return;
+        }
+        this.state["move_snapshot"] = null;
 
         // Bitmask masks are translated wholesale rather than point-by-point
         if (spatial_type === "bitmask") {
@@ -6747,6 +6734,7 @@ export class ULabel {
                             ret["candidate_ids"] = [annotation_id];
                             ret["best"] = {
                                 annid: annotation_id,
+                                containing: true,
                             };
                         }
                     }
@@ -6755,6 +6743,7 @@ export class ULabel {
                     minsize = boxsize;
                     ret["best"] = {
                         annid: annotation_id,
+                        containing: false,
                     };
                 }
             }
@@ -6769,7 +6758,7 @@ export class ULabel {
      * Find closest keypoints (ends of polygons/polylines etc) within a range defined by the edit handle
      * If no endpoints, search along segments with infinite range
      */
-    suggest_edits(mouse_event = null, nonspatial_id = null, force_refresh = false) {
+    suggest_edits(mouse_event = null, nonspatial_id = null) {
         const current_subtask = this.get_current_subtask();
         // Don't show any dialogs when currently drawing/editing an annotation,
         // And hide just edit dialogs when moving
@@ -6808,14 +6797,6 @@ export class ULabel {
             const global_x = this.get_global_mouse_x(mouse_event);
             const global_y = this.get_global_mouse_y(mouse_event);
 
-            // Ignore when we're already hovering an edit
-            if (
-                !force_refresh &&
-                $(mouse_event.target).hasClass("gedit-target")
-            ) {
-                return;
-            }
-
             const edit_candidates = this.get_edit_candidates(
                 global_x,
                 global_y,
@@ -6828,6 +6809,7 @@ export class ULabel {
 
             // Show global edit dialogs for "best" candidate
             best_candidate = edit_candidates["best"];
+            const containing = best_candidate["containing"];
 
             // Look for an existing point that's close enough to suggest editing it
             const nearest_active_keypoint = this.get_nearest_active_keypoint(global_x, global_y, dst_thresh, edit_candidates["candidate_ids"]);
@@ -6846,8 +6828,14 @@ export class ULabel {
                 }
             }
 
-            // Only spatial annotations can be moved
+            // Only spatial annotations can be moved. `containing` is what lets a
+            // body drag start a move: a near-miss on the box alone is not grabbable.
+            best_candidate["containing"] = containing;
             current_subtask["state"]["move_candidate"] = best_candidate;
+            this.set_move_cursor(
+                !this.is_current_subtask_read_only() &&
+                ULabel.is_body_move_start(mouse_event, this),
+            );
         }
 
         // Both spatial/non-spatial can have the global suggestions
@@ -6862,6 +6850,15 @@ export class ULabel {
     hide_edits() {
         this.hide_global_edit_suggestion();
         this.hide_edit_suggestion();
+        this.set_move_cursor(false);
+    }
+
+    /**
+     * Show the move cursor on the front canvas when a left click would drag the
+     * hovered annotation rather than start drawing.
+     */
+    set_move_cursor(movable) {
+        $("#" + this.get_current_subtask()["canvas_fid"]).toggleClass("movable_hover", movable);
     }
 
     hide_and_clear_action_candidates() {
@@ -7312,7 +7309,7 @@ export class ULabel {
             mouse_event.preventDefault();
             // Don't start new drag while id_dialog is visible or subtask is hidden
             if (
-                (this.get_current_subtask()["state"]["idd_visible"] && !this.get_current_subtask()["state"]["idd_thumbnail"]) ||
+                this.get_current_subtask()["state"]["idd_visible"] ||
                 (this.is_subtask_hidden() && drag_key !== "pan" && drag_key !== "zoom")
             ) {
                 return;
@@ -7326,13 +7323,12 @@ export class ULabel {
     handle_mouse_move(mouse_event) {
         const annotation_mode = this.get_current_subtask()["state"]["annotation_mode"];
         const idd_visible = this.get_current_subtask()["state"]["idd_visible"];
-        const idd_thumbnail = this.get_current_subtask()["state"]["idd_thumbnail"];
         const edit_candidate = this.get_current_subtask()["state"]["edit_candidate"];
         this.state["last_move"] = mouse_event;
         // If the ID dialog is visible, let it's own handler take care of this
         // If not dragging...
         if (this.drag_state["active_key"] === null) {
-            if (idd_visible && !idd_thumbnail) {
+            if (idd_visible) {
                 return;
             }
             // If polygon is in progress, redirect last segment
@@ -7367,7 +7363,7 @@ export class ULabel {
                     this.drag_rezoom(mouse_event);
                     break;
                 case "annotation":
-                    if (!idd_visible || idd_thumbnail) {
+                    if (!idd_visible) {
                         this.continue_annotation(mouse_event);
                     }
                     break;
@@ -7381,12 +7377,12 @@ export class ULabel {
                     }
                     break;
                 case "edit":
-                    if (!idd_visible || idd_thumbnail) {
+                    if (!idd_visible) {
                         this.continue_edit(mouse_event);
                     }
                     break;
                 case "move":
-                    if (!idd_visible || idd_thumbnail) {
+                    if (!idd_visible) {
                         this.schedule_continue_move(mouse_event);
                     }
                     break;
@@ -7426,7 +7422,7 @@ export class ULabel {
             this.update_frame(dlta);
         } else {
             // Don't scroll if id dialog is visible
-            if (this.get_current_subtask()["state"]["idd_visible"] && !this.get_current_subtask()["state"]["idd_thumbnail"]) {
+            if (this.get_current_subtask()["state"]["idd_visible"]) {
                 return;
             }
 

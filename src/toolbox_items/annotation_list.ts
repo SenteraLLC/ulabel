@@ -299,7 +299,7 @@ export class AnnotationListToolboxItem extends ToolboxItem {
                 $(".annotation-list-item").removeClass("highlighted");
                 $(e.currentTarget).addClass("highlighted");
 
-                // Show the global edit suggestion (ID dialog)
+                // Show the hover outline and confidence card on the canvas
                 this.ulabel.show_global_edit_suggestion(annotation_id, null, null);
 
                 // Set edit_candidate to allow delete keybind to work

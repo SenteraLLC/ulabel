@@ -1,11 +1,10 @@
 const { ULabel } = require("./testing-utils/build_loader");
 
 describe.each([0.5, 0.666])("confidence card at dialog scale %s", (scale) => {
-    test.each([false, true])("clamps both sides and recenters with read_only=%s", (read_only) => {
+    test("clamps both sides, recenters, and hugs the containing box", () => {
         document.body.innerHTML = `
             <div id="annbox">
                 <div id="global_edit_suggestion__st" style="width: 120px;">
-                    <a class="global_sub_suggestion" style="height: 60px;"></a>
                     <div id="global_annotation_confidence__st" style="width: 160px; height: 80px;"></div>
                 </div>
             </div>
@@ -36,11 +35,8 @@ describe.each([0.5, 0.666])("confidence card at dialog scale %s", (scale) => {
             subtasks: { st: subtask },
             get_current_subtask_key: () => "st",
             get_current_subtask: () => subtask,
-            is_current_subtask_read_only: () => read_only,
-            _get_compatible_class_ids: () => [1],
             reposition_dialogs: jest.fn(),
             set_hovered_annotation: jest.fn(),
-            hide_id_dialog: jest.fn(),
         };
         const dialog = document.getElementById("global_edit_suggestion__st");
         Object.defineProperty(dialog, "offsetWidth", { value: 120 });
@@ -56,12 +52,13 @@ describe.each([0.5, 0.666])("confidence card at dialog scale %s", (scale) => {
 
                 const shift = Number.parseFloat(card.style.transform.match(/\+ ([-\d.]+)px/)[1]);
                 expect(shift).toBeCloseTo(expected_shift);
-                expect(Number.parseFloat(card.style.bottom)).toBeCloseTo(30 + 10 / scale);
+                // Half the box's on-screen height (100 * zoom 2 / 2) plus the gap, in local units
+                expect(Number.parseFloat(card.style.bottom)).toBeCloseTo((100 + 10) / scale);
             }
         }
 
         subtask.annotations.access.a0.containing_box = { tlx: 200, tly: 50, brx: 300, bry: 60 };
         ULabel.prototype.show_global_edit_suggestion.call(ulabel, "a0");
-        expect(Number.parseFloat(card.style.top)).toBeCloseTo(30 + 10 / scale);
+        expect(Number.parseFloat(card.style.top)).toBeCloseTo((10 + 10) / scale);
     });
 });

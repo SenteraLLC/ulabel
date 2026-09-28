@@ -72,6 +72,8 @@ class ULabel({
     mask_annotation_opacity: number,
     default_brush_overlap_mode: BrushOverlapMode,
     brush_overlap_across_subtasks: boolean,
+    allow_body_move: boolean,
+    force_draw_modifier: "alt" | "ctrl" | "shift" | "meta",
     set_brush_overlap_none_keybind: string,
     set_brush_overlap_exclude_keybind: string,
     set_brush_overlap_overwrite_keybind: string,
@@ -310,7 +312,7 @@ The `"bitmask"` mode enables raster (per-pixel) segmentation. Each bitmask annot
 
 - Painting uses the brush, shared with the `polygon` brush. Toggle the brush with `toggle_brush_mode_keybind` (default `g`) or the Brush toolbox item, erase with `toggle_erase_mode_keybind` (default `e`), and resize the brush with `increase_brush_size_keybind` / `decrease_brush_size_keybind` (defaults `]` / `[`) or `alt+scroll`.
 - Starting a paint stroke over an existing bitmask of the **currently-selected class** adds to that mask; otherwise (a different class is selected, or you start over empty space) a new bitmask annotation of the selected class is created. Erasing is class-agnostic — it removes from whichever mask is under the brush. (This class-aware joining differs from the `polygon` brush, which joins any polygon under the brush.)
-- With the brush off, hovering a mask surfaces the usual edit dialogs: change its class via the ID dialog, or move/delete it like any other spatial annotation. Erasing a mask entirely deprecates the annotation (ULabel's delete semantics).
+- With the brush off, a mask behaves like any other spatial annotation: hover it for the outline and confidence card, drag its body to move it (see [`allow_body_move`](#allow_body_move)), press a class keybind while hovering to reclassify it, or delete it with the delete keybind. Erasing a mask entirely deprecates the annotation (ULabel's delete semantics).
 - Requires the `Brush` toolbox item (`AllowedToolboxItem.Brush`) to be present.
 
 **Overlap modes**
@@ -502,7 +504,7 @@ The `AnnotationList` toolbox item displays all annotations in the current subtas
 - Toast notification appears showing current position (e.g., "3 / 10") when navigating
 
 **Bidirectional Highlighting:**
-- Hover over an annotation in the list to highlight it on the canvas with the ID dialog
+- Hover over an annotation in the list to highlight it on the canvas (outline and confidence card)
 - Hover over an annotation on the canvas to highlight its corresponding entry in the list
 
 This toolbox item requires no configuration and can be added to the `toolbox_order` array using `AllowedToolboxItem.AnnotationList`.
@@ -615,6 +617,12 @@ The initial [brush overlap mode](#overlap-modes) for bitmask painting: `"none"` 
 
 ### `brush_overlap_across_subtasks`
 When `true`, [brush overlap resolution](#overlap-modes) also reaches undeprecated bitmask annotations in *other* subtasks: `"exclude"` clips the stroke against them, and `"overwrite"` carves them — except masks in `read_only` subtasks, which act as barriers (the stroke is clipped around them instead). Default is `false`: a stroke only interacts with masks in the active subtask.
+
+### `allow_body_move`
+When `true` (the default), a plain left-drag that starts inside a spatial annotation's body moves that annotation. The cursor must actually be inside the shape (a polygon's fill, a bbox, a point's handle, a polyline's stroke, a bitmask's pixels) — being merely near its bounding box still starts a new annotation. A vertex edit handle under the cursor takes precedence and edits that vertex. Hold [`force_draw_modifier`](#force_draw_modifier) to start a new annotation on top of an existing body instead. Delete modes and read-only subtasks are unaffected. Set to `false` to make every canvas drag start a new annotation.
+
+### `force_draw_modifier`
+The modifier key that, when held during a left-drag on an annotation's body, starts a new annotation instead of moving it. One of `"alt"` (default), `"ctrl"`, `"shift"`, or `"meta"`. Note that `ctrl`/`meta` (pan) and `shift` (zoom) already have meanings on canvas mousedown and are checked first, so only `"alt"` works without conflicts.
 
 ### `set_brush_overlap_none_keybind`
 Keybind to set the brush overlap mode to `none`. Default is `shift+n`.

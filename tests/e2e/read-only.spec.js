@@ -23,7 +23,7 @@ test.describe("Read-only subtask behavior", () => {
         expect(flags.fr_ro).toBe(true);
     });
 
-    test("global edit suggestion hides move/reid/delete buttons and skips id dialog thumbnail", async ({ page }) => {
+    test("global edit suggestion renders no action buttons and no id dialog", async ({ page }) => {
         await wait_for_ulabel_init(page, "/read-only.html");
 
         // Trigger the edit suggestion directly for a known bbox annotation
@@ -42,15 +42,11 @@ test.describe("Read-only subtask behavior", () => {
         const container_display = await page.locator(global_id).evaluate((el) => el.style.display);
         expect(container_display).toBe("block");
 
-        // All action buttons inside are visibility:hidden (preserves flow space so the
-        // confidence card's margin-based position math stays valid)
-        const button_visibilities = await page.locator(`${global_id} .global_sub_suggestion`).evaluateAll(
-            (els) => els.map((el) => el.style.visibility),
-        );
-        expect(button_visibilities.length).toBeGreaterThan(0);
-        for (const v of button_visibilities) expect(v).toBe("hidden");
+        // The hover ring is gone: no move/reid/delete anchors anywhere
+        await expect(page.locator(`${global_id} a`)).toHaveCount(0);
+        await expect(page.locator(".movable")).toHaveCount(0);
 
-        // ID dialog thumbnail is not shown
+        // ID dialog is not shown on hover
         const idd_visible = await page.evaluate(() => window.ulabel.get_current_subtask().state.idd_visible);
         expect(idd_visible).toBe(false);
     });

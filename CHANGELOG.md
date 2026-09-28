@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented here.
 
+## [0.29.0] - Unreleased
+- **Breaking: hover + click-drag is now the default move interaction.** A plain left-drag that starts inside a spatial annotation's body moves it; a drag that starts on a vertex edit handle still edits that vertex; a drag over empty canvas (or merely near an annotation's bounding box) starts a new annotation. Hold the new `force_draw_modifier` (default `alt`) to draw on top of an existing body. New `allow_body_move` config option (default `true`) restores draw-everywhere behavior when `false`. Read-only subtasks and delete modes are unaffected. The canvas shows the `move` cursor whenever a left-drag would move the hovered annotation.
+- **Breaking: the hover edit ring is gone.** The move handle, delete button, reclassify button, and id-dialog pie thumbnail that appeared around a hovered annotation have been removed; hovering now shows only the shape outline and the confidence card. Reclassify with a class keybind while hovering, delete with the delete keybind. `show_id_dialog()` lost its `thumbnail` parameter and `suggest_edits()` lost its `force_refresh` parameter; `ULabelActionCandidate` gained a `containing` flag.
+- A click (mousedown/up without movement) on an annotation body no longer records a no-op `begin_move` action, so it no longer pollutes undo history, clears the redo stack, or marks the session as edited.
+- Fix the hover confidence card overflowing the visible canvas horizontally when the hovered annotation sits near the left or right edge of the image: the card now clamps inside the annotation box.
+
 ## [0.28.0] - Sept 10th, 2026
 - New `set_active_class(class_id, subtask_key?, redraw?)` and `get_selected_class_id(subtask_key?)` public API methods; all internal class-selection paths (toolbox clicks, keybinds, delete-mode toggles) route through `set_active_class`.
 - New per-subtask `focus_active_class` option (default `false`): the selected class is the focused class — other classes dim to `defocused_opacity` and drop out of hover, Tab navigation, the annotation list, and bulk delete. Toggleable via `set_focus_active_class()` or `toggle_class_focus_keybind` (default `shift+f`).

@@ -358,9 +358,7 @@ export function create_ulabel_listeners(
     id_dialog.on(
         "mousemove" + ULABEL_NAMESPACE,
         (mouse_event) => {
-            if (!ulabel.get_current_subtask()["state"]["idd_thumbnail"]) {
-                ulabel.handle_id_dialog_hover(mouse_event);
-            }
+            ulabel.handle_id_dialog_hover(mouse_event);
         },
     );
 
@@ -560,7 +558,6 @@ export function create_ulabel_listeners(
                 click_event.pageX!,
                 click_event.pageY!,
                 click_event.target.id.substring("reclf__".length),
-                false,
                 true,
             );
         },
@@ -570,7 +567,7 @@ export function create_ulabel_listeners(
         "mouseenter" + ULABEL_NAMESPACE,
         "div.fad_annotation_rows div.fad_row",
         (mouse_event) => {
-            // Show thumbnail for idd
+            // Track the hovered row as the edit candidate
             ulabel.suggest_edits(
                 null,
                 $(mouse_event.currentTarget).attr("id")!.substring("row__".length),
@@ -582,11 +579,8 @@ export function create_ulabel_listeners(
         "mouseleave" + ULABEL_NAMESPACE,
         "div.fad_annotation_rows div.fad_row",
         () => {
-            // Show thumbnail for idd
-            if (
-                ulabel.get_current_subtask()["state"]["idd_visible"] &&
-                !ulabel.get_current_subtask()["state"]["idd_thumbnail"]
-            ) {
+            // A clicked-open id dialog is its own interaction; don't yank it away
+            if (ulabel.get_current_subtask()["state"]["idd_visible"]) {
                 return;
             }
             ulabel.suggest_edits(null);
@@ -626,37 +620,7 @@ export function create_ulabel_listeners(
         "click" + ULABEL_NAMESPACE,
         "#" + ulabel.config["container_id"] + " a.id-dialog-clickable-indicator",
         (click_event) => {
-            if (!ulabel.get_current_subtask()["state"]["idd_thumbnail"]) {
-                ulabel.handle_id_dialog_click(click_event);
-            }
-        },
-    );
-
-    $(document).on(
-        "click" + ULABEL_NAMESPACE,
-        ".global_edit_suggestion a.reid_suggestion",
-        (click_event) => {
-            const crst = ulabel.get_current_subtask();
-            const annid = crst["state"]["idd_associated_annotation"];
-            // No association means no dialog to open (e.g. it was suppressed
-            // because the annotation has no valid reassignment targets)
-            if (annid == null) return;
-            ulabel.hide_global_edit_suggestion();
-            ulabel.show_id_dialog(
-                ulabel.get_global_mouse_x(click_event),
-                ulabel.get_global_mouse_y(click_event),
-                annid,
-                false,
-            );
-        },
-    );
-
-    $(document).on(
-        "click" + ULABEL_NAMESPACE,
-        "#" + ulabel.config["annbox_id"] + " .delete_suggestion",
-        () => {
-            const crst = ulabel.get_current_subtask();
-            ulabel.delete_annotation(crst["state"]["move_candidate"]!["annid"]);
+            ulabel.handle_id_dialog_click(click_event);
         },
     );
 
@@ -669,7 +633,7 @@ export function create_ulabel_listeners(
             if (ulabel.drag_state["active_key"] !== null) return;
             const state = ulabel.get_current_subtask()["state"];
             // A clicked-open id dialog is its own interaction; don't yank it away
-            if (state["idd_visible"] && !state["idd_thumbnail"]) return;
+            if (state["idd_visible"]) return;
             ulabel.hide_and_clear_action_candidates();
         },
     );

@@ -302,6 +302,7 @@ export type ULabelActionCandidate = {
     spatial_type: ULabelSpatialType;
     offset?: Offset; // Optional offset for move actions
     is_vertex?: boolean; // True if hovering over an actual vertex, false if hovering over a segment
+    containing?: boolean; // True if the cursor is inside the annotation's real boundary, not just near its box
 };
 
 export type ULabelSubtasks = { [key: string]: ULabelSubtask };
@@ -323,6 +324,8 @@ export type ULabelConstructorArgs = {
     class_counter_toolbox_item?: ClassCounterConfig;
     /** Let bitmask brush overlap resolution reach masks in other subtasks. Default false. */
     brush_overlap_across_subtasks?: boolean;
+    allow_body_move?: boolean;
+    force_draw_modifier?: "alt" | "ctrl" | "shift" | "meta";
     /** Fired after a subtask's active class changes, from any writer (API, toolbox click, class keybind). */
     on_active_class_change?: (subtask_key: string, class_id: number) => void;
     /** Fired after the current subtask changes, from any writer (API, tab click, switch keybind). */
@@ -668,7 +671,6 @@ export class ULabel {
     public suggest_edits(
         mouse_event?: JQuery.TriggeredEvent | null,
         nonspatial_id?: string | null,
-        force_refresh?: boolean,
     ): void;
     public show_global_edit_suggestion(
         annid: string,
@@ -724,7 +726,6 @@ export class ULabel {
         gbx: number,
         gby: number,
         active_ann: string, // annotation id
-        thumbnail?: boolean,
         nonspatial?: boolean,
     ): void;
     public hide_id_dialog(): void;
