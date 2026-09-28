@@ -150,17 +150,23 @@ describe("get_edit_candidates containing hits per spatial type", () => {
 
     test("tbar: stem and cross bar move, the empty quadrant does not", () => {
         const ulabel = make_ulabel();
-        // Stem from (50,50) straight down to (50,90); cross bar spans x 30..70 at y=50
+        // Stem from (400,300) straight down to (400,600); cross bar spans x 250..550 at y=300
         load(ulabel, {
             id: "t", spatial_type: "tbar", deprecated: false,
-            spatial_payload: [[50, 50], [50, 90]],
-            containing_box: { tlx: 30, tly: 50, brx: 70, bry: 90 },
+            spatial_payload: [[400, 300], [400, 600]],
+            containing_box: null,
             classification_payloads: [{ class_id: 1, confidence: 1 }],
         });
+        ulabel.rebuild_containing_box("t", false, "st");
 
-        expect(containing_at(ulabel, 50, 70)).toBe(true);
-        expect(containing_at(ulabel, 35, 50)).toBe(true);
-        expect(containing_at(ulabel, 65, 80)).toBe(false);
+        const box = ulabel.subtasks.st.annotations.access.t.containing_box;
+        expect(box.tlx).toBeLessThanOrEqual(250);
+        expect(box.brx).toBeGreaterThanOrEqual(550);
+
+        expect(containing_at(ulabel, 400, 450)).toBe(true);
+        expect(containing_at(ulabel, 280, 300)).toBe(true);
+        expect(containing_at(ulabel, 520, 300)).toBe(true);
+        expect(containing_at(ulabel, 500, 500)).toBe(false);
     });
 
     test("bbox3: inside the x/y box on a covered frame moves", () => {

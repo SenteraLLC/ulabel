@@ -1,5 +1,10 @@
 ## Tasks
 
+## PR Re-review: release/0.29.0 -> main
+
+- [x] Reassess fixes and nearby regression coverage against review head `9f56e76`.
+- [x] Update the PR review with current findings and validation results.
+
 History through v0.28.0 (bitmask perf, three-fixed-subtasks architecture,
 class focus, per-class modes, `set_active_class`) lives in git:
 `git log -p aa3d3f7 -- .github/tasks.md`.
@@ -254,6 +259,13 @@ Verified facts the tickets get wrong, for the record:
 - [x] F5 lint + build + jest + affected e2e; CHANGELOG bullet for F2
   (contour/tbar/bbox3 move) - F1/F3/F4 are fixes to unreleased code.
   Done: lint clean, jest 341/341, context-menu + isolate e2e 17/17.
+- [x] F6 (re-review) `finish_annotation__undo` deprecates rather than
+  removes, so isolation outlived an undone polygon/polyline. Clear it
+  there too. Tests: jest + e2e (draw polygon -> isolate -> Ctrl+Z).
+- [x] F7 (re-review) `rebuild_containing_box` now includes the tbar
+  crossbar endpoints so the preliminary gate no longer rejects crossbar
+  hits. Tbar unit test builds the box through production code and hits
+  the crossbar well outside the stem padding. jest 342/342.
 
 ### Release
 

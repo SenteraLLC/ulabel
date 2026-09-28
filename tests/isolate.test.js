@@ -323,4 +323,22 @@ describe("clears", () => {
         expect(ulabel.redraw_all_annotations).toHaveBeenCalledWith("st");
         expect(on_isolate_change).toHaveBeenLastCalledWith("st", null);
     });
+
+    test("undoing finish_annotation on the isolated polygon clears the isolation", () => {
+        const on_isolate_change = jest.fn();
+        const ulabel = make_ulabel({ ...mock_config, on_isolate_change });
+        const base = make_annotation();
+        const poly = { ...make_annotation(), id: "poly", spatial_type: "polygon", spatial_payload: [[[0, 0], [5, 0], [5, 5], [0, 0]]] };
+        load(ulabel, [base, poly]);
+        ulabel.isolate_annotation("poly");
+        ulabel.redraw_all_annotations.mockClear();
+
+        ulabel.finish_annotation__undo("poly");
+
+        expect(poly.deprecated).toBe(true);
+        expect(ulabel.subtasks.st.state.isolated_annid).toBeNull();
+        expect(ulabel.is_annotation_defocused(base, "st")).toBe(false);
+        expect(ulabel.redraw_all_annotations).toHaveBeenCalledWith("st");
+        expect(on_isolate_change).toHaveBeenLastCalledWith("st", null);
+    });
 });

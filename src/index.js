@@ -4942,6 +4942,11 @@ export class ULabel {
         for (var pti = 1; pti < npts; pti++) {
             this.update_containing_box(spatial_payload[pti], actid, subtask);
         }
+        if (spatial_type === "tbar" && spatial_payload.length >= 2) {
+            for (const cross_pt of GeometricUtils.tbar_cross_segment(spatial_payload[0], spatial_payload[1])) {
+                this.update_containing_box(cross_pt, actid, subtask);
+            }
+        }
         if (spatial_type) {
             let line_size = this.get_subtask_line_size(subtask);
             this.subtasks[subtask]["annotations"]["access"][actid]["containing_box"]["tlx"] -= 3 * line_size;
@@ -4949,7 +4954,6 @@ export class ULabel {
             this.subtasks[subtask]["annotations"]["access"][actid]["containing_box"]["brx"] += 3 * line_size;
             this.subtasks[subtask]["annotations"]["access"][actid]["containing_box"]["bry"] += 3 * line_size;
         }
-        // TODO modification here for T-Bar would be nice too
     }
 
     // Check that two containing boxes are equal
@@ -6289,8 +6293,13 @@ export class ULabel {
     }
 
     finish_annotation__undo(annotation_id) {
+        const current_subtask = this.get_current_subtask();
+        // The isolation must not outlive its target
+        if (current_subtask["state"]["isolated_annid"] === annotation_id) {
+            this.isolate_annotation(null);
+        }
         // Deprecate the annotation
-        mark_deprecated(this.get_current_subtask()["annotations"]["access"][annotation_id], true);
+        mark_deprecated(current_subtask["annotations"]["access"][annotation_id], true);
     }
 
     finish_annotation__redo(annotation_id) {

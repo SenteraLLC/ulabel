@@ -2,6 +2,7 @@
 import { test, expect } from "./fixtures";
 import { wait_for_ulabel_init } from "../testing-utils/init_utils";
 import { get_annotation_count } from "../testing-utils/annotation_utils";
+import { draw_polygon } from "../testing-utils/drawing_utils";
 
 // 6 x 4 grid of 30px boxes in screen space; each cell's centre is a hover target
 const COLS = 6;
@@ -195,6 +196,24 @@ test.describe("isolate annotation", () => {
         await page.waitForTimeout(100);
 
         expect(await get_annotation_count(page)).toBe(COLS * ROWS);
+        expect(await isolated_id(page)).toBeNull();
+        expect(await painted_pixel_count(page)).toBe(all_painted);
+    });
+
+    test("undoing the completion of an isolated polygon clears the isolation", async ({ page }) => {
+        const all_painted = await painted_pixel_count(page);
+        // Close a polygon in the empty area below the grid, then isolate it
+        await draw_polygon(page, [[150, 450], [220, 450], [220, 520], [150, 520]]);
+        expect(await get_annotation_count(page)).toBe(COLS * ROWS + 1);
+        const poly_id = await page.evaluate(() => window.ulabel.get_current_subtask().annotations.ordering.at(-1));
+        await page.evaluate((id) => window.ulabel.isolate_annotation(id), poly_id);
+        expect(await isolated_id(page)).toBe(poly_id);
+
+        await page.keyboard.press("Control+z");
+        await page.waitForTimeout(100);
+
+        // finish_annotation undo deprecates rather than removes
+        expect(await page.evaluate((id) => window.ulabel.get_current_subtask().annotations.access[id].deprecated, poly_id)).toBe(true);
         expect(await isolated_id(page)).toBeNull();
         expect(await painted_pixel_count(page)).toBe(all_painted);
     });
