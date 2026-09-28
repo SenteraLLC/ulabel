@@ -7423,10 +7423,14 @@ export class ULabel {
                 let gmx = this.get_global_mouse_x(mouse_event);
                 let gmy = this.get_global_mouse_y(mouse_event);
                 this.move_brush_circle(gmx, gmy);
-            } else if (mouse_event.shiftKey && annotation_mode === "polygon" && idd_visible && edit_candidate != null) {
-                // If shift key is held while hovering a polygon, we want to start a new complex payload
-
-                // set annotation as active, in_progress, and starting_complex_polygon
+            } else if (
+                mouse_event.shiftKey &&
+                annotation_mode === "polygon" &&
+                edit_candidate != null &&
+                this.get_current_subtask()["annotations"]["access"][edit_candidate["annid"]]?.["spatial_type"] === "polygon"
+            ) {
+                // Shift-hovering a polygon starts a new complex layer on it. The hover ring
+                // that used to signal this via `idd_visible` is gone; the candidate is the cue.
                 this.get_current_subtask()["state"]["active_id"] = edit_candidate["annid"];
                 this.start_complex_polygon();
             } else { // Nothing in progress. Maybe show editable queues

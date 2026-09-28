@@ -1,37 +1,5 @@
 ## Tasks
 
-## PR Re-review: release/0.29.0 -> main
-
-- [x] Reassess fixes and nearby regression coverage against review head `9b4f977`.
-- [x] Update the PR review with current findings and validation results.
-
-History through v0.28.0 (bitmask perf, three-fixed-subtasks architecture,
-class focus, per-class modes, `set_active_class`) lives in git:
-`git log -p aa3d3f7 -- .github/tasks.md`.
-
-## Carried over (open before the v0.29.0 work)
-
-- [ ] 0.3 Missing confidence-card tests found in audit: read-only parity
-  (same rect with `read_only` toggled), an upper bound on distance from the
-  anchor, and the 0.666 dialog scale (single-class demo). **Re-scope after
-  228.4**: the ring the card hugged is gone, so the anchor becomes the
-  containing box.
-- [ ] 6.3 (ULabel, only if live GT editing during diff review is required)
-  edit a non-current subtask and record on its undo stream. Prefer 7.9.
-- [ ] 7.5 / 7.9 / 7.10 / 7.11 (model-registry): `pushChainRef` kept until
-  ULabel has a swap re-entrancy guard; resolution overlay for the review
-  queue; unpin ulabel to a published tag; `editableGroundtruth` flag off
-  until a save path exists (CVML-232/235).
-- [ ] 8.1 / 8.2 (history): retarget PRs at merge rather than stack;
-  optionally re-slice by nature.
-- [ ] V1/V3 lint + jest + e2e green per phase. V2/V4 model-registry checks
-  on eval run #3 (zero rebuilds, zoom preserved, three front canvases).
-  V5 in-place reclassify keeps id / `encord_object_hash` / undo coherence.
-  V6 `focus_active_class` moves focus, dimming and mode buttons together;
-  flag-off configs show zero change.
-- [x] Add the `release/0.29.0` confidence-card side-clamp fix (commit
-  `7da8e0d`) to the CHANGELOG; it has no entry yet.
-
 ## Plan: v0.29.0 - editing ergonomics for model-registry (CVML-173)
 
 Jira: CVML-228 (body-drag move), CVML-229 (context menu), CVML-230
@@ -274,6 +242,10 @@ Verified facts the tickets get wrong, for the record:
   `tests/isolate.test.js`; e2e "Bitmask isolation lifecycle" in
   `tests/e2e/bitmask.spec.js` with real brush dabs + Ctrl+Z / Ctrl+Shift+Z.
   jest 346/346, bitmask e2e 15/15.
+- [x] F9 GHA e2e "shift-hover on an existing polygon starts a new complex
+  layer" failed on every browser: the `handle_mouse_move` branch required
+  `idd_visible`, which only the removed hover-ring thumbnail set. Now
+  gated on `edit_candidate` pointing at a polygon. keybind e2e 16/16.
 
 ### Release
 
