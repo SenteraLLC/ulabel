@@ -17,6 +17,9 @@ export class ULabelSubtask {
     public annotations!: {
         access: { [key: string]: ULabelAnnotation };
         ordering: string[];
+        // `last_edited_at` each host-loaded annotation arrived with, by id.
+        // Absent for in-session creations.
+        loaded_edited_at?: { [key: string]: string | null };
     };
 
     public canvas_fid!: string;

@@ -150,6 +150,23 @@ If either more than one submit button or more button customization is desired, t
     // Buttons with lower row numbers will be higher in the toolbox
     // If row_number is not provided, it will default to 0
     // Buttons will be arranged left to right in the order they are provided in the array
+    /**
+     * Only include these subtask keys in the payload's `annotations` object.
+     * Unknown keys are ignored with a warning. Defaults to every subtask.
+     */
+    subtasks?: string[]
+    /**
+     * If true, each subtask's list is reduced to the annotations that differ from
+     * what the host loaded (via `resume_from`, `set_annotations()`, or
+     * `set_annotations_batch()`): created this session and not deleted, loaded and
+     * now deleted, or loaded and edited (moved, reclassified, brushed, carved by a
+     * delete polygon or an overlapping bitmask stroke, un-deleted...). Undoing an
+     * edit removes the annotation from the list again. Annotations hidden only by
+     * a filter (confidence slider, row distance) are not edits. Each included
+     * annotation carries `edit_type: "created" | "deleted" | "modified"`.
+     * Defaults to false.
+     */
+    edits_only?: boolean
 }
 ```
 
@@ -166,7 +183,7 @@ The argument to the hook is an object with the format:
 }
 ```
 
-Where `<subtask n>` refers to the nth key in the object provided as the `subtasks` argument to the constructor.
+Where `<subtask n>` refers to the nth key in the object provided as the `subtasks` argument to the constructor. With `subtasks` set on the button, only those keys appear; with `edits_only`, each list contains only the annotations that changed since they were loaded (see above), each tagged with an `edit_type` of `"created"`, `"deleted"`, or `"modified"`.
 
 As you can see, each subtask will have a corresponding list of annotation objects. Each annotation object has the following format:
 

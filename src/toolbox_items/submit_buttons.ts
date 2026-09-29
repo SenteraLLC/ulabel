@@ -59,57 +59,7 @@ export class SubmitButtons extends ToolboxItem {
                 button.appendChild(animation);
 
                 // Create the submit payload
-                const submit_payload: { task_meta: object | null; annotations: Record<string, ULabelAnnotation[]> } = {
-                    task_meta: ulabel.config["task_meta"],
-                    annotations: {},
-                };
-
-                // Loop through all of the subtasks
-                for (const stkey in ulabel.subtasks) {
-                    submit_payload["annotations"][stkey] = [];
-
-                    // Add all of the annotations in that subtask
-                    let annotation: ULabelAnnotation | null = null;
-                    let temp_annotation: ULabelAnnotation | object;
-                    for (let i = 0; i < ulabel.subtasks[stkey]["annotations"]["ordering"].length; i++) {
-                        temp_annotation = ulabel.subtasks[stkey]["annotations"]["access"][ulabel.subtasks[stkey]["annotations"]["ordering"][i]];
-                        // Validate the annotation
-                        if (typeof temp_annotation === "object") {
-                            try {
-                                annotation = ULabelAnnotation.from_json(temp_annotation);
-                            } catch (e) {
-                                log_message(`Error validating annotation ${temp_annotation} during submit: ${e}.`, LogLevel.ERROR, true);
-                                continue;
-                            }
-                        }
-
-                        // Handle null
-                        if (annotation === null) {
-                            continue;
-                        }
-
-                        // Skip any delete modes
-                        if (DELETE_MODES.includes(annotation.spatial_type!)) {
-                            continue;
-                        }
-
-                        // Skip spatial annotations that have an empty spatial payload
-                        if (NONSPATIAL_MODES.includes(annotation.spatial_type!) ||
-                            annotation.spatial_payload.length === 0) {
-                            continue;
-                        }
-
-                        // Ensure annotation is within the image if required
-                        if (!ulabel.config.allow_annotations_outside_image) {
-                            annotation.clamp_annotation_to_image_bounds(
-                                ulabel.config["image_width"]!,
-                                ulabel.config["image_height"]!,
-                            );
-                        }
-
-                        submit_payload["annotations"][stkey].push(annotation);
-                    }
-                }
+                const submit_payload = SubmitButtons.build_submit_payload(ulabel, this.submit_buttons[idx]);
 
                 // Set set_saved if it was provided
                 if (this.submit_buttons[idx].set_saved) {
@@ -128,6 +78,102 @@ export class SubmitButtons extends ToolboxItem {
                 }
             });
         }
+    }
+
+    /**
+     * Build the payload passed to a submit button's hook, honoring the button's
+     * `subtasks` whitelist and `edits_only` filter.
+     */
+    public static build_submit_payload(
+        ulabel: ULabel,
+        button: Pick<ULabelSubmitButton, "subtasks" | "edits_only"> = {},
+    ): { task_meta: object | null; annotations: Record<string, ULabelAnnotation[]> } {
+        const submit_payload: { task_meta: object | null; annotations: Record<string, ULabelAnnotation[]> } = {
+            task_meta: ulabel.config["task_meta"],
+            annotations: {},
+        };
+
+        let subtask_keys = Object.keys(ulabel.subtasks);
+        if (button.subtasks !== undefined) {
+            for (const key of button.subtasks) {
+                if (!(key in ulabel.subtasks)) {
+                    log_message(`Submit button subtasks: unknown subtask "${key}"`, LogLevel.WARNING);
+                }
+            }
+            subtask_keys = subtask_keys.filter((key) => button.subtasks!.includes(key));
+        }
+
+        for (const stkey of subtask_keys) {
+            submit_payload["annotations"][stkey] = [];
+            const subtask_annotations = ulabel.subtasks[stkey]["annotations"];
+            const loaded_edited_at = subtask_annotations["loaded_edited_at"] ?? {};
+
+            // Add all of the annotations in that subtask
+            let annotation: ULabelAnnotation | null = null;
+            let temp_annotation: ULabelAnnotation | object;
+            for (let i = 0; i < subtask_annotations["ordering"].length; i++) {
+                const annotation_id = subtask_annotations["ordering"][i];
+                temp_annotation = subtask_annotations["access"][annotation_id];
+                // Validate the annotation
+                if (typeof temp_annotation === "object") {
+                    try {
+                        annotation = ULabelAnnotation.from_json(temp_annotation);
+                    } catch (e) {
+                        log_message(`Error validating annotation ${temp_annotation} during submit: ${e}.`, LogLevel.ERROR, true);
+                        continue;
+                    }
+                }
+
+                // Handle null
+                if (annotation === null) {
+                    continue;
+                }
+
+                // Skip any delete modes
+                if (DELETE_MODES.includes(annotation.spatial_type!)) {
+                    continue;
+                }
+
+                // Skip spatial annotations that have an empty spatial payload
+                if (NONSPATIAL_MODES.includes(annotation.spatial_type!) ||
+                    annotation.spatial_payload.length === 0) {
+                    continue;
+                }
+
+                // Never echo a stale marker a host may have round-tripped through resume_from
+                delete annotation.edit_type;
+
+                // New annotations count while alive; loaded ones count once their
+                // stamp moved (undo restores it, filters never touch it)
+                if (button.edits_only) {
+                    const loaded_at = loaded_edited_at[annotation_id];
+                    if (loaded_at === undefined) {
+                        if (annotation.deprecated) {
+                            continue;
+                        }
+                        annotation.edit_type = "created";
+                    } else if (annotation.last_edited_at === loaded_at) {
+                        continue;
+                    } else if (annotation.deprecated) {
+                        annotation.edit_type = "deleted";
+                    } else {
+                        annotation.edit_type = "modified";
+                    }
+                }
+
+                // Ensure annotation is within the image if required
+                if (!ulabel.config.allow_annotations_outside_image) {
+                    annotation.clamp_annotation_to_image_bounds(
+                        ulabel.config["image_width"]!,
+                        ulabel.config["image_height"]!,
+                    );
+                }
+
+                submit_payload["annotations"][stkey].push(annotation);
+            }
+        }
+
+        return submit_payload;
     }
 
     /**

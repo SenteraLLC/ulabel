@@ -258,3 +258,66 @@ Verified facts the tickets get wrong, for the record:
   above (bitmask in scope, ring removed, no host hook, no change events).
   Done 2026-09-28; CVML-236 still says "details-only on read-only layers"
   and mentions the ring-less hover only implicitly - revisit when adopting.
+
+## Plan: submit-button filtering for model-registry (CVML-248, ships in 0.29.0)
+
+Two optional fields on `ULabelSubmitButton`, per button:
+
+- `subtasks?: string[]` whitelist of subtask keys in the payload (mirrors
+  `ClassCounterConfig.subtasks`). Default all.
+- `edits_only?: boolean` reduce each subtask to what differs from what the
+  host loaded: (1) new and not deprecated, (2) loaded and now deprecated,
+  (3) loaded and any submitted field changed (incl. un-deprecation).
+
+Design decisions (verified against `release/0.29.0`, audit 2026-09-29):
+
+- "Loaded" = `resume_from` **and** `set_annotations` /
+  `set_annotations_batch`; all go through `process_resume_from`.
+- Modification is detected via `last_edited_at`. `record_action` stamps
+  the named annotation and `undo_action` restores `prev_timestamp`; every
+  single-annotation edit already routes through it. Audit found three
+  mutations that bypass the stamp and must be fixed first (S0):
+  1. `delete_annotations_in_polygon` / `_in_bbox` victims
+     (`deprecated_ids`, `modified_annotations`); the action names the
+     delete polygon, which is then removed, so redo stamps nothing.
+  2. `resolve_bitmask_overlap` overwrite victims (`other_edits`), possibly
+     in other subtasks, incl. `bitmask_stroke__undo/__redo`.
+  3. Non-spatial note textarea writes `text_payload` directly
+     (`listeners.ts`), no action, not undoable.
+  Filter deprecation (confidence slider, `distance_from_row`) is not a
+  human edit and stays unstamped on purpose.
+- Fix shape: optional `affected: {annotation_id, subtask_key}[]` on the
+  raw action. `record_action` stamps each (any subtask) and stores their
+  prev edit info on the action; `undo_action` restores them. Text notes
+  get an `edit_text_payload` action (old -> new) on `change`.
+- `process_resume_from` records each loaded id's `last_edited_at` in a
+  subtask-level `annotations.loaded_edited_at` map (a non-enumerable
+  per-annotation property was rejected: undo paths replace annotation
+  objects). In-session creations have no entry.
+- Single inclusion rule in `SubmitButtons.build_submit_payload`:
+  `loaded_at === undefined ? !deprecated : last_edited_at !== loaded_at`.
+  Yields exactly the three categories; a loaded annotation left alone or
+  hidden only by a filter is omitted; undone edits drop out because undo
+  restores the loaded stamp.
+- Open: a button-less accessor for the same payload (autosave). Not until
+  model-registry asks.
+- Note: non-spatial annotations are skipped from the submit payload by
+  pre-existing code, so text-note edits are undoable/stamped but never
+  reach the hook.
+
+- [x] S0 timestamp audit fixes: `affected` on `record_action`/`undo_action`
+  + use in `bitmask_stroke` and `delete_annotations_in_polygon` (incl.
+  redo); `edit_text_payload` action; jest: victims stamped on do/redo and
+  restored on undo across subtasks, text note stamped and undoable.
+- [x] S1 `loaded_edited_at` in `process_resume_from`; jest: set for
+  resume_from and set_annotations, absent for in-session creations.
+- [x] S2 `subtasks` whitelist in `SubmitButtons` (unknown keys warn).
+- [x] S3 `edits_only` inclusion rule in `SubmitButtons`.
+- [x] S4 jest (`tests/submit_payload.test.js`): legacy payload, whitelist,
+  none / new / delete / reclassify / undo / redo / delete-polygon carve /
+  cross-subtask bitmask carve / filter-hidden / set_annotations rebaseline.
+- [x] S5 e2e (`demo/submit-payload.html`, `tests/e2e/submit-payload.spec.js`):
+  two subtasks, one button per option, payload asserted through the hook.
+- [x] S6 `index.d.ts`, `api_spec.md` submit-button section, CHANGELOG.
+- [x] Test infra: `PORT` env var for demo.js/Playwright; demo image served
+  locally (`demo/cs-demo-0.png`) so e2e no longer depends on S3/Zscaler.

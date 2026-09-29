@@ -33,6 +33,8 @@ const SPATIAL_TYPE_SET: Record<ULabelSpatialType, true> = {
 // Every ULabelSpatialType (spatial and non-spatial modes) as a runtime array.
 export const ALL_SPATIAL_TYPES = Object.keys(SPATIAL_TYPE_SET) as ULabelSpatialType[];
 
+export type ULabelEditType = "created" | "deleted" | "modified";
+
 export type PolygonSpatialData = {
     // TODO (joshua-dean): validate this type
     spatial_payload: [number[]][];
@@ -70,6 +72,8 @@ export class ULabelAnnotation {
         // Lineage tracking fields
         public last_edited_by?: string,
         public last_edited_at?: string,
+        // Only set on copies handed to an `edits_only` submit hook
+        public edit_type?: ULabelEditType,
     ) {}
 
     public ensure_compatible_classification_payloads(ulabel_class_ids: [number]) {

@@ -437,6 +437,7 @@ export class ULabel {
         ul.subtasks[subtask_key]["annotations"] = {
             ordering: [],
             access: {},
+            loaded_edited_at: {},
         };
         if (subtask["resume_from"] != null) {
             for (var i = 0; i < subtask["resume_from"].length; i++) {
@@ -555,6 +556,7 @@ export class ULabel {
                 // Push to ordering and add to access
                 ul.subtasks[subtask_key]["annotations"]["ordering"].push(cand.id);
                 ul.subtasks[subtask_key]["annotations"]["access"][cand.id] = cand;
+                ul.subtasks[subtask_key]["annotations"]["loaded_edited_at"][cand.id] = cand.last_edited_at;
 
                 if (cand.spatial_type === "polygon") {
                     // If missing any of `spatial_payload_holes` or `spatial_payload_child_indices`,
@@ -3784,6 +3786,9 @@ export class ULabel {
         }
 
         // Record the delete annotation
+        const affected = [...deprecated_ids, ...Object.keys(modified_annotations)].map(
+            (annid) => ({ annotation_id: annid, subtask_key: current_subtask_key }),
+        );
         record_action(this, {
             act_type: "delete_annotations_in_polygon",
             annotation_id: delete_annid,
@@ -3796,6 +3801,7 @@ export class ULabel {
             redo_payload: {
                 delete_polygon: delete_polygon,
             },
+            affected: affected,
         }, redoing);
 
         if (!redoing) {
@@ -5688,10 +5694,19 @@ export class ULabel {
             frame: this.state["current_frame"],
             undo_payload: stroke_payload,
             redo_payload: stroke_payload,
+            affected: this.bitmask_other_edits_affected(other_edits),
         });
 
         // The active annotation is re-rendered by the action listener; render the others here
         this.render_bitmask_other_edits(other_edits);
+    }
+
+    // `affected` entries for the masks carved by an overwrite stroke
+    bitmask_other_edits_affected(other_edits) {
+        return (other_edits || []).map((edit) => ({
+            annotation_id: edit.annotation_id,
+            subtask_key: edit.subtask,
+        }));
     }
 
     // {id, subtask} for all undeprecated bitmask annotations except the given one. Scoped to the
@@ -5863,6 +5878,7 @@ export class ULabel {
             frame: this.state["current_frame"],
             undo_payload: redo_payload,
             redo_payload: redo_payload,
+            affected: this.bitmask_other_edits_affected(other_edits),
         }, true);
     }
 
@@ -7290,6 +7306,32 @@ export class ULabel {
     assign_annotation_id__undo(annotation_id, undo_payload) {
         // Restore the old payload
         this.get_current_subtask()["annotations"]["access"][annotation_id]["classification_payloads"] = undo_payload.old_id_payload;
+    }
+
+    edit_text_payload(annotation_id, new_text, redoing = false) {
+        const annotation = this.get_current_subtask()["annotations"]["access"][annotation_id];
+        const old_text = annotation["text_payload"];
+        if (!redoing && old_text === new_text) return;
+        annotation["text_payload"] = new_text;
+        record_action(this, {
+            act_type: "edit_text_payload",
+            annotation_id: annotation_id,
+            frame: this.state["current_frame"],
+            undo_payload: {
+                old_text: old_text,
+            },
+            redo_payload: {
+                new_text: new_text,
+            },
+        }, redoing);
+    }
+
+    edit_text_payload__undo(annotation_id, undo_payload) {
+        this.get_current_subtask()["annotations"]["access"][annotation_id]["text_payload"] = undo_payload.old_text;
+    }
+
+    edit_text_payload__redo(annotation_id, redo_payload) {
+        this.edit_text_payload(annotation_id, redo_payload.new_text, true);
     }
 
     handle_id_dialog_click(mouse_event, annotation_id = null, new_class_idx = null) {

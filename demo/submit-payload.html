@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>ULabel - Submit Payload Demo</title>
+
+        <!-- ULabel Library -->
+        <script src="/ulabel.js"></script>
+
+        <!-- JQuery Library -->
+        <script src="https://code.jquery.com/jquery-3.5.1.min.js" integrity="sha256-9/aliU8dGd2tb6OSsuzixeV4y/faTqgFtohetphbbj0=" crossorigin="anonymous"></script>
+
+        <!-- ULabel Usage -->
+        <script>
+            /* global $ */
+            /* global ULabel */
+
+            $(window).on("load", function() {
+                // Each button stores the payload it received so tests (and humans in devtools)
+                // can inspect exactly what a host application would be handed.
+                window.submitted_payloads = {};
+                function record_payload(button_name) {
+                    return function(payload) {
+                        window.submitted_payloads[button_name] = payload;
+                    };
+                }
+
+                let gt_annotations = [
+                    {
+                        "id": "gt-bbox-1",
+                        "spatial_type": "bbox",
+                        "spatial_payload": [[100, 100], [300, 250]],
+                        "classification_payloads": [{ "class_id": 10, "confidence": 1.0 }],
+                        "last_edited_at": "2026-01-01T00:00:00.000Z",
+                        "last_edited_by": "host",
+                    },
+                    {
+                        "id": "gt-bbox-2",
+                        "spatial_type": "bbox",
+                        "spatial_payload": [[400, 150], [600, 320]],
+                        "classification_payloads": [{ "class_id": 11, "confidence": 1.0 }],
+                        "last_edited_at": "2026-01-01T00:00:00.000Z",
+                        "last_edited_by": "host",
+                    },
+                ];
+
+                let pred_annotations = [
+                    {
+                        "id": "pred-bbox-1",
+                        "spatial_type": "bbox",
+                        "spatial_payload": [[700, 400], [900, 600]],
+                        "classification_payloads": [{ "class_id": 10, "confidence": 0.7 }],
+                        "last_edited_at": "2026-01-01T00:00:00.000Z",
+                        "last_edited_by": "model",
+                    },
+                ];
+
+                const classes = [
+                    { "name": "Sedan", "color": "blue", "id": 10, "keybind": "1" },
+                    { "name": "SUV", "color": "green", "id": 11, "keybind": "2" },
+                    { "name": "Truck", "color": "orange", "id": 12, "keybind": "3" },
+                ];
+
+                let subtasks = {
+                    "ground_truth": {
+                        "display_name": "Ground Truth",
+                        "classes": classes,
+                        "allowed_modes": ["bbox", "polygon", "point", "delete_polygon"],
+                        "resume_from": gt_annotations,
+                        "task_meta": null,
+                        "annotation_meta": null,
+                    },
+                    "predictions": {
+                        "display_name": "Predictions",
+                        "classes": classes,
+                        "allowed_modes": ["bbox"],
+                        "resume_from": pred_annotations,
+                        "task_meta": null,
+                        "annotation_meta": null,
+                    },
+                };
+
+                let ulabel = new ULabel({
+                    "container_id": "container",
+                    "image_data": "/cs-demo-0.png",
+                    "username": "DemoUser",
+                    "submit_buttons": [
+                        // Legacy behavior: every subtask, every annotation.
+                        { "name": "Submit All", "hook": record_payload("all") },
+                        // Only the ground truth subtask.
+                        { "name": "Submit GT", "hook": record_payload("gt"), "subtasks": ["ground_truth"] },
+                        // Only annotations created, deleted, or modified since load, across all subtasks.
+                        { "name": "Submit Edits", "hook": record_payload("edits"), "edits_only": true },
+                    ],
+                    "subtasks": subtasks,
+                    "task_meta": { "job": 7 },
+                });
+                ulabel.init(function() {
+                    // ULabel is now ready for use
+                });
+                // Expose the instance for e2e tests
+                window.ulabel = ulabel;
+            });
+        </script>
+        <style>
+            body { margin: 0; padding: 0; }
+        </style>
+    </head>
+    <body>
+        <div id="container" style="width: 100%; height: 100vh; position: absolute; top: 0; left: 0;"></div>
+    </body>
+</html>

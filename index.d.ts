@@ -188,6 +188,21 @@ export type ULabelSubmitButton = {
     set_saved?: boolean;
     size_factor?: number;
     row_number?: number;
+    /**
+     * Subtask keys to include in `submit_data.annotations`.
+     * Defaults to every subtask.
+     */
+    subtasks?: string[];
+    /**
+     * When true, each subtask's list holds only annotations that differ from
+     * what the host loaded (`resume_from` / `set_annotations`): created
+     * in-session and not deprecated, or loaded and since edited (including
+     * deletion). Detected via `last_edited_at`; undo restores the loaded
+     * stamp, and filter-driven deprecation is not an edit. Each included
+     * annotation carries `edit_type: "created" | "deleted" | "modified"`.
+     * Defaults to false.
+     */
+    edits_only?: boolean;
 };
 
 export type ULabelAnnotations = { [key: string]: ULabelAnnotation[] };
@@ -269,7 +284,14 @@ export type ULabelActionType = "create_nonspatial_annotation" |
     "continue_bitmask" |
     "bitmask_stroke" |
     "finish_modify_annotation" |
-    "assign_annotation_id";
+    "assign_annotation_id" |
+    "edit_text_payload";
+
+// An annotation, possibly in another subtask, that an action also edits
+export type ULabelActionAffected = {
+    annotation_id: string;
+    subtask_key: string;
+};
 
 export type ULabelActionRaw = {
     act_type: ULabelActionType;
@@ -277,6 +299,7 @@ export type ULabelActionRaw = {
     frame: number;
     redo_payload: object;
     undo_payload: object;
+    affected?: ULabelActionAffected[];
 };
 
 export type ULabelAction = {
@@ -287,6 +310,9 @@ export type ULabelAction = {
     undo_payload: string; // Stringified object
     prev_timestamp: string;
     prev_user: string;
+    affected?: ULabelActionAffected[];
+    // Parallel to `affected`: their edit info before the action
+    affected_prev?: { prev_timestamp: string; prev_user: string }[];
     is_internal_undo?: boolean;
 };
 
@@ -650,6 +676,8 @@ export class ULabel {
     public delete_vertex__undo(annotation_id: string, undo_payload: object): void;
     public cancel_annotation__undo(annotation_id: string, undo_payload: object): void;
     public assign_annotation_id__undo(annotation_id: string, undo_payload: object): void;
+    public edit_text_payload(annotation_id: string, new_text: string, redoing?: boolean): void;
+    public edit_text_payload__undo(annotation_id: string, undo_payload: object): void;
     public create_annotation__undo(annotation_id: string): void;
     public create_nonspatial_annotation__undo(annotation_id: string): void;
     public start_complex_polygon__undo(annotation_id: string): void;
@@ -664,6 +692,7 @@ export class ULabel {
     public redo(): void;
     public finish_annotation__redo(annotation_id: string): void;
     public bitmask_stroke__redo(annotation_id: string, redo_payload: object): void;
+    public edit_text_payload__redo(annotation_id: string, redo_payload: object): void;
     public begin_edit__redo(annotation_id: string, redo_payload: object): void;
     public begin_move__redo(annotation_id: string, redo_payload: object): void;
     public delete_annotation__redo(annotation_id: string): void;

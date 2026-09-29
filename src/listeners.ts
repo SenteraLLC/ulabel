@@ -563,13 +563,11 @@ export function create_ulabel_listeners(
     );
 
     $(document).on(
-        "input" + ULABEL_NAMESPACE,
+        "change" + ULABEL_NAMESPACE,
         "textarea.nonspatial_note",
-        (input_event) => {
-            // Update annotation's text field
-            const annos = ulabel.get_current_subtask()["annotations"]["access"];
-            const text_payload_anno_id = input_event.target.id.substring("note__".length);
-            annos[text_payload_anno_id]["text_payload"] = input_event.target.value;
+        (change_event) => {
+            const text_payload_anno_id = change_event.target.id.substring("note__".length);
+            ulabel.edit_text_payload(text_payload_anno_id, change_event.target.value);
         },
     );
 

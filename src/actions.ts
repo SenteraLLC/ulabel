@@ -45,15 +45,29 @@ export function record_action(ulabel: ULabel, raw_action: ULabelActionRaw, is_re
         prev_user: annotation?.last_edited_by || "unknown",
     } as ULabelAction;
 
+    const affected = raw_action.affected ?? [];
+    const affected_annotations = affected.map(
+        ({ annotation_id, subtask_key }) => ulabel.subtasks[subtask_key]?.annotations.access[annotation_id],
+    );
+    if (affected.length > 0) {
+        action.affected = affected;
+        action.affected_prev = affected_annotations.map((ann) => ({
+            prev_timestamp: ann?.last_edited_at || null,
+            prev_user: ann?.last_edited_by || "unknown",
+        })) as ULabelAction["affected_prev"];
+    }
+
     // Add to stream
     if (add_to_action_stream) {
         current_subtask.actions.stream.push(action);
 
         // For some redo actions the annotation may no longer exist
-        if (annotation !== undefined) {
-            // Update annotation edit info
-            annotation.last_edited_at = ULabel.get_time();
-            annotation.last_edited_by = ulabel.config.username;
+        const now = ULabel.get_time();
+        for (const ann of [annotation, ...affected_annotations]) {
+            if (ann !== undefined) {
+                ann.last_edited_at = now;
+                ann.last_edited_by = ulabel.config.username;
+            }
         }
     }
 
@@ -263,6 +277,10 @@ function trigger_action_listeners(
             action: on_annotation_id_change,
             undo: on_annotation_id_change,
         },
+        edit_text_payload: {
+            action: on_text_payload_change,
+            undo: on_text_payload_change,
+        },
         begin_edit: {
             undo: on_finish_annotation_spatial_modification,
             redo: on_finish_annotation_spatial_modification,
@@ -428,6 +446,14 @@ function on_annotation_deletion(
 }
 
 /**
+ * Triggered when a non-spatial annotation's text payload is changed.
+ * Redrawing refreshes the note textarea.
+ */
+function on_text_payload_change(ulabel: ULabel, action: ULabelAction) {
+    ulabel.redraw_annotation(action.annotation_id!);
+}
+
+/**
  * Triggered when an annotation ID is changed.
  *
  * @param ulabel ULabel instance
@@ -569,6 +595,12 @@ function undo_action(ulabel: ULabel, action: ULabelAction) {
         annotation.last_edited_at = action.prev_timestamp;
         annotation.last_edited_by = action.prev_user;
     }
+    (action.affected ?? []).forEach(({ annotation_id: aid, subtask_key }, i) => {
+        const affected = ulabel.subtasks[subtask_key]?.annotations.access[aid];
+        if (affected === undefined) return;
+        affected.last_edited_at = action.affected_prev![i].prev_timestamp;
+        affected.last_edited_by = action.affected_prev![i].prev_user;
+    });
 
     switch (action.act_type) {
         case "begin_annotation":
@@ -597,6 +629,9 @@ function undo_action(ulabel: ULabel, action: ULabelAction) {
             break;
         case "assign_annotation_id":
             ulabel.assign_annotation_id__undo(annotation_id, undo_payload);
+            break;
+        case "edit_text_payload":
+            ulabel.edit_text_payload__undo(annotation_id, undo_payload);
             break;
         case "create_annotation":
             ulabel.create_annotation__undo(annotation_id);
@@ -678,6 +713,9 @@ export function redo_action(ulabel: ULabel, action: ULabelAction) {
             break;
         case "assign_annotation_id":
             ulabel.assign_annotation_id(annotation_id, redo_payload);
+            break;
+        case "edit_text_payload":
+            ulabel.edit_text_payload__redo(annotation_id, redo_payload);
             break;
         case "create_annotation":
             ulabel.create_annotation__redo(annotation_id, redo_payload);
