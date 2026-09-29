@@ -202,6 +202,24 @@ describe("delete modes freeze the selection", () => {
         expect(ulabel.is_annotation_defocused(make_annotation(2), "st")).toBe(false);
         expect(ulabel.is_annotation_defocused(make_annotation(1), "st")).toBe(true);
     });
+
+    test("selecting the delete class in a single-class subtask keeps the payload finite", () => {
+        const ulabel = new ULabel({
+            ...delete_config,
+            subtasks: {
+                st: { ...delete_config.subtasks.st, classes: [{ name: "Crop", id: 1, color: "green" }] },
+            },
+        });
+        ulabel.state.current_subtask = "st";
+
+        // Delete class has no index in class_ids, so every class takes the
+        // remainder share; with one class that used to be 0 / 0.
+        ulabel.set_id_dialog_payload_nopin(-1, 1.0);
+
+        const payload = ulabel.subtasks.st.state.id_payload;
+        expect(payload).toHaveLength(1);
+        expect(payload[0].confidence).toBe(0);
+    });
 });
 
 describe("set_focus_active_class", () => {

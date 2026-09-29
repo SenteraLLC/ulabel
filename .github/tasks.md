@@ -1,10 +1,5 @@
 ## Tasks
 
-## PR Re-review: Local CVML-248 Fixes
-
-- [x] Recheck local fixes for nonspatial submission and null timestamp undo.
-- [x] Run focused validation and update the release PR review.
-
 ## Plan: v0.29.0 - editing ergonomics for model-registry (CVML-173)
 
 Jira: CVML-228 (body-drag move), CVML-229 (context menu), CVML-230
@@ -342,3 +337,6 @@ Design decisions (verified against `release/0.29.0`, audit 2026-09-29):
 - [x] R6 review: `record_action` treats an explicit `prev_timestamp: null`
   as an override (null loaded baseline), only `undefined` falls through.
   Jest collapsed-layer undo now parameterized over string/null baseline.
+- [x] Fix `set_id_dialog_payload_nopin` 0/0 → NaN pie radius when the
+  delete class (index -1) is selected in a single-class subtask. Jest in
+  `tests/class_focus.test.js`.

@@ -7094,6 +7094,12 @@ export class ULabel {
 
     set_id_dialog_payload_nopin(class_ind, dist_prop) {
         let class_ids = this.get_current_subtask()["class_ids"];
+        // Delete modes pass class_ind -1, so every class takes the remainder;
+        // with a single class that would divide by zero
+        let other_prop = 0;
+        if (class_ids.length > 1) {
+            other_prop = (1 - dist_prop) / (class_ids.length - 1);
+        }
         // Recompute and render opaque pie slices
         for (var i = 0; i < class_ids.length; i++) {
             if (i === class_ind) {
@@ -7104,7 +7110,7 @@ export class ULabel {
             } else {
                 this.get_current_subtask()["state"]["id_payload"][i] = {
                     class_id: class_ids[i],
-                    confidence: (1 - dist_prop) / (class_ids.length - 1),
+                    confidence: other_prop,
                 };
             }
         }
