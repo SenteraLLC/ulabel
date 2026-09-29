@@ -4,6 +4,7 @@
 // base class is initialized first (see confidence_slider.test.js).
 require("../build/configuration");
 const { SubmitButtons } = require("../build/toolbox_items/submit_buttons");
+const { mark_deprecated } = require("../build/annotation_operators");
 const { ULabel } = require("./testing-utils/build_loader");
 
 function make_bbox(id, class_id = 1, extra = {}) {
@@ -17,6 +18,17 @@ function make_bbox(id, class_id = 1, extra = {}) {
         last_edited_by: "host",
         ...extra,
     };
+}
+
+function make_polygon(id) {
+    return make_bbox(id, 1, {
+        spatial_type: "polygon",
+        spatial_payload: [[[0, 0], [10, 0], [10, 10], [0, 10], [0, 0]]],
+    });
+}
+
+function make_note(id) {
+    return make_bbox(id, 1, { spatial_type: "whole-image", spatial_payload: null, text_payload: "before" });
 }
 
 const classes = [
@@ -35,7 +47,7 @@ function make_config(gt, pred) {
         task_meta: { job: 7 },
         submit_buttons: [{ name: "Submit", hook: jest.fn() }],
         subtasks: {
-            gt: { display_name: "GT", classes, allowed_modes: ["bbox", "point", "delete_polygon", "bitmask"], resume_from: gt },
+            gt: { display_name: "GT", classes, allowed_modes: ["bbox", "point", "polygon", "delete_polygon", "bitmask", "whole-image"], resume_from: gt },
             pred: { display_name: "Pred", classes, allowed_modes: ["bbox", "bitmask"], resume_from: pred },
         },
     };
@@ -103,6 +115,12 @@ describe("build_submit_payload without options", () => {
         const payload = SubmitButtons.build_submit_payload(ulabel);
 
         expect(payload.annotations.gt[0].edit_type).toBeUndefined();
+    });
+
+    test("skips nonspatial annotations with a null spatial payload", () => {
+        const ulabel = make_ulabel([make_note("note"), make_bbox("g1")]);
+
+        expect(ids(SubmitButtons.build_submit_payload(ulabel), "gt")).toEqual(["g1"]);
     });
 });
 
@@ -236,6 +254,103 @@ describe("edits_only", () => {
         g1.deprecated_by = { human: false, confidence_filter: true };
         g1.deprecated = true;
 
+        expect(ids(SubmitButtons.build_submit_payload(ulabel, edits_only), "gt")).toEqual([]);
+    });
+
+    test("a filter hiding a modified annotation keeps it modified and not deprecated", () => {
+        const ulabel = make_ulabel([make_bbox("g1")]);
+        reclassify(ulabel, "g1", 2);
+        mark_deprecated(ulabel.subtasks.gt.annotations.access.g1, true, "confidence_slider");
+        expect(ulabel.subtasks.gt.annotations.access.g1.deprecated).toBe(true);
+
+        const payload = SubmitButtons.build_submit_payload(ulabel, edits_only);
+
+        expect(edit_types(payload, "gt")).toEqual({ g1: "modified" });
+        expect(payload.annotations.gt[0].deprecated).toBe(false);
+        expect(payload.annotations.gt[0].deprecated_by.confidence_slider).toBe(true);
+    });
+
+    test("a filter hiding a created annotation keeps it created", () => {
+        const ulabel = make_ulabel([]);
+        ulabel.create_annotation("bbox", [[1, 1], [5, 5]], "fresh");
+        mark_deprecated(ulabel.subtasks.gt.annotations.access.fresh, true, "confidence_slider");
+
+        const payload = SubmitButtons.build_submit_payload(ulabel, edits_only);
+
+        expect(edit_types(payload, "gt")).toEqual({ fresh: "created" });
+        expect(payload.annotations.gt[0].deprecated).toBe(false);
+    });
+
+    test("a human deletion under a filter is still a deletion", () => {
+        const ulabel = make_ulabel([make_bbox("g1")]);
+        ulabel.delete_annotation("g1");
+        mark_deprecated(ulabel.subtasks.gt.annotations.access.g1, true, "confidence_slider");
+
+        const payload = SubmitButtons.build_submit_payload(ulabel, edits_only);
+
+        expect(edit_types(payload, "gt")).toEqual({ g1: "deleted" });
+        expect(payload.annotations.gt[0].deprecated).toBe(true);
+    });
+
+    test("a loaded polygon erased to nothing still yields a deletion record", () => {
+        const ulabel = make_ulabel([make_polygon("poly")]);
+        // What continue_brush leaves behind after the last fill is erased
+        ulabel.delete_annotation("poly");
+        ulabel.subtasks.gt.annotations.access.poly.spatial_payload = [];
+
+        expect(ids(SubmitButtons.build_submit_payload(ulabel), "gt")).toEqual([]);
+        const payload = SubmitButtons.build_submit_payload(ulabel, edits_only);
+        expect(edit_types(payload, "gt")).toEqual({ poly: "deleted" });
+        expect(payload.annotations.gt[0].deprecated).toBe(true);
+        expect(payload.annotations.gt[0].spatial_type).toBe("polygon");
+    });
+
+    test("a created polygon erased to nothing is omitted", () => {
+        const ulabel = make_ulabel([]);
+        ulabel.create_annotation("polygon", [[[0, 0], [10, 0], [10, 10], [0, 10], [0, 0]]], "fresh");
+        ulabel.delete_annotation("fresh");
+        ulabel.subtasks.gt.annotations.access.fresh.spatial_payload = [];
+
+        expect(ids(SubmitButtons.build_submit_payload(ulabel, edits_only), "gt")).toEqual([]);
+    });
+
+    test("an edited or created nonspatial note does not reach the payload", () => {
+        const ulabel = make_ulabel([make_note("note")]);
+        ulabel.edit_text_payload("note", "after");
+        ulabel.create_annotation("whole-image", null, "fresh_note");
+
+        expect(ids(SubmitButtons.build_submit_payload(ulabel, edits_only), "gt")).toEqual([]);
+    });
+
+    test.each([
+        ["a string baseline", "2026-01-01T00:00:00.000Z"],
+        ["a null baseline", null],
+    ])("modified: a finished complex layer drops out on undo and returns on redo with %s", (_label, loaded_at) => {
+        const ulabel = make_ulabel([make_bbox("poly", 1, {
+            spatial_type: "polygon",
+            spatial_payload: [[[0, 0], [10, 0], [10, 10], [0, 10], [0, 0]]],
+            last_edited_at: loaded_at,
+        })]);
+        expect(ulabel.subtasks.gt.annotations.access.poly.last_edited_at).toBe(loaded_at);
+        ulabel.subtasks.gt.state.active_id = "poly";
+        ulabel.start_complex_polygon();
+        ulabel.subtasks.gt.annotations.access.poly.spatial_payload[1] = [[20, 20], [30, 20], [30, 30], [20, 30], [20, 30]];
+        ulabel.finish_annotation();
+
+        const stream = ulabel.subtasks.gt.actions.stream;
+        expect(stream[stream.length - 1].act_type).toBe("finish_modify_annotation");
+        expect(stream[stream.length - 1].prev_timestamp).toBe(loaded_at);
+        expect(edit_types(SubmitButtons.build_submit_payload(ulabel, edits_only), "gt")).toEqual({ poly: "modified" });
+
+        ulabel.undo();
+        expect(ulabel.subtasks.gt.annotations.access.poly.last_edited_at).toBe(loaded_at);
+        expect(ulabel.subtasks.gt.annotations.access.poly.spatial_payload.length).toBe(1);
+        expect(ids(SubmitButtons.build_submit_payload(ulabel, edits_only), "gt")).toEqual([]);
+
+        ulabel.redo();
+        expect(edit_types(SubmitButtons.build_submit_payload(ulabel, edits_only), "gt")).toEqual({ poly: "modified" });
+
+        ulabel.undo();
         expect(ids(SubmitButtons.build_submit_payload(ulabel, edits_only), "gt")).toEqual([]);
     });
 

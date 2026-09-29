@@ -35,14 +35,23 @@ export function record_action(ulabel: ULabel, raw_action: ULabelActionRaw, is_re
 
     // Stringify the undo/redo payloads
     const act_type = raw_action.act_type;
+    // A collapsed action inherits the stamp of the action it replaces; null is a valid loaded baseline
+    let prev_timestamp: string | null = annotation?.last_edited_at || null;
+    if (raw_action.prev_timestamp !== undefined) {
+        prev_timestamp = raw_action.prev_timestamp;
+    }
+    let prev_user: string = annotation?.last_edited_by || "unknown";
+    if (raw_action.prev_user !== undefined) {
+        prev_user = raw_action.prev_user;
+    }
     const action: ULabelAction = {
         act_type: act_type,
         annotation_id: raw_action.annotation_id,
         frame: raw_action.frame,
         undo_payload: JSON.stringify(raw_action.undo_payload),
         redo_payload: JSON.stringify(raw_action.redo_payload),
-        prev_timestamp: annotation?.last_edited_at || null,
-        prev_user: annotation?.last_edited_by || "unknown",
+        prev_timestamp: prev_timestamp,
+        prev_user: prev_user,
     } as ULabelAction;
 
     const affected = raw_action.affected ?? [];

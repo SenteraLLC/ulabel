@@ -300,6 +300,9 @@ export type ULabelActionRaw = {
     redo_payload: object;
     undo_payload: object;
     affected?: ULabelActionAffected[];
+    // Override the recorded pre-action edit info (used when collapsing actions)
+    prev_timestamp?: string | null;
+    prev_user?: string;
 };
 
 export type ULabelAction = {

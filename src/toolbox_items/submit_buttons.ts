@@ -2,6 +2,7 @@ import type { ULabelSubmitButton } from "../../index";
 // Import ULabel from ../../src/index - TypeScript will find ../../src/index.d.ts for types
 import { ULabel } from "../../src/index";
 import { ULabelAnnotation, DELETE_MODES, NONSPATIAL_MODES } from "../annotation";
+import type { ULabelEditType } from "../annotation";
 import { ToolboxItem } from "../toolbox";
 import { log_message, LogLevel } from "../error_logging";
 
@@ -114,66 +115,85 @@ export class SubmitButtons extends ToolboxItem {
             for (let i = 0; i < subtask_annotations["ordering"].length; i++) {
                 const annotation_id = subtask_annotations["ordering"][i];
                 temp_annotation = subtask_annotations["access"][annotation_id];
-                // Validate the annotation
-                if (typeof temp_annotation === "object") {
-                    try {
-                        annotation = ULabelAnnotation.from_json(temp_annotation);
-                    } catch (e) {
-                        log_message(`Error validating annotation ${temp_annotation} during submit: ${e}.`, LogLevel.ERROR, true);
+                if (typeof temp_annotation !== "object" || temp_annotation === null) {
+                    continue;
+                }
+
+                // Skip delete modes and nonspatial annotations (nonspatial may have a null payload)
+                const raw_spatial_type = (<ULabelAnnotation>temp_annotation).spatial_type!;
+                if (DELETE_MODES.includes(raw_spatial_type) || NONSPATIAL_MODES.includes(raw_spatial_type)) {
+                    continue;
+                }
+
+                // Classify before geometry validation: a fully erased loaded
+                // polygon has no valid geometry but still owes the host a deletion
+                let edit_type: ULabelEditType | null = null;
+                if (button.edits_only) {
+                    edit_type = SubmitButtons.classify_edit(
+                        <ULabelAnnotation>temp_annotation,
+                        loaded_edited_at[annotation_id],
+                    );
+                    if (edit_type === null) {
                         continue;
                     }
                 }
 
-                // Handle null
-                if (annotation === null) {
-                    continue;
+                // Validate the annotation
+                try {
+                    annotation = ULabelAnnotation.from_json(temp_annotation);
+                } catch (e) {
+                    log_message(`Error validating annotation ${temp_annotation} during submit: ${e}.`, LogLevel.ERROR, true);
+                    annotation = null;
                 }
 
-                // Skip any delete modes
-                if (DELETE_MODES.includes(annotation.spatial_type!)) {
-                    continue;
-                }
-
-                // Skip spatial annotations that have an empty spatial payload
-                if (NONSPATIAL_MODES.includes(annotation.spatial_type!) ||
-                    annotation.spatial_payload.length === 0) {
-                    continue;
+                const has_geometry = annotation !== null && annotation.spatial_payload.length !== 0;
+                if (!has_geometry) {
+                    if (edit_type !== "deleted") {
+                        continue;
+                    }
+                    annotation = Object.assign(new ULabelAnnotation(), temp_annotation);
                 }
 
                 // Never echo a stale marker a host may have round-tripped through resume_from
-                delete annotation.edit_type;
+                delete annotation!.edit_type;
 
-                // New annotations count while alive; loaded ones count once their
-                // stamp moved (undo restores it, filters never touch it)
-                if (button.edits_only) {
-                    const loaded_at = loaded_edited_at[annotation_id];
-                    if (loaded_at === undefined) {
-                        if (annotation.deprecated) {
-                            continue;
-                        }
-                        annotation.edit_type = "created";
-                    } else if (annotation.last_edited_at === loaded_at) {
-                        continue;
-                    } else if (annotation.deprecated) {
-                        annotation.edit_type = "deleted";
-                    } else {
-                        annotation.edit_type = "modified";
-                    }
+                if (edit_type !== null) {
+                    annotation!.edit_type = edit_type;
+                    // Display filters must not read as deletions to the host
+                    annotation!.deprecated = edit_type === "deleted";
                 }
 
                 // Ensure annotation is within the image if required
-                if (!ulabel.config.allow_annotations_outside_image) {
-                    annotation.clamp_annotation_to_image_bounds(
+                if (has_geometry && !ulabel.config.allow_annotations_outside_image) {
+                    annotation!.clamp_annotation_to_image_bounds(
                         ulabel.config["image_width"]!,
                         ulabel.config["image_height"]!,
                     );
                 }
 
-                submit_payload["annotations"][stkey].push(annotation);
+                submit_payload["annotations"][stkey].push(annotation!);
             }
         }
 
         return submit_payload;
+    }
+
+    /**
+     * Decide how an `edits_only` payload reports an annotation, or null to omit it.
+     * Only human deletion counts; filter deprecation is display state.
+     */
+    public static classify_edit(
+        annotation: ULabelAnnotation,
+        loaded_at: string | null | undefined,
+    ): ULabelEditType | null {
+        const human_deleted = annotation.deprecated_by?.human === true;
+        if (loaded_at === undefined) {
+            return human_deleted ? null : "created";
+        }
+        if (annotation.last_edited_at === loaded_at) {
+            return null;
+        }
+        return human_deleted ? "deleted" : "modified";
     }
 
     /**

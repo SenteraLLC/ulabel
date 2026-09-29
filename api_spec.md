@@ -163,7 +163,10 @@ If either more than one submit button or more button customization is desired, t
      * delete polygon or an overlapping bitmask stroke, un-deleted...). Undoing an
      * edit removes the annotation from the list again. Annotations hidden only by
      * a filter (confidence slider, row distance) are not edits. Each included
-     * annotation carries `edit_type: "created" | "deleted" | "modified"`.
+     * annotation carries `edit_type: "created" | "deleted" | "modified"`, and its
+     * `deprecated` flag reflects only human deletion (a filter hiding a modified
+     * annotation does not make it `deprecated` in this payload). A loaded
+     * annotation whose geometry was fully erased is still reported as `"deleted"`.
      * Defaults to false.
      */
     edits_only?: boolean

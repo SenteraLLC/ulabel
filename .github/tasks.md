@@ -1,5 +1,10 @@
 ## Tasks
 
+## PR Re-review: Local CVML-248 Fixes
+
+- [x] Recheck local fixes for nonspatial submission and null timestamp undo.
+- [x] Run focused validation and update the release PR review.
+
 ## Plan: v0.29.0 - editing ergonomics for model-registry (CVML-173)
 
 Jira: CVML-228 (body-drag move), CVML-229 (context menu), CVML-230
@@ -321,3 +326,19 @@ Design decisions (verified against `release/0.29.0`, audit 2026-09-29):
 - [x] S6 `index.d.ts`, `api_spec.md` submit-button section, CHANGELOG.
 - [x] Test infra: `PORT` env var for demo.js/Playwright; demo image served
   locally (`demo/cs-demo-0.png`) so e2e no longer depends on S3/Zscaler.
+- [x] R1 review: `edit_type`/`deprecated` in `edits_only` derive from
+  `deprecated_by.human`, not the filter aggregate (`classify_edit`).
+- [x] R2 review: a loaded annotation erased to empty geometry still yields
+  a `"deleted"` record (legacy payload unchanged).
+- [x] R3 review: `finish_annotation` carries `prev_timestamp`/`prev_user`
+  from the collapsed `begin_brush`/`start_complex_polygon` action so undo
+  restores the loaded stamp.
+- [x] R4 review: shift-hover complex-layer start gated on read-only.
+  Jest for R1–R3 in `tests/submit_payload.test.js`; e2e for R4 in
+  `tests/e2e/read-only.spec.js`.
+- [x] R5 review: nonspatial/delete-mode skip moved before geometry access
+  (null `spatial_payload` crashed legacy submit). Jest legacy + edits_only
+  note cases; e2e legacy Submit on read-only demo.
+- [x] R6 review: `record_action` treats an explicit `prev_timestamp: null`
+  as an override (null loaded baseline), only `undefined` falls through.
+  Jest collapsed-layer undo now parameterized over string/null baseline.

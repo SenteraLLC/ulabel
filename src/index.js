@@ -6261,6 +6261,8 @@ export class ULabel {
 
         let undo_payload = {};
         let redo_payload = {};
+        let prev_timestamp;
+        let prev_user;
         if (should_record_action) {
             // Once we've finished a polygon or polyline, undoing will
             // remove the entire completed annotation rather that undoing each point.
@@ -6278,6 +6280,9 @@ export class ULabel {
                     act_type = "finish_modify_annotation";
                     undo_payload = JSON.parse(action.undo_payload);
                     redo_payload.polygon_spatial_data = ULabelAnnotation.get_polygon_spatial_data(annotations[active_id]);
+                    // The popped action already stamped the annotation; keep its pre-edit stamp so undo restores it
+                    prev_timestamp = action.prev_timestamp;
+                    prev_user = action.prev_user;
                     break;
                 }
             }
@@ -6292,6 +6297,8 @@ export class ULabel {
                 frame: this.state["current_frame"],
                 undo_payload: undo_payload,
                 redo_payload: redo_payload,
+                prev_timestamp: prev_timestamp,
+                prev_user: prev_user,
             }, false, should_record_action);
         }
 
@@ -7468,6 +7475,7 @@ export class ULabel {
             } else if (
                 mouse_event.shiftKey &&
                 annotation_mode === "polygon" &&
+                !this.is_current_subtask_read_only() &&
                 edit_candidate != null &&
                 this.get_current_subtask()["annotations"]["access"][edit_candidate["annid"]]?.["spatial_type"] === "polygon"
             ) {
