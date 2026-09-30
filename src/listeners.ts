@@ -688,6 +688,16 @@ export function create_ulabel_listeners(
         },
     );
 
+    // ULabel's anchors are buttons; don't let a click navigate to "#" (which
+    // scrolls the host page and rewrites its hash)
+    $(document).on(
+        "click" + ULABEL_NAMESPACE,
+        "#" + ulabel.config["container_id"] + " a[href=\"#\"]",
+        (click_event) => {
+            click_event.preventDefault();
+        },
+    );
+
     // Listener for id_dialog click interactions
     $(document).on(
         "click" + ULABEL_NAMESPACE,

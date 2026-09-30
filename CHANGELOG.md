@@ -19,6 +19,7 @@ All notable changes to this project will be documented here.
 - Fix undoing a brush stroke or a new complex-polygon layer on a loaded annotation leaving the session's `last_edited_at` / `last_edited_by` in place instead of restoring the loaded values.
 - Shift-hovering a polygon in a read-only subtask no longer starts a new complex layer on it.
 - Fix a `<circle> attribute r: Expected length, "NaN"` console error when entering a delete mode in a single-class subtask: the id payload divided the remaining confidence by zero other classes.
+- Clicking ULabel's anchor buttons (toolbox, class pie, annotation list) no longer navigates the host page to `#`, which scrolled it and rewrote the URL hash.
 - `demo.js` honors a `PORT` environment variable (Playwright reads the same one) and falls back to the next free port when 8080 is taken. Demo pages now load the sample image from the local server instead of S3.
 
 ## [0.28.0] - Sept 10th, 2026

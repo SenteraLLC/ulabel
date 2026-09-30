@@ -42,6 +42,17 @@ test.describe("ULabel Basic Functionality", () => {
         await expect(page.locator("a#md-btn--point")).toHaveClass(/sel/);
     });
 
+    test("clicking toolbox anchors does not navigate to #", async ({ page }) => {
+        await wait_for_ulabel_init(page);
+        const url_before = page.url();
+
+        await page.locator("a#md-btn--bbox").click();
+        await page.locator("a#recenter-button").click();
+        await page.locator("a.night-button").click();
+
+        expect(page.url()).toBe(url_before);
+    });
+
     test("should create bbox annotation", async ({ page }) => {
         await wait_for_ulabel_init(page);
 

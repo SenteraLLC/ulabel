@@ -389,4 +389,7 @@ Decisions (agreed with the user, see the ticket for the full spec):
 - [x] R3 review: `_discard_moved_copy` follows later `move_annotation`
   actions on the copy recursively so chained moves leave no orphan.
 - [x] Repeat pastes cascade: envelope `paste_counts` per target subtask
-  scales `PASTE_OFFSET_PX`; reset by a new copy/cut.
+  scales `PASTE_OFFSET_PX`; reset by a new copy/cut. Envelope `copy_id`
+  keys the in-memory count cache.
+- [x] Delegated click handler on `#container a[href="#"]` calls
+  `preventDefault` so ULabel's anchor buttons never navigate to `#`.
