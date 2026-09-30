@@ -42,15 +42,16 @@ async function current_subtask_key(page) {
     return await page.evaluate(() => window.ulabel.get_current_subtask_key());
 }
 
-async function pick_pie_wedge(page, index) {
-    await page.evaluate((wedge) => {
-        window.ulabel.handle_id_dialog_click(null, null, wedge);
-    }, index);
+async function reclassify(page, subtask_key, annotation_id, wedge) {
+    await page.evaluate(([key, annid, index]) => {
+        window.ulabel.set_subtask(key);
+        window.ulabel.handle_id_dialog_click(null, annid, index);
+    }, [subtask_key, annotation_id, wedge]);
     await page.waitForTimeout(100);
 }
 
 test.describe("copy annotations between subtasks", () => {
-    test("Copy to via the menu clones the annotation and opens the class pie in the target", async ({ page }) => {
+    test("Copy to via the menu clones the annotation and keeps its class", async ({ page }) => {
         await wait_for_ulabel_init(page, "/submit-payload.html");
 
         await open_menu(page, "gt-bbox-1");
@@ -67,9 +68,9 @@ test.describe("copy annotations between subtasks", () => {
         await click_item(page, "Copy to Predictions");
         await expect(menu).toBeHidden();
 
-        // Target has three compatible classes, so the pie opens there
-        expect(await current_subtask_key(page)).toBe("predictions");
-        await expect(page.locator("#id_dialog__predictions")).toBeVisible();
+        // The target has the same class id, so no class pie and no subtask switch
+        expect(await current_subtask_key(page)).toBe("ground_truth");
+        await expect(page.locator("#id_dialog__predictions")).toBeHidden();
 
         const predictions = await get_annotations(page, "predictions");
         expect(predictions).toHaveLength(2);
@@ -78,11 +79,6 @@ test.describe("copy annotations between subtasks", () => {
         expect(copy.spatial_type).toBe("bbox");
         expect(copy.spatial_payload).toEqual([[100, 100], [300, 250]]);
         expect(copy.class_id).toBe(10);
-
-        // Choosing a wedge reclassifies the copy
-        await pick_pie_wedge(page, 2);
-        await expect(page.locator("#id_dialog__predictions")).toBeHidden();
-        expect((await get_annotations(page, "predictions"))[1].class_id).toBe(12);
 
         // The source is untouched
         const ground_truth = await get_annotations(page, "ground_truth");
@@ -97,12 +93,16 @@ test.describe("copy annotations between subtasks", () => {
 
         await open_menu(page, "gt-bbox-2");
         await click_item(page, "Move to Predictions");
-        await pick_pie_wedge(page, 2);
 
         expect((await get_annotations(page, "ground_truth"))[1].deprecated).toBe(true);
         let predictions = await get_annotations(page, "predictions");
         expect(predictions).toHaveLength(2);
         expect(predictions[1].spatial_payload).toEqual([[400, 150], [600, 320]]);
+        expect(predictions[1].class_id).toBe(11);
+
+        // Reclassify the copy in the target
+        await reclassify(page, "predictions", predictions[1].id, 2);
+        predictions = await get_annotations(page, "predictions");
         expect(predictions[1].class_id).toBe(12);
 
         // Undo in the target (current subtask) only reverts the reclassify
@@ -156,10 +156,10 @@ test.describe("copy annotations between subtasks", () => {
         const predictions = await get_annotations(page, "predictions");
         expect(predictions).toHaveLength(2);
         expect(predictions[1].spatial_payload).toEqual([[100, 100], [300, 250]]);
-        await expect(page.locator("#id_dialog__predictions")).toBeVisible();
+        expect(predictions[1].class_id).toBe(10);
+        await expect(page.locator("#id_dialog__predictions")).toBeHidden();
 
         // A repeat paste here is nudged so it does not hide the first
-        await page.evaluate(() => window.ulabel.hide_id_dialog());
         await page.keyboard.press("Control+v");
         await page.waitForTimeout(100);
         expect((await get_annotations(page, "predictions"))[2].spatial_payload).toEqual([[120, 120], [320, 270]]);

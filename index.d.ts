@@ -303,6 +303,8 @@ export type ULabelClipboardEnvelope = {
     image_width: number;
     image_height: number;
     source_subtask_key: string;
+    // Name of the source class, so a target without the same class id can match by name
+    source_class_name?: string | null;
     annotation: ULabelAnnotation;
     // Pastes of this envelope so far, per target subtask; repeats are offset further
     paste_counts?: Record<string, number>;
@@ -672,8 +674,12 @@ export class ULabel {
     public can_paste_into_subtask(annotation: ULabelAnnotation | object, subtask_key: string): boolean;
     /** Keys of the other subtasks `annotation` can be copied into. */
     public get_copy_target_subtask_keys(annotation: ULabelAnnotation | object, source_key?: string | null): string[];
-    /** Source class if compatible, else the target's active class, else the first compatible class. */
-    public resolve_paste_class_id(annotation: ULabelAnnotation | object, target_key: string): number | null;
+    /** Compatible target class matching the source class by id, else by `source_class_name`; null when none. */
+    public match_paste_class_id(annotation: ULabelAnnotation | object, target_key: string, source_class_name?: string | null): number | null;
+    /** Matched source class (id, then name), else the target's active class, else the first compatible class. */
+    public resolve_paste_class_id(annotation: ULabelAnnotation | object, target_key: string, source_class_name?: string | null): number | null;
+    /** Name of a class in a subtask, or null. */
+    public get_class_name(class_id: number, subtask_key: string): string | null;
     /**
      * Insert a copy of `annotation` into `target_key` with a fresh id and stamps.
      * Records a `paste_annotation` action on the target subtask unless `record` is false. Returns the new id, or null.

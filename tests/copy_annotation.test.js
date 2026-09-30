@@ -47,6 +47,16 @@ function make_config(resume) {
             pred: { display_name: "Pred", classes, allowed_modes: ["bbox", "bitmask"], resume_from: resume.pred ?? null },
             // No Crop class here, so a Crop bbox has to change class
             weeds: { display_name: "Weeds", classes: [classes[1], other_class], allowed_modes: ["bbox"], resume_from: resume.weeds ?? null },
+            // Same class names under different ids
+            renamed: {
+                display_name: "Renamed",
+                classes: [
+                    { name: "Crop", id: 7, color: "green" },
+                    { name: "Weed", id: 8, color: "red" },
+                ],
+                allowed_modes: ["bbox"],
+                resume_from: null,
+            },
             // Per-class modes: only Weed may be a bbox
             mixed: {
                 display_name: "Mixed",
@@ -102,8 +112,8 @@ describe("eligibility", () => {
         const ulabel = make_ulabel({ gt: [make_bbox("g1")] });
         const bbox = ulabel.subtasks.gt.annotations.access.g1;
 
-        expect(ulabel.get_copy_target_subtask_keys(bbox)).toEqual(["pred", "weeds", "mixed"]);
-        expect(ulabel.get_copy_target_subtask_keys(bbox, "pred")).toEqual(["gt", "weeds", "mixed"]);
+        expect(ulabel.get_copy_target_subtask_keys(bbox)).toEqual(["pred", "weeds", "renamed", "mixed"]);
+        expect(ulabel.get_copy_target_subtask_keys(bbox, "pred")).toEqual(["gt", "weeds", "renamed", "mixed"]);
     });
 
     test("a polygon is only offered where some class allows polygons", () => {
@@ -223,6 +233,22 @@ describe("class resolution", () => {
         ]);
     });
 
+    test("matches the source class by name when the id differs", () => {
+        const ulabel = make_ulabel({ gt: [make_bbox("g1", 2)] });
+        ulabel.set_active_class(7, "renamed", false);
+
+        const new_id = ulabel.copy_annotation_to_subtask("g1", "gt", "renamed", null, false, true);
+
+        expect(ulabel.match_paste_class_id(ulabel.subtasks.gt.annotations.access.g1, "renamed", "Weed")).toBe(8);
+        expect(ulabel.match_paste_class_id(ulabel.subtasks.gt.annotations.access.g1, "renamed")).toBeNull();
+        expect(ulabel.subtasks.renamed.annotations.access[new_id].classification_payloads).toEqual([
+            { class_id: 7, confidence: 0.0 },
+            { class_id: 8, confidence: 1.0 },
+        ]);
+        // A match means no class pie
+        expect(ulabel.show_id_dialog).not.toHaveBeenCalled();
+    });
+
     test("falls back to the first compatible class when the active class cannot take the type", () => {
         const ulabel = make_ulabel({ gt: [make_bbox("g1", 1)] });
         ulabel.set_active_class(1, "mixed", false);
@@ -272,6 +298,22 @@ describe("undo / redo", () => {
         ulabel.undo();
 
         expect(ulabel.subtasks.pred.annotations.ordering).toHaveLength(1);
+    });
+
+    test("re-picking the copy's current class records nothing and still closes the pie", () => {
+        const ulabel = make_ulabel({ gt: [make_bbox("g1", 2)] });
+        const new_id = ulabel.copy_annotation("g1", "pred");
+        ulabel.state.current_subtask = "pred";
+        ulabel.edit_text_payload(new_id, "changed");
+        ulabel.undo();
+        expect(ulabel.subtasks.pred.actions.undone_stack).toHaveLength(1);
+
+        ulabel.subtasks.pred.state.id_payload = [{ class_id: 1, confidence: 0.0 }, { class_id: 2, confidence: 1.0 }];
+        ulabel.assign_annotation_id(new_id);
+
+        expect(action_types(ulabel, "pred")).toEqual(["paste_annotation"]);
+        expect(ulabel.subtasks.pred.actions.undone_stack).toHaveLength(1);
+        expect(ulabel.hide_id_dialog).toHaveBeenCalled();
     });
 });
 
@@ -367,13 +409,30 @@ describe("cut", () => {
 });
 
 describe("class choice", () => {
-    test("several compatible classes switch to the target and open the class pie on the copy", () => {
-        const ulabel = make_ulabel({ gt: [make_bbox("g1")] });
+    test("an unmatched class with several options switches to the target and opens the class pie on the copy", () => {
+        const ulabel = make_ulabel({ gt: [make_bbox("g1", 1)] });
 
-        const new_id = ulabel.copy_annotation_to_subtask("g1", "gt", "pred", null, false, true);
+        const new_id = ulabel.copy_annotation_to_subtask("g1", "gt", "weeds", null, false, true);
 
-        expect(ulabel.set_subtask).toHaveBeenCalledWith("pred");
+        expect(ulabel.set_subtask).toHaveBeenCalledWith("weeds");
         expect(ulabel.show_id_dialog).toHaveBeenCalledWith(20, 20, new_id, false);
+    });
+
+    test("a class matched by id opens no pie", () => {
+        const ulabel = make_ulabel({ gt: [make_bbox("g1", 1)] });
+
+        ulabel.copy_annotation_to_subtask("g1", "gt", "pred", null, false, true);
+
+        expect(ulabel.set_subtask).not.toHaveBeenCalled();
+        expect(ulabel.show_id_dialog).not.toHaveBeenCalled();
+    });
+
+    test("an explicit class opens no pie", () => {
+        const ulabel = make_ulabel({ gt: [make_bbox("g1", 1)] });
+
+        ulabel.copy_annotation_to_subtask("g1", "gt", "weeds", 3, false, true);
+
+        expect(ulabel.show_id_dialog).not.toHaveBeenCalled();
     });
 
     test("a single compatible class stays in the source subtask without a pie", () => {
@@ -419,6 +478,7 @@ describe("clipboard", () => {
             image_width: 100,
             image_height: 100,
             source_subtask_key: "gt",
+            source_class_name: "Crop",
             annotation: { id: "g1", spatial_type: "bbox" },
         });
         expect(ulabel.state.clipboard).toBe(envelope);
@@ -455,8 +515,25 @@ describe("clipboard", () => {
         const new_id = ulabel.paste_annotation_from_clipboard();
 
         expect(ulabel.subtasks.pred.annotations.access[new_id].spatial_payload).toEqual([[10, 10], [30, 30]]);
-        // Two compatible classes: the pie opens on the copy
-        expect(ulabel.show_id_dialog).toHaveBeenCalledWith(20, 20, new_id, false);
+        // The class id exists in the target: no pie
+        expect(ulabel.show_id_dialog).not.toHaveBeenCalled();
+
+        // No Crop in weeds: the pie opens on the copy
+        ulabel.state.current_subtask = "weeds";
+        const weeds_id = ulabel.paste_annotation_from_clipboard();
+        expect(ulabel.show_id_dialog).toHaveBeenCalledWith(20, 20, weeds_id, false);
+    });
+
+    test("paste matches the source class by name from the envelope", () => {
+        const ulabel = make_ulabel({ gt: [make_bbox("g1", 2)] });
+        hover(ulabel, "gt", "g1");
+        const text = JSON.stringify(ulabel.copy_annotation_to_clipboard());
+
+        ulabel.state.current_subtask = "renamed";
+        const new_id = ulabel.paste_annotation_from_clipboard(JSON.parse(text));
+
+        expect(ulabel.subtasks.renamed.annotations.access[new_id].classification_payloads[1]).toEqual({ class_id: 8, confidence: 1.0 });
+        expect(ulabel.show_id_dialog).not.toHaveBeenCalled();
     });
 
     test("paste back into the source subtask is offset and keeps the class without a pie", () => {

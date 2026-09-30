@@ -815,7 +815,7 @@ Sets the zoom to focus on the provided annotation, and switches to its subtask i
 
 ### `copy_annotation(annotation_id, target_subtask_key, class_id?, source_subtask_key?)`
 
-*(annotation_id: string, target_subtask_key: string, class_id?: number | null, source_subtask_key?: string | null) => string | null* -- Clones a spatial annotation from one subtask (default: the current one) into another at the same image coordinates and returns the new annotation's id, or `null` when the target is read-only, does not allow the annotation's spatial type, or has no class that accepts it. The class defaults to the source class when the target allows it, else the target's active class, else its first compatible class. The paste is recorded on the target subtask's action stream (`paste_annotation`) and can be undone there.
+*(annotation_id: string, target_subtask_key: string, class_id?: number | null, source_subtask_key?: string | null) => string | null* -- Clones a spatial annotation from one subtask (default: the current one) into another at the same image coordinates and returns the new annotation's id, or `null` when the target is read-only, does not allow the annotation's spatial type, or has no class that accepts it. The class defaults to the target class matching the source class by id, else by name, else the target's active class, else its first compatible class. The paste is recorded on the target subtask's action stream (`paste_annotation`) and can be undone there.
 
 ### `copy_annotation_to_clipboard(annotation_id?, cut?)`
 
@@ -823,7 +823,7 @@ Sets the zoom to focus on the provided annotation, and switches to its subtask i
 
 ### `paste_annotation_from_clipboard(envelope?)`
 
-*(envelope?: ULabelClipboardEnvelope | null) => string | null* -- Pastes an envelope (default: the in-memory clipboard) into the current subtask and returns the new annotation's id. Refused with a warning when the envelope's image dimensions differ from the current image or when no class in the current subtask accepts the annotation. A paste back into `source_subtask_key` keeps its class. The first paste into another subtask keeps the coordinates; each repeat paste into the same subtask, and any paste back into the source, is offset by a further 20 pixels (`paste_counts`, per target subtask, tracked per `copy_id`). When pasting into another subtask with several compatible classes, the class pie opens on the pasted annotation.
+*(envelope?: ULabelClipboardEnvelope | null) => string | null* -- Pastes an envelope (default: the in-memory clipboard) into the current subtask and returns the new annotation's id. Refused with a warning when the envelope's image dimensions differ from the current image or when no class in the current subtask accepts the annotation. A paste back into `source_subtask_key` keeps its class. The first paste into another subtask keeps the coordinates; each repeat paste into the same subtask, and any paste back into the source, is offset by a further 20 pixels (`paste_counts`, per target subtask, tracked per `copy_id`). When the source class has no counterpart in the target (by id, then by name; the envelope's `source_class_name`) and several classes could take the annotation, the class pie opens on the pasted annotation.
 
 ### `isolate_annotation(annotation_id, subtask_key?, redraw?)`
 

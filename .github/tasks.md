@@ -393,3 +393,9 @@ Decisions (agreed with the user, see the ticket for the full spec):
   keys the in-memory count cache.
 - [x] Delegated click handler on `#container a[href="#"]` calls
   `preventDefault` so ULabel's anchor buttons never navigate to `#`.
+- [x] Paste class: `match_paste_class_id` matches by id then name (envelope
+  `source_class_name`); the class pie only opens when neither matched and no
+  explicit class was given.
+- [x] `assign_annotation_id` returns early (hides the pie, clears suggestions)
+  when the picked payload equals the current one, so no no-op action is
+  recorded.

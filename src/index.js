@@ -4344,21 +4344,55 @@ export class ULabel {
     }
 
     /**
-     * Class for a pasted annotation: the source class when the target allows
-     * it, else the target's active class, else the first compatible class.
+     * Compatible class in the target that matches the source class by id, or
+     * failing that by name. Null when the source class has no counterpart.
      *
      * @param {object} annotation
      * @param {string} target_key
-     * @returns {number|null} null when no class in the target fits
+     * @param {string|null} source_class_name name of the source class, if known
+     * @returns {number|null}
      */
-    resolve_paste_class_id(annotation, target_key) {
+    match_paste_class_id(annotation, target_key, source_class_name = null) {
         const compatible = this._get_compatible_class_ids(annotation, target_key);
-        if (compatible.length === 0) return null;
         const source_class_id = Number(get_annotation_class_id(annotation));
         if (compatible.includes(source_class_id)) return source_class_id;
+        if (source_class_name == null) return null;
+        const by_name = this.subtasks[target_key]["class_defs"].find(
+            (def) => def["name"] === source_class_name && compatible.includes(def["id"]),
+        );
+        return by_name == null ? null : by_name["id"];
+    }
+
+    /**
+     * Class for a pasted annotation: the source class when the target has it
+     * (by id, else by name), else the target's active class, else the first
+     * compatible class.
+     *
+     * @param {object} annotation
+     * @param {string} target_key
+     * @param {string|null} source_class_name name of the source class, if known
+     * @returns {number|null} null when no class in the target fits
+     */
+    resolve_paste_class_id(annotation, target_key, source_class_name = null) {
+        const compatible = this._get_compatible_class_ids(annotation, target_key);
+        if (compatible.length === 0) return null;
+        const matched = this.match_paste_class_id(annotation, target_key, source_class_name);
+        if (matched !== null) return matched;
         const active_class_id = get_active_class_id(this, target_key);
         if (active_class_id !== undefined && compatible.includes(active_class_id)) return active_class_id;
         return compatible[0];
+    }
+
+    /**
+     * Name of a class in a subtask, or null when the subtask has no such class.
+     *
+     * @param {number} class_id
+     * @param {string} subtask_key
+     * @returns {string|null}
+     */
+    get_class_name(class_id, subtask_key) {
+        const class_def = this.subtasks[subtask_key]?.["class_defs"].find((def) => def["id"] === class_id);
+        return class_def?.["name"] ?? null;
     }
 
     /**
@@ -4535,9 +4569,10 @@ export class ULabel {
      * coordinates. Cut turns the copy into a move: the source, which must live
      * in the current, writable subtask, is deleted and the whole move is one
      * undoable `move_annotation` action on the source's stream (nothing is
-     * recorded on the target). When the target offers more than one
-     * compatible class and `choose_class` is set, the target becomes the
-     * current subtask and the class pie opens on the copy.
+     * recorded on the target). When `choose_class` is set, no class was given
+     * and the source class has no counterpart in the target (by id or name)
+     * that could be chosen from several, the target becomes the current
+     * subtask and the class pie opens on the copy.
      *
      * @param {string} annotation_id
      * @param {string} source_key subtask the annotation lives in
@@ -4559,6 +4594,13 @@ export class ULabel {
             log_message("Cut only removes annotations from the current, writable subtask; copied instead", LogLevel.WARNING, true);
             move = false;
         }
+        let offer_choice = false;
+        if (class_id === null && this.can_paste_into_subtask(annotation, target_key)) {
+            const source_class_name = this.get_class_name(Number(get_annotation_class_id(annotation)), source_key);
+            const matched = this.match_paste_class_id(annotation, target_key, source_class_name);
+            offer_choice = choose_class && matched === null;
+            class_id = this.resolve_paste_class_id(annotation, target_key, source_class_name);
+        }
         const new_id = this.paste_annotation(annotation, target_key, class_id, offset, !move);
         if (new_id === null) return null;
 
@@ -4566,7 +4608,7 @@ export class ULabel {
             this._record_move_annotation(annotation_id, target_key, new_id, false);
         }
 
-        if (choose_class) {
+        if (offer_choice) {
             this._offer_pasted_class_choice(new_id, target_key);
         }
         return new_id;
@@ -4676,6 +4718,7 @@ export class ULabel {
             image_width: this.config["image_width"],
             image_height: this.config["image_height"],
             source_subtask_key: subtask_key,
+            source_class_name: this.get_class_name(Number(get_annotation_class_id(annotation)), subtask_key),
             annotation: copy,
             paste_counts: {},
         };
@@ -4691,8 +4734,9 @@ export class ULabel {
      * argument the in-memory clipboard is used. The first paste into another
      * subtask keeps the coordinates; a paste back into the source subtask,
      * and every repeat paste into the same subtask, is offset by a further
-     * `PASTE_OFFSET_PX` so each copy is visible. Pasting into another subtask
-     * with several compatible classes opens the class pie.
+     * `PASTE_OFFSET_PX` so each copy is visible. When the source class has
+     * no counterpart in the target (by id or name), the class pie opens on
+     * the copy if several classes could take it.
      *
      * @param {object|null} envelope as produced by `copy_annotation_to_clipboard`
      * @returns {string|null} id of the pasted annotation
@@ -4723,10 +4767,13 @@ export class ULabel {
         const same_subtask = envelope["source_subtask_key"] === target_key;
         const steps = (envelope["paste_counts"][target_key] ?? 0) + (same_subtask ? 1 : 0);
         const offset = [PASTE_OFFSET_PX * steps, PASTE_OFFSET_PX * steps];
-        const new_id = this.paste_annotation(envelope["annotation"], target_key, null, offset);
+        const source_class_name = envelope["source_class_name"] ?? null;
+        const matched = this.match_paste_class_id(envelope["annotation"], target_key, source_class_name);
+        const class_id = this.resolve_paste_class_id(envelope["annotation"], target_key, source_class_name);
+        const new_id = this.paste_annotation(envelope["annotation"], target_key, class_id, offset);
         if (new_id === null) return null;
         envelope["paste_counts"][target_key] = (envelope["paste_counts"][target_key] ?? 0) + 1;
-        if (!same_subtask) {
+        if (matched === null) {
             this._offer_pasted_class_choice(new_id, target_key);
         }
         return new_id;
@@ -4734,8 +4781,9 @@ export class ULabel {
 
     /**
      * Copy an annotation into another subtask at the same image coordinates.
-     * The class defaults to the source class when the target allows it, else
-     * the target's active class, else the first compatible class.
+     * The class defaults to the target class matching the source class by id,
+     * else by name, else the target's active class, else the first compatible
+     * class.
      *
      * @param {string} annotation_id
      * @param {string} target_subtask_key
@@ -7724,6 +7772,12 @@ export class ULabel {
             }
             old_payload = current_subtask["annotations"]["access"][annotation_id]["classification_payloads"];
             new_payload = current_subtask["state"]["id_payload"];
+            // Re-picking the current class is not an edit; just dismiss the pie
+            if (JSON.stringify(old_payload) === JSON.stringify(new_payload)) {
+                this.hide_id_dialog();
+                this.suggest_edits(null);
+                return;
+            }
         } else {
             redoing = true;
             old_payload = redo_payload.old_id_payload;
