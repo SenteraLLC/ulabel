@@ -340,3 +340,53 @@ Design decisions (verified against `release/0.29.0`, audit 2026-09-29):
 - [x] Fix `set_id_dialog_payload_nopin` 0/0 → NaN pie radius when the
   delete class (index -1) is selected in a single-class subtask. Jest in
   `tests/class_focus.test.js`.
+
+## Plan: copy/cut annotations between subtasks (CVML-261, ships in 0.29.0)
+
+Decisions (agreed with the user, see the ticket for the full spec):
+
+- Eligible target: any other subtask that is not read-only and has at
+  least one class whose allowed modes include the annotation's
+  `spatial_type`. Spatial annotations only. Copy from a read-only source
+  is allowed; cut is not.
+- Context menu: "Copy to" / "Move to" list the eligible targets. One
+  target collapses to "Copy to <name>". No targets → items hidden. The
+  list opens as an in-place drill-down (same pattern as Details), not a
+  hover submenu.
+- Keybinds: native `copy` / `cut` / `paste` DOM events (not remappable),
+  ignored while focus is in an input/textarea. Copy/cut act on the hovered
+  `edit_candidate`; paste goes to the current subtask. Same-subtask paste
+  offsets by `PASTE_OFFSET_PX` (20 image px) so the copy is visible.
+- Class: same class id if compatible, else the target's active class, else
+  the first compatible class. With more than one compatible class the
+  pasted annotation gets the class pie (switching to the target subtask
+  first when needed). No compatible class → warn, no paste.
+- Copy carries everything except `id`, `subtask_key`, class payload,
+  deprecation, stamps and `edit_type`; bitmasks are re-encoded to RLE.
+- Undo: cut = `delete_annotation` on the source stream; paste = new
+  `paste_annotation` action recorded on the TARGET stream (undo removes
+  the copy, redo re-adds it from the stored annotation). `record_action`
+  gains an optional `subtask_key` for that.
+- System clipboard envelope `{ ulabel_annotation: 1, image_width,
+  image_height, annotation }`; paste prefers `clipboardData` when the
+  dimensions match, else the in-memory clipboard; mismatch warns.
+
+- [x] S1 core: `paste_annotation` / `copy_annotation_to_subtask` in
+  `index.js`, `__undo` / `__redo`, `record_action` subtask targeting,
+  `ULabelActionType` in `index.d.ts`.
+- [x] S2 context menu "Copy to" / "Move to" drill-down.
+- [x] S3 `copy` / `cut` / `paste` listeners + class-pie flow.
+- [x] S4 public API `copy_annotation(annid, target_subtask_key, class_id?)`
+  + `index.d.ts`.
+- [x] S5 jest (`tests/copy_annotation.test.js`) + e2e
+  (`tests/e2e/copy-annotation.spec.js`).
+- [x] S6 `api_spec.md`, CHANGELOG.
+- [x] R1 review: `move_annotation__undo` prunes the target's stream and
+  undone stack of the copy's actions (`remove_recorded_events_for_annotation`
+  takes a subtask key); `delete_annotations_in_polygon__undo` skips missing ids.
+- [x] R2 review: `_insert_pasted_annotation` releases the target's isolation
+  like other creation paths.
+- [x] R3 review: `_discard_moved_copy` follows later `move_annotation`
+  actions on the copy recursively so chained moves leave no orphan.
+- [x] Repeat pastes cascade: envelope `paste_counts` per target subtask
+  scales `PASTE_OFFSET_PX`; reset by a new copy/cut.

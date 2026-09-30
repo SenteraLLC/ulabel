@@ -14,6 +14,49 @@ import { AnnotationResizeItem, SMALL_ANNOTATION_SIZE, LARGE_ANNOTATION_SIZE, INC
 
 const ULABEL_NAMESPACE = ".ulabel";
 
+/** Whether a keyboard/clipboard event originates from a text field, where the browser should keep its default behavior. */
+function is_text_input_target(target: EventTarget | null): boolean {
+    const element = target as HTMLElement | null;
+    if (element == null) return false;
+    return element.tagName === "INPUT" || element.tagName === "TEXTAREA" || element.isContentEditable === true;
+}
+
+/**
+ * Native clipboard shortcuts: copy/cut the hovered annotation, paste into the
+ * current subtask. Only intercepts the event when there is something to act on.
+ */
+function handle_clipboard_event(
+    clipboard_event: JQuery.TriggeredEvent,
+    ulabel: ULabel,
+    kind: "copy" | "cut" | "paste",
+) {
+    if (is_text_input_target(clipboard_event.target) || ulabel.state.is_editing_keybind) return;
+    if (ulabel.get_current_subtask()["state"]["is_in_progress"]) return;
+    const clipboard_data = (clipboard_event.originalEvent as ClipboardEvent | undefined)?.clipboardData ?? null;
+
+    if (kind === "paste") {
+        let envelope = null;
+        const text = clipboard_data?.getData("text/plain");
+        if (text) {
+            try {
+                const parsed = JSON.parse(text);
+                if (parsed?.ulabel_annotation === 1) envelope = parsed;
+            } catch {
+                // Not our payload; fall back to the in-memory clipboard
+            }
+        }
+        if (envelope === null && ulabel.state.clipboard === null) return;
+        clipboard_event.preventDefault();
+        ulabel.paste_annotation_from_clipboard(envelope);
+        return;
+    }
+
+    const envelope = ulabel.copy_annotation_to_clipboard(null, kind === "cut");
+    if (envelope === null) return;
+    clipboard_event.preventDefault();
+    clipboard_data?.setData("text/plain", JSON.stringify(envelope));
+}
+
 /**
  * Check if a keyboard event matches a keybind (supports chords like "ctrl+s")
  */
@@ -717,6 +760,14 @@ export function create_ulabel_listeners(
             handle_keydown_event(keydown_event, ulabel);
         },
     );
+
+    // Copy / cut the hovered annotation, paste into the current subtask
+    for (const kind of ["copy", "cut", "paste"] as const) {
+        $(document).on(
+            kind + ULABEL_NAMESPACE,
+            (clipboard_event) => handle_clipboard_event(clipboard_event, ulabel, kind),
+        );
+    }
 
     $(window).on(
         "beforeunload" + ULABEL_NAMESPACE,

@@ -22,10 +22,17 @@ import { log_message, LogLevel } from "./error_logging";
  * @param raw_action action to record
  * @param is_redo whether ulabel action is a redo or not
  * @param add_to_action_stream whether to add the action to the action stream
+ * @param subtask_key subtask whose stream receives the action; defaults to the current subtask
  */
-export function record_action(ulabel: ULabel, raw_action: ULabelActionRaw, is_redo: boolean = false, add_to_action_stream: boolean = true) {
+export function record_action(
+    ulabel: ULabel,
+    raw_action: ULabelActionRaw,
+    is_redo: boolean = false,
+    add_to_action_stream: boolean = true,
+    subtask_key: string | null = null,
+) {
     ulabel.set_saved(false);
-    const current_subtask = ulabel.get_current_subtask();
+    const current_subtask = ulabel.subtasks[subtask_key ?? ulabel.get_current_subtask_key()];
     const annotation = current_subtask.annotations.access[raw_action.annotation_id!];
 
     // After a new action, you can no longer redo old actions
@@ -317,6 +324,16 @@ function trigger_action_listeners(
         delete_annotations_in_polygon: {
             // No listener for this action.
             // It handles the re-rendering of the affected annotations itself.
+        },
+        paste_annotation: {
+            // The paste redraws itself (its target may not be the current subtask);
+            // undo always runs on the current subtask
+            undo: on_annotation_deletion,
+        },
+        move_annotation: {
+            // Deleting the source triggers the deletion listener itself; the copy is
+            // drawn/removed directly in its own subtask
+            undo: on_finish_annotation_spatial_modification,
         },
     };
 
@@ -645,6 +662,12 @@ function undo_action(ulabel: ULabel, action: ULabelAction) {
         case "create_annotation":
             ulabel.create_annotation__undo(annotation_id);
             break;
+        case "paste_annotation":
+            ulabel.paste_annotation__undo(annotation_id);
+            break;
+        case "move_annotation":
+            ulabel.move_annotation__undo(annotation_id, undo_payload);
+            break;
         case "create_nonspatial_annotation":
             ulabel.create_nonspatial_annotation__undo(annotation_id);
             break;
@@ -728,6 +751,12 @@ export function redo_action(ulabel: ULabel, action: ULabelAction) {
             break;
         case "create_annotation":
             ulabel.create_annotation__redo(annotation_id, redo_payload);
+            break;
+        case "paste_annotation":
+            ulabel.paste_annotation__redo(annotation_id, redo_payload);
+            break;
+        case "move_annotation":
+            ulabel.move_annotation__redo(annotation_id, redo_payload);
             break;
         case "create_nonspatial_annotation":
             ulabel.create_nonspatial_annotation(annotation_id, redo_payload);

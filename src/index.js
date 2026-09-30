@@ -70,6 +70,9 @@ const BITMASK_OUTLINE_BORDER = 2;
 // Opacity of annotations outside a subtask's focused class. 0 skips them.
 const DEFAULT_DEFOCUSED_OPACITY = 0.4;
 
+// Image-space shift applied when an annotation is pasted back into the subtask it was copied from.
+const PASTE_OFFSET_PX = 20;
+
 export class ULabel {
     static version() {
         return ULABEL_VERSION;
@@ -783,6 +786,8 @@ export class ULabel {
             move_snapshot: null,
             // Annotation the right-click context menu is open for, if any
             context_menu_annid: null,
+            // Last copied/cut annotation envelope (see copy_annotation_to_clipboard)
+            clipboard: null,
 
             // Global annotation state (subtasks also maintain an annotation state)
             current_subtask: null, // The key of the current subtask
@@ -3823,6 +3828,8 @@ export class ULabel {
         let annotation_ids_to_redraw = [];
         let polyline_was_updated = false;
         for (let annid of undo_payload["deprecated_ids"]) {
+            // A victim may have been removed since (e.g. a moved copy whose move was undone)
+            if (annotations[annid] === undefined) continue;
             if (!polyline_was_updated && annotations[annid].spatial_type === "polyline") {
                 polyline_was_updated = true;
             }
@@ -3833,6 +3840,7 @@ export class ULabel {
         }
         // Loop through all modified annotations
         for (let [annid, annotation] of Object.entries(undo_payload["modified_annotations"])) {
+            if (annotations[annid] === undefined) continue;
             if (!polyline_was_updated && annotation.spatial_type === "polyline") {
                 polyline_was_updated = true;
             }
@@ -3891,18 +3899,14 @@ export class ULabel {
     }
 
     // Remove all recorded events associated with a specific annotation id
-    remove_recorded_events_for_annotation(annotation_id) {
-        // filter action stream
-        let new_action_stream = [];
-        for (let action of this.get_current_subtask()["actions"]["stream"]) {
-            if (
-                action.annotation_id !== annotation_id ||
-                action.act_type === "delete_annotations_in_polygon"
-            ) {
-                new_action_stream.push(action);
-            }
-        }
-        this.get_current_subtask()["actions"]["stream"] = new_action_stream;
+    // Forget every recorded action about an annotation that no longer exists in
+    // a subtask (default: the current one). Delete-polygon actions survive since
+    // they cover many annotations; their payloads skip missing ids on undo.
+    remove_recorded_events_for_annotation(annotation_id, subtask_key = null) {
+        const actions = this.subtasks[subtask_key ?? this.get_current_subtask_key()]["actions"];
+        const keep = (action) => action.annotation_id !== annotation_id || action.act_type === "delete_annotations_in_polygon";
+        actions["stream"] = actions["stream"].filter(keep);
+        actions["undone_stack"] = actions["undone_stack"].filter(keep);
     }
 
     /**
@@ -4066,13 +4070,17 @@ export class ULabel {
     }
 
     /**
-     * Class ids in the current subtask that can take an annotation's spatial
+     * Class ids in a subtask that can take an annotation's spatial
      * type. A null annotation places no restriction.
+     *
+     * @param {object|null} annotation
+     * @param {string|null} subtask_key defaults to the current subtask
      */
-    _get_compatible_class_ids(annotation = null) {
-        const class_ids = this.get_current_subtask()["class_ids"];
+    _get_compatible_class_ids(annotation = null, subtask_key = null) {
+        subtask_key ??= this.get_current_subtask_key();
+        const class_ids = this.subtasks[subtask_key]["class_ids"];
         if (annotation == null) return class_ids;
-        return class_ids.filter((class_id) => can_annotation_be_class(this, annotation, class_id));
+        return class_ids.filter((class_id) => can_annotation_be_class(this, annotation, class_id, subtask_key));
     }
 
     // ID dialog: color wheel to change the ID of an annotation
@@ -4301,6 +4309,443 @@ export class ULabel {
             annotation_id,
             true,
         );
+    }
+
+    /**
+     * Whether an annotation can be pasted into a subtask: it is spatial, the
+     * subtask is not read-only, and at least one of its classes allows the
+     * annotation's spatial type.
+     *
+     * @param {object} annotation
+     * @param {string} subtask_key
+     * @returns {boolean}
+     */
+    can_paste_into_subtask(annotation, subtask_key) {
+        const subtask = this.subtasks[subtask_key];
+        if (subtask === undefined || subtask["read_only"] === true) return false;
+        if (annotation == null) return false;
+        const spatial_type = annotation["spatial_type"];
+        if (NONSPATIAL_MODES.includes(spatial_type) || DELETE_MODES.includes(spatial_type)) return false;
+        return this._get_compatible_class_ids(annotation, subtask_key).length > 0;
+    }
+
+    /**
+     * Keys of the other subtasks an annotation can be copied into.
+     *
+     * @param {object} annotation
+     * @param {string|null} source_key subtask the annotation lives in; defaults to the current subtask
+     * @returns {string[]}
+     */
+    get_copy_target_subtask_keys(annotation, source_key = null) {
+        source_key ??= this.get_current_subtask_key();
+        return Object.keys(this.subtasks).filter(
+            (key) => key !== source_key && this.can_paste_into_subtask(annotation, key),
+        );
+    }
+
+    /**
+     * Class for a pasted annotation: the source class when the target allows
+     * it, else the target's active class, else the first compatible class.
+     *
+     * @param {object} annotation
+     * @param {string} target_key
+     * @returns {number|null} null when no class in the target fits
+     */
+    resolve_paste_class_id(annotation, target_key) {
+        const compatible = this._get_compatible_class_ids(annotation, target_key);
+        if (compatible.length === 0) return null;
+        const source_class_id = Number(get_annotation_class_id(annotation));
+        if (compatible.includes(source_class_id)) return source_class_id;
+        const active_class_id = get_active_class_id(this, target_key);
+        if (active_class_id !== undefined && compatible.includes(active_class_id)) return active_class_id;
+        return compatible[0];
+    }
+
+    /**
+     * Insert a copy of an annotation into a subtask. The copy gets a fresh id,
+     * fresh stamps, no deprecation and a class payload for `class_id`; every
+     * other field carries over. Records a `paste_annotation` action on the
+     * target subtask's stream.
+     *
+     * @param {object} annotation source annotation (from any subtask or a clipboard payload)
+     * @param {string} target_key subtask to paste into
+     * @param {number|null} class_id class for the copy; null resolves via `resolve_paste_class_id`
+     * @param {[number, number]} offset image-space shift applied to the copy
+     * @param {boolean} record record a `paste_annotation` action on the target stream
+     * @returns {string|null} id of the new annotation, or null when nothing was pasted
+     */
+    paste_annotation(annotation, target_key, class_id = null, offset = [0, 0], record = true) {
+        if (!this.can_paste_into_subtask(annotation, target_key)) {
+            log_message(`Cannot paste a ${annotation?.["spatial_type"]} annotation into subtask ${target_key}`, LogLevel.WARNING, true);
+            return null;
+        }
+        class_id ??= this.resolve_paste_class_id(annotation, target_key);
+        if (!this._get_compatible_class_ids(annotation, target_key).includes(class_id)) {
+            log_message(`Class ${class_id} in subtask ${target_key} cannot take a ${annotation["spatial_type"]} annotation`, LogLevel.WARNING, true);
+            return null;
+        }
+
+        const copy = JSON.parse(JSON.stringify(annotation));
+        // Bitmask payloads may be raw arrays or stale; re-encode from the decoded mask
+        if (copy["spatial_type"] === "bitmask") {
+            copy["spatial_payload"] = this.get_bitmask(annotation).to_rle();
+        }
+        const now = ULabel.get_time();
+        delete copy["edit_type"];
+        copy["id"] = this.make_new_annotation_id();
+        copy["created_by"] = this.config.username;
+        copy["created_at"] = now;
+        copy["last_edited_by"] = this.config.username;
+        copy["last_edited_at"] = now;
+        copy["deprecated"] = false;
+        copy["deprecated_by"] = { human: false };
+        copy["classification_payloads"] = this.subtasks[target_key]["class_ids"].map((cid) => ({
+            class_id: cid,
+            confidence: cid === class_id ? 1.0 : 0.0,
+        }));
+
+        let new_annotation = ULabelAnnotation.from_json(copy);
+        if (new_annotation === null) {
+            log_message("Cannot paste an annotation with an incompatible spatial payload", LogLevel.WARNING, true);
+            return null;
+        }
+        const [dx, dy] = offset;
+        if (dx !== 0 || dy !== 0) {
+            const spatial_type = new_annotation["spatial_type"];
+            if (spatial_type === "bitmask") {
+                this.translate_bitmask(new_annotation, dx, dy);
+            } else {
+                // The JSON round trip broke any shared closing-point reference, so every point shifts once
+                let layers = [new_annotation["spatial_payload"]];
+                if (spatial_type === "polygon") {
+                    layers = new_annotation["spatial_payload"];
+                }
+                for (const layer of layers) {
+                    for (const point of layer) {
+                        point[0] += dx;
+                        point[1] += dy;
+                    }
+                }
+            }
+        }
+        if (!this.config.allow_annotations_outside_image) {
+            new_annotation = new_annotation.clamp_annotation_to_image_bounds(this.config["image_width"], this.config["image_height"]);
+        }
+        this._insert_pasted_annotation(new_annotation, target_key, false, record);
+        return new_annotation["id"];
+    }
+
+    /**
+     * Add an already-prepared pasted annotation to a subtask. Shared by
+     * `paste_annotation`, its redo, and `move_annotation`'s redo.
+     *
+     * @param {object} annotation_json annotation with its final id, class and geometry
+     * @param {string} target_key
+     * @param {boolean} is_redo
+     * @param {boolean} record record a `paste_annotation` action on the target stream
+     */
+    _insert_pasted_annotation(annotation_json, target_key, is_redo, record = true) {
+        const target = this.subtasks[target_key];
+        // A new annotation would be hidden by an active isolation
+        this.isolate_annotation(null, target_key);
+        const annotation = ULabelAnnotation.from_json(annotation_json);
+        const annotation_id = annotation["id"];
+        annotation["canvas_id"] = this.get_init_canvas_context_id(annotation_id, target_key);
+        target["annotations"]["access"][annotation_id] = annotation;
+        target["annotations"]["ordering"].push(annotation_id);
+        this.rebuild_containing_box(annotation_id, false, target_key);
+
+        if (record) {
+            let frame = this.state["current_frame"];
+            if (MODES_3D.includes(annotation["spatial_type"])) {
+                frame = null;
+            }
+            record_action(this, {
+                act_type: "paste_annotation",
+                annotation_id: annotation_id,
+                frame: frame,
+                undo_payload: {},
+                redo_payload: { annotation: annotation },
+            }, is_redo, true, target_key);
+        }
+
+        // No action listener: the target may not be the current subtask
+        this.redraw_annotation(annotation_id, target_key);
+        this.toolbox.redraw_update_items(this);
+    }
+
+    /**
+     * Drop a pasted annotation from a subtask entirely (it never existed
+     * before the paste, so there is nothing to deprecate).
+     *
+     * @param {string} annotation_id
+     * @param {string} subtask_key
+     */
+    _remove_pasted_annotation(annotation_id, subtask_key) {
+        const subtask = this.subtasks[subtask_key];
+        if (!(annotation_id in subtask["annotations"]["access"])) return;
+        if (subtask["state"]["isolated_annid"] === annotation_id) {
+            this.isolate_annotation(null, subtask_key);
+        }
+        this.destroy_annotation_context(annotation_id, subtask_key);
+        delete subtask["annotations"]["access"][annotation_id];
+        subtask["annotations"]["ordering"] = subtask["annotations"]["ordering"].filter((value) => value !== annotation_id);
+    }
+
+    /**
+     * Drop a moved copy from its subtask along with everything that subtask
+     * recorded about it. A copy that was itself moved on is followed first
+     * so no orphaned duplicate outlives the move being undone.
+     *
+     * @param {string} copy_id
+     * @param {string} subtask_key
+     */
+    _discard_moved_copy(copy_id, subtask_key) {
+        for (const action of this.subtasks[subtask_key]["actions"]["stream"]) {
+            if (action.act_type === "move_annotation" && action.annotation_id === copy_id) {
+                const payload = JSON.parse(action.undo_payload);
+                this._discard_moved_copy(payload.copy_id, payload.target_subtask_key);
+            }
+        }
+        this._remove_pasted_annotation(copy_id, subtask_key);
+        this.remove_recorded_events_for_annotation(copy_id, subtask_key);
+    }
+
+    /**
+     * Undo a paste: remove the copy from the current subtask.
+     *
+     * @param {string} annotation_id
+     */
+    paste_annotation__undo(annotation_id) {
+        this._remove_pasted_annotation(annotation_id, this.get_current_subtask_key());
+    }
+
+    /**
+     * Redo a paste: re-add the stored copy to the current subtask.
+     *
+     * @param {string} annotation_id
+     * @param {object} redo_payload `{ annotation }` as recorded by the paste
+     */
+    paste_annotation__redo(annotation_id, redo_payload) {
+        this._insert_pasted_annotation(redo_payload.annotation, this.get_current_subtask_key(), true);
+    }
+
+    /**
+     * Copy an annotation from one subtask into another at the same image
+     * coordinates. Cut turns the copy into a move: the source, which must live
+     * in the current, writable subtask, is deleted and the whole move is one
+     * undoable `move_annotation` action on the source's stream (nothing is
+     * recorded on the target). When the target offers more than one
+     * compatible class and `choose_class` is set, the target becomes the
+     * current subtask and the class pie opens on the copy.
+     *
+     * @param {string} annotation_id
+     * @param {string} source_key subtask the annotation lives in
+     * @param {string} target_key subtask to copy into
+     * @param {number|null} class_id class for the copy; null resolves via `resolve_paste_class_id`
+     * @param {boolean} cut delete the source afterwards
+     * @param {boolean} choose_class open the class pie when the class is ambiguous
+     * @param {[number, number]} offset image-space shift applied to the copy
+     * @returns {string|null} id of the copy
+     */
+    copy_annotation_to_subtask(annotation_id, source_key, target_key, class_id = null, cut = false, choose_class = false, offset = [0, 0]) {
+        const annotation = this.subtasks[source_key]?.["annotations"]["access"][annotation_id];
+        if (annotation == null) {
+            log_message(`Annotation ${annotation_id} not found in subtask ${source_key}`, LogLevel.WARNING, true);
+            return null;
+        }
+        let move = cut;
+        if (cut && (source_key !== this.get_current_subtask_key() || this.is_current_subtask_read_only())) {
+            log_message("Cut only removes annotations from the current, writable subtask; copied instead", LogLevel.WARNING, true);
+            move = false;
+        }
+        const new_id = this.paste_annotation(annotation, target_key, class_id, offset, !move);
+        if (new_id === null) return null;
+
+        if (move) {
+            this._record_move_annotation(annotation_id, target_key, new_id, false);
+        }
+
+        if (choose_class) {
+            this._offer_pasted_class_choice(new_id, target_key);
+        }
+        return new_id;
+    }
+
+    /**
+     * Deprecate the source of a move and record the compound action on the
+     * current (source) subtask's stream. The copy must already be in place.
+     *
+     * @param {string} annotation_id source annotation in the current subtask
+     * @param {string} target_key subtask holding the copy
+     * @param {string} copy_id id of the copy
+     * @param {boolean} is_redo
+     */
+    _record_move_annotation(annotation_id, target_key, copy_id, is_redo) {
+        const spatial_type = this.get_current_subtask()["annotations"]["access"][annotation_id]["spatial_type"];
+        this.delete_annotation(annotation_id, is_redo, false);
+        let frame = this.state["current_frame"];
+        if (MODES_3D.includes(spatial_type)) {
+            frame = null;
+        }
+        const copy = this.subtasks[target_key]["annotations"]["access"][copy_id];
+        record_action(this, {
+            act_type: "move_annotation",
+            annotation_id: annotation_id,
+            frame: frame,
+            undo_payload: { target_subtask_key: target_key, copy_id: copy_id },
+            redo_payload: { target_subtask_key: target_key, annotation: copy },
+            affected: [{ annotation_id: copy_id, subtask_key: target_key }],
+        }, is_redo);
+    }
+
+    /**
+     * Undo a move: restore the source in the current subtask and drop the
+     * copy from the target, along with everything the target recorded about
+     * the copy (its edits there can no longer be replayed) and any copies
+     * made by moving it on again.
+     *
+     * @param {string} annotation_id
+     * @param {object} undo_payload `{ target_subtask_key, copy_id }`
+     */
+    move_annotation__undo(annotation_id, undo_payload) {
+        mark_deprecated(this.get_current_subtask()["annotations"]["access"][annotation_id], false);
+        this._discard_moved_copy(undo_payload.copy_id, undo_payload.target_subtask_key);
+        this.toolbox.redraw_update_items(this);
+    }
+
+    /**
+     * Redo a move: re-insert the copy in the target and deprecate the source
+     * again.
+     *
+     * @param {string} annotation_id
+     * @param {object} redo_payload `{ target_subtask_key, annotation }`
+     */
+    move_annotation__redo(annotation_id, redo_payload) {
+        const target_key = redo_payload.target_subtask_key;
+        this._insert_pasted_annotation(redo_payload.annotation, target_key, true, false);
+        this._record_move_annotation(annotation_id, target_key, redo_payload.annotation["id"], true);
+    }
+
+    /**
+     * When a pasted annotation could take several classes in its subtask, make
+     * that subtask current and open the class pie on the copy.
+     *
+     * @param {string} annotation_id id of the pasted annotation
+     * @param {string} target_key subtask it was pasted into
+     */
+    _offer_pasted_class_choice(annotation_id, target_key) {
+        const annotation = this.subtasks[target_key]["annotations"]["access"][annotation_id];
+        if (this._get_compatible_class_ids(annotation, target_key).length <= 1) return;
+        if (target_key !== this.get_current_subtask_key()) {
+            this.set_subtask(target_key);
+        }
+        const cbox = annotation["containing_box"];
+        if (cbox != null) {
+            this.show_id_dialog((cbox.tlx + cbox.brx) / 2, (cbox.tly + cbox.bry) / 2, annotation_id, false);
+        }
+    }
+
+    /**
+     * Put the hovered annotation (or `annotation_id`) on the in-memory
+     * clipboard; cut also deletes it from the current subtask. Returns the
+     * JSON envelope for the system clipboard, or null when nothing was copied.
+     *
+     * @param {string|null} annotation_id defaults to the hovered annotation
+     * @param {boolean} cut delete the source (current subtask must be writable)
+     * @returns {object|null} `{ ulabel_annotation: 1, image_width, image_height, source_subtask_key, annotation }`
+     */
+    copy_annotation_to_clipboard(annotation_id = null, cut = false) {
+        const subtask_key = this.get_current_subtask_key();
+        const subtask = this.subtasks[subtask_key];
+        annotation_id ??= subtask["state"]["edit_candidate"]?.["annid"] ?? null;
+        if (annotation_id === null) return null;
+        const annotation = subtask["annotations"]["access"][annotation_id];
+        if (annotation == null || annotation["deprecated"]) return null;
+        const spatial_type = annotation["spatial_type"];
+        if (NONSPATIAL_MODES.includes(spatial_type) || DELETE_MODES.includes(spatial_type)) return null;
+        if (cut && this.is_current_subtask_read_only()) return null;
+
+        const copy = JSON.parse(JSON.stringify(annotation));
+        if (spatial_type === "bitmask") {
+            copy["spatial_payload"] = this.get_bitmask(annotation).to_rle();
+        }
+        const envelope = {
+            ulabel_annotation: 1,
+            copy_id: uuidv4(),
+            image_width: this.config["image_width"],
+            image_height: this.config["image_height"],
+            source_subtask_key: subtask_key,
+            annotation: copy,
+            paste_counts: {},
+        };
+        this.state["clipboard"] = envelope;
+        if (cut) {
+            this.delete_annotation(annotation_id);
+        }
+        return envelope;
+    }
+
+    /**
+     * Paste a clipboard envelope into the current subtask. Without an
+     * argument the in-memory clipboard is used. The first paste into another
+     * subtask keeps the coordinates; a paste back into the source subtask,
+     * and every repeat paste into the same subtask, is offset by a further
+     * `PASTE_OFFSET_PX` so each copy is visible. Pasting into another subtask
+     * with several compatible classes opens the class pie.
+     *
+     * @param {object|null} envelope as produced by `copy_annotation_to_clipboard`
+     * @returns {string|null} id of the pasted annotation
+     */
+    paste_annotation_from_clipboard(envelope = null) {
+        envelope ??= this.state["clipboard"];
+        if (envelope == null || envelope["annotation"] == null) return null;
+        if (envelope["image_width"] !== this.config["image_width"] || envelope["image_height"] !== this.config["image_height"]) {
+            log_message("Clipboard annotation belongs to an image of different dimensions; not pasted", LogLevel.WARNING, true);
+            return null;
+        }
+        const target_key = this.get_current_subtask_key();
+        if (!this.can_paste_into_subtask(envelope["annotation"], target_key)) {
+            log_message(`No class in subtask ${target_key} accepts a ${envelope["annotation"]["spatial_type"]} annotation`, LogLevel.WARNING, true);
+            return null;
+        }
+        // The system clipboard yields a fresh parse each paste; the in-memory
+        // envelope for the same copy carries the running paste counts
+        const stored = this.state["clipboard"];
+        if (stored != null && stored !== envelope && envelope["copy_id"] != null && stored["copy_id"] === envelope["copy_id"]) {
+            envelope = stored;
+        } else {
+            this.state["clipboard"] = envelope;
+        }
+        envelope["paste_counts"] ??= {};
+        // A paste onto the source keeps its class and starts nudged; elsewhere
+        // only repeats are nudged
+        const same_subtask = envelope["source_subtask_key"] === target_key;
+        const steps = (envelope["paste_counts"][target_key] ?? 0) + (same_subtask ? 1 : 0);
+        const offset = [PASTE_OFFSET_PX * steps, PASTE_OFFSET_PX * steps];
+        const new_id = this.paste_annotation(envelope["annotation"], target_key, null, offset);
+        if (new_id === null) return null;
+        envelope["paste_counts"][target_key] = (envelope["paste_counts"][target_key] ?? 0) + 1;
+        if (!same_subtask) {
+            this._offer_pasted_class_choice(new_id, target_key);
+        }
+        return new_id;
+    }
+
+    /**
+     * Copy an annotation into another subtask at the same image coordinates.
+     * The class defaults to the source class when the target allows it, else
+     * the target's active class, else the first compatible class.
+     *
+     * @param {string} annotation_id
+     * @param {string} target_subtask_key
+     * @param {number|null} class_id
+     * @param {string|null} source_subtask_key defaults to the current subtask
+     * @returns {string|null} id of the copy, or null when nothing was copied
+     */
+    copy_annotation(annotation_id, target_subtask_key, class_id = null, source_subtask_key = null) {
+        source_subtask_key ??= this.get_current_subtask_key();
+        return this.copy_annotation_to_subtask(annotation_id, source_subtask_key, target_subtask_key, class_id);
     }
 
     create_point_annotation_at_mouse_location() {
@@ -7317,7 +7762,6 @@ export class ULabel {
     }
 
     assign_annotation_id__undo(annotation_id, undo_payload) {
-        // Restore the old payload
         this.get_current_subtask()["annotations"]["access"][annotation_id]["classification_payloads"] = undo_payload.old_id_payload;
     }
 

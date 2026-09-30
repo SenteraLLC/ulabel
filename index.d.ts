@@ -263,6 +263,8 @@ export type BrushOverlapMode = "none" | "exclude" | "overwrite";
 
 export type ULabelActionType = "create_nonspatial_annotation" |
     "create_annotation" |
+    "paste_annotation" |
+    "move_annotation" |
     "begin_annotation" |
     "continue_annotation" |
     "finish_annotation" |
@@ -291,6 +293,19 @@ export type ULabelActionType = "create_nonspatial_annotation" |
 export type ULabelActionAffected = {
     annotation_id: string;
     subtask_key: string;
+};
+
+// Clipboard payload written by copy/cut and read by paste (also as JSON on the system clipboard)
+export type ULabelClipboardEnvelope = {
+    ulabel_annotation: 1;
+    // Unique per copy/cut; tells a repeat paste of one copy from a newer copy of the same annotation
+    copy_id: string;
+    image_width: number;
+    image_height: number;
+    source_subtask_key: string;
+    annotation: ULabelAnnotation;
+    // Pastes of this envelope so far, per target subtask; repeats are offset further
+    paste_counts?: Record<string, number>;
 };
 
 export type ULabelActionRaw = {
@@ -394,6 +409,8 @@ export class ULabel {
         all_subtasks_vanished: boolean;
         /** Annotation the right-click context menu is open for, if any. */
         context_menu_annid: string | null;
+        /** Last copied/cut annotation envelope, see `copy_annotation_to_clipboard`. */
+        clipboard: ULabelClipboardEnvelope | null;
     };
 
     config: Configuration;
@@ -509,7 +526,7 @@ export class ULabel {
     /** The spatial types a class may be drawn as; falls back to the subtask's list. */
     public get_class_allowed_modes(class_id: number, subtask_key?: string | null): ULabelSpatialType[];
     /** Class ids in the current subtask that can take an annotation's spatial type. */
-    public _get_compatible_class_ids(annotation?: ULabelAnnotation | null): number[];
+    public _get_compatible_class_ids(annotation?: ULabelAnnotation | null, subtask_key?: string | null): number[];
     /**
      * Open the right-click context menu (Change class / Delete / Details) for an
      * annotation in the current subtask at a viewport position. Returns whether
@@ -651,6 +668,48 @@ export class ULabel {
     public create_nonspatial_annotation(
         annotation_id?: string, redo_payload?: object,
     ): void;
+    /** Whether `annotation` (spatial) may be pasted into a writable subtask with a compatible class. */
+    public can_paste_into_subtask(annotation: ULabelAnnotation | object, subtask_key: string): boolean;
+    /** Keys of the other subtasks `annotation` can be copied into. */
+    public get_copy_target_subtask_keys(annotation: ULabelAnnotation | object, source_key?: string | null): string[];
+    /** Source class if compatible, else the target's active class, else the first compatible class. */
+    public resolve_paste_class_id(annotation: ULabelAnnotation | object, target_key: string): number | null;
+    /**
+     * Insert a copy of `annotation` into `target_key` with a fresh id and stamps.
+     * Records a `paste_annotation` action on the target subtask unless `record` is false. Returns the new id, or null.
+     */
+    public paste_annotation(
+        annotation: ULabelAnnotation | object,
+        target_key: string,
+        class_id?: number | null,
+        offset?: [number, number],
+        record?: boolean,
+    ): string | null;
+    /**
+     * Copy (or cut) an annotation from `source_key` into `target_key` at the same coordinates.
+     * A cut from the current, writable subtask is one `move_annotation` action on the source's stream.
+     * With `choose_class` and several compatible classes, switches to the target and opens the class pie.
+     */
+    public copy_annotation_to_subtask(
+        annotation_id: string,
+        source_key: string,
+        target_key: string,
+        class_id?: number | null,
+        cut?: boolean,
+        choose_class?: boolean,
+        offset?: [number, number],
+    ): string | null;
+    /** Copy an annotation into another subtask. Returns the new id, or null when nothing was copied. */
+    public copy_annotation(
+        annotation_id: string,
+        target_subtask_key: string,
+        class_id?: number | null,
+        source_subtask_key?: string | null,
+    ): string | null;
+    /** Copy (or cut) the hovered annotation to the in-memory clipboard; returns the envelope or null. */
+    public copy_annotation_to_clipboard(annotation_id?: string | null, cut?: boolean): ULabelClipboardEnvelope | null;
+    /** Paste an envelope (default: the in-memory clipboard) into the current subtask; returns the new id or null. */
+    public paste_annotation_from_clipboard(envelope?: ULabelClipboardEnvelope | null): string | null;
     public start_complex_polygon(annotation_id?: string): void;
     public merge_polygon_complex_layer(
         annotation_id: string,
@@ -682,6 +741,8 @@ export class ULabel {
     public edit_text_payload(annotation_id: string, new_text: string, redoing?: boolean): void;
     public edit_text_payload__undo(annotation_id: string, undo_payload: object): void;
     public create_annotation__undo(annotation_id: string): void;
+    public paste_annotation__undo(annotation_id: string): void;
+    public move_annotation__undo(annotation_id: string, undo_payload: object): void;
     public create_nonspatial_annotation__undo(annotation_id: string): void;
     public start_complex_polygon__undo(annotation_id: string): void;
     public merge_polygon_complex_layer__undo(annotation_id: string, undo_payload: object): void;
@@ -701,6 +762,8 @@ export class ULabel {
     public delete_annotation__redo(annotation_id: string): void;
     public delete_vertex__redo(annotation_id: string, redo_payload: object): void;
     public create_annotation__redo(annotation_id: string, redo_payload: object): void;
+    public paste_annotation__redo(annotation_id: string, redo_payload: object): void;
+    public move_annotation__redo(annotation_id: string, redo_payload: object): void;
     public finish_modify_annotation__redo(annotation_id: string, redo_payload: object): void;
 
     // Mouse event handlers

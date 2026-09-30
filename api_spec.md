@@ -15,8 +15,9 @@ This should eventually be replaced with a more comprehensive approach to documen
 - Press `Escape` to exit brush/erase mode.
 - Press `Tab` to set the zoom to focus on the next annotation
 - Press `Shift+Tab` to set the zoom to focus on the previous annotation
-- Right-click a hovered annotation (or its entry in the `AnnotationList` toolbox item) to open a context menu with `Change class`, `Delete`, `Isolate` / `Show all`, and `Details`. `Change class` opens the class pie for that annotation; `Isolate` hides every other annotation in the subtask (see [`isolate_annotation`](#isolate_annotationannotation_id-subtask_key-redraw)) and reads `Show all` while that annotation is isolated; `Details` lists its id, class, spatial type, last editor/edit time, and `annotation_meta` entries. Read-only subtasks only offer `Isolate` and `Details`. Press `Escape` or click anywhere to close it. A right-click while drawing a polyline still finishes the polyline and opens no menu.
+- Right-click a hovered annotation (or its entry in the `AnnotationList` toolbox item) to open a context menu with `Change class`, `Copy to`, `Move to`, `Delete`, `Isolate` / `Show all`, and `Details`. `Change class` opens the class pie for that annotation; `Copy to` / `Move to` clone the annotation into another subtask at the same image coordinates (see [`copy_annotation`](#copy_annotationannotation_id-target_subtask_key-class_id-source_subtask_key)) -- a single eligible subtask is named on the item, several open a list to pick from, and `Move to` also deletes the source (one undoable action on the source subtask that also removes the copy and the target's history about it); `Isolate` hides every other annotation in the subtask (see [`isolate_annotation`](#isolate_annotationannotation_id-subtask_key-redraw)) and reads `Show all` while that annotation is isolated; `Details` lists its id, class, spatial type, last editor/edit time, and `annotation_meta` entries. Read-only subtasks only offer `Isolate` and `Details`. Press `Escape` or click anywhere to close it. A right-click while drawing a polyline still finishes the polyline and opens no menu.
 - Press `Escape` to close an open class pie or context menu.
+- `ctrl+c` / `cmd+c` copies the hovered annotation, `ctrl+x` / `cmd+x` cuts it (deletes it after copying; not in read-only subtasks), and `ctrl+v` / `cmd+v` pastes into the current subtask (see [`paste_annotation_from_clipboard`](#paste_annotation_from_clipboardenvelope)). The copy is placed on the system clipboard as JSON, so it can be pasted into another ULabel instance showing an image of the same dimensions; a paste back into the subtask it was copied from keeps its class; the first paste into another subtask keeps the coordinates, and every repeat paste into the same subtask (or any paste back into the source) is offset by a further 20 pixels. These shortcuts are not remappable and are ignored while a text field has focus.
 
 ## ULabel Constructor
 
@@ -811,6 +812,18 @@ Sets the zoom to focus on the provided annotation, and switches to its subtask i
 ### `is_context_menu_open()`
 
 *() => boolean* -- Whether the context menu is currently open.
+
+### `copy_annotation(annotation_id, target_subtask_key, class_id?, source_subtask_key?)`
+
+*(annotation_id: string, target_subtask_key: string, class_id?: number | null, source_subtask_key?: string | null) => string | null* -- Clones a spatial annotation from one subtask (default: the current one) into another at the same image coordinates and returns the new annotation's id, or `null` when the target is read-only, does not allow the annotation's spatial type, or has no class that accepts it. The class defaults to the source class when the target allows it, else the target's active class, else its first compatible class. The paste is recorded on the target subtask's action stream (`paste_annotation`) and can be undone there.
+
+### `copy_annotation_to_clipboard(annotation_id?, cut?)`
+
+*(annotation_id?: string | null, cut?: boolean) => ULabelClipboardEnvelope | null* -- Stores a copy of an annotation in the current subtask (default: the hovered one) on the in-memory clipboard and returns the envelope `{ ulabel_annotation: 1, image_width, image_height, source_subtask_key, annotation }`. With `cut`, the source is deleted afterwards (refused in read-only subtasks). Returns `null` for deprecated, non-spatial, or delete-mode annotations.
+
+### `paste_annotation_from_clipboard(envelope?)`
+
+*(envelope?: ULabelClipboardEnvelope | null) => string | null* -- Pastes an envelope (default: the in-memory clipboard) into the current subtask and returns the new annotation's id. Refused with a warning when the envelope's image dimensions differ from the current image or when no class in the current subtask accepts the annotation. A paste back into `source_subtask_key` keeps its class. The first paste into another subtask keeps the coordinates; each repeat paste into the same subtask, and any paste back into the source, is offset by a further 20 pixels (`paste_counts`, per target subtask, tracked per `copy_id`). When pasting into another subtask with several compatible classes, the class pie opens on the pasted annotation.
 
 ### `isolate_annotation(annotation_id, subtask_key?, redraw?)`
 

@@ -16,7 +16,7 @@ function make_annotation(overrides = {}) {
     };
 }
 
-function make_ulabel({ read_only = false, compatible = [1, 2], annotation = make_annotation() } = {}) {
+function make_ulabel({ read_only = false, compatible = [1, 2], annotation = make_annotation(), copy_targets = [] } = {}) {
     document.body.innerHTML = `<div id="container"></div>`;
     const subtask = {
         read_only,
@@ -27,9 +27,17 @@ function make_ulabel({ read_only = false, compatible = [1, 2], annotation = make
     const ulabel = {
         config: { container_id: "container" },
         state: { context_menu_annid: null },
+        subtasks: {
+            main: subtask,
+            pred: { display_name: "Predictions" },
+            review: { display_name: "Review" },
+        },
         get_current_subtask: () => subtask,
+        get_current_subtask_key: () => "main",
         is_current_subtask_read_only: () => read_only,
         _get_compatible_class_ids: jest.fn(() => compatible),
+        get_copy_target_subtask_keys: jest.fn(() => copy_targets),
+        copy_annotation_to_subtask: jest.fn(),
         show_id_dialog: jest.fn(),
         delete_annotation: jest.fn(),
         isolate_annotation: jest.fn((annid) => {
@@ -91,6 +99,51 @@ describe("context menu items", () => {
 
         const deprecated = make_ulabel({ annotation: make_annotation({ deprecated: true }) });
         expect(show_context_menu(deprecated, "a0", 100, 100)).toBe(false);
+    });
+
+    test("one copy target is named on flat Copy to / Move to items", () => {
+        const ulabel = make_ulabel({ copy_targets: ["pred"] });
+        show_context_menu(ulabel, "a0", 100, 100);
+        expect(item_labels()).toEqual([
+            "Change class",
+            "Copy to Predictions",
+            "Move to Predictions",
+            "Delete",
+            "Isolate",
+            "Details",
+        ]);
+        expect(ulabel.get_copy_target_subtask_keys).toHaveBeenCalledWith(ulabel.get_current_subtask().annotations.access.a0, "main");
+
+        click_item("Copy to Predictions");
+        expect(is_context_menu_open(ulabel)).toBe(false);
+        expect(ulabel.copy_annotation_to_subtask).toHaveBeenCalledWith("a0", "main", "pred", null, false, true);
+    });
+
+    test("several copy targets drill down to a list of subtask names", () => {
+        const ulabel = make_ulabel({ copy_targets: ["pred", "review"] });
+        show_context_menu(ulabel, "a0", 100, 100);
+        expect(item_labels()).toEqual([
+            "Change class",
+            "Copy to\u2026",
+            "Move to\u2026",
+            "Delete",
+            "Isolate",
+            "Details",
+        ]);
+
+        click_item("Move to\u2026");
+        expect(is_context_menu_open(ulabel)).toBe(true);
+        expect(item_labels()).toEqual(["Predictions", "Review"]);
+
+        click_item("Review");
+        expect(is_context_menu_open(ulabel)).toBe(false);
+        expect(ulabel.copy_annotation_to_subtask).toHaveBeenCalledWith("a0", "main", "review", null, true, true);
+    });
+
+    test("read-only subtask offers Copy to but not Move to", () => {
+        const ulabel = make_ulabel({ read_only: true, copy_targets: ["pred"] });
+        show_context_menu(ulabel, "a0", 100, 100);
+        expect(item_labels()).toEqual(["Copy to Predictions", "Isolate", "Details"]);
     });
 });
 

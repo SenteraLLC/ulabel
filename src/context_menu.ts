@@ -21,6 +21,8 @@ const ICON_CHANGE_CLASS = `<svg ${SVG_ATTRS}><path d="M2 2h5.5l6.5 6.5-5.5 5.5L2
 const ICON_DELETE = `<svg ${SVG_ATTRS}><path d="M2.5 4h11M6 4V2.5h4V4M3.5 4l.8 9.5h7.4l.8-9.5M6.5 7v4M9.5 7v4"/></svg>`;
 const ICON_DETAILS = `<svg ${SVG_ATTRS}><circle cx="8" cy="8" r="6"/><path d="M8 7.5v4M8 5v.01"/></svg>`;
 const ICON_ISOLATE = `<svg ${SVG_ATTRS}><path d="M1.5 8s2.5-4.5 6.5-4.5S14.5 8 14.5 8s-2.5 4.5-6.5 4.5S1.5 8 1.5 8z"/><circle cx="8" cy="8" r="2"/></svg>`;
+const ICON_COPY = `<svg ${SVG_ATTRS}><rect x="5.5" y="5.5" width="8" height="8" rx="1"/><path d="M10.5 5.5v-2a1 1 0 0 0-1-1h-6a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2"/></svg>`;
+const ICON_CUT = `<svg ${SVG_ATTRS}><circle cx="4.5" cy="11.5" r="2"/><circle cx="11.5" cy="11.5" r="2"/><path d="M6 10l7-8M10 10L3 2"/></svg>`;
 
 function get_menu_element(ulabel: ULabel): HTMLDivElement | null {
     return document.getElementById(`${MENU_CLASS}__${ulabel.config.container_id}`) as HTMLDivElement | null;
@@ -117,10 +119,39 @@ function render_details(
 }
 
 /**
+ * "Copy to" / "Move to" entry. One eligible subtask collapses to a flat
+ * "<label> <name>" item; several open an in-place list of subtask names.
+ */
+function add_subtask_picker(
+    ulabel: ULabel,
+    menu: HTMLDivElement,
+    label: string,
+    icon_svg: string,
+    target_keys: string[],
+    client_x: number,
+    client_y: number,
+    on_pick: (target_key: string) => void,
+): void {
+    const name_of = (key: string) => ulabel.subtasks[key].display_name;
+    if (target_keys.length === 1) {
+        add_item(menu, `${label} ${name_of(target_keys[0])}`, icon_svg, () => on_pick(target_keys[0]));
+        return;
+    }
+    add_item(menu, `${label}\u2026`, icon_svg, () => {
+        menu.replaceChildren();
+        for (const key of target_keys) {
+            add_item(menu, name_of(key), icon_svg, () => on_pick(key));
+        }
+        position_menu(menu, client_x, client_y);
+    });
+}
+
+/**
  * Open the menu for an annotation in the current subtask at a viewport
  * position. Items: Change class (editable subtask with at least two
- * compatible classes), Delete (editable subtask), Isolate / Show all
- * (always; view-only), Details (always).
+ * compatible classes), Copy to / Move to (another writable subtask has a
+ * compatible class; Move to only on an editable subtask), Delete (editable
+ * subtask), Isolate / Show all (always; view-only), Details (always).
  *
  * @returns whether the menu was shown
  */
@@ -146,6 +177,18 @@ export function show_context_menu(ulabel: ULabel, annid: string, client_x: numbe
                 ulabel.show_id_dialog(0, 0, annid, true);
             }
         });
+    }
+    const source_key = ulabel.get_current_subtask_key();
+    const copy_targets = ulabel.get_copy_target_subtask_keys(annotation, source_key);
+    if (copy_targets.length > 0) {
+        const transfer = (target_key: string, cut: boolean) => {
+            hide_context_menu(ulabel);
+            ulabel.copy_annotation_to_subtask(annid, source_key, target_key, null, cut, true);
+        };
+        add_subtask_picker(ulabel, menu, "Copy to", ICON_COPY, copy_targets, client_x, client_y, (key) => transfer(key, false));
+        if (!read_only) {
+            add_subtask_picker(ulabel, menu, "Move to", ICON_CUT, copy_targets, client_x, client_y, (key) => transfer(key, true));
+        }
     }
     if (!read_only) {
         add_item(menu, "Delete", ICON_DELETE, () => {
