@@ -14,6 +14,49 @@ import { AnnotationResizeItem, SMALL_ANNOTATION_SIZE, LARGE_ANNOTATION_SIZE, INC
 
 const ULABEL_NAMESPACE = ".ulabel";
 
+/** Whether a keyboard/clipboard event originates from a text field, where the browser should keep its default behavior. */
+function is_text_input_target(target: EventTarget | null): boolean {
+    const element = target as HTMLElement | null;
+    if (element == null) return false;
+    return element.tagName === "INPUT" || element.tagName === "TEXTAREA" || element.isContentEditable === true;
+}
+
+/**
+ * Native clipboard shortcuts: copy/cut the hovered annotation, paste into the
+ * current subtask. Only intercepts the event when there is something to act on.
+ */
+function handle_clipboard_event(
+    clipboard_event: JQuery.TriggeredEvent,
+    ulabel: ULabel,
+    kind: "copy" | "cut" | "paste",
+) {
+    if (is_text_input_target(clipboard_event.target) || ulabel.state.is_editing_keybind) return;
+    if (ulabel.get_current_subtask()["state"]["is_in_progress"]) return;
+    const clipboard_data = (clipboard_event.originalEvent as ClipboardEvent | undefined)?.clipboardData ?? null;
+
+    if (kind === "paste") {
+        let envelope = null;
+        const text = clipboard_data?.getData("text/plain");
+        if (text) {
+            try {
+                const parsed = JSON.parse(text);
+                if (parsed?.ulabel_annotation === 1) envelope = parsed;
+            } catch {
+                // Not our payload; fall back to the in-memory clipboard
+            }
+        }
+        if (envelope === null && ulabel.state.clipboard === null) return;
+        clipboard_event.preventDefault();
+        ulabel.paste_annotation_from_clipboard(envelope);
+        return;
+    }
+
+    const envelope = ulabel.copy_annotation_to_clipboard(null, kind === "cut");
+    if (envelope === null) return;
+    clipboard_event.preventDefault();
+    clipboard_data?.setData("text/plain", JSON.stringify(envelope));
+}
+
 /**
  * Check if a keyboard event matches a keybind (supports chords like "ctrl+s")
  */
@@ -265,8 +308,15 @@ function handle_keydown_event(
 
     // Handle Escape key
     if (keydown_event.key.toLowerCase() === "escape") {
-        // If in erase or brush mode, cancel the brush
-        if (current_subtask.state.is_in_erase_mode) {
+        if (ulabel.is_context_menu_open()) {
+            ulabel.hide_context_menu();
+        } else if (current_subtask.state.idd_visible) {
+            // A clicked-open id dialog has no other dismissal
+            ulabel.hide_id_dialog();
+        } else if (current_subtask.state.isolated_annid != null) {
+            ulabel.isolate_annotation(null);
+        } else if (current_subtask.state.is_in_erase_mode) {
+            // If in erase or brush mode, cancel the brush
             ulabel.toggle_erase_mode();
         } else if (current_subtask.state.is_in_brush_mode) {
             ulabel.toggle_brush_mode();
@@ -358,9 +408,7 @@ export function create_ulabel_listeners(
     id_dialog.on(
         "mousemove" + ULABEL_NAMESPACE,
         (mouse_event) => {
-            if (!ulabel.get_current_subtask()["state"]["idd_thumbnail"]) {
-                ulabel.handle_id_dialog_hover(mouse_event);
-            }
+            ulabel.handle_id_dialog_hover(mouse_event);
         },
     );
 
@@ -398,6 +446,31 @@ export function create_ulabel_listeners(
     annbox.on(
         "mousemove" + ULABEL_NAMESPACE,
         (move_event) => ulabel.handle_mouse_move(move_event),
+    );
+
+    // Right-click opens the context menu for the hovered annotation. While an
+    // annotation is in progress button 2 belongs to the draw (mouseup finishes
+    // a polyline), so no menu then.
+    annbox.on(
+        "contextmenu" + ULABEL_NAMESPACE,
+        (context_event) => {
+            context_event.preventDefault();
+            const state = ulabel.get_current_subtask()["state"];
+            if (state["active_id"] != null || state["idd_visible"]) return;
+            // The mousedown just before this dismissed any open menu (and its
+            // hover), so re-resolve the candidate under the cursor
+            ulabel.suggest_edits(context_event);
+            const edit_candidate = state["edit_candidate"];
+            if (edit_candidate != null) {
+                ulabel.show_context_menu(edit_candidate.annid, context_event.clientX!, context_event.clientY!);
+            }
+        },
+    );
+
+    // A mousedown anywhere outside the menu dismisses it (the menu stops its own)
+    $(document).on(
+        "mousedown" + ULABEL_NAMESPACE,
+        () => ulabel.hide_context_menu(),
     );
 
     // ================= Uncategorized =================
@@ -533,13 +606,11 @@ export function create_ulabel_listeners(
     );
 
     $(document).on(
-        "input" + ULABEL_NAMESPACE,
+        "change" + ULABEL_NAMESPACE,
         "textarea.nonspatial_note",
-        (input_event) => {
-            // Update annotation's text field
-            const annos = ulabel.get_current_subtask()["annotations"]["access"];
-            const text_payload_anno_id = input_event.target.id.substring("note__".length);
-            annos[text_payload_anno_id]["text_payload"] = input_event.target.value;
+        (change_event) => {
+            const text_payload_anno_id = change_event.target.id.substring("note__".length);
+            ulabel.edit_text_payload(text_payload_anno_id, change_event.target.value);
         },
     );
 
@@ -560,7 +631,6 @@ export function create_ulabel_listeners(
                 click_event.pageX!,
                 click_event.pageY!,
                 click_event.target.id.substring("reclf__".length),
-                false,
                 true,
             );
         },
@@ -570,7 +640,7 @@ export function create_ulabel_listeners(
         "mouseenter" + ULABEL_NAMESPACE,
         "div.fad_annotation_rows div.fad_row",
         (mouse_event) => {
-            // Show thumbnail for idd
+            // Track the hovered row as the edit candidate
             ulabel.suggest_edits(
                 null,
                 $(mouse_event.currentTarget).attr("id")!.substring("row__".length),
@@ -582,11 +652,8 @@ export function create_ulabel_listeners(
         "mouseleave" + ULABEL_NAMESPACE,
         "div.fad_annotation_rows div.fad_row",
         () => {
-            // Show thumbnail for idd
-            if (
-                ulabel.get_current_subtask()["state"]["idd_visible"] &&
-                !ulabel.get_current_subtask()["state"]["idd_thumbnail"]
-            ) {
+            // A clicked-open id dialog is its own interaction; don't yank it away
+            if (ulabel.get_current_subtask()["state"]["idd_visible"]) {
                 return;
             }
             ulabel.suggest_edits(null);
@@ -621,42 +688,22 @@ export function create_ulabel_listeners(
         },
     );
 
+    // ULabel's anchors are buttons; don't let a click navigate to "#" (which
+    // scrolls the host page and rewrites its hash)
+    $(document).on(
+        "click" + ULABEL_NAMESPACE,
+        "#" + ulabel.config["container_id"] + " a[href=\"#\"]",
+        (click_event) => {
+            click_event.preventDefault();
+        },
+    );
+
     // Listener for id_dialog click interactions
     $(document).on(
         "click" + ULABEL_NAMESPACE,
         "#" + ulabel.config["container_id"] + " a.id-dialog-clickable-indicator",
         (click_event) => {
-            if (!ulabel.get_current_subtask()["state"]["idd_thumbnail"]) {
-                ulabel.handle_id_dialog_click(click_event);
-            }
-        },
-    );
-
-    $(document).on(
-        "click" + ULABEL_NAMESPACE,
-        ".global_edit_suggestion a.reid_suggestion",
-        (click_event) => {
-            const crst = ulabel.get_current_subtask();
-            const annid = crst["state"]["idd_associated_annotation"];
-            // No association means no dialog to open (e.g. it was suppressed
-            // because the annotation has no valid reassignment targets)
-            if (annid == null) return;
-            ulabel.hide_global_edit_suggestion();
-            ulabel.show_id_dialog(
-                ulabel.get_global_mouse_x(click_event),
-                ulabel.get_global_mouse_y(click_event),
-                annid,
-                false,
-            );
-        },
-    );
-
-    $(document).on(
-        "click" + ULABEL_NAMESPACE,
-        "#" + ulabel.config["annbox_id"] + " .delete_suggestion",
-        () => {
-            const crst = ulabel.get_current_subtask();
-            ulabel.delete_annotation(crst["state"]["move_candidate"]!["annid"]);
+            ulabel.handle_id_dialog_click(click_event);
         },
     );
 
@@ -668,8 +715,8 @@ export function create_ulabel_listeners(
             // of them doesn't count as leaving.
             if (ulabel.drag_state["active_key"] !== null) return;
             const state = ulabel.get_current_subtask()["state"];
-            // A clicked-open id dialog is its own interaction; don't yank it away
-            if (state["idd_visible"] && !state["idd_thumbnail"]) return;
+            // A clicked-open id dialog or context menu is its own interaction; don't yank it away
+            if (state["idd_visible"] || ulabel.is_context_menu_open()) return;
             ulabel.hide_and_clear_action_candidates();
         },
     );
@@ -723,6 +770,14 @@ export function create_ulabel_listeners(
             handle_keydown_event(keydown_event, ulabel);
         },
     );
+
+    // Copy / cut the hovered annotation, paste into the current subtask
+    for (const kind of ["copy", "cut", "paste"] as const) {
+        $(document).on(
+            kind + ULABEL_NAMESPACE,
+            (clipboard_event) => handle_clipboard_event(clipboard_event, ulabel, kind),
+        );
+    }
 
     $(window).on(
         "beforeunload" + ULABEL_NAMESPACE,

@@ -5,6 +5,7 @@ import { test, expect } from "./fixtures";
 import { wait_for_ulabel_init } from "../testing-utils/init_utils";
 import { get_annotation_count } from "../testing-utils/annotation_utils";
 import { switch_to_subtask } from "../testing-utils/subtask_utils";
+import { switch_to_mode } from "../testing-utils/mode_utils";
 
 test.describe("Read-only subtask behavior", () => {
     test("loads with every subtask marked read_only without erroring", async ({ page }) => {
@@ -23,7 +24,7 @@ test.describe("Read-only subtask behavior", () => {
         expect(flags.fr_ro).toBe(true);
     });
 
-    test("global edit suggestion hides move/reid/delete buttons and skips id dialog thumbnail", async ({ page }) => {
+    test("global edit suggestion renders no action buttons and no id dialog", async ({ page }) => {
         await wait_for_ulabel_init(page, "/read-only.html");
 
         // Trigger the edit suggestion directly for a known bbox annotation
@@ -42,15 +43,11 @@ test.describe("Read-only subtask behavior", () => {
         const container_display = await page.locator(global_id).evaluate((el) => el.style.display);
         expect(container_display).toBe("block");
 
-        // All action buttons inside are visibility:hidden (preserves flow space so the
-        // confidence card's margin-based position math stays valid)
-        const button_visibilities = await page.locator(`${global_id} .global_sub_suggestion`).evaluateAll(
-            (els) => els.map((el) => el.style.visibility),
-        );
-        expect(button_visibilities.length).toBeGreaterThan(0);
-        for (const v of button_visibilities) expect(v).toBe("hidden");
+        // The hover ring is gone: no move/reid/delete anchors anywhere
+        await expect(page.locator(`${global_id} a`)).toHaveCount(0);
+        await expect(page.locator(".movable")).toHaveCount(0);
 
-        // ID dialog thumbnail is not shown
+        // ID dialog is not shown on hover
         const idd_visible = await page.evaluate(() => window.ulabel.get_current_subtask().state.idd_visible);
         expect(idd_visible).toBe(false);
     });
@@ -222,6 +219,71 @@ test.describe("Read-only subtask behavior", () => {
             return anno.classification_payloads.map((p) => ({ class_id: p.class_id, confidence: p.confidence }));
         });
         expect(after).toEqual(before);
+    });
+
+    test("shift-hover over a polygon does not start a complex layer", async ({ page }) => {
+        await wait_for_ulabel_init(page, "/read-only.html");
+        await switch_to_mode(page, "polygon");
+
+        // Prime the hover candidate as suggest_edits would, then shift-move the mouse
+        await page.mouse.move(300, 300);
+        await page.evaluate(() => {
+            window.ulabel.get_current_subtask().state.edit_candidate = {
+                annid: "ro-polygon-1",
+                spatial_type: "polygon",
+            };
+        });
+        await page.keyboard.down("Shift");
+        await page.mouse.move(301, 301);
+        await page.waitForTimeout(100);
+        await page.keyboard.up("Shift");
+
+        const after = await page.evaluate(() => {
+            const st = window.ulabel.get_current_subtask();
+            const anno = st.annotations.access["ro-polygon-1"];
+            return {
+                layers: anno.spatial_payload.length,
+                last_edited_at: anno.last_edited_at,
+                starting_complex_polygon: st.state.starting_complex_polygon,
+                is_in_progress: st.state.is_in_progress,
+                active_id: st.state.active_id,
+                act_types: st.actions.stream.map((a) => a.act_type),
+            };
+        });
+        expect(after.layers).toBe(1);
+        expect(after.last_edited_at).toBeNull();
+        expect(after.starting_complex_polygon).toBe(false);
+        expect(after.is_in_progress).toBe(false);
+        expect(after.active_id).toBeNull();
+        expect(after.act_types).not.toContain("start_complex_polygon");
+    });
+
+    test("legacy submit tolerates a nonspatial annotation with a null payload", async ({ page }) => {
+        await wait_for_ulabel_init(page, "/read-only.html");
+
+        // Capture the payload instead of letting the demo hook trigger a download
+        await page.evaluate(() => {
+            const item = window.ulabel.toolbox.items.find((i) => i.get_toolbox_item_type() === "SubmitButtons");
+            item.submit_buttons[0].hook = (payload) => {
+                window.submitted_payload = payload;
+            };
+        });
+        const whole_image_payload = await page.evaluate(
+            () => window.ulabel.subtasks.frame_review.annotations.access["ro-whole-image-1"].spatial_payload,
+        );
+        expect(whole_image_payload).toBeNull();
+
+        await page.locator(".submit-button").first().click();
+        await page.waitForFunction(() => window.submitted_payload !== undefined);
+
+        const result = await page.evaluate(() => ({
+            car_ids: window.submitted_payload.annotations.car_detection.map((a) => a.id),
+            frame_review_ids: window.submitted_payload.annotations.frame_review.map((a) => a.id),
+            button_disabled: document.querySelector(".submit-button").disabled,
+        }));
+        expect(result.car_ids).toContain("ro-polygon-1");
+        expect(result.frame_review_ids).toEqual([]);
+        expect(result.button_disabled).toBe(false);
     });
 
     test("nonspatial annotation row has no reclassify or delete buttons and a readonly note", async ({ page }) => {

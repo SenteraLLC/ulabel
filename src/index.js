@@ -33,6 +33,8 @@ import { record_action, record_finish, record_finish_edit, record_finish_move, u
 import { ULabelMask, is_raw_mask_payload } from "../build/mask_utils";
 import { get_active_class_id, get_local_storage_item, set_local_storage_item } from "../build/utilities";
 import { set_active_class, get_selected_class_id, set_focus_active_class, set_defocused_opacity, can_annotation_be_class } from "../build/active_class";
+import { show_context_menu, hide_context_menu, is_context_menu_open } from "../build/context_menu";
+import { isolate_annotation, is_annotation_isolated_out } from "../build/isolate";
 import { get_idd_string } from "../build/html_builder";
 
 import $ from "jquery";
@@ -67,6 +69,9 @@ const BITMASK_OUTLINE_BORDER = 2;
 
 // Opacity of annotations outside a subtask's focused class. 0 skips them.
 const DEFAULT_DEFOCUSED_OPACITY = 0.4;
+
+// Image-space shift applied when an annotation is pasted back into the subtask it was copied from.
+const PASTE_OFFSET_PX = 20;
 
 export class ULabel {
     static version() {
@@ -124,12 +129,12 @@ export class ULabel {
                     if (ul.is_current_subtask_read_only()) {
                         return null;
                     }
+                    if (ULabel.is_body_move_start(mouse_event, ul)) {
+                        return "move";
+                    }
                     return "annotation";
                 } else if ($(mouse_event.target).hasClass("editable")) {
                     return "edit";
-                } else if ($(mouse_event.target).hasClass("movable")) {
-                    mouse_event.preventDefault();
-                    return "move";
                 } else {
                     return null;
                 }
@@ -138,6 +143,21 @@ export class ULabel {
             case 2:
                 return null;
         }
+    }
+
+    /**
+     * Whether a left mousedown on the canvas should move the hovered annotation
+     * rather than start a draw: body move enabled, not a delete mode (whose
+     * drags start over the annotations they target), Alt not held, and the
+     * hover candidate a real containing hit (not the near-miss box fallback).
+     */
+    static is_body_move_start(mouse_event, ul) {
+        if (!ul.config["allow_body_move"]) return false;
+        const current_subtask = ul.get_current_subtask();
+        if (DELETE_MODES.includes(current_subtask["state"]["annotation_mode"])) return false;
+        if (mouse_event.altKey) return false;
+        const move_candidate = current_subtask["state"]["move_candidate"];
+        return move_candidate != null && move_candidate["containing"] === true;
     }
 
     /**
@@ -420,6 +440,7 @@ export class ULabel {
         ul.subtasks[subtask_key]["annotations"] = {
             ordering: [],
             access: {},
+            loaded_edited_at: {},
         };
         if (subtask["resume_from"] != null) {
             for (var i = 0; i < subtask["resume_from"].length; i++) {
@@ -538,6 +559,7 @@ export class ULabel {
                 // Push to ordering and add to access
                 ul.subtasks[subtask_key]["annotations"]["ordering"].push(cand.id);
                 ul.subtasks[subtask_key]["annotations"]["access"][cand.id] = cand;
+                ul.subtasks[subtask_key]["annotations"]["loaded_edited_at"][cand.id] = cand.last_edited_at;
 
                 if (cand.spatial_type === "polygon") {
                     // If missing any of `spatial_payload_holes` or `spatial_payload_child_indices`,
@@ -597,7 +619,6 @@ export class ULabel {
                 idd_id_front: "id_dialog_front__" + subtask_key,
                 idd_visible: false,
                 idd_associated_annotation: null,
-                idd_thumbnail: false,
                 id_payload: id_payload,
                 delete_mode_id_payload: [{ class_id: -1, confidence: 1 }],
                 // Class ids currently rendered in this subtask's pies; shrinks to
@@ -621,6 +642,7 @@ export class ULabel {
                 fly_to_idx: null,
                 // The last non-delete class selected; what class focus follows
                 selected_class_id: ul.subtasks[subtask_key]["class_ids"][0] ?? null,
+                isolated_annid: null,
                 defocused_opacity: raw_subtask["defocused_opacity"] ?? DEFAULT_DEFOCUSED_OPACITY,
                 // Cache of the layer opacity slider, synced by readjust_subtask_opacities
                 layer_opacity: 1,
@@ -760,6 +782,12 @@ export class ULabel {
             // Overlay snapshot + rAF flag used to keep in-progress bitmask moves cheap
             bitmask_move_overlay: null,
             move_raf_pending: false,
+            // Saved/undone state captured in begin_move so a zero-diff click can be unwound
+            move_snapshot: null,
+            // Annotation the right-click context menu is open for, if any
+            context_menu_annid: null,
+            // Last copied/cut annotation envelope (see copy_annotation_to_clipboard)
+            clipboard: null,
 
             // Global annotation state (subtasks also maintain an annotation state)
             current_subtask: null, // The key of the current subtask
@@ -787,45 +815,7 @@ export class ULabel {
         // TODO(v1)
         // There can only be one drag, yes? Maybe pare this down...
         // Would be nice to consolidate this with global state also
-        this.drag_state = {
-            active_key: null,
-            release_button: null,
-            annotation: {
-                mouse_start: null, // Screen coordinates where the current mouse drag started
-                offset_start: null, // Scroll values where the current mouse drag started
-                zoom_val_start: null, // zoom_val when the dragging interaction started
-            },
-            brush: {
-                mouse_start: null, // Screen coordinates where the current mouse drag started
-                offset_start: null, // Scroll values where the current mouse drag started
-                zoom_val_start: null, // zoom_val when the dragging interaction started
-            },
-            edit: {
-                mouse_start: null, // Screen coordinates where the current mouse drag started
-                offset_start: null, // Scroll values where the current mouse drag started
-                zoom_val_start: null, // zoom_val when the dragging interaction started
-            },
-            pan: {
-                mouse_start: null, // Screen coordinates where the current mouse drag started
-                offset_start: null, // Scroll values where the current mouse drag started
-                zoom_val_start: null, // zoom_val when the dragging interaction started
-            },
-            zoom: {
-                mouse_start: null, // Screen coordinates where the current mouse drag started
-                offset_start: null, // Scroll values where the current mouse drag started
-                zoom_val_start: null, // zoom_val when the dragging interaction started
-            },
-            move: {
-                mouse_start: null, // Screen coordinates where the current mouse drag started
-                offset_start: null, // Scroll values where the current mouse drag started
-                zoom_val_start: null, // zoom_val when the dragging interaction started
-            },
-            right: {
-                mouse_start: null, // Screen coordinates where the current mouse drag started
-                offset_start: null, // Scroll values where the current mouse drag started
-                zoom_val_start: null, // zoom_val when the dragging interaction started
-            },
-        };
+        this.drag_state = ULabel.build_initial_drag_state();
 
         for (const st in this.subtasks) {
             for (let i = 0; i < this.subtasks[st]["annotations"]["ordering"].length; i++) {
@@ -1160,10 +1150,34 @@ export class ULabel {
      */
     is_annotation_defocused(annotation, subtask_key) {
         const subtask = this.subtasks[subtask_key];
-        if (subtask == null || !subtask["focus_active_class"]) return false;
+        if (subtask == null) return false;
+        // Isolation hides rather than dims, but shares every input gate
+        if (is_annotation_isolated_out(this, annotation, subtask_key)) return true;
+        if (!subtask["focus_active_class"]) return false;
         const selected_class_id = get_selected_class_id(this, subtask_key);
         if (selected_class_id == null) return false;
         return get_annotation_class_id(annotation) !== String(selected_class_id);
+    }
+
+    /**
+     * Isolate one annotation in a subtask (hide all others), or pass `null`
+     * to show all again. View-only: not recorded, does not mark edited.
+     *
+     * @param {string|null} annotation_id
+     * @param {string|null} subtask_key defaults to the current subtask
+     * @param {boolean} redraw
+     * @returns {boolean} whether the request was accepted
+     */
+    isolate_annotation(annotation_id, subtask_key = null, redraw = true) {
+        return isolate_annotation(this, annotation_id, subtask_key, redraw);
+    }
+
+    /**
+     * @param {string|null} subtask_key defaults to the current subtask
+     * @returns {string|null} the isolated annotation id, if any
+     */
+    get_isolated_annotation_id(subtask_key = null) {
+        return this.subtasks[subtask_key ?? this.get_current_subtask_key()]?.["state"]["isolated_annid"] ?? null;
     }
 
     /**
@@ -1177,6 +1191,27 @@ export class ULabel {
      */
     set_active_class(class_id, subtask_key = null, redraw = true) {
         return set_active_class(this, class_id, subtask_key, redraw);
+    }
+
+    /**
+     * Open the right-click context menu for an annotation in the current
+     * subtask at a viewport position.
+     *
+     * @param {string} annotation_id
+     * @param {number} client_x
+     * @param {number} client_y
+     * @returns {boolean} whether the menu was shown
+     */
+    show_context_menu(annotation_id, client_x, client_y) {
+        return show_context_menu(this, annotation_id, client_x, client_y);
+    }
+
+    hide_context_menu() {
+        hide_context_menu(this);
+    }
+
+    is_context_menu_open() {
+        return is_context_menu_open(this);
     }
 
     /**
@@ -1213,6 +1248,9 @@ export class ULabel {
 
     set_subtask(st_key) {
         let old_st = this.get_current_subtask_key();
+        this.hide_context_menu();
+        // Isolation is a per-subtask view; leaving the subtask ends it
+        this.isolate_annotation(null, old_st);
 
         // Clear stale hover on the outgoing subtask so its white outline doesn't linger
         // (its canvases stay visible at reduced opacity in the background).
@@ -1982,9 +2020,7 @@ export class ULabel {
 
         // Replacing the pies dropped their hover listeners; re-add
         $("#" + idd_id + ", #" + idd_id_front).on("mousemove.ulabel", (mouse_event) => {
-            if (!this.get_current_subtask()["state"]["idd_thumbnail"]) {
-                this.handle_id_dialog_hover(mouse_event);
-            }
+            this.handle_id_dialog_hover(mouse_event);
         });
     }
 
@@ -2644,18 +2680,7 @@ export class ULabel {
         ctx.stroke();
 
         // Draw the cross of the tbar
-        let halflen = Math.sqrt(
-            (sp[0] - ep[0]) * (sp[0] - ep[0]) + (sp[1] - ep[1]) * (sp[1] - ep[1]),
-        ) / 2;
-        let theta = Math.atan((ep[1] - sp[1]) / (ep[0] - sp[0]));
-        let sb = [
-            sp[0] + halflen * Math.sin(theta),
-            sp[1] - halflen * Math.cos(theta),
-        ];
-        let eb = [
-            sp[0] - halflen * Math.sin(theta),
-            sp[1] + halflen * Math.cos(theta),
-        ];
+        const [sb, eb] = GeometricUtils.tbar_cross_segment(sp, ep);
 
         ctx.lineCap = "square";
         ctx.beginPath();
@@ -2737,6 +2762,8 @@ export class ULabel {
         // DEBUG left here for refactor reference, but I don't think it's needed moving forward
         //    there may be a use case for drawing depreacted annotations
         if (annotation_object["deprecated"]) return;
+        // Isolated-out annotations are hidden outright, never dimmed
+        if (is_annotation_isolated_out(this, annotation_object, subtask)) return;
         // Defocused annotations are only drawn by the scratch pass, which dims
         // them as a layer; anything else reaching here would draw at full alpha.
         if (!this.state["drawing_defocused"] && this.is_annotation_defocused(annotation_object, subtask)) return;
@@ -2863,13 +2890,16 @@ export class ULabel {
      */
     draw_context_in_focus_passes(canvas_id, subtask, draw) {
         const context_entry = this.subtasks[subtask]["state"]["annotation_contexts"][canvas_id];
-        const annotation_ids = context_entry["annotation_ids"];
+        const access = this.subtasks[subtask]["annotations"]["access"];
+        // Isolation hides, so it never enters the dimming pass
+        const annotation_ids = context_entry["annotation_ids"].filter(
+            (annid) => !is_annotation_isolated_out(this, access[annid], subtask),
+        );
         if (!this.subtasks[subtask]["focus_active_class"]) {
             for (const annid of annotation_ids) draw(annid);
             return;
         }
 
-        const access = this.subtasks[subtask]["annotations"]["access"];
         const defocused = [];
         const focused = [];
         for (const annid of annotation_ids) {
@@ -3761,6 +3791,9 @@ export class ULabel {
         }
 
         // Record the delete annotation
+        const affected = [...deprecated_ids, ...Object.keys(modified_annotations)].map(
+            (annid) => ({ annotation_id: annid, subtask_key: current_subtask_key }),
+        );
         record_action(this, {
             act_type: "delete_annotations_in_polygon",
             annotation_id: delete_annid,
@@ -3773,6 +3806,7 @@ export class ULabel {
             redo_payload: {
                 delete_polygon: delete_polygon,
             },
+            affected: affected,
         }, redoing);
 
         if (!redoing) {
@@ -3794,6 +3828,8 @@ export class ULabel {
         let annotation_ids_to_redraw = [];
         let polyline_was_updated = false;
         for (let annid of undo_payload["deprecated_ids"]) {
+            // A victim may have been removed since (e.g. a moved copy whose move was undone)
+            if (annotations[annid] === undefined) continue;
             if (!polyline_was_updated && annotations[annid].spatial_type === "polyline") {
                 polyline_was_updated = true;
             }
@@ -3804,6 +3840,7 @@ export class ULabel {
         }
         // Loop through all modified annotations
         for (let [annid, annotation] of Object.entries(undo_payload["modified_annotations"])) {
+            if (annotations[annid] === undefined) continue;
             if (!polyline_was_updated && annotation.spatial_type === "polyline") {
                 polyline_was_updated = true;
             }
@@ -3836,6 +3873,11 @@ export class ULabel {
     // Remove an annotation from access and ordering
     remove_annotation_from_access_and_ordering(annotation_id) {
         const current_subtask = this.get_current_subtask();
+        // Undoing a creation bypasses delete_annotation; the isolation must
+        // not outlive its target
+        if (current_subtask["state"]["isolated_annid"] === annotation_id) {
+            this.isolate_annotation(null);
+        }
         if (annotation_id in current_subtask["annotations"]["access"]) {
             // Remove the annotation from access
             delete current_subtask["annotations"]["access"][annotation_id];
@@ -3844,19 +3886,27 @@ export class ULabel {
         }
     }
 
-    // Remove all recorded events associated with a specific annotation id
-    remove_recorded_events_for_annotation(annotation_id) {
-        // filter action stream
-        let new_action_stream = [];
-        for (let action of this.get_current_subtask()["actions"]["stream"]) {
-            if (
-                action.annotation_id !== annotation_id ||
-                action.act_type === "delete_annotations_in_polygon"
-            ) {
-                new_action_stream.push(action);
-            }
+    // Clear a subtask's isolation when its target has just been deprecated
+    // by a path that bypasses delete_annotation (bitmask strokes, undo/redo)
+    release_isolation_if_deprecated(annotation_id, subtask_key = null) {
+        subtask_key = subtask_key ?? this.get_current_subtask_key();
+        const subtask = this.subtasks[subtask_key];
+        if (subtask["state"]["isolated_annid"] !== annotation_id) return;
+        const annotation = subtask["annotations"]["access"][annotation_id];
+        if (annotation === undefined || annotation["deprecated"]) {
+            this.isolate_annotation(null, subtask_key);
         }
-        this.get_current_subtask()["actions"]["stream"] = new_action_stream;
+    }
+
+    // Remove all recorded events associated with a specific annotation id
+    // Forget every recorded action about an annotation that no longer exists in
+    // a subtask (default: the current one). Delete-polygon actions survive since
+    // they cover many annotations; their payloads skip missing ids on undo.
+    remove_recorded_events_for_annotation(annotation_id, subtask_key = null) {
+        const actions = this.subtasks[subtask_key ?? this.get_current_subtask_key()]["actions"];
+        const keep = (action) => action.annotation_id !== annotation_id || action.act_type === "delete_annotations_in_polygon";
+        actions["stream"] = actions["stream"].filter(keep);
+        actions["undone_stack"] = actions["undone_stack"].filter(keep);
     }
 
     /**
@@ -3948,6 +3998,9 @@ export class ULabel {
 
     // Global edit suggestion: id dialog, move button, and delete button
     show_global_edit_suggestion(annid, offset = null, nonspatial_id = null) {
+        // Nonspatial annotations have no outline or confidence card on the canvas
+        if (nonspatial_id !== null) return;
+
         const subtask_key = this.get_current_subtask_key();
         const current_subtask = this.subtasks[subtask_key];
 
@@ -3958,98 +4011,80 @@ export class ULabel {
             diffY = offset["diffY"];
         }
 
-        let idd_x;
-        let idd_y;
-        const is_read_only = this.is_current_subtask_read_only();
-        // With fewer than two compatible classes there is nothing to reassign
-        // to, so the reid button and the pie thumbnail don't apply (the same
-        // treatment single_class_mode gives every annotation)
-        const can_reassign = this._get_compatible_class_ids(
-            current_subtask["annotations"]["access"][annid],
-        ).length > 1;
-        if (nonspatial_id === null) {
-            let esid = "global_edit_suggestion__" + subtask_key;
-            var esjq = $("#" + esid);
-            esjq.css("display", "block");
-            // Collapse to the compact single-class ring when there is nothing to
-            // reassign to: `mcm` carries the wide 3-slot width and scale, and the
-            // reid button drops out of flow so move/delete close the gap.
-            esjq.toggleClass("mcm", !current_subtask["single_class_mode"] && can_reassign);
-            esjq.find("a.reid_suggestion").css("display", can_reassign ? "" : "none");
-            // Hide the move/reid/delete buttons on read-only subtasks; use visibility rather than
-            // display so the button ring geometry stays measurable for the dialogs around it.
-            esjq.find(".global_sub_suggestion").css("visibility", is_read_only ? "hidden" : "");
-            let cbox = current_subtask["annotations"]["access"][annid]["containing_box"];
-            let new_lft = (cbox["tlx"] + cbox["brx"] + 2 * diffX) / (2 * this.config["image_width"]);
-            let new_top = (cbox["tly"] + cbox["bry"] + 2 * diffY) / (2 * this.config["image_height"]);
-            current_subtask["state"]["visible_dialogs"][esid]["left"] = new_lft;
-            current_subtask["state"]["visible_dialogs"][esid]["top"] = new_top;
-            // Decide confidence card position from the un-offset cbox so it stays stable during moves.
-            // Account for annbox scroll: what matters is the visible position, not the image-space position.
-            const scroll_top = $("#" + this.config["annbox_id"]).scrollTop() || 0;
-            const conf_id = `global_annotation_confidence__${subtask_key}`;
-            const conf_jq = $(`#${conf_id}`);
-            // The dialog container is CSS-scaled about the anchor, so offsets set
-            // here land `scale` times as far; the cbox measurements are in screen px.
-            const es_el = esjq[0];
-            const scale = es_el.offsetWidth > 0 ?
-                es_el.getBoundingClientRect().width / es_el.offsetWidth :
-                1;
-            const card_height = conf_jq.outerHeight() || 0;
-            const gap = 10;
-            // The buttons ring the anchor (box centre) via translateY(-50%); hug the
-            // ring by clearing half a button's height (local units) plus the gap.
-            // The card is positioned absolutely against the 0-height anchor container:
-            // deriving the position from the card's own layout (offsetTop) feeds
-            // integer rounding back into the next mousemove and makes the card jitter.
-            const ring_clearance = (esjq.find("a.global_sub_suggestion").outerHeight() || 60) / 2 + gap / scale;
-            const anchor_visible = ((cbox["tly"] + cbox["bry"]) / 2 * this.state["zoom_val"]) - scroll_top;
-            const card_top_visible = anchor_visible - (ring_clearance + card_height) * scale;
-            const flip_below = card_top_visible < 0;
-            conf_jq.css(
-                flip_below ?
-                        { top: `${ring_clearance}px`, bottom: "auto" } :
-                        { top: "auto", bottom: `${ring_clearance}px` },
+        const esid = "global_edit_suggestion__" + subtask_key;
+        const esjq = $("#" + esid);
+        esjq.css("display", "block");
+        const cbox = current_subtask["annotations"]["access"][annid]["containing_box"];
+        const new_lft = (cbox["tlx"] + cbox["brx"] + 2 * diffX) / (2 * this.config["image_width"]);
+        const new_top = (cbox["tly"] + cbox["bry"] + 2 * diffY) / (2 * this.config["image_height"]);
+        current_subtask["state"]["visible_dialogs"][esid]["left"] = new_lft;
+        current_subtask["state"]["visible_dialogs"][esid]["top"] = new_top;
+        // Decide confidence card position from the un-offset cbox so it stays stable during moves.
+        // Account for annbox scroll: what matters is the visible position, not the image-space position.
+        const annbox_jq = $("#" + this.config["annbox_id"]);
+        const scroll_top = annbox_jq.scrollTop() || 0;
+        const conf_id = `global_annotation_confidence__${subtask_key}`;
+        const conf_jq = $(`#${conf_id}`);
+        // The dialog container is CSS-scaled about the anchor, so offsets set
+        // here land `scale` times as far; the cbox measurements are in screen px.
+        const es_el = esjq[0];
+        const scale = es_el.offsetWidth > 0 ?
+            es_el.getBoundingClientRect().width / es_el.offsetWidth :
+            1;
+        const card_height = conf_jq.outerHeight() || 0;
+        const gap = 10;
+        // The anchor is the box centre; hug the box by clearing half its on-screen
+        // height plus the gap, converted to the container's local units.
+        // The card is positioned absolutely against the 0-height anchor container:
+        // deriving the position from the card's own layout (offsetTop) feeds
+        // integer rounding back into the next mousemove and makes the card jitter.
+        const box_clearance = ((cbox["bry"] - cbox["tly"]) / 2 * this.state["zoom_val"] + gap) / scale;
+        const anchor_visible = ((cbox["tly"] + cbox["bry"]) / 2 * this.state["zoom_val"]) - scroll_top;
+        const card_top_visible = anchor_visible - (box_clearance + card_height) * scale;
+        const flip_below = card_top_visible < 0;
+        conf_jq.css(
+            flip_below ?
+                    { top: `${box_clearance}px`, bottom: "auto" } :
+                    { top: "auto", bottom: `${box_clearance}px` },
+        );
+        this.reposition_dialogs();
+        if (annbox_jq.length && conf_jq.length) {
+            const annbox_el = annbox_jq[0];
+            const visible_left = annbox_el.getBoundingClientRect().left + annbox_el.clientLeft;
+            const visible_right = visible_left + annbox_el.clientWidth;
+            const anchor_rect = es_el.getBoundingClientRect();
+            const anchor_x = anchor_rect.left + anchor_rect.width / 2;
+            const card_half_width = (conf_jq.outerWidth() || 0) * scale / 2;
+            const card_center = Math.max(
+                visible_left + gap + card_half_width,
+                Math.min(anchor_x, visible_right - gap - card_half_width),
             );
-            this.reposition_dialogs();
-            idd_x = (cbox["tlx"] + cbox["brx"] + 2 * diffX) / 2;
-            idd_y = (cbox["tly"] + cbox["bry"] + 2 * diffY) / 2;
-            this.set_hovered_annotation(annid);
-        } else {
-            // TODO(new3d)
-            idd_x = $("#reclf__" + nonspatial_id).offset().left - 85;// this.get_global_element_center_x($("#reclf__" + nonspatial_id));
-            idd_y = $("#reclf__" + nonspatial_id).offset().top - 85;// this.get_global_element_center_y($("#reclf__" + nonspatial_id));
+            conf_jq.css("transform", `translateX(calc(-50% + ${(card_center - anchor_x) / scale}px))`);
         }
-
-        // let placeholder = $("#global_edit_suggestion a.reid_suggestion");
-        if (!current_subtask["single_class_mode"] && !is_read_only && can_reassign) {
-            // Show id dialog thumbnail
-            this.show_id_dialog(idd_x, idd_y, annid, true, nonspatial_id != null);
-        } else {
-            // can_reassign varies per annotation, so a thumbnail shown for the
-            // previously hovered annotation must not linger over this one
-            this.hide_id_dialog();
-        }
+        this.set_hovered_annotation(annid);
     }
 
     hide_global_edit_suggestion() {
         $(".global_edit_suggestion").css("display", "none");
-        this.hide_id_dialog();
         this.set_hovered_annotation(null);
     }
 
     /**
-     * Class ids in the current subtask that can take an annotation's spatial
+     * Class ids in a subtask that can take an annotation's spatial
      * type. A null annotation places no restriction.
+     *
+     * @param {object|null} annotation
+     * @param {string|null} subtask_key defaults to the current subtask
      */
-    _get_compatible_class_ids(annotation = null) {
-        const class_ids = this.get_current_subtask()["class_ids"];
+    _get_compatible_class_ids(annotation = null, subtask_key = null) {
+        subtask_key ??= this.get_current_subtask_key();
+        const class_ids = this.subtasks[subtask_key]["class_ids"];
         if (annotation == null) return class_ids;
-        return class_ids.filter((class_id) => can_annotation_be_class(this, annotation, class_id));
+        return class_ids.filter((class_id) => can_annotation_be_class(this, annotation, class_id, subtask_key));
     }
 
     // ID dialog: color wheel to change the ID of an annotation
-    show_id_dialog(gbx, gby, active_ann, thumbnail = false, nonspatial = false) {
+    show_id_dialog(gbx, gby, active_ann, nonspatial = false) {
         let stkey = this.get_current_subtask_key();
 
         // Only offer classes that can take this annotation's spatial type. With
@@ -4073,19 +4108,16 @@ export class ULabel {
         // TODO
         // am_dialog_associated_ann = active_ann;
         this.get_current_subtask()["state"]["idd_visible"] = true;
-        this.get_current_subtask()["state"]["idd_thumbnail"] = thumbnail;
         this.get_current_subtask()["state"]["idd_associated_annotation"] = active_ann;
         this.get_current_subtask()["state"]["idd_which"] = "back";
 
         let idd_id = this.get_current_subtask()["state"]["idd_id"];
         let idd_niu_id = this.get_current_subtask()["state"]["idd_id_front"];
-        let new_height = $(`#global_edit_suggestion__${stkey} a.reid_suggestion`)[0].getBoundingClientRect().height;
 
         if (nonspatial) {
             this.get_current_subtask()["state"]["idd_which"] = "front";
             idd_id = this.get_current_subtask()["state"]["idd_id_front"];
             idd_niu_id = this.get_current_subtask()["state"]["idd_id"];
-            new_height = 28;
         } else {
             // Add this id to the list of dialogs with managed positions
             // TODO actually only do this when calling append()
@@ -4100,14 +4132,11 @@ export class ULabel {
         if (nonspatial) {
             let new_home = $(`#reclf__${active_ann}`);
             let fad_st = $(`#fad_st__${stkey} div.front_dialogs`);
-            let ofst = -100;
-            let zidx = 2000;
-            if (thumbnail) {
-                zidx = -1;
-                // ofst = -100;
-            }
-            let top_c = new_home.offset().top - fad_st.offset().top + ofst + new_height / 2;
-            let left_c = new_home.offset().left - fad_st.offset().left + ofst + 1 + new_height / 2;
+            // Centre the pie over the reclf button (28px tall)
+            const ofst = -100 + 14;
+            const zidx = 2000;
+            let top_c = new_home.offset().top - fad_st.offset().top + ofst;
+            let left_c = new_home.offset().left - fad_st.offset().left + ofst + 1;
             idd.css({
                 "display": "block",
                 "position": "absolute",
@@ -4118,24 +4147,6 @@ export class ULabel {
             idd.parent().css({
                 "z-index": zidx,
             });
-        }
-
-        // Add or remove thumbnail class if necessary
-        let scale_ratio = new_height / this.config["outer_diameter"];
-        if (thumbnail) {
-            if (!idd.hasClass("thumb")) {
-                idd.addClass("thumb");
-            }
-            $("#" + idd_id + ".thumb").css({
-                transform: `scale(${scale_ratio})`,
-            });
-        } else {
-            $("#" + idd_id + ".thumb").css({
-                transform: `scale(1.0)`,
-            });
-            if (idd.hasClass("thumb")) {
-                idd.removeClass("thumb");
-            }
         }
 
         this.reposition_dialogs();
@@ -4206,6 +4217,8 @@ export class ULabel {
         if (this.is_subtask_hidden()) {
             return;
         }
+        // A new annotation would be hidden by an active isolation
+        this.isolate_annotation(null);
 
         const annotation_access = current_subtask["annotations"]["access"];
         const annotation_ordering = current_subtask["annotations"]["ordering"];
@@ -4298,6 +4311,491 @@ export class ULabel {
         );
     }
 
+    /**
+     * Whether an annotation can be pasted into a subtask: it is spatial, the
+     * subtask is not read-only, and at least one of its classes allows the
+     * annotation's spatial type.
+     *
+     * @param {object} annotation
+     * @param {string} subtask_key
+     * @returns {boolean}
+     */
+    can_paste_into_subtask(annotation, subtask_key) {
+        const subtask = this.subtasks[subtask_key];
+        if (subtask === undefined || subtask["read_only"] === true) return false;
+        if (annotation == null) return false;
+        const spatial_type = annotation["spatial_type"];
+        if (NONSPATIAL_MODES.includes(spatial_type) || DELETE_MODES.includes(spatial_type)) return false;
+        return this._get_compatible_class_ids(annotation, subtask_key).length > 0;
+    }
+
+    /**
+     * Keys of the other subtasks an annotation can be copied into.
+     *
+     * @param {object} annotation
+     * @param {string|null} source_key subtask the annotation lives in; defaults to the current subtask
+     * @returns {string[]}
+     */
+    get_copy_target_subtask_keys(annotation, source_key = null) {
+        source_key ??= this.get_current_subtask_key();
+        return Object.keys(this.subtasks).filter(
+            (key) => key !== source_key && this.can_paste_into_subtask(annotation, key),
+        );
+    }
+
+    /**
+     * Compatible class in the target that matches the source class by id, or
+     * failing that by name. Null when the source class has no counterpart.
+     *
+     * @param {object} annotation
+     * @param {string} target_key
+     * @param {string|null} source_class_name name of the source class, if known
+     * @returns {number|null}
+     */
+    match_paste_class_id(annotation, target_key, source_class_name = null) {
+        const compatible = this._get_compatible_class_ids(annotation, target_key);
+        const source_class_id = Number(get_annotation_class_id(annotation));
+        if (compatible.includes(source_class_id)) return source_class_id;
+        if (source_class_name == null) return null;
+        const by_name = this.subtasks[target_key]["class_defs"].find(
+            (def) => def["name"] === source_class_name && compatible.includes(def["id"]),
+        );
+        return by_name == null ? null : by_name["id"];
+    }
+
+    /**
+     * Class for a pasted annotation: the source class when the target has it
+     * (by id, else by name), else the target's active class, else the first
+     * compatible class.
+     *
+     * @param {object} annotation
+     * @param {string} target_key
+     * @param {string|null} source_class_name name of the source class, if known
+     * @returns {number|null} null when no class in the target fits
+     */
+    resolve_paste_class_id(annotation, target_key, source_class_name = null) {
+        const compatible = this._get_compatible_class_ids(annotation, target_key);
+        if (compatible.length === 0) return null;
+        const matched = this.match_paste_class_id(annotation, target_key, source_class_name);
+        if (matched !== null) return matched;
+        const active_class_id = get_active_class_id(this, target_key);
+        if (active_class_id !== undefined && compatible.includes(active_class_id)) return active_class_id;
+        return compatible[0];
+    }
+
+    /**
+     * Name of a class in a subtask, or null when the subtask has no such class.
+     *
+     * @param {number} class_id
+     * @param {string} subtask_key
+     * @returns {string|null}
+     */
+    get_class_name(class_id, subtask_key) {
+        const class_def = this.subtasks[subtask_key]?.["class_defs"].find((def) => def["id"] === class_id);
+        return class_def?.["name"] ?? null;
+    }
+
+    /**
+     * Insert a copy of an annotation into a subtask. The copy gets a fresh id,
+     * fresh stamps, no deprecation and a class payload for `class_id`; every
+     * other field carries over. Records a `paste_annotation` action on the
+     * target subtask's stream.
+     *
+     * @param {object} annotation source annotation (from any subtask or a clipboard payload)
+     * @param {string} target_key subtask to paste into
+     * @param {number|null} class_id class for the copy; null resolves via `resolve_paste_class_id`
+     * @param {[number, number]} offset image-space shift applied to the copy
+     * @param {boolean} record record a `paste_annotation` action on the target stream
+     * @returns {string|null} id of the new annotation, or null when nothing was pasted
+     */
+    paste_annotation(annotation, target_key, class_id = null, offset = [0, 0], record = true) {
+        if (!this.can_paste_into_subtask(annotation, target_key)) {
+            log_message(`Cannot paste a ${annotation?.["spatial_type"]} annotation into subtask ${target_key}`, LogLevel.WARNING, true);
+            return null;
+        }
+        class_id ??= this.resolve_paste_class_id(annotation, target_key);
+        if (!this._get_compatible_class_ids(annotation, target_key).includes(class_id)) {
+            log_message(`Class ${class_id} in subtask ${target_key} cannot take a ${annotation["spatial_type"]} annotation`, LogLevel.WARNING, true);
+            return null;
+        }
+
+        const copy = JSON.parse(JSON.stringify(annotation));
+        // Bitmask payloads may be raw arrays or stale; re-encode from the decoded mask
+        if (copy["spatial_type"] === "bitmask") {
+            copy["spatial_payload"] = this.get_bitmask(annotation).to_rle();
+        }
+        const now = ULabel.get_time();
+        delete copy["edit_type"];
+        copy["id"] = this.make_new_annotation_id();
+        copy["created_by"] = this.config.username;
+        copy["created_at"] = now;
+        copy["last_edited_by"] = this.config.username;
+        copy["last_edited_at"] = now;
+        copy["deprecated"] = false;
+        copy["deprecated_by"] = { human: false };
+        copy["classification_payloads"] = this.subtasks[target_key]["class_ids"].map((cid) => ({
+            class_id: cid,
+            confidence: cid === class_id ? 1.0 : 0.0,
+        }));
+
+        let new_annotation = ULabelAnnotation.from_json(copy);
+        if (new_annotation === null) {
+            log_message("Cannot paste an annotation with an incompatible spatial payload", LogLevel.WARNING, true);
+            return null;
+        }
+        const [dx, dy] = offset;
+        if (dx !== 0 || dy !== 0) {
+            const spatial_type = new_annotation["spatial_type"];
+            if (spatial_type === "bitmask") {
+                this.translate_bitmask(new_annotation, dx, dy);
+            } else {
+                // The JSON round trip broke any shared closing-point reference, so every point shifts once
+                let layers = [new_annotation["spatial_payload"]];
+                if (spatial_type === "polygon") {
+                    layers = new_annotation["spatial_payload"];
+                }
+                for (const layer of layers) {
+                    for (const point of layer) {
+                        point[0] += dx;
+                        point[1] += dy;
+                    }
+                }
+            }
+        }
+        if (!this.config.allow_annotations_outside_image) {
+            new_annotation = new_annotation.clamp_annotation_to_image_bounds(this.config["image_width"], this.config["image_height"]);
+        }
+        this._insert_pasted_annotation(new_annotation, target_key, false, record);
+        return new_annotation["id"];
+    }
+
+    /**
+     * Add an already-prepared pasted annotation to a subtask. Shared by
+     * `paste_annotation`, its redo, and `move_annotation`'s redo.
+     *
+     * @param {object} annotation_json annotation with its final id, class and geometry
+     * @param {string} target_key
+     * @param {boolean} is_redo
+     * @param {boolean} record record a `paste_annotation` action on the target stream
+     */
+    _insert_pasted_annotation(annotation_json, target_key, is_redo, record = true) {
+        const target = this.subtasks[target_key];
+        // A new annotation would be hidden by an active isolation
+        this.isolate_annotation(null, target_key);
+        const annotation = ULabelAnnotation.from_json(annotation_json);
+        const annotation_id = annotation["id"];
+        annotation["canvas_id"] = this.get_init_canvas_context_id(annotation_id, target_key);
+        target["annotations"]["access"][annotation_id] = annotation;
+        target["annotations"]["ordering"].push(annotation_id);
+        this.rebuild_containing_box(annotation_id, false, target_key);
+
+        if (record) {
+            let frame = this.state["current_frame"];
+            if (MODES_3D.includes(annotation["spatial_type"])) {
+                frame = null;
+            }
+            record_action(this, {
+                act_type: "paste_annotation",
+                annotation_id: annotation_id,
+                frame: frame,
+                undo_payload: {},
+                redo_payload: { annotation: annotation },
+            }, is_redo, true, target_key);
+        }
+
+        // No action listener: the target may not be the current subtask
+        this.redraw_annotation(annotation_id, target_key);
+        this.toolbox.redraw_update_items(this);
+    }
+
+    /**
+     * Drop a pasted annotation from a subtask entirely (it never existed
+     * before the paste, so there is nothing to deprecate).
+     *
+     * @param {string} annotation_id
+     * @param {string} subtask_key
+     */
+    _remove_pasted_annotation(annotation_id, subtask_key) {
+        const subtask = this.subtasks[subtask_key];
+        if (!(annotation_id in subtask["annotations"]["access"])) return;
+        if (subtask["state"]["isolated_annid"] === annotation_id) {
+            this.isolate_annotation(null, subtask_key);
+        }
+        this.destroy_annotation_context(annotation_id, subtask_key);
+        delete subtask["annotations"]["access"][annotation_id];
+        subtask["annotations"]["ordering"] = subtask["annotations"]["ordering"].filter((value) => value !== annotation_id);
+    }
+
+    /**
+     * Drop a moved copy from its subtask along with everything that subtask
+     * recorded about it. A copy that was itself moved on is followed first
+     * so no orphaned duplicate outlives the move being undone.
+     *
+     * @param {string} copy_id
+     * @param {string} subtask_key
+     */
+    _discard_moved_copy(copy_id, subtask_key) {
+        for (const action of this.subtasks[subtask_key]["actions"]["stream"]) {
+            if (action.act_type === "move_annotation" && action.annotation_id === copy_id) {
+                const payload = JSON.parse(action.undo_payload);
+                this._discard_moved_copy(payload.copy_id, payload.target_subtask_key);
+            }
+        }
+        this._remove_pasted_annotation(copy_id, subtask_key);
+        this.remove_recorded_events_for_annotation(copy_id, subtask_key);
+    }
+
+    /**
+     * Undo a paste: remove the copy from the current subtask.
+     *
+     * @param {string} annotation_id
+     */
+    paste_annotation__undo(annotation_id) {
+        this._remove_pasted_annotation(annotation_id, this.get_current_subtask_key());
+    }
+
+    /**
+     * Redo a paste: re-add the stored copy to the current subtask.
+     *
+     * @param {string} annotation_id
+     * @param {object} redo_payload `{ annotation }` as recorded by the paste
+     */
+    paste_annotation__redo(annotation_id, redo_payload) {
+        this._insert_pasted_annotation(redo_payload.annotation, this.get_current_subtask_key(), true);
+    }
+
+    /**
+     * Copy an annotation from one subtask into another at the same image
+     * coordinates. Cut turns the copy into a move: the source, which must live
+     * in the current, writable subtask, is deleted and the whole move is one
+     * undoable `move_annotation` action on the source's stream (nothing is
+     * recorded on the target). When `choose_class` is set, no class was given
+     * and the source class has no counterpart in the target (by id or name)
+     * that could be chosen from several, the target becomes the current
+     * subtask and the class pie opens on the copy.
+     *
+     * @param {string} annotation_id
+     * @param {string} source_key subtask the annotation lives in
+     * @param {string} target_key subtask to copy into
+     * @param {number|null} class_id class for the copy; null resolves via `resolve_paste_class_id`
+     * @param {boolean} cut delete the source afterwards
+     * @param {boolean} choose_class open the class pie when the class is ambiguous
+     * @param {[number, number]} offset image-space shift applied to the copy
+     * @returns {string|null} id of the copy
+     */
+    copy_annotation_to_subtask(annotation_id, source_key, target_key, class_id = null, cut = false, choose_class = false, offset = [0, 0]) {
+        const annotation = this.subtasks[source_key]?.["annotations"]["access"][annotation_id];
+        if (annotation == null) {
+            log_message(`Annotation ${annotation_id} not found in subtask ${source_key}`, LogLevel.WARNING, true);
+            return null;
+        }
+        let move = cut;
+        if (cut && (source_key !== this.get_current_subtask_key() || this.is_current_subtask_read_only())) {
+            log_message("Cut only removes annotations from the current, writable subtask; copied instead", LogLevel.WARNING, true);
+            move = false;
+        }
+        let offer_choice = false;
+        if (class_id === null && this.can_paste_into_subtask(annotation, target_key)) {
+            const source_class_name = this.get_class_name(Number(get_annotation_class_id(annotation)), source_key);
+            const matched = this.match_paste_class_id(annotation, target_key, source_class_name);
+            offer_choice = choose_class && matched === null;
+            class_id = this.resolve_paste_class_id(annotation, target_key, source_class_name);
+        }
+        const new_id = this.paste_annotation(annotation, target_key, class_id, offset, !move);
+        if (new_id === null) return null;
+
+        if (move) {
+            this._record_move_annotation(annotation_id, target_key, new_id, false);
+        }
+
+        if (offer_choice) {
+            this._offer_pasted_class_choice(new_id, target_key);
+        }
+        return new_id;
+    }
+
+    /**
+     * Deprecate the source of a move and record the compound action on the
+     * current (source) subtask's stream. The copy must already be in place.
+     *
+     * @param {string} annotation_id source annotation in the current subtask
+     * @param {string} target_key subtask holding the copy
+     * @param {string} copy_id id of the copy
+     * @param {boolean} is_redo
+     */
+    _record_move_annotation(annotation_id, target_key, copy_id, is_redo) {
+        const spatial_type = this.get_current_subtask()["annotations"]["access"][annotation_id]["spatial_type"];
+        this.delete_annotation(annotation_id, is_redo, false);
+        let frame = this.state["current_frame"];
+        if (MODES_3D.includes(spatial_type)) {
+            frame = null;
+        }
+        const copy = this.subtasks[target_key]["annotations"]["access"][copy_id];
+        record_action(this, {
+            act_type: "move_annotation",
+            annotation_id: annotation_id,
+            frame: frame,
+            undo_payload: { target_subtask_key: target_key, copy_id: copy_id },
+            redo_payload: { target_subtask_key: target_key, annotation: copy },
+            affected: [{ annotation_id: copy_id, subtask_key: target_key }],
+        }, is_redo);
+    }
+
+    /**
+     * Undo a move: restore the source in the current subtask and drop the
+     * copy from the target, along with everything the target recorded about
+     * the copy (its edits there can no longer be replayed) and any copies
+     * made by moving it on again.
+     *
+     * @param {string} annotation_id
+     * @param {object} undo_payload `{ target_subtask_key, copy_id }`
+     */
+    move_annotation__undo(annotation_id, undo_payload) {
+        mark_deprecated(this.get_current_subtask()["annotations"]["access"][annotation_id], false);
+        this._discard_moved_copy(undo_payload.copy_id, undo_payload.target_subtask_key);
+        this.toolbox.redraw_update_items(this);
+    }
+
+    /**
+     * Redo a move: re-insert the copy in the target and deprecate the source
+     * again.
+     *
+     * @param {string} annotation_id
+     * @param {object} redo_payload `{ target_subtask_key, annotation }`
+     */
+    move_annotation__redo(annotation_id, redo_payload) {
+        const target_key = redo_payload.target_subtask_key;
+        this._insert_pasted_annotation(redo_payload.annotation, target_key, true, false);
+        this._record_move_annotation(annotation_id, target_key, redo_payload.annotation["id"], true);
+    }
+
+    /**
+     * When a pasted annotation could take several classes in its subtask, make
+     * that subtask current and open the class pie on the copy.
+     *
+     * @param {string} annotation_id id of the pasted annotation
+     * @param {string} target_key subtask it was pasted into
+     */
+    _offer_pasted_class_choice(annotation_id, target_key) {
+        const annotation = this.subtasks[target_key]["annotations"]["access"][annotation_id];
+        if (this._get_compatible_class_ids(annotation, target_key).length <= 1) return;
+        if (target_key !== this.get_current_subtask_key()) {
+            this.set_subtask(target_key);
+        }
+        const cbox = annotation["containing_box"];
+        if (cbox != null) {
+            this.show_id_dialog((cbox.tlx + cbox.brx) / 2, (cbox.tly + cbox.bry) / 2, annotation_id, false);
+        }
+    }
+
+    /**
+     * Put the hovered annotation (or `annotation_id`) on the in-memory
+     * clipboard; cut also deletes it from the current subtask. Returns the
+     * JSON envelope for the system clipboard, or null when nothing was copied.
+     *
+     * @param {string|null} annotation_id defaults to the hovered annotation
+     * @param {boolean} cut delete the source (current subtask must be writable)
+     * @returns {object|null} `{ ulabel_annotation: 1, image_width, image_height, source_subtask_key, annotation }`
+     */
+    copy_annotation_to_clipboard(annotation_id = null, cut = false) {
+        const subtask_key = this.get_current_subtask_key();
+        const subtask = this.subtasks[subtask_key];
+        annotation_id ??= subtask["state"]["edit_candidate"]?.["annid"] ?? null;
+        if (annotation_id === null) return null;
+        const annotation = subtask["annotations"]["access"][annotation_id];
+        if (annotation == null || annotation["deprecated"]) return null;
+        const spatial_type = annotation["spatial_type"];
+        if (NONSPATIAL_MODES.includes(spatial_type) || DELETE_MODES.includes(spatial_type)) return null;
+        if (cut && this.is_current_subtask_read_only()) return null;
+
+        const copy = JSON.parse(JSON.stringify(annotation));
+        if (spatial_type === "bitmask") {
+            copy["spatial_payload"] = this.get_bitmask(annotation).to_rle();
+        }
+        const envelope = {
+            ulabel_annotation: 1,
+            copy_id: uuidv4(),
+            image_width: this.config["image_width"],
+            image_height: this.config["image_height"],
+            source_subtask_key: subtask_key,
+            source_class_name: this.get_class_name(Number(get_annotation_class_id(annotation)), subtask_key),
+            annotation: copy,
+            paste_counts: {},
+        };
+        this.state["clipboard"] = envelope;
+        if (cut) {
+            this.delete_annotation(annotation_id);
+        }
+        return envelope;
+    }
+
+    /**
+     * Paste a clipboard envelope into the current subtask. Without an
+     * argument the in-memory clipboard is used. The first paste into another
+     * subtask keeps the coordinates; a paste back into the source subtask,
+     * and every repeat paste into the same subtask, is offset by a further
+     * `PASTE_OFFSET_PX` so each copy is visible. When the source class has
+     * no counterpart in the target (by id or name), the class pie opens on
+     * the copy if several classes could take it.
+     *
+     * @param {object|null} envelope as produced by `copy_annotation_to_clipboard`
+     * @returns {string|null} id of the pasted annotation
+     */
+    paste_annotation_from_clipboard(envelope = null) {
+        envelope ??= this.state["clipboard"];
+        if (envelope == null || envelope["annotation"] == null) return null;
+        if (envelope["image_width"] !== this.config["image_width"] || envelope["image_height"] !== this.config["image_height"]) {
+            log_message("Clipboard annotation belongs to an image of different dimensions; not pasted", LogLevel.WARNING, true);
+            return null;
+        }
+        const target_key = this.get_current_subtask_key();
+        if (!this.can_paste_into_subtask(envelope["annotation"], target_key)) {
+            log_message(`No class in subtask ${target_key} accepts a ${envelope["annotation"]["spatial_type"]} annotation`, LogLevel.WARNING, true);
+            return null;
+        }
+        // The system clipboard yields a fresh parse each paste; the in-memory
+        // envelope for the same copy carries the running paste counts
+        const stored = this.state["clipboard"];
+        if (stored != null && stored !== envelope && envelope["copy_id"] != null && stored["copy_id"] === envelope["copy_id"]) {
+            envelope = stored;
+        } else {
+            this.state["clipboard"] = envelope;
+        }
+        envelope["paste_counts"] ??= {};
+        // A paste onto the source keeps its class and starts nudged; elsewhere
+        // only repeats are nudged
+        const same_subtask = envelope["source_subtask_key"] === target_key;
+        const steps = (envelope["paste_counts"][target_key] ?? 0) + (same_subtask ? 1 : 0);
+        const offset = [PASTE_OFFSET_PX * steps, PASTE_OFFSET_PX * steps];
+        const source_class_name = envelope["source_class_name"] ?? null;
+        const matched = this.match_paste_class_id(envelope["annotation"], target_key, source_class_name);
+        const class_id = this.resolve_paste_class_id(envelope["annotation"], target_key, source_class_name);
+        const new_id = this.paste_annotation(envelope["annotation"], target_key, class_id, offset);
+        if (new_id === null) return null;
+        envelope["paste_counts"][target_key] = (envelope["paste_counts"][target_key] ?? 0) + 1;
+        if (matched === null) {
+            this._offer_pasted_class_choice(new_id, target_key);
+        }
+        return new_id;
+    }
+
+    /**
+     * Copy an annotation into another subtask at the same image coordinates.
+     * The class defaults to the target class matching the source class by id,
+     * else by name, else the target's active class, else the first compatible
+     * class.
+     *
+     * @param {string} annotation_id
+     * @param {string} target_subtask_key
+     * @param {number|null} class_id
+     * @param {string|null} source_subtask_key defaults to the current subtask
+     * @returns {string|null} id of the copy, or null when nothing was copied
+     */
+    copy_annotation(annotation_id, target_subtask_key, class_id = null, source_subtask_key = null) {
+        source_subtask_key ??= this.get_current_subtask_key();
+        return this.copy_annotation_to_subtask(annotation_id, source_subtask_key, target_subtask_key, class_id);
+    }
+
     create_point_annotation_at_mouse_location() {
         const last_move = this.state["last_move"];
         if (last_move !== null) {
@@ -4312,6 +4810,14 @@ export class ULabel {
         const current_subtask = this.get_current_subtask();
         const annotations = current_subtask["annotations"]["access"];
         const spatial_type = annotations[annotation_id]["spatial_type"];
+
+        if (this.state["context_menu_annid"] === annotation_id) {
+            this.hide_context_menu();
+        }
+        // Deleting the isolated annotation must bring the others back
+        if (current_subtask["state"]["isolated_annid"] === annotation_id) {
+            this.isolate_annotation(null);
+        }
 
         // Deprecate the annotation and redraw it
         mark_deprecated(annotations[annotation_id], true);
@@ -4686,6 +5192,8 @@ export class ULabel {
 
     create_nonspatial_annotation(annotation_id = null, redo_payload = null) {
         const current_subtask = this.get_current_subtask();
+        // A new annotation would be hidden by an active isolation
+        this.isolate_annotation(null);
         let redoing = false;
         let annotation_mode = null;
         let init_idpyld = null;
@@ -4767,6 +5275,8 @@ export class ULabel {
 
         const subtask_key = this.get_current_subtask_key();
         const current_subtask = this.subtasks[subtask_key];
+        // A new annotation would be hidden by an active isolation
+        this.isolate_annotation(null);
 
         if (redo_payload === null) {
             annotation_id = this.make_new_annotation_id();
@@ -4943,6 +5453,11 @@ export class ULabel {
         for (var pti = 1; pti < npts; pti++) {
             this.update_containing_box(spatial_payload[pti], actid, subtask);
         }
+        if (spatial_type === "tbar" && spatial_payload.length >= 2) {
+            for (const cross_pt of GeometricUtils.tbar_cross_segment(spatial_payload[0], spatial_payload[1])) {
+                this.update_containing_box(cross_pt, actid, subtask);
+            }
+        }
         if (spatial_type) {
             let line_size = this.get_subtask_line_size(subtask);
             this.subtasks[subtask]["annotations"]["access"][actid]["containing_box"]["tlx"] -= 3 * line_size;
@@ -4950,7 +5465,6 @@ export class ULabel {
             this.subtasks[subtask]["annotations"]["access"][actid]["containing_box"]["brx"] += 3 * line_size;
             this.subtasks[subtask]["annotations"]["access"][actid]["containing_box"]["bry"] += 3 * line_size;
         }
-        // TODO modification here for T-Bar would be nice too
     }
 
     // Check that two containing boxes are equal
@@ -5418,6 +5932,8 @@ export class ULabel {
     create_bitmask_annotation() {
         const subtask_key = this.get_current_subtask_key();
         const current_subtask = this.subtasks[subtask_key];
+        // A new annotation would be hidden by an active isolation
+        this.isolate_annotation(null);
         const annotation_id = this.make_new_annotation_id();
         const init_id_payload = this.get_init_id_payload("bitmask");
         const canvas_id = this.get_init_canvas_context_id(
@@ -5643,6 +6159,7 @@ export class ULabel {
         // If the stroke erased the whole mask, deprecate the annotation (ULabel's delete semantics)
         if (after_empty) {
             mark_deprecated(annotation, true);
+            this.release_isolation_if_deprecated(active_id);
         }
 
         if (current_subtask["single_class_mode"]) {
@@ -5670,10 +6187,19 @@ export class ULabel {
             frame: this.state["current_frame"],
             undo_payload: stroke_payload,
             redo_payload: stroke_payload,
+            affected: this.bitmask_other_edits_affected(other_edits),
         });
 
         // The active annotation is re-rendered by the action listener; render the others here
         this.render_bitmask_other_edits(other_edits);
+    }
+
+    // `affected` entries for the masks carved by an overwrite stroke
+    bitmask_other_edits_affected(other_edits) {
+        return (other_edits || []).map((edit) => ({
+            annotation_id: edit.annotation_id,
+            subtask_key: edit.subtask,
+        }));
     }
 
     // {id, subtask} for all undeprecated bitmask annotations except the given one. Scoped to the
@@ -5751,6 +6277,7 @@ export class ULabel {
             access[oid]["spatial_payload"] = other_mask.to_rle();
             if (after_empty) {
                 mark_deprecated(access[oid], true);
+                this.release_isolation_if_deprecated(oid, st);
             }
             other_edits.push({
                 annotation_id: oid,
@@ -5795,6 +6322,7 @@ export class ULabel {
                 this.set_bitmask_from_rle(annotation, null);
                 annotation["spatial_payload"] = null;
                 mark_deprecated(annotation, true);
+                this.release_isolation_if_deprecated(annotation_id);
             } else {
                 this.set_bitmask_from_rle(annotation, undo_payload.before_rle);
                 annotation["spatial_payload"] = undo_payload.before_rle;
@@ -5821,6 +6349,7 @@ export class ULabel {
             this.set_bitmask_from_rle(annotation, redo_payload.after_rle);
             annotation["spatial_payload"] = redo_payload.after_rle;
             mark_deprecated(annotation, redo_payload.after_empty === true);
+            this.release_isolation_if_deprecated(annotation_id);
         }
         // Re-apply the carve to any other masks
         const other_edits = redo_payload.other_edits || [];
@@ -5830,6 +6359,7 @@ export class ULabel {
             this.set_bitmask_from_rle(other, edit.after_rle);
             other["spatial_payload"] = edit.after_rle;
             mark_deprecated(other, edit.after_empty === true);
+            this.release_isolation_if_deprecated(edit.annotation_id, edit.subtask);
             this.rebuild_bitmask_containing_box(other);
             this.redraw_annotation(edit.annotation_id, edit.subtask);
         }
@@ -5841,6 +6371,7 @@ export class ULabel {
             frame: this.state["current_frame"],
             undo_payload: redo_payload,
             redo_payload: redo_payload,
+            affected: this.bitmask_other_edits_affected(other_edits),
         }, true);
     }
 
@@ -6223,6 +6754,8 @@ export class ULabel {
 
         let undo_payload = {};
         let redo_payload = {};
+        let prev_timestamp;
+        let prev_user;
         if (should_record_action) {
             // Once we've finished a polygon or polyline, undoing will
             // remove the entire completed annotation rather that undoing each point.
@@ -6240,6 +6773,9 @@ export class ULabel {
                     act_type = "finish_modify_annotation";
                     undo_payload = JSON.parse(action.undo_payload);
                     redo_payload.polygon_spatial_data = ULabelAnnotation.get_polygon_spatial_data(annotations[active_id]);
+                    // The popped action already stamped the annotation; keep its pre-edit stamp so undo restores it
+                    prev_timestamp = action.prev_timestamp;
+                    prev_user = action.prev_user;
                     break;
                 }
             }
@@ -6254,6 +6790,8 @@ export class ULabel {
                 frame: this.state["current_frame"],
                 undo_payload: undo_payload,
                 redo_payload: redo_payload,
+                prev_timestamp: prev_timestamp,
+                prev_user: prev_user,
             }, false, should_record_action);
         }
 
@@ -6288,8 +6826,13 @@ export class ULabel {
     }
 
     finish_annotation__undo(annotation_id) {
+        const current_subtask = this.get_current_subtask();
+        // The isolation must not outlive its target
+        if (current_subtask["state"]["isolated_annid"] === annotation_id) {
+            this.isolate_annotation(null);
+        }
         // Deprecate the annotation
-        mark_deprecated(this.get_current_subtask()["annotations"]["access"][annotation_id], true);
+        mark_deprecated(current_subtask["annotations"]["access"][annotation_id], true);
     }
 
     finish_annotation__redo(annotation_id) {
@@ -6326,6 +6869,13 @@ export class ULabel {
         if (MODES_3D.includes(annotation_mode)) {
             frame = null;
         }
+
+        // A body click that never drags is unwound in finish_move; keep what
+        // record_action is about to clobber.
+        this.state["move_snapshot"] = {
+            edited: this.state["edited"],
+            undone_stack: current_subtask["actions"]["undone_stack"].slice(),
+        };
 
         record_action(this, {
             act_type: "begin_move",
@@ -6408,6 +6958,31 @@ export class ULabel {
         const spatial_type = annotation["spatial_type"];
         let spatial_payload = annotation["spatial_payload"];
         let active_spatial_payload = spatial_payload;
+
+        // A click with no drag is not an edit: drop the begin_move so neither
+        // undo nor redo ever see it, and leave the saved state as it was.
+        if (diffX === 0 && diffY === 0 && diffZ === 0) {
+            const action = current_subtask["actions"]["stream"].pop();
+            annotation["last_edited_at"] = action["prev_timestamp"];
+            annotation["last_edited_by"] = action["prev_user"];
+            const snapshot = this.state["move_snapshot"];
+            if (snapshot != null) {
+                this.set_saved(!snapshot["edited"]);
+                // In place: undo() may hold a reference to this array
+                const undone_stack = current_subtask["actions"]["undone_stack"];
+                undone_stack.length = 0;
+                undone_stack.push(...snapshot["undone_stack"]);
+                this.state["move_snapshot"] = null;
+            }
+            current_subtask["state"]["active_id"] = null;
+            current_subtask["state"]["is_in_move"] = false;
+            if (spatial_type === "bitmask") {
+                this.end_bitmask_move();
+            }
+            this.redraw_all_annotations_in_annotation_context(annotation["canvas_id"], current_subtask_key);
+            return;
+        }
+        this.state["move_snapshot"] = null;
 
         // Bitmask masks are translated wholesale rather than point-by-point
         if (spatial_type === "bitmask") {
@@ -6684,6 +7259,7 @@ export class ULabel {
                         break;
                     case "bbox":
                     case "point":
+                    case "bbox3":
                         if (
                             gblx >= cbox["tlx"] &&
                             gblx <= cbox["brx"] &&
@@ -6694,6 +7270,7 @@ export class ULabel {
                         }
                         break;
                     case "polyline":
+                    case "contour":
                         // Within the drawn stroke of the line itself
                         if (GeometricUtils.point_is_near_polyline(
                             [gblx, gbly],
@@ -6703,6 +7280,19 @@ export class ULabel {
                             is_a_containing_annotation = true;
                         }
                         break;
+                    case "tbar": {
+                        // Within the stroke of either the stem or the cross bar
+                        const stroke = (annotation["line_size"] ?? this.get_subtask_line_size()) / 2 + slack;
+                        const [sp, ep] = annotation["spatial_payload"];
+                        const cross = GeometricUtils.tbar_cross_segment(sp, ep);
+                        if (
+                            GeometricUtils.point_is_near_polyline([gblx, gbly], [sp, ep], stroke) ||
+                            GeometricUtils.point_is_near_polyline([gblx, gbly], cross, stroke)
+                        ) {
+                            is_a_containing_annotation = true;
+                        }
+                        break;
+                    }
                     case "bitmask":
                         // The mouse must be over a painted pixel of the mask
                         if (this.get_bitmask(annotation).has_foreground_in_circle(
@@ -6733,6 +7323,7 @@ export class ULabel {
                             ret["candidate_ids"] = [annotation_id];
                             ret["best"] = {
                                 annid: annotation_id,
+                                containing: true,
                             };
                         }
                     }
@@ -6741,6 +7332,7 @@ export class ULabel {
                     minsize = boxsize;
                     ret["best"] = {
                         annid: annotation_id,
+                        containing: false,
                     };
                 }
             }
@@ -6755,7 +7347,7 @@ export class ULabel {
      * Find closest keypoints (ends of polygons/polylines etc) within a range defined by the edit handle
      * If no endpoints, search along segments with infinite range
      */
-    suggest_edits(mouse_event = null, nonspatial_id = null, force_refresh = false) {
+    suggest_edits(mouse_event = null, nonspatial_id = null) {
         const current_subtask = this.get_current_subtask();
         // Don't show any dialogs when currently drawing/editing an annotation,
         // And hide just edit dialogs when moving
@@ -6794,14 +7386,6 @@ export class ULabel {
             const global_x = this.get_global_mouse_x(mouse_event);
             const global_y = this.get_global_mouse_y(mouse_event);
 
-            // Ignore when we're already hovering an edit
-            if (
-                !force_refresh &&
-                $(mouse_event.target).hasClass("gedit-target")
-            ) {
-                return;
-            }
-
             const edit_candidates = this.get_edit_candidates(
                 global_x,
                 global_y,
@@ -6814,6 +7398,7 @@ export class ULabel {
 
             // Show global edit dialogs for "best" candidate
             best_candidate = edit_candidates["best"];
+            const containing = best_candidate["containing"];
 
             // Look for an existing point that's close enough to suggest editing it
             const nearest_active_keypoint = this.get_nearest_active_keypoint(global_x, global_y, dst_thresh, edit_candidates["candidate_ids"]);
@@ -6832,8 +7417,14 @@ export class ULabel {
                 }
             }
 
-            // Only spatial annotations can be moved
+            // Only spatial annotations can be moved. `containing` is what lets a
+            // body drag start a move: a near-miss on the box alone is not grabbable.
+            best_candidate["containing"] = containing;
             current_subtask["state"]["move_candidate"] = best_candidate;
+            this.set_move_cursor(
+                !this.is_current_subtask_read_only() &&
+                ULabel.is_body_move_start(mouse_event, this),
+            );
         }
 
         // Both spatial/non-spatial can have the global suggestions
@@ -6848,6 +7439,15 @@ export class ULabel {
     hide_edits() {
         this.hide_global_edit_suggestion();
         this.hide_edit_suggestion();
+        this.set_move_cursor(false);
+    }
+
+    /**
+     * Show the move cursor on the front canvas when a left click would drag the
+     * hovered annotation rather than start drawing.
+     */
+    set_move_cursor(movable) {
+        $("#" + this.get_current_subtask()["canvas_fid"]).toggleClass("movable_hover", movable);
     }
 
     hide_and_clear_action_candidates() {
@@ -6987,6 +7587,12 @@ export class ULabel {
 
     set_id_dialog_payload_nopin(class_ind, dist_prop) {
         let class_ids = this.get_current_subtask()["class_ids"];
+        // Delete modes pass class_ind -1, so every class takes the remainder;
+        // with a single class that would divide by zero
+        let other_prop = 0;
+        if (class_ids.length > 1) {
+            other_prop = (1 - dist_prop) / (class_ids.length - 1);
+        }
         // Recompute and render opaque pie slices
         for (var i = 0; i < class_ids.length; i++) {
             if (i === class_ind) {
@@ -6997,7 +7603,7 @@ export class ULabel {
             } else {
                 this.get_current_subtask()["state"]["id_payload"][i] = {
                     class_id: class_ids[i],
-                    confidence: (1 - dist_prop) / (class_ids.length - 1),
+                    confidence: other_prop,
                 };
             }
         }
@@ -7166,6 +7772,12 @@ export class ULabel {
             }
             old_payload = current_subtask["annotations"]["access"][annotation_id]["classification_payloads"];
             new_payload = current_subtask["state"]["id_payload"];
+            // Re-picking the current class is not an edit; just dismiss the pie
+            if (JSON.stringify(old_payload) === JSON.stringify(new_payload)) {
+                this.hide_id_dialog();
+                this.suggest_edits(null);
+                return;
+            }
         } else {
             redoing = true;
             old_payload = redo_payload.old_id_payload;
@@ -7204,8 +7816,33 @@ export class ULabel {
     }
 
     assign_annotation_id__undo(annotation_id, undo_payload) {
-        // Restore the old payload
         this.get_current_subtask()["annotations"]["access"][annotation_id]["classification_payloads"] = undo_payload.old_id_payload;
+    }
+
+    edit_text_payload(annotation_id, new_text, redoing = false) {
+        const annotation = this.get_current_subtask()["annotations"]["access"][annotation_id];
+        const old_text = annotation["text_payload"];
+        if (!redoing && old_text === new_text) return;
+        annotation["text_payload"] = new_text;
+        record_action(this, {
+            act_type: "edit_text_payload",
+            annotation_id: annotation_id,
+            frame: this.state["current_frame"],
+            undo_payload: {
+                old_text: old_text,
+            },
+            redo_payload: {
+                new_text: new_text,
+            },
+        }, redoing);
+    }
+
+    edit_text_payload__undo(annotation_id, undo_payload) {
+        this.get_current_subtask()["annotations"]["access"][annotation_id]["text_payload"] = undo_payload.old_text;
+    }
+
+    edit_text_payload__redo(annotation_id, redo_payload) {
+        this.edit_text_payload(annotation_id, redo_payload.new_text, true);
     }
 
     handle_id_dialog_click(mouse_event, annotation_id = null, new_class_idx = null) {
@@ -7292,13 +7929,18 @@ export class ULabel {
     // ================= Viewer/Annotation Interaction Handlers  =================
 
     handle_mouse_down(mouse_event) {
+        // Like a native menu, the click that dismisses the menu does nothing else
+        if (this.is_context_menu_open()) {
+            this.hide_context_menu();
+            return;
+        }
         const drag_key = ULabel.get_drag_key_start(mouse_event, this);
         if (drag_key != null) {
             // Suppress browser defaults (e.g. middle-click auto-scroll)
             mouse_event.preventDefault();
             // Don't start new drag while id_dialog is visible or subtask is hidden
             if (
-                (this.get_current_subtask()["state"]["idd_visible"] && !this.get_current_subtask()["state"]["idd_thumbnail"]) ||
+                this.get_current_subtask()["state"]["idd_visible"] ||
                 (this.is_subtask_hidden() && drag_key !== "pan" && drag_key !== "zoom")
             ) {
                 return;
@@ -7312,13 +7954,12 @@ export class ULabel {
     handle_mouse_move(mouse_event) {
         const annotation_mode = this.get_current_subtask()["state"]["annotation_mode"];
         const idd_visible = this.get_current_subtask()["state"]["idd_visible"];
-        const idd_thumbnail = this.get_current_subtask()["state"]["idd_thumbnail"];
         const edit_candidate = this.get_current_subtask()["state"]["edit_candidate"];
         this.state["last_move"] = mouse_event;
         // If the ID dialog is visible, let it's own handler take care of this
         // If not dragging...
         if (this.drag_state["active_key"] === null) {
-            if (idd_visible && !idd_thumbnail) {
+            if (idd_visible || this.is_context_menu_open()) {
                 return;
             }
             // If polygon is in progress, redirect last segment
@@ -7335,10 +7976,15 @@ export class ULabel {
                 let gmx = this.get_global_mouse_x(mouse_event);
                 let gmy = this.get_global_mouse_y(mouse_event);
                 this.move_brush_circle(gmx, gmy);
-            } else if (mouse_event.shiftKey && annotation_mode === "polygon" && idd_visible && edit_candidate != null) {
-                // If shift key is held while hovering a polygon, we want to start a new complex payload
-
-                // set annotation as active, in_progress, and starting_complex_polygon
+            } else if (
+                mouse_event.shiftKey &&
+                annotation_mode === "polygon" &&
+                !this.is_current_subtask_read_only() &&
+                edit_candidate != null &&
+                this.get_current_subtask()["annotations"]["access"][edit_candidate["annid"]]?.["spatial_type"] === "polygon"
+            ) {
+                // Shift-hovering a polygon starts a new complex layer on it. The hover ring
+                // that used to signal this via `idd_visible` is gone; the candidate is the cue.
                 this.get_current_subtask()["state"]["active_id"] = edit_candidate["annid"];
                 this.start_complex_polygon();
             } else { // Nothing in progress. Maybe show editable queues
@@ -7353,7 +7999,7 @@ export class ULabel {
                     this.drag_rezoom(mouse_event);
                     break;
                 case "annotation":
-                    if (!idd_visible || idd_thumbnail) {
+                    if (!idd_visible) {
                         this.continue_annotation(mouse_event);
                     }
                     break;
@@ -7367,12 +8013,12 @@ export class ULabel {
                     }
                     break;
                 case "edit":
-                    if (!idd_visible || idd_thumbnail) {
+                    if (!idd_visible) {
                         this.continue_edit(mouse_event);
                     }
                     break;
                 case "move":
-                    if (!idd_visible || idd_thumbnail) {
+                    if (!idd_visible) {
                         this.schedule_continue_move(mouse_event);
                     }
                     break;
@@ -7412,7 +8058,7 @@ export class ULabel {
             this.update_frame(dlta);
         } else {
             // Don't scroll if id dialog is visible
-            if (this.get_current_subtask()["state"]["idd_visible"] && !this.get_current_subtask()["state"]["idd_thumbnail"]) {
+            if (this.get_current_subtask()["state"]["idd_visible"]) {
                 return;
             }
 
@@ -7628,6 +8274,7 @@ export class ULabel {
 
     // Handle zooming at a certain focus
     rezoom(foc_x = null, foc_y = null, abs = false) {
+        this.hide_context_menu();
         // JQuery convenience
         var imwrap = $("#" + this.config["imwrap_id"]);
         var annbox = $("#" + this.config["annbox_id"]);
@@ -7933,6 +8580,7 @@ export class ULabel {
     }
 
     reset_interaction_state(subtask = null) {
+        this.hide_context_menu();
         let q = [];
         if (subtask === null) {
             for (let st in this.subtasks) {
@@ -7958,40 +8606,22 @@ export class ULabel {
         if (subtask !== null && subtask !== this.state["current_subtask"]) {
             return;
         }
-        this.drag_state = {
+        this.drag_state = ULabel.build_initial_drag_state();
+    }
+
+    static build_initial_drag_state() {
+        const drag_state = {
             active_key: null,
             release_button: null,
-            annotation: {
-                mouse_start: null, // Screen coordinates where the current mouse drag started
-                offset_start: null, // Scroll values where the current mouse drag started
-                zoom_val_start: null, // zoom_val when the dragging interaction started
-            },
-            edit: {
-                mouse_start: null, // Screen coordinates where the current mouse drag started
-                offset_start: null, // Scroll values where the current mouse drag started
-                zoom_val_start: null, // zoom_val when the dragging interaction started
-            },
-            pan: {
-                mouse_start: null, // Screen coordinates where the current mouse drag started
-                offset_start: null, // Scroll values where the current mouse drag started
-                zoom_val_start: null, // zoom_val when the dragging interaction started
-            },
-            zoom: {
-                mouse_start: null, // Screen coordinates where the current mouse drag started
-                offset_start: null, // Scroll values where the current mouse drag started
-                zoom_val_start: null, // zoom_val when the dragging interaction started
-            },
-            move: {
-                mouse_start: null, // Screen coordinates where the current mouse drag started
-                offset_start: null, // Scroll values where the current mouse drag started
-                zoom_val_start: null, // zoom_val when the dragging interaction started
-            },
-            right: {
-                mouse_start: null, // Screen coordinates where the current mouse drag started
-                offset_start: null, // Scroll values where the current mouse drag started
-                zoom_val_start: null, // zoom_val when the dragging interaction started
-            },
         };
+        for (const drag_key of ["annotation", "brush", "edit", "pan", "zoom", "move", "right"]) {
+            drag_state[drag_key] = {
+                mouse_start: null, // Screen coordinates where the current mouse drag started
+                offset_start: null, // Scroll values where the current mouse drag started
+                zoom_val_start: null, // zoom_val when the dragging interaction started
+            };
+        }
+        return drag_state;
     }
 
     // Allow for external access and modification of annotations within a subtask
@@ -8117,6 +8747,8 @@ export class ULabel {
         this.reset_interaction_state(subtask);
         this.subtasks[subtask]["actions"]["stream"] = [];
         this.subtasks[subtask]["actions"]["undone_stack"] = [];
+        // The isolated id is about to stop existing; the redraw below repaints
+        this.isolate_annotation(null, subtask, false);
 
         // Bulk teardown of outgoing annotations: much cheaper than a per-annotation loop.
         this._clear_subtask_annotation_canvases(subtask);

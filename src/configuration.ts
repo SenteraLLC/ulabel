@@ -145,6 +145,9 @@ export class Configuration {
     // Whether stroke overlap resolution reaches masks in other subtasks; off, a
     // stroke only interacts with masks in the active subtask.
     public brush_overlap_across_subtasks: boolean = false;
+    // Left-dragging an annotation's body moves it; Alt forces a new draw at
+    // that spot instead (ctrl/shift already mean pan/zoom on the canvas).
+    public allow_body_move: boolean = true;
     // Configuration for the annotation task itself
     public image_data: ImageData | null = null;
     public allow_soft_id: boolean = false;
@@ -165,6 +168,7 @@ export class Configuration {
     public on_active_class_change: ((subtask_key: string, class_id: number) => void) | null = null;
     public on_subtask_change: ((subtask_key: string, old_subtask_key: string) => void) | null = null;
     public on_focus_active_class_change: ((subtask_key: string, enabled: boolean) => void) | null = null;
+    public on_isolate_change: ((subtask_key: string, annotation_id: string | null) => void) | null = null;
 
     // Passthrough
     public task_meta: object = {};

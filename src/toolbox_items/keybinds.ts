@@ -530,6 +530,15 @@ export class KeybindsToolboxItem extends ToolboxItem {
             configurable: false,
         });
 
+        if (config.allow_body_move) {
+            keybinds.push({
+                key: "Alt + Click Drag",
+                label: "Draw Over",
+                description: "Start a new annotation on top of an existing one instead of moving it",
+                configurable: false,
+            });
+        }
+
         // Scroll combinations
         keybinds.push({
             key: "Scroll",
