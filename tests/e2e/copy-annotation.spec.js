@@ -50,6 +50,36 @@ async function reclassify(page, subtask_key, annotation_id, wedge) {
     await page.waitForTimeout(100);
 }
 
+function create_clipboard_driver(page, transport) {
+    let clipboard_text = "";
+    return async (kind, target = "body", handled = true) => {
+        if (transport === "native shortcuts") {
+            const keys = { copy: "c", cut: "x", paste: "v" };
+            await page.keyboard.press(`ControlOrMeta+${keys[kind]}`);
+            return;
+        }
+        const result = await page.locator(target).evaluate((element, { kind, text }) => {
+            const clipboard_data = new DataTransfer();
+            const event = new ClipboardEvent(kind, {
+                bubbles: true,
+                cancelable: true,
+                clipboardData: clipboard_data,
+            });
+            if (kind === "paste") event.clipboardData.setData("text/plain", text);
+            element.dispatchEvent(event);
+            return {
+                handled: event.defaultPrevented,
+                text: event.clipboardData.getData("text/plain"),
+            };
+        }, { kind, text: clipboard_text });
+        expect(result.handled).toBe(handled);
+        if (kind !== "paste" && handled) {
+            expect(JSON.parse(result.text).ulabel_annotation).toBe(1);
+            clipboard_text = result.text;
+        }
+    };
+}
+
 test.describe("copy annotations between subtasks", () => {
     test("Copy to via the menu clones the annotation and keeps its class", async ({ page }) => {
         await wait_for_ulabel_init(page, "/submit-payload.html");
@@ -139,89 +169,110 @@ test.describe("copy annotations between subtasks", () => {
         expect(predictions[1].deprecated).toBe(false);
     });
 
-    test("Ctrl+C on a hovered annotation and Ctrl+V in another subtask pastes at the same place", async ({ page }) => {
-        await wait_for_ulabel_init(page, "/submit-payload.html");
+    for (const transport of ["native shortcuts", "synthetic ClipboardEvents"]) {
+        test.describe(transport, () => {
+            test.beforeEach(async ({ browserName }) => {
+                test.skip(
+                    transport === "native shortcuts" && process.platform === "linux" && browserName === "webkit",
+                    "Linux WebKit automation emits key events but not native clipboard events; covered separately by synthetic ClipboardEvents.",
+                );
+            });
 
-        await page.evaluate(() => {
-            window.ulabel.get_current_subtask().state.edit_candidate = { annid: "gt-bbox-1" };
+            test("copying a hovered annotation and pasting into another subtask keeps its position", async ({ page }) => {
+                await wait_for_ulabel_init(page, "/submit-payload.html");
+                const send_clipboard = create_clipboard_driver(page, transport);
+
+                await page.evaluate(() => {
+                    window.ulabel.get_current_subtask().state.edit_candidate = { annid: "gt-bbox-1" };
+                });
+                await send_clipboard("copy");
+                await expect.poll(() => page.evaluate(() => window.ulabel.state.clipboard?.annotation.id)).toBe("gt-bbox-1");
+                if (transport === "synthetic ClipboardEvents") {
+                    await page.evaluate(() => {
+                        window.ulabel.state.clipboard = null;
+                    });
+                }
+
+                await page.evaluate(() => window.ulabel.set_subtask("predictions"));
+                await send_clipboard("paste");
+                await expect.poll(() => get_annotations(page, "predictions")).toHaveLength(2);
+
+                const predictions = await get_annotations(page, "predictions");
+                expect(predictions[1].spatial_payload).toEqual([[100, 100], [300, 250]]);
+                expect(predictions[1].class_id).toBe(10);
+                await expect(page.locator("#id_dialog__predictions")).toBeHidden();
+
+                await send_clipboard("paste");
+                await expect.poll(() => get_annotations(page, "predictions")).toHaveLength(3);
+                expect((await get_annotations(page, "predictions"))[2].spatial_payload).toEqual([[120, 120], [320, 270]]);
+            });
+
+            test("pasting into the source subtask offsets the copy and keeps its class", async ({ page }) => {
+                await wait_for_ulabel_init(page, "/submit-payload.html");
+                const send_clipboard = create_clipboard_driver(page, transport);
+
+                await page.evaluate(() => {
+                    window.ulabel.isolate_annotation("gt-bbox-1");
+                    window.ulabel.get_current_subtask().state.edit_candidate = { annid: "gt-bbox-1" };
+                });
+                await send_clipboard("copy");
+                await send_clipboard("paste");
+                await expect.poll(() => get_annotations(page, "ground_truth")).toHaveLength(3);
+
+                const ground_truth = await get_annotations(page, "ground_truth");
+                expect(ground_truth[2].spatial_payload).toEqual([[120, 120], [320, 270]]);
+                expect(ground_truth[2].class_id).toBe(10);
+                await expect(page.locator("#id_dialog__ground_truth")).toBeHidden();
+                expect(await page.evaluate(() => window.ulabel.get_isolated_annotation_id())).toBeNull();
+
+                await send_clipboard("paste");
+                await expect.poll(() => get_annotations(page, "ground_truth")).toHaveLength(4);
+                expect((await get_annotations(page, "ground_truth"))[3].spatial_payload).toEqual([[140, 140], [340, 290]]);
+            });
+
+            test("cut removes the source and paste restores it elsewhere", async ({ page }) => {
+                await wait_for_ulabel_init(page, "/submit-payload.html");
+                const send_clipboard = create_clipboard_driver(page, transport);
+
+                await page.evaluate(() => {
+                    window.ulabel.get_current_subtask().state.edit_candidate = { annid: "gt-bbox-2" };
+                });
+                await send_clipboard("cut");
+                await expect.poll(async () => (await get_annotations(page, "ground_truth"))[1].deprecated).toBe(true);
+
+                await page.evaluate(() => window.ulabel.set_subtask("predictions"));
+                await send_clipboard("paste");
+                await expect.poll(() => get_annotations(page, "predictions")).toHaveLength(2);
+                const predictions = await get_annotations(page, "predictions");
+                expect(predictions[1].spatial_payload).toEqual([[400, 150], [600, 320]]);
+            });
+
+            test("copy, cut and paste are ignored while typing in a text field", async ({ page }) => {
+                await wait_for_ulabel_init(page, "/submit-payload.html");
+                const send_clipboard = create_clipboard_driver(page, transport);
+
+                await page.evaluate(() => {
+                    window.ulabel.get_current_subtask().state.edit_candidate = { annid: "gt-bbox-1" };
+                    const input = document.createElement("input");
+                    input.id = "scratch-input";
+                    input.value = "annotation note";
+                    document.body.appendChild(input);
+                });
+                await send_clipboard("copy");
+                const clipboard_before = await page.evaluate(() => window.ulabel.state.clipboard);
+                expect(clipboard_before?.annotation.id).toBe("gt-bbox-1");
+                await page.locator("#scratch-input").focus();
+                await page.locator("#scratch-input").selectText();
+                for (const kind of ["copy", "cut", "paste"]) {
+                    await send_clipboard(kind, "#scratch-input", false);
+                    expect(await page.evaluate(() => window.ulabel.state.clipboard)).toEqual(clipboard_before);
+                    const ground_truth = await get_annotations(page, "ground_truth");
+                    expect(ground_truth).toHaveLength(2);
+                    expect(ground_truth[0].deprecated).toBe(false);
+                }
+            });
         });
-        await page.keyboard.press("Control+c");
-        await page.waitForTimeout(100);
-        expect(await page.evaluate(() => window.ulabel.state.clipboard.annotation.id)).toBe("gt-bbox-1");
-
-        await page.evaluate(() => window.ulabel.set_subtask("predictions"));
-        await page.keyboard.press("Control+v");
-        await page.waitForTimeout(100);
-
-        const predictions = await get_annotations(page, "predictions");
-        expect(predictions).toHaveLength(2);
-        expect(predictions[1].spatial_payload).toEqual([[100, 100], [300, 250]]);
-        expect(predictions[1].class_id).toBe(10);
-        await expect(page.locator("#id_dialog__predictions")).toBeHidden();
-
-        // A repeat paste here is nudged so it does not hide the first
-        await page.keyboard.press("Control+v");
-        await page.waitForTimeout(100);
-        expect((await get_annotations(page, "predictions"))[2].spatial_payload).toEqual([[120, 120], [320, 270]]);
-    });
-
-    test("Ctrl+V in the source subtask offsets the copy and keeps its class", async ({ page }) => {
-        await wait_for_ulabel_init(page, "/submit-payload.html");
-
-        await page.evaluate(() => {
-            window.ulabel.isolate_annotation("gt-bbox-1");
-            window.ulabel.get_current_subtask().state.edit_candidate = { annid: "gt-bbox-1" };
-        });
-        await page.keyboard.press("Control+c");
-        await page.keyboard.press("Control+v");
-        await page.waitForTimeout(100);
-
-        const ground_truth = await get_annotations(page, "ground_truth");
-        expect(ground_truth).toHaveLength(3);
-        expect(ground_truth[2].spatial_payload).toEqual([[120, 120], [320, 270]]);
-        expect(ground_truth[2].class_id).toBe(10);
-        await expect(page.locator("#id_dialog__ground_truth")).toBeHidden();
-        // Pasting releases the isolation so the copy is visible
-        expect(await page.evaluate(() => window.ulabel.get_isolated_annotation_id())).toBeNull();
-
-        // A second paste of the same copy lands further along
-        await page.keyboard.press("Control+v");
-        await page.waitForTimeout(100);
-        expect((await get_annotations(page, "ground_truth"))[3].spatial_payload).toEqual([[140, 140], [340, 290]]);
-    });
-
-    test("Ctrl+X removes the source and Ctrl+V restores it elsewhere", async ({ page }) => {
-        await wait_for_ulabel_init(page, "/submit-payload.html");
-
-        await page.evaluate(() => {
-            window.ulabel.get_current_subtask().state.edit_candidate = { annid: "gt-bbox-2" };
-        });
-        await page.keyboard.press("Control+x");
-        await page.waitForTimeout(100);
-        expect((await get_annotations(page, "ground_truth"))[1].deprecated).toBe(true);
-
-        await page.evaluate(() => window.ulabel.set_subtask("predictions"));
-        await page.keyboard.press("Control+v");
-        await page.waitForTimeout(100);
-        const predictions = await get_annotations(page, "predictions");
-        expect(predictions).toHaveLength(2);
-        expect(predictions[1].spatial_payload).toEqual([[400, 150], [600, 320]]);
-    });
-
-    test("shortcuts are ignored while typing in a text field", async ({ page }) => {
-        await wait_for_ulabel_init(page, "/submit-payload.html");
-
-        await page.evaluate(() => {
-            window.ulabel.get_current_subtask().state.edit_candidate = { annid: "gt-bbox-1" };
-            const input = document.createElement("input");
-            input.id = "scratch-input";
-            document.body.appendChild(input);
-        });
-        await page.locator("#scratch-input").focus();
-        await page.keyboard.press("Control+c");
-        await page.waitForTimeout(100);
-        expect(await page.evaluate(() => window.ulabel.state.clipboard)).toBeNull();
-    });
+    }
 
     test("pasting an envelope from a different image size is refused", async ({ page }) => {
         await wait_for_ulabel_init(page, "/submit-payload.html");
