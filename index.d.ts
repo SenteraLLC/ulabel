@@ -300,6 +300,8 @@ export type ULabelClipboardEnvelope = {
     ulabel_annotation: 1;
     // Unique per copy/cut; tells a repeat paste of one copy from a newer copy of the same annotation
     copy_id: string;
+    // Epoch ms of the copy; when the system and in-memory clipboards hold different copies, the newer one is pasted
+    copied_at?: number;
     image_width: number;
     image_height: number;
     source_subtask_key: string;
@@ -372,6 +374,10 @@ export type ULabelConstructorArgs = {
     brush_overlap_across_subtasks?: boolean;
     /** Left-drag inside a spatial annotation's body moves it; Alt+drag draws instead. Default true. */
     allow_body_move?: boolean;
+    /** Open the class pie on a paste whose source class has no id/name match in the target. Default true; false takes the target's active class. */
+    paste_class_choice?: boolean;
+    /** Make the target the current subtask after a context-menu copy/move. Default false. */
+    paste_switch_to_target?: boolean;
     /** Fired after a subtask's active class changes, from any writer (API, toolbox click, class keybind). */
     on_active_class_change?: (subtask_key: string, class_id: number) => void;
     /** Fired after the current subtask changes, from any writer (API, tab click, switch keybind). */
@@ -683,6 +689,7 @@ export class ULabel {
     /**
      * Insert a copy of `annotation` into `target_key` with a fresh id and stamps.
      * Records a `paste_annotation` action on the target subtask unless `record` is false. Returns the new id, or null.
+     * With `source_key`, the copy's `annotation_meta.copied_from` is `{ subtask_key, annotation_id }`.
      */
     public paste_annotation(
         annotation: ULabelAnnotation | object,
@@ -690,11 +697,13 @@ export class ULabel {
         class_id?: number | null,
         offset?: [number, number],
         record?: boolean,
+        source_key?: string | null,
     ): string | null;
     /**
      * Copy (or cut) an annotation from `source_key` into `target_key` at the same coordinates.
      * A cut from the current, writable subtask is one `move_annotation` action on the source's stream.
-     * With `choose_class` and several compatible classes, switches to the target and opens the class pie.
+     * With `choose_class`, several compatible classes and `config.paste_class_choice`, switches to the target and opens the class pie.
+     * With `config.paste_switch_to_target`, always switches to the target.
      */
     public copy_annotation_to_subtask(
         annotation_id: string,
@@ -716,6 +725,11 @@ export class ULabel {
     public copy_annotation_to_clipboard(annotation_id?: string | null, cut?: boolean): ULabelClipboardEnvelope | null;
     /** Paste an envelope (default: the in-memory clipboard) into the current subtask; returns the new id or null. */
     public paste_annotation_from_clipboard(envelope?: ULabelClipboardEnvelope | null): string | null;
+    /** Id of an annotation in `target_key` pasted from `annotation_id` in `source_key` and not human-deleted, or null. */
+    public find_pasted_copy(annotation_id: string, source_key: string, target_key: string): string | null;
+    /** Whether a context-menu copy/move makes the target the current subtask. */
+    public set_paste_switch_to_target(enabled: boolean): void;
+    public get_paste_switch_to_target(): boolean;
     public start_complex_polygon(annotation_id?: string): void;
     public merge_polygon_complex_layer(
         annotation_id: string,

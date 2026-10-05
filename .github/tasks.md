@@ -399,3 +399,21 @@ Decisions (agreed with the user, see the ticket for the full spec):
 - [x] `assign_annotation_id` returns early (hides the pie, clears suggestions)
   when the picked payload equals the current one, so no no-op action is
   recorded.
+
+## CVML-283: cross-subtask paste follow-ups (0.29.0)
+
+- [x] `paste_class_choice` config (default true): off, menu copy and ctrl+v
+  never open the pie; `resolve_paste_class_id` picks the class.
+- [x] `paste_switch_to_target` config (default false) + `set_/get_` API:
+  menu copy/move calls `set_subtask(target)` after the paste (and after a
+  move is recorded on the source).
+- [x] Provenance: `paste_annotation(..., source_key)` stamps
+  `annotation_meta.copied_from`; `find_pasted_copy` scans the target for a
+  live copy. Context menu `confirm()`s a repeat copy/move; ctrl+v is exempt.
+- [x] Menu copy/move also arms the clipboard (in-memory + `navigator.clipboard`)
+  with `paste_counts[target] = 1`.
+- [x] Tests (jest + e2e), api_spec, index.d.ts, CHANGELOG.
+- [x] Review: envelope `copied_at`; paste picks the newer of system vs
+  in-memory when `copy_id`s differ (failed `writeText` left a stale system
+  payload). `find_pasted_copy` skips only `deprecated_by.human`, not
+  filter-hidden copies.

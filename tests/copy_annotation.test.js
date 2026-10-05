@@ -2,6 +2,7 @@
 // eligibility, field carry-over, class resolution, undo/redo on the target
 // stream, cut on the source stream, and the clipboard envelope.
 const { ULabel } = require("./testing-utils/build_loader");
+const { mark_deprecated } = require("../build/annotation_operators");
 
 const classes = [
     { name: "Crop", id: 1, color: "green" },
@@ -107,6 +108,11 @@ function action_types(ulabel, subtask_key) {
     return ulabel.subtasks[subtask_key].actions.stream.map((action) => action.act_type);
 }
 
+function get_class(ulabel, subtask_key, annotation_id) {
+    const payloads = ulabel.subtasks[subtask_key].annotations.access[annotation_id].classification_payloads;
+    return payloads.find((payload) => payload.confidence === 1.0).class_id;
+}
+
 describe("eligibility", () => {
     test("targets are the other writable subtasks with a class that allows the spatial type", () => {
         const ulabel = make_ulabel({ gt: [make_bbox("g1")] });
@@ -153,7 +159,7 @@ describe("copy_annotation", () => {
             { class_id: 2, confidence: 1.0 },
         ]);
         expect(copy.text_payload).toBe("note");
-        expect(copy.annotation_meta).toEqual({ source: "model" });
+        expect(copy.annotation_meta).toEqual({ source: "model", copied_from: { subtask_key: "gt", annotation_id: "g1" } });
         expect(copy.deprecated).toBe(false);
         expect(copy.deprecated_by).toEqual({ human: false });
         expect(copy.created_by).toBe("test_user");
@@ -444,6 +450,119 @@ describe("class choice", () => {
         expect(ulabel.show_id_dialog).not.toHaveBeenCalled();
         expect(ulabel.state.current_subtask).toBe("gt");
     });
+
+    test("paste_class_choice off: an unmatched class takes the target's active class without a pie", () => {
+        const ulabel = make_ulabel({ gt: [make_bbox("g1", 1)] });
+        ulabel.config.paste_class_choice = false;
+        ulabel.set_active_class(3, "weeds", false);
+
+        const new_id = ulabel.copy_annotation_to_subtask("g1", "gt", "weeds", null, false, true);
+
+        expect(get_class(ulabel, "weeds", new_id)).toBe(3);
+        expect(ulabel.show_id_dialog).not.toHaveBeenCalled();
+        expect(ulabel.set_subtask).not.toHaveBeenCalled();
+
+        // ctrl+v honours it too
+        ulabel.subtasks.gt.state.edit_candidate = { annid: "g1", spatial_type: "bbox" };
+        ulabel.copy_annotation_to_clipboard();
+        ulabel.state.current_subtask = "weeds";
+        const pasted = ulabel.paste_annotation_from_clipboard();
+        expect(get_class(ulabel, "weeds", pasted)).toBe(3);
+        expect(ulabel.show_id_dialog).not.toHaveBeenCalled();
+    });
+});
+
+describe("paste_switch_to_target", () => {
+    test("off by default: a matched copy stays in the source subtask", () => {
+        const ulabel = make_ulabel({ ro: [make_bbox("r1")] }, "ro");
+
+        expect(ulabel.get_paste_switch_to_target()).toBe(false);
+        ulabel.copy_annotation_to_subtask("r1", "ro", "pred", null, false, true);
+
+        expect(ulabel.set_subtask).not.toHaveBeenCalled();
+        expect(ulabel.state.current_subtask).toBe("ro");
+    });
+
+    test("on: a matched copy switches to the target; the pie, when it opens, opens there", () => {
+        const ulabel = make_ulabel({ ro: [make_bbox("r1")] }, "ro");
+        ulabel.set_paste_switch_to_target(true);
+        expect(ulabel.get_paste_switch_to_target()).toBe(true);
+
+        ulabel.copy_annotation_to_subtask("r1", "ro", "pred", null, false, true);
+        expect(ulabel.set_subtask).toHaveBeenCalledTimes(1);
+        expect(ulabel.set_subtask).toHaveBeenCalledWith("pred");
+        expect(ulabel.show_id_dialog).not.toHaveBeenCalled();
+
+        ulabel.state.current_subtask = "ro";
+        const weeds_id = ulabel.copy_annotation_to_subtask("r1", "ro", "weeds", null, false, true);
+        expect(ulabel.state.current_subtask).toBe("weeds");
+        expect(ulabel.show_id_dialog).toHaveBeenCalledWith(20, 20, weeds_id, false);
+    });
+
+    test("on: a move switches after the source is deleted and recorded", () => {
+        const ulabel = make_ulabel({ gt: [make_bbox("g1")] });
+        ulabel.set_paste_switch_to_target(true);
+
+        ulabel.copy_annotation_to_subtask("g1", "gt", "pred", null, true, true);
+
+        expect(ulabel.subtasks.gt.annotations.access.g1.deprecated).toBe(true);
+        expect(action_types(ulabel, "gt")).toEqual(["move_annotation"]);
+        expect(ulabel.state.current_subtask).toBe("pred");
+    });
+});
+
+describe("find_pasted_copy", () => {
+    test("finds the live copy by provenance; undo clears it, redo re-arms it", () => {
+        const ulabel = make_ulabel({ gt: [make_bbox("g1")] });
+        expect(ulabel.find_pasted_copy("g1", "gt", "pred")).toBeNull();
+
+        const new_id = ulabel.copy_annotation("g1", "pred");
+        expect(ulabel.find_pasted_copy("g1", "gt", "pred")).toBe(new_id);
+        expect(ulabel.find_pasted_copy("g1", "pred", "pred")).toBeNull();
+        expect(ulabel.find_pasted_copy(new_id, "pred", "gt")).toBeNull();
+
+        ulabel.state.current_subtask = "pred";
+        ulabel.undo();
+        expect(ulabel.find_pasted_copy("g1", "gt", "pred")).toBeNull();
+        ulabel.redo();
+        expect(ulabel.find_pasted_copy("g1", "gt", "pred")).toBe(new_id);
+
+        ulabel.delete_annotation(new_id);
+        expect(ulabel.find_pasted_copy("g1", "gt", "pred")).toBeNull();
+    });
+
+    test("a copy hidden by a filter still counts", () => {
+        const ulabel = make_ulabel({ gt: [make_bbox("g1")] });
+        const new_id = ulabel.copy_annotation("g1", "pred");
+        const copy = ulabel.subtasks.pred.annotations.access[new_id];
+
+        mark_deprecated(copy, true, "confidence_filter");
+        expect(copy.deprecated).toBe(true);
+        expect(ulabel.find_pasted_copy("g1", "gt", "pred")).toBe(new_id);
+
+        mark_deprecated(copy, true, "human");
+        expect(ulabel.find_pasted_copy("g1", "gt", "pred")).toBeNull();
+    });
+
+    test("a clipboard paste is stamped with the envelope's source", () => {
+        const ulabel = make_ulabel({ gt: [make_bbox("g1")] });
+        ulabel.subtasks.gt.state.edit_candidate = { annid: "g1", spatial_type: "bbox" };
+        const text = JSON.stringify(ulabel.copy_annotation_to_clipboard());
+
+        ulabel.state.current_subtask = "pred";
+        const new_id = ulabel.paste_annotation_from_clipboard(JSON.parse(text));
+
+        expect(ulabel.subtasks.pred.annotations.access[new_id].annotation_meta.copied_from).toEqual({ subtask_key: "gt", annotation_id: "g1" });
+        expect(ulabel.find_pasted_copy("g1", "gt", "pred")).toBe(new_id);
+    });
+
+    test("a string annotation_meta is replaced by the stamp", () => {
+        const ulabel = make_ulabel({ gt: [make_bbox("g1", 1, { annotation_meta: "opaque" })] });
+
+        const new_id = ulabel.copy_annotation("g1", "pred");
+
+        expect(ulabel.subtasks.pred.annotations.access[new_id].annotation_meta).toEqual({ copied_from: { subtask_key: "gt", annotation_id: "g1" } });
+    });
 });
 
 describe("bitmask", () => {
@@ -602,8 +721,56 @@ describe("clipboard", () => {
         hover(ulabel, "gt", "g1");
         const envelope = ulabel.copy_annotation_to_clipboard();
 
-        expect(ulabel.paste_annotation_from_clipboard({ ...envelope, image_width: 200 })).toBeNull();
+        // A newer copy from an instance showing a different image
+        const foreign = { ...envelope, copy_id: "elsewhere", copied_at: envelope.copied_at + 1, image_width: 200 };
+        expect(ulabel.paste_annotation_from_clipboard(foreign)).toBeNull();
         expect(ulabel.subtasks.gt.annotations.ordering).toEqual(["g1"]);
+        expect(ulabel.state.clipboard).toBe(envelope);
+    });
+
+    test("a stale incompatible system payload does not block the newer in-memory copy", () => {
+        const ulabel = make_ulabel({ gt: [make_bbox("g1"), make_bbox("poly", 1, { spatial_type: "polygon", spatial_payload: [[[0, 0], [10, 0], [10, 10], [0, 0]]] })] });
+        const now = jest.spyOn(Date, "now").mockReturnValue(1000);
+        hover(ulabel, "gt", "poly");
+        const stale_polygon = JSON.stringify(ulabel.copy_annotation_to_clipboard());
+        const stale_other_image = JSON.stringify({ ...JSON.parse(stale_polygon), copy_id: "other-image", image_width: 200 });
+
+        now.mockReturnValue(2000);
+        const newer = ulabel.copy_annotation_to_clipboard("g1");
+
+        // No class in pred takes a polygon, and the other payload is for another image
+        ulabel.state.current_subtask = "pred";
+        const first = ulabel.paste_annotation_from_clipboard(JSON.parse(stale_polygon));
+        const second = ulabel.paste_annotation_from_clipboard(JSON.parse(stale_other_image));
+        expect(first).not.toBeNull();
+        expect(second).not.toBeNull();
+        expect(ulabel.subtasks.pred.annotations.access[first].spatial_type).toBe("bbox");
+        expect(ulabel.subtasks.pred.annotations.access[second].spatial_payload).toEqual([[30, 30], [50, 50]]);
+        expect(ulabel.state.clipboard).toBe(newer);
+        now.mockRestore();
+    });
+
+    test("a newer in-memory copy wins over a stale system clipboard payload", () => {
+        const ulabel = make_ulabel({ gt: [make_bbox("g1"), make_bbox("g2", 2)] });
+        const now = jest.spyOn(Date, "now").mockReturnValue(1000);
+        hover(ulabel, "gt", "g1");
+        const stale_text = JSON.stringify(ulabel.copy_annotation_to_clipboard());
+
+        // A later copy that never reached the system clipboard
+        now.mockReturnValue(2000);
+        const newer = ulabel.copy_annotation_to_clipboard("g2");
+
+        ulabel.state.current_subtask = "pred";
+        const pasted = ulabel.paste_annotation_from_clipboard(JSON.parse(stale_text));
+        expect(get_class(ulabel, "pred", pasted)).toBe(2);
+        expect(ulabel.state.clipboard).toBe(newer);
+
+        // A newer payload from elsewhere still wins
+        const other = { ...JSON.parse(stale_text), copy_id: "elsewhere", copied_at: 3000 };
+        const second = ulabel.paste_annotation_from_clipboard(other);
+        expect(get_class(ulabel, "pred", second)).toBe(1);
+        expect(ulabel.state.clipboard).toBe(other);
+        now.mockRestore();
     });
 
     test("paste refuses when no class in the current subtask fits", () => {

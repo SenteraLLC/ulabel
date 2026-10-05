@@ -4406,9 +4406,10 @@ export class ULabel {
      * @param {number|null} class_id class for the copy; null resolves via `resolve_paste_class_id`
      * @param {[number, number]} offset image-space shift applied to the copy
      * @param {boolean} record record a `paste_annotation` action on the target stream
+     * @param {string|null} source_key when given, stamped as `annotation_meta.copied_from`
      * @returns {string|null} id of the new annotation, or null when nothing was pasted
      */
-    paste_annotation(annotation, target_key, class_id = null, offset = [0, 0], record = true) {
+    paste_annotation(annotation, target_key, class_id = null, offset = [0, 0], record = true, source_key = null) {
         if (!this.can_paste_into_subtask(annotation, target_key)) {
             log_message(`Cannot paste a ${annotation?.["spatial_type"]} annotation into subtask ${target_key}`, LogLevel.WARNING, true);
             return null;
@@ -4433,6 +4434,11 @@ export class ULabel {
         copy["last_edited_at"] = now;
         copy["deprecated"] = false;
         copy["deprecated_by"] = { human: false };
+        if (source_key !== null) {
+            // Per-subtask annotation_meta may be a string; only an object can carry the stamp
+            const meta = typeof copy["annotation_meta"] === "object" && copy["annotation_meta"] !== null ? copy["annotation_meta"] : {};
+            copy["annotation_meta"] = { ...meta, copied_from: { subtask_key: source_key, annotation_id: annotation["id"] } };
+        }
         copy["classification_payloads"] = this.subtasks[target_key]["class_ids"].map((cid) => ({
             class_id: cid,
             confidence: cid === class_id ? 1.0 : 0.0,
@@ -4572,7 +4578,9 @@ export class ULabel {
      * recorded on the target). When `choose_class` is set, no class was given
      * and the source class has no counterpart in the target (by id or name)
      * that could be chosen from several, the target becomes the current
-     * subtask and the class pie opens on the copy.
+     * subtask and the class pie opens on the copy (unless
+     * `config.paste_class_choice` is off). `config.paste_switch_to_target`
+     * makes the target current after any successful copy.
      *
      * @param {string} annotation_id
      * @param {string} source_key subtask the annotation lives in
@@ -4598,20 +4606,61 @@ export class ULabel {
         if (class_id === null && this.can_paste_into_subtask(annotation, target_key)) {
             const source_class_name = this.get_class_name(Number(get_annotation_class_id(annotation)), source_key);
             const matched = this.match_paste_class_id(annotation, target_key, source_class_name);
-            offer_choice = choose_class && matched === null;
+            offer_choice = choose_class && this.config["paste_class_choice"] && matched === null;
             class_id = this.resolve_paste_class_id(annotation, target_key, source_class_name);
         }
-        const new_id = this.paste_annotation(annotation, target_key, class_id, offset, !move);
+        const new_id = this.paste_annotation(annotation, target_key, class_id, offset, !move, source_key);
         if (new_id === null) return null;
 
         if (move) {
             this._record_move_annotation(annotation_id, target_key, new_id, false);
         }
 
+        if (this.config["paste_switch_to_target"] && target_key !== this.get_current_subtask_key()) {
+            this.set_subtask(target_key);
+        }
         if (offer_choice) {
             this._offer_pasted_class_choice(new_id, target_key);
         }
         return new_id;
+    }
+
+    /**
+     * Find an annotation in `target_key` that was pasted from
+     * `annotation_id` in `source_key` (via `annotation_meta.copied_from`) and
+     * has not been deleted by a human (filter-hidden copies count).
+     *
+     * @param {string} annotation_id source annotation
+     * @param {string} source_key subtask the source lives in
+     * @param {string} target_key subtask to search
+     * @returns {string|null} id of the copy, or null when there is none
+     */
+    find_pasted_copy(annotation_id, source_key, target_key) {
+        const target = this.subtasks[target_key];
+        if (target == null) return null;
+        for (const copy_id of target["annotations"]["ordering"]) {
+            const copy = target["annotations"]["access"][copy_id];
+            // Filter-hidden copies still count; only a human deletion clears the guard
+            if (copy["deprecated_by"]?.["human"]) continue;
+            const from = copy["annotation_meta"]?.["copied_from"];
+            if (from?.["subtask_key"] === source_key && from?.["annotation_id"] === annotation_id) {
+                return copy_id;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Whether a context-menu copy/move makes the target the current subtask.
+     * @param {boolean} enabled
+     */
+    set_paste_switch_to_target(enabled) {
+        this.config["paste_switch_to_target"] = Boolean(enabled);
+    }
+
+    /** @returns {boolean} */
+    get_paste_switch_to_target() {
+        return this.config["paste_switch_to_target"];
     }
 
     /**
@@ -4715,6 +4764,7 @@ export class ULabel {
         const envelope = {
             ulabel_annotation: 1,
             copy_id: uuidv4(),
+            copied_at: Date.now(),
             image_width: this.config["image_width"],
             image_height: this.config["image_height"],
             source_subtask_key: subtask_key,
@@ -4736,7 +4786,8 @@ export class ULabel {
      * and every repeat paste into the same subtask, is offset by a further
      * `PASTE_OFFSET_PX` so each copy is visible. When the source class has
      * no counterpart in the target (by id or name), the class pie opens on
-     * the copy if several classes could take it.
+     * the copy if several classes could take it and
+     * `config.paste_class_choice` is on.
      *
      * @param {object|null} envelope as produced by `copy_annotation_to_clipboard`
      * @returns {string|null} id of the pasted annotation
@@ -4744,6 +4795,16 @@ export class ULabel {
     paste_annotation_from_clipboard(envelope = null) {
         envelope ??= this.state["clipboard"];
         if (envelope == null || envelope["annotation"] == null) return null;
+        // The system clipboard yields a fresh parse each paste; the in-memory
+        // envelope for the same copy carries the running paste counts. A
+        // different, newer in-memory copy wins over a stale system payload
+        // (e.g. a menu copy whose system clipboard write failed)
+        const stored = this.state["clipboard"];
+        const same_copy = envelope["copy_id"] != null && stored?.["copy_id"] === envelope["copy_id"];
+        const stored_newer = (stored?.["copied_at"] ?? 0) > (envelope["copied_at"] ?? 0);
+        if (stored != null && stored !== envelope && (same_copy || stored_newer)) {
+            envelope = stored;
+        }
         if (envelope["image_width"] !== this.config["image_width"] || envelope["image_height"] !== this.config["image_height"]) {
             log_message("Clipboard annotation belongs to an image of different dimensions; not pasted", LogLevel.WARNING, true);
             return null;
@@ -4753,14 +4814,7 @@ export class ULabel {
             log_message(`No class in subtask ${target_key} accepts a ${envelope["annotation"]["spatial_type"]} annotation`, LogLevel.WARNING, true);
             return null;
         }
-        // The system clipboard yields a fresh parse each paste; the in-memory
-        // envelope for the same copy carries the running paste counts
-        const stored = this.state["clipboard"];
-        if (stored != null && stored !== envelope && envelope["copy_id"] != null && stored["copy_id"] === envelope["copy_id"]) {
-            envelope = stored;
-        } else {
-            this.state["clipboard"] = envelope;
-        }
+        this.state["clipboard"] = envelope;
         envelope["paste_counts"] ??= {};
         // A paste onto the source keeps its class and starts nudged; elsewhere
         // only repeats are nudged
@@ -4770,10 +4824,10 @@ export class ULabel {
         const source_class_name = envelope["source_class_name"] ?? null;
         const matched = this.match_paste_class_id(envelope["annotation"], target_key, source_class_name);
         const class_id = this.resolve_paste_class_id(envelope["annotation"], target_key, source_class_name);
-        const new_id = this.paste_annotation(envelope["annotation"], target_key, class_id, offset);
+        const new_id = this.paste_annotation(envelope["annotation"], target_key, class_id, offset, true, envelope["source_subtask_key"] ?? null);
         if (new_id === null) return null;
         envelope["paste_counts"][target_key] = (envelope["paste_counts"][target_key] ?? 0) + 1;
-        if (matched === null) {
+        if (matched === null && this.config["paste_class_choice"]) {
             this._offer_pasted_class_choice(new_id, target_key);
         }
         return new_id;

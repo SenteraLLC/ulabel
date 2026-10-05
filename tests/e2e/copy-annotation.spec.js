@@ -116,6 +116,32 @@ test.describe("copy annotations between subtasks", () => {
         expect(ground_truth[0].deprecated).toBe(false);
     });
 
+    test("a repeat Copy to asks first; with paste_switch_to_target the view lands on the target", async ({ page }) => {
+        await wait_for_ulabel_init(page, "/submit-payload.html");
+        await open_menu(page, "gt-bbox-1");
+        await click_item(page, "Copy to Predictions");
+        expect(await get_annotations(page, "predictions")).toHaveLength(2);
+
+        // Cancel the confirm: nothing is copied
+        page.once("dialog", (dialog) => {
+            expect(dialog.message()).toBe("This annotation was already copied to Predictions. Copy it there again?");
+            dialog.dismiss();
+        });
+        await open_menu(page, "gt-bbox-1");
+        await click_item(page, "Copy to Predictions");
+        expect(await get_annotations(page, "predictions")).toHaveLength(2);
+        expect(await current_subtask_key(page)).toBe("ground_truth");
+
+        // Accept it with the switch enabled: copied and now on the target
+        await page.evaluate(() => window.ulabel.set_paste_switch_to_target(true));
+        page.once("dialog", (dialog) => dialog.accept());
+        await open_menu(page, "gt-bbox-1");
+        await click_item(page, "Copy to Predictions");
+        expect(await get_annotations(page, "predictions")).toHaveLength(3);
+        expect(await current_subtask_key(page)).toBe("predictions");
+        await expect(page.locator("#id_dialog__predictions")).toBeHidden();
+    });
+
     test("Move to is one undoable action on the source subtask", async ({ page }) => {
         await wait_for_ulabel_init(page, "/submit-payload.html");
         const page_errors = [];

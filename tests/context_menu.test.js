@@ -37,7 +37,9 @@ function make_ulabel({ read_only = false, compatible = [1, 2], annotation = make
         is_current_subtask_read_only: () => read_only,
         _get_compatible_class_ids: jest.fn(() => compatible),
         get_copy_target_subtask_keys: jest.fn(() => copy_targets),
-        copy_annotation_to_subtask: jest.fn(),
+        copy_annotation_to_subtask: jest.fn(() => "new_id"),
+        copy_annotation_to_clipboard: jest.fn(() => ({ ulabel_annotation: 1, paste_counts: {} })),
+        find_pasted_copy: jest.fn(() => null),
         show_id_dialog: jest.fn(),
         delete_annotation: jest.fn(),
         isolate_annotation: jest.fn((annid) => {
@@ -144,6 +146,55 @@ describe("context menu items", () => {
         const ulabel = make_ulabel({ read_only: true, copy_targets: ["pred"] });
         show_context_menu(ulabel, "a0", 100, 100);
         expect(item_labels()).toEqual(["Copy to Predictions", "Isolate", "Details"]);
+    });
+
+    test("a menu copy also arms the clipboard, counting as the first paste into the target", () => {
+        const ulabel = make_ulabel({ copy_targets: ["pred"] });
+        const write_text = jest.fn(() => Promise.resolve());
+        Object.defineProperty(navigator, "clipboard", { value: { writeText: write_text }, configurable: true });
+        show_context_menu(ulabel, "a0", 100, 100);
+
+        click_item("Copy to Predictions");
+
+        expect(ulabel.copy_annotation_to_clipboard).toHaveBeenCalledWith("a0");
+        const envelope = ulabel.copy_annotation_to_clipboard.mock.results[0].value;
+        expect(envelope.paste_counts).toEqual({ pred: 1 });
+        expect(write_text).toHaveBeenCalledWith(JSON.stringify(envelope));
+        delete navigator.clipboard;
+    });
+
+    test("a failed system clipboard write still arms the in-memory clipboard", async () => {
+        const ulabel = make_ulabel({ copy_targets: ["pred"] });
+        Object.defineProperty(navigator, "clipboard", { value: { writeText: () => Promise.reject(new Error("denied")) }, configurable: true });
+        show_context_menu(ulabel, "a0", 100, 100);
+
+        click_item("Copy to Predictions");
+        await Promise.resolve();
+
+        expect(ulabel.copy_annotation_to_clipboard).toHaveBeenCalledWith("a0");
+        expect(ulabel.copy_annotation_to_subtask).toHaveBeenCalled();
+        delete navigator.clipboard;
+    });
+
+    test("a repeat copy asks first; cancelling skips the copy", () => {
+        const ulabel = make_ulabel({ copy_targets: ["pred"] });
+        ulabel.find_pasted_copy.mockReturnValue("older_copy");
+        const confirm_spy = jest.spyOn(window, "confirm").mockReturnValue(false);
+
+        show_context_menu(ulabel, "a0", 100, 100);
+        click_item("Copy to Predictions");
+        expect(ulabel.find_pasted_copy).toHaveBeenCalledWith("a0", "main", "pred");
+        expect(confirm_spy).toHaveBeenCalledWith("This annotation was already copied to Predictions. Copy it there again?");
+        expect(is_context_menu_open(ulabel)).toBe(false);
+        expect(ulabel.copy_annotation_to_subtask).not.toHaveBeenCalled();
+        expect(ulabel.copy_annotation_to_clipboard).not.toHaveBeenCalled();
+
+        confirm_spy.mockReturnValue(true);
+        show_context_menu(ulabel, "a0", 100, 100);
+        click_item("Move to Predictions");
+        expect(confirm_spy).toHaveBeenLastCalledWith("This annotation was already copied to Predictions. Move it there again?");
+        expect(ulabel.copy_annotation_to_subtask).toHaveBeenCalledWith("a0", "main", "pred", null, true, true);
+        confirm_spy.mockRestore();
     });
 });
 

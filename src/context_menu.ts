@@ -183,7 +183,17 @@ export function show_context_menu(ulabel: ULabel, annid: string, client_x: numbe
     if (copy_targets.length > 0) {
         const transfer = (target_key: string, cut: boolean) => {
             hide_context_menu(ulabel);
-            ulabel.copy_annotation_to_subtask(annid, source_key, target_key, null, cut, true);
+            if (ulabel.find_pasted_copy(annid, source_key, target_key) !== null) {
+                const target_name = ulabel.subtasks[target_key].display_name ?? target_key;
+                if (!confirm(`This annotation was already copied to ${target_name}. ${cut ? "Move" : "Copy"} it there again?`)) return;
+            }
+            // Also arm ctrl+v, counting this as the first paste into the target
+            const envelope = ulabel.copy_annotation_to_clipboard(annid);
+            const new_id = ulabel.copy_annotation_to_subtask(annid, source_key, target_key, null, cut, true);
+            if (envelope !== null && new_id !== null) {
+                (envelope.paste_counts ??= {})[target_key] = 1;
+                navigator.clipboard?.writeText(JSON.stringify(envelope)).catch(() => {});
+            }
         };
         add_subtask_picker(ulabel, menu, "Copy to", ICON_COPY, copy_targets, client_x, client_y, (key) => transfer(key, false));
         if (!read_only) {
