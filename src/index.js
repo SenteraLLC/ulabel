@@ -5428,7 +5428,7 @@ export class ULabel {
             if (annotation_mode === "polygon" || annotation_mode === "polyline" || annotation_mode === "delete_polygon") {
                 this.continue_annotation(this.state["last_move"]);
             } else {
-                this.finish_annotation();
+                this.finish_annotation(null, true);
             }
         }
     }
@@ -6714,7 +6714,7 @@ export class ULabel {
         }
     }
 
-    finish_annotation(mouse_event = null) {
+    finish_annotation(mouse_event = null, redoing = false) {
         // Convenience
         const current_subtask = this.get_current_subtask();
         const annotations = current_subtask["annotations"]["access"];
@@ -6846,7 +6846,7 @@ export class ULabel {
                 redo_payload: redo_payload,
                 prev_timestamp: prev_timestamp,
                 prev_user: prev_user,
-            }, false, should_record_action);
+            }, redoing, should_record_action);
         }
 
         // TODO build a dialog here when necessary -- will also need to integrate with undo

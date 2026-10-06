@@ -3,6 +3,7 @@ import type {
     ULabelAction,
     ULabelActionRaw,
     ULabelActionType,
+    ULabelAnnotationChange,
 } from "../index";
 import { ULabel } from "../src/index";
 import { FilterPointDistanceFromRow } from "./toolbox";
@@ -89,7 +90,82 @@ export function record_action(
 
     // Trigger any listeners for the action
     trigger_action_listeners(ulabel, action, false, is_redo);
+    // Off-stream recordings are sub-steps of a compound action (the delete inside a
+    // move), which reports itself; finish_* are the exception since begin_* is silent.
+    // A redone begin_annotation re-runs finish_annotation itself and is already reported.
+    const is_substep = !add_to_action_stream &&
+        !(FINISH_OFF_STREAM.includes(action.act_type) && !is_redo) &&
+        !IN_PROGRESS.includes(action.act_type);
+    if (!is_substep) {
+        emit_annotation_change(ulabel, action, is_redo ? "redo" : "do", subtask_key ?? ulabel.get_current_subtask_key());
+    }
 };
+
+// Actions that touch nothing committed until a later action; reported only on undo/redo.
+// Polygon simplify/merge only ever run inside finish_annotation, which collapses
+// them off the stream and reports the final geometry itself.
+const UNCOMMITTED_ON_DO: ULabelActionType[] = [
+    "begin_annotation",
+    "begin_edit",
+    "begin_move",
+    "begin_brush",
+    "start_complex_polygon",
+    "create_nonspatial_annotation",
+    "simplify_polygon_complex_layer",
+    "merge_polygon_complex_layer",
+];
+const IN_PROGRESS: ULabelActionType[] = [
+    "continue_annotation",
+    "continue_edit",
+    "continue_move",
+    "continue_brush",
+    "continue_bitmask",
+];
+// bbox/point/etc. finish off-stream (the begin_annotation is what gets collapsed)
+const FINISH_OFF_STREAM: ULabelActionType[] = ["finish_annotation", "finish_edit", "finish_move"];
+
+/**
+ * Notify the host's `on_annotation_change` callback of a recorded, undone, or redone action.
+ *
+ * @param ulabel ULabel instance
+ * @param action the action
+ * @param kind whether the action was done, undone, or redone
+ * @param subtask_key subtask whose stream holds the action
+ */
+function emit_annotation_change(
+    ulabel: ULabel,
+    action: ULabelAction,
+    kind: ULabelAnnotationChange["kind"],
+    subtask_key: string,
+) {
+    const callback = ulabel.config.on_annotation_change;
+    if (callback === null) return;
+    const act_type = action.act_type;
+    if (act_type === "edit_text_payload") return;
+    if (IN_PROGRESS.includes(act_type) && !ulabel.config.on_annotation_change_in_progress) return;
+    if (kind === "do" && UNCOMMITTED_ON_DO.includes(act_type)) return;
+
+    let previous_classification_payloads = null;
+    if (act_type === "assign_annotation_id") {
+        // Undo removes the new payload; do/redo remove the old one
+        previous_classification_payloads = kind === "undo" ?
+            JSON.parse(action.redo_payload).new_id_payload :
+            JSON.parse(action.undo_payload).old_id_payload;
+    }
+    const change: ULabelAnnotationChange = {
+        subtask_key,
+        annotation_id: action.annotation_id,
+        act_type,
+        kind,
+        affected: action.affected ?? [],
+        previous_classification_payloads,
+    };
+    try {
+        callback(change);
+    } catch (err) {
+        log_message(`on_annotation_change callback threw: ${err}`, LogLevel.WARNING, true);
+    }
+}
 
 /**
  * Finish an action in the action stream.
@@ -581,6 +657,7 @@ export function undo(ulabel: ULabel, is_internal_undo: boolean = false) {
 
     // Trigger any listeners for the action
     trigger_action_listeners(ulabel, undo_candidate, true);
+    emit_annotation_change(ulabel, undo_candidate, "undo", ulabel.get_current_subtask_key());
 }
 
 /**

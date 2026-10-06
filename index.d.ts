@@ -295,6 +295,19 @@ export type ULabelActionAffected = {
     subtask_key: string;
 };
 
+// Payload of `on_annotation_change`: one recorded, undone, or redone action
+export type ULabelAnnotationChange = {
+    // Subtask whose action stream holds the action
+    subtask_key: string;
+    annotation_id: string | null;
+    act_type: ULabelActionType;
+    kind: "do" | "undo" | "redo";
+    // Other annotations the action edited (paste/move target copy, bitmask overlap)
+    affected: ULabelActionAffected[];
+    // `assign_annotation_id` only: what the annotation had immediately before this event
+    previous_classification_payloads: ULabelClassificationPayload[] | null;
+};
+
 // Clipboard payload written by copy/cut and read by paste (also as JSON on the system clipboard)
 export type ULabelClipboardEnvelope = {
     ulabel_annotation: 1;
@@ -386,6 +399,10 @@ export type ULabelConstructorArgs = {
     on_focus_active_class_change?: (subtask_key: string, enabled: boolean) => void;
     /** Fired after a subtask's isolated annotation changes (`null` when cleared), from any writer (API, list button, Escape). */
     on_isolate_change?: (subtask_key: string, annotation_id: string | null) => void;
+    /** Fired once per recorded, undone, or redone action that changes committed annotation state. Not fired by `set_annotations`/`set_annotations_batch`/`resume_from`. */
+    on_annotation_change?: (change: ULabelAnnotationChange) => void;
+    /** Also report `continue_*` (in-progress draw/edit/move/brush) actions to `on_annotation_change`. Default false. */
+    on_annotation_change_in_progress?: boolean;
     /** @deprecated Use top-level properties instead. */
     config_data?: object;
 };

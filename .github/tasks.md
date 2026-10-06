@@ -417,3 +417,32 @@ Decisions (agreed with the user, see the ticket for the full spec):
   in-memory when `copy_id`s differ (failed `writeText` left a stale system
   payload). `find_pasted_copy` skips only `deprecated_by.human`, not
   filter-hidden copies.
+
+## CVML-286: on_annotation_change host callback (0.29.0)
+
+Agreed deviations from ticket: single object arg (not 4 positional), one call
+per action with `affected` list (no fan-out), `begin_*` suppressed on "do",
+`edit_text_payload` excluded, `previous_classification_payloads` for id changes.
+
+- [x] Config: `on_annotation_change` (null) and
+  `on_annotation_change_in_progress` (false); `ULabelAnnotationChange` type.
+- [x] `actions.ts`: `emit_annotation_change` at end of `record_action`
+  ("do"/"redo") and after the undo listener ("undo"); try/catch →
+  `log_message(WARNING)`. `continue_*` only with the flag; `begin_*`,
+  `start_complex_polygon`, `begin_brush`, `create_nonspatial_annotation`
+  skipped on "do" only; `edit_text_payload` never. Off-stream recordings
+  (the delete inside a move) are sub-steps and skipped, except
+  `finish_edit`/`finish_move`.
+- [x] Jest (`tests/on_annotation_change.test.js`): do/undo/redo for
+  create/delete/id-change (previous payloads oriented per kind); edit and
+  move flows (begin_* silent on do, fire on undo/redo; zero-diff click
+  silent); affected for paste/move/bitmask; continue_* gated;
+  edit_text_payload and set_annotations silent; callback exception logged.
+- [x] Docs: index.d.ts, api_spec, CHANGELOG.
+- [x] Full jest + chromium e2e pass.
+- [x] Review: off-stream `finish_annotation` (bbox/point/contour/tbar) is
+  reported; polygon `simplify`/`merge` are silent on "do" (the collapsed
+  `finish_annotation` carries the final geometry). A redone
+  `begin_annotation` passes `redoing` into `finish_annotation` so its
+  off-stream finish is not reported twice. Tests drive real
+  begin/continue/finish flows and assert geometry seen inside the callback.

@@ -96,7 +96,9 @@ class ULabel({
     on_active_class_change: function,
     on_subtask_change: function,
     on_focus_active_class_change: function,
-    on_isolate_change: function
+    on_isolate_change: function,
+    on_annotation_change: function,
+    on_annotation_change_in_progress: boolean
 })
 ```
 
@@ -724,6 +726,28 @@ When `true` (the default), ULabel installs a `MutationObserver` on the container
 
 ### `on_isolate_change`
 *(subtask_key: string, annotation_id: string | null) => void* -- Called after a subtask's isolated annotation actually changes, whatever the writer: `isolate_annotation`, the list's eye button, `Show all`, `Escape`, or one of the automatic clears (deletion, creation, subtask switch, `set_annotations`). `annotation_id` is `null` when the isolation clears. Default is `null`.
+
+### `on_annotation_change`
+*(change: ULabelAnnotationChange) => void* -- Called once per recorded, undone, or redone action that changes committed annotation state (geometry, position, deprecation, or class), so a host can recompute derived data (e.g. a live diff against fixed predictions) without polling the action stream. Default is `null`. Exceptions thrown by the callback are caught and logged as warnings.
+
+```javascript
+{
+    subtask_key: string,                 // subtask whose action stream holds the action
+    annotation_id: string | null,
+    act_type: ULabelActionType,
+    kind: "do" | "undo" | "redo",
+    affected: { subtask_key, annotation_id }[],  // other annotations the action edited
+    previous_classification_payloads: ULabelClassificationPayload[] | null,
+}
+```
+
+- One call per action, never per annotation. Cross-subtask actions record on one stream and list the other side in `affected`: `paste_annotation` records on the target; `move_annotation` records on the source with the target copy in `affected`; a `bitmask_stroke` that resolves overlap lists the other masks. A host interested in one subtask checks both `subtask_key` and `affected`.
+- `previous_classification_payloads` is set for `assign_annotation_id` only and is always what the annotation had immediately before this event (for every `kind`); the annotation itself already holds the new payloads.
+- Not reported: `continue_*` (in-progress draw/edit/move/brush) unless `on_annotation_change_in_progress` is `true`; `begin_annotation`, `begin_edit`, `begin_move`, `begin_brush`, `start_complex_polygon`, and `create_nonspatial_annotation` on `"do"` (nothing is committed until the matching `finish_*`/`create_annotation`; their `"undo"`/`"redo"` do fire since that is what reverts or re-applies the change); the internal `simplify_polygon_complex_layer` / `merge_polygon_complex_layer` steps of finishing a polygon (the `finish_annotation` that follows reports the final geometry); `edit_text_payload`; a zero-distance move; re-picking an annotation's current class.
+- Not fired by `set_annotations`, `set_annotations_batch`, `set_saved`, or `resume_from` on init: those replace state without recording actions.
+
+### `on_annotation_change_in_progress`
+*boolean* -- Also report `continue_annotation`, `continue_edit`, `continue_move`, `continue_brush`, and `continue_bitmask` to `on_annotation_change`. These fire on every mouse move during a drag. Default is `false`.
 
 
 ## Display Utility Functions
