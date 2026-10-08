@@ -118,7 +118,7 @@ export class ULabel {
         switch (mouse_event.button) {
             case 0:
                 if (mouse_event.target.id === "brush_circle") {
-                    return "brush";
+                    return ul.is_current_subtask_read_only() ? null : "brush";
                 } else if (mouse_event.target.id === ul.get_current_subtask()["canvas_fid"]) {
                     if (mouse_event.ctrlKey || mouse_event.metaKey) {
                         return "pan";
@@ -1138,6 +1138,54 @@ export class ULabel {
         subtask["state"]["layer_opacity"] = clamped;
         $("input#tb-st-range--" + subtask_key).val(Math.round(100 * clamped));
         $("div#canvasses__" + subtask_key).css("opacity", clamped);
+    }
+
+    /**
+     * Make a subtask read-only or editable at runtime. Making the current
+     * subtask read-only completes an active drag and discards other
+     * in-progress work as Escape would. Not recorded, does not mark edited.
+     * @param {string} subtask_key
+     * @param {boolean} read_only
+     */
+    set_subtask_read_only(subtask_key, read_only) {
+        const subtask = this.subtasks[subtask_key];
+        if (subtask === undefined) {
+            log_message(`set_subtask_read_only: unknown subtask key ${subtask_key}`, LogLevel.WARNING, true);
+            return;
+        }
+        read_only = read_only === true;
+        if (subtask["read_only"] === read_only) return;
+
+        // Teardown runs before the flag flips, so it behaves as on an editable subtask
+        if (read_only && subtask_key === this.get_current_subtask_key()) {
+            const state = subtask["state"];
+            if (this.drag_state["active_key"] !== null) {
+                this.end_drag(this.state["last_move"]);
+            }
+            if (state["starting_complex_polygon"]) {
+                undo(this, true);
+            }
+            if (state["is_in_progress"]) {
+                this.cancel_annotation();
+            }
+            if (state["is_in_brush_mode"]) {
+                this.disable_bitmask_brush();
+            }
+            this.hide_id_dialog();
+            this.hide_context_menu();
+            this.hide_and_clear_action_candidates();
+        }
+        subtask["read_only"] = read_only;
+
+        // Non-spatial rows bake their read-only controls in at creation
+        for (const annotation_id of subtask["annotations"]["ordering"]) {
+            const annotation = subtask["annotations"]["access"][annotation_id];
+            if (!NONSPATIAL_MODES.includes(annotation["spatial_type"])) continue;
+            if ($(`div#${this.get_nonspatial_annotation_element_id(annotation_id)}`).length === 0) continue;
+            this.clear_nonspatial_annotation(annotation_id);
+            const svg_obj = annotation["spatial_type"] === "whole-image" ? WHOLE_IMAGE_SVG : GLOBAL_SVG;
+            this.draw_nonspatial_annotation(annotation, svg_obj, subtask_key);
+        }
     }
 
     /**
@@ -3252,6 +3300,7 @@ export class ULabel {
     }
 
     toggle_brush_mode(mouse_event) {
+        if (this.is_current_subtask_read_only()) return;
         // The brush is only valid in polygon or bitmask mode
         const current_subtask = this.get_current_subtask_key();
         const state = this.subtasks[current_subtask]["state"];
@@ -3294,6 +3343,7 @@ export class ULabel {
     }
 
     toggle_erase_mode(mouse_event) {
+        if (this.is_current_subtask_read_only()) return;
         const current_subtask = this.get_current_subtask();
         // If not in brush mode, turn it on
         if (!current_subtask["state"]["is_in_brush_mode"]) {

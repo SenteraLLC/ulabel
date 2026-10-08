@@ -548,6 +548,12 @@ export class ULabel {
      * survives a subtask switch.
      */
     public set_subtask_opacity(subtask_key: string, opacity: number): void;
+    /**
+     * Make a subtask read-only or editable at runtime. Making the current
+     * subtask read-only completes an active drag and discards other
+     * in-progress work as Escape would. Not recorded, does not mark edited.
+     */
+    public set_subtask_read_only(subtask_key: string, read_only: boolean): void;
     /** The spatial types a class may be drawn as; falls back to the subtask's list. */
     public get_class_allowed_modes(class_id: number, subtask_key?: string | null): ULabelSpatialType[];
     /** Class ids in the current subtask that can take an annotation's spatial type. */

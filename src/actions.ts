@@ -620,6 +620,17 @@ function on_annotation_revert(
 // ================= Undo / Redo =================
 
 /**
+ * Whether user undo/redo of an action would mutate a read-only subtask.
+ *
+ * @param ulabel ULabel instance
+ * @param action action at the top of the stack
+ */
+function is_blocked_by_read_only(ulabel: ULabel, action: ULabelAction): boolean {
+    if (ulabel.is_current_subtask_read_only()) return true;
+    return (action.affected ?? []).some(({ subtask_key }) => ulabel.subtasks[subtask_key]?.read_only === true);
+}
+
+/**
  * Undo the last action in the action stream.
  *
  * @param ulabel ULabel instance
@@ -633,6 +644,7 @@ export function undo(ulabel: ULabel, is_internal_undo: boolean = false) {
 
     // If the action_steam is empty, then there are no actions to undo
     if (action_stream.length === 0) return;
+    if (!is_internal_undo && is_blocked_by_read_only(ulabel, action_stream[action_stream.length - 1])) return;
 
     ulabel.hide_id_dialog();
 
@@ -672,6 +684,7 @@ export function redo(ulabel: ULabel) {
 
     // If the action_steam is empty, then there are no actions to redo
     if (undone_stack.length === 0) return;
+    if (is_blocked_by_read_only(ulabel, undone_stack[undone_stack.length - 1])) return;
 
     // Redo the action
     const redo_candidate = undone_stack.pop()!;

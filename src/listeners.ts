@@ -609,6 +609,7 @@ export function create_ulabel_listeners(
         "change" + ULABEL_NAMESPACE,
         "textarea.nonspatial_note",
         (change_event) => {
+            if (ulabel.is_current_subtask_read_only()) return;
             const text_payload_anno_id = change_event.target.id.substring("note__".length);
             ulabel.edit_text_payload(text_payload_anno_id, change_event.target.value);
         },
@@ -618,6 +619,7 @@ export function create_ulabel_listeners(
         "click" + ULABEL_NAMESPACE,
         "a.fad_button.delete",
         (click_event) => {
+            if (ulabel.is_current_subtask_read_only()) return;
             ulabel.delete_annotation(click_event.target.id.substring("delete__".length));
         },
     );
@@ -626,6 +628,7 @@ export function create_ulabel_listeners(
         "click" + ULABEL_NAMESPACE,
         "a.fad_button.reclf",
         (click_event) => {
+            if (ulabel.is_current_subtask_read_only()) return;
             // Show idd
             ulabel.show_id_dialog(
                 click_event.pageX!,

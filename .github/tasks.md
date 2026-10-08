@@ -446,3 +446,19 @@ per action with `affected` list (no fan-out), `begin_*` suppressed on "do",
   `begin_annotation` passes `redoing` into `finish_annotation` so its
   off-stream finish is not reported twice. Tests drive real
   begin/continue/finish flows and assert geometry seen inside the callback.
+
+## CVML-287: runtime read-only toggle + enforcement gaps (0.29.0)
+
+- [x] `set_subtask_read_only(subtask_key, read_only)`: unknown key warns,
+  same value no-ops; going read-only on the current subtask completes an
+  active drag, discards in-progress work, disables the brush, closes the
+  ID dialog/context menu and clears edit/move candidates; re-renders the
+  subtask's non-spatial rows. No action, no edited flag, no callbacks.
+- [x] Gates: `toggle_brush_mode`/`toggle_erase_mode`, brush-circle drag key,
+  user undo/redo (current subtask or any `affected` subtask read-only),
+  non-spatial row change/delete/reclf handlers.
+- [x] Docs: index.d.ts, api_spec, CHANGELOG.
+- [x] Jest (`tests/read_only_toggle.test.js`).
+- [x] Playwright: brush bypass, toggle round-trip, mid-polygon toggle,
+  non-spatial rows follow the toggle. Demo gained Brush + a toggle button.
+- [x] Lint + build; targeted tests; browser check via demo; full suite.

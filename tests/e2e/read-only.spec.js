@@ -311,3 +311,117 @@ test.describe("Read-only subtask behavior", () => {
         expect(row_state.delete_exists).toBe(false);
     });
 });
+
+// Runtime toggling via set_subtask_read_only (CVML-287). The demo's banner button
+// toggles the current subtask.
+test.describe("Read-only toggle", () => {
+    // Page points over empty image area near the canvas's top-left corner
+    async function empty_points(page) {
+        const box = await page.evaluate(() => {
+            const r = document.getElementById(window.ulabel.get_current_subtask().canvas_fid).getBoundingClientRect();
+            return { x: r.left, y: r.top };
+        });
+        return [[box.x + 40, box.y + 40], [box.x + 120, box.y + 40], [box.x + 120, box.y + 110], [box.x + 40, box.y + 110]];
+    }
+
+    async function live_ids(page) {
+        return await page.evaluate(() => {
+            const st = window.ulabel.get_current_subtask();
+            return st.annotations.ordering.filter((id) => !st.annotations.access[id].deprecated);
+        });
+    }
+
+    async function drag(page, from, to) {
+        await page.mouse.move(from[0], from[1]);
+        await page.mouse.down();
+        await page.mouse.move((from[0] + to[0]) / 2, (from[1] + to[1]) / 2);
+        await page.mouse.move(to[0], to[1]);
+        await page.mouse.up();
+    }
+
+    test("brush toolbox button and a canvas drag paint nothing while read-only", async ({ page }) => {
+        await wait_for_ulabel_init(page, "/read-only.html");
+        await switch_to_mode(page, "polygon");
+        const before = await live_ids(page);
+
+        await page.click("#brush-mode");
+        const state = await page.evaluate(() => window.ulabel.get_current_subtask().state.is_in_brush_mode);
+        expect(state).toBe(false);
+        await expect(page.locator("#brush_circle")).toHaveCount(0);
+
+        const [a, , c] = await empty_points(page);
+        await drag(page, a, c);
+        expect(await live_ids(page)).toEqual(before);
+    });
+
+    test("read-only, editable, read-only blocks, allows, then blocks again", async ({ page }) => {
+        await wait_for_ulabel_init(page, "/read-only.html");
+        const before = await live_ids(page);
+        const [a, , c] = await empty_points(page);
+
+        await page.click("#toggle-read-only");
+        expect(await page.evaluate(() => window.ulabel.is_current_subtask_read_only())).toBe(false);
+        await switch_to_mode(page, "bbox");
+        await drag(page, a, c);
+        const after_create = await live_ids(page);
+        expect(after_create).toHaveLength(before.length + 1);
+
+        // Brush turns on while editable and off on the way back to read-only
+        await switch_to_mode(page, "polygon");
+        await page.click("#brush-mode");
+        expect(await page.evaluate(() => window.ulabel.get_current_subtask().state.is_in_brush_mode)).toBe(true);
+
+        await page.click("#toggle-read-only");
+        expect(await page.evaluate(() => window.ulabel.get_current_subtask().state.is_in_brush_mode)).toBe(false);
+
+        await switch_to_mode(page, "bbox");
+        await drag(page, a, c);
+        expect(await live_ids(page)).toEqual(after_create);
+
+        // User undo is blocked while read-only and works again once editable
+        await page.keyboard.press("Control+z");
+        expect(await live_ids(page)).toEqual(after_create);
+
+        await page.click("#toggle-read-only");
+        await page.keyboard.press("Control+z");
+        expect(await live_ids(page)).toEqual(before);
+    });
+
+    test("going read-only mid-polygon discards the polygon", async ({ page }) => {
+        await wait_for_ulabel_init(page, "/read-only.html");
+        const before = await live_ids(page);
+        const [a, b, c] = await empty_points(page);
+
+        await page.click("#toggle-read-only");
+        await switch_to_mode(page, "polygon");
+        for (const pt of [a, b, c]) {
+            await page.mouse.click(pt[0], pt[1]);
+        }
+        expect(await page.evaluate(() => window.ulabel.get_current_subtask().state.is_in_progress)).toBe(true);
+
+        await page.click("#toggle-read-only");
+        const state = await page.evaluate(() => {
+            const st = window.ulabel.get_current_subtask();
+            return { read_only: st.read_only, is_in_progress: st.state.is_in_progress, active_id: st.state.active_id };
+        });
+        expect(state).toEqual({ read_only: true, is_in_progress: false, active_id: null });
+        expect(await live_ids(page)).toEqual(before);
+    });
+
+    test("non-spatial rows follow the toggle", async ({ page }) => {
+        await wait_for_ulabel_init(page, "/read-only.html");
+        await switch_to_subtask(page, 1);
+
+        const row = () => page.evaluate(() => ({
+            note_readonly: document.getElementById("note__ro-whole-image-1").hasAttribute("readonly"),
+            reclf: document.getElementById("reclf__ro-whole-image-1") != null,
+            del: document.getElementById("delete__ro-whole-image-1") != null,
+        }));
+
+        await page.click("#toggle-read-only");
+        expect(await row()).toEqual({ note_readonly: false, reclf: true, del: true });
+
+        await page.click("#toggle-read-only");
+        expect(await row()).toEqual({ note_readonly: true, reclf: false, del: false });
+    });
+});

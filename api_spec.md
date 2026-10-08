@@ -316,6 +316,8 @@ Every annotation session requires at least one subtask. Each subtask has its own
 ```
 The `"keybind"` argument allows the user to select a class for existing annotations (when hovered), for new annotations, or for annotations that are actively being drawn.
 
+With `"read_only": true`, the subtask's annotations can be viewed but not created, edited, moved, deleted, reclassified, or undone/redone by the user. Toggle it at runtime with [`set_subtask_read_only`](#set_subtask_read_onlysubtask_key-read_only).
+
 The full list of `"allowed_modes"` that are currently supported is:
 
 - `"bbox"`: A simple single-frame bounding box
@@ -864,6 +866,10 @@ Sets the zoom to focus on the provided annotation, and switches to its subtask i
 ### `paste_annotation_from_clipboard(envelope?)`
 
 *(envelope?: ULabelClipboardEnvelope | null) => string | null* -- Pastes an envelope (default: the in-memory clipboard) into the current subtask and returns the new annotation's id. When the given envelope and the in-memory clipboard hold different copies, the newer `copied_at` wins (so a menu copy whose system clipboard write failed still pastes). Refused with a warning when the envelope's image dimensions differ from the current image or when no class in the current subtask accepts the annotation. A paste back into `source_subtask_key` keeps its class. The first paste into another subtask keeps the coordinates; each repeat paste into the same subtask, and any paste back into the source, is offset by a further 20 pixels (`paste_counts`, per target subtask, tracked per `copy_id`). When the source class has no counterpart in the target (by id, then by name; the envelope's `source_class_name`) and several classes could take the annotation, the class pie opens on the pasted annotation unless [`paste_class_choice`](#paste_class_choice) is `false`. The copy's `annotation_meta.copied_from` records the envelope's `source_subtask_key` and the source annotation id.
+
+### `set_subtask_read_only(subtask_key, read_only)`
+
+*(subtask_key: string, read_only: boolean) => void* -- Make a subtask read-only or editable without recreating ULabel. Making the current subtask read-only first completes an active mouse drag, then discards other in-progress work as `Escape` would (a complex polygon layer being started, an unfinished annotation), turns the brush off, and closes the class pie and context menu. Non-spatial rows are re-rendered with or without their controls. Zoom, isolation, class focus, active class, and the undo history are kept; user undo/redo is blocked while the current subtask, or any subtask the action touched, is read-only. Unknown subtask keys log a warning; setting the current value does nothing. Not recorded and does not mark the session edited; the toggle itself fires no callback, but the completed drag and discarded work are recorded and reported to [`on_annotation_change`](#on_annotation_change) exactly as the mouse-up or `Escape` would be.
 
 ### `isolate_annotation(annotation_id, subtask_key?, redraw?)`
 
