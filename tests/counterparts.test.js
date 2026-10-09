@@ -257,3 +257,62 @@ describe("delete_counterparts", () => {
         expect(action_types(ulabel, "ro")).toEqual([]);
     });
 });
+
+describe("undo/redo from a read-only subtask", () => {
+    function setup() {
+        const on_annotation_change = jest.fn();
+        const ulabel = make_ulabel({
+            gt: [make_bbox("g1", { hash: "h1" })],
+            diff: [make_bbox("d1", { hash: "h1" })],
+        }, { on_annotation_change });
+        ulabel.delete_counterparts("d1", "diff", "gt");
+        ulabel.state.current_subtask = "diff";
+        ulabel.set_subtask = jest.fn((key) => {
+            ulabel.state.current_subtask = key;
+        });
+        return { ulabel, on_annotation_change };
+    }
+
+    test("runs on the sole writable subtask in place", () => {
+        const { ulabel, on_annotation_change } = setup();
+
+        ulabel.undo();
+        expect(gt(ulabel, "g1").deprecated).toBe(false);
+        expect(ulabel.get_current_subtask_key()).toBe("diff");
+        expect(ulabel.toolbox.redraw_update_items).toHaveBeenCalled();
+        expect(on_annotation_change).toHaveBeenLastCalledWith(expect.objectContaining({ kind: "undo", subtask_key: "gt", from_subtask_key: "diff" }));
+
+        ulabel.redo();
+        expect(gt(ulabel, "g1").deprecated).toBe(true);
+        expect(ulabel.get_current_subtask_key()).toBe("diff");
+        expect(ulabel.set_subtask).not.toHaveBeenCalled();
+        expect(on_annotation_change).toHaveBeenLastCalledWith(expect.objectContaining({ kind: "redo", from_subtask_key: "diff" }));
+
+        ulabel.state.current_subtask = "gt";
+        ulabel.undo();
+        expect(on_annotation_change).toHaveBeenLastCalledWith(expect.objectContaining({ kind: "undo", from_subtask_key: null }));
+    });
+
+    test("switches to the writable subtask with paste_switch_to_target, only when there is something to do", () => {
+        const { ulabel } = setup();
+        ulabel.config.paste_switch_to_target = true;
+        const on_annotation_change = ulabel.config.on_annotation_change;
+
+        ulabel.redo();
+        expect(ulabel.set_subtask).not.toHaveBeenCalled();
+
+        ulabel.undo();
+        expect(ulabel.set_subtask).toHaveBeenCalledWith("gt");
+        expect(gt(ulabel, "g1").deprecated).toBe(false);
+        expect(on_annotation_change).toHaveBeenLastCalledWith(expect.objectContaining({ kind: "undo", from_subtask_key: "diff" }));
+        expect(ulabel.state.undo_redo_from_subtask).toBeNull();
+    });
+
+    test("does nothing with more than one writable subtask", () => {
+        const { ulabel } = setup();
+        ulabel.subtasks.ro.read_only = false;
+
+        ulabel.undo();
+        expect(gt(ulabel, "g1").deprecated).toBe(true);
+    });
+});

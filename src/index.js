@@ -792,6 +792,8 @@ export class ULabel {
 
             // Global annotation state (subtasks also maintain an annotation state)
             current_subtask: null, // The key of the current subtask
+            // Read-only subtask an undo/redo was issued from while it runs on the writable one
+            undo_redo_from_subtask: null,
             last_brush_stroke: null,
             anno_scaling_mode: this.config.anno_scaling_mode,
 
@@ -4240,17 +4242,48 @@ export class ULabel {
     // ================= Annotation Utilities =================
 
     /**
-     * Undo the last action.
+     * Undo the last action. From a read-only subtask, undoes on the sole writable subtask.
      */
     undo() {
-        undo(this);
+        this.run_on_edit_subtask("stream", () => undo(this));
     }
 
     /**
-     * Redo the last undone action.
+     * Redo the last undone action. From a read-only subtask, redoes on the sole writable subtask.
      */
     redo() {
-        redo(this);
+        this.run_on_edit_subtask("undone_stack", () => redo(this));
+    }
+
+    /**
+     * Run an undo/redo on the sole writable subtask when the current one is read-only:
+     * switching to it if `paste_switch_to_target` is set, otherwise in place.
+     *
+     * @param {"stream" | "undone_stack"} stack the stack the operation pops
+     * @param {() => void} fn the undo/redo
+     */
+    run_on_edit_subtask(stack, fn) {
+        const writable = Object.keys(this.subtasks).filter((key) => this.subtasks[key].read_only !== true);
+        if (!this.is_current_subtask_read_only() || writable.length !== 1) return fn();
+        const current_key = this.get_current_subtask_key();
+        const edit_key = writable[0];
+        if (this.subtasks[edit_key].actions[stack].length === 0) return;
+        this.state["undo_redo_from_subtask"] = current_key;
+        try {
+            if (this.config["paste_switch_to_target"]) {
+                this.set_subtask(edit_key);
+                return fn();
+            }
+            this.state["current_subtask"] = edit_key;
+            try {
+                fn();
+            } finally {
+                this.state["current_subtask"] = current_key;
+                this.toolbox.redraw_update_items(this);
+            }
+        } finally {
+            this.state["undo_redo_from_subtask"] = null;
+        }
     }
 
     /**

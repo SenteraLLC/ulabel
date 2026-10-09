@@ -159,6 +159,7 @@ function emit_annotation_change(
         kind,
         affected: action.affected ?? [],
         previous_classification_payloads,
+        from_subtask_key: kind === "do" ? null : ulabel.state.undo_redo_from_subtask,
     };
     try {
         callback(change);

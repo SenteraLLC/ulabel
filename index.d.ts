@@ -307,6 +307,8 @@ export type ULabelAnnotationChange = {
     affected: ULabelActionAffected[];
     // `assign_annotation_id` only: what the annotation had immediately before this event
     previous_classification_payloads: ULabelClassificationPayload[] | null;
+    // Undo/redo only: the read-only subtask it was issued from, when routed to this writable one
+    from_subtask_key: string | null;
 };
 
 // Clipboard payload written by copy/cut and read by paste (also as JSON on the system clipboard)
@@ -390,7 +392,7 @@ export type ULabelConstructorArgs = {
     allow_body_move?: boolean;
     /** Open the class pie on a paste whose source class has no id/name match in the target. Default true; false takes the target's active class. */
     paste_class_choice?: boolean;
-    /** Make the target the current subtask after a copy/move or `delete_counterparts`. Default false. */
+    /** Make the target the current subtask after a copy/move or `delete_counterparts`, and the writable subtask on undo/redo from a read-only one. Default false. */
     paste_switch_to_target?: boolean;
     /** `annotation_meta` key whose value (string or string[]) links annotations across subtasks; any shared value links. Copies drop it. Default null. */
     annotation_link_meta_key?: string | null;
@@ -424,6 +426,7 @@ export class ULabel {
         current_frame: number;
         // Global annotation state
         current_subtask: string;
+        undo_redo_from_subtask: string | null;
         last_brush_stroke: [number, number];
         line_size: number;
         anno_scaling_mode: AnnoScalingMode;
@@ -788,7 +791,9 @@ export class ULabel {
     public get_active_class_id_idx(): number;
 
     // Undo
+    /** From a read-only subtask, undoes on the sole writable subtask (if exactly one). */
     public undo(): void;
+    public run_on_edit_subtask(stack: "stream" | "undone_stack", fn: () => void): void;
     public begin_annotation__undo(annotation_id: string): void;
     public continue_annotation__undo(annotation_id: string): void;
     public finish_annotation__undo(annotation_id: string): void;
@@ -814,6 +819,7 @@ export class ULabel {
     public finish_modify_annotation__undo(annotation_id: string, undo_payload: object): void;
 
     // Redo
+    /** From a read-only subtask, redoes on the sole writable subtask (if exactly one). */
     public redo(): void;
     public finish_annotation__redo(annotation_id: string): void;
     public bitmask_stroke__redo(annotation_id: string, redo_payload: object): void;
