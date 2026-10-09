@@ -381,3 +381,19 @@ describe("edits_only", () => {
         expect(ids(payload, "pred")).toEqual([]);
     });
 });
+
+describe("has_edits", () => {
+    test("follows the edits_only payload, so an undone edit clears it", () => {
+        const ulabel = make_ulabel([make_bbox("g1")], [make_bbox("p1")]);
+        expect(ulabel.has_edits()).toBe(false);
+
+        ulabel.delete_annotation("g1");
+        expect(ulabel.has_edits()).toBe(true);
+        expect(ulabel.has_edits(["gt"])).toBe(true);
+        expect(ulabel.has_edits(["pred"])).toBe(false);
+
+        ulabel.undo();
+        expect(ulabel.has_edits()).toBe(false);
+        expect(ulabel.state.edited).toBe(true);
+    });
+});

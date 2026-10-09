@@ -199,6 +199,27 @@ describe("delete_counterparts", () => {
         expect(gt(ulabel, "covered").deprecated).toBe(true);
     });
 
+    test("erase=false deletes every counterpart of a bitmask; a non-bitmask cannot erase", () => {
+        const ulabel = make_ulabel({
+            gt: [make_bitmask("far", 50, 10, { hash: "h1" }), make_bbox("box", { hash: "h1" }), make_bbox("other", {})],
+            diff: [make_bitmask("d1", 0, 5, { hash: "h1" }), make_bbox("d2", { hash: "h1" })],
+        });
+
+        expect(ulabel.delete_counterparts("d2", "diff", "gt", true)).toEqual([]);
+        expect(action_types(ulabel, "gt")).toEqual([]);
+
+        expect(ulabel.delete_counterparts("d1", "diff", "gt", false)).toEqual(["far", "box"]);
+        expect(gt(ulabel, "far").deprecated).toBe(true);
+        expect(gt(ulabel, "box").deprecated).toBe(true);
+        expect(gt(ulabel, "other").deprecated).toBe(false);
+        expect(ulabel.get_bitmask(gt(ulabel, "far")).is_empty()).toBe(false);
+
+        ulabel.state.current_subtask = "gt";
+        ulabel.undo();
+        expect(gt(ulabel, "far").deprecated).toBe(false);
+        expect(gt(ulabel, "box").deprecated).toBe(false);
+    });
+
     test("records nothing when no counterpart changes", () => {
         const ulabel = make_ulabel({
             gt: [make_bitmask("far", 50, 10, { hash: "h1" })],
@@ -208,6 +229,20 @@ describe("delete_counterparts", () => {
         expect(ulabel.delete_counterparts("d1", "diff", "gt")).toEqual([]);
         expect(ulabel.delete_counterparts("d2", "diff", "gt")).toEqual([]);
         expect(action_types(ulabel, "gt")).toEqual([]);
+    });
+
+    test("paste_switch_to_target switches to the target only when something changed", () => {
+        const ulabel = make_ulabel({
+            gt: [make_bbox("g1", { hash: "h1" })],
+            diff: [make_bbox("d1", { hash: "h1" }), make_bbox("d2", {})],
+        }, { paste_switch_to_target: true });
+        ulabel.set_subtask = jest.fn();
+
+        ulabel.delete_counterparts("d2", "diff", "gt");
+        expect(ulabel.set_subtask).not.toHaveBeenCalled();
+
+        ulabel.delete_counterparts("d1", "diff", "gt");
+        expect(ulabel.set_subtask).toHaveBeenCalledWith("gt");
     });
 
     test("a read-only target is left alone", () => {
@@ -220,5 +255,64 @@ describe("delete_counterparts", () => {
         expect(ulabel.delete_counterparts("g1", "gt", "ro")).toEqual([]);
         expect(ulabel.subtasks.ro.annotations.access.r1.deprecated).toBe(false);
         expect(action_types(ulabel, "ro")).toEqual([]);
+    });
+});
+
+describe("undo/redo from a read-only subtask", () => {
+    function setup() {
+        const on_annotation_change = jest.fn();
+        const ulabel = make_ulabel({
+            gt: [make_bbox("g1", { hash: "h1" })],
+            diff: [make_bbox("d1", { hash: "h1" })],
+        }, { on_annotation_change });
+        ulabel.delete_counterparts("d1", "diff", "gt");
+        ulabel.state.current_subtask = "diff";
+        ulabel.set_subtask = jest.fn((key) => {
+            ulabel.state.current_subtask = key;
+        });
+        return { ulabel, on_annotation_change };
+    }
+
+    test("runs on the sole writable subtask in place", () => {
+        const { ulabel, on_annotation_change } = setup();
+
+        ulabel.undo();
+        expect(gt(ulabel, "g1").deprecated).toBe(false);
+        expect(ulabel.get_current_subtask_key()).toBe("diff");
+        expect(ulabel.toolbox.redraw_update_items).toHaveBeenCalled();
+        expect(on_annotation_change).toHaveBeenLastCalledWith(expect.objectContaining({ kind: "undo", subtask_key: "gt", from_subtask_key: "diff" }));
+
+        ulabel.redo();
+        expect(gt(ulabel, "g1").deprecated).toBe(true);
+        expect(ulabel.get_current_subtask_key()).toBe("diff");
+        expect(ulabel.set_subtask).not.toHaveBeenCalled();
+        expect(on_annotation_change).toHaveBeenLastCalledWith(expect.objectContaining({ kind: "redo", from_subtask_key: "diff" }));
+
+        ulabel.state.current_subtask = "gt";
+        ulabel.undo();
+        expect(on_annotation_change).toHaveBeenLastCalledWith(expect.objectContaining({ kind: "undo", from_subtask_key: null }));
+    });
+
+    test("switches to the writable subtask with paste_switch_to_target, only when there is something to do", () => {
+        const { ulabel } = setup();
+        ulabel.config.paste_switch_to_target = true;
+        const on_annotation_change = ulabel.config.on_annotation_change;
+
+        ulabel.redo();
+        expect(ulabel.set_subtask).not.toHaveBeenCalled();
+
+        ulabel.undo();
+        expect(ulabel.set_subtask).toHaveBeenCalledWith("gt");
+        expect(gt(ulabel, "g1").deprecated).toBe(false);
+        expect(on_annotation_change).toHaveBeenLastCalledWith(expect.objectContaining({ kind: "undo", from_subtask_key: "diff" }));
+        expect(ulabel.state.undo_redo_from_subtask).toBeNull();
+    });
+
+    test("does nothing with more than one writable subtask", () => {
+        const { ulabel } = setup();
+        ulabel.subtasks.ro.read_only = false;
+
+        ulabel.undo();
+        expect(gt(ulabel, "g1").deprecated).toBe(true);
     });
 });

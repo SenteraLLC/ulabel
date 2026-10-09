@@ -6,6 +6,8 @@ This should eventually be replaced with a more comprehensive approach to documen
 
 - `ctrl+z` or `cmd+z`: Undo
 - `ctrl+shift+z` or `cmd+shift+z`: Redo
+
+In a read-only subtask, undo and redo act on the only writable subtask, if there is exactly one: in place, or after switching to it when [`paste_switch_to_target`](#paste_switch_to_target) is set.
 - `scroll`: Zoom -- up for in, down for out
 - `ctrl+scroll` or `shift+scroll` or `cmd+scroll`: Change frame -- down for next, up for previous
 - `scrollclick+drag`: Pan
@@ -15,7 +17,7 @@ This should eventually be replaced with a more comprehensive approach to documen
 - Press `Escape` to exit brush/erase mode.
 - Press `Tab` to set the zoom to focus on the next annotation
 - Press `Shift+Tab` to set the zoom to focus on the previous annotation
-- Right-click a hovered annotation (or its entry in the `AnnotationList` toolbox item) to open a context menu with `Change class`, `Copy to`, `Move to`, `Delete`, `Isolate` / `Show all`, and `Details`. `Change class` opens the class pie for that annotation; `Copy to` / `Move to` clone the annotation into another subtask at the same image coordinates (see [`copy_annotation`](#copy_annotationannotation_id-target_subtask_key-class_id-source_subtask_key)) -- a single eligible subtask is named on the item, several open a list to pick from, and `Move to` also deletes the source (one undoable action on the source subtask that also removes the copy and the target's history about it). Both also arm `ctrl+v` with the annotation, and when the target already has a counterpart of it (see [`find_counterparts`](#find_counterpartsannotation_id-source_key-target_key)) a confirm dialog asks before copying again. `Delete from` (`Erase from` for a bitmask) appears for every other writable subtask holding counterparts and removes them there (see [`delete_counterparts`](#delete_counterpartsannotation_id-source_key-target_key)). The view stays on the source subtask unless the class pie opens or [`paste_switch_to_target`](#paste_switch_to_target) is on; `Isolate` hides every other annotation in the subtask (see [`isolate_annotation`](#isolate_annotationannotation_id-subtask_key-redraw)) and reads `Show all` while that annotation is isolated; `Details` lists its id, class, spatial type, last editor/edit time, and `annotation_meta` entries. Read-only subtasks only offer `Copy to`, `Delete from` / `Erase from`, `Isolate`, and `Details`. Press `Escape` or click anywhere to close it. A right-click while drawing a polyline still finishes the polyline and opens no menu.
+- Right-click a hovered annotation (or its entry in the `AnnotationList` toolbox item) to open a context menu with `Change class`, `Copy to`, `Move to`, `Delete`, `Isolate` / `Show all`, and `Details`. `Change class` opens the class pie for that annotation; `Copy to` / `Move to` clone the annotation into another subtask at the same image coordinates (see [`copy_annotation`](#copy_annotationannotation_id-target_subtask_key-class_id-source_subtask_key)) -- a single eligible subtask is named on the item, several open a list to pick from, and `Move to` also deletes the source (one undoable action on the source subtask that also removes the copy and the target's history about it). Both also arm `ctrl+v` with the annotation, and when the target already has a counterpart of it (see [`find_counterparts`](#find_counterpartsannotation_id-source_key-target_key)) a confirm dialog asks before copying again. `Delete from` appears for every other writable subtask holding counterparts and deletes them there, reading `Delete <n> from <subtask>` (or `<subtask> (<n>)` in the list) when there is more than one; a bitmask also offers `Erase from`, which only subtracts its mask (see [`delete_counterparts`](#delete_counterpartsannotation_id-source_key-target_key-erase)). The view stays on the source subtask unless the class pie opens or [`paste_switch_to_target`](#paste_switch_to_target) is on; `Isolate` hides every other annotation in the subtask (see [`isolate_annotation`](#isolate_annotationannotation_id-subtask_key-redraw)) and reads `Show all` while that annotation is isolated; `Details` lists its id, class, spatial type, last editor/edit time, and `annotation_meta` entries. Read-only subtasks only offer `Copy to`, `Delete from` / `Erase from`, `Isolate`, and `Details`. Press `Escape` or click anywhere to close it. A right-click while drawing a polyline still finishes the polyline and opens no menu.
 - Press `Escape` to close an open class pie or context menu.
 - `ctrl+c` / `cmd+c` copies the hovered annotation, `ctrl+x` / `cmd+x` cuts it (deletes it after copying; not in read-only subtasks), and `ctrl+v` / `cmd+v` pastes into the current subtask (see [`paste_annotation_from_clipboard`](#paste_annotation_from_clipboardenvelope)). The copy is placed on the system clipboard as JSON, so it can be pasted into another ULabel instance showing an image of the same dimensions; a paste back into the subtask it was copied from keeps its class; the first paste into another subtask keeps the coordinates, and every repeat paste into the same subtask (or any paste back into the source) is offset by a further 20 pixels. These shortcuts are not remappable and are ignored while a text field has focus.
 
@@ -79,6 +81,7 @@ class ULabel({
     paste_class_choice: boolean,
     paste_switch_to_target: boolean,
     annotation_link_meta_key: string | null,
+    hide_copy_to_linked: boolean,
     set_brush_overlap_none_keybind: string,
     set_brush_overlap_exclude_keybind: string,
     set_brush_overlap_overwrite_keybind: string,
@@ -665,10 +668,13 @@ When `true` (the default), a plain left-drag that starts inside a spatial annota
 When `true` (the default), a context-menu `Copy to` / `Move to` or a `ctrl+v` paste whose source class has no counterpart in the target subtask (by id, then by name) opens the class pie on the pasted annotation when several classes could take it. Set to `false` to never open the pie: the copy silently takes the target's active class (else its first compatible class). Useful when the source subtask's classes (e.g. `True Positive` / `False Negative`) can never match the target's and the host keeps the target's active class in sync with its own class picker.
 
 ### `paste_switch_to_target`
-When `true`, a context-menu `Copy to` / `Move to` makes the target the current subtask after the copy (firing [`on_subtask_change`](#on_subtask_change)), whether or not the class pie opens. Default is `false`: the view only switches when the class pie opens on the copy. Toggle at runtime with [`set_paste_switch_to_target`](#set_paste_switch_to_targetenabled). `ctrl+v` pastes into the current subtask and is unaffected.
+When `true`, a context-menu `Copy to` / `Move to` / `Delete from` / `Erase from` makes the target the current subtask afterwards (firing [`on_subtask_change`](#on_subtask_change)), whether or not the class pie opens; an undo/redo from a read-only subtask likewise switches to the writable subtask it acts on. Default is `false`: the view only switches when the class pie opens on the copy. Toggle at runtime with [`set_paste_switch_to_target`](#set_paste_switch_to_targetenabled). `ctrl+v` pastes into the current subtask and is unaffected.
 
 ### `annotation_link_meta_key`
 An `annotation_meta` key whose value, a string or an array of strings, links annotations across subtasks: two annotations are counterparts when they share any value (see [`find_counterparts`](#find_counterpartsannotation_id-source_key-target_key)). Every copy and paste drops this entry from the copy's `annotation_meta`, so a copy never claims its source's identity. Default is `null` (only `copied_from` links).
+
+### `hide_copy_to_linked`
+When `true`, the context menu leaves out `Copy to` / `Move to` for every subtask that already holds a counterpart of the annotation (see [`find_counterparts`](#find_counterpartsannotation_id-source_key-target_key)), instead of asking before copying again. `ctrl+v` is unaffected. Default is `false`.
 
 ### `set_brush_overlap_none_keybind`
 Keybind to set the brush overlap mode to `none`. Default is `shift+n`.
@@ -749,11 +755,13 @@ When `true` (the default), ULabel installs a `MutationObserver` on the container
     kind: "do" | "undo" | "redo",
     affected: { subtask_key, annotation_id }[],  // other annotations the action edited
     previous_classification_payloads: ULabelClassificationPayload[] | null,
+    from_subtask_key: string | null,     // read-only subtask an undo/redo was issued from
 }
 ```
 
 - One call per action, never per annotation. Cross-subtask actions record on one stream and list the other side in `affected`: `paste_annotation` records on the target; `move_annotation` records on the source with the target copy in `affected`; a `bitmask_stroke` that resolves overlap lists the other masks. A host interested in one subtask checks both `subtask_key` and `affected`.
 - `previous_classification_payloads` is set for `assign_annotation_id` only and is always what the annotation had immediately before this event (for every `kind`); the annotation itself already holds the new payloads.
+- `from_subtask_key` is set on an `"undo"` / `"redo"` issued from a read-only subtask and run on the sole writable one (see [Keyboard Shortcuts](#keyboard-shortcuts)), with or without `paste_switch_to_target`; otherwise `null`.
 - Not reported: `continue_*` (in-progress draw/edit/move/brush) unless `on_annotation_change_in_progress` is `true`; `begin_annotation`, `begin_edit`, `begin_move`, `begin_brush`, `start_complex_polygon`, and `create_nonspatial_annotation` on `"do"` (nothing is committed until the matching `finish_*`/`create_annotation`; their `"undo"`/`"redo"` do fire since that is what reverts or re-applies the change); the internal `simplify_polygon_complex_layer` / `merge_polygon_complex_layer` steps of finishing a polygon (the `finish_annotation` that follows reports the final geometry); `edit_text_payload`; a zero-distance move; re-picking an annotation's current class.
 - Not fired by `set_annotations`, `set_annotations_batch`, `set_saved`, or `resume_from` on init: those replace state without recording actions.
 
@@ -828,6 +836,10 @@ When batching several per-subtask swaps, prefer [`set_annotations_batch()`](#set
 
 *(bool) => void* -- Allows js script implementing the ULabel class to set saved status, e.g., during callback.
 
+### `has_edits(subtasks?)`
+
+*(subtasks?: string[] | null) => boolean* -- Whether a submit button with `edits_only` (and this `subtasks` list; default all subtasks) would send any annotation. Unlike `state.edited`, which stays set until [`set_saved(true)`](#set_savedsaved), this turns `false` again when every edit is undone. It compares against what was loaded via `resume_from` / `set_annotations()`, not the last save. Builds the payload on each call.
+
 ### `remove_listeners()`
 
 *() => void* -- Removes persistent event listeners from the document and window. Listeners attached directly to html elements are not explicitly removed.
@@ -883,9 +895,9 @@ Sets the zoom to focus on the provided annotation, and switches to its subtask i
 
 *(annotation_id: string, source_key: string, target_key: string) => string[]* -- Ids of the spatial annotations in `target_key` linked to `annotation_id` in `source_key`: copies of it, the annotation it was copied from (both via `annotation_meta.copied_from`), and annotations sharing a value under [`annotation_link_meta_key`](#annotation_link_meta_key). Human-deleted annotations are skipped; filter-hidden ones count. Empty when `source_key === target_key`. The context menu uses this for the copy confirm and for `Delete from` / `Erase from`.
 
-### `delete_counterparts(annotation_id, source_key, target_key)`
+### `delete_counterparts(annotation_id, source_key, target_key, erase?)`
 
-*(annotation_id: string, source_key: string, target_key: string) => string[]* -- Removes the counterparts (see [`find_counterparts`](#find_counterpartsannotation_id-source_key-target_key)) from `target_key`, which must not be read-only; the source may be. A bitmask source is subtracted from its bitmask counterparts (a mask erased to nothing is deleted) and other counterparts are left alone; any other source deletes its counterparts. Recorded as one `delete_counterparts` action on the target subtask's stream (undo there restores every mask and deletion) and reported to [`on_annotation_change`](#on_annotation_change) with the target as `subtask_key` and the changed counterparts as `affected`. Returns the changed ids; nothing is recorded when none changed.
+*(annotation_id: string, source_key: string, target_key: string, erase?: boolean | null) => string[]* -- Removes the counterparts (see [`find_counterparts`](#find_counterpartsannotation_id-source_key-target_key)) from `target_key`, which must not be read-only; the source may be. With `erase` (default: whether the source is a bitmask; only a bitmask source can erase), the source mask is subtracted from its bitmask counterparts (a mask erased to nothing is deleted) and other counterparts are left alone; otherwise every counterpart is deleted. Recorded as one `delete_counterparts` action on the target subtask's stream (undo there restores every mask and deletion) and reported to [`on_annotation_change`](#on_annotation_change) with the target as `subtask_key` and the changed counterparts as `affected`. Returns the changed ids; nothing is recorded when none changed. When something changed and [`paste_switch_to_target`](#paste_switch_to_target) is on, the target becomes the current subtask.
 
 ### `set_paste_switch_to_target(enabled)` / `get_paste_switch_to_target()`
 
@@ -901,7 +913,7 @@ Sets the zoom to focus on the provided annotation, and switches to its subtask i
 
 ### `set_subtask_read_only(subtask_key, read_only)`
 
-*(subtask_key: string, read_only: boolean) => void* -- Make a subtask read-only or editable without recreating ULabel. Making the current subtask read-only first completes an active mouse drag, then discards other in-progress work as `Escape` would (a complex polygon layer being started, an unfinished annotation), turns the brush off, and closes the class pie and context menu. Non-spatial rows are re-rendered with or without their controls. Zoom, isolation, class focus, active class, and the undo history are kept; user undo/redo is blocked while the current subtask, or any subtask the action touched, is read-only. Unknown subtask keys log a warning; setting the current value does nothing. Not recorded and does not mark the session edited; the toggle itself fires no callback, but the completed drag and discarded work are recorded and reported to [`on_annotation_change`](#on_annotation_change) exactly as the mouse-up or `Escape` would be.
+*(subtask_key: string, read_only: boolean) => void* -- Make a subtask read-only or editable without recreating ULabel. Making the current subtask read-only first completes an active mouse drag, then discards other in-progress work as `Escape` would (a complex polygon layer being started, an unfinished annotation), turns the brush off, and closes the class pie and context menu. Non-spatial rows are re-rendered with or without their controls. Zoom, isolation, class focus, active class, and the undo history are kept; user undo/redo is blocked while any subtask the action touched is read-only (from a read-only current subtask it goes to the sole writable subtask, see [Keyboard Shortcuts](#keyboard-shortcuts)). Unknown subtask keys log a warning; setting the current value does nothing. Not recorded and does not mark the session edited; the toggle itself fires no callback, but the completed drag and discarded work are recorded and reported to [`on_annotation_change`](#on_annotation_change) exactly as the mouse-up or `Escape` would be.
 
 ### `isolate_annotation(annotation_id, subtask_key?, redraw?)`
 

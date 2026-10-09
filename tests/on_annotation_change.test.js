@@ -90,6 +90,7 @@ describe("create / delete round trip", () => {
             kind: "do",
             affected: [],
             previous_classification_payloads: null,
+            from_subtask_key: null,
         });
     });
 

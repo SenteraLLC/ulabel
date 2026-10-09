@@ -792,6 +792,8 @@ export class ULabel {
 
             // Global annotation state (subtasks also maintain an annotation state)
             current_subtask: null, // The key of the current subtask
+            // Read-only subtask an undo/redo was issued from while it runs on the writable one
+            undo_redo_from_subtask: null,
             last_brush_stroke: null,
             anno_scaling_mode: this.config.anno_scaling_mode,
 
@@ -4281,17 +4283,48 @@ export class ULabel {
     // ================= Annotation Utilities =================
 
     /**
-     * Undo the last action.
+     * Undo the last action. From a read-only subtask, undoes on the sole writable subtask.
      */
     undo() {
-        undo(this);
+        this.run_on_edit_subtask("stream", () => undo(this));
     }
 
     /**
-     * Redo the last undone action.
+     * Redo the last undone action. From a read-only subtask, redoes on the sole writable subtask.
      */
     redo() {
-        redo(this);
+        this.run_on_edit_subtask("undone_stack", () => redo(this));
+    }
+
+    /**
+     * Run an undo/redo on the sole writable subtask when the current one is read-only:
+     * switching to it if `paste_switch_to_target` is set, otherwise in place.
+     *
+     * @param {"stream" | "undone_stack"} stack the stack the operation pops
+     * @param {() => void} fn the undo/redo
+     */
+    run_on_edit_subtask(stack, fn) {
+        const writable = Object.keys(this.subtasks).filter((key) => this.subtasks[key].read_only !== true);
+        if (!this.is_current_subtask_read_only() || writable.length !== 1) return fn();
+        const current_key = this.get_current_subtask_key();
+        const edit_key = writable[0];
+        if (this.subtasks[edit_key].actions[stack].length === 0) return;
+        this.state["undo_redo_from_subtask"] = current_key;
+        try {
+            if (this.config["paste_switch_to_target"]) {
+                this.set_subtask(edit_key);
+                return fn();
+            }
+            this.state["current_subtask"] = edit_key;
+            try {
+                fn();
+            } finally {
+                this.state["current_subtask"] = current_key;
+                this.toolbox.redraw_update_items(this);
+            }
+        } finally {
+            this.state["undo_redo_from_subtask"] = null;
+        }
     }
 
     /**
@@ -4792,17 +4825,19 @@ export class ULabel {
 
     /**
      * Remove an annotation's counterparts (see `find_counterparts`) from a
-     * writable subtask. A bitmask source is erased from its bitmask
-     * counterparts (a mask erased to nothing is deleted; other counterparts
-     * are left alone); any other source deletes its counterparts. Recorded as
-     * one `delete_counterparts` action on the target's stream.
+     * writable subtask. Erasing (bitmask sources only) subtracts the source
+     * from its bitmask counterparts (a mask erased to nothing is deleted;
+     * other counterparts are left alone); otherwise every counterpart is
+     * deleted. Recorded as one `delete_counterparts` action on the target's stream.
+     * `config.paste_switch_to_target` then switches to the target.
      *
      * @param {string} annotation_id
      * @param {string} source_key subtask the annotation lives in
      * @param {string} target_key subtask to remove counterparts from
+     * @param {boolean | null} erase default: whether the source is a bitmask
      * @returns {string[]} ids of the changed counterparts
      */
-    delete_counterparts(annotation_id, source_key, target_key) {
+    delete_counterparts(annotation_id, source_key, target_key, erase = null) {
         const source = this.subtasks[source_key]?.["annotations"]["access"][annotation_id];
         const target = this.subtasks[target_key];
         if (source == null || target == null) {
@@ -4813,7 +4848,12 @@ export class ULabel {
             log_message(`Subtask ${target_key} is read-only; nothing removed`, LogLevel.WARNING, true);
             return [];
         }
-        const erase = source["spatial_type"] === "bitmask";
+        const is_bitmask = source["spatial_type"] === "bitmask";
+        erase ??= is_bitmask;
+        if (erase && !is_bitmask) {
+            log_message(`Only a bitmask can be erased from subtask ${target_key}`, LogLevel.WARNING, true);
+            return [];
+        }
         const source_mask = erase ? this.get_bitmask(source) : null;
         const before = { masks: {}, deprecated_ids: [] };
         const after = { masks: {}, deprecated_ids: [] };
@@ -4839,6 +4879,9 @@ export class ULabel {
         }
         this._apply_counterpart_removal(after, target_key, true);
         this._record_delete_counterparts(annotation_id, target_key, { before, after }, false);
+        if (this.config["paste_switch_to_target"] && target_key !== this.get_current_subtask_key()) {
+            this.set_subtask(target_key);
+        }
         return changed_ids;
     }
 
@@ -4901,7 +4944,7 @@ export class ULabel {
     }
 
     /**
-     * Whether a context-menu copy/move makes the target the current subtask.
+     * Whether a context-menu copy/move/delete-from makes the target the current subtask.
      * @param {boolean} enabled
      */
     set_paste_switch_to_target(enabled) {
@@ -5492,6 +5535,17 @@ export class ULabel {
 
     set_saved(saved) {
         this.state["edited"] = !saved;
+    }
+
+    /**
+     * Whether an `edits_only` submit (optionally limited to `subtasks`) would send anything.
+     *
+     * @param {string[] | null} subtasks subtask keys to check; default all
+     * @returns {boolean}
+     */
+    has_edits(subtasks = null) {
+        const payload = SubmitButtons.build_submit_payload(this, { subtasks: subtasks ?? undefined, edits_only: true });
+        return Object.values(payload.annotations).some((annotations) => annotations.length > 0);
     }
 
     create_nonspatial_annotation(annotation_id = null, redo_payload = null) {

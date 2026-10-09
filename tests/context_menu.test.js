@@ -211,17 +211,50 @@ describe("context menu items", () => {
 
         click_item("Delete from Predictions");
         expect(is_context_menu_open(ulabel)).toBe(false);
-        expect(ulabel.delete_counterparts).toHaveBeenCalledWith("a0", "main", "pred");
+        expect(ulabel.delete_counterparts).toHaveBeenCalledWith("a0", "main", "pred", false);
     });
 
-    test("a bitmask offers Erase from only where a counterpart is a bitmask", () => {
+    test("hide_copy_to_linked leaves out Copy to / Move to for subtasks with counterparts", () => {
+        const ulabel = make_ulabel({ copy_targets: ["pred", "review"] });
+        ulabel.config.hide_copy_to_linked = true;
+        ulabel.find_counterparts.mockImplementation((annid, source_key, key) => (key === "pred" ? ["p1"] : []));
+
+        show_context_menu(ulabel, "a0", 100, 100);
+        expect(item_labels()).toEqual([
+            "Change class",
+            "Copy to Review",
+            "Move to Review",
+            "Delete from Predictions",
+            "Delete",
+            "Isolate",
+            "Details",
+        ]);
+    });
+
+    test("Delete from shows how many it would delete", () => {
+        const ulabel = make_ulabel({ read_only: true });
+        ulabel.find_counterparts.mockImplementation((annid, source_key, key) => (key === "pred" ? ["p1", "p2"] : ["r1"]));
+
+        show_context_menu(ulabel, "a0", 100, 100);
+        click_item("Delete from\u2026");
+        expect(item_labels()).toEqual(["Predictions (2)", "Review"]);
+
+        ulabel.subtasks.review.read_only = true;
+        show_context_menu(ulabel, "a0", 100, 100);
+        expect(item_labels()).toEqual(["Delete 2 from Predictions", "Isolate", "Details"]);
+    });
+
+    test("a bitmask offers Erase from where a counterpart is a bitmask, and Delete from anywhere", () => {
         const ulabel = make_ulabel({ read_only: true, annotation: make_annotation({ spatial_type: "bitmask" }) });
         ulabel.subtasks.pred.annotations = { access: { p1: { spatial_type: "bitmask" } } };
         ulabel.subtasks.review.annotations = { access: { r1: { spatial_type: "polygon" } } };
         ulabel.find_counterparts.mockImplementation((annid, source_key, key) => (key === "pred" ? ["p1"] : ["r1"]));
 
         show_context_menu(ulabel, "a0", 100, 100);
-        expect(item_labels()).toEqual(["Erase from Predictions", "Isolate", "Details"]);
+        expect(item_labels()).toEqual(["Erase from Predictions", "Delete from\u2026", "Isolate", "Details"]);
+
+        click_item("Erase from Predictions");
+        expect(ulabel.delete_counterparts).toHaveBeenCalledWith("a0", "main", "pred", true);
     });
 });
 
