@@ -15,7 +15,7 @@ import {
     AllowedToolboxItem,
     Configuration,
 } from "../build/configuration";
-import { get_gradient } from "../build/drawing_utilities";
+import { get_gradient, get_contrast_color } from "../build/drawing_utilities";
 import {
     assign_closest_line_to_each_point,
     filter_points_distance_from_line,
@@ -36,6 +36,7 @@ import { set_active_class, get_selected_class_id, set_focus_active_class, set_de
 import { show_context_menu, hide_context_menu, is_context_menu_open } from "../build/context_menu";
 import { isolate_annotation, is_annotation_isolated_out } from "../build/isolate";
 import { get_idd_string } from "../build/html_builder";
+import { SubmitButtons } from "../build/toolbox_items/submit_buttons";
 
 import $ from "jquery";
 const jQuery = $;
@@ -801,6 +802,7 @@ export class ULabel {
             demo_canvas_context: null,
             edited: false,
             all_subtasks_vanished: false,
+            highlight_edits: this.config.highlight_edits === true,
         };
 
         // Create a place on ulabel to store resize observer objects
@@ -1292,6 +1294,22 @@ export class ULabel {
      */
     set_defocused_opacity(subtask_key, opacity, redraw = true) {
         set_defocused_opacity(this, subtask_key, opacity, redraw);
+    }
+
+    /**
+     * Outline spatial annotations created or modified since load, in every subtask.
+     * @param {boolean} enabled
+     */
+    set_highlight_edits(enabled) {
+        enabled = enabled === true;
+        if (this.state["highlight_edits"] === enabled) return;
+        this.state["highlight_edits"] = enabled;
+        this.redraw_all_annotations();
+        this.config.on_highlight_edits_change?.(enabled);
+    }
+
+    get_highlight_edits() {
+        return this.state["highlight_edits"];
     }
 
     set_subtask(st_key) {
@@ -2185,7 +2203,7 @@ export class ULabel {
 
     // ================= Drawing Functions =================
 
-    draw_bounding_box(annotation_object, ctx, offset = null) {
+    draw_bounding_box(annotation_object, ctx, offset = null, outline_color = null) {
         const px_per_px = this.config["px_per_px"];
         let diffX = 0;
         let diffY = 0;
@@ -2216,10 +2234,10 @@ export class ULabel {
         ctx.lineTo((sp[0] + diffX) * px_per_px, (sp[1] + diffY) * px_per_px);
         ctx.closePath();
         ctx.stroke();
-        this.draw_hover_outline(annotation_object, ctx, line_size + 4);
+        this.draw_outline(ctx, line_size + 4, outline_color);
     }
 
-    draw_point(annotation_object, ctx, offset = null) {
+    draw_point(annotation_object, ctx, offset = null, outline_color = null) {
         const px_per_px = this.config["px_per_px"];
         let diffX = 0;
         let diffY = 0;
@@ -2250,10 +2268,10 @@ export class ULabel {
         ctx.arc((sp[0] + diffX) * px_per_px, (sp[1] + diffY) * px_per_px, line_size * px_per_px * 3, 0, 2 * Math.PI);
         ctx.closePath();
         ctx.stroke();
-        this.draw_hover_outline(annotation_object, ctx, line_size + 2);
+        this.draw_outline(ctx, line_size + 2, outline_color);
     }
 
-    draw_bbox3(annotation_object, ctx, offset = null) {
+    draw_bbox3(annotation_object, ctx, offset = null, outline_color = null) {
         const px_per_px = this.config["px_per_px"];
         let diffX = 0;
         let diffY = 0;
@@ -2303,10 +2321,10 @@ export class ULabel {
             ctx.globalAlpha = 1.0;
         }
 
-        this.draw_hover_outline(annotation_object, ctx, line_size + 4);
+        this.draw_outline(ctx, line_size + 4, outline_color);
     }
 
-    draw_polygon(annotation_object, ctx, offset = null) {
+    draw_polygon(annotation_object, ctx, offset = null, outline_color = null) {
         const px_per_px = this.config["px_per_px"];
         let diffX = 0;
         let diffY = 0;
@@ -2368,10 +2386,10 @@ export class ULabel {
             }
         }
 
-        // Draw hover outline behind the annotation strokes
-        if (this.is_annotation_hovered(annotation_object)) {
+        // Draw the outline behind the annotation strokes
+        if (outline_color !== null) {
             ctx.globalCompositeOperation = "destination-over";
-            ctx.strokeStyle = "white";
+            ctx.strokeStyle = outline_color;
             ctx.lineWidth = (line_size + 4) * px_per_px;
             for (let i = 0; i < n_iters; i++) {
                 if (spatial_type === "polygon" && annotation_object["spatial_payload_holes"][i]) continue;
@@ -2538,7 +2556,7 @@ export class ULabel {
         annotation_object["spatial_payload"] = shifted.to_rle();
     }
 
-    draw_bitmask(annotation_object, ctx, offset = null) {
+    draw_bitmask(annotation_object, ctx, offset = null, outline_color = null) {
         const px_per_px = this.config["px_per_px"];
         const image_width = this.config["image_width"];
         const image_height = this.config["image_height"];
@@ -2576,19 +2594,19 @@ export class ULabel {
         );
         ctx.globalAlpha = 1.0;
 
-        if (this.is_annotation_hovered(annotation_object)) {
-            const outline = this.get_bitmask_outline(render);
+        if (outline_color !== null) {
+            const outline = this.get_bitmask_outline(render, outline_color);
             const blit_x = (render.tlx + diffX - BITMASK_OUTLINE_BORDER) * px_per_px;
             const blit_y = (render.tly + diffY - BITMASK_OUTLINE_BORDER) * px_per_px;
             ctx.drawImage(outline, blit_x, blit_y, outline.width * px_per_px, outline.height * px_per_px);
         }
     }
 
-    // Build (once per render) a white contour by dilating the mask shape and cutting out the
-    // interior. Cached on the render, which is already discarded whenever the mask version or
-    // class color changes, so hovering never re-rasterizes.
-    get_bitmask_outline(render) {
-        if (render.outline != null) return render.outline;
+    // Build a contour by dilating the mask shape and cutting out the interior. Cached on the
+    // render per color; the render is discarded whenever the mask version or class color changes.
+    get_bitmask_outline(render, color) {
+        render.outlines ??= {};
+        if (render.outlines[color] != null) return render.outlines[color];
 
         const border = BITMASK_OUTLINE_BORDER;
         const ow = render.box_width + border * 2;
@@ -2602,12 +2620,12 @@ export class ULabel {
             octx.drawImage(render.canvas, border + ox * border, border + oy * border);
         }
         octx.globalCompositeOperation = "source-in";
-        octx.fillStyle = "white";
+        octx.fillStyle = color;
         octx.fillRect(0, 0, ow, oh);
         octx.globalCompositeOperation = "destination-out";
         octx.drawImage(render.canvas, border, border);
 
-        render.outline = outline;
+        render.outlines[color] = outline;
         return outline;
     }
 
@@ -2667,7 +2685,7 @@ export class ULabel {
         });
     }
 
-    draw_contour(annotation_object, ctx, offset = null) {
+    draw_contour(annotation_object, ctx, offset = null, outline_color = null) {
         const px_per_px = this.config["px_per_px"];
         let diffX = 0;
         let diffY = 0;
@@ -2696,10 +2714,10 @@ export class ULabel {
             ctx.lineTo((pts[pti][0] + diffX) * px_per_px, (pts[pti][1] + diffY) * px_per_px);
         }
         ctx.stroke();
-        this.draw_hover_outline(annotation_object, ctx, line_size + 4);
+        this.draw_outline(ctx, line_size + 4, outline_color);
     }
 
-    draw_tbar(annotation_object, ctx, offset = null) {
+    draw_tbar(annotation_object, ctx, offset = null, outline_color = null) {
         const px_per_px = this.config["px_per_px"];
         let diffX = 0;
         let diffY = 0;
@@ -2737,9 +2755,9 @@ export class ULabel {
         ctx.stroke();
         ctx.lineCap = "round";
 
-        if (this.is_annotation_hovered(annotation_object)) {
+        if (outline_color !== null) {
             ctx.globalCompositeOperation = "destination-over";
-            ctx.strokeStyle = "white";
+            ctx.strokeStyle = outline_color;
             ctx.lineWidth = (line_size + 4) * px_per_px;
             // Re-stroke the main line
             ctx.beginPath();
@@ -2833,31 +2851,32 @@ export class ULabel {
         }
 
         // Dispatch to annotation type's drawing function
+        const outline = this.get_annotation_outline_color(annotation_object, subtask);
         switch (annotation_object["spatial_type"]) {
             case "bbox":
             case "delete_bbox":
-                this.draw_bounding_box(annotation_object, context, offset);
+                this.draw_bounding_box(annotation_object, context, offset, outline);
                 break;
             case "point":
-                this.draw_point(annotation_object, context, offset);
+                this.draw_point(annotation_object, context, offset, outline);
                 break;
             case "bbox3":
                 // TODO(new3d)
-                this.draw_bbox3(annotation_object, context, offset);
+                this.draw_bbox3(annotation_object, context, offset, outline);
                 break;
             case "polygon":
             case "polyline":
             case "delete_polygon":
-                this.draw_polygon(annotation_object, context, offset);
+                this.draw_polygon(annotation_object, context, offset, outline);
                 break;
             case "contour":
-                this.draw_contour(annotation_object, context, offset);
+                this.draw_contour(annotation_object, context, offset, outline);
                 break;
             case "tbar":
-                this.draw_tbar(annotation_object, context, offset);
+                this.draw_tbar(annotation_object, context, offset, outline);
                 break;
             case "bitmask":
-                this.draw_bitmask(annotation_object, context, offset);
+                this.draw_bitmask(annotation_object, context, offset, outline);
                 break;
             case "whole-image":
                 this.draw_whole_image_annotation(annotation_object, subtask);
@@ -4008,14 +4027,37 @@ export class ULabel {
 
     is_annotation_hovered(annotation_object) {
         const subtask_key = this.get_current_subtask_key();
-        return this.subtasks[subtask_key]["state"]["hovered_annid"] === annotation_object["id"];
+        return this.subtasks[subtask_key]?.["state"]["hovered_annid"] === annotation_object["id"];
     }
 
-    draw_hover_outline(annotation_object, ctx, border_width) {
-        if (!this.is_annotation_hovered(annotation_object)) return;
+    // White while hovered; otherwise the edit highlight color when enabled, else null
+    get_annotation_outline_color(annotation_object, subtask = null) {
+        if (this.is_annotation_hovered(annotation_object)) return "white";
+        if (!this.state["highlight_edits"] || subtask == null || subtask === "demo") return null;
+        if (NONSPATIAL_MODES.includes(annotation_object["spatial_type"])) return null;
+        const loaded_edited_at = this.subtasks[subtask]["annotations"]["loaded_edited_at"] ?? {};
+        let color;
+        switch (SubmitButtons.classify_edit(annotation_object, loaded_edited_at[annotation_object["id"]])) {
+            case "created":
+                color = this.config["highlight_created_color"];
+                break;
+            case "modified":
+                color = this.config["highlight_modified_color"];
+                break;
+            default:
+                return null;
+        }
+        if (color != null) return color;
+        const class_color = this.color_info[get_annotation_class_id(annotation_object)] ?? this.config["default_annotation_color"];
+        return get_contrast_color(class_color);
+    }
+
+    // Stroke the current path behind what is already drawn
+    draw_outline(ctx, border_width, color) {
+        if (color === null) return;
         const px_per_px = this.config["px_per_px"];
         ctx.globalCompositeOperation = "destination-over";
-        ctx.strokeStyle = "white";
+        ctx.strokeStyle = color;
         ctx.lineWidth = border_width * px_per_px;
         ctx.stroke();
         ctx.globalCompositeOperation = "source-over";

@@ -99,7 +99,12 @@ class ULabel({
     on_focus_active_class_change: function,
     on_isolate_change: function,
     on_annotation_change: function,
-    on_annotation_change_in_progress: boolean
+    on_annotation_change_in_progress: boolean,
+    highlight_edits: boolean,
+    highlight_created_color: string,
+    highlight_modified_color: string,
+    toggle_highlight_edits_keybind: string,
+    on_highlight_edits_change: function
 })
 ```
 
@@ -755,6 +760,21 @@ When `true` (the default), ULabel installs a `MutationObserver` on the container
 ### `on_annotation_change_in_progress`
 *boolean* -- Also report `continue_annotation`, `continue_edit`, `continue_move`, `continue_brush`, and `continue_bitmask` to `on_annotation_change`. These fire on every mouse move during a drag. Default is `false`.
 
+### `highlight_edits`
+*boolean* -- Initial state of the edit highlight: spatial annotations created or modified since the host loaded them (via `resume_from` / `set_annotations()`) get an outline behind the shape, in every subtask, using the same rule as an `edits_only` submit (undoing back to the loaded state clears it). Hover still shows the white outline. Non-spatial and deleted annotations are not highlighted. Toggle at runtime with [`set_highlight_edits`](#set_highlight_editsenabled--get_highlight_edits) or `toggle_highlight_edits_keybind`. Default is `false`.
+
+### `highlight_created_color`
+*string | null* -- Outline color for annotations created since load. Any canvas color string. Default is `null`: the complementary hue of the annotation's class color at full saturation (`#ffd400` for gray, black, or white classes).
+
+### `highlight_modified_color`
+*string | null* -- Outline color for loaded annotations modified since load (geometry, class, deprecation, or a text note). Default is `null`, derived like `highlight_created_color`, so new and modified annotations look the same unless at least one color is set.
+
+### `toggle_highlight_edits_keybind`
+Keybind to toggle the edit highlight. Default is `h`.
+
+### `on_highlight_edits_change`
+*(enabled: boolean) => void* -- Called after the edit highlight actually toggles, whatever the writer: `set_highlight_edits` or `toggle_highlight_edits_keybind`. Not called for the initial `highlight_edits` value. Default is `null`.
+
 
 ## Display Utility Functions
 
@@ -890,6 +910,10 @@ Sets the zoom to focus on the provided annotation, and switches to its subtask i
 ### `get_isolated_annotation_id(subtask_key?)`
 
 *(subtask_key?: string | null) => string | null* -- The isolated annotation id in a subtask (default: the current one), or `null`.
+
+### `set_highlight_edits(enabled)` / `get_highlight_edits()`
+
+*(enabled: boolean) => void* / *() => boolean* -- Read or change the edit highlight (see [`highlight_edits`](#highlight_edits)) for all subtasks. Redraws and fires [`on_highlight_edits_change`](#on_highlight_edits_change) only on an actual change.
 
 ### `get_keypoint_slider_value()`
 

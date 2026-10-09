@@ -118,3 +118,36 @@ export function color_to_hex(color: string): string {
     if (color.toLowerCase() in VALID_HTML_COLORS) return (VALID_HTML_COLORS as Record<string, string>)[color.toLowerCase()];
     return color;
 }
+
+// Used for gray/black/white and unparseable colors, which have no complementary hue
+const ACHROMATIC_CONTRAST_COLOR = "#ffd400";
+
+/**
+ * A saturated color with the complementary hue of `color`, to outline it with.
+ *
+ * @param {string} color CSS color keyword or hex
+ * @returns {string} CSS color
+ */
+export function get_contrast_color(color: string): string {
+    let hex = color_to_hex(color).toLowerCase();
+    if (/^#[0-9a-f]{3}$/.test(hex)) {
+        hex = "#" + hex[1] + hex[1] + hex[2] + hex[2] + hex[3] + hex[3];
+    }
+    if (!/^#[0-9a-f]{6}$/.test(hex)) return ACHROMATIC_CONTRAST_COLOR;
+    const r = parseInt(hex.slice(1, 3), 16) / 255;
+    const g = parseInt(hex.slice(3, 5), 16) / 255;
+    const b = parseInt(hex.slice(5, 7), 16) / 255;
+    const max = Math.max(r, g, b);
+    const delta = max - Math.min(r, g, b);
+    if (delta < 0.15) return ACHROMATIC_CONTRAST_COLOR;
+    let hue: number;
+    if (max === r) {
+        hue = ((g - b) / delta) % 6;
+    } else if (max === g) {
+        hue = (b - r) / delta + 2;
+    } else {
+        hue = (r - g) / delta + 4;
+    }
+    hue = (Math.round(hue * 60) + 360 + 180) % 360;
+    return `hsl(${hue}, 100%, 50%)`;
+}

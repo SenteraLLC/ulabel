@@ -349,6 +349,14 @@ export class KeybindsToolboxItem extends ToolboxItem {
         });
 
         keybinds.push({
+            key: config.toggle_highlight_edits_keybind,
+            label: "Toggle Edit Highlight",
+            description: "Outline annotations created or modified since load",
+            configurable: true,
+            config_key: "toggle_highlight_edits_keybind",
+        });
+
+        keybinds.push({
             key: config.create_bbox_on_initial_crop_keybind,
             label: "Create BBox on Crop",
             description: "Create bbox annotation on initial crop area",

@@ -402,10 +402,20 @@ export type ULabelConstructorArgs = {
     on_focus_active_class_change?: (subtask_key: string, enabled: boolean) => void;
     /** Fired after a subtask's isolated annotation changes (`null` when cleared), from any writer (API, list button, Escape). */
     on_isolate_change?: (subtask_key: string, annotation_id: string | null) => void;
+    /** Fired after the edit highlight toggles, from any writer (API, keybind). */
+    on_highlight_edits_change?: (enabled: boolean) => void;
     /** Fired once per recorded, undone, or redone action that changes committed annotation state. Not fired by `set_annotations`/`set_annotations_batch`/`resume_from`. */
     on_annotation_change?: (change: ULabelAnnotationChange) => void;
     /** Also report `continue_*` (in-progress draw/edit/move/brush) actions to `on_annotation_change`. Default false. */
     on_annotation_change_in_progress?: boolean;
+    /** Outline spatial annotations created or modified since load. Default false. */
+    highlight_edits?: boolean;
+    /** Outline color for annotations created since load. Default null: a contrasting hue of the class color. */
+    highlight_created_color?: string | null;
+    /** Outline color for loaded annotations modified since load. Default null: a contrasting hue of the class color. */
+    highlight_modified_color?: string | null;
+    /** Keybind that toggles `highlight_edits`. Default "h". */
+    toggle_highlight_edits_keybind?: string;
     /** @deprecated Use top-level properties instead. */
     config_data?: object;
 };
@@ -435,6 +445,8 @@ export class ULabel {
         demo_canvas_context: CanvasRenderingContext2D;
         edited: boolean;
         all_subtasks_vanished: boolean;
+        /** Whether edited/new annotations are outlined, see `set_highlight_edits`. */
+        highlight_edits: boolean;
         /** Annotation the right-click context menu is open for, if any. */
         context_menu_annid: string | null;
         /** Last copied/cut annotation envelope, see `copy_annotation_to_clipboard`. */
@@ -537,6 +549,11 @@ export class ULabel {
      * entirely, which is cheaper but loses them as visual context.
      */
     public set_defocused_opacity(subtask_key: string, opacity: number, redraw?: boolean): void;
+    /** Outline spatial annotations created or modified since load, in every subtask. */
+    public set_highlight_edits(enabled: boolean): void;
+    public get_highlight_edits(): boolean;
+    /** White while hovered; otherwise the edit highlight color when enabled, else null. */
+    public get_annotation_outline_color(annotation: ULabelAnnotation, subtask?: string | null): string | null;
     /**
      * Isolate one annotation in a subtask: every other annotation is hidden
      * from the canvas and from input until cleared with `null`. View-only

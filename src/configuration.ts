@@ -175,10 +175,17 @@ export class Configuration {
     public on_subtask_change: ((subtask_key: string, old_subtask_key: string) => void) | null = null;
     public on_focus_active_class_change: ((subtask_key: string, enabled: boolean) => void) | null = null;
     public on_isolate_change: ((subtask_key: string, annotation_id: string | null) => void) | null = null;
+    public on_highlight_edits_change: ((enabled: boolean) => void) | null = null;
     // Fired once per recorded/undone/redone action that changes committed annotation state
     public on_annotation_change: ((change: ULabelAnnotationChange) => void) | null = null;
     // Whether continue_* (in-progress) actions are also reported
     public on_annotation_change_in_progress: boolean = false;
+
+    // Outline spatial annotations created or modified since load (initial state)
+    public highlight_edits: boolean = false;
+    // null: a contrasting color derived from the annotation's class color
+    public highlight_created_color: string | null = null;
+    public highlight_modified_color: string | null = null;
 
     // Passthrough
     public task_meta: object = {};
@@ -290,6 +297,8 @@ export class Configuration {
     public annotation_vanish_all_keybind: string = "shift+v";
 
     public toggle_class_focus_keybind: string = "shift+f";
+
+    public toggle_highlight_edits_keybind: string = "h";
 
     public fly_to_next_annotation_keybind: string = "tab";
 

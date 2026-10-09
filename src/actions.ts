@@ -78,6 +78,10 @@ export function record_action(
     if (add_to_action_stream) {
         current_subtask.actions.stream.push(action);
 
+        // Affected annotations were redrawn before this stamp, which can change their edit highlight
+        const outline_before = affected_annotations.map(
+            (ann, i) => ann && ulabel.get_annotation_outline_color(ann, affected[i].subtask_key),
+        );
         // For some redo actions the annotation may no longer exist
         const now = ULabel.get_time();
         for (const ann of [annotation, ...affected_annotations]) {
@@ -86,6 +90,12 @@ export function record_action(
                 ann.last_edited_by = ulabel.config.username;
             }
         }
+        affected_annotations.forEach((ann, i) => {
+            if (ann === undefined || ann.deprecated) return;
+            if (ulabel.get_annotation_outline_color(ann, affected[i].subtask_key) !== outline_before[i]) {
+                ulabel.redraw_annotation(affected[i].annotation_id, affected[i].subtask_key);
+            }
+        });
     }
 
     // Trigger any listeners for the action

@@ -214,6 +214,11 @@ function handle_keypress_event(
         return;
     }
 
+    if (event_matches_keybind(keypress_event, ulabel.config.toggle_highlight_edits_keybind)) {
+        ulabel.set_highlight_edits(!ulabel.get_highlight_edits());
+        return;
+    }
+
     // Check for class keybinds
     if (!DELETE_MODES.includes(current_subtask.state.annotation_mode)) {
         for (let i = 0; i < current_subtask.class_defs.length; i++) {
