@@ -15,7 +15,7 @@ This should eventually be replaced with a more comprehensive approach to documen
 - Press `Escape` to exit brush/erase mode.
 - Press `Tab` to set the zoom to focus on the next annotation
 - Press `Shift+Tab` to set the zoom to focus on the previous annotation
-- Right-click a hovered annotation (or its entry in the `AnnotationList` toolbox item) to open a context menu with `Change class`, `Copy to`, `Move to`, `Delete`, `Isolate` / `Show all`, and `Details`. `Change class` opens the class pie for that annotation; `Copy to` / `Move to` clone the annotation into another subtask at the same image coordinates (see [`copy_annotation`](#copy_annotationannotation_id-target_subtask_key-class_id-source_subtask_key)) -- a single eligible subtask is named on the item, several open a list to pick from, and `Move to` also deletes the source (one undoable action on the source subtask that also removes the copy and the target's history about it). Both also arm `ctrl+v` with the annotation, and when the target already holds a live copy of it (see [`find_pasted_copy`](#find_pasted_copyannotation_id-source_key-target_key)) a confirm dialog asks before copying again. The view stays on the source subtask unless the class pie opens or [`paste_switch_to_target`](#paste_switch_to_target) is on; `Isolate` hides every other annotation in the subtask (see [`isolate_annotation`](#isolate_annotationannotation_id-subtask_key-redraw)) and reads `Show all` while that annotation is isolated; `Details` lists its id, class, spatial type, last editor/edit time, and `annotation_meta` entries. Read-only subtasks only offer `Isolate` and `Details`. Press `Escape` or click anywhere to close it. A right-click while drawing a polyline still finishes the polyline and opens no menu.
+- Right-click a hovered annotation (or its entry in the `AnnotationList` toolbox item) to open a context menu with `Change class`, `Copy to`, `Move to`, `Delete`, `Isolate` / `Show all`, and `Details`. `Change class` opens the class pie for that annotation; `Copy to` / `Move to` clone the annotation into another subtask at the same image coordinates (see [`copy_annotation`](#copy_annotationannotation_id-target_subtask_key-class_id-source_subtask_key)) -- a single eligible subtask is named on the item, several open a list to pick from, and `Move to` also deletes the source (one undoable action on the source subtask that also removes the copy and the target's history about it). Both also arm `ctrl+v` with the annotation, and when the target already has a counterpart of it (see [`find_counterparts`](#find_counterpartsannotation_id-source_key-target_key)) a confirm dialog asks before copying again. `Delete from` (`Erase from` for a bitmask) appears for every other writable subtask holding counterparts and removes them there (see [`delete_counterparts`](#delete_counterpartsannotation_id-source_key-target_key)). The view stays on the source subtask unless the class pie opens or [`paste_switch_to_target`](#paste_switch_to_target) is on; `Isolate` hides every other annotation in the subtask (see [`isolate_annotation`](#isolate_annotationannotation_id-subtask_key-redraw)) and reads `Show all` while that annotation is isolated; `Details` lists its id, class, spatial type, last editor/edit time, and `annotation_meta` entries. Read-only subtasks only offer `Copy to`, `Delete from` / `Erase from`, `Isolate`, and `Details`. Press `Escape` or click anywhere to close it. A right-click while drawing a polyline still finishes the polyline and opens no menu.
 - Press `Escape` to close an open class pie or context menu.
 - `ctrl+c` / `cmd+c` copies the hovered annotation, `ctrl+x` / `cmd+x` cuts it (deletes it after copying; not in read-only subtasks), and `ctrl+v` / `cmd+v` pastes into the current subtask (see [`paste_annotation_from_clipboard`](#paste_annotation_from_clipboardenvelope)). The copy is placed on the system clipboard as JSON, so it can be pasted into another ULabel instance showing an image of the same dimensions; a paste back into the subtask it was copied from keeps its class; the first paste into another subtask keeps the coordinates, and every repeat paste into the same subtask (or any paste back into the source) is offset by a further 20 pixels. These shortcuts are not remappable and are ignored while a text field has focus.
 
@@ -78,6 +78,7 @@ class ULabel({
     allow_body_move: boolean,
     paste_class_choice: boolean,
     paste_switch_to_target: boolean,
+    annotation_link_meta_key: string | null,
     set_brush_overlap_none_keybind: string,
     set_brush_overlap_exclude_keybind: string,
     set_brush_overlap_overwrite_keybind: string,
@@ -661,6 +662,9 @@ When `true` (the default), a context-menu `Copy to` / `Move to` or a `ctrl+v` pa
 ### `paste_switch_to_target`
 When `true`, a context-menu `Copy to` / `Move to` makes the target the current subtask after the copy (firing [`on_subtask_change`](#on_subtask_change)), whether or not the class pie opens. Default is `false`: the view only switches when the class pie opens on the copy. Toggle at runtime with [`set_paste_switch_to_target`](#set_paste_switch_to_targetenabled). `ctrl+v` pastes into the current subtask and is unaffected.
 
+### `annotation_link_meta_key`
+An `annotation_meta` key whose value, a string or an array of strings, links annotations across subtasks: two annotations are counterparts when they share any value (see [`find_counterparts`](#find_counterpartsannotation_id-source_key-target_key)). Every copy and paste drops this entry from the copy's `annotation_meta`, so a copy never claims its source's identity. Default is `null` (only `copied_from` links).
+
 ### `set_brush_overlap_none_keybind`
 Keybind to set the brush overlap mode to `none`. Default is `shift+n`.
 
@@ -854,6 +858,14 @@ Sets the zoom to focus on the provided annotation, and switches to its subtask i
 ### `find_pasted_copy(annotation_id, source_key, target_key)`
 
 *(annotation_id: string, source_key: string, target_key: string) => string | null* -- Id of an annotation in `target_key` whose `annotation_meta.copied_from` names `annotation_id` in `source_key` and that has not been deleted by a human (copies hidden by a confidence/distance filter still count), or `null`. Undoing the paste (or deleting the copy) clears it; redo re-arms it. The context menu uses this to ask before copying the same annotation into a subtask twice; `ctrl+v` does not check (a repeat paste there is deliberate and offset).
+
+### `find_counterparts(annotation_id, source_key, target_key)`
+
+*(annotation_id: string, source_key: string, target_key: string) => string[]* -- Ids of the spatial annotations in `target_key` linked to `annotation_id` in `source_key`: copies of it, the annotation it was copied from (both via `annotation_meta.copied_from`), and annotations sharing a value under [`annotation_link_meta_key`](#annotation_link_meta_key). Human-deleted annotations are skipped; filter-hidden ones count. Empty when `source_key === target_key`. The context menu uses this for the copy confirm and for `Delete from` / `Erase from`.
+
+### `delete_counterparts(annotation_id, source_key, target_key)`
+
+*(annotation_id: string, source_key: string, target_key: string) => string[]* -- Removes the counterparts (see [`find_counterparts`](#find_counterpartsannotation_id-source_key-target_key)) from `target_key`, which must not be read-only; the source may be. A bitmask source is subtracted from its bitmask counterparts (a mask erased to nothing is deleted) and other counterparts are left alone; any other source deletes its counterparts. Recorded as one `delete_counterparts` action on the target subtask's stream (undo there restores every mask and deletion) and reported to [`on_annotation_change`](#on_annotation_change) with the target as `subtask_key` and the changed counterparts as `affected`. Returns the changed ids; nothing is recorded when none changed.
 
 ### `set_paste_switch_to_target(enabled)` / `get_paste_switch_to_target()`
 

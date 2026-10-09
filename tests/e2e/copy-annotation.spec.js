@@ -124,7 +124,7 @@ test.describe("copy annotations between subtasks", () => {
 
         // Cancel the confirm: nothing is copied
         page.once("dialog", (dialog) => {
-            expect(dialog.message()).toBe("This annotation was already copied to Predictions. Copy it there again?");
+            expect(dialog.message()).toBe("Predictions already has this annotation. Copy it there anyway?");
             dialog.dismiss();
         });
         await open_menu(page, "gt-bbox-1");
@@ -140,6 +140,34 @@ test.describe("copy annotations between subtasks", () => {
         expect(await get_annotations(page, "predictions")).toHaveLength(3);
         expect(await current_subtask_key(page)).toBe("predictions");
         await expect(page.locator("#id_dialog__predictions")).toBeHidden();
+    });
+
+    test("Delete from removes the copy on the target's stream; undo there restores it", async ({ page }) => {
+        await wait_for_ulabel_init(page, "/submit-payload.html");
+        await open_menu(page, "gt-bbox-1");
+        await click_item(page, "Copy to Predictions");
+        const copy_id = (await get_annotations(page, "predictions"))[1].id;
+
+        await open_menu(page, "gt-bbox-1");
+        await expect(page.locator(MENU).locator(ITEM, { hasText: "Delete from Predictions" })).toBeVisible();
+        await click_item(page, "Delete from Predictions");
+
+        expect((await get_annotations(page, "predictions"))[1].deprecated).toBe(true);
+        expect((await get_annotations(page, "ground_truth"))[0].deprecated).toBe(false);
+        expect(await current_subtask_key(page)).toBe("ground_truth");
+
+        // Gone from the target: no more Delete from
+        await open_menu(page, "gt-bbox-1");
+        await expect(page.locator(MENU).locator(ITEM, { hasText: "Delete from" })).toHaveCount(0);
+
+        await page.evaluate(() => {
+            window.ulabel.hide_context_menu();
+            window.ulabel.set_subtask("predictions");
+            window.ulabel.undo();
+        });
+        const predictions = await get_annotations(page, "predictions");
+        expect(predictions[1].id).toBe(copy_id);
+        expect(predictions[1].deprecated).toBe(false);
     });
 
     test("Move to is one undoable action on the source subtask", async ({ page }) => {

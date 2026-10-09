@@ -4448,7 +4448,8 @@ export class ULabel {
     /**
      * Insert a copy of an annotation into a subtask. The copy gets a fresh id,
      * fresh stamps, no deprecation and a class payload for `class_id`; every
-     * other field carries over. Records a `paste_annotation` action on the
+     * other field carries over, except the `config.annotation_link_meta_key`
+     * entry of `annotation_meta`. Records a `paste_annotation` action on the
      * target subtask's stream.
      *
      * @param {object} annotation source annotation (from any subtask or a clipboard payload)
@@ -4484,6 +4485,10 @@ export class ULabel {
         copy["last_edited_at"] = now;
         copy["deprecated"] = false;
         copy["deprecated_by"] = { human: false };
+        const link_key = this.config["annotation_link_meta_key"];
+        if (link_key != null && typeof copy["annotation_meta"] === "object" && copy["annotation_meta"] !== null) {
+            delete copy["annotation_meta"][link_key];
+        }
         if (source_key !== null) {
             // Per-subtask annotation_meta may be a string; only an object can carry the stamp
             const meta = typeof copy["annotation_meta"] === "object" && copy["annotation_meta"] !== null ? copy["annotation_meta"] : {};
@@ -4698,6 +4703,159 @@ export class ULabel {
             }
         }
         return null;
+    }
+
+    /**
+     * Spatial annotations in `target_key` linked to `annotation_id` in
+     * `source_key`: its copies, the annotation it was copied from, and those
+     * sharing a value under `config.annotation_link_meta_key`. Human-deleted
+     * annotations are skipped; filter-hidden ones count.
+     *
+     * @param {string} annotation_id
+     * @param {string} source_key subtask the annotation lives in
+     * @param {string} target_key subtask to search
+     * @returns {string[]}
+     */
+    find_counterparts(annotation_id, source_key, target_key) {
+        const source = this.subtasks[source_key]?.["annotations"]["access"][annotation_id];
+        const target = this.subtasks[target_key];
+        if (source == null || target == null || source_key === target_key) return [];
+        const link_values = new Set(this._get_link_values(source));
+        const source_from = source["annotation_meta"]?.["copied_from"];
+        const ids = [];
+        for (const candidate_id of target["annotations"]["ordering"]) {
+            const candidate = target["annotations"]["access"][candidate_id];
+            if (candidate["deprecated_by"]?.["human"]) continue;
+            const spatial_type = candidate["spatial_type"];
+            if (NONSPATIAL_MODES.includes(spatial_type) || DELETE_MODES.includes(spatial_type)) continue;
+            const from = candidate["annotation_meta"]?.["copied_from"];
+            if (
+                (from?.["subtask_key"] === source_key && from?.["annotation_id"] === annotation_id) ||
+                (source_from?.["subtask_key"] === target_key && source_from?.["annotation_id"] === candidate_id) ||
+                this._get_link_values(candidate).some((value) => link_values.has(value))
+            ) {
+                ids.push(candidate_id);
+            }
+        }
+        return ids;
+    }
+
+    // Non-empty strings under `config.annotation_link_meta_key` (a string or string[])
+    _get_link_values(annotation) {
+        const key = this.config["annotation_link_meta_key"];
+        if (key == null) return [];
+        const value = annotation["annotation_meta"]?.[key];
+        return (Array.isArray(value) ? value : [value]).filter((v) => typeof v === "string" && v !== "");
+    }
+
+    /**
+     * Remove an annotation's counterparts (see `find_counterparts`) from a
+     * writable subtask. A bitmask source is erased from its bitmask
+     * counterparts (a mask erased to nothing is deleted; other counterparts
+     * are left alone); any other source deletes its counterparts. Recorded as
+     * one `delete_counterparts` action on the target's stream.
+     *
+     * @param {string} annotation_id
+     * @param {string} source_key subtask the annotation lives in
+     * @param {string} target_key subtask to remove counterparts from
+     * @returns {string[]} ids of the changed counterparts
+     */
+    delete_counterparts(annotation_id, source_key, target_key) {
+        const source = this.subtasks[source_key]?.["annotations"]["access"][annotation_id];
+        const target = this.subtasks[target_key];
+        if (source == null || target == null) {
+            log_message(`Annotation ${annotation_id} or subtask ${target_key} not found`, LogLevel.WARNING, true);
+            return [];
+        }
+        if (target["read_only"] === true) {
+            log_message(`Subtask ${target_key} is read-only; nothing removed`, LogLevel.WARNING, true);
+            return [];
+        }
+        const erase = source["spatial_type"] === "bitmask";
+        const source_mask = erase ? this.get_bitmask(source) : null;
+        const before = { masks: {}, deprecated_ids: [] };
+        const after = { masks: {}, deprecated_ids: [] };
+        for (const id of this.find_counterparts(annotation_id, source_key, target_key)) {
+            const counterpart = target["annotations"]["access"][id];
+            if (!erase) {
+                before.deprecated_ids.push(id);
+                continue;
+            }
+            if (counterpart["spatial_type"] !== "bitmask") continue;
+            const current_mask = this.get_bitmask(counterpart);
+            const mask = current_mask.clone();
+            if (!mask.subtract(source_mask)) continue;
+            before.masks[id] = current_mask.to_rle();
+            after.masks[id] = mask.to_rle();
+            if (mask.is_empty()) before.deprecated_ids.push(id);
+        }
+        after.deprecated_ids = before.deprecated_ids;
+        const changed_ids = [...new Set([...Object.keys(after.masks), ...after.deprecated_ids])];
+        if (changed_ids.length === 0) {
+            log_message(`Nothing to remove from subtask ${target_key}`, LogLevel.INFO, true);
+            return [];
+        }
+        this._apply_counterpart_removal(after, target_key, true);
+        this._record_delete_counterparts(annotation_id, target_key, { before, after }, false);
+        return changed_ids;
+    }
+
+    _record_delete_counterparts(annotation_id, target_key, payload, is_redo) {
+        const ids = new Set([...Object.keys(payload.after.masks), ...payload.after.deprecated_ids]);
+        record_action(this, {
+            act_type: "delete_counterparts",
+            annotation_id: annotation_id,
+            frame: this.state["current_frame"],
+            undo_payload: payload,
+            redo_payload: payload,
+            affected: [...ids].map((id) => ({ annotation_id: id, subtask_key: target_key })),
+        }, is_redo, true, target_key);
+    }
+
+    // Set masks and deprecation from a `delete_counterparts` payload half, then redraw
+    _apply_counterpart_removal(state, subtask_key, deprecated) {
+        const access = this.subtasks[subtask_key]["annotations"]["access"];
+        const ids = new Set();
+        for (const [id, rle] of Object.entries(state.masks)) {
+            const annotation = access[id];
+            if (annotation === undefined) continue;
+            annotation["spatial_payload"] = rle;
+            this.set_bitmask_from_rle(annotation, rle);
+            this.rebuild_bitmask_containing_box(annotation);
+            ids.add(id);
+        }
+        for (const id of state.deprecated_ids) {
+            if (access[id] === undefined) continue;
+            mark_deprecated(access[id], deprecated);
+            if (deprecated) this.release_isolation_if_deprecated(id, subtask_key);
+            ids.add(id);
+        }
+        this.redraw_multiple_spatial_annotations([...ids], subtask_key);
+        if ([...ids].some((id) => access[id]["spatial_type"] === "polyline")) {
+            this.update_filter_distance(null, false, true);
+        }
+        this.toolbox.redraw_update_items(this);
+    }
+
+    /**
+     * Undo `delete_counterparts`: restore the masks and deletions in the current subtask.
+     *
+     * @param {object} undo_payload `{ before, after }`
+     */
+    delete_counterparts__undo(undo_payload) {
+        this._apply_counterpart_removal(undo_payload.before, this.get_current_subtask_key(), false);
+    }
+
+    /**
+     * Redo `delete_counterparts` in the current subtask.
+     *
+     * @param {string} annotation_id source annotation
+     * @param {object} redo_payload `{ before, after }`
+     */
+    delete_counterparts__redo(annotation_id, redo_payload) {
+        const subtask_key = this.get_current_subtask_key();
+        this._apply_counterpart_removal(redo_payload.after, subtask_key, true);
+        this._record_delete_counterparts(annotation_id, subtask_key, redo_payload, true);
     }
 
     /**

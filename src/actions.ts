@@ -411,6 +411,9 @@ function trigger_action_listeners(
             // drawn/removed directly in its own subtask
             undo: on_finish_annotation_spatial_modification,
         },
+        delete_counterparts: {
+            // Redraws its target subtask itself
+        },
     };
 
     // Call the appropriate listener
@@ -758,6 +761,9 @@ function undo_action(ulabel: ULabel, action: ULabelAction) {
         case "move_annotation":
             ulabel.move_annotation__undo(annotation_id, undo_payload);
             break;
+        case "delete_counterparts":
+            ulabel.delete_counterparts__undo(undo_payload);
+            break;
         case "create_nonspatial_annotation":
             ulabel.create_nonspatial_annotation__undo(annotation_id);
             break;
@@ -847,6 +853,9 @@ export function redo_action(ulabel: ULabel, action: ULabelAction) {
             break;
         case "move_annotation":
             ulabel.move_annotation__redo(annotation_id, redo_payload);
+            break;
+        case "delete_counterparts":
+            ulabel.delete_counterparts__redo(annotation_id, redo_payload);
             break;
         case "create_nonspatial_annotation":
             ulabel.create_nonspatial_annotation(annotation_id, redo_payload);

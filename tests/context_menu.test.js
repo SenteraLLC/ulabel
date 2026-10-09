@@ -39,7 +39,8 @@ function make_ulabel({ read_only = false, compatible = [1, 2], annotation = make
         get_copy_target_subtask_keys: jest.fn(() => copy_targets),
         copy_annotation_to_subtask: jest.fn(() => "new_id"),
         copy_annotation_to_clipboard: jest.fn(() => ({ ulabel_annotation: 1, paste_counts: {} })),
-        find_pasted_copy: jest.fn(() => null),
+        find_counterparts: jest.fn(() => []),
+        delete_counterparts: jest.fn(() => []),
         show_id_dialog: jest.fn(),
         delete_annotation: jest.fn(),
         isolate_annotation: jest.fn((annid) => {
@@ -176,15 +177,16 @@ describe("context menu items", () => {
         delete navigator.clipboard;
     });
 
-    test("a repeat copy asks first; cancelling skips the copy", () => {
+    test("a target that already has the annotation asks first; cancelling skips the copy", () => {
         const ulabel = make_ulabel({ copy_targets: ["pred"] });
-        ulabel.find_pasted_copy.mockReturnValue("older_copy");
+        ulabel.find_counterparts.mockReturnValue(["older_copy"]);
+        ulabel.subtasks.pred.read_only = true;
         const confirm_spy = jest.spyOn(window, "confirm").mockReturnValue(false);
 
         show_context_menu(ulabel, "a0", 100, 100);
         click_item("Copy to Predictions");
-        expect(ulabel.find_pasted_copy).toHaveBeenCalledWith("a0", "main", "pred");
-        expect(confirm_spy).toHaveBeenCalledWith("This annotation was already copied to Predictions. Copy it there again?");
+        expect(ulabel.find_counterparts).toHaveBeenCalledWith("a0", "main", "pred");
+        expect(confirm_spy).toHaveBeenCalledWith("Predictions already has this annotation. Copy it there anyway?");
         expect(is_context_menu_open(ulabel)).toBe(false);
         expect(ulabel.copy_annotation_to_subtask).not.toHaveBeenCalled();
         expect(ulabel.copy_annotation_to_clipboard).not.toHaveBeenCalled();
@@ -192,9 +194,34 @@ describe("context menu items", () => {
         confirm_spy.mockReturnValue(true);
         show_context_menu(ulabel, "a0", 100, 100);
         click_item("Move to Predictions");
-        expect(confirm_spy).toHaveBeenLastCalledWith("This annotation was already copied to Predictions. Move it there again?");
+        expect(confirm_spy).toHaveBeenLastCalledWith("Predictions already has this annotation. Move it there anyway?");
         expect(ulabel.copy_annotation_to_subtask).toHaveBeenCalledWith("a0", "main", "pred", null, true, true);
         confirm_spy.mockRestore();
+    });
+
+    test("Delete from lists writable subtasks with counterparts, even from a read-only source", () => {
+        const ulabel = make_ulabel({ read_only: true });
+        ulabel.subtasks.pred.annotations = { access: { p1: { spatial_type: "bbox" } } };
+        ulabel.subtasks.review.read_only = true;
+        ulabel.find_counterparts.mockReturnValue(["p1"]);
+
+        show_context_menu(ulabel, "a0", 100, 100);
+        expect(item_labels()).toEqual(["Delete from Predictions", "Isolate", "Details"]);
+        expect(ulabel.find_counterparts).not.toHaveBeenCalledWith("a0", "main", "review");
+
+        click_item("Delete from Predictions");
+        expect(is_context_menu_open(ulabel)).toBe(false);
+        expect(ulabel.delete_counterparts).toHaveBeenCalledWith("a0", "main", "pred");
+    });
+
+    test("a bitmask offers Erase from only where a counterpart is a bitmask", () => {
+        const ulabel = make_ulabel({ read_only: true, annotation: make_annotation({ spatial_type: "bitmask" }) });
+        ulabel.subtasks.pred.annotations = { access: { p1: { spatial_type: "bitmask" } } };
+        ulabel.subtasks.review.annotations = { access: { r1: { spatial_type: "polygon" } } };
+        ulabel.find_counterparts.mockImplementation((annid, source_key, key) => (key === "pred" ? ["p1"] : ["r1"]));
+
+        show_context_menu(ulabel, "a0", 100, 100);
+        expect(item_labels()).toEqual(["Erase from Predictions", "Isolate", "Details"]);
     });
 });
 

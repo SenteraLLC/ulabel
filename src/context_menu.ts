@@ -119,7 +119,7 @@ function render_details(
 }
 
 /**
- * "Copy to" / "Move to" entry. One eligible subtask collapses to a flat
+ * "Copy to" / "Move to" / "Delete from" entry. One eligible subtask collapses to a flat
  * "<label> <name>" item; several open an in-place list of subtask names.
  */
 function add_subtask_picker(
@@ -150,7 +150,9 @@ function add_subtask_picker(
  * Open the menu for an annotation in the current subtask at a viewport
  * position. Items: Change class (editable subtask with at least two
  * compatible classes), Copy to / Move to (another writable subtask has a
- * compatible class; Move to only on an editable subtask), Delete (editable
+ * compatible class; Move to only on an editable subtask), Delete from /
+ * Erase from (another writable subtask holds counterparts, see
+ * `find_counterparts`; Erase for a bitmask), Delete (editable
  * subtask), Isolate / Show all (always; view-only), Details (always).
  *
  * @returns whether the menu was shown
@@ -183,9 +185,9 @@ export function show_context_menu(ulabel: ULabel, annid: string, client_x: numbe
     if (copy_targets.length > 0) {
         const transfer = (target_key: string, cut: boolean) => {
             hide_context_menu(ulabel);
-            if (ulabel.find_pasted_copy(annid, source_key, target_key) !== null) {
+            if (ulabel.find_counterparts(annid, source_key, target_key).length > 0) {
                 const target_name = ulabel.subtasks[target_key].display_name ?? target_key;
-                if (!confirm(`This annotation was already copied to ${target_name}. ${cut ? "Move" : "Copy"} it there again?`)) return;
+                if (!confirm(`${target_name} already has this annotation. ${cut ? "Move" : "Copy"} it there anyway?`)) return;
             }
             // Also arm ctrl+v, counting this as the first paste into the target
             const envelope = ulabel.copy_annotation_to_clipboard(annid);
@@ -199,6 +201,20 @@ export function show_context_menu(ulabel: ULabel, annid: string, client_x: numbe
         if (!read_only) {
             add_subtask_picker(ulabel, menu, "Move to", ICON_CUT, copy_targets, client_x, client_y, (key) => transfer(key, true));
         }
+    }
+    const erase = annotation.spatial_type === "bitmask";
+    const removal_targets = Object.keys(ulabel.subtasks).filter((key) => {
+        if (key === source_key || ulabel.subtasks[key].read_only === true) return false;
+        return ulabel.find_counterparts(annid, source_key, key).some(
+            (id) => !erase || ulabel.subtasks[key].annotations.access[id].spatial_type === "bitmask",
+        );
+    });
+    if (removal_targets.length > 0) {
+        const label = erase ? "Erase from" : "Delete from";
+        add_subtask_picker(ulabel, menu, label, ICON_DELETE, removal_targets, client_x, client_y, (key) => {
+            hide_context_menu(ulabel);
+            ulabel.delete_counterparts(annid, source_key, key);
+        });
     }
     if (!read_only) {
         add_item(menu, "Delete", ICON_DELETE, () => {

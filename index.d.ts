@@ -265,6 +265,7 @@ export type ULabelActionType = "create_nonspatial_annotation" |
     "create_annotation" |
     "paste_annotation" |
     "move_annotation" |
+    "delete_counterparts" |
     "begin_annotation" |
     "continue_annotation" |
     "finish_annotation" |
@@ -391,6 +392,8 @@ export type ULabelConstructorArgs = {
     paste_class_choice?: boolean;
     /** Make the target the current subtask after a context-menu copy/move. Default false. */
     paste_switch_to_target?: boolean;
+    /** `annotation_meta` key whose value (string or string[]) links annotations across subtasks; any shared value links. Copies drop it. Default null. */
+    annotation_link_meta_key?: string | null;
     /** Fired after a subtask's active class changes, from any writer (API, toolbox click, class keybind). */
     on_active_class_change?: (subtask_key: string, class_id: number) => void;
     /** Fired after the current subtask changes, from any writer (API, tab click, switch keybind). */
@@ -713,6 +716,7 @@ export class ULabel {
      * Insert a copy of `annotation` into `target_key` with a fresh id and stamps.
      * Records a `paste_annotation` action on the target subtask unless `record` is false. Returns the new id, or null.
      * With `source_key`, the copy's `annotation_meta.copied_from` is `{ subtask_key, annotation_id }`.
+     * The `annotation_link_meta_key` entry is dropped from the copy's `annotation_meta`.
      */
     public paste_annotation(
         annotation: ULabelAnnotation | object,
@@ -750,6 +754,13 @@ export class ULabel {
     public paste_annotation_from_clipboard(envelope?: ULabelClipboardEnvelope | null): string | null;
     /** Id of an annotation in `target_key` pasted from `annotation_id` in `source_key` and not human-deleted, or null. */
     public find_pasted_copy(annotation_id: string, source_key: string, target_key: string): string | null;
+    /** Live spatial annotations in `target_key` linked to the source by `copied_from` (either way) or a shared `annotation_link_meta_key` value. */
+    public find_counterparts(annotation_id: string, source_key: string, target_key: string): string[];
+    /**
+     * Delete the counterparts from a writable `target_key`, or erase a bitmask source from its bitmask counterparts.
+     * One `delete_counterparts` action on the target's stream. Returns the changed ids.
+     */
+    public delete_counterparts(annotation_id: string, source_key: string, target_key: string): string[];
     /** Whether a context-menu copy/move makes the target the current subtask. */
     public set_paste_switch_to_target(enabled: boolean): void;
     public get_paste_switch_to_target(): boolean;
@@ -786,6 +797,7 @@ export class ULabel {
     public create_annotation__undo(annotation_id: string): void;
     public paste_annotation__undo(annotation_id: string): void;
     public move_annotation__undo(annotation_id: string, undo_payload: object): void;
+    public delete_counterparts__undo(undo_payload: object): void;
     public create_nonspatial_annotation__undo(annotation_id: string): void;
     public start_complex_polygon__undo(annotation_id: string): void;
     public merge_polygon_complex_layer__undo(annotation_id: string, undo_payload: object): void;
@@ -807,6 +819,7 @@ export class ULabel {
     public create_annotation__redo(annotation_id: string, redo_payload: object): void;
     public paste_annotation__redo(annotation_id: string, redo_payload: object): void;
     public move_annotation__redo(annotation_id: string, redo_payload: object): void;
+    public delete_counterparts__redo(annotation_id: string, redo_payload: object): void;
     public finish_modify_annotation__redo(annotation_id: string, redo_payload: object): void;
 
     // Mouse event handlers
