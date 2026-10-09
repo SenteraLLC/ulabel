@@ -4754,6 +4754,7 @@ export class ULabel {
      * counterparts (a mask erased to nothing is deleted; other counterparts
      * are left alone); any other source deletes its counterparts. Recorded as
      * one `delete_counterparts` action on the target's stream.
+     * `config.paste_switch_to_target` then switches to the target.
      *
      * @param {string} annotation_id
      * @param {string} source_key subtask the annotation lives in
@@ -4797,6 +4798,9 @@ export class ULabel {
         }
         this._apply_counterpart_removal(after, target_key, true);
         this._record_delete_counterparts(annotation_id, target_key, { before, after }, false);
+        if (this.config["paste_switch_to_target"] && target_key !== this.get_current_subtask_key()) {
+            this.set_subtask(target_key);
+        }
         return changed_ids;
     }
 
@@ -4859,7 +4863,7 @@ export class ULabel {
     }
 
     /**
-     * Whether a context-menu copy/move makes the target the current subtask.
+     * Whether a context-menu copy/move/delete-from makes the target the current subtask.
      * @param {boolean} enabled
      */
     set_paste_switch_to_target(enabled) {

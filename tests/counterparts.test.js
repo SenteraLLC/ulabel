@@ -210,6 +210,20 @@ describe("delete_counterparts", () => {
         expect(action_types(ulabel, "gt")).toEqual([]);
     });
 
+    test("paste_switch_to_target switches to the target only when something changed", () => {
+        const ulabel = make_ulabel({
+            gt: [make_bbox("g1", { hash: "h1" })],
+            diff: [make_bbox("d1", { hash: "h1" }), make_bbox("d2", {})],
+        }, { paste_switch_to_target: true });
+        ulabel.set_subtask = jest.fn();
+
+        ulabel.delete_counterparts("d2", "diff", "gt");
+        expect(ulabel.set_subtask).not.toHaveBeenCalled();
+
+        ulabel.delete_counterparts("d1", "diff", "gt");
+        expect(ulabel.set_subtask).toHaveBeenCalledWith("gt");
+    });
+
     test("a read-only target is left alone", () => {
         const ulabel = make_ulabel({
             ro: [make_bbox("r1", { hash: "h1" })],

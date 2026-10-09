@@ -390,7 +390,7 @@ export type ULabelConstructorArgs = {
     allow_body_move?: boolean;
     /** Open the class pie on a paste whose source class has no id/name match in the target. Default true; false takes the target's active class. */
     paste_class_choice?: boolean;
-    /** Make the target the current subtask after a context-menu copy/move. Default false. */
+    /** Make the target the current subtask after a copy/move or `delete_counterparts`. Default false. */
     paste_switch_to_target?: boolean;
     /** `annotation_meta` key whose value (string or string[]) links annotations across subtasks; any shared value links. Copies drop it. Default null. */
     annotation_link_meta_key?: string | null;
@@ -759,9 +759,10 @@ export class ULabel {
     /**
      * Delete the counterparts from a writable `target_key`, or erase a bitmask source from its bitmask counterparts.
      * One `delete_counterparts` action on the target's stream. Returns the changed ids.
+     * With `config.paste_switch_to_target`, switches to the target when anything changed.
      */
     public delete_counterparts(annotation_id: string, source_key: string, target_key: string): string[];
-    /** Whether a context-menu copy/move makes the target the current subtask. */
+    /** Whether a context-menu copy/move/delete-from makes the target the current subtask. */
     public set_paste_switch_to_target(enabled: boolean): void;
     public get_paste_switch_to_target(): boolean;
     public start_complex_polygon(annotation_id?: string): void;

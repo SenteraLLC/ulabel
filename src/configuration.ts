@@ -152,7 +152,7 @@ export class Configuration {
     // Whether a paste whose source class has no counterpart in the target
     // (by id or name) opens the class pie; off, the target's active class wins.
     public paste_class_choice: boolean = true;
-    // Whether a context-menu copy/move makes the target the current subtask.
+    // Whether a context-menu copy/move/delete-from makes the target the current subtask.
     public paste_switch_to_target: boolean = false;
     // Configuration for the annotation task itself
     public image_data: ImageData | null = null;
