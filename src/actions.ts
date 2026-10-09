@@ -3,6 +3,7 @@ import type {
     ULabelAction,
     ULabelActionRaw,
     ULabelActionType,
+    ULabelAnnotation,
     ULabelAnnotationChange,
 } from "../index";
 import { ULabel } from "../src/index";
@@ -80,12 +81,22 @@ export function record_action(
 
         // For some redo actions the annotation may no longer exist
         const now = ULabel.get_time();
-        for (const ann of [annotation, ...affected_annotations]) {
-            if (ann !== undefined) {
-                ann.last_edited_at = now;
-                ann.last_edited_by = ulabel.config.username;
-            }
+        const main_key = subtask_key ?? ulabel.get_current_subtask_key();
+        const stamped = [
+            { ann: annotation, key: main_key },
+            ...affected_annotations.map((ann, i) => ({ ann, key: affected[i].subtask_key })),
+        ].filter((entry): entry is { ann: ULabelAnnotation; key: string } => entry.ann !== undefined);
+        // Stamping can move an annotation into edit focus; only a redraw shows it
+        const defocused_before = stamped.map(({ ann, key }) => ulabel.is_annotation_defocused(ann, key));
+        for (const { ann } of stamped) {
+            ann.last_edited_at = now;
+            ann.last_edited_by = ulabel.config.username;
         }
+        stamped.forEach(({ ann, key }, i) => {
+            if (!ann.deprecated && ulabel.is_annotation_defocused(ann, key) !== defocused_before[i]) {
+                ulabel.redraw_annotation(ann.id!, key);
+            }
+        });
     }
 
     // Trigger any listeners for the action

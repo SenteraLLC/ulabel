@@ -93,6 +93,7 @@ class ULabel({
     annotation_size_minus_keybind: string,
     annotation_vanish_keybind: string,
     toggle_class_focus_keybind: string,
+    toggle_edit_focus_keybind: string,
     fly_to_max_zoom: number,
     min_zoom_fit_ratio: number,
     n_annos_per_canvas: number,
@@ -100,6 +101,7 @@ class ULabel({
     on_active_class_change: function,
     on_subtask_change: function,
     on_focus_active_class_change: function,
+    on_focus_edited_change: function,
     on_isolate_change: function,
     on_annotation_change: function,
     on_annotation_change_in_progress: boolean
@@ -707,6 +709,9 @@ Keybind to toggle vanish mode for all subtasks. Default is `shift+v`
 ### `toggle_class_focus_keybind`
 Keybind to toggle `focus_active_class` on the current subtask: with it on, classes other than the active one dim to `defocused_opacity` and drop out of hover, navigation, the annotation list, and bulk delete. Default is `shift+f`.
 
+### `toggle_edit_focus_keybind`
+Keybind to toggle `focus_edited` on the current subtask (also the **Edited Only** checkbox in the `AnnotationList` toolbox item): with it on, annotations not created or modified since load (the `edits_only` submit rule) dim to `defocused_opacity` and drop out of hover, navigation, the annotation list, and bulk delete. Composes with class focus. Set per subtask at load with a subtask's `focus_edited: true`, or at runtime with `set_focus_edited(subtask_key, enabled, redraw = true)`. Default is `h`.
+
 ### `fly_to_max_zoom`
 Maximum zoom factor used when flying-to an annotation. Default is `10`, value must be > `0`. 
 
@@ -735,6 +740,9 @@ When `true` (the default), ULabel installs a `MutationObserver` on the container
 
 ### `on_focus_active_class_change`
 *(subtask_key: string, enabled: boolean) => void* -- Called after a subtask's `focus_active_class` flag actually changes, whatever the writer: `set_focus_active_class` or the `toggle_class_focus_keybind`. Not called when the flag is already at the target value, so a host may re-sync other subtasks from the callback without recursing. Default is `null`.
+
+### `on_focus_edited_change`
+*(subtask_key: string, enabled: boolean) => void* -- Called after a subtask's `focus_edited` flag actually changes, whatever the writer: `set_focus_edited`, the `toggle_edit_focus_keybind`, or the annotation list's **Edited Only** checkbox. Not called when the flag is already at the target value. Default is `null`.
 
 ### `on_isolate_change`
 *(subtask_key: string, annotation_id: string | null) => void* -- Called after a subtask's isolated annotation actually changes, whatever the writer: `isolate_annotation`, the list's eye button, `Show all`, `Escape`, or one of the automatic clears (deletion, creation, subtask switch, `set_annotations`). `annotation_id` is `null` when the isolation clears. Default is `null`.

@@ -146,6 +146,42 @@ export function set_focus_active_class(
 }
 
 /**
+ * Turn edit focus on or off for a subtask at runtime: annotations unchanged
+ * since load dim and drop out of input like class focus.
+ *
+ * @param ulabel ULabel instance
+ * @param subtask_key subtask to toggle
+ * @param enabled whether only created/modified annotations stay in focus
+ * @param redraw whether the change repaints immediately
+ */
+export function set_focus_edited(
+    ulabel: ULabel,
+    subtask_key: string,
+    enabled: boolean,
+    redraw: boolean = true,
+): void {
+    const subtask = ulabel.subtasks[subtask_key];
+    if (subtask === undefined) {
+        log_message(`set_focus_edited: unknown subtask key ${subtask_key}`, LogLevel.WARNING, true);
+        return;
+    }
+    const previous = subtask.focus_edited === true;
+    subtask.focus_edited = enabled === true;
+
+    subtask.state.hovered_annid = null;
+    subtask.state.fly_to_idx = null;
+
+    if (redraw) {
+        ulabel.redraw_all_annotations(subtask_key);
+        ulabel.toolbox?.redraw_update_items(ulabel);
+    }
+
+    if (previous !== subtask.focus_edited) {
+        ulabel.config.on_focus_edited_change?.(subtask_key, subtask.focus_edited);
+    }
+}
+
+/**
  * Opacity for annotations outside the focused class. 0 skips drawing them
  * entirely, which is cheaper but loses them as visual context.
  *

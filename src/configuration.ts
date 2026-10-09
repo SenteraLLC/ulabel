@@ -176,6 +176,7 @@ export class Configuration {
     public on_active_class_change: ((subtask_key: string, class_id: number) => void) | null = null;
     public on_subtask_change: ((subtask_key: string, old_subtask_key: string) => void) | null = null;
     public on_focus_active_class_change: ((subtask_key: string, enabled: boolean) => void) | null = null;
+    public on_focus_edited_change: ((subtask_key: string, enabled: boolean) => void) | null = null;
     public on_isolate_change: ((subtask_key: string, annotation_id: string | null) => void) | null = null;
     // Fired once per recorded/undone/redone action that changes committed annotation state
     public on_annotation_change: ((change: ULabelAnnotationChange) => void) | null = null;
@@ -292,6 +293,8 @@ export class Configuration {
     public annotation_vanish_all_keybind: string = "shift+v";
 
     public toggle_class_focus_keybind: string = "shift+f";
+
+    public toggle_edit_focus_keybind: string = "h";
 
     public fly_to_next_annotation_keybind: string = "tab";
 

@@ -404,6 +404,8 @@ export type ULabelConstructorArgs = {
     on_subtask_change?: (subtask_key: string, old_subtask_key: string) => void;
     /** Fired after a subtask's `focus_active_class` flag changes, from any writer (API, focus keybind). */
     on_focus_active_class_change?: (subtask_key: string, enabled: boolean) => void;
+    /** Fired after a subtask's `focus_edited` flag changes, from any writer (API, edit focus keybind, annotation list checkbox). */
+    on_focus_edited_change?: (subtask_key: string, enabled: boolean) => void;
     /** Fired after a subtask's isolated annotation changes (`null` when cleared), from any writer (API, list button, Escape). */
     on_isolate_change?: (subtask_key: string, annotation_id: string | null) => void;
     /** Fired once per recorded, undone, or redone action that changes committed annotation state. Not fired by `set_annotations`/`set_annotations_batch`/`resume_from`. */
@@ -537,6 +539,11 @@ export class ULabel {
     public is_annotation_defocused(annotation: ULabelAnnotation, subtask_key: string): boolean;
     /** Turn focus-follows-active-class on or off for a subtask at runtime. */
     public set_focus_active_class(subtask_key: string, enabled: boolean, redraw?: boolean): void;
+    /**
+     * Turn edit focus on or off for a subtask at runtime: annotations unchanged
+     * since load dim to `defocused_opacity` and drop out of input like class focus.
+     */
+    public set_focus_edited(subtask_key: string, enabled: boolean, redraw?: boolean): void;
     /**
      * Opacity for annotations outside the focused class. 0 skips drawing them
      * entirely, which is cheaper but loses them as visual context.

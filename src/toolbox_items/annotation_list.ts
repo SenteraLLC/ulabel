@@ -332,6 +332,11 @@ export class AnnotationListToolboxItem extends ToolboxItem {
             this.update_list();
         });
 
+        // Edit focus lives on the subtask, so the canvas dims with the list
+        $(document).on("change.ulabel", "#annotation-list-edited-only", (e) => {
+            this.ulabel.set_focus_edited(this.ulabel.get_current_subtask_key(), (e.target as HTMLInputElement).checked);
+        });
+
         // Click on annotation list item to fly to it
         $(document).on("click.ulabel", ".annotation-list-item", (e) => {
             const annotation_id = $(e.currentTarget).data("annotation-id");
@@ -430,6 +435,10 @@ export class AnnotationListToolboxItem extends ToolboxItem {
         // Get current subtask
         const current_subtask = this.ulabel.get_current_subtask();
         if (!current_subtask) return;
+
+        // The keybind, API, and subtask switches all change it outside the checkbox
+        const edited_only_input = document.querySelector<HTMLInputElement>("#annotation-list-edited-only");
+        if (edited_only_input) edited_only_input.checked = current_subtask.focus_edited === true;
 
         // Build the list HTML
         const list_container = document.querySelector<HTMLDivElement>("#annotation-list-container");
@@ -699,6 +708,10 @@ export class AnnotationListToolboxItem extends ToolboxItem {
                     <div class="annotation-list-option">
                         <input type="checkbox" id="annotation-list-group-by-class" />
                         <label for="annotation-list-group-by-class">Group by Class</label>
+                    </div>
+                    <div class="annotation-list-option">
+                        <input type="checkbox" id="annotation-list-edited-only" />
+                        <label for="annotation-list-edited-only">Edited Only</label>
                     </div>
                 </div>
                 <div id="annotation-list-container" class="annotation-list-container">

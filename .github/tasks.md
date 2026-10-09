@@ -483,32 +483,21 @@ or string[]; any shared value links. "Erase from" for bitmask sources,
 - [x] Docs: index.d.ts, api_spec, CHANGELOG.
 - [ ] Lint + build; targeted tests; full jest + chromium e2e (full suites skipped for now).
 
-## Plan: highlight edited / new annotations (no ticket yet)
+## Edit focus: "Edited Only" (no ticket yet, branch `edit-focus`)
 
-Reuse the hover outline: drawn behind the shape when not hovered, colored by
-`SubmitButtons.classify_edit()` against `loaded_edited_at` (same rule as
-`edits_only` submit). Hover (white) wins. Global toggle, off by default.
+Replaces the outline-highlight experiment (branch `test-highlight`). Per-subtask
+`focus_edited` flag feeds `is_annotation_defocused()`: unchanged annotations
+(`SubmitButtons.classify_edit()` null against `loaded_edited_at`) dim like
+class focus and drop out of input, navigation, bulk delete and the list.
+Composes with class focus; isolation still wins.
 
-Phase 1 — core (keybind + API):
-- [ ] Config: `highlight_edits` (false, initial state),
-  `highlight_created_color` / `highlight_modified_color`,
-  `toggle_highlight_edits_keybind`.
-- [ ] `get_annotation_outline_color(annotation, subtask)`: hovered in the
-  current subtask → white; toggle on + created/modified → its color; else null.
-- [ ] Thread `subtask` from `draw_annotation` into every `draw_*`; replace the
-  `is_annotation_hovered()` checks in `draw_hover_outline`, polygon, tbar,
-  and bitmask with the resolver.
-- [ ] Bitmask: `get_bitmask_outline(render, color)` caches per color.
-- [ ] `bitmask_stroke__redo`: redraw carved masks after `record_action`
-  stamps them (currently before → stale halo).
-- [ ] `set_highlight_edits(enabled)` / `get_highlight_edits()`; redraw all
-  subtasks on change. Keypress handler + Keybinds toolbox entry.
-- [ ] Jest: resolver (created/modified/unchanged/hover wins/undo clears/
-  `set_annotations` rebaselines), toggle redraw, bitmask cache per color,
-  redo ordering. E2E: pixel color of halo after an edit, toggle off clears.
-- [ ] Docs: index.d.ts, api_spec, CHANGELOG.
-
-Phase 2 — optional toolbox item (`AllowedToolboxItem.HighlightEdits = 14`):
-- [ ] Checkbox (mirrors toggle) + two `<input type="color">` pickers
-  (precedent: `RecolorActiveItem`). `set_highlight_edit_colors({ created?,
-  modified? })` setter; keybind updates the checkbox.
+- [x] `ULabelSubtask.focus_edited` (+ subtask json option); defocus check;
+  focus-pass gate in `draw_context_in_focus_passes`.
+- [x] `set_focus_edited(subtask_key, enabled, redraw)` + `on_focus_edited_change`.
+- [x] `toggle_edit_focus_keybind` (`h`): keypress handler + Keybinds entry.
+- [x] Annotation list "Edited Only" checkbox mirrors the current subtask's flag
+  (not persisted).
+- [x] `record_action`: redraw annotations whose defocus flipped on stamping.
+- [x] Jest + e2e.
+- [x] Docs: index.d.ts, api_spec, CHANGELOG.
+- [x] Lint + build; full jest + chromium e2e.

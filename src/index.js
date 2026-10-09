@@ -32,7 +32,7 @@ import { initialize_annotation_canvases } from "../build/canvas_utils";
 import { record_action, record_finish, record_finish_edit, record_finish_move, undo, redo } from "../build/actions";
 import { ULabelMask, is_raw_mask_payload } from "../build/mask_utils";
 import { get_active_class_id, get_local_storage_item, set_local_storage_item } from "../build/utilities";
-import { set_active_class, get_selected_class_id, set_focus_active_class, set_defocused_opacity, can_annotation_be_class } from "../build/active_class";
+import { set_active_class, get_selected_class_id, set_focus_active_class, set_focus_edited, set_defocused_opacity, can_annotation_be_class } from "../build/active_class";
 import { show_context_menu, hide_context_menu, is_context_menu_open } from "../build/context_menu";
 import { isolate_annotation, is_annotation_isolated_out } from "../build/isolate";
 import { get_idd_string } from "../build/html_builder";
@@ -1192,7 +1192,7 @@ export class ULabel {
     }
 
     /**
-     * Whether a class focus is active on a subtask and this annotation is not in it.
+     * Whether class focus or edit focus is active on a subtask and this annotation is not in it.
      * Affects drawing and input targeting only: a defocused annotation is still
      * real data, so geometry (bitmask overlap, merges) must ignore this.
      * @param {object} annotation
@@ -1204,6 +1204,10 @@ export class ULabel {
         if (subtask == null) return false;
         // Isolation hides rather than dims, but shares every input gate
         if (is_annotation_isolated_out(this, annotation, subtask_key)) return true;
+        if (subtask["focus_edited"]) {
+            const loaded_edited_at = subtask["annotations"]["loaded_edited_at"] ?? {};
+            if (SubmitButtons.classify_edit(annotation, loaded_edited_at[annotation["id"]]) === null) return true;
+        }
         if (!subtask["focus_active_class"]) return false;
         const selected_class_id = get_selected_class_id(this, subtask_key);
         if (selected_class_id == null) return false;
@@ -1284,6 +1288,17 @@ export class ULabel {
      */
     set_focus_active_class(subtask_key, enabled, redraw = true) {
         set_focus_active_class(this, subtask_key, enabled, redraw);
+    }
+
+    /**
+     * Turn edit focus on or off for a subtask: annotations unchanged since
+     * load dim and drop out of input.
+     * @param {string} subtask_key
+     * @param {boolean} enabled
+     * @param {boolean} redraw
+     */
+    set_focus_edited(subtask_key, enabled, redraw = true) {
+        set_focus_edited(this, subtask_key, enabled, redraw);
     }
 
     /**
@@ -2946,7 +2961,7 @@ export class ULabel {
         const annotation_ids = context_entry["annotation_ids"].filter(
             (annid) => !is_annotation_isolated_out(this, access[annid], subtask),
         );
-        if (!this.subtasks[subtask]["focus_active_class"]) {
+        if (!this.subtasks[subtask]["focus_active_class"] && !this.subtasks[subtask]["focus_edited"]) {
             for (const annid of annotation_ids) draw(annid);
             return;
         }

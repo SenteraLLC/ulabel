@@ -214,6 +214,13 @@ function handle_keypress_event(
         return;
     }
 
+    // Toggle edit focus (only created/modified annotations) on the current subtask
+    if (event_matches_keybind(keypress_event, ulabel.config.toggle_edit_focus_keybind)) {
+        const st_key = ulabel.get_current_subtask_key();
+        ulabel.set_focus_edited(st_key, !ulabel.subtasks[st_key].focus_edited);
+        return;
+    }
+
     // Check for class keybinds
     if (!DELETE_MODES.includes(current_subtask.state.annotation_mode)) {
         for (let i = 0; i < current_subtask.class_defs.length; i++) {
