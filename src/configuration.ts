@@ -9,6 +9,7 @@ import type {
     ULabelSubmitButton,
     AnnoScalingMode,
     BrushOverlapMode,
+    ULabelAnnotationChange,
 } from "../index";
 import {
     ModeSelectionToolboxItem,
@@ -145,6 +146,16 @@ export class Configuration {
     // Whether stroke overlap resolution reaches masks in other subtasks; off, a
     // stroke only interacts with masks in the active subtask.
     public brush_overlap_across_subtasks: boolean = false;
+    // Left-dragging an annotation's body moves it; Alt forces a new draw at
+    // that spot instead (ctrl/shift already mean pan/zoom on the canvas).
+    public allow_body_move: boolean = true;
+    // Whether a paste whose source class has no counterpart in the target
+    // (by id or name) opens the class pie; off, the target's active class wins.
+    public paste_class_choice: boolean = true;
+    // Whether a context-menu copy/move/delete-from makes the target the current subtask.
+    public paste_switch_to_target: boolean = false;
+    // Whether the context menu hides Copy to / Move to for subtasks holding a counterpart.
+    public hide_copy_to_linked: boolean = false;
     // Configuration for the annotation task itself
     public image_data: ImageData | null = null;
     public allow_soft_id: boolean = false;
@@ -165,6 +176,11 @@ export class Configuration {
     public on_active_class_change: ((subtask_key: string, class_id: number) => void) | null = null;
     public on_subtask_change: ((subtask_key: string, old_subtask_key: string) => void) | null = null;
     public on_focus_active_class_change: ((subtask_key: string, enabled: boolean) => void) | null = null;
+    public on_isolate_change: ((subtask_key: string, annotation_id: string | null) => void) | null = null;
+    // Fired once per recorded/undone/redone action that changes committed annotation state
+    public on_annotation_change: ((change: ULabelAnnotationChange) => void) | null = null;
+    // Whether continue_* (in-progress) actions are also reported
+    public on_annotation_change_in_progress: boolean = false;
 
     // Passthrough
     public task_meta: object = {};

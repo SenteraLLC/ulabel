@@ -1732,6 +1732,9 @@ div#${prntid} canvas.canvas_cls {
    top: 0;
    left: 0;
 }
+div#${prntid} canvas.canvas_cls.movable_hover {
+   cursor: move;
+}
 div#${prntid} canvas.annotation_canvas {
    pointer-events: none;
 }
@@ -1933,53 +1936,78 @@ div#${prntid} div.global_edit_suggestion {
    display: none;
    position: absolute;
    width: 150px;
-   /*height: 75px;*/
    height: 0px;
    text-align: center;
    z-index: 1;
-   /* background-color: white; */
    transform: scale(0.66666);
    overflow: visible;
 }
-div#${prntid} div.global_edit_suggestion.mcm {
-   width: 225px;
-   transform: scale(0.5);
-}
-div#${prntid} a.global_sub_suggestion {
-   width: 60px;
-   height: 60px;
-   margin-left: 7.5px;
-   margin-right: 7.5px;
-   display: inline-block;
-   border-radius: 37.5px;
+
+div#${prntid} div.ulabel-context-menu {
+   display: none;
+   position: fixed;
+   z-index: 3000;
+   min-width: 0;
+   max-width: 320px;
+   max-height: calc(100vh - 8px);
+   overflow-y: auto;
+   box-sizing: border-box;
+   padding: 2px 0;
    background-color: white;
-   overflow: hidden;
-   transform: translateY(-50%);
+   color: #222;
+   border: 1px solid rgba(0, 0, 0, 0.2);
+   border-radius: 4px;
+   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+   font-family: sans-serif;
+   font-size: 13px;
+   line-height: 1.2;
+   user-select: none;
 }
-div#${prntid} a.global_sub_suggestion img {
-   display: block;
-   width: 40px;
-   height: 40px;
-   padding: 10px;
+div#${prntid}.ulabel-night div.ulabel-context-menu {
+   background-color: #2b2b2b;
+   color: #eee;
+   border-color: rgba(255, 255, 255, 0.2);
 }
-div#${prntid} a.global_sub_suggestion span.bigx {
-   position: absolute;
-   display: block;
-   font-size: 4em;
-   text-align: center;
-   width: 60px;
-   top: 50%;
-   -ms-transform: translateY(-50%);
-   transform: translateY(-50%);
-   color: black;
-   text-decoration: none;
+div#${prntid} div.ulabel-context-menu-item {
+   display: flex;
+   align-items: center;
+   justify-content: flex-start;
+   gap: 6px;
+   padding: 4px 8px;
+   cursor: pointer;
+   white-space: nowrap;
 }
-div#${prntid} a.global_sub_suggestion.reid_suggestion {
-   opacity: 0.3;
-   background-color: black;
+div#${prntid} span.ulabel-context-menu-item-icon {
+   display: inline-flex;
+   width: 14px;
+   height: 14px;
+   opacity: 0.75;
 }
-div#${prntid} a.global_sub_suggestion.reid_suggestion:hover {
-   opacity: 0; 
+div#${prntid} span.ulabel-context-menu-item-icon svg {
+   width: 100%;
+   height: 100%;
+}
+div#${prntid} div.ulabel-context-menu-item:hover {
+   background-color: rgba(0, 128, 255, 0.15);
+}
+div#${prntid} div.ulabel-context-menu-detail {
+   display: flex;
+   gap: 8px;
+   padding: 2px 8px;
+   font-size: 12px;
+}
+div#${prntid} span.ulabel-context-menu-detail-key {
+   flex: 0 0 auto;
+   color: #777;
+}
+div#${prntid}.ulabel-night span.ulabel-context-menu-detail-key {
+   color: #aaa;
+}
+div#${prntid} span.ulabel-context-menu-detail-value {
+   flex: 1 1 auto;
+   font-family: monospace;
+   word-break: break-all;
+   text-align: right;
 }
 
 div#${prntid} a.tbid-opt {

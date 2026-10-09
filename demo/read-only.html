@@ -114,13 +114,14 @@
                 const AllowedToolboxItem = ULabel.get_allowed_toolbox_item_enum();
                 let ulabel = new ULabel({
                     "container_id": "container",
-                    "image_data": "https://ulabel.s3.us-east-2.amazonaws.com/cs-demo-0.png",
+                    "image_data": "/cs-demo-0.png",
                     "username": "DemoUser",
                     "submit_buttons": on_submit,
                     "subtasks": subtasks,
                     "toolbox_order": [
                         AllowedToolboxItem.ModeSelect,
                         AllowedToolboxItem.ZoomPan,
+                        AllowedToolboxItem.Brush,
                         AllowedToolboxItem.AnnotationID,
                         AllowedToolboxItem.ClassCounter,
                         AllowedToolboxItem.AnnotationResize,
@@ -133,6 +134,11 @@
                 });
                 // Expose the instance for e2e tests
                 window.ulabel = ulabel;
+
+                $("#toggle-read-only").on("click", function() {
+                    const key = ulabel.get_current_subtask_key();
+                    ulabel.set_subtask_read_only(key, !ulabel.is_current_subtask_read_only());
+                });
             });
         </script>
         <style>
@@ -154,6 +160,7 @@
                 All subtasks are <code>read_only: true</code>. Hover shows the confidence card and hover outline, but
                 move/reclassify/delete buttons, vertex handles, and the id color-wheel are suppressed. Creation drags,
                 brush/erase mode, delete keybinds, and class-reassign keybinds are all blocked.
+                <button id="toggle-read-only">Toggle read-only (current subtask)</button>
             </p>
         </div>
         <div id="wrapper">
