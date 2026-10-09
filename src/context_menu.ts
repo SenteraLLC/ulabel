@@ -189,7 +189,15 @@ export function show_context_menu(ulabel: ULabel, annid: string, client_x: numbe
         });
     }
     const source_key = ulabel.get_current_subtask_key();
-    const copy_targets = ulabel.get_copy_target_subtask_keys(annotation, source_key);
+    const counterparts: Record<string, string[]> = {};
+    for (const key of Object.keys(ulabel.subtasks)) {
+        if (key === source_key || ulabel.subtasks[key].read_only === true) continue;
+        const ids = ulabel.find_counterparts(annid, source_key, key);
+        if (ids.length > 0) counterparts[key] = ids;
+    }
+    const copy_targets = ulabel.get_copy_target_subtask_keys(annotation, source_key).filter(
+        (key) => !(ulabel.config.hide_copy_to_linked && key in counterparts),
+    );
     if (copy_targets.length > 0) {
         const transfer = (target_key: string, cut: boolean) => {
             hide_context_menu(ulabel);
@@ -209,12 +217,6 @@ export function show_context_menu(ulabel: ULabel, annid: string, client_x: numbe
         if (!read_only) {
             add_subtask_picker(ulabel, menu, "Move to", ICON_CUT, copy_targets, client_x, client_y, (key) => transfer(key, true));
         }
-    }
-    const counterparts: Record<string, string[]> = {};
-    for (const key of Object.keys(ulabel.subtasks)) {
-        if (key === source_key || ulabel.subtasks[key].read_only === true) continue;
-        const ids = ulabel.find_counterparts(annid, source_key, key);
-        if (ids.length > 0) counterparts[key] = ids;
     }
     const remove = (target_key: string, erase: boolean) => {
         hide_context_menu(ulabel);

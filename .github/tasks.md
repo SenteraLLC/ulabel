@@ -484,6 +484,8 @@ or string[]; any shared value links. "Erase from" for bitmask sources,
 - [ ] Lint + build; targeted tests; full jest + chromium e2e (full suites skipped for now).
 - [x] Bitmask also gets "Delete from" (`delete_counterparts(..., erase)`); Delete shows
   the count when above 1 ("Delete 2 from GT", list "GT (2)").
+- [x] `hide_copy_to_linked` (false): menu leaves out Copy to / Move to for
+  subtasks with counterparts (registry: only FP diff pieces lack GT hashes).
 
 ## `has_edits(subtasks?)` public API (0.29.0)
 

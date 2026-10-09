@@ -214,6 +214,23 @@ describe("context menu items", () => {
         expect(ulabel.delete_counterparts).toHaveBeenCalledWith("a0", "main", "pred", false);
     });
 
+    test("hide_copy_to_linked leaves out Copy to / Move to for subtasks with counterparts", () => {
+        const ulabel = make_ulabel({ copy_targets: ["pred", "review"] });
+        ulabel.config.hide_copy_to_linked = true;
+        ulabel.find_counterparts.mockImplementation((annid, source_key, key) => (key === "pred" ? ["p1"] : []));
+
+        show_context_menu(ulabel, "a0", 100, 100);
+        expect(item_labels()).toEqual([
+            "Change class",
+            "Copy to Review",
+            "Move to Review",
+            "Delete from Predictions",
+            "Delete",
+            "Isolate",
+            "Details",
+        ]);
+    });
+
     test("Delete from shows how many it would delete", () => {
         const ulabel = make_ulabel({ read_only: true });
         ulabel.find_counterparts.mockImplementation((annid, source_key, key) => (key === "pred" ? ["p1", "p2"] : ["r1"]));

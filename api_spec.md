@@ -79,6 +79,7 @@ class ULabel({
     paste_class_choice: boolean,
     paste_switch_to_target: boolean,
     annotation_link_meta_key: string | null,
+    hide_copy_to_linked: boolean,
     set_brush_overlap_none_keybind: string,
     set_brush_overlap_exclude_keybind: string,
     set_brush_overlap_overwrite_keybind: string,
@@ -664,6 +665,9 @@ When `true`, a context-menu `Copy to` / `Move to` / `Delete from` / `Erase from`
 
 ### `annotation_link_meta_key`
 An `annotation_meta` key whose value, a string or an array of strings, links annotations across subtasks: two annotations are counterparts when they share any value (see [`find_counterparts`](#find_counterpartsannotation_id-source_key-target_key)). Every copy and paste drops this entry from the copy's `annotation_meta`, so a copy never claims its source's identity. Default is `null` (only `copied_from` links).
+
+### `hide_copy_to_linked`
+When `true`, the context menu leaves out `Copy to` / `Move to` for every subtask that already holds a counterpart of the annotation (see [`find_counterparts`](#find_counterpartsannotation_id-source_key-target_key)), instead of asking before copying again. `ctrl+v` is unaffected. Default is `false`.
 
 ### `set_brush_overlap_none_keybind`
 Keybind to set the brush overlap mode to `none`. Default is `shift+n`.

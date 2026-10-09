@@ -394,6 +394,8 @@ export type ULabelConstructorArgs = {
     paste_switch_to_target?: boolean;
     /** `annotation_meta` key whose value (string or string[]) links annotations across subtasks; any shared value links. Copies drop it. Default null. */
     annotation_link_meta_key?: string | null;
+    /** Context menu hides Copy to / Move to for subtasks that already hold a counterpart (instead of confirming). Default false. */
+    hide_copy_to_linked?: boolean;
     /** Fired after a subtask's active class changes, from any writer (API, toolbox click, class keybind). */
     on_active_class_change?: (subtask_key: string, class_id: number) => void;
     /** Fired after the current subtask changes, from any writer (API, tab click, switch keybind). */
