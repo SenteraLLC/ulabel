@@ -4751,18 +4751,19 @@ export class ULabel {
 
     /**
      * Remove an annotation's counterparts (see `find_counterparts`) from a
-     * writable subtask. A bitmask source is erased from its bitmask
-     * counterparts (a mask erased to nothing is deleted; other counterparts
-     * are left alone); any other source deletes its counterparts. Recorded as
-     * one `delete_counterparts` action on the target's stream.
+     * writable subtask. Erasing (bitmask sources only) subtracts the source
+     * from its bitmask counterparts (a mask erased to nothing is deleted;
+     * other counterparts are left alone); otherwise every counterpart is
+     * deleted. Recorded as one `delete_counterparts` action on the target's stream.
      * `config.paste_switch_to_target` then switches to the target.
      *
      * @param {string} annotation_id
      * @param {string} source_key subtask the annotation lives in
      * @param {string} target_key subtask to remove counterparts from
+     * @param {boolean | null} erase default: whether the source is a bitmask
      * @returns {string[]} ids of the changed counterparts
      */
-    delete_counterparts(annotation_id, source_key, target_key) {
+    delete_counterparts(annotation_id, source_key, target_key, erase = null) {
         const source = this.subtasks[source_key]?.["annotations"]["access"][annotation_id];
         const target = this.subtasks[target_key];
         if (source == null || target == null) {
@@ -4773,7 +4774,12 @@ export class ULabel {
             log_message(`Subtask ${target_key} is read-only; nothing removed`, LogLevel.WARNING, true);
             return [];
         }
-        const erase = source["spatial_type"] === "bitmask";
+        const is_bitmask = source["spatial_type"] === "bitmask";
+        erase ??= is_bitmask;
+        if (erase && !is_bitmask) {
+            log_message(`Only a bitmask can be erased from subtask ${target_key}`, LogLevel.WARNING, true);
+            return [];
+        }
         const source_mask = erase ? this.get_bitmask(source) : null;
         const before = { masks: {}, deprecated_ids: [] };
         const after = { masks: {}, deprecated_ids: [] };

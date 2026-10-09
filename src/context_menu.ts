@@ -120,7 +120,8 @@ function render_details(
 
 /**
  * "Copy to" / "Move to" / "Delete from" entry. One eligible subtask collapses to a flat
- * "<label> <name>" item; several open an in-place list of subtask names.
+ * "<label> <name>" item; several open an in-place list of subtask names. A `count_of`
+ * above 1 is shown as "<verb> <n> <rest> <name>" or "<name> (<n>)".
  */
 function add_subtask_picker(
     ulabel: ULabel,
@@ -131,16 +132,22 @@ function add_subtask_picker(
     client_x: number,
     client_y: number,
     on_pick: (target_key: string) => void,
+    count_of: (target_key: string) => number = () => 1,
 ): void {
     const name_of = (key: string) => ulabel.subtasks[key].display_name;
     if (target_keys.length === 1) {
-        add_item(menu, `${label} ${name_of(target_keys[0])}`, icon_svg, () => on_pick(target_keys[0]));
+        const key = target_keys[0];
+        const count = count_of(key);
+        const [verb, ...rest] = label.split(" ");
+        const text = count > 1 ? `${verb} ${count} ${rest.join(" ")}` : label;
+        add_item(menu, `${text} ${name_of(key)}`, icon_svg, () => on_pick(key));
         return;
     }
     add_item(menu, `${label}\u2026`, icon_svg, () => {
         menu.replaceChildren();
         for (const key of target_keys) {
-            add_item(menu, name_of(key), icon_svg, () => on_pick(key));
+            const count = count_of(key);
+            add_item(menu, count > 1 ? `${name_of(key)} (${count})` : name_of(key), icon_svg, () => on_pick(key));
         }
         position_menu(menu, client_x, client_y);
     });
@@ -150,9 +157,10 @@ function add_subtask_picker(
  * Open the menu for an annotation in the current subtask at a viewport
  * position. Items: Change class (editable subtask with at least two
  * compatible classes), Copy to / Move to (another writable subtask has a
- * compatible class; Move to only on an editable subtask), Delete from /
- * Erase from (another writable subtask holds counterparts, see
- * `find_counterparts`; Erase for a bitmask), Delete (editable
+ * compatible class; Move to only on an editable subtask), Erase from (a
+ * bitmask, where another writable subtask holds bitmask counterparts, see
+ * `find_counterparts`), Delete from (another writable subtask holds
+ * counterparts; the count shows when above 1), Delete (editable
  * subtask), Isolate / Show all (always; view-only), Details (always).
  *
  * @returns whether the menu was shown
@@ -202,19 +210,28 @@ export function show_context_menu(ulabel: ULabel, annid: string, client_x: numbe
             add_subtask_picker(ulabel, menu, "Move to", ICON_CUT, copy_targets, client_x, client_y, (key) => transfer(key, true));
         }
     }
-    const erase = annotation.spatial_type === "bitmask";
-    const removal_targets = Object.keys(ulabel.subtasks).filter((key) => {
-        if (key === source_key || ulabel.subtasks[key].read_only === true) return false;
-        return ulabel.find_counterparts(annid, source_key, key).some(
-            (id) => !erase || ulabel.subtasks[key].annotations.access[id].spatial_type === "bitmask",
-        );
-    });
-    if (removal_targets.length > 0) {
-        const label = erase ? "Erase from" : "Delete from";
-        add_subtask_picker(ulabel, menu, label, ICON_DELETE, removal_targets, client_x, client_y, (key) => {
-            hide_context_menu(ulabel);
-            ulabel.delete_counterparts(annid, source_key, key);
-        });
+    const counterparts: Record<string, string[]> = {};
+    for (const key of Object.keys(ulabel.subtasks)) {
+        if (key === source_key || ulabel.subtasks[key].read_only === true) continue;
+        const ids = ulabel.find_counterparts(annid, source_key, key);
+        if (ids.length > 0) counterparts[key] = ids;
+    }
+    const remove = (target_key: string, erase: boolean) => {
+        hide_context_menu(ulabel);
+        ulabel.delete_counterparts(annid, source_key, target_key, erase);
+    };
+    if (annotation.spatial_type === "bitmask") {
+        const erase_targets = Object.keys(counterparts).filter((key) => counterparts[key].some(
+            (id) => ulabel.subtasks[key].annotations.access[id].spatial_type === "bitmask",
+        ));
+        if (erase_targets.length > 0) {
+            add_subtask_picker(ulabel, menu, "Erase from", ICON_DELETE, erase_targets, client_x, client_y, (key) => remove(key, true));
+        }
+    }
+    const delete_targets = Object.keys(counterparts);
+    if (delete_targets.length > 0) {
+        const count_of = (key: string) => counterparts[key].length;
+        add_subtask_picker(ulabel, menu, "Delete from", ICON_DELETE, delete_targets, client_x, client_y, (key) => remove(key, false), count_of);
     }
     if (!read_only) {
         add_item(menu, "Delete", ICON_DELETE, () => {

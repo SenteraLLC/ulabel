@@ -199,6 +199,27 @@ describe("delete_counterparts", () => {
         expect(gt(ulabel, "covered").deprecated).toBe(true);
     });
 
+    test("erase=false deletes every counterpart of a bitmask; a non-bitmask cannot erase", () => {
+        const ulabel = make_ulabel({
+            gt: [make_bitmask("far", 50, 10, { hash: "h1" }), make_bbox("box", { hash: "h1" }), make_bbox("other", {})],
+            diff: [make_bitmask("d1", 0, 5, { hash: "h1" }), make_bbox("d2", { hash: "h1" })],
+        });
+
+        expect(ulabel.delete_counterparts("d2", "diff", "gt", true)).toEqual([]);
+        expect(action_types(ulabel, "gt")).toEqual([]);
+
+        expect(ulabel.delete_counterparts("d1", "diff", "gt", false)).toEqual(["far", "box"]);
+        expect(gt(ulabel, "far").deprecated).toBe(true);
+        expect(gt(ulabel, "box").deprecated).toBe(true);
+        expect(gt(ulabel, "other").deprecated).toBe(false);
+        expect(ulabel.get_bitmask(gt(ulabel, "far")).is_empty()).toBe(false);
+
+        ulabel.state.current_subtask = "gt";
+        ulabel.undo();
+        expect(gt(ulabel, "far").deprecated).toBe(false);
+        expect(gt(ulabel, "box").deprecated).toBe(false);
+    });
+
     test("records nothing when no counterpart changes", () => {
         const ulabel = make_ulabel({
             gt: [make_bitmask("far", 50, 10, { hash: "h1" })],

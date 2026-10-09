@@ -482,6 +482,8 @@ or string[]; any shared value links. "Erase from" for bitmask sources,
 - [ ] Jest + e2e (new e2e test not yet run).
 - [x] Docs: index.d.ts, api_spec, CHANGELOG.
 - [ ] Lint + build; targeted tests; full jest + chromium e2e (full suites skipped for now).
+- [x] Bitmask also gets "Delete from" (`delete_counterparts(..., erase)`); Delete shows
+  the count when above 1 ("Delete 2 from GT", list "GT (2)").
 
 ## `has_edits(subtasks?)` public API (0.29.0)
 

@@ -759,11 +759,12 @@ export class ULabel {
     /** Live spatial annotations in `target_key` linked to the source by `copied_from` (either way) or a shared `annotation_link_meta_key` value. */
     public find_counterparts(annotation_id: string, source_key: string, target_key: string): string[];
     /**
-     * Delete the counterparts from a writable `target_key`, or erase a bitmask source from its bitmask counterparts.
+     * Delete the counterparts from a writable `target_key`, or with `erase` (default: source is a bitmask)
+     * subtract a bitmask source from its bitmask counterparts.
      * One `delete_counterparts` action on the target's stream. Returns the changed ids.
      * With `config.paste_switch_to_target`, switches to the target when anything changed.
      */
-    public delete_counterparts(annotation_id: string, source_key: string, target_key: string): string[];
+    public delete_counterparts(annotation_id: string, source_key: string, target_key: string, erase?: boolean | null): string[];
     /** Whether a context-menu copy/move/delete-from makes the target the current subtask. */
     public set_paste_switch_to_target(enabled: boolean): void;
     public get_paste_switch_to_target(): boolean;
