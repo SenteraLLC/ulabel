@@ -808,6 +808,10 @@ When batching several per-subtask swaps, prefer [`set_annotations_batch()`](#set
 
 *(bool) => void* -- Allows js script implementing the ULabel class to set saved status, e.g., during callback.
 
+### `has_edits(subtasks?)`
+
+*(subtasks?: string[] | null) => boolean* -- Whether a submit button with `edits_only` (and this `subtasks` list; default all subtasks) would send any annotation. Unlike `state.edited`, which stays set until [`set_saved(true)`](#set_savedsaved), this turns `false` again when every edit is undone. It compares against what was loaded via `resume_from` / `set_annotations()`, not the last save. Builds the payload on each call.
+
 ### `remove_listeners()`
 
 *() => void* -- Removes persistent event listeners from the document and window. Listeners attached directly to html elements are not explicitly removed.

@@ -36,6 +36,7 @@ import { set_active_class, get_selected_class_id, set_focus_active_class, set_de
 import { show_context_menu, hide_context_menu, is_context_menu_open } from "../build/context_menu";
 import { isolate_annotation, is_annotation_isolated_out } from "../build/isolate";
 import { get_idd_string } from "../build/html_builder";
+import { SubmitButtons } from "../build/toolbox_items/submit_buttons";
 
 import $ from "jquery";
 const jQuery = $;
@@ -5454,6 +5455,17 @@ export class ULabel {
 
     set_saved(saved) {
         this.state["edited"] = !saved;
+    }
+
+    /**
+     * Whether an `edits_only` submit (optionally limited to `subtasks`) would send anything.
+     *
+     * @param {string[] | null} subtasks subtask keys to check; default all
+     * @returns {boolean}
+     */
+    has_edits(subtasks = null) {
+        const payload = SubmitButtons.build_submit_payload(this, { subtasks: subtasks ?? undefined, edits_only: true });
+        return Object.values(payload.annotations).some((annotations) => annotations.length > 0);
     }
 
     create_nonspatial_annotation(annotation_id = null, redo_payload = null) {

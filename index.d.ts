@@ -591,6 +591,8 @@ export class ULabel {
     /** Deferred half of a batched `set_annotations` sequence: filter distances + toolbox redraw. */
     public refresh_toolbox(): void;
     public set_saved(saved: boolean): void;
+    /** Whether an `edits_only` submit limited to `subtasks` (default all) would send anything. */
+    public has_edits(subtasks?: string[] | null): boolean;
     public draw_annotation_from_id(id: string, offset?: Offset, subtask?: string): void;
     public redraw_annotation(annotation_id: string, subtask?: string, offset?: Offset): void;
     public render_bitmask_move(annotation_id: string, subtask: string, offset: Offset): void;

@@ -483,6 +483,11 @@ or string[]; any shared value links. "Erase from" for bitmask sources,
 - [x] Docs: index.d.ts, api_spec, CHANGELOG.
 - [ ] Lint + build; targeted tests; full jest + chromium e2e (full suites skipped for now).
 
+## `has_edits(subtasks?)` public API (0.29.0)
+
+- [x] `has_edits` = `edits_only` payload non-empty; undo clears it, unlike `state.edited`.
+- [x] Docs + Jest; lint, build, targeted tests.
+
 ## Plan: highlight edited / new annotations (no ticket yet)
 
 Reuse the hover outline: drawn behind the shape when not hovered, colored by
