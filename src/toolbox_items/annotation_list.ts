@@ -19,6 +19,9 @@ import {
 // Eye icon for the per-entry isolate button; `currentColor` follows the theme
 const ISOLATE_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 8s2.5-4.5 6.5-4.5S14.5 8 14.5 8s-2.5 4.5-6.5 4.5S1.5 8 1.5 8z"/><circle cx="8" cy="8" r="2"/></svg>`;
 
+// Keyed by `${spatial_type}|${color}`
+const ICON_URL_CACHE: Map<string, string> = new Map();
+
 /**
  * Toolbox item for displaying and navigating annotations in a list
  */
@@ -174,6 +177,8 @@ export class AnnotationListToolboxItem extends ToolboxItem {
             border-bottom: 1px solid rgba(128, 128, 128, 0.2);
             cursor: pointer;
             transition: background-color 150ms;
+            content-visibility: auto;
+            contain-intrinsic-size: auto 37px;
         }
 
         #toolbox .annotation-list-item:last-child {
@@ -203,7 +208,7 @@ export class AnnotationListToolboxItem extends ToolboxItem {
             justify-content: center;
         }
 
-        #toolbox .annotation-list-item-icon svg {
+        #toolbox .annotation-list-item-icon img {
             width: 100%;
             height: 100%;
         }
@@ -497,12 +502,12 @@ export class AnnotationListToolboxItem extends ToolboxItem {
             const class_def = class_def_by_id.get(class_id);
             const class_name = class_def ? class_def.name : "Unknown";
             const color = this.ulabel.color_info[class_id] || "#cccccc";
-            const svg = this.get_spatial_type_svg(annotation.spatial_type!, color);
+            const icon_url = this.get_spatial_type_icon_url(annotation.spatial_type!, color);
 
             html += `
                 <div class="annotation-list-item" data-annotation-id="${annotation.id}" data-annotation-idx="${i}">
                     <div class="annotation-list-item-header">
-                        <div class="annotation-list-item-icon">${svg}</div>
+                        <div class="annotation-list-item-icon"><img src="${icon_url}" alt=""></div>
                         <div class="annotation-list-item-text">
                             <span class="annotation-list-item-class">${class_name}</span>
                             <span class="annotation-list-item-id">#${i}</span>
@@ -522,6 +527,7 @@ export class AnnotationListToolboxItem extends ToolboxItem {
      */
     private build_grouped_list_html(annotations: ULabelAnnotation[], subtask: ULabelSubtask): string {
         const class_def_by_id = this.build_class_def_by_id(subtask);
+        const overall_idx_by_annotation = new Map(annotations.map((annotation, idx) => [annotation, idx]));
 
         // Group annotations by class
         const groups: { [class_id: number]: ULabelAnnotation[] } = {};
@@ -574,13 +580,13 @@ export class AnnotationListToolboxItem extends ToolboxItem {
 
             for (let i = 0; i < group_annotations.length; i++) {
                 const annotation = group_annotations[i];
-                const overall_idx = annotations.indexOf(annotation);
-                const svg = this.get_spatial_type_svg(annotation.spatial_type!, color);
+                const overall_idx = overall_idx_by_annotation.get(annotation);
+                const icon_url = this.get_spatial_type_icon_url(annotation.spatial_type!, color);
 
                 html += `
                     <div class="annotation-list-item" data-annotation-id="${annotation.id}" data-annotation-idx="${overall_idx}">
                         <div class="annotation-list-item-header">
-                            <div class="annotation-list-item-icon" style="margin-left: 0.5rem;">${svg}</div>
+                            <div class="annotation-list-item-icon" style="margin-left: 0.5rem;"><img src="${icon_url}" alt=""></div>
                             <div class="annotation-list-item-text">
                                 <span class="annotation-list-item-id">#${i}</span>
                             </div>
@@ -612,9 +618,14 @@ export class AnnotationListToolboxItem extends ToolboxItem {
     }
 
     /**
-     * Get the SVG icon for a given spatial type
+     * Get a data URL for the colored icon of a given spatial type. Rendering it as an
+     * <img> keeps each row to one DOM node instead of a full inline Inkscape SVG.
      */
-    private get_spatial_type_svg(spatial_type: string, color: string): string {
+    private get_spatial_type_icon_url(spatial_type: string, color: string): string {
+        const cache_key = `${spatial_type}|${color}`;
+        const cached = ICON_URL_CACHE.get(cache_key);
+        if (cached !== undefined) return cached;
+
         let svg = "";
 
         switch (spatial_type) {
@@ -659,7 +670,9 @@ export class AnnotationListToolboxItem extends ToolboxItem {
         svg = svg.replace(/stroke:#[0-9a-fA-F]{6}/g, `stroke:${color}`);
         svg = svg.replace(/fill:#[0-9a-fA-F]{6}/g, `fill:${color}`);
 
-        return svg;
+        const url = `data:image/svg+xml,${encodeURIComponent(svg)}`;
+        ICON_URL_CACHE.set(cache_key, url);
+        return url;
     }
 
     /**
