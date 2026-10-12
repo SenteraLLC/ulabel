@@ -32,6 +32,7 @@ function handle_clipboard_event(
 ) {
     if (is_text_input_target(clipboard_event.target) || ulabel.state.is_editing_keybind) return;
     if (ulabel.get_current_subtask()["state"]["is_in_progress"]) return;
+    if (kind !== "copy" && ulabel.is_subtask_edit_locked()) return;
     const clipboard_data = (clipboard_event.originalEvent as ClipboardEvent | undefined)?.clipboardData ?? null;
 
     if (kind === "paste") {
@@ -109,7 +110,7 @@ function handle_keypress_event(
     }
 
     const current_subtask = ulabel.get_current_subtask();
-    const is_read_only = ulabel.is_current_subtask_read_only();
+    const is_read_only = ulabel.is_subtask_edit_locked();
 
     // Create a point annotation at the mouse's current location
     if (event_matches_keybind(keypress_event, ulabel.config.create_point_annotation_keybind)) {
@@ -218,6 +219,13 @@ function handle_keypress_event(
     if (event_matches_keybind(keypress_event, ulabel.config.toggle_edit_focus_keybind)) {
         const st_key = ulabel.get_current_subtask_key();
         ulabel.set_focus_edited(st_key, !ulabel.subtasks[st_key].focus_edited);
+        return;
+    }
+
+    // Toggle deprecated focus (Show Deprecated) on the current subtask
+    if (event_matches_keybind(keypress_event, ulabel.config.toggle_deprecated_focus_keybind)) {
+        const st_key = ulabel.get_current_subtask_key();
+        ulabel.set_focus_deprecated(st_key, !ulabel.subtasks[st_key].focus_deprecated);
         return;
     }
 
@@ -597,7 +605,16 @@ export function create_ulabel_listeners(
     $(document).on(
         "click" + ULABEL_NAMESPACE,
         "div.fad_row.add a.add-glob-button",
-        () => ulabel.create_nonspatial_annotation(),
+        () => {
+            if (ulabel.is_subtask_edit_locked()) return;
+            ulabel.create_nonspatial_annotation();
+        },
+    );
+
+    $(document).on(
+        "click" + ULABEL_NAMESPACE,
+        "div.deprecated-focus-banner a.deprecated-focus-exit",
+        () => ulabel.set_focus_deprecated(ulabel.get_current_subtask_key(), false),
     );
 
     $(document).on(
@@ -616,7 +633,7 @@ export function create_ulabel_listeners(
         "change" + ULABEL_NAMESPACE,
         "textarea.nonspatial_note",
         (change_event) => {
-            if (ulabel.is_current_subtask_read_only()) return;
+            if (ulabel.is_subtask_edit_locked()) return;
             const text_payload_anno_id = change_event.target.id.substring("note__".length);
             ulabel.edit_text_payload(text_payload_anno_id, change_event.target.value);
         },
@@ -626,7 +643,7 @@ export function create_ulabel_listeners(
         "click" + ULABEL_NAMESPACE,
         "a.fad_button.delete",
         (click_event) => {
-            if (ulabel.is_current_subtask_read_only()) return;
+            if (ulabel.is_subtask_edit_locked()) return;
             ulabel.delete_annotation(click_event.target.id.substring("delete__".length));
         },
     );
@@ -635,7 +652,7 @@ export function create_ulabel_listeners(
         "click" + ULABEL_NAMESPACE,
         "a.fad_button.reclf",
         (click_event) => {
-            if (ulabel.is_current_subtask_read_only()) return;
+            if (ulabel.is_subtask_edit_locked()) return;
             // Show idd
             ulabel.show_id_dialog(
                 click_event.pageX!,
@@ -676,7 +693,7 @@ export function create_ulabel_listeners(
         (keypress_event: JQuery.KeyPressEvent) => {
             // Check the key pressed against the delete annotation keybind in the config
             if (event_matches_keybind(keypress_event, ulabel.config.delete_annotation_keybind)) {
-                if (ulabel.is_current_subtask_read_only()) return;
+                if (ulabel.is_subtask_edit_locked()) return;
                 const current_subtask = ulabel.get_current_subtask();
                 // Check the edit_candidate to make sure its not null and isn't nonspatial
                 const edit_cand = current_subtask.state.edit_candidate;
@@ -691,7 +708,7 @@ export function create_ulabel_listeners(
             }
             // Check the key pressed against the delete vertex keybind in the config
             if (event_matches_keybind(keypress_event, ulabel.config.delete_vertex_keybind)) {
-                if (ulabel.is_current_subtask_read_only()) return;
+                if (ulabel.is_subtask_edit_locked()) return;
                 const current_subtask = ulabel.get_current_subtask();
                 const edit_cand = current_subtask.state.edit_candidate;
 

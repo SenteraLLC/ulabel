@@ -36,6 +36,10 @@ function make_ulabel({ read_only = false, compatible = [1, 2], annotation = make
         get_current_subtask: () => subtask,
         get_current_subtask_key: () => "main",
         is_current_subtask_read_only: () => read_only,
+        is_subtask_edit_locked: (key = "main") => {
+            const s = ulabel.subtasks[key];
+            return s.read_only === true || s.focus_deprecated === true;
+        },
         _get_compatible_class_ids: jest.fn(() => compatible),
         get_copy_target_subtask_keys: jest.fn(() => copy_targets),
         copy_annotation_to_subtask: jest.fn(() => "new_id"),

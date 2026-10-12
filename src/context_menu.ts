@@ -217,7 +217,7 @@ function add_edit_items(
     client_x: number,
     client_y: number,
 ): void {
-    const read_only = ulabel.is_current_subtask_read_only();
+    const read_only = ulabel.is_subtask_edit_locked();
     if (!read_only && ulabel._get_compatible_class_ids(annotation).length >= 2) {
         add_item(menu, "Change class", ICON_CHANGE_CLASS, () => {
             hide_context_menu(ulabel);
@@ -232,7 +232,7 @@ function add_edit_items(
     const source_key = ulabel.get_current_subtask_key();
     const counterparts: Record<string, string[]> = {};
     for (const key of Object.keys(ulabel.subtasks)) {
-        if (key === source_key || ulabel.subtasks[key].read_only === true) continue;
+        if (key === source_key || ulabel.is_subtask_edit_locked(key)) continue;
         const ids = ulabel.find_counterparts(annid, source_key, key);
         if (ids.length > 0) counterparts[key] = ids;
     }

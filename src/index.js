@@ -119,7 +119,7 @@ export class ULabel {
         switch (mouse_event.button) {
             case 0:
                 if (mouse_event.target.id === "brush_circle") {
-                    return ul.is_current_subtask_read_only() ? null : "brush";
+                    return ul.is_subtask_edit_locked() ? null : "brush";
                 } else if (mouse_event.target.id === ul.get_current_subtask()["canvas_fid"]) {
                     if (mouse_event.ctrlKey || mouse_event.metaKey) {
                         return "pan";
@@ -127,7 +127,7 @@ export class ULabel {
                     if (mouse_event.shiftKey && !ul.get_current_subtask()["state"]["starting_complex_polygon"]) {
                         return "zoom";
                     }
-                    if (ul.is_current_subtask_read_only()) {
+                    if (ul.is_subtask_edit_locked()) {
                         return null;
                     }
                     if (ULabel.is_body_move_start(mouse_event, ul)) {
@@ -861,6 +861,7 @@ export class ULabel {
 
         // The configured initial mode may not be one the initial class allows
         this.sync_annotation_modes_to_active_class();
+        this.update_edit_lock_display();
 
         // Show the brush toolbox if bitmask is the initial mode (brush starts off; toggle to paint)
         if (this.get_current_subtask()["state"]["annotation_mode"] === "bitmask") {
@@ -1097,6 +1098,51 @@ export class ULabel {
     }
 
     /**
+     * Whether user input may not edit a subtask: read-only, or under deprecated
+     * focus (where only Restore applies). Public API methods are unaffected.
+     * @param {string|null} subtask_key defaults to the current subtask
+     */
+    is_subtask_edit_locked(subtask_key = null) {
+        const subtask = this.subtasks[subtask_key ?? this.get_current_subtask_key()];
+        return subtask?.["read_only"] === true || subtask?.["focus_deprecated"] === true;
+    }
+
+    /**
+     * Show the current subtask's deprecated-focus banner, and the locked cursor
+     * on the front canvas of every subtask under deprecated focus.
+     */
+    update_edit_lock_display() {
+        for (const subtask of Object.values(this.subtasks)) {
+            $("#" + subtask["canvas_fid"]).toggleClass("edit_locked", subtask["focus_deprecated"] === true);
+        }
+        $("#" + this.config["container_id"] + " .deprecated-focus-banner")
+            .toggleClass("ulabel-hidden", this.get_current_subtask()?.["focus_deprecated"] !== true);
+    }
+
+    /**
+     * End the current subtask's in-progress input before it becomes edit-locked:
+     * completes an active drag and discards other work as Escape would.
+     */
+    discard_in_progress_input() {
+        const state = this.get_current_subtask()["state"];
+        if (this.drag_state["active_key"] !== null) {
+            this.end_drag(this.state["last_move"]);
+        }
+        if (state["starting_complex_polygon"]) {
+            undo(this, true);
+        }
+        if (state["is_in_progress"]) {
+            this.cancel_annotation();
+        }
+        if (state["is_in_brush_mode"]) {
+            this.disable_bitmask_brush();
+        }
+        this.hide_id_dialog();
+        this.hide_context_menu();
+        this.hide_and_clear_action_candidates();
+    }
+
+    /**
      * Whether a subtask's annotations are hidden from view: vanished, or its
      * layer opacity slider is at 0. Hidden implies non-interactive, so the
      * interaction gates check this rather than `is_vanished` alone.
@@ -1161,22 +1207,7 @@ export class ULabel {
 
         // Teardown runs before the flag flips, so it behaves as on an editable subtask
         if (read_only && subtask_key === this.get_current_subtask_key()) {
-            const state = subtask["state"];
-            if (this.drag_state["active_key"] !== null) {
-                this.end_drag(this.state["last_move"]);
-            }
-            if (state["starting_complex_polygon"]) {
-                undo(this, true);
-            }
-            if (state["is_in_progress"]) {
-                this.cancel_annotation();
-            }
-            if (state["is_in_brush_mode"]) {
-                this.disable_bitmask_brush();
-            }
-            this.hide_id_dialog();
-            this.hide_context_menu();
-            this.hide_and_clear_action_candidates();
+            this.discard_in_progress_input();
         }
         subtask["read_only"] = read_only;
 
@@ -1394,6 +1425,7 @@ export class ULabel {
 
         // Set transparancy for inactive layers
         this.readjust_subtask_opacities();
+        this.update_edit_lock_display();
 
         // Redraw demo
         this.redraw_demo();
@@ -3338,7 +3370,7 @@ export class ULabel {
     }
 
     toggle_brush_mode(mouse_event) {
-        if (this.is_current_subtask_read_only()) return;
+        if (this.is_subtask_edit_locked()) return;
         // The brush is only valid in polygon or bitmask mode
         const current_subtask = this.get_current_subtask_key();
         const state = this.subtasks[current_subtask]["state"];
@@ -3381,7 +3413,7 @@ export class ULabel {
     }
 
     toggle_erase_mode(mouse_event) {
-        if (this.is_current_subtask_read_only()) return;
+        if (this.is_subtask_edit_locked()) return;
         const current_subtask = this.get_current_subtask();
         // If not in brush mode, turn it on
         if (!current_subtask["state"]["is_in_brush_mode"]) {
@@ -4025,8 +4057,8 @@ export class ULabel {
 
     // Edit suggestion: highlight a point in an annotation that can be edited
     show_edit_suggestion(edit_suggestion, currently_exists = false) {
-        // Vertex edit handle is a mutation affordance; skip it in read-only subtasks.
-        if (this.is_current_subtask_read_only()) return;
+        // Vertex edit handle is a mutation affordance; skip it in edit-locked subtasks.
+        if (this.is_subtask_edit_locked()) return;
         let esid = "edit_suggestion__" + this.get_current_subtask_key();
         var esjq = $("#" + esid);
         esjq.css("display", "block");
@@ -5042,7 +5074,7 @@ export class ULabel {
         if (annotation == null || annotation["deprecated"]) return null;
         const spatial_type = annotation["spatial_type"];
         if (NONSPATIAL_MODES.includes(spatial_type) || DELETE_MODES.includes(spatial_type)) return null;
-        if (cut && this.is_current_subtask_read_only()) return null;
+        if (cut && this.is_subtask_edit_locked()) return null;
 
         const copy = JSON.parse(JSON.stringify(annotation));
         if (spatial_type === "bitmask") {
@@ -7885,6 +7917,7 @@ export class ULabel {
                 this.hide_edit_suggestion();
                 current_subtask["state"]["move_candidate"] = null;
                 this.set_move_cursor(false);
+                $("#" + current_subtask["canvas_fid"]).addClass("context_menu_hover");
                 current_subtask["state"]["edit_candidate"] = best_candidate;
                 this.update_confidence_dialog();
                 this.show_global_edit_suggestion(best_candidate.annid, null, null);
@@ -7913,7 +7946,7 @@ export class ULabel {
             best_candidate["containing"] = containing;
             current_subtask["state"]["move_candidate"] = best_candidate;
             this.set_move_cursor(
-                !this.is_current_subtask_read_only() &&
+                !this.is_subtask_edit_locked() &&
                 ULabel.is_body_move_start(mouse_event, this),
             );
         }
@@ -7931,6 +7964,7 @@ export class ULabel {
         this.hide_global_edit_suggestion();
         this.hide_edit_suggestion();
         this.set_move_cursor(false);
+        $("#" + this.get_current_subtask()["canvas_fid"]).removeClass("context_menu_hover");
     }
 
     /**
@@ -8470,7 +8504,7 @@ export class ULabel {
             } else if (
                 mouse_event.shiftKey &&
                 annotation_mode === "polygon" &&
-                !this.is_current_subtask_read_only() &&
+                !this.is_subtask_edit_locked() &&
                 edit_candidate != null &&
                 this.get_current_subtask()["annotations"]["access"][edit_candidate["annid"]]?.["spatial_type"] === "polygon" &&
                 !this.get_current_subtask()["annotations"]["access"][edit_candidate["annid"]]["deprecated"]

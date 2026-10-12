@@ -202,6 +202,9 @@ export function set_focus_deprecated(
         return;
     }
     const previous = subtask.focus_deprecated === true;
+    if (enabled === true && !previous && subtask_key === ulabel.get_current_subtask_key()) {
+        ulabel.discard_in_progress_input();
+    }
     subtask.focus_deprecated = enabled === true;
 
     // A deprecated target must not outlive the flag that made it visible
@@ -219,6 +222,7 @@ export function set_focus_deprecated(
         ulabel.redraw_all_annotations(subtask_key);
         ulabel.toolbox?.redraw_update_items(ulabel);
     }
+    ulabel.update_edit_lock_display();
 
     if (previous !== subtask.focus_deprecated) {
         ulabel.config.on_focus_deprecated_change?.(subtask_key, subtask.focus_deprecated);
@@ -307,8 +311,8 @@ function apply_active_class_to_dom(ulabel: ULabel, subtask_key: string, class_id
     ulabel.update_id_dialog_display();
 
     // Update the class of the active annotation,
-    // except when toggling on the delete class or in a read-only subtask
-    if (class_id !== DELETE_CLASS_ID && !ulabel.is_current_subtask_read_only()) {
+    // except when toggling on the delete class or in an edit-locked subtask
+    if (class_id !== DELETE_CLASS_ID && !ulabel.is_subtask_edit_locked()) {
         let target_id: string | null = null;
         if (subtask.state.active_id !== null) {
             target_id = subtask.state.active_id;

@@ -297,6 +297,7 @@ export class Toolbox {
                     ${images}
                 </div>
             </div>
+            <div class="deprecated-focus-banner ulabel-hidden">Showing deleted annotations · editing disabled<a href="#" class="deprecated-focus-exit">Exit</a></div>
             <button class="toolbox-collapse-btn" title="${collapse_title}">${collapse_arrow}</button>
             <div id="${ulabel.config["toolbox_id"]}" class="${toolbox_class}">
                 <div class="toolbox-header-container">

@@ -297,6 +297,8 @@ export class Configuration {
 
     public toggle_edit_focus_keybind: string = "h";
 
+    public toggle_deprecated_focus_keybind: string = "shift+d";
+
     public fly_to_next_annotation_keybind: string = "tab";
 
     public fly_to_previous_annotation_keybind: string = "shift+tab";

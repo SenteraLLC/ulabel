@@ -535,3 +535,12 @@ Edited Only (→ this session's deletions) and class focus.
   undo does not bring the layer back.
 - [x] Polygon brush target selection skips defocused polygons (`begin_brush`).
 - [x] Bitmask brush target selection skips defocused masks (`find_bitmask_under_brush`).
+
+### Deprecated focus edit lock
+
+- [x] `is_subtask_edit_locked` (read-only or deprecated focus) gates user input;
+  Restore and undo/redo stay allowed; API not gated.
+- [x] Enabling discards in-progress input (`discard_in_progress_input`).
+- [x] `not-allowed` cursor (`edit_locked` canvas class) and banner with Exit.
+- [x] Tests, docs, lint, build, jest, e2e. jest 506/506, chromium e2e 164/164.
+- [x] `toggle_deprecated_focus_keybind` (`shift+d`): keypress handler + Keybinds entry.

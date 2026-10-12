@@ -34,6 +34,8 @@ All notable changes to this project will be documented here.
 - An annotation removed by deleting its last vertices keeps its original geometry. A polygon brush stroke that erases a polygon is now one undo step, and the deleted polygon keeps its pre-stroke geometry: submits carry that geometry instead of an empty `spatial_payload`.
 - Cancelling an in-progress drawing (e.g. `Escape`) now removes it instead of leaving a deprecated annotation, so it no longer appears in submits; undo brings it back in progress.
 - The polygon and bitmask brushes only merge into or erase annotations in focus: annotations dimmed by class, edit, or deprecated focus, or hidden by isolation, are left untouched.
+- **Show Deprecated** locks the subtask's user edits like `read_only`, except Restore and undo/redo. Turning it on discards any drawing in progress. The canvas shows a `not-allowed` cursor, and a banner over the image has an Exit link that turns the mode off.
+- New `toggle_deprecated_focus_keybind` (default `shift+d`) toggles **Show Deprecated** on the current subtask.
 
 ## [0.28.0] - Sept 10th, 2026
 - New `set_active_class(class_id, subtask_key?, redraw?)` and `get_selected_class_id(subtask_key?)` public API methods; all internal class-selection paths (toolbox clicks, keybinds, delete-mode toggles) route through `set_active_class`.

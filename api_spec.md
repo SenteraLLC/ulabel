@@ -94,6 +94,7 @@ class ULabel({
     annotation_vanish_keybind: string,
     toggle_class_focus_keybind: string,
     toggle_edit_focus_keybind: string,
+    toggle_deprecated_focus_keybind: string,
     fly_to_max_zoom: number,
     min_zoom_fit_ratio: number,
     n_annos_per_canvas: number,
@@ -532,7 +533,7 @@ The `AnnotationList` toolbox item displays all annotations in the current subtas
 - Collapsible interface to maximize canvas space
 
 **Filtering Options:**
-- **Show Deprecated**: Turns on deprecated focus for the current subtask (`focus_deprecated`, default off; also a subtask option at load and `set_focus_deprecated(subtask_key, enabled, redraw = true)` at runtime). Deprecated annotations, whatever deprecated them, are drawn and become the only ones in focus: live annotations dim to `defocused_opacity` and drop out of hover, navigation, the list, and bulk delete. Deprecated annotations can be hovered, isolated, navigated to, and restored from the context menu, but not edited, moved, reclassified, or deleted. Composes with **Edited Only** (leaving this session's deletions of loaded annotations) and class focus. Deprecated entries carry a marker whose tooltip names what deprecated them. Non-spatial deprecated annotations are listed but not drawn.
+- **Show Deprecated**: Turns on deprecated focus for the current subtask (`focus_deprecated`, default off; also a subtask option at load and `set_focus_deprecated(subtask_key, enabled, redraw = true)` at runtime). Deprecated annotations, whatever deprecated them, are drawn and become the only ones in focus: live annotations dim to `defocused_opacity` and drop out of hover, navigation, the list, and bulk delete. Deprecated annotations can be hovered, isolated, navigated to, and restored from the context menu, but not edited, moved, reclassified, or deleted. While it is on, the subtask's user input is locked like `read_only`, except that Restore and undo/redo still work: no drawing, brushing, pasting, deleting, or reclassifying. Turning it on discards any drawing in progress. The canvas shows a `not-allowed` cursor, and a banner over the image reads "Showing deleted annotations · editing disabled" with an Exit link that turns the mode off. API methods are not locked. Composes with **Edited Only** (leaving this session's deletions of loaded annotations) and class focus. Deprecated entries carry a marker whose tooltip names what deprecated them. Non-spatial deprecated annotations are listed but not drawn.
 - **Group by Class**: Organize annotations by their classification for easier management
 
 **Navigation:**
@@ -712,6 +713,9 @@ Keybind to toggle `focus_active_class` on the current subtask: with it on, class
 
 ### `toggle_edit_focus_keybind`
 Keybind to toggle `focus_edited` on the current subtask (also the **Edited Only** checkbox in the `AnnotationList` toolbox item): with it on, annotations not created or modified since load (the `edits_only` submit rule) dim to `defocused_opacity` and drop out of hover, navigation, the annotation list, and bulk delete. Composes with class focus. Set per subtask at load with a subtask's `focus_edited: true`, or at runtime with `set_focus_edited(subtask_key, enabled, redraw = true)`. Default is `h`.
+
+### `toggle_deprecated_focus_keybind`
+Keybind to toggle `focus_deprecated` on the current subtask, the same as the **Show Deprecated** checkbox in the `AnnotationList` toolbox item. Default is `shift+d`.
 
 ### `fly_to_max_zoom`
 Maximum zoom factor used when flying-to an annotation. Default is `10`, value must be > `0`. 

@@ -1735,6 +1735,34 @@ div#${prntid} canvas.canvas_cls {
 div#${prntid} canvas.canvas_cls.movable_hover {
    cursor: move;
 }
+div#${prntid} canvas.canvas_cls.edit_locked {
+   cursor: not-allowed;
+}
+div#${prntid} canvas.canvas_cls.edit_locked.context_menu_hover {
+   cursor: context-menu;
+}
+div#${prntid} div.deprecated-focus-banner {
+   position: absolute;
+   top: 8px;
+   left: calc((100% - 320px) / 2);
+   transform: translateX(-50%);
+   z-index: 110;
+   padding: 4px 12px;
+   border-radius: 14px;
+   background-color: rgba(160, 30, 30, 0.85);
+   color: white;
+   font-size: 13px;
+   white-space: nowrap;
+   pointer-events: none;
+}
+div#${prntid} div.toolbox-collapsed div.deprecated-focus-banner {
+   left: 50%;
+}
+div#${prntid} div.deprecated-focus-banner a {
+   color: white;
+   margin-left: 8px;
+   pointer-events: auto;
+}
 div#${prntid} canvas.annotation_canvas {
    pointer-events: none;
 }

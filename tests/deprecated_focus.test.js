@@ -132,6 +132,32 @@ describe("deprecated focus", () => {
         expect(ulabel.fly_to_annotation_id("gone", "gt")).toBe(false);
     });
 
+    test("locks user edits like read-only while Restore stays available", () => {
+        const ulabel = make_ulabel([make_annotation("gone", { deprecated: true, deprecated_by: { human: true } })]);
+        const canvas_click = { button: 0, target: { id: ulabel.subtasks.gt.canvas_fid } };
+        expect(ulabel.is_subtask_edit_locked()).toBe(false);
+        expect(ULabel.get_drag_key_start(canvas_click, ulabel)).toBe("annotation");
+
+        ulabel.set_focus_deprecated("gt", true, false);
+
+        expect(ulabel.is_subtask_edit_locked()).toBe(true);
+        expect(ULabel.get_drag_key_start(canvas_click, ulabel)).toBeNull();
+        expect(ulabel.can_restore_annotation("gone")).toBe(true);
+    });
+
+    test("turning deprecated focus on discards the drawing in progress", () => {
+        const ulabel = make_ulabel([], {}, { allowed_modes: ["bbox", "polyline"] });
+        const subtask = ulabel.subtasks.gt;
+        ulabel.create_annotation("polyline", [[10, 10], [30, 30]], "draw");
+        subtask.state.active_id = "draw";
+        subtask.state.is_in_progress = true;
+
+        ulabel.set_focus_deprecated("gt", true, false);
+
+        expect(subtask.state.is_in_progress).toBe(false);
+        expect(subtask.annotations.access.draw).toBeUndefined();
+    });
+
     test("the polygon brush ignores live polygons dimmed by deprecated focus", () => {
         const square = [[[10, 10], [30, 10], [30, 30], [10, 30], [10, 10]]];
         const ulabel = make_ulabel(

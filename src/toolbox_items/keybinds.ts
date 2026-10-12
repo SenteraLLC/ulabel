@@ -357,6 +357,14 @@ export class KeybindsToolboxItem extends ToolboxItem {
         });
 
         keybinds.push({
+            key: config.toggle_deprecated_focus_keybind,
+            label: "Toggle Show Deprecated",
+            description: "Show deleted annotations for restoring; other editing is disabled",
+            configurable: true,
+            config_key: "toggle_deprecated_focus_keybind",
+        });
+
+        keybinds.push({
             key: config.create_bbox_on_initial_crop_keybind,
             label: "Create BBox on Crop",
             description: "Create bbox annotation on initial crop area",

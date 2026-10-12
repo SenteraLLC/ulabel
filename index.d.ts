@@ -525,6 +525,10 @@ export class ULabel {
     public get_current_subtask_key(): string;
     public get_current_subtask(): ULabelSubtask;
     public is_current_subtask_read_only(): boolean;
+    /** Whether user input may not edit a subtask: read-only or under deprecated focus. Public API methods are unaffected. */
+    public is_subtask_edit_locked(subtask_key?: string | null): boolean;
+    public update_edit_lock_display(): void;
+    public discard_in_progress_input(): void;
     /** Whether a subtask's annotations are hidden: vanished, or layer opacity 0. Hidden implies non-interactive. */
     public is_subtask_hidden(subtask_key?: string): boolean;
     public readjust_subtask_opacities(): void;

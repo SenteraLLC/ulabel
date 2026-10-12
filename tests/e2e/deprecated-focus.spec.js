@@ -57,4 +57,34 @@ test.describe("deprecated focus", () => {
         await page.locator("#annotation-list-show-deprecated").uncheck();
         expect(await get_annotation_list_count(page)).toBe(1);
     });
+
+    test("drawing is blocked and signalled; the banner's Exit leaves the mode", async ({ page }) => {
+        const canvas_fid = await page.evaluate(() => window.ulabel.get_current_subtask().canvas_fid);
+        const banner = page.locator(".deprecated-focus-banner");
+        await expect(banner).toBeHidden();
+
+        await page.locator("#annotation-list-show-deprecated").check();
+        await expect(banner).toBeVisible();
+        await expect(page.locator(`#${canvas_fid}`)).toHaveClass(/edit_locked/);
+
+        const count = () => page.evaluate(() => window.ulabel.get_current_subtask().annotations.ordering.length);
+        const before = await count();
+        await page.mouse.move(200, 400);
+        await page.mouse.down();
+        await page.mouse.move(300, 500);
+        await page.mouse.up();
+        expect(await count()).toBe(before);
+
+        await banner.locator("a.deprecated-focus-exit").click();
+        await expect(banner).toBeHidden();
+        await expect(page.locator(`#${canvas_fid}`)).not.toHaveClass(/edit_locked/);
+        expect(await page.evaluate(() => window.ulabel.get_current_subtask().focus_deprecated)).toBe(false);
+        await expect(page.locator("#annotation-list-show-deprecated")).not.toBeChecked();
+
+        await page.keyboard.press("Shift+D");
+        await expect(banner).toBeVisible();
+        await expect(page.locator("#annotation-list-show-deprecated")).toBeChecked();
+        await page.keyboard.press("Shift+D");
+        await expect(banner).toBeHidden();
+    });
 });
