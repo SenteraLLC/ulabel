@@ -84,6 +84,8 @@ export class ULabelSubtask {
         public focus_active_class: boolean = false,
         /** Only annotations created or modified since load stay in focus. */
         public focus_edited: boolean = false,
+        /** Only deprecated annotations stay in focus (and are drawn). */
+        public focus_deprecated: boolean = false,
     ) {
         this.actions = {
             stream: [],
@@ -104,6 +106,7 @@ export class ULabelSubtask {
         ret.read_only = ("read_only" in subtask_json) && (subtask_json["read_only"] === true);
         ret.focus_active_class = subtask_json["focus_active_class"] === true;
         ret.focus_edited = subtask_json["focus_edited"] === true;
+        ret.focus_deprecated = subtask_json["focus_deprecated"] === true;
         if ("inactive_opacity" in subtask_json && typeof subtask_json["inactive_opacity"] == "number") {
             ret.inactive_opacity = Math.min(Math.max(subtask_json["inactive_opacity"], 0.0), 1.0);
         }

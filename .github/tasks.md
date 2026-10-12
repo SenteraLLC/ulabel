@@ -501,3 +501,37 @@ Composes with class focus; isolation still wins.
 - [x] Jest + e2e.
 - [x] Docs: index.d.ts, api_spec, CHANGELOG.
 - [x] Lint + build; full jest + chromium e2e.
+
+## Deprecated focus + Restore (no ticket yet, branch `edit-focus`)
+
+"Show Deprecated" becomes a per-subtask `focus_deprecated` flag: deprecated
+annotations (any source) are drawn and in focus, live ones dim. Composes with
+Edited Only (→ this session's deletions) and class focus.
+
+- [x] `focus_deprecated` flag + `set_focus_deprecated()` + callback; in
+  `is_annotation_defocused` (deprecated in focus iff flag on); drop the
+  localStorage key; checkbox mirrors the current subtask.
+- [x] Draw in-focus deprecated annotations; fly-to / Tab / isolate accept them.
+- [x] Canvas hover + context menu on deprecated (outline, card); block edit,
+  move, reclassify, delete, vertex handles, brush/erase.
+- [x] List row icon with deprecated-by tooltip; Details "Deprecated by" row.
+- [x] `restore_annotation` action (human deletes, writable subtasks, not empty
+  bitmasks): restores the pre-delete stamp from the latest stream action that
+  touched it, else stamps now. Undo re-deprecates. Context menu "Restore".
+- [x] Verify every deletion path records the annotation (target or affected).
+- [x] Jest + e2e; docs; lint + build; full jest + chromium e2e.
+
+### Review fixes
+
+- [x] `delete_vertex` keeps the original geometry when it deletes the annotation.
+- [x] Polygon brush erase-all collapses `begin_brush` into the `delete_annotation`
+  (pre-stroke geometry and stamp; one undo step).
+- [x] `cancel_annotation` removes the drawing from access; undo re-inserts it.
+- [x] `can_restore_annotation` rejects delete modes and empty/degenerate geometry.
+- [x] `record_action` redraws deprecated annotations whose focus flips on stamping.
+- [x] Tests; CHANGELOG + api_spec; lint, build, full jest + chromium e2e; live check.
+  jest 502/502, chromium e2e 163/163. Not fixed (pre-existing): cancelling a
+  complex layer snapshots the annotation after the layer was popped, so its
+  undo does not bring the layer back.
+- [x] Polygon brush target selection skips defocused polygons (`begin_brush`).
+- [x] Bitmask brush target selection skips defocused masks (`find_bitmask_under_brush`).

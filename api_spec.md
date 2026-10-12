@@ -17,7 +17,7 @@ In a read-only subtask, undo and redo act on the only writable subtask, if there
 - Press `Escape` to exit brush/erase mode.
 - Press `Tab` to set the zoom to focus on the next annotation
 - Press `Shift+Tab` to set the zoom to focus on the previous annotation
-- Right-click a hovered annotation (or its entry in the `AnnotationList` toolbox item) to open a context menu with `Change class`, `Copy to`, `Move to`, `Delete`, `Isolate` / `Show all`, and `Details`. `Change class` opens the class pie for that annotation; `Copy to` / `Move to` clone the annotation into another subtask at the same image coordinates (see [`copy_annotation`](#copy_annotationannotation_id-target_subtask_key-class_id-source_subtask_key)) -- a single eligible subtask is named on the item, several open a list to pick from, and `Move to` also deletes the source (one undoable action on the source subtask that also removes the copy and the target's history about it). Both also arm `ctrl+v` with the annotation, and when the target already has a counterpart of it (see [`find_counterparts`](#find_counterpartsannotation_id-source_key-target_key)) a confirm dialog asks before copying again. `Delete from` appears for every other writable subtask holding counterparts and deletes them there, reading `Delete <n> from <subtask>` (or `<subtask> (<n>)` in the list) when there is more than one; a bitmask also offers `Erase from`, which only subtracts its mask (see [`delete_counterparts`](#delete_counterpartsannotation_id-source_key-target_key-erase)). The view stays on the source subtask unless the class pie opens or [`paste_switch_to_target`](#paste_switch_to_target) is on; `Isolate` hides every other annotation in the subtask (see [`isolate_annotation`](#isolate_annotationannotation_id-subtask_key-redraw)) and reads `Show all` while that annotation is isolated; `Details` lists its id, class, spatial type, last editor/edit time, and `annotation_meta` entries. Read-only subtasks only offer `Copy to`, `Delete from` / `Erase from`, `Isolate`, and `Details`. Press `Escape` or click anywhere to close it. A right-click while drawing a polyline still finishes the polyline and opens no menu.
+- Right-click a hovered annotation (or its entry in the `AnnotationList` toolbox item) to open a context menu with `Change class`, `Copy to`, `Move to`, `Delete`, `Isolate` / `Show all`, and `Details`. `Change class` opens the class pie for that annotation; `Copy to` / `Move to` clone the annotation into another subtask at the same image coordinates (see [`copy_annotation`](#copy_annotationannotation_id-target_subtask_key-class_id-source_subtask_key)) -- a single eligible subtask is named on the item, several open a list to pick from, and `Move to` also deletes the source (one undoable action on the source subtask that also removes the copy and the target's history about it). Both also arm `ctrl+v` with the annotation, and when the target already has a counterpart of it (see [`find_counterparts`](#find_counterpartsannotation_id-source_key-target_key)) a confirm dialog asks before copying again. `Delete from` appears for every other writable subtask holding counterparts and deletes them there, reading `Delete <n> from <subtask>` (or `<subtask> (<n>)` in the list) when there is more than one; a bitmask also offers `Erase from`, which only subtracts its mask (see [`delete_counterparts`](#delete_counterpartsannotation_id-source_key-target_key-erase)). The view stays on the source subtask unless the class pie opens or [`paste_switch_to_target`](#paste_switch_to_target) is on; `Isolate` hides every other annotation in the subtask (see [`isolate_annotation`](#isolate_annotationannotation_id-subtask_key-redraw)) and reads `Show all` while that annotation is isolated; `Details` lists its id, class, spatial type, last editor/edit time, what deprecated it (deprecated annotations only), and `annotation_meta` entries. Read-only subtasks only offer `Copy to`, `Delete from` / `Erase from`, `Isolate`, and `Details`. A deprecated annotation (hoverable only under deprecated focus, see **Show Deprecated** in the `AnnotationList` toolbox item) offers `Restore`, `Isolate` / `Show all`, and `Details`; `Restore` appears only for annotations deleted by a human and nothing else, on writable subtasks, and not for a bitmask erased to nothing (see [`restore_annotation`](#restore_annotationannotation_id)). Press `Escape` or click anywhere to close it. A right-click while drawing a polyline still finishes the polyline and opens no menu.
 - Press `Escape` to close an open class pie or context menu.
 - `ctrl+c` / `cmd+c` copies the hovered annotation, `ctrl+x` / `cmd+x` cuts it (deletes it after copying; not in read-only subtasks), and `ctrl+v` / `cmd+v` pastes into the current subtask (see [`paste_annotation_from_clipboard`](#paste_annotation_from_clipboardenvelope)). The copy is placed on the system clipboard as JSON, so it can be pasted into another ULabel instance showing an image of the same dimensions; a paste back into the subtask it was copied from keeps its class; the first paste into another subtask keeps the coordinates, and every repeat paste into the same subtask (or any paste back into the source) is offset by a further 20 pixels. These shortcuts are not remappable and are ignored while a text field has focus.
 
@@ -102,6 +102,7 @@ class ULabel({
     on_subtask_change: function,
     on_focus_active_class_change: function,
     on_focus_edited_change: function,
+    on_focus_deprecated_change: function,
     on_isolate_change: function,
     on_annotation_change: function,
     on_annotation_change_in_progress: boolean
@@ -531,7 +532,7 @@ The `AnnotationList` toolbox item displays all annotations in the current subtas
 - Collapsible interface to maximize canvas space
 
 **Filtering Options:**
-- **Show Deprecated**: Toggle to show/hide deprecated annotations (default: hidden)
+- **Show Deprecated**: Turns on deprecated focus for the current subtask (`focus_deprecated`, default off; also a subtask option at load and `set_focus_deprecated(subtask_key, enabled, redraw = true)` at runtime). Deprecated annotations, whatever deprecated them, are drawn and become the only ones in focus: live annotations dim to `defocused_opacity` and drop out of hover, navigation, the list, and bulk delete. Deprecated annotations can be hovered, isolated, navigated to, and restored from the context menu, but not edited, moved, reclassified, or deleted. Composes with **Edited Only** (leaving this session's deletions of loaded annotations) and class focus. Deprecated entries carry a marker whose tooltip names what deprecated them. Non-spatial deprecated annotations are listed but not drawn.
 - **Group by Class**: Organize annotations by their classification for easier management
 
 **Navigation:**
@@ -744,6 +745,9 @@ When `true` (the default), ULabel installs a `MutationObserver` on the container
 ### `on_focus_edited_change`
 *(subtask_key: string, enabled: boolean) => void* -- Called after a subtask's `focus_edited` flag actually changes, whatever the writer: `set_focus_edited`, the `toggle_edit_focus_keybind`, or the annotation list's **Edited Only** checkbox. Not called when the flag is already at the target value. Default is `null`.
 
+### `on_focus_deprecated_change`
+*(subtask_key: string, enabled: boolean) => void* -- Called after a subtask's `focus_deprecated` flag actually changes, whatever the writer: `set_focus_deprecated` or the annotation list's **Show Deprecated** checkbox. Not called when the flag is already at the target value. Default is `null`.
+
 ### `on_isolate_change`
 *(subtask_key: string, annotation_id: string | null) => void* -- Called after a subtask's isolated annotation actually changes, whatever the writer: `isolate_annotation`, the list's eye button, `Show all`, `Escape`, or one of the automatic clears (deletion, creation, subtask switch, `set_annotations`). `annotation_id` is `null` when the isolation clears. Default is `null`.
 
@@ -905,11 +909,15 @@ Sets the zoom to focus on the provided annotation, and switches to its subtask i
 
 ### `isolate_annotation(annotation_id, subtask_key?, redraw?)`
 
-*(annotation_id: string | null, subtask_key?: string | null, redraw?: boolean) => boolean* -- Isolate one annotation in a subtask (default: the current one): every other annotation is hidden from the canvas and from input until cleared by passing `null`. Returns `false` and changes nothing for an unknown subtask or an unknown/deprecated annotation. View-only: not recorded, does not mark the session edited. Fires [`on_isolate_change`](#on_isolate_change) on an actual change.
+*(annotation_id: string | null, subtask_key?: string | null, redraw?: boolean) => boolean* -- Isolate one annotation in a subtask (default: the current one): every other annotation is hidden from the canvas and from input until cleared by passing `null`. Returns `false` and changes nothing for an unknown subtask or an unknown annotation, or a deprecated one outside deprecated focus (turning deprecated focus off releases a deprecated isolation). View-only: not recorded, does not mark the session edited. Fires [`on_isolate_change`](#on_isolate_change) on an actual change.
 
 ### `get_isolated_annotation_id(subtask_key?)`
 
 *(subtask_key?: string | null) => string | null* -- The isolated annotation id in a subtask (default: the current one), or `null`.
+
+### `restore_annotation(annotation_id)`
+
+*(annotation_id: string) => boolean* -- Undeletes an annotation in the current subtask, as the context menu's `Restore` does. Refused (returns `false`) unless `can_restore_annotation(annotation_id)`: deleted by a human and by nothing else (filter-deprecated annotations stay deprecated), a writable subtask, and geometry that can stand alone (not a delete shape, an empty polygon or bitmask, or a polyline / contour with fewer than 2 points). A vertex delete or brush stroke that removes an annotation keeps its original shape, so restoring it brings that shape back. The edit stamp (`last_edited_at` / `last_edited_by`) reverts to what it was before the recorded action that deleted it, so restoring an unedited loaded annotation leaves it unedited for `edits_only` and Edited Only; when no recorded action deleted it (it was loaded deprecated) it is stamped now. Recorded as a `restore_annotation` action (undo deletes it again) and reported to [`on_annotation_change`](#on_annotation_change).
 
 ### `get_keypoint_slider_value()`
 

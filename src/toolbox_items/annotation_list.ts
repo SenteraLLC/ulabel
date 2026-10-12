@@ -24,7 +24,6 @@ const ISOLATE_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"
  */
 export class AnnotationListToolboxItem extends ToolboxItem {
     private ulabel: ULabel;
-    private show_deprecated: boolean = false;
     private group_by_class: boolean = false;
     private is_collapsed: boolean = false;
     private sync_scheduled: boolean = false;
@@ -119,6 +118,12 @@ export class AnnotationListToolboxItem extends ToolboxItem {
         #toolbox .annotation-list-item-isolate.active {
             opacity: 1;
             color: rgb(0, 128, 255);
+        }
+
+        #toolbox .annotation-list-item-deprecated {
+            flex-shrink: 0;
+            color: gray;
+            cursor: help;
         }
 
         #toolbox .annotation-list-content {
@@ -318,11 +323,9 @@ export class AnnotationListToolboxItem extends ToolboxItem {
             this.update_list();
         });
 
-        // Show/hide deprecated annotations checkbox
+        // Deprecated focus lives on the subtask, so the canvas follows the list
         $(document).on("change.ulabel", "#annotation-list-show-deprecated", (e) => {
-            this.show_deprecated = (e.target as HTMLInputElement).checked;
-            set_local_storage_item("ulabel_annotation_list_show_deprecated", this.show_deprecated ? "true" : "false");
-            this.update_list();
+            this.ulabel.set_focus_deprecated(this.ulabel.get_current_subtask_key(), (e.target as HTMLInputElement).checked);
         });
 
         // Group by class checkbox
@@ -439,6 +442,8 @@ export class AnnotationListToolboxItem extends ToolboxItem {
         // The keybind, API, and subtask switches all change it outside the checkbox
         const edited_only_input = document.querySelector<HTMLInputElement>("#annotation-list-edited-only");
         if (edited_only_input) edited_only_input.checked = current_subtask.focus_edited === true;
+        const show_deprecated_input = document.querySelector<HTMLInputElement>("#annotation-list-show-deprecated");
+        if (show_deprecated_input) show_deprecated_input.checked = current_subtask.focus_deprecated === true;
 
         // Build the list HTML
         const list_container = document.querySelector<HTMLDivElement>("#annotation-list-container");
@@ -468,11 +473,7 @@ export class AnnotationListToolboxItem extends ToolboxItem {
         for (const annotation_id of subtask.annotations.ordering) {
             const annotation = subtask.annotations.access[annotation_id];
 
-            // Skip deprecated annotations unless the option to show them is enabled
-            if (!this.show_deprecated && annotation.deprecated) {
-                continue;
-            }
-
+            // Deprecated annotations are in focus only under deprecated focus
             if (this.ulabel.is_annotation_defocused(annotation, subtask_key)) {
                 continue;
             }
@@ -506,6 +507,7 @@ export class AnnotationListToolboxItem extends ToolboxItem {
                             <span class="annotation-list-item-class">${class_name}</span>
                             <span class="annotation-list-item-id">#${i}</span>
                         </div>
+                        ${this.build_deprecated_marker_html(annotation)}
                         ${this.build_isolate_button_html(annotation)}
                     </div>
                 </div>
@@ -582,6 +584,7 @@ export class AnnotationListToolboxItem extends ToolboxItem {
                             <div class="annotation-list-item-text">
                                 <span class="annotation-list-item-id">#${i}</span>
                             </div>
+                            ${this.build_deprecated_marker_html(annotation)}
                             ${this.build_isolate_button_html(annotation)}
                         </div>
                     </div>
@@ -592,6 +595,14 @@ export class AnnotationListToolboxItem extends ToolboxItem {
         }
 
         return html;
+    }
+
+    private build_deprecated_marker_html(annotation: ULabelAnnotation): string {
+        if (!annotation.deprecated) return "";
+        const sources = Object.entries(annotation.deprecated_by ?? {}).filter(([, value]) => value).map(([key]) => key);
+        // deprecated_by keys can come from loaded JSON
+        const title = `Deprecated by: ${sources.join(", ")}`.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+        return `<span class="annotation-list-item-deprecated" title="${title}">&#8856;</span>`;
     }
 
     private build_isolate_button_html(annotation: ULabelAnnotation): string {
@@ -751,13 +762,6 @@ export class AnnotationListToolboxItem extends ToolboxItem {
             this.is_collapsed = true;
         }
 
-        const stored_show_deprecated = get_local_storage_item("ulabel_annotation_list_show_deprecated");
-        if (stored_show_deprecated === "true") {
-            this.show_deprecated = true;
-        } else if (stored_show_deprecated === "false") {
-            this.show_deprecated = false;
-        }
-
         const stored_group_by_class = get_local_storage_item("ulabel_annotation_list_group_by_class");
         if (stored_group_by_class === "true") {
             this.group_by_class = true;
@@ -766,8 +770,6 @@ export class AnnotationListToolboxItem extends ToolboxItem {
         }
 
         // Reflect restored values into the checkbox DOM so the UI matches state.
-        const show_deprecated_input = document.querySelector<HTMLInputElement>("#annotation-list-show-deprecated");
-        if (show_deprecated_input) show_deprecated_input.checked = this.show_deprecated;
         const group_by_class_input = document.querySelector<HTMLInputElement>("#annotation-list-group-by-class");
         if (group_by_class_input) group_by_class_input.checked = this.group_by_class;
     }
@@ -800,7 +802,8 @@ export class AnnotationListToolboxItem extends ToolboxItem {
 
         const current_subtask = this.ulabel.get_current_subtask();
         const annotation = current_subtask.annotations.access[annotation_id];
-        if (annotation && !annotation.deprecated) {
+        // The list only shows in-focus annotations, deprecated ones included under deprecated focus
+        if (annotation) {
             current_subtask.state.edit_candidate = {
                 annid: annotation.id!,
                 spatial_type: annotation.spatial_type!,

@@ -277,6 +277,7 @@ export type ULabelActionType = "create_nonspatial_annotation" |
     "finish_move" |
     "cancel_annotation" |
     "delete_annotation" |
+    "restore_annotation" |
     "delete_vertex" |
     "delete_annotations_in_polygon" |
     "start_complex_polygon" |
@@ -338,6 +339,8 @@ export type ULabelActionRaw = {
     // Override the recorded pre-action edit info (used when collapsing actions)
     prev_timestamp?: string | null;
     prev_user?: string;
+    // Stamp the touched annotations with this instead of now/username (restore)
+    stamp_override?: { at: string; by: string };
 };
 
 export type ULabelAction = {
@@ -351,6 +354,8 @@ export type ULabelAction = {
     affected?: ULabelActionAffected[];
     // Parallel to `affected`: their edit info before the action
     affected_prev?: { prev_timestamp: string; prev_user: string }[];
+    // The edit stamp this action wrote to the annotations it touched
+    stamped_at?: string;
     is_internal_undo?: boolean;
 };
 
@@ -406,6 +411,8 @@ export type ULabelConstructorArgs = {
     on_focus_active_class_change?: (subtask_key: string, enabled: boolean) => void;
     /** Fired after a subtask's `focus_edited` flag changes, from any writer (API, edit focus keybind, annotation list checkbox). */
     on_focus_edited_change?: (subtask_key: string, enabled: boolean) => void;
+    /** Fired after a subtask's `focus_deprecated` flag changes, from any writer (API, annotation list checkbox). */
+    on_focus_deprecated_change?: (subtask_key: string, enabled: boolean) => void;
     /** Fired after a subtask's isolated annotation changes (`null` when cleared), from any writer (API, list button, Escape). */
     on_isolate_change?: (subtask_key: string, annotation_id: string | null) => void;
     /** Fired once per recorded, undone, or redone action that changes committed annotation state. Not fired by `set_annotations`/`set_annotations_batch`/`resume_from`. */
@@ -545,6 +552,12 @@ export class ULabel {
      */
     public set_focus_edited(subtask_key: string, enabled: boolean, redraw?: boolean): void;
     /**
+     * Turn deprecated focus on or off for a subtask at runtime: deprecated
+     * annotations are drawn and in focus (view-only; restorable from the
+     * context menu), live ones dim and drop out of input like class focus.
+     */
+    public set_focus_deprecated(subtask_key: string, enabled: boolean, redraw?: boolean): void;
+    /**
      * Opacity for annotations outside the focused class. 0 skips drawing them
      * entirely, which is cheaper but loses them as visual context.
      */
@@ -553,7 +566,7 @@ export class ULabel {
      * Isolate one annotation in a subtask: every other annotation is hidden
      * from the canvas and from input until cleared with `null`. View-only
      * state (not recorded, does not mark edited). Returns whether the request
-     * was accepted (unknown or deprecated ids are rejected).
+     * was accepted (unknown ids, and deprecated ids outside deprecated focus, are rejected).
      */
     public isolate_annotation(annotation_id: string | null, subtask_key?: string | null, redraw?: boolean): boolean;
     /** The isolated annotation id in a subtask, if any. */
@@ -697,7 +710,16 @@ export class ULabel {
         annotation_id: string,
         redoing?: boolean,
         should_record_action?: boolean,
+        prev_stamp?: { prev_timestamp: string | null; prev_user: string } | null,
     ): void;
+    /** Whether Restore applies: deleted by a human only, editable subtask, restorable geometry. */
+    public can_restore_annotation(annotation_id: string): boolean;
+    /**
+     * Undelete a human-deleted annotation in the current subtask. Its edit stamp
+     * reverts to before the deletion when the action stream still knows it,
+     * else it is stamped now. Returns whether it was restored.
+     */
+    public restore_annotation(annotation_id: string, redoing?: boolean): boolean;
     public delete_vertex(
         annotation_id: string,
         access_str: string | number | [number, number],
@@ -807,6 +829,7 @@ export class ULabel {
     public begin_edit__undo(annotation_id: string, undo_payload: object): void;
     public begin_move__undo(annotation_id: string, undo_payload: object): void;
     public delete_annotation__undo(annotation_id: string): void;
+    public restore_annotation__undo(annotation_id: string): void;
     public delete_vertex__undo(annotation_id: string, undo_payload: object): void;
     public cancel_annotation__undo(annotation_id: string, undo_payload: object): void;
     public assign_annotation_id__undo(annotation_id: string, undo_payload: object): void;
@@ -834,6 +857,7 @@ export class ULabel {
     public begin_edit__redo(annotation_id: string, redo_payload: object): void;
     public begin_move__redo(annotation_id: string, redo_payload: object): void;
     public delete_annotation__redo(annotation_id: string): void;
+    public restore_annotation__redo(annotation_id: string): void;
     public delete_vertex__redo(annotation_id: string, redo_payload: object): void;
     public create_annotation__redo(annotation_id: string, redo_payload: object): void;
     public paste_annotation__redo(annotation_id: string, redo_payload: object): void;

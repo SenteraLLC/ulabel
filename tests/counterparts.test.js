@@ -245,6 +245,23 @@ describe("delete_counterparts", () => {
         expect(ulabel.set_subtask).toHaveBeenCalledWith("gt");
     });
 
+    test("deleted counterparts are redrawn once stamping brings them into combined focus", () => {
+        const ulabel = make_ulabel({
+            gt: [make_bbox("g1", { hash: "h1" })],
+            diff: [make_bbox("d1", { hash: "h1" })],
+        });
+        ulabel.subtasks.gt.focus_deprecated = true;
+        ulabel.subtasks.gt.focus_edited = true;
+        const focused_at_redraw = [];
+        ulabel.redraw_annotation = jest.fn((id, key) => {
+            if (key === "gt") focused_at_redraw.push(!ulabel.is_annotation_defocused(gt(ulabel, id), key));
+        });
+
+        ulabel.delete_counterparts("d1", "diff", "gt");
+
+        expect(focused_at_redraw.at(-1)).toBe(true);
+    });
+
     test("a read-only target is left alone", () => {
         const ulabel = make_ulabel({
             ro: [make_bbox("r1", { hash: "h1" })],

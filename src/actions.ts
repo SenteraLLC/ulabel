@@ -80,7 +80,9 @@ export function record_action(
         current_subtask.actions.stream.push(action);
 
         // For some redo actions the annotation may no longer exist
-        const now = ULabel.get_time();
+        const now = raw_action.stamp_override !== undefined ? raw_action.stamp_override.at : ULabel.get_time();
+        const username = raw_action.stamp_override !== undefined ? raw_action.stamp_override.by : ulabel.config.username;
+        action.stamped_at = now;
         const main_key = subtask_key ?? ulabel.get_current_subtask_key();
         const stamped = [
             { ann: annotation, key: main_key },
@@ -90,10 +92,10 @@ export function record_action(
         const defocused_before = stamped.map(({ ann, key }) => ulabel.is_annotation_defocused(ann, key));
         for (const { ann } of stamped) {
             ann.last_edited_at = now;
-            ann.last_edited_by = ulabel.config.username;
+            ann.last_edited_by = username;
         }
         stamped.forEach(({ ann, key }, i) => {
-            if (!ann.deprecated && ulabel.is_annotation_defocused(ann, key) !== defocused_before[i]) {
+            if (ulabel.is_annotation_defocused(ann, key) !== defocused_before[i]) {
                 ulabel.redraw_annotation(ann.id!, key);
             }
         });
@@ -372,6 +374,10 @@ function trigger_action_listeners(
         delete_annotation: {
             action: on_annotation_deletion,
             undo: on_finish_annotation_spatial_modification,
+        },
+        restore_annotation: {
+            action: on_finish_annotation_spatial_modification,
+            undo: on_annotation_deletion,
         },
         delete_vertex: {
             action: on_finish_annotation_spatial_modification,
@@ -752,6 +758,9 @@ function undo_action(ulabel: ULabel, action: ULabelAction) {
         case "delete_annotation":
             ulabel.delete_annotation__undo(annotation_id);
             break;
+        case "restore_annotation":
+            ulabel.restore_annotation__undo(annotation_id);
+            break;
         case "delete_vertex":
             ulabel.delete_vertex__undo(annotation_id, undo_payload);
             break;
@@ -844,6 +853,9 @@ export function redo_action(ulabel: ULabel, action: ULabelAction) {
             break;
         case "delete_annotation":
             ulabel.delete_annotation__redo(annotation_id);
+            break;
+        case "restore_annotation":
+            ulabel.restore_annotation__redo(annotation_id);
             break;
         case "delete_vertex":
             ulabel.delete_vertex__redo(annotation_id, redo_payload);

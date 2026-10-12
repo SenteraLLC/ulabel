@@ -680,7 +680,12 @@ export function create_ulabel_listeners(
                 const current_subtask = ulabel.get_current_subtask();
                 // Check the edit_candidate to make sure its not null and isn't nonspatial
                 const edit_cand = current_subtask.state.edit_candidate;
-                if (edit_cand !== null && !NONSPATIAL_MODES.includes(edit_cand.spatial_type)) {
+                if (
+                    edit_cand !== null &&
+                    !NONSPATIAL_MODES.includes(edit_cand.spatial_type) &&
+                    // Deprecated annotations are hoverable under deprecated focus but not deletable
+                    !current_subtask.annotations.access[edit_cand.annid]?.deprecated
+                ) {
                     ulabel.delete_annotation(edit_cand.annid);
                 }
             }

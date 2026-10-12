@@ -23,6 +23,7 @@ const ICON_DETAILS = `<svg ${SVG_ATTRS}><circle cx="8" cy="8" r="6"/><path d="M8
 const ICON_ISOLATE = `<svg ${SVG_ATTRS}><path d="M1.5 8s2.5-4.5 6.5-4.5S14.5 8 14.5 8s-2.5 4.5-6.5 4.5S1.5 8 1.5 8z"/><circle cx="8" cy="8" r="2"/></svg>`;
 const ICON_COPY = `<svg ${SVG_ATTRS}><rect x="5.5" y="5.5" width="8" height="8" rx="1"/><path d="M10.5 5.5v-2a1 1 0 0 0-1-1h-6a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2"/></svg>`;
 const ICON_CUT = `<svg ${SVG_ATTRS}><circle cx="4.5" cy="11.5" r="2"/><circle cx="11.5" cy="11.5" r="2"/><path d="M6 10l7-8M10 10L3 2"/></svg>`;
+const ICON_RESTORE = `<svg ${SVG_ATTRS}><path d="M2.5 8a5.5 5.5 0 1 0 1.6-3.9M2.5 2.5v3h3"/></svg>`;
 
 function get_menu_element(ulabel: ULabel): HTMLDivElement | null {
     return document.getElementById(`${MENU_CLASS}__${ulabel.config.container_id}`) as HTMLDivElement | null;
@@ -108,6 +109,10 @@ function render_details(
     add_detail_row(menu, "type", annotation.spatial_type);
     add_detail_row(menu, "edited by", annotation.last_edited_by);
     add_detail_row(menu, "edited at", annotation.last_edited_at);
+    if (annotation.deprecated) {
+        const sources = Object.entries(annotation.deprecated_by ?? {}).filter(([, value]) => value).map(([key]) => key);
+        add_detail_row(menu, "deprecated by", sources.join(", "));
+    }
     const meta = annotation.annotation_meta;
     if (meta != null && typeof meta === "object") {
         for (const [key, value] of Object.entries(meta)) {
@@ -162,13 +167,18 @@ function add_subtask_picker(
  * `find_counterparts`), Delete from (another writable subtask holds
  * counterparts; the count shows when above 1), Delete (editable
  * subtask), Isolate / Show all (always; view-only), Details (always).
+ * A deprecated annotation (only reachable under deprecated focus) gets
+ * Restore (see `can_restore_annotation`), Isolate / Show all, and Details.
  *
  * @returns whether the menu was shown
  */
 export function show_context_menu(ulabel: ULabel, annid: string, client_x: number, client_y: number): boolean {
     const subtask = ulabel.get_current_subtask();
     const annotation = subtask.annotations.access[annid];
-    if (annotation == null || annotation.deprecated) {
+    if (
+        annotation == null ||
+        (annotation.deprecated && ulabel.is_annotation_defocused(annotation, ulabel.get_current_subtask_key()))
+    ) {
         hide_context_menu(ulabel);
         return false;
     }
@@ -176,6 +186,37 @@ export function show_context_menu(ulabel: ULabel, annid: string, client_x: numbe
     if (menu == null) return false;
     menu.replaceChildren();
 
+    if (annotation.deprecated) {
+        if (ulabel.can_restore_annotation(annid)) {
+            add_item(menu, "Restore", ICON_RESTORE, () => {
+                hide_context_menu(ulabel);
+                ulabel.restore_annotation(annid);
+            });
+        }
+    } else {
+        add_edit_items(ulabel, menu, annotation, annid, client_x, client_y);
+    }
+    // isolate_annotation closes the menu itself
+    const is_isolated = subtask.state.isolated_annid === annid;
+    add_item(menu, is_isolated ? "Show all" : "Isolate", ICON_ISOLATE, () => {
+        ulabel.isolate_annotation(is_isolated ? null : annid);
+    });
+    add_item(menu, "Details", ICON_DETAILS, () => render_details(ulabel, menu, annotation, client_x, client_y));
+
+    ulabel.state.context_menu_annid = annid;
+    position_menu(menu, client_x, client_y);
+    return true;
+}
+
+/** Change class, Copy/Move to, Erase/Delete from, and Delete for a live annotation. */
+function add_edit_items(
+    ulabel: ULabel,
+    menu: HTMLDivElement,
+    annotation: ULabelAnnotation,
+    annid: string,
+    client_x: number,
+    client_y: number,
+): void {
     const read_only = ulabel.is_current_subtask_read_only();
     if (!read_only && ulabel._get_compatible_class_ids(annotation).length >= 2) {
         add_item(menu, "Change class", ICON_CHANGE_CLASS, () => {
@@ -241,16 +282,6 @@ export function show_context_menu(ulabel: ULabel, annid: string, client_x: numbe
             ulabel.delete_annotation(annid);
         });
     }
-    // isolate_annotation closes the menu itself
-    const is_isolated = subtask.state.isolated_annid === annid;
-    add_item(menu, is_isolated ? "Show all" : "Isolate", ICON_ISOLATE, () => {
-        ulabel.isolate_annotation(is_isolated ? null : annid);
-    });
-    add_item(menu, "Details", ICON_DETAILS, () => render_details(ulabel, menu, annotation, client_x, client_y));
-
-    ulabel.state.context_menu_annid = annid;
-    position_menu(menu, client_x, client_y);
-    return true;
 }
 
 /** Close the menu and drop the hover it was holding. No-op when closed. */

@@ -43,7 +43,8 @@ export function isolate_annotation(
     }
     if (annotation_id != null) {
         const annotation = subtask.annotations.access[annotation_id];
-        if (annotation == null || annotation.deprecated) {
+        // Deprecated annotations are only visible, so only isolatable, under deprecated focus
+        if (annotation == null || (annotation.deprecated && !subtask.focus_deprecated)) {
             log_message(`isolate_annotation: unknown or deprecated annotation ${annotation_id}`, LogLevel.WARNING, true);
             return false;
         }

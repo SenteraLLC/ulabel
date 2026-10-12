@@ -182,6 +182,50 @@ export function set_focus_edited(
 }
 
 /**
+ * Turn deprecated focus on or off for a subtask at runtime: deprecated
+ * annotations are drawn and in focus, live ones dim and drop out of input.
+ *
+ * @param ulabel ULabel instance
+ * @param subtask_key subtask to toggle
+ * @param enabled whether only deprecated annotations stay in focus
+ * @param redraw whether the change repaints immediately
+ */
+export function set_focus_deprecated(
+    ulabel: ULabel,
+    subtask_key: string,
+    enabled: boolean,
+    redraw: boolean = true,
+): void {
+    const subtask = ulabel.subtasks[subtask_key];
+    if (subtask === undefined) {
+        log_message(`set_focus_deprecated: unknown subtask key ${subtask_key}`, LogLevel.WARNING, true);
+        return;
+    }
+    const previous = subtask.focus_deprecated === true;
+    subtask.focus_deprecated = enabled === true;
+
+    // A deprecated target must not outlive the flag that made it visible
+    subtask.state.hovered_annid = null;
+    subtask.state.edit_candidate = null;
+    subtask.state.move_candidate = null;
+    subtask.state.fly_to_idx = null;
+    if (subtask_key === ulabel.get_current_subtask_key()) ulabel.hide_context_menu();
+    const isolated_annid = subtask.state.isolated_annid;
+    if (isolated_annid != null && subtask.annotations.access[isolated_annid]?.deprecated && !subtask.focus_deprecated) {
+        ulabel.isolate_annotation(null, subtask_key, false);
+    }
+
+    if (redraw) {
+        ulabel.redraw_all_annotations(subtask_key);
+        ulabel.toolbox?.redraw_update_items(ulabel);
+    }
+
+    if (previous !== subtask.focus_deprecated) {
+        ulabel.config.on_focus_deprecated_change?.(subtask_key, subtask.focus_deprecated);
+    }
+}
+
+/**
  * Opacity for annotations outside the focused class. 0 skips drawing them
  * entirely, which is cheaper but loses them as visual context.
  *

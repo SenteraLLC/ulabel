@@ -177,6 +177,7 @@ export class Configuration {
     public on_subtask_change: ((subtask_key: string, old_subtask_key: string) => void) | null = null;
     public on_focus_active_class_change: ((subtask_key: string, enabled: boolean) => void) | null = null;
     public on_focus_edited_change: ((subtask_key: string, enabled: boolean) => void) | null = null;
+    public on_focus_deprecated_change: ((subtask_key: string, enabled: boolean) => void) | null = null;
     public on_isolate_change: ((subtask_key: string, annotation_id: string | null) => void) | null = null;
     // Fired once per recorded/undone/redone action that changes committed annotation state
     public on_annotation_change: ((change: ULabelAnnotationChange) => void) | null = null;

@@ -16,10 +16,11 @@ function make_annotation(overrides = {}) {
     };
 }
 
-function make_ulabel({ read_only = false, compatible = [1, 2], annotation = make_annotation(), copy_targets = [] } = {}) {
+function make_ulabel({ read_only = false, compatible = [1, 2], annotation = make_annotation(), copy_targets = [], focus_deprecated = false, can_restore = true } = {}) {
     document.body.innerHTML = `<div id="container"></div>`;
     const subtask = {
         read_only,
+        focus_deprecated,
         class_defs: [{ id: 1, name: "Crop" }, { id: 2, name: "Weed" }],
         annotations: { access: { [annotation.id]: annotation } },
         state: { edit_candidate: { annid: annotation.id }, move_candidate: null, isolated_annid: null },
@@ -43,6 +44,9 @@ function make_ulabel({ read_only = false, compatible = [1, 2], annotation = make
         delete_counterparts: jest.fn(() => []),
         show_id_dialog: jest.fn(),
         delete_annotation: jest.fn(),
+        is_annotation_defocused: jest.fn((ann) => ann.deprecated !== subtask.focus_deprecated),
+        can_restore_annotation: jest.fn(() => can_restore),
+        restore_annotation: jest.fn(),
         isolate_annotation: jest.fn((annid) => {
             subtask.state.isolated_annid = annid;
             hide_context_menu(ulabel);
@@ -102,6 +106,27 @@ describe("context menu items", () => {
 
         const deprecated = make_ulabel({ annotation: make_annotation({ deprecated: true }) });
         expect(show_context_menu(deprecated, "a0", 100, 100)).toBe(false);
+    });
+
+    test("deprecated target under deprecated focus offers Restore, Isolate, and Details", () => {
+        const ulabel = make_ulabel({ annotation: make_annotation({ deprecated: true }), focus_deprecated: true });
+        expect(show_context_menu(ulabel, "a0", 100, 100)).toBe(true);
+        expect(item_labels()).toEqual(["Restore", "Isolate", "Details"]);
+
+        click_item("Restore");
+        expect(is_context_menu_open(ulabel)).toBe(false);
+        expect(ulabel.restore_annotation).toHaveBeenCalledWith("a0");
+    });
+
+    test("a deprecated target that cannot be restored has no Restore", () => {
+        const ulabel = make_ulabel({
+            annotation: make_annotation({ deprecated: true }),
+            focus_deprecated: true,
+            can_restore: false,
+        });
+        show_context_menu(ulabel, "a0", 100, 100);
+        expect(item_labels()).toEqual(["Isolate", "Details"]);
+        expect(ulabel.can_restore_annotation).toHaveBeenCalledWith("a0");
     });
 
     test("one copy target is named on flat Copy to / Move to items", () => {
@@ -315,6 +340,24 @@ describe("context menu actions", () => {
             ["nested", "{\"a\":1}"],
         ]);
         expect(menu_element().querySelector("b")).toBeNull();
+    });
+
+    test("Details lists what deprecated a deprecated target", () => {
+        const ulabel = make_ulabel({
+            annotation: make_annotation({
+                deprecated: true,
+                deprecated_by: { human: true, confidence_filter: true, distance_from_row: false },
+            }),
+            focus_deprecated: true,
+        });
+        show_context_menu(ulabel, "a0", 100, 100);
+        click_item("Details");
+
+        const rows = Array.from(menu_element().querySelectorAll(".ulabel-context-menu-detail")).map((row) => [
+            row.querySelector(".ulabel-context-menu-detail-key").textContent,
+            row.querySelector(".ulabel-context-menu-detail-value").textContent,
+        ]);
+        expect(rows).toContainEqual(["deprecated by", "human, confidence_filter"]);
     });
 });
 

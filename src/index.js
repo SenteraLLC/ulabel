@@ -32,7 +32,7 @@ import { initialize_annotation_canvases } from "../build/canvas_utils";
 import { record_action, record_finish, record_finish_edit, record_finish_move, undo, redo } from "../build/actions";
 import { ULabelMask, is_raw_mask_payload } from "../build/mask_utils";
 import { get_active_class_id, get_local_storage_item, set_local_storage_item } from "../build/utilities";
-import { set_active_class, get_selected_class_id, set_focus_active_class, set_focus_edited, set_defocused_opacity, can_annotation_be_class } from "../build/active_class";
+import { set_active_class, get_selected_class_id, set_focus_active_class, set_focus_edited, set_focus_deprecated, set_defocused_opacity, can_annotation_be_class } from "../build/active_class";
 import { show_context_menu, hide_context_menu, is_context_menu_open } from "../build/context_menu";
 import { isolate_annotation, is_annotation_isolated_out } from "../build/isolate";
 import { get_idd_string } from "../build/html_builder";
@@ -1204,6 +1204,9 @@ export class ULabel {
         if (subtask == null) return false;
         // Isolation hides rather than dims, but shares every input gate
         if (is_annotation_isolated_out(this, annotation, subtask_key)) return true;
+        // Deprecated annotations are in focus only under deprecated focus, and then only they are
+        const is_deprecated = annotation["deprecated"] === true;
+        if (is_deprecated !== (subtask["focus_deprecated"] === true)) return true;
         if (subtask["focus_edited"]) {
             const loaded_edited_at = subtask["annotations"]["loaded_edited_at"] ?? {};
             if (SubmitButtons.classify_edit(annotation, loaded_edited_at[annotation["id"]]) === null) return true;
@@ -1299,6 +1302,17 @@ export class ULabel {
      */
     set_focus_edited(subtask_key, enabled, redraw = true) {
         set_focus_edited(this, subtask_key, enabled, redraw);
+    }
+
+    /**
+     * Turn deprecated focus on or off for a subtask: deprecated annotations
+     * are drawn and in focus, live ones dim and drop out of input.
+     * @param {string} subtask_key
+     * @param {boolean} enabled
+     * @param {boolean} redraw
+     */
+    set_focus_deprecated(subtask_key, enabled, redraw = true) {
+        set_focus_deprecated(this, subtask_key, enabled, redraw);
     }
 
     /**
@@ -2825,9 +2839,11 @@ export class ULabel {
     }
 
     draw_annotation(annotation_object, offset = null, subtask = null) {
-        // DEBUG left here for refactor reference, but I don't think it's needed moving forward
-        //    there may be a use case for drawing depreacted annotations
-        if (annotation_object["deprecated"]) return;
+        // Deprecated annotations are drawn only under deprecated focus, and never as note rows
+        if (
+            annotation_object["deprecated"] &&
+            (subtask === "demo" || !this.subtasks[subtask]?.["focus_deprecated"] || NONSPATIAL_MODES.includes(annotation_object["spatial_type"]))
+        ) return;
         // Isolated-out annotations are hidden outright, never dimmed
         if (is_annotation_isolated_out(this, annotation_object, subtask)) return;
         // Defocused annotations are only drawn by the scratch pass, which dims
@@ -2961,7 +2977,11 @@ export class ULabel {
         const annotation_ids = context_entry["annotation_ids"].filter(
             (annid) => !is_annotation_isolated_out(this, access[annid], subtask),
         );
-        if (!this.subtasks[subtask]["focus_active_class"] && !this.subtasks[subtask]["focus_edited"]) {
+        if (
+            !this.subtasks[subtask]["focus_active_class"] &&
+            !this.subtasks[subtask]["focus_edited"] &&
+            !this.subtasks[subtask]["focus_deprecated"]
+        ) {
             for (const annid of annotation_ids) draw(annid);
             return;
         }
@@ -3961,7 +3981,7 @@ export class ULabel {
         const subtask = this.subtasks[subtask_key];
         if (subtask["state"]["isolated_annid"] !== annotation_id) return;
         const annotation = subtask["annotations"]["access"][annotation_id];
-        if (annotation === undefined || annotation["deprecated"]) {
+        if (annotation === undefined || (annotation["deprecated"] && !subtask["focus_deprecated"])) {
             this.isolate_annotation(null, subtask_key);
         }
     }
@@ -5126,7 +5146,7 @@ export class ULabel {
         }
     }
 
-    delete_annotation(annotation_id, redoing = false, should_record_action = true) {
+    delete_annotation(annotation_id, redoing = false, should_record_action = true, prev_stamp = null) {
         // Grab constants for convenience
         const current_subtask = this.get_current_subtask();
         const annotations = current_subtask["annotations"]["access"];
@@ -5171,6 +5191,7 @@ export class ULabel {
             frame: frame,
             undo_payload: {},
             redo_payload: {},
+            ...(prev_stamp ?? {}),
         }, redoing, should_record_action);
     }
 
@@ -5181,6 +5202,100 @@ export class ULabel {
 
     delete_annotation__redo(annotation_id) {
         this.delete_annotation(annotation_id, true);
+    }
+
+    /**
+     * Whether Restore applies to an annotation in the current subtask: deleted by
+     * a human only (filters keep theirs), editable subtask, not an emptied bitmask.
+     * @param {string} annotation_id
+     * @returns {boolean}
+     */
+    can_restore_annotation(annotation_id) {
+        if (this.is_current_subtask_read_only()) return false;
+        const annotation = this.get_current_subtask()["annotations"]["access"][annotation_id];
+        const deprecated_by = annotation?.["deprecated_by"];
+        if (deprecated_by?.["human"] !== true) return false;
+        if (Object.entries(deprecated_by).some(([key, value]) => key !== "human" && value)) return false;
+        const spatial_payload = annotation["spatial_payload"];
+        switch (annotation["spatial_type"]) {
+            case "delete_polygon":
+            case "delete_bbox":
+                return false;
+            case "bitmask":
+                return !this.get_bitmask(annotation).is_empty();
+            case "polygon":
+                return spatial_payload.length > 0;
+            case "polyline":
+            case "contour":
+                return spatial_payload.length >= 2;
+            default:
+                return true;
+        }
+    }
+
+    /**
+     * The edit stamp an annotation had before the recorded action that wrote its
+     * current stamp, searched across every subtask's stream; null if none did.
+     * @param {string} annotation_id
+     * @param {string} subtask_key
+     * @returns {{at: string|null, by: string}|null}
+     */
+    find_stamp_before_last_action(annotation_id, subtask_key) {
+        const stamp = this.subtasks[subtask_key]["annotations"]["access"][annotation_id]["last_edited_at"];
+        if (stamp == null) return null;
+        for (const [key, subtask] of Object.entries(this.subtasks)) {
+            const stream = subtask["actions"]["stream"];
+            for (let i = stream.length - 1; i >= 0; i--) {
+                const action = stream[i];
+                if (action["stamped_at"] !== stamp) continue;
+                if (key === subtask_key && action["annotation_id"] === annotation_id) {
+                    return { at: action["prev_timestamp"], by: action["prev_user"] };
+                }
+                const idx = (action["affected"] ?? []).findIndex(
+                    (entry) => entry["annotation_id"] === annotation_id && entry["subtask_key"] === subtask_key,
+                );
+                if (idx !== -1) {
+                    const prev = action["affected_prev"][idx];
+                    return { at: prev["prev_timestamp"], by: prev["prev_user"] };
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Undelete a human-deleted annotation in the current subtask. Its edit stamp
+     * reverts to before the deletion when the streams still know it, else now.
+     * @param {string} annotation_id
+     * @param {boolean} redoing
+     * @returns {boolean} whether it was restored
+     */
+    restore_annotation(annotation_id, redoing = false) {
+        if (!redoing && !this.can_restore_annotation(annotation_id)) return false;
+        const annotation = this.get_current_subtask()["annotations"]["access"][annotation_id];
+        const stamp = this.find_stamp_before_last_action(annotation_id, this.get_current_subtask_key());
+        if (this.state["context_menu_annid"] === annotation_id) {
+            this.hide_context_menu();
+        }
+        mark_deprecated(annotation, false);
+        record_action(this, {
+            act_type: "restore_annotation",
+            annotation_id: annotation_id,
+            frame: MODES_3D.includes(annotation["spatial_type"]) ? null : this.state["current_frame"],
+            undo_payload: {},
+            redo_payload: {},
+            stamp_override: stamp ?? undefined,
+        }, redoing);
+        return true;
+    }
+
+    restore_annotation__undo(annotation_id) {
+        mark_deprecated(this.get_current_subtask()["annotations"]["access"][annotation_id], true);
+        this.release_isolation_if_deprecated(annotation_id);
+    }
+
+    restore_annotation__redo(annotation_id) {
+        this.restore_annotation(annotation_id, true);
     }
 
     /**
@@ -5292,8 +5407,10 @@ export class ULabel {
             },
         }, redoing, should_record_action);
 
-        // If the entire annotation should be deleted, do so
+        // If the entire annotation should be deleted, do so with its geometry intact
         if (should_delete) {
+            annotation["spatial_payload"] = old_spatial_payload;
+            this.rebuild_containing_box(annotation_id);
             this.delete_annotation(annotation_id, false, false);
         }
     }
@@ -6094,11 +6211,16 @@ export class ULabel {
 
         // Loop through all annotations in the ordering until we find a polygon that intersects with the brush
         if (brush_polygon !== null) {
+            const subtask_key = this.get_current_subtask_key();
             for (let i = current_subtask["annotations"]["ordering"].length - 1; i >= 0; i--) {
                 let active_id = current_subtask["annotations"]["ordering"][i];
                 let annotation = current_subtask["annotations"]["access"][active_id];
-                // Only undeprecated polygons
-                if (!annotation["deprecated"] && annotation["spatial_type"] === "polygon") {
+                // Only undeprecated polygons in focus
+                if (
+                    !annotation["deprecated"] &&
+                    annotation["spatial_type"] === "polygon" &&
+                    !this.is_annotation_defocused(annotation, subtask_key)
+                ) {
                     // Split into fills + their associated holes
                     let split_polygons = this.split_complex_polygon(active_id);
                     // Check if the brush intersects with or is within any layer
@@ -6240,7 +6362,18 @@ export class ULabel {
                 }
 
                 if (new_spatial_payload.length === 0) {
-                    // Delete the annotation before overwriting payload
+                    // Fold the stroke into the deletion, as finish_annotation folds a normal stroke
+                    const stream = current_subtask["actions"]["stream"];
+                    const begin = stream.at(-1);
+                    if (begin?.act_type === "begin_brush" && begin.annotation_id === active_id) {
+                        stream.pop();
+                        this.replace_polygon_spatial_data(active_id, JSON.parse(begin.undo_payload).polygon_spatial_data);
+                        this.delete_annotation(active_id, false, true, {
+                            prev_timestamp: begin.prev_timestamp,
+                            prev_user: begin.prev_user,
+                        });
+                        return;
+                    }
                     this.delete_annotation(active_id);
                 }
                 annotation["spatial_payload"] = new_spatial_payload;
@@ -6297,15 +6430,17 @@ export class ULabel {
         return annotation_id;
     }
 
-    // Find the topmost undeprecated bitmask annotation with foreground under the brush.
+    // Find the topmost undeprecated, in-focus bitmask annotation with foreground under the brush.
     // When `class_id` is provided, only annotations of that class are considered.
     find_bitmask_under_brush(imx, imy, radius, class_id = null) {
         const current_subtask = this.get_current_subtask();
+        const subtask_key = this.get_current_subtask_key();
         const ordering = current_subtask["annotations"]["ordering"];
         const access = current_subtask["annotations"]["access"];
         for (let i = ordering.length - 1; i >= 0; i--) {
             const annotation = access[ordering[i]];
             if (annotation["deprecated"] || annotation["spatial_type"] !== "bitmask") continue;
+            if (this.is_annotation_defocused(annotation, subtask_key)) continue;
             // Optionally only join annotations that match the given class
             // (get_annotation_class_id returns a string, so coerce for comparison)
             if (class_id !== null && get_annotation_class_id(annotation) !== String(class_id)) continue;
@@ -6957,12 +7092,25 @@ export class ULabel {
                 },
                 redo_payload: {},
             }, redoing);
+
+            // A cancelled drawing was never committed; undo re-inserts it from the payload
+            if (!is_complex_layer) {
+                this.destroy_annotation_context(annotation_id);
+                this.remove_annotation_from_access_and_ordering(annotation_id);
+                this.toolbox.redraw_update_items(this);
+            }
         }
     }
 
     cancel_annotation__undo(annotation_id, undo_payload) {
         // Mark that the annotation is in progress again
         const current_subtask = this.get_current_subtask();
+        if (!undo_payload.is_complex_layer) {
+            const annotation = undo_payload.annotation;
+            annotation["canvas_id"] = this.get_init_canvas_context_id(annotation_id);
+            current_subtask["annotations"]["access"][annotation_id] = annotation;
+            current_subtask["annotations"]["ordering"].push(annotation_id);
+        }
         current_subtask["state"]["active_id"] = annotation_id;
         current_subtask["state"]["is_in_progress"] = true;
 
@@ -7548,7 +7696,7 @@ export class ULabel {
         for (let edi = 0; edi < this.get_current_subtask()["annotations"]["ordering"].length; edi++) {
             const annotation_id = this.get_current_subtask()["annotations"]["ordering"][edi];
             let annotation = this.get_current_subtask()["annotations"]["access"][annotation_id];
-            if (annotation["deprecated"]) continue;
+            // Deprecated annotations are candidates only under deprecated focus
             if (this.is_annotation_defocused(annotation, current_subtask_key)) continue;
             let cbox = annotation["containing_box"];
             let frame = annotation["frame"];
@@ -7731,6 +7879,17 @@ export class ULabel {
             // Show global edit dialogs for "best" candidate
             best_candidate = edit_candidates["best"];
             const containing = best_candidate["containing"];
+
+            // A deprecated annotation is view-only: hover card and context menu, no handles or grab
+            if (current_subtask["annotations"]["access"][best_candidate["annid"]]["deprecated"]) {
+                this.hide_edit_suggestion();
+                current_subtask["state"]["move_candidate"] = null;
+                this.set_move_cursor(false);
+                current_subtask["state"]["edit_candidate"] = best_candidate;
+                this.update_confidence_dialog();
+                this.show_global_edit_suggestion(best_candidate.annid, null, null);
+                return;
+            }
 
             // Look for an existing point that's close enough to suggest editing it
             const nearest_active_keypoint = this.get_nearest_active_keypoint(global_x, global_y, dst_thresh, edit_candidates["candidate_ids"]);
@@ -8313,7 +8472,8 @@ export class ULabel {
                 annotation_mode === "polygon" &&
                 !this.is_current_subtask_read_only() &&
                 edit_candidate != null &&
-                this.get_current_subtask()["annotations"]["access"][edit_candidate["annid"]]?.["spatial_type"] === "polygon"
+                this.get_current_subtask()["annotations"]["access"][edit_candidate["annid"]]?.["spatial_type"] === "polygon" &&
+                !this.get_current_subtask()["annotations"]["access"][edit_candidate["annid"]]["deprecated"]
             ) {
                 // Shift-hovering a polygon starts a new complex layer on it. The hover ring
                 // that used to signal this via `idd_visible` is gone; the candidate is the cue.
@@ -8710,17 +8870,16 @@ export class ULabel {
     }
 
     fly_to_annotation(annotation, subtask_key = null, max_zoom = 10) {
-        // Handle null, deprecated, and non-spatial annotations
+        // Handle null and non-spatial annotations
         if (
             annotation === null ||
             annotation === undefined ||
-            annotation["deprecated"] ||
             NONSPATIAL_MODES.includes(annotation["spatial_type"])
         ) {
             return false;
         }
 
-        // Navigation should only visit what's on screen
+        // Navigation should only visit what's on screen; deprecated ones only under deprecated focus
         if (this.is_annotation_defocused(annotation, subtask_key ?? this.get_current_subtask_key())) {
             return false;
         }
@@ -8782,13 +8941,13 @@ export class ULabel {
 
         if (annotation_idx === -1) return;
 
-        // Count non-deprecated annotations up to and including this one
+        // Count in-focus annotations up to and including this one
         let visible_count = 0;
         let current_visible_idx = -1;
         const current_subtask_key = this.get_current_subtask_key();
         for (let i = 0; i < ordering.length; i++) {
             const ann = current_subtask["annotations"]["access"][ordering[i]];
-            if (!ann["deprecated"] && !this.is_annotation_defocused(ann, current_subtask_key)) {
+            if (!this.is_annotation_defocused(ann, current_subtask_key)) {
                 if (ordering[i] === annotation_id) {
                     current_visible_idx = visible_count;
                 }

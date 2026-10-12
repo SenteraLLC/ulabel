@@ -553,9 +553,9 @@ test.describe("Keybind Functionality Tests", () => {
         });
         expect(is_in_progress).toBe(false);
 
-        // Verify annotation is now deprecated
-        const annotation = await get_annotation_by_index(page, 0);
-        expect(annotation.deprecated).toBe(true);
+        // Verify the cancelled drawing was removed, not left deprecated
+        const n_annotations = await page.evaluate(() => window.ulabel.get_current_subtask().annotations.ordering.length);
+        expect(n_annotations).toBe(0);
 
         // Test 2: Exit brush mode
         // Enter brush mode
@@ -804,9 +804,10 @@ test.describe("Keybind Functionality Tests", () => {
         await press_keybind(page, keybind);
         await page.waitForTimeout(200);
 
-        // Verify the polyline is now deprecated (deleted)
+        // Verify the polyline is now deprecated (deleted) with its geometry intact
         annotation = await get_annotation_by_index(page, 0);
         expect(annotation.deprecated).toBe(true);
+        expect(annotation.spatial_payload.length).toBe(2);
     });
 
     test("shift-hover on an existing polygon starts a new complex layer", async ({ page }) => {
