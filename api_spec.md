@@ -105,6 +105,7 @@ class ULabel({
     on_focus_edited_change: function,
     on_focus_deprecated_change: function,
     on_isolate_change: function,
+    on_undo_redo_blocked: function,
     on_annotation_change: function,
     on_annotation_change_in_progress: boolean
 })
@@ -750,10 +751,13 @@ When `true` (the default), ULabel installs a `MutationObserver` on the container
 *(subtask_key: string, enabled: boolean) => void* -- Called after a subtask's `focus_edited` flag actually changes, whatever the writer: `set_focus_edited`, the `toggle_edit_focus_keybind`, or the annotation list's **Edited Only** checkbox. Not called when the flag is already at the target value. Default is `null`.
 
 ### `on_focus_deprecated_change`
-*(subtask_key: string, enabled: boolean) => void* -- Called after a subtask's `focus_deprecated` flag actually changes, whatever the writer: `set_focus_deprecated` or the annotation list's **Show Deprecated** checkbox. Not called when the flag is already at the target value. Default is `null`.
+*(subtask_key: string, enabled: boolean) => void* -- Called after a subtask's `focus_deprecated` flag actually changes, whatever the writer: `set_focus_deprecated`, the `toggle_deprecated_focus_keybind`, or the annotation list's **Show Deprecated** checkbox. Not called when the flag is already at the target value. Default is `null`.
 
 ### `on_isolate_change`
 *(subtask_key: string, annotation_id: string | null) => void* -- Called after a subtask's isolated annotation actually changes, whatever the writer: `isolate_annotation`, the list's eye button, `Show all`, `Escape`, or one of the automatic clears (deletion, creation, subtask switch, `set_annotations`). `annotation_id` is `null` when the isolation clears. Default is `null`.
+
+### `on_undo_redo_blocked`
+*(kind: "undo" | "redo", subtask_key: string, from_subtask_key: string, origin_subtask_key: string | null) => void* -- Called when an undo or redo issued from read-only subtask `from_subtask_key` does nothing because the action on top of the sole writable subtask `subtask_key`'s history was triggered from `origin_subtask_key`, not from `from_subtask_key` (see [Keyboard Shortcuts](#keyboard-shortcuts)). Not called when that history is empty. Default is `null`.
 
 ### `on_annotation_change`
 *(change: ULabelAnnotationChange) => void* -- Called once per recorded, undone, or redone action that changes committed annotation state (geometry, position, deprecation, or class), so a host can recompute derived data (e.g. a live diff against fixed predictions) without polling the action stream. Default is `null`. Exceptions thrown by the callback are caught and logged as warnings.

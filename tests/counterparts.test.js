@@ -375,6 +375,27 @@ describe("undo/redo from a read-only subtask", () => {
         expect(gt(ulabel, pasted_id)).toBeDefined();
     });
 
+    test("reports a blocked undo/redo to on_undo_redo_blocked, but not an empty history", () => {
+        const on_undo_redo_blocked = jest.fn();
+        const ulabel = make_ulabel({ gt: [make_bbox("g1")] }, { on_undo_redo_blocked });
+        ulabel.undo();
+        ulabel.redo();
+        expect(on_undo_redo_blocked).not.toHaveBeenCalled();
+
+        ulabel.state.current_subtask = "gt";
+        ulabel.delete_annotation("g1");
+        ulabel.state.current_subtask = "diff";
+        ulabel.undo();
+        expect(on_undo_redo_blocked).toHaveBeenLastCalledWith("undo", "gt", "diff", "gt");
+
+        ulabel.state.current_subtask = "gt";
+        ulabel.undo();
+        ulabel.state.current_subtask = "diff";
+        ulabel.redo();
+        expect(on_undo_redo_blocked).toHaveBeenLastCalledWith("redo", "gt", "diff", "gt");
+        expect(on_undo_redo_blocked).toHaveBeenCalledTimes(2);
+    });
+
     test("does nothing for an action triggered from another read-only subtask", () => {
         const ulabel = make_ulabel({ ro: [make_bbox("r1")] });
         ulabel.state.current_subtask = "ro";

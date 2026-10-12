@@ -550,3 +550,4 @@ Edited Only (→ this session's deletions) and class focus.
 - [x] Actions record `origin_subtask_key` (`undo_redo_from_subtask` or current subtask).
 - [x] `run_on_edit_subtask` only runs when the top action's origin is the current read-only subtask.
 - [x] Tests, docs, lint, build, jest, e2e. jest 509/509, chromium e2e 164/164.
+- [x] `on_undo_redo_blocked(kind, subtask_key, from_subtask_key, origin_subtask_key)` host callback. jest 510/510.

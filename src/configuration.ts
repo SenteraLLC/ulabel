@@ -179,6 +179,7 @@ export class Configuration {
     public on_focus_edited_change: ((subtask_key: string, enabled: boolean) => void) | null = null;
     public on_focus_deprecated_change: ((subtask_key: string, enabled: boolean) => void) | null = null;
     public on_isolate_change: ((subtask_key: string, annotation_id: string | null) => void) | null = null;
+    public on_undo_redo_blocked: ((kind: "undo" | "redo", subtask_key: string, from_subtask_key: string, origin_subtask_key: string | null) => void) | null = null;
     // Fired once per recorded/undone/redone action that changes committed annotation state
     public on_annotation_change: ((change: ULabelAnnotationChange) => void) | null = null;
     // Whether continue_* (in-progress) actions are also reported

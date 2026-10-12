@@ -413,10 +413,12 @@ export type ULabelConstructorArgs = {
     on_focus_active_class_change?: (subtask_key: string, enabled: boolean) => void;
     /** Fired after a subtask's `focus_edited` flag changes, from any writer (API, edit focus keybind, annotation list checkbox). */
     on_focus_edited_change?: (subtask_key: string, enabled: boolean) => void;
-    /** Fired after a subtask's `focus_deprecated` flag changes, from any writer (API, annotation list checkbox). */
+    /** Fired after a subtask's `focus_deprecated` flag changes, from any writer (API, toggle keybind, annotation list checkbox). */
     on_focus_deprecated_change?: (subtask_key: string, enabled: boolean) => void;
     /** Fired after a subtask's isolated annotation changes (`null` when cleared), from any writer (API, list button, Escape). */
     on_isolate_change?: (subtask_key: string, annotation_id: string | null) => void;
+    /** Fired when an undo/redo from a read-only subtask does nothing because the writable subtask's top action was triggered elsewhere. */
+    on_undo_redo_blocked?: (kind: "undo" | "redo", subtask_key: string, from_subtask_key: string, origin_subtask_key: string | null) => void;
     /** Fired once per recorded, undone, or redone action that changes committed annotation state. Not fired by `set_annotations`/`set_annotations_batch`/`resume_from`. */
     on_annotation_change?: (change: ULabelAnnotationChange) => void;
     /** Also report `continue_*` (in-progress draw/edit/move/brush) actions to `on_annotation_change`. Default false. */

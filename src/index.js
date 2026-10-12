@@ -4338,7 +4338,12 @@ export class ULabel {
         const current_key = this.get_current_subtask_key();
         const edit_key = writable[0];
         const actions = this.subtasks[edit_key].actions[stack];
-        if (actions.length === 0 || actions[actions.length - 1].origin_subtask_key !== current_key) return;
+        if (actions.length === 0) return;
+        const origin_key = actions[actions.length - 1].origin_subtask_key ?? null;
+        if (origin_key !== current_key) {
+            this.config.on_undo_redo_blocked?.(stack === "stream" ? "undo" : "redo", edit_key, current_key, origin_key);
+            return;
+        }
         this.state["undo_redo_from_subtask"] = current_key;
         try {
             if (this.config["paste_switch_to_target"]) {
