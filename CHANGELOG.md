@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented here.
 
+## [0.29.1] - Oct 12th, 2026
+#### Fixed
+- `set_annotations()` / `set_annotations_batch()` could paint a frame with no annotations on heavy images. The outgoing annotations now stay on screen until the new ones are drawn.
+
+#### Changed
+- Faster `AnnotationList` rebuilds: each row's icon is a cached `<img>` instead of an inline SVG, rows off screen skip layout and paint (`content-visibility: auto`), and the grouped view no longer does a linear search per row.
+
 ## [0.29.0] - Oct 12th, 2026
 #### Breaking Changes
 - **Drag a body to move it.** A left-drag that starts inside a spatial annotation moves it (now including `contour`, `tbar`, and `bbox3`). A drag on a vertex handle edits the vertex, and a drag anywhere else draws. Hold `Alt` to draw over an annotation. Set `allow_body_move: false` for the old draw-everywhere behavior.

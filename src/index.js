@@ -9322,10 +9322,7 @@ export class ULabel {
         // The isolated id is about to stop existing; the redraw below repaints
         this.isolate_annotation(null, subtask, false);
 
-        // Bulk teardown of outgoing annotations: much cheaper than a per-annotation loop.
-        this._clear_subtask_annotation_canvases(subtask);
-
-        // Set new annotations and initialize canvases
+        const outgoing_annotations = this.subtasks[subtask]["annotations"];
         ULabel.process_resume_from(this, subtask, { resume_from: new_annotations });
 
         // Yield the event loop so the loader's reveal timer can fire if the load above
@@ -9335,6 +9332,8 @@ export class ULabel {
         await new Promise((resolve) => setTimeout(resolve, 0));
         if (this.is_destroyed) return false;
 
+        // The outgoing canvases stay up through the yield, so no paint can show an empty frame.
+        this._clear_subtask_annotation_canvases(subtask, outgoing_annotations);
         initialize_annotation_canvases(this, subtask);
         // Redraw all annotations to render them
         this.redraw_all_annotations(subtask);
@@ -9363,9 +9362,9 @@ export class ULabel {
      * redraw the remaining siblings on every removal — wasted work when the caller
      * is about to replace everything and redraw once.
      */
-    _clear_subtask_annotation_canvases(subtask) {
-        const access = this.subtasks[subtask]["annotations"]["access"];
-        for (const id of this.subtasks[subtask]["annotations"]["ordering"]) {
+    _clear_subtask_annotation_canvases(subtask, annotations = this.subtasks[subtask]["annotations"]) {
+        const access = annotations["access"];
+        for (const id of annotations["ordering"]) {
             const anno = access[id];
             if (anno?.spatial_type === "bitmask") {
                 delete anno["_mask"];
