@@ -1,5 +1,9 @@
 import { defineConfig, devices } from "@playwright/test";
 
+// Override with PORT=... when 8080 is taken by something else; demo.js reads the same variable.
+const port = Number(process.env.PORT) || 8080;
+const base_url = `http://localhost:${port}`;
+
 export default defineConfig({
     testDir: "./tests/e2e",
     fullyParallel: false, // Run tests sequentially for more stable results
@@ -8,7 +12,7 @@ export default defineConfig({
     workers: 3,
     reporter: "list",
     use: {
-        baseURL: "http://localhost:8080",
+        baseURL: base_url,
         trace: "on-first-retry",
         screenshot: "only-on-failure",
         video: "retain-on-failure",
@@ -66,7 +70,7 @@ export default defineConfig({
 
     webServer: {
         command: "npm run demo",
-        url: "http://localhost:8080/multi-class.html",
+        url: `${base_url}/multi-class.html`,
         reuseExistingServer: !process.env.CI,
     },
 });

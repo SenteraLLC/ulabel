@@ -12,6 +12,7 @@ export type PointAccessObject = {
     access: string | number | null; // Access string or number that acts as the index of the point in the original spatial payload
     distance: number | null;
     point: Point2D | null;
+    segment?: number; // Index of the segment's first point, when segments are searched
 };
 export type LineEquation = {
     a: number;
@@ -339,6 +340,7 @@ export class GeometricUtils {
                     ret["access"] = "" + (kpi + nr["prop"]);
                     ret["distance"] = nr["dst"];
                     ret["point"] = GeometricUtils.interpolate_poly_segment(poly_pts, kpi, nr["prop"]);
+                    ret["segment"] = kpi;
                 }
             }
             return ret;
@@ -583,6 +585,21 @@ export class GeometricUtils {
             }
         }
         return false;
+    }
+
+    /**
+     * The cross bar of a tbar with stem `sp` -> `ep`: centred on `sp`,
+     * perpendicular to the stem, as long as the stem.
+     */
+    public static tbar_cross_segment(sp: Point2D, ep: Point2D): ULabelSpatialPayload2D {
+        const halflen: number = Math.sqrt(
+            (sp[0] - ep[0]) * (sp[0] - ep[0]) + (sp[1] - ep[1]) * (sp[1] - ep[1]),
+        ) / 2;
+        const theta: number = Math.atan((ep[1] - sp[1]) / (ep[0] - sp[0]));
+        return [
+            [sp[0] + halflen * Math.sin(theta), sp[1] - halflen * Math.cos(theta)],
+            [sp[0] - halflen * Math.sin(theta), sp[1] + halflen * Math.cos(theta)],
+        ];
     }
 
     // Convert a bbox to a simple polygon by adding the last point

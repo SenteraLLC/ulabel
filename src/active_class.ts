@@ -146,6 +146,90 @@ export function set_focus_active_class(
 }
 
 /**
+ * Turn edit focus on or off for a subtask at runtime: annotations unchanged
+ * since load dim and drop out of input like class focus.
+ *
+ * @param ulabel ULabel instance
+ * @param subtask_key subtask to toggle
+ * @param enabled whether only created/modified annotations stay in focus
+ * @param redraw whether the change repaints immediately
+ */
+export function set_focus_edited(
+    ulabel: ULabel,
+    subtask_key: string,
+    enabled: boolean,
+    redraw: boolean = true,
+): void {
+    const subtask = ulabel.subtasks[subtask_key];
+    if (subtask === undefined) {
+        log_message(`set_focus_edited: unknown subtask key ${subtask_key}`, LogLevel.WARNING, true);
+        return;
+    }
+    const previous = subtask.focus_edited === true;
+    subtask.focus_edited = enabled === true;
+
+    subtask.state.hovered_annid = null;
+    subtask.state.fly_to_idx = null;
+
+    if (redraw) {
+        ulabel.redraw_all_annotations(subtask_key);
+        ulabel.toolbox?.redraw_update_items(ulabel);
+    }
+
+    if (previous !== subtask.focus_edited) {
+        ulabel.config.on_focus_edited_change?.(subtask_key, subtask.focus_edited);
+    }
+}
+
+/**
+ * Turn deprecated focus on or off for a subtask at runtime: deprecated
+ * annotations are drawn and in focus, live ones dim and drop out of input.
+ *
+ * @param ulabel ULabel instance
+ * @param subtask_key subtask to toggle
+ * @param enabled whether only deprecated annotations stay in focus
+ * @param redraw whether the change repaints immediately
+ */
+export function set_focus_deprecated(
+    ulabel: ULabel,
+    subtask_key: string,
+    enabled: boolean,
+    redraw: boolean = true,
+): void {
+    const subtask = ulabel.subtasks[subtask_key];
+    if (subtask === undefined) {
+        log_message(`set_focus_deprecated: unknown subtask key ${subtask_key}`, LogLevel.WARNING, true);
+        return;
+    }
+    const previous = subtask.focus_deprecated === true;
+    if (enabled === true && !previous && subtask_key === ulabel.get_current_subtask_key()) {
+        ulabel.discard_in_progress_input();
+    }
+    subtask.focus_deprecated = enabled === true;
+
+    // A deprecated target must not outlive the flag that made it visible
+    subtask.state.hovered_annid = null;
+    subtask.state.edit_candidate = null;
+    subtask.state.move_candidate = null;
+    subtask.state.fly_to_idx = null;
+    if (subtask_key === ulabel.get_current_subtask_key()) ulabel.hide_context_menu();
+    const isolated_annid = subtask.state.isolated_annid;
+    if (isolated_annid != null && subtask.annotations.access[isolated_annid]?.deprecated && !subtask.focus_deprecated) {
+        ulabel.isolate_annotation(null, subtask_key, false);
+    }
+
+    if (redraw) {
+        ulabel.redraw_all_annotations(subtask_key);
+        ulabel.toolbox?.redraw_update_items(ulabel);
+    }
+    ulabel.update_edit_lock_display();
+
+    if (previous !== subtask.focus_deprecated) {
+        ulabel.config.on_focus_deprecated_change?.(subtask_key, subtask.focus_deprecated);
+    }
+}
+
+/**
  * Opacity for annotations outside the focused class. 0 skips drawing them
  * entirely, which is cheaper but loses them as visual context.
  *
@@ -227,8 +311,8 @@ function apply_active_class_to_dom(ulabel: ULabel, subtask_key: string, class_id
     ulabel.update_id_dialog_display();
 
     // Update the class of the active annotation,
-    // except when toggling on the delete class or in a read-only subtask
-    if (class_id !== DELETE_CLASS_ID && !ulabel.is_current_subtask_read_only()) {
+    // except when toggling on the delete class or in an edit-locked subtask
+    if (class_id !== DELETE_CLASS_ID && !ulabel.is_subtask_edit_locked()) {
         let target_id: string | null = null;
         if (subtask.state.active_id !== null) {
             target_id = subtask.state.active_id;

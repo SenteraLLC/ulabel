@@ -349,6 +349,22 @@ export class KeybindsToolboxItem extends ToolboxItem {
         });
 
         keybinds.push({
+            key: config.toggle_edit_focus_keybind,
+            label: "Toggle Edit Focus",
+            description: "Focus edits: annotations unchanged since load dim and drop out of hover and navigation",
+            configurable: true,
+            config_key: "toggle_edit_focus_keybind",
+        });
+
+        keybinds.push({
+            key: config.toggle_deprecated_focus_keybind,
+            label: "Toggle Show Deprecated",
+            description: "Show deleted annotations for restoring; other editing is disabled",
+            configurable: true,
+            config_key: "toggle_deprecated_focus_keybind",
+        });
+
+        keybinds.push({
             key: config.create_bbox_on_initial_crop_keybind,
             label: "Create BBox on Crop",
             description: "Create bbox annotation on initial crop area",
@@ -529,6 +545,15 @@ export class KeybindsToolboxItem extends ToolboxItem {
             description: "Zoom in/out by holding Shift and dragging with left mouse button up/down",
             configurable: false,
         });
+
+        if (config.allow_body_move) {
+            keybinds.push({
+                key: "Alt + Click Drag",
+                label: "Draw Over",
+                description: "Start a new annotation on top of an existing one instead of moving it",
+                configurable: false,
+            });
+        }
 
         // Scroll combinations
         keybinds.push({

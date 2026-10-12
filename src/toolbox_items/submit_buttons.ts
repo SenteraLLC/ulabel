@@ -2,6 +2,7 @@ import type { ULabelSubmitButton } from "../../index";
 // Import ULabel from ../../src/index - TypeScript will find ../../src/index.d.ts for types
 import { ULabel } from "../../src/index";
 import { ULabelAnnotation, DELETE_MODES, NONSPATIAL_MODES } from "../annotation";
+import type { ULabelEditType } from "../annotation";
 import { ToolboxItem } from "../toolbox";
 import { log_message, LogLevel } from "../error_logging";
 
@@ -59,57 +60,7 @@ export class SubmitButtons extends ToolboxItem {
                 button.appendChild(animation);
 
                 // Create the submit payload
-                const submit_payload: { task_meta: object | null; annotations: Record<string, ULabelAnnotation[]> } = {
-                    task_meta: ulabel.config["task_meta"],
-                    annotations: {},
-                };
-
-                // Loop through all of the subtasks
-                for (const stkey in ulabel.subtasks) {
-                    submit_payload["annotations"][stkey] = [];
-
-                    // Add all of the annotations in that subtask
-                    let annotation: ULabelAnnotation | null = null;
-                    let temp_annotation: ULabelAnnotation | object;
-                    for (let i = 0; i < ulabel.subtasks[stkey]["annotations"]["ordering"].length; i++) {
-                        temp_annotation = ulabel.subtasks[stkey]["annotations"]["access"][ulabel.subtasks[stkey]["annotations"]["ordering"][i]];
-                        // Validate the annotation
-                        if (typeof temp_annotation === "object") {
-                            try {
-                                annotation = ULabelAnnotation.from_json(temp_annotation);
-                            } catch (e) {
-                                log_message(`Error validating annotation ${temp_annotation} during submit: ${e}.`, LogLevel.ERROR, true);
-                                continue;
-                            }
-                        }
-
-                        // Handle null
-                        if (annotation === null) {
-                            continue;
-                        }
-
-                        // Skip any delete modes
-                        if (DELETE_MODES.includes(annotation.spatial_type!)) {
-                            continue;
-                        }
-
-                        // Skip spatial annotations that have an empty spatial payload
-                        if (NONSPATIAL_MODES.includes(annotation.spatial_type!) ||
-                            annotation.spatial_payload.length === 0) {
-                            continue;
-                        }
-
-                        // Ensure annotation is within the image if required
-                        if (!ulabel.config.allow_annotations_outside_image) {
-                            annotation.clamp_annotation_to_image_bounds(
-                                ulabel.config["image_width"]!,
-                                ulabel.config["image_height"]!,
-                            );
-                        }
-
-                        submit_payload["annotations"][stkey].push(annotation);
-                    }
-                }
+                const submit_payload = SubmitButtons.build_submit_payload(ulabel, this.submit_buttons[idx]);
 
                 // Set set_saved if it was provided
                 if (this.submit_buttons[idx].set_saved) {
@@ -128,6 +79,121 @@ export class SubmitButtons extends ToolboxItem {
                 }
             });
         }
+    }
+
+    /**
+     * Build the payload passed to a submit button's hook, honoring the button's
+     * `subtasks` whitelist and `edits_only` filter.
+     */
+    public static build_submit_payload(
+        ulabel: ULabel,
+        button: Pick<ULabelSubmitButton, "subtasks" | "edits_only"> = {},
+    ): { task_meta: object | null; annotations: Record<string, ULabelAnnotation[]> } {
+        const submit_payload: { task_meta: object | null; annotations: Record<string, ULabelAnnotation[]> } = {
+            task_meta: ulabel.config["task_meta"],
+            annotations: {},
+        };
+
+        let subtask_keys = Object.keys(ulabel.subtasks);
+        if (button.subtasks !== undefined) {
+            for (const key of button.subtasks) {
+                if (!(key in ulabel.subtasks)) {
+                    log_message(`Submit button subtasks: unknown subtask "${key}"`, LogLevel.WARNING);
+                }
+            }
+            subtask_keys = subtask_keys.filter((key) => button.subtasks!.includes(key));
+        }
+
+        for (const stkey of subtask_keys) {
+            submit_payload["annotations"][stkey] = [];
+            const subtask_annotations = ulabel.subtasks[stkey]["annotations"];
+            const loaded_edited_at = subtask_annotations["loaded_edited_at"] ?? {};
+
+            // Add all of the annotations in that subtask
+            let annotation: ULabelAnnotation | null = null;
+            let temp_annotation: ULabelAnnotation | object;
+            for (let i = 0; i < subtask_annotations["ordering"].length; i++) {
+                const annotation_id = subtask_annotations["ordering"][i];
+                temp_annotation = subtask_annotations["access"][annotation_id];
+                if (typeof temp_annotation !== "object" || temp_annotation === null) {
+                    continue;
+                }
+
+                // Skip delete modes and nonspatial annotations (nonspatial may have a null payload)
+                const raw_spatial_type = (<ULabelAnnotation>temp_annotation).spatial_type!;
+                if (DELETE_MODES.includes(raw_spatial_type) || NONSPATIAL_MODES.includes(raw_spatial_type)) {
+                    continue;
+                }
+
+                // Classify before geometry validation: a fully erased loaded
+                // polygon has no valid geometry but still owes the host a deletion
+                let edit_type: ULabelEditType | null = null;
+                if (button.edits_only) {
+                    edit_type = SubmitButtons.classify_edit(
+                        <ULabelAnnotation>temp_annotation,
+                        loaded_edited_at[annotation_id],
+                    );
+                    if (edit_type === null) {
+                        continue;
+                    }
+                }
+
+                // Validate the annotation
+                try {
+                    annotation = ULabelAnnotation.from_json(temp_annotation);
+                } catch (e) {
+                    log_message(`Error validating annotation ${temp_annotation} during submit: ${e}.`, LogLevel.ERROR, true);
+                    annotation = null;
+                }
+
+                const has_geometry = annotation !== null && annotation.spatial_payload.length !== 0;
+                if (!has_geometry) {
+                    if (edit_type !== "deleted") {
+                        continue;
+                    }
+                    annotation = Object.assign(new ULabelAnnotation(), temp_annotation);
+                }
+
+                // Never echo a stale marker a host may have round-tripped through resume_from
+                delete annotation!.edit_type;
+
+                if (edit_type !== null) {
+                    annotation!.edit_type = edit_type;
+                    // Display filters must not read as deletions to the host
+                    annotation!.deprecated = edit_type === "deleted";
+                }
+
+                // Ensure annotation is within the image if required
+                if (has_geometry && !ulabel.config.allow_annotations_outside_image) {
+                    annotation!.clamp_annotation_to_image_bounds(
+                        ulabel.config["image_width"]!,
+                        ulabel.config["image_height"]!,
+                    );
+                }
+
+                submit_payload["annotations"][stkey].push(annotation!);
+            }
+        }
+
+        return submit_payload;
+    }
+
+    /**
+     * Decide how an `edits_only` payload reports an annotation, or null to omit it.
+     * Only human deletion counts; filter deprecation is display state.
+     */
+    public static classify_edit(
+        annotation: ULabelAnnotation,
+        loaded_at: string | null | undefined,
+    ): ULabelEditType | null {
+        const human_deleted = annotation.deprecated_by?.human === true;
+        if (loaded_at === undefined) {
+            return human_deleted ? null : "created";
+        }
+        if (annotation.last_edited_at === loaded_at) {
+            return null;
+        }
+        return human_deleted ? "deleted" : "modified";
     }
 
     /**

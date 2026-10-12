@@ -45,9 +45,10 @@ test.describe("Annotation List UI", () => {
         await page.keyboard.press("d");
         expect(await get_annotation_list_count(page)).toBe(1);
 
-        // Show deprecated annotation
+        // Show deprecated focuses the list on the deprecated annotation
         await toggle_show_deprecated(page, true);
-        expect(await get_annotation_list_count(page)).toBe(2);
+        expect(await get_annotation_list_count(page)).toBe(1);
+        await expect(page.locator(".annotation-list-item-deprecated")).toHaveCount(1);
     });
 });
 

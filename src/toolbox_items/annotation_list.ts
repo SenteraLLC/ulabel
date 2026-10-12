@@ -16,12 +16,14 @@ import {
     WHOLE_IMAGE_SVG,
 } from "../../src/blobs";
 
+// Eye icon for the per-entry isolate button; `currentColor` follows the theme
+const ISOLATE_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 8s2.5-4.5 6.5-4.5S14.5 8 14.5 8s-2.5 4.5-6.5 4.5S1.5 8 1.5 8z"/><circle cx="8" cy="8" r="2"/></svg>`;
+
 /**
  * Toolbox item for displaying and navigating annotations in a list
  */
 export class AnnotationListToolboxItem extends ToolboxItem {
     private ulabel: ULabel;
-    private show_deprecated: boolean = false;
     private group_by_class: boolean = false;
     private is_collapsed: boolean = false;
     private sync_scheduled: boolean = false;
@@ -70,6 +72,58 @@ export class AnnotationListToolboxItem extends ToolboxItem {
 
         #toolbox .annotation-list-toggle-btn:hover {
             background-color: rgba(0, 128, 255, 0.1);
+        }
+
+        #toolbox .annotation-list-show-all-btn {
+            display: none;
+            margin-left: auto;
+            margin-right: 0.5rem;
+            padding: 0.15rem 0.5rem;
+            border: 1px solid rgba(128, 128, 128, 0.5);
+            border-radius: 4px;
+            background: none;
+            color: inherit;
+            font-size: 0.75rem;
+            cursor: pointer;
+        }
+
+        #toolbox .annotation-list-show-all-btn:hover {
+            background-color: rgba(0, 128, 255, 0.1);
+        }
+
+        #toolbox .annotation-list-item-isolate {
+            display: inline-flex;
+            flex-shrink: 0;
+            width: 20px;
+            height: 20px;
+            padding: 2px;
+            border: none;
+            border-radius: 4px;
+            background: none;
+            color: inherit;
+            opacity: 0.4;
+            cursor: pointer;
+        }
+
+        #toolbox .annotation-list-item-isolate svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        #toolbox .annotation-list-item-isolate:hover {
+            opacity: 1;
+            background-color: rgba(0, 128, 255, 0.15);
+        }
+
+        #toolbox .annotation-list-item-isolate.active {
+            opacity: 1;
+            color: rgb(0, 128, 255);
+        }
+
+        #toolbox .annotation-list-item-deprecated {
+            flex-shrink: 0;
+            color: gray;
+            cursor: help;
         }
 
         #toolbox .annotation-list-content {
@@ -269,11 +323,9 @@ export class AnnotationListToolboxItem extends ToolboxItem {
             this.update_list();
         });
 
-        // Show/hide deprecated annotations checkbox
+        // Deprecated focus lives on the subtask, so the canvas follows the list
         $(document).on("change.ulabel", "#annotation-list-show-deprecated", (e) => {
-            this.show_deprecated = (e.target as HTMLInputElement).checked;
-            set_local_storage_item("ulabel_annotation_list_show_deprecated", this.show_deprecated ? "true" : "false");
-            this.update_list();
+            this.ulabel.set_focus_deprecated(this.ulabel.get_current_subtask_key(), (e.target as HTMLInputElement).checked);
         });
 
         // Group by class checkbox
@@ -281,6 +333,11 @@ export class AnnotationListToolboxItem extends ToolboxItem {
             this.group_by_class = (e.target as HTMLInputElement).checked;
             set_local_storage_item("ulabel_annotation_list_group_by_class", this.group_by_class ? "true" : "false");
             this.update_list();
+        });
+
+        // Edit focus lives on the subtask, so the canvas dims with the list
+        $(document).on("change.ulabel", "#annotation-list-edited-only", (e) => {
+            this.ulabel.set_focus_edited(this.ulabel.get_current_subtask_key(), (e.target as HTMLInputElement).checked);
         });
 
         // Click on annotation list item to fly to it
@@ -291,40 +348,50 @@ export class AnnotationListToolboxItem extends ToolboxItem {
             }
         });
 
+        // Per-entry isolate toggle; must not bubble into the fly-to click above
+        $(document).on("click.ulabel", ".annotation-list-item-isolate", (e) => {
+            e.stopPropagation();
+            const annotation_id = $(e.currentTarget).closest(".annotation-list-item").data("annotation-id");
+            if (!annotation_id) return;
+            const id = String(annotation_id);
+            this.ulabel.isolate_annotation(this.ulabel.get_isolated_annotation_id() === id ? null : id);
+        });
+
+        // Header button; must not bubble into the collapse toggle
+        $(document).on("click.ulabel", "#annotation-list-show-all", (e) => {
+            e.stopPropagation();
+            this.ulabel.isolate_annotation(null);
+        });
+
         // Hover on annotation list item to highlight annotation on canvas
         $(document).on("mouseenter.ulabel", ".annotation-list-item", (e) => {
+            if (this.ulabel.is_context_menu_open()) return;
             const annotation_id = $(e.currentTarget).data("annotation-id");
             if (annotation_id) {
-                // Highlight this list item
-                $(".annotation-list-item").removeClass("highlighted");
-                $(e.currentTarget).addClass("highlighted");
-
-                // Show the global edit suggestion (ID dialog)
-                this.ulabel.show_global_edit_suggestion(annotation_id, null, null);
-
-                // Set edit_candidate to allow delete keybind to work
-                const current_subtask = this.ulabel.get_current_subtask();
-                const annotation = current_subtask.annotations.access[annotation_id];
-                if (annotation && !annotation.deprecated) {
-                    current_subtask.state.edit_candidate = {
-                        annid: annotation.id!,
-                        spatial_type: annotation.spatial_type!,
-                        access: 0,
-                        distance: 0,
-                        point: [0, 0],
-                    };
-                }
+                this.highlight_from_list(String(annotation_id));
             }
         });
 
         // Remove highlight when mouse leaves the list item
         $(document).on("mouseleave.ulabel", ".annotation-list-item", () => {
+            // The menu holds the highlight until it closes
+            if (this.ulabel.is_context_menu_open()) return;
             $(".annotation-list-item").removeClass("highlighted");
             // Clear the edit candidate and edit suggestion
             const current_subtask = this.ulabel.get_current_subtask();
             current_subtask.state.edit_candidate = null;
             this.ulabel.hide_global_edit_suggestion();
             this.ulabel.hide_edit_suggestion();
+        });
+
+        // Right-click a list item for its context menu. The mousedown just before
+        // dismissed any open menu (and its hover), so re-highlight first.
+        $(document).on("contextmenu.ulabel", ".annotation-list-item", (e) => {
+            e.preventDefault();
+            const annotation_id = $(e.currentTarget).data("annotation-id");
+            if (!annotation_id || this.ulabel.get_current_subtask().state.active_id != null) return;
+            this.highlight_from_list(String(annotation_id));
+            this.ulabel.show_context_menu(String(annotation_id), e.clientX!, e.clientY!);
         });
 
         // Listen for mousemove on the annbox to sync list highlighting from canvas
@@ -357,6 +424,11 @@ export class AnnotationListToolboxItem extends ToolboxItem {
 
         if (!content || !toggle_btn) return;
 
+        const show_all_btn = document.querySelector<HTMLButtonElement>("#annotation-list-show-all");
+        if (show_all_btn) {
+            show_all_btn.style.display = this.ulabel.get_isolated_annotation_id() != null ? "inline-block" : "none";
+        }
+
         // Update toggle button
         toggle_btn.innerText = this.is_collapsed ? "▼" : "▲";
         content.style.display = this.is_collapsed ? "none" : "block";
@@ -366,6 +438,12 @@ export class AnnotationListToolboxItem extends ToolboxItem {
         // Get current subtask
         const current_subtask = this.ulabel.get_current_subtask();
         if (!current_subtask) return;
+
+        // The keybind, API, and subtask switches all change it outside the checkbox
+        const edited_only_input = document.querySelector<HTMLInputElement>("#annotation-list-edited-only");
+        if (edited_only_input) edited_only_input.checked = current_subtask.focus_edited === true;
+        const show_deprecated_input = document.querySelector<HTMLInputElement>("#annotation-list-show-deprecated");
+        if (show_deprecated_input) show_deprecated_input.checked = current_subtask.focus_deprecated === true;
 
         // Build the list HTML
         const list_container = document.querySelector<HTMLDivElement>("#annotation-list-container");
@@ -395,11 +473,7 @@ export class AnnotationListToolboxItem extends ToolboxItem {
         for (const annotation_id of subtask.annotations.ordering) {
             const annotation = subtask.annotations.access[annotation_id];
 
-            // Skip deprecated annotations unless the option to show them is enabled
-            if (!this.show_deprecated && annotation.deprecated) {
-                continue;
-            }
-
+            // Deprecated annotations are in focus only under deprecated focus
             if (this.ulabel.is_annotation_defocused(annotation, subtask_key)) {
                 continue;
             }
@@ -433,6 +507,8 @@ export class AnnotationListToolboxItem extends ToolboxItem {
                             <span class="annotation-list-item-class">${class_name}</span>
                             <span class="annotation-list-item-id">#${i}</span>
                         </div>
+                        ${this.build_deprecated_marker_html(annotation)}
+                        ${this.build_isolate_button_html(annotation)}
                     </div>
                 </div>
             `;
@@ -508,6 +584,8 @@ export class AnnotationListToolboxItem extends ToolboxItem {
                             <div class="annotation-list-item-text">
                                 <span class="annotation-list-item-id">#${i}</span>
                             </div>
+                            ${this.build_deprecated_marker_html(annotation)}
+                            ${this.build_isolate_button_html(annotation)}
                         </div>
                     </div>
                 `;
@@ -517,6 +595,20 @@ export class AnnotationListToolboxItem extends ToolboxItem {
         }
 
         return html;
+    }
+
+    private build_deprecated_marker_html(annotation: ULabelAnnotation): string {
+        if (!annotation.deprecated) return "";
+        const sources = Object.entries(annotation.deprecated_by ?? {}).filter(([, value]) => value).map(([key]) => key);
+        // deprecated_by keys can come from loaded JSON
+        const title = `Deprecated by: ${sources.join(", ")}`.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+        return `<span class="annotation-list-item-deprecated" title="${title}">&#8856;</span>`;
+    }
+
+    private build_isolate_button_html(annotation: ULabelAnnotation): string {
+        const active = this.ulabel.get_isolated_annotation_id() === annotation.id;
+        const title = active ? "Show all annotations" : "Isolate this annotation";
+        return `<button class="annotation-list-item-isolate${active ? " active" : ""}" title="${title}">${ISOLATE_SVG}</button>`;
     }
 
     /**
@@ -615,6 +707,7 @@ export class AnnotationListToolboxItem extends ToolboxItem {
             <div class="toolbox-divider"></div>
             <div class="annotation-list-header">
                 <h3 class="annotation-list-title">Annotation List</h3>
+                <button id="annotation-list-show-all" class="annotation-list-show-all-btn">Show all</button>
                 <button id="annotation-list-toggle" class="annotation-list-toggle-btn">▲</button>
             </div>
             <div id="annotation-list-content" class="annotation-list-content">
@@ -626,6 +719,10 @@ export class AnnotationListToolboxItem extends ToolboxItem {
                     <div class="annotation-list-option">
                         <input type="checkbox" id="annotation-list-group-by-class" />
                         <label for="annotation-list-group-by-class">Group by Class</label>
+                    </div>
+                    <div class="annotation-list-option">
+                        <input type="checkbox" id="annotation-list-edited-only" />
+                        <label for="annotation-list-edited-only">Edited Only</label>
                     </div>
                 </div>
                 <div id="annotation-list-container" class="annotation-list-container">
@@ -665,13 +762,6 @@ export class AnnotationListToolboxItem extends ToolboxItem {
             this.is_collapsed = true;
         }
 
-        const stored_show_deprecated = get_local_storage_item("ulabel_annotation_list_show_deprecated");
-        if (stored_show_deprecated === "true") {
-            this.show_deprecated = true;
-        } else if (stored_show_deprecated === "false") {
-            this.show_deprecated = false;
-        }
-
         const stored_group_by_class = get_local_storage_item("ulabel_annotation_list_group_by_class");
         if (stored_group_by_class === "true") {
             this.group_by_class = true;
@@ -680,8 +770,6 @@ export class AnnotationListToolboxItem extends ToolboxItem {
         }
 
         // Reflect restored values into the checkbox DOM so the UI matches state.
-        const show_deprecated_input = document.querySelector<HTMLInputElement>("#annotation-list-show-deprecated");
-        if (show_deprecated_input) show_deprecated_input.checked = this.show_deprecated;
         const group_by_class_input = document.querySelector<HTMLInputElement>("#annotation-list-group-by-class");
         if (group_by_class_input) group_by_class_input.checked = this.group_by_class;
     }
@@ -700,6 +788,30 @@ export class AnnotationListToolboxItem extends ToolboxItem {
     public frame_update(): void {
         this.update_list();
         this.sync_highlight_from_canvas();
+    }
+
+    /**
+     * Make a list entry the hovered annotation: list highlight, canvas outline
+     * and card, and the edit candidate the keybinds act on.
+     */
+    private highlight_from_list(annotation_id: string) {
+        $(".annotation-list-item").removeClass("highlighted");
+        $(`.annotation-list-item[data-annotation-id="${annotation_id}"]`).addClass("highlighted");
+
+        this.ulabel.show_global_edit_suggestion(annotation_id, null, null);
+
+        const current_subtask = this.ulabel.get_current_subtask();
+        const annotation = current_subtask.annotations.access[annotation_id];
+        // The list only shows in-focus annotations, deprecated ones included under deprecated focus
+        if (annotation) {
+            current_subtask.state.edit_candidate = {
+                annid: annotation.id!,
+                spatial_type: annotation.spatial_type!,
+                access: 0,
+                distance: 0,
+                point: [0, 0],
+            };
+        }
     }
 
     /**

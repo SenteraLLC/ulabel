@@ -2,6 +2,45 @@
 
 All notable changes to this project will be documented here.
 
+## [0.29.0] - Oct 12th, 2026
+#### Breaking Changes
+- **Drag a body to move it.** A left-drag that starts inside a spatial annotation moves it (now including `contour`, `tbar`, and `bbox3`). A drag on a vertex handle edits the vertex, and a drag anywhere else draws. Hold `Alt` to draw over an annotation. Set `allow_body_move: false` for the old draw-everywhere behavior.
+- **The hover edit ring is gone.** Hovering shows only the outline and the confidence card. To reclassify or delete, use the class and delete keybinds or the new context menu. `show_id_dialog()` lost `thumbnail` and `suggest_edits()` lost `force_refresh`. `ULabelActionCandidate` gained `containing`.
+
+#### Added
+- **Context menu.** Right-click a hovered annotation or an `AnnotationList` entry for Change class, Delete, Isolate / Show all, Details, and the items below. New `show_context_menu()`, `hide_context_menu()`, and `is_context_menu_open()`.
+- **Copy and move between subtasks** with Copy to / Move to or `ctrl+c` / `ctrl+x` / `ctrl+v`. The system clipboard holds JSON, so copies can be pasted into another ULabel instance whose image is the same size. A copy keeps its geometry, takes the target class matching its own (by id, then name), and records `annotation_meta.copied_from`. Both are undoable (`paste_annotation` / `move_annotation`). New config options `paste_class_choice` and `paste_switch_to_target`. New `copy_annotation()`, `copy_annotation_to_clipboard()`, `paste_annotation_from_clipboard()`, `find_pasted_copy()`, `set_paste_switch_to_target()` / `get_paste_switch_to_target()`, and the `ULabelClipboardEnvelope` type.
+- **Cross-subtask counterparts:** annotations linked by `copied_from` or by the new `annotation_link_meta_key` config option. New `find_counterparts()`. The menu offers Delete from `<subtask>` (and Erase from `<subtask>` for bitmasks) via `delete_counterparts()`, recorded as one undoable action. Copy to / Move to ask before duplicating a counterpart; `hide_copy_to_linked` hides those targets instead.
+- **Isolate:** an `AnnotationList` eye button (or the menu) hides all other annotations from the canvas and input until cleared. It is view-only. New `isolate_annotation()`, `get_isolated_annotation_id()`, and `on_isolate_change`.
+- **Edit focus:** a per-subtask `focus_edited` option dims annotations not edited since load. Toggle it with the **Edited Only** checkbox, `toggle_edit_focus_keybind` (`h`), or `set_focus_edited()`. New `on_focus_edited_change`.
+- **Deprecated focus:** **Show Deprecated** is now a per-subtask `focus_deprecated` option and is no longer persisted. Deprecated annotations are shown and in focus while live ones dim. Edits are locked except Restore and undo/redo, and a banner offers an Exit link. Toggle it with `toggle_deprecated_focus_keybind` (`shift+d`) or `set_focus_deprecated()`. New `on_focus_deprecated_change`.
+- **Restore** menu item and `restore_annotation()` for human-deleted annotations.
+- **Submit buttons** have two optional fields: `subtasks` (a whitelist of subtask keys) and `edits_only` (only annotations created, deleted, or modified since load, tagged with `edit_type`). New `has_edits(subtasks?)` reports whether an `edits_only` submit would send anything.
+- **`on_annotation_change`** callback: fires for each action that changes annotations, or its undo/redo, with the other annotations it changed in `affected`. Set `on_annotation_change_in_progress` to also report `continue_*` actions.
+- `fly_to_on_undo` (default `true`): an undo or redo whose changes are out of view centers the view on them.
+- `set_subtask_read_only(subtask_key, read_only)` toggles read-only at runtime.
+- Undo/redo in a read-only subtask now applies to the only writable subtask, for actions triggered from the read-only subtask (e.g. Copy to, Delete from). Actions record `origin_subtask_key`. New `on_undo_redo_blocked` callback.
+
+#### Changed
+- The polygon/polyline vertex-insert handle now sits at the hovered segment's midpoint, so dragging elsewhere on a polyline moves it.
+- Editing a non-spatial note is now an undoable `edit_text_payload` action.
+- `last_edited_at` / `last_edited_by` are now stamped on annotations an action changes indirectly (delete-mode victims, carved masks) and restored on undo.
+- Cancelling an in-progress drawing removes it instead of deprecating it.
+- Annotations deleted by erasing their vertices or by a polygon brush stroke keep their original geometry. A polygon brush stroke that deletes a polygon is one undo step.
+- Brushes only affect annotations in focus.
+- Read-only is enforced on the brush, undo/redo, and non-spatial rows.
+- `Escape` closes the class pie.
+- A click without a drag no longer records `begin_move`. Picking an annotation's current class no longer records `assign_annotation_id`.
+- `demo.js` honors `PORT`, and demos load their image locally.
+
+#### Fixed
+- The hover confidence card overflowing the canvas near the image edges.
+- A `TypeError` on the first brush stroke after a subtask switch or `set_annotations()`.
+- Undoing a brush stroke or a new layer on a loaded annotation leaving the session's edit stamp in place.
+- Shift-hover in a read-only subtask starting a complex layer.
+- A `NaN` circle radius error when entering a delete mode in a single-class subtask.
+- Anchor buttons navigating the host page to `#`.
+
 ## [0.28.0] - Sept 10th, 2026
 - New `set_active_class(class_id, subtask_key?, redraw?)` and `get_selected_class_id(subtask_key?)` public API methods; all internal class-selection paths (toolbox clicks, keybinds, delete-mode toggles) route through `set_active_class`.
 - New per-subtask `focus_active_class` option (default `false`): the selected class is the focused class — other classes dim to `defocused_opacity` and drop out of hover, Tab navigation, the annotation list, and bulk delete. Toggleable via `set_focus_active_class()` or `toggle_class_focus_keybind` (default `shift+f`).

@@ -70,6 +70,19 @@ describe("set_subtask brush teardown", () => {
         expect(ulabel.subtasks.first.state.move_candidate).toBeNull();
         expect(ulabel.subtasks.first.state.edit_candidate).toBeNull();
     });
+
+    test("keeps a brush drag slot after the interaction state resets", () => {
+        const ulabel = make_switchable_ulabel();
+
+        ulabel.set_subtask("second");
+
+        // start_drag("brush", ...) writes into drag_state.brush after any reset
+        expect(ulabel.drag_state.brush).toEqual({
+            mouse_start: null,
+            offset_start: null,
+            zoom_val_start: null,
+        });
+    });
 });
 
 describe("update_brush_toolbox_display", () => {

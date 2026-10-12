@@ -42,6 +42,17 @@ test.describe("ULabel Basic Functionality", () => {
         await expect(page.locator("a#md-btn--point")).toHaveClass(/sel/);
     });
 
+    test("clicking toolbox anchors does not navigate to #", async ({ page }) => {
+        await wait_for_ulabel_init(page);
+        const url_before = page.url();
+
+        await page.locator("a#md-btn--bbox").click();
+        await page.locator("a#recenter-button").click();
+        await page.locator("a.night-button").click();
+
+        expect(page.url()).toBe(url_before);
+    });
+
     test("should create bbox annotation", async ({ page }) => {
         await wait_for_ulabel_init(page);
 
@@ -161,48 +172,47 @@ test.describe("ULabel Basic Functionality", () => {
     });
 
     // The edit-suggestion container is 0-height and pinned to the box centre, so
-    // its rect top IS the anchor. The card hugs the button ring: above the anchor
-    // normally, below it when there is no room above. `ring_max` is the furthest
-    // the card's near edge may sit from the anchor (half a button + gap + slack),
-    // catching regressions where the card drifts away from the ring.
+    // its rect top IS the anchor. The card hugs the containing box: above the
+    // anchor normally, below it when there is no room above. `box_max` is the
+    // furthest the card's near edge may sit from the anchor (half the box's
+    // on-screen height + gap + slack), catching regressions where the card
+    // drifts away from the box.
     const get_card_geometry = async (page, conf_id, anchor_id) => {
         return page.evaluate(({ conf, anchor }) => {
             const card = document.querySelector(conf).getBoundingClientRect();
             const es_el = document.querySelector(anchor);
             const anchor_y = es_el.getBoundingClientRect().top;
-            const scale = es_el.offsetWidth > 0 ?
-                es_el.getBoundingClientRect().width / es_el.offsetWidth :
-                1;
-            const button = es_el.querySelector("a.global_sub_suggestion");
-            const button_half = (button ? button.offsetHeight : 60) / 2;
+            const st = window.ulabel.get_current_subtask();
+            const cbox = st.annotations.access[st.state.edit_candidate.annid].containing_box;
+            const box_half = (cbox.bry - cbox.tly) / 2 * window.ulabel.state.zoom_val;
             return {
                 card_top: card.top,
                 card_bottom: card.bottom,
                 anchor_y,
-                ring_max: button_half * scale + 10 + 8,
+                box_max: box_half + 10 + 8,
             };
         }, { conf: conf_id, anchor: anchor_id });
     };
 
-    test("confidence card flips below buttons when annotation is near the top of the image", async ({ page }) => {
+    test("confidence card flips below the box when annotation is near the top of the image", async ({ page }) => {
         await wait_for_ulabel_init(page);
 
         const subtask_key = await page.evaluate(() => window.ulabel.get_current_subtask_key());
         const conf_id = `#global_annotation_confidence__${subtask_key}`;
         const anchor_id = `#global_edit_suggestion__${subtask_key}`;
 
-        // Annotation well away from the top -> card above the buttons and box
+        // Annotation well away from the top -> card above the box
         await draw_bbox(page, [400, 400], [500, 500]);
         await page.waitForTimeout(100);
         await page.mouse.move(450, 450);
         await page.waitForTimeout(200);
 
         const mid = await get_card_geometry(page, conf_id, anchor_id);
-        // Card hugs the button ring above the anchor regardless of box size
+        // Card hugs the top edge of the box
         expect(mid.card_bottom).toBeLessThanOrEqual(mid.anchor_y - 5);
-        expect(mid.anchor_y - mid.card_bottom).toBeLessThanOrEqual(mid.ring_max);
+        expect(mid.anchor_y - mid.card_bottom).toBeLessThanOrEqual(mid.box_max);
 
-        // Annotation near the top edge -> card flips below the buttons
+        // Annotation near the top edge -> card flips below the box
         await draw_bbox(page, [100, 5], [200, 30]);
         await page.waitForTimeout(100);
         await page.mouse.move(150, 15);
@@ -210,7 +220,7 @@ test.describe("ULabel Basic Functionality", () => {
 
         const top_edge = await get_card_geometry(page, conf_id, anchor_id);
         expect(top_edge.card_top).toBeGreaterThanOrEqual(top_edge.anchor_y + 5);
-        expect(top_edge.card_top - top_edge.anchor_y).toBeLessThanOrEqual(top_edge.ring_max);
+        expect(top_edge.card_top - top_edge.anchor_y).toBeLessThanOrEqual(top_edge.box_max);
     });
 
     test("confidence card sits in the same spot when the subtask is read-only", async ({ page }) => {
@@ -236,19 +246,12 @@ test.describe("ULabel Basic Functionality", () => {
         await page.waitForTimeout(200);
         const read_only = await get_card_geometry(page, conf_id, anchor_id);
 
-        // Buttons are hidden with `visibility` so their flow space survives and the
-        // card lands in the exact same place (sub-pixel slack only).
-        const button_visibility = await page.evaluate(({ anchor }) => {
-            return getComputedStyle(
-                document.querySelector(anchor).querySelector("a.global_sub_suggestion"),
-            ).visibility;
-        }, { anchor: anchor_id });
-        expect(button_visibility).toBe("hidden");
+        // Read-only changes nothing about the card's anchor (sub-pixel slack only)
         expect(Math.abs(read_only.card_top - editable.card_top)).toBeLessThanOrEqual(1);
         expect(Math.abs(read_only.card_bottom - editable.card_bottom)).toBeLessThanOrEqual(1);
     });
 
-    test("confidence card hugs the ring on the single-class demo (0.666 dialog scale)", async ({ page }) => {
+    test("confidence card hugs the box on the single-class demo (0.666 dialog scale)", async ({ page }) => {
         await wait_for_ulabel_init(page, "/single-class.html");
 
         const subtask_key = await page.evaluate(() => window.ulabel.get_current_subtask_key());
@@ -262,8 +265,40 @@ test.describe("ULabel Basic Functionality", () => {
 
         const geom = await get_card_geometry(page, conf_id, anchor_id);
         expect(geom.card_bottom).toBeLessThanOrEqual(geom.anchor_y - 5);
-        expect(geom.anchor_y - geom.card_bottom).toBeLessThanOrEqual(geom.ring_max);
+        expect(geom.anchor_y - geom.card_bottom).toBeLessThanOrEqual(geom.box_max);
     });
+
+    for (const demo_path of ["/multi-class.html", "/single-class.html"]) {
+        test(`confidence card stays inside the side edges and recenters on ${demo_path}`, async ({ page }) => {
+            await wait_for_ulabel_init(page, demo_path);
+
+            const subtask_key = await get_current_subtask_key(page);
+            const conf_id = `#global_annotation_confidence__${subtask_key}`;
+            const bounds = await page.evaluate(() => {
+                const annbox = document.getElementById(window.ulabel.config.annbox_id);
+                const rect = annbox.getBoundingClientRect();
+                return {
+                    left: rect.left + annbox.clientLeft,
+                    right: rect.left + annbox.clientLeft + annbox.clientWidth,
+                    top: rect.top + annbox.clientTop,
+                };
+            });
+
+            for (const anchor_x of [bounds.left + 12, bounds.right - 12, (bounds.left + bounds.right) / 2]) {
+                const anchor_y = bounds.top + 220;
+                await draw_bbox(page, [anchor_x - 8, anchor_y - 20], [anchor_x + 8, anchor_y + 20]);
+                await page.mouse.move(anchor_x, anchor_y);
+                await expect(page.locator(conf_id)).toBeVisible();
+
+                const card = await page.locator(conf_id).boundingBox();
+                expect(card.x).toBeGreaterThanOrEqual(bounds.left);
+                expect(card.x + card.width).toBeLessThanOrEqual(bounds.right);
+                if (anchor_x === (bounds.left + bounds.right) / 2) {
+                    expect(Math.abs(card.x + card.width / 2 - anchor_x)).toBeLessThanOrEqual(1);
+                }
+            }
+        });
+    }
 
     test("confidence card flip check accounts for annbox scroll position", async ({ page }) => {
         await wait_for_ulabel_init(page);

@@ -188,6 +188,21 @@ export type ULabelSubmitButton = {
     set_saved?: boolean;
     size_factor?: number;
     row_number?: number;
+    /**
+     * Subtask keys to include in `submit_data.annotations`.
+     * Defaults to every subtask.
+     */
+    subtasks?: string[];
+    /**
+     * When true, each subtask's list holds only annotations that differ from
+     * what the host loaded (`resume_from` / `set_annotations`): created
+     * in-session and not deprecated, or loaded and since edited (including
+     * deletion). Detected via `last_edited_at`; undo restores the loaded
+     * stamp, and filter-driven deprecation is not an edit. Each included
+     * annotation carries `edit_type: "created" | "deleted" | "modified"`.
+     * Defaults to false.
+     */
+    edits_only?: boolean;
 };
 
 export type ULabelAnnotations = { [key: string]: ULabelAnnotation[] };
@@ -248,6 +263,9 @@ export type BrushOverlapMode = "none" | "exclude" | "overwrite";
 
 export type ULabelActionType = "create_nonspatial_annotation" |
     "create_annotation" |
+    "paste_annotation" |
+    "move_annotation" |
+    "delete_counterparts" |
     "begin_annotation" |
     "continue_annotation" |
     "finish_annotation" |
@@ -259,6 +277,7 @@ export type ULabelActionType = "create_nonspatial_annotation" |
     "finish_move" |
     "cancel_annotation" |
     "delete_annotation" |
+    "restore_annotation" |
     "delete_vertex" |
     "delete_annotations_in_polygon" |
     "start_complex_polygon" |
@@ -269,7 +288,46 @@ export type ULabelActionType = "create_nonspatial_annotation" |
     "continue_bitmask" |
     "bitmask_stroke" |
     "finish_modify_annotation" |
-    "assign_annotation_id";
+    "assign_annotation_id" |
+    "edit_text_payload";
+
+// An annotation, possibly in another subtask, that an action also edits
+export type ULabelActionAffected = {
+    annotation_id: string;
+    subtask_key: string;
+};
+
+// Payload of `on_annotation_change`: one recorded, undone, or redone action
+export type ULabelAnnotationChange = {
+    // Subtask whose action stream holds the action
+    subtask_key: string;
+    annotation_id: string | null;
+    act_type: ULabelActionType;
+    kind: "do" | "undo" | "redo";
+    // Other annotations the action edited (paste/move target copy, bitmask overlap)
+    affected: ULabelActionAffected[];
+    // `assign_annotation_id` only: what the annotation had immediately before this event
+    previous_classification_payloads: ULabelClassificationPayload[] | null;
+    // Undo/redo only: the read-only subtask it was issued from, when routed to this writable one
+    from_subtask_key: string | null;
+};
+
+// Clipboard payload written by copy/cut and read by paste (also as JSON on the system clipboard)
+export type ULabelClipboardEnvelope = {
+    ulabel_annotation: 1;
+    // Unique per copy/cut; tells a repeat paste of one copy from a newer copy of the same annotation
+    copy_id: string;
+    // Epoch ms of the copy; when the system and in-memory clipboards hold different copies, the newer one is pasted
+    copied_at?: number;
+    image_width: number;
+    image_height: number;
+    source_subtask_key: string;
+    // Name of the source class, so a target without the same class id can match by name
+    source_class_name?: string | null;
+    annotation: ULabelAnnotation;
+    // Pastes of this envelope so far, per target subtask; repeats are offset further
+    paste_counts?: Record<string, number>;
+};
 
 export type ULabelActionRaw = {
     act_type: ULabelActionType;
@@ -277,6 +335,12 @@ export type ULabelActionRaw = {
     frame: number;
     redo_payload: object;
     undo_payload: object;
+    affected?: ULabelActionAffected[];
+    // Override the recorded pre-action edit info (used when collapsing actions)
+    prev_timestamp?: string | null;
+    prev_user?: string;
+    // Stamp the touched annotations with this instead of now/username (restore)
+    stamp_override?: { at: string; by: string };
 };
 
 export type ULabelAction = {
@@ -287,6 +351,13 @@ export type ULabelAction = {
     undo_payload: string; // Stringified object
     prev_timestamp: string;
     prev_user: string;
+    affected?: ULabelActionAffected[];
+    // Parallel to `affected`: their edit info before the action
+    affected_prev?: { prev_timestamp: string; prev_user: string }[];
+    // The edit stamp this action wrote to the annotations it touched
+    stamped_at?: string;
+    // Subtask the user was in when the action was triggered (or last redone)
+    origin_subtask_key?: string;
     is_internal_undo?: boolean;
 };
 
@@ -302,6 +373,7 @@ export type ULabelActionCandidate = {
     spatial_type: ULabelSpatialType;
     offset?: Offset; // Optional offset for move actions
     is_vertex?: boolean; // True if hovering over an actual vertex, false if hovering over a segment
+    containing?: boolean; // True if the cursor is inside the annotation's real boundary, not just near its box
 };
 
 export type ULabelSubtasks = { [key: string]: ULabelSubtask };
@@ -323,12 +395,34 @@ export type ULabelConstructorArgs = {
     class_counter_toolbox_item?: ClassCounterConfig;
     /** Let bitmask brush overlap resolution reach masks in other subtasks. Default false. */
     brush_overlap_across_subtasks?: boolean;
+    /** Left-drag inside a spatial annotation's body moves it; Alt+drag draws instead. Default true. */
+    allow_body_move?: boolean;
+    /** Open the class pie on a paste whose source class has no id/name match in the target. Default true; false takes the target's active class. */
+    paste_class_choice?: boolean;
+    /** Make the target the current subtask after a copy/move or `delete_counterparts`, and the writable subtask on undo/redo from a read-only one. Default false. */
+    paste_switch_to_target?: boolean;
+    /** `annotation_meta` key whose value (string or string[]) links annotations across subtasks; any shared value links. Copies drop it. Default null. */
+    annotation_link_meta_key?: string | null;
+    /** Context menu hides Copy to / Move to for subtasks that already hold a counterpart (instead of confirming). Default false. */
+    hide_copy_to_linked?: boolean;
     /** Fired after a subtask's active class changes, from any writer (API, toolbox click, class keybind). */
     on_active_class_change?: (subtask_key: string, class_id: number) => void;
     /** Fired after the current subtask changes, from any writer (API, tab click, switch keybind). */
     on_subtask_change?: (subtask_key: string, old_subtask_key: string) => void;
     /** Fired after a subtask's `focus_active_class` flag changes, from any writer (API, focus keybind). */
     on_focus_active_class_change?: (subtask_key: string, enabled: boolean) => void;
+    /** Fired after a subtask's `focus_edited` flag changes, from any writer (API, edit focus keybind, annotation list checkbox). */
+    on_focus_edited_change?: (subtask_key: string, enabled: boolean) => void;
+    /** Fired after a subtask's `focus_deprecated` flag changes, from any writer (API, toggle keybind, annotation list checkbox). */
+    on_focus_deprecated_change?: (subtask_key: string, enabled: boolean) => void;
+    /** Fired after a subtask's isolated annotation changes (`null` when cleared), from any writer (API, list button, Escape). */
+    on_isolate_change?: (subtask_key: string, annotation_id: string | null) => void;
+    /** Fired when an undo/redo from a read-only subtask does nothing because the writable subtask's top action was triggered elsewhere. */
+    on_undo_redo_blocked?: (kind: "undo" | "redo", subtask_key: string, from_subtask_key: string, origin_subtask_key: string | null) => void;
+    /** Fired once per recorded, undone, or redone action that changes committed annotation state. Not fired by `set_annotations`/`set_annotations_batch`/`resume_from`. */
+    on_annotation_change?: (change: ULabelAnnotationChange) => void;
+    /** Also report `continue_*` (in-progress draw/edit/move/brush) actions to `on_annotation_change`. Default false. */
+    on_annotation_change_in_progress?: boolean;
     /** @deprecated Use top-level properties instead. */
     config_data?: object;
 };
@@ -345,6 +439,7 @@ export class ULabel {
         current_frame: number;
         // Global annotation state
         current_subtask: string;
+        undo_redo_from_subtask: string | null;
         last_brush_stroke: [number, number];
         line_size: number;
         anno_scaling_mode: AnnoScalingMode;
@@ -358,6 +453,10 @@ export class ULabel {
         demo_canvas_context: CanvasRenderingContext2D;
         edited: boolean;
         all_subtasks_vanished: boolean;
+        /** Annotation the right-click context menu is open for, if any. */
+        context_menu_annid: string | null;
+        /** Last copied/cut annotation envelope, see `copy_annotation_to_clipboard`. */
+        clipboard: ULabelClipboardEnvelope | null;
     };
 
     config: Configuration;
@@ -430,6 +529,10 @@ export class ULabel {
     public get_current_subtask_key(): string;
     public get_current_subtask(): ULabelSubtask;
     public is_current_subtask_read_only(): boolean;
+    /** Whether user input may not edit a subtask: read-only or under deprecated focus. Public API methods are unaffected. */
+    public is_subtask_edit_locked(subtask_key?: string | null): boolean;
+    public update_edit_lock_display(): void;
+    public discard_in_progress_input(): void;
     /** Whether a subtask's annotations are hidden: vanished, or layer opacity 0. Hidden implies non-interactive. */
     public is_subtask_hidden(subtask_key?: string): boolean;
     public readjust_subtask_opacities(): void;
@@ -452,17 +555,53 @@ export class ULabel {
     /** Turn focus-follows-active-class on or off for a subtask at runtime. */
     public set_focus_active_class(subtask_key: string, enabled: boolean, redraw?: boolean): void;
     /**
+     * Turn edit focus on or off for a subtask at runtime: annotations unchanged
+     * since load dim to `defocused_opacity` and drop out of input like class focus.
+     */
+    public set_focus_edited(subtask_key: string, enabled: boolean, redraw?: boolean): void;
+    /**
+     * Turn deprecated focus on or off for a subtask at runtime: deprecated
+     * annotations are drawn and in focus (view-only; restorable from the
+     * context menu), live ones dim and drop out of input like class focus.
+     */
+    public set_focus_deprecated(subtask_key: string, enabled: boolean, redraw?: boolean): void;
+    /**
      * Opacity for annotations outside the focused class. 0 skips drawing them
      * entirely, which is cheaper but loses them as visual context.
      */
     public set_defocused_opacity(subtask_key: string, opacity: number, redraw?: boolean): void;
     /**
+     * Isolate one annotation in a subtask: every other annotation is hidden
+     * from the canvas and from input until cleared with `null`. View-only
+     * state (not recorded, does not mark edited). Returns whether the request
+     * was accepted (unknown ids, and deprecated ids outside deprecated focus, are rejected).
+     */
+    public isolate_annotation(annotation_id: string | null, subtask_key?: string | null, redraw?: boolean): boolean;
+    /** The isolated annotation id in a subtask, if any. */
+    public get_isolated_annotation_id(subtask_key?: string | null): string | null;
+    /**
      * Set a subtask's layer opacity. Also writes `inactive_opacity` so the value
      * survives a subtask switch.
      */
     public set_subtask_opacity(subtask_key: string, opacity: number): void;
+    /**
+     * Make a subtask read-only or editable at runtime. Making the current
+     * subtask read-only completes an active drag and discards other
+     * in-progress work as Escape would. Not recorded, does not mark edited.
+     */
+    public set_subtask_read_only(subtask_key: string, read_only: boolean): void;
     /** The spatial types a class may be drawn as; falls back to the subtask's list. */
     public get_class_allowed_modes(class_id: number, subtask_key?: string | null): ULabelSpatialType[];
+    /** Class ids in the current subtask that can take an annotation's spatial type. */
+    public _get_compatible_class_ids(annotation?: ULabelAnnotation | null, subtask_key?: string | null): number[];
+    /**
+     * Open the right-click context menu (Change class / Delete / Details) for an
+     * annotation in the current subtask at a viewport position. Returns whether
+     * the menu was shown.
+     */
+    public show_context_menu(annotation_id: string, client_x: number, client_y: number): boolean;
+    public hide_context_menu(): void;
+    public is_context_menu_open(): boolean;
     /**
      * Hide the mode buttons the active class disallows and switch off a mode it
      * disallows. Delete modes are exempt.
@@ -485,6 +624,8 @@ export class ULabel {
     /** Deferred half of a batched `set_annotations` sequence: filter distances + toolbox redraw. */
     public refresh_toolbox(): void;
     public set_saved(saved: boolean): void;
+    /** Whether an `edits_only` submit limited to `subtasks` (default all) would send anything. */
+    public has_edits(subtasks?: string[] | null): boolean;
     public draw_annotation_from_id(id: string, offset?: Offset, subtask?: string): void;
     public redraw_annotation(annotation_id: string, subtask?: string, offset?: Offset): void;
     public render_bitmask_move(annotation_id: string, subtask: string, offset: Offset): void;
@@ -524,6 +665,7 @@ export class ULabel {
     public fly_to_next_annotation(increment: number, max_zoom?: number): boolean;
     public fly_to_annotation_id(annotation_id: string, subtask_key?: string | null, max_zoom?: number): boolean;
     public fly_to_annotation(annotation: ULabelAnnotation, subtask_key?: string, max_zoom?: number): boolean;
+    public fly_to_boxes_if_offscreen(boxes: ULabelContainingBox[]): boolean;
 
     // Brush
     // TODO (joshua-dean): should these actually be optional?
@@ -577,7 +719,16 @@ export class ULabel {
         annotation_id: string,
         redoing?: boolean,
         should_record_action?: boolean,
+        prev_stamp?: { prev_timestamp: string | null; prev_user: string } | null,
     ): void;
+    /** Whether Restore applies: deleted by a human only, editable subtask, restorable geometry. */
+    public can_restore_annotation(annotation_id: string): boolean;
+    /**
+     * Undelete a human-deleted annotation in the current subtask. Its edit stamp
+     * reverts to before the deletion when the action stream still knows it,
+     * else it is stamped now. Returns whether it was restored.
+     */
+    public restore_annotation(annotation_id: string, redoing?: boolean): boolean;
     public delete_vertex(
         annotation_id: string,
         access_str: string | number | [number, number],
@@ -596,6 +747,70 @@ export class ULabel {
     public create_nonspatial_annotation(
         annotation_id?: string, redo_payload?: object,
     ): void;
+    /** Whether `annotation` (spatial) may be pasted into a writable subtask with a compatible class. */
+    public can_paste_into_subtask(annotation: ULabelAnnotation | object, subtask_key: string): boolean;
+    /** Keys of the other subtasks `annotation` can be copied into. */
+    public get_copy_target_subtask_keys(annotation: ULabelAnnotation | object, source_key?: string | null): string[];
+    /** Compatible target class matching the source class by id, else by `source_class_name`; null when none. */
+    public match_paste_class_id(annotation: ULabelAnnotation | object, target_key: string, source_class_name?: string | null): number | null;
+    /** Matched source class (id, then name), else the target's active class, else the first compatible class. */
+    public resolve_paste_class_id(annotation: ULabelAnnotation | object, target_key: string, source_class_name?: string | null): number | null;
+    /** Name of a class in a subtask, or null. */
+    public get_class_name(class_id: number, subtask_key: string): string | null;
+    /**
+     * Insert a copy of `annotation` into `target_key` with a fresh id and stamps.
+     * Records a `paste_annotation` action on the target subtask unless `record` is false. Returns the new id, or null.
+     * With `source_key`, the copy's `annotation_meta.copied_from` is `{ subtask_key, annotation_id }`.
+     * The `annotation_link_meta_key` entry is dropped from the copy's `annotation_meta`.
+     */
+    public paste_annotation(
+        annotation: ULabelAnnotation | object,
+        target_key: string,
+        class_id?: number | null,
+        offset?: [number, number],
+        record?: boolean,
+        source_key?: string | null,
+    ): string | null;
+    /**
+     * Copy (or cut) an annotation from `source_key` into `target_key` at the same coordinates.
+     * A cut from the current, writable subtask is one `move_annotation` action on the source's stream.
+     * With `choose_class`, several compatible classes and `config.paste_class_choice`, switches to the target and opens the class pie.
+     * With `config.paste_switch_to_target`, always switches to the target.
+     */
+    public copy_annotation_to_subtask(
+        annotation_id: string,
+        source_key: string,
+        target_key: string,
+        class_id?: number | null,
+        cut?: boolean,
+        choose_class?: boolean,
+        offset?: [number, number],
+    ): string | null;
+    /** Copy an annotation into another subtask. Returns the new id, or null when nothing was copied. */
+    public copy_annotation(
+        annotation_id: string,
+        target_subtask_key: string,
+        class_id?: number | null,
+        source_subtask_key?: string | null,
+    ): string | null;
+    /** Copy (or cut) the hovered annotation to the in-memory clipboard; returns the envelope or null. */
+    public copy_annotation_to_clipboard(annotation_id?: string | null, cut?: boolean): ULabelClipboardEnvelope | null;
+    /** Paste an envelope (default: the in-memory clipboard) into the current subtask; returns the new id or null. */
+    public paste_annotation_from_clipboard(envelope?: ULabelClipboardEnvelope | null): string | null;
+    /** Id of an annotation in `target_key` pasted from `annotation_id` in `source_key` and not human-deleted, or null. */
+    public find_pasted_copy(annotation_id: string, source_key: string, target_key: string): string | null;
+    /** Live spatial annotations in `target_key` linked to the source by `copied_from` (either way) or a shared `annotation_link_meta_key` value. */
+    public find_counterparts(annotation_id: string, source_key: string, target_key: string): string[];
+    /**
+     * Delete the counterparts from a writable `target_key`, or with `erase` (default: source is a bitmask)
+     * subtract a bitmask source from its bitmask counterparts.
+     * One `delete_counterparts` action on the target's stream. Returns the changed ids.
+     * With `config.paste_switch_to_target`, switches to the target when anything changed.
+     */
+    public delete_counterparts(annotation_id: string, source_key: string, target_key: string, erase?: boolean | null): string[];
+    /** Whether a context-menu copy/move/delete-from makes the target the current subtask. */
+    public set_paste_switch_to_target(enabled: boolean): void;
+    public get_paste_switch_to_target(): boolean;
     public start_complex_polygon(annotation_id?: string): void;
     public merge_polygon_complex_layer(
         annotation_id: string,
@@ -614,17 +829,25 @@ export class ULabel {
     public get_active_class_id_idx(): number;
 
     // Undo
+    /** From a read-only subtask, undoes on the sole writable subtask (if exactly one). */
     public undo(): void;
+    public run_on_edit_subtask(stack: "stream" | "undone_stack", fn: () => void): void;
     public begin_annotation__undo(annotation_id: string): void;
     public continue_annotation__undo(annotation_id: string): void;
     public finish_annotation__undo(annotation_id: string): void;
     public begin_edit__undo(annotation_id: string, undo_payload: object): void;
     public begin_move__undo(annotation_id: string, undo_payload: object): void;
     public delete_annotation__undo(annotation_id: string): void;
+    public restore_annotation__undo(annotation_id: string): void;
     public delete_vertex__undo(annotation_id: string, undo_payload: object): void;
     public cancel_annotation__undo(annotation_id: string, undo_payload: object): void;
     public assign_annotation_id__undo(annotation_id: string, undo_payload: object): void;
+    public edit_text_payload(annotation_id: string, new_text: string, redoing?: boolean): void;
+    public edit_text_payload__undo(annotation_id: string, undo_payload: object): void;
     public create_annotation__undo(annotation_id: string): void;
+    public paste_annotation__undo(annotation_id: string): void;
+    public move_annotation__undo(annotation_id: string, undo_payload: object): void;
+    public delete_counterparts__undo(undo_payload: object): void;
     public create_nonspatial_annotation__undo(annotation_id: string): void;
     public start_complex_polygon__undo(annotation_id: string): void;
     public merge_polygon_complex_layer__undo(annotation_id: string, undo_payload: object): void;
@@ -635,14 +858,20 @@ export class ULabel {
     public finish_modify_annotation__undo(annotation_id: string, undo_payload: object): void;
 
     // Redo
+    /** From a read-only subtask, redoes on the sole writable subtask (if exactly one). */
     public redo(): void;
     public finish_annotation__redo(annotation_id: string): void;
     public bitmask_stroke__redo(annotation_id: string, redo_payload: object): void;
+    public edit_text_payload__redo(annotation_id: string, redo_payload: object): void;
     public begin_edit__redo(annotation_id: string, redo_payload: object): void;
     public begin_move__redo(annotation_id: string, redo_payload: object): void;
     public delete_annotation__redo(annotation_id: string): void;
+    public restore_annotation__redo(annotation_id: string): void;
     public delete_vertex__redo(annotation_id: string, redo_payload: object): void;
     public create_annotation__redo(annotation_id: string, redo_payload: object): void;
+    public paste_annotation__redo(annotation_id: string, redo_payload: object): void;
+    public move_annotation__redo(annotation_id: string, redo_payload: object): void;
+    public delete_counterparts__redo(annotation_id: string, redo_payload: object): void;
     public finish_modify_annotation__redo(annotation_id: string, redo_payload: object): void;
 
     // Mouse event handlers
@@ -668,7 +897,6 @@ export class ULabel {
     public suggest_edits(
         mouse_event?: JQuery.TriggeredEvent | null,
         nonspatial_id?: string | null,
-        force_refresh?: boolean,
     ): void;
     public show_global_edit_suggestion(
         annid: string,
@@ -724,7 +952,6 @@ export class ULabel {
         gbx: number,
         gby: number,
         active_ann: string, // annotation id
-        thumbnail?: boolean,
         nonspatial?: boolean,
     ): void;
     public hide_id_dialog(): void;

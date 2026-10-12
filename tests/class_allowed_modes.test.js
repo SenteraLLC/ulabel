@@ -352,14 +352,13 @@ describe("pie class exclusion", () => {
         return annotation;
     }
 
-    // show_id_dialog's non-suppressed path needs the reid button + dialog DOM
+    // show_id_dialog's non-suppressed path needs the dialog DOM
     function scaffold_dialog_dom(ulabel) {
         const idd_id = ulabel.subtasks.st.state.idd_id;
         const idd_id_front = ulabel.subtasks.st.state.idd_id_front;
         document.body.innerHTML = `
             <div id="dialogs__st"><div id="${idd_id}" class="id_dialog"></div></div>
             <div id="front_dialogs__st"><div id="${idd_id_front}" class="id_dialog"></div></div>
-            <div id="global_edit_suggestion__st"><a class="reid_suggestion global_sub_suggestion"></a></div>
         `;
     }
 
@@ -368,7 +367,7 @@ describe("pie class exclusion", () => {
         load_annotation(ulabel, "polyline");
         scaffold_dialog_dom(ulabel);
 
-        ulabel.show_id_dialog(10, 10, "a0", true);
+        ulabel.show_id_dialog(10, 10, "a0");
 
         // Crop (bbox-only) is excluded; Row and Any remain
         expect(ulabel.subtasks.st.state.idd_displayed_class_ids).toEqual([2, 3]);
@@ -384,7 +383,7 @@ describe("pie class exclusion", () => {
         load_annotation(ulabel, "bbox");
         scaffold_dialog_dom(ulabel);
 
-        ulabel.show_id_dialog(10, 10, "a0", true);
+        ulabel.show_id_dialog(10, 10, "a0");
 
         expect(ulabel.subtasks.st.state.idd_visible).toBe(false);
     });
@@ -405,57 +404,6 @@ describe("pie class exclusion", () => {
         expect(pos_evt).not.toBeNull();
         // class 2 sits at index 1 of the full class list
         expect(pos_evt.class_ind).toBe(1);
-    });
-
-    test("the button ring collapses like single-class mode when nothing can be reassigned", () => {
-        const ulabel = make_ulabel(make_config([CROP, ROW, ANY]));
-        // bbox: only Crop and Any qualify (2 targets); polyline: Row and Any (2 targets);
-        // narrow Any to make bbox single-target
-        ulabel.subtasks.st.class_defs[2].allowed_modes = ["polyline"];
-        const annotation = load_annotation(ulabel, "bbox");
-        annotation.classification_payloads = [
-            { class_id: 1, confidence: 1 },
-            { class_id: 2, confidence: 0 },
-            { class_id: 3, confidence: 0 },
-        ];
-        annotation.containing_box = { tlx: 0, tly: 0, brx: 10, bry: 10 };
-        document.body.innerHTML = `
-            <div id="global_edit_suggestion__st" class="global_edit_suggestion mcm">
-                <a class="move_suggestion global_sub_suggestion"></a>
-                <a class="reid_suggestion global_sub_suggestion"></a>
-                <a class="delete_suggestion global_sub_suggestion"></a>
-            </div>
-        `;
-        ulabel.subtasks.st.state.visible_dialogs["global_edit_suggestion__st"] = { left: 0, top: 0, pin: "center" };
-        ulabel.config.image_width = 100;
-        ulabel.config.image_height = 100;
-
-        // bbox can only be Crop -> compact ring, no reid button
-        ulabel.show_global_edit_suggestion("a0");
-
-        const container = document.getElementById("global_edit_suggestion__st");
-        expect(container.classList.contains("mcm")).toBe(false);
-        expect(document.querySelector("a.reid_suggestion").style.display).toBe("none");
-    });
-
-    test("a thumbnail from the previous hover hides when the next annotation has no targets", () => {
-        const ulabel = make_ulabel(make_config([CROP, ROW, ANY]));
-        ulabel.subtasks.st.class_defs[2].allowed_modes = ["polyline"];
-        const annotation = load_annotation(ulabel, "bbox");
-        annotation.classification_payloads = [{ class_id: 1, confidence: 1 }];
-        annotation.containing_box = { tlx: 0, tly: 0, brx: 10, bry: 10 };
-        document.body.innerHTML = `<div id="global_edit_suggestion__st" class="global_edit_suggestion mcm"></div>`;
-        ulabel.subtasks.st.state.visible_dialogs["global_edit_suggestion__st"] = { left: 0, top: 0, pin: "center" };
-        ulabel.config.image_width = 100;
-        ulabel.config.image_height = 100;
-        // A pie left visible by the previously hovered annotation
-        ulabel.subtasks.st.state.idd_visible = true;
-        ulabel.subtasks.st.state.idd_associated_annotation = "other";
-
-        ulabel.show_global_edit_suggestion("a0");
-
-        expect(ulabel.subtasks.st.state.idd_visible).toBe(false);
-        expect(ulabel.subtasks.st.state.idd_associated_annotation).toBeNull();
     });
 });
 

@@ -43,9 +43,9 @@ export function time_function<T, R>(
     return replacement_method;
 }
 
-export function get_active_class_id(ulabel: ULabel): number | undefined {
-    // Grab the current subtask from the ulabel object
-    const current_subtask_key: string = ulabel.state.current_subtask;
+export function get_active_class_id(ulabel: ULabel, subtask_key: string | null = null): number | undefined {
+    // Grab the subtask from the ulabel object, defaulting to the current one
+    const current_subtask_key: string = subtask_key ?? ulabel.state.current_subtask;
     const current_subtask: ULabelSubtask = ulabel.subtasks[current_subtask_key];
 
     // If in single_class_mode return the only valid class id

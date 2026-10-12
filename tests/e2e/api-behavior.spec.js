@@ -39,7 +39,7 @@ test.describe("ULabel API Behavior", () => {
         // (the check is: if (nonspatial_id !== null))
         const result = await page.evaluate(() => {
             try {
-                window.ulabel.suggest_edits(null, null, true);
+                window.ulabel.suggest_edits(null, null);
                 return { success: true };
             } catch (e) {
                 return { success: false, error: e.message };

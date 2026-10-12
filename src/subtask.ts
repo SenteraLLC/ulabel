@@ -17,6 +17,9 @@ export class ULabelSubtask {
     public annotations!: {
         access: { [key: string]: ULabelAnnotation };
         ordering: string[];
+        // `last_edited_at` each host-loaded annotation arrived with, by id.
+        // Absent for in-session creations.
+        loaded_edited_at?: { [key: string]: string | null };
     };
 
     public canvas_fid!: string;
@@ -36,7 +39,6 @@ export class ULabelSubtask {
         idd_associated_annotation: string;
         idd_id: string;
         idd_id_front: string;
-        idd_thumbnail: boolean;
         idd_visible: boolean;
         // Class ids currently rendered in the pies (compatible-class subset)
         idd_displayed_class_ids: number[];
@@ -54,6 +56,8 @@ export class ULabelSubtask {
         // The last non-delete class selected; what class focus follows when
         // `focus_active_class` is set. Defocused annotations are still real data.
         selected_class_id: number | null;
+        // When set, every other annotation in the subtask is hidden (view-only)
+        isolated_annid: string | null;
         defocused_opacity: number;
         // Cache of the layer opacity slider, synced by readjust_subtask_opacities
         layer_opacity: number;
@@ -78,6 +82,10 @@ export class ULabelSubtask {
         public inactive_opacity: number = 0.4,
         /** Focus follows the active class: other classes dim and drop out of input. */
         public focus_active_class: boolean = false,
+        /** Only annotations created or modified since load stay in focus. */
+        public focus_edited: boolean = false,
+        /** Only deprecated annotations stay in focus (and are drawn). */
+        public focus_deprecated: boolean = false,
     ) {
         this.actions = {
             stream: [],
@@ -97,6 +105,8 @@ export class ULabelSubtask {
         );
         ret.read_only = ("read_only" in subtask_json) && (subtask_json["read_only"] === true);
         ret.focus_active_class = subtask_json["focus_active_class"] === true;
+        ret.focus_edited = subtask_json["focus_edited"] === true;
+        ret.focus_deprecated = subtask_json["focus_deprecated"] === true;
         if ("inactive_opacity" in subtask_json && typeof subtask_json["inactive_opacity"] == "number") {
             ret.inactive_opacity = Math.min(Math.max(subtask_json["inactive_opacity"], 0.0), 1.0);
         }
