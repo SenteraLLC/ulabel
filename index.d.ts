@@ -356,6 +356,8 @@ export type ULabelAction = {
     affected_prev?: { prev_timestamp: string; prev_user: string }[];
     // The edit stamp this action wrote to the annotations it touched
     stamped_at?: string;
+    // Subtask the user was in when the action was triggered (or last redone)
+    origin_subtask_key?: string;
     is_internal_undo?: boolean;
 };
 

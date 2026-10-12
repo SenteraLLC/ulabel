@@ -61,6 +61,7 @@ export function record_action(
         redo_payload: JSON.stringify(raw_action.redo_payload),
         prev_timestamp: prev_timestamp,
         prev_user: prev_user,
+        origin_subtask_key: ulabel.state.undo_redo_from_subtask ?? ulabel.get_current_subtask_key(),
     } as ULabelAction;
 
     const affected = raw_action.affected ?? [];

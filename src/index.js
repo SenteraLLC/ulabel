@@ -4309,22 +4309,25 @@ export class ULabel {
     // ================= Annotation Utilities =================
 
     /**
-     * Undo the last action. From a read-only subtask, undoes on the sole writable subtask.
+     * Undo the last action. From a read-only subtask, undoes on the sole writable subtask
+     * if that action was triggered from the read-only subtask.
      */
     undo() {
         this.run_on_edit_subtask("stream", () => undo(this));
     }
 
     /**
-     * Redo the last undone action. From a read-only subtask, redoes on the sole writable subtask.
+     * Redo the last undone action. From a read-only subtask, redoes on the sole writable subtask
+     * if that action was triggered from the read-only subtask.
      */
     redo() {
         this.run_on_edit_subtask("undone_stack", () => redo(this));
     }
 
     /**
-     * Run an undo/redo on the sole writable subtask when the current one is read-only:
-     * switching to it if `paste_switch_to_target` is set, otherwise in place.
+     * Run an undo/redo on the sole writable subtask when the current one is read-only and the
+     * action on top of `stack` was triggered from it: switching to the writable subtask if
+     * `paste_switch_to_target` is set, otherwise in place.
      *
      * @param {"stream" | "undone_stack"} stack the stack the operation pops
      * @param {() => void} fn the undo/redo
@@ -4334,7 +4337,8 @@ export class ULabel {
         if (!this.is_current_subtask_read_only() || writable.length !== 1) return fn();
         const current_key = this.get_current_subtask_key();
         const edit_key = writable[0];
-        if (this.subtasks[edit_key].actions[stack].length === 0) return;
+        const actions = this.subtasks[edit_key].actions[stack];
+        if (actions.length === 0 || actions[actions.length - 1].origin_subtask_key !== current_key) return;
         this.state["undo_redo_from_subtask"] = current_key;
         try {
             if (this.config["paste_switch_to_target"]) {

@@ -7,7 +7,7 @@ This should eventually be replaced with a more comprehensive approach to documen
 - `ctrl+z` or `cmd+z`: Undo
 - `ctrl+shift+z` or `cmd+shift+z`: Redo
 
-In a read-only subtask, undo and redo act on the only writable subtask, if there is exactly one: in place, or after switching to it when [`paste_switch_to_target`](#paste_switch_to_target) is set.
+In a read-only subtask, undo and redo act on the only writable subtask, if there is exactly one, and only when the action on top of its undo (or redo) history was triggered from that read-only subtask (such as **Copy to** or **Delete from**); otherwise they do nothing. They run in place, or after switching to the writable subtask when [`paste_switch_to_target`](#paste_switch_to_target) is set. Each action records the subtask it was triggered from as `origin_subtask_key`; a redo issued from the writable subtask takes it over.
 - `scroll`: Zoom -- up for in, down for out
 - `ctrl+scroll` or `shift+scroll` or `cmd+scroll`: Change frame -- down for next, up for previous
 - `scrollclick+drag`: Pan

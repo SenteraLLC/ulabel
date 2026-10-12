@@ -58,6 +58,7 @@ function make_ulabel(resume = {}, extra_config = {}) {
         "hide_id_dialog",
         "hide_context_menu",
         "update_frame",
+        "destroy_annotation_context",
     ]) {
         ulabel[name] = jest.fn();
     }
@@ -331,5 +332,60 @@ describe("undo/redo from a read-only subtask", () => {
 
         ulabel.undo();
         expect(gt(ulabel, "g1").deprecated).toBe(true);
+    });
+
+    test("does nothing when the top action was triggered in the writable subtask", () => {
+        const { ulabel } = setup();
+        ulabel.state.current_subtask = "gt";
+        ulabel.create_annotation("bbox", [[50, 50], [60, 60]], "n1");
+        ulabel.state.current_subtask = "diff";
+
+        ulabel.undo();
+        expect(gt(ulabel, "g1").deprecated).toBe(true);
+        expect(gt(ulabel, "n1")).toBeDefined();
+
+        ulabel.state.current_subtask = "gt";
+        ulabel.undo();
+        ulabel.state.current_subtask = "diff";
+        ulabel.undo();
+        expect(gt(ulabel, "n1")).toBeUndefined();
+        expect(gt(ulabel, "g1").deprecated).toBe(false);
+
+        // The Delete from is on top of the redo stack; the create beneath it was undone in gt
+        ulabel.redo();
+        expect(gt(ulabel, "g1").deprecated).toBe(true);
+        ulabel.redo();
+        expect(gt(ulabel, "n1")).toBeUndefined();
+    });
+
+    test("undoes a Copy to sent from the read-only subtask, but not a paste made in the writable one", () => {
+        const { ulabel } = setup();
+        const copy_id = ulabel.copy_annotation_to_subtask("d1", "diff", "gt");
+        ulabel.undo();
+        expect(gt(ulabel, copy_id)).toBeUndefined();
+        ulabel.redo();
+        expect(gt(ulabel, copy_id)).toBeDefined();
+        ulabel.undo();
+        expect(gt(ulabel, copy_id)).toBeUndefined();
+
+        ulabel.state.current_subtask = "gt";
+        const pasted_id = ulabel.paste_annotation(ulabel.subtasks.diff.annotations.access.d1, "gt", null, [0, 0], true, "diff");
+        ulabel.state.current_subtask = "diff";
+        ulabel.undo();
+        expect(gt(ulabel, pasted_id)).toBeDefined();
+    });
+
+    test("does nothing for an action triggered from another read-only subtask", () => {
+        const ulabel = make_ulabel({ ro: [make_bbox("r1")] });
+        ulabel.state.current_subtask = "ro";
+        const copy_id = ulabel.copy_annotation_to_subtask("r1", "ro", "gt");
+        ulabel.state.current_subtask = "diff";
+
+        ulabel.undo();
+        expect(gt(ulabel, copy_id)).toBeDefined();
+
+        ulabel.state.current_subtask = "ro";
+        ulabel.undo();
+        expect(gt(ulabel, copy_id)).toBeUndefined();
     });
 });
