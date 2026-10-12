@@ -144,4 +144,37 @@ test.describe("body-drag move", () => {
         const unchanged = await get_annotation_by_index(page, 0);
         expect_payload_close(unchanged.spatial_payload, bbox);
     });
+
+    // A polyline whose single long segment runs from (200,200) to (400,200) on screen
+    async function create_polyline(page) {
+        return await page.evaluate(() => {
+            const u = window.ulabel;
+            const g = (x, y) => u.get_image_aware_mouse_x_y({ pageX: x, pageY: y });
+            const payload = [g(200, 200), g(400, 200)];
+            u.create_annotation("polyline", payload, "line");
+            return payload;
+        });
+    }
+
+    test("dragging a polyline stroke away from the segment midpoint moves it", async ({ page }) => {
+        await wait_for_ulabel_init(page);
+        const line = await create_polyline(page);
+
+        await drag(page, [230, 200], [260, 240]);
+
+        const moved = await get_annotation_by_index(page, 0);
+        expect_payload_close(moved.spatial_payload, await translated(page, line, [30, 40]));
+    });
+
+    test("dragging the segment midpoint handle inserts a vertex", async ({ page }) => {
+        await wait_for_ulabel_init(page);
+        const line = await create_polyline(page);
+
+        await drag(page, [300, 200], [300, 260]);
+
+        const edited = await get_annotation_by_index(page, 0);
+        expect(edited.spatial_payload).toHaveLength(3);
+        expect_payload_close([edited.spatial_payload[0], edited.spatial_payload[2]], line);
+        expect(edited.spatial_payload[1][1]).toBeGreaterThan(line[0][1]);
+    });
 });

@@ -665,6 +665,7 @@ export class ULabel {
     public fly_to_next_annotation(increment: number, max_zoom?: number): boolean;
     public fly_to_annotation_id(annotation_id: string, subtask_key?: string | null, max_zoom?: number): boolean;
     public fly_to_annotation(annotation: ULabelAnnotation, subtask_key?: string, max_zoom?: number): boolean;
+    public fly_to_boxes_if_offscreen(boxes: ULabelContainingBox[]): boolean;
 
     // Brush
     // TODO (joshua-dean): should these actually be optional?

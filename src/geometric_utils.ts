@@ -12,6 +12,7 @@ export type PointAccessObject = {
     access: string | number | null; // Access string or number that acts as the index of the point in the original spatial payload
     distance: number | null;
     point: Point2D | null;
+    segment?: number; // Index of the segment's first point, when segments are searched
 };
 export type LineEquation = {
     a: number;
@@ -339,6 +340,7 @@ export class GeometricUtils {
                     ret["access"] = "" + (kpi + nr["prop"]);
                     ret["distance"] = nr["dst"];
                     ret["point"] = GeometricUtils.interpolate_poly_segment(poly_pts, kpi, nr["prop"]);
+                    ret["segment"] = kpi;
                 }
             }
             return ret;

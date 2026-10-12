@@ -5,6 +5,7 @@ import type {
     ULabelActionType,
     ULabelAnnotation,
     ULabelAnnotationChange,
+    ULabelContainingBox,
 } from "../index";
 import { ULabel } from "../src/index";
 import { FilterPointDistanceFromRow } from "./toolbox";
@@ -687,11 +688,14 @@ export function undo(ulabel: ULabel, is_internal_undo: boolean = false) {
     // Set internal undo status
     undo_candidate.is_internal_undo = is_internal_undo;
     undone_stack.push(undo_candidate);
+    const boxes_before = is_internal_undo ? [] : get_action_boxes(ulabel, undo_candidate);
     undo_action(ulabel, undo_candidate);
 
     // Trigger any listeners for the action
     trigger_action_listeners(ulabel, undo_candidate, true);
     emit_annotation_change(ulabel, undo_candidate, "undo", ulabel.get_current_subtask_key());
+    // After the listeners, which rebuild containing boxes (e.g. for a move)
+    if (!is_internal_undo) fly_to_action_change(ulabel, undo_candidate, boxes_before);
 }
 
 /**
@@ -710,7 +714,46 @@ export function redo(ulabel: ULabel) {
 
     // Redo the action
     const redo_candidate = undone_stack.pop()!;
+    const boxes_before = get_action_boxes(ulabel, redo_candidate);
     redo_action(ulabel, redo_candidate);
+    fly_to_action_change(ulabel, redo_candidate, boxes_before);
+}
+
+/**
+ * Containing boxes of the annotations an action touches, in image coordinates.
+ *
+ * @param ulabel ULabel instance
+ * @param action the action
+ */
+function get_action_boxes(ulabel: ULabel, action: ULabelAction): ULabelContainingBox[] {
+    // A counterpart action's own id is its source annotation, in another subtask
+    const own = action.act_type === "delete_counterparts" ?
+            [] :
+            [{ annotation_id: action.annotation_id, subtask_key: ulabel.get_current_subtask_key() }];
+    const targets = [...own, ...(action.affected ?? [])];
+    const boxes: ULabelContainingBox[] = [];
+    for (const { annotation_id, subtask_key } of targets) {
+        if (annotation_id === null) continue;
+        const annotation = ulabel.subtasks[subtask_key]?.annotations.access[annotation_id];
+        if (annotation === undefined || NONSPATIAL_MODES.includes(annotation.spatial_type!)) continue;
+        const box = annotation.containing_box;
+        if (box != null && [box.tlx, box.tly, box.brx, box.bry].every(Number.isFinite)) boxes.push({ ...box });
+    }
+    return boxes;
+}
+
+/**
+ * After a user undo/redo, fly to where its annotations ended up (or were, if
+ * none remain) when none of them is in view.
+ *
+ * @param ulabel ULabel instance
+ * @param action the undone/redone action
+ * @param boxes_before boxes of its annotations before the undo/redo
+ */
+function fly_to_action_change(ulabel: ULabel, action: ULabelAction, boxes_before: ULabelContainingBox[]) {
+    if (!ulabel.config.fly_to_on_undo || IN_PROGRESS.includes(action.act_type)) return;
+    const boxes_after = get_action_boxes(ulabel, action);
+    ulabel.fly_to_boxes_if_offscreen(boxes_after.length > 0 ? boxes_after : boxes_before);
 }
 
 /**

@@ -276,6 +276,42 @@ describe("delete_counterparts", () => {
     });
 });
 
+describe("fly to undo/redo changes", () => {
+    test("passes where the undo/redo left its annotations, or where they were if none remain", () => {
+        const ulabel = make_ulabel({
+            // An unrelated gt annotation sharing the diff source's id
+            gt: [make_bbox("g1", { hash: "h1" }), make_annotation("d1", "bbox", [[70, 70], [90, 90]])],
+            diff: [make_bbox("d1", { hash: "h1" })],
+        });
+        ulabel.fly_to_boxes_if_offscreen = jest.fn();
+        ulabel.state.current_subtask = "gt";
+        ulabel.create_annotation("bbox", [[50, 50], [60, 60]], "n1");
+        const n1_box = { ...gt(ulabel, "n1").containing_box };
+        const g1_box = { ...gt(ulabel, "g1").containing_box };
+
+        ulabel.undo();
+        expect(ulabel.fly_to_boxes_if_offscreen).toHaveBeenLastCalledWith([n1_box]);
+        ulabel.redo();
+        expect(ulabel.fly_to_boxes_if_offscreen).toHaveBeenLastCalledWith([n1_box]);
+
+        ulabel.state.current_subtask = "diff";
+        ulabel.delete_counterparts("d1", "diff", "gt");
+        ulabel.undo();
+        // The action's own id is the diff source; only the affected counterpart counts
+        expect(ulabel.fly_to_boxes_if_offscreen).toHaveBeenLastCalledWith([g1_box]);
+    });
+
+    test("fly_to_on_undo: false never moves the view", () => {
+        const ulabel = make_ulabel({}, { fly_to_on_undo: false });
+        ulabel.fly_to_boxes_if_offscreen = jest.fn();
+        ulabel.state.current_subtask = "gt";
+        ulabel.create_annotation("bbox", [[50, 50], [60, 60]], "n1");
+        ulabel.undo();
+        ulabel.redo();
+        expect(ulabel.fly_to_boxes_if_offscreen).not.toHaveBeenCalled();
+    });
+});
+
 describe("undo/redo from a read-only subtask", () => {
     function setup() {
         const on_annotation_change = jest.fn();

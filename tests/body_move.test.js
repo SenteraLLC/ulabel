@@ -50,6 +50,26 @@ function hover(ulabel, containing) {
     };
 }
 
+describe("segment insert handle", () => {
+    function nearest(x, y) {
+        const ulabel = make_ulabel();
+        ulabel.get_empirical_scale = () => 1;
+        ulabel.subtasks.st.annotations = {
+            access: { l: { id: "l", spatial_type: "polyline", spatial_payload: [[10, 10], [200, 10], [200, 200]] } },
+            ordering: ["l"],
+        };
+        return ulabel.get_nearest_segment_point(x, y, Infinity, ["l"]);
+    }
+
+    test("sits at the midpoint of the hovered segment", () => {
+        expect(nearest(50, 15)).toMatchObject({ access: "0.5", point: [105, 10] });
+    });
+
+    test("projecting onto the final endpoint stays on the last segment", () => {
+        expect(nearest(210, 200)).toMatchObject({ access: "1.5", point: [200, 105] });
+    });
+});
+
 describe("get_drag_key_start body move", () => {
     test("a containing hit starts a move", () => {
         const ulabel = make_ulabel();
@@ -250,6 +270,23 @@ describe("zero-diff body click", () => {
         expect(ulabel.subtasks.st.actions.stream.map((a) => a.act_type)).toEqual(["begin_move"]);
         expect(ulabel.state.edited).toBe(true);
         expect(annotation.spatial_payload).toEqual([[30, 20], [70, 60]]);
+    });
+
+    test("undo flies to where the move put the annotation back, not where it was moved to", () => {
+        const ulabel = make_ulabel();
+        load_bbox(ulabel);
+        stub_rendering(ulabel);
+        delete ulabel.rebuild_containing_box;
+        ulabel.hide_id_dialog = jest.fn();
+        ulabel.fly_to_boxes_if_offscreen = jest.fn();
+
+        click_body(ulabel, 200, 0);
+        ulabel.undo();
+
+        const [boxes] = ulabel.fly_to_boxes_if_offscreen.mock.calls.at(-1);
+        expect(boxes).toHaveLength(1);
+        expect(boxes[0].tlx).toBeLessThanOrEqual(10);
+        expect(boxes[0].brx).toBeLessThan(200);
     });
 
     // Ctrl+Z while the mouse is still held finishes the pending begin_move

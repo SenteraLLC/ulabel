@@ -96,6 +96,7 @@ class ULabel({
     toggle_edit_focus_keybind: string,
     toggle_deprecated_focus_keybind: string,
     fly_to_max_zoom: number,
+    fly_to_on_undo: boolean,
     min_zoom_fit_ratio: number,
     n_annos_per_canvas: number,
     auto_destroy_on_detach: boolean,
@@ -662,7 +663,7 @@ The initial [brush overlap mode](#overlap-modes) for bitmask painting: `"none"` 
 When `true`, [brush overlap resolution](#overlap-modes) also reaches undeprecated bitmask annotations in *other* subtasks: `"exclude"` clips the stroke against them, and `"overwrite"` carves them — except masks in `read_only` subtasks, which act as barriers (the stroke is clipped around them instead). Default is `false`: a stroke only interacts with masks in the active subtask.
 
 ### `allow_body_move`
-When `true` (the default), a plain left-drag that starts inside a spatial annotation's body moves that annotation. The cursor must actually be inside the shape (a polygon's fill, a bbox, a point's handle, a polyline's stroke, a bitmask's pixels) — being merely near its bounding box still starts a new annotation. A vertex edit handle under the cursor takes precedence and edits that vertex. Hold `Alt` to start a new annotation on top of an existing body instead. Delete modes and read-only subtasks are unaffected. Set to `false` to make every canvas drag start a new annotation.
+When `true` (the default), a plain left-drag that starts inside a spatial annotation's body moves that annotation. The cursor must actually be inside the shape (a polygon's fill, a bbox, a point's handle, a polyline's stroke, a bitmask's pixels) — being merely near its bounding box still starts a new annotation. A vertex edit handle under the cursor takes precedence and edits that vertex. On polygons and polylines the handle for inserting a new vertex sits at the midpoint of the hovered segment, so dragging the rest of a polyline's stroke moves it. Hold `Alt` to start a new annotation on top of an existing body instead. Delete modes and read-only subtasks are unaffected. Set to `false` to make every canvas drag start a new annotation.
 
 ### `paste_class_choice`
 When `true` (the default), a context-menu `Copy to` / `Move to` or a `ctrl+v` paste whose source class has no counterpart in the target subtask (by id, then by name) opens the class pie on the pasted annotation when several classes could take it. Set to `false` to never open the pie: the copy silently takes the target's active class (else its first compatible class). Useful when the source subtask's classes (e.g. `True Positive` / `False Negative`) can never match the target's and the host keeps the target's active class in sync with its own class picker.
@@ -717,6 +718,9 @@ Keybind to toggle `focus_edited` on the current subtask (also the **Edited Only*
 
 ### `toggle_deprecated_focus_keybind`
 Keybind to toggle `focus_deprecated` on the current subtask, the same as the **Show Deprecated** checkbox in the `AnnotationList` toolbox item. Default is `shift+d`.
+
+### `fly_to_on_undo`
+After a user undo or redo, center the view on the annotations it changed (the action's annotation plus any `affected` ones, in any subtask) when none of them is in view after the change. It targets where the change left them (e.g. a move's original position on undo), or where they were if none remain (e.g. undoing a create). The zoom is kept unless their combined box does not fit, in which case it zooms out to fit. Internal undos, in-progress steps, and non-spatial annotations never move the view. Default is `true`.
 
 ### `fly_to_max_zoom`
 Maximum zoom factor used when flying-to an annotation. Default is `10`, value must be > `0`. 

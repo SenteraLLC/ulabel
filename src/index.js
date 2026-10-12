@@ -5574,7 +5574,8 @@ export class ULabel {
     }
 
     /**
-     * Get annotation segment to a point.
+     * Get the midpoint of the annotation segment nearest a point: where the
+     * insert handle sits, leaving the rest of the stroke free for a body move.
      * @param {*} global_x
      * @param {*} global_y
      * @param {*} max_dist Maximum distance to search
@@ -5597,7 +5598,7 @@ export class ULabel {
             const spatial_type = this.get_current_subtask()["annotations"]["access"][edid]["spatial_type"];
             let spatial_payload = this.get_current_subtask()["annotations"]["access"][edid]["spatial_payload"];
             let active_spatial_payload = spatial_payload;
-            let n_iters, access_idx;
+            let n_iters;
             switch (spatial_type) {
                 case "bbox":
                 case "bbox3":
@@ -5615,14 +5616,13 @@ export class ULabel {
                         var npi = GeometricUtils.get_nearest_point_on_polygon(
                             global_x, global_y, active_spatial_payload, max_dist / this.get_empirical_scale(), true,
                         );
-                        // for polygons, access index is a list of two indices
-                        // for polylines, access index is a single index
-                        access_idx = spatial_type === "polygon" ? [i, npi["access"]] : npi["access"];
                         if (npi["distance"] != null && npi["distance"] < ret["distance"]) {
+                            const segment = npi["segment"];
+                            const midpoint = "" + (segment + 0.5);
                             ret["annid"] = edid;
-                            ret["access"] = access_idx;
+                            ret["access"] = spatial_type === "polygon" ? [i, midpoint] : midpoint;
                             ret["distance"] = npi["distance"];
-                            ret["point"] = npi["point"];
+                            ret["point"] = GeometricUtils.interpolate_poly_segment(active_spatial_payload, segment, 0.5);
                         }
                     }
                     break;
@@ -8910,6 +8910,44 @@ export class ULabel {
         }
         const annotation = this.get_current_subtask()["annotations"]["access"][annotation_id];
         return this.fly_to_annotation(annotation, null, max_zoom);
+    }
+
+    /**
+     * Center the view on image-space boxes when none of them is in view, keeping
+     * the zoom unless their union does not fit, then zooming out to fit it.
+     *
+     * @param {{tlx: number, tly: number, brx: number, bry: number}[]} boxes
+     * @returns {boolean} whether the view moved
+     */
+    fly_to_boxes_if_offscreen(boxes) {
+        if (boxes.length === 0) return false;
+        const annbox = $("#" + this.config["annbox_id"]);
+        const scale = this.get_empirical_scale();
+        const viewport_width = annbox.width();
+        const viewport_height = annbox.height();
+        if (!(scale > 0) || !(viewport_width > 0) || !(viewport_height > 0)) return false;
+
+        const view_tlx = annbox.scrollLeft() / scale;
+        const view_tly = annbox.scrollTop() / scale;
+        const view_brx = view_tlx + viewport_width / scale;
+        const view_bry = view_tly + viewport_height / scale;
+        const any_in_view = boxes.some(
+            (box) => box.tlx <= view_brx && box.brx >= view_tlx && box.tly <= view_bry && box.bry >= view_tly,
+        );
+        if (any_in_view) return false;
+
+        const tlx = Math.min(...boxes.map((box) => box.tlx));
+        const tly = Math.min(...boxes.map((box) => box.tly));
+        const brx = Math.max(...boxes.map((box) => box.brx));
+        const bry = Math.max(...boxes.map((box) => box.bry));
+        const padding_factor = 0.9;
+        const fit_zoom = Math.min(
+            (viewport_width * padding_factor) / Math.max(brx - tlx, 1),
+            (viewport_height * padding_factor) / Math.max(bry - tly, 1),
+        );
+        if (fit_zoom < this.state["zoom_val"]) this.set_zoom_val(fit_zoom);
+        this.rezoom((tlx + brx) / 2, (tly + bry) / 2, true);
+        return true;
     }
 
     fly_to_annotation(annotation, subtask_key = null, max_zoom = 10) {

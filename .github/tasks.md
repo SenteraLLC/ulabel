@@ -551,3 +551,20 @@ Edited Only (→ this session's deletions) and class focus.
 - [x] `run_on_edit_subtask` only runs when the top action's origin is the current read-only subtask.
 - [x] Tests, docs, lint, build, jest, e2e. jest 509/509, chromium e2e 164/164.
 - [x] `on_undo_redo_blocked(kind, subtask_key, from_subtask_key, origin_subtask_key)` host callback. jest 510/510.
+
+### Fly to undo/redo changes
+
+- [x] `fly_to_on_undo` (default true): user undo/redo centers on the changed annotations
+  (own + `affected`, before and after) only when none is in view; keeps zoom unless they don't fit.
+- [x] Tests, docs, lint, build, jest 512/512, chromium e2e 166/166.
+- [x] Fly after the action listeners (rebuilt boxes); target the after boxes, before boxes
+  only when none remain. Live-checked all types and ops.
+
+### Polyline body move: midpoint insert handles
+
+- [x] Snap the segment insert handle to the hovered segment's midpoint, so dragging
+  the rest of a polyline stroke moves it.
+- [x] Tests, docs, lint, build, jest 513/513, chromium e2e 168/168.
+- [x] Review fixes: take the segment index from the nearest-point search (an endpoint
+  projection no longer indexes past the last segment); `delete_counterparts` flies to
+  affected counterparts only. Jest 515/515, chromium e2e 168/168.
