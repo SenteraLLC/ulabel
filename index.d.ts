@@ -56,6 +56,9 @@ export type FilterDistanceOverride = {
     show_overlay: boolean;
 };
 
+/** Where an `add_overlay_canvas()` canvas stacks relative to the image frames and subtask canvases. */
+export type OverlayLayer = "below_annotations" | "above_annotations";
+
 export type DistanceOverlayInfo = {
     multi_class_mode: boolean;
     zoom_val: number;
@@ -476,7 +479,9 @@ export class ULabel {
     color_info: { [key: number]: string };
     valid_class_ids: number[];
     toolbox_order?: number[];
-    filter_distance_overlay?: FilterDistanceOverlay;
+    filter_distance_overlay?: FilterDistanceOverlay | null;
+    // Canvases resized on every zoom: FilterDistance's overlay and any from add_overlay_canvas().
+    overlay_canvases: HTMLCanvasElement[];
     begining_time: number;
     is_init: boolean;
     resize_observers: ResizeObserver[];
@@ -512,6 +517,14 @@ export class ULabel {
     public show_initial_crop(): void;
     public show_whole_image(): void;
     public swap_frame_image(new_src: string, frame?: number): Promise<string>;
+    /**
+     * Returns a pointer-free canvas that ULabel owns, sizes, zoom-syncs, and removes on destroy().
+     * Throws before init completes or after destroy().
+     */
+    public add_overlay_canvas(layer?: OverlayLayer): HTMLCanvasElement;
+    /** Detach a canvas from `add_overlay_canvas()` and drop ULabel's reference to it. */
+    public remove_overlay_canvas(canvas: HTMLCanvasElement): void;
+    public resize_overlay_canvases(new_width: number, new_height: number): void;
     public swap_anno_bg_color(new_bg_color: string): string;
     /**
      * Set a class's color and sync every view of it: `color_info`, the
