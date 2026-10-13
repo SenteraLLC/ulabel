@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented here.
 
-## [unreleased]
+## [0.30.0] - Oct 13th, 2026
 #### Added
 - `add_overlay_canvas(layer?)` returns a pointer-free canvas that an embedder can draw into. ULabel places it in the image wrapper, keeps it in sync with zoom, and removes it on `destroy()`. `layer` is `"below_annotations"` (default: above the image, below every subtask) or `"above_annotations"` (above the active subtask). `remove_overlay_canvas(canvas)` detaches one early. New `OverlayLayer` type.
 
