@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented here.
 
+## [Unreleased]
+#### Changed
+- Import individual `turf` modules rather than broadly to reduce bundle size
+- Playwright e2e test optimizations
+  - Only record video on the first retry
+  - Local runs use default `workers` (half of available CPU cores)
+  - Break each browser into a job and run jobs in parallel
+  - Skip returning `window.ulabel` from `wait_for_ulabel_init`;
+    serializing the whole page is slow
+
 ## [0.31.1] - Oct 22nd, 2026
 #### Changed
 - Simplified ternary syntax into nullish coalescing in several locations

@@ -9,13 +9,14 @@ export default defineConfig({
     fullyParallel: false, // Run tests sequentially for more stable results
     forbidOnly: !!process.env.CI,
     retries: process.env.CI ? 2 : 0,
-    workers: 3,
+    // CI runners have 4 vCPUs. Locally default to half of available cores
+    workers: process.env.CI ? 3 : undefined,
     reporter: "list",
     use: {
         baseURL: base_url,
         trace: "on-first-retry",
         screenshot: "only-on-failure",
-        video: "retain-on-failure",
+        video: "on-first-retry",
         // Enable downloads
         acceptDownloads: true,
     },
