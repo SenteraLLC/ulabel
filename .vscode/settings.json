@@ -1,3 +1,9 @@
 {
-    "js/ts.tsdk.path": "node_modules\\typescript\\lib"
+    "js/ts.tsdk.path": "node_modules\\typescript\\lib",
+    "chat.tools.terminal.autoApprove": {
+        "/^gh api repos/SenteraLLC/ulabel/pages --jq \\.html_url; git --no-pager log --oneline -5; Get-ChildItem \\.github\\\\workflows \\| Select-Object Name$/": {
+            "approve": true,
+            "matchCommandLine": true
+        }
+    }
 }

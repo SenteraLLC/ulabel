@@ -8,3 +8,9 @@
   inline Inkscape SVG per row.
 - [x] AnnotationList: `content-visibility: auto` on rows; id->index map in the grouped view.
 - [x] Lint, build, jest 515/515.
+
+## Fix GitHub Pages demo (blank page)
+
+- [x] `live_demo.html`: load `./cs-demo-0.png` (relative) so it resolves under `/ulabel/`.
+- [x] `deploy-demo.yml`: copy `demo/cs-demo-0.png` into `_site`.
+- [x] Verified with Playwright against a simulated `/ulabel/` Pages layout.

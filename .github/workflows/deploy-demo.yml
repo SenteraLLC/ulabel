@@ -42,6 +42,7 @@ jobs:
           mkdir -p _site
           cp demo/live_demo.html _site/index.html
           cp dist/ulabel.min.js _site/ulabel.min.js
+          cp demo/cs-demo-0.png _site/cs-demo-0.png
 
       - name: Configure Pages
         uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5
