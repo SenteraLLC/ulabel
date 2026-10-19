@@ -2,9 +2,10 @@
  * File for storing useful utilities that are not strictly ULabel related.
  */
 
-import { ULabel } from "..";
+import { ULabel } from "../src/index";
 import { ULabelSubtask } from "./subtask";
 import { DELETE_CLASS_ID, DELETE_MODES } from "./annotation";
+import { log_message, LogLevel } from "./error_logging";
 
 /**
  * Checks if something is an object, not an array, and not null
@@ -42,9 +43,9 @@ export function time_function<T, R>(
     return replacement_method;
 }
 
-export function get_active_class_id(ulabel: ULabel): number {
-    // Grab the current subtask from the ulabel object
-    const current_subtask_key: string = ulabel.state.current_subtask;
+export function get_active_class_id(ulabel: ULabel, subtask_key: string | null = null): number | undefined {
+    // Grab the subtask from the ulabel object, defaulting to the current one
+    const current_subtask_key: string = subtask_key ?? ulabel.state.current_subtask;
     const current_subtask: ULabelSubtask = ulabel.subtasks[current_subtask_key];
 
     // If in single_class_mode return the only valid class id
@@ -60,12 +61,14 @@ export function get_active_class_id(ulabel: ULabel): number {
 
         // If the payload is an object then return its id if its confidence is > 0
         if (payload.confidence > 0) {
-            console.log(`payload: ${payload}`);
             return payload.class_id;
         }
     }
-    console.error(`get_active_class_id was unable to determine an active class id.
-    current_subtask: ${JSON.stringify(current_subtask)}`);
+    log_message(
+        `get_active_class_id was unable to determine an active class id. current_subtask: ${JSON.stringify(current_subtask)}`,
+        LogLevel.WARNING,
+    );
+    return undefined;
 }
 
 /**

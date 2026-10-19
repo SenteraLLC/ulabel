@@ -4,12 +4,16 @@
  * This also includes "staggered" initializers to test loading.
  */
 
-import { ULabel } from "..";
+import { ULabel } from "../src/index";
 import { initialize_annotation_canvases } from "./canvas_utils";
+import { Configuration } from "./configuration";
 import { NightModeCookie } from "./cookies";
 import { add_style_to_document, build_confidence_dialog, build_edit_suggestion, build_id_dialogs, prep_window_html } from "./html_builder";
 import { create_ulabel_listeners } from "./listeners";
 import { ULabelLoader } from "./loader";
+import { ULabelSubtask } from "./subtask";
+import { ULabelAnnotation, NONSPATIAL_MODES } from "./annotation";
+import { get_local_storage_item } from "./utilities";
 
 /**
  * Make canvases for each subtask
@@ -30,15 +34,10 @@ function make_image_canvases(
         $("#" + ulabel.config["imwrap_id"]).append(`
         <div id="canvasses__${st}" class="canvasses">
             <canvas 
-                id="${ulabel.subtasks[st]["canvas_bid"]}" 
-                class="${ulabel.config["canvas_class"]} ${ulabel.config["imgsz_class"]} canvas_cls" 
-                height=${ulabel.config["image_height"] * ulabel.config["px_per_px"]} 
-                width=${ulabel.config["image_width"] * ulabel.config["px_per_px"]}></canvas>
-            <canvas 
                 id="${ulabel.subtasks[st]["canvas_fid"]}" 
                 class="${ulabel.config["canvas_class"]} ${ulabel.config["imgsz_class"]} canvas_cls" 
-                height=${ulabel.config["image_height"] * ulabel.config["px_per_px"]} 
-                width=${ulabel.config["image_width"] * ulabel.config["px_per_px"]} 
+                height=${ulabel.config["image_height"]! * ulabel.config["px_per_px"]} 
+                width=${ulabel.config["image_width"]! * ulabel.config["px_per_px"]} 
                 oncontextmenu="return false"></canvas>
             <div id="dialogs__${st}" class="dialogs_container"></div>
         </div>
@@ -48,10 +47,82 @@ function make_image_canvases(
         `);
 
         // Get canvas contexts
-        const canvas_bid = <HTMLCanvasElement>document.getElementById(ulabel.subtasks[st]["canvas_bid"]);
         const canvas_fid = <HTMLCanvasElement>document.getElementById(ulabel.subtasks[st]["canvas_fid"]);
-        ulabel.subtasks[st]["state"]["back_context"] = canvas_bid.getContext("2d");
-        ulabel.subtasks[st]["state"]["front_context"] = canvas_fid.getContext("2d");
+        ulabel.subtasks[st]["state"]["front_context"] = canvas_fid.getContext("2d")!;
+    }
+}
+
+/**
+ * Store original keybinds before customization
+ *
+ * @param ulabel ULabel instance to store original keybinds for
+ */
+function store_original_keybinds(ulabel: ULabel) {
+    // Store original config keybinds (from constructor, before localStorage)
+    const original_config_keybinds: { [config_key: string]: string } = {};
+
+    for (const key of Configuration.KEYBIND_CONFIG_KEYS) {
+        if (key in ulabel.config) {
+            original_config_keybinds[key] = ulabel.config[key] as string;
+        }
+    }
+    ulabel.state["original_config_keybinds"] = original_config_keybinds;
+
+    // Store original class keybinds in the ULabel state for later reference
+    const original_class_keybinds: { [class_id: number]: string | null } = {};
+    for (const subtask_key in ulabel.subtasks) {
+        const subtask = ulabel.subtasks[subtask_key];
+        if (subtask.class_defs) {
+            for (const class_def of subtask.class_defs) {
+                original_class_keybinds[class_def.id] = class_def.keybind;
+            }
+        }
+    }
+    ulabel.state["original_class_keybinds"] = original_class_keybinds;
+}
+
+/**
+ * Restore custom keybinds from localStorage
+ *
+ * @param ulabel ULabel instance to restore keybinds for
+ */
+function restore_custom_keybinds(ulabel: ULabel) {
+    // First, store the original keybinds before applying customizations
+    store_original_keybinds(ulabel);
+
+    // Restore regular keybinds
+    const stored_keybinds = get_local_storage_item("ulabel_custom_keybinds");
+    if (stored_keybinds) {
+        try {
+            const custom_keybinds = JSON.parse(stored_keybinds);
+            for (const [config_key, value] of Object.entries(custom_keybinds)) {
+                if (config_key in ulabel.config) {
+                    ulabel.config[config_key] = value as string;
+                }
+            }
+        } catch (e) {
+            console.error("Failed to parse custom keybinds from localStorage:", e);
+        }
+    }
+
+    // Restore class keybinds
+    const stored_class_keybinds = get_local_storage_item("ulabel_custom_class_keybinds");
+    if (stored_class_keybinds) {
+        try {
+            const custom_class_keybinds = JSON.parse(stored_class_keybinds);
+            for (const subtask_key in ulabel.subtasks) {
+                const subtask = ulabel.subtasks[subtask_key];
+                if (subtask.class_defs) {
+                    for (const class_def of subtask.class_defs) {
+                        if (class_def.id in custom_class_keybinds) {
+                            class_def.keybind = custom_class_keybinds[class_def.id];
+                        }
+                    }
+                }
+            }
+        } catch (e) {
+            console.error("Failed to parse custom class keybinds from localStorage:", e);
+        }
     }
 }
 
@@ -69,6 +140,9 @@ export async function ulabel_init(
     // Add stylesheet
     add_style_to_document(ulabel);
 
+    // Restore custom keybinds from localStorage
+    restore_custom_keybinds(ulabel);
+
     // Set current subtask to first subtask
     ulabel.state["current_subtask"] = Object.keys(ulabel.subtasks)[0];
 
@@ -78,6 +152,14 @@ export async function ulabel_init(
         ulabel.config.toolbox_order,
     );
 
+    // Own this specific node from now on so destroy() and the auto-teardown observer never
+    // mistake a same-id replacement mounted by an SPA for our container.
+    ulabel._owned_container = document.getElementById(ulabel.config["container_id"]);
+
+    // Arm auto-teardown before the image decode await so a container removal during decode
+    // still triggers destroy() rather than silently leaving init running on a detached tree.
+    ulabel._install_auto_destroy_observer();
+
     // Detect night cookie
     if (NightModeCookie.exists_in_document()) {
         $("#" + ulabel.config["container_id"]).addClass("ulabel-night");
@@ -85,7 +167,26 @@ export async function ulabel_init(
     const first_bg_img = <HTMLImageElement>document.getElementById(`${ulabel.config["image_id_pfx"]}__0`);
     await first_bg_img.decode();
 
+    // Container may have been removed (and destroy() may have run) during decode.
+    if (ulabel.is_destroyed) return;
+
     make_image_canvases(ulabel, first_bg_img);
+
+    // Once the image dimensions are known, we can resize annotations if needed
+    if (!ulabel.config.allow_annotations_outside_image) {
+        const image_height = ulabel.config["image_height"];
+        const image_width = ulabel.config["image_width"];
+        for (const subtask_key in ulabel.subtasks) {
+            const subtask: ULabelSubtask = ulabel.subtasks[subtask_key];
+            for (const anno of Object.values(subtask.annotations.access) as ULabelAnnotation[]) {
+                if (NONSPATIAL_MODES.includes(anno.spatial_type!)) continue;
+                anno.clamp_annotation_to_image_bounds(image_width!, image_height!);
+                // The containing box was built from the pre-clamp payload; a stale
+                // box anchors the hover dialogs (and hit-testing) off the image
+                ulabel.rebuild_containing_box(anno.id!, false, subtask_key);
+            }
+        }
+    }
 
     // This step is hoisted up to show the container before the rest of the initialization
     $(`div#${ulabel.config["container_id"]}`).css("display", "block");
@@ -118,6 +219,7 @@ export async function ulabel_init(
     ulabel.is_init = true;
 
     ulabel.show_initial_crop();
+    $(".full_ulabel_container_").addClass("ulabel-cropped");
     ulabel.update_frame();
 
     // Draw demo annotation

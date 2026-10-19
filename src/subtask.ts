@@ -1,19 +1,5 @@
-import { ULabelSpatialType, ClassDefinition } from "..";
+import type { ULabelSpatialType, ClassDefinition, ULabelAction, ULabelActionCandidate } from "../index";
 import { ULabelAnnotation } from "./annotation";
-
-/**
- * Action object for undo/redo functionality
- */
-export type ULabelAction = {
-    act_type: string;
-    frame: number;
-    /**
-     * Undo/reload payloads vary on the action type
-     * When they are stored, JSON.stringify() is called on the payload
-     */
-    undo_payload: string;
-    redo_payload: string;
-};
 
 /**
  * Position information for a dialog
@@ -27,30 +13,25 @@ export type ULabelDialogPosition = {
 export class ULabelSubtask {
     public actions: { stream: ULabelAction[]; undone_stack: ULabelAction[] };
     public class_ids: number[] = [];
-    public class_defs: ClassDefinition[];
-    public annotations: {
+    public class_defs!: ClassDefinition[];
+    public annotations!: {
         access: { [key: string]: ULabelAnnotation };
         ordering: string[];
+        // `last_edited_at` each host-loaded annotation arrived with, by id.
+        // Absent for in-session creations.
+        loaded_edited_at?: { [key: string]: string | null };
     };
 
-    public single_class_mode: boolean;
-    public state: {
+    public canvas_fid!: string;
+    public single_class_mode!: boolean;
+    public state!: {
         active_id: string;
         annotation_mode: string;
-        back_context: CanvasRenderingContext2D;
-        edit_candidate: {
-            annid: string;
-            /**
-             * Access string, referring to the point with a spatial payload being edited.
-             * The type varies on the type of spatial payload.
-             */
-            access: string | number | [number, number];
-            distance: number;
-            point: [number, number]; // Mouse location
-            spatial_type: ULabelSpatialType;
-        };
+        edit_candidate: ULabelActionCandidate | null;
+        move_candidate: ULabelActionCandidate | null;
         first_explicit_assignment: boolean;
         front_context: CanvasRenderingContext2D;
+        hovered_annid: string | null;
         id_payload: number[] | {
             class_id: number;
             confidence: number;
@@ -58,19 +39,29 @@ export class ULabelSubtask {
         idd_associated_annotation: string;
         idd_id: string;
         idd_id_front: string;
-        idd_thumbnail: boolean;
         idd_visible: boolean;
+        // Class ids currently rendered in the pies (compatible-class subset)
+        idd_displayed_class_ids: number[];
         is_in_edit: boolean;
         is_in_move: boolean;
         is_in_progress: boolean;
         starting_complex_polygon: boolean;
         is_in_brush_mode: boolean;
         is_in_erase_mode: boolean;
-        move_candidate: unknown; // TODO: figure out what type this is.  Probably ULabelAnnotation idk for sure tho
+        is_vanished: boolean;
         visible_dialogs: {
             [key: string]: ULabelDialogPosition;
         };
-        spatial_type: ULabelSpatialType;
+        fly_to_idx: number | null;
+        // The last non-delete class selected; what class focus follows when
+        // `focus_active_class` is set. Defocused annotations are still real data.
+        selected_class_id: number | null;
+        // When set, every other annotation in the subtask is hidden (view-only)
+        isolated_annid: string | null;
+        defocused_opacity: number;
+        // Cache of the layer opacity slider, synced by readjust_subtask_opacities
+        layer_opacity: number;
+        line_size: number;
     };
 
     constructor(
@@ -89,6 +80,12 @@ export class ULabelSubtask {
         public annotation_meta: object | string,
         public read_only?: boolean,
         public inactive_opacity: number = 0.4,
+        /** Focus follows the active class: other classes dim and drop out of input. */
+        public focus_active_class: boolean = false,
+        /** Only annotations created or modified since load stay in focus. */
+        public focus_edited: boolean = false,
+        /** Only deprecated annotations stay in focus (and are drawn). */
+        public focus_deprecated: boolean = false,
     ) {
         this.actions = {
             stream: [],
@@ -96,7 +93,8 @@ export class ULabelSubtask {
         };
     }
 
-    public static from_json(subtask_key: string, subtask_json: object): ULabelSubtask {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    public static from_json(subtask_key: string, subtask_json: Record<string, any>): ULabelSubtask {
         const ret = new ULabelSubtask(
             subtask_json["display_name"],
             subtask_json["classes"],
@@ -106,6 +104,9 @@ export class ULabelSubtask {
             subtask_json["annotation_meta"],
         );
         ret.read_only = ("read_only" in subtask_json) && (subtask_json["read_only"] === true);
+        ret.focus_active_class = subtask_json["focus_active_class"] === true;
+        ret.focus_edited = subtask_json["focus_edited"] === true;
+        ret.focus_deprecated = subtask_json["focus_deprecated"] === true;
         if ("inactive_opacity" in subtask_json && typeof subtask_json["inactive_opacity"] == "number") {
             ret.inactive_opacity = Math.min(Math.max(subtask_json["inactive_opacity"], 0.0), 1.0);
         }

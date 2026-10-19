@@ -35,29 +35,26 @@
                     "spatial_type": "point", 
                     "spatial_payload": [[300, 300]], 
                     "classification_payloads": [
-                      {"id": "c72ea9a1-79f9-444c-a01a-7983f0697b4a", "class_id": 12, "confidence": 0.0},
-                      {"id": "c72ea9a1-79f9-444c-a01a-7983f0697b4a", "class_id": 11, "confidence": 1.0},
-                      {"id": "c72ea9a1-79f9-444c-a01a-7983f0697b4a", "class_id": 10, "confidence": 0.0},
+                      {"class_id": 12, "confidence": 0.0},
+                      {"class_id": 11, "confidence": 0.9},
+                      {"class_id": 10, "confidence": 0.0},
                     ],
-                    "line_width": 4
                   },
                   {
                     "id": "4a586dc4-0efa-4563-a42b-8eea3dd5b04b", 
                     "spatial_type": "point", 
                     "spatial_payload": [[400, 300]], 
                     "classification_payloads": [
-                      {"id": "c72ea9a1-79f9-444c-a01a-7983f0697b4a", "class_id": 10}
+                      {"class_id": 10, "confidence": 0.25},
                     ],
-                    "line_width": 4
                   },
                   {
                     "id": "4a686dc4-0efa-4563-a42b-8eea3dd5b04b", 
                     "spatial_type": "point", 
                     "spatial_payload": [[300, 400]], 
                     "classification_payloads": [
-                      {"id": "c72ea9a1-79f9-444c-a01a-7983f0697b4a", "class_id": 12}
+                      {"class_id": 12, "confidence": 0.55},
                     ],
-                    "line_width": 4
                   },
                   {
                     "id": "4a186dc4-0efa-4563-a42b-8eea3dd5b04b",
@@ -105,7 +102,7 @@
                         ]
                     ],
                     "classification_payloads": [
-                        {"id": "c72ea9a1-79f9-444c-a01a-7983f0697b4a", "class_id": 11},
+                        {"class_id": 11, "confidence": 0.75},
                         {"class_id": -1, "confidence": 0.0}
                     ],
                   },
@@ -172,22 +169,60 @@
                                 467.5,
                                 267.5
                             ]
-                        ]
+                        ],
+                        []
                     ],
                     "classification_payloads": [
                         {
                             "class_id": 10,
-                            "confidence": 1
+                            "confidence": 0.15
                         },
                         {
                             "class_id": 11,
                             "confidence": 0
                         }
                     ],
-                    "line_size": 3,
                     "text_payload": "",
                     "annotation_meta": null
-                    }, 
+                    },
+                    {
+                    "id": "6ce129ba-9201-4425-ad75-215c2a0a1e0c",
+                    "new": true,
+                    "parent_id": null,
+                    "created_by": "out_of_bounds_test",
+                    "created_at": "2025-07-21T18:17:44.862Z",
+                    "deprecated": false,
+                    "deprecated_by": {
+                        "human": false
+                    },
+                    "spatial_type": "bbox",
+                    "spatial_payload": [
+                        [
+                            1202.358968798912,
+                            959.6967745553865
+                        ],
+                        [
+                            1440.9410038651008,
+                            1132.1372553458002
+                        ]
+                    ],
+                    "classification_payloads": [
+                        {
+                            "class_id": 10,
+                            "confidence": 0.6
+                        },
+                        {
+                            "class_id": 11,
+                            "confidence": 0
+                        },
+                        {
+                            "class_id": 12,
+                            "confidence": 0
+                        }
+                    ],
+                    "text_payload": "",
+                    "annotation_meta": null
+                    } 
                 ];
 
                 let subtasks = {
@@ -240,12 +275,27 @@
                 };
 
                 // Initial ULabel configuration
+                const AllowedToolboxItem = ULabel.get_allowed_toolbox_item_enum();
                 let ulabel = new ULabel({
                     "container_id": "container",
-                    "image_data": "https://ulabel.s3.us-east-2.amazonaws.com/cs-demo-0.png",
+                    "image_data": "/cs-demo-0.png",
                     "username": "DemoUser",
                     "submit_buttons": on_submit,
-                    "subtasks": subtasks
+                    "subtasks": subtasks,
+                    "anno_scaling_mode": "inverse-zoom",
+                    "allow_annotations_outside_image": false,
+                    "fly_to_next_annotation_keybind": "w",
+                    "fly_to_previous_annotation_keybind": "`",
+                    "fly_to_max_zoom": 6,
+                    "toolbox_order": [
+                        AllowedToolboxItem.ModeSelect,
+                        AllowedToolboxItem.ZoomPan,
+                        AllowedToolboxItem.AnnotationID,
+                        AllowedToolboxItem.ClassCounter,
+                        AllowedToolboxItem.AnnotationResize,
+                        AllowedToolboxItem.ConfidenceSlider,
+                        AllowedToolboxItem.SubmitButtons,
+                    ],
                 });
                 // Wait for ULabel instance to finish initialization
                 ulabel.init(function() {
@@ -254,8 +304,26 @@
 
             });
         </script>
+        <style>
+            body {
+                margin: 0;
+                padding: 0;
+            }
+            .test-banner {
+                background-color: #333;
+                color: white;
+                padding: 2px;
+                text-align: center;
+                font-family: sans-serif;
+            }
+        </style>
     </head>
     <body>
-        <div id="container" style="width: 100%; height: 100vh; position: absolute; top: 0; left: 0;"></div>
+        <div class="test-banner">
+            <h2>Test Banner - This tests that the collapse button respects container positioning</h2>
+        </div>
+        <div id="wrapper">
+            <div id="container" style="width: 100%; height: calc(100vh - 140px);"></div>
+        </div>
     </body>
 </html>

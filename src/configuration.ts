@@ -1,10 +1,16 @@
-import {
+import type {
     FilterDistanceConfig,
+    ConfidenceSliderConfig,
+    ClassCounterConfig,
+    ImageFiltersConfig,
     InitialCrop,
     ImageData,
     RecolorActiveConfig,
     ULabelSubmitButton,
-} from "..";
+    AnnoScalingMode,
+    BrushOverlapMode,
+    ULabelAnnotationChange,
+} from "../index";
 import {
     ModeSelectionToolboxItem,
     ZoomPanToolboxItem,
@@ -12,12 +18,15 @@ import {
     ClassCounterToolboxItem,
     AnnotationResizeItem,
     RecolorActiveItem,
-    KeypointSliderItem,
-    SubmitButtons,
     FilterPointDistanceFromRow,
     BrushToolboxItem,
     ToolboxItem,
 } from "./toolbox";
+import { ConfidenceSlider, KeypointSliderItem } from "./toolbox_items/confidence_slider";
+import { SubmitButtons } from "./toolbox_items/submit_buttons";
+import { ImageFiltersToolboxItem } from "./toolbox_items/image_filters";
+import { AnnotationListToolboxItem } from "./toolbox_items/annotation_list";
+import { KeybindsToolboxItem } from "./toolbox_items/keybinds";
 import { is_object_and_not_array } from "./utilities";
 
 /* eslint-disable @stylistic/no-multi-spaces */
@@ -32,6 +41,10 @@ export enum AllowedToolboxItem {
     SubmitButtons,    // 7
     FilterDistance,   // 8
     Brush,            // 9
+    ImageFilters,     // 10
+    AnnotationList,   // 11
+    Keybinds,         // 12
+    ConfidenceSlider, // 13
 }
 /* eslint-enable @stylistic/no-multi-spaces */
 
@@ -53,15 +66,61 @@ export const DEFAULT_FILTER_DISTANCE_CONFIG: FilterDistanceConfig = {
     filter_during_polyline_move: true,
 };
 
+export const DEFAULT_CONFIDENCE_SLIDER_CONFIG: ConfidenceSliderConfig = {
+    name: "Confidence Filter",
+    filter_min: 0,
+    filter_max: 100,
+    default_values: { all: 0 },
+    step_value: 1,
+    class_filter_mode: "toggle",
+    filter_on_load: true,
+};
+
+export const DEFAULT_IMAGE_FILTERS_CONFIG: ImageFiltersConfig = {
+    default_values: {
+        brightness: 100,
+        contrast: 100,
+        hueRotate: 0,
+        invert: 0,
+        saturate: 100,
+    },
+};
+
 export class Configuration {
+    // Index signature to allow string indexing for dynamic property access
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    [key: string]: any;
+    /**
+     * Dynamically get all keybind configuration property names.
+     * Scans the Configuration class for properties ending in "_keybind" or known keybind properties.
+     * Use this to iterate over keybind properties without maintaining a hardcoded list.
+     */
+    public static get KEYBIND_CONFIG_KEYS(): readonly string[] {
+        // Get all properties from a Configuration instance
+        const config = new Configuration();
+        const keybind_keys: string[] = [];
+
+        for (const key in config) {
+            // Include all properties ending with "_keybind"
+            if (key.endsWith("_keybind")) {
+                // Verify it's a string property (keybinds should be strings)
+                if (typeof config[key] === "string") {
+                    keybind_keys.push(key);
+                }
+            }
+        }
+
+        return keybind_keys;
+    }
+
     // Values useful for generating HTML for tool
     public container_id: string = "container";
     public px_per_px: number = 1;
-    public initial_crop: InitialCrop = null;
+    public anno_scaling_mode: AnnoScalingMode = "fixed";
+    public initial_crop: InitialCrop | null = null;
     public annbox_id: string = "annbox";
     public imwrap_id: string = "imwrap";
     public canvas_fid_pfx: string = "front-canvas";
-    public canvas_bid_pfx: string = "back-canvas";
     public canvas_did: string = "demo-canvas";
     public canvas_class: string = "easel";
     public image_id_pfx: string = "ann_image";
@@ -69,20 +128,40 @@ export class Configuration {
     public toolbox_id: string = "toolbox";
 
     // Dimensions of various components of the tool
-    public image_width: number = null;
-    public image_height: number = null;
+    public image_width: number | null = null;
+    public image_height: number | null = null;
     public demo_width: number = 120;
     public demo_height: number = 40;
     public polygon_ender_size: number = 15;
     public edit_handle_size: number = 30;
     public brush_size: number = 60;
 
+    // Fill opacity (0-1) used when rendering bitmask (raster segmentation) annotations
+    public mask_annotation_opacity: number = 0.4;
+    // How the bitmask brush resolves overlap with other undeprecated bitmask
+    // annotations when painting. Resolution is deferred to the end of a stroke.
+    // The live value is global and persisted to localStorage; this is the initial default.
+    public default_brush_overlap_mode: BrushOverlapMode = "none";
+    public brush_overlap_mode: BrushOverlapMode = "none";
+    // Whether stroke overlap resolution reaches masks in other subtasks; off, a
+    // stroke only interacts with masks in the active subtask.
+    public brush_overlap_across_subtasks: boolean = false;
+    // Left-dragging an annotation's body moves it; Alt forces a new draw at
+    // that spot instead (ctrl/shift already mean pan/zoom on the canvas).
+    public allow_body_move: boolean = true;
+    // Whether a paste whose source class has no counterpart in the target
+    // (by id or name) opens the class pie; off, the target's active class wins.
+    public paste_class_choice: boolean = true;
+    // Whether a context-menu copy/move/delete-from makes the target the current subtask.
+    public paste_switch_to_target: boolean = false;
+    // Whether the context menu hides Copy to / Move to for subtasks holding a counterpart.
+    public hide_copy_to_linked: boolean = false;
     // Configuration for the annotation task itself
-    public image_data: ImageData = null;
+    public image_data: ImageData | null = null;
     public allow_soft_id: boolean = false;
     public default_annotation_color: string = "#fa9d2a";
     public username: string = "ULabelUser";
-    public initial_line_size: number = null;
+    public initial_line_size: number = 5;
 
     // ID Dialog config
     public cl_opacity: number = 0.4;
@@ -90,14 +169,27 @@ export class Configuration {
     public inner_prop: number = 0.3;
 
     // Behavior on special interactions
-    public instructions_url: string = null;
+    public instructions_url: string | null = null;
     public submit_buttons: ULabelSubmitButton[] = [];
 
-    // Passthrough
-    public task_meta: object = null;
-    public annotation_meta: object = null;
+    // Host notification callbacks; each fires only when the value actually changes
+    public on_active_class_change: ((subtask_key: string, class_id: number) => void) | null = null;
+    public on_subtask_change: ((subtask_key: string, old_subtask_key: string) => void) | null = null;
+    public on_focus_active_class_change: ((subtask_key: string, enabled: boolean) => void) | null = null;
+    public on_focus_edited_change: ((subtask_key: string, enabled: boolean) => void) | null = null;
+    public on_focus_deprecated_change: ((subtask_key: string, enabled: boolean) => void) | null = null;
+    public on_isolate_change: ((subtask_key: string, annotation_id: string | null) => void) | null = null;
+    public on_undo_redo_blocked: ((kind: "undo" | "redo", subtask_key: string, from_subtask_key: string, origin_subtask_key: string | null) => void) | null = null;
+    // Fired once per recorded/undone/redone action that changes committed annotation state
+    public on_annotation_change: ((change: ULabelAnnotationChange) => void) | null = null;
+    // Whether continue_* (in-progress) actions are also reported
+    public on_annotation_change_in_progress: boolean = false;
 
-    public subtasks: object = null;
+    // Passthrough
+    public task_meta: object = {};
+    public annotation_meta: object = {};
+
+    public subtasks: object | null = null;
 
     /**
      * Map from AllowedToolboxItem enum to the class that implements it.
@@ -105,7 +197,8 @@ export class Configuration {
      * [abstract construct signature](https://www.typescriptlang.org/docs/handbook/2/classes.html#abstract-construct-signatures)
      * to handle the different constructors for each toolbox item.
      */
-    public toolbox_map = new Map<AllowedToolboxItem, new (..._) => ToolboxItem>([
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    public toolbox_map = new Map<AllowedToolboxItem, new (..._: any[]) => ToolboxItem>([
         [AllowedToolboxItem.ModeSelect, ModeSelectionToolboxItem],
         [AllowedToolboxItem.ZoomPan, ZoomPanToolboxItem],
         [AllowedToolboxItem.AnnotationResize, AnnotationResizeItem],
@@ -116,28 +209,27 @@ export class Configuration {
         [AllowedToolboxItem.SubmitButtons, SubmitButtons],
         [AllowedToolboxItem.FilterDistance, FilterPointDistanceFromRow],
         [AllowedToolboxItem.Brush, BrushToolboxItem],
+        [AllowedToolboxItem.ImageFilters, ImageFiltersToolboxItem],
+        [AllowedToolboxItem.AnnotationList, AnnotationListToolboxItem],
+        [AllowedToolboxItem.Keybinds, KeybindsToolboxItem],
+        [AllowedToolboxItem.ConfidenceSlider, ConfidenceSlider],
     ]);
 
     // Default toolbox order used when the user doesn't specify one
     public toolbox_order: AllowedToolboxItem[] = [
+        AllowedToolboxItem.Keybinds,
         AllowedToolboxItem.ModeSelect,
+        AllowedToolboxItem.AnnotationList,
         AllowedToolboxItem.Brush,
+        AllowedToolboxItem.ImageFilters,
         AllowedToolboxItem.ZoomPan,
         AllowedToolboxItem.AnnotationResize,
         AllowedToolboxItem.AnnotationID,
         AllowedToolboxItem.RecolorActive,
         AllowedToolboxItem.ClassCounter,
-        AllowedToolboxItem.KeypointSlider,
+        AllowedToolboxItem.ConfidenceSlider,
         AllowedToolboxItem.SubmitButtons,
     ];
-
-    public default_keybinds = {
-        annotation_size_small: "s",
-        annotation_size_large: "l",
-        annotation_size_plus: "=",
-        annotation_size_minus: "-",
-        annotation_vanish: "v",
-    };
 
     // Config for RecolorActiveItem
     public recolor_active_toolbox_item: RecolorActiveConfig = {
@@ -147,15 +239,26 @@ export class Configuration {
     // Config for FilterDistanceToolboxItem
     public distance_filter_toolbox_item: FilterDistanceConfig = DEFAULT_FILTER_DISTANCE_CONFIG;
 
-    public change_zoom_keybind: string = "r";
+    // Config for ConfidenceSlider
+    public confidence_slider_toolbox_item: ConfidenceSliderConfig = DEFAULT_CONFIDENCE_SLIDER_CONFIG;
+
+    // Config for ClassCounterToolboxItem. Option defaults resolve in the item.
+    public class_counter_toolbox_item: ClassCounterConfig = {};
+
+    // Config for ImageFiltersToolboxItem
+    public image_filters_toolbox_item: ImageFiltersConfig = DEFAULT_IMAGE_FILTERS_CONFIG;
+
+    public reset_zoom_keybind: string = "r";
+
+    public show_full_image_keybind: string = "shift+r";
 
     public create_point_annotation_keybind: string = "c";
 
-    public default_annotation_size: number = 6;
-
     public delete_annotation_keybind: string = "d";
 
-    public keypoint_slider_default_value: number;
+    public delete_vertex_keybind: string = "x";
+
+    public keypoint_slider_default_value: number = 0;
 
     public filter_annotations_on_load: boolean = true;
 
@@ -163,7 +266,7 @@ export class Configuration {
 
     public toggle_annotation_mode_keybind: string = "u";
 
-    public create_bbox_on_initial_crop: string = "f";
+    public create_bbox_on_initial_crop_keybind: string = "f";
 
     public toggle_brush_mode_keybind: string = "g";
 
@@ -173,7 +276,47 @@ export class Configuration {
 
     public decrease_brush_size_keybind: string = "[";
 
+    public set_brush_overlap_none_keybind: string = "shift+n";
+
+    public set_brush_overlap_exclude_keybind: string = "shift+e";
+
+    public set_brush_overlap_overwrite_keybind: string = "shift+o";
+
+    public annotation_size_small_keybind: string = "s";
+
+    public annotation_size_large_keybind: string = "l";
+
+    public annotation_size_plus_keybind: string = "=";
+
+    public annotation_size_minus_keybind: string = "-";
+
+    public annotation_vanish_keybind: string = "v";
+
+    public annotation_vanish_all_keybind: string = "shift+v";
+
+    public toggle_class_focus_keybind: string = "shift+f";
+
+    public toggle_edit_focus_keybind: string = "h";
+
+    public toggle_deprecated_focus_keybind: string = "shift+d";
+
+    public fly_to_next_annotation_keybind: string = "tab";
+
+    public fly_to_previous_annotation_keybind: string = "shift+tab";
+
+    public fly_to_max_zoom: number = 10;
+
+    public fly_to_on_undo: boolean = true;
+
+    public min_zoom_fit_ratio: number = 0;
+
     public n_annos_per_canvas: number = DEFAULT_N_ANNOS_PER_CANVAS;
+
+    public click_and_drag_poly_annotations: boolean = true;
+
+    public allow_annotations_outside_image: boolean = true;
+
+    public auto_destroy_on_detach: boolean = true;
 
     constructor(...kwargs: { [key: string]: unknown }[]) {
         this.modify_config(...kwargs);

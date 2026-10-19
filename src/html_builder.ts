@@ -1,4 +1,5 @@
-import { SliderInfo, ULabel } from "..";
+import type { SliderInfo } from "../index";
+import { ULabel } from "../src/index";
 import { Toolbox, ZoomPanToolboxItem } from "./toolbox";
 import { ULABEL_VERSION } from "../src/version";
 import { DELETE_CLASS_ID } from "./annotation";
@@ -14,6 +15,7 @@ import {
     POLYLINE_SVG,
     WHOLE_IMAGE_SVG,
     GLOBAL_SVG,
+    BITMASK_SVG,
     get_init_style,
 } from "../src/blobs";
 import { ULabelLoader } from "./loader";
@@ -40,7 +42,7 @@ export function add_style_to_document(ulabel: ULabel) {
  * @param subtasks ULabel's Subtasks object
  * @returns html for a mode button
  */
-function get_md_button(md_key, md_name, svg_blob, cur_md, subtasks): string {
+function get_md_button(md_key: string, md_name: string, svg_blob: string, cur_md: string, subtasks: Record<string, { allowed_modes: string[] }>): string {
     let sel: string = "";
     let href: string = ` href="#"`;
     if (cur_md == md_key) {
@@ -70,14 +72,14 @@ function get_images_html(ulabel: ULabel): string {
     let images_html: string = "";
 
     let display: string;
-    for (let i = 0; i < ulabel.config["image_data"].frames.length; i++) {
+    for (let i = 0; i < ulabel.config["image_data"]!.frames.length; i++) {
         if (i != 0) {
             display = "none";
         } else {
             display = "block";
         }
         images_html += `
-            <img id="${ulabel.config["image_id_pfx"]}__${i}" src="${ulabel.config["image_data"].frames[i]}" class="imwrap_cls ${ulabel.config["imgsz_class"]} image_frame" style="z-index: 50; display: ${display};" />
+            <img id="${ulabel.config["image_id_pfx"]}__${i}" src="${ulabel.config["image_data"]!.frames[i]}" class="imwrap_cls ${ulabel.config["imgsz_class"]} image_frame" style="z-index: 50; display: ${display};" />
         `;
     }
     return images_html;
@@ -136,7 +138,7 @@ function get_frame_annotation_dialogs(ulabel: ULabel): string {
     return frame_annotation_dialog;
 }
 
-export function prep_window_html(ulabel: ULabel, toolbox_item_order: unknown[] = null): boolean | void {
+export function prep_window_html(ulabel: ULabel, toolbox_item_order: unknown[] | null = null): boolean | void {
     // Bring image and annotation scaffolding in
     // TODO multi-image with spacing etc.
 
@@ -147,7 +149,7 @@ export function prep_window_html(ulabel: ULabel, toolbox_item_order: unknown[] =
     // const toolbox = configuration.create_toolbox();
     const toolbox: Toolbox = new Toolbox(
         [],
-        Toolbox.create_toolbox(ulabel, toolbox_item_order),
+        Toolbox.create_toolbox(ulabel, toolbox_item_order!),
     );
 
     const tool_html: string = toolbox.setup_toolbox_html(
@@ -160,7 +162,7 @@ export function prep_window_html(ulabel: ULabel, toolbox_item_order: unknown[] =
     // Set the container's html to the toolbox html we just created
     $("#" + ulabel.config["container_id"]).html(tool_html);
     const container = document.getElementById(ulabel.config["container_id"]);
-    ULabelLoader.add_loader_div(container);
+    ULabelLoader.add_loader_div(container!);
 
     // Build toolbox for the current subtask only
     const current_subtask: string = Object.keys(ulabel.subtasks)[0];
@@ -172,6 +174,7 @@ export function prep_window_html(ulabel: ULabel, toolbox_item_order: unknown[] =
         get_md_button("bbox", "Bounding Box", BBOX_SVG, curmd, ulabel.subtasks),
         get_md_button("point", "Point", POINT_SVG, curmd, ulabel.subtasks),
         get_md_button("polygon", "Polygon", POLYGON_SVG, curmd, ulabel.subtasks),
+        get_md_button("bitmask", "Bitmask", BITMASK_SVG, curmd, ulabel.subtasks),
         get_md_button("tbar", "T-Bar", TBAR_SVG, curmd, ulabel.subtasks),
         get_md_button("polyline", "Polyline", POLYLINE_SVG, curmd, ulabel.subtasks),
         get_md_button("contour", "Contour", CONTOUR_SVG, curmd, ulabel.subtasks),
@@ -189,7 +192,7 @@ export function prep_window_html(ulabel: ULabel, toolbox_item_order: unknown[] =
     ulabel.show_annotation_mode(null);
 
     // Make sure that entire toolbox is shown
-    if ($("#" + ulabel.config["toolbox_id"] + " .toolbox_inner_cls").height() > $("#" + ulabel.config["container_id"]).height()) {
+    if ($("#" + ulabel.config["toolbox_id"] + " .toolbox_inner_cls").height()! > $("#" + ulabel.config["container_id"]).height()!) {
         $("#" + ulabel.config["toolbox_id"]).css("overflow-y", "scroll");
     }
 
@@ -212,16 +215,16 @@ export function prep_window_html(ulabel: ULabel, toolbox_item_order: unknown[] =
     };
 
     // Check if initial_crop exists and has the appropriate properties
-    const initial_crop_is_valid = function (initial_crop) {
+    const initial_crop_is_valid = function (initial_crop: unknown) {
         // If initial_crop doesn't exist, return false
         if (initial_crop == null) return false;
 
         // If initial_crop has the appropriate properties, return true
         if (
-            "width" in initial_crop &&
-            "height" in initial_crop &&
-            "left" in initial_crop &&
-            "top" in initial_crop
+            "width" in (initial_crop as object) &&
+            "height" in (initial_crop as object) &&
+            "left" in (initial_crop as object) &&
+            "top" in (initial_crop as object)
         ) {
             return true;
         }
@@ -241,11 +244,11 @@ export function prep_window_html(ulabel: ULabel, toolbox_item_order: unknown[] =
         if (initial_crop_is_valid(ulabel.config.initial_crop)) {
             // Grab the initial crop button and rename it
             const initial_crop_button = document.getElementById("recenter-button");
-            initial_crop_button.innerHTML = "Initial Crop";
+            initial_crop_button!.innerHTML = "Initial Crop";
         } else {
             // Grab the whole image button and set its display to none
-            const whole_image_button = document.getElementById("recenter-whole-image-button");
-            whole_image_button.style.display = "none";
+            const whole_image_button = document.getElementById("recenter-whole-image-button") as HTMLElement;
+            whole_image_button!.style.display = "none";
         }
     }
 }
@@ -399,13 +402,13 @@ export function build_id_dialogs(ulabel: ULabel) {
         let toolbox_html: string = `<div id="tb-id-app--${st}" class="tb-id-app">`;
         const class_ids: number[] = JSON.parse(JSON.stringify(ulabel.subtasks[st]["class_ids"]));
         // Add the reserved DELETE_CLASS_ID if it is present in the class_defs
-        if (ulabel.subtasks[st]["class_defs"].at(-1)["id"] === DELETE_CLASS_ID) {
+        if (ulabel.subtasks[st]["class_defs"][ulabel.subtasks[st]["class_defs"].length - 1]["id"] === DELETE_CLASS_ID) {
             class_ids.push(DELETE_CLASS_ID);
         }
 
         for (let i = 0; i < class_ids.length; i++) {
             const this_id: string = class_ids[i].toString();
-            const this_color: string = ulabel.color_info[this_id];
+            const this_color: string = ulabel.color_info[this_id as unknown as number];
             // let this_color: string = ulabel.subtasks[st]["class_defs"][i]["color"];
             const this_name: string = ulabel.subtasks[st]["class_defs"][i]["name"];
 
@@ -475,23 +478,10 @@ export function build_edit_suggestion(ulabel: ULabel) {
             "border-radius": ulabel.config["edit_handle_size"] / 2 + "px",
         });
 
-        // Global edit suggestion
-        let id_edit: string = "";
-        let mcm_ind: string = "";
-        if (!ulabel.subtasks[stkey]["single_class_mode"]) {
-            id_edit = `--><a href="#" class="reid_suggestion global_sub_suggestion gedit-target"></a><!--`;
-            mcm_ind = " mcm";
-        }
+        // Global edit suggestion: a zero-height anchor at the hovered annotation's
+        // box centre that the confidence card is positioned against
         subtask_dialog_container_jq.append(`
-            <div id="${global_id}" class="global_edit_suggestion glob_editable gedit-target${mcm_ind}">
-                <a href="#" class="move_suggestion global_sub_suggestion movable gedit-target">
-                    <img class="movable gedit-target" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAOEAAADhCAMAAAAJbSJIAAAAdVBMVEX///8jHyAAAAD7+/sfGxwcFxhta2s3NDUEAABxcHBqaWnr6+seGRoSCw0yLzC0s7O6ubl4dncLAAN9fHz19fUsKCkWERInIyTW1dV5eHjBwMCko6ODgoJAPj7o5+jw7/BYVleLiopHRUXKysqtrK1PTE0/PD0MlkEbAAAF+ElEQVR4nO2d63aiMBRGIYJTWhyrKPZia2sv7/+IQ7QWYhLITcmXyf41yzWLOXs+GsDmHJLkqsz32X5+3X/yuhSkTEuyGLuMyzElKYVMxy7kUhRHwUaxGLuUyzA9CYaaYtEKhpkiIxii4pQVDO9ELc4FQ0uRSzC0FAUJhpXi7Y1QMJwUC5lgKClO5YJhpNgrGEKKwlU0pBQHEqTcQCv2LDIdReATVXqZOFO8HbtQU5QSRE5RMUHcFJUTRE1RYRVlFOFWVE1BPEVtQbRLv8Yig5miQYIHRZjlxijBgyLIRWMxdLMthzyOXbwKH+aCjeLH2OUrsJ1ZGM62Y5evwKK2MKwRTtNPq7P0c+zyFZisc2PBfD0Zu3wV7kpeUfSzyX+WZ3djF68Gr0jul5zO8v78dM5LEMFGMWUVyVMi+L1F8sR+mKcwgo1i1lUk98lEYDhJmBRhTtEj3RSbBCWGXUWoBCltik2CUsNWESxByinFg6DU8KQIlyDlrmwuB/lRUG7YKDb/EzOcVbTLakHI18Pxz3LD5OGLkMVqvDId0WMYCNEQn2iITzTEJxriEw3xiYb4REN8oiE+0RCfaIhPNMQnGuITDfGJhvhEQ3yiIT7RMABEe6LCojjfpzcD2pmvxC5flllLuSx3Y5d04KMqnh39uEy2L39aXrauDvtcVBZ7wxdkVpO1z5t5XteknpmP9Lk9LA95/uqyJqe85oetZcSwT+PU+VLWvqZ4V5fHEs0aitrOlzzzM8XOLlYTxW7vkp9bI5nN1vqKbHNWvvFP8Wyrta7iefeZf/s/2Y3W2op8e12+8eMKfWK34VoedAZQiPoH841Pe0BXqaBtRb0LVTwwZ+lT01UlbB9TTVE2rGN52aK1kJSolqJk5JFfjzvSGhVSlI5bqd8uXrc6b7LusWFFaYIpebhG6Yo8yMscUOwRvL9O7YpwbWGKijCCpopAgmaKUIImivI+euLn6N+5vGDhUz9YghS9FOWCMz8TpMylvf98inLB5naNqFPZ3p/vHjX+Nb67WJqixSwLlllp9zXhpLYZydCFTdGZYBP4u5XhticWTbqKfaeoLuWLleF36a6UVtFhgmma/bUy/Js5rOU0DMapoFeGPylWTgX9MkxJ1XdjYIZfhvRu5cvxIT0zLN8Sx0f0zTDNkr3D5flwRL8Msy+7kUCiQ/plSIcWBb+W/gfXwyR5DPaepjod1mWK5beVodP70qo9bpjPFlX3wO6eD3O758OVu+fDij2yq2f8wvYZf1U4esbnpvfJU8T8nqbi/3ZY37UJ5y+G9H2pIEEKWIq6CVKgFHsEJQlSgBTNBIEUTQVD+B3wgGCPIsjv8QcF0fdiKAhi7KeRzERXE0TeE6UoKNnXlvq/r01ZEHVvotZJ5v/+Uk5RJ0GK/3uEd+zccF1BhH3eTIr6ggh79Tspmggi9Fv8pqi3yLT43zOz29TmCVIeD31P/go2it+078niC8yL9a59v7vqIJ0v3v146OH7D326RXIB30Nq3FLnKfzN/M3YJbkl/F7uaIhPNMQnGuITDfGJhvhEQ3yiIT7REJ9oiE80xCca4hMN8YmG+ERDfKIhPtEQn2iISfDv5Q7+3eqnAapHRanhT9+Ef/tXB2kHqB4UZYa/jSF+bvDsoTsClzxJDTudL2ApsiNwmxTFhkxrD1SKZ0OMaYqidyM8sR8CpciMof5Jke/YXXLNWTnKisoLNpcD7hPRZyAn6mQt67oaJl8j3OhYDUuho0i8Z1FbGNbSDl6PeLcZijCzmzlxHeTtnQp41agqxWKkj3lbwXW5lfQ/DnJj+K6R6yPqX1QR1Bj9PzZGimavUhkL6WR3OepvNvAD7RSxEqRoKuIJJkmho4i0yLRoXDRwLhMsyiliJkhRTBE1QYpSirgJUhRWVMRVtMvgpR/tQs8zkCL2KXqkVxE/QUrPcqPzIjGfkV40wkiQIkkxlAQpwhTDSZAiGMwUUoIUbkUNK0HKWYqhJUhhFEMUZG7gwjtFj/ymGGaClJ8UQ02QsiBZmpm/KByB+T7bX3ko8T9Zz1H5wFZx8QAAAABJRU5ErkJggg==">
-                </a><!--
-                ${id_edit}
-                --><a href="#" class="delete_suggestion global_sub_suggestion gedit-target">
-                    <span class="bigx gedit-target">&#215;</span>
-                </a>
-            </div>
+            <div id="${global_id}" class="global_edit_suggestion"></div>
         `);
 
         // Register these dialogs with each subtask
@@ -528,35 +518,32 @@ export function build_confidence_dialog(ulabel: ULabel) {
             width: ulabel.config["edit_handle_size"] + "px",
         });
 
-        // Global edit suggestion
-        let id_edit: string = "";
-        let mcm_ind: string = "";
-        if (!ulabel.subtasks[stkey]["single_class_mode"]) {
-            // TODO (joshua-dean): Is `id_edit` actually necessary or can we yoink it?
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            id_edit = `--><a href="#" class="reid_suggestion global_sub_suggestion gedit-target"></a><!--`;
-            mcm_ind = " mcm";
-        }
+        // Global confidence card, anchored to the edit suggestion container
         global_edit_suggestion_jq.append(`
-            <div id="${global_id}" class="annotation-confidence gedit-target${mcm_ind}">
-                <p class="annotation-confidence-title" style="margin: 0.25em; margin-top: 1em; padding-top: 0.3em; opacity: 1;">Annotation Confidence:</p>
-                <p class="annotation-confidence-value" style="margin: 0.25em; opacity: 1;">
-                    N/A
+            <div id="${global_id}" class="annotation-confidence">
+                <p class="annotation-confidence-classname" style="margin: 0.4em 0.6em 0.1em; opacity: 1; font-weight: 600;"></p>
+                <p class="annotation-confidence-value" style="margin: 0.1em 0.6em 0.4em; opacity: 0.85; font-size: 0.9em;">
                 </p>
             </div>
         `);
 
-        // Style the dialog
+        // Style the dialog. Absolutely positioned against the 0-height edit-suggestion
+        // container, whose top edge is the annotation's anchor; show_global_edit_suggestion
+        // sets top/bottom per hover to hug the containing box above or below the anchor.
         $("#" + global_id).css({
-            "background-color": "black",
+            "background-color": "rgba(0, 0, 0, 0.75)",
             "color": "white",
-            "opacity": "0.6",
-            "height": "3em",
-            "width": "14.5em",
-            "margin-top": "-9.5em",
-            "border-radius": "1em",
-            "font-size": "1.2em",
-            "margin-left": "-1.4em",
+            "height": "auto",
+            "width": "auto",
+            "min-width": "8em",
+            "padding": "0.2em 0.4em",
+            "border-radius": "0.5em",
+            "font-size": "1.1em",
+            "position": "absolute",
+            "bottom": "40px",
+            "left": "50%",
+            "transform": "translateX(-50%)",
+            "pointer-events": "none",
         });
     }
 }
@@ -570,7 +557,7 @@ export class SliderHandler {
     slider_event: (slider_val: number | string) => void;
     class?: string;
     label_units?: string = "";
-    main_label: string;
+    main_label!: string;
     min: string = "0";
     max: string = "100";
     step: string = "1";
@@ -672,8 +659,8 @@ export class SliderHandler {
     }
 
     private updateLabel() {
-        const slider: HTMLInputElement = document.querySelector(`#${this.id}`);
-        const label: HTMLLabelElement = document.querySelector(`#${this.id}-value-label`);
+        const slider: HTMLInputElement = document.querySelector(`#${this.id}`)!;
+        const label: HTMLLabelElement = document.querySelector(`#${this.id}-value-label`)!;
 
         // Set the label as a concatenation of the value and the units
         label.innerText = slider.value + this.label_units;
@@ -685,7 +672,7 @@ export class SliderHandler {
      */
     private incrementSlider() {
         // Get the slider element
-        const slider: HTMLInputElement = document.querySelector(`#${this.id}`);
+        const slider: HTMLInputElement = document.querySelector(`#${this.id}`)!;
 
         // Add the step value
         const new_value = slider.valueAsNumber + this.step_as_number;
@@ -706,7 +693,7 @@ export class SliderHandler {
      */
     private decrementSlider() {
         // Get the slider element
-        const slider: HTMLInputElement = document.querySelector(`#${this.id}`);
+        const slider: HTMLInputElement = document.querySelector(`#${this.id}`)!;
 
         // Add the step value
         const new_value = slider.valueAsNumber - this.step_as_number;

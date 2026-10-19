@@ -65,4 +65,51 @@ export default [
     },
     eslint.configs.recommended,
     ...tseslint.configs.recommended,
+    {
+        // Special configuration for test files - placed last to override other configs
+        files: ["tests/**/*.{js,mjs,cjs,ts}", "jest.config.js", "playwright.config.js"],
+        languageOptions: {
+            globals: {
+                ...globals.browser,
+                ...globals.node,
+                ...globals.jest,
+                require: "readonly",
+                module: "readonly",
+                global: "readonly",
+                process: "readonly",
+                describe: "readonly",
+                test: "readonly",
+                it: "readonly",
+                expect: "readonly",
+                beforeEach: "readonly",
+                afterEach: "readonly",
+                beforeAll: "readonly",
+                afterAll: "readonly",
+                jest: "readonly",
+            },
+        },
+        rules: {
+            // Allow require() imports in tests (needed for CommonJS module loading)
+            "@typescript-eslint/no-require-imports": "off",
+            // Allow no-undef for Node.js and Jest globals
+            "no-undef": "off",
+            // Allow unused variables in tests (for mocking scenarios)
+            "@typescript-eslint/no-unused-vars": "warn",
+            // Allow unused expressions in test setup (for side effects)
+            "@typescript-eslint/no-unused-expressions": "off",
+        },
+    },
+    {
+        // Node-specific config for build/release tooling scripts
+        files: ["scripts/**/*.{js,mjs,cjs}"],
+        languageOptions: {
+            globals: {
+                ...globals.node,
+            },
+        },
+        rules: {
+            // Build scripts use CommonJS require()
+            "@typescript-eslint/no-require-imports": "off",
+        },
+    },
 ];

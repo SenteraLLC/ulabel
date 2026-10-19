@@ -6,11 +6,93 @@
  * Long handlers are broken out into separate functions.
  */
 
-import type { ULabel } from "..";
+import type { ULabel } from "../index";
 import { NightModeCookie } from "./cookies";
-import { DELETE_CLASS_ID, DELETE_MODES, NONSPATIAL_MODES } from "./annotation";
+import { DELETE_MODES, NONSPATIAL_MODES } from "./annotation";
+import { set_local_storage_item } from "./utilities";
+import { AnnotationResizeItem, SMALL_ANNOTATION_SIZE, LARGE_ANNOTATION_SIZE, INCREMENT_ANNOTATION_SIZE } from "./toolbox";
 
 const ULABEL_NAMESPACE = ".ulabel";
+
+/** Whether a keyboard/clipboard event originates from a text field, where the browser should keep its default behavior. */
+function is_text_input_target(target: EventTarget | null): boolean {
+    const element = target as HTMLElement | null;
+    if (element == null) return false;
+    return element.tagName === "INPUT" || element.tagName === "TEXTAREA" || element.isContentEditable === true;
+}
+
+/**
+ * Native clipboard shortcuts: copy/cut the hovered annotation, paste into the
+ * current subtask. Only intercepts the event when there is something to act on.
+ */
+function handle_clipboard_event(
+    clipboard_event: JQuery.TriggeredEvent,
+    ulabel: ULabel,
+    kind: "copy" | "cut" | "paste",
+) {
+    if (is_text_input_target(clipboard_event.target) || ulabel.state.is_editing_keybind) return;
+    if (ulabel.get_current_subtask()["state"]["is_in_progress"]) return;
+    if (kind !== "copy" && ulabel.is_subtask_edit_locked()) return;
+    const clipboard_data = (clipboard_event.originalEvent as ClipboardEvent | undefined)?.clipboardData ?? null;
+
+    if (kind === "paste") {
+        let envelope = null;
+        const text = clipboard_data?.getData("text/plain");
+        if (text) {
+            try {
+                const parsed = JSON.parse(text);
+                if (parsed?.ulabel_annotation === 1) envelope = parsed;
+            } catch {
+                // Not our payload; fall back to the in-memory clipboard
+            }
+        }
+        if (envelope === null && ulabel.state.clipboard === null) return;
+        clipboard_event.preventDefault();
+        ulabel.paste_annotation_from_clipboard(envelope);
+        return;
+    }
+
+    const envelope = ulabel.copy_annotation_to_clipboard(null, kind === "cut");
+    if (envelope === null) return;
+    clipboard_event.preventDefault();
+    clipboard_data?.setData("text/plain", JSON.stringify(envelope));
+}
+
+/**
+ * Check if a keyboard event matches a keybind (supports chords like "ctrl+s")
+ */
+function event_matches_keybind(
+    keyEvent: JQuery.KeyDownEvent | JQuery.KeyPressEvent,
+    keybind: string,
+): boolean {
+    if (!keybind || typeof keybind !== "string") {
+        return false;
+    }
+
+    // Check if this is a chord (contains '+')
+    if (keybind.includes("+")) {
+        const parts = keybind.toLowerCase().split("+");
+        const modifiers = new Set(parts.slice(0, -1));
+        const key = parts[parts.length - 1];
+
+        // Check modifiers
+        const has_ctrl = (keyEvent.ctrlKey || keyEvent.metaKey) === modifiers.has("ctrl");
+        const has_alt = keyEvent.altKey === modifiers.has("alt");
+        const has_shift = keyEvent.shiftKey === modifiers.has("shift");
+
+        // Normalize event key
+        let event_key = keyEvent.key.toLowerCase();
+        if (event_key === " ") {
+            event_key = "space";
+        }
+
+        return has_ctrl && has_alt && has_shift && event_key === key;
+    }
+
+    // Simple key match (no modifiers allowed for simple keys)
+    const no_modifiers = !keyEvent.ctrlKey && !keyEvent.metaKey && !keyEvent.altKey && !keyEvent.shiftKey;
+    return no_modifiers && (keyEvent.key === keybind || keyEvent.key.toLowerCase() === keybind.toLowerCase());
+}
 
 /**
  * Handle keypress events.
@@ -22,109 +104,172 @@ function handle_keypress_event(
     keypress_event: JQuery.KeyPressEvent,
     ulabel: ULabel,
 ) {
+    // Don't handle keypresses if editing a keybind
+    if (ulabel.state.is_editing_keybind) {
+        return;
+    }
+
     const current_subtask = ulabel.get_current_subtask();
-    switch (keypress_event.key) {
-        // Create a point annotation at the mouse's current location
-        case ulabel.config.create_point_annotation_keybind:
-            // Only allow keypress to create point annotations
-            if (current_subtask.state.annotation_mode === "point") {
-                // Create an annotation based on the last mouse position
-                ulabel.begin_annotation(ulabel.state["last_move"]);
-            }
-            break;
-        // Create a bbox annotation around the initial_crop,
-        // or the whole image if inital_crop does not exist
-        case ulabel.config.create_bbox_on_initial_crop:
-            if (current_subtask.state.annotation_mode === "bbox") {
-                // Default to an annotation with size of image
+    const is_read_only = ulabel.is_subtask_edit_locked();
+
+    // Create a point annotation at the mouse's current location
+    if (event_matches_keybind(keypress_event, ulabel.config.create_point_annotation_keybind)) {
+        if (is_read_only) return;
+        // Only allow keypress to create point annotations
+        if (current_subtask.state.annotation_mode === "point") {
+            // Create an annotation based on the last mouse position
+            ulabel.create_point_annotation_at_mouse_location();
+        }
+        return;
+    }
+
+    // Create a bbox annotation around the initial_crop,
+    // or the whole image if inital_crop does not exist
+    if (event_matches_keybind(keypress_event, ulabel.config.create_bbox_on_initial_crop_keybind)) {
+        if (is_read_only) return;
+        if (current_subtask.state.annotation_mode === "bbox") {
+            // Default to an annotation with size of image
+            // Create the coordinates for the bbox's spatial payload
+            let bbox_top_left: [number, number] = [0, 0];
+            let bbox_bottom_right: [number, number] = [
+                ulabel.config.image_width!,
+                ulabel.config.image_height!,
+            ];
+
+            // If an initial crop exists, use that instead
+            // TODO (joshua-dean): can't this just be "if (ulabel.config.initial_crop)"?
+            if (ulabel.config.initial_crop !== null && ulabel.config.initial_crop !== undefined) {
+                // Convenience
+                const initial_crop = ulabel.config.initial_crop;
+
                 // Create the coordinates for the bbox's spatial payload
-                let bbox_top_left: [number, number] = [0, 0];
-                let bbox_bottom_right: [number, number] = [
-                    ulabel.config.image_width,
-                    ulabel.config.image_height,
-                ];
-
-                // If an initial crop exists, use that instead
-                // TODO (joshua-dean): can't this just be "if (ulabel.config.initial_crop)"?
-                if (ulabel.config.initial_crop !== null && ulabel.config.initial_crop !== undefined) {
-                    // Convenience
-                    const initial_crop = ulabel.config.initial_crop;
-
-                    // Create the coordinates for the bbox's spatial payload
-                    bbox_top_left = [initial_crop.left, initial_crop.top];
-                    bbox_bottom_right = [initial_crop.left + initial_crop.width, initial_crop.top + initial_crop.height];
-                }
-
-                // Create the annotation
-                ulabel.create_annotation(
-                    current_subtask.state.annotation_mode,
-                    [bbox_top_left, bbox_bottom_right],
-                );
+                bbox_top_left = [initial_crop.left, initial_crop.top];
+                bbox_bottom_right = [initial_crop.left + initial_crop.width, initial_crop.top + initial_crop.height];
             }
-            break;
-        // Change to brush mode (for now, polygon only)
-        case ulabel.config.toggle_brush_mode_keybind:
-            ulabel.toggle_brush_mode(ulabel.state["last_move"]);
-            break;
-        // Change to erase mode (will also set the is_in_brush_mode state)
-        case ulabel.config.toggle_erase_mode_keybind:
-            ulabel.toggle_erase_mode(ulabel.state["last_move"]);
-            break;
-        // Increase brush size by 10%
-        case ulabel.config.increase_brush_size_keybind:
-            ulabel.change_brush_size(1.1);
-            break;
-        // Decrease brush size by 10%
-        case ulabel.config.decrease_brush_size_keybind:
-            ulabel.change_brush_size(1 / 1.1);
-            break;
-        case ulabel.config.change_zoom_keybind.toLowerCase():
-            ulabel.show_initial_crop();
-            break;
-        case ulabel.config.change_zoom_keybind.toUpperCase():
-            ulabel.show_whole_image();
-            break;
-        default:
-            // TODO (joshua-dean): break this out
-            if (!DELETE_MODES.includes(current_subtask.state.spatial_type)) {
-                // Check for class keybinds
-                for (let i = 0; i < current_subtask.class_defs.length; i++) {
-                    const class_def = current_subtask.class_defs[i];
-                    if (class_def.keybind !== null && keypress_event.key === class_def.keybind) {
-                        const st_key = ulabel.get_current_subtask_key();
-                        const class_button = $(`#tb-id-app--${st_key} a.tbid-opt`).eq(i);
-                        if (class_button.hasClass("sel")) {
-                            // If the class button is already selected,
-                            // check if there is an active annotation, and if so, get it
-                            let target_id = null;
-                            if (current_subtask.state.active_id !== null) {
-                                target_id = current_subtask.state.active_id;
-                            } else if (current_subtask.state.move_candidate !== null) {
-                                target_id = current_subtask.state.move_candidate["annid"];
-                            }
-                            // Update the class of the active annotation
-                            if (target_id !== null) {
-                                // Set the annotation's class to the selected class
-                                ulabel.handle_id_dialog_click(
-                                    ulabel.state["last_move"],
-                                    target_id,
-                                    ulabel.get_active_class_id_idx(),
-                                );
-                            }
-                        } else {
-                            // Click the class button if not already selected
-                            class_button.trigger("click");
-                        }
-                        return;
+
+            // Create the annotation
+            ulabel.create_annotation(
+                current_subtask.state.annotation_mode,
+                [bbox_top_left, bbox_bottom_right],
+            );
+        }
+        return;
+    }
+
+    // Change to brush mode (for now, polygon only)
+    if (event_matches_keybind(keypress_event, ulabel.config.toggle_brush_mode_keybind)) {
+        if (is_read_only) return;
+        ulabel.toggle_brush_mode(ulabel.state["last_move"]);
+        return;
+    }
+
+    // Change to erase mode (will also set the is_in_brush_mode state)
+    if (event_matches_keybind(keypress_event, ulabel.config.toggle_erase_mode_keybind)) {
+        if (is_read_only) return;
+        ulabel.toggle_erase_mode(ulabel.state["last_move"]);
+        return;
+    }
+
+    // Increase brush size by 10%
+    if (event_matches_keybind(keypress_event, ulabel.config.increase_brush_size_keybind)) {
+        ulabel.change_brush_size(1.1);
+        return;
+    }
+
+    // Decrease brush size by 10%
+    if (event_matches_keybind(keypress_event, ulabel.config.decrease_brush_size_keybind)) {
+        ulabel.change_brush_size(1 / 1.1);
+        return;
+    }
+
+    // Set the brush overlap mode (bitmask). Persisted globally.
+    if (event_matches_keybind(keypress_event, ulabel.config.set_brush_overlap_none_keybind)) {
+        ulabel.set_brush_overlap_mode("none");
+        return;
+    }
+    if (event_matches_keybind(keypress_event, ulabel.config.set_brush_overlap_exclude_keybind)) {
+        ulabel.set_brush_overlap_mode("exclude");
+        return;
+    }
+    if (event_matches_keybind(keypress_event, ulabel.config.set_brush_overlap_overwrite_keybind)) {
+        ulabel.set_brush_overlap_mode("overwrite");
+        return;
+    }
+
+    // Reset zoom to initial crop
+    if (event_matches_keybind(keypress_event, ulabel.config.reset_zoom_keybind)) {
+        ulabel.show_initial_crop();
+        return;
+    }
+
+    // Show full image
+    if (event_matches_keybind(keypress_event, ulabel.config.show_full_image_keybind)) {
+        ulabel.show_whole_image();
+        return;
+    }
+
+    // Toggle class focus (focus follows the active class) on the current subtask
+    if (event_matches_keybind(keypress_event, ulabel.config.toggle_class_focus_keybind)) {
+        const st_key = ulabel.get_current_subtask_key();
+        ulabel.set_focus_active_class(st_key, !ulabel.subtasks[st_key].focus_active_class);
+        return;
+    }
+
+    // Toggle edit focus (only created/modified annotations) on the current subtask
+    if (event_matches_keybind(keypress_event, ulabel.config.toggle_edit_focus_keybind)) {
+        const st_key = ulabel.get_current_subtask_key();
+        ulabel.set_focus_edited(st_key, !ulabel.subtasks[st_key].focus_edited);
+        return;
+    }
+
+    // Toggle deprecated focus (Show Deprecated) on the current subtask
+    if (event_matches_keybind(keypress_event, ulabel.config.toggle_deprecated_focus_keybind)) {
+        const st_key = ulabel.get_current_subtask_key();
+        ulabel.set_focus_deprecated(st_key, !ulabel.subtasks[st_key].focus_deprecated);
+        return;
+    }
+
+    // Check for class keybinds
+    if (!DELETE_MODES.includes(current_subtask.state.annotation_mode)) {
+        for (let i = 0; i < current_subtask.class_defs.length; i++) {
+            const class_def = current_subtask.class_defs[i];
+            if (class_def.keybind !== null && event_matches_keybind(keypress_event, class_def.keybind!)) {
+                const st_key = ulabel.get_current_subtask_key();
+                const class_button = $(`#tb-id-app--${st_key} a.tbid-opt`).eq(i);
+                if (class_button.hasClass("sel")) {
+                    // Reclassifying the active annotation is an edit; the
+                    // selection branch below is not, so it stays available
+                    if (is_read_only) return;
+                    // If the class button is already selected,
+                    // check if there is an active annotation, and if so, get it
+                    let target_id = null;
+                    if (current_subtask.state.active_id !== null) {
+                        target_id = current_subtask.state.active_id;
+                    } else if (current_subtask.state.move_candidate !== null) {
+                        target_id = current_subtask.state.move_candidate["annid"];
                     }
+                    // Update the class of the active annotation
+                    if (target_id !== null) {
+                        // Set the annotation's class to the selected class
+                        ulabel.handle_id_dialog_click(
+                            ulabel.state["last_move"],
+                            target_id,
+                            ulabel.get_active_class_id_idx(),
+                        );
+                    }
+                } else {
+                    // Select the class if not already selected
+                    ulabel.set_active_class(class_def.id);
                 }
+                return;
             }
-            break;
+        }
     }
 }
 
 /**
- * Handle a click on a soft ID toolbox button.
+ * Handle a click on a soft ID toolbox button. Thin wrapper: the selection
+ * logic lives in `set_active_class`, of which this click is one caller.
  *
  * @param click_event Click event
  * @param ulabel ULabel instance
@@ -134,62 +279,10 @@ function handle_soft_id_toolbox_button_click(
     ulabel: ULabel,
 ) {
     const tgt_jq = $(click_event.currentTarget);
-    const pfx = "div#tb-id-app--" + ulabel.get_current_subtask_key();
-    const current_subtask = ulabel.get_current_subtask();
-    if (tgt_jq.attr("href") === "#") {
-        const current_id_button = $(pfx + " a.tbid-opt.sel");
-        current_id_button.attr("href", "#");
-        current_id_button.removeClass("sel");
-        const old_id = parseInt(current_id_button.attr("id").split("_").at(-1));
-        tgt_jq.addClass("sel");
-        tgt_jq.removeAttr("href");
-        const idarr = tgt_jq.attr("id").split("_");
-        const rawid = parseInt(idarr[idarr.length - 1]);
-        ulabel.set_id_dialog_payload_nopin(
-            current_subtask["class_ids"].indexOf(rawid),
-            1.0,
-        );
-        ulabel.update_id_dialog_display();
-
-        // Update the class of the active annotation,
-        // except when toggling on the delete class
-        if (rawid !== DELETE_CLASS_ID) {
-            // Get the active annotation, if any
-            let target_id = null;
-            if (current_subtask.state.active_id !== null) {
-                target_id = current_subtask.state.active_id;
-            } else if (current_subtask.state.move_candidate !== null) {
-                target_id = current_subtask.state.move_candidate["annid"];
-            }
-
-            // Update the class of the active annotation
-            if (target_id !== null) {
-                // Set the annotation's class to the selected class
-                ulabel.handle_id_dialog_click(
-                    ulabel.state["last_move"],
-                    target_id,
-                    ulabel.get_active_class_id_idx(),
-                );
-            } else {
-                // If there is not active annotation,
-                // still update the brush circle if in brush mode
-                ulabel.recolor_brush_circle();
-            }
-        }
-
-        /*
-        If toggling off a delete class while still in delete mode,
-        re-toggle the delete class.
-        This occurs when using a keybind to change a hovered annotation's
-        class while in delete mode.
-        */
-        if (
-            old_id === DELETE_CLASS_ID &&
-            DELETE_MODES.includes(current_subtask.state.annotation_mode)
-        ) {
-            $("#toolbox_sel_" + DELETE_CLASS_ID).trigger("click");
-        }
-    }
+    // The selected button has no href; clicking it is a no-op
+    if (tgt_jq.attr("href") !== "#") return;
+    const idarr = tgt_jq.attr("id")!.split("_");
+    ulabel.set_active_class(parseInt(idarr[idarr.length - 1]));
 }
 
 /**
@@ -203,6 +296,11 @@ function handle_keydown_event(
     keydown_event: JQuery.KeyDownEvent,
     ulabel: ULabel,
 ): boolean {
+    // Don't handle keydown events if editing a keybind
+    if (ulabel.state.is_editing_keybind) {
+        return false;
+    }
+
     const shift = keydown_event.shiftKey;
     const ctrl = keydown_event.ctrlKey || keydown_event.metaKey;
     const key_is_z = (
@@ -219,25 +317,95 @@ function handle_keydown_event(
             ulabel.undo();
         }
         return false;
-    } else {
-        const current_subtask = ulabel.get_current_subtask();
-        switch (keydown_event.key) {
-            case "Escape":
-                // If in erase or brush mode, cancel the brush
-                if (current_subtask.state.is_in_erase_mode) {
-                    ulabel.toggle_erase_mode();
-                } else if (current_subtask.state.is_in_brush_mode) {
-                    ulabel.toggle_brush_mode();
-                } else if (current_subtask.state.starting_complex_polygon) {
-                    // If starting a complex polygon, undo
-                    ulabel.undo();
-                } else if (current_subtask.state.is_in_progress) {
-                    // If in the middle of drawing an annotation, cancel the annotation
-                    ulabel.cancel_annotation();
-                }
-                break;
-        }
     }
+
+    const current_subtask = ulabel.get_current_subtask();
+
+    // Handle Escape key
+    if (keydown_event.key.toLowerCase() === "escape") {
+        if (ulabel.is_context_menu_open()) {
+            ulabel.hide_context_menu();
+        } else if (current_subtask.state.idd_visible) {
+            // A clicked-open id dialog has no other dismissal
+            ulabel.hide_id_dialog();
+        } else if (current_subtask.state.isolated_annid != null) {
+            ulabel.isolate_annotation(null);
+        } else if (current_subtask.state.is_in_erase_mode) {
+            // If in erase or brush mode, cancel the brush
+            ulabel.toggle_erase_mode();
+        } else if (current_subtask.state.is_in_brush_mode) {
+            ulabel.toggle_brush_mode();
+        } else if (current_subtask.state.starting_complex_polygon) {
+            // If starting a complex polygon, undo
+            ulabel.undo();
+        } else if (current_subtask.state.is_in_progress) {
+            // If in the middle of drawing an annotation, cancel the annotation
+            ulabel.cancel_annotation();
+        }
+        return false;
+    }
+
+    // Handle fly to next annotation
+    if (event_matches_keybind(keydown_event, ulabel.config.fly_to_next_annotation_keybind)) {
+        keydown_event.preventDefault();
+        ulabel.fly_to_next_annotation(1, ulabel.config.fly_to_max_zoom);
+        return false;
+    }
+
+    // Handle fly to previous annotation
+    if (event_matches_keybind(keydown_event, ulabel.config.fly_to_previous_annotation_keybind)) {
+        keydown_event.preventDefault();
+        ulabel.fly_to_next_annotation(-1, ulabel.config.fly_to_max_zoom);
+        return false;
+    }
+
+    // Handle annotation resizing keybinds
+
+    if (event_matches_keybind(keydown_event, ulabel.config.annotation_vanish_all_keybind)) {
+        keydown_event.preventDefault();
+        // Toggle global vanish flag
+        ulabel.state.all_subtasks_vanished = !ulabel.state.all_subtasks_vanished;
+
+        // For each subtask, toggle vanished state if needed
+        for (const subtask_key in ulabel.subtasks) {
+            if (ulabel.subtasks[subtask_key].state.is_vanished !== ulabel.state.all_subtasks_vanished) {
+                AnnotationResizeItem.toggle_subtask_vanished(ulabel, subtask_key);
+            }
+        }
+        return false;
+    }
+
+    if (event_matches_keybind(keydown_event, ulabel.config.annotation_vanish_keybind)) {
+        keydown_event.preventDefault();
+        AnnotationResizeItem.toggle_subtask_vanished(ulabel, ulabel.get_current_subtask_key());
+        return false;
+    }
+
+    if (event_matches_keybind(keydown_event, ulabel.config.annotation_size_small_keybind)) {
+        keydown_event.preventDefault();
+        AnnotationResizeItem.update_annotation_size(ulabel, ulabel.get_current_subtask_key(), SMALL_ANNOTATION_SIZE);
+        return false;
+    }
+
+    if (event_matches_keybind(keydown_event, ulabel.config.annotation_size_large_keybind)) {
+        keydown_event.preventDefault();
+        AnnotationResizeItem.update_annotation_size(ulabel, ulabel.get_current_subtask_key(), LARGE_ANNOTATION_SIZE);
+        return false;
+    }
+
+    if (event_matches_keybind(keydown_event, ulabel.config.annotation_size_minus_keybind)) {
+        keydown_event.preventDefault();
+        AnnotationResizeItem.update_annotation_size(ulabel, ulabel.get_current_subtask_key(), -INCREMENT_ANNOTATION_SIZE, true);
+        return false;
+    }
+
+    if (event_matches_keybind(keydown_event, ulabel.config.annotation_size_plus_keybind)) {
+        keydown_event.preventDefault();
+        AnnotationResizeItem.update_annotation_size(ulabel, ulabel.get_current_subtask_key(), INCREMENT_ANNOTATION_SIZE, true);
+        return false;
+    }
+
+    return false;
 }
 
 /**
@@ -255,9 +423,7 @@ export function create_ulabel_listeners(
     id_dialog.on(
         "mousemove" + ULABEL_NAMESPACE,
         (mouse_event) => {
-            if (!ulabel.get_current_subtask()["state"]["idd_thumbnail"]) {
-                ulabel.handle_id_dialog_hover(mouse_event);
-            }
+            ulabel.handle_id_dialog_hover(mouse_event);
         },
     );
 
@@ -297,9 +463,35 @@ export function create_ulabel_listeners(
         (move_event) => ulabel.handle_mouse_move(move_event),
     );
 
+    // Right-click opens the context menu for the hovered annotation. While an
+    // annotation is in progress button 2 belongs to the draw (mouseup finishes
+    // a polyline), so no menu then.
+    annbox.on(
+        "contextmenu" + ULABEL_NAMESPACE,
+        (context_event) => {
+            context_event.preventDefault();
+            const state = ulabel.get_current_subtask()["state"];
+            if (state["active_id"] != null || state["idd_visible"]) return;
+            // The mousedown just before this dismissed any open menu (and its
+            // hover), so re-resolve the candidate under the cursor
+            ulabel.suggest_edits(context_event);
+            const edit_candidate = state["edit_candidate"];
+            if (edit_candidate != null) {
+                ulabel.show_context_menu(edit_candidate.annid, context_event.clientX!, context_event.clientY!);
+            }
+        },
+    );
+
+    // A mousedown anywhere outside the menu dismisses it (the menu stops its own)
+    $(document).on(
+        "mousedown" + ULABEL_NAMESPACE,
+        () => ulabel.hide_context_menu(),
+    );
+
     // ================= Uncategorized =================
 
-    $(document).on(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- jQuery overloads don't support namespaced event strings
+    ($(document) as any).on(
         "keypress" + ULABEL_NAMESPACE,
         (keypress_event: JQuery.KeyPressEvent) => {
             handle_keypress_event(keypress_event, ulabel);
@@ -312,7 +504,7 @@ export function create_ulabel_listeners(
     // Detection ctrl+scroll
     document.getElementById(
         ulabel.config["annbox_id"],
-    ).addEventListener(
+    )!.addEventListener(
         "wheel",
         (wheel_event) => ulabel.handle_wheel(wheel_event),
     );
@@ -324,7 +516,7 @@ export function create_ulabel_listeners(
 
     // Observe the changes on the imwrap_id element
     dialog_resize_observer.observe(
-        document.getElementById(ulabel.config["imwrap_id"]),
+        document.getElementById(ulabel.config["imwrap_id"])!,
     );
 
     // Store a reference
@@ -337,14 +529,32 @@ export function create_ulabel_listeners(
 
     // Observe the changes on the ulabel container
     tb_overflow_resize_observer.observe(
-        document.getElementById(ulabel.config["container_id"]),
+        document.getElementById(ulabel.config["container_id"])!,
     );
 
     // Store a reference
     ulabel.resize_observers.push(tb_overflow_resize_observer);
 
+    // Re-clamp zoom to `min_zoom_fit_ratio` when the annbox resizes. `set_zoom_val`
+    // computes the floor from live viewport dimensions, so we just reapply the
+    // current value; if it lands above the new floor nothing changes.
+    const min_zoom_resize_observer = new ResizeObserver(() => {
+        if (!ulabel.is_init) return;
+        if (!(ulabel.config["min_zoom_fit_ratio"] > 0)) return;
+        const current = ulabel.state["zoom_val"];
+        ulabel.set_zoom_val(current);
+        if (ulabel.state["zoom_val"] !== current) {
+            ulabel.rezoom();
+        }
+    });
+    min_zoom_resize_observer.observe(
+        document.getElementById(ulabel.config["annbox_id"])!,
+    );
+    ulabel.resize_observers.push(min_zoom_resize_observer);
+
     // create_soft_id_toolbox_button_listener(ulabel);
-    $(document).on(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- jQuery overloads don't support namespaced event strings
+    ($(document) as any).on(
         "click" + ULABEL_NAMESPACE,
         `#${ulabel.config["toolbox_id"]} a.tbid-opt`,
         (click_event: JQuery.ClickEvent) => {
@@ -356,7 +566,7 @@ export function create_ulabel_listeners(
         "click" + ULABEL_NAMESPACE,
         "a.tb-st-switch[href]",
         (click_event) => {
-            const switch_to = $(click_event.target).attr("id").split("--")[1];
+            const switch_to = $(click_event.target).attr("id")!.split("--")[1];
 
             // Ignore if in the middle of annotation
             if (ulabel.get_current_subtask()["state"]["is_in_progress"]) return;
@@ -366,14 +576,15 @@ export function create_ulabel_listeners(
     );
 
     // Keybind to switch active subtask
-    $(document).on(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- jQuery overloads don't support namespaced event strings
+    ($(document) as any).on(
         "keypress" + ULABEL_NAMESPACE,
-        (keypress_event) => {
+        (keypress_event: JQuery.KeyPressEvent) => {
             // Ignore if in the middle of annotation
             if (ulabel.get_current_subtask()["state"]["is_in_progress"]) return;
 
             // Check for the right keypress
-            if (keypress_event.key === ulabel.config.switch_subtask_keybind) {
+            if (event_matches_keybind(keypress_event, ulabel.config.switch_subtask_keybind)) {
                 ulabel.switch_to_next_subtask();
             }
         },
@@ -394,7 +605,16 @@ export function create_ulabel_listeners(
     $(document).on(
         "click" + ULABEL_NAMESPACE,
         "div.fad_row.add a.add-glob-button",
-        () => ulabel.create_nonspatial_annotation(),
+        () => {
+            if (ulabel.is_subtask_edit_locked()) return;
+            ulabel.create_nonspatial_annotation();
+        },
+    );
+
+    $(document).on(
+        "click" + ULABEL_NAMESPACE,
+        "div.deprecated-focus-banner a.deprecated-focus-exit",
+        () => ulabel.set_focus_deprecated(ulabel.get_current_subtask_key(), false),
     );
 
     $(document).on(
@@ -410,13 +630,12 @@ export function create_ulabel_listeners(
     );
 
     $(document).on(
-        "input" + ULABEL_NAMESPACE,
+        "change" + ULABEL_NAMESPACE,
         "textarea.nonspatial_note",
-        (input_event) => {
-            // Update annotation's text field
-            const annos = ulabel.get_current_subtask()["annotations"]["access"];
-            const text_payload_anno_id = input_event.target.id.substring("note__".length);
-            annos[text_payload_anno_id]["text_payload"] = input_event.target.value;
+        (change_event) => {
+            if (ulabel.is_subtask_edit_locked()) return;
+            const text_payload_anno_id = change_event.target.id.substring("note__".length);
+            ulabel.edit_text_payload(text_payload_anno_id, change_event.target.value);
         },
     );
 
@@ -424,6 +643,7 @@ export function create_ulabel_listeners(
         "click" + ULABEL_NAMESPACE,
         "a.fad_button.delete",
         (click_event) => {
+            if (ulabel.is_subtask_edit_locked()) return;
             ulabel.delete_annotation(click_event.target.id.substring("delete__".length));
         },
     );
@@ -432,12 +652,12 @@ export function create_ulabel_listeners(
         "click" + ULABEL_NAMESPACE,
         "a.fad_button.reclf",
         (click_event) => {
+            if (ulabel.is_subtask_edit_locked()) return;
             // Show idd
             ulabel.show_id_dialog(
-                click_event.pageX,
-                click_event.pageY,
+                click_event.pageX!,
+                click_event.pageY!,
                 click_event.target.id.substring("reclf__".length),
-                false,
                 true,
             );
         },
@@ -447,10 +667,10 @@ export function create_ulabel_listeners(
         "mouseenter" + ULABEL_NAMESPACE,
         "div.fad_annotation_rows div.fad_row",
         (mouse_event) => {
-            // Show thumbnail for idd
+            // Track the hovered row as the edit candidate
             ulabel.suggest_edits(
                 null,
-                $(mouse_event.currentTarget).attr("id").substring("row__".length),
+                $(mouse_event.currentTarget).attr("id")!.substring("row__".length),
             );
         },
     );
@@ -459,28 +679,54 @@ export function create_ulabel_listeners(
         "mouseleave" + ULABEL_NAMESPACE,
         "div.fad_annotation_rows div.fad_row",
         () => {
-            // Show thumbnail for idd
-            if (
-                ulabel.get_current_subtask()["state"]["idd_visible"] &&
-                !ulabel.get_current_subtask()["state"]["idd_thumbnail"]
-            ) {
+            // A clicked-open id dialog is its own interaction; don't yank it away
+            if (ulabel.get_current_subtask()["state"]["idd_visible"]) {
                 return;
             }
             ulabel.suggest_edits(null);
         },
     );
 
-    $(document).on(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- jQuery overloads don't support namespaced event strings
+    ($(document) as any).on(
         "keypress" + ULABEL_NAMESPACE,
-        (keypress_event) => {
+        (keypress_event: JQuery.KeyPressEvent) => {
             // Check the key pressed against the delete annotation keybind in the config
-            if (keypress_event.key === ulabel.config.delete_annotation_keybind) {
+            if (event_matches_keybind(keypress_event, ulabel.config.delete_annotation_keybind)) {
+                if (ulabel.is_subtask_edit_locked()) return;
+                const current_subtask = ulabel.get_current_subtask();
                 // Check the edit_candidate to make sure its not null and isn't nonspatial
-                const edit_cand = ulabel.get_current_subtask().state.edit_candidate;
-                if (edit_cand !== null && !NONSPATIAL_MODES.includes(edit_cand.spatial_type)) {
+                const edit_cand = current_subtask.state.edit_candidate;
+                if (
+                    edit_cand !== null &&
+                    !NONSPATIAL_MODES.includes(edit_cand.spatial_type) &&
+                    // Deprecated annotations are hoverable under deprecated focus but not deletable
+                    !current_subtask.annotations.access[edit_cand.annid]?.deprecated
+                ) {
                     ulabel.delete_annotation(edit_cand.annid);
                 }
             }
+            // Check the key pressed against the delete vertex keybind in the config
+            if (event_matches_keybind(keypress_event, ulabel.config.delete_vertex_keybind)) {
+                if (ulabel.is_subtask_edit_locked()) return;
+                const current_subtask = ulabel.get_current_subtask();
+                const edit_cand = current_subtask.state.edit_candidate;
+
+                // Only delete if we have an edit candidate that is an actual vertex (not a segment point)
+                if (edit_cand !== null && edit_cand.is_vertex === true) {
+                    ulabel.delete_vertex(edit_cand.annid, edit_cand.access);
+                }
+            }
+        },
+    );
+
+    // ULabel's anchors are buttons; don't let a click navigate to "#" (which
+    // scrolls the host page and rewrites its hash)
+    $(document).on(
+        "click" + ULABEL_NAMESPACE,
+        "#" + ulabel.config["container_id"] + " a[href=\"#\"]",
+        (click_event) => {
+            click_event.preventDefault();
         },
     );
 
@@ -489,38 +735,25 @@ export function create_ulabel_listeners(
         "click" + ULABEL_NAMESPACE,
         "#" + ulabel.config["container_id"] + " a.id-dialog-clickable-indicator",
         (click_event) => {
-            if (!ulabel.get_current_subtask()["state"]["idd_thumbnail"]) {
-                ulabel.handle_id_dialog_click(click_event);
-            }
+            ulabel.handle_id_dialog_click(click_event);
         },
     );
 
     $(document).on(
-        "click" + ULABEL_NAMESPACE,
-        ".global_edit_suggestion a.reid_suggestion",
-        (click_event) => {
-            const crst = ulabel.get_current_subtask();
-            const annid = crst["state"]["idd_associated_annotation"];
-            ulabel.hide_global_edit_suggestion();
-            ulabel.show_id_dialog(
-                ulabel.get_global_mouse_x(click_event),
-                ulabel.get_global_mouse_y(click_event),
-                annid,
-                false,
-            );
-        },
-    );
-
-    $(document).on(
-        "click" + ULABEL_NAMESPACE,
-        "#" + ulabel.config["annbox_id"] + " .delete_suggestion",
+        "mouseleave" + ULABEL_NAMESPACE,
+        "#" + ulabel.config["annbox_id"],
         () => {
-            const crst = ulabel.get_current_subtask();
-            ulabel.delete_annotation(crst["state"]["move_candidate"]["annid"]);
+            // The suggestion dialogs live inside the annbox, so moving onto one
+            // of them doesn't count as leaving.
+            if (ulabel.drag_state["active_key"] !== null) return;
+            const state = ulabel.get_current_subtask()["state"];
+            // A clicked-open id dialog or context menu is its own interaction; don't yank it away
+            if (state["idd_visible"] || ulabel.is_context_menu_open()) return;
+            ulabel.hide_and_clear_action_candidates();
         },
     );
 
-    // Button to save annotations
+    // Button to toggle night mode
     $(document).on(
         "click" + ULABEL_NAMESPACE,
         "#" + ulabel.config["toolbox_id"] + " a.night-button",
@@ -536,13 +769,47 @@ export function create_ulabel_listeners(
         },
     );
 
-    // Keyboard only events
+    // Button to collapse/expand toolbox
     $(document).on(
+        "click" + ULABEL_NAMESPACE,
+        ".toolbox-collapse-btn",
+        (e) => {
+            const toolbox = $("#" + ulabel.config["toolbox_id"]);
+            const container = $(".full_ulabel_container_");
+            const btn = $(e.currentTarget);
+
+            if (toolbox.hasClass("collapsed")) {
+                toolbox.removeClass("collapsed");
+                container.removeClass("toolbox-collapsed");
+                btn.text("▶");
+                btn.attr("title", "Collapse toolbox");
+                set_local_storage_item("ulabel_toolbox_collapsed", "false");
+            } else {
+                toolbox.addClass("collapsed");
+                container.addClass("toolbox-collapsed");
+                btn.text("◀");
+                btn.attr("title", "Expand toolbox");
+                set_local_storage_item("ulabel_toolbox_collapsed", "true");
+            }
+        },
+    );
+
+    // Keyboard only events
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- jQuery overloads don't support namespaced event strings
+    ($(document) as any).on(
         "keydown" + ULABEL_NAMESPACE,
         (keydown_event: JQuery.KeyDownEvent) => {
             handle_keydown_event(keydown_event, ulabel);
         },
     );
+
+    // Copy / cut the hovered annotation, paste into the current subtask
+    for (const kind of ["copy", "cut", "paste"] as const) {
+        $(document).on(
+            kind + ULABEL_NAMESPACE,
+            (clipboard_event) => handle_clipboard_event(clipboard_event, ulabel, kind),
+        );
+    }
 
     $(window).on(
         "beforeunload" + ULABEL_NAMESPACE,

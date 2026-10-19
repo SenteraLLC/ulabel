@@ -1,11 +1,13 @@
-import {
+import type {
     DeprecatedBy,
     DistanceFromPolylineClasses,
     ULabelClassificationPayload,
     ULabelContainingBox,
     ULabelSpatialType,
-} from "..";
+} from "../index";
 import { GeometricUtils } from "./geometric_utils";
+import { ULabelMask, is_raw_mask_payload } from "./mask_utils";
+import { log_message, LogLevel } from "./error_logging";
 
 // Modes used to draw an area in the which to delete all annotations
 export const DELETE_MODES = ["delete_polygon", "delete_bbox"];
@@ -13,21 +15,40 @@ export const DELETE_CLASS_ID = -1;
 export const MODES_3D = ["global", "bbox3"];
 export const NONSPATIAL_MODES = ["whole-image", "global"];
 
+// A record enumerating every ULabelSpatialType. Adding a member to the union without updating this
+// record is a compile error, which keeps ALL_SPATIAL_TYPES in sync with the type.
+const SPATIAL_TYPE_SET: Record<ULabelSpatialType, true> = {
+    "contour": true,
+    "polygon": true,
+    "polyline": true,
+    "bbox": true,
+    "tbar": true,
+    "bbox3": true,
+    "whole-image": true,
+    "global": true,
+    "point": true,
+    "bitmask": true,
+};
+
+// Every ULabelSpatialType (spatial and non-spatial modes) as a runtime array.
+export const ALL_SPATIAL_TYPES = Object.keys(SPATIAL_TYPE_SET) as ULabelSpatialType[];
+
+export type ULabelEditType = "created" | "deleted" | "modified";
+
 export type PolygonSpatialData = {
     // TODO (joshua-dean): validate this type
     spatial_payload: [number[]][];
     spatial_payload_holes: boolean[];
     spatial_payload_child_indices: number[][];
-    containing_box: ULabelContainingBox;
+    containing_box: ULabelContainingBox | null;
 };
 
 export class ULabelAnnotation {
     constructor(
         // Required properties
-        public annotation_meta: object = null,
+        public annotation_meta: object = {},
         public deprecated: boolean = false,
         public deprecated_by: DeprecatedBy = { human: false },
-        public parent_id: string = null,
         public text_payload: string = "",
 
         // Optional properties
@@ -37,7 +58,6 @@ export class ULabelAnnotation {
         public created_by?: string,
         public distance_from?: DistanceFromPolylineClasses,
         public frame?: number,
-        public line_size?: number,
         public id?: string,
         public canvas_id?: string,
         // Polygons use complex spatial payloads
@@ -49,6 +69,11 @@ export class ULabelAnnotation {
         public spatial_payload_holes?: boolean[],
         // Track what holes belong to what fill, ie if spatial_payload[0] is a fill with a hole at spatial_payload[1], spatial_payload_child_indices[0] = [1]
         public spatial_payload_child_indices?: number[][],
+        // Lineage tracking fields
+        public last_edited_by?: string,
+        public last_edited_at?: string,
+        // Only set on copies handed to an `edits_only` submit hook
+        public edit_type?: ULabelEditType,
     ) {}
 
     public ensure_compatible_classification_payloads(ulabel_class_ids: [number]) {
@@ -58,20 +83,19 @@ export class ULabelAnnotation {
         let remaining_confidence = 1.0;
 
         // Filter out any classification payloads items that use the DELETE_CLASS_ID
-        this.classification_payloads = this.classification_payloads.filter((payload) => {
+        this.classification_payloads = this.classification_payloads!.filter((payload) => {
             return payload.class_id !== DELETE_CLASS_ID;
         });
 
         for (j = 0; j < this.classification_payloads.length; j++) {
             const this_id = this.classification_payloads[j].class_id;
             if (!ulabel_class_ids.includes(this_id)) {
-                alert(`Found class id ${this_id} in "resume_from" data but not in "allowed_classes"`);
-                throw `Found class id ${this_id} in "resume_from" data but not in "allowed_classes"`;
+                log_message(`Found class id ${this_id} in "resume_from" data but not in "allowed_classes"`, LogLevel.ERROR);
             }
             found_ids.push(this_id);
             if (!("confidence" in this.classification_payloads[j])) {
                 if (conf_not_found_j !== null) {
-                    throw ("More than one classification payload was supplied without confidence for a single annotation.");
+                    log_message("More than one classification payload was supplied without confidence for a single annotation.", LogLevel.ERROR);
                 } else {
                     conf_not_found_j = j;
                 }
@@ -84,7 +108,7 @@ export class ULabelAnnotation {
         }
         if (conf_not_found_j !== null) {
             if (remaining_confidence < 0) {
-                throw ("Supplied total confidence was greater than 100%");
+                log_message("Supplied total confidence was greater than 100%", LogLevel.ERROR);
             }
             this.classification_payloads[conf_not_found_j].confidence = remaining_confidence;
         }
@@ -102,10 +126,23 @@ export class ULabelAnnotation {
 
     // ensure polygon spatial_payloads are updated to support complex polygons
     public ensure_compatible_spatial_payloads() {
+        if (this.spatial_type === "bitmask") {
+            // Reject malformed / corrupt raster payloads, surfacing the specific reason
+            try {
+                if (is_raw_mask_payload(this.spatial_payload)) {
+                    ULabelMask.validate_raw(this.spatial_payload);
+                } else {
+                    ULabelMask.validate_rle(this.spatial_payload);
+                }
+            } catch (error) {
+                log_message(`Skipping bitmask annotation id ${this.id}: ${(error as Error).message}`, LogLevel.WARNING, true);
+                return false;
+            }
+        }
         if (this.spatial_type === "polygon") {
             // Catch empty spatial payloads
             if (this.spatial_payload === undefined || this.spatial_payload.length === 0) {
-                console.warn(`Empty spatial payload for polygon id ${this.id}. Skipping annotation.`);
+                log_message(`Empty spatial payload for polygon id ${this.id}. Skipping annotation.`, LogLevel.WARNING, true);
                 return false;
             }
             // Check that spatial_payload[0][0] is an array and not a number
@@ -129,7 +166,7 @@ export class ULabelAnnotation {
                 const layer = this.spatial_payload[i];
                 // Ensure that the layer is an array
                 if (!Array.isArray(layer[0])) {
-                    console.log(`Layer ${i} points of id ${this.id} are not arrays. Removing layer.`);
+                    log_message(`Layer ${i} of id ${this.id} has an invalid or empty point array. Removing layer.`, LogLevel.WARNING, true);
                     indices_to_remove.push(i);
                     continue;
                 }
@@ -145,7 +182,7 @@ export class ULabelAnnotation {
                     }
                 }
                 if (layer.length < 4) {
-                    console.log(`Layer ${i} of id ${this.id} has fewer than 4 points. Removing layer.`);
+                    log_message(`Layer ${i} of id ${this.id} has fewer than 4 points. Removing layer.`, LogLevel.WARNING, true);
                     indices_to_remove.push(i);
                     continue;
                 }
@@ -157,8 +194,7 @@ export class ULabelAnnotation {
                 try {
                     this.spatial_payload[i] = GeometricUtils.turf_simplify_complex_polygon([layer])[0];
                 } catch (error) {
-                    console.log(`Error simplifying polygon layer ${i} of id ${this.id}. Removing layer.`);
-                    console.warn(error);
+                    log_message(`Error simplifying polygon layer ${i} of id ${this.id}. Removing layer. Error: ${(error as Error).message}`, LogLevel.WARNING, true);
                     indices_to_remove.push(i);
                 }
             }
@@ -173,7 +209,55 @@ export class ULabelAnnotation {
         return true;
     }
 
-    public static from_json(json_block: object): ULabelAnnotation {
+    /**
+     * Ensure each point in an annotation is within the image.
+     *
+     * @param {number} image_width Width of the image.
+     * @param {number} image_height Height of the image.
+     * @return {ULabelAnnotation} The annotation with the updated spatial payload.
+     */
+    public clamp_annotation_to_image_bounds(image_width: number, image_height: number): ULabelAnnotation {
+        if (!this.is_delete_annotation()) {
+            // Bitmask annotations store a raster payload (not point arrays) that is
+            // inherently within image bounds, so there is nothing to clamp.
+            if (this.spatial_type === "bitmask") {
+                return this;
+            }
+            // Ensure each point in the payload is within the image
+            // for polygons, we'll need to loop through all points
+            let active_spatial_payload = this.spatial_payload;
+            const n_iters = this.spatial_type === "polygon" ? this.spatial_payload.length : 1;
+            for (let i = 0; i < n_iters; i++) {
+                if (this.spatial_type === "polygon") {
+                    active_spatial_payload = this.spatial_payload[i];
+                }
+
+                for (let j = 0; j < active_spatial_payload.length; j++) {
+                    active_spatial_payload[j] = GeometricUtils.clamp_point_to_image(
+                        active_spatial_payload[j],
+                        image_width,
+                        image_height,
+                    );
+                }
+            }
+        }
+
+        // Return the annotation with the updated spatial payload
+        return this;
+    }
+
+    /**
+     * Check if the annotation is a delete annotation, e.g. annotations drawn by the `delete_polygon`
+     * or `delete_bbox` annotation modes.
+     *
+     * @returns {boolean} True if the annotation is a delete annotation, false otherwise.
+     */
+    public is_delete_annotation(): boolean {
+        // Check if the annotation is a delete annotation
+        return this.classification_payloads![0]["class_id"] === DELETE_CLASS_ID;
+    }
+
+    public static from_json(json_block: object): ULabelAnnotation | null {
         const ret = new ULabelAnnotation();
         Object.assign(ret, json_block);
         // Convert deprecated spatial payloads if necessary

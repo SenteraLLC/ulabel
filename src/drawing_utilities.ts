@@ -115,6 +115,6 @@ export function get_gradient(
  * @returns {string} Color hex
  */
 export function color_to_hex(color: string): string {
-    if (color.toLowerCase() in VALID_HTML_COLORS) return VALID_HTML_COLORS[color.toLowerCase()];
+    if (color.toLowerCase() in VALID_HTML_COLORS) return (VALID_HTML_COLORS as Record<string, string>)[color.toLowerCase()];
     return color;
 }

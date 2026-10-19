@@ -1,30 +1,26 @@
-import {
+import type {
+    ClassCounterConfig,
     DistanceFromPolylineClasses,
     FilterDistanceConfig,
     RecolorActiveConfig,
-    ULabel,
-    ULabelSubmitButton,
-    ValidDeprecatedBy,
-} from "..";
-import { DEFAULT_FILTER_DISTANCE_CONFIG } from "./configuration";
-import { ULabelAnnotation, NONSPATIAL_MODES, DELETE_MODES } from "./annotation";
+} from "../index";
+import { ULabel } from "../src/index";
+import { DEFAULT_FILTER_DISTANCE_CONFIG, AllowedToolboxItem } from "./configuration";
+import { ULabelAnnotation, DELETE_CLASS_ID } from "./annotation";
 import { ULabelSubtask } from "./subtask";
 import {
-    get_annotation_confidence,
-    value_is_lower_than_filter,
-    mark_deprecated,
     filter_points_distance_from_line,
     findAllPolylineClassDefinitions,
     get_point_and_line_annotations,
 } from "./annotation_operators";
-import { SliderHandler, get_idd_string } from "./html_builder";
+import { SliderHandler } from "./html_builder";
 import { FilterDistanceOverlay } from "./overlays";
 import {
     get_active_class_id,
     get_local_storage_item,
     set_local_storage_item,
 } from "./utilities";
-import { AnnotationSizeCookie } from "./cookies";
+import { log_message, LogLevel } from "./error_logging";
 
 // For ResizeToolboxItem
 enum ValidResizeValues {
@@ -35,17 +31,22 @@ enum ValidResizeValues {
     DECREMENT = "dec",
 }
 
+export const SMALL_ANNOTATION_SIZE = 1.5;
+export const LARGE_ANNOTATION_SIZE = 5.0;
+export const INCREMENT_ANNOTATION_SIZE = 0.5;
+export const MINIMUM_ANNOTATION_SIZE = 0.01;
+
 const toolboxDividerDiv = "<div class=toolbox-divider></div>";
 
 /** Chains the replaceAll method and the toLowerCase method.
  *  Optionally concatenates a string at the end of the method.
   */
-String.prototype.replaceLowerConcat = function (before: string, after: string, concat_string: string = null) {
+String.prototype.replaceLowerConcat = function (before: string, after: string, concat_string: string | null = null) {
     if (typeof (concat_string) === "string") {
-        return this.replaceAll(before, after).toLowerCase().concat(concat_string);
+        return this.split(before).join(after).toLowerCase().concat(concat_string);
     }
 
-    return this.replaceAll(before, after).toLowerCase();
+    return this.split(before).join(after).toLowerCase();
 };
 
 /**
@@ -71,12 +72,28 @@ export class Toolbox {
             throw new Error("No Toolbox Items Given");
         }
 
+        // Warn if both the deprecated KeypointSlider and the ConfidenceSlider are enabled, since
+        // they overlap in functionality and use different deprecation keys.
+        const toolbox_keys = toolbox_item_order.map((item) =>
+            typeof item === "number" ? item : (item as [number, object])[0],
+        );
+        if (
+            toolbox_keys.includes(AllowedToolboxItem.KeypointSlider) &&
+            toolbox_keys.includes(AllowedToolboxItem.ConfidenceSlider)
+        ) {
+            log_message(
+                "Both the deprecated KeypointSlider and the ConfidenceSlider toolbox items are enabled. " +
+                "The KeypointSlider is deprecated; consider using only the ConfidenceSlider.",
+                LogLevel.WARNING,
+            );
+        }
+
         this.add_styles();
 
         const toolbox_instance_list = [];
         // Go through the items in toolbox_item_order and add their instance to the toolbox instance list
         for (let i = 0; i < toolbox_item_order.length; i++) {
-            let args: object, toolbox_key: number;
+            let args: object | null = null, toolbox_key: number;
 
             // If the value of toolbox_item_order[i] is a number then that means the it is one of the
             // enumerated toolbox items, so set it to the key, otherwise the element must be an array
@@ -85,11 +102,11 @@ export class Toolbox {
             if (typeof (toolbox_item_order[i]) === "number") {
                 toolbox_key = <number> toolbox_item_order[i];
             } else {
-                toolbox_key = toolbox_item_order[i][0];
-                args = toolbox_item_order[i][1];
+                toolbox_key = (toolbox_item_order[i] as [number, object])[0];
+                args = (toolbox_item_order[i] as [number, object])[1];
             }
 
-            const toolbox_item_class = ulabel.config.toolbox_map.get(toolbox_key);
+            const toolbox_item_class = ulabel.config.toolbox_map.get(toolbox_key)!;
 
             if (args == null) {
                 toolbox_instance_list.push(new toolbox_item_class(ulabel));
@@ -103,6 +120,17 @@ export class Toolbox {
 
     static add_styles() {
         const css = `
+        .full_ulabel_container_ {
+            position: relative;
+            height: 100%;
+        }
+
+        /* The image is inserted at its natural size and only scaled once the
+           initial crop lands, so keep it hidden until then. */
+        .full_ulabel_container_:not(.ulabel-cropped) .imwrap_cls {
+            visibility: hidden;
+        }
+
         #toolbox {
             width: 320px;
             background-color: white;
@@ -110,6 +138,55 @@ export class Toolbox {
             position: absolute;
             top: 0;
             right: 0;
+        }
+
+        #toolbox.collapsed {
+            display: none;
+        }
+
+        .annbox_cls {
+            width: calc(100% - 320px);
+        }
+
+        .full_ulabel_container_.toolbox-collapsed .annbox_cls {
+            width: 100% !important;
+        }
+
+        .full_ulabel_container_.toolbox-collapsed div.frame_annotation_dialog {
+            display: none !important;
+        }
+
+        .toolbox-collapse-btn {
+            position: absolute;
+            top: 0;
+            right: 0;
+            z-index: 1000;
+            border-radius: 5px;
+            color: white;
+            font-size: 1.2rem;
+            width: 37px;
+            height: 37px;
+            padding: 0;
+            background-color: rgba(255, 166, 0, 0.739);
+            border: 1px solid rgba(0, 128, 128, 0.5);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .toolbox-collapse-btn:hover {
+            background-color: rgba(255, 166, 0, 0.9);
+        }
+
+        .toolbox-header-container {
+            display: flex;
+            align-items: flex-start;
+            height: 40px;
+        }
+
+        .ulabel-night .toolbox-header-container {
+            background-color: rgb(0, 60, 95);
         }
 
         .ulabel-night #toolbox {
@@ -202,24 +279,37 @@ export class Toolbox {
         images: string,
         ULABEL_VERSION: string,
     ): string {
+        // Bake the persisted collapsed state into the markup. Applying it after
+        // init instead paints a frame with the toolbox expanded, which reads as
+        // a flicker every time the instance is rebuilt.
+        const is_collapsed = get_local_storage_item("ulabel_toolbox_collapsed") === "true";
+        const container_class = is_collapsed ? "full_ulabel_container_ toolbox-collapsed" : "full_ulabel_container_";
+        const toolbox_class = is_collapsed ? "toolbox_cls collapsed" : "toolbox_cls";
+        const collapse_arrow = is_collapsed ? "◀" : "▶";
+        const collapse_title = is_collapsed ? "Expand toolbox" : "Collapse toolbox";
+
         // Setup base div and ULabel version header
         let toolbox_html = `
-        <div class="full_ulabel_container_">
+        <div class="${container_class}">
             ${frame_annotation_dialogs}
             <div id="${ulabel.config["annbox_id"]}" class="annbox_cls">
                 <div id="${ulabel.config["imwrap_id"]}" class="imwrap_cls ${ulabel.config["imgsz_class"]}">
                     ${images}
                 </div>
             </div>
-            <div id="${ulabel.config["toolbox_id"]}" class="toolbox_cls">
-                <div class="toolbox-name-header">
-                    <h1 class="toolname"><a class="repo-anchor" href="https://github.com/SenteraLLC/ulabel">ULabel</a> <span class="version-number">v${ULABEL_VERSION}</span></h1><!--
-                    --><div class="night-button-cont">
-                        <a href="#" class="night-button">
-                            <div class="night-button-track">
-                                <div class="night-status"></div>
-                            </div>
-                        </a>
+            <div class="deprecated-focus-banner ulabel-hidden">Showing deleted annotations · editing disabled<a href="#" class="deprecated-focus-exit">Exit</a></div>
+            <button class="toolbox-collapse-btn" title="${collapse_title}">${collapse_arrow}</button>
+            <div id="${ulabel.config["toolbox_id"]}" class="${toolbox_class}">
+                <div class="toolbox-header-container">
+                    <div class="toolbox-name-header">
+                        <h1 class="toolname"><a class="repo-anchor" href="https://github.com/SenteraLLC/ulabel">ULabel</a> <span class="version-number">v${ULABEL_VERSION}</span></h1><!--
+                        --><div class="night-button-cont">
+                            <a href="#" class="night-button">
+                                <div class="night-button-track">
+                                    <div class="night-status"></div>
+                                </div>
+                            </a>
+                        </div>
                     </div>
                 </div>
                 <div class="toolbox_inner_cls">
@@ -285,7 +375,7 @@ export class ToolboxTab {
             sel = " sel";
             val = 100;
         }
-        console.log(subtask.display_name, subtask);
+        log_message(`Building toolbox tab for subtask: ${subtask.display_name}`, LogLevel.VERBOSE);
         this.html = `
         <div class="tb-st-tab${sel}">
             <a${href} id="tb-st-switch--${subtask_key}" class="tb-st-switch">${this.subtask.display_name}</a><!--
@@ -346,21 +436,38 @@ export class ModeSelectionToolboxItem extends ToolboxItem {
             if (target_jq.hasClass("sel") || current_subtask["state"]["is_in_progress"]) return;
 
             // Get the new mode and set it to ulabel's current mode
-            const new_mode = target_jq.attr("id").split("--")[1];
+            const prev_mode = current_subtask["state"]["annotation_mode"];
+            const new_mode = target_jq.attr("id")!.split("--")[1];
             current_subtask["state"]["annotation_mode"] = new_mode;
 
-            // Show the BrushToolboxItem when polygon mode is selected
+            // Show the BrushToolboxItem when polygon or bitmask mode is selected
             if (new_mode === "polygon") {
                 BrushToolboxItem.show_brush_toolbox_item();
+                // Overlap modes are bitmask-only for now
+                BrushToolboxItem.hide_overlap_controls();
+                // Leaving bitmask requires tearing down its brush state
+                if (prev_mode === "bitmask") {
+                    ulabel.disable_bitmask_brush();
+                }
+            } else if (new_mode === "bitmask") {
+                BrushToolboxItem.show_brush_toolbox_item();
+                BrushToolboxItem.show_overlap_controls();
+                // Brush starts off so edit/id dialogs remain usable; the user toggles it to paint
             } else {
                 BrushToolboxItem.hide_brush_toolbox_item();
-                // Turn off erase mode if it's on
-                if (current_subtask["state"]["is_in_erase_mode"]) {
-                    ulabel.toggle_erase_mode(e);
-                }
-                // Turn off brush mode if it's on
-                if (current_subtask["state"]["is_in_brush_mode"]) {
-                    ulabel.toggle_brush_mode(e);
+                BrushToolboxItem.hide_overlap_controls();
+                if (prev_mode === "bitmask") {
+                    // Tear down the bitmask brush without forcing a polygon switch
+                    ulabel.disable_bitmask_brush();
+                } else {
+                    // Turn off erase mode if it's on
+                    if (current_subtask["state"]["is_in_erase_mode"]) {
+                        ulabel.toggle_erase_mode(e);
+                    }
+                    // Turn off brush mode if it's on
+                    if (current_subtask["state"]["is_in_brush_mode"]) {
+                        ulabel.toggle_brush_mode(e);
+                    }
                 }
             }
 
@@ -399,7 +506,7 @@ export class ModeSelectionToolboxItem extends ToolboxItem {
                 // Grab the currently selected mode button
                 const selected_mode_button = <HTMLAnchorElement> Array.from(document.getElementsByClassName("md-btn sel"))[0]; // There's only ever going to be one element in this array, so grab the first one
 
-                let new_button_index: number;
+                let new_button_index: number = 0;
 
                 // Loop through all of the mode select buttons that are currently displayed
                 // to find which one is the currently selected button.  Once its found add 1
@@ -517,7 +624,7 @@ export class ModeSelectionToolboxItem extends ToolboxItem {
  * Toolbox item for resizing all annotations
  */
 export class BrushToolboxItem extends ToolboxItem {
-    public html: string;
+    public html!: string;
     private ulabel: ULabel;
     /**
      * CSS class indicating the brush button is active
@@ -561,6 +668,17 @@ export class BrushToolboxItem extends ToolboxItem {
         #toolbox div.brush button.brush-button.${BrushToolboxItem.BRUSH_BTN_ACTIVE_CLS} {
             background-color: #1c2d4d;
         }
+
+        #toolbox div.brush div.brush-overlap {
+            margin-top: 0.5rem;
+            text-align: center;
+        }
+
+        #toolbox div.brush div.brush-overlap span.brush-overlap-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+        }
         `;
         // Create an id so this specific style tag can be referenced
         const style_id = "brush-toolbox-item-styles";
@@ -586,7 +704,7 @@ export class BrushToolboxItem extends ToolboxItem {
             const button = $(event.currentTarget);
 
             // Use the button id to get what size to resize the annotations to
-            const button_id: string = button.attr("id");
+            const button_id: string = button.attr("id") || "";
 
             switch (button_id) {
                 case "brush-mode":
@@ -603,6 +721,12 @@ export class BrushToolboxItem extends ToolboxItem {
                     break;
             };
         });
+
+        // Overlap mode selection (bitmask only)
+        $(document).on("click.ulabel", ".brush-overlap-button", (event) => {
+            const mode = ($(event.currentTarget).attr("id") || "").replace("brush-overlap-", "");
+            this.ulabel.set_brush_overlap_mode(mode);
+        });
     }
 
     public get_html() {
@@ -611,12 +735,20 @@ export class BrushToolboxItem extends ToolboxItem {
             <p class="tb-header">Brush Tool</p>
             <div class="brush-button-holder">
                 <span class="brush-mode">
-                    <button class="brush-button" id="brush-mode">Brush</button>
-                    <button class="brush-button" id="erase-mode">Erase</button>
+                    <button class="brush-button" id="brush-mode" title="Toggle brush mode (paint)">Brush</button>
+                    <button class="brush-button" id="erase-mode" title="Toggle erase mode">Erase</button>
                 </span>
                 <span class="brush-inc increment">
-                    <button class="brush-button circle inc" id="brush-inc">+</button>
-                    <button class="brush-button circle dec" id="brush-dec">-</button>
+                    <button class="brush-button circle inc" id="brush-inc" title="Increase brush size">+</button>
+                    <button class="brush-button circle dec" id="brush-dec" title="Decrease brush size">-</button>
+                </span>
+            </div>
+            <div class="brush-overlap">
+                <p class="tb-header">Overlap</p>
+                <span class="brush-overlap-buttons">
+                    <button class="brush-button brush-overlap-button" id="brush-overlap-none" title="Overlap: none — painted pixels may overlap other masks">None</button>
+                    <button class="brush-button brush-overlap-button" id="brush-overlap-exclude" title="Overlap: exclude — don't paint over pixels owned by other masks">Exclude</button>
+                    <button class="brush-button brush-overlap-button" id="brush-overlap-overwrite" title="Overlap: overwrite — remove painted pixels from other masks">Overwrite</button>
                 </span>
             </div>
         </div>
@@ -633,10 +765,32 @@ export class BrushToolboxItem extends ToolboxItem {
         $(".brush").addClass("ulabel-hidden");
     }
 
+    // Show/hide the overlap-mode controls (bitmask only)
+    public static show_overlap_controls() {
+        $(".brush-overlap").removeClass("ulabel-hidden");
+    }
+
+    public static hide_overlap_controls() {
+        $(".brush-overlap").addClass("ulabel-hidden");
+    }
+
+    // Reflect the active overlap mode on the toolbox buttons
+    public static update_overlap_mode_buttons(mode: string) {
+        $(".brush-overlap-button").removeClass(BrushToolboxItem.BRUSH_BTN_ACTIVE_CLS);
+        $(`#brush-overlap-${mode}`).addClass(BrushToolboxItem.BRUSH_BTN_ACTIVE_CLS);
+    }
+
     public after_init() {
-        // Only show BrushToolboxItem if the current mode is polygon
-        if (this.ulabel.get_current_subtask().state["annotation_mode"] !== "polygon") {
+        // Reflect the persisted overlap mode on the buttons
+        BrushToolboxItem.update_overlap_mode_buttons(this.ulabel.get_brush_overlap_mode());
+        // Only show BrushToolboxItem if the current mode is polygon or bitmask
+        const mode = this.ulabel.get_current_subtask().state["annotation_mode"];
+        if (mode !== "polygon" && mode !== "bitmask") {
             BrushToolboxItem.hide_brush_toolbox_item();
+        }
+        // Overlap controls are bitmask-only
+        if (mode !== "bitmask") {
+            BrushToolboxItem.hide_overlap_controls();
         }
     }
 
@@ -649,7 +803,7 @@ export class BrushToolboxItem extends ToolboxItem {
  * Toolbox item for zooming and panning.
  */
 export class ZoomPanToolboxItem extends ToolboxItem {
-    public frame_range: string;
+    public frame_range!: string;
     constructor(
         public ulabel: ULabel,
     ) {
@@ -825,13 +979,13 @@ export class ZoomPanToolboxItem extends ToolboxItem {
     }
 
     private add_event_listeners() {
-        const frames_exist = this.ulabel.config["image_data"].frames.length > 1;
+        const frames_exist = this.ulabel.config["image_data"]!.frames.length > 1;
 
         $(document).on("click.ulabel", ".ulabel-zoom-button", (event) => {
             if ($(event.currentTarget).hasClass("ulabel-zoom-out")) {
-                this.ulabel.state.zoom_val /= 1.1;
+                this.ulabel.set_zoom_val(this.ulabel.state.zoom_val / 1.1);
             } else if ($(event.currentTarget).hasClass("ulabel-zoom-in")) {
-                this.ulabel.state.zoom_val *= 1.1;
+                this.ulabel.set_zoom_val(this.ulabel.state.zoom_val * 1.1);
             }
 
             this.ulabel.rezoom();
@@ -843,13 +997,13 @@ export class ZoomPanToolboxItem extends ToolboxItem {
         $(document).on("click.ulabel", ".ulabel-pan", (event) => {
             const annbox = $("#" + this.ulabel.config.annbox_id);
             if ($(event.currentTarget).hasClass("ulabel-pan-up")) {
-                annbox.scrollTop(annbox.scrollTop() - 20);
+                annbox.scrollTop(annbox.scrollTop()! - 20);
             } else if ($(event.currentTarget).hasClass("ulabel-pan-down")) {
-                annbox.scrollTop(annbox.scrollTop() + 20);
+                annbox.scrollTop(annbox.scrollTop()! + 20);
             } else if ($(event.currentTarget).hasClass("ulabel-pan-left")) {
-                annbox.scrollLeft(annbox.scrollLeft() - 20);
+                annbox.scrollLeft(annbox.scrollLeft()! - 20);
             } else if ($(event.currentTarget).hasClass("ulabel-pan-right")) {
-                annbox.scrollLeft(annbox.scrollLeft() + 20);
+                annbox.scrollLeft(annbox.scrollLeft()! + 20);
             }
         });
 
@@ -872,19 +1026,19 @@ export class ZoomPanToolboxItem extends ToolboxItem {
                 const annbox = $("#" + this.ulabel.config.annbox_id);
                 switch (event.key) {
                     case "ArrowLeft":
-                        annbox.scrollLeft(annbox.scrollLeft() - 20);
+                        annbox.scrollLeft(annbox.scrollLeft()! - 20);
                         event.preventDefault();
                         break;
                     case "ArrowRight":
-                        annbox.scrollLeft(annbox.scrollLeft() + 20);
+                        annbox.scrollLeft(annbox.scrollLeft()! + 20);
                         event.preventDefault();
                         break;
                     case "ArrowUp":
-                        annbox.scrollTop(annbox.scrollTop() - 20);
+                        annbox.scrollTop(annbox.scrollTop()! - 20);
                         event.preventDefault();
                         break;
                     case "ArrowDown":
-                        annbox.scrollTop(annbox.scrollTop() + 20);
+                        annbox.scrollTop(annbox.scrollTop()! + 20);
                         event.preventDefault();
                         break;
                     default:
@@ -901,17 +1055,17 @@ export class ZoomPanToolboxItem extends ToolboxItem {
         });
 
         $(document).on("keypress.ulabel", (e) => {
-            if (e.key == this.ulabel.config.change_zoom_keybind.toLowerCase()) {
-                document.getElementById("recenter-button").click();
+            if (e.key == this.ulabel.config.reset_zoom_keybind) {
+                document.getElementById("recenter-button")!.click();
             }
-            if (e.key == this.ulabel.config.change_zoom_keybind.toUpperCase()) {
-                document.getElementById("recenter-whole-image-button").click();
+            if (e.key == this.ulabel.config.show_full_image_keybind) {
+                document.getElementById("recenter-whole-image-button")!.click();
             }
         });
     }
 
-    private set_frame_range(ulabel) {
-        if (ulabel.config["image_data"]["frames"].length == 1) {
+    private set_frame_range(ulabel: ULabel) {
+        if (ulabel.config["image_data"]!["frames"].length == 1) {
             this.frame_range = ``;
             return;
         }
@@ -921,7 +1075,7 @@ export class ZoomPanToolboxItem extends ToolboxItem {
                 <div class="zpcont">
                     <div class="lblpyldcont">
                         <span class="pzlbl htblbl">Frame</span> &nbsp;
-                        <input class="frame_input" type="range" min=0 max=${ulabel.config["image_data"].frames.length - 1} value=0 />
+                        <input class="frame_input" type="range" min=0 max=${ulabel.config["image_data"]!.frames.length - 1} value=0 />
                     </div>
                 </div>
             </div>
@@ -974,7 +1128,7 @@ export class ZoomPanToolboxItem extends ToolboxItem {
  * Toolbox item for selection Annotation ID.
  */
 export class AnnotationIDToolboxItem extends ToolboxItem {
-    instructions: string;
+    instructions!: string;
     constructor(
         public ulabel: ULabel,
     ) {
@@ -1049,13 +1203,16 @@ export class AnnotationIDToolboxItem extends ToolboxItem {
 }
 
 export class ClassCounterToolboxItem extends ToolboxItem {
-    public html: string;
+    public html!: string;
     public inner_HTML: string;
+    public subtasks: string[] | "current";
+    public layout: "current" | "grouped" | "flat";
 
-    // TODO (joshua-dean): Find the correct way to handle this
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    constructor(...args) {
+    constructor(ulabel?: ULabel) {
         super();
+        const config: ClassCounterConfig = ulabel?.config?.class_counter_toolbox_item ?? {};
+        this.subtasks = config.subtasks ?? "current";
+        this.layout = config.layout ?? "current";
         this.inner_HTML = `<p class="tb-header">Annotation Count</p>`;
         this.add_styles();
     }
@@ -1065,7 +1222,12 @@ export class ClassCounterToolboxItem extends ToolboxItem {
      */
     protected add_styles() {
         // Define the css
-        const css = ` /* ClassCounterToolboxItem currently requires no styling */ `;
+        const css = `
+        div.toolbox-class-counter p.tb-counter-subtask-header {
+            font-weight: bold;
+            margin-bottom: 0;
+        }
+        `;
 
         // Create an id so this specific style tag can be referenced
         const style_id = "class-counter-toolbox-item-styles";
@@ -1086,47 +1248,102 @@ export class ClassCounterToolboxItem extends ToolboxItem {
     }
 
     /**
-     * Update the Class Counter with the current number of active annotations.
-     *
-     * @param {ULabelSubtask} subtask Subtask to update the counter for.
+     * Update which subtasks are counted and how counts are laid out. The host's
+     * view mode owns this, so it must be changeable at runtime.
      */
-    update_toolbox_counter(subtask: ULabelSubtask): void {
-        if (subtask == null) {
-            return;
+    public set_options(options: ClassCounterConfig): void {
+        if (options.subtasks !== undefined) this.subtasks = options.subtasks;
+        if (options.layout !== undefined) this.layout = options.layout;
+    }
+
+    /**
+     * Count a subtask's non-deprecated annotations per class, in class_defs order.
+     * An annotation counts toward its first classification payload with confidence > 0.
+     */
+    private count_subtask(subtask: ULabelSubtask): { id: number; name: string; count: number }[] {
+        const class_counts: Record<number, number> = {};
+        for (const class_id of subtask.class_ids) {
+            class_counts[class_id] = 0;
         }
-        const class_ids = subtask.class_ids;
-        let i: number, j: number;
-        const class_counts = {};
-        for (i = 0; i < class_ids.length; i++) {
-            class_counts[class_ids[i]] = 0;
-        }
-        const annotations = subtask.annotations.access;
-        const annotation_ids = subtask.annotations.ordering;
-        let current_annotation: ULabelAnnotation, current_payload;
-        for (i = 0; i < annotation_ids.length; i++) {
-            current_annotation = annotations[annotation_ids[i]];
-            if (current_annotation.deprecated === false) {
-                for (j = 0; j < current_annotation.classification_payloads.length; j++) {
-                    current_payload = current_annotation.classification_payloads[j];
-                    if (current_payload.confidence > 0.0) {
-                        class_counts[current_payload.class_id] += 1;
-                        break;
+        for (const annotation_id of subtask.annotations.ordering) {
+            const annotation = subtask.annotations.access[annotation_id];
+            if (annotation.deprecated) continue;
+            for (const payload of annotation.classification_payloads ?? []) {
+                if (payload.confidence > 0.0) {
+                    if (payload.class_id in class_counts) {
+                        class_counts[payload.class_id] += 1;
                     }
+                    break;
                 }
             }
         }
-        let f_string = "";
-        let class_name: string, class_count: number;
-        for (i = 0; i < class_ids.length; i++) {
-            class_name = subtask.class_defs[i].name;
-            // MF-Tassels Hack
-            if (class_name.includes("OVERWRITE")) {
-                continue;
-            }
-            class_count = class_counts[subtask.class_defs[i].id];
-            f_string += `${class_name}: ${class_count}<br>`;
+        return subtask.class_defs
+            // The reserved delete class is a mode implement, not a real class
+            .filter((class_def) => class_def.id !== DELETE_CLASS_ID)
+            // MF-Tassels Hack: OVERWRITE classes are internal and never displayed
+            .filter((class_def) => !class_def.name.includes("OVERWRITE"))
+            .map((class_def) => ({
+                id: class_def.id,
+                name: class_def.name,
+                count: class_counts[class_def.id],
+            }));
+    }
+
+    /**
+     * Update the Class Counter with the current number of active annotations.
+     *
+     * @param {ULabel} ulabel ULabel instance to count annotations for.
+     */
+    update_toolbox_counter(ulabel: ULabel): void {
+        if (ulabel == null) {
+            return;
         }
-        this.inner_HTML = `<p class="tb-header">Annotation Count</p>` + `<p>${f_string}</p>`;
+        let keys: string[];
+        if (this.subtasks === "current") {
+            keys = [ulabel.get_current_subtask_key()];
+        } else {
+            keys = this.subtasks.filter((key) => key in ulabel.subtasks);
+        }
+
+        let body = "";
+        if (this.layout === "grouped") {
+            for (const key of keys) {
+                const subtask = ulabel.subtasks[key];
+                let lines = "";
+                for (const row of this.count_subtask(subtask)) {
+                    lines += `${row.name}: ${row.count}<br>`;
+                }
+                body += `<p class="tb-counter-subtask-header">${subtask.display_name}</p><p>${lines}</p>`;
+            }
+        } else if (this.layout === "flat") {
+            // Merge shared class ids across subtasks: sum counts, keep first-seen order/name
+            const merged = new Map<number, { name: string; count: number }>();
+            for (const key of keys) {
+                for (const row of this.count_subtask(ulabel.subtasks[key])) {
+                    const existing = merged.get(row.id);
+                    if (existing !== undefined) {
+                        existing.count += row.count;
+                    } else {
+                        merged.set(row.id, { name: row.name, count: row.count });
+                    }
+                }
+            }
+            let lines = "";
+            merged.forEach((row) => {
+                lines += `${row.name}: ${row.count}<br>`;
+            });
+            body = `<p>${lines}</p>`;
+        } else {
+            // "current": the original rendering, one run of lines per counted subtask
+            let lines = "";
+            for (const key of keys) {
+                for (const row of this.count_subtask(ulabel.subtasks[key])) {
+                    lines += `${row.name}: ${row.count}<br>`;
+                }
+            }
+            body = `<p>${lines}</p>`;
+        }
+        this.inner_HTML = `<p class="tb-header">Annotation Count</p>` + body;
     }
 
     public get_html() {
@@ -1139,9 +1356,7 @@ export class ClassCounterToolboxItem extends ToolboxItem {
     }
 
     public redraw_update(ulabel: ULabel) {
-        this.update_toolbox_counter(
-            ulabel.get_current_subtask(),
-        );
+        this.update_toolbox_counter(ulabel);
         $("#" + ulabel.config["toolbox_id"] + " div.toolbox-class-counter").html(this.inner_HTML);
     }
 
@@ -1155,8 +1370,7 @@ export class ClassCounterToolboxItem extends ToolboxItem {
  */
 export class AnnotationResizeItem extends ToolboxItem {
     public cached_size: number = 1.5;
-    public html: string;
-    private keybind_configuration: { [key: string]: string };
+    public html!: string;
     private ulabel: ULabel;
 
     constructor(ulabel: ULabel) {
@@ -1164,26 +1378,9 @@ export class AnnotationResizeItem extends ToolboxItem {
 
         this.ulabel = ulabel;
 
-        // Get default keybinds
-        this.keybind_configuration = ulabel.config.default_keybinds;
-
         // First check for a size cookie, if one isn't found then check the config
-        // for a default annotation size. If neither are found it will use the size
-        // that the annotation was saved as.
-        for (const subtask in ulabel.subtasks) {
-            const cached_size_property = ulabel.subtasks[subtask].display_name.replaceLowerConcat(" ", "-", "-cached-size");
-            const size_cookie = AnnotationSizeCookie.read_size_cookie(ulabel.subtasks[subtask]);
-            if (size_cookie != null) {
-                this.update_annotation_size(ulabel, ulabel.subtasks[subtask], Number(size_cookie));
-                this[cached_size_property] = Number(size_cookie);
-            } else if (ulabel.config.default_annotation_size != undefined) {
-                this.update_annotation_size(ulabel, ulabel.subtasks[subtask], ulabel.config.default_annotation_size);
-                this[cached_size_property] = ulabel.config.default_annotation_size;
-            } else {
-                const DEFAULT_SIZE = 5;
-                this.update_annotation_size(ulabel, ulabel.subtasks[subtask], DEFAULT_SIZE);
-                this[cached_size_property] = DEFAULT_SIZE;
-            }
+        for (const subtask_key in ulabel.subtasks) {
+            AnnotationResizeItem.update_annotation_size(ulabel, subtask_key, ulabel.config.initial_line_size, false, false);
         }
 
         this.add_styles();
@@ -1268,169 +1465,108 @@ export class AnnotationResizeItem extends ToolboxItem {
         $(document).on("click.ulabel", ".annotation-resize-button", (event) => {
             // Get the current subtask
             const current_subtask_key = this.ulabel.get_current_subtask_key();
-            const current_subtask = this.ulabel.get_current_subtask();
 
             // Get the clicked button
             const button = $(event.currentTarget);
 
             // Use the button id to get what size to resize the annotations to
-            const annotation_size = <ValidResizeValues> button.attr("id").slice(18);
+            const button_value = <ValidResizeValues> button.attr("id")!.slice(18);
 
-            // Update the size of all annotations in the subtask
-            this.update_annotation_size(this.ulabel, current_subtask, annotation_size);
-
-            this.ulabel.redraw_all_annotations(current_subtask_key, null, false);
-        });
-
-        $(document).on("keydown.ulabel", (event) => {
-            // Get the current subtask
-            const current_subtask = this.ulabel.get_current_subtask();
-
-            switch (event.key) {
-                case this.keybind_configuration.annotation_vanish.toUpperCase():
-                    this.update_all_subtask_annotation_size(this.ulabel, ValidResizeValues.VANISH);
+            let annotation_size: number;
+            let increment: boolean = false;
+            switch (button_value) {
+                case ValidResizeValues.SMALL:
+                    annotation_size = SMALL_ANNOTATION_SIZE;
                     break;
-                case this.keybind_configuration.annotation_vanish.toLowerCase():
-                    this.update_annotation_size(this.ulabel, current_subtask, ValidResizeValues.VANISH);
+                case ValidResizeValues.LARGE:
+                    annotation_size = LARGE_ANNOTATION_SIZE;
                     break;
-                case this.keybind_configuration.annotation_size_small:
-                    this.update_annotation_size(this.ulabel, current_subtask, ValidResizeValues.SMALL);
+                case ValidResizeValues.INCREMENT:
+                    annotation_size = INCREMENT_ANNOTATION_SIZE;
+                    increment = true;
                     break;
-                case this.keybind_configuration.annotation_size_large:
-                    this.update_annotation_size(this.ulabel, current_subtask, ValidResizeValues.LARGE);
+                case ValidResizeValues.DECREMENT:
+                    annotation_size = -INCREMENT_ANNOTATION_SIZE;
+                    increment = true;
                     break;
-                case this.keybind_configuration.annotation_size_minus:
-                    this.update_annotation_size(this.ulabel, current_subtask, ValidResizeValues.DECREMENT);
-                    break;
-                case this.keybind_configuration.annotation_size_plus:
-                    this.update_annotation_size(this.ulabel, current_subtask, ValidResizeValues.INCREMENT);
-                    break;
+                case ValidResizeValues.VANISH:
+                    // Toggle the vanished flag for the current subtask and return
+                    AnnotationResizeItem.toggle_subtask_vanished(this.ulabel, current_subtask_key);
+                    return;
                 default:
-                    // Return if no valid keybind was pressed
+                    log_message(`Invalid Resize Value: ${button_value}`, LogLevel.ERROR, true);
                     return;
             }
 
-            // If the sizes were updated resize the annotations
-            this.ulabel.redraw_all_annotations(null, null, false);
+            // Update the size of all annotations in the subtask
+            AnnotationResizeItem.update_annotation_size(this.ulabel, current_subtask_key, annotation_size, increment);
         });
     }
 
     /**
-     * Takes in either a number or a ValidResizeValues.value. If given a number it will resize all annotations in the subtask to
-     * be that size. The ValidResizeValues will either set the size of all annotations to set values or increment/decrement the
-     * current size of the annotations.
+     * Update the size of all annotations in a subtask.
      *
-     * @param subtask Subtask which holds the annotations to act on
-     * @param size How to resize the annotations
+     * @param {ULabel} ulabel ULabel instance
+     * @param {string} subtask_key Key of the subtask to update
+     * @param {number} size Size to set/increment/decrement the annotations
+     * @param {boolean} increment Whether or not to increment (true) or set (false) the size
+     * @param {boolean} redraw Whether to redraw the annotation
      */
-    public update_annotation_size(ulabel: ULabel, subtask: ULabelSubtask, size: number | ValidResizeValues): void {
+    public static update_annotation_size(ulabel: ULabel, subtask_key: string, size: number, increment: boolean = false, redraw: boolean = true): void {
+        const subtask = ulabel.subtasks[subtask_key];
         if (subtask === null) return;
 
-        const small_size = 1.5;
-        const large_size = 5;
-        const increment_size = 0.5;
-        const vanish_size = 0.01;
-        const subtask_cached_size = subtask.display_name.replaceLowerConcat(" ", "-", "-cached-size");
-        const subtask_vanished_flag = subtask.display_name.replaceLowerConcat(" ", "-", "-vanished");
+        // If the annotations are currently hidden (vanished or opacity 0), don't resize them
+        if (ulabel.is_subtask_hidden(subtask_key)) return;
 
-        // If the annotations are currently vanished and a button other than the vanish button is
-        // pressed, then we want to ignore the input
-        if (this[subtask_vanished_flag] && size !== "v") return;
+        // Set the size of the subtask to the given size
+        AnnotationResizeItem.update_subtask_line_size(subtask, size, increment);
 
-        // If a number was passed in, set all annotations to be the size of the number
-        if (typeof (size) === "number") {
-            this.loop_through_annotations(subtask, size, "=");
-            return;
-        }
-
-        // Otherwise handle each ValidResizeValues case here
-        switch (size) {
-            case ValidResizeValues.SMALL:
-                this.loop_through_annotations(subtask, small_size, "=");
-                this[subtask_cached_size] = small_size;
-                break;
-            case ValidResizeValues.LARGE:
-                this.loop_through_annotations(subtask, large_size, "=");
-                this[subtask_cached_size] = large_size;
-                break;
-            case ValidResizeValues.DECREMENT:
-                this.loop_through_annotations(subtask, increment_size, "-");
-                if (this[subtask_cached_size] - increment_size > vanish_size) {
-                    this[subtask_cached_size] -= increment_size;
-                } else {
-                    this[subtask_cached_size] = vanish_size;
-                }
-                break;
-            case ValidResizeValues.INCREMENT:
-                this.loop_through_annotations(subtask, increment_size, "+");
-                this[subtask_cached_size] += increment_size;
-                break;
-            case ValidResizeValues.VANISH:
-                if (this[subtask_vanished_flag]) {
-                    // Re-apply the cashed annotation size
-                    this.loop_through_annotations(subtask, this[subtask_cached_size], "=");
-
-                    // Filp the state
-                    this[subtask_vanished_flag] = !this[subtask_vanished_flag];
-
-                    // Unlock the vanish button
-                    $("#annotation-resize-v").removeClass("locked");
-                } else {
-                    // Apply the vanish size to make the annotations to small to see
-                    this.loop_through_annotations(subtask, vanish_size, "=");
-
-                    // Filp the state
-                    this[subtask_vanished_flag] = !this[subtask_vanished_flag];
-
-                    // Lock the vanish button
-                    $("#annotation-resize-v").addClass("locked");
-                }
-                break;
-            default:
-                console.error("update_annotation_size called with unknown size");
-        }
-
-        // Store the new size as the default if we should be tracking it
-        if (ulabel.state.line_size !== null) {
-            ulabel.state.line_size = this[subtask_cached_size];
+        // If the sizes were updated, resize the annotations
+        if (redraw) {
+            ulabel.redraw_all_annotations(subtask_key, null, false);
         }
     }
 
-    // Loop through all annotations in a subtask and change their line size
-    public loop_through_annotations(subtask: ULabelSubtask, size: number, operation: "=" | "+" | "-") {
-        for (const annotation_id in subtask.annotations.access) {
-            switch (operation) {
-                case "=":
-                    subtask.annotations.access[annotation_id].line_size = size;
-                    break;
-                case "+":
-                    subtask.annotations.access[annotation_id].line_size += size;
-                    break;
-                case "-":
-                    // Check to make sure annotation line size won't go 0 or negative.
-                    // If it would, set it equal to a small positive number
-                    if (subtask.annotations.access[annotation_id].line_size - size <= 0.01) {
-                        subtask.annotations.access[annotation_id].line_size = 0.01;
-                    } else {
-                        subtask.annotations.access[annotation_id].line_size -= size;
-                    }
-                    break;
-                default:
-                    throw Error("Invalid Operation given to loop_through_annotations");
+    // Update the line size for a subtask
+    public static update_subtask_line_size(subtask: ULabelSubtask, size: number, increment: boolean) {
+        // Update subtask line size
+        if (increment) {
+            // Guard against the line size going too small or negative
+            if (subtask.state.line_size + size < MINIMUM_ANNOTATION_SIZE) {
+                subtask.state.line_size = MINIMUM_ANNOTATION_SIZE;
+            } else {
+                subtask.state.line_size += size;
             }
-        }
-
-        if (subtask.annotations.ordering.length > 0) {
-            const cst_line_size = subtask.annotations.access[subtask.annotations.ordering[0]].line_size;
-            AnnotationSizeCookie.set_size_cookie(cst_line_size, subtask);
+        } else {
+            // Set the line size to the given size
+            subtask.state.line_size = size;
         }
     }
 
-    // Loop through all subtasks and apply a size to them all
-    public update_all_subtask_annotation_size(ulabel, size) {
-        for (const subtask in ulabel.subtasks) {
-            this.update_annotation_size(ulabel, ulabel.subtasks[subtask], size);
+    /**
+     * Set the vanished flag for a subtask and update the vanish button
+     *
+     * @param {ULabel} ulabel ULabel
+     * @param {string} subtask_key Key of the subtask to update
+     */
+    public static toggle_subtask_vanished(ulabel: ULabel, subtask_key: string) {
+        // Toggle the vanished flag for the subtask
+        const new_value = !ulabel.subtasks[subtask_key].state.is_vanished;
+        ulabel.subtasks[subtask_key].state.is_vanished = new_value;
+
+        // Lock/unlock the vanish button
+        if (new_value) {
+            $("#annotation-resize-v").addClass("locked");
+        } else {
+            $("#annotation-resize-v").removeClass("locked");
         }
+
+        // Redraw the annotations
+        ulabel.redraw_all_annotations(subtask_key, null, false);
+
+        // Show/hide dialogs
+        ulabel.suggest_edits();
     }
 
     public get_html() {
@@ -1500,79 +1636,23 @@ export class RecolorActiveItem extends ToolboxItem {
 
     private read_local_storage(): void {
         // Loop through every valid id and see if a color has been saved for it in local storage
+        const saved_colors: Record<string, string> = {};
         for (const class_id of this.ulabel.valid_class_ids) {
             // Get the color from local storage based on the current class id
             const color = get_local_storage_item(`RecolorActiveItem-${class_id}`);
 
-            // Update the color if its not null
-            // Additionally no need to save the color to local storage since we got it from reading local storage
-            if (color !== null) this.update_color(class_id, color, false);
+            // No need to save the color back; we just read it from local storage
+            if (color !== null) saved_colors[class_id] = color;
         }
+        this.ulabel.set_class_colors(saved_colors, false);
 
         // Then read whether or not the gradient should be on by default
         this.gradient_turned_on = get_local_storage_item("RecolorActiveItem-Gradient");
     }
 
-    private replace_color_pie(): void {
-        // Only the current subtask's color can be changed, so only the current subtask needs to be updated
-        const current_subtask_key: string = this.ulabel.state.current_subtask;
-        const current_subtask: ULabelSubtask = this.ulabel.subtasks[current_subtask_key];
-
-        // Get the back and front id dialog's ids
-        const id_dialog_id: string = current_subtask.state.idd_id;
-        const front_id_dialog_id = this.ulabel.subtasks[current_subtask_key].state.idd_id_front;
-
-        // Need the width and inner radius of the pie to re-build it
-        const width: number = this.ulabel.config.outer_diameter;
-        const inner_radius = this.ulabel.config.inner_prop * width / 2;
-
-        const color_info = this.ulabel.color_info;
-
-        // Grab the dialogs and their containers
-        const subtask_dialog_container_jq = $("#dialogs__" + current_subtask_key);
-        const id_dialog_container = $(`#id_dialog__${current_subtask_key}`);
-        const front_subtask_dialog_container_jq = $("#front_dialogs__" + current_subtask_key);
-        const front_id_dialog_container = $(`#id_front_dialog__${current_subtask_key}`);
-
-        // Build the html
-        const dialog_html_v2 = get_idd_string(
-            id_dialog_id, width, this.ulabel.subtasks[current_subtask_key].class_ids, inner_radius, color_info,
-        );
-        const front_dialog_html_v2 = get_idd_string(
-            front_id_dialog_id, width, this.ulabel.subtasks[current_subtask_key].class_ids, inner_radius, color_info,
-        );
-
-        // Remove the old pies
-        id_dialog_container.remove();
-        front_id_dialog_container.remove();
-
-        // Add dialog to the document inside their containers
-        front_subtask_dialog_container_jq.append(front_dialog_html_v2);
-        subtask_dialog_container_jq.append(dialog_html_v2);
-
-        // Re-add the event listener for changing the opacity on hover
-        // Set that = this because this references the element inside the event listener instead of the toolbox item
-        // TODO (joshua-dean): Don't alias this
-        // https://typescript-eslint.io/rules/no-this-alias/
-        // eslint-disable-next-line @typescript-eslint/no-this-alias
-        const that = this;
-        $(".id_dialog").on("mousemove.ulabel", function (mouse_event) {
-            if (!that.ulabel.subtasks[current_subtask_key].state.idd_thumbnail) {
-                that.ulabel.handle_id_dialog_hover(mouse_event);
-            }
-        });
-    }
-
     private update_color(class_id: number | string, color: string, need_to_save: boolean = true): void {
-        // Update the color_info for annotations appropriately
-        this.ulabel.color_info[class_id] = color;
-
-        // Update the color in the AnnotationId button for this class
-        const button_color_square = <HTMLDivElement> document.querySelector(`#toolbox_sel_${class_id} > div`);
-        if (button_color_square) button_color_square.style.backgroundColor = color;
-
-        // Update the id update pie
-        this.replace_color_pie();
+        // Write color_info and sync the toolbox swatch + id-dialog pies
+        this.ulabel.set_class_color(class_id, color, false);
 
         // Save the color to local storage if appropriate
         if (need_to_save) this.save_local_storage_color(class_id, color);
@@ -1687,7 +1767,11 @@ export class RecolorActiveItem extends ToolboxItem {
             const color: string = event.target.id.slice(13);
 
             // Get the currently selected class id
-            const active_class_id: number = get_active_class_id(this.ulabel);
+            const active_class_id = get_active_class_id(this.ulabel);
+            if (active_class_id === undefined) {
+                log_message("Cannot change color: no active class id found", LogLevel.WARNING);
+                return;
+            }
 
             // Overwrite the color info with the new color
             this.update_color(active_class_id, color);
@@ -1703,7 +1787,11 @@ export class RecolorActiveItem extends ToolboxItem {
             const color: string = event.currentTarget.value;
 
             // Get the currently selected class id
-            const active_class_id: number = get_active_class_id(this.ulabel);
+            const active_class_id = get_active_class_id(this.ulabel);
+            if (active_class_id === undefined) {
+                log_message("Cannot change color: no active class id found", LogLevel.WARNING);
+                return;
+            }
 
             // Update the color for this class
             this.update_color(active_class_id, color);
@@ -1796,206 +1884,32 @@ export class RecolorActiveItem extends ToolboxItem {
     }
 }
 
-export class KeypointSliderItem extends ToolboxItem {
-    public html: string;
-    public inner_HTML: string;
-    public name: string;
-    public slider_bar_id: string;
-    public filter_function: (value: number, filter: number) => boolean;
-    public get_confidence: (annotation: ULabelAnnotation) => number;
-    public mark_deprecated: (
-        annotation: ULabelAnnotation,
-        deprecated: boolean,
-        deprecated_by_key?: ValidDeprecatedBy,
-    ) => void;
-
-    filter_value: number = 0;
-    ulabel: ULabel;
-    keybinds: {
-        increment: string;
-        decrement: string;
-    };
-
-    // TODO (joshua-dean): See if we can narrow this any
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    constructor(ulabel: ULabel, kwargs: { [name: string]: any }) {
-        super();
-        this.inner_HTML = `<p class="tb-header">Keypoint Slider</p>`;
-        this.ulabel = ulabel;
-
-        // Use properties in kwargs if kwargs is present
-        if (kwargs !== undefined) {
-            this.name = kwargs.name;
-            this.filter_function = kwargs.filter_function;
-            this.get_confidence = kwargs.confidence_function;
-            this.mark_deprecated = kwargs.mark_deprecated;
-            this.keybinds = kwargs.keybinds;
-        } else {
-            // Otherwise use defaults
-            this.name = "Keypoint Slider";
-            this.filter_function = value_is_lower_than_filter;
-            this.get_confidence = get_annotation_confidence;
-            this.mark_deprecated = mark_deprecated;
-            this.keybinds = {
-                increment: "2",
-                decrement: "1",
-            };
-            kwargs = {};
-        }
-
-        // Create slider bar id
-        this.slider_bar_id = this.name.replaceLowerConcat(" ", "-");
-
-        // If the config has a default value override the filter_value
-        const has_filter_override = Object.prototype.hasOwnProperty.call(
-            this.ulabel.config,
-            this.name.replaceLowerConcat(" ", "_", "_default_value"),
-        );
-        if (has_filter_override) {
-            // Set the filter value
-            this.filter_value = this.ulabel.config[this.name.replaceLowerConcat(" ", "_", "_default_value")];
-        }
-
-        // Check the config to see if we should update the annotations with the default filter on load
-        if (this.ulabel.config.filter_annotations_on_load) {
-            this.filter_annotations(this.ulabel);
-        }
-
-        this.add_styles();
-    }
-
-    /**
-     * Create the css for this ToolboxItem and append it to the page.
-     */
-    protected add_styles() {
-        // Define the css
-        const css = `
-        /* Component has no css?? */
-        `;
-        // Create an id so this specific style tag can be referenced
-        const style_id = "keypoint-slider-toolbox-item-styles";
-
-        // Don't add the style tag if its already been added once
-        if (document.getElementById(style_id)) return;
-
-        // Grab the document's head and create a style tag
-        const head = document.head || document.querySelector("head");
-        const style = document.createElement("style");
-
-        // Add the css and id to the style tag
-        style.appendChild(document.createTextNode(css));
-        style.id = style_id;
-
-        // Add the style tag to the document's head
-        head.appendChild(style);
-    }
-
-    /**
-     * Given the ulabel object and a filter value, go through each annotation and decide whether or
-     * not to deprecate it.
-     *
-     * @param ulabel ULabel object
-     * @param filter_value The number between 0-100 which annotation's confidence is compared against
-     * @param redraw whether or not to redraw the annotations after filtering
-     * @returns Annotations that were modified, organized by subtask key
-     */
-    private filter_annotations(ulabel: ULabel, filter_value: number = null, redraw: boolean = false): void {
-        if (filter_value === null) {
-            // Use stored filter value if none is passed in
-            filter_value = Math.round(this.filter_value * 100);
-        }
-        // Store which annotations need to be redrawn
-        const annotations_ids_to_redraw_by_subtask: { [key: string]: string[] } = {};
-        // Initialize the object with the subtask keys
-        for (const subtask_key in ulabel.subtasks) {
-            annotations_ids_to_redraw_by_subtask[subtask_key] = [];
-        }
-
-        // Get all point annotations
-        const point_and_line_annotations = get_point_and_line_annotations(ulabel);
-        for (const annotation of point_and_line_annotations[0]) {
-            // Get the annotation's confidence as decimal between 0-1
-            let confidence: number = this.get_confidence(annotation);
-
-            // filter_value will be a number between 0-100, so convert the confidence to a percentage as well
-            confidence = Math.round(confidence * 100);
-
-            // Compare the confidence value against the filter value
-            const should_deprecate: boolean = this.filter_function(confidence, filter_value);
-            // Check if an annotation should be deprecated or undeprecated, else do nothing
-            if (
-                (should_deprecate && !annotation.deprecated) ||
-                (!should_deprecate && annotation.deprecated)
-            ) {
-                // Mark this annotation as either deprecated or undeprecated by the confidence filter
-                this.mark_deprecated(annotation, should_deprecate, "confidence_filter");
-                annotations_ids_to_redraw_by_subtask[annotation.subtask_key].push(annotation.id);
-            }
-        }
-
-        if (redraw) {
-            // Redraw each subtask's annotations
-            for (const subtask_key in annotations_ids_to_redraw_by_subtask) {
-                ulabel.redraw_multiple_spatial_annotations(annotations_ids_to_redraw_by_subtask[subtask_key], subtask_key);
-            }
-            // Update class counter
-            ulabel.toolbox.redraw_update_items(ulabel);
-        }
-    }
-
-    public get_html() {
-        // Create a SliderHandler instance to handle slider interactions
-        const slider_handler = new SliderHandler({
-            id: this.name.replaceLowerConcat(" ", "-"),
-            class: "keypoint-slider",
-            default_value: Math.round(this.filter_value * 100).toString(),
-            label_units: "%",
-            slider_event: (slider_value: number) => {
-                // Filter the annotations, then redraw them
-                this.filter_annotations(this.ulabel, slider_value, true);
-            },
-        });
-
-        return `
-        <div class="keypoint-slider">
-            <p class="tb-header">${this.name}</p>
-            ` + slider_handler.getSliderHTML() + `
-        </div>
-        `;
-    }
-
-    public after_init() {
-        // This toolbox item doesn't need to do anything after initialization
-    }
-
-    public get_toolbox_item_type() {
-        return "KeypointSlider";
-    }
-}
+/* ConfidenceSlider and the deprecated KeypointSliderItem now live in
+ * ./toolbox_items/confidence_slider.ts */
 
 export class FilterPointDistanceFromRow extends ToolboxItem {
-    name: string; // Component name shown to users
-    component_name: string; // Internal component name
-    default_values: DistanceFromPolylineClasses; // Values sliders are set to on page load
-    filter_min: number; // Minimum value slider may be set to
-    filter_max: number; // Maximum value slider may be set to
-    step_value: number; // Value slider increments by
-    filter_on_load: boolean; // Whether or not to filter annotations on page load
-    multi_class_mode: boolean; // Whether or not the component is currently in multi-class mode
-    disable_multi_class_mode: boolean; // Whether or not to disable the checkbox to enable multi-class mode
-    show_options: boolean; // Whether or not the options dialog will be visable
+    name!: string; // Component name shown to users
+    component_name!: string; // Internal component name
+    default_values!: DistanceFromPolylineClasses; // Values sliders are set to on page load
+    filter_min!: number; // Minimum value slider may be set to
+    filter_max!: number; // Maximum value slider may be set to
+    step_value!: number; // Value slider increments by
+    filter_on_load!: boolean; // Whether or not to filter annotations on page load
+    multi_class_mode!: boolean; // Whether or not the component is currently in multi-class mode
+    disable_multi_class_mode!: boolean; // Whether or not to disable the checkbox to enable multi-class mode
+    show_options!: boolean; // Whether or not the options dialog will be visable
     collapse_options: boolean; // Whether or not the options is in a collapsed state
-    show_overlay: boolean; // Whether or not the overlay will be shown
-    toggle_overlay_keybind: string;
-    filter_during_polyline_move: boolean; // Whether or not to filter annotations during a pending mode/edit of a polyline
-    overlay: FilterDistanceOverlay;
+    show_overlay!: boolean; // Whether or not the overlay will be shown
+    toggle_overlay_keybind!: string;
+    filter_during_polyline_move!: boolean; // Whether or not to filter annotations during a pending mode/edit of a polyline
+    overlay!: FilterDistanceOverlay;
 
     ulabel: ULabel; // The ULabel object. Must be passed in
     config: FilterDistanceConfig; // This object's config object
 
     // TODO (joshua-dean): Resolve kwargs usage and narrow any
     // eslint-disable-next-line @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any
-    constructor(ulabel: ULabel, kwargs: { [name: string]: any } = null) {
+    constructor(ulabel: ULabel, kwargs: { [name: string]: any } | null = null) {
         super();
 
         this.ulabel = ulabel;
@@ -2006,13 +1920,15 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
         // For each key missing from the config, set the default value
         for (const key in DEFAULT_FILTER_DISTANCE_CONFIG) {
             if (!Object.prototype.hasOwnProperty.call(this.config, key)) {
-                this.config[key] = DEFAULT_FILTER_DISTANCE_CONFIG[key];
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                (this.config as any)[key] = (DEFAULT_FILTER_DISTANCE_CONFIG as any)[key];
             }
         }
 
         // Set the component's properties to be the same as the config's properties
         for (const property in this.config) {
-            this[property] = this.config[property];
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (this as any)[property] = (this.config as any)[property];
         }
 
         // Force disable multi-class mode if the config doesn't allow it
@@ -2027,13 +1943,13 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
         // Check if localStorage has a value for showing the overlay
         const show_overlay = get_local_storage_item("filterDistanceShowOverlay");
         // Guard against null values
-        this.show_overlay = show_overlay ?? this.show_overlay;
+        this.show_overlay = show_overlay !== null ? show_overlay : this.show_overlay;
         this.overlay.update_display_overlay(this.show_overlay);
 
         // Check if localStorage has a value for filtering during polyline move
         const filter_during_polyline_move = get_local_storage_item("filterDistanceFilterDuringPolylineMove");
         // Guard against null values
-        this.filter_during_polyline_move = filter_during_polyline_move ?? this.filter_during_polyline_move;
+        this.filter_during_polyline_move = filter_during_polyline_move !== null ? filter_during_polyline_move : this.filter_during_polyline_move;
 
         this.add_styles();
 
@@ -2167,7 +2083,7 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
             if (event.key !== this.toggle_overlay_keybind) return;
 
             // Grab the show overlay checkbox and click it
-            const show_overlay_checkbox: HTMLInputElement = document.querySelector("#filter-slider-distance-toggle-overlay-checkbox");
+            const show_overlay_checkbox: HTMLInputElement = document.querySelector("#filter-slider-distance-toggle-overlay-checkbox")!;
             show_overlay_checkbox.click();
         });
     }
@@ -2199,7 +2115,7 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
         const line_annotations: ULabelAnnotation[] = get_point_and_line_annotations(this.ulabel)[1];
 
         // Initialize an object to hold the distances points are allowed to be from each class as well as any line
-        const filter_values: DistanceFromPolylineClasses = { closest_row: undefined };
+        const filter_values: DistanceFromPolylineClasses = { closest_row: { distance: 0 } };
 
         // Grab all filter-distance-sliders on the page
         const sliders: NodeListOf<HTMLInputElement> = document.querySelectorAll(".filter-row-distance-slider");
@@ -2207,7 +2123,7 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
         // Loop through each slider and populate filter_values
         for (let idx = 0; idx < sliders.length; idx++) {
             // Use a regex to get the string after the final - character in the slider id (Which is the class id or the string "closest_row")
-            const slider_class_name = /[^-]*$/.exec(sliders[idx].id)[0];
+            const slider_class_name = /[^-]*$/.exec(sliders[idx].id)![0];
 
             // Use the class id as a key to store the slider's value
             filter_values[slider_class_name] = {
@@ -2217,8 +2133,8 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
 
         // Create and assign an overlay class instance to ulabel to be able to access it
         this.overlay = new FilterDistanceOverlay(
-            this.ulabel.config["image_width"] * this.ulabel.config["px_per_px"],
-            this.ulabel.config["image_height"] * this.ulabel.config["px_per_px"],
+            this.ulabel.config["image_width"]! * this.ulabel.config["px_per_px"],
+            this.ulabel.config["image_height"]! * this.ulabel.config["px_per_px"],
             line_annotations,
             this.ulabel.config["px_per_px"],
         );
@@ -2372,221 +2288,41 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
         // This toolbox item doesn't need to do anything after initialization
     }
 
+    /**
+     * Get the current distance filter slider values by reading the DOM slider elements.
+     *
+     * @returns An object mapping class identifiers to their distance values, or null if no sliders are found
+     */
+    public get_current_values(): DistanceFromPolylineClasses | null {
+        // Always read the single-class slider for closest_row
+        const single_container = document.getElementById("filter-single-class-mode");
+        if (single_container === null) return null;
+
+        const single_slider = single_container.querySelector<HTMLInputElement>(".filter-row-distance-slider");
+        if (single_slider === null) return null;
+
+        const filter_values: DistanceFromPolylineClasses = {
+            closest_row: { distance: single_slider.valueAsNumber },
+        };
+
+        // In multi-class mode, also read the per-class sliders
+        if (this.multi_class_mode) {
+            const multi_container = document.getElementById("filter-multi-class-mode");
+            if (multi_container !== null) {
+                const sliders = multi_container.querySelectorAll<HTMLInputElement>(".filter-row-distance-slider");
+                for (let idx = 0; idx < sliders.length; idx++) {
+                    const slider_class_name = /[^-]*$/.exec(sliders[idx].id)![0];
+                    filter_values[slider_class_name] = {
+                        distance: sliders[idx].valueAsNumber,
+                    };
+                }
+            }
+        }
+
+        return filter_values;
+    }
+
     public get_toolbox_item_type() {
         return "FilterDistance";
     }
 }
-
-export class SubmitButtons extends ToolboxItem {
-    private submit_buttons: ULabelSubmitButton[];
-    private submit_buttons_by_row: ULabelSubmitButton[][];
-
-    constructor(ulabel: ULabel) {
-        super();
-
-        // Grab the submit buttons from ulabel
-        this.submit_buttons = ulabel.config.submit_buttons;
-
-        // For legacy reasons submit_buttons may be a function, in that case convert it to the right format
-        if (typeof this.submit_buttons == "function") {
-            this.submit_buttons = [{
-                name: "Submit",
-                hook: this.submit_buttons,
-                row_number: 0,
-                set_saved: false,
-            }];
-        }
-
-        // Set `set_saved` to false if not provided
-        for (const button of this.submit_buttons) {
-            button.set_saved = button.set_saved ?? false;
-        }
-
-        this.add_styles();
-
-        this.add_event_listeners();
-
-        this.submit_buttons_by_row = this.sort_buttons_by_row_number();
-
-        for (const idx in this.submit_buttons) {
-            // Create a unique event listener for each submit button in the submit buttons array.
-            $(document).on("click.ulabel", "#" + this.submit_buttons[idx].name.replaceLowerConcat(" ", "-"), async () => {
-                // Grab the button
-                const button: HTMLButtonElement = <HTMLButtonElement> document.getElementById(this.submit_buttons[idx].name.replaceLowerConcat(" ", "-"));
-
-                // Grab all of the submit buttons
-                const submit_button_elements = <HTMLButtonElement[]> Array.from(document.getElementsByClassName("submit-button"));
-
-                // Make all the buttons look disabled
-                for (const i in submit_button_elements) {
-                    submit_button_elements[i].disabled = true;
-                    submit_button_elements[i].style.filter = "opacity(0.7)";
-                }
-
-                // Give the clicked button a loading animation
-                button.innerText = "";
-                const animation = document.createElement("div");
-                animation.className = "lds-dual-ring";
-                button.appendChild(animation);
-
-                // Create the submit payload
-                const submit_payload = {
-                    task_meta: ulabel.config["task_meta"],
-                    annotations: {},
-                };
-
-                // Loop through all of the subtasks
-                for (const stkey in ulabel.subtasks) {
-                    submit_payload["annotations"][stkey] = [];
-
-                    // Add all of the annotations in that subtask
-                    for (let i = 0; i < ulabel.subtasks[stkey]["annotations"]["ordering"].length; i++) {
-                        const annotation = ulabel.subtasks[stkey]["annotations"]["access"][ulabel.subtasks[stkey]["annotations"]["ordering"][i]];
-                        // Skip any delete modes
-                        if (
-                            DELETE_MODES.includes(annotation.spatial_type)
-                        ) {
-                            continue;
-                        }
-
-                        // Skip spatial annotations that have an empty spatial payload
-                        if (
-                            NONSPATIAL_MODES.includes(annotation.spatial_type) ||
-                            annotation.spatial_payload.length === 0
-                        ) {
-                            continue;
-                        }
-
-                        submit_payload["annotations"][stkey].push(annotation);
-                    }
-                }
-
-                // Set set_saved if it was provided
-                if (this.submit_buttons[idx].set_saved) {
-                    ulabel.set_saved(true);
-                }
-
-                await this.submit_buttons[idx].hook(submit_payload);
-
-                // Give the button back its name
-                button.innerText = this.submit_buttons[idx].name;
-
-                // Re-enable the buttons
-                for (const i in submit_button_elements) {
-                    submit_button_elements[i].disabled = false;
-                    submit_button_elements[i].style.filter = "opacity(1)";
-                }
-            });
-        }
-    }
-
-    /**
-     * Group submit buttons by row number
-     *
-     * @returns {ULabelSubmitButton[][]} Array of submit buttons grouped by row number
-     */
-    private sort_buttons_by_row_number() {
-        const submit_buttons_by_row: ULabelSubmitButton[][] = [];
-        // First, get all the unique row numbers.
-        // If a button doesn't have a row number, it will be placed in row 0.
-        const row_numbers: Set<number> = new Set(this.submit_buttons.map((button) => button.row_number ?? 0));
-        // Sort the row numbers
-        const sorted_row_numbers: number[] = Array.from(row_numbers).sort((a, b) => a - b);
-        // Group the buttons by row number in ascending order
-        for (const row_number of sorted_row_numbers) {
-            submit_buttons_by_row.push(
-                this.submit_buttons.filter((button) => {
-                    // If the button doesn't have a row number, it will be placed in row 0
-                    if (button.row_number === undefined) {
-                        return row_number === 0;
-                    }
-                    // Otherwise, place the button in the row that matches its row number
-                    return button.row_number === row_number;
-                }),
-            );
-        }
-        return submit_buttons_by_row;
-    }
-
-    /**
-     * Create the css for this ToolboxItem and append it to the page.
-     */
-    protected add_styles() {
-        // Styles defined in blobs.js and get_html()
-    }
-
-    add_event_listeners(): void {
-        $(document).on("keypress.ulabel", (event) => {
-            const ctrl = event.ctrlKey || event.metaKey;
-            if (ctrl && (event.key === "s" || event.key === "S")) {
-                event.preventDefault();
-                $(".submit-button")[0].click(); // Click the first submit button
-            }
-        });
-    }
-
-    get_html(): string {
-        let toolboxitem_html = `<div class="submit-button-container">`;
-
-        for (const submit_buttons of this.submit_buttons_by_row) {
-            // Create a row for each row of submit buttons
-            toolboxitem_html += `<div class="submit-button-row">`;
-
-            // Create each button in the row
-            for (const submit_button of submit_buttons) {
-                let button_color = "rgba(255, 166, 0, 0.739)";
-                if (submit_button.color !== undefined) {
-                    button_color = submit_button.color;
-                }
-
-                // Get the size factor
-                let size_factor = 1;
-                if (submit_button.size_factor !== undefined) {
-                    size_factor = submit_button.size_factor;
-                }
-
-                toolboxitem_html += `
-                <button 
-                    id="${submit_button.name.replaceLowerConcat(" ", "-")}" 
-                    class="submit-button" 
-                    style="
-                        background-color: ${button_color};
-                        border: ${1 * size_factor}px solid ${button_color};
-                        border-radius: ${0.5 * size_factor}em;
-                        height: ${1.2 * size_factor}em;
-                        width: ${6 * size_factor}em;
-                        font-size: ${1.5 * size_factor}em;
-                        padding: ${1 * size_factor}em;
-                ">
-                    ${submit_button.name}
-                </button>
-                `;
-            }
-            // Close the row div
-            toolboxitem_html += `</div>`;
-        }
-        // Close the container div
-        toolboxitem_html += `</div>`;
-
-        return toolboxitem_html;
-    }
-
-    public after_init() {
-        // This toolbox item doesn't need to do anything after initialization
-    }
-
-    public get_toolbox_item_type() {
-        return "SubmitButtons";
-    }
-}
-
-// export class WholeImageClassifierToolboxTab extends ToolboxItem {
-//     constructor() {
-//         super(
-//             "toolbox-whole-image-classifier",
-//             "Whole Image Classification",
-//             ""
-//         );
-//     }
-
-// }

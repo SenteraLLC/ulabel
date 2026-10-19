@@ -2,9 +2,281 @@
 
 All notable changes to this project will be documented here.
 
-## [unreleased]
+## [0.29.1] - Oct 12th, 2026
+#### Fixed
+- `set_annotations()` / `set_annotations_batch()` could paint a frame with no annotations on heavy images. The outgoing annotations now stay on screen until the new ones are drawn.
 
-Nothing yet.
+#### Changed
+- Faster `AnnotationList` rebuilds: each row's icon is a cached `<img>` instead of an inline SVG, rows off screen skip layout and paint (`content-visibility: auto`), and the grouped view no longer does a linear search per row.
+
+## [0.29.0] - Oct 12th, 2026
+#### Breaking Changes
+- **Drag a body to move it.** A left-drag that starts inside a spatial annotation moves it (now including `contour`, `tbar`, and `bbox3`). A drag on a vertex handle edits the vertex, and a drag anywhere else draws. Hold `Alt` to draw over an annotation. Set `allow_body_move: false` for the old draw-everywhere behavior.
+- **The hover edit ring is gone.** Hovering shows only the outline and the confidence card. To reclassify or delete, use the class and delete keybinds or the new context menu. `show_id_dialog()` lost `thumbnail` and `suggest_edits()` lost `force_refresh`. `ULabelActionCandidate` gained `containing`.
+
+#### Added
+- **Context menu.** Right-click a hovered annotation or an `AnnotationList` entry for Change class, Delete, Isolate / Show all, Details, and the items below. New `show_context_menu()`, `hide_context_menu()`, and `is_context_menu_open()`.
+- **Copy and move between subtasks** with Copy to / Move to or `ctrl+c` / `ctrl+x` / `ctrl+v`. The system clipboard holds JSON, so copies can be pasted into another ULabel instance whose image is the same size. A copy keeps its geometry, takes the target class matching its own (by id, then name), and records `annotation_meta.copied_from`. Both are undoable (`paste_annotation` / `move_annotation`). New config options `paste_class_choice` and `paste_switch_to_target`. New `copy_annotation()`, `copy_annotation_to_clipboard()`, `paste_annotation_from_clipboard()`, `find_pasted_copy()`, `set_paste_switch_to_target()` / `get_paste_switch_to_target()`, and the `ULabelClipboardEnvelope` type.
+- **Cross-subtask counterparts:** annotations linked by `copied_from` or by the new `annotation_link_meta_key` config option. New `find_counterparts()`. The menu offers Delete from `<subtask>` (and Erase from `<subtask>` for bitmasks) via `delete_counterparts()`, recorded as one undoable action. Copy to / Move to ask before duplicating a counterpart; `hide_copy_to_linked` hides those targets instead.
+- **Isolate:** an `AnnotationList` eye button (or the menu) hides all other annotations from the canvas and input until cleared. It is view-only. New `isolate_annotation()`, `get_isolated_annotation_id()`, and `on_isolate_change`.
+- **Edit focus:** a per-subtask `focus_edited` option dims annotations not edited since load. Toggle it with the **Edited Only** checkbox, `toggle_edit_focus_keybind` (`h`), or `set_focus_edited()`. New `on_focus_edited_change`.
+- **Deprecated focus:** **Show Deprecated** is now a per-subtask `focus_deprecated` option and is no longer persisted. Deprecated annotations are shown and in focus while live ones dim. Edits are locked except Restore and undo/redo, and a banner offers an Exit link. Toggle it with `toggle_deprecated_focus_keybind` (`shift+d`) or `set_focus_deprecated()`. New `on_focus_deprecated_change`.
+- **Restore** menu item and `restore_annotation()` for human-deleted annotations.
+- **Submit buttons** have two optional fields: `subtasks` (a whitelist of subtask keys) and `edits_only` (only annotations created, deleted, or modified since load, tagged with `edit_type`). New `has_edits(subtasks?)` reports whether an `edits_only` submit would send anything.
+- **`on_annotation_change`** callback: fires for each action that changes annotations, or its undo/redo, with the other annotations it changed in `affected`. Set `on_annotation_change_in_progress` to also report `continue_*` actions.
+- `fly_to_on_undo` (default `true`): an undo or redo whose changes are out of view centers the view on them.
+- `set_subtask_read_only(subtask_key, read_only)` toggles read-only at runtime.
+- Undo/redo in a read-only subtask now applies to the only writable subtask, for actions triggered from the read-only subtask (e.g. Copy to, Delete from). Actions record `origin_subtask_key`. New `on_undo_redo_blocked` callback.
+
+#### Changed
+- The polygon/polyline vertex-insert handle now sits at the hovered segment's midpoint, so dragging elsewhere on a polyline moves it.
+- Editing a non-spatial note is now an undoable `edit_text_payload` action.
+- `last_edited_at` / `last_edited_by` are now stamped on annotations an action changes indirectly (delete-mode victims, carved masks) and restored on undo.
+- Cancelling an in-progress drawing removes it instead of deprecating it.
+- Annotations deleted by erasing their vertices or by a polygon brush stroke keep their original geometry. A polygon brush stroke that deletes a polygon is one undo step.
+- Brushes only affect annotations in focus.
+- Read-only is enforced on the brush, undo/redo, and non-spatial rows.
+- `Escape` closes the class pie.
+- A click without a drag no longer records `begin_move`. Picking an annotation's current class no longer records `assign_annotation_id`.
+- `demo.js` honors `PORT`, and demos load their image locally.
+
+#### Fixed
+- The hover confidence card overflowing the canvas near the image edges.
+- A `TypeError` on the first brush stroke after a subtask switch or `set_annotations()`.
+- Undoing a brush stroke or a new layer on a loaded annotation leaving the session's edit stamp in place.
+- Shift-hover in a read-only subtask starting a complex layer.
+- A `NaN` circle radius error when entering a delete mode in a single-class subtask.
+- Anchor buttons navigating the host page to `#`.
+
+## [0.28.0] - Sept 10th, 2026
+- New `set_active_class(class_id, subtask_key?, redraw?)` and `get_selected_class_id(subtask_key?)` public API methods; all internal class-selection paths (toolbox clicks, keybinds, delete-mode toggles) route through `set_active_class`.
+- New per-subtask `focus_active_class` option (default `false`): the selected class is the focused class — other classes dim to `defocused_opacity` and drop out of hover, Tab navigation, the annotation list, and bulk delete. Toggleable via `set_focus_active_class()` or `toggle_class_focus_keybind` (default `shift+f`).
+- Per-class `allowed_modes` are now enforced on reclassification: the id-dialog pie only offers classes compatible with the annotation's spatial type; with fewer than two, no pie appears and the edit ring collapses. Importing an incompatible annotation logs a warning but still loads.
+- New host callback config options `on_active_class_change`, `on_subtask_change`, and `on_focus_active_class_change`: fired from any writer (API, toolbox, keybind), and only when the value actually changes.
+- New `brush_overlap_across_subtasks` config option (default `false`). **Behavior change**: brush overlap resolution now stays within the active subtask; reaching masks in other subtasks (including read-only barriers) is opt-in.
+- `set_annotations()` and `set_annotations_batch()` gained an optional `show_loader` parameter (default `true`); pass `false` to swap background layers without flashing the loading overlay.
+- A subtask with its layer opacity slider at 0 is now non-interactive, matching vanish mode (new `is_subtask_hidden()` helper).
+- Fix the Brush/Erase toolbox buttons staying lit after a subtask switch.
+- Fix class keybinds edited in the Keybinds toolbox item not applying to other subtasks sharing the class id until a reload; class-select keybinds now also work in read-only subtasks, and are correctly inert while a delete mode is active (the gate for this read a field that was never assigned).
+- Fix stale containing boxes when `allow_annotations_outside_image = false` clamps loaded annotations at init.
+- Removed unused per-subtask back canvas.
+- `set_annotations()` gained a `skip_toolbox_update` parameter for batching several per-subtask swaps, plus a `refresh_toolbox()` method to run the deferred filter-distance + toolbox update once at the end.
+- `ClassCounter` toolbox item options via `class_counter_toolbox_item` config: `subtasks` (`string[] | "current"`) selects which subtasks to count, `layout` (`"current" | "grouped" | "flat"`) controls rendering (`grouped` adds a heading per subtask, `flat` merges shared class ids into one summed list). New `set_class_counter_options()` public API method changes them at runtime.
+- New `set_class_color(class_id, color, redraw?)` public API method: writes `color_info` and syncs the id-toolbox swatch and id-dialog color pies. Also fixes the front id-dialog pie not updating (and duplicating) on recolor via the `RecolorActive` toolbox item.
+- Fix the hover confidence card sitting on top of the hovered annotation: the card is now populated before it is measured and positioned, so it hugs the edit-button ring instead of drifting onto the anchor.
+- `swap_frame_image()` now rejects (and restores the old image) when the new image's dimensions don't match the ones the instance was initialized with, instead of silently misaligning annotations against the new frame. Changing image dimensions requires reinitializing the ULabel instance.
+
+## [0.27.0] - Aug 18th, 2026
+- Hovering a spatial annotation now draws a white outline that hugs its shape.
+- Polish and update the confidence card to include the class name and fix its positioning.
+- Fix shift-hover to properly start a new polygon complex layer.
+- Fix bitmask moves to the image edge that were permanently truncating the mask. Now a translated mask bounces back to its previous position if it would be moved outside the image bounds.
+- Improve read-only subtask handling. Subtasks marked `read_only: true` now actually prevent edits. Additionally, all subtasks may now be read-only (the previous "at least one non-read-only subtask" error has been removed).
+
+## [0.26.3] - Aug 13th, 2026
+- **Fix wheel-zoom and drag-zoom focal point when the ULabel container is offset from the viewport origin.** `handle_wheel` and `drag_rezoom` used to pass raw `clientX`/`clientY` (viewport coords) straight into `rezoom`, which treats its focal-point arguments as annbox-local. When the container sat at viewport `(0, 0)` the two frames coincided and the bug was invisible; anywhere else (e.g. hosted inside a centered dialog, a padded panel, or below a header) zoom would snap by roughly the annbox's screen offset. Both call sites now convert to annbox-local via `getBoundingClientRect()` before calling `rezoom`, so zoom stays anchored to the cursor / mousedown point regardless of how the host embeds ULabel.
+- **New config option `min_zoom_fit_ratio`.** Sets a zoom-out floor as a multiplier of the "whole image just fits the viewport" zoom. `0` (default) preserves the existing behavior (no floor). `1.0` prevents users from zooming out past the fit-to-viewport level. `>1` forces the image to always overflow. Zoom-in is unaffected. The floor recomputes from live annbox dimensions, so it adapts to browser resize.
+
+## [0.26.2] - Aug 13th, 2026
+- **Fix regression in `set_annotations()` where hover feedback and the brush stopped working after a swap.** The 0.26.1 bulk-teardown path called `$("#canvasses__<subtask>").empty()`, which removed not just the per-annotation canvases but also the subtask's front canvas and the `#dialogs__<subtask>` container (which owns the brush circle and polygon ender). `state.front_context` was left pointing at a detached canvas so hover highlights painted into nothing, and the brush had no parent to attach to. The teardown now removes only `> canvas.annotation_canvas` children, leaving the front/back canvases and dialogs container intact.
+- New demo: [`demo/set-annotations.html`](demo/set-annotations.html) with buttons that swap through empty / small / medium / large / RLE-bitmask / raw-Uint8Array-bitmask presets so this regression stays visible.
+
+## [0.26.1] - Aug 13th, 2026
+- **Bitmask annotations can now be imported as raw `Uint8Array` payloads.** In addition to the existing RLE `{ counts, size }` shape, `spatial_payload` may now be `{ data: Uint8Array, size: [height, width] }`. This lets callers that already have the mask as a pixel buffer skip the RLE encode step before handing it to ULabel.
+- **Loader no longer flashes on fast operations.** `ULabelLoader.add_loader_div()` now appends the overlay hidden and reveals it only after a delay (200 ms by default). Callers can pass an explicit `delay_ms` — including `0` to opt back into immediate-show.
+- **Performance: bulk teardown in `set_annotations()`.** The old per-annotation `destroy_annotation_context` loop redrew remaining siblings on each canvas after every removal. The new path drops caches on outgoing annotations, empties the subtask's canvasses container in one shot, and resets `annotation_contexts`. Eliminates wasted redraws.
+- **Correctness: `reset_interaction_state()` in `set_annotations()` is now scoped to the target subtask.** Previously the reset ran on every subtask, wiping `is_in_edit` / `active_id` on subtasks the caller wasn't touching.
+
+## [0.26.0] - Aug 11th, 2026
+- **Memory leak fix on teardown.** Bitmask annotations attach a decoded pixel `Uint8Array` (`_mask`) and a tinted stencil canvas (`_mask_render`) to each annotation object. These persisted after `remove_listeners()`, and consumers that rebuild ULabel per navigation could accumulate multi-GB retained heap. Changes:
+  - New `destroy()` method on `ULabel`. Idempotent; releases per-annotation bitmask caches, empties action/undo streams, breaks toolbox back-references, clears the resize-observer array, and wipes the container DOM. Callers should prefer `destroy()` over `remove_listeners()` going forward.
+  - `destroy_annotation_context()` now also drops `_mask` / `_mask_render` / `_bitmask_box_hint` on the destroyed annotation, so `set_annotations()` also frees mask memory when it recycles contexts.
+  - New `auto_destroy_on_detach` config option (default `true`). When enabled, ULabel installs a `MutationObserver` on the container's root and calls `destroy()` automatically after the container leaves the DOM.
+  - `set_annotations()`, `get_annotations()`, and `redraw_all_annotations()` now short-circuit with a warning if called after `destroy()`.
+  - Fixed a latent typo in `set_annotations()` that wrote to a non-existent `undo_stack` property instead of clearing the real `undone_stack`.
+
+
+## [0.25.1] - Aug 10th, 2026
+- The `ConfidenceSlider` toolbox item now also filters `bitmask` annotations
+- The `set_annotations()` and `swap_frame_image()` public API methods now display the loading spinner while they run and return a `Promise`
+- Bitmask brush **overlap modes** (`exclude` / `overwrite`) now resolve against bitmask annotations across **all subtasks**, not just the active one.
+- Performance improvements for jobs with many large bitmask annotations:
+  - Overlap resolution (`exclude` / `overwrite`) now uses a bounding-box pre-filter and box-limited pixel operations, skipping masks that don't overlap the stroke and touching only the overlapping region of the ones that do, instead of scanning the whole mask for each candidate.
+  - Moving a bitmask renders only the moving mask over a cached snapshot of the others (throttled to one render per animation frame) instead of re-rasterizing every mask on the canvas each frame.
+  - Each bitmask caches a pre-tinted render that is reused across redraws (brush dabs, moves, pan, zoom) and rebuilt only when the mask or its color changes, removing per-frame pixel-by-pixel rasterization.
+
+## [0.25.0] - Aug 5th, 2026
+- Add a `bitmask` annotation mode for raster (per-pixel) segmentation, selectable via `allowed_modes: ["bitmask", ...]`.
+  - Painted with the brush (toggle with `toggle_brush_mode_keybind`, default `g`); erase with `toggle_erase_mode_keybind` (default `e`); resize the brush with `increase_brush_size_keybind` / `decrease_brush_size_keybind` (defaults `]` / `[`) or `alt+scroll`. The brush/erase toggles now apply to both `polygon` and `bitmask` modes.
+  - A paint stroke only joins an existing mask of the currently-selected class; painting a different class (or over empty space) starts a new mask of the selected class. Erase is class-agnostic. This differs from the `polygon` brush, which joins any polygon under the brush.
+  - Hover a mask (with the brush off) to change its class via the ID dialog, or move/delete it like any other spatial annotation.
+  - Each bitmask annotation stores a single binary mask. On export, `spatial_payload` is a COCO-style run-length-encoded object: `{ "counts": <number[]>, "size": [<height>, <width>] }` (column-major, starting with a background run). Fully-erased masks are deprecated (ULabel's delete semantics).
+  - Configurable render opacity for bitmask classes via `mask_annotation_opacity`.
+- Add brush **overlap modes** for bitmask painting, controlled globally and persisted to localStorage: `none` (default), `exclude`, and `overwrite`.
+  - `exclude`: newly-painted pixels never cover pixels owned by other undeprecated bitmask annotations (existing masks win).
+  - `overwrite`: newly-painted pixels are removed from any other bitmask annotation that owned them (the new mask wins); a mask fully carved away is deprecated.
+  - Resolution is deferred to the end of a stroke (you see the active mask cover others, then it snaps to the resolved result on release) and only affects the pixels a stroke adds; erase is unaffected.
+  - Selectable via the Brush toolbox item (shown in bitmask mode) and keybinds `set_brush_overlap_none_keybind` / `set_brush_overlap_exclude_keybind` / `set_brush_overlap_overwrite_keybind` (defaults `shift+n` / `shift+e` / `shift+o`), which also appear in the `Keybinds` toolbox item. Initial value configurable via `default_brush_overlap_mode`.
+  - Brush toolbox buttons have hover tooltips.
+
+## [0.24.0] - July 22nd, 2026
+- Add `ConfidenceSlider` toolbox item (`AllowedToolboxItem.ConfidenceSlider`) that deprecates (hides) or shows spatial annotations based on their confidence values. Unlike the now-deprecated `KeypointSlider`, it works with all spatial annotation types that have a confidence payload (`bbox`, `bbox3`, `polygon`, `polyline`, `contour`, `tbar`, and `point`), across every subtask.
+  - Supports a single global "all" slider and/or per-class sliders, controlled by `class_filter_mode` (`"toggle"`, `"all-only"`, or `"class-only"`).
+  - Configurable via `confidence_slider_toolbox_item`, including `filter_min`/`filter_max`/`step_value`, per-class `default_values`, `target_spatial_types`, and `target_class_ids`.
+- Add `get_confidence_slider_value()` public API method to get the current confidence slider values.
+- The default `toolbox_order` (used when none is provided) now includes `ConfidenceSlider` instead of `KeypointSlider`.
+- Log a warning when both the `KeypointSlider` and `ConfidenceSlider` toolbox items are enabled at once.
+- Deprecate the `KeypointSlider` toolbox item and `get_keypoint_slider_value()` in favor of the `ConfidenceSlider` and `get_confidence_slider_value()`. The `KeypointSlider` is retained for backwards compatibility and continues to filter only `point` annotations. It will be removed in a future release.
+
+## [0.23.7] - July 21st, 2026
+- Ship generated `.d.ts` declarations (`dist/types/`) and a generated type entry (`dist/index.d.ts`) instead of pointing consumers' type resolution at the raw `.ts` source. This stops downstream TypeScript projects from compiling ULabel's source under their own (stricter) `tsconfig`.
+- Stop publishing the `src/` directory in the npm package (`files` now ships `dist/` only).
+
+## [0.23.6] - May 11th, 2026
+- Fix `AnnotationList` class ordering to match the `AnnotationID` toolbox item ordering, which is based on the configured class definition order in the subtask's `classes` array
+- Add local storage of checkbox options for the `AnnotationList` toolbox item
+
+## [0.23.5] - May 6th, 2026
+- Fix bug where on some browsers, middle-click-drag when annotations were vanished would trigger auto-scroll rather than the normal pan behavior.
+
+## [0.23.4] - May 5th, 2026
+- Fix type declarations for npm consumers
+- Add `"files"` field to `package.json` to explicitly control published package contents.
+- Add CI type-test job that validates type declarations against a packed tarball.
+
+## [0.23.3] - Mar 18th, 2026
+- Add `get_keypoint_slider_value()` public API method to get the current keypoint slider value (0-1).
+- Add `get_distance_filter_value()` public API method to get the current distance filter slider values.
+
+## [0.23.2] - Mar 18th, 2026
+- Fix bug where multiple spaces in a submit button name would cause the button hook to not fire.
+
+## [0.23.1] - Mar 18th, 2026
+- Fix export of typescript types
+- Add `ULabel.get_resize_toolbox_item()` static method to get the `AnnotationResizeItem` class, which has static methods that allow for programmatic control of annotation size for subtasks.
+
+## [0.23.0] - Jan 16th, 2026
+- Add vertex deletion keybind for polygon and polyline annotations
+  - New configurable `delete_vertex_keybind` (default: `x`)
+  - Delete individual vertices by hovering over them and pressing the keybind
+  - Automatically deletes entire polyline if only 1 point remains after deletion
+  - Automatically removes polygon layer if fewer than 3 points remain after deletion
+- Fixed bug where deleting an annotation mid-edit would cause the ULabel state to be stuck in edit mode.
+
+## [0.22.1] - Jan 13th, 2026
+- Don't draw annotations when a subtask is vanished
+- Add configurable `annotation_vanish_all_keybind`
+- Track annotation size per subtask
+  - Remove annotation size cookie, since it was tracking just one size per annotation session
+- Deprecated the `default_annotation_size` argument in the configuration object. Use the `initial_line_size` argument instead. See api_spec.md for details.
+- Fix toolbox collapse arrow positioning, and make frame annotation dialogs disappear on collapse
+- Removed the `line_size` property from annotation objects. `subtask.state.line_size` determined the size of drawn annotations within a subtask.
+
+## [0.22.0] - Oct 30th, 2025
+- Add collapsible toolbox with arrow button at top
+  - Toolbox collapse state persists in browser
+  - Annotation canvas expands to fill space when toolbox is collapsed
+- Add `Keybinds` toolbox item for viewing and customizing keybinds
+  - Display all configurable keybinds with labels and descriptions
+  - Edit keybinds by clicking and pressing new key combination
+  - Support for modifier key chords (shift, ctrl, alt, meta)
+  - Collision detection with red highlighting for duplicate keybinds
+  - Reset individual keybinds or all keybinds to defaults
+  - Visual indicator (yellow highlight) for user-customized keybinds
+  - User keybind settings persist in browser
+- Rename `create_bbox_on_initial_crop` to `create_bbox_on_initial_crop_keybind` for consistency
+- Split `change_zoom_keybind` into two separate keybinds:
+  - `reset_zoom_keybind` (default: `r`) - Reset zoom to fit image
+  - `show_full_image_keybind` (default: `shift+r`) - Zoom to show full image
+- Store collapse/expand state for Keybinds, Annotation List, and Image Filters toolbox items
+- Add comprehensive e2e tests for keybind functionality and keybind toolbox item
+
+## [0.21.0] - Oct 27th, 2025
+- Add toast notification that shows on `fly_to` calls and shows annotation position in the ordering (e.g., "3 / 10")
+- Add `AnnotationList` toolbox item for managing and navigating annotations
+  - Displays all annotations in a scrollable list with spatial type icons and class names
+  - Bidirectional hover highlighting between list and canvas
+  - Filter options:
+    - Toggle show/hide deprecated annotations (default: hidden)
+    - Group annotations by class
+  - Collapsible interface to maximize toolbox space
+- Add automated package deployment via GHA
+
+## [0.20.0] - Oct 15th, 2025
+- Add `fly-to` functions, which sets the zoom and focus to a specific annotation
+  - `fly_to_next_annotation()`
+  - `fly_to_annotation_id()`
+  - `fly_to_annotation()`
+- Add `Tab` and `Tab+Shift` default keybinds to fly-to the next/previous annotation, respectively
+  - Keybinds are configurable:
+    - `fly_to_next_annotation_keybind`
+    - `fly_to_previous_annotation_keybind` 
+- Add `ImageFilters` toolbox item to expose sliders for the following image css filters:
+  - brightness
+  - contrast
+  - hue rotate
+  - invert
+  - saturate
+- Removed redundant dependencies that were being unnecessarily installed by users using npm to install ulabel
+- Updated webpack build process to properly provide both a minified (default) and unminified build (for better debugging)
+  - Added package `exports` field with options: `.` (minified), `./min` (minified), `./debug` (unminified)
+- Add test coverage for both minified and unminified builds
+- Update dependencies and fix 12 security vulnerabilities
+
+## [0.19.1] - Oct 9th, 2025
+- Add automated testing to the repo
+- Fix circular webpack builds by forcibly cleaning the `dist/` directory before each build
+  - Also use `import type... from ".."` instead of just `import` to fix ts not properly resolving imports to js
+  - Reduced bundle size from ~20 MB -> 1 MB
+- Refactor some more `console.warn` and `console.error` instances to use `log_message`
+- Remove deprecated `parent_id` field from `ULabelAnnotation`
+
+## [0.19.0] - Aug 19th, 2025
+
+- Add minimal lineage tracking via `last_edited_by` and `last_edited_at` annotation fields
+- Prevent creation of zero-length polylines
+- Fixed `process_resume_from` not actually populating missing annotation fields on load
+- Misc bug/QOL fixes
+  - Simplified/fixed non-spatial annotation creation/deletion
+  - Replaced `alert`, `throw`, and `console` calls with `log_message()`
+  - Cleanup of `suggest_edits()` and other functions related to toggling dialogs
+  - Refactor action stream management and undo/redo flow into `actions.ts`
+    - Move a lot of repeated rendering/cleanup steps after actions into general action listeners that trigger on similar actions
+    - Move `annotation_id` out of undo/redo payloads and into the action itself 
+
+## [0.18.2] - July 28th, 2025
+
+- Fix special characters in submit buttons breaking tool
+
+## [0.18.1] - July 22nd, 2025
+
+- Fix "Annotation ID" text color in night mode
+
+## [0.18.0] - July 21st, 2025
+- add `allow_annotations_outside_image` arg to the `ULabel` constructor, which defaults to `true`.
+  - when set to `false`, new annotations will be limited to points within the image, and attempts to move annotations outside the image will bounce back. 
+
+## [0.17.0] - May 30th, 2025
+- Add `anno_scaling_mode` argument to the `ULabel` constructor, which allows users to specify how the size of annotations should be scaled when the zoom level is changed.
+  - Options are `fixed`, `match-zoom`, and `inverse-zoom`.
+  - When set to `fixed`, the line size of annotations will remain constant regardless of zoom level.
+  - When set to `match-zoom`, the line size of annotations will increase with increased zoom level.
+  - When set to `inverse-zoom`, the line size of annotations will decrease with increased zoom level.
+- Prior behavior is equivalent to `anno_scaling_mode = "fixed"`.
+- Fix bug where fully erased polygon annotations would cause the an error upon submit.
+
+## [0.16.4] - May 2nd, 2025
+- Fix bug where empty polygon layers could be included in a `submit_button` hook payload.
+
+## [0.16.3] - Apr 25th, 2025
+- Fix bug where the `Vanish` button wouldn't update its `locked` state when switching between subtasks.
+- Fix bug where clicking the `Vanish` button would unexpectedly set the size cookie, causing future annotations in the same subtask to be loaded in a very small size on subsequent sessions, with the only way to recover being to increase the annotation size.
+
+## [0.16.2] - Apr 2nd, 2025
+- Fixed bug introduced in v0.15.0 where using the erase tool such that a polygon was separated into multiple disjoint regions would cause an unrecoverable error.
+
+## [0.16.1] - Jan 13th, 2025
+-  Added `click_and_drag_poly_annotations` flag to the configuration object, that when set to false prevents continuous points from being added to a polyline or polygon annotations when clicking and dragging.
 
 ## [0.16.0] - Nov 8th, 2024
 - Added loading overlay with spinning icon while ULabel is initializing

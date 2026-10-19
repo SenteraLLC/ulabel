@@ -20,6 +20,7 @@ export enum LogLevel {
 export function log_message(
     message: string,
     log_level: LogLevel = LogLevel.INFO,
+    hide_alert: boolean = false,
 ) {
     switch (log_level) {
         case LogLevel.VERBOSE:
@@ -30,11 +31,15 @@ export function log_message(
             break;
         case LogLevel.WARNING:
             console.warn(message);
-            alert("[WARNING] " + message);
+            if (!hide_alert) {
+                alert("[WARNING] " + message);
+            }
             break;
         case LogLevel.ERROR:
             console.error(message);
-            alert("[ERROR] " + message);
+            if (!hide_alert) {
+                alert("[ERROR] " + message);
+            }
             throw new Error(message);
     }
 }

@@ -1,7 +1,7 @@
 // z-indices for canvases
 const FRONT_Z_INDEX = 100;
 const BACK_Z_INDEX = 75;
-const DEMO_ANNOTATION = { id: "7c64913a-9d8c-475a-af1a-658944e37c31", new: true, parent_id: null, created_by: "TestUser", created_at: "2020-12-21T02:41:47.304Z", deprecated: false, spatial_type: "contour", spatial_payload: [[4, 25], [4, 25], [4, 24], [4, 23], [4, 22], [4, 22], [5, 22], [5, 21], [5, 20], [6, 20], [6, 19], [7, 19], [7, 18], [8, 18], [8, 18], [10, 18], [11, 18], [11, 17], [12, 17], [12, 16], [12, 16], [13, 16], [14, 15], [16, 14], [16, 14], [17, 14], [18, 14], [18, 13], [19, 13], [20, 13], [20, 13], [21, 13], [22, 13], [23, 13], [24, 13], [24, 13], [25, 13], [26, 13], [27, 13], [28, 13], [28, 13], [29, 13], [30, 13], [31, 13], [32, 13], [34, 13], [36, 14], [36, 14], [37, 15], [40, 15], [40, 16], [41, 16], [42, 17], [43, 17], [44, 18], [44, 18], [45, 18], [46, 18], [47, 18], [47, 18], [48, 18], [48, 18], [49, 19], [50, 20], [52, 20], [52, 20], [53, 21], [54, 21], [55, 21], [56, 21], [57, 21], [58, 22], [59, 22], [60, 22], [60, 22], [61, 22], [63, 22], [64, 22], [64, 22], [65, 22], [66, 22], [67, 22], [68, 22], [68, 21], [69, 21], [70, 20], [70, 19], [71, 19], [71, 18], [72, 18], [72, 18], [72, 18], [73, 18], [75, 17], [75, 16], [76, 16], [76, 16], [76, 15], [77, 14], [78, 14], [79, 14], [79, 13], [79, 12], [80, 12], [81, 12], [82, 11], [83, 11], [84, 10], [85, 10], [86, 10], [87, 10], [88, 10], [88, 10], [89, 10], [90, 10], [91, 10], [92, 10], [92, 10], [93, 10], [94, 10], [94, 10], [95, 10], [96, 10], [96, 11], [96, 11], [98, 11], [98, 12], [99, 12], [100, 13], [100, 14], [101, 14], [101, 15], [102, 15], [104, 16], [104, 17], [104, 18], [105, 18], [106, 18], [106, 18], [107, 18], [107, 19], [107, 20], [108, 20], [108, 21], [108, 21], [108, 22], [109, 22], [109, 22], [109, 23]], classification_payloads: null, annotation_meta: "is_assigned_to_each_annotation" };
+const DEMO_ANNOTATION = { id: "7c64913a-9d8c-475a-af1a-658944e37c31", new: true, created_by: "TestUser", created_at: "2020-12-21T02:41:47.304Z", deprecated: false, spatial_type: "contour", spatial_payload: [[4, 25], [4, 25], [4, 24], [4, 23], [4, 22], [4, 22], [5, 22], [5, 21], [5, 20], [6, 20], [6, 19], [7, 19], [7, 18], [8, 18], [8, 18], [10, 18], [11, 18], [11, 17], [12, 17], [12, 16], [12, 16], [13, 16], [14, 15], [16, 14], [16, 14], [17, 14], [18, 14], [18, 13], [19, 13], [20, 13], [20, 13], [21, 13], [22, 13], [23, 13], [24, 13], [24, 13], [25, 13], [26, 13], [27, 13], [28, 13], [28, 13], [29, 13], [30, 13], [31, 13], [32, 13], [34, 13], [36, 14], [36, 14], [37, 15], [40, 15], [40, 16], [41, 16], [42, 17], [43, 17], [44, 18], [44, 18], [45, 18], [46, 18], [47, 18], [47, 18], [48, 18], [48, 18], [49, 19], [50, 20], [52, 20], [52, 20], [53, 21], [54, 21], [55, 21], [56, 21], [57, 21], [58, 22], [59, 22], [60, 22], [60, 22], [61, 22], [63, 22], [64, 22], [64, 22], [65, 22], [66, 22], [67, 22], [68, 22], [68, 21], [69, 21], [70, 20], [70, 19], [71, 19], [71, 18], [72, 18], [72, 18], [72, 18], [73, 18], [75, 17], [75, 16], [76, 16], [76, 16], [76, 15], [77, 14], [78, 14], [79, 14], [79, 13], [79, 12], [80, 12], [81, 12], [82, 11], [83, 11], [84, 10], [85, 10], [86, 10], [87, 10], [88, 10], [88, 10], [89, 10], [90, 10], [91, 10], [92, 10], [92, 10], [93, 10], [94, 10], [94, 10], [95, 10], [96, 10], [96, 11], [96, 11], [98, 11], [98, 12], [99, 12], [100, 13], [100, 14], [101, 14], [101, 15], [102, 15], [104, 16], [104, 17], [104, 18], [105, 18], [106, 18], [106, 18], [107, 18], [107, 19], [107, 20], [108, 20], [108, 21], [108, 21], [108, 22], [109, 22], [109, 22], [109, 23]], classification_payloads: null, annotation_meta: "is_assigned_to_each_annotation" };
 const BBOX_SVG = `
 <svg
    xmlns:dc="http://purl.org/dc/elements/1.1/"
@@ -1732,6 +1732,37 @@ div#${prntid} canvas.canvas_cls {
    top: 0;
    left: 0;
 }
+div#${prntid} canvas.canvas_cls.movable_hover {
+   cursor: move;
+}
+div#${prntid} canvas.canvas_cls.edit_locked {
+   cursor: not-allowed;
+}
+div#${prntid} canvas.canvas_cls.edit_locked.context_menu_hover {
+   cursor: context-menu;
+}
+div#${prntid} div.deprecated-focus-banner {
+   position: absolute;
+   top: 8px;
+   left: calc((100% - 320px) / 2);
+   transform: translateX(-50%);
+   z-index: 110;
+   padding: 4px 12px;
+   border-radius: 14px;
+   background-color: rgba(160, 30, 30, 0.85);
+   color: white;
+   font-size: 13px;
+   white-space: nowrap;
+   pointer-events: none;
+}
+div#${prntid} div.toolbox-collapsed div.deprecated-focus-banner {
+   left: 50%;
+}
+div#${prntid} div.deprecated-focus-banner a {
+   color: white;
+   margin-left: 8px;
+   pointer-events: auto;
+}
 div#${prntid} canvas.annotation_canvas {
    pointer-events: none;
 }
@@ -1862,6 +1893,8 @@ div#${prntid} div.dialogs_container {
    position: absolute;
    top: 0;
    left: 0;
+   /* Above the annotation canvases */
+   z-index: ${BACK_Z_INDEX + 2};
 }
 
 div.toolbox_inner_cls {
@@ -1931,53 +1964,78 @@ div#${prntid} div.global_edit_suggestion {
    display: none;
    position: absolute;
    width: 150px;
-   /*height: 75px;*/
    height: 0px;
    text-align: center;
    z-index: 1;
-   /* background-color: white; */
    transform: scale(0.66666);
    overflow: visible;
 }
-div#${prntid} div.global_edit_suggestion.mcm {
-   width: 225px;
-   transform: scale(0.5);
-}
-div#${prntid} a.global_sub_suggestion {
-   width: 60px;
-   height: 60px;
-   margin-left: 7.5px;
-   margin-right: 7.5px;
-   display: inline-block;
-   border-radius: 37.5px;
+
+div#${prntid} div.ulabel-context-menu {
+   display: none;
+   position: fixed;
+   z-index: 3000;
+   min-width: 0;
+   max-width: 320px;
+   max-height: calc(100vh - 8px);
+   overflow-y: auto;
+   box-sizing: border-box;
+   padding: 2px 0;
    background-color: white;
-   overflow: hidden;
-   transform: translateY(-50%);
+   color: #222;
+   border: 1px solid rgba(0, 0, 0, 0.2);
+   border-radius: 4px;
+   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+   font-family: sans-serif;
+   font-size: 13px;
+   line-height: 1.2;
+   user-select: none;
 }
-div#${prntid} a.global_sub_suggestion img {
-   display: block;
-   width: 40px;
-   height: 40px;
-   padding: 10px;
+div#${prntid}.ulabel-night div.ulabel-context-menu {
+   background-color: #2b2b2b;
+   color: #eee;
+   border-color: rgba(255, 255, 255, 0.2);
 }
-div#${prntid} a.global_sub_suggestion span.bigx {
-   position: absolute;
-   display: block;
-   font-size: 4em;
-   text-align: center;
-   width: 60px;
-   top: 50%;
-   -ms-transform: translateY(-50%);
-   transform: translateY(-50%);
-   color: black;
-   text-decoration: none;
+div#${prntid} div.ulabel-context-menu-item {
+   display: flex;
+   align-items: center;
+   justify-content: flex-start;
+   gap: 6px;
+   padding: 4px 8px;
+   cursor: pointer;
+   white-space: nowrap;
 }
-div#${prntid} a.global_sub_suggestion.reid_suggestion {
-   opacity: 0.3;
-   background-color: black;
+div#${prntid} span.ulabel-context-menu-item-icon {
+   display: inline-flex;
+   width: 14px;
+   height: 14px;
+   opacity: 0.75;
 }
-div#${prntid} a.global_sub_suggestion.reid_suggestion:hover {
-   opacity: 0; 
+div#${prntid} span.ulabel-context-menu-item-icon svg {
+   width: 100%;
+   height: 100%;
+}
+div#${prntid} div.ulabel-context-menu-item:hover {
+   background-color: rgba(0, 128, 255, 0.15);
+}
+div#${prntid} div.ulabel-context-menu-detail {
+   display: flex;
+   gap: 8px;
+   padding: 2px 8px;
+   font-size: 12px;
+}
+div#${prntid} span.ulabel-context-menu-detail-key {
+   flex: 0 0 auto;
+   color: #777;
+}
+div#${prntid}.ulabel-night span.ulabel-context-menu-detail-key {
+   color: #aaa;
+}
+div#${prntid} span.ulabel-context-menu-detail-value {
+   flex: 1 1 auto;
+   font-family: monospace;
+   word-break: break-all;
+   text-align: right;
 }
 
 div#${prntid} a.tbid-opt {
@@ -1997,6 +2055,9 @@ div#${prntid} span.tb-cls-nam {
    display: inline-block;
    vertical-align: middle;
 }
+div#${prntid}.ulabel-night span.tb-cls-nam {
+   color: white;
+}
 div#${prntid} a.tbid-opt:hover {
    background-color: rgba(255, 181, 44, 0.397);
 }
@@ -2006,6 +2067,7 @@ div#${prntid} a.tbid-opt.sel {
 div#${prntid} div.toolbox-name-header {
    background-color: rgb(0, 128, 202);
    margin: 0;
+   flex: 7;
 }
 div#${prntid}.ulabel-night div.toolbox-name-header {
    background-color: rgb(0, 60, 95);
@@ -2033,7 +2095,7 @@ div#${prntid}.ulabel-night div.toolbox-name-header h1 span.version-number {
    color: rgb(190, 190, 190);
 }
 div#${prntid} div.night-button-cont {
-   text-align: right;
+   text-align: left;
    display: inline-block;
    vertical-align: middle;
    position: relative;
@@ -2224,8 +2286,25 @@ const COLORS = [
     "fuchsia",
 ];
 
+// Simple icon representing a raster/bitmask segmentation mode (a filled pixel grid)
+const BITMASK_SVG = `
+<svg xmlns="http://www.w3.org/2000/svg" width="100mm" height="100mm" viewBox="0 0 100 100" version="1.1">
+  <g>
+    <rect x="10" y="10" width="24" height="24"/>
+    <rect x="38" y="10" width="24" height="24"/>
+    <rect x="66" y="10" width="24" height="24" fill="none" stroke="currentColor" stroke-width="4"/>
+    <rect x="10" y="38" width="24" height="24" fill="none" stroke="currentColor" stroke-width="4"/>
+    <rect x="38" y="38" width="24" height="24"/>
+    <rect x="66" y="38" width="24" height="24"/>
+    <rect x="10" y="66" width="24" height="24"/>
+    <rect x="38" y="66" width="24" height="24" fill="none" stroke="currentColor" stroke-width="4"/>
+    <rect x="66" y="66" width="24" height="24"/>
+  </g>
+</svg>`;
+
 export {
     BBOX_SVG, DELETE_BBOX_SVG, BBOX3_SVG, POINT_SVG, POLYGON_SVG, DELETE_POLYGON_SVG, CONTOUR_SVG, TBAR_SVG, POLYLINE_SVG, WHOLE_IMAGE_SVG, GLOBAL_SVG,
+    BITMASK_SVG,
     DEMO_ANNOTATION,
     get_init_style,
     COLORS, BUTTON_LOADER_HTML,

@@ -51,7 +51,6 @@
                             "name": "Truck",
                             "color": "orange",
                             "id": 12,
-                            "keybind": "3",
                         },
                     ],
                     "allowed_modes": ["bbox", "polygon", "contour", "polyline", "point", "tbar", "delete_polygon", "delete_bbox"],
@@ -65,7 +64,8 @@
                         {
                             "name": "Blurry",
                             "color": "gray",
-                            "id": 20
+                            "id": 20,
+                            "keybind": "5",
                         },
                         {
                             "name": "Occluded",
@@ -84,7 +84,7 @@
             // Initial ULabel configuration
             let ulabel = new ULabel({
                 "container_id": "container",
-                "image_data": "https://ulabel.s3.us-east-2.amazonaws.com/cs-demo-0.png",
+                "image_data": "/cs-demo-0.png",
                 "username": "DemoUser",
                 "submit_buttons": [
                     {
@@ -119,17 +119,32 @@
                 "initial_line_size": 2,
                 "toolbox_order": [
                     AllowedToolboxItem.SubmitButtons,
+                    AllowedToolboxItem.Keybinds,
                     AllowedToolboxItem.ModeSelect,
+                    AllowedToolboxItem.AnnotationList,
+                    AllowedToolboxItem.ImageFilters,
                     AllowedToolboxItem.ZoomPan,
                     AllowedToolboxItem.AnnotationID, 
                     AllowedToolboxItem.ClassCounter,
                     AllowedToolboxItem.AnnotationResize, 
-                    AllowedToolboxItem.KeypointSlider,  
+                    AllowedToolboxItem.KeypointSlider,
+                    AllowedToolboxItem.ConfidenceSlider,
                     AllowedToolboxItem.FilterDistance,
                     AllowedToolboxItem.RecolorActive,
                 ],
                 "toggle_brush_mode_keybind": "f",
-                "create_bbox_on_initial_crop": "|",
+                "create_bbox_on_initial_crop_keybind": "|",
+                "click_and_drag_poly_annotations": false,
+                "anno_scaling_mode": "fixed",
+                "allow_annotations_outside_image": false,
+                "image_filters_toolbox_item": {
+                    "default_values": {
+                        "brightness": 120
+                    },
+                },
+                "confidence_slider_toolbox_item": {
+                    "step_value": 5,
+                },
             });
             // Wait for ULabel instance to finish initialization
             ulabel.init(function () {
@@ -137,6 +152,8 @@
                 console.log(ulabel);
             });
 
+            // Expose ulabel instance globally for testing
+            window.ulabel = ulabel;
         });
     </script>
 </head>

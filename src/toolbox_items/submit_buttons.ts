@@ -1,0 +1,311 @@
+import type { ULabelSubmitButton } from "../../index";
+// Import ULabel from ../../src/index - TypeScript will find ../../src/index.d.ts for types
+import { ULabel } from "../../src/index";
+import { ULabelAnnotation, DELETE_MODES, NONSPATIAL_MODES } from "../annotation";
+import type { ULabelEditType } from "../annotation";
+import { ToolboxItem } from "../toolbox";
+import { log_message, LogLevel } from "../error_logging";
+
+export class SubmitButtons extends ToolboxItem {
+    private submit_buttons: ULabelSubmitButton[];
+    private submit_buttons_by_row: ULabelSubmitButton[][];
+
+    constructor(ulabel: ULabel) {
+        super();
+
+        // Grab the submit buttons from ulabel
+        this.submit_buttons = ulabel.config.submit_buttons;
+
+        // For legacy reasons submit_buttons may be a function, in that case convert it to the right format
+        if (typeof this.submit_buttons == "function") {
+            this.submit_buttons = [{
+                name: "Submit",
+                hook: this.submit_buttons,
+                row_number: 0,
+                set_saved: false,
+            }];
+        }
+
+        // Set `set_saved` to false if not provided
+        for (const button of this.submit_buttons) {
+            button.set_saved = button.set_saved ?? false;
+        }
+
+        this.add_styles();
+
+        this.add_event_listeners();
+
+        this.submit_buttons_by_row = this.sort_buttons_by_row_number();
+
+        for (const idx in this.submit_buttons) {
+            // Create a unique event listener for each submit button in the submit buttons array.
+            const submit_button_id = SubmitButtons.submit_button_id(this.submit_buttons[idx]);
+            $(document).on("click.ulabel", "#" + submit_button_id, async () => {
+                // Grab the button
+                const button: HTMLButtonElement = <HTMLButtonElement>document.getElementById(submit_button_id);
+
+                // Grab all of the submit buttons
+                const submit_button_elements = <HTMLButtonElement[]>Array.from(document.getElementsByClassName("submit-button"));
+
+                // Make all the buttons look disabled
+                for (const i in submit_button_elements) {
+                    submit_button_elements[i].disabled = true;
+                    submit_button_elements[i].style.filter = "opacity(0.7)";
+                }
+
+                // Give the clicked button a loading animation
+                button.innerText = "";
+                const animation = document.createElement("div");
+                animation.className = "lds-dual-ring";
+                button.appendChild(animation);
+
+                // Create the submit payload
+                const submit_payload = SubmitButtons.build_submit_payload(ulabel, this.submit_buttons[idx]);
+
+                // Set set_saved if it was provided
+                if (this.submit_buttons[idx].set_saved) {
+                    ulabel.set_saved(true);
+                }
+
+                await this.submit_buttons[idx].hook(submit_payload);
+
+                // Give the button back its name
+                button.innerText = this.submit_buttons[idx].name;
+
+                // Re-enable the buttons
+                for (const i in submit_button_elements) {
+                    submit_button_elements[i].disabled = false;
+                    submit_button_elements[i].style.filter = "opacity(1)";
+                }
+            });
+        }
+    }
+
+    /**
+     * Build the payload passed to a submit button's hook, honoring the button's
+     * `subtasks` whitelist and `edits_only` filter.
+     */
+    public static build_submit_payload(
+        ulabel: ULabel,
+        button: Pick<ULabelSubmitButton, "subtasks" | "edits_only"> = {},
+    ): { task_meta: object | null; annotations: Record<string, ULabelAnnotation[]> } {
+        const submit_payload: { task_meta: object | null; annotations: Record<string, ULabelAnnotation[]> } = {
+            task_meta: ulabel.config["task_meta"],
+            annotations: {},
+        };
+
+        let subtask_keys = Object.keys(ulabel.subtasks);
+        if (button.subtasks !== undefined) {
+            for (const key of button.subtasks) {
+                if (!(key in ulabel.subtasks)) {
+                    log_message(`Submit button subtasks: unknown subtask "${key}"`, LogLevel.WARNING);
+                }
+            }
+            subtask_keys = subtask_keys.filter((key) => button.subtasks!.includes(key));
+        }
+
+        for (const stkey of subtask_keys) {
+            submit_payload["annotations"][stkey] = [];
+            const subtask_annotations = ulabel.subtasks[stkey]["annotations"];
+            const loaded_edited_at = subtask_annotations["loaded_edited_at"] ?? {};
+
+            // Add all of the annotations in that subtask
+            let annotation: ULabelAnnotation | null = null;
+            let temp_annotation: ULabelAnnotation | object;
+            for (let i = 0; i < subtask_annotations["ordering"].length; i++) {
+                const annotation_id = subtask_annotations["ordering"][i];
+                temp_annotation = subtask_annotations["access"][annotation_id];
+                if (typeof temp_annotation !== "object" || temp_annotation === null) {
+                    continue;
+                }
+
+                // Skip delete modes and nonspatial annotations (nonspatial may have a null payload)
+                const raw_spatial_type = (<ULabelAnnotation>temp_annotation).spatial_type!;
+                if (DELETE_MODES.includes(raw_spatial_type) || NONSPATIAL_MODES.includes(raw_spatial_type)) {
+                    continue;
+                }
+
+                // Classify before geometry validation: a fully erased loaded
+                // polygon has no valid geometry but still owes the host a deletion
+                let edit_type: ULabelEditType | null = null;
+                if (button.edits_only) {
+                    edit_type = SubmitButtons.classify_edit(
+                        <ULabelAnnotation>temp_annotation,
+                        loaded_edited_at[annotation_id],
+                    );
+                    if (edit_type === null) {
+                        continue;
+                    }
+                }
+
+                // Validate the annotation
+                try {
+                    annotation = ULabelAnnotation.from_json(temp_annotation);
+                } catch (e) {
+                    log_message(`Error validating annotation ${temp_annotation} during submit: ${e}.`, LogLevel.ERROR, true);
+                    annotation = null;
+                }
+
+                const has_geometry = annotation !== null && annotation.spatial_payload.length !== 0;
+                if (!has_geometry) {
+                    if (edit_type !== "deleted") {
+                        continue;
+                    }
+                    annotation = Object.assign(new ULabelAnnotation(), temp_annotation);
+                }
+
+                // Never echo a stale marker a host may have round-tripped through resume_from
+                delete annotation!.edit_type;
+
+                if (edit_type !== null) {
+                    annotation!.edit_type = edit_type;
+                    // Display filters must not read as deletions to the host
+                    annotation!.deprecated = edit_type === "deleted";
+                }
+
+                // Ensure annotation is within the image if required
+                if (has_geometry && !ulabel.config.allow_annotations_outside_image) {
+                    annotation!.clamp_annotation_to_image_bounds(
+                        ulabel.config["image_width"]!,
+                        ulabel.config["image_height"]!,
+                    );
+                }
+
+                submit_payload["annotations"][stkey].push(annotation!);
+            }
+        }
+
+        return submit_payload;
+    }
+
+    /**
+     * Decide how an `edits_only` payload reports an annotation, or null to omit it.
+     * Only human deletion counts; filter deprecation is display state.
+     */
+    public static classify_edit(
+        annotation: ULabelAnnotation,
+        loaded_at: string | null | undefined,
+    ): ULabelEditType | null {
+        const human_deleted = annotation.deprecated_by?.human === true;
+        if (loaded_at === undefined) {
+            return human_deleted ? null : "created";
+        }
+        if (annotation.last_edited_at === loaded_at) {
+            return null;
+        }
+        return human_deleted ? "deleted" : "modified";
+    }
+
+    /**
+     * Group submit buttons by row number
+     *
+     * @returns {ULabelSubmitButton[][]} Array of submit buttons grouped by row number
+     */
+    private sort_buttons_by_row_number() {
+        const submit_buttons_by_row: ULabelSubmitButton[][] = [];
+        // First, get all the unique row numbers.
+        // If a button doesn't have a row number, it will be placed in row 0.
+        const row_numbers: Set<number> = new Set(this.submit_buttons.map((button) => button.row_number ? button.row_number : 0));
+        // Sort the row numbers
+        const sorted_row_numbers: number[] = Array.from(row_numbers).sort((a, b) => a - b);
+        // Group the buttons by row number in ascending order
+        for (const row_number of sorted_row_numbers) {
+            submit_buttons_by_row.push(
+                this.submit_buttons.filter((button) => {
+                    // If the button doesn't have a row number, it will be placed in row 0
+                    if (button.row_number === undefined) {
+                        return row_number === 0;
+                    }
+                    // Otherwise, place the button in the row that matches its row number
+                    return button.row_number === row_number;
+                }),
+            );
+        }
+        return submit_buttons_by_row;
+    }
+
+    /**
+     * Produce a valid ID for the given submit button.
+     * Achieved by removing special characters from the `name` property.
+     *
+     * @param submit_button Submit button to generate ID for
+     */
+    public static submit_button_id(submit_button: ULabelSubmitButton) {
+        // Remove everything except alphanumeric, dash, underscore, space
+        let submit_button_id = submit_button.name.replace(/[^a-zA-Z0-9-_ ]/g, "");
+
+        submit_button_id = submit_button_id.trim().toLowerCase().replace(/ /g, "-");
+        return submit_button_id;
+    }
+
+    /**
+     * Create the css for this ToolboxItem and append it to the page.
+     */
+    protected add_styles() {
+        // Styles defined in blobs.js and get_html()
+    }
+
+    add_event_listeners(): void {
+        $(document).on("keypress.ulabel", (event) => {
+            const ctrl = event.ctrlKey || event.metaKey;
+            if (ctrl && (event.key === "s" || event.key === "S")) {
+                event.preventDefault();
+                $(".submit-button")[0].click(); // Click the first submit button
+            }
+        });
+    }
+
+    get_html(): string {
+        let toolboxitem_html = `<div class="submit-button-container">`;
+
+        for (const submit_buttons of this.submit_buttons_by_row) {
+            // Create a row for each row of submit buttons
+            toolboxitem_html += `<div class="submit-button-row">`;
+
+            // Create each button in the row
+            for (const submit_button of submit_buttons) {
+                let button_color = "rgba(255, 166, 0, 0.739)";
+                if (submit_button.color !== undefined) {
+                    button_color = submit_button.color;
+                }
+
+                // Get the size factor
+                let size_factor = 1;
+                if (submit_button.size_factor !== undefined) {
+                    size_factor = submit_button.size_factor;
+                }
+
+                toolboxitem_html += `
+                <button 
+                    id="${SubmitButtons.submit_button_id(submit_button)}" 
+                    class="submit-button" 
+                    style="
+                        background-color: ${button_color};
+                        border: ${1 * size_factor}px solid ${button_color};
+                        border-radius: ${0.5 * size_factor}em;
+                        height: ${1.2 * size_factor}em;
+                        width: ${6 * size_factor}em;
+                        font-size: ${1.5 * size_factor}em;
+                        padding: ${1 * size_factor}em;
+                ">
+                    ${submit_button.name}
+                </button>
+                `;
+            }
+            // Close the row div
+            toolboxitem_html += `</div>`;
+        }
+        // Close the container div
+        toolboxitem_html += `</div>`;
+
+        return toolboxitem_html;
+    }
+
+    public after_init() {
+        // This toolbox item doesn't need to do anything after initialization
+    }
+
+    public get_toolbox_item_type() {
+        return "SubmitButtons";
+    }
+}
