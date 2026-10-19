@@ -1943,13 +1943,13 @@ export class FilterPointDistanceFromRow extends ToolboxItem {
         // Check if localStorage has a value for showing the overlay
         const show_overlay = get_local_storage_item("filterDistanceShowOverlay");
         // Guard against null values
-        this.show_overlay = show_overlay !== null ? show_overlay : this.show_overlay;
+        this.show_overlay = show_overlay ?? this.show_overlay;
         this.overlay.update_display_overlay(this.show_overlay);
 
         // Check if localStorage has a value for filtering during polyline move
         const filter_during_polyline_move = get_local_storage_item("filterDistanceFilterDuringPolylineMove");
         // Guard against null values
-        this.filter_during_polyline_move = filter_during_polyline_move !== null ? filter_during_polyline_move : this.filter_during_polyline_move;
+        this.filter_during_polyline_move = filter_during_polyline_move ?? this.filter_during_polyline_move;
 
         this.add_styles();
 
