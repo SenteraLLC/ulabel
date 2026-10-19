@@ -35,6 +35,11 @@ Note that in order to begin the session, you must thereafter call
 ulabel.init(() => {/* behavior on ready */})
 ```
 
+`init()` returns a `Promise<void>` that:
+
+- Resolves when initialization finishes (after the callback)
+- Rejects if initialization fails (e.g. the image fails to decode)
+
 `ULabel` is the only name that `ulabel.js` will add to the global namespace.
 
 > ULabel is designed for **a single instance per page**. Toolbox handlers, id dialogs, and global keybinds bind to shared DOM ids and delegated selectors on `document`, so mounting more than one `ULabel` simultaneously is not supported.
