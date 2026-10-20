@@ -178,7 +178,8 @@ export class AnnotationListToolboxItem extends ToolboxItem {
             cursor: pointer;
             transition: background-color 150ms;
             content-visibility: auto;
-            contain-intrinsic-size: auto 37px;
+            /* Content-box height: a rendered row is 24px of content + 1rem padding + 1px border */
+            contain-intrinsic-size: auto 24px;
         }
 
         #toolbox .annotation-list-item:last-child {
