@@ -38,9 +38,10 @@ ulabel.init(() => {/* behavior on ready */})
 `init()` returns a `Promise<void>` that:
 
 - Resolves when initialization finishes (after the callback)
-- Rejects if initialization fails (e.g. the image fails to decode)
 - Resolves early without calling the callback if [`destroy()`](#destroy)
   runs mid-init; check `ulabel.is_destroyed` after awaiting
+- Rejects if initialization fails (e.g. the image fails to decode)
+- Rejects if the callback fails
 
 `ULabel` is the only name that `ulabel.js` will add to the global namespace.
 
