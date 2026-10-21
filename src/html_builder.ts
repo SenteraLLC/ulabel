@@ -17,6 +17,7 @@ import {
     GLOBAL_SVG,
     BITMASK_SVG,
     get_init_style,
+    IMAGE_FRAME_Z_INDEX,
 } from "../src/blobs";
 import { ULabelLoader } from "./loader";
 import { log_message, LogLevel } from "./error_logging";
@@ -79,7 +80,7 @@ function get_images_html(ulabel: ULabel): string {
             display = "block";
         }
         images_html += `
-            <img id="${ulabel.config["image_id_pfx"]}__${i}" src="${ulabel.config["image_data"]!.frames[i]}" class="imwrap_cls ${ulabel.config["imgsz_class"]} image_frame" style="z-index: 50; display: ${display};" />
+            <img id="${ulabel.config["image_id_pfx"]}__${i}" src="${ulabel.config["image_data"]!.frames[i]}" class="imwrap_cls ${ulabel.config["imgsz_class"]} image_frame" style="z-index: ${IMAGE_FRAME_Z_INDEX}; display: ${display};" />
         `;
     }
     return images_html;

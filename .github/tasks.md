@@ -46,3 +46,9 @@
 - [x] Merge `origin/main` (0.30.0 and 0.30.1 already released there); resolve version conflicts.
 - [x] Re-bump package/version.js to 0.31.0; move the overlay API changelog entry under 0.31.0.
 - [x] Run lint, build, and unit tests.
+
+## PR #263 review: z-indices and overlay resize
+
+- [x] Name the image frame (50), FilterDistance overlay (95), and loader z-indices in `src/blobs.js`; loader sits above `"above_annotations"` overlays.
+- [x] Drop `resize_overlay_canvases()`: overlays carry `imgsz_class`, so rezoom already resizes them. Restore the FilterDistance resize call; `overlay_canvases` holds embedder canvases only.
+- [x] Lint, build, jest 521/521 (both builds), Chromium e2e 94/94.

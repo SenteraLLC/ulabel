@@ -524,8 +524,6 @@ export class ULabel {
     public add_overlay_canvas(layer?: OverlayLayer): HTMLCanvasElement;
     /** Detach a canvas from `add_overlay_canvas()` and drop ULabel's reference to it. */
     public remove_overlay_canvas(canvas: HTMLCanvasElement): void;
-    /** @internal */
-    public resize_overlay_canvases(new_width: number, new_height: number): void;
     public swap_anno_bg_color(new_bg_color: string): string;
     /**
      * Set a class's color and sync every view of it: `color_info`, the

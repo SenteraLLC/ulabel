@@ -18,3 +18,6 @@ export const FRONT_Z_INDEX: number;
 export const BACK_Z_INDEX: number;
 export const OVERLAY_BELOW_ANNOTATIONS_Z_INDEX: number;
 export const OVERLAY_ABOVE_ANNOTATIONS_Z_INDEX: number;
+export const IMAGE_FRAME_Z_INDEX: number;
+export const FILTER_DISTANCE_OVERLAY_Z_INDEX: number;
+export const LOADER_Z_INDEX: number;

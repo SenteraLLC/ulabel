@@ -846,7 +846,7 @@ export class ULabel {
         this.annotation_navigation_toast_timeout = null;
         // Set true by destroy(); subsequent calls short-circuit.
         this.is_destroyed = false;
-        // Overlay canvases resized on every zoom: FilterDistance's and any from add_overlay_canvas().
+        // Embedder canvases from add_overlay_canvas(), removed on destroy().
         this.overlay_canvases = [];
         // MutationObserver used by opt-in auto-teardown; may be null.
         this.mutation_observer = null;
@@ -962,7 +962,6 @@ export class ULabel {
                     );
 
                     $("#" + this.config["imwrap_id"]).prepend(this.filter_distance_overlay.get_canvas());
-                    this.overlay_canvases.push(this.filter_distance_overlay.get_canvas());
 
                     // Filter the points with an override
                     filter_points_distance_from_line(this, true, null, {
@@ -1012,7 +1011,7 @@ export class ULabel {
         canvas.style.zIndex = String(z_index);
         canvas.style.pointerEvents = "none";
         canvas.style.imageRendering = "pixelated";
-        // Match the current zoom; rezoom() keeps it in sync afterwards.
+        // Match the current zoom; rezoom() resizes every imgsz_class element afterwards.
         const zoom_val = this.state["zoom_val"];
         canvas.style.width = Math.round(this.config["image_width"] * zoom_val) + "px";
         canvas.style.height = Math.round(this.config["image_height"] * zoom_val) + "px";
@@ -1033,19 +1032,6 @@ export class ULabel {
         if (idx === -1) return;
         this.overlay_canvases.splice(idx, 1);
         canvas.remove();
-    }
-
-    /**
-     * Set the CSS size of every overlay canvas. Backing sizes stay fixed at image resolution.
-     *
-     * @param {number} new_width CSS width in px
-     * @param {number} new_height CSS height in px
-     */
-    resize_overlay_canvases(new_width, new_height) {
-        for (const canvas of this.overlay_canvases) {
-            canvas.style.width = new_width + "px";
-            canvas.style.height = new_height + "px";
-        }
     }
 
     handle_toolbox_overflow() {
@@ -8860,7 +8846,7 @@ export class ULabel {
         var toresize = $("." + this.config["imgsz_class"]);
         toresize.css("width", new_width + "px");
         toresize.css("height", new_height + "px");
-        this.resize_overlay_canvases(new_width, new_height);
+        this.filter_distance_overlay?.resize_canvas(new_width, new_height);
         this.resize_active_polygon_ender();
 
         // Scroll from drag-start baseline
@@ -8931,8 +8917,8 @@ export class ULabel {
         toresize.css("width", new_width + "px");
         toresize.css("height", new_height + "px");
 
-        // Apply new size to overlay canvases
-        this.resize_overlay_canvases(new_width, new_height);
+        // Apply new size to overlay if overlay exists
+        this.filter_distance_overlay?.resize_canvas(new_width, new_height);
 
         // Apply new size to an active polygon ender
         this.resize_active_polygon_ender();

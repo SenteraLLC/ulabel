@@ -88,20 +88,6 @@ describe("overlay canvases", () => {
         expect(() => ulabel.add_overlay_canvas()).toThrow(/after destroy/);
     });
 
-    test("resize_overlay_canvases sets the CSS size of every overlay", () => {
-        const ulabel = scaffold_instance();
-        const first = ulabel.add_overlay_canvas();
-        const second = ulabel.add_overlay_canvas("above_annotations");
-
-        ulabel.resize_overlay_canvases(300, 150);
-
-        for (const canvas of [first, second]) {
-            expect(canvas.style.width).toBe("300px");
-            expect(canvas.style.height).toBe("150px");
-            expect(canvas.width).toBe(200);
-        }
-    });
-
     test("remove_overlay_canvas detaches the canvas and drops the reference", () => {
         const ulabel = scaffold_instance();
         const first = ulabel.add_overlay_canvas();
