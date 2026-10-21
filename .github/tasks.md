@@ -25,3 +25,24 @@
 - [x] Bump package/type versions and release changelog heading to 0.30.0.
 - [x] Mark internal canvas members in TypeScript docs and verify the public API spec does not advertise them.
 - [x] Run post-change lint, build, and unit tests; commit locally.
+
+## Fix GitHub Pages demo (blank page)
+
+- [x] `live_demo.html`: load `./cs-demo-0.png` (relative) so it resolves under `/ulabel/`.
+- [x] `deploy-demo.yml`: copy `demo/cs-demo-0.png` into `_site`.
+- [x] Verified with Playwright against a simulated `/ulabel/` Pages layout.
+
+## Fix flaky Firefox isolate e2e test
+
+- [x] AnnotationList: `contain-intrinsic-size` 37px -> 24px. It sizes the content box, so
+  unrendered rows were 54px vs 41px rendered; the list shifted as rows rendered and the
+  test's click hit the row instead of the isolate button.
+- [x] Test: move the mouse off the list before counting pixels (Firefox hovers the
+  re-rendered row, drawing a thicker outline).
+- [x] Verified: Firefox 50/50 with no settle wait; list-related e2e 156/156; lint; jest 515/515.
+
+## Merge main for PR #263
+
+- [x] Merge `origin/main` (0.30.0 and 0.30.1 already released there); resolve version conflicts.
+- [x] Re-bump package/version.js to 0.31.0; move the overlay API changelog entry under 0.31.0.
+- [x] Run lint, build, and unit tests.

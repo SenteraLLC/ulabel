@@ -86,6 +86,8 @@ test.describe("isolate annotation", () => {
 
         const entry = page.locator(".annotation-list-item[data-annotation-id=\"grid-7\"]");
         await entry.locator(".annotation-list-item-isolate").click();
+        // The re-rendered row lands under the cursor; Firefox hovers it, drawing a thicker outline
+        await page.mouse.move(5, 5);
         await page.waitForTimeout(100);
 
         expect(await isolated_id(page)).toBe("grid-7");

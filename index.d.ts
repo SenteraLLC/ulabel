@@ -512,7 +512,7 @@ export class ULabel {
      * @link https://github.com/SenteraLLC/ulabel/blob/main/api_spec.md#display-utility-functions
      */
     public version(): string;
-    public init(callback: () => void): void;
+    public init(callback: () => void): Promise<void>;
     public after_init(): void;
     public show_initial_crop(): void;
     public show_whole_image(): void;

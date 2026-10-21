@@ -855,8 +855,14 @@ export class ULabel {
         this._owned_container = null;
     }
 
+    /**
+     * Initialize the session, then call the user callback.
+     *
+     * @param {() => void} callback User-provided callback to run after initialization.
+     * @returns {Promise<void>} Resolves when initialization finishes; rejects if it fails.
+     */
     init(callback) {
-        ulabel_init(this, callback);
+        return ulabel_init(this, callback);
     }
 
     /**
