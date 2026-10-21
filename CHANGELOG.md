@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented here.
 
+## [0.30.0] - Oct 20th, 2026
+#### Changed
+- `init()` now returns the `ulabel_init`; typed `Promise<void>`
+
 ## [0.29.1] - Oct 12th, 2026
 #### Fixed
 - `set_annotations()` / `set_annotations_batch()` could paint a frame with no annotations on heavy images. The outgoing annotations now stay on screen until the new ones are drawn.
