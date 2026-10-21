@@ -1,3 +1,5 @@
+import { LOADER_Z_INDEX } from "../src/blobs";
+
 /**
  * Animated loader for initial loading screen.
  */
@@ -85,7 +87,7 @@ export class ULabelLoader {
                 height: 100%;
                 inset: 0;
                 background-color: rgba(0, 0, 0, 0.5);
-                z-index: 100;
+                z-index: ${LOADER_Z_INDEX};
             }
             .ulabel-loader {
                 border: 16px solid #f3f3f3;

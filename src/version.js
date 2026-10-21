@@ -1,1 +1,1 @@
-export const ULABEL_VERSION = "0.30.1";
+export const ULABEL_VERSION = "0.31.0";

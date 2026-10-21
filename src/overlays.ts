@@ -3,6 +3,7 @@ import { ULabelAnnotation } from "./annotation";
 import { get_annotation_class_id } from "./annotation_operators";
 import { log_message, LogLevel } from "./error_logging";
 import { ULabelSpatialPayload2D } from "./geometric_utils";
+import { FILTER_DISTANCE_OVERLAY_Z_INDEX } from "../src/blobs";
 
 /**
  * Basic class to hold generic methods useful for creating overlays.
@@ -55,7 +56,7 @@ class ULabelOverlay {
         this.canvas.setAttribute("class", "ulabel-overlay");
 
         // Set the overlay to be behind the active subtask canvas, but in front of everything else
-        this.canvas.style.zIndex = "95";
+        this.canvas.style.zIndex = String(FILTER_DISTANCE_OVERLAY_Z_INDEX);
         this.canvas.style.position = "relative";
 
         // Set the width and height

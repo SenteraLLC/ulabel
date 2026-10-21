@@ -53,6 +53,8 @@ import {
     GLOBAL_SVG,
     FRONT_Z_INDEX,
     BACK_Z_INDEX,
+    OVERLAY_BELOW_ANNOTATIONS_Z_INDEX,
+    OVERLAY_ABOVE_ANNOTATIONS_Z_INDEX,
 } from "./blobs";
 import { ULABEL_VERSION } from "./version";
 import { ulabel_init } from "../build/initializer";
@@ -249,7 +251,14 @@ export class ULabel {
         // 6. Drop the resize-observer array so disconnected observers stop retaining state.
         this.resize_observers = [];
 
-        // 7. Wipe the container DOM (canvases, id dialogs, brush circle, enders, overlays).
+        // 7. Detach overlay canvases (embedder overlays may outlive the container wipe via references).
+        for (const canvas of this.overlay_canvases ?? []) {
+            canvas.remove();
+        }
+        this.overlay_canvases = [];
+        this.filter_distance_overlay = null;
+
+        // 8. Wipe the container DOM (canvases, id dialogs, brush circle, enders, overlays).
         //    Prefer the captured owned-container node so a same-id replacement mounted by an SPA
         //    between detach and this call is left untouched.
         let container = this._owned_container;
@@ -837,6 +846,8 @@ export class ULabel {
         this.annotation_navigation_toast_timeout = null;
         // Set true by destroy(); subsequent calls short-circuit.
         this.is_destroyed = false;
+        // Embedder canvases from add_overlay_canvas(), removed on destroy().
+        this.overlay_canvases = [];
         // MutationObserver used by opt-in auto-teardown; may be null.
         this.mutation_observer = null;
         // The specific container HTMLElement this instance owns. Captured at observer-install
@@ -964,6 +975,63 @@ export class ULabel {
                     log_message(`Toolbox item ${toolbox_name} is associated with an overlay, yet no overlay logic exists.`, LogLevel.WARNING, true);
             }
         }
+    }
+
+    /**
+     * Create a pointer-free canvas in the image wrapper for an embedder to draw into.
+     * ULabel sizes it to the image, keeps its CSS size in sync with zoom, and removes it on
+     * `destroy()`. The caller owns its pixels, including across `swap_frame_image()`.
+     *
+     * @param {"below_annotations" | "above_annotations"} layer Stack above the image frames and
+     *     below every subtask canvas (default), or above the active subtask canvas.
+     * @returns {HTMLCanvasElement} The overlay canvas
+     */
+    add_overlay_canvas(layer = "below_annotations") {
+        if (this.is_destroyed) throw new Error("add_overlay_canvas() called after destroy()");
+        if (!this.is_init) throw new Error("add_overlay_canvas() called before init completed");
+        let z_index;
+        switch (layer) {
+            case "below_annotations":
+                z_index = OVERLAY_BELOW_ANNOTATIONS_Z_INDEX;
+                break;
+            case "above_annotations":
+                z_index = OVERLAY_ABOVE_ANNOTATIONS_Z_INDEX;
+                break;
+            default:
+                throw new Error(`Unknown overlay layer "${layer}"`);
+        }
+
+        const canvas = document.createElement("canvas");
+        canvas.width = this.config["image_width"] * this.config["px_per_px"];
+        canvas.height = this.config["image_height"] * this.config["px_per_px"];
+        canvas.classList.add(this.config["imgsz_class"], "ulabel-embedder-overlay");
+        canvas.style.position = "absolute";
+        canvas.style.top = "0";
+        canvas.style.left = "0";
+        canvas.style.zIndex = String(z_index);
+        canvas.style.pointerEvents = "none";
+        canvas.style.imageRendering = "pixelated";
+        // Match the current zoom; rezoom() resizes every imgsz_class element afterwards.
+        const zoom_val = this.state["zoom_val"];
+        canvas.style.width = Math.round(this.config["image_width"] * zoom_val) + "px";
+        canvas.style.height = Math.round(this.config["image_height"] * zoom_val) + "px";
+
+        document.getElementById(this.config["imwrap_id"]).appendChild(canvas);
+        this.overlay_canvases.push(canvas);
+        return canvas;
+    }
+
+    /**
+     * Detach an overlay canvas returned by `add_overlay_canvas()` and drop ULabel's reference.
+     * Unknown canvases are ignored.
+     *
+     * @param {HTMLCanvasElement} canvas The overlay canvas to remove
+     */
+    remove_overlay_canvas(canvas) {
+        const idx = this.overlay_canvases.indexOf(canvas);
+        if (idx === -1) return;
+        this.overlay_canvases.splice(idx, 1);
+        canvas.remove();
     }
 
     handle_toolbox_overflow() {
