@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented here.
 
-## [Unreleased]
+## [0.30.0] - Oct 20th, 2026
 #### Changed
 - `init()` now returns the `ulabel_init`; typed `Promise<void>`
 
