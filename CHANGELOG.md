@@ -3,9 +3,12 @@
 All notable changes to this project will be documented here.
 
 ## [Unreleased]
+
+## [0.30.1] - Oct 21st, 2026
 #### Fixed
 - `AnnotationList` rows that had not been drawn yet reserved 54px instead of 41px, so the list jumped as rows scrolled into view (most visible in Firefox).
 
+## [0.30.0] - Oct 20th, 2026
 #### Changed
 - `init()` now returns the `ulabel_init`; typed `Promise<void>`
 
