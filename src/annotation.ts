@@ -286,9 +286,9 @@ export class ULabelAnnotation {
         // Return the data, initializing the arrays if they are undefined
         const ret: PolygonSpatialData = {
             spatial_payload: annotation.spatial_payload,
-            containing_box: annotation.containing_box ? annotation.containing_box : null,
-            spatial_payload_holes: annotation.spatial_payload_holes ? annotation.spatial_payload_holes : [false],
-            spatial_payload_child_indices: annotation.spatial_payload_child_indices ? annotation.spatial_payload_child_indices : [[]],
+            containing_box: annotation.containing_box ?? null,
+            spatial_payload_holes: annotation.spatial_payload_holes ?? [false],
+            spatial_payload_child_indices: annotation.spatial_payload_child_indices ?? [[]],
         };
         if (deep_copy) {
             return JSON.parse(JSON.stringify(ret));

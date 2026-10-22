@@ -726,7 +726,7 @@ export class SliderHandler {
                 value="${this.default_value}"
             />
             <label for="${this.id}" id="${this.id}-value-label" class="ulabel-slider-value-label">
-                ${this.default_value}${this.label_units ? this.label_units : ""}
+                ${this.default_value}${this.label_units ?? ""}
             </label>
             <div class="ulabel-slider-button-container">
                 <button id=${this.id}-inc-button class="ulabel-slider-button circle" >
