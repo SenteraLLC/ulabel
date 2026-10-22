@@ -2,7 +2,7 @@ import globals from "globals";
 import eslint from "@eslint/js";
 import stylistic from "@stylistic/eslint-plugin";
 import tseslint from "typescript-eslint";
-import { includeIgnoreFile } from "@eslint/compat";
+import { includeIgnoreFile } from "@eslint/config-helpers";
 import { fileURLToPath } from "node:url";
 
 export default [
