@@ -2,8 +2,11 @@ import globals from "globals";
 import eslint from "@eslint/js";
 import stylistic from "@stylistic/eslint-plugin";
 import tseslint from "typescript-eslint";
+import { includeIgnoreFile } from "@eslint/compat";
+import { fileURLToPath } from "node:url";
 
 export default [
+    includeIgnoreFile(fileURLToPath(new URL(".gitignore", import.meta.url)), "Imported .gitignore patterns"),
     {
         // Global ignores
         // https://eslint.org/docs/latest/use/configure/configuration-files#configuration-objects
