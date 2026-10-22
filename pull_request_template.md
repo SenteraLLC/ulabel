@@ -10,7 +10,7 @@
 - [ ] Version number in `package.json` has been bumped since last release
 - [ ] Version numbers match between package `package.json` and `src/version.js`
 - [ ] Updated documentation if necessary (currently just in `api_spec.md`)
-- [ ] Added changes to `changelog.md`
+- [ ] Added changes to `CHANGELOG.md`
 
 ## Breaking API Changes
 
