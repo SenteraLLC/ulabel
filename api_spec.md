@@ -35,6 +35,14 @@ Note that in order to begin the session, you must thereafter call
 ulabel.init(() => {/* behavior on ready */})
 ```
 
+`init()` returns a `Promise<void>` that:
+
+- Resolves when initialization finishes (after the callback)
+- Resolves early without calling the callback if [`destroy()`](#destroy)
+  runs mid-init; check `ulabel.is_destroyed` after awaiting
+- Rejects if initialization fails (e.g. the image fails to decode)
+- Rejects if the callback fails
+
 `ULabel` is the only name that `ulabel.js` will add to the global namespace.
 
 > ULabel is designed for **a single instance per page**. Toolbox handlers, id dialogs, and global keybinds bind to shared DOM ids and delegated selectors on `document`, so mounting more than one `ULabel` simultaneously is not supported.
@@ -798,6 +806,22 @@ Display utilities are provided for a constructed `ULabel` object.
 
 The new image must match the dimensions this instance was initialized with: the canvases, zoom math, and loaded annotations are all in the init-time image's coordinate space. On a mismatch the old image is restored and the returned `Promise` rejects. Rebuild the ULabel instance to change image dimensions.
 
+Overlay canvases from [`add_overlay_canvas()`](#add_overlay_canvaslayerbelow_annotations) stay in place across a swap; the caller is responsible for their content.
+
+### `add_overlay_canvas(layer="below_annotations")`
+
+*("below_annotations" | "above_annotations") => HTMLCanvasElement* -- Creates a canvas for the embedder to draw into and appends it to the image wrapper. ULabel owns its placement:
+
+- Its backing size is `image_width * px_per_px` by `image_height * px_per_px`. Draw in that pixel space.
+- It has the image-size class (`imgsz_class`), `pointer-events: none`, and `image-rendering: pixelated`. ULabel keeps its CSS size in sync with zoom, so pan and zoom never require a redraw.
+- `"below_annotations"` stacks it above the image frames and below every subtask canvas. `"above_annotations"` stacks it above the active subtask canvas.
+
+Throws if called before `init()` completes or after [`destroy()`](#destroy). Each call creates a new canvas.
+
+### `remove_overlay_canvas(canvas)`
+
+*(HTMLCanvasElement) => void* -- Detaches a canvas returned by `add_overlay_canvas()` and drops ULabel's reference to it. Unknown canvases are ignored. `destroy()` removes any overlay canvases still registered.
+
 ### `swap_anno_bg_color(new_bg_color)`
 
 *(string) => string* -- Changes the background color for the annotation box. Returns the old color.
@@ -860,6 +884,7 @@ Note that ULabel will not function properly after this method is called. Designe
 - toolbox item back-references to the instance,
 - resize observers and (if [`auto_destroy_on_detach`](#auto_destroy_on_detach) installed one) the auto-teardown `MutationObserver`,
 - pending toast/interaction timers,
+- overlay canvases from [`add_overlay_canvas()`](#add_overlay_canvaslayerbelow_annotations),
 - all DOM under the configured container.
 
 After calling `destroy()` the instance MUST NOT be used again. `set_annotations()`, `get_annotations()`, and `redraw_all_annotations()` short-circuit with a warning if called on a destroyed instance.
