@@ -434,6 +434,9 @@ function trigger_action_listeners(
         delete_counterparts: {
             // Redraws its target subtask itself
         },
+        set_counterparts_class: {
+            // Redraws its target subtask itself
+        },
     };
 
     // Call the appropriate listener
@@ -727,7 +730,7 @@ export function redo(ulabel: ULabel) {
  */
 function get_action_boxes(ulabel: ULabel, action: ULabelAction): ULabelContainingBox[] {
     // A counterpart action's own id is its source annotation, in another subtask
-    const own = action.act_type === "delete_counterparts" ?
+    const own = action.act_type === "delete_counterparts" || action.act_type === "set_counterparts_class" ?
             [] :
             [{ annotation_id: action.annotation_id, subtask_key: ulabel.get_current_subtask_key() }];
     const targets = [...own, ...(action.affected ?? [])];
@@ -829,6 +832,9 @@ function undo_action(ulabel: ULabel, action: ULabelAction) {
         case "delete_counterparts":
             ulabel.delete_counterparts__undo(undo_payload);
             break;
+        case "set_counterparts_class":
+            ulabel.set_counterparts_class__undo(undo_payload);
+            break;
         case "create_nonspatial_annotation":
             ulabel.create_nonspatial_annotation__undo(annotation_id);
             break;
@@ -924,6 +930,9 @@ export function redo_action(ulabel: ULabel, action: ULabelAction) {
             break;
         case "delete_counterparts":
             ulabel.delete_counterparts__redo(annotation_id, redo_payload);
+            break;
+        case "set_counterparts_class":
+            ulabel.set_counterparts_class__redo(annotation_id, redo_payload);
             break;
         case "create_nonspatial_annotation":
             ulabel.create_nonspatial_annotation(annotation_id, redo_payload);

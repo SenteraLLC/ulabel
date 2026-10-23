@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented here.
 
+## [Unreleased]
+#### Added
+- **Set class in `<subtask>`** context-menu item: sets an annotation's counterparts in another writable subtask to its class (matched by id, then name). Counterparts that can't take that class, or already have it, are left alone, and the item only shows when at least one would change. New `get_counterpart_class_changes()` and `set_counterparts_class()`, recorded as one undoable `set_counterparts_class` action on the target subtask.
+
 ## [0.31.1] - Oct 22nd, 2026
 #### Changed
 - Simplified ternary syntax into nullish coalescing in several locations

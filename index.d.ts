@@ -269,6 +269,7 @@ export type ULabelActionType = "create_nonspatial_annotation" |
     "paste_annotation" |
     "move_annotation" |
     "delete_counterparts" |
+    "set_counterparts_class" |
     "begin_annotation" |
     "continue_annotation" |
     "finish_annotation" |
@@ -402,7 +403,7 @@ export type ULabelConstructorArgs = {
     allow_body_move?: boolean;
     /** Open the class pie on a paste whose source class has no id/name match in the target. Default true; false takes the target's active class. */
     paste_class_choice?: boolean;
-    /** Make the target the current subtask after a copy/move or `delete_counterparts`, and the writable subtask on undo/redo from a read-only one. Default false. */
+    /** Make the target the current subtask after a copy/move, `delete_counterparts` or `set_counterparts_class`, and the writable subtask on undo/redo from a read-only one. Default false. */
     paste_switch_to_target?: boolean;
     /** `annotation_meta` key whose value (string or string[]) links annotations across subtasks; any shared value links. Copies drop it. Default null. */
     annotation_link_meta_key?: string | null;
@@ -820,7 +821,18 @@ export class ULabel {
      * With `config.paste_switch_to_target`, switches to the target when anything changed.
      */
     public delete_counterparts(annotation_id: string, source_key: string, target_key: string, erase?: boolean | null): string[];
-    /** Whether a context-menu copy/move/delete-from makes the target the current subtask. */
+    /**
+     * Counterparts in `target_key` that can take the source's class (by id, else by name)
+     * and don't already have it, mapped to the class id each would take.
+     */
+    public get_counterpart_class_changes(annotation_id: string, source_key: string, target_key: string): Record<string, number>;
+    /**
+     * Set the counterparts in a writable `target_key` to the source's class (see `get_counterpart_class_changes`).
+     * One `set_counterparts_class` action on the target's stream. Returns the changed ids.
+     * With `config.paste_switch_to_target`, switches to the target when anything changed.
+     */
+    public set_counterparts_class(annotation_id: string, source_key: string, target_key: string): string[];
+    /** Whether a context-menu copy/move/delete-from/set-class-in makes the target the current subtask. */
     public set_paste_switch_to_target(enabled: boolean): void;
     public get_paste_switch_to_target(): boolean;
     public start_complex_polygon(annotation_id?: string): void;
@@ -860,6 +872,7 @@ export class ULabel {
     public paste_annotation__undo(annotation_id: string): void;
     public move_annotation__undo(annotation_id: string, undo_payload: object): void;
     public delete_counterparts__undo(undo_payload: object): void;
+    public set_counterparts_class__undo(undo_payload: object): void;
     public create_nonspatial_annotation__undo(annotation_id: string): void;
     public start_complex_polygon__undo(annotation_id: string): void;
     public merge_polygon_complex_layer__undo(annotation_id: string, undo_payload: object): void;
@@ -884,6 +897,7 @@ export class ULabel {
     public paste_annotation__redo(annotation_id: string, redo_payload: object): void;
     public move_annotation__redo(annotation_id: string, redo_payload: object): void;
     public delete_counterparts__redo(annotation_id: string, redo_payload: object): void;
+    public set_counterparts_class__redo(annotation_id: string, redo_payload: object): void;
     public finish_modify_annotation__redo(annotation_id: string, redo_payload: object): void;
 
     // Mouse event handlers

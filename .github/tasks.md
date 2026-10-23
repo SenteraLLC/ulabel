@@ -52,3 +52,10 @@
 - [x] Name the image frame (50), FilterDistance overlay (95), and loader z-indices in `src/blobs.js`; loader sits above `"above_annotations"` overlays.
 - [x] Drop `resize_overlay_canvases()`: overlays carry `imgsz_class`, so rezoom already resizes them. Restore the FilterDistance resize call; `overlay_canvases` holds embedder canvases only.
 - [x] Lint, build, jest 521/521 (both builds), Chromium e2e 94/94.
+
+## Set class in <subtask> (context menu)
+
+- [x] `set_counterparts_class()` in `src/index.js` + undo/redo (`set_counterparts_class` action).
+- [x] Context menu item `Set class in` (only counterparts that can take the source class and differ).
+- [x] Types (`index.d.ts`), `api_spec.md`, changelog.
+- [x] Jest tests; lint, build, jest.

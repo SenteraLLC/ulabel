@@ -46,6 +46,8 @@ function make_ulabel({ read_only = false, compatible = [1, 2], annotation = make
         copy_annotation_to_clipboard: jest.fn(() => ({ ulabel_annotation: 1, paste_counts: {} })),
         find_counterparts: jest.fn(() => []),
         delete_counterparts: jest.fn(() => []),
+        get_counterpart_class_changes: jest.fn(() => ({})),
+        set_counterparts_class: jest.fn(() => []),
         show_id_dialog: jest.fn(),
         delete_annotation: jest.fn(),
         is_annotation_defocused: jest.fn((ann) => ann.deprecated !== subtask.focus_deprecated),
@@ -284,6 +286,37 @@ describe("context menu items", () => {
 
         click_item("Erase from Predictions");
         expect(ulabel.delete_counterparts).toHaveBeenCalledWith("a0", "main", "pred", true);
+    });
+
+    test("Set class in lists writable subtasks with counterparts to change, even from a read-only source", () => {
+        const ulabel = make_ulabel({ read_only: true });
+        ulabel.find_counterparts.mockImplementation((annid, source_key, key) => (key === "pred" ? ["p1"] : ["r1"]));
+        ulabel.get_counterpart_class_changes.mockImplementation((annid, source_key, key) => (key === "pred" ? { p1: 2 } : {}));
+
+        show_context_menu(ulabel, "a0", 100, 100);
+        expect(item_labels()).toEqual(["Set class in Predictions", "Delete from\u2026", "Isolate", "Details"]);
+
+        click_item("Set class in Predictions");
+        expect(is_context_menu_open(ulabel)).toBe(false);
+        expect(ulabel.set_counterparts_class).toHaveBeenCalledWith("a0", "main", "pred");
+    });
+
+    test("Set class in skips read-only subtasks and opens a list for several", () => {
+        const ulabel = make_ulabel();
+        ulabel.find_counterparts.mockReturnValue(["x1"]);
+        ulabel.get_counterpart_class_changes.mockReturnValue({ x1: 2 });
+
+        show_context_menu(ulabel, "a0", 100, 100);
+        click_item("Set class in\u2026");
+        expect(item_labels()).toEqual(["Predictions", "Review"]);
+        click_item("Review");
+        expect(ulabel.set_counterparts_class).toHaveBeenCalledWith("a0", "main", "review");
+
+        ulabel.subtasks.review.read_only = true;
+        ulabel.get_counterpart_class_changes.mockClear();
+        show_context_menu(ulabel, "a0", 100, 100);
+        expect(item_labels()).toContain("Set class in Predictions");
+        expect(ulabel.get_counterpart_class_changes).not.toHaveBeenCalledWith("a0", "main", "review");
     });
 });
 

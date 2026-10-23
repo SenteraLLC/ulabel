@@ -5053,6 +5053,127 @@ export class ULabel {
     }
 
     /**
+     * Counterparts (see `find_counterparts`) in `target_key` that can take the
+     * source annotation's class (matched by id, else by name) and don't already
+     * have it, with the class each would take.
+     *
+     * @param {string} annotation_id
+     * @param {string} source_key subtask the annotation lives in
+     * @param {string} target_key subtask to search
+     * @returns {Record<string, number>} counterpart id -> class id
+     */
+    get_counterpart_class_changes(annotation_id, source_key, target_key) {
+        const source = this.subtasks[source_key]?.["annotations"]["access"][annotation_id];
+        const target = this.subtasks[target_key];
+        if (source == null || target == null) return {};
+        const source_class_id = Number(get_annotation_class_id(source));
+        const source_class_name = this.get_class_name(source_class_id, source_key);
+        const changes = {};
+        for (const id of this.find_counterparts(annotation_id, source_key, target_key)) {
+            const counterpart = target["annotations"]["access"][id];
+            const compatible = this._get_compatible_class_ids(counterpart, target_key);
+            let class_id = compatible.includes(source_class_id) ? source_class_id : null;
+            class_id ??= target["class_defs"].find(
+                (def) => def["name"] === source_class_name && compatible.includes(def["id"]),
+            )?.["id"] ?? null;
+            if (class_id === null || Number(get_annotation_class_id(counterpart)) === class_id) continue;
+            changes[id] = class_id;
+        }
+        return changes;
+    }
+
+    /**
+     * Set the class of an annotation's counterparts in a writable subtask to
+     * the source's class (see `get_counterpart_class_changes`; counterparts
+     * that can't take it are left alone). Recorded as one
+     * `set_counterparts_class` action on the target's stream.
+     * `config.paste_switch_to_target` then switches to the target.
+     *
+     * @param {string} annotation_id
+     * @param {string} source_key subtask the annotation lives in
+     * @param {string} target_key subtask whose counterparts change
+     * @returns {string[]} ids of the changed counterparts
+     */
+    set_counterparts_class(annotation_id, source_key, target_key) {
+        const target = this.subtasks[target_key];
+        if (this.subtasks[source_key]?.["annotations"]["access"][annotation_id] == null || target == null) {
+            log_message(`Annotation ${annotation_id} or subtask ${target_key} not found`, LogLevel.WARNING, true);
+            return [];
+        }
+        if (target["read_only"] === true) {
+            log_message(`Subtask ${target_key} is read-only; nothing changed`, LogLevel.WARNING, true);
+            return [];
+        }
+        const changes = this.get_counterpart_class_changes(annotation_id, source_key, target_key);
+        const changed_ids = Object.keys(changes);
+        if (changed_ids.length === 0) {
+            log_message(`No class to change in subtask ${target_key}`, LogLevel.INFO, true);
+            return [];
+        }
+        const before = {};
+        const after = {};
+        for (const id of changed_ids) {
+            before[id] = target["annotations"]["access"][id]["classification_payloads"];
+            after[id] = target["class_ids"].map((cid) => ({
+                class_id: cid,
+                confidence: cid === changes[id] ? 1.0 : 0.0,
+            }));
+        }
+        this._apply_counterpart_classes(after, target_key);
+        this._record_set_counterparts_class(annotation_id, target_key, { before, after }, false);
+        if (this.config["paste_switch_to_target"] && target_key !== this.get_current_subtask_key()) {
+            this.set_subtask(target_key);
+        }
+        return changed_ids;
+    }
+
+    _record_set_counterparts_class(annotation_id, target_key, payload, is_redo) {
+        record_action(this, {
+            act_type: "set_counterparts_class",
+            annotation_id: annotation_id,
+            frame: this.state["current_frame"],
+            undo_payload: payload,
+            redo_payload: payload,
+            affected: Object.keys(payload.after).map((id) => ({ annotation_id: id, subtask_key: target_key })),
+        }, is_redo, true, target_key);
+    }
+
+    // Set classification payloads from a `set_counterparts_class` payload half, then redraw
+    _apply_counterpart_classes(payloads, subtask_key) {
+        const access = this.subtasks[subtask_key]["annotations"]["access"];
+        const ids = Object.keys(payloads).filter((id) => access[id] !== undefined);
+        for (const id of ids) {
+            access[id]["classification_payloads"] = JSON.parse(JSON.stringify(payloads[id]));
+        }
+        this.redraw_multiple_spatial_annotations(ids, subtask_key);
+        if (ids.some((id) => access[id]["spatial_type"] === "polyline")) {
+            this.update_filter_distance(null, false, true);
+        }
+        this.toolbox.redraw_update_items(this);
+    }
+
+    /**
+     * Undo `set_counterparts_class`: restore the classes in the current subtask.
+     *
+     * @param {object} undo_payload `{ before, after }`
+     */
+    set_counterparts_class__undo(undo_payload) {
+        this._apply_counterpart_classes(undo_payload.before, this.get_current_subtask_key());
+    }
+
+    /**
+     * Redo `set_counterparts_class` in the current subtask.
+     *
+     * @param {string} annotation_id source annotation
+     * @param {object} redo_payload `{ before, after }`
+     */
+    set_counterparts_class__redo(annotation_id, redo_payload) {
+        const subtask_key = this.get_current_subtask_key();
+        this._apply_counterpart_classes(redo_payload.after, subtask_key);
+        this._record_set_counterparts_class(annotation_id, subtask_key, redo_payload, true);
+    }
+
+    /**
      * Whether a context-menu copy/move/delete-from makes the target the current subtask.
      * @param {boolean} enabled
      */
