@@ -796,7 +796,7 @@ export class KeybindsToolboxItem extends ToolboxItem {
                 const is_customized = this.is_keybind_customized(keybind.config_key!);
                 const collision_class = has_collision ? " collision" : "";
                 const customized_class = is_customized ? " customized" : "";
-                const display_key = keybind.key !== null && keybind.key !== undefined ? keybind.key : "none";
+                const display_key = keybind.key ?? "none";
                 const reset_button = is_customized ? `<button class="keybind-reset-btn" data-config-key="${keybind.config_key}" title="Reset to default">↺</button>` : "";
 
                 keybinds_html += `
@@ -829,7 +829,7 @@ export class KeybindsToolboxItem extends ToolboxItem {
                 const is_customized = this.is_class_keybind_customized(keybind.class_id!);
                 const collision_class = has_collision ? " collision" : "";
                 const customized_class = is_customized ? " customized" : "";
-                const display_key = keybind.key != null ? keybind.key : "none";
+                const display_key = keybind.key ?? "none";
                 const reset_button = is_customized ? `<button class="keybind-reset-btn" data-class-id="${keybind.class_id}" title="Reset to default">↺</button>` : "";
 
                 keybinds_html += `
@@ -860,7 +860,7 @@ export class KeybindsToolboxItem extends ToolboxItem {
             for (const keybind of other) {
                 const has_collision = this.has_collision(keybind.key, all_keybinds);
                 const collision_class = has_collision ? " collision" : "";
-                const display_key = keybind.key !== null && keybind.key !== undefined ? keybind.key : "none";
+                const display_key = keybind.key ?? "none";
                 keybinds_html += `
                     <div class="keybind-item" title="${keybind.description}">
                         <span class="keybind-description">${keybind.label}</span>

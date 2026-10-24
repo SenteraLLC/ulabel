@@ -2,7 +2,11 @@
 
 All notable changes to this project will be documented here.
 
-## [Unreleased]
+## [0.31.1] - Oct 22nd, 2026
+#### Changed
+- Simplified ternary syntax into nullish coalescing in several locations
+- Added `@eslint/config-helpers` so ESLint can load `.gitignore`
+- Update CHANGELOG capitalization in PR template
 
 ## [0.31.0] - Oct 21st, 2026
 #### Added
