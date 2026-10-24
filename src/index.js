@@ -4579,7 +4579,9 @@ export class ULabel {
 
     /**
      * Compatible class in the target that matches the source class by id, or
-     * failing that by name. Null when the source class has no counterpart.
+     * failing that by name. A non-empty string under the source's
+     * `annotation_meta[config.counterpart_class_meta_key]` replaces both: only
+     * a class with that name matches. Null when nothing matches.
      *
      * @param {object} annotation
      * @param {string} target_key
@@ -4588,13 +4590,25 @@ export class ULabel {
      */
     match_paste_class_id(annotation, target_key, source_class_name = null) {
         const compatible = this._get_compatible_class_ids(annotation, target_key);
-        const source_class_id = Number(get_annotation_class_id(annotation));
-        if (compatible.includes(source_class_id)) return source_class_id;
-        if (source_class_name == null) return null;
+        const override_name = this._get_counterpart_class_name(annotation);
+        if (override_name === null) {
+            const source_class_id = Number(get_annotation_class_id(annotation));
+            if (compatible.includes(source_class_id)) return source_class_id;
+        }
+        const class_name = override_name ?? source_class_name;
+        if (class_name == null) return null;
         const by_name = this.subtasks[target_key]["class_defs"].find(
-            (def) => def["name"] === source_class_name && compatible.includes(def["id"]),
+            (def) => def["name"] === class_name && compatible.includes(def["id"]),
         );
         return by_name == null ? null : by_name["id"];
+    }
+
+    // Non-empty string under `config.counterpart_class_meta_key`, or null
+    _get_counterpart_class_name(annotation) {
+        const key = this.config["counterpart_class_meta_key"];
+        if (key == null) return null;
+        const value = annotation?.["annotation_meta"]?.[key];
+        return typeof value === "string" && value !== "" ? value : null;
     }
 
     /**
@@ -4633,7 +4647,7 @@ export class ULabel {
      * Insert a copy of an annotation into a subtask. The copy gets a fresh id,
      * fresh stamps, no deprecation and a class payload for `class_id`; every
      * other field carries over, except the `config.annotation_link_meta_key`
-     * entry of `annotation_meta`. Records a `paste_annotation` action on the
+     * and `config.counterpart_class_meta_key` entries of `annotation_meta`. Records a `paste_annotation` action on the
      * target subtask's stream.
      *
      * @param {object} annotation source annotation (from any subtask or a clipboard payload)
@@ -4669,9 +4683,11 @@ export class ULabel {
         copy["last_edited_at"] = now;
         copy["deprecated"] = false;
         copy["deprecated_by"] = { human: false };
-        const link_key = this.config["annotation_link_meta_key"];
-        if (link_key != null && typeof copy["annotation_meta"] === "object" && copy["annotation_meta"] !== null) {
-            delete copy["annotation_meta"][link_key];
+        const copy_meta = copy["annotation_meta"];
+        if (typeof copy_meta === "object" && copy_meta !== null) {
+            for (const key of [this.config["annotation_link_meta_key"], this.config["counterpart_class_meta_key"]]) {
+                if (key != null) delete copy_meta[key];
+            }
         }
         if (source_key !== null) {
             // Per-subtask annotation_meta may be a string; only an object can carry the stamp
@@ -5054,8 +5070,10 @@ export class ULabel {
 
     /**
      * Counterparts (see `find_counterparts`) in `target_key` that can take the
-     * source annotation's class (matched by id, else by name) and don't already
-     * have it, with the class each would take.
+     * source annotation's class (matched by id, else by name; a
+     * `config.counterpart_class_meta_key` value on the source replaces both,
+     * matching by that name only) and don't already have it, with the class
+     * each would take.
      *
      * @param {string} annotation_id
      * @param {string} source_key subtask the annotation lives in
@@ -5066,13 +5084,14 @@ export class ULabel {
         const source = this.subtasks[source_key]?.["annotations"]["access"][annotation_id];
         const target = this.subtasks[target_key];
         if (source == null || target == null) return {};
-        const source_class_id = Number(get_annotation_class_id(source));
-        const source_class_name = this.get_class_name(source_class_id, source_key);
+        const override_name = this._get_counterpart_class_name(source);
+        const source_class_id = override_name === null ? Number(get_annotation_class_id(source)) : null;
+        const source_class_name = override_name ?? this.get_class_name(source_class_id, source_key);
         const changes = {};
         for (const id of this.find_counterparts(annotation_id, source_key, target_key)) {
             const counterpart = target["annotations"]["access"][id];
             const compatible = this._get_compatible_class_ids(counterpart, target_key);
-            let class_id = compatible.includes(source_class_id) ? source_class_id : null;
+            let class_id = source_class_id !== null && compatible.includes(source_class_id) ? source_class_id : null;
             class_id ??= target["class_defs"].find(
                 (def) => def["name"] === source_class_name && compatible.includes(def["id"]),
             )?.["id"] ?? null;

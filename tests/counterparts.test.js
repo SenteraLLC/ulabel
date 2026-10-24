@@ -370,6 +370,62 @@ describe("set_counterparts_class", () => {
         ulabel.set_counterparts_class("d1", "diff", "gt");
         expect(ulabel.set_subtask).toHaveBeenCalledWith("gt");
     });
+
+    describe("counterpart_class_meta_key", () => {
+        // Diff classes share ids with gt but never names, so only the meta value can match by name
+        function make_diff_ulabel(gt, diff) {
+            const modes = ["bbox"];
+            return make_ulabel({}, {
+                counterpart_class_meta_key: "pred_class_name",
+                subtasks: {
+                    gt: { display_name: "GT", classes, allowed_modes: modes, resume_from: gt },
+                    diff: {
+                        display_name: "Diff",
+                        classes: [{ name: "TP", id: 1, color: "blue" }, { name: "FP", id: 2, color: "orange" }],
+                        allowed_modes: modes,
+                        read_only: true,
+                        resume_from: diff,
+                    },
+                },
+            });
+        }
+
+        test("the meta value names the target class, skipping the id match", () => {
+            const ulabel = make_diff_ulabel(
+                [make_bbox("g1", { hash: "h1" })],
+                [make_bbox("d1", { hash: "h1", pred_class_name: "Weed" })],
+            );
+
+            expect(ulabel.get_counterpart_class_changes("d1", "diff", "gt")).toEqual({ g1: 2 });
+            expect(ulabel.set_counterparts_class("d1", "diff", "gt")).toEqual(["g1"]);
+            expect(gt(ulabel, "g1").classification_payloads).toEqual([{ class_id: 1, confidence: 0 }, { class_id: 2, confidence: 1 }]);
+        });
+
+        test("an unknown name changes nothing; a missing or empty value uses the id/name match", () => {
+            const ulabel = make_diff_ulabel(
+                [weed(make_bbox("g1", { hash: "h1" })), weed(make_bbox("g2", { hash: "h2" })), weed(make_bbox("g3", { hash: "h3" }))],
+                [
+                    make_bbox("d1", { hash: "h1", pred_class_name: "Nope" }),
+                    make_bbox("d2", { hash: "h2" }),
+                    make_bbox("d3", { hash: "h3", pred_class_name: "" }),
+                ],
+            );
+
+            expect(ulabel.get_counterpart_class_changes("d1", "diff", "gt")).toEqual({});
+            expect(ulabel.get_counterpart_class_changes("d2", "diff", "gt")).toEqual({ g2: 1 });
+            expect(ulabel.get_counterpart_class_changes("d3", "diff", "gt")).toEqual({ g3: 1 });
+        });
+
+        test("copies take the class named by the meta value and drop it", () => {
+            const ulabel = make_diff_ulabel([], [make_bbox("d1", { pred_class_name: "Weed" })]);
+
+            const copy_id = ulabel.copy_annotation("d1", "gt");
+            expect(gt(ulabel, copy_id).classification_payloads).toEqual([{ class_id: 1, confidence: 0 }, { class_id: 2, confidence: 1 }]);
+            expect(gt(ulabel, copy_id).annotation_meta).toEqual({ copied_from: { subtask_key: "diff", annotation_id: "d1" } });
+            expect(ulabel.subtasks.diff.annotations.access.d1.annotation_meta.pred_class_name).toBe("Weed");
+            expect(ulabel.match_paste_class_id(ulabel.subtasks.diff.annotations.access.d1, "gt", "TP")).toBe(2);
+        });
+    });
 });
 
 describe("fly to undo/redo changes", () => {

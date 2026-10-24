@@ -59,3 +59,10 @@
 - [x] Context menu item `Set class in` (only counterparts that can take the source class and differ).
 - [x] Types (`index.d.ts`), `api_spec.md`, changelog.
 - [x] Jest tests; lint, build, jest.
+
+## counterpart_class_meta_key config option
+
+- [x] `_get_counterpart_class_name` helper; override in `get_counterpart_class_changes` and `match_paste_class_id` (Copy to / Move to / paste).
+- [x] Config default, `index.d.ts`, `api_spec.md`, changelog.
+- [x] Jest tests; lint, build, jest.
+- [x] Copies drop the `counterpart_class_meta_key` entry (like the link key).

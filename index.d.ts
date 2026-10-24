@@ -409,6 +409,13 @@ export type ULabelConstructorArgs = {
     annotation_link_meta_key?: string | null;
     /** Context menu hides Copy to / Move to for subtasks that already hold a counterpart (instead of confirming). Default false. */
     hide_copy_to_linked?: boolean;
+    /**
+     * `annotation_meta` key whose non-empty string value names the class an annotation gives its
+     * counterparts (Set class in) and copies (Copy to / Move to, paste), replacing the source class
+     * id/name match. No class of that name: Set class in leaves the counterpart alone; a copy falls
+     * back as when nothing matches. Annotations without it use the id/name match. Copies drop it. Default null.
+     */
+    counterpart_class_meta_key?: string | null;
     /** Fired after a subtask's active class changes, from any writer (API, toolbox click, class keybind). */
     on_active_class_change?: (subtask_key: string, class_id: number) => void;
     /** Fired after the current subtask changes, from any writer (API, tab click, switch keybind). */
@@ -774,7 +781,7 @@ export class ULabel {
      * Insert a copy of `annotation` into `target_key` with a fresh id and stamps.
      * Records a `paste_annotation` action on the target subtask unless `record` is false. Returns the new id, or null.
      * With `source_key`, the copy's `annotation_meta.copied_from` is `{ subtask_key, annotation_id }`.
-     * The `annotation_link_meta_key` entry is dropped from the copy's `annotation_meta`.
+     * The `annotation_link_meta_key` and `counterpart_class_meta_key` entries are dropped from the copy's `annotation_meta`.
      */
     public paste_annotation(
         annotation: ULabelAnnotation | object,

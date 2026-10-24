@@ -156,6 +156,9 @@ export class Configuration {
     public paste_switch_to_target: boolean = false;
     // Whether the context menu hides Copy to / Move to for subtasks holding a counterpart.
     public hide_copy_to_linked: boolean = false;
+    // `annotation_meta` key whose string value names the target class for Set class in
+    // and copy/paste, replacing the source class id/name match.
+    public counterpart_class_meta_key: string | null = null;
     // Configuration for the annotation task itself
     public image_data: ImageData | null = null;
     public allow_soft_id: boolean = false;

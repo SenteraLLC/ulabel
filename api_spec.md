@@ -90,6 +90,7 @@ class ULabel({
     paste_switch_to_target: boolean,
     annotation_link_meta_key: string | null,
     hide_copy_to_linked: boolean,
+    counterpart_class_meta_key: string | null,
     set_brush_overlap_none_keybind: string,
     set_brush_overlap_exclude_keybind: string,
     set_brush_overlap_overwrite_keybind: string,
@@ -685,6 +686,9 @@ An `annotation_meta` key whose value, a string or an array of strings, links ann
 ### `hide_copy_to_linked`
 When `true`, the context menu leaves out `Copy to` / `Move to` for every subtask that already holds a counterpart of the annotation (see [`find_counterparts`](#find_counterpartsannotation_id-source_key-target_key)), instead of asking before copying again. `ctrl+v` is unaffected. Default is `false`.
 
+### `counterpart_class_meta_key`
+An `annotation_meta` key whose value, a non-empty string, names the class an annotation passes on to other subtasks. When the source of a `Set class in` (see [`get_counterpart_class_changes`](#get_counterpart_class_changesannotation_id-source_key-target_key)), `Copy to` / `Move to`, or paste has it, the target class is the compatible class with that name, replacing the usual match on the source class's id and then name. If the target has no such class, `Set class in` leaves the counterpart alone (and doesn't appear when no counterpart would change), while a copy falls back as for any unmatched class (see [`paste_class_choice`](#paste_class_choice)). Annotations without the key use the usual match. Every copy and paste drops this entry from the copy's `annotation_meta`. Useful when the source subtask's classes (e.g. `TP` / `FP` / `FN`) never exist in the target and the host knows the right target class per annotation. Default is `null`.
+
 ### `set_brush_overlap_none_keybind`
 Keybind to set the brush overlap mode to `none`. Default is `shift+n`.
 
@@ -930,7 +934,7 @@ Sets the zoom to focus on the provided annotation, and switches to its subtask i
 
 ### `get_counterpart_class_changes(annotation_id, source_key, target_key)`
 
-*(annotation_id: string, source_key: string, target_key: string) => Record<string, number>* -- The counterparts (see [`find_counterparts`](#find_counterpartsannotation_id-source_key-target_key)) in `target_key` that can take the source annotation's class and don't already have it, each mapped to the class id it would take. The class is matched by id, else by name (the first compatible class with that name); counterparts with no compatible match are left out. The context menu shows `Set class in` for a subtask only when this is non-empty.
+*(annotation_id: string, source_key: string, target_key: string) => Record<string, number>* -- The counterparts (see [`find_counterparts`](#find_counterpartsannotation_id-source_key-target_key)) in `target_key` that can take the source annotation's class and don't already have it, each mapped to the class id it would take. The class is matched by id, else by name (the first compatible class with that name); a [`counterpart_class_meta_key`](#counterpart_class_meta_key) value on the source replaces both, matching that name only. Counterparts with no compatible match are left out. The context menu shows `Set class in` for a subtask only when this is non-empty.
 
 ### `set_counterparts_class(annotation_id, source_key, target_key)`
 
