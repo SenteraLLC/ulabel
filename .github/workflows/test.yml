@@ -31,6 +31,11 @@ jobs:
 
   e2e-tests:
     runs-on: ubuntu-latest
+    # One job per browser, each running both builds, so the browsers run in parallel.
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox, webkit]
     
     steps:
     - uses: actions/checkout@v4
@@ -53,7 +58,7 @@ jobs:
       uses: actions/cache@v4
       with:
         path: ~/.cache/ms-playwright
-        key: playwright-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}
+        key: playwright-${{ runner.os }}-${{ matrix.browser }}-${{ steps.playwright-version.outputs.version }}
 
     # playwright's dep install runs apt-get update, which fails outright when any
     # configured repo is mid-republish (hash mismatch). The runner image ships
@@ -63,23 +68,23 @@ jobs:
 
     - name: Install Playwright browsers
       if: steps.playwright-cache.outputs.cache-hit != 'true'
-      run: npx playwright install --with-deps
+      run: npx playwright install --with-deps ${{ matrix.browser }}
 
     - name: Install Playwright system dependencies (cache hit)
       if: steps.playwright-cache.outputs.cache-hit == 'true'
-      run: npx playwright install-deps
+      run: npx playwright install-deps ${{ matrix.browser }}
 
     - name: Build project
       run: npm run build
 
-    - name: Run E2E tests (all browsers, both builds)
-      run: npm run test:e2e
+    - name: Run E2E tests (${{ matrix.browser }}, both builds)
+      run: npm run test:e2e -- --project=${{ matrix.browser }} --project=${{ matrix.browser }}-minified
     
     - name: Upload Playwright report
       uses: actions/upload-artifact@v4
       if: failure()
       with:
-        name: playwright-report
+        name: playwright-report-${{ matrix.browser }}
         path: playwright-report/
         retention-days: 30
 

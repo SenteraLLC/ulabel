@@ -1,7 +1,34 @@
 // eslint-disable-next-line @typescript-eslint/triple-slash-reference -- required for consumer type resolution
 /// <reference path="./ambient.d.ts" />
-import * as turf from "@turf/turf";
+// Import turf functions individually: the @turf/turf umbrella package pulls in
+// every turf module (jsts, d3-geo, topojson, ...) and roughly doubles the bundle.
+import booleanOverlap from "@turf/boolean-overlap";
+import booleanPointInPolygon from "@turf/boolean-point-in-polygon";
+import booleanWithin from "@turf/boolean-within";
+import difference from "@turf/difference";
+import * as turf_helpers from "@turf/helpers";
+import intersect from "@turf/intersect";
+import length from "@turf/length";
+import lineSplit from "@turf/line-split";
+import simplify from "@turf/simplify";
+import union from "@turf/union";
 import * as polygonClipping from "polygon-clipping";
+
+const turf = {
+    booleanOverlap,
+    booleanPointInPolygon,
+    booleanWithin,
+    difference,
+    featureCollection: turf_helpers.featureCollection,
+    intersect,
+    length,
+    lineSplit,
+    lineString: turf_helpers.lineString,
+    point: turf_helpers.point,
+    polygon: turf_helpers.polygon,
+    simplify,
+    union,
+};
 
 export type Point2D = [number, number];
 export type Point3D = [number, number, number];
@@ -190,7 +217,7 @@ export class GeometricUtils {
 
         // Discard the parts of the line that are inside the polygon
         const remaining_splits = turf.featureCollection(
-            split.features.filter((feature: { geometry: { coordinates: Point2D[] } }) => {
+            split.features.filter((feature) => {
                 // If the point at the middle of the lineString is inside the polygon, discard it
                 const middle_pt_idx = Math.floor(feature.geometry.coordinates.length / 2);
                 return !GeometricUtils.point_is_within_simple_polygon(
@@ -201,7 +228,7 @@ export class GeometricUtils {
         );
 
         // Sort the remaining splits by length
-        remaining_splits.features.sort((a: unknown, b: unknown) => {
+        remaining_splits.features.sort((a, b) => {
             return turf.length(b) - turf.length(a);
         });
 
@@ -246,7 +273,7 @@ export class GeometricUtils {
         ret = <ULabelSpatialPayload2D[]>turf.union(
             turf.polygon(complex_poly1),
             turf.polygon(complex_poly2),
-        ).geometry.coordinates;
+        )!.geometry.coordinates;
         // When the two polygons have no intersection, turf.union returns a quad nested list instead of a triple nested list
         // So we can just return complex_poly1
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
