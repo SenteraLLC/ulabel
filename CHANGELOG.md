@@ -10,7 +10,7 @@ All notable changes to this project will be documented here.
   - Local runs use default `workers` (half of available CPU cores)
   - Break each browser into a job and run jobs in parallel
   - Skip returning `window.ulabel` from `wait_for_ulabel_init`;
-    serializing the whole page is slow
+    serializing the whole ULabel instance is slow
 
 ## [0.31.1] - Oct 22nd, 2026
 #### Changed
