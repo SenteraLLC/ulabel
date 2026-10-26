@@ -5,8 +5,10 @@ All notable changes to this project will be documented here.
 ## [0.32.0] - Oct 23rd, 2026
 #### Added
 - **Set class in `<subtask>`** context-menu item: sets an annotation's counterparts in another writable subtask to its class (matched by id, then name). Counterparts that can't take that class, or already have it, are left alone, and the item only shows when at least one would change. New `get_counterpart_class_changes()` and `set_counterparts_class()`, recorded as one undoable `set_counterparts_class` action on the target subtask.
-- `counterpart_class_meta_key` config option (default `null`): an annotation's string value under this `annotation_meta` key names the class it gives its counterparts (Set class in) and copies (Copy to / Move to, paste), replacing the id/name match. Set class in leaves a counterpart alone when no class has that name. Copies drop the entry.
+- `counterpart_class_meta_key` config option (default `null`): an annotation's string value under this `annotation_meta` key names the class it gives its counterparts (Set class in) and copies (Copy to / Move to, paste), replacing the id/name match. Set class in leaves a counterpart alone when no class has that name. Copies drop the entry, and copies/pastes back into the source subtask ignore it.
 
+#### Fixed
+- `delete_counterparts` no longer stamps, reverts or drops history for an unrelated target annotation that happens to share the source annotation's id.
 ## [0.31.1] - Oct 22nd, 2026
 #### Changed
 - Simplified ternary syntax into nullish coalescing in several locations

@@ -425,7 +425,51 @@ describe("set_counterparts_class", () => {
             expect(ulabel.subtasks.diff.annotations.access.d1.annotation_meta.pred_class_name).toBe("Weed");
             expect(ulabel.match_paste_class_id(ulabel.subtasks.diff.annotations.access.d1, "gt", "TP")).toBe(2);
         });
+
+        test("a paste back into the source subtask keeps its class", () => {
+            const ulabel = make_ulabel({
+                gt: [make_bbox("g1", { pred_class_name: "Weed" }), make_bbox("g2", { pred_class_name: "Nope" })],
+            }, { counterpart_class_meta_key: "pred_class_name", paste_class_choice: true });
+            ulabel.state.current_subtask = "gt";
+            ulabel._offer_pasted_class_choice = jest.fn();
+
+            for (const id of ["g1", "g2"]) {
+                ulabel.copy_annotation_to_clipboard(id);
+                const copy_id = ulabel.paste_annotation_from_clipboard();
+                expect(gt(ulabel, copy_id).classification_payloads).toEqual([{ class_id: 1, confidence: 1 }, { class_id: 2, confidence: 0 }]);
+                const dup_id = ulabel.copy_annotation_to_subtask(id, "gt", "gt");
+                expect(gt(ulabel, dup_id).classification_payloads).toEqual([{ class_id: 1, confidence: 1 }, { class_id: 2, confidence: 0 }]);
+            }
+            expect(ulabel._offer_pasted_class_choice).not.toHaveBeenCalled();
+        });
     });
+
+    test.each(["set_counterparts_class", "delete_counterparts"])(
+        "%s leaves a target annotation that only shares the source id alone through do, undo and redo",
+        (method) => {
+            const ulabel = make_ulabel({
+                gt: [make_bbox("g1", { hash: "h1" }), make_bbox("d1", { hash: "unrelated" })],
+                diff: [weed(make_bbox("d1", { hash: "h1" }))],
+            });
+            const unrelated = () => gt(ulabel, "d1");
+            const stamp = () => [unrelated().last_edited_at, unrelated().last_edited_by];
+            const before = stamp();
+
+            expect(ulabel[method]("d1", "diff", "gt")).toEqual(["g1"]);
+            expect(gt(ulabel, "g1").last_edited_by).toBe("test_user");
+            expect(stamp()).toEqual(before);
+
+            ulabel.state.current_subtask = "gt";
+            ulabel.undo();
+            expect(stamp()).toEqual(before);
+            ulabel.redo();
+            expect(stamp()).toEqual(before);
+            expect(unrelated().deprecated).toBe(false);
+
+            ulabel.remove_recorded_events_for_annotation("d1", "gt");
+            expect(action_types(ulabel, "gt")).toEqual([method]);
+        },
+    );
 });
 
 describe("fly to undo/redo changes", () => {

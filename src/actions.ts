@@ -15,6 +15,19 @@ import { NONSPATIAL_MODES } from "./annotation";
 
 import { log_message, LogLevel } from "./error_logging";
 
+// Actions whose `annotation_id` is a source annotation in another subtask, not
+// one in the stream that records them
+const FOREIGN_ID_ACTIONS: ULabelActionType[] = ["delete_counterparts", "set_counterparts_class"];
+
+/**
+ * Whether an action's `annotation_id` names an annotation in its own subtask.
+ *
+ * @param action the action
+ */
+export function action_owns_annotation_id(action: { act_type: ULabelActionType }): boolean {
+    return !FOREIGN_ID_ACTIONS.includes(action.act_type);
+}
+
 // ================= Record Actions =================
 
 /**
@@ -36,7 +49,9 @@ export function record_action(
 ) {
     ulabel.set_saved(false);
     const current_subtask = ulabel.subtasks[subtask_key ?? ulabel.get_current_subtask_key()];
-    const annotation = current_subtask.annotations.access[raw_action.annotation_id!];
+    const annotation = action_owns_annotation_id(raw_action) ?
+        current_subtask.annotations.access[raw_action.annotation_id!] :
+        undefined;
 
     // After a new action, you can no longer redo old actions
     if (add_to_action_stream && !is_redo) {
@@ -729,10 +744,9 @@ export function redo(ulabel: ULabel) {
  * @param action the action
  */
 function get_action_boxes(ulabel: ULabel, action: ULabelAction): ULabelContainingBox[] {
-    // A counterpart action's own id is its source annotation, in another subtask
-    const own = action.act_type === "delete_counterparts" || action.act_type === "set_counterparts_class" ?
-            [] :
-            [{ annotation_id: action.annotation_id, subtask_key: ulabel.get_current_subtask_key() }];
+    const own = action_owns_annotation_id(action) ?
+            [{ annotation_id: action.annotation_id, subtask_key: ulabel.get_current_subtask_key() }] :
+            [];
     const targets = [...own, ...(action.affected ?? [])];
     const boxes: ULabelContainingBox[] = [];
     for (const { annotation_id, subtask_key } of targets) {
@@ -772,7 +786,7 @@ function undo_action(ulabel: ULabel, action: ULabelAction) {
     const annotation_id = action.annotation_id!;
 
     // For some actions like delete_annotations_in_polygon, the annotation may no longer exist
-    if (annotation_id in annotations) {
+    if (action_owns_annotation_id(action) && annotation_id in annotations) {
         const annotation = annotations[annotation_id];
 
         // Revert the annotation's last edited info

@@ -66,3 +66,9 @@
 - [x] Config default, `index.d.ts`, `api_spec.md`, changelog.
 - [x] Jest tests; lint, build, jest.
 - [x] Copies drop the `counterpart_class_meta_key` entry (like the link key).
+
+## Review fixes (REVIEW-feature-sync-class.md)
+
+- [x] #1 A copy/paste back into the source subtask ignores `counterpart_class_meta_key` (`use_meta_override` param).
+- [x] #2 Counterpart actions' `annotation_id` is foreign: `action_owns_annotation_id` guards stamping, undo revert, fly-to boxes, `remove_recorded_events_for_annotation` and `find_stamp_before_last_action`.
+- [x] Regression tests; docs; lint, build, jest.

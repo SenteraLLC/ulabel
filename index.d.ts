@@ -413,7 +413,8 @@ export type ULabelConstructorArgs = {
      * `annotation_meta` key whose non-empty string value names the class an annotation gives its
      * counterparts (Set class in) and copies (Copy to / Move to, paste), replacing the source class
      * id/name match. No class of that name: Set class in leaves the counterpart alone; a copy falls
-     * back as when nothing matches. Annotations without it use the id/name match. Copies drop it. Default null.
+     * back as when nothing matches. Annotations without it, and copies/pastes back into the source subtask,
+     * use the id/name match. Copies drop it. Default null.
      */
     counterpart_class_meta_key?: string | null;
     /** Fired after a subtask's active class changes, from any writer (API, toolbox click, class keybind). */
@@ -771,10 +772,17 @@ export class ULabel {
     public can_paste_into_subtask(annotation: ULabelAnnotation | object, subtask_key: string): boolean;
     /** Keys of the other subtasks `annotation` can be copied into. */
     public get_copy_target_subtask_keys(annotation: ULabelAnnotation | object, source_key?: string | null): string[];
-    /** Compatible target class matching the source class by id, else by `source_class_name`; null when none. */
-    public match_paste_class_id(annotation: ULabelAnnotation | object, target_key: string, source_class_name?: string | null): number | null;
+    /**
+     * Compatible target class matching the source class by id, else by `source_class_name`; null when none.
+     * `use_meta_override` false ignores `counterpart_class_meta_key` (a paste back into the source subtask). Default true.
+     */
+    public match_paste_class_id(
+        annotation: ULabelAnnotation | object, target_key: string, source_class_name?: string | null, use_meta_override?: boolean,
+    ): number | null;
     /** Matched source class (id, then name), else the target's active class, else the first compatible class. */
-    public resolve_paste_class_id(annotation: ULabelAnnotation | object, target_key: string, source_class_name?: string | null): number | null;
+    public resolve_paste_class_id(
+        annotation: ULabelAnnotation | object, target_key: string, source_class_name?: string | null, use_meta_override?: boolean,
+    ): number | null;
     /** Name of a class in a subtask, or null. */
     public get_class_name(class_id: number, subtask_key: string): string | null;
     /**

@@ -29,7 +29,7 @@ import { AnnotationResizeItem, BrushToolboxItem } from "../build/toolbox";
 import { remove_ulabel_listeners } from "../build/listeners";
 import { log_message, LogLevel } from "../build/error_logging";
 import { initialize_annotation_canvases } from "../build/canvas_utils";
-import { record_action, record_finish, record_finish_edit, record_finish_move, undo, redo } from "../build/actions";
+import { record_action, record_finish, record_finish_edit, record_finish_move, undo, redo, action_owns_annotation_id } from "../build/actions";
 import { ULabelMask, is_raw_mask_payload } from "../build/mask_utils";
 import { get_active_class_id, get_local_storage_item, set_local_storage_item } from "../build/utilities";
 import { set_active_class, get_selected_class_id, set_focus_active_class, set_focus_edited, set_focus_deprecated, set_defocused_opacity, can_annotation_be_class } from "../build/active_class";
@@ -4096,9 +4096,12 @@ export class ULabel {
     // Forget every recorded action about an annotation that no longer exists in
     // a subtask (default: the current one). Delete-polygon actions survive since
     // they cover many annotations; their payloads skip missing ids on undo.
+    // Counterpart actions survive since their id names another subtask's annotation.
     remove_recorded_events_for_annotation(annotation_id, subtask_key = null) {
         const actions = this.subtasks[subtask_key ?? this.get_current_subtask_key()]["actions"];
-        const keep = (action) => action.annotation_id !== annotation_id || action.act_type === "delete_annotations_in_polygon";
+        const keep = (action) => action.annotation_id !== annotation_id ||
+            action.act_type === "delete_annotations_in_polygon" ||
+            !action_owns_annotation_id(action);
         actions["stream"] = actions["stream"].filter(keep);
         actions["undone_stack"] = actions["undone_stack"].filter(keep);
     }
@@ -4586,11 +4589,12 @@ export class ULabel {
      * @param {object} annotation
      * @param {string} target_key
      * @param {string|null} source_class_name name of the source class, if known
+     * @param {boolean} use_meta_override false ignores the meta override (a paste back into the source subtask)
      * @returns {number|null}
      */
-    match_paste_class_id(annotation, target_key, source_class_name = null) {
+    match_paste_class_id(annotation, target_key, source_class_name = null, use_meta_override = true) {
         const compatible = this._get_compatible_class_ids(annotation, target_key);
-        const override_name = this._get_counterpart_class_name(annotation);
+        const override_name = use_meta_override ? this._get_counterpart_class_name(annotation) : null;
         if (override_name === null) {
             const source_class_id = Number(get_annotation_class_id(annotation));
             if (compatible.includes(source_class_id)) return source_class_id;
@@ -4619,12 +4623,13 @@ export class ULabel {
      * @param {object} annotation
      * @param {string} target_key
      * @param {string|null} source_class_name name of the source class, if known
+     * @param {boolean} use_meta_override see `match_paste_class_id`
      * @returns {number|null} null when no class in the target fits
      */
-    resolve_paste_class_id(annotation, target_key, source_class_name = null) {
+    resolve_paste_class_id(annotation, target_key, source_class_name = null, use_meta_override = true) {
         const compatible = this._get_compatible_class_ids(annotation, target_key);
         if (compatible.length === 0) return null;
-        const matched = this.match_paste_class_id(annotation, target_key, source_class_name);
+        const matched = this.match_paste_class_id(annotation, target_key, source_class_name, use_meta_override);
         if (matched !== null) return matched;
         const active_class_id = get_active_class_id(this, target_key);
         if (active_class_id !== undefined && compatible.includes(active_class_id)) return active_class_id;
@@ -4663,7 +4668,7 @@ export class ULabel {
             log_message(`Cannot paste a ${annotation?.["spatial_type"]} annotation into subtask ${target_key}`, LogLevel.WARNING, true);
             return null;
         }
-        class_id ??= this.resolve_paste_class_id(annotation, target_key);
+        class_id ??= this.resolve_paste_class_id(annotation, target_key, null, target_key !== source_key);
         if (!this._get_compatible_class_ids(annotation, target_key).includes(class_id)) {
             log_message(`Class ${class_id} in subtask ${target_key} cannot take a ${annotation["spatial_type"]} annotation`, LogLevel.WARNING, true);
             return null;
@@ -4860,9 +4865,10 @@ export class ULabel {
         let offer_choice = false;
         if (class_id === null && this.can_paste_into_subtask(annotation, target_key)) {
             const source_class_name = this.get_class_name(Number(get_annotation_class_id(annotation)), source_key);
-            const matched = this.match_paste_class_id(annotation, target_key, source_class_name);
+            const use_override = target_key !== source_key;
+            const matched = this.match_paste_class_id(annotation, target_key, source_class_name, use_override);
             offer_choice = choose_class && this.config["paste_class_choice"] && matched === null;
-            class_id = this.resolve_paste_class_id(annotation, target_key, source_class_name);
+            class_id = this.resolve_paste_class_id(annotation, target_key, source_class_name, use_override);
         }
         const new_id = this.paste_annotation(annotation, target_key, class_id, offset, !move, source_key);
         if (new_id === null) return null;
@@ -5364,8 +5370,8 @@ export class ULabel {
         const steps = (envelope["paste_counts"][target_key] ?? 0) + (same_subtask ? 1 : 0);
         const offset = [PASTE_OFFSET_PX * steps, PASTE_OFFSET_PX * steps];
         const source_class_name = envelope["source_class_name"] ?? null;
-        const matched = this.match_paste_class_id(envelope["annotation"], target_key, source_class_name);
-        const class_id = this.resolve_paste_class_id(envelope["annotation"], target_key, source_class_name);
+        const matched = this.match_paste_class_id(envelope["annotation"], target_key, source_class_name, !same_subtask);
+        const class_id = this.resolve_paste_class_id(envelope["annotation"], target_key, source_class_name, !same_subtask);
         const new_id = this.paste_annotation(envelope["annotation"], target_key, class_id, offset, true, envelope["source_subtask_key"] ?? null);
         if (new_id === null) return null;
         envelope["paste_counts"][target_key] = (envelope["paste_counts"][target_key] ?? 0) + 1;
@@ -5503,7 +5509,7 @@ export class ULabel {
             for (let i = stream.length - 1; i >= 0; i--) {
                 const action = stream[i];
                 if (action["stamped_at"] !== stamp) continue;
-                if (key === subtask_key && action["annotation_id"] === annotation_id) {
+                if (key === subtask_key && action["annotation_id"] === annotation_id && action_owns_annotation_id(action)) {
                     return { at: action["prev_timestamp"], by: action["prev_user"] };
                 }
                 const idx = (action["affected"] ?? []).findIndex(
