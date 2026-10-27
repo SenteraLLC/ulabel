@@ -1,5 +1,11 @@
 ## Tasks
 
+## Review unstaged class confidence changes
+
+- [x] Inspect unstaged confidence display changes and affected UI behavior.
+- [x] Validate suspected findings and run lint, build, and focused tests.
+- [x] Update the PR review report (no new findings requiring posting locations).
+
 ## Embedder overlay canvases (CVML-194)
 
 - [x] Named overlay z-index constants in `src/blobs.js`.
@@ -72,3 +78,13 @@
 - [x] #1 A copy/paste back into the source subtask ignores `counterpart_class_meta_key` (`use_meta_override` param).
 - [x] #2 Counterpart actions' `annotation_id` is foreign: `action_owns_annotation_id` guards stamping, undo revert, fly-to boxes, `remove_recorded_events_for_annotation` and `find_stamp_before_last_action`.
 - [x] Regression tests; docs; lint, build, jest.
+
+## Class confidence display
+
+- [x] Details menu lists non-zero class confidences (sorted; only when more than one is non-zero).
+- [x] `confidence_card_classes` config (default 1): confidence card shows the top N non-zero classes.
+- [x] Class pie shows the class name on slice hover.
+- [x] Types, `api_spec.md`, changelog; tests; lint, build, jest; live check in browser.
+- [x] Demo: mixed confidences + `confidence_card_classes: 2` in `demo/live_demo.html`.
+- [x] Pie centre label: wrap only between words, shrink font to fit the circle.
+- [x] Pie centre label: 8px floor, then truncate with an ellipsis.

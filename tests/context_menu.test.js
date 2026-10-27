@@ -370,6 +370,7 @@ describe("context menu actions", () => {
         expect(rows).toEqual([
             ["id", "a0"],
             ["class", "Weed (2)"],
+            ["confidences", "Weed 0.80, Crop 0.20"],
             ["type", "bbox"],
             ["edited by", "annotator"],
             ["edited at", "2026-09-28T00:00:00Z"],
@@ -377,6 +378,19 @@ describe("context menu actions", () => {
             ["nested", "{\"a\":1}"],
         ]);
         expect(menu_element().querySelector("b")).toBeNull();
+    });
+
+    test("Details leaves out confidences when only one class has one", () => {
+        const ulabel = make_ulabel({
+            annotation: make_annotation({
+                classification_payloads: [{ class_id: 1, confidence: 0 }, { class_id: 2, confidence: 1 }],
+            }),
+        });
+        show_context_menu(ulabel, "a0", 100, 100);
+        click_item("Details");
+
+        const keys = Array.from(menu_element().querySelectorAll(".ulabel-context-menu-detail-key")).map((el) => el.textContent);
+        expect(keys).not.toContain("confidences");
     });
 
     test("Details lists what deprecated a deprecated target", () => {

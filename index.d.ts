@@ -417,6 +417,8 @@ export type ULabelConstructorArgs = {
      * use the id/name match. Copies drop it. Default null.
      */
     counterpart_class_meta_key?: string | null;
+    /** Classes the hover confidence card lists: the top class plus up to N - 1 runner-ups with non-zero confidence. Default 1. */
+    confidence_card_classes?: number;
     /** Fired after a subtask's active class changes, from any writer (API, toolbox click, class keybind). */
     on_active_class_change?: (subtask_key: string, class_id: number) => void;
     /** Fired after the current subtask changes, from any writer (API, tab click, switch keybind). */
@@ -984,6 +986,8 @@ export class ULabel {
             dist_prop: number;
         },
     ): void;
+    /** Show `name` in the centre of the current subtask's class pie (`front` for the nonspatial pie). */
+    public set_id_dialog_class_name(name: string, front?: boolean): void;
     public handle_id_dialog_click(
         mouse_event: JQuery.TriggeredEvent,
         annotation_id?: string,

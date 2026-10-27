@@ -159,6 +159,8 @@ export class Configuration {
     // `annotation_meta` key whose string value names the target class for Set class in
     // and copy/paste, replacing the source class id/name match.
     public counterpart_class_meta_key: string | null = null;
+    // Classes listed on the confidence card: the top class plus up to N - 1 non-zero runner-ups
+    public confidence_card_classes: number = 1;
     // Configuration for the annotation task itself
     public image_data: ImageData | null = null;
     public allow_soft_id: boolean = false;

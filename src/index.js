@@ -21,6 +21,7 @@ import {
     filter_points_distance_from_line,
     get_annotation_class_id,
     get_annotation_confidence,
+    get_class_confidences,
     get_point_and_line_annotations,
     mark_deprecated,
     update_distance_from_line_to_each_point,
@@ -4351,6 +4352,7 @@ export class ULabel {
         // Configure the dialog to show the current information for this ann
         this.set_id_dialog_payload_to_init(active_ann);
         this.update_id_dialog_display(nonspatial);
+        this.set_id_dialog_class_name("", nonspatial);
 
         // Show the dialog
         idd.css("display", "block");
@@ -8512,6 +8514,34 @@ export class ULabel {
             // TODO This assumes no pins
             this.set_id_dialog_payload_nopin(pos_evt.class_ind, pos_evt.dist_prop);
             this.update_id_dialog_display(front);
+            const class_id = current_subtask["class_ids"][pos_evt.class_ind];
+            this.set_id_dialog_class_name(this.get_class_name(class_id, this.state.current_subtask) ?? "", front);
+        }
+    }
+
+    // Show `name` in the centre of the current subtask's id dialog
+    set_id_dialog_class_name(name, front = false) {
+        const state = this.get_current_subtask()["state"];
+        const label = $(`#${front ? state["idd_id_front"] : state["idd_id"]} .idd-class-name`)[0];
+        // The shown text may be truncated, so compare against the full name
+        if (label === undefined || label.dataset.name === name) return;
+        label.dataset.name = name;
+        label.textContent = name;
+        const overflows = () => label.scrollWidth > label.clientWidth || label.scrollHeight > label.clientHeight;
+
+        // Lines only break between words, so shrink the font until the longest word and all lines fit
+        let font_size = 11;
+        label.style.fontSize = `${font_size}px`;
+        while (font_size > 8 && overflows()) {
+            font_size -= 0.5;
+            label.style.fontSize = `${font_size}px`;
+        }
+
+        // Still too long at the smallest readable size: trim characters and end with an ellipsis
+        let shown = name;
+        while (shown.length > 1 && overflows()) {
+            shown = shown.slice(0, -1);
+            label.textContent = `${shown.trimEnd()}…`;
         }
     }
 
@@ -8678,6 +8708,18 @@ export class ULabel {
         const global_id = `global_annotation_confidence__${subtask_key}`;
         $(`#${global_id} .annotation-confidence-classname`).text(class_name);
         $(`#${global_id} .annotation-confidence-value`).text(`Confidence: ${confidence.toFixed(2)}`);
+
+        // Non-zero runner-ups, up to config.confidence_card_classes - 1
+        const extra = Math.max(0, Math.floor(this.config["confidence_card_classes"]) - 1);
+        const runner_ups = get_class_confidences(active_annotation, current_subtask["class_defs"])
+            .filter((entry) => String(entry.class_id) !== String(best_class_id))
+            .slice(0, extra);
+        const others = $(`#${global_id} .annotation-confidence-others`);
+        others.empty();
+        for (const entry of runner_ups) {
+            others.append($("<div>").text(`${entry.name}: ${entry.confidence.toFixed(2)}`));
+        }
+        others.css("display", runner_ups.length > 0 ? "block" : "none");
     }
 
     // ================= Viewer/Annotation Interaction Handlers  =================

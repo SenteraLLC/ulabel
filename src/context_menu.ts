@@ -10,7 +10,7 @@
 
 import type { ULabel } from "../index";
 import { ULabelAnnotation } from "./annotation";
-import { get_annotation_class_id } from "./annotation_operators";
+import { get_annotation_class_id, get_class_confidences } from "./annotation_operators";
 
 const MENU_CLASS = "ulabel-context-menu";
 const VIEWPORT_MARGIN = 4;
@@ -106,6 +106,10 @@ function render_details(
     const class_def = subtask.class_defs.find((cd) => cd.id === class_id);
     add_detail_row(menu, "id", annotation.id);
     add_detail_row(menu, "class", class_def != null ? `${class_def.name} (${class_id})` : String(class_id));
+    const confidences = get_class_confidences(annotation, subtask.class_defs);
+    if (confidences.length > 1) {
+        add_detail_row(menu, "confidences", confidences.map((c) => `${c.name} ${c.confidence.toFixed(2)}`).join(", "));
+    }
     add_detail_row(menu, "type", annotation.spatial_type);
     add_detail_row(menu, "edited by", annotation.last_edited_by);
     add_detail_row(menu, "edited at", annotation.last_edited_at);
