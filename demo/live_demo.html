@@ -783,7 +783,12 @@
                     "username": "DemoUser",
                     "submit_buttons": on_submit,
                     "subtasks": subtasks,
-                    "confidence_card_classes": 2
+                    "confidence_card_classes": 2,
+                    // Extra lines on the hover card, supplied by the host app
+                    "hover_card_text": (annotation) => [
+                        `Type: ${annotation.spatial_type}`,
+                        `ID: ${annotation.id.slice(0, 8)}`,
+                    ],
                 });
                 // Wait for ULabel instance to finish initialization
                 ulabel.init(function() {

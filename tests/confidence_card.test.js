@@ -77,6 +77,7 @@ describe("class confidences on the card and the pie", () => {
                 <p class="annotation-confidence-classname"></p>
                 <p class="annotation-confidence-value"></p>
                 <div class="annotation-confidence-others" style="display: none;"></div>
+                <div class="annotation-confidence-host-text" style="display: none;"></div>
             </div>
         `;
         const ulabel = new ULabel({
@@ -157,5 +158,64 @@ describe("class confidences on the card and the pie", () => {
         expect(label()).toBe("Sedge");
         ulabel.set_id_dialog_class_name("");
         expect(label()).toBe("");
+    });
+
+    function host_lines() {
+        return Array.from(card_text(".annotation-confidence-host-text").children).map((el) => el.textContent);
+    }
+
+    test("hover_card_text adds plain-text lines, at most 5", () => {
+        const hover_card_text = jest.fn((annotation, subtask_key) => [`${subtask_key}:${annotation.id}`, "<b>x</b>", null, "", 3, "a", "b", "c"]);
+        const ulabel = make_ulabel(soft, { hover_card_text });
+        ulabel.update_confidence_dialog();
+
+        expect(hover_card_text).toHaveBeenCalledWith(ulabel.subtasks.st.annotations.access.a0, "st");
+        expect(host_lines()).toEqual(["st:a0", "<b>x</b>", "3", "a", "b"]);
+        expect(card_text(".annotation-confidence-host-text").querySelector("b")).toBeNull();
+        expect(card_text(".annotation-confidence-host-text").style.display).toBe("block");
+    });
+
+    test("hover_card_text accepts a single string and hides the block for null", () => {
+        let result = "Prediction: Weed";
+        const ulabel = make_ulabel(soft, { hover_card_text: () => result });
+        ulabel.update_confidence_dialog();
+        expect(host_lines()).toEqual(["Prediction: Weed"]);
+
+        result = null;
+        ulabel.clear_hover_card_text_cache();
+        ulabel.update_confidence_dialog();
+        expect(host_lines()).toEqual([]);
+        expect(card_text(".annotation-confidence-host-text").style.display).toBe("none");
+    });
+
+    test("hover_card_text is called once per hover, and again after the hover ends or the annotation is replaced", () => {
+        const hover_card_text = jest.fn(() => "info");
+        const ulabel = make_ulabel(soft, { hover_card_text });
+        ulabel.update_confidence_dialog();
+        ulabel.update_confidence_dialog();
+        expect(hover_card_text).toHaveBeenCalledTimes(1);
+
+        ulabel.hide_global_edit_suggestion();
+        ulabel.update_confidence_dialog();
+        expect(hover_card_text).toHaveBeenCalledTimes(2);
+
+        // set_annotations swaps in a new object under the same id
+        const access = ulabel.subtasks.st.annotations.access;
+        access.a0 = { ...access.a0 };
+        ulabel.update_confidence_dialog();
+        expect(hover_card_text).toHaveBeenCalledTimes(3);
+    });
+
+    test("a throwing hover_card_text is logged and shows no extra text", () => {
+        const warn_spy = jest.spyOn(console, "warn").mockImplementation(() => {});
+        const ulabel = make_ulabel(soft, { hover_card_text: () => {
+            throw new Error("boom");
+        } });
+        ulabel.update_confidence_dialog();
+
+        expect(host_lines()).toEqual([]);
+        expect(card_text(".annotation-confidence-classname").textContent).toBe("Weed");
+        expect(warn_spy).toHaveBeenCalledWith(expect.stringContaining("boom"));
+        warn_spy.mockRestore();
     });
 });

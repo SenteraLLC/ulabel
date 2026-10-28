@@ -92,6 +92,7 @@ class ULabel({
     hide_copy_to_linked: boolean,
     counterpart_class_meta_key: string | null,
     confidence_card_classes: number,
+    hover_card_text: ((annotation: ULabelAnnotation, subtask_key: string) => string | string[] | null) | null,
     set_brush_overlap_none_keybind: string,
     set_brush_overlap_exclude_keybind: string,
     set_brush_overlap_overwrite_keybind: string,
@@ -692,6 +693,22 @@ An `annotation_meta` key whose value, a non-empty string, names the class an ann
 
 ### `confidence_card_classes`
 How many classes the confidence card shown on hover lists. The card always shows the annotation's top class and its confidence; values above `1` add up to `confidence_card_classes - 1` more classes below it, highest confidence first, skipping classes with a confidence of `0`. Default is `1` (top class only). The `Details` context-menu panel always lists every non-zero confidence when more than one class has one.
+
+### `hover_card_text`
+Callback that adds host-supplied lines to the confidence card shown on hover, below the class confidences. It receives the hovered annotation (the full object, including `annotation_meta`) and its subtask key, and returns a string (one line), an array of strings (one line each), or `null` for no extra text. Default is `null`.
+
+- Lines are shown as plain text, never HTML, and at most 5 are shown.
+- It is called once when an annotation becomes hovered, and again after any action or `set_annotations` changes it, not on every mouse move.
+- It must be synchronous; prefetch any data it needs. Treat `annotation` as read-only.
+- If it throws, the error is logged and the card shows no extra text.
+- The card's toolbox toggle still hides the whole card.
+
+```javascript
+hover_card_text: (annotation, subtask_key) => {
+    const pred = annotation.annotation_meta?.pred_class_name;
+    return pred ? [`Prediction: ${pred}`] : null;
+},
+```
 
 ### `set_brush_overlap_none_keybind`
 Keybind to set the brush overlap mode to `none`. Default is `shift+n`.

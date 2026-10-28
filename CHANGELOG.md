@@ -8,6 +8,7 @@ All notable changes to this project will be documented here.
 - `counterpart_class_meta_key` config option (default `null`): an annotation's string value under this `annotation_meta` key names the class it gives its counterparts (Set class in) and copies (Copy to / Move to, paste), replacing the id/name match. Set class in leaves a counterpart alone when no class has that name. Copies drop the entry, and copies/pastes back into the source subtask ignore it.
 - `Details` in the context menu lists every non-zero class confidence, highest first, when more than one class has one.
 - `confidence_card_classes` config option (default `1`): the hover confidence card also lists up to N - 1 runner-up classes with non-zero confidence.
+- `hover_card_text` config callback (default `null`): returns up to 5 plain-text lines that the hover confidence card shows for an annotation. Called once per hovered annotation and again after it changes.
 - The class pie shows the hovered class's name in its centre. Long names break only between words, and the text shrinks to fit the circle, down to 8px, then ends in "…".
 
 #### Fixed

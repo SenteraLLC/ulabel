@@ -1,11 +1,5 @@
 ## Tasks
 
-## Review unstaged class confidence changes
-
-- [x] Inspect unstaged confidence display changes and affected UI behavior.
-- [x] Validate suspected findings and run lint, build, and focused tests.
-- [x] Update the PR review report (no new findings requiring posting locations).
-
 ## Embedder overlay canvases (CVML-194)
 
 - [x] Named overlay z-index constants in `src/blobs.js`.
@@ -88,3 +82,10 @@
 - [x] Demo: mixed confidences + `confidence_card_classes: 2` in `demo/live_demo.html`.
 - [x] Pie centre label: wrap only between words, shrink font to fit the circle.
 - [x] Pie centre label: 8px floor, then truncate with an ellipsis.
+
+## hover_card_text config callback
+
+- [x] `hover_card_text(annotation, subtask_key) => string | string[] | null`: extra plain-text lines in the confidence card.
+- [x] Called once per hovered annotation (cached), errors caught and logged, capped at 5 lines.
+- [x] Card shows host text for every hovered spatial annotation; card toggle still wins.
+- [x] Types, `api_spec.md`, changelog, demo; tests; lint, build, jest; live check.

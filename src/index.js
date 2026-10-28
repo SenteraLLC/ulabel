@@ -799,6 +799,8 @@ export class ULabel {
             context_menu_annid: null,
             // Last copied/cut annotation envelope (see copy_annotation_to_clipboard)
             clipboard: null,
+            // Last config.hover_card_text result: { annotation, subtask_key, lines }
+            hover_card_text_cache: null,
 
             // Global annotation state (subtasks also maintain an annotation state)
             current_subtask: null, // The key of the current subtask
@@ -4265,6 +4267,7 @@ export class ULabel {
     hide_global_edit_suggestion() {
         $(".global_edit_suggestion").css("display", "none");
         this.set_hovered_annotation(null);
+        this.clear_hover_card_text_cache();
     }
 
     /**
@@ -8720,6 +8723,40 @@ export class ULabel {
             others.append($("<div>").text(`${entry.name}: ${entry.confidence.toFixed(2)}`));
         }
         others.css("display", runner_ups.length > 0 ? "block" : "none");
+
+        const host_lines = this.get_hover_card_text_lines(active_annotation, subtask_key);
+        const host_text = $(`#${global_id} .annotation-confidence-host-text`);
+        host_text.empty();
+        for (const line of host_lines) {
+            host_text.append($("<div>").text(line));
+        }
+        host_text.css("display", host_lines.length > 0 ? "block" : "none");
+    }
+
+    get_hover_card_text_lines(annotation, subtask_key) {
+        const callback = this.config["hover_card_text"];
+        if (typeof callback !== "function") return [];
+        // Keyed on the object, not the id: set_annotations swaps in new objects under the same ids
+        const cache = this.state["hover_card_text_cache"];
+        if (cache && cache.annotation === annotation && cache.subtask_key === subtask_key) return cache.lines;
+
+        let lines = [];
+        try {
+            const result = callback(annotation, subtask_key);
+            lines = (Array.isArray(result) ? result : [result])
+                .filter((line) => line !== null && line !== undefined && line !== "")
+                .map(String)
+                .slice(0, 5);
+        } catch (error) {
+            // WARNING, not ERROR: log_message throws on ERROR, which would break hovering
+            log_message(`hover_card_text failed for annotation ${annotation["id"]}: ${error}`, LogLevel.WARNING, true);
+        }
+        this.state["hover_card_text_cache"] = { annotation, subtask_key, lines };
+        return lines;
+    }
+
+    clear_hover_card_text_cache() {
+        this.state["hover_card_text_cache"] = null;
     }
 
     // ================= Viewer/Annotation Interaction Handlers  =================

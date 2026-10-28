@@ -338,6 +338,9 @@ function trigger_action_listeners(
     is_undo: boolean = false,
     is_redo: boolean = false,
 ) {
+    // The action may change the hovered annotation, so ask the host for its card text again
+    ulabel.clear_hover_card_text_cache();
+
     const action_map: Record<ULabelActionType, {
         action?: (ulabel: ULabel, action: ULabelAction) => void;
         undo?: (ulabel: ULabel, action: ULabelAction, is_undo?: boolean) => void;

@@ -530,6 +530,7 @@ export function build_confidence_dialog(ulabel: ULabel) {
                 <p class="annotation-confidence-value" style="margin: 0.1em 0.6em 0.4em; opacity: 0.85; font-size: 0.9em;">
                 </p>
                 <div class="annotation-confidence-others" style="display: none; margin: 0 0.6em 0.4em; opacity: 0.7; font-size: 0.85em;"></div>
+                <div class="annotation-confidence-host-text" style="display: none; margin: 0 0.6em 0.4em; padding-top: 0.3em; border-top: 1px solid rgba(255, 255, 255, 0.25); opacity: 0.85; font-size: 0.85em; max-width: 16em; overflow-wrap: anywhere;"></div>
             </div>
         `);
 

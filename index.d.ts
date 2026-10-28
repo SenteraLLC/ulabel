@@ -419,6 +419,13 @@ export type ULabelConstructorArgs = {
     counterpart_class_meta_key?: string | null;
     /** Classes the hover confidence card lists: the top class plus up to N - 1 runner-ups with non-zero confidence. Default 1. */
     confidence_card_classes?: number;
+    /**
+     * Callback returning extra lines for the hover confidence card, shown as plain text below the
+     * confidences. Return a string (one line), an array of strings (one line each, max 5), or null for none.
+     * Called once per hovered annotation and again after it changes; treat `annotation` as read-only.
+     * Must be synchronous. Errors are logged and show no extra text. Default null.
+     */
+    hover_card_text?: ((annotation: ULabelAnnotation, subtask_key: string) => string | string[] | null) | null;
     /** Fired after a subtask's active class changes, from any writer (API, toolbox click, class keybind). */
     on_active_class_change?: (subtask_key: string, class_id: number) => void;
     /** Fired after the current subtask changes, from any writer (API, tab click, switch keybind). */
@@ -471,6 +478,8 @@ export class ULabel {
         context_menu_annid: string | null;
         /** Last copied/cut annotation envelope, see `copy_annotation_to_clipboard`. */
         clipboard: ULabelClipboardEnvelope | null;
+        /** Last `hover_card_text` result, reused while the same annotation stays hovered. */
+        hover_card_text_cache: { annotation: ULabelAnnotation; subtask_key: string; lines: string[] } | null;
     };
 
     config: Configuration;
@@ -988,6 +997,10 @@ export class ULabel {
     ): void;
     /** Show `name` in the centre of the current subtask's class pie (`front` for the nonspatial pie). */
     public set_id_dialog_class_name(name: string, front?: boolean): void;
+    /** Lines from `config.hover_card_text` for an annotation, cached until the hovered annotation changes. */
+    public get_hover_card_text_lines(annotation: ULabelAnnotation, subtask_key: string): string[];
+    /** Drop the cached `hover_card_text` result so the next hover calls the callback again. */
+    public clear_hover_card_text_cache(): void;
     public handle_id_dialog_click(
         mouse_event: JQuery.TriggeredEvent,
         annotation_id?: string,
