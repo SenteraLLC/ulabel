@@ -89,3 +89,9 @@
 - [x] Called once per hovered annotation (cached), errors caught and logged, capped at 5 lines.
 - [x] Card shows host text for every hovered spatial annotation; card toggle still wins.
 - [x] Types, `api_spec.md`, changelog, demo; tests; lint, build, jest; live check.
+
+## PR review: linked-annotation demo + local landing page
+
+- [x] `demo/linked-subtasks.html`: Predictions (read-only) / Diff / GT with link meta key + counterpart class meta key; A/B/C direct-links case.
+- [x] `demo/index.html` landing page listing every demo; `demo.js` prints the landing URL.
+- [x] Lint, build; live check in browser.
