@@ -472,6 +472,52 @@ describe("set_counterparts_class", () => {
     );
 });
 
+describe("subtask locks", () => {
+    function weed(annotation) {
+        annotation.classification_payloads = [{ class_id: 2, confidence: 1.0 }];
+        return annotation;
+    }
+
+    test("is_read_only / is_edit_locked", () => {
+        const ulabel = make_ulabel();
+        expect(ulabel.subtasks.diff.is_read_only()).toBe(true);
+        expect(ulabel.subtasks.diff.is_edit_locked()).toBe(true);
+        expect(ulabel.subtasks.gt.is_read_only()).toBe(false);
+        expect(ulabel.subtasks.gt.is_edit_locked()).toBe(false);
+
+        ulabel.subtasks.gt.focus_deprecated = true;
+        expect(ulabel.subtasks.gt.is_read_only()).toBe(false);
+        expect(ulabel.subtasks.gt.is_edit_locked()).toBe(true);
+        expect(ulabel.is_subtask_edit_locked("gt")).toBe(true);
+    });
+
+    test("API methods ignore focus_deprecated on the target", () => {
+        const ulabel = make_ulabel({
+            gt: [make_bbox("g1", { hash: "h1" }), make_bbox("g2", { hash: "h2" })],
+            diff: [weed(make_bbox("d1", { hash: "h1" })), make_bbox("d2", { hash: "h2" }), make_bbox("d3", {})],
+        });
+        ulabel.subtasks.gt.focus_deprecated = true;
+
+        expect(ulabel.set_counterparts_class("d1", "diff", "gt")).toEqual(["g1"]);
+        expect(ulabel.delete_counterparts("d2", "diff", "gt")).toEqual(["g2"]);
+        expect(ulabel.copy_annotation_to_subtask("d3", "diff", "gt")).not.toBeNull();
+    });
+
+    test("clipboard cut is refused only by read_only", () => {
+        const ulabel = make_ulabel({ gt: [make_bbox("g1"), make_bbox("g2")] });
+        ulabel.state.current_subtask = "gt";
+        ulabel.subtasks.gt.focus_deprecated = true;
+
+        expect(ulabel.copy_annotation_to_clipboard("g1", true)).not.toBeNull();
+        expect(gt(ulabel, "g1").deprecated).toBe(true);
+
+        ulabel.subtasks.gt.focus_deprecated = false;
+        ulabel.subtasks.gt.read_only = true;
+        expect(ulabel.copy_annotation_to_clipboard("g2", true)).toBeNull();
+        expect(gt(ulabel, "g2").deprecated).toBe(false);
+    });
+});
+
 describe("fly to undo/redo changes", () => {
     test("passes where the undo/redo left its annotations, or where they were if none remain", () => {
         const ulabel = make_ulabel({

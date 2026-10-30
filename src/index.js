@@ -1171,17 +1171,16 @@ export class ULabel {
      * Programmatic mutations via public API (e.g., set_annotations) are still permitted.
      */
     is_current_subtask_read_only() {
-        return this.get_current_subtask()["read_only"] === true;
+        return this.get_current_subtask().is_read_only();
     }
 
     /**
      * Whether user input may not edit a subtask: read-only, or under deprecated
-     * focus (where only Restore applies). Public API methods are unaffected.
+     * focus (where only Restore applies). Public API methods check read-only only.
      * @param {string|null} subtask_key defaults to the current subtask
      */
     is_subtask_edit_locked(subtask_key = null) {
-        const subtask = this.subtasks[subtask_key ?? this.get_current_subtask_key()];
-        return subtask?.["read_only"] === true || subtask?.["focus_deprecated"] === true;
+        return this.subtasks[subtask_key ?? this.get_current_subtask_key()]?.is_edit_locked() === true;
     }
 
     /**
@@ -2902,7 +2901,7 @@ export class ULabel {
         }
         const annotation_id = annotation_object["id"];
         const element_id = this.get_nonspatial_annotation_element_id(annotation_id);
-        const is_read_only = this.subtasks[subtask]["read_only"] === true;
+        const is_read_only = this.subtasks[subtask].is_read_only();
         const note_readonly_attr = is_read_only ? " readonly" : "";
         const reclf_button = is_read_only ?
             "" :
@@ -4415,7 +4414,7 @@ export class ULabel {
      * @param {() => void} fn the undo/redo
      */
     run_on_edit_subtask(stack, fn) {
-        const writable = Object.keys(this.subtasks).filter((key) => this.subtasks[key].read_only !== true);
+        const writable = Object.keys(this.subtasks).filter((key) => !this.subtasks[key].is_read_only());
         if (!this.is_current_subtask_read_only() || writable.length !== 1) return fn();
         const current_key = this.get_current_subtask_key();
         const edit_key = writable[0];
@@ -4564,7 +4563,7 @@ export class ULabel {
      */
     can_paste_into_subtask(annotation, subtask_key) {
         const subtask = this.subtasks[subtask_key];
-        if (subtask === undefined || subtask["read_only"] === true) return false;
+        if (subtask === undefined || subtask.is_read_only()) return false;
         if (annotation == null) return false;
         const spatial_type = annotation["spatial_type"];
         if (NONSPATIAL_MODES.includes(spatial_type) || DELETE_MODES.includes(spatial_type)) return false;
@@ -4980,7 +4979,7 @@ export class ULabel {
             log_message(`Annotation ${annotation_id} or subtask ${target_key} not found`, LogLevel.WARNING, true);
             return [];
         }
-        if (target["read_only"] === true) {
+        if (target.is_read_only()) {
             log_message(`Subtask ${target_key} is read-only; nothing removed`, LogLevel.WARNING, true);
             return [];
         }
@@ -5130,7 +5129,7 @@ export class ULabel {
             log_message(`Annotation ${annotation_id} or subtask ${target_key} not found`, LogLevel.WARNING, true);
             return [];
         }
-        if (target["read_only"] === true) {
+        if (target.is_read_only()) {
             log_message(`Subtask ${target_key} is read-only; nothing changed`, LogLevel.WARNING, true);
             return [];
         }
@@ -5308,7 +5307,7 @@ export class ULabel {
         if (annotation == null || annotation["deprecated"]) return null;
         const spatial_type = annotation["spatial_type"];
         if (NONSPATIAL_MODES.includes(spatial_type) || DELETE_MODES.includes(spatial_type)) return null;
-        if (cut && this.is_subtask_edit_locked()) return null;
+        if (cut && this.is_current_subtask_read_only()) return null;
 
         const copy = JSON.parse(JSON.stringify(annotation));
         if (spatial_type === "bitmask") {
@@ -7000,7 +6999,7 @@ export class ULabel {
             // Read-only masks act as barriers: clip the active mask around them instead of
             // carving them, preserving both the read-only contract and overwrite's mutual
             // exclusion invariant on export.
-            if (this.subtasks[st]["read_only"]) {
+            if (this.subtasks[st].is_read_only()) {
                 active_mask.subtract_intersection_in_box(delta, other_mask, box);
                 continue;
             }

@@ -11,9 +11,11 @@ All notable changes to this project will be documented here.
 - `hover_card_text` config callback (default `null`): returns up to 5 plain-text lines that the hover confidence card shows for an annotation. Called once per hovered annotation and again after it changes.
 - `demo/linked-subtasks.html`: demo of linked annotations across Diff, GT and read-only Predictions subtasks. `demo/index.html`: local landing page listing every demo.
 - The class pie shows the hovered class's name in its centre. Long names break only between words, and the text shrinks to fit the circle, down to 8px, then ends in "…".
+- `ULabelSubtask.is_read_only()` / `is_edit_locked()`: the single source for subtask locks. Public API methods check `is_read_only()`; user input checks `is_edit_locked()` (read-only or Show Deprecated). Documented under "Subtask locks" in `api_spec.md`, along with links being direct only.
 
 #### Fixed
 - `delete_counterparts` no longer stamps, reverts or drops history for an unrelated target annotation that happens to share the source annotation's id.
+- `copy_annotation_to_clipboard(id, true)` no longer refuses the cut under Show Deprecated; like the other API methods it is only refused in read-only subtasks. The cut shortcut is still blocked.
 ## [0.31.1] - Oct 22nd, 2026
 #### Changed
 - Simplified ternary syntax into nullish coalescing in several locations

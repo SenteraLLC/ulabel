@@ -339,6 +339,15 @@ The `"keybind"` argument allows the user to select a class for existing annotati
 
 With `"read_only": true`, the subtask's annotations can be viewed but not created, edited, moved, deleted, reclassified, or undone/redone by the user. Toggle it at runtime with [`set_subtask_read_only`](#set_subtask_read_onlysubtask_key-read_only).
 
+#### Subtask locks
+
+Two flags lock a subtask. `ULabelSubtask.is_read_only()` and `ULabelSubtask.is_edit_locked()` (also `ulabel.is_subtask_edit_locked(subtask_key?)`) are the checks every caller uses.
+
+| Lock | User input (mouse, keybinds, context menu, clipboard shortcuts) | Public API |
+|---|---|---|
+| `read_only` (`is_read_only()`) | Blocked. | Copy/move into, `delete_counterparts`, `set_counterparts_class`, clipboard cut, `restore_annotation`, and undo/redo are refused. `set_annotations` and other bulk loaders still write. |
+| `focus_deprecated` (part of `is_edit_locked()`) | Blocked, except Restore and undo/redo. | Not locked. |
+
 The full list of `"allowed_modes"` that are currently supported is:
 
 - `"bbox"`: A simple single-frame bounding box
@@ -947,7 +956,7 @@ Sets the zoom to focus on the provided annotation, and switches to its subtask i
 
 ### `find_counterparts(annotation_id, source_key, target_key)`
 
-*(annotation_id: string, source_key: string, target_key: string) => string[]* -- Ids of the spatial annotations in `target_key` linked to `annotation_id` in `source_key`: copies of it, the annotation it was copied from (both via `annotation_meta.copied_from`), and annotations sharing a value under [`annotation_link_meta_key`](#annotation_link_meta_key). Human-deleted annotations are skipped; filter-hidden ones count. Empty when `source_key === target_key`. The context menu uses this for the copy confirm and for `Set class in` / `Delete from` / `Erase from`.
+*(annotation_id: string, source_key: string, target_key: string) => string[]* -- Ids of the spatial annotations in `target_key` linked to `annotation_id` in `source_key`: copies of it, the annotation it was copied from (both via `annotation_meta.copied_from`), and annotations sharing a value under [`annotation_link_meta_key`](#annotation_link_meta_key). Links are direct only: if A in one subtask is linked to B in another and A is copied into a third subtask as C, C links to A but not to B (copies drop the link key). Human-deleted annotations are skipped; filter-hidden ones count. Empty when `source_key === target_key`. The context menu uses this for the copy confirm and for `Set class in` / `Delete from` / `Erase from`.
 
 ### `delete_counterparts(annotation_id, source_key, target_key, erase?)`
 

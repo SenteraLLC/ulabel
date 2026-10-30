@@ -671,7 +671,7 @@ function on_annotation_revert(
  */
 function is_blocked_by_read_only(ulabel: ULabel, action: ULabelAction): boolean {
     if (ulabel.is_current_subtask_read_only()) return true;
-    return (action.affected ?? []).some(({ subtask_key }) => ulabel.subtasks[subtask_key]?.read_only === true);
+    return (action.affected ?? []).some(({ subtask_key }) => ulabel.subtasks[subtask_key]?.is_read_only() === true);
 }
 
 /**

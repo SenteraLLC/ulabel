@@ -95,3 +95,10 @@
 - [x] `demo/linked-subtasks.html`: Predictions (read-only) / Diff / GT with link meta key + counterpart class meta key; A/B/C direct-links case.
 - [x] `demo/index.html` landing page listing every demo; `demo.js` prints the landing URL.
 - [x] Lint, build; live check in browser.
+
+## PR review: standardise subtask locks
+
+- [x] `ULabelSubtask.is_read_only()` / `is_edit_locked()`; `is_subtask_edit_locked` / `is_current_subtask_read_only` delegate.
+- [x] Route hand-written `read_only` checks through `is_read_only()`; `copy_annotation_to_clipboard(cut)` respects `read_only` only.
+- [x] `api_spec.md` Subtask locks section + links are direct only; `index.d.ts`; changelog.
+- [x] Tests; lint, build, jest.
