@@ -17,7 +17,7 @@ In a read-only subtask, undo and redo act on the only writable subtask, if there
 - Press `Escape` to exit brush/erase mode.
 - Press `Tab` to set the zoom to focus on the next annotation
 - Press `Shift+Tab` to set the zoom to focus on the previous annotation
-- Right-click a hovered annotation (or its entry in the `AnnotationList` toolbox item) to open a context menu with `Change class`, `Copy to`, `Move to`, `Delete`, `Isolate` / `Show all`, and `Details`. `Change class` opens the class pie for that annotation; `Copy to` / `Move to` clone the annotation into another subtask at the same image coordinates (see [`copy_annotation`](#copy_annotationannotation_id-target_subtask_key-class_id-source_subtask_key)) -- a single eligible subtask is named on the item, several open a list to pick from, and `Move to` also deletes the source (one undoable action on the source subtask that also removes the copy and the target's history about it). Both also arm `ctrl+v` with the annotation, and when the target already has a counterpart of it (see [`find_counterparts`](#find_counterpartsannotation_id-source_key-target_key)) a confirm dialog asks before copying again. `Delete from` appears for every other writable subtask holding counterparts and deletes them there, reading `Delete <n> from <subtask>` (or `<subtask> (<n>)` in the list) when there is more than one; a bitmask also offers `Erase from`, which only subtracts its mask (see [`delete_counterparts`](#delete_counterpartsannotation_id-source_key-target_key-erase)). The view stays on the source subtask unless the class pie opens or [`paste_switch_to_target`](#paste_switch_to_target) is on; `Isolate` hides every other annotation in the subtask (see [`isolate_annotation`](#isolate_annotationannotation_id-subtask_key-redraw)) and reads `Show all` while that annotation is isolated; `Details` lists its id, class, spatial type, last editor/edit time, what deprecated it (deprecated annotations only), and `annotation_meta` entries. Read-only subtasks only offer `Copy to`, `Delete from` / `Erase from`, `Isolate`, and `Details`. A deprecated annotation (hoverable only under deprecated focus, see **Show Deprecated** in the `AnnotationList` toolbox item) offers `Restore`, `Isolate` / `Show all`, and `Details`; `Restore` appears only for annotations deleted by a human and nothing else, on writable subtasks, and not for a bitmask erased to nothing (see [`restore_annotation`](#restore_annotationannotation_id)). Press `Escape` or click anywhere to close it. A right-click while drawing a polyline still finishes the polyline and opens no menu.
+- Right-click a hovered annotation (or its entry in the `AnnotationList` toolbox item) to open a context menu with `Change class`, `Copy to`, `Move to`, `Delete`, `Isolate` / `Show all`, and `Details`. `Change class` opens the class pie for that annotation; `Copy to` / `Move to` clone the annotation into another subtask at the same image coordinates (see [`copy_annotation`](#copy_annotationannotation_id-target_subtask_key-class_id-source_subtask_key)) -- a single eligible subtask is named on the item, several open a list to pick from, and `Move to` also deletes the source (one undoable action on the source subtask that also removes the copy and the target's history about it). Both also arm `ctrl+v` with the annotation, and when the target already has a counterpart of it (see [`find_counterparts`](#find_counterpartsannotation_id-source_key-target_key)) a confirm dialog asks before copying again. `Delete from` appears for every other writable subtask holding counterparts and deletes them there, reading `Delete <n> from <subtask>` (or `<subtask> (<n>)` in the list) when there is more than one; a bitmask also offers `Erase from`, which only subtracts its mask (see [`delete_counterparts`](#delete_counterpartsannotation_id-source_key-target_key-erase)). `Set class in` appears for every other writable subtask holding counterparts that can take the annotation's class (matched by id, else by name) and don't already have it, and sets them to it (see [`set_counterparts_class`](#set_counterparts_classannotation_id-source_key-target_key)). The view stays on the source subtask unless the class pie opens or [`paste_switch_to_target`](#paste_switch_to_target) is on; `Isolate` hides every other annotation in the subtask (see [`isolate_annotation`](#isolate_annotationannotation_id-subtask_key-redraw)) and reads `Show all` while that annotation is isolated; `Details` lists its id, class, every non-zero class confidence (highest first; only when more than one class has one), spatial type, last editor/edit time, what deprecated it (deprecated annotations only), and `annotation_meta` entries. Read-only subtasks only offer `Copy to`, `Set class in`, `Delete from` / `Erase from`, `Isolate`, and `Details`. A deprecated annotation (hoverable only under deprecated focus, see **Show Deprecated** in the `AnnotationList` toolbox item) offers `Restore`, `Isolate` / `Show all`, and `Details`; `Restore` appears only for annotations deleted by a human and nothing else, on writable subtasks, and not for a bitmask erased to nothing (see [`restore_annotation`](#restore_annotationannotation_id)). Press `Escape` or click anywhere to close it. A right-click while drawing a polyline still finishes the polyline and opens no menu.
 - Press `Escape` to close an open class pie or context menu.
 - `ctrl+c` / `cmd+c` copies the hovered annotation, `ctrl+x` / `cmd+x` cuts it (deletes it after copying; not in read-only subtasks), and `ctrl+v` / `cmd+v` pastes into the current subtask (see [`paste_annotation_from_clipboard`](#paste_annotation_from_clipboardenvelope)). The copy is placed on the system clipboard as JSON, so it can be pasted into another ULabel instance showing an image of the same dimensions; a paste back into the subtask it was copied from keeps its class; the first paste into another subtask keeps the coordinates, and every repeat paste into the same subtask (or any paste back into the source) is offset by a further 20 pixels. These shortcuts are not remappable and are ignored while a text field has focus.
 
@@ -90,6 +90,9 @@ class ULabel({
     paste_switch_to_target: boolean,
     annotation_link_meta_key: string | null,
     hide_copy_to_linked: boolean,
+    counterpart_class_meta_key: string | null,
+    confidence_card_classes: number,
+    hover_card_text: ((annotation: ULabelAnnotation, subtask_key: string) => string | string[] | null) | null,
     set_brush_overlap_none_keybind: string,
     set_brush_overlap_exclude_keybind: string,
     set_brush_overlap_overwrite_keybind: string,
@@ -335,6 +338,15 @@ Every annotation session requires at least one subtask. Each subtask has its own
 The `"keybind"` argument allows the user to select a class for existing annotations (when hovered), for new annotations, or for annotations that are actively being drawn.
 
 With `"read_only": true`, the subtask's annotations can be viewed but not created, edited, moved, deleted, reclassified, or undone/redone by the user. Toggle it at runtime with [`set_subtask_read_only`](#set_subtask_read_onlysubtask_key-read_only).
+
+#### Subtask locks
+
+Two flags lock a subtask. `ULabelSubtask.is_read_only()` and `ULabelSubtask.is_edit_locked()` (also `ulabel.is_subtask_edit_locked(subtask_key?)`) are the checks every caller uses.
+
+| Lock | User input (mouse, keybinds, context menu, clipboard shortcuts) | Public API |
+|---|---|---|
+| `read_only` (`is_read_only()`) | Blocked. | Copy/move into, `delete_counterparts`, `set_counterparts_class`, clipboard cut, `restore_annotation`, and undo/redo are refused. `set_annotations` and other bulk loaders still write. |
+| `focus_deprecated` (part of `is_edit_locked()`) | Blocked, except Restore and undo/redo. | Not locked. |
 
 The full list of `"allowed_modes"` that are currently supported is:
 
@@ -677,13 +689,35 @@ When `true` (the default), a plain left-drag that starts inside a spatial annota
 When `true` (the default), a context-menu `Copy to` / `Move to` or a `ctrl+v` paste whose source class has no counterpart in the target subtask (by id, then by name) opens the class pie on the pasted annotation when several classes could take it. Set to `false` to never open the pie: the copy silently takes the target's active class (else its first compatible class). Useful when the source subtask's classes (e.g. `True Positive` / `False Negative`) can never match the target's and the host keeps the target's active class in sync with its own class picker.
 
 ### `paste_switch_to_target`
-When `true`, a context-menu `Copy to` / `Move to` / `Delete from` / `Erase from` makes the target the current subtask afterwards (firing [`on_subtask_change`](#on_subtask_change)), whether or not the class pie opens; an undo/redo from a read-only subtask likewise switches to the writable subtask it acts on. Default is `false`: the view only switches when the class pie opens on the copy. Toggle at runtime with [`set_paste_switch_to_target`](#set_paste_switch_to_targetenabled). `ctrl+v` pastes into the current subtask and is unaffected.
+When `true`, a context-menu `Copy to` / `Move to` / `Set class in` / `Delete from` / `Erase from` makes the target the current subtask afterwards (firing [`on_subtask_change`](#on_subtask_change)), whether or not the class pie opens; an undo/redo from a read-only subtask likewise switches to the writable subtask it acts on. Default is `false`: the view only switches when the class pie opens on the copy. Toggle at runtime with [`set_paste_switch_to_target`](#set_paste_switch_to_targetenabled). `ctrl+v` pastes into the current subtask and is unaffected.
 
 ### `annotation_link_meta_key`
 An `annotation_meta` key whose value, a string or an array of strings, links annotations across subtasks: two annotations are counterparts when they share any value (see [`find_counterparts`](#find_counterpartsannotation_id-source_key-target_key)). Every copy and paste drops this entry from the copy's `annotation_meta`, so a copy never claims its source's identity. Default is `null` (only `copied_from` links).
 
 ### `hide_copy_to_linked`
 When `true`, the context menu leaves out `Copy to` / `Move to` for every subtask that already holds a counterpart of the annotation (see [`find_counterparts`](#find_counterpartsannotation_id-source_key-target_key)), instead of asking before copying again. `ctrl+v` is unaffected. Default is `false`.
+
+### `counterpart_class_meta_key`
+An `annotation_meta` key whose value, a non-empty string, names the class an annotation passes on to other subtasks. When the source of a `Set class in` (see [`get_counterpart_class_changes`](#get_counterpart_class_changesannotation_id-source_key-target_key)), `Copy to` / `Move to`, or paste has it, the target class is the compatible class with that name, replacing the usual match on the source class's id and then name. If the target has no such class, `Set class in` leaves the counterpart alone (and doesn't appear when no counterpart would change), while a copy falls back as for any unmatched class (see [`paste_class_choice`](#paste_class_choice)). Annotations without the key use the usual match, as does a copy or paste back into the annotation's own subtask, so a duplicate keeps its class. Every copy and paste drops this entry from the copy's `annotation_meta`. Useful when the source subtask's classes (e.g. `TP` / `FP` / `FN`) never exist in the target and the host knows the right target class per annotation. Default is `null`.
+
+### `confidence_card_classes`
+How many classes the confidence card shown on hover lists. The card always shows the annotation's top class and its confidence; values above `1` add up to `confidence_card_classes - 1` more classes below it, highest confidence first, skipping classes with a confidence of `0`. Default is `1` (top class only). The `Details` context-menu panel always lists every non-zero confidence when more than one class has one.
+
+### `hover_card_text`
+Callback that adds host-supplied lines to the confidence card shown on hover, below the class confidences. It receives the hovered annotation (the full object, including `annotation_meta`) and its subtask key, and returns a string (one line), an array of strings (one line each), or `null` for no extra text. Default is `null`.
+
+- Lines are shown as plain text, never HTML, and at most 5 are shown.
+- It is called once when an annotation becomes hovered, and again after any action or `set_annotations` changes it, not on every mouse move.
+- It must be synchronous; prefetch any data it needs. Treat `annotation` as read-only.
+- If it throws, the error is logged and the card shows no extra text.
+- The card's toolbox toggle still hides the whole card.
+
+```javascript
+hover_card_text: (annotation, subtask_key) => {
+    const pred = annotation.annotation_meta?.pred_class_name;
+    return pred ? [`Prediction: ${pred}`] : null;
+},
+```
 
 ### `set_brush_overlap_none_keybind`
 Keybind to set the brush overlap mode to `none`. Default is `shift+n`.
@@ -922,11 +956,19 @@ Sets the zoom to focus on the provided annotation, and switches to its subtask i
 
 ### `find_counterparts(annotation_id, source_key, target_key)`
 
-*(annotation_id: string, source_key: string, target_key: string) => string[]* -- Ids of the spatial annotations in `target_key` linked to `annotation_id` in `source_key`: copies of it, the annotation it was copied from (both via `annotation_meta.copied_from`), and annotations sharing a value under [`annotation_link_meta_key`](#annotation_link_meta_key). Human-deleted annotations are skipped; filter-hidden ones count. Empty when `source_key === target_key`. The context menu uses this for the copy confirm and for `Delete from` / `Erase from`.
+*(annotation_id: string, source_key: string, target_key: string) => string[]* -- Ids of the spatial annotations in `target_key` linked to `annotation_id` in `source_key`: copies of it, the annotation it was copied from (both via `annotation_meta.copied_from`), and annotations sharing a value under [`annotation_link_meta_key`](#annotation_link_meta_key). Links are direct only: if A in one subtask is linked to B in another and A is copied into a third subtask as C, C links to A but not to B (copies drop the link key). Human-deleted annotations are skipped; filter-hidden ones count. Empty when `source_key === target_key`. The context menu uses this for the copy confirm and for `Set class in` / `Delete from` / `Erase from`.
 
 ### `delete_counterparts(annotation_id, source_key, target_key, erase?)`
 
 *(annotation_id: string, source_key: string, target_key: string, erase?: boolean | null) => string[]* -- Removes the counterparts (see [`find_counterparts`](#find_counterpartsannotation_id-source_key-target_key)) from `target_key`, which must not be read-only; the source may be. With `erase` (default: whether the source is a bitmask; only a bitmask source can erase), the source mask is subtracted from its bitmask counterparts (a mask erased to nothing is deleted) and other counterparts are left alone; otherwise every counterpart is deleted. Recorded as one `delete_counterparts` action on the target subtask's stream (undo there restores every mask and deletion) and reported to [`on_annotation_change`](#on_annotation_change) with the target as `subtask_key` and the changed counterparts as `affected`. Returns the changed ids; nothing is recorded when none changed. When something changed and [`paste_switch_to_target`](#paste_switch_to_target) is on, the target becomes the current subtask.
+
+### `get_counterpart_class_changes(annotation_id, source_key, target_key)`
+
+*(annotation_id: string, source_key: string, target_key: string) => Record<string, number>* -- The counterparts (see [`find_counterparts`](#find_counterpartsannotation_id-source_key-target_key)) in `target_key` that can take the source annotation's class and don't already have it, each mapped to the class id it would take. The class is matched by id, else by name (the first compatible class with that name); a [`counterpart_class_meta_key`](#counterpart_class_meta_key) value on the source replaces both, matching that name only. Counterparts with no compatible match are left out. The context menu shows `Set class in` for a subtask only when this is non-empty.
+
+### `set_counterparts_class(annotation_id, source_key, target_key)`
+
+*(annotation_id: string, source_key: string, target_key: string) => string[]* -- Sets each counterpart from [`get_counterpart_class_changes`](#get_counterpart_class_changesannotation_id-source_key-target_key) to its matched class at full confidence; the rest are left alone. `target_key` must not be read-only; the source may be. Recorded as one `set_counterparts_class` action on the target subtask's stream (undo there restores every previous classification) and reported to [`on_annotation_change`](#on_annotation_change) with the target as `subtask_key` and the changed counterparts as `affected`. Returns the changed ids; nothing is recorded when none changed. When something changed and [`paste_switch_to_target`](#paste_switch_to_target) is on, the target becomes the current subtask.
 
 ### `set_paste_switch_to_target(enabled)` / `get_paste_switch_to_target()`
 

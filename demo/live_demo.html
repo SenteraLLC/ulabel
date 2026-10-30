@@ -65,6 +65,7 @@
                         "spatial_payload": [[1447.58, 484.52], [1418.42, 397.04]],
                         "classification_payloads": [
                             {"class_id": 11, "confidence": 0.55},
+                            {"class_id": 10, "confidence": 0.45},
                         ],
                     },
                     {
@@ -89,6 +90,7 @@
                         "spatial_payload": [[1037.67, 477.22], [1013.63, 393.07]],
                         "classification_payloads": [
                             {"class_id": 11, "confidence": 0.45},
+                            {"class_id": 10, "confidence": 0.35},
                         ],
                     },
                     {
@@ -97,6 +99,7 @@
                         "spatial_payload": [[952.93, 470.00], [898.24, 409.90]],
                         "classification_payloads": [
                             {"class_id": 11, "confidence": 0.6},
+                            {"class_id": 10, "confidence": 0.4},
                         ],
                     },
                     {
@@ -779,7 +782,13 @@
                     "image_data": "./cs-demo-0.png",
                     "username": "DemoUser",
                     "submit_buttons": on_submit,
-                    "subtasks": subtasks
+                    "subtasks": subtasks,
+                    "confidence_card_classes": 2,
+                    // Extra lines on the hover card, supplied by the host app
+                    "hover_card_text": (annotation) => [
+                        `Type: ${annotation.spatial_type}`,
+                        `ID: ${annotation.id.slice(0, 8)}`,
+                    ],
                 });
                 // Wait for ULabel instance to finish initialization
                 ulabel.init(function() {

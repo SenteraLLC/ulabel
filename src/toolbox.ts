@@ -369,7 +369,7 @@ export class ToolboxTab {
         let href = ` href="#"`;
         let val = subtask.inactive_opacity * 100;
         if (this.selected) {
-            if (this.subtask.read_only) {
+            if (this.subtask.is_read_only()) {
                 href = "";
             }
             sel = " sel";

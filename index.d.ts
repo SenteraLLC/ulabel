@@ -269,6 +269,7 @@ export type ULabelActionType = "create_nonspatial_annotation" |
     "paste_annotation" |
     "move_annotation" |
     "delete_counterparts" |
+    "set_counterparts_class" |
     "begin_annotation" |
     "continue_annotation" |
     "finish_annotation" |
@@ -402,12 +403,29 @@ export type ULabelConstructorArgs = {
     allow_body_move?: boolean;
     /** Open the class pie on a paste whose source class has no id/name match in the target. Default true; false takes the target's active class. */
     paste_class_choice?: boolean;
-    /** Make the target the current subtask after a copy/move or `delete_counterparts`, and the writable subtask on undo/redo from a read-only one. Default false. */
+    /** Make the target the current subtask after a copy/move, `delete_counterparts` or `set_counterparts_class`, and the writable subtask on undo/redo from a read-only one. Default false. */
     paste_switch_to_target?: boolean;
     /** `annotation_meta` key whose value (string or string[]) links annotations across subtasks; any shared value links. Copies drop it. Default null. */
     annotation_link_meta_key?: string | null;
     /** Context menu hides Copy to / Move to for subtasks that already hold a counterpart (instead of confirming). Default false. */
     hide_copy_to_linked?: boolean;
+    /**
+     * `annotation_meta` key whose non-empty string value names the class an annotation gives its
+     * counterparts (Set class in) and copies (Copy to / Move to, paste), replacing the source class
+     * id/name match. No class of that name: Set class in leaves the counterpart alone; a copy falls
+     * back as when nothing matches. Annotations without it, and copies/pastes back into the source subtask,
+     * use the id/name match. Copies drop it. Default null.
+     */
+    counterpart_class_meta_key?: string | null;
+    /** Classes the hover confidence card lists: the top class plus up to N - 1 runner-ups with non-zero confidence. Default 1. */
+    confidence_card_classes?: number;
+    /**
+     * Callback returning extra lines for the hover confidence card, shown as plain text below the
+     * confidences. Return a string (one line), an array of strings (one line each, max 5), or null for none.
+     * Called once per hovered annotation and again after it changes; treat `annotation` as read-only.
+     * Must be synchronous. Errors are logged and show no extra text. Default null.
+     */
+    hover_card_text?: ((annotation: ULabelAnnotation, subtask_key: string) => string | string[] | null) | null;
     /** Fired after a subtask's active class changes, from any writer (API, toolbox click, class keybind). */
     on_active_class_change?: (subtask_key: string, class_id: number) => void;
     /** Fired after the current subtask changes, from any writer (API, tab click, switch keybind). */
@@ -460,6 +478,8 @@ export class ULabel {
         context_menu_annid: string | null;
         /** Last copied/cut annotation envelope, see `copy_annotation_to_clipboard`. */
         clipboard: ULabelClipboardEnvelope | null;
+        /** Last `hover_card_text` result, reused while the same annotation stays hovered. */
+        hover_card_text_cache: { annotation: ULabelAnnotation; subtask_key: string; lines: string[] } | null;
     };
 
     config: Configuration;
@@ -763,17 +783,24 @@ export class ULabel {
     public can_paste_into_subtask(annotation: ULabelAnnotation | object, subtask_key: string): boolean;
     /** Keys of the other subtasks `annotation` can be copied into. */
     public get_copy_target_subtask_keys(annotation: ULabelAnnotation | object, source_key?: string | null): string[];
-    /** Compatible target class matching the source class by id, else by `source_class_name`; null when none. */
-    public match_paste_class_id(annotation: ULabelAnnotation | object, target_key: string, source_class_name?: string | null): number | null;
+    /**
+     * Compatible target class matching the source class by id, else by `source_class_name`; null when none.
+     * `use_meta_override` false ignores `counterpart_class_meta_key` (a paste back into the source subtask). Default true.
+     */
+    public match_paste_class_id(
+        annotation: ULabelAnnotation | object, target_key: string, source_class_name?: string | null, use_meta_override?: boolean,
+    ): number | null;
     /** Matched source class (id, then name), else the target's active class, else the first compatible class. */
-    public resolve_paste_class_id(annotation: ULabelAnnotation | object, target_key: string, source_class_name?: string | null): number | null;
+    public resolve_paste_class_id(
+        annotation: ULabelAnnotation | object, target_key: string, source_class_name?: string | null, use_meta_override?: boolean,
+    ): number | null;
     /** Name of a class in a subtask, or null. */
     public get_class_name(class_id: number, subtask_key: string): string | null;
     /**
      * Insert a copy of `annotation` into `target_key` with a fresh id and stamps.
      * Records a `paste_annotation` action on the target subtask unless `record` is false. Returns the new id, or null.
      * With `source_key`, the copy's `annotation_meta.copied_from` is `{ subtask_key, annotation_id }`.
-     * The `annotation_link_meta_key` entry is dropped from the copy's `annotation_meta`.
+     * The `annotation_link_meta_key` and `counterpart_class_meta_key` entries are dropped from the copy's `annotation_meta`.
      */
     public paste_annotation(
         annotation: ULabelAnnotation | object,
@@ -820,7 +847,18 @@ export class ULabel {
      * With `config.paste_switch_to_target`, switches to the target when anything changed.
      */
     public delete_counterparts(annotation_id: string, source_key: string, target_key: string, erase?: boolean | null): string[];
-    /** Whether a context-menu copy/move/delete-from makes the target the current subtask. */
+    /**
+     * Counterparts in `target_key` that can take the source's class (by id, else by name)
+     * and don't already have it, mapped to the class id each would take.
+     */
+    public get_counterpart_class_changes(annotation_id: string, source_key: string, target_key: string): Record<string, number>;
+    /**
+     * Set the counterparts in a writable `target_key` to the source's class (see `get_counterpart_class_changes`).
+     * One `set_counterparts_class` action on the target's stream. Returns the changed ids.
+     * With `config.paste_switch_to_target`, switches to the target when anything changed.
+     */
+    public set_counterparts_class(annotation_id: string, source_key: string, target_key: string): string[];
+    /** Whether a context-menu copy/move/delete-from/set-class-in makes the target the current subtask. */
     public set_paste_switch_to_target(enabled: boolean): void;
     public get_paste_switch_to_target(): boolean;
     public start_complex_polygon(annotation_id?: string): void;
@@ -860,6 +898,7 @@ export class ULabel {
     public paste_annotation__undo(annotation_id: string): void;
     public move_annotation__undo(annotation_id: string, undo_payload: object): void;
     public delete_counterparts__undo(undo_payload: object): void;
+    public set_counterparts_class__undo(undo_payload: object): void;
     public create_nonspatial_annotation__undo(annotation_id: string): void;
     public start_complex_polygon__undo(annotation_id: string): void;
     public merge_polygon_complex_layer__undo(annotation_id: string, undo_payload: object): void;
@@ -884,6 +923,7 @@ export class ULabel {
     public paste_annotation__redo(annotation_id: string, redo_payload: object): void;
     public move_annotation__redo(annotation_id: string, redo_payload: object): void;
     public delete_counterparts__redo(annotation_id: string, redo_payload: object): void;
+    public set_counterparts_class__redo(annotation_id: string, redo_payload: object): void;
     public finish_modify_annotation__redo(annotation_id: string, redo_payload: object): void;
 
     // Mouse event handlers
@@ -955,6 +995,12 @@ export class ULabel {
             dist_prop: number;
         },
     ): void;
+    /** Show `name` in the centre of the current subtask's class pie (`front` for the nonspatial pie). */
+    public set_id_dialog_class_name(name: string, front?: boolean): void;
+    /** Lines from `config.hover_card_text` for an annotation, cached until the hovered annotation changes. */
+    public get_hover_card_text_lines(annotation: ULabelAnnotation, subtask_key: string): string[];
+    /** Drop the cached `hover_card_text` result so the next hover calls the callback again. */
+    public clear_hover_card_text_cache(): void;
     public handle_id_dialog_click(
         mouse_event: JQuery.TriggeredEvent,
         annotation_id?: string,

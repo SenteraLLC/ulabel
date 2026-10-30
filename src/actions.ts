@@ -15,6 +15,19 @@ import { NONSPATIAL_MODES } from "./annotation";
 
 import { log_message, LogLevel } from "./error_logging";
 
+// Actions whose `annotation_id` is a source annotation in another subtask, not
+// one in the stream that records them
+const FOREIGN_ID_ACTIONS: ULabelActionType[] = ["delete_counterparts", "set_counterparts_class"];
+
+/**
+ * Whether an action's `annotation_id` names an annotation in its own subtask.
+ *
+ * @param action the action
+ */
+export function action_owns_annotation_id(action: { act_type: ULabelActionType }): boolean {
+    return !FOREIGN_ID_ACTIONS.includes(action.act_type);
+}
+
 // ================= Record Actions =================
 
 /**
@@ -36,7 +49,9 @@ export function record_action(
 ) {
     ulabel.set_saved(false);
     const current_subtask = ulabel.subtasks[subtask_key ?? ulabel.get_current_subtask_key()];
-    const annotation = current_subtask.annotations.access[raw_action.annotation_id!];
+    const annotation = action_owns_annotation_id(raw_action) ?
+        current_subtask.annotations.access[raw_action.annotation_id!] :
+        undefined;
 
     // After a new action, you can no longer redo old actions
     if (add_to_action_stream && !is_redo) {
@@ -323,6 +338,9 @@ function trigger_action_listeners(
     is_undo: boolean = false,
     is_redo: boolean = false,
 ) {
+    // The action may change the hovered annotation, so ask the host for its card text again
+    ulabel.clear_hover_card_text_cache();
+
     const action_map: Record<ULabelActionType, {
         action?: (ulabel: ULabel, action: ULabelAction) => void;
         undo?: (ulabel: ULabel, action: ULabelAction, is_undo?: boolean) => void;
@@ -432,6 +450,9 @@ function trigger_action_listeners(
             undo: on_finish_annotation_spatial_modification,
         },
         delete_counterparts: {
+            // Redraws its target subtask itself
+        },
+        set_counterparts_class: {
             // Redraws its target subtask itself
         },
     };
@@ -650,7 +671,7 @@ function on_annotation_revert(
  */
 function is_blocked_by_read_only(ulabel: ULabel, action: ULabelAction): boolean {
     if (ulabel.is_current_subtask_read_only()) return true;
-    return (action.affected ?? []).some(({ subtask_key }) => ulabel.subtasks[subtask_key]?.read_only === true);
+    return (action.affected ?? []).some(({ subtask_key }) => ulabel.subtasks[subtask_key]?.is_read_only() === true);
 }
 
 /**
@@ -726,10 +747,9 @@ export function redo(ulabel: ULabel) {
  * @param action the action
  */
 function get_action_boxes(ulabel: ULabel, action: ULabelAction): ULabelContainingBox[] {
-    // A counterpart action's own id is its source annotation, in another subtask
-    const own = action.act_type === "delete_counterparts" ?
-            [] :
-            [{ annotation_id: action.annotation_id, subtask_key: ulabel.get_current_subtask_key() }];
+    const own = action_owns_annotation_id(action) ?
+            [{ annotation_id: action.annotation_id, subtask_key: ulabel.get_current_subtask_key() }] :
+            [];
     const targets = [...own, ...(action.affected ?? [])];
     const boxes: ULabelContainingBox[] = [];
     for (const { annotation_id, subtask_key } of targets) {
@@ -769,7 +789,7 @@ function undo_action(ulabel: ULabel, action: ULabelAction) {
     const annotation_id = action.annotation_id!;
 
     // For some actions like delete_annotations_in_polygon, the annotation may no longer exist
-    if (annotation_id in annotations) {
+    if (action_owns_annotation_id(action) && annotation_id in annotations) {
         const annotation = annotations[annotation_id];
 
         // Revert the annotation's last edited info
@@ -828,6 +848,9 @@ function undo_action(ulabel: ULabel, action: ULabelAction) {
             break;
         case "delete_counterparts":
             ulabel.delete_counterparts__undo(undo_payload);
+            break;
+        case "set_counterparts_class":
+            ulabel.set_counterparts_class__undo(undo_payload);
             break;
         case "create_nonspatial_annotation":
             ulabel.create_nonspatial_annotation__undo(annotation_id);
@@ -924,6 +947,9 @@ export function redo_action(ulabel: ULabel, action: ULabelAction) {
             break;
         case "delete_counterparts":
             ulabel.delete_counterparts__redo(annotation_id, redo_payload);
+            break;
+        case "set_counterparts_class":
+            ulabel.set_counterparts_class__redo(annotation_id, redo_payload);
             break;
         case "create_nonspatial_annotation":
             ulabel.create_nonspatial_annotation(annotation_id, redo_payload);

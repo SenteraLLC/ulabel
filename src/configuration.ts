@@ -10,6 +10,7 @@ import type {
     AnnoScalingMode,
     BrushOverlapMode,
     ULabelAnnotationChange,
+    ULabelAnnotation,
 } from "../index";
 import {
     ModeSelectionToolboxItem,
@@ -156,6 +157,13 @@ export class Configuration {
     public paste_switch_to_target: boolean = false;
     // Whether the context menu hides Copy to / Move to for subtasks holding a counterpart.
     public hide_copy_to_linked: boolean = false;
+    // `annotation_meta` key whose string value names the target class for Set class in
+    // and copy/paste, replacing the source class id/name match.
+    public counterpart_class_meta_key: string | null = null;
+    // Classes listed on the confidence card: the top class plus up to N - 1 non-zero runner-ups
+    public confidence_card_classes: number = 1;
+    // Callback returning extra plain-text lines for the confidence card; called once per hovered annotation
+    public hover_card_text: ((annotation: ULabelAnnotation, subtask_key: string) => string | string[] | null) | null = null;
     // Configuration for the annotation task itself
     public image_data: ImageData | null = null;
     public allow_soft_id: boolean = false;

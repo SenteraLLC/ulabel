@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented here.
 
+## [0.32.0] - Oct 23rd, 2026
+#### Added
+- **Set class in `<subtask>`** context-menu item: sets an annotation's counterparts in another writable subtask to its class (matched by id, then name). Counterparts that can't take that class, or already have it, are left alone, and the item only shows when at least one would change. New `get_counterpart_class_changes()` and `set_counterparts_class()`, recorded as one undoable `set_counterparts_class` action on the target subtask.
+- `counterpart_class_meta_key` config option (default `null`): an annotation's string value under this `annotation_meta` key names the class it gives its counterparts (Set class in) and copies (Copy to / Move to, paste), replacing the id/name match. Set class in leaves a counterpart alone when no class has that name. Copies drop the entry, and copies/pastes back into the source subtask ignore it.
+- `Details` in the context menu lists every non-zero class confidence, highest first, when more than one class has one.
+- `confidence_card_classes` config option (default `1`): the hover confidence card also lists up to N - 1 runner-up classes with non-zero confidence.
+- `hover_card_text` config callback (default `null`): returns up to 5 plain-text lines that the hover confidence card shows for an annotation. Called once per hovered annotation and again after it changes.
+- `demo/linked-subtasks.html`: demo of linked annotations across Diff, GT and read-only Predictions subtasks. `demo/index.html`: local landing page listing every demo.
+- The class pie shows the hovered class's name in its centre. Long names break only between words, and the text shrinks to fit the circle, down to 8px, then ends in "…".
+- `ULabelSubtask.is_read_only()` / `is_edit_locked()`: the single source for subtask locks. Public API methods check `is_read_only()`; user input checks `is_edit_locked()` (read-only or Show Deprecated). Documented under "Subtask locks" in `api_spec.md`, along with links being direct only.
+
+#### Fixed
+- `delete_counterparts` no longer stamps, reverts or drops history for an unrelated target annotation that happens to share the source annotation's id.
+- `copy_annotation_to_clipboard(id, true)` no longer refuses the cut under Show Deprecated; like the other API methods it is only refused in read-only subtasks. The cut shortcut is still blocked.
 ## [0.31.1] - Oct 22nd, 2026
 #### Changed
 - Simplified ternary syntax into nullish coalescing in several locations

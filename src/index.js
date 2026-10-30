@@ -21,6 +21,7 @@ import {
     filter_points_distance_from_line,
     get_annotation_class_id,
     get_annotation_confidence,
+    get_class_confidences,
     get_point_and_line_annotations,
     mark_deprecated,
     update_distance_from_line_to_each_point,
@@ -29,7 +30,7 @@ import { AnnotationResizeItem, BrushToolboxItem } from "../build/toolbox";
 import { remove_ulabel_listeners } from "../build/listeners";
 import { log_message, LogLevel } from "../build/error_logging";
 import { initialize_annotation_canvases } from "../build/canvas_utils";
-import { record_action, record_finish, record_finish_edit, record_finish_move, undo, redo } from "../build/actions";
+import { record_action, record_finish, record_finish_edit, record_finish_move, undo, redo, action_owns_annotation_id } from "../build/actions";
 import { ULabelMask, is_raw_mask_payload } from "../build/mask_utils";
 import { get_active_class_id, get_local_storage_item, set_local_storage_item } from "../build/utilities";
 import { set_active_class, get_selected_class_id, set_focus_active_class, set_focus_edited, set_focus_deprecated, set_defocused_opacity, can_annotation_be_class } from "../build/active_class";
@@ -798,6 +799,8 @@ export class ULabel {
             context_menu_annid: null,
             // Last copied/cut annotation envelope (see copy_annotation_to_clipboard)
             clipboard: null,
+            // Last config.hover_card_text result: { annotation, subtask_key, lines }
+            hover_card_text_cache: null,
 
             // Global annotation state (subtasks also maintain an annotation state)
             current_subtask: null, // The key of the current subtask
@@ -1168,17 +1171,16 @@ export class ULabel {
      * Programmatic mutations via public API (e.g., set_annotations) are still permitted.
      */
     is_current_subtask_read_only() {
-        return this.get_current_subtask()["read_only"] === true;
+        return this.get_current_subtask().is_read_only();
     }
 
     /**
      * Whether user input may not edit a subtask: read-only, or under deprecated
-     * focus (where only Restore applies). Public API methods are unaffected.
+     * focus (where only Restore applies). Public API methods check read-only only.
      * @param {string|null} subtask_key defaults to the current subtask
      */
     is_subtask_edit_locked(subtask_key = null) {
-        const subtask = this.subtasks[subtask_key ?? this.get_current_subtask_key()];
-        return subtask?.["read_only"] === true || subtask?.["focus_deprecated"] === true;
+        return this.subtasks[subtask_key ?? this.get_current_subtask_key()]?.is_edit_locked() === true;
     }
 
     /**
@@ -2899,7 +2901,7 @@ export class ULabel {
         }
         const annotation_id = annotation_object["id"];
         const element_id = this.get_nonspatial_annotation_element_id(annotation_id);
-        const is_read_only = this.subtasks[subtask]["read_only"] === true;
+        const is_read_only = this.subtasks[subtask].is_read_only();
         const note_readonly_attr = is_read_only ? " readonly" : "";
         const reclf_button = is_read_only ?
             "" :
@@ -4096,9 +4098,12 @@ export class ULabel {
     // Forget every recorded action about an annotation that no longer exists in
     // a subtask (default: the current one). Delete-polygon actions survive since
     // they cover many annotations; their payloads skip missing ids on undo.
+    // Counterpart actions survive since their id names another subtask's annotation.
     remove_recorded_events_for_annotation(annotation_id, subtask_key = null) {
         const actions = this.subtasks[subtask_key ?? this.get_current_subtask_key()]["actions"];
-        const keep = (action) => action.annotation_id !== annotation_id || action.act_type === "delete_annotations_in_polygon";
+        const keep = (action) => action.annotation_id !== annotation_id ||
+            action.act_type === "delete_annotations_in_polygon" ||
+            !action_owns_annotation_id(action);
         actions["stream"] = actions["stream"].filter(keep);
         actions["undone_stack"] = actions["undone_stack"].filter(keep);
     }
@@ -4261,6 +4266,7 @@ export class ULabel {
     hide_global_edit_suggestion() {
         $(".global_edit_suggestion").css("display", "none");
         this.set_hovered_annotation(null);
+        this.clear_hover_card_text_cache();
     }
 
     /**
@@ -4348,6 +4354,7 @@ export class ULabel {
         // Configure the dialog to show the current information for this ann
         this.set_id_dialog_payload_to_init(active_ann);
         this.update_id_dialog_display(nonspatial);
+        this.set_id_dialog_class_name("", nonspatial);
 
         // Show the dialog
         idd.css("display", "block");
@@ -4407,7 +4414,7 @@ export class ULabel {
      * @param {() => void} fn the undo/redo
      */
     run_on_edit_subtask(stack, fn) {
-        const writable = Object.keys(this.subtasks).filter((key) => this.subtasks[key].read_only !== true);
+        const writable = Object.keys(this.subtasks).filter((key) => !this.subtasks[key].is_read_only());
         if (!this.is_current_subtask_read_only() || writable.length !== 1) return fn();
         const current_key = this.get_current_subtask_key();
         const edit_key = writable[0];
@@ -4556,7 +4563,7 @@ export class ULabel {
      */
     can_paste_into_subtask(annotation, subtask_key) {
         const subtask = this.subtasks[subtask_key];
-        if (subtask === undefined || subtask["read_only"] === true) return false;
+        if (subtask === undefined || subtask.is_read_only()) return false;
         if (annotation == null) return false;
         const spatial_type = annotation["spatial_type"];
         if (NONSPATIAL_MODES.includes(spatial_type) || DELETE_MODES.includes(spatial_type)) return false;
@@ -4579,22 +4586,37 @@ export class ULabel {
 
     /**
      * Compatible class in the target that matches the source class by id, or
-     * failing that by name. Null when the source class has no counterpart.
+     * failing that by name. A non-empty string under the source's
+     * `annotation_meta[config.counterpart_class_meta_key]` replaces both: only
+     * a class with that name matches. Null when nothing matches.
      *
      * @param {object} annotation
      * @param {string} target_key
      * @param {string|null} source_class_name name of the source class, if known
+     * @param {boolean} use_meta_override false ignores the meta override (a paste back into the source subtask)
      * @returns {number|null}
      */
-    match_paste_class_id(annotation, target_key, source_class_name = null) {
+    match_paste_class_id(annotation, target_key, source_class_name = null, use_meta_override = true) {
         const compatible = this._get_compatible_class_ids(annotation, target_key);
-        const source_class_id = Number(get_annotation_class_id(annotation));
-        if (compatible.includes(source_class_id)) return source_class_id;
-        if (source_class_name == null) return null;
+        const override_name = use_meta_override ? this._get_counterpart_class_name(annotation) : null;
+        if (override_name === null) {
+            const source_class_id = Number(get_annotation_class_id(annotation));
+            if (compatible.includes(source_class_id)) return source_class_id;
+        }
+        const class_name = override_name ?? source_class_name;
+        if (class_name == null) return null;
         const by_name = this.subtasks[target_key]["class_defs"].find(
-            (def) => def["name"] === source_class_name && compatible.includes(def["id"]),
+            (def) => def["name"] === class_name && compatible.includes(def["id"]),
         );
         return by_name == null ? null : by_name["id"];
+    }
+
+    // Non-empty string under `config.counterpart_class_meta_key`, or null
+    _get_counterpart_class_name(annotation) {
+        const key = this.config["counterpart_class_meta_key"];
+        if (key == null) return null;
+        const value = annotation?.["annotation_meta"]?.[key];
+        return typeof value === "string" && value !== "" ? value : null;
     }
 
     /**
@@ -4605,12 +4627,13 @@ export class ULabel {
      * @param {object} annotation
      * @param {string} target_key
      * @param {string|null} source_class_name name of the source class, if known
+     * @param {boolean} use_meta_override see `match_paste_class_id`
      * @returns {number|null} null when no class in the target fits
      */
-    resolve_paste_class_id(annotation, target_key, source_class_name = null) {
+    resolve_paste_class_id(annotation, target_key, source_class_name = null, use_meta_override = true) {
         const compatible = this._get_compatible_class_ids(annotation, target_key);
         if (compatible.length === 0) return null;
-        const matched = this.match_paste_class_id(annotation, target_key, source_class_name);
+        const matched = this.match_paste_class_id(annotation, target_key, source_class_name, use_meta_override);
         if (matched !== null) return matched;
         const active_class_id = get_active_class_id(this, target_key);
         if (active_class_id !== undefined && compatible.includes(active_class_id)) return active_class_id;
@@ -4633,7 +4656,7 @@ export class ULabel {
      * Insert a copy of an annotation into a subtask. The copy gets a fresh id,
      * fresh stamps, no deprecation and a class payload for `class_id`; every
      * other field carries over, except the `config.annotation_link_meta_key`
-     * entry of `annotation_meta`. Records a `paste_annotation` action on the
+     * and `config.counterpart_class_meta_key` entries of `annotation_meta`. Records a `paste_annotation` action on the
      * target subtask's stream.
      *
      * @param {object} annotation source annotation (from any subtask or a clipboard payload)
@@ -4649,7 +4672,7 @@ export class ULabel {
             log_message(`Cannot paste a ${annotation?.["spatial_type"]} annotation into subtask ${target_key}`, LogLevel.WARNING, true);
             return null;
         }
-        class_id ??= this.resolve_paste_class_id(annotation, target_key);
+        class_id ??= this.resolve_paste_class_id(annotation, target_key, null, target_key !== source_key);
         if (!this._get_compatible_class_ids(annotation, target_key).includes(class_id)) {
             log_message(`Class ${class_id} in subtask ${target_key} cannot take a ${annotation["spatial_type"]} annotation`, LogLevel.WARNING, true);
             return null;
@@ -4669,9 +4692,11 @@ export class ULabel {
         copy["last_edited_at"] = now;
         copy["deprecated"] = false;
         copy["deprecated_by"] = { human: false };
-        const link_key = this.config["annotation_link_meta_key"];
-        if (link_key != null && typeof copy["annotation_meta"] === "object" && copy["annotation_meta"] !== null) {
-            delete copy["annotation_meta"][link_key];
+        const copy_meta = copy["annotation_meta"];
+        if (typeof copy_meta === "object" && copy_meta !== null) {
+            for (const key of [this.config["annotation_link_meta_key"], this.config["counterpart_class_meta_key"]]) {
+                if (key != null) delete copy_meta[key];
+            }
         }
         if (source_key !== null) {
             // Per-subtask annotation_meta may be a string; only an object can carry the stamp
@@ -4844,9 +4869,10 @@ export class ULabel {
         let offer_choice = false;
         if (class_id === null && this.can_paste_into_subtask(annotation, target_key)) {
             const source_class_name = this.get_class_name(Number(get_annotation_class_id(annotation)), source_key);
-            const matched = this.match_paste_class_id(annotation, target_key, source_class_name);
+            const use_override = target_key !== source_key;
+            const matched = this.match_paste_class_id(annotation, target_key, source_class_name, use_override);
             offer_choice = choose_class && this.config["paste_class_choice"] && matched === null;
-            class_id = this.resolve_paste_class_id(annotation, target_key, source_class_name);
+            class_id = this.resolve_paste_class_id(annotation, target_key, source_class_name, use_override);
         }
         const new_id = this.paste_annotation(annotation, target_key, class_id, offset, !move, source_key);
         if (new_id === null) return null;
@@ -4953,7 +4979,7 @@ export class ULabel {
             log_message(`Annotation ${annotation_id} or subtask ${target_key} not found`, LogLevel.WARNING, true);
             return [];
         }
-        if (target["read_only"] === true) {
+        if (target.is_read_only()) {
             log_message(`Subtask ${target_key} is read-only; nothing removed`, LogLevel.WARNING, true);
             return [];
         }
@@ -5050,6 +5076,130 @@ export class ULabel {
         const subtask_key = this.get_current_subtask_key();
         this._apply_counterpart_removal(redo_payload.after, subtask_key, true);
         this._record_delete_counterparts(annotation_id, subtask_key, redo_payload, true);
+    }
+
+    /**
+     * Counterparts (see `find_counterparts`) in `target_key` that can take the
+     * source annotation's class (matched by id, else by name; a
+     * `config.counterpart_class_meta_key` value on the source replaces both,
+     * matching by that name only) and don't already have it, with the class
+     * each would take.
+     *
+     * @param {string} annotation_id
+     * @param {string} source_key subtask the annotation lives in
+     * @param {string} target_key subtask to search
+     * @returns {Record<string, number>} counterpart id -> class id
+     */
+    get_counterpart_class_changes(annotation_id, source_key, target_key) {
+        const source = this.subtasks[source_key]?.["annotations"]["access"][annotation_id];
+        const target = this.subtasks[target_key];
+        if (source == null || target == null) return {};
+        const override_name = this._get_counterpart_class_name(source);
+        const source_class_id = override_name === null ? Number(get_annotation_class_id(source)) : null;
+        const source_class_name = override_name ?? this.get_class_name(source_class_id, source_key);
+        const changes = {};
+        for (const id of this.find_counterparts(annotation_id, source_key, target_key)) {
+            const counterpart = target["annotations"]["access"][id];
+            const compatible = this._get_compatible_class_ids(counterpart, target_key);
+            let class_id = source_class_id !== null && compatible.includes(source_class_id) ? source_class_id : null;
+            class_id ??= target["class_defs"].find(
+                (def) => def["name"] === source_class_name && compatible.includes(def["id"]),
+            )?.["id"] ?? null;
+            if (class_id === null || Number(get_annotation_class_id(counterpart)) === class_id) continue;
+            changes[id] = class_id;
+        }
+        return changes;
+    }
+
+    /**
+     * Set the class of an annotation's counterparts in a writable subtask to
+     * the source's class (see `get_counterpart_class_changes`; counterparts
+     * that can't take it are left alone). Recorded as one
+     * `set_counterparts_class` action on the target's stream.
+     * `config.paste_switch_to_target` then switches to the target.
+     *
+     * @param {string} annotation_id
+     * @param {string} source_key subtask the annotation lives in
+     * @param {string} target_key subtask whose counterparts change
+     * @returns {string[]} ids of the changed counterparts
+     */
+    set_counterparts_class(annotation_id, source_key, target_key) {
+        const target = this.subtasks[target_key];
+        if (this.subtasks[source_key]?.["annotations"]["access"][annotation_id] == null || target == null) {
+            log_message(`Annotation ${annotation_id} or subtask ${target_key} not found`, LogLevel.WARNING, true);
+            return [];
+        }
+        if (target.is_read_only()) {
+            log_message(`Subtask ${target_key} is read-only; nothing changed`, LogLevel.WARNING, true);
+            return [];
+        }
+        const changes = this.get_counterpart_class_changes(annotation_id, source_key, target_key);
+        const changed_ids = Object.keys(changes);
+        if (changed_ids.length === 0) {
+            log_message(`No class to change in subtask ${target_key}`, LogLevel.INFO, true);
+            return [];
+        }
+        const before = {};
+        const after = {};
+        for (const id of changed_ids) {
+            before[id] = target["annotations"]["access"][id]["classification_payloads"];
+            after[id] = target["class_ids"].map((cid) => ({
+                class_id: cid,
+                confidence: cid === changes[id] ? 1.0 : 0.0,
+            }));
+        }
+        this._apply_counterpart_classes(after, target_key);
+        this._record_set_counterparts_class(annotation_id, target_key, { before, after }, false);
+        if (this.config["paste_switch_to_target"] && target_key !== this.get_current_subtask_key()) {
+            this.set_subtask(target_key);
+        }
+        return changed_ids;
+    }
+
+    _record_set_counterparts_class(annotation_id, target_key, payload, is_redo) {
+        record_action(this, {
+            act_type: "set_counterparts_class",
+            annotation_id: annotation_id,
+            frame: this.state["current_frame"],
+            undo_payload: payload,
+            redo_payload: payload,
+            affected: Object.keys(payload.after).map((id) => ({ annotation_id: id, subtask_key: target_key })),
+        }, is_redo, true, target_key);
+    }
+
+    // Set classification payloads from a `set_counterparts_class` payload half, then redraw
+    _apply_counterpart_classes(payloads, subtask_key) {
+        const access = this.subtasks[subtask_key]["annotations"]["access"];
+        const ids = Object.keys(payloads).filter((id) => access[id] !== undefined);
+        for (const id of ids) {
+            access[id]["classification_payloads"] = JSON.parse(JSON.stringify(payloads[id]));
+        }
+        this.redraw_multiple_spatial_annotations(ids, subtask_key);
+        if (ids.some((id) => access[id]["spatial_type"] === "polyline")) {
+            this.update_filter_distance(null, false, true);
+        }
+        this.toolbox.redraw_update_items(this);
+    }
+
+    /**
+     * Undo `set_counterparts_class`: restore the classes in the current subtask.
+     *
+     * @param {object} undo_payload `{ before, after }`
+     */
+    set_counterparts_class__undo(undo_payload) {
+        this._apply_counterpart_classes(undo_payload.before, this.get_current_subtask_key());
+    }
+
+    /**
+     * Redo `set_counterparts_class` in the current subtask.
+     *
+     * @param {string} annotation_id source annotation
+     * @param {object} redo_payload `{ before, after }`
+     */
+    set_counterparts_class__redo(annotation_id, redo_payload) {
+        const subtask_key = this.get_current_subtask_key();
+        this._apply_counterpart_classes(redo_payload.after, subtask_key);
+        this._record_set_counterparts_class(annotation_id, subtask_key, redo_payload, true);
     }
 
     /**
@@ -5157,7 +5307,7 @@ export class ULabel {
         if (annotation == null || annotation["deprecated"]) return null;
         const spatial_type = annotation["spatial_type"];
         if (NONSPATIAL_MODES.includes(spatial_type) || DELETE_MODES.includes(spatial_type)) return null;
-        if (cut && this.is_subtask_edit_locked()) return null;
+        if (cut && this.is_current_subtask_read_only()) return null;
 
         const copy = JSON.parse(JSON.stringify(annotation));
         if (spatial_type === "bitmask") {
@@ -5224,8 +5374,8 @@ export class ULabel {
         const steps = (envelope["paste_counts"][target_key] ?? 0) + (same_subtask ? 1 : 0);
         const offset = [PASTE_OFFSET_PX * steps, PASTE_OFFSET_PX * steps];
         const source_class_name = envelope["source_class_name"] ?? null;
-        const matched = this.match_paste_class_id(envelope["annotation"], target_key, source_class_name);
-        const class_id = this.resolve_paste_class_id(envelope["annotation"], target_key, source_class_name);
+        const matched = this.match_paste_class_id(envelope["annotation"], target_key, source_class_name, !same_subtask);
+        const class_id = this.resolve_paste_class_id(envelope["annotation"], target_key, source_class_name, !same_subtask);
         const new_id = this.paste_annotation(envelope["annotation"], target_key, class_id, offset, true, envelope["source_subtask_key"] ?? null);
         if (new_id === null) return null;
         envelope["paste_counts"][target_key] = (envelope["paste_counts"][target_key] ?? 0) + 1;
@@ -5363,7 +5513,7 @@ export class ULabel {
             for (let i = stream.length - 1; i >= 0; i--) {
                 const action = stream[i];
                 if (action["stamped_at"] !== stamp) continue;
-                if (key === subtask_key && action["annotation_id"] === annotation_id) {
+                if (key === subtask_key && action["annotation_id"] === annotation_id && action_owns_annotation_id(action)) {
                     return { at: action["prev_timestamp"], by: action["prev_user"] };
                 }
                 const idx = (action["affected"] ?? []).findIndex(
@@ -6849,7 +6999,7 @@ export class ULabel {
             // Read-only masks act as barriers: clip the active mask around them instead of
             // carving them, preserving both the read-only contract and overwrite's mutual
             // exclusion invariant on export.
-            if (this.subtasks[st]["read_only"]) {
+            if (this.subtasks[st].is_read_only()) {
                 active_mask.subtract_intersection_in_box(delta, other_mask, box);
                 continue;
             }
@@ -8366,6 +8516,34 @@ export class ULabel {
             // TODO This assumes no pins
             this.set_id_dialog_payload_nopin(pos_evt.class_ind, pos_evt.dist_prop);
             this.update_id_dialog_display(front);
+            const class_id = current_subtask["class_ids"][pos_evt.class_ind];
+            this.set_id_dialog_class_name(this.get_class_name(class_id, this.state.current_subtask) ?? "", front);
+        }
+    }
+
+    // Show `name` in the centre of the current subtask's id dialog
+    set_id_dialog_class_name(name, front = false) {
+        const state = this.get_current_subtask()["state"];
+        const label = $(`#${front ? state["idd_id_front"] : state["idd_id"]} .idd-class-name`)[0];
+        // The shown text may be truncated, so compare against the full name
+        if (label === undefined || label.dataset.name === name) return;
+        label.dataset.name = name;
+        label.textContent = name;
+        const overflows = () => label.scrollWidth > label.clientWidth || label.scrollHeight > label.clientHeight;
+
+        // Lines only break between words, so shrink the font until the longest word and all lines fit
+        let font_size = 11;
+        label.style.fontSize = `${font_size}px`;
+        while (font_size > 8 && overflows()) {
+            font_size -= 0.5;
+            label.style.fontSize = `${font_size}px`;
+        }
+
+        // Still too long at the smallest readable size: trim characters and end with an ellipsis
+        let shown = name;
+        while (shown.length > 1 && overflows()) {
+            shown = shown.slice(0, -1);
+            label.textContent = `${shown.trimEnd()}…`;
         }
     }
 
@@ -8532,6 +8710,52 @@ export class ULabel {
         const global_id = `global_annotation_confidence__${subtask_key}`;
         $(`#${global_id} .annotation-confidence-classname`).text(class_name);
         $(`#${global_id} .annotation-confidence-value`).text(`Confidence: ${confidence.toFixed(2)}`);
+
+        // Non-zero runner-ups, up to config.confidence_card_classes - 1
+        const extra = Math.max(0, Math.floor(this.config["confidence_card_classes"]) - 1);
+        const runner_ups = get_class_confidences(active_annotation, current_subtask["class_defs"])
+            .filter((entry) => String(entry.class_id) !== String(best_class_id))
+            .slice(0, extra);
+        const others = $(`#${global_id} .annotation-confidence-others`);
+        others.empty();
+        for (const entry of runner_ups) {
+            others.append($("<div>").text(`${entry.name}: ${entry.confidence.toFixed(2)}`));
+        }
+        others.css("display", runner_ups.length > 0 ? "block" : "none");
+
+        const host_lines = this.get_hover_card_text_lines(active_annotation, subtask_key);
+        const host_text = $(`#${global_id} .annotation-confidence-host-text`);
+        host_text.empty();
+        for (const line of host_lines) {
+            host_text.append($("<div>").text(line));
+        }
+        host_text.css("display", host_lines.length > 0 ? "block" : "none");
+    }
+
+    get_hover_card_text_lines(annotation, subtask_key) {
+        const callback = this.config["hover_card_text"];
+        if (typeof callback !== "function") return [];
+        // Keyed on the object, not the id: set_annotations swaps in new objects under the same ids
+        const cache = this.state["hover_card_text_cache"];
+        if (cache && cache.annotation === annotation && cache.subtask_key === subtask_key) return cache.lines;
+
+        let lines = [];
+        try {
+            const result = callback(annotation, subtask_key);
+            lines = (Array.isArray(result) ? result : [result])
+                .filter((line) => line !== null && line !== undefined && line !== "")
+                .map(String)
+                .slice(0, 5);
+        } catch (error) {
+            // WARNING, not ERROR: log_message throws on ERROR, which would break hovering
+            log_message(`hover_card_text failed for annotation ${annotation["id"]}: ${error}`, LogLevel.WARNING, true);
+        }
+        this.state["hover_card_text_cache"] = { annotation, subtask_key, lines };
+        return lines;
+    }
+
+    clear_hover_card_text_cache() {
+        this.state["hover_card_text_cache"] = null;
     }
 
     // ================= Viewer/Annotation Interaction Handlers  =================

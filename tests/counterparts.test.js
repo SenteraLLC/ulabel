@@ -276,6 +276,248 @@ describe("delete_counterparts", () => {
     });
 });
 
+describe("set_counterparts_class", () => {
+    function weed(annotation) {
+        annotation.classification_payloads = [{ class_id: 2, confidence: 1.0 }];
+        return annotation;
+    }
+
+    test("sets differing counterparts to the source class as one undoable action on the target stream", () => {
+        const on_annotation_change = jest.fn();
+        const ulabel = make_ulabel({
+            gt: [make_bbox("g1", { hash: "h1" }), weed(make_bbox("g2", { hash: "h1" })), make_bbox("g3", {})],
+            diff: [weed(make_bbox("d1", { hash: "h1" }))],
+        }, { on_annotation_change });
+
+        expect(ulabel.get_counterpart_class_changes("d1", "diff", "gt")).toEqual({ g1: 2 });
+        expect(ulabel.set_counterparts_class("d1", "diff", "gt")).toEqual(["g1"]);
+
+        expect(gt(ulabel, "g1").classification_payloads).toEqual([{ class_id: 1, confidence: 0 }, { class_id: 2, confidence: 1 }]);
+        expect(gt(ulabel, "g3").classification_payloads).toEqual([{ class_id: 1, confidence: 1 }, { class_id: 2, confidence: 0 }]);
+        expect(action_types(ulabel, "gt")).toEqual(["set_counterparts_class"]);
+        expect(action_types(ulabel, "diff")).toEqual([]);
+        expect(ulabel.redraw_multiple_spatial_annotations).toHaveBeenLastCalledWith(["g1"], "gt");
+        expect(on_annotation_change).toHaveBeenLastCalledWith(expect.objectContaining({
+            subtask_key: "gt",
+            annotation_id: "d1",
+            act_type: "set_counterparts_class",
+            kind: "do",
+            affected: [{ annotation_id: "g1", subtask_key: "gt" }],
+        }));
+        expect(gt(ulabel, "g1").last_edited_by).toBe("test_user");
+        expect(ulabel.get_counterpart_class_changes("d1", "diff", "gt")).toEqual({});
+
+        ulabel.state.current_subtask = "gt";
+        ulabel.undo();
+        expect(gt(ulabel, "g1").classification_payloads).toEqual([{ class_id: 1, confidence: 1 }, { class_id: 2, confidence: 0 }]);
+        expect(action_types(ulabel, "gt")).toEqual([]);
+
+        ulabel.redo();
+        expect(gt(ulabel, "g1").classification_payloads).toEqual([{ class_id: 1, confidence: 0 }, { class_id: 2, confidence: 1 }]);
+        expect(action_types(ulabel, "gt")).toEqual(["set_counterparts_class"]);
+        expect(on_annotation_change).toHaveBeenLastCalledWith(expect.objectContaining({ kind: "redo", subtask_key: "gt" }));
+    });
+
+    test("matches by name when ids differ and leaves counterparts that can't take the class alone", () => {
+        const ulabel = make_ulabel({}, {
+            subtasks: {
+                gt: {
+                    display_name: "GT",
+                    classes: [
+                        { name: "Crop", id: 1, color: "green" },
+                        { name: "Weed", id: 7, color: "red", allowed_modes: ["bbox"] },
+                    ],
+                    allowed_modes: ["bbox", "bitmask"],
+                    resume_from: [make_bbox("g1", { hash: "h1" }), make_bitmask("g2", 0, 10, { hash: "h1" })],
+                },
+                diff: {
+                    display_name: "Diff",
+                    classes,
+                    allowed_modes: ["bbox", "bitmask"],
+                    read_only: true,
+                    resume_from: [weed(make_bbox("d1", { hash: "h1" }))],
+                },
+            },
+        });
+
+        expect(ulabel.get_counterpart_class_changes("d1", "diff", "gt")).toEqual({ g1: 7 });
+        expect(ulabel.set_counterparts_class("d1", "diff", "gt")).toEqual(["g1"]);
+        expect(gt(ulabel, "g1").classification_payloads).toEqual([{ class_id: 1, confidence: 0 }, { class_id: 7, confidence: 1 }]);
+        expect(gt(ulabel, "g2").classification_payloads).toEqual([{ class_id: 1, confidence: 1 }, { class_id: 7, confidence: 0 }]);
+    });
+
+    test("does nothing for a read-only target or when every counterpart already matches", () => {
+        const ulabel = make_ulabel({
+            ro: [make_bbox("r1", { hash: "h1" })],
+            gt: [weed(make_bbox("g1", { hash: "h1" }))],
+            diff: [weed(make_bbox("d1", { hash: "h1" }))],
+        });
+
+        expect(ulabel.set_counterparts_class("g1", "gt", "ro")).toEqual([]);
+        expect(ulabel.subtasks.ro.annotations.access.r1.classification_payloads).toEqual([{ class_id: 1, confidence: 1 }, { class_id: 2, confidence: 0 }]);
+        expect(action_types(ulabel, "ro")).toEqual([]);
+        expect(ulabel.set_counterparts_class("d1", "diff", "gt")).toEqual([]);
+        expect(action_types(ulabel, "gt")).toEqual([]);
+    });
+
+    test("paste_switch_to_target switches to the target", () => {
+        const ulabel = make_ulabel({
+            gt: [make_bbox("g1", { hash: "h1" })],
+            diff: [weed(make_bbox("d1", { hash: "h1" }))],
+        }, { paste_switch_to_target: true });
+        ulabel.set_subtask = jest.fn();
+
+        ulabel.set_counterparts_class("d1", "diff", "gt");
+        expect(ulabel.set_subtask).toHaveBeenCalledWith("gt");
+    });
+
+    describe("counterpart_class_meta_key", () => {
+        // Diff classes share ids with gt but never names, so only the meta value can match by name
+        function make_diff_ulabel(gt, diff) {
+            const modes = ["bbox"];
+            return make_ulabel({}, {
+                counterpart_class_meta_key: "pred_class_name",
+                subtasks: {
+                    gt: { display_name: "GT", classes, allowed_modes: modes, resume_from: gt },
+                    diff: {
+                        display_name: "Diff",
+                        classes: [{ name: "TP", id: 1, color: "blue" }, { name: "FP", id: 2, color: "orange" }],
+                        allowed_modes: modes,
+                        read_only: true,
+                        resume_from: diff,
+                    },
+                },
+            });
+        }
+
+        test("the meta value names the target class, skipping the id match", () => {
+            const ulabel = make_diff_ulabel(
+                [make_bbox("g1", { hash: "h1" })],
+                [make_bbox("d1", { hash: "h1", pred_class_name: "Weed" })],
+            );
+
+            expect(ulabel.get_counterpart_class_changes("d1", "diff", "gt")).toEqual({ g1: 2 });
+            expect(ulabel.set_counterparts_class("d1", "diff", "gt")).toEqual(["g1"]);
+            expect(gt(ulabel, "g1").classification_payloads).toEqual([{ class_id: 1, confidence: 0 }, { class_id: 2, confidence: 1 }]);
+        });
+
+        test("an unknown name changes nothing; a missing or empty value uses the id/name match", () => {
+            const ulabel = make_diff_ulabel(
+                [weed(make_bbox("g1", { hash: "h1" })), weed(make_bbox("g2", { hash: "h2" })), weed(make_bbox("g3", { hash: "h3" }))],
+                [
+                    make_bbox("d1", { hash: "h1", pred_class_name: "Nope" }),
+                    make_bbox("d2", { hash: "h2" }),
+                    make_bbox("d3", { hash: "h3", pred_class_name: "" }),
+                ],
+            );
+
+            expect(ulabel.get_counterpart_class_changes("d1", "diff", "gt")).toEqual({});
+            expect(ulabel.get_counterpart_class_changes("d2", "diff", "gt")).toEqual({ g2: 1 });
+            expect(ulabel.get_counterpart_class_changes("d3", "diff", "gt")).toEqual({ g3: 1 });
+        });
+
+        test("copies take the class named by the meta value and drop it", () => {
+            const ulabel = make_diff_ulabel([], [make_bbox("d1", { pred_class_name: "Weed" })]);
+
+            const copy_id = ulabel.copy_annotation("d1", "gt");
+            expect(gt(ulabel, copy_id).classification_payloads).toEqual([{ class_id: 1, confidence: 0 }, { class_id: 2, confidence: 1 }]);
+            expect(gt(ulabel, copy_id).annotation_meta).toEqual({ copied_from: { subtask_key: "diff", annotation_id: "d1" } });
+            expect(ulabel.subtasks.diff.annotations.access.d1.annotation_meta.pred_class_name).toBe("Weed");
+            expect(ulabel.match_paste_class_id(ulabel.subtasks.diff.annotations.access.d1, "gt", "TP")).toBe(2);
+        });
+
+        test("a paste back into the source subtask keeps its class", () => {
+            const ulabel = make_ulabel({
+                gt: [make_bbox("g1", { pred_class_name: "Weed" }), make_bbox("g2", { pred_class_name: "Nope" })],
+            }, { counterpart_class_meta_key: "pred_class_name", paste_class_choice: true });
+            ulabel.state.current_subtask = "gt";
+            ulabel._offer_pasted_class_choice = jest.fn();
+
+            for (const id of ["g1", "g2"]) {
+                ulabel.copy_annotation_to_clipboard(id);
+                const copy_id = ulabel.paste_annotation_from_clipboard();
+                expect(gt(ulabel, copy_id).classification_payloads).toEqual([{ class_id: 1, confidence: 1 }, { class_id: 2, confidence: 0 }]);
+                const dup_id = ulabel.copy_annotation_to_subtask(id, "gt", "gt");
+                expect(gt(ulabel, dup_id).classification_payloads).toEqual([{ class_id: 1, confidence: 1 }, { class_id: 2, confidence: 0 }]);
+            }
+            expect(ulabel._offer_pasted_class_choice).not.toHaveBeenCalled();
+        });
+    });
+
+    test.each(["set_counterparts_class", "delete_counterparts"])(
+        "%s leaves a target annotation that only shares the source id alone through do, undo and redo",
+        (method) => {
+            const ulabel = make_ulabel({
+                gt: [make_bbox("g1", { hash: "h1" }), make_bbox("d1", { hash: "unrelated" })],
+                diff: [weed(make_bbox("d1", { hash: "h1" }))],
+            });
+            const unrelated = () => gt(ulabel, "d1");
+            const stamp = () => [unrelated().last_edited_at, unrelated().last_edited_by];
+            const before = stamp();
+
+            expect(ulabel[method]("d1", "diff", "gt")).toEqual(["g1"]);
+            expect(gt(ulabel, "g1").last_edited_by).toBe("test_user");
+            expect(stamp()).toEqual(before);
+
+            ulabel.state.current_subtask = "gt";
+            ulabel.undo();
+            expect(stamp()).toEqual(before);
+            ulabel.redo();
+            expect(stamp()).toEqual(before);
+            expect(unrelated().deprecated).toBe(false);
+
+            ulabel.remove_recorded_events_for_annotation("d1", "gt");
+            expect(action_types(ulabel, "gt")).toEqual([method]);
+        },
+    );
+});
+
+describe("subtask locks", () => {
+    function weed(annotation) {
+        annotation.classification_payloads = [{ class_id: 2, confidence: 1.0 }];
+        return annotation;
+    }
+
+    test("is_read_only / is_edit_locked", () => {
+        const ulabel = make_ulabel();
+        expect(ulabel.subtasks.diff.is_read_only()).toBe(true);
+        expect(ulabel.subtasks.diff.is_edit_locked()).toBe(true);
+        expect(ulabel.subtasks.gt.is_read_only()).toBe(false);
+        expect(ulabel.subtasks.gt.is_edit_locked()).toBe(false);
+
+        ulabel.subtasks.gt.focus_deprecated = true;
+        expect(ulabel.subtasks.gt.is_read_only()).toBe(false);
+        expect(ulabel.subtasks.gt.is_edit_locked()).toBe(true);
+        expect(ulabel.is_subtask_edit_locked("gt")).toBe(true);
+    });
+
+    test("API methods ignore focus_deprecated on the target", () => {
+        const ulabel = make_ulabel({
+            gt: [make_bbox("g1", { hash: "h1" }), make_bbox("g2", { hash: "h2" })],
+            diff: [weed(make_bbox("d1", { hash: "h1" })), make_bbox("d2", { hash: "h2" }), make_bbox("d3", {})],
+        });
+        ulabel.subtasks.gt.focus_deprecated = true;
+
+        expect(ulabel.set_counterparts_class("d1", "diff", "gt")).toEqual(["g1"]);
+        expect(ulabel.delete_counterparts("d2", "diff", "gt")).toEqual(["g2"]);
+        expect(ulabel.copy_annotation_to_subtask("d3", "diff", "gt")).not.toBeNull();
+    });
+
+    test("clipboard cut is refused only by read_only", () => {
+        const ulabel = make_ulabel({ gt: [make_bbox("g1"), make_bbox("g2")] });
+        ulabel.state.current_subtask = "gt";
+        ulabel.subtasks.gt.focus_deprecated = true;
+
+        expect(ulabel.copy_annotation_to_clipboard("g1", true)).not.toBeNull();
+        expect(gt(ulabel, "g1").deprecated).toBe(true);
+
+        ulabel.subtasks.gt.focus_deprecated = false;
+        ulabel.subtasks.gt.read_only = true;
+        expect(ulabel.copy_annotation_to_clipboard("g2", true)).toBeNull();
+        expect(gt(ulabel, "g2").deprecated).toBe(false);
+    });
+});
+
 describe("fly to undo/redo changes", () => {
     test("passes where the undo/redo left its annotations, or where they were if none remain", () => {
         const ulabel = make_ulabel({

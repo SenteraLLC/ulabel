@@ -10,7 +10,7 @@
 
 import type { ULabel } from "../index";
 import { ULabelAnnotation } from "./annotation";
-import { get_annotation_class_id } from "./annotation_operators";
+import { get_annotation_class_id, get_class_confidences } from "./annotation_operators";
 
 const MENU_CLASS = "ulabel-context-menu";
 const VIEWPORT_MARGIN = 4;
@@ -106,6 +106,10 @@ function render_details(
     const class_def = subtask.class_defs.find((cd) => cd.id === class_id);
     add_detail_row(menu, "id", annotation.id);
     add_detail_row(menu, "class", class_def != null ? `${class_def.name} (${class_id})` : String(class_id));
+    const confidences = get_class_confidences(annotation, subtask.class_defs);
+    if (confidences.length > 1) {
+        add_detail_row(menu, "confidences", confidences.map((c) => `${c.name} ${c.confidence.toFixed(2)}`).join(", "));
+    }
     add_detail_row(menu, "type", annotation.spatial_type);
     add_detail_row(menu, "edited by", annotation.last_edited_by);
     add_detail_row(menu, "edited at", annotation.last_edited_at);
@@ -124,7 +128,7 @@ function render_details(
 }
 
 /**
- * "Copy to" / "Move to" / "Delete from" entry. One eligible subtask collapses to a flat
+ * "Copy to" / "Move to" / "Set class in" / "Delete from" entry. One eligible subtask collapses to a flat
  * "<label> <name>" item; several open an in-place list of subtask names. A `count_of`
  * above 1 is shown as "<verb> <n> <rest> <name>" or "<name> (<n>)".
  */
@@ -162,7 +166,9 @@ function add_subtask_picker(
  * Open the menu for an annotation in the current subtask at a viewport
  * position. Items: Change class (editable subtask with at least two
  * compatible classes), Copy to / Move to (another writable subtask has a
- * compatible class; Move to only on an editable subtask), Erase from (a
+ * compatible class; Move to only on an editable subtask), Set class in
+ * (another writable subtask holds counterparts that can take the source's
+ * class and don't have it, see `get_counterpart_class_changes`), Erase from (a
  * bitmask, where another writable subtask holds bitmask counterparts, see
  * `find_counterparts`), Delete from (another writable subtask holds
  * counterparts; the count shows when above 1), Delete (editable
@@ -208,7 +214,7 @@ export function show_context_menu(ulabel: ULabel, annid: string, client_x: numbe
     return true;
 }
 
-/** Change class, Copy/Move to, Erase/Delete from, and Delete for a live annotation. */
+/** Change class, Copy/Move to, Set class in, Erase/Delete from, and Delete for a live annotation. */
 function add_edit_items(
     ulabel: ULabel,
     menu: HTMLDivElement,
@@ -258,6 +264,15 @@ function add_edit_items(
         if (!read_only) {
             add_subtask_picker(ulabel, menu, "Move to", ICON_CUT, copy_targets, client_x, client_y, (key) => transfer(key, true));
         }
+    }
+    const class_targets = Object.keys(counterparts).filter(
+        (key) => Object.keys(ulabel.get_counterpart_class_changes(annid, source_key, key)).length > 0,
+    );
+    if (class_targets.length > 0) {
+        add_subtask_picker(ulabel, menu, "Set class in", ICON_CHANGE_CLASS, class_targets, client_x, client_y, (key) => {
+            hide_context_menu(ulabel);
+            ulabel.set_counterparts_class(annid, source_key, key);
+        });
     }
     const remove = (target_key: string, erase: boolean) => {
         hide_context_menu(ulabel);
