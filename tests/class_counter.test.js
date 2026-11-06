@@ -75,7 +75,7 @@ describe("ClassCounterToolboxItem", () => {
             expect(item.inner_HTML).toContain("Crop: 1");
         });
 
-        test("counts an annotation toward its first payload with confidence > 0", () => {
+        test("counts an annotation toward its highest-confidence class", () => {
             const ulabel = make_ulabel({
                 st: make_subtask("A", [CROP, WEED], [{
                     id: "multi",
@@ -85,6 +85,25 @@ describe("ClassCounterToolboxItem", () => {
                         { class_id: 1, confidence: 0.0 },
                         { class_id: 2, confidence: 0.7 },
                     ],
+                },
+                {
+                    // Load sorts payloads by class id, so a low-scoring class can come first
+                    id: "runner_up_first",
+                    spatial_type: "bbox",
+                    deprecated: false,
+                    classification_payloads: [
+                        { class_id: 1, confidence: 0.2 },
+                        { class_id: 2, confidence: 0.8 },
+                    ],
+                },
+                {
+                    id: "unscored",
+                    spatial_type: "bbox",
+                    deprecated: false,
+                    classification_payloads: [
+                        { class_id: 1, confidence: 0.0 },
+                        { class_id: 2, confidence: 0.0 },
+                    ],
                 }]),
             }, "st");
             const item = new ClassCounterToolboxItem(ulabel);
@@ -92,7 +111,7 @@ describe("ClassCounterToolboxItem", () => {
             item.update_toolbox_counter(ulabel);
 
             expect(item.inner_HTML).toContain("Crop: 0");
-            expect(item.inner_HTML).toContain("Weed: 1");
+            expect(item.inner_HTML).toContain("Weed: 2");
         });
 
         test("hides OVERWRITE classes", () => {

@@ -16,6 +16,7 @@ All notable changes to this project will be documented here.
 #### Fixed
 - `delete_counterparts` no longer stamps, reverts or drops history for an unrelated target annotation that happens to share the source annotation's id.
 - `copy_annotation_to_clipboard(id, true)` no longer refuses the cut under Show Deprecated; like the other API methods it is only refused in read-only subtasks. The cut shortcut is still blocked.
+- The Class Counter counted an annotation under its first class with a non-zero confidence, not its highest-confidence class. Payloads are sorted by class id on load, so annotations with runner-up scores were counted under the wrong class. It now counts the class the annotation is drawn in.
 ## [0.31.1] - Oct 22nd, 2026
 #### Changed
 - Simplified ternary syntax into nullish coalescing in several locations

@@ -102,3 +102,8 @@
 - [x] Route hand-written `read_only` checks through `is_read_only()`; `copy_annotation_to_clipboard(cut)` respects `read_only` only.
 - [x] `api_spec.md` Subtask locks section + links are direct only; `index.d.ts`; changelog.
 - [x] Tests; lint, build, jest.
+
+## Fix: Class Counter counts first non-zero class
+
+- [x] `count_subtask` uses `get_annotation_class_id` (top class, same as the canvas colour); all-zero annotations stay uncounted.
+- [x] Regression test, changelog; lint, build, jest.
