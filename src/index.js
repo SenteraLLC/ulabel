@@ -4239,13 +4239,17 @@ export class ULabel {
         // integer rounding back into the next mousemove and makes the card jitter.
         const box_clearance = ((cbox["bry"] - cbox["tly"]) / 2 * this.state["zoom_val"] + gap) / scale;
         const anchor_visible = ((cbox["tly"] + cbox["bry"]) / 2 * this.state["zoom_val"]) - scroll_top;
-        const card_top_visible = anchor_visible - (box_clearance + card_height) * scale;
-        const flip_below = card_top_visible < 0;
-        conf_jq.css(
-            flip_below ?
-                    { top: `${box_clearance}px`, bottom: "auto" } :
-                    { top: "auto", bottom: `${box_clearance}px` },
-        );
+        const card_extent = (box_clearance + card_height) * scale;
+        const visible_height = annbox_jq[0]?.clientHeight ?? Infinity;
+        if (anchor_visible - card_extent >= 0) {
+            conf_jq.css({ top: "auto", bottom: `${box_clearance}px` });
+        } else if (anchor_visible + card_extent <= visible_height) {
+            conf_jq.css({ top: `${box_clearance}px`, bottom: "auto" });
+        } else {
+            // Box is taller than the view (e.g. a whole-image annotation): pin the card
+            // inside the box at the top of the visible area. It takes no pointer events.
+            conf_jq.css({ top: `${(gap - anchor_visible) / scale}px`, bottom: "auto" });
+        }
         this.reposition_dialogs();
         if (annbox_jq.length && conf_jq.length) {
             const annbox_el = annbox_jq[0];

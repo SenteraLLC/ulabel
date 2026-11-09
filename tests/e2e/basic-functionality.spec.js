@@ -351,6 +351,56 @@ test.describe("ULabel Basic Functionality", () => {
         expect(scrolled.card_top).toBeGreaterThanOrEqual(scrolled.anchor_y);
     });
 
+    // #271: a box taller than the view has no room above or below; the card must stay visible
+    test("confidence card stays inside the view for a box taller than the view", async ({ page }) => {
+        await wait_for_ulabel_init(page);
+
+        const subtask_key = await get_current_subtask_key(page);
+        const conf_id = `#global_annotation_confidence__${subtask_key}`;
+        const get_bounds = () => page.evaluate(() => {
+            const annbox = document.getElementById(window.ulabel.config.annbox_id);
+            const rect = annbox.getBoundingClientRect();
+            const top = rect.top + annbox.clientTop;
+            const left = rect.left + annbox.clientLeft;
+            return { top, bottom: top + annbox.clientHeight, left, right: left + annbox.clientWidth };
+        });
+        const expect_card_inside = async () => {
+            await expect(page.locator(conf_id)).toBeVisible();
+            const bounds = await get_bounds();
+            const card = await page.locator(conf_id).boundingBox();
+            expect(card.y).toBeGreaterThanOrEqual(bounds.top);
+            expect(card.y + card.height).toBeLessThanOrEqual(bounds.bottom);
+        };
+
+        // Box covering the whole visible area
+        const bounds = await get_bounds();
+        await draw_bbox(page, [bounds.left + 5, bounds.top + 5], [bounds.right - 25, bounds.bottom - 25]);
+        await page.mouse.move((bounds.left + bounds.right) / 2, (bounds.top + bounds.bottom) / 2);
+        await expect_card_inside();
+
+        // Ordinary box zoomed in until it overflows the view
+        await page.mouse.move(bounds.left + 50, bounds.top + 50);
+        await draw_bbox(page, [400, 300], [500, 400]);
+        await page.mouse.move(450, 350);
+        for (let i = 0; i < 15; i++) {
+            await page.mouse.wheel(0, -100);
+        }
+        await page.waitForTimeout(300);
+        const box_height = await page.evaluate(() => {
+            const u = window.ulabel;
+            const subtask = u.get_current_subtask();
+            const annid = subtask.annotations.ordering[subtask.annotations.ordering.length - 1];
+            const cbox = subtask.annotations.access[annid].containing_box;
+            const annbox = document.getElementById(u.config.annbox_id);
+            annbox.scrollTop = (cbox.tly + cbox.bry) / 2 * u.state.zoom_val - annbox.clientHeight / 2;
+            subtask.state.edit_candidate = { annid };
+            u.show_global_edit_suggestion(annid);
+            return { box: (cbox.bry - cbox.tly) * u.state.zoom_val, view: annbox.clientHeight };
+        });
+        expect(box_height.box).toBeGreaterThan(box_height.view);
+        await expect_card_inside();
+    });
+
     test("confidence card picks a class name even when all confidences are 0", async ({ page }) => {
         await wait_for_ulabel_init(page);
 

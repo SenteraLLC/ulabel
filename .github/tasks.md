@@ -19,7 +19,7 @@
 - [x] AnnotationList: `content-visibility: auto` on rows; id->index map in the grouped view.
 - [x] Lint, build, jest 515/515.
 
-## PR #263 review fixes
+## Release version and public API documentation
 
 - [x] Run baseline lint, build, and unit tests.
 - [x] Bump package/type versions and release changelog heading to 0.30.0.
@@ -47,7 +47,7 @@
 - [x] Re-bump package/version.js to 0.31.0; move the overlay API changelog entry under 0.31.0.
 - [x] Run lint, build, and unit tests.
 
-## PR #263 review: z-indices and overlay resize
+## Overlay z-indices and resize
 
 - [x] Name the image frame (50), FilterDistance overlay (95), and loader z-indices in `src/blobs.js`; loader sits above `"above_annotations"` overlays.
 - [x] Drop `resize_overlay_canvases()`: overlays carry `imgsz_class`, so rezoom already resizes them. Restore the FilterDistance resize call; `overlay_canvases` holds embedder canvases only.
@@ -67,10 +67,10 @@
 - [x] Jest tests; lint, build, jest.
 - [x] Copies drop the `counterpart_class_meta_key` entry (like the link key).
 
-## Review fixes (REVIEW-feature-sync-class.md)
+## Copy/paste and counterpart action fixes
 
-- [x] #1 A copy/paste back into the source subtask ignores `counterpart_class_meta_key` (`use_meta_override` param).
-- [x] #2 Counterpart actions' `annotation_id` is foreign: `action_owns_annotation_id` guards stamping, undo revert, fly-to boxes, `remove_recorded_events_for_annotation` and `find_stamp_before_last_action`.
+- [x] A copy/paste back into the source subtask ignores `counterpart_class_meta_key` (`use_meta_override` param).
+- [x] Counterpart actions' `annotation_id` is foreign: `action_owns_annotation_id` guards stamping, undo revert, fly-to boxes, `remove_recorded_events_for_annotation` and `find_stamp_before_last_action`.
 - [x] Regression tests; docs; lint, build, jest.
 
 ## Class confidence display
@@ -90,13 +90,13 @@
 - [x] Card shows host text for every hovered spatial annotation; card toggle still wins.
 - [x] Types, `api_spec.md`, changelog, demo; tests; lint, build, jest; live check.
 
-## PR review: linked-annotation demo + local landing page
+## Linked-annotation demo + local landing page
 
 - [x] `demo/linked-subtasks.html`: Predictions (read-only) / Diff / GT with link meta key + counterpart class meta key; A/B/C direct-links case.
 - [x] `demo/index.html` landing page listing every demo; `demo.js` prints the landing URL.
 - [x] Lint, build; live check in browser.
 
-## PR review: standardise subtask locks
+## Standardise subtask locks
 
 - [x] `ULabelSubtask.is_read_only()` / `is_edit_locked()`; `is_subtask_edit_locked` / `is_current_subtask_read_only` delegate.
 - [x] Route hand-written `read_only` checks through `is_read_only()`; `copy_annotation_to_clipboard(cut)` respects `read_only` only.
@@ -107,3 +107,8 @@
 
 - [x] `count_subtask` uses `get_annotation_class_id` (top class, same as the canvas colour); all-zero annotations stay uncounted.
 - [x] Regression test, changelog; lint, build, jest.
+
+## Fix #271: hover card off-screen for boxes taller than the view
+
+- [x] Card placement: above, else below, else pinned inside the visible area.
+- [x] Playwright test (whole-image box, zoomed-in box); changelog; lint, build, jest, e2e.

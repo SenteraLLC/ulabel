@@ -14,6 +14,7 @@ describe.each([0.5, 0.666])("confidence card at dialog scale %s", (scale) => {
         Object.defineProperties(annbox, {
             clientLeft: { value: 2 },
             clientWidth: { value: 400 },
+            clientHeight: { value: 400 },
         });
         annbox.scrollLeft = 200;
         annbox.scrollTop = 100;
@@ -60,6 +61,11 @@ describe.each([0.5, 0.666])("confidence card at dialog scale %s", (scale) => {
         subtask.annotations.access.a0.containing_box = { tlx: 200, tly: 50, brx: 300, bry: 60 };
         ULabel.prototype.show_global_edit_suggestion.call(ulabel, "a0");
         expect(Number.parseFloat(card.style.top)).toBeCloseTo((10 + 10) / scale);
+
+        // Taller than the 400px view (anchor at 1000 - 100 scroll = 900): pinned 10px below the view's top
+        subtask.annotations.access.a0.containing_box = { tlx: 200, tly: 0, brx: 300, bry: 1000 };
+        ULabel.prototype.show_global_edit_suggestion.call(ulabel, "a0");
+        expect(Number.parseFloat(card.style.top)).toBeCloseTo((10 - 900) / scale);
     });
 });
 

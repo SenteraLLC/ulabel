@@ -17,6 +17,7 @@ All notable changes to this project will be documented here.
 - `delete_counterparts` no longer stamps, reverts or drops history for an unrelated target annotation that happens to share the source annotation's id.
 - `copy_annotation_to_clipboard(id, true)` no longer refuses the cut under Show Deprecated; like the other API methods it is only refused in read-only subtasks. The cut shortcut is still blocked.
 - The Class Counter counted an annotation under its first class with a non-zero confidence, not its highest-confidence class. Payloads are sorted by class id on load, so annotations with runner-up scores were counted under the wrong class. It now counts the class the annotation is drawn in.
+- The hover confidence card disappeared for annotations taller than the visible area (e.g. whole-image annotations, or any box once zoomed in): with no room above or below the box it was placed off-screen. It is now pinned inside the box at the top of the visible area ([#271](https://github.com/SenteraLLC/ulabel/issues/271)).
 ## [0.31.1] - Oct 22nd, 2026
 #### Changed
 - Simplified ternary syntax into nullish coalescing in several locations
