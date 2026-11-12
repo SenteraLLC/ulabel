@@ -7,10 +7,10 @@
  * as selected meanwhile.
  */
 
-import type { ULabel } from "../index";
+import type { ULabel, ULabelContainingBox } from "../index";
 import { DELETE_MODES, MODES_3D, NONSPATIAL_MODES, ULabelAnnotation } from "./annotation";
 import { log_message, LogLevel } from "./error_logging";
-import { GeometricUtils, Point2D, Rect2D, ULabelSpatialPayload2D } from "./geometric_utils";
+import { GeometricUtils, Point2D, ULabelSpatialPayload2D } from "./geometric_utils";
 
 export type SelectionHow = "replace" | "add" | "remove" | "toggle";
 
@@ -20,7 +20,10 @@ const ACTIVE_BODY_CLASS = "ulabel-selection-active";
 
 // The box drag in progress per ULabel instance, so refreshes can prune its starting
 // selection and notifications can update what its host last heard
-const active_boxes = new WeakMap<ULabel, BoxSelection>();
+const active_boxes = new WeakMap<ULabel, SelectBox>();
+
+// A Ctrl+left drag shorter than this (screen px) is a selection click, not a selection box
+export const CLICK_MOVE_TOLERANCE_PX = 4;
 
 /**
  * Whether an annotation can be part of a selection.
@@ -59,7 +62,7 @@ export function is_annotation_selected(
 ): boolean {
     const key = subtask_key ?? ulabel.get_current_subtask_key();
     const selected = ulabel.subtasks[key]?.state.selected_ids;
-    if (selected == null || selected.size === 0 || !selected.has(annotation.id!)) return false;
+    if (!selected?.has(annotation.id!)) return false;
     return is_annotation_selectable(ulabel, annotation, key);
 }
 
@@ -74,7 +77,7 @@ export function get_selected_annotation_ids(ulabel: ULabel, subtask_key: string 
     refresh_selection(ulabel, key);
     const subtask = ulabel.subtasks[key];
     const selected = subtask?.state.selected_ids;
-    if (selected == null || selected.size === 0) return [];
+    if (!selected?.size) return [];
     return subtask.annotations.ordering.filter((id) => selected.has(id));
 }
 
@@ -159,7 +162,7 @@ export function refresh_selection(ulabel: ULabel, subtask_key: string | null = n
             });
         }
         const selected = subtask?.state?.selected_ids;
-        if (selected == null || selected.size === 0) continue;
+        if (!selected?.size) continue;
         const before = new Set(selected);
         for (const id of Array.from(before)) {
             if (!is_annotation_selectable(ulabel, subtask.annotations.access[id], key)) {
@@ -206,7 +209,7 @@ function notify_selection_change(ulabel: ULabel, subtask_key: string): void {
 /**
  * Whether any part of an annotation touches a rectangle (image coordinates, normalised).
  */
-function annotation_touches_rect(ulabel: ULabel, annotation: ULabelAnnotation, rect: Rect2D): boolean {
+function annotation_touches_rect(ulabel: ULabel, annotation: ULabelAnnotation, rect: Pick<ULabelContainingBox, "tlx" | "tly" | "brx" | "bry">): boolean {
     const payload = annotation.spatial_payload;
     const box = annotation.containing_box;
     // A tbar's containing box covers only its stem, not the cross bar; a bitmask's lists pixel indices
@@ -269,11 +272,11 @@ function annotation_touches_rect(ulabel: ULabel, annotation: ULabelAnnotation, r
  * @param rect rectangle in image coordinates; corners may be in any order
  * @param subtask_key defaults to the current subtask
  */
-export function get_annotation_ids_in_rect(ulabel: ULabel, rect: Rect2D, subtask_key: string | null = null): string[] {
+export function get_annotation_ids_in_rect(ulabel: ULabel, rect: Pick<ULabelContainingBox, "tlx" | "tly" | "brx" | "bry">, subtask_key: string | null = null): string[] {
     const key = subtask_key ?? ulabel.get_current_subtask_key();
     const subtask = ulabel.subtasks[key];
     if (subtask == null) return [];
-    const norm: Rect2D = {
+    const norm: Pick<ULabelContainingBox, "tlx" | "tly" | "brx" | "bry"> = {
         tlx: Math.min(rect.tlx, rect.brx),
         tly: Math.min(rect.tly, rect.bry),
         brx: Math.max(rect.tlx, rect.brx),
@@ -292,45 +295,23 @@ export function get_annotation_ids_in_rect(ulabel: ULabel, rect: Rect2D, subtask
 }
 
 /**
- * The selection a box drag started from, so previews can be rebuilt from it.
+ * A Ctrl+drag selection box in progress: the selection it started from (so
+ * previews can be rebuilt from it) and its on-screen state.
  */
-export interface BoxSelection {
+interface SelectBox {
     subtask_key: string;
     base: Set<string>;
     // Deselect what the box touches instead of adding it
     remove: boolean;
     // The selection the host last heard of for this subtask; unlike `base`, never pruned
     reported: Set<string>;
+    // Image-space corners
+    start: Point2D;
+    end: Point2D | null;
+    // Not created until the mouse moves past the click tolerance
+    element: HTMLDivElement | null;
+    frame_request: number | null;
 }
-
-/**
- * Snapshot the selection a box drag starts from.
- *
- * @param ulabel ULabel instance
- * @param remove deselect the caught ids instead of adding them
- * @param subtask_key defaults to the current subtask
- */
-export function begin_box_selection(ulabel: ULabel, remove: boolean, subtask_key: string | null = null): BoxSelection {
-    const key = subtask_key ?? ulabel.get_current_subtask_key();
-    refresh_selection(ulabel, key);
-    const selected = ulabel.subtasks[key]?.state.selected_ids ?? [];
-    const box: BoxSelection = {
-        subtask_key: key,
-        base: new Set(selected),
-        remove,
-        reported: new Set(selected),
-    };
-    active_boxes.set(ulabel, box);
-    return box;
-}
-
-/**
- * Forget the box drag in progress; call when it finishes, is cancelled, or is torn down.
- */
-export function end_box_selection(ulabel: ULabel): void {
-    active_boxes.delete(ulabel);
-}
-
 /**
  * Box select: show the box's `base` plus (or, when `remove`, minus) the
  * `caught` ids as the selection. Base ids that stopped being selectable during
@@ -339,13 +320,13 @@ export function end_box_selection(ulabel: ULabel): void {
  * the host last heard. Cancel with `caught` empty and `final` true.
  *
  * @param ulabel ULabel instance
- * @param box from `begin_box_selection`
+ * @param box the box in progress
  * @param caught ids the box currently touches
  * @param final whether the box is done
  */
-export function preview_box_selection(
+function preview_box_selection(
     ulabel: ULabel,
-    box: BoxSelection,
+    box: SelectBox,
     caught: string[],
     final: boolean = false,
 ): void {
@@ -376,6 +357,174 @@ export function preview_box_selection(
     if (selected.size !== reported.size || Array.from(selected).some((id) => !reported.has(id))) {
         notify_selection_change(ulabel, key);
     }
+}
+
+type PointerEvent2D = JQuery.TriggeredEvent | MouseEvent;
+
+function moved_past_click(ulabel: ULabel, mouse_event: PointerEvent2D): boolean {
+    const [start_x, start_y] = ulabel.drag_state.select_box.mouse_start!;
+    return Math.hypot(mouse_event.clientX! - start_x, mouse_event.clientY! - start_y) > CLICK_MOVE_TOLERANCE_PX;
+}
+
+/**
+ * A Ctrl+left click: toggle the hovered annotation in the selection, or just
+ * deselect it when `remove`. The hover outline is held off until the mouse
+ * moves so the result shows.
+ *
+ * @param ulabel ULabel instance
+ * @param mouse_event the click
+ * @param remove deselect only
+ */
+export function toggle_selection_on_ctrl_click(ulabel: ULabel, mouse_event: PointerEvent2D, remove: boolean = false): void {
+    if (ulabel.drag_state.release_button !== 0) return;
+    // Hover resolves lazily; re-resolve under the cursor like the context menu does
+    ulabel.suggest_edits(mouse_event as JQuery.TriggeredEvent);
+    const edit_candidate = ulabel.get_current_subtask().state.edit_candidate;
+    if (edit_candidate == null) return;
+    ulabel.select_annotations([edit_candidate.annid], remove ? "remove" : "toggle");
+    ulabel.suppress_hover_until_move(mouse_event);
+}
+
+/**
+ * Start a Ctrl+drag selection box (Ctrl+Shift deselects; fixed at mousedown).
+ * Nothing is drawn until the mouse moves past the click tolerance, so a plain
+ * Ctrl+click still toggles.
+ *
+ * @param ulabel ULabel instance
+ * @param mouse_event the mousedown
+ */
+export function begin_select_box(ulabel: ULabel, mouse_event: PointerEvent2D): void {
+    cancel_select_box(ulabel);
+    const key = ulabel.get_current_subtask_key();
+    refresh_selection(ulabel, key);
+    const selected = ulabel.subtasks[key]?.state.selected_ids ?? [];
+    const event = mouse_event as JQuery.TriggeredEvent;
+    active_boxes.set(ulabel, {
+        subtask_key: key,
+        base: new Set(selected),
+        remove: mouse_event.shiftKey === true,
+        reported: new Set(selected),
+        start: [ulabel.get_global_mouse_x(event), ulabel.get_global_mouse_y(event)],
+        end: null,
+        element: null,
+        frame_request: null,
+    });
+}
+
+/**
+ * Grow the box to the mouse and preview what it catches, at most once per frame.
+ *
+ * @param ulabel ULabel instance
+ * @param mouse_event the mousemove
+ */
+export function continue_select_box(ulabel: ULabel, mouse_event: PointerEvent2D): void {
+    const box = active_boxes.get(ulabel);
+    if (box == null) return;
+    if (box.element === null) {
+        if (!moved_past_click(ulabel, mouse_event)) return;
+        box.element = create_select_box_element(box.remove);
+        document.body.appendChild(box.element);
+    }
+    const event = mouse_event as JQuery.TriggeredEvent;
+    box.end = [ulabel.get_global_mouse_x(event), ulabel.get_global_mouse_y(event)];
+    position_select_box(ulabel, box);
+    if (box.frame_request === null) {
+        box.frame_request = requestAnimationFrame(() => {
+            box.frame_request = null;
+            if (active_boxes.get(ulabel) !== box) return;
+            preview_box_selection(ulabel, box, get_select_box_ids(ulabel, box), false);
+        });
+    }
+}
+
+/**
+ * Apply the box on mouseup; a box that never moved past the click tolerance is a click.
+ *
+ * @param ulabel ULabel instance
+ * @param mouse_event the mouseup
+ */
+export function finish_select_box(ulabel: ULabel, mouse_event: PointerEvent2D): void {
+    const box = active_boxes.get(ulabel);
+    if (box == null) return;
+    if (box.element === null && !moved_past_click(ulabel, mouse_event)) {
+        remove_select_box(ulabel);
+        toggle_selection_on_ctrl_click(ulabel, mouse_event, box.remove);
+        return;
+    }
+    const event = mouse_event as JQuery.TriggeredEvent;
+    box.end = [ulabel.get_global_mouse_x(event), ulabel.get_global_mouse_y(event)];
+    const caught = get_select_box_ids(ulabel, box);
+    remove_select_box(ulabel);
+    preview_box_selection(ulabel, box, caught, true);
+}
+
+/**
+ * Abandon an in-progress selection box and restore the selection it started from.
+ *
+ * @param ulabel ULabel instance
+ * @returns whether a box was cancelled
+ */
+export function cancel_select_box(ulabel: ULabel): boolean {
+    const box = active_boxes.get(ulabel);
+    if (box == null) return false;
+    remove_select_box(ulabel);
+    if (ulabel.subtasks[box.subtask_key] != null) {
+        preview_box_selection(ulabel, box, [], true);
+    }
+    if (ulabel.drag_state.active_key === "select_box") {
+        ulabel.drag_state.active_key = null;
+        ulabel.drag_state.release_button = null;
+    }
+    return true;
+}
+
+/**
+ * Drop the box and its element without touching the selection.
+ *
+ * @param ulabel ULabel instance
+ */
+export function remove_select_box(ulabel: ULabel): void {
+    const box = active_boxes.get(ulabel);
+    if (box == null) return;
+    if (box.frame_request !== null) cancelAnimationFrame(box.frame_request);
+    box.element?.remove();
+    active_boxes.delete(ulabel);
+}
+
+export function has_select_box(ulabel: ULabel): boolean {
+    return active_boxes.has(ulabel);
+}
+
+function create_select_box_element(remove: boolean): HTMLDivElement {
+    const element = document.createElement("div");
+    element.className = remove ? "ulabel-select-box ulabel-select-box-remove" : "ulabel-select-box";
+    Object.assign(element.style, {
+        position: "fixed",
+        border: remove ? "1px dashed #ff6b6b" : "1px dashed white",
+        boxShadow: "0 0 0 1px rgba(0, 0, 0, 0.6)",
+        background: remove ? "rgba(255, 80, 80, 0.12)" : "rgba(255, 255, 255, 0.1)",
+        pointerEvents: "none",
+        zIndex: "9999",
+    });
+    return element;
+}
+
+function get_select_box_ids(ulabel: ULabel, box: SelectBox): string[] {
+    const [start, end] = [box.start, box.end!];
+    return get_annotation_ids_in_rect(ulabel, { tlx: start[0], tly: start[1], brx: end[0], bry: end[1] }, box.subtask_key);
+}
+
+// Place the box from its image-space corners, so it tracks the image through scroll and zoom
+function position_select_box(ulabel: ULabel, box: SelectBox): void {
+    const [start, end] = [box.start, box.end!];
+    const scale = ulabel.get_empirical_scale();
+    const origin = ulabel.get_annbox_content_origin();
+    Object.assign(box.element!.style, {
+        left: `${origin.left - window.scrollX + Math.min(start[0], end[0]) * scale}px`,
+        top: `${origin.top - window.scrollY + Math.min(start[1], end[1]) * scale}px`,
+        width: `${Math.abs(end[0] - start[0]) * scale}px`,
+        height: `${Math.abs(end[1] - start[1]) * scale}px`,
+    });
 }
 
 /**

@@ -78,7 +78,7 @@ function begin(ulabel, from) {
 }
 
 function move(ulabel, to) {
-    ulabel.continue_select_box(at(to));
+    ulabel.handle_mouse_move(at(to));
 }
 
 function box_select(ulabel, from, to) {

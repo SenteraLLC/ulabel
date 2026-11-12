@@ -13,6 +13,7 @@ import { AllowedToolboxItem } from "./configuration";
 import { filter_points_distance_from_line } from "./annotation_operators";
 import { NONSPATIAL_MODES } from "./annotation";
 
+import { v4 as uuidv4 } from "uuid";
 import { log_message, LogLevel } from "./error_logging";
 
 // Actions whose `annotation_id` is a source annotation in another subtask, not
@@ -29,6 +30,27 @@ export function action_owns_annotation_id(action: { act_type: ULabelActionType }
 }
 
 // ================= Record Actions =================
+
+/**
+ * Run `fn` as one bulk operation: every action it records shares a batch
+ * id, so a single undo/redo covers them all. The selection is refreshed
+ * once at the end instead of after each action. Nested calls join the
+ * outer batch.
+ *
+ * @param ulabel ULabel instance
+ * @param fn the bulk operation
+ * @returns what `fn` returns
+ */
+export function run_action_batch<T>(ulabel: ULabel, fn: () => T): T {
+    if (ulabel.state.action_batch_id != null) return fn();
+    ulabel.state.action_batch_id = uuidv4();
+    try {
+        return fn();
+    } finally {
+        ulabel.state.action_batch_id = null;
+        ulabel.refresh_selection();
+    }
+}
 
 /**
  * Record an action in the action stream to allow undo/redo functionality.
@@ -78,8 +100,8 @@ export function record_action(
         prev_timestamp: prev_timestamp,
         prev_user: prev_user,
         origin_subtask_key: ulabel.state.undo_redo_from_subtask ?? ulabel.get_current_subtask_key(),
+        batch_id: ulabel.state.action_batch_id ?? undefined,
     } as ULabelAction;
-    if (ulabel.state.action_batch_id != null) action.batch_id = ulabel.state.action_batch_id;
 
     const affected = raw_action.affected ?? [];
     const affected_annotations = affected.map(

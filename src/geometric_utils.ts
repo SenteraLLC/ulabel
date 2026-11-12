@@ -2,6 +2,7 @@
 /// <reference path="./ambient.d.ts" />
 import * as turf from "@turf/turf";
 import * as polygonClipping from "polygon-clipping";
+import type { ULabelContainingBox } from "../index";
 
 export type Point2D = [number, number];
 export type Point3D = [number, number, number];
@@ -18,13 +19,6 @@ export type LineEquation = {
     a: number;
     b: number;
     c: number;
-};
-/** Axis-aligned rectangle with `tl` <= `br`. */
-export type Rect2D = {
-    tlx: number;
-    tly: number;
-    brx: number;
-    bry: number;
 };
 
 export class GeometricUtils {
@@ -595,17 +589,17 @@ export class GeometricUtils {
     }
 
     /** Whether a point lies in an axis-aligned rectangle, edges included. */
-    public static point_is_within_rect(point: Point2D, rect: Rect2D): boolean {
+    public static point_is_within_rect(point: Point2D, rect: Pick<ULabelContainingBox, "tlx" | "tly" | "brx" | "bry">): boolean {
         return point[0] >= rect.tlx && point[0] <= rect.brx && point[1] >= rect.tly && point[1] <= rect.bry;
     }
 
     /** Whether two axis-aligned rectangles overlap, edges included. */
-    public static rects_overlap(a: Rect2D, b: Rect2D): boolean {
+    public static rects_overlap(a: Pick<ULabelContainingBox, "tlx" | "tly" | "brx" | "bry">, b: Pick<ULabelContainingBox, "tlx" | "tly" | "brx" | "bry">): boolean {
         return a.tlx <= b.brx && a.brx >= b.tlx && a.tly <= b.bry && a.bry >= b.tly;
     }
 
     /** Whether a line segment touches an axis-aligned rectangle (Liang-Barsky clip). */
-    public static segment_intersects_rect(p1: Point2D, p2: Point2D, rect: Rect2D): boolean {
+    public static segment_intersects_rect(p1: Point2D, p2: Point2D, rect: Pick<ULabelContainingBox, "tlx" | "tly" | "brx" | "bry">): boolean {
         const dx: number = p2[0] - p1[0];
         const dy: number = p2[1] - p1[1];
         let t0: number = 0;
@@ -634,7 +628,7 @@ export class GeometricUtils {
     }
 
     /** Whether any vertex or segment of a path touches a rectangle. `closed` adds the last -> first segment. */
-    public static path_touches_rect(path: ULabelSpatialPayload2D, rect: Rect2D, closed: boolean = false): boolean {
+    public static path_touches_rect(path: ULabelSpatialPayload2D, rect: Pick<ULabelContainingBox, "tlx" | "tly" | "brx" | "bry">, closed: boolean = false): boolean {
         if (path.length === 0) return false;
         if (path.length === 1) return GeometricUtils.point_is_within_rect(path[0], rect);
         for (let i = 0; i < path.length - 1; i++) {

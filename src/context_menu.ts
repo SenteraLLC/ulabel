@@ -197,7 +197,7 @@ export function show_context_menu(ulabel: ULabel, annid: string, client_x: numbe
 
     const raw_selected = ulabel.get_current_subtask().state.selected_ids;
     // The menu on an unselected annotation acts on it alone, from the canvas or the list
-    if (raw_selected != null && raw_selected.size > 0 && !raw_selected.has(annid)) ulabel.clear_selection();
+    if (raw_selected?.size && !raw_selected.has(annid)) ulabel.clear_selection();
     const selected = raw_selected?.has(annid) && raw_selected.size > 1 ? ulabel.get_selected_annotation_ids() : [];
     if (selected.length > 1 && selected.includes(annid)) {
         add_selection_items(ulabel, menu, annid, selected, client_x, client_y);

@@ -161,3 +161,15 @@ in the current subtask; adds to the selection.
 ## Multi-select: selection click feedback
 - [x] Hide the hover outline after a ctrl/ctrl+shift click (canvas and annotation list) until the mouse moves past the click tolerance, so deselects are visible; e2e coverage.
 - [x] Review: right-click right after a selection click highlights the menu target (clear suppression before resolving it, canvas and list); e2e regressions.
+
+## Multi-select: move selection logic out of index.js
+- [x] Move box-select drag handling and `toggle_selection_on_ctrl_click` into `selection.ts`; one per-instance box state (merge `select_box_state` into the `active_boxes` entry).
+- [x] Move `run_action_batch` body into `actions.ts`; keep the `ULabel` wrapper.
+- [x] Lint, build, Jest, e2e.
+- [x] Review fix: module code calls public methods through the ULabel instance so `ulabel.on(...)` callbacks still fire (regression test in copy_annotation.test.js).
+
+## Multi-select: move clipboard/paste/counterpart logic out of index.js
+
+- [x] Move clipboard, paste and counterpart logic into new TS modules; keep thin ULabel wrappers for the public API and `__undo`/`__redo` handlers.
+- [x] Lint, build, Jest, e2e.
+- [x] Review fix: module code calls public methods through the ULabel instance so `ulabel.on(...)` callbacks still fire (regression test in copy_annotation.test.js).

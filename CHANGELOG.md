@@ -2,13 +2,16 @@
 
 All notable changes to this project will be documented here.
 
-## [0.32.0] - Oct 23rd, 2026
+## [Unreleased]
 #### Added
 - Multi-select ([CVML-358](https://sentera.atlassian.net/browse/CVML-358)): `ctrl+click` annotations (or their `AnnotationList` rows) to select several, `ctrl+a` to select all, `Escape` to clear. Selected annotations get the hover border and list highlight, and an `<n> selected` indicator shows where the fly-to toast does (the toast moves below it). After a selection click the hover border stays off until the mouse moves, so the click's result shows immediately. Only live, visible, 2D spatial annotations can be selected. The selection is view-only: never recorded, doesn't mark the session edited.
 - Box select: `ctrl+drag` / `cmd+drag` on the image adds every annotation the box touches to the selection, previewed live; `ctrl+shift+drag` deselects them instead (red box), and `ctrl+shift+click` deselects one. `Escape` mid-drag cancels it. **Behavior change:** `ctrl+drag` no longer pans; use `scrollclick+drag`.
 - Bulk actions on the selection, each one undo step: `ctrl+c` / `ctrl+x` / `ctrl+v` copy, cut and paste all of it; the delete keybind deletes it; right-clicking a selected annotation offers `Change class of <n>` (one class pie for all), `Copy <n> to` / `Move <n> to`, `Delete <n>`, and `Clear selection`. Read-only subtasks only offer `Copy <n> to`.
 - Selection API: `select_annotations(ids, how?, subtask_key?)`, `select_all_annotations()`, `clear_selection()`, `get_selected_annotation_ids()`, and the `on_selection_change` config callback. Bulk API: `copy_annotations_to_clipboard()`, `copy_annotations_to_subtask()`, `delete_selected_annotations()`, and `run_action_batch(fn)`, which makes every action recorded inside `fn` undo and redo as one step (actions get a shared `batch_id`).
 - Multi-annotation clipboard envelope (`ulabel_annotation: 2`, new `ULabelMultiClipboardEnvelope` type); `paste_annotation_from_clipboard` returns the new ids for it. Single-annotation envelopes paste as before.
+
+## [0.32.0] - Oct 23rd, 2026
+#### Added
 - **Set class in `<subtask>`** context-menu item: sets an annotation's counterparts in another writable subtask to its class (matched by id, then name). Counterparts that can't take that class, or already have it, are left alone, and the item only shows when at least one would change. New `get_counterpart_class_changes()` and `set_counterparts_class()`, recorded as one undoable `set_counterparts_class` action on the target subtask.
 - `counterpart_class_meta_key` config option (default `null`): an annotation's string value under this `annotation_meta` key names the class it gives its counterparts (Set class in) and copies (Copy to / Move to, paste), replacing the id/name match. Set class in leaves a counterpart alone when no class has that name. Copies drop the entry, and copies/pastes back into the source subtask ignore it.
 - `Details` in the context menu lists every non-zero class confidence, highest first, when more than one class has one.

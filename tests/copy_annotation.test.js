@@ -643,6 +643,25 @@ describe("clipboard", () => {
         expect(ulabel.show_id_dialog).toHaveBeenCalledWith(20, 20, weeds_id, false);
     });
 
+    test("clipboard paste and copy-to-subtask fire an on(paste_annotation) callback", () => {
+        const ulabel = make_ulabel({ gt: [make_bbox("g1")] });
+        const callback = jest.fn();
+        ulabel.on(ulabel.paste_annotation, callback);
+        hover(ulabel, "gt", "g1");
+        ulabel.copy_annotation_to_clipboard();
+
+        ulabel.state.current_subtask = "pred";
+        ulabel.paste_annotation_from_clipboard();
+        expect(callback).toHaveBeenCalledTimes(1);
+
+        ulabel.copy_annotation_to_subtask("g1", "gt", "pred");
+        expect(callback).toHaveBeenCalledTimes(2);
+
+        ulabel.copy_annotations_to_subtask(["g1"], "gt", "pred");
+        expect(callback).toHaveBeenCalledTimes(3);
+        expect(ulabel.subtasks.pred.annotations.ordering).toHaveLength(3);
+    });
+
     test("paste matches the source class by name from the envelope", () => {
         const ulabel = make_ulabel({ gt: [make_bbox("g1", 2)] });
         hover(ulabel, "gt", "g1");

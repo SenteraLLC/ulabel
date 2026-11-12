@@ -1,7 +1,7 @@
 import { ULabelAnnotation } from "./src/annotation";
 import { AllowedToolboxItem, Configuration } from "./src/configuration";
 import { FilterDistanceOverlay } from "./src/overlays";
-import type { ULabelMask } from "./src/mask_utils";
+import type { ULabelMask, ULabelMaskPayload } from "./src/mask_utils";
 import { ULabelSubtask } from "./src/subtask";
 import { Toolbox, AnnotationResizeItem } from "./src/toolbox";
 
@@ -356,7 +356,8 @@ export type ULabelMultiClipboardEnvelope = {
 export type ULabelActionRaw = {
     act_type: ULabelActionType;
     annotation_id: string | null;
-    frame: number;
+    // Null for frame-independent (3D-mode) annotations
+    frame: number | null;
     redo_payload: object;
     undo_payload: object;
     affected?: ULabelActionAffected[];
@@ -370,7 +371,7 @@ export type ULabelActionRaw = {
 export type ULabelAction = {
     act_type: ULabelActionType;
     annotation_id: string | null;
-    frame: number;
+    frame: number | null;
     redo_payload: string; // Stringified object
     undo_payload: string; // Stringified object
     prev_timestamp: string;
@@ -516,7 +517,7 @@ export class ULabel {
         active_key: string | null;
         release_button: number | null;
     } & Record<
-        "annotation" | "brush" | "edit" | "pan" | "zoom" | "move" | "right",
+        "annotation" | "brush" | "edit" | "pan" | "zoom" | "move" | "right" | "select_box",
         {
             mouse_start: [number, number] | null;
             offset_start: [number, number] | null;
@@ -752,7 +753,7 @@ export class ULabel {
         offset?: Offset,
     ): void;
     public update_filter_distance(
-        annotation_id: string,
+        annotation_id: string | null,
         redraw_update_items?: boolean,
         force_filter_all?: boolean,
         offset?: Offset,
@@ -867,7 +868,7 @@ export class ULabel {
         annotation: ULabelAnnotation | object, target_key: string, source_class_name?: string | null, use_meta_override?: boolean,
     ): number | null;
     /** Name of a class in a subtask, or null. */
-    public get_class_name(class_id: number, subtask_key: string): string | null;
+    public get_class_name(class_id: number | null, subtask_key: string): string | null;
     /**
      * Insert a copy of `annotation` into `target_key` with a fresh id and stamps.
      * Records a `paste_annotation` action on the target subtask unless `record` is false. Returns the new id, or null.
@@ -1027,6 +1028,10 @@ export class ULabel {
     public drag_rezoom(mouse_event: JQuery.TriggeredEvent): void;
 
     // "Mouse event interpreters"
+    /** @internal Page coordinates of the annbox's content origin, where the image starts. */
+    public get_annbox_content_origin(): { left: number; top: number };
+    /** @internal Ratio of the displayed image width to its pixel width. */
+    public get_empirical_scale(): number;
     public get_global_mouse_x(mouse_event: JQuery.TriggeredEvent): number;
     public get_global_mouse_y(mouse_event: JQuery.TriggeredEvent): number;
 
@@ -1110,6 +1115,20 @@ export class ULabel {
         annotation_id: string,
         subtask?: string, // SUBTASK KEY
     ): string;
+    /** @internal */
+    public destroy_annotation_context(annotation_id: string, subtask?: string | null): void;
+    /** @internal Unique id for a new annotation. */
+    public make_new_annotation_id(): string;
+    /** @internal Shift a bitmask annotation's mask by (dx, dy) image pixels. */
+    public translate_bitmask(annotation_object: ULabelAnnotation, dx: number, dy: number): void;
+    /** @internal Forget every recorded action about an annotation that no longer exists in a subtask. */
+    public remove_recorded_events_for_annotation(annotation_id: string, subtask_key?: string | null): void;
+    /** @internal Replace a bitmask annotation's cached mask from an RLE payload (empty when null). */
+    public set_bitmask_from_rle(annotation_object: ULabelAnnotation, rle: ULabelMaskPayload | null): void;
+    /** @internal Recompute a bitmask annotation's containing box from its mask. */
+    public rebuild_bitmask_containing_box(annotation_object: ULabelAnnotation): void;
+    /** @internal Clear a subtask's isolation when its target was deprecated outside delete_annotation. */
+    public release_isolation_if_deprecated(annotation_id: string, subtask_key?: string | null): void;
 }
 
 declare global {
