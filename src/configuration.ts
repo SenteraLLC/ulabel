@@ -148,7 +148,7 @@ export class Configuration {
     // stroke only interacts with masks in the active subtask.
     public brush_overlap_across_subtasks: boolean = false;
     // Left-dragging an annotation's body moves it; Alt forces a new draw at
-    // that spot instead (ctrl/shift already mean pan/zoom on the canvas).
+    // that spot instead (ctrl/shift already mean box select/zoom on the canvas).
     public allow_body_move: boolean = true;
     // Whether a paste whose source class has no counterpart in the target
     // (by id or name) opens the class pie; off, the target's active class wins.

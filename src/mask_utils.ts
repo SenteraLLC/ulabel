@@ -299,6 +299,19 @@ export class ULabelMask {
         return false;
     }
 
+    // True if any foreground pixel lies within the inclusive image-space box.
+    public has_foreground_in_box(box: BoundingBox): boolean {
+        const b = this.clamp_box_to_window(box);
+        if (b === null) return false;
+        for (let y = b.y0; y <= b.y1; y++) {
+            const row = (y - this.win_y) * this.win_w - this.win_x;
+            for (let x = b.x0; x <= b.x1; x++) {
+                if (this.data[row + x] !== 0) return true;
+            }
+        }
+        return false;
+    }
+
     // Axis-aligned bounding box of foreground pixels, or null if empty.
     // Returned as { tlx, tly, brx, bry } in image pixel coordinates.
     public get_bounding_box(): BoundingBox | null {

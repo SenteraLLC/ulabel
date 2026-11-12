@@ -134,3 +134,26 @@ No box/lasso select modes and no group drag (follow-ups).
   e2e: `tests/e2e/multi-select.spec.js`. Existing demos already exercise it, so no demo change.)
 - [x] Review fixes (`REVIEW-feature-multi-select.md`): hidden layers not selectable, confidence/keypoint filters
   prune the selection, Cmd+click on list rows, right-click on an unselected list row clears the selection.
+
+## Multi-select (CVML-358): box select
+
+Ctrl+drag on the canvas draws a box (replaces Ctrl+drag pan; middle-drag still pans). Catches anything it touches
+in the current subtask; adds to the selection.
+
+- [x] `get_annotation_ids_in_rect` in `src/selection.ts` (containing-box prefilter + per-type geometry); Jest tests.
+- [x] `select_box` drag key: overlay div, click-vs-drag threshold (Ctrl+click still toggles), Esc cancels; Jest tests.
+- [x] Live preview while dragging (rAF-throttled, diff-only redraw); perf check, fall back to count-only if slow.
+  (4000 annotations: hit-test ~1ms, preview JS ~6ms/frame; browser repaint of changed canvases ~75ms long tasks,
+  below an existing vertex-edit drag's ~200ms, so kept. Ctrl also wins over edit handles so dense scenes box-select.)
+- [x] Docs (`api_spec.md`), changelog, e2e; lint, build, jest, e2e.
+- [x] `ctrl+shift+drag` deselect box (mode fixed at mousedown, red box), `ctrl+shift+click` deselects only; Jest + e2e.
+
+## Multi-select: review fixes (box select)
+
+- [x] Bitmask hit-test checks foreground pixels in the overlap, not just the containing box.
+- [x] Cancel an in-progress selection box when the subtask changes.
+- [x] Box preview/cancel drops base ids that stopped being selectable during the drag.
+- [x] Jest regression tests; lint, build, jest, e2e.
+
+- [x] Final box notification compares against the host's last-heard selection (independent of base pruning).
+- [x] Track that per ULabel instance and subtask, not via a module-global counter; Jest regressions.

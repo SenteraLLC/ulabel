@@ -105,7 +105,7 @@ test.describe("Zoom and Pan Interactions", () => {
         expect(after.left !== before.left || after.top !== before.top).toBe(true);
     });
 
-    test("ctrl+left-click drag on canvas pans the annbox", async ({ page }) => {
+    test("ctrl+left-click drag on canvas box-selects instead of panning", async ({ page }) => {
         await wait_for_ulabel_init(page);
 
         // Zoom in so we can pan
@@ -126,7 +126,7 @@ test.describe("Zoom and Pan Interactions", () => {
         await page.waitForTimeout(50);
         const after = await get_annbox_scroll(page);
 
-        expect(after.left !== before.left || after.top !== before.top).toBe(true);
+        expect(after).toEqual(before);
     });
 
     test("shift+left-click drag on canvas zooms", async ({ page }) => {

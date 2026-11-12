@@ -10,12 +10,17 @@
 import type { ULabel } from "../index";
 import { DELETE_MODES, MODES_3D, NONSPATIAL_MODES, ULabelAnnotation } from "./annotation";
 import { log_message, LogLevel } from "./error_logging";
+import { GeometricUtils, Point2D, Rect2D, ULabelSpatialPayload2D } from "./geometric_utils";
 
 export type SelectionHow = "replace" | "add" | "remove" | "toggle";
 
 const INDICATOR_ID = "annotation-selection-indicator";
 const STYLE_ID = "annotation-selection-indicator-styles";
 const ACTIVE_BODY_CLASS = "ulabel-selection-active";
+
+// The box drag in progress per ULabel instance, so refreshes can prune its starting
+// selection and notifications can update what its host last heard
+const active_boxes = new WeakMap<ULabel, BoxSelection>();
 
 /**
  * Whether an annotation can be part of a selection.
@@ -144,8 +149,15 @@ export function clear_selection(ulabel: ULabel, subtask_key: string | null = nul
  */
 export function refresh_selection(ulabel: ULabel, subtask_key: string | null = null): void {
     const keys = subtask_key === null ? Object.keys(ulabel.subtasks) : [subtask_key];
+    const box = active_boxes.get(ulabel);
     for (const key of keys) {
         const subtask = ulabel.subtasks[key];
+        // A box in progress would otherwise restore what was pruned when it previews or cancels
+        if (box?.subtask_key === key && subtask != null) {
+            box.base.forEach((id) => {
+                if (!is_annotation_selectable(ulabel, subtask.annotations.access[id], key)) box.base.delete(id);
+            });
+        }
         const selected = subtask?.state?.selected_ids;
         if (selected == null || selected.size === 0) continue;
         const before = new Set(selected);
@@ -159,9 +171,9 @@ export function refresh_selection(ulabel: ULabel, subtask_key: string | null = n
 }
 
 /**
- * Redraw what changed, update the indicator, and notify the host.
+ * Redraw what changed, update the indicator, and (unless `notify` is false) notify the host.
  */
-function commit_selection_change(ulabel: ULabel, subtask_key: string, before: Set<string>): void {
+function commit_selection_change(ulabel: ULabel, subtask_key: string, before: Set<string>, notify: boolean = true): void {
     const subtask = ulabel.subtasks[subtask_key];
     const after = subtask.state.selected_ids;
     const changed = Array.from(before).filter((id) => !after.has(id))
@@ -180,7 +192,190 @@ function commit_selection_change(ulabel: ULabel, subtask_key: string, before: Se
 
     sync_annotation_list_selection(ulabel, subtask_key);
     update_selection_indicator(ulabel);
-    ulabel.config.on_selection_change?.(subtask_key, subtask.annotations.ordering.filter((id) => after.has(id)));
+    if (notify) notify_selection_change(ulabel, subtask_key);
+}
+
+function notify_selection_change(ulabel: ULabel, subtask_key: string): void {
+    const subtask = ulabel.subtasks[subtask_key];
+    const selected = subtask.state.selected_ids;
+    const box = active_boxes.get(ulabel);
+    if (box?.subtask_key === subtask_key) box.reported = new Set(selected);
+    ulabel.config.on_selection_change?.(subtask_key, subtask.annotations.ordering.filter((id) => selected.has(id)));
+}
+
+/**
+ * Whether any part of an annotation touches a rectangle (image coordinates, normalised).
+ */
+function annotation_touches_rect(ulabel: ULabel, annotation: ULabelAnnotation, rect: Rect2D): boolean {
+    const payload = annotation.spatial_payload;
+    const box = annotation.containing_box;
+    // A tbar's containing box covers only its stem, not the cross bar; a bitmask's lists pixel indices
+    if (annotation.spatial_type !== "tbar" && annotation.spatial_type !== "bitmask" && box != null && !GeometricUtils.rects_overlap(box, rect)) {
+        return false;
+    }
+    switch (annotation.spatial_type) {
+        case "point":
+            return GeometricUtils.point_is_within_rect(payload[0], rect);
+        case "bbox": {
+            const [[x0, y0], [x1, y1]] = payload as ULabelSpatialPayload2D;
+            return GeometricUtils.rects_overlap(
+                { tlx: Math.min(x0, x1), tly: Math.min(y0, y1), brx: Math.max(x0, x1), bry: Math.max(y0, y1) },
+                rect,
+            );
+        }
+        case "tbar": {
+            const [sp, ep] = payload as ULabelSpatialPayload2D;
+            return (
+                GeometricUtils.segment_intersects_rect(sp, ep, rect) ||
+                GeometricUtils.path_touches_rect(GeometricUtils.tbar_cross_segment(sp, ep), rect)
+            );
+        }
+        case "polyline":
+        case "contour":
+            return GeometricUtils.path_touches_rect(payload, rect);
+        case "polygon": {
+            const layers = payload as ULabelSpatialPayload2D[];
+            if (layers.some((layer) => GeometricUtils.path_touches_rect(layer, rect, true))) return true;
+            // No edge touches: the rectangle may still sit wholly inside a filled region
+            const corner: Point2D = [rect.tlx, rect.tly];
+            const holes = annotation.spatial_payload_holes ?? [];
+            const children = annotation.spatial_payload_child_indices ?? [];
+            return layers.some((layer, i) =>
+                holes[i] !== true &&
+                GeometricUtils.point_is_within_ring(corner, layer) &&
+                !(children[i] ?? []).some((j) => layers[j] != null && GeometricUtils.point_is_within_ring(corner, layers[j])),
+            );
+        }
+        case "bitmask": {
+            // Pixel x covers [x, x + 1), so the rectangle touches pixels floor(tlx)..floor(brx)
+            const pixels = {
+                tlx: Math.floor(rect.tlx),
+                tly: Math.floor(rect.tly),
+                brx: Math.floor(rect.brx),
+                bry: Math.floor(rect.bry),
+            };
+            if (box != null && !GeometricUtils.rects_overlap(box, pixels)) return false;
+            return ulabel.get_bitmask(annotation).has_foreground_in_box(pixels);
+        }
+        default:
+            return false;
+    }
+}
+
+/**
+ * Ids of selectable annotations on the current frame that touch a rectangle, in annotation order.
+ *
+ * @param ulabel ULabel instance
+ * @param rect rectangle in image coordinates; corners may be in any order
+ * @param subtask_key defaults to the current subtask
+ */
+export function get_annotation_ids_in_rect(ulabel: ULabel, rect: Rect2D, subtask_key: string | null = null): string[] {
+    const key = subtask_key ?? ulabel.get_current_subtask_key();
+    const subtask = ulabel.subtasks[key];
+    if (subtask == null) return [];
+    const norm: Rect2D = {
+        tlx: Math.min(rect.tlx, rect.brx),
+        tly: Math.min(rect.tly, rect.bry),
+        brx: Math.max(rect.tlx, rect.brx),
+        bry: Math.max(rect.tly, rect.bry),
+    };
+    const current_frame = ulabel.state.current_frame;
+    const ids: string[] = [];
+    for (const id of subtask.annotations.ordering) {
+        const annotation = subtask.annotations.access[id];
+        if (!is_annotation_selectable(ulabel, annotation, key)) continue;
+        // Keep `!=` loose: frames may be null, undefined, or stringly typed
+        if (annotation.frame != null && annotation.frame != current_frame) continue;
+        if (annotation_touches_rect(ulabel, annotation, norm)) ids.push(id);
+    }
+    return ids;
+}
+
+/**
+ * The selection a box drag started from, so previews can be rebuilt from it.
+ */
+export interface BoxSelection {
+    subtask_key: string;
+    base: Set<string>;
+    // Deselect what the box touches instead of adding it
+    remove: boolean;
+    // The selection the host last heard of for this subtask; unlike `base`, never pruned
+    reported: Set<string>;
+}
+
+/**
+ * Snapshot the selection a box drag starts from.
+ *
+ * @param ulabel ULabel instance
+ * @param remove deselect the caught ids instead of adding them
+ * @param subtask_key defaults to the current subtask
+ */
+export function begin_box_selection(ulabel: ULabel, remove: boolean, subtask_key: string | null = null): BoxSelection {
+    const key = subtask_key ?? ulabel.get_current_subtask_key();
+    refresh_selection(ulabel, key);
+    const selected = ulabel.subtasks[key]?.state.selected_ids ?? [];
+    const box: BoxSelection = {
+        subtask_key: key,
+        base: new Set(selected),
+        remove,
+        reported: new Set(selected),
+    };
+    active_boxes.set(ulabel, box);
+    return box;
+}
+
+/**
+ * Forget the box drag in progress; call when it finishes, is cancelled, or is torn down.
+ */
+export function end_box_selection(ulabel: ULabel): void {
+    active_boxes.delete(ulabel);
+}
+
+/**
+ * Box select: show the box's `base` plus (or, when `remove`, minus) the
+ * `caught` ids as the selection. Base ids that stopped being selectable during
+ * the drag are dropped for good. Intermediate calls redraw without notifying
+ * the host; the `final` call notifies once if the selection differs from what
+ * the host last heard. Cancel with `caught` empty and `final` true.
+ *
+ * @param ulabel ULabel instance
+ * @param box from `begin_box_selection`
+ * @param caught ids the box currently touches
+ * @param final whether the box is done
+ */
+export function preview_box_selection(
+    ulabel: ULabel,
+    box: BoxSelection,
+    caught: string[],
+    final: boolean = false,
+): void {
+    const key = box.subtask_key;
+    const subtask = ulabel.subtasks[key];
+    if (subtask == null) return;
+    const base = box.base;
+    const selected = subtask.state.selected_ids;
+    const before = new Set(selected);
+    selected.clear();
+    base.forEach((id) => {
+        if (is_annotation_selectable(ulabel, subtask.annotations.access[id], key)) {
+            selected.add(id);
+        } else {
+            base.delete(id);
+        }
+    });
+    for (const id of caught) {
+        if (box.remove) {
+            selected.delete(id);
+        } else if (is_annotation_selectable(ulabel, subtask.annotations.access[id], key)) {
+            selected.add(id);
+        }
+    }
+    commit_selection_change(ulabel, key, before, false);
+    if (!final) return;
+    const reported = box.reported;
+    if (selected.size !== reported.size || Array.from(selected).some((id) => !reported.has(id))) {
+        notify_selection_change(ulabel, key);
+    }
 }
 
 /**

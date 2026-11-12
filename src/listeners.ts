@@ -330,6 +330,9 @@ function handle_keydown_event(
 
     // Handle Escape key
     if (keydown_event.key.toLowerCase() === "escape") {
+        if (ulabel.cancel_select_box()) {
+            return false;
+        }
         if (ulabel.is_context_menu_open()) {
             ulabel.hide_context_menu();
         } else if (current_subtask.state.idd_visible) {

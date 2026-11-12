@@ -44,6 +44,10 @@ import {
     clear_selection,
     refresh_selection,
     remove_selection_indicator,
+    get_annotation_ids_in_rect,
+    begin_box_selection,
+    end_box_selection,
+    preview_box_selection,
 } from "../build/selection";
 import { get_idd_string } from "../build/html_builder";
 import { SubmitButtons } from "../build/toolbox_items/submit_buttons";
@@ -85,7 +89,7 @@ const DEFAULT_DEFOCUSED_OPACITY = 0.4;
 
 // Image-space shift applied when an annotation is pasted back into the subtask it was copied from.
 const PASTE_OFFSET_PX = 20;
-// A Ctrl+left drag shorter than this (screen px) is a selection click, not a pan
+// A Ctrl+left drag shorter than this (screen px) is a selection click, not a selection box
 const CLICK_MOVE_TOLERANCE_PX = 4;
 
 export class ULabel {
@@ -115,8 +119,9 @@ export class ULabel {
         - edit
             - Editable left mousedown
         - pan
-            - Ctrl-left mousedown
             - Center mousedown
+        - select_box
+            - Ctrl/Cmd-left mousedown on the canvas or an edit handle (a click without movement toggles one annotation)
         - zoom
             - Right mousedown
             - Shift-left mousedown
@@ -136,7 +141,7 @@ export class ULabel {
                     return ul.is_subtask_edit_locked() ? null : "brush";
                 } else if (mouse_event.target.id === ul.get_current_subtask()["canvas_fid"]) {
                     if (mouse_event.ctrlKey || mouse_event.metaKey) {
-                        return "pan";
+                        return "select_box";
                     }
                     if (mouse_event.shiftKey && !ul.get_current_subtask()["state"]["starting_complex_polygon"]) {
                         return "zoom";
@@ -149,7 +154,8 @@ export class ULabel {
                     }
                     return "annotation";
                 } else if ($(mouse_event.target).hasClass("editable")) {
-                    return "edit";
+                    // Handles crowd dense scenes; a box started on one still selects
+                    return (mouse_event.ctrlKey || mouse_event.metaKey) ? "select_box" : "edit";
                 } else {
                     return null;
                 }
@@ -270,6 +276,7 @@ export class ULabel {
         this.overlay_canvases = [];
         this.filter_distance_overlay = null;
         remove_selection_indicator();
+        this.remove_select_box();
 
         // 8. Wipe the container DOM (canvases, id dialogs, brush circle, enders, overlays).
         //    Prefer the captured owned-container node so a same-id replacement mounted by an SPA
@@ -848,6 +855,8 @@ export class ULabel {
         // There can only be one drag, yes? Maybe pare this down...
         // Would be nice to consolidate this with global state also
         this.drag_state = ULabel.build_initial_drag_state();
+        // In-progress Ctrl+drag selection box, or null
+        this.select_box_state = null;
 
         for (const st in this.subtasks) {
             for (let i = 0; i < this.subtasks[st]["annotations"]["ordering"].length; i++) {
@@ -1507,7 +1516,8 @@ export class ULabel {
         this.hide_context_menu();
         // Isolation is a per-subtask view; leaving the subtask ends it
         this.isolate_annotation(null, old_st);
-        // So is the selection
+        // So do the selection and any selection box in progress
+        this.cancel_select_box();
         this.clear_selection(old_st);
 
         // Clear stale hover on the outgoing subtask so its white outline doesn't linger
@@ -9100,6 +9110,8 @@ export class ULabel {
         // If the ID dialog is visible, let it's own handler take care of this
         // If not dragging...
         if (this.drag_state["active_key"] === null) {
+            // A drag reset elsewhere (e.g. an API edit mid-drag) can orphan the box
+            if (this.select_box_state != null) this.remove_select_box();
             if (idd_visible || this.is_context_menu_open()) {
                 return;
             }
@@ -9119,6 +9131,8 @@ export class ULabel {
                 this.move_brush_circle(gmx, gmy);
             } else if (
                 mouse_event.shiftKey &&
+                // Ctrl+Shift is a deselect box, not a new complex layer
+                !(mouse_event.ctrlKey || mouse_event.metaKey) &&
                 annotation_mode === "polygon" &&
                 !this.is_subtask_edit_locked() &&
                 edit_candidate != null &&
@@ -9163,6 +9177,9 @@ export class ULabel {
                     if (!idd_visible) {
                         this.schedule_continue_move(mouse_event);
                     }
+                    break;
+                case "select_box":
+                    this.continue_select_box(mouse_event);
                     break;
             }
         }
@@ -9271,6 +9288,9 @@ export class ULabel {
             case "move":
                 this.begin_move(mouse_event);
                 break;
+            case "select_box":
+                this.begin_select_box(mouse_event);
+                break;
             default:
                 // No handling necessary for pan and zoom until mousemove
                 break;
@@ -9331,8 +9351,8 @@ export class ULabel {
             case "move":
                 this.finish_move(mouse_event);
                 break;
-            case "pan":
-                this.toggle_selection_on_ctrl_click(mouse_event);
+            case "select_box":
+                this.finish_select_box(mouse_event);
                 break;
             default:
                 // No handling necessary for pan and zoom until mousemove
@@ -9344,18 +9364,128 @@ export class ULabel {
     }
 
     /**
-     * A Ctrl+left "pan" that barely moved is a click: toggle the hovered
-     * annotation in the selection.
+     * A Ctrl+left box drag that barely moved is a click: toggle the hovered
+     * annotation in the selection, or just deselect it when Shift was held.
      */
-    toggle_selection_on_ctrl_click(mouse_event) {
+    toggle_selection_on_ctrl_click(mouse_event, remove = false) {
         if (this.drag_state["release_button"] !== 0) return;
-        const [start_x, start_y] = this.drag_state["pan"]["mouse_start"];
-        if (Math.hypot(mouse_event.clientX - start_x, mouse_event.clientY - start_y) > CLICK_MOVE_TOLERANCE_PX) return;
         // Hover resolves lazily; re-resolve under the cursor like the context menu does
         this.suggest_edits(mouse_event);
         const edit_candidate = this.get_current_subtask()["state"]["edit_candidate"];
         if (edit_candidate == null) return;
-        this.select_annotations([edit_candidate["annid"]], "toggle");
+        this.select_annotations([edit_candidate["annid"]], remove ? "remove" : "toggle");
+    }
+
+    /**
+     * Start a Ctrl+drag selection box (Ctrl+Shift deselects; fixed at mousedown).
+     * Nothing is drawn until the mouse moves past the click tolerance, so a plain
+     * Ctrl+click still toggles.
+     */
+    begin_select_box(mouse_event) {
+        this.cancel_select_box();
+        this.select_box_state = {
+            selection: begin_box_selection(this, mouse_event.shiftKey === true),
+            start: [this.get_global_mouse_x(mouse_event), this.get_global_mouse_y(mouse_event)],
+            end: null,
+            element: null,
+            frame_request: null,
+        };
+    }
+
+    continue_select_box(mouse_event) {
+        const box = this.select_box_state;
+        if (box == null) return;
+        if (box.element === null) {
+            const [start_x, start_y] = this.drag_state["select_box"]["mouse_start"];
+            if (Math.hypot(mouse_event.clientX - start_x, mouse_event.clientY - start_y) <= CLICK_MOVE_TOLERANCE_PX) return;
+            box.element = document.createElement("div");
+            box.element.className = box.selection.remove ? "ulabel-select-box ulabel-select-box-remove" : "ulabel-select-box";
+            Object.assign(box.element.style, {
+                position: "fixed",
+                border: box.selection.remove ? "1px dashed #ff6b6b" : "1px dashed white",
+                boxShadow: "0 0 0 1px rgba(0, 0, 0, 0.6)",
+                background: box.selection.remove ? "rgba(255, 80, 80, 0.12)" : "rgba(255, 255, 255, 0.1)",
+                pointerEvents: "none",
+                zIndex: "9999",
+            });
+            document.body.appendChild(box.element);
+        }
+        box.end = [this.get_global_mouse_x(mouse_event), this.get_global_mouse_y(mouse_event)];
+        this.position_select_box();
+        // Hit-test at most once per frame
+        if (box.frame_request === null) {
+            box.frame_request = requestAnimationFrame(() => {
+                box.frame_request = null;
+                if (this.select_box_state !== box) return;
+                preview_box_selection(this, box.selection, this.get_select_box_ids(), false);
+            });
+        }
+    }
+
+    finish_select_box(mouse_event) {
+        const box = this.select_box_state;
+        if (box == null) return;
+        const [start_x, start_y] = this.drag_state["select_box"]["mouse_start"];
+        if (
+            box.element === null &&
+            Math.hypot(mouse_event.clientX - start_x, mouse_event.clientY - start_y) <= CLICK_MOVE_TOLERANCE_PX
+        ) {
+            this.remove_select_box();
+            this.toggle_selection_on_ctrl_click(mouse_event, box.selection.remove);
+            return;
+        }
+        box.end = [this.get_global_mouse_x(mouse_event), this.get_global_mouse_y(mouse_event)];
+        const caught = this.get_select_box_ids();
+        this.remove_select_box();
+        preview_box_selection(this, box.selection, caught, true);
+    }
+
+    /**
+     * Abandon an in-progress selection box and restore the selection it started from.
+     *
+     * @returns {boolean} whether a box was cancelled
+     */
+    cancel_select_box() {
+        const box = this.select_box_state;
+        if (box == null) return false;
+        this.remove_select_box();
+        if (this.subtasks[box.selection.subtask_key] != null) {
+            preview_box_selection(this, box.selection, [], true);
+        }
+        if (this.drag_state["active_key"] === "select_box") {
+            this.drag_state["active_key"] = null;
+            this.drag_state["release_button"] = null;
+        }
+        return true;
+    }
+
+    remove_select_box() {
+        const box = this.select_box_state;
+        if (box == null) return;
+        if (box.frame_request !== null) cancelAnimationFrame(box.frame_request);
+        box.element?.remove();
+        end_box_selection(this);
+        this.select_box_state = null;
+    }
+
+    get_select_box_ids() {
+        const { start, end, selection } = this.select_box_state;
+        return get_annotation_ids_in_rect(this, { tlx: start[0], tly: start[1], brx: end[0], bry: end[1] }, selection.subtask_key);
+    }
+
+    // Place the box from its image-space corners, so it tracks the image through scroll and zoom
+    position_select_box() {
+        const { start, end, element } = this.select_box_state;
+        const scale = this.get_empirical_scale();
+        const origin = this.get_annbox_content_origin();
+        const x0 = origin.left - window.scrollX + Math.min(start[0], end[0]) * scale;
+        const y0 = origin.top - window.scrollY + Math.min(start[1], end[1]) * scale;
+        Object.assign(element.style, {
+            left: `${x0}px`,
+            top: `${y0}px`,
+            width: `${Math.abs(end[0] - start[0]) * scale}px`,
+            height: `${Math.abs(end[1] - start[1]) * scale}px`,
+        });
     }
 
     // Pan to correct location given mouse dragging
@@ -9803,6 +9933,7 @@ export class ULabel {
         if (subtask !== null && subtask !== this.state["current_subtask"]) {
             return;
         }
+        this.remove_select_box();
         this.drag_state = ULabel.build_initial_drag_state();
     }
 
@@ -9811,7 +9942,7 @@ export class ULabel {
             active_key: null,
             release_button: null,
         };
-        for (const drag_key of ["annotation", "brush", "edit", "pan", "zoom", "move", "right"]) {
+        for (const drag_key of ["annotation", "brush", "edit", "pan", "zoom", "move", "right", "select_box"]) {
             drag_state[drag_key] = {
                 mouse_start: null, // Screen coordinates where the current mouse drag started
                 offset_start: null, // Scroll values where the current mouse drag started

@@ -313,12 +313,26 @@ describe("pruning", () => {
 describe("Ctrl+click", () => {
     function ctrl_click(ulabel, annid, dx = 0) {
         ulabel.suggest_edits = jest.fn();
+        ulabel.get_global_mouse_x = (e) => e.clientX;
+        ulabel.get_global_mouse_y = (e) => e.clientY;
         ulabel.subtasks.st.state.edit_candidate = annid === null ? null : { annid };
-        ulabel.drag_state.active_key = "pan";
-        ulabel.drag_state.release_button = 0;
-        ulabel.drag_state.pan.mouse_start = [100, 100, 0];
+        ulabel.start_drag("select_box", 0, { clientX: 100, clientY: 100, button: 0 });
         ulabel.end_drag({ clientX: 100 + dx, clientY: 100, button: 0 });
     }
+
+    test("Ctrl/Cmd+left on the canvas starts a select_box drag", () => {
+        const ulabel = make_ulabel();
+        const target = { id: ulabel.subtasks.st.canvas_fid };
+
+        expect(ULabel.get_drag_key_start({ button: 0, ctrlKey: true, target }, ulabel)).toBe("select_box");
+        expect(ULabel.get_drag_key_start({ button: 0, metaKey: true, target }, ulabel)).toBe("select_box");
+        expect(ULabel.get_drag_key_start({ button: 1, target }, ulabel)).toBe("pan");
+
+        const handle = document.createElement("a");
+        handle.className = "editable";
+        expect(ULabel.get_drag_key_start({ button: 0, ctrlKey: true, target: handle }, ulabel)).toBe("select_box");
+        expect(ULabel.get_drag_key_start({ button: 0, target: handle }, ulabel)).toBe("edit");
+    });
 
     test("toggles the hovered annotation", () => {
         const ulabel = make_ulabel();
@@ -333,13 +347,23 @@ describe("Ctrl+click", () => {
         expect(ulabel.get_selected_annotation_ids()).toEqual([b.id]);
     });
 
-    test("a real pan, or a click on nothing, changes nothing", () => {
+    test("a click on nothing changes nothing", () => {
         const ulabel = make_ulabel();
         const a = make_annotation();
         load(ulabel, [a]);
 
-        ctrl_click(ulabel, a.id, 20);
         ctrl_click(ulabel, null);
+
+        expect(ulabel.get_selected_annotation_ids()).toEqual([]);
+    });
+
+    test("a drag is a box, not a toggle of the hovered annotation", () => {
+        const ulabel = make_ulabel();
+        // Hovered, but far from the 100..120 box
+        const a = make_annotation();
+        load(ulabel, [a]);
+
+        ctrl_click(ulabel, a.id, 20);
 
         expect(ulabel.get_selected_annotation_ids()).toEqual([]);
     });

@@ -1106,7 +1106,7 @@ export class ZoomPanToolboxItem extends ToolboxItem {
                     </span>
                 </div>
             </div>
-            <p class="shortcut-tip pan-shortcut-tip">scrollclick+drag or ctrl+drag</p>
+            <p class="shortcut-tip pan-shortcut-tip">scrollclick+drag</p>
             <div class="recenter-container">
                 <a href="#" id="recenter-button">Re-Center</a>
                 <a href="#" id="recenter-whole-image-button">Whole Image</a>

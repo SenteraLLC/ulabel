@@ -1,4 +1,4 @@
-// End-to-end tests for multi-select (CVML-358): ctrl+click / ctrl+a selection,
+// End-to-end tests for multi-select (CVML-358): ctrl+click / ctrl+drag box / ctrl+a selection,
 // the indicator, and bulk actions that undo as one step.
 import { test, expect } from "./fixtures";
 import { draw_bbox } from "../testing-utils/drawing_utils";
@@ -89,6 +89,89 @@ test.describe("multi-select", () => {
         await page.keyboard.press("Control+z");
         await page.waitForTimeout(100);
         expect(await get_annotation_count(page)).toBe(2);
+    });
+});
+
+test.describe("multi-select box", () => {
+    async function ctrl_drag_start(page, from, to) {
+        await page.mouse.move(from[0], from[1]);
+        await page.keyboard.down("Control");
+        await page.mouse.down();
+        await page.mouse.move(to[0], to[1], { steps: 8 });
+        await page.waitForTimeout(100);
+    }
+
+    async function ctrl_drag_end(page) {
+        await page.mouse.up();
+        await page.keyboard.up("Control");
+        await page.waitForTimeout(100);
+    }
+
+    test("ctrl+drag selects what the box touches, previewing live and adding to the selection", async ({ page }) => {
+        await setup(page);
+
+        // Touches only the first box's corner
+        await ctrl_drag_start(page, [150, 150], [220, 220]);
+        await expect(page.locator(".ulabel-select-box")).toBeVisible();
+        await expect.poll(() => selected_ids(page)).toHaveLength(1);
+        await ctrl_drag_end(page);
+        await expect(page.locator(".ulabel-select-box")).toHaveCount(0);
+        await expect(page.locator(INDICATOR)).toHaveText("1 selected");
+
+        // A second box over the other annotation adds to it
+        await ctrl_drag_start(page, [480, 150], [550, 220]);
+        await ctrl_drag_end(page);
+        expect(await selected_ids(page)).toHaveLength(2);
+        expect(await get_annotation_count(page)).toBe(2);
+    });
+
+    test("escape mid-drag cancels the box and keeps the prior selection", async ({ page }) => {
+        await setup(page);
+        await ctrl_click(page, [450, 250]);
+
+        await ctrl_drag_start(page, [150, 150], [220, 220]);
+        await expect.poll(() => selected_ids(page)).toHaveLength(2);
+        await page.keyboard.press("Escape");
+        await expect(page.locator(".ulabel-select-box")).toHaveCount(0);
+        await ctrl_drag_end(page);
+
+        expect(await selected_ids(page)).toHaveLength(1);
+    });
+
+    test("ctrl+shift+drag deselects what the box touches; ctrl+shift+click deselects one", async ({ page }) => {
+        await setup(page);
+        await ctrl_click(page, [250, 250]);
+        await ctrl_click(page, [450, 250]);
+        expect(await selected_ids(page)).toHaveLength(2);
+
+        await page.keyboard.down("Shift");
+        await ctrl_drag_start(page, [150, 150], [220, 220]);
+        await expect(page.locator(".ulabel-select-box-remove")).toBeVisible();
+        await expect.poll(() => selected_ids(page)).toHaveLength(1);
+        await ctrl_drag_end(page);
+        await expect(page.locator(INDICATOR)).toHaveText("1 selected");
+
+        // A click that doesn't deselect never adds
+        await ctrl_click(page, [250, 250]);
+        expect(await selected_ids(page)).toHaveLength(1);
+        await page.keyboard.up("Shift");
+        expect(await get_annotation_count(page)).toBe(2);
+    });
+
+    test("switching subtasks mid-drag drops the box and leaves the old subtask unselected", async ({ page }) => {
+        await setup(page);
+        await ctrl_click(page, [450, 250]);
+        const old_key = await page.evaluate(() => window.ulabel.get_current_subtask_key());
+
+        await ctrl_drag_start(page, [150, 150], [220, 220]);
+        await page.keyboard.up("Control");
+        await page.keyboard.press("z");
+        expect(await page.evaluate(() => window.ulabel.get_current_subtask_key())).not.toBe(old_key);
+        await expect(page.locator(".ulabel-select-box")).toHaveCount(0);
+        await page.mouse.up();
+        await page.waitForTimeout(100);
+
+        expect(await page.evaluate((key) => window.ulabel.get_selected_annotation_ids(key), old_key)).toEqual([]);
     });
 });
 

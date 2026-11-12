@@ -1,6 +1,7 @@
 import { ULabelAnnotation } from "./src/annotation";
 import { AllowedToolboxItem, Configuration } from "./src/configuration";
 import { FilterDistanceOverlay } from "./src/overlays";
+import type { ULabelMask } from "./src/mask_utils";
 import { ULabelSubtask } from "./src/subtask";
 import { Toolbox, AnnotationResizeItem } from "./src/toolbox";
 
@@ -655,6 +656,10 @@ export class ULabel {
     public get_selected_annotation_ids(subtask_key?: string | null): string[];
     /** @internal Drop selected ids that are no longer selectable; defaults to every subtask. */
     public refresh_selection(subtask_key?: string | null): void;
+    /** @internal Abandon an in-progress Ctrl+drag selection box, restoring the prior selection. */
+    public cancel_select_box(): boolean;
+    /** @internal A bitmask annotation's decoded mask (cached). */
+    public get_bitmask(annotation_object: ULabelAnnotation): ULabelMask;
     /** Delete the current subtask's selected annotations as one undo step. Returns whether anything was deleted. */
     public delete_selected_annotations(): boolean;
     /**
