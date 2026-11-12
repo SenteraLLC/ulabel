@@ -3,7 +3,7 @@
  * actions. View-only state like isolation: nothing is recorded and `edited`
  * is untouched. A selection only ever holds live, in-focus, 2D spatial
  * annotations; anything that stops qualifying (deleted, deprecated, dimmed,
- * isolated out, filtered) drops out on the next refresh, and is never drawn
+ * isolated out, filtered, layer hidden) drops out on the next refresh, and is never drawn
  * as selected meanwhile.
  */
 
@@ -31,6 +31,7 @@ export function is_annotation_selectable(
 ): boolean {
     const subtask = ulabel.subtasks[subtask_key];
     if (subtask == null || annotation == null || annotation.deprecated) return false;
+    if (ulabel.is_subtask_hidden(subtask_key)) return false;
     const spatial_type = annotation.spatial_type!;
     if (NONSPATIAL_MODES.includes(spatial_type) || MODES_3D.includes(spatial_type) || DELETE_MODES.includes(spatial_type)) {
         return false;

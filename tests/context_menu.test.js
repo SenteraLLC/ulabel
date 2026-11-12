@@ -445,3 +445,70 @@ describe("context menu close", () => {
         expect(menu_element().style.left).toBe("200px");
     });
 });
+
+describe("selection menu", () => {
+    function make_selection_ulabel(options = {}) {
+        const ulabel = make_ulabel(options);
+        const subtask = ulabel.get_current_subtask();
+        subtask.annotations.access.a1 = make_annotation({ id: "a1" });
+        subtask.state.selected_ids = new Set(["a0", "a1"]);
+        Object.assign(ulabel, {
+            get_selected_annotation_ids: jest.fn(() => ["a0", "a1"]),
+            _get_annotations_center: jest.fn(() => [20, 40]),
+            copy_annotations_to_clipboard: jest.fn(() => ({ ulabel_annotation: 2, paste_counts: {} })),
+            copy_annotations_to_subtask: jest.fn(() => ["n0", "n1"]),
+            delete_selected_annotations: jest.fn(() => true),
+            clear_selection: jest.fn(),
+        });
+        return ulabel;
+    }
+
+    test("right-clicking a selected annotation shows the bulk items", () => {
+        const ulabel = make_selection_ulabel({ copy_targets: ["pred"] });
+        expect(show_context_menu(ulabel, "a0", 100, 100)).toBe(true);
+        expect(item_labels()).toEqual(["Change class of 2", "Copy 2 to Predictions", "Move 2 to Predictions", "Delete 2", "Clear selection"]);
+    });
+
+    test("a read-only subtask offers only Copy N to and Clear selection", () => {
+        const ulabel = make_selection_ulabel({ read_only: true, copy_targets: ["pred"] });
+        show_context_menu(ulabel, "a0", 100, 100);
+        expect(item_labels()).toEqual(["Copy 2 to Predictions", "Clear selection"]);
+    });
+
+    test("an unselected target gets the single-annotation menu", () => {
+        const ulabel = make_selection_ulabel();
+        ulabel.get_current_subtask().state.selected_ids = new Set(["a1", "a2"]);
+        show_context_menu(ulabel, "a0", 100, 100);
+        expect(item_labels()).toEqual(["Change class", "Delete", "Isolate", "Details"]);
+        // Shortcuts must not keep targeting the old selection
+        expect(ulabel.clear_selection).toHaveBeenCalled();
+    });
+
+    test("a selected target keeps the selection", () => {
+        const ulabel = make_selection_ulabel();
+        show_context_menu(ulabel, "a0", 100, 100);
+        expect(ulabel.clear_selection).not.toHaveBeenCalled();
+    });
+
+    test("bulk items call the bulk methods", () => {
+        const ulabel = make_selection_ulabel({ copy_targets: ["pred"] });
+
+        show_context_menu(ulabel, "a0", 100, 100);
+        click_item("Change class of 2");
+        expect(ulabel.show_id_dialog).toHaveBeenCalledWith(20, 40, "a0", false, ["a0", "a1"]);
+
+        show_context_menu(ulabel, "a0", 100, 100);
+        click_item("Move 2 to Predictions");
+        expect(ulabel.copy_annotations_to_subtask).toHaveBeenCalledWith(["a0", "a1"], "main", "pred", true, true);
+        expect(ulabel.copy_annotations_to_clipboard).toHaveBeenCalledWith(["a0", "a1"]);
+
+        show_context_menu(ulabel, "a0", 100, 100);
+        click_item("Delete 2");
+        expect(ulabel.delete_selected_annotations).toHaveBeenCalled();
+
+        show_context_menu(ulabel, "a0", 100, 100);
+        click_item("Clear selection");
+        expect(ulabel.clear_selection).toHaveBeenCalled();
+        expect(is_context_menu_open(ulabel)).toBe(false);
+    });
+});

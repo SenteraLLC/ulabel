@@ -333,6 +333,25 @@ export type ULabelClipboardEnvelope = {
     paste_counts?: Record<string, number>;
 };
 
+// One annotation in a multi clipboard envelope
+export type ULabelClipboardItem = {
+    annotation: ULabelAnnotation;
+    // Name of its source class, so a target without the same class id can match by name
+    source_class_name?: string | null;
+};
+
+// Clipboard payload for several annotations (a copied/cut selection); fields as in `ULabelClipboardEnvelope`
+export type ULabelMultiClipboardEnvelope = {
+    ulabel_annotation: 2;
+    copy_id: string;
+    copied_at?: number;
+    image_width: number;
+    image_height: number;
+    source_subtask_key: string;
+    annotations: ULabelClipboardItem[];
+    paste_counts?: Record<string, number>;
+};
+
 export type ULabelActionRaw = {
     act_type: ULabelActionType;
     annotation_id: string | null;
@@ -363,6 +382,8 @@ export type ULabelAction = {
     // Subtask the user was in when the action was triggered (or last redone)
     origin_subtask_key?: string;
     is_internal_undo?: boolean;
+    // Shared by every action of one bulk operation; undo/redo treat them as one step
+    batch_id?: string;
 };
 
 export type ULabelActionCandidate = {
@@ -463,6 +484,8 @@ export class ULabel {
         // Global annotation state
         current_subtask: string;
         undo_redo_from_subtask: string | null;
+        /** Set while a bulk operation records its actions, see `run_action_batch`. */
+        action_batch_id: string | null;
         last_brush_stroke: [number, number];
         line_size: number;
         anno_scaling_mode: AnnoScalingMode;
@@ -479,7 +502,7 @@ export class ULabel {
         /** Annotation the right-click context menu is open for, if any. */
         context_menu_annid: string | null;
         /** Last copied/cut annotation envelope, see `copy_annotation_to_clipboard`. */
-        clipboard: ULabelClipboardEnvelope | null;
+        clipboard: ULabelClipboardEnvelope | ULabelMultiClipboardEnvelope | null;
         /** Last `hover_card_text` result, reused while the same annotation stays hovered. */
         hover_card_text_cache: { annotation: ULabelAnnotation; subtask_key: string; lines: string[] } | null;
     };
@@ -632,6 +655,27 @@ export class ULabel {
     public get_selected_annotation_ids(subtask_key?: string | null): string[];
     /** @internal Drop selected ids that are no longer selectable; defaults to every subtask. */
     public refresh_selection(subtask_key?: string | null): void;
+    /** Delete the current subtask's selected annotations as one undo step. Returns whether anything was deleted. */
+    public delete_selected_annotations(): boolean;
+    /**
+     * Copy (or move, with `cut`) several annotations into another subtask at the same coordinates, as one undo step.
+     * Annotations the target can't take are skipped. With `choose_class`, one class pie opens on the copies
+     * whose source class has no counterpart in the target. Returns the ids of the copies.
+     */
+    public copy_annotations_to_subtask(
+        annotation_ids: string[],
+        source_key: string,
+        target_key: string,
+        cut?: boolean,
+        choose_class?: boolean,
+    ): string[];
+    /**
+     * Run `fn` as one bulk operation: its recorded actions share a `batch_id` and undo/redo as one step.
+     * Nested calls join the outer batch.
+     */
+    public run_action_batch<T>(fn: () => T): T;
+    /** @internal Centre of the union of the annotations' containing boxes, or null when none has one. */
+    public _get_annotations_center(annotation_ids: string[], subtask_key: string): [number, number] | null;
     /**
      * Set a subtask's layer opacity. Also writes `inactive_opacity` so the value
      * survives a subtask switch.
@@ -853,10 +897,23 @@ export class ULabel {
         class_id?: number | null,
         source_subtask_key?: string | null,
     ): string | null;
-    /** Copy (or cut) the hovered annotation to the in-memory clipboard; returns the envelope or null. */
-    public copy_annotation_to_clipboard(annotation_id?: string | null, cut?: boolean): ULabelClipboardEnvelope | null;
-    /** Paste an envelope (default: the in-memory clipboard) into the current subtask; returns the new id or null. */
-    public paste_annotation_from_clipboard(envelope?: ULabelClipboardEnvelope | null): string | null;
+    /**
+     * Copy (or cut) the selection, or else the hovered annotation (or `annotation_id`), to the in-memory clipboard;
+     * returns the envelope or null. A cut selection is deleted as one undo step.
+     */
+    public copy_annotation_to_clipboard(
+        annotation_id?: string | null,
+        cut?: boolean,
+    ): ULabelClipboardEnvelope | ULabelMultiClipboardEnvelope | null;
+    /** Copy (or cut, as one undo step) annotations of the current subtask to the in-memory clipboard as one multi envelope. */
+    public copy_annotations_to_clipboard(annotation_ids: string[], cut?: boolean): ULabelMultiClipboardEnvelope | null;
+    /**
+     * Paste an envelope (default: the in-memory clipboard) into the current subtask; returns the new id
+     * (the new ids for a multi envelope, pasted as one undo step) or null.
+     */
+    public paste_annotation_from_clipboard(
+        envelope?: ULabelClipboardEnvelope | ULabelMultiClipboardEnvelope | null,
+    ): string | string[] | null;
     /** Id of an annotation in `target_key` pasted from `annotation_id` in `source_key` and not human-deleted, or null. */
     public find_pasted_copy(annotation_id: string, source_key: string, target_key: string): string | null;
     /** Live spatial annotations in `target_key` linked to the source by `copied_from` (either way) or a shared `annotation_link_meta_key` value. */
@@ -1032,6 +1089,8 @@ export class ULabel {
         gby: number,
         active_ann: string, // annotation id
         nonspatial?: boolean,
+        // Further annotations a pick also applies to (each that can take the class), as one undo step
+        batch_ids?: string[],
     ): void;
     public hide_id_dialog(): void;
 

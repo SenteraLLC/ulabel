@@ -22,8 +22,9 @@ function is_text_input_target(target: EventTarget | null): boolean {
 }
 
 /**
- * Native clipboard shortcuts: copy/cut the hovered annotation, paste into the
- * current subtask. Only intercepts the event when there is something to act on.
+ * Native clipboard shortcuts: copy/cut the selection (or else the hovered
+ * annotation), paste into the current subtask. Only intercepts the event when
+ * there is something to act on.
  */
 function handle_clipboard_event(
     clipboard_event: JQuery.TriggeredEvent,
@@ -41,7 +42,7 @@ function handle_clipboard_event(
         if (text) {
             try {
                 const parsed = JSON.parse(text);
-                if (parsed?.ulabel_annotation === 1) envelope = parsed;
+                if (parsed?.ulabel_annotation === 1 || parsed?.ulabel_annotation === 2) envelope = parsed;
             } catch {
                 // Not our payload; fall back to the in-memory clipboard
             }
@@ -705,6 +706,8 @@ export function create_ulabel_listeners(
             if (event_matches_keybind(keypress_event, ulabel.config.delete_annotation_keybind)) {
                 if (ulabel.is_subtask_edit_locked()) return;
                 const current_subtask = ulabel.get_current_subtask();
+                // The selection goes first
+                if (!current_subtask.state.is_in_progress && ulabel.delete_selected_annotations()) return;
                 // Check the edit_candidate to make sure its not null and isn't nonspatial
                 const edit_cand = current_subtask.state.edit_candidate;
                 if (

@@ -24,6 +24,7 @@ const ICON_ISOLATE = `<svg ${SVG_ATTRS}><path d="M1.5 8s2.5-4.5 6.5-4.5S14.5 8 1
 const ICON_COPY = `<svg ${SVG_ATTRS}><rect x="5.5" y="5.5" width="8" height="8" rx="1"/><path d="M10.5 5.5v-2a1 1 0 0 0-1-1h-6a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2"/></svg>`;
 const ICON_CUT = `<svg ${SVG_ATTRS}><circle cx="4.5" cy="11.5" r="2"/><circle cx="11.5" cy="11.5" r="2"/><path d="M6 10l7-8M10 10L3 2"/></svg>`;
 const ICON_RESTORE = `<svg ${SVG_ATTRS}><path d="M2.5 8a5.5 5.5 0 1 0 1.6-3.9M2.5 2.5v3h3"/></svg>`;
+const ICON_CLEAR = `<svg ${SVG_ATTRS}><path d="M4 4l8 8M12 4l-8 8"/></svg>`;
 
 function get_menu_element(ulabel: ULabel): HTMLDivElement | null {
     return document.getElementById(`${MENU_CLASS}__${ulabel.config.container_id}`) as HTMLDivElement | null;
@@ -175,6 +176,8 @@ function add_subtask_picker(
  * subtask), Isolate / Show all (always; view-only), Details (always).
  * A deprecated annotation (only reachable under deprecated focus) gets
  * Restore (see `can_restore_annotation`), Isolate / Show all, and Details.
+ * A selected annotation, while more than one is selected, gets the bulk
+ * items instead (see `add_selection_items`).
  *
  * @returns whether the menu was shown
  */
@@ -191,6 +194,17 @@ export function show_context_menu(ulabel: ULabel, annid: string, client_x: numbe
     const menu = ensure_menu_element(ulabel);
     if (menu == null) return false;
     menu.replaceChildren();
+
+    const raw_selected = ulabel.get_current_subtask().state.selected_ids;
+    // The menu on an unselected annotation acts on it alone, from the canvas or the list
+    if (raw_selected != null && raw_selected.size > 0 && !raw_selected.has(annid)) ulabel.clear_selection();
+    const selected = raw_selected?.has(annid) && raw_selected.size > 1 ? ulabel.get_selected_annotation_ids() : [];
+    if (selected.length > 1 && selected.includes(annid)) {
+        add_selection_items(ulabel, menu, annid, selected, client_x, client_y);
+        ulabel.state.context_menu_annid = annid;
+        position_menu(menu, client_x, client_y);
+        return true;
+    }
 
     if (annotation.deprecated) {
         if (ulabel.can_restore_annotation(annid)) {
@@ -297,6 +311,79 @@ function add_edit_items(
             ulabel.delete_annotation(annid);
         });
     }
+}
+
+/**
+ * Bulk items for the selection, each one undo step: Change class of N (editable
+ * subtask; the pie lists the clicked annotation's compatible classes and the
+ * pick applies to each selected annotation that can take it), Copy N to / Move
+ * N to (per target, the selected annotations it can take; Move only on an
+ * editable subtask; `hide_copy_to_linked` drops ones already linked there),
+ * Delete N (editable subtask), and Clear selection.
+ */
+function add_selection_items(
+    ulabel: ULabel,
+    menu: HTMLDivElement,
+    annid: string,
+    ids: string[],
+    client_x: number,
+    client_y: number,
+): void {
+    const read_only = ulabel.is_subtask_edit_locked();
+    const source_key = ulabel.get_current_subtask_key();
+    const access = ulabel.get_current_subtask().annotations.access;
+    if (!read_only && ulabel._get_compatible_class_ids(access[annid]).length >= 2) {
+        add_item(menu, `Change class of ${ids.length}`, ICON_CHANGE_CLASS, () => {
+            hide_context_menu(ulabel);
+            const center = ulabel._get_annotations_center(ids, source_key);
+            if (center !== null) ulabel.show_id_dialog(center[0], center[1], annid, false, ids);
+        });
+    }
+
+    const eligible: Record<string, string[]> = {};
+    const linked: Record<string, number> = {};
+    for (const id of ids) {
+        for (const key of ulabel.get_copy_target_subtask_keys(access[id], source_key)) {
+            const is_linked = ulabel.find_counterparts(id, source_key, key).length > 0;
+            if (is_linked && ulabel.config.hide_copy_to_linked) continue;
+            (eligible[key] ??= []).push(id);
+            if (is_linked) linked[key] = (linked[key] ?? 0) + 1;
+        }
+    }
+    const copy_targets = Object.keys(ulabel.subtasks).filter((key) => key in eligible);
+    if (copy_targets.length > 0) {
+        const transfer = (target_key: string, cut: boolean) => {
+            hide_context_menu(ulabel);
+            const linked_count = linked[target_key] ?? 0;
+            if (linked_count > 0) {
+                const target_name = ulabel.subtasks[target_key].display_name ?? target_key;
+                const verb = cut ? "Move" : "Copy";
+                if (!confirm(`${target_name} already has ${linked_count} of these annotations. ${verb} them there anyway?`)) return;
+            }
+            // Also arm ctrl+v, counting this as the first paste into the target
+            const envelope = ulabel.copy_annotations_to_clipboard(eligible[target_key]);
+            const new_ids = ulabel.copy_annotations_to_subtask(eligible[target_key], source_key, target_key, cut, true);
+            if (envelope !== null && new_ids.length > 0) {
+                (envelope.paste_counts ??= {})[target_key] = 1;
+                navigator.clipboard?.writeText(JSON.stringify(envelope)).catch(() => {});
+            }
+        };
+        const count_of = (key: string) => eligible[key].length;
+        add_subtask_picker(ulabel, menu, "Copy to", ICON_COPY, copy_targets, client_x, client_y, (key) => transfer(key, false), count_of);
+        if (!read_only) {
+            add_subtask_picker(ulabel, menu, "Move to", ICON_CUT, copy_targets, client_x, client_y, (key) => transfer(key, true), count_of);
+        }
+    }
+    if (!read_only) {
+        add_item(menu, `Delete ${ids.length}`, ICON_DELETE, () => {
+            hide_context_menu(ulabel);
+            ulabel.delete_selected_annotations();
+        });
+    }
+    add_item(menu, "Clear selection", ICON_CLEAR, () => {
+        hide_context_menu(ulabel);
+        ulabel.clear_selection();
+    });
 }
 
 /** Close the menu and drop the hover it was holding. No-op when closed. */

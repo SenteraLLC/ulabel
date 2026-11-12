@@ -353,7 +353,7 @@ export class AnnotationListToolboxItem extends ToolboxItem {
         $(document).on("click.ulabel", ".annotation-list-item", (e) => {
             const annotation_id = $(e.currentTarget).data("annotation-id");
             if (!annotation_id) return;
-            if (e.ctrlKey) {
+            if (e.ctrlKey || e.metaKey) {
                 this.ulabel.select_annotations([String(annotation_id)], "toggle");
                 return;
             }

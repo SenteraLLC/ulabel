@@ -125,8 +125,12 @@ No box/lasso select modes and no group drag (follow-ups).
 - [x] Input: Ctrl+click (no drag, canvas or annotation list) toggles; Ctrl+A selects all visible; Esc clears (after cancelling an in-progress
   annotation, before exiting isolation); right-click on an unselected annotation clears the selection and acts on it.
 - [x] Public API: `get_selected_annotation_ids()`, `select_annotations(ids, how)`, `select_all_annotations()`, `clear_selection()`, `on_selection_change` config callback.
-- [ ] Bulk clipboard: Ctrl+C/X/V act on the selection first; v2 envelope (`annotations: [...]`), v1 still pasteable;
+- [x] Bulk clipboard: Ctrl+C/X/V act on the selection first; v2 envelope (`annotations: [...]`), v1 still pasteable;
   one undo step; one class pie for the batch.
-- [ ] Bulk context menu on a selected annotation: Copy to / Move to / Delete / Change class, each one undo step.
+- [x] Bulk context menu on a selected annotation: Copy to / Move to / Delete / Change class, each one undo step.
   Delete key acts on the selection first.
-- [ ] Types, `api_spec.md`, changelog, demo; Jest + Playwright tests; lint, build, jest.
+- [x] Types, `api_spec.md`, changelog, demo; Jest + Playwright tests; lint, build, jest.
+  (Jest: `tests/bulk_actions.test.js`, `tests/selection.test.js`, `tests/context_menu.test.js`;
+  e2e: `tests/e2e/multi-select.spec.js`. Existing demos already exercise it, so no demo change.)
+- [x] Review fixes (`REVIEW-feature-multi-select.md`): hidden layers not selectable, confidence/keypoint filters
+  prune the selection, Cmd+click on list rows, right-click on an unselected list row clears the selection.

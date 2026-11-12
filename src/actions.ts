@@ -79,6 +79,7 @@ export function record_action(
         prev_user: prev_user,
         origin_subtask_key: ulabel.state.undo_redo_from_subtask ?? ulabel.get_current_subtask_key(),
     } as ULabelAction;
+    if (ulabel.state.action_batch_id != null) action.batch_id = ulabel.state.action_batch_id;
 
     const affected = raw_action.affected ?? [];
     const affected_annotations = affected.map(
@@ -129,8 +130,11 @@ export function record_action(
     if (!is_substep) {
         emit_annotation_change(ulabel, action, is_redo ? "redo" : "do", subtask_key ?? ulabel.get_current_subtask_key());
     }
-    // A deleted, deprecated or reclassed (now dimmed) annotation leaves the selection
-    ulabel.refresh_selection(subtask_key ?? ulabel.get_current_subtask_key());
+    // A deleted, deprecated or reclassed (now dimmed) annotation leaves the selection;
+    // a batch refreshes once when it ends
+    if (ulabel.state.action_batch_id == null) {
+        ulabel.refresh_selection(subtask_key ?? ulabel.get_current_subtask_key());
+    }
 };
 
 // Actions that touch nothing committed until a later action; reported only on undo/redo.
@@ -683,14 +687,38 @@ function is_blocked_by_read_only(ulabel: ULabel, action: ULabelAction): boolean 
  * @param is_internal_undo whether ulabel undo is triggered by an internal action
  */
 export function undo(ulabel: ULabel, is_internal_undo: boolean = false) {
+    const stream = () => ulabel.get_current_subtask().actions.stream;
+    const top = stream()[stream().length - 1];
+    if (top === undefined) return;
+    const batch_id = top.batch_id;
+    const undone: [ULabelAction, ULabelContainingBox[]][] = [];
+    let step = undo_one(ulabel, is_internal_undo);
+    while (step !== null) {
+        undone.push(step);
+        const next = stream()[stream().length - 1];
+        if (batch_id == null || next?.batch_id !== batch_id) break;
+        step = undo_one(ulabel, is_internal_undo);
+    }
+    // After the listeners, which rebuild containing boxes (e.g. for a move)
+    if (!is_internal_undo && undone.length > 0) {
+        fly_to_actions_change(ulabel, undone.map(([action]) => action), undone.flatMap(([, boxes]) => boxes));
+    }
+}
+
+/**
+ * Undo the top action of the current subtask's stream.
+ *
+ * @returns the undone action and its boxes before the undo, or null when nothing was undone
+ */
+function undo_one(ulabel: ULabel, is_internal_undo: boolean): [ULabelAction, ULabelContainingBox[]] | null {
     // Create constants for convenience
     const current_subtask = ulabel.get_current_subtask();
     const action_stream = current_subtask.actions.stream;
     const undone_stack = current_subtask.actions.undone_stack;
 
     // If the action_steam is empty, then there are no actions to undo
-    if (action_stream.length === 0) return;
-    if (!is_internal_undo && is_blocked_by_read_only(ulabel, action_stream[action_stream.length - 1])) return;
+    if (action_stream.length === 0) return null;
+    if (!is_internal_undo && is_blocked_by_read_only(ulabel, action_stream[action_stream.length - 1])) return null;
 
     ulabel.hide_id_dialog();
 
@@ -704,7 +732,7 @@ export function undo(ulabel: ULabel, is_internal_undo: boolean = false) {
         finish_action(ulabel, undo_candidate);
         // A zero-diff move drops its own begin_move on finish; there is
         // nothing left to undo
-        if (action_stream[action_stream.length - 1] !== undo_candidate) return;
+        if (action_stream[action_stream.length - 1] !== undo_candidate) return null;
         undo_candidate = action_stream.pop()!;
     }
 
@@ -717,29 +745,41 @@ export function undo(ulabel: ULabel, is_internal_undo: boolean = false) {
     // Trigger any listeners for the action
     trigger_action_listeners(ulabel, undo_candidate, true);
     emit_annotation_change(ulabel, undo_candidate, "undo", ulabel.get_current_subtask_key());
-    // After the listeners, which rebuild containing boxes (e.g. for a move)
-    if (!is_internal_undo) fly_to_action_change(ulabel, undo_candidate, boxes_before);
+    return [undo_candidate, boxes_before];
 }
 
 /**
- * Redo the last undone action.
+ * Redo the last undone action, or the whole batch it belongs to.
  *
  * @param ulabel ULabel instance
  */
 export function redo(ulabel: ULabel) {
-    // Create constants for convenience
-    const current_subtask = ulabel.get_current_subtask();
-    const undone_stack = current_subtask.actions.undone_stack;
-
-    // If the action_steam is empty, then there are no actions to redo
-    if (undone_stack.length === 0) return;
-    if (is_blocked_by_read_only(ulabel, undone_stack[undone_stack.length - 1])) return;
-
-    // Redo the action
-    const redo_candidate = undone_stack.pop()!;
-    const boxes_before = get_action_boxes(ulabel, redo_candidate);
-    redo_action(ulabel, redo_candidate);
-    fly_to_action_change(ulabel, redo_candidate, boxes_before);
+    const undone_stack = () => ulabel.get_current_subtask().actions.undone_stack;
+    const top = undone_stack()[undone_stack().length - 1];
+    if (top === undefined) return;
+    const batch_id = top.batch_id;
+    const redone: ULabelAction[] = [];
+    const boxes_before: ULabelContainingBox[] = [];
+    // Re-recorded actions rejoin the batch
+    const previous_batch_id = ulabel.state.action_batch_id;
+    ulabel.state.action_batch_id = batch_id ?? null;
+    try {
+        while (true) {
+            const stack = undone_stack();
+            // If the undone stack is empty, then there are no actions to redo
+            if (stack.length === 0) break;
+            if (is_blocked_by_read_only(ulabel, stack[stack.length - 1])) break;
+            const redo_candidate = stack.pop()!;
+            boxes_before.push(...get_action_boxes(ulabel, redo_candidate));
+            redo_action(ulabel, redo_candidate);
+            redone.push(redo_candidate);
+            const next = undone_stack()[undone_stack().length - 1];
+            if (batch_id == null || next?.batch_id !== batch_id) break;
+        }
+    } finally {
+        ulabel.state.action_batch_id = previous_batch_id;
+    }
+    if (redone.length > 0) fly_to_actions_change(ulabel, redone, boxes_before);
 }
 
 /**
@@ -769,12 +809,12 @@ function get_action_boxes(ulabel: ULabel, action: ULabelAction): ULabelContainin
  * none remain) when none of them is in view.
  *
  * @param ulabel ULabel instance
- * @param action the undone/redone action
- * @param boxes_before boxes of its annotations before the undo/redo
+ * @param actions the undone/redone actions (several for a batch)
+ * @param boxes_before boxes of their annotations before the undo/redo
  */
-function fly_to_action_change(ulabel: ULabel, action: ULabelAction, boxes_before: ULabelContainingBox[]) {
-    if (!ulabel.config.fly_to_on_undo || IN_PROGRESS.includes(action.act_type)) return;
-    const boxes_after = get_action_boxes(ulabel, action);
+function fly_to_actions_change(ulabel: ULabel, actions: ULabelAction[], boxes_before: ULabelContainingBox[]) {
+    if (!ulabel.config.fly_to_on_undo || actions.every((action) => IN_PROGRESS.includes(action.act_type))) return;
+    const boxes_after = actions.flatMap((action) => get_action_boxes(ulabel, action));
     ulabel.fly_to_boxes_if_offscreen(boxes_after.length > 0 ? boxes_after : boxes_before);
 }
 

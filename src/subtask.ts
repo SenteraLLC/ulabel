@@ -37,6 +37,8 @@ export class ULabelSubtask {
             confidence: number;
         }[];
         idd_associated_annotation: string;
+        // Further annotations a pie pick also applies to (bulk change class / paste)
+        idd_batch_ids: string[];
         idd_id: string;
         idd_id_front: string;
         idd_visible: boolean;

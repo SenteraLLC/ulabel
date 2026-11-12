@@ -254,6 +254,45 @@ describe("pruning", () => {
         expect(ulabel.get_selected_annotation_ids()).toEqual([b.id]);
     });
 
+    test("an annotation deprecated by a filter drops out on refresh", () => {
+        const ulabel = make_ulabel();
+        const [a, b] = [make_annotation(), make_annotation()];
+        load(ulabel, [a, b]);
+        ulabel.select_annotations([a.id, b.id]);
+
+        a.deprecated = true;
+        ulabel.refresh_selection("st");
+        a.deprecated = false;
+
+        // Filtering it back in doesn't silently reselect it
+        expect(ulabel.get_selected_annotation_ids()).toEqual([b.id]);
+        expect(document.getElementById("annotation-selection-indicator").textContent).toBe("1 selected");
+    });
+
+    test("a vanished layer can't be selected from", () => {
+        const ulabel = make_ulabel();
+        const a = make_annotation();
+        load(ulabel, [a]);
+        ulabel.subtasks.st.state.is_vanished = true;
+
+        expect(ulabel.select_annotations([a.id])).toEqual([]);
+        expect(ulabel.select_all_annotations()).toEqual([]);
+    });
+
+    test("setting a layer's opacity to 0 clears its selection", () => {
+        const ulabel = make_ulabel();
+        const [a, b] = [make_annotation(), make_annotation()];
+        load(ulabel, [a, b]);
+        ulabel.select_annotations([a.id, b.id]);
+
+        ulabel.set_subtask_opacity("st", 0.5);
+        expect(ulabel.get_selected_annotation_ids()).toEqual([a.id, b.id]);
+
+        ulabel.set_subtask_opacity("st", 0);
+        expect(ulabel.subtasks.st.state.selected_ids.size).toBe(0);
+        expect(document.getElementById("annotation-selection-indicator")).toBeNull();
+    });
+
     test("undo leaves restored annotations unselected", () => {
         const ulabel = make_ulabel();
         const [a, b] = [make_annotation(), make_annotation()];
