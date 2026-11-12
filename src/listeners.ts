@@ -485,7 +485,9 @@ export function create_ulabel_listeners(
             const state = ulabel.get_current_subtask()["state"];
             if (state["active_id"] != null || state["idd_visible"]) return;
             // The mousedown just before this dismissed any open menu (and its
-            // hover), so re-resolve the candidate under the cursor
+            // hover), so re-resolve the candidate under the cursor. The menu
+            // target is highlighted even right after a selection click.
+            ulabel.state.hover_suppressed_at = null;
             ulabel.suggest_edits(context_event);
             const edit_candidate = state["edit_candidate"];
             if (edit_candidate != null) {

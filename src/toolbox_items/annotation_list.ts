@@ -355,6 +355,7 @@ export class AnnotationListToolboxItem extends ToolboxItem {
             if (!annotation_id) return;
             if (e.ctrlKey || e.metaKey) {
                 this.ulabel.select_annotations([String(annotation_id)], "toggle");
+                this.ulabel.suppress_hover_until_move(e);
                 return;
             }
             this.ulabel.fly_to_annotation_id(annotation_id, null, this.ulabel.config.fly_to_max_zoom);
@@ -378,6 +379,17 @@ export class AnnotationListToolboxItem extends ToolboxItem {
         // Hover on annotation list item to highlight annotation on canvas
         $(document).on("mouseenter.ulabel", ".annotation-list-item", (e) => {
             if (this.ulabel.is_context_menu_open()) return;
+            this.ulabel.release_hover_suppression(e);
+            const annotation_id = $(e.currentTarget).data("annotation-id");
+            if (annotation_id) {
+                this.highlight_from_list(String(annotation_id));
+            }
+        });
+
+        // A selection click hides the canvas outline; bring it back once the mouse moves
+        $(document).on("mousemove.ulabel", ".annotation-list-item", (e) => {
+            if (this.ulabel.is_context_menu_open()) return;
+            if (!this.ulabel.release_hover_suppression(e)) return;
             const annotation_id = $(e.currentTarget).data("annotation-id");
             if (annotation_id) {
                 this.highlight_from_list(String(annotation_id));
@@ -402,6 +414,8 @@ export class AnnotationListToolboxItem extends ToolboxItem {
             e.preventDefault();
             const annotation_id = $(e.currentTarget).data("annotation-id");
             if (!annotation_id || this.ulabel.get_current_subtask().state.active_id != null) return;
+            // The menu target is highlighted even right after a selection click
+            this.ulabel.state.hover_suppressed_at = null;
             this.highlight_from_list(String(annotation_id));
             this.ulabel.show_context_menu(String(annotation_id), e.clientX!, e.clientY!);
         });

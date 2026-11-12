@@ -810,6 +810,8 @@ export class ULabel {
             // Add and handle a value for current image
             zoom_val: 1.0,
             last_move: null,
+            // Client point of a selection click; the hover outline stays off until the mouse leaves it
+            hover_suppressed_at: null,
             current_frame: 0,
 
             // Overlay snapshot + rAF flag used to keep in-progress bitmask moves cheap
@@ -4287,6 +4289,10 @@ export class ULabel {
     show_global_edit_suggestion(annid, offset = null, nonspatial_id = null) {
         // Nonspatial annotations have no outline or confidence card on the canvas
         if (nonspatial_id !== null) return;
+        if (this.state["hover_suppressed_at"] != null) {
+            this.hide_global_edit_suggestion();
+            return;
+        }
 
         const subtask_key = this.get_current_subtask_key();
         const current_subtask = this.subtasks[subtask_key];
@@ -9107,6 +9113,7 @@ export class ULabel {
         const idd_visible = this.get_current_subtask()["state"]["idd_visible"];
         const edit_candidate = this.get_current_subtask()["state"]["edit_candidate"];
         this.state["last_move"] = mouse_event;
+        this.release_hover_suppression(mouse_event);
         // If the ID dialog is visible, let it's own handler take care of this
         // If not dragging...
         if (this.drag_state["active_key"] === null) {
@@ -9374,6 +9381,29 @@ export class ULabel {
         const edit_candidate = this.get_current_subtask()["state"]["edit_candidate"];
         if (edit_candidate == null) return;
         this.select_annotations([edit_candidate["annid"]], remove ? "remove" : "toggle");
+        this.suppress_hover_until_move(mouse_event);
+    }
+
+    /**
+     * Hide the hover outline after a selection click so the selection outline
+     * (which looks the same) shows whether the click selected or deselected.
+     * It comes back once the mouse moves past the click tolerance.
+     */
+    suppress_hover_until_move(mouse_event) {
+        this.state["hover_suppressed_at"] = [mouse_event.clientX, mouse_event.clientY];
+        this.hide_global_edit_suggestion();
+    }
+
+    /**
+     * End hover suppression if `mouse_event` is far enough from the click.
+     * Returns true when it ended.
+     */
+    release_hover_suppression(mouse_event) {
+        const point = this.state["hover_suppressed_at"];
+        if (point == null) return false;
+        if (Math.hypot(mouse_event.clientX - point[0], mouse_event.clientY - point[1]) <= CLICK_MOVE_TOLERANCE_PX) return false;
+        this.state["hover_suppressed_at"] = null;
+        return true;
     }
 
     /**

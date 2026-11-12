@@ -481,6 +481,8 @@ export class ULabel {
         // This exists in a few other spots that are technically
         // just mouse events as well
         last_move: JQuery.TriggeredEvent;
+        /** Client point of a selection click while the hover outline is held off. */
+        hover_suppressed_at: [number, number] | null;
         current_frame: number;
         // Global annotation state
         current_subtask: string;
@@ -1041,6 +1043,10 @@ export class ULabel {
     public hide_global_edit_suggestion(): void;
     public hide_edit_suggestion(): void;
     public hide_and_clear_action_candidates(): void;
+    /** @internal Hide the hover outline after a selection click until the mouse moves. */
+    public suppress_hover_until_move(mouse_event: JQuery.TriggeredEvent | MouseEvent): void;
+    /** @internal End hover suppression once the mouse is past the click tolerance; true if it ended. */
+    public release_hover_suppression(mouse_event: JQuery.TriggeredEvent | MouseEvent): boolean;
 
     // Edit utils
     public get_with_access_string(

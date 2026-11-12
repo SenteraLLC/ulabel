@@ -28,6 +28,10 @@ async function selected_ids(page) {
     return page.evaluate(() => window.ulabel.get_selected_annotation_ids());
 }
 
+async function hovered_id(page) {
+    return page.evaluate(() => window.ulabel.get_current_subtask().state.hovered_annid);
+}
+
 async function setup(page) {
     await wait_for_ulabel_init(page);
     await draw_bbox(page, [200, 200], [300, 300]);
@@ -53,6 +57,30 @@ test.describe("multi-select", () => {
         await expect(page.locator(INDICATOR)).toHaveCount(0);
         // Selecting never edits anything
         expect(await get_annotation_count(page)).toBe(2);
+    });
+
+    test("ctrl+click hides the hover outline until the mouse moves", async ({ page }) => {
+        await setup(page);
+
+        await ctrl_click(page, [250, 250]);
+        expect(await selected_ids(page)).toHaveLength(1);
+        expect(await hovered_id(page)).toBeNull();
+        // Jitter within the click tolerance keeps it hidden
+        await page.mouse.move(252, 250);
+        expect(await hovered_id(page)).toBeNull();
+
+        await page.mouse.move(260, 250);
+        const [selected] = await selected_ids(page);
+        await expect.poll(() => hovered_id(page)).toBe(selected);
+
+        await ctrl_click(page, [250, 250]);
+        expect(await selected_ids(page)).toEqual([]);
+        expect(await hovered_id(page)).toBeNull();
+
+        // Right-clicking without moving highlights the menu's target
+        await page.mouse.click(250, 250, { button: "right" });
+        await expect(page.locator(ITEM).first()).toBeVisible();
+        expect(await hovered_id(page)).toBe(selected);
     });
 
     test("bulk delete from the context menu is one undo step", async ({ page }) => {
@@ -196,6 +224,36 @@ test.describe("multi-select in the annotation list", () => {
 
         await rows.nth(0).click({ modifiers: ["Meta"] });
         expect(await selected_ids(page)).toHaveLength(1);
+    });
+
+    test("ctrl+click on a row hides the canvas hover outline until the mouse moves", async ({ page }) => {
+        await setup(page);
+        await expand_annotation_list(page);
+        const row = page.locator(".annotation-list-item").nth(0);
+        const id = await row.getAttribute("data-annotation-id");
+        const box = await row.boundingBox();
+        const [x, y] = [box.x + box.width / 2, box.y + box.height / 2];
+
+        await page.mouse.move(x, y);
+        await expect.poll(() => hovered_id(page)).toBe(id);
+        await page.keyboard.down("Control");
+        await page.mouse.click(x, y);
+        await page.keyboard.up("Control");
+        expect(await selected_ids(page)).toEqual([id]);
+        expect(await hovered_id(page)).toBeNull();
+
+        await page.mouse.move(x + 10, y);
+        await expect.poll(() => hovered_id(page)).toBe(id);
+
+        // Deselect, then right-click without moving: the menu's target is highlighted
+        await page.keyboard.down("Control");
+        await page.mouse.click(x + 10, y);
+        await page.keyboard.up("Control");
+        expect(await selected_ids(page)).toEqual([]);
+        expect(await hovered_id(page)).toBeNull();
+        await page.mouse.click(x + 10, y, { button: "right" });
+        await expect(page.locator(ITEM).first()).toBeVisible();
+        expect(await hovered_id(page)).toBe(id);
     });
 
     test("right-clicking an unselected row clears the selection", async ({ page }) => {

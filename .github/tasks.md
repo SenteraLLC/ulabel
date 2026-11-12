@@ -157,3 +157,7 @@ in the current subtask; adds to the selection.
 
 - [x] Final box notification compares against the host's last-heard selection (independent of base pruning).
 - [x] Track that per ULabel instance and subtask, not via a module-global counter; Jest regressions.
+
+## Multi-select: selection click feedback
+- [x] Hide the hover outline after a ctrl/ctrl+shift click (canvas and annotation list) until the mouse moves past the click tolerance, so deselects are visible; e2e coverage.
+- [x] Review: right-click right after a selection click highlights the menu target (clear suppression before resolving it, canvas and list); e2e regressions.
