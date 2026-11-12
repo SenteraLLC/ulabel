@@ -36,6 +36,15 @@ import { get_active_class_id, get_local_storage_item, set_local_storage_item } f
 import { set_active_class, get_selected_class_id, set_focus_active_class, set_focus_edited, set_focus_deprecated, set_defocused_opacity, can_annotation_be_class } from "../build/active_class";
 import { show_context_menu, hide_context_menu, is_context_menu_open } from "../build/context_menu";
 import { isolate_annotation, is_annotation_isolated_out } from "../build/isolate";
+import {
+    is_annotation_selected,
+    get_selected_annotation_ids,
+    select_annotations,
+    select_all_annotations,
+    clear_selection,
+    refresh_selection,
+    remove_selection_indicator,
+} from "../build/selection";
 import { get_idd_string } from "../build/html_builder";
 import { SubmitButtons } from "../build/toolbox_items/submit_buttons";
 
@@ -76,6 +85,8 @@ const DEFAULT_DEFOCUSED_OPACITY = 0.4;
 
 // Image-space shift applied when an annotation is pasted back into the subtask it was copied from.
 const PASTE_OFFSET_PX = 20;
+// A Ctrl+left drag shorter than this (screen px) is a selection click, not a pan
+const CLICK_MOVE_TOLERANCE_PX = 4;
 
 export class ULabel {
     static version() {
@@ -258,6 +269,7 @@ export class ULabel {
         }
         this.overlay_canvases = [];
         this.filter_distance_overlay = null;
+        remove_selection_indicator();
 
         // 8. Wipe the container DOM (canvases, id dialogs, brush circle, enders, overlays).
         //    Prefer the captured owned-container node so a same-id replacement mounted by an SPA
@@ -654,6 +666,7 @@ export class ULabel {
                 // The last non-delete class selected; what class focus follows
                 selected_class_id: ul.subtasks[subtask_key]["class_ids"][0] ?? null,
                 isolated_annid: null,
+                selected_ids: new Set(),
                 defocused_opacity: raw_subtask["defocused_opacity"] ?? DEFAULT_DEFOCUSED_OPACITY,
                 // Cache of the layer opacity slider, synced by readjust_subtask_opacities
                 layer_opacity: 1,
@@ -1346,6 +1359,55 @@ export class ULabel {
     }
 
     /**
+     * Change a subtask's selection (the target of bulk actions). Ids that
+     * can't be selected (deprecated, dimmed, non-spatial, unknown) are ignored.
+     * View-only: not recorded, does not mark the session edited.
+     *
+     * @param {string[]} annotation_ids
+     * @param {"replace"|"add"|"remove"|"toggle"} how
+     * @param {string|null} subtask_key defaults to the current subtask
+     * @returns {string[]} the selected ids afterwards
+     */
+    select_annotations(annotation_ids, how = "replace", subtask_key = null) {
+        return select_annotations(this, annotation_ids, how, subtask_key);
+    }
+
+    /**
+     * Select every selectable annotation in a subtask.
+     *
+     * @param {string|null} subtask_key defaults to the current subtask
+     * @returns {string[]} the selected ids
+     */
+    select_all_annotations(subtask_key = null) {
+        return select_all_annotations(this, subtask_key);
+    }
+
+    /**
+     * @param {string|null} subtask_key defaults to the current subtask
+     */
+    clear_selection(subtask_key = null) {
+        clear_selection(this, subtask_key);
+    }
+
+    /**
+     * @param {string|null} subtask_key defaults to the current subtask
+     * @returns {string[]} the selected ids, in annotation order
+     */
+    get_selected_annotation_ids(subtask_key = null) {
+        return get_selected_annotation_ids(this, subtask_key);
+    }
+
+    /**
+     * Drop selected ids that are no longer selectable and update the
+     * selection indicator.
+     *
+     * @param {string|null} subtask_key defaults to every subtask
+     */
+    refresh_selection(subtask_key = null) {
+        refresh_selection(this, subtask_key);
+    }
+
+    /**
      * Set a subtask's active class: id payload, toolbox selection, per-class
      * mode sync, and - on subtasks with `focus_active_class` - the class focus.
      *
@@ -1438,6 +1500,8 @@ export class ULabel {
         this.hide_context_menu();
         // Isolation is a per-subtask view; leaving the subtask ends it
         this.isolate_annotation(null, old_st);
+        // So is the selection
+        this.clear_selection(old_st);
 
         // Clear stale hover on the outgoing subtask so its white outline doesn't linger
         // (its canvases stay visible at reduced opacity in the background).
@@ -2509,7 +2573,7 @@ export class ULabel {
         }
 
         // Draw hover outline behind the annotation strokes
-        if (this.is_annotation_hovered(annotation_object)) {
+        if (this.is_annotation_highlighted(annotation_object)) {
             ctx.globalCompositeOperation = "destination-over";
             ctx.strokeStyle = "white";
             ctx.lineWidth = (line_size + 4) * px_per_px;
@@ -2716,7 +2780,7 @@ export class ULabel {
         );
         ctx.globalAlpha = 1.0;
 
-        if (this.is_annotation_hovered(annotation_object)) {
+        if (this.is_annotation_highlighted(annotation_object)) {
             const outline = this.get_bitmask_outline(render);
             const blit_x = (render.tlx + diffX - BITMASK_OUTLINE_BORDER) * px_per_px;
             const blit_y = (render.tly + diffY - BITMASK_OUTLINE_BORDER) * px_per_px;
@@ -2877,7 +2941,7 @@ export class ULabel {
         ctx.stroke();
         ctx.lineCap = "round";
 
-        if (this.is_annotation_hovered(annotation_object)) {
+        if (this.is_annotation_highlighted(annotation_object)) {
             ctx.globalCompositeOperation = "destination-over";
             ctx.strokeStyle = "white";
             ctx.lineWidth = (line_size + 4) * px_per_px;
@@ -3214,6 +3278,8 @@ export class ULabel {
         } else {
             this.redraw_all_annotations_in_subtask(subtask, offset, nonspatial_only);
         }
+        // Focus, isolation and filter changes all end in a full redraw
+        if (offset === null) refresh_selection(this, subtask);
     }
 
     /**
@@ -4160,8 +4226,13 @@ export class ULabel {
         return this.subtasks[subtask_key]["state"]["hovered_annid"] === annotation_object["id"];
     }
 
+    // Hovered and selected annotations share the white outline
+    is_annotation_highlighted(annotation_object) {
+        return this.is_annotation_hovered(annotation_object) || is_annotation_selected(this, annotation_object);
+    }
+
     draw_hover_outline(annotation_object, ctx, border_width) {
-        if (!this.is_annotation_hovered(annotation_object)) return;
+        if (!this.is_annotation_highlighted(annotation_object)) return;
         const px_per_px = this.config["px_per_px"];
         ctx.globalCompositeOperation = "destination-over";
         ctx.strokeStyle = "white";
@@ -4399,6 +4470,7 @@ export class ULabel {
      */
     undo() {
         this.run_on_edit_subtask("stream", () => undo(this));
+        refresh_selection(this);
     }
 
     /**
@@ -4407,6 +4479,7 @@ export class ULabel {
      */
     redo() {
         this.run_on_edit_subtask("undone_stack", () => redo(this));
+        refresh_selection(this);
     }
 
     /**
@@ -9026,6 +9099,9 @@ export class ULabel {
             case "move":
                 this.finish_move(mouse_event);
                 break;
+            case "pan":
+                this.toggle_selection_on_ctrl_click(mouse_event);
+                break;
             default:
                 // No handling necessary for pan and zoom until mousemove
                 break;
@@ -9033,6 +9109,21 @@ export class ULabel {
 
         this.drag_state["active_key"] = null;
         this.drag_state["release_button"] = null;
+    }
+
+    /**
+     * A Ctrl+left "pan" that barely moved is a click: toggle the hovered
+     * annotation in the selection.
+     */
+    toggle_selection_on_ctrl_click(mouse_event) {
+        if (this.drag_state["release_button"] !== 0) return;
+        const [start_x, start_y] = this.drag_state["pan"]["mouse_start"];
+        if (Math.hypot(mouse_event.clientX - start_x, mouse_event.clientY - start_y) > CLICK_MOVE_TOLERANCE_PX) return;
+        // Hover resolves lazily; re-resolve under the cursor like the context menu does
+        this.suggest_edits(mouse_event);
+        const edit_candidate = this.get_current_subtask()["state"]["edit_candidate"];
+        if (edit_candidate == null) return;
+        this.select_annotations([edit_candidate["annid"]], "toggle");
     }
 
     // Pan to correct location given mouse dragging
@@ -9623,6 +9714,7 @@ export class ULabel {
         this.subtasks[subtask]["actions"]["undone_stack"] = [];
         // The isolated id is about to stop existing; the redraw below repaints
         this.isolate_annotation(null, subtask, false);
+        this.clear_selection(subtask);
 
         const outgoing_annotations = this.subtasks[subtask]["annotations"];
         ULabel.process_resume_from(this, subtask, { resume_from: new_annotations });

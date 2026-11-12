@@ -319,6 +319,12 @@ function handle_keydown_event(
         return false;
     }
 
+    if (ctrl && !shift && !keydown_event.altKey && keydown_event.key.toLowerCase() === "a" && !is_text_input_target(keydown_event.target)) {
+        keydown_event.preventDefault();
+        ulabel.select_all_annotations();
+        return false;
+    }
+
     const current_subtask = ulabel.get_current_subtask();
 
     // Handle Escape key
@@ -328,6 +334,8 @@ function handle_keydown_event(
         } else if (current_subtask.state.idd_visible) {
             // A clicked-open id dialog has no other dismissal
             ulabel.hide_id_dialog();
+        } else if (current_subtask.state.selected_ids.size > 0 && !current_subtask.state.is_in_progress) {
+            ulabel.clear_selection();
         } else if (current_subtask.state.isolated_annid != null) {
             ulabel.isolate_annotation(null);
         } else if (current_subtask.state.is_in_erase_mode) {
@@ -477,6 +485,8 @@ export function create_ulabel_listeners(
             ulabel.suggest_edits(context_event);
             const edit_candidate = state["edit_candidate"];
             if (edit_candidate != null) {
+                // The menu on an unselected annotation acts on it alone
+                if (!state.selected_ids.has(edit_candidate.annid)) ulabel.clear_selection();
                 ulabel.show_context_menu(edit_candidate.annid, context_event.clientX!, context_event.clientY!);
             }
         },

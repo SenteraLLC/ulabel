@@ -438,6 +438,8 @@ export type ULabelConstructorArgs = {
     on_focus_deprecated_change?: (subtask_key: string, enabled: boolean) => void;
     /** Fired after a subtask's isolated annotation changes (`null` when cleared), from any writer (API, list button, Escape). */
     on_isolate_change?: (subtask_key: string, annotation_id: string | null) => void;
+    /** Fired with the selected ids (in annotation order) after a subtask's selection changes, from any writer (API, Ctrl+click, Ctrl+A, Escape, pruning). */
+    on_selection_change?: (subtask_key: string, annotation_ids: string[]) => void;
     /** Fired when an undo/redo from a read-only subtask does nothing because the writable subtask's top action was triggered elsewhere. */
     on_undo_redo_blocked?: (kind: "undo" | "redo", subtask_key: string, from_subtask_key: string, origin_subtask_key: string | null) => void;
     /** Fired once per recorded, undone, or redone action that changes committed annotation state. Not fired by `set_annotations`/`set_annotations_batch`/`resume_from`. */
@@ -611,6 +613,25 @@ export class ULabel {
     public isolate_annotation(annotation_id: string | null, subtask_key?: string | null, redraw?: boolean): boolean;
     /** The isolated annotation id in a subtask, if any. */
     public get_isolated_annotation_id(subtask_key?: string | null): string | null;
+    /**
+     * Change a subtask's selection, the target of bulk actions. Ids that can't
+     * be selected (unknown, deprecated, dimmed or isolated out, non-spatial,
+     * 3D, in progress) are ignored. View-only state (not recorded, does not
+     * mark edited). Returns the selected ids afterwards.
+     */
+    public select_annotations(
+        annotation_ids: string[],
+        how?: "replace" | "add" | "remove" | "toggle",
+        subtask_key?: string | null,
+    ): string[];
+    /** Select every selectable annotation in a subtask. Returns the selected ids. */
+    public select_all_annotations(subtask_key?: string | null): string[];
+    /** Empty a subtask's selection. */
+    public clear_selection(subtask_key?: string | null): void;
+    /** The selected annotation ids in a subtask, in annotation order. */
+    public get_selected_annotation_ids(subtask_key?: string | null): string[];
+    /** @internal Drop selected ids that are no longer selectable; defaults to every subtask. */
+    public refresh_selection(subtask_key?: string | null): void;
     /**
      * Set a subtask's layer opacity. Also writes `inactive_opacity` so the value
      * survives a subtask switch.

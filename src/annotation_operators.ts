@@ -625,6 +625,8 @@ export function filter_points_distance_from_line(ulabel: ULabel, recalculate_dis
             ulabel.redraw_multiple_spatial_annotations(annotations_ids_to_redraw_by_subtask[subtask_key], subtask_key);
         }
     }
+    // Filtered-out points leave the selection
+    ulabel.refresh_selection();
 
     // Ensure the overlay exists before trying to access it
     if (ulabel.filter_distance_overlay === null || ulabel.filter_distance_overlay === undefined) {

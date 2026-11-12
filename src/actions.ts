@@ -129,6 +129,8 @@ export function record_action(
     if (!is_substep) {
         emit_annotation_change(ulabel, action, is_redo ? "redo" : "do", subtask_key ?? ulabel.get_current_subtask_key());
     }
+    // A deleted, deprecated or reclassed (now dimmed) annotation leaves the selection
+    ulabel.refresh_selection(subtask_key ?? ulabel.get_current_subtask_key());
 };
 
 // Actions that touch nothing committed until a later action; reported only on undo/redo.

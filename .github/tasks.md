@@ -112,3 +112,21 @@
 
 - [x] Card placement: above, else below, else pinned inside the visible area.
 - [x] Playwright test (whole-image box, zoomed-in box); changelog; lint, build, jest, e2e.
+
+## Multi-select + bulk actions (CVML-358), phase 1: direct selection only
+
+No box/lasso select modes and no group drag (follow-ups).
+
+- [x] Selection core: `selected_ids` per-subtask state; `src/selection.ts` (set/add/toggle, clear, prune, get);
+  only live, non-deprecated, visible, spatial, non-3D ids; not undoable. Cleared on subtask switch / `set_annotations`;
+  pruned on delete, undo/redo, filter/focus changes.
+- [x] Drawing: selected annotations get the hover white border.
+- [x] Persistent `N selected` indicator, styled and placed like the fly-to toast (which moves below it).
+- [x] Input: Ctrl+click (no drag, canvas or annotation list) toggles; Ctrl+A selects all visible; Esc clears (after cancelling an in-progress
+  annotation, before exiting isolation); right-click on an unselected annotation clears the selection and acts on it.
+- [x] Public API: `get_selected_annotation_ids()`, `select_annotations(ids, how)`, `select_all_annotations()`, `clear_selection()`, `on_selection_change` config callback.
+- [ ] Bulk clipboard: Ctrl+C/X/V act on the selection first; v2 envelope (`annotations: [...]`), v1 still pasteable;
+  one undo step; one class pie for the batch.
+- [ ] Bulk context menu on a selected annotation: Copy to / Move to / Delete / Change class, each one undo step.
+  Delete key acts on the selection first.
+- [ ] Types, `api_spec.md`, changelog, demo; Jest + Playwright tests; lint, build, jest.
