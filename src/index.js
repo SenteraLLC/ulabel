@@ -1416,14 +1416,6 @@ export class ULabel {
 
     /**
      * @param {string|null} subtask_key defaults to the current subtask
-     * @returns {string|null} the first isolated annotation id, if any
-     */
-    get_isolated_annotation_id(subtask_key = null) {
-        return this.get_isolated_annotation_ids(subtask_key)[0] ?? null;
-    }
-
-    /**
-     * @param {string|null} subtask_key defaults to the current subtask
      * @returns {string[]} the isolated annotation ids (empty when nothing is isolated)
      */
     get_isolated_annotation_ids(subtask_key = null) {

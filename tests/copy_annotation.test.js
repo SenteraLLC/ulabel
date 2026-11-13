@@ -212,7 +212,7 @@ describe("copy_annotation", () => {
 
         ulabel.copy_annotation("g1", "pred");
 
-        expect(ulabel.get_isolated_annotation_id("pred")).toBeNull();
+        expect(ulabel.get_isolated_annotation_ids("pred")).toEqual([]);
     });
 });
 

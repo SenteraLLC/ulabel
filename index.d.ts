@@ -643,8 +643,6 @@ export class ULabel {
      * `null` or `[]` clears. Rejected as a whole if any id would be rejected.
      */
     public isolate_annotations(annotation_ids: string[] | null, subtask_key?: string | null, redraw?: boolean): boolean;
-    /** The first isolated annotation id in a subtask, if any (see `get_isolated_annotation_ids`). */
-    public get_isolated_annotation_id(subtask_key?: string | null): string | null;
     /** The isolated annotation ids in a subtask (empty when nothing is isolated). */
     public get_isolated_annotation_ids(subtask_key?: string | null): string[];
     /**

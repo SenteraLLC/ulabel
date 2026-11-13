@@ -1046,10 +1046,6 @@ A multi envelope (`ulabel_annotation: 2`) pastes every annotation the current su
 
 *(subtask_key?: string | null) => string[]* -- The isolated annotation ids in a subtask (default: the current one), or `[]`.
 
-### `get_isolated_annotation_id(subtask_key?)`
-
-*(subtask_key?: string | null) => string | null* -- The first isolated annotation id in a subtask (default: the current one), or `null`. Use [`get_isolated_annotation_ids`](#get_isolated_annotation_idssubtask_key) when several can be isolated.
-
 ### `restore_annotation(annotation_id)`
 
 *(annotation_id: string) => boolean* -- Undeletes an annotation in the current subtask, as the context menu's `Restore` does. Refused (returns `false`) unless `can_restore_annotation(annotation_id)`: deleted by a human and by nothing else (filter-deprecated annotations stay deprecated), a writable subtask, and geometry that can stand alone (not a delete shape, an empty polygon or bitmask, or a polyline / contour with fewer than 2 points). A vertex delete or brush stroke that removes an annotation keeps its original shape, so restoring it brings that shape back. The edit stamp (`last_edited_at` / `last_edited_by`) reverts to what it was before the recorded action that deleted it, so restoring an unedited loaded annotation leaves it unedited for `edits_only` and Edited Only; when no recorded action deleted it (it was loaded deprecated) it is stamped now. Recorded as a `restore_annotation` action (undo deletes it again) and reported to [`on_annotation_change`](#on_annotation_change).

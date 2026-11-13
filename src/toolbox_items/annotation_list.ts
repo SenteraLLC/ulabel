@@ -452,7 +452,7 @@ export class AnnotationListToolboxItem extends ToolboxItem {
 
         const show_all_btn = document.querySelector<HTMLButtonElement>("#annotation-list-show-all");
         if (show_all_btn) {
-            show_all_btn.style.display = this.ulabel.get_isolated_annotation_id() != null ? "inline-block" : "none";
+            show_all_btn.style.display = this.ulabel.get_isolated_annotation_ids().length > 0 ? "inline-block" : "none";
         }
 
         // Update toggle button

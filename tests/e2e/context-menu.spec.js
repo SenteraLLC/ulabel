@@ -182,17 +182,17 @@ test.describe("context menu", () => {
         await draw_bbox(page, [200, 200], [300, 300]);
         await draw_bbox(page, [400, 200], [500, 300]);
         const annotation_id = (await get_annotation_by_index(page, 0)).id;
-        const isolated_id = () => page.evaluate(() => window.ulabel.get_isolated_annotation_id());
+        const isolated_ids = () => page.evaluate(() => window.ulabel.get_isolated_annotation_ids());
 
         await right_click(page, [250, 250]);
         await click_item(page, "Isolate");
         await expect(page.locator(MENU)).toBeHidden();
-        expect(await isolated_id()).toBe(annotation_id);
+        expect(await isolated_ids()).toEqual([annotation_id]);
 
         await right_click(page, [250, 250]);
         await expect(page.locator(MENU).locator(ITEM, { hasText: "Show all" })).toHaveCount(1);
         await click_item(page, "Show all");
         await expect(page.locator(MENU)).toBeHidden();
-        expect(await isolated_id()).toBeNull();
+        expect(await isolated_ids()).toEqual([]);
     });
 });

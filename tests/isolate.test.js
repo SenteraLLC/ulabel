@@ -57,7 +57,7 @@ describe("isolate_annotation", () => {
         const ulabel = make_ulabel();
 
         expect(ulabel.subtasks.st.state.isolated_annids).toBeNull();
-        expect(ulabel.get_isolated_annotation_id("st")).toBeNull();
+        expect(ulabel.get_isolated_annotation_ids("st")).toEqual([]);
     });
 
     test("writes the state and reports it", () => {
@@ -68,7 +68,7 @@ describe("isolate_annotation", () => {
         expect(ulabel.isolate_annotation(a.id)).toBe(true);
 
         expect(ulabel.subtasks.st.state.isolated_annids).toEqual([a.id]);
-        expect(ulabel.get_isolated_annotation_id()).toBe(a.id);
+        expect(ulabel.get_isolated_annotation_ids()).toEqual([a.id]);
     });
 
     test("rejects unknown and deprecated ids without touching state", () => {
@@ -253,7 +253,6 @@ describe("isolate_annotations", () => {
         expect(ulabel.isolate_annotations([a.id, b.id, a.id])).toBe(true);
 
         expect(ulabel.get_isolated_annotation_ids()).toEqual([a.id, b.id]);
-        expect(ulabel.get_isolated_annotation_id()).toBe(a.id);
         expect(ulabel.is_annotation_defocused(a, "st")).toBe(false);
         expect(ulabel.is_annotation_defocused(b, "st")).toBe(false);
         expect(ulabel.is_annotation_defocused(c, "st")).toBe(true);

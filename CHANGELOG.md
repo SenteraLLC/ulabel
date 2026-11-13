@@ -14,7 +14,7 @@ All notable changes to this project will be documented here.
 
 #### Changed
 - **Breaking:** `on_isolate_change(subtask_key, annotation_ids)` now receives an array of ids (or `null`) instead of a single id. A single isolation arrives as `[annotation_id]`.
-- `get_isolated_annotation_id()` returns the first isolated id.
+- **Breaking:** `get_isolated_annotation_id()` is removed; use `get_isolated_annotation_ids()`.
 
 ## [0.33.0] - Nov 13th, 2026
 #### Added
