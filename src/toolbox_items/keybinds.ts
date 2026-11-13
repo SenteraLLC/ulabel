@@ -525,22 +525,50 @@ export class KeybindsToolboxItem extends ToolboxItem {
         });
 
         keybinds.push({
-            key: "Escape",
+            key: "escape",
             label: "Cancel",
-            description: "Cancel current action, exit brush/erase mode, or cancel annotation in progress",
+            description: "Cancel current action, exit brush/erase mode, cancel annotation in progress, or clear the selection",
+            configurable: false,
+        });
+
+        keybinds.push({
+            key: "ctrl+a",
+            label: "Select All",
+            description: "Select every visible annotation in the current subtask",
             configurable: false,
         });
 
         // Mouse + Modifier combinations
         keybinds.push({
-            key: "Middle Click",
+            key: "ctrl+click",
+            label: "Toggle Selection",
+            description: "Add or remove the clicked annotation (or annotation list row) from the selection",
+            configurable: false,
+        });
+
+        keybinds.push({
+            key: "ctrl+drag",
+            label: "Box Select",
+            description: "Add every annotation the dragged box touches to the selection",
+            configurable: false,
+        });
+
+        keybinds.push({
+            key: "ctrl+shift+drag",
+            label: "Box Deselect",
+            description: "Remove every annotation the dragged box touches from the selection (ctrl+shift+click removes one)",
+            configurable: false,
+        });
+
+        keybinds.push({
+            key: "scrollclick+drag",
             label: "Pan",
             description: "Pan the image by dragging with middle mouse button",
             configurable: false,
         });
 
         keybinds.push({
-            key: "Shift + Click Drag",
+            key: "shift+drag",
             label: "Zoom Drag",
             description: "Zoom in/out by holding Shift and dragging with left mouse button up/down",
             configurable: false,
@@ -548,7 +576,7 @@ export class KeybindsToolboxItem extends ToolboxItem {
 
         if (config.allow_body_move) {
             keybinds.push({
-                key: "Alt + Click Drag",
+                key: "alt+drag",
                 label: "Draw Over",
                 description: "Start a new annotation on top of an existing one instead of moving it",
                 configurable: false,
@@ -557,23 +585,23 @@ export class KeybindsToolboxItem extends ToolboxItem {
 
         // Scroll combinations
         keybinds.push({
-            key: "Scroll",
+            key: "scroll",
             label: "Zoom",
             description: "Zoom in/out using mouse scroll wheel",
             configurable: false,
         });
 
         keybinds.push({
-            key: "Alt + Scroll",
+            key: "alt+scroll",
             label: "Brush Size",
-            description: "Change brush size using Alt + scroll wheel (when in brush mode)",
+            description: "Change brush size using alt+scroll (when in brush mode)",
             configurable: false,
         });
 
         keybinds.push({
-            key: "Ctrl/Shift + Scroll",
+            key: "ctrl/shift+scroll",
             label: "Frame",
-            description: "Navigate between frames using Ctrl or Shift + scroll wheel (multi-frame images)",
+            description: "Navigate between frames using ctrl+scroll or shift+scroll (multi-frame images)",
             configurable: false,
         });
 

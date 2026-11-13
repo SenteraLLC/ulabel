@@ -22,8 +22,9 @@ function is_text_input_target(target: EventTarget | null): boolean {
 }
 
 /**
- * Native clipboard shortcuts: copy/cut the hovered annotation, paste into the
- * current subtask. Only intercepts the event when there is something to act on.
+ * Native clipboard shortcuts: copy/cut the selection (or else the hovered
+ * annotation), paste into the current subtask. Only intercepts the event when
+ * there is something to act on.
  */
 function handle_clipboard_event(
     clipboard_event: JQuery.TriggeredEvent,
@@ -41,7 +42,7 @@ function handle_clipboard_event(
         if (text) {
             try {
                 const parsed = JSON.parse(text);
-                if (parsed?.ulabel_annotation === 1) envelope = parsed;
+                if (parsed?.ulabel_annotation === 1 || parsed?.ulabel_annotation === 2) envelope = parsed;
             } catch {
                 // Not our payload; fall back to the in-memory clipboard
             }
@@ -319,15 +320,26 @@ function handle_keydown_event(
         return false;
     }
 
+    if (ctrl && !shift && !keydown_event.altKey && keydown_event.key.toLowerCase() === "a" && !is_text_input_target(keydown_event.target)) {
+        keydown_event.preventDefault();
+        ulabel.select_all_annotations();
+        return false;
+    }
+
     const current_subtask = ulabel.get_current_subtask();
 
     // Handle Escape key
     if (keydown_event.key.toLowerCase() === "escape") {
+        if (ulabel.cancel_select_box()) {
+            return false;
+        }
         if (ulabel.is_context_menu_open()) {
             ulabel.hide_context_menu();
         } else if (current_subtask.state.idd_visible) {
             // A clicked-open id dialog has no other dismissal
             ulabel.hide_id_dialog();
+        } else if (current_subtask.state.selected_ids.size > 0 && !current_subtask.state.is_in_progress) {
+            ulabel.clear_selection();
         } else if (current_subtask.state.isolated_annid != null) {
             ulabel.isolate_annotation(null);
         } else if (current_subtask.state.is_in_erase_mode) {
@@ -473,10 +485,14 @@ export function create_ulabel_listeners(
             const state = ulabel.get_current_subtask()["state"];
             if (state["active_id"] != null || state["idd_visible"]) return;
             // The mousedown just before this dismissed any open menu (and its
-            // hover), so re-resolve the candidate under the cursor
+            // hover), so re-resolve the candidate under the cursor. The menu
+            // target is highlighted even right after a selection click.
+            ulabel.state.hover_suppressed_at = null;
             ulabel.suggest_edits(context_event);
             const edit_candidate = state["edit_candidate"];
             if (edit_candidate != null) {
+                // The menu on an unselected annotation acts on it alone
+                if (!state.selected_ids.has(edit_candidate.annid)) ulabel.clear_selection();
                 ulabel.show_context_menu(edit_candidate.annid, context_event.clientX!, context_event.clientY!);
             }
         },
@@ -695,6 +711,8 @@ export function create_ulabel_listeners(
             if (event_matches_keybind(keypress_event, ulabel.config.delete_annotation_keybind)) {
                 if (ulabel.is_subtask_edit_locked()) return;
                 const current_subtask = ulabel.get_current_subtask();
+                // The selection goes first
+                if (!current_subtask.state.is_in_progress && ulabel.delete_selected_annotations()) return;
                 // Check the edit_candidate to make sure its not null and isn't nonspatial
                 const edit_cand = current_subtask.state.edit_candidate;
                 if (

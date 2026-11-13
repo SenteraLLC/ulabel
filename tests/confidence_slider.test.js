@@ -43,6 +43,7 @@ function make_ulabel(annotations, config = {}) {
             },
         },
         redraw_multiple_spatial_annotations: jest.fn(),
+        refresh_selection: jest.fn(),
         toolbox: { redraw_update_items: jest.fn() },
     };
 }
@@ -316,6 +317,24 @@ describe("ConfidenceSlider", () => {
 
             expect(ulabel.redraw_multiple_spatial_annotations).toHaveBeenCalledWith(["low"], "st");
             expect(ulabel.toolbox.redraw_update_items).toHaveBeenCalled();
+        });
+
+        test("filtering an annotation in or out refreshes that subtask's selection", () => {
+            const low = make_annotation("low", "bbox", [{ class_id: 10, confidence: 0.1 }]);
+            const ulabel = make_ulabel([low], {
+                class_filter_mode: "all-only",
+                default_values: { all: 50 },
+                filter_on_load: false,
+            });
+            const cs = new ConfidenceSlider(ulabel);
+
+            cs.filter_annotations(true);
+            expect(ulabel.refresh_selection).toHaveBeenCalledWith("st");
+
+            // Nothing changes on a second pass, so no refresh
+            ulabel.refresh_selection.mockClear();
+            cs.filter_annotations(true);
+            expect(ulabel.refresh_selection).not.toHaveBeenCalled();
         });
     });
 

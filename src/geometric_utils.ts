@@ -2,6 +2,7 @@
 /// <reference path="./ambient.d.ts" />
 import * as turf from "@turf/turf";
 import * as polygonClipping from "polygon-clipping";
+import type { ULabelContainingBox } from "../index";
 
 export type Point2D = [number, number];
 export type Point3D = [number, number, number];
@@ -585,6 +586,68 @@ export class GeometricUtils {
             }
         }
         return false;
+    }
+
+    /** Whether a point lies in an axis-aligned rectangle, edges included. */
+    public static point_is_within_rect(point: Point2D, rect: Pick<ULabelContainingBox, "tlx" | "tly" | "brx" | "bry">): boolean {
+        return point[0] >= rect.tlx && point[0] <= rect.brx && point[1] >= rect.tly && point[1] <= rect.bry;
+    }
+
+    /** Whether two axis-aligned rectangles overlap, edges included. */
+    public static rects_overlap(a: Pick<ULabelContainingBox, "tlx" | "tly" | "brx" | "bry">, b: Pick<ULabelContainingBox, "tlx" | "tly" | "brx" | "bry">): boolean {
+        return a.tlx <= b.brx && a.brx >= b.tlx && a.tly <= b.bry && a.bry >= b.tly;
+    }
+
+    /** Whether a line segment touches an axis-aligned rectangle (Liang-Barsky clip). */
+    public static segment_intersects_rect(p1: Point2D, p2: Point2D, rect: Pick<ULabelContainingBox, "tlx" | "tly" | "brx" | "bry">): boolean {
+        const dx: number = p2[0] - p1[0];
+        const dy: number = p2[1] - p1[1];
+        let t0: number = 0;
+        let t1: number = 1;
+        const edges: [number, number][] = [
+            [-dx, p1[0] - rect.tlx],
+            [dx, rect.brx - p1[0]],
+            [-dy, p1[1] - rect.tly],
+            [dy, rect.bry - p1[1]],
+        ];
+        for (const [p, q] of edges) {
+            if (p === 0) {
+                if (q < 0) return false;
+            } else {
+                const t: number = q / p;
+                if (p < 0) {
+                    if (t > t1) return false;
+                    t0 = Math.max(t0, t);
+                } else {
+                    if (t < t0) return false;
+                    t1 = Math.min(t1, t);
+                }
+            }
+        }
+        return true;
+    }
+
+    /** Whether any vertex or segment of a path touches a rectangle. `closed` adds the last -> first segment. */
+    public static path_touches_rect(path: ULabelSpatialPayload2D, rect: Pick<ULabelContainingBox, "tlx" | "tly" | "brx" | "bry">, closed: boolean = false): boolean {
+        if (path.length === 0) return false;
+        if (path.length === 1) return GeometricUtils.point_is_within_rect(path[0], rect);
+        for (let i = 0; i < path.length - 1; i++) {
+            if (GeometricUtils.segment_intersects_rect(path[i], path[i + 1], rect)) return true;
+        }
+        return closed && GeometricUtils.segment_intersects_rect(path[path.length - 1], path[0], rect);
+    }
+
+    /** Even-odd ray cast: whether a point is inside a ring (closed or not). */
+    public static point_is_within_ring(point: Point2D, ring: ULabelSpatialPayload2D): boolean {
+        let inside: boolean = false;
+        for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+            const [xi, yi] = ring[i];
+            const [xj, yj] = ring[j];
+            if ((yi > point[1]) !== (yj > point[1]) && point[0] < ((xj - xi) * (point[1] - yi)) / (yj - yi) + xi) {
+                inside = !inside;
+            }
+        }
+        return inside;
     }
 
     /**

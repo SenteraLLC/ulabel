@@ -2,6 +2,7 @@ import type { ULabel } from "../index";
 import { ToolboxItem } from "../toolbox";
 import { ULabelAnnotation } from "../annotation";
 import { ULabelSubtask } from "../subtask";
+import { is_annotation_selected } from "../selection";
 import { get_local_storage_item, set_local_storage_item } from "../utilities";
 import {
     BBOX_SVG,
@@ -190,7 +191,8 @@ export class AnnotationListToolboxItem extends ToolboxItem {
             background-color: rgba(0, 128, 255, 0.1);
         }
 
-        #toolbox .annotation-list-item.highlighted {
+        #toolbox .annotation-list-item.highlighted,
+        #toolbox .annotation-list-item.selected {
             background-color: rgba(0, 128, 255, 0.2);
         }
 
@@ -268,7 +270,8 @@ export class AnnotationListToolboxItem extends ToolboxItem {
             background-color: rgba(100, 149, 237, 0.2);
         }
 
-        .ulabel-night #toolbox .annotation-list-item.highlighted {
+        .ulabel-night #toolbox .annotation-list-item.highlighted,
+        .ulabel-night #toolbox .annotation-list-item.selected {
             background-color: rgba(100, 149, 237, 0.3);
         }
 
@@ -346,12 +349,16 @@ export class AnnotationListToolboxItem extends ToolboxItem {
             this.ulabel.set_focus_edited(this.ulabel.get_current_subtask_key(), (e.target as HTMLInputElement).checked);
         });
 
-        // Click on annotation list item to fly to it
+        // Click on annotation list item to fly to it; Ctrl+click toggles its selection instead
         $(document).on("click.ulabel", ".annotation-list-item", (e) => {
             const annotation_id = $(e.currentTarget).data("annotation-id");
-            if (annotation_id) {
-                this.ulabel.fly_to_annotation_id(annotation_id, null, this.ulabel.config.fly_to_max_zoom);
+            if (!annotation_id) return;
+            if (e.ctrlKey || e.metaKey) {
+                this.ulabel.select_annotations([String(annotation_id)], "toggle");
+                this.ulabel.suppress_hover_until_move(e);
+                return;
             }
+            this.ulabel.fly_to_annotation_id(annotation_id, null, this.ulabel.config.fly_to_max_zoom);
         });
 
         // Per-entry isolate toggle; must not bubble into the fly-to click above
@@ -372,6 +379,17 @@ export class AnnotationListToolboxItem extends ToolboxItem {
         // Hover on annotation list item to highlight annotation on canvas
         $(document).on("mouseenter.ulabel", ".annotation-list-item", (e) => {
             if (this.ulabel.is_context_menu_open()) return;
+            this.ulabel.release_hover_suppression(e);
+            const annotation_id = $(e.currentTarget).data("annotation-id");
+            if (annotation_id) {
+                this.highlight_from_list(String(annotation_id));
+            }
+        });
+
+        // A selection click hides the canvas outline; bring it back once the mouse moves
+        $(document).on("mousemove.ulabel", ".annotation-list-item", (e) => {
+            if (this.ulabel.is_context_menu_open()) return;
+            if (!this.ulabel.release_hover_suppression(e)) return;
             const annotation_id = $(e.currentTarget).data("annotation-id");
             if (annotation_id) {
                 this.highlight_from_list(String(annotation_id));
@@ -396,6 +414,8 @@ export class AnnotationListToolboxItem extends ToolboxItem {
             e.preventDefault();
             const annotation_id = $(e.currentTarget).data("annotation-id");
             if (!annotation_id || this.ulabel.get_current_subtask().state.active_id != null) return;
+            // The menu target is highlighted even right after a selection click
+            this.ulabel.state.hover_suppressed_at = null;
             this.highlight_from_list(String(annotation_id));
             this.ulabel.show_context_menu(String(annotation_id), e.clientX!, e.clientY!);
         });
@@ -506,7 +526,7 @@ export class AnnotationListToolboxItem extends ToolboxItem {
             const icon_url = this.get_spatial_type_icon_url(annotation.spatial_type!, color);
 
             html += `
-                <div class="annotation-list-item" data-annotation-id="${annotation.id}" data-annotation-idx="${i}">
+                <div class="annotation-list-item${this.build_selected_class(annotation)}" data-annotation-id="${annotation.id}" data-annotation-idx="${i}">
                     <div class="annotation-list-item-header">
                         <div class="annotation-list-item-icon"><img src="${icon_url}" alt=""></div>
                         <div class="annotation-list-item-text">
@@ -585,7 +605,7 @@ export class AnnotationListToolboxItem extends ToolboxItem {
                 const icon_url = this.get_spatial_type_icon_url(annotation.spatial_type!, color);
 
                 html += `
-                    <div class="annotation-list-item" data-annotation-id="${annotation.id}" data-annotation-idx="${overall_idx}">
+                    <div class="annotation-list-item${this.build_selected_class(annotation)}" data-annotation-id="${annotation.id}" data-annotation-idx="${overall_idx}">
                         <div class="annotation-list-item-header">
                             <div class="annotation-list-item-icon" style="margin-left: 0.5rem;"><img src="${icon_url}" alt=""></div>
                             <div class="annotation-list-item-text">
@@ -602,6 +622,10 @@ export class AnnotationListToolboxItem extends ToolboxItem {
         }
 
         return html;
+    }
+
+    private build_selected_class(annotation: ULabelAnnotation): string {
+        return is_annotation_selected(this.ulabel, annotation) ? " selected" : "";
     }
 
     private build_deprecated_marker_html(annotation: ULabelAnnotation): string {

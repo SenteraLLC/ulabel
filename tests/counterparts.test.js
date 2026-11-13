@@ -431,7 +431,7 @@ describe("set_counterparts_class", () => {
                 gt: [make_bbox("g1", { pred_class_name: "Weed" }), make_bbox("g2", { pred_class_name: "Nope" })],
             }, { counterpart_class_meta_key: "pred_class_name", paste_class_choice: true });
             ulabel.state.current_subtask = "gt";
-            ulabel._offer_pasted_class_choice = jest.fn();
+            ulabel.show_id_dialog = jest.fn();
 
             for (const id of ["g1", "g2"]) {
                 ulabel.copy_annotation_to_clipboard(id);
@@ -440,7 +440,7 @@ describe("set_counterparts_class", () => {
                 const dup_id = ulabel.copy_annotation_to_subtask(id, "gt", "gt");
                 expect(gt(ulabel, dup_id).classification_payloads).toEqual([{ class_id: 1, confidence: 1 }, { class_id: 2, confidence: 0 }]);
             }
-            expect(ulabel._offer_pasted_class_choice).not.toHaveBeenCalled();
+            expect(ulabel.show_id_dialog).not.toHaveBeenCalled();
         });
     });
 

@@ -112,3 +112,64 @@
 
 - [x] Card placement: above, else below, else pinned inside the visible area.
 - [x] Playwright test (whole-image box, zoomed-in box); changelog; lint, build, jest, e2e.
+
+## Multi-select + bulk actions (CVML-358), phase 1: direct selection only
+
+No box/lasso select modes and no group drag (follow-ups).
+
+- [x] Selection core: `selected_ids` per-subtask state; `src/selection.ts` (set/add/toggle, clear, prune, get);
+  only live, non-deprecated, visible, spatial, non-3D ids; not undoable. Cleared on subtask switch / `set_annotations`;
+  pruned on delete, undo/redo, filter/focus changes.
+- [x] Drawing: selected annotations get the hover white border.
+- [x] Persistent `N selected` indicator, styled and placed like the fly-to toast (which moves below it).
+- [x] Input: Ctrl+click (no drag, canvas or annotation list) toggles; Ctrl+A selects all visible; Esc clears (after cancelling an in-progress
+  annotation, before exiting isolation); right-click on an unselected annotation clears the selection and acts on it.
+- [x] Public API: `get_selected_annotation_ids()`, `select_annotations(ids, how)`, `select_all_annotations()`, `clear_selection()`, `on_selection_change` config callback.
+- [x] Bulk clipboard: Ctrl+C/X/V act on the selection first; v2 envelope (`annotations: [...]`), v1 still pasteable;
+  one undo step; one class pie for the batch.
+- [x] Bulk context menu on a selected annotation: Copy to / Move to / Delete / Change class, each one undo step.
+  Delete key acts on the selection first.
+- [x] Types, `api_spec.md`, changelog, demo; Jest + Playwright tests; lint, build, jest.
+  (Jest: `tests/bulk_actions.test.js`, `tests/selection.test.js`, `tests/context_menu.test.js`;
+  e2e: `tests/e2e/multi-select.spec.js`. Existing demos already exercise it, so no demo change.)
+- [x] Review fixes (`REVIEW-feature-multi-select.md`): hidden layers not selectable, confidence/keypoint filters
+  prune the selection, Cmd+click on list rows, right-click on an unselected list row clears the selection.
+
+## Multi-select (CVML-358): box select
+
+Ctrl+drag on the canvas draws a box (replaces Ctrl+drag pan; middle-drag still pans). Catches anything it touches
+in the current subtask; adds to the selection.
+
+- [x] `get_annotation_ids_in_rect` in `src/selection.ts` (containing-box prefilter + per-type geometry); Jest tests.
+- [x] `select_box` drag key: overlay div, click-vs-drag threshold (Ctrl+click still toggles), Esc cancels; Jest tests.
+- [x] Live preview while dragging (rAF-throttled, diff-only redraw); perf check, fall back to count-only if slow.
+  (4000 annotations: hit-test ~1ms, preview JS ~6ms/frame; browser repaint of changed canvases ~75ms long tasks,
+  below an existing vertex-edit drag's ~200ms, so kept. Ctrl also wins over edit handles so dense scenes box-select.)
+- [x] Docs (`api_spec.md`), changelog, e2e; lint, build, jest, e2e.
+- [x] `ctrl+shift+drag` deselect box (mode fixed at mousedown, red box), `ctrl+shift+click` deselects only; Jest + e2e.
+
+## Multi-select: review fixes (box select)
+
+- [x] Bitmask hit-test checks foreground pixels in the overlap, not just the containing box.
+- [x] Cancel an in-progress selection box when the subtask changes.
+- [x] Box preview/cancel drops base ids that stopped being selectable during the drag.
+- [x] Jest regression tests; lint, build, jest, e2e.
+
+- [x] Final box notification compares against the host's last-heard selection (independent of base pruning).
+- [x] Track that per ULabel instance and subtask, not via a module-global counter; Jest regressions.
+
+## Multi-select: selection click feedback
+- [x] Hide the hover outline after a ctrl/ctrl+shift click (canvas and annotation list) until the mouse moves past the click tolerance, so deselects are visible; e2e coverage.
+- [x] Review: right-click right after a selection click highlights the menu target (clear suppression before resolving it, canvas and list); e2e regressions.
+
+## Multi-select: move selection logic out of index.js
+- [x] Move box-select drag handling and `toggle_selection_on_ctrl_click` into `selection.ts`; one per-instance box state (merge `select_box_state` into the `active_boxes` entry).
+- [x] Move `run_action_batch` body into `actions.ts`; keep the `ULabel` wrapper.
+- [x] Lint, build, Jest, e2e.
+- [x] Review fix: module code calls public methods through the ULabel instance so `ulabel.on(...)` callbacks still fire (regression test in copy_annotation.test.js).
+
+## Multi-select: move clipboard/paste/counterpart logic out of index.js
+
+- [x] Move clipboard, paste and counterpart logic into new TS modules; keep thin ULabel wrappers for the public API and `__undo`/`__redo` handlers.
+- [x] Lint, build, Jest, e2e.
+- [x] Review fix: module code calls public methods through the ULabel instance so `ulabel.on(...)` callbacks still fire (regression test in copy_annotation.test.js).

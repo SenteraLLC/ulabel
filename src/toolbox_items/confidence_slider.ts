@@ -280,6 +280,13 @@ export class ConfidenceSlider extends ToolboxItem {
             }
         }
 
+        // Filtered-out annotations are deprecated, so they leave the selection
+        for (const subtask_key in annotations_ids_to_redraw_by_subtask) {
+            if (annotations_ids_to_redraw_by_subtask[subtask_key].length > 0) {
+                this.ulabel.refresh_selection(subtask_key);
+            }
+        }
+
         if (redraw) {
             for (const subtask_key in annotations_ids_to_redraw_by_subtask) {
                 this.ulabel.redraw_multiple_spatial_annotations(annotations_ids_to_redraw_by_subtask[subtask_key], subtask_key);
@@ -538,6 +545,13 @@ export class KeypointSliderItem extends ConfidenceSlider {
                 // Mark this annotation as either deprecated or undeprecated by the confidence filter
                 this.mark_deprecated(annotation, should_deprecate, "confidence_filter");
                 annotations_ids_to_redraw_by_subtask[annotation.subtask_key!].push(annotation.id!);
+            }
+        }
+
+        // Filtered-out annotations are deprecated, so they leave the selection
+        for (const subtask_key in annotations_ids_to_redraw_by_subtask) {
+            if (annotations_ids_to_redraw_by_subtask[subtask_key].length > 0) {
+                ulabel.refresh_selection(subtask_key);
             }
         }
 

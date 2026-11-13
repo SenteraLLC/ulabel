@@ -21,6 +21,19 @@ In a read-only subtask, undo and redo act on the only writable subtask, if there
 - Press `Escape` to close an open class pie or context menu.
 - `ctrl+c` / `cmd+c` copies the hovered annotation, `ctrl+x` / `cmd+x` cuts it (deletes it after copying; not in read-only subtasks), and `ctrl+v` / `cmd+v` pastes into the current subtask (see [`paste_annotation_from_clipboard`](#paste_annotation_from_clipboardenvelope)). The copy is placed on the system clipboard as JSON, so it can be pasted into another ULabel instance showing an image of the same dimensions; a paste back into the subtask it was copied from keeps its class; the first paste into another subtask keeps the coordinates, and every repeat paste into the same subtask (or any paste back into the source) is offset by a further 20 pixels. These shortcuts are not remappable and are ignored while a text field has focus.
 
+### Selection
+
+Several annotations can be selected and acted on together. The selection is per subtask and view-only: it is never recorded and doesn't mark the session edited. Selected annotations get the same white border as a hovered one (and their `AnnotationList` rows the hover highlight), and a persistent `<n> selected` indicator shows where the fly-to toast does, pushing that toast below it. Only live, visible, 2D spatial annotations can be selected; one that is deleted, filtered out, dimmed by a focus filter, hidden by isolation, or in a hidden layer (vanished or at opacity 0) drops out of the selection.
+
+- `ctrl+click` / `cmd+click` an annotation (or its `AnnotationList` row) to add it to, or remove it from, the selection. A list row ctrl+click doesn't fly to the annotation.
+- `ctrl+drag` / `cmd+drag` on the image draws a selection box: every selectable annotation on the current frame that the box touches is added to the selection, highlighted live while dragging. Hold `shift` as well when starting the drag (`ctrl+shift+drag`) to deselect what the box touches instead; that box is drawn red, and `ctrl+shift+click` deselects a single annotation. `Escape` mid-drag cancels the box and restores the selection it started from. [`on_selection_change`](#on_selection_change) fires once, on release. (Use `scrollclick+drag` to pan.)
+- `ctrl+a` / `cmd+a` selects every selectable annotation in the current subtask.
+- `Escape` clears the selection when no class pie or context menu is open (it closes those first) and nothing is being drawn. Right-clicking an annotation that isn't selected also clears it, and the menu acts on that annotation only.
+- While anything is selected, `ctrl+c` / `ctrl+x` copy / cut the whole selection, and `ctrl+v` pastes all of it (see [`copy_annotations_to_clipboard`](#copy_annotations_to_clipboardannotation_ids-cut)). The [`delete_annotation_keybind`](#delete_annotation_keybind) deletes the selection instead of the hovered annotation.
+- Right-clicking a selected annotation, when more than one is selected, opens a bulk menu: `Change class of <n>` (one class pie, at the centre of the selection, listing the clicked annotation's classes; the pick applies to every selected annotation that can take it), `Copy <n> to` / `Move <n> to` (per target subtask, the selected annotations it can take; see [`copy_annotations_to_subtask`](#copy_annotations_to_subtaskannotation_ids-source_key-target_key-cut-choose_class)), `Delete <n>`, and `Clear selection`. Read-only subtasks only offer `Copy <n> to` and `Clear selection`.
+
+Each bulk action is one step in the undo history: a single undo (or redo) reverts (or repeats) all of it. Copies into another subtask are undone from that subtask; moves, deletes, and class changes from the source subtask.
+
 ## ULabel Constructor
 
 When the `ulabel.js` file is included, it attaches its class definition to the `window` object. Therefore, within the document, you may create a new annotation session with
@@ -117,6 +130,7 @@ class ULabel({
     on_focus_edited_change: function,
     on_focus_deprecated_change: function,
     on_isolate_change: function,
+    on_selection_change: function,
     on_undo_redo_blocked: function,
     on_annotation_change: function,
     on_annotation_change_in_progress: boolean
@@ -683,7 +697,7 @@ The initial [brush overlap mode](#overlap-modes) for bitmask painting: `"none"` 
 When `true`, [brush overlap resolution](#overlap-modes) also reaches undeprecated bitmask annotations in *other* subtasks: `"exclude"` clips the stroke against them, and `"overwrite"` carves them — except masks in `read_only` subtasks, which act as barriers (the stroke is clipped around them instead). Default is `false`: a stroke only interacts with masks in the active subtask.
 
 ### `allow_body_move`
-When `true` (the default), a plain left-drag that starts inside a spatial annotation's body moves that annotation. The cursor must actually be inside the shape (a polygon's fill, a bbox, a point's handle, a polyline's stroke, a bitmask's pixels) — being merely near its bounding box still starts a new annotation. A vertex edit handle under the cursor takes precedence and edits that vertex. On polygons and polylines the handle for inserting a new vertex sits at the midpoint of the hovered segment, so dragging the rest of a polyline's stroke moves it. Hold `Alt` to start a new annotation on top of an existing body instead. Delete modes and read-only subtasks are unaffected. Set to `false` to make every canvas drag start a new annotation.
+When `true` (the default), a plain left-drag that starts inside a spatial annotation's body moves that annotation. The cursor must actually be inside the shape (a polygon's fill, a bbox, a point's handle, a polyline's stroke, a bitmask's pixels) — being merely near its bounding box still starts a new annotation. A vertex edit handle under the cursor takes precedence and edits that vertex. On polygons and polylines the handle for inserting a new vertex sits at the midpoint of the hovered segment, so dragging the rest of a polyline's stroke moves it. Hold `Alt` to start a new annotation on top of an existing body instead. Holding `ctrl` / `cmd` draws a [selection box](#selection) instead, even over a handle. Delete modes and read-only subtasks are unaffected. Set to `false` to make every canvas drag start a new annotation.
 
 ### `paste_class_choice`
 When `true` (the default), a context-menu `Copy to` / `Move to` or a `ctrl+v` paste whose source class has no counterpart in the target subtask (by id, then by name) opens the class pie on the pasted annotation when several classes could take it. Set to `false` to never open the pie: the copy silently takes the target's active class (else its first compatible class). Useful when the source subtask's classes (e.g. `True Positive` / `False Negative`) can never match the target's and the host keeps the target's active class in sync with its own class picker.
@@ -801,6 +815,9 @@ When `true` (the default), ULabel installs a `MutationObserver` on the container
 
 ### `on_isolate_change`
 *(subtask_key: string, annotation_id: string | null) => void* -- Called after a subtask's isolated annotation actually changes, whatever the writer: `isolate_annotation`, the list's eye button, `Show all`, `Escape`, or one of the automatic clears (deletion, creation, subtask switch, `set_annotations`). `annotation_id` is `null` when the isolation clears. Default is `null`.
+
+### `on_selection_change`
+*(subtask_key: string, annotation_ids: string[]) => void* -- Called with the selected ids (in annotation order) after a subtask's selection actually changes, whatever the writer: [`select_annotations`](#select_annotationsannotation_ids-how-subtask_key) and the other selection methods, `ctrl+click`, `ctrl+a`, a `ctrl+drag` selection box (once, on release), `Escape`, or ids dropping out because they can no longer be selected (see [Selection](#selection)). Default is `null`.
 
 ### `on_undo_redo_blocked`
 *(kind: "undo" | "redo", subtask_key: string, from_subtask_key: string, origin_subtask_key: string | null) => void* -- Called when an undo or redo issued from read-only subtask `from_subtask_key` does nothing because the action on top of the sole writable subtask `subtask_key`'s history was triggered from `origin_subtask_key`, not from `from_subtask_key` (see [Keyboard Shortcuts](#keyboard-shortcuts)). Not called when that history is empty. Default is `null`.
@@ -976,11 +993,41 @@ Sets the zoom to focus on the provided annotation, and switches to its subtask i
 
 ### `copy_annotation_to_clipboard(annotation_id?, cut?)`
 
-*(annotation_id?: string | null, cut?: boolean) => ULabelClipboardEnvelope | null* -- Stores a copy of an annotation in the current subtask (default: the hovered one) on the in-memory clipboard and returns the envelope `{ ulabel_annotation: 1, copy_id, copied_at, image_width, image_height, source_subtask_key, source_class_name, annotation }`. With `cut`, the source is deleted afterwards (refused in read-only subtasks). Returns `null` for deprecated, non-spatial, or delete-mode annotations.
+*(annotation_id?: string | null, cut?: boolean) => ULabelClipboardEnvelope | ULabelMultiClipboardEnvelope | null* -- Stores a copy of an annotation in the current subtask (default: the hovered one) on the in-memory clipboard and returns the envelope `{ ulabel_annotation: 1, copy_id, copied_at, image_width, image_height, source_subtask_key, source_class_name, annotation }`. With `cut`, the source is deleted afterwards (refused in read-only subtasks). Returns `null` for deprecated, non-spatial, or delete-mode annotations. Without `annotation_id`, a non-empty [selection](#selection) is copied instead, through [`copy_annotations_to_clipboard`](#copy_annotations_to_clipboardannotation_ids-cut).
+
+### `copy_annotations_to_clipboard(annotation_ids, cut?)`
+
+*(annotation_ids: string[], cut?: boolean) => ULabelMultiClipboardEnvelope | null* -- Stores copies of several annotations in the current subtask on the in-memory clipboard and returns the envelope `{ ulabel_annotation: 2, copy_id, copied_at, image_width, image_height, source_subtask_key, annotations: [{ annotation, source_class_name }, ...] }`. Ids that can't be copied are skipped; returns `null` when none can. With `cut`, the sources are deleted afterwards as one undo step (refused in read-only subtasks).
 
 ### `paste_annotation_from_clipboard(envelope?)`
 
-*(envelope?: ULabelClipboardEnvelope | null) => string | null* -- Pastes an envelope (default: the in-memory clipboard) into the current subtask and returns the new annotation's id. When the given envelope and the in-memory clipboard hold different copies, the newer `copied_at` wins (so a menu copy whose system clipboard write failed still pastes). Refused with a warning when the envelope's image dimensions differ from the current image or when no class in the current subtask accepts the annotation. A paste back into `source_subtask_key` keeps its class. The first paste into another subtask keeps the coordinates; each repeat paste into the same subtask, and any paste back into the source, is offset by a further 20 pixels (`paste_counts`, per target subtask, tracked per `copy_id`). When the source class has no counterpart in the target (by id, then by name; the envelope's `source_class_name`) and several classes could take the annotation, the class pie opens on the pasted annotation unless [`paste_class_choice`](#paste_class_choice) is `false`. The copy's `annotation_meta.copied_from` records the envelope's `source_subtask_key` and the source annotation id.
+*(envelope?: ULabelClipboardEnvelope | ULabelMultiClipboardEnvelope | null) => string | string[] | null* -- Pastes an envelope (default: the in-memory clipboard) into the current subtask and returns the new annotation's id. When the given envelope and the in-memory clipboard hold different copies, the newer `copied_at` wins (so a menu copy whose system clipboard write failed still pastes). Refused with a warning when the envelope's image dimensions differ from the current image or when no class in the current subtask accepts the annotation. A paste back into `source_subtask_key` keeps its class. The first paste into another subtask keeps the coordinates; each repeat paste into the same subtask, and any paste back into the source, is offset by a further 20 pixels (`paste_counts`, per target subtask, tracked per `copy_id`). When the source class has no counterpart in the target (by id, then by name; the envelope's `source_class_name`) and several classes could take the annotation, the class pie opens on the pasted annotation unless [`paste_class_choice`](#paste_class_choice) is `false`. The copy's `annotation_meta.copied_from` records the envelope's `source_subtask_key` and the source annotation id.
+
+A multi envelope (`ulabel_annotation: 2`) pastes every annotation the current subtask can take, by the same rules, as one undo step, and returns the new ids (`null` when none could be pasted). The copies whose class has to be chosen share one class pie, at their centre; the pick applies to each of them.
+
+### `delete_selected_annotations()`
+
+*() => boolean* -- Deletes the current subtask's [selection](#selection) as one undo step and returns whether anything was deleted. Refused in read-only subtasks and under Show Deprecated.
+
+### `copy_annotations_to_subtask(annotation_ids, source_key, target_key, cut?, choose_class?)`
+
+*(annotation_ids: string[], source_key: string, target_key: string, cut?: boolean, choose_class?: boolean) => string[]* -- Copies several annotations into another subtask at the same image coordinates, as with [`copy_annotation`](#copy_annotationannotation_id-target_subtask_key-class_id-source_subtask_key), and returns the new ids. Annotations the target can't take are skipped. The copies are one undo step on the target subtask. With `cut` the sources are moved instead, as one undo step on the source subtask; a move is only possible from the current, writable subtask, and otherwise copies. Afterwards it switches to the target when [`paste_switch_to_target`](#paste_switch_to_target) is on. With `choose_class` (and [`paste_class_choice`](#paste_class_choice) on), the copies whose class has no counterpart in the target share one class pie.
+
+### `select_annotations(annotation_ids, how?, subtask_key?)`
+
+*(annotation_ids: string[], how?: "replace" | "add" | "remove" | "toggle", subtask_key?: string | null) => string[]* -- Changes a subtask's (default: the current one) [selection](#selection) and returns the selected ids afterwards, in annotation order. `how` defaults to `"replace"`. Ids that can't be selected (unknown, deprecated, dimmed or hidden by isolation, non-spatial, 3D, or being drawn) are ignored.
+
+### `select_all_annotations(subtask_key?)`
+
+*(subtask_key?: string | null) => string[]* -- Selects every selectable annotation in a subtask (default: the current one) and returns the selected ids.
+
+### `clear_selection(subtask_key?)`
+
+*(subtask_key?: string | null) => void* -- Empties a subtask's (default: the current one) selection.
+
+### `get_selected_annotation_ids(subtask_key?)`
+
+*(subtask_key?: string | null) => string[]* -- The selected annotation ids in a subtask (default: the current one), in annotation order.
 
 ### `set_subtask_read_only(subtask_key, read_only)`
 

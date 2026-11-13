@@ -122,11 +122,11 @@ describe("get_drag_key_start body move", () => {
         expect(ULabel.get_drag_key_start(canvas_mousedown(ulabel), ulabel)).toBeNull();
     });
 
-    test("ctrl pans and shift zooms before body move is considered", () => {
+    test("ctrl box-selects and shift zooms before body move is considered", () => {
         const ulabel = make_ulabel();
         hover(ulabel, true);
 
-        expect(ULabel.get_drag_key_start(canvas_mousedown(ulabel, { ctrlKey: true }), ulabel)).toBe("pan");
+        expect(ULabel.get_drag_key_start(canvas_mousedown(ulabel, { ctrlKey: true }), ulabel)).toBe("select_box");
         expect(ULabel.get_drag_key_start(canvas_mousedown(ulabel, { shiftKey: true }), ulabel)).toBe("zoom");
     });
 

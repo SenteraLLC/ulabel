@@ -148,7 +148,7 @@ export class Configuration {
     // stroke only interacts with masks in the active subtask.
     public brush_overlap_across_subtasks: boolean = false;
     // Left-dragging an annotation's body moves it; Alt forces a new draw at
-    // that spot instead (ctrl/shift already mean pan/zoom on the canvas).
+    // that spot instead (ctrl/shift already mean box select/zoom on the canvas).
     public allow_body_move: boolean = true;
     // Whether a paste whose source class has no counterpart in the target
     // (by id or name) opens the class pie; off, the target's active class wins.
@@ -187,6 +187,8 @@ export class Configuration {
     public on_focus_edited_change: ((subtask_key: string, enabled: boolean) => void) | null = null;
     public on_focus_deprecated_change: ((subtask_key: string, enabled: boolean) => void) | null = null;
     public on_isolate_change: ((subtask_key: string, annotation_id: string | null) => void) | null = null;
+    // Fired with the selected ids (in annotation order) whenever a subtask's selection changes
+    public on_selection_change: ((subtask_key: string, annotation_ids: string[]) => void) | null = null;
     public on_undo_redo_blocked: ((kind: "undo" | "redo", subtask_key: string, from_subtask_key: string, origin_subtask_key: string | null) => void) | null = null;
     // Fired once per recorded/undone/redone action that changes committed annotation state
     public on_annotation_change: ((change: ULabelAnnotationChange) => void) | null = null;
