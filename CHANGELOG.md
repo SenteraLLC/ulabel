@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented here.
 
-## [Unreleased]
+## [0.33.0] - Nov 13th, 2026
 #### Added
 - Multi-select ([CVML-358](https://sentera.atlassian.net/browse/CVML-358)): `ctrl+click` annotations (or their `AnnotationList` rows) to select several, `ctrl+a` to select all, `Escape` to clear. Selected annotations get the hover border and list highlight, and an `<n> selected` indicator shows where the fly-to toast does (the toast moves below it). After a selection click the hover border stays off until the mouse moves, so the click's result shows immediately. Only live, visible, 2D spatial annotations can be selected. The selection is view-only: never recorded, doesn't mark the session edited.
 - Box select: `ctrl+drag` / `cmd+drag` on the image adds every annotation the box touches to the selection, previewed live; `ctrl+shift+drag` deselects them instead (red box), and `ctrl+shift+click` deselects one. `Escape` mid-drag cancels it. **Behavior change:** `ctrl+drag` no longer pans; use `scrollclick+drag`.
