@@ -93,6 +93,23 @@ export class ULabelSubtask {
         };
     }
 
+    /**
+     * Read-only subtasks refuse user edits and public API edits to user data
+     * (copy/move into, delete-from, set-class-in, restore, undo/redo).
+     * Bulk loaders such as `set_annotations` still write.
+     */
+    public is_read_only(): boolean {
+        return this.read_only === true;
+    }
+
+    /**
+     * User input may not edit the subtask: read-only, or under deprecated focus
+     * (where only Restore applies). Public API methods check `is_read_only` only.
+     */
+    public is_edit_locked(): boolean {
+        return this.is_read_only() || this.focus_deprecated === true;
+    }
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     public static from_json(subtask_key: string, subtask_json: Record<string, any>): ULabelSubtask {
         const ret = new ULabelSubtask(

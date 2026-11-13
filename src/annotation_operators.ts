@@ -70,6 +70,27 @@ export function get_annotation_class_id(annotation: ULabelAnnotation): string {
 }
 
 /**
+ * An annotation's non-zero class confidences, highest first (ties keep payload order).
+ *
+ * @param annotation ULabelAnnotation
+ * @param class_defs class definitions used to name each class; unknown ids are named by their id
+ * @returns one entry per class with a confidence above 0
+ */
+export function get_class_confidences(
+    annotation: ULabelAnnotation,
+    class_defs: { id: number; name: string }[],
+): { class_id: number; name: string; confidence: number }[] {
+    return (annotation.classification_payloads ?? [])
+        .filter((payload) => payload.confidence > 0)
+        .map((payload) => ({
+            class_id: payload.class_id,
+            name: class_defs.find((def) => String(def.id) === String(payload.class_id))?.name ?? String(payload.class_id),
+            confidence: payload.confidence,
+        }))
+        .sort((a, b) => b.confidence - a.confidence);
+}
+
+/**
  * Takes in an annotation and marks it either deprecated or not deprecated.
  *
  * @param annotation ULabelAnnotation

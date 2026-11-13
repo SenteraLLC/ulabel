@@ -11,6 +11,7 @@ import { ULabelSubtask } from "./subtask";
 import {
     filter_points_distance_from_line,
     findAllPolylineClassDefinitions,
+    get_annotation_class_id,
     get_point_and_line_annotations,
 } from "./annotation_operators";
 import { SliderHandler } from "./html_builder";
@@ -369,7 +370,7 @@ export class ToolboxTab {
         let href = ` href="#"`;
         let val = subtask.inactive_opacity * 100;
         if (this.selected) {
-            if (this.subtask.read_only) {
+            if (this.subtask.is_read_only()) {
                 href = "";
             }
             sel = " sel";
@@ -1258,7 +1259,8 @@ export class ClassCounterToolboxItem extends ToolboxItem {
 
     /**
      * Count a subtask's non-deprecated annotations per class, in class_defs order.
-     * An annotation counts toward its first classification payload with confidence > 0.
+     * An annotation counts toward its highest-confidence class (the class it is drawn in);
+     * one with no confidence above 0 is not counted.
      */
     private count_subtask(subtask: ULabelSubtask): { id: number; name: string; count: number }[] {
         const class_counts: Record<number, number> = {};
@@ -1268,13 +1270,10 @@ export class ClassCounterToolboxItem extends ToolboxItem {
         for (const annotation_id of subtask.annotations.ordering) {
             const annotation = subtask.annotations.access[annotation_id];
             if (annotation.deprecated) continue;
-            for (const payload of annotation.classification_payloads ?? []) {
-                if (payload.confidence > 0.0) {
-                    if (payload.class_id in class_counts) {
-                        class_counts[payload.class_id] += 1;
-                    }
-                    break;
-                }
+            if (!(annotation.classification_payloads ?? []).some((payload) => payload.confidence > 0.0)) continue;
+            const class_id = Number(get_annotation_class_id(annotation));
+            if (class_id in class_counts) {
+                class_counts[class_id] += 1;
             }
         }
         return subtask.class_defs

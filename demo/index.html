@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>ULabel Demos</title>
+        <style>
+            body { margin: 0 auto; padding: 24px; max-width: 760px; font-family: sans-serif; color: #222; line-height: 1.4; }
+            h1 { margin: 0 0 4px 0; }
+            h2 { margin: 24px 0 8px 0; font-size: 1.1em; border-bottom: 1px solid #ddd; padding-bottom: 4px; }
+            p.note { margin: 0; color: #666; font-size: 0.9em; }
+            ul { margin: 0; padding-left: 20px; }
+            li { margin: 6px 0; }
+            a { font-weight: 600; color: #2b4b7a; }
+            code { background: #f0f0f0; padding: 0 3px; border-radius: 3px; }
+        </style>
+    </head>
+    <body>
+        <h1>ULabel Demos</h1>
+        <p class="note">Local demo pages served by <code>npm run demo</code>. Run <code>npm run build</code> first to pick up source changes.</p>
+
+        <h2>Overview</h2>
+        <ul>
+            <li><a href="live_demo.html">live_demo</a> - Annotated street scene with mixed confidences, <code>confidence_card_classes</code>, and <code>hover_card_text</code>. Published to GitHub Pages.</li>
+            <li><a href="single-class.html">single-class</a> - One subtask, one class.</li>
+            <li><a href="multi-class.html">multi-class</a> - Several classes and every spatial mode, plus a whole-image subtask.</li>
+        </ul>
+
+        <h2>Features</h2>
+        <ul>
+            <li><a href="linked-subtasks.html">linked-subtasks</a> - Diff / GT / Predictions linked by <code>annotation_link_meta_key</code>: Copy to, Set class in, Delete from, <code>counterpart_class_meta_key</code>.</li>
+            <li><a href="class-focus.html">class-focus</a> - <code>focus_active_class</code> and per-class <code>allowed_modes</code>.</li>
+            <li><a href="bitmask-example.html">bitmask-example</a> - Bitmask brush and erase with a reference subtask.</li>
+            <li><a href="box-roi.html">box-roi</a> - Main subtask plus a bbox-only ROI subtask.</li>
+            <li><a href="row-filtering-example.html">row-filtering-example</a> - <code>FilterDistance</code>: points filtered by distance from polyline rows.</li>
+            <li><a href="read-only.html">read-only</a> - Every subtask <code>read_only</code>, with a toggle.</li>
+            <li><a href="frames.html">frames</a> - Multi-frame image stack with frame-level annotations.</li>
+        </ul>
+
+        <h2>Data and API</h2>
+        <ul>
+            <li><a href="resume-from.html">resume-from</a> - Loading existing annotations with <code>resume_from</code>.</li>
+            <li><a href="set-annotations.html">set-annotations</a> - Swapping annotations at runtime with <code>set_annotations</code>, small to large sets and bitmasks.</li>
+            <li><a href="getset.html">getset</a> - Round-tripping <code>get_annotations</code> / <code>set_annotations</code>.</li>
+            <li><a href="submit-payload.html">submit-payload</a> - Submit buttons, including <code>edits_only</code> payloads.</li>
+        </ul>
+
+        <h2>Layout and test fixtures</h2>
+        <ul>
+            <li><a href="offset-container.html">offset-container</a> - ULabel inside an offset container.</li>
+            <li><a href="bitmask-e2e.html">bitmask-e2e</a> - Minimal two-subtask bitmask fixture used by e2e tests.</li>
+        </ul>
+    </body>
+</html>

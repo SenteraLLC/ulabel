@@ -365,8 +365,12 @@ export function get_idd_string(
 
     const outer_radius = 0.5 * width;
 
-    // Create a centcirc div at the end and close off the div
-    dialog_html += `<div class="centcirc" style="position: absolute; top: ${outer_radius - inner_rad}px; left:${outer_radius - inner_rad}px; width: ${2 * inner_rad}px; height: ${2 * inner_rad}px; background-color: black; border-radius: ${inner_rad}px;" ></div></div>`;
+    // Create a centcirc div at the end and close off the div; it shows the hovered class's name
+    dialog_html += `<div class="centcirc" style="position: absolute; top: ${outer_radius - inner_rad}px; left:${outer_radius - inner_rad}px; width: ${2 * inner_rad}px; height: ${2 * inner_rad}px; background-color: black; border-radius: ${inner_rad}px; display: flex; align-items: center; justify-content: center; overflow: hidden;" >`;
+    // 0.8 x 0.6 of the diameter is a rectangle inscribed in the circle, so the label never crosses its edge
+    const label_width = Math.floor(1.6 * inner_rad);
+    const label_height = Math.floor(1.2 * inner_rad);
+    dialog_html += `<span class="idd-class-name" style="color: white; font-size: 11px; line-height: 1.1; text-align: center; width: ${label_width}px; max-height: ${label_height}px; overflow: hidden; overflow-wrap: normal; word-break: normal; pointer-events: none;"></span></div></div>`;
 
     return dialog_html;
 }
@@ -525,6 +529,8 @@ export function build_confidence_dialog(ulabel: ULabel) {
                 <p class="annotation-confidence-classname" style="margin: 0.4em 0.6em 0.1em; opacity: 1; font-weight: 600;"></p>
                 <p class="annotation-confidence-value" style="margin: 0.1em 0.6em 0.4em; opacity: 0.85; font-size: 0.9em;">
                 </p>
+                <div class="annotation-confidence-others" style="display: none; margin: 0 0.6em 0.4em; opacity: 0.7; font-size: 0.85em;"></div>
+                <div class="annotation-confidence-host-text" style="display: none; margin: 0 0.6em 0.4em; padding-top: 0.3em; border-top: 1px solid rgba(255, 255, 255, 0.25); opacity: 0.85; font-size: 0.85em; max-width: 16em; overflow-wrap: anywhere;"></div>
             </div>
         `);
 

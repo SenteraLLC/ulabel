@@ -1,4 +1,6 @@
 const express = require('express');
+const fs = require('fs');
+const net = require('net');
 const app = express();
 // Override with PORT=... (Playwright reads the same variable). Falls through to the next
 // free port when the requested one is busy, unless PORT was set explicitly.
@@ -10,22 +12,36 @@ app.use(express.static('demo'));
 app.use(express.static('dist'));
 
 function show_demo_urls(port) {
-    console.log(`http://localhost:${port}/single-class.html`);
-    console.log(`http://localhost:${port}/multi-class.html`);
-    console.log(`http://localhost:${port}/frames.html`);
-    console.log(`http://localhost:${port}/box-roi.html`);
-    console.log(`http://localhost:${port}/resume-from.html`);
-    console.log(`http://localhost:${port}/read-only.html`);
-    console.log(`http://localhost:${port}/row-filtering-example.html`);
-    console.log(`http://localhost:${port}/bitmask-example.html`);
-    console.log(`http://localhost:${port}/set-annotations.html`);
-    console.log(`http://localhost:${port}/class-focus.html`);
-    console.log(`http://localhost:${port}/live_demo.html`);
-    console.log(`http://localhost:${port}/offset-container.html`);
-    console.log(`http://localhost:${port}/submit-payload.html`);
+    console.log(`ULabel demos: http://localhost:${port}/`);
+    fs.readdirSync('demo')
+        .filter((file) => file.endsWith('.html') && file !== 'index.html')
+        .sort()
+        .forEach((file) => console.log(`  http://localhost:${port}/${file}`));
 }
 
-function listen(port, attempts_left) {
+// Windows lets us bind [::] while another server holds 127.0.0.1 or ::1 on the same port, so
+// listen() would not report EADDRINUSE. Probe both loopback addresses first.
+function is_port_answering(port) {
+    const probe = (host) => new Promise((resolve) => {
+        const socket = net.connect({ host, port });
+        socket.setTimeout(300);
+        socket.once('connect', () => { socket.destroy(); resolve(true); });
+        socket.once('timeout', () => { socket.destroy(); resolve(false); });
+        socket.once('error', () => resolve(false));
+    });
+    return Promise.all([probe('127.0.0.1'), probe('::1')]).then((results) => results.some(Boolean));
+}
+
+async function listen(port, attempts_left) {
+    if (await is_port_answering(port)) {
+        if (!port_is_explicit && attempts_left > 0) {
+            listen(port + 1, attempts_left - 1);
+        } else {
+            console.error(`Could not start demo server on port ${port}: port is in use`);
+            process.exit(1);
+        }
+        return;
+    }
     const server = app.listen(port, () => {
         if (port !== requested_port) {
             console.log(`Port ${requested_port} is in use; using ${port} instead.`);

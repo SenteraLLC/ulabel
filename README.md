@@ -120,7 +120,7 @@ for an example of how to integrate ULabel into a React project.
 
 ## Development
 
-The recommended way to develop new features is to use the tool as if you were running the demo. For testing new API features, you can create a new HTML file in `demo/`. The server in `demo.js` runs a static server from `demo/` so it will be served at `localhost:8080/<new-file>.html` automatically.
+The recommended way to develop new features is to use the tool as if you were running the demo. For testing new API features, you can create a new HTML file in `demo/`. The server in `demo.js` runs a static server from `demo/` so it will be served at `localhost:8080/<new-file>.html` automatically. `localhost:8080/` opens a landing page (`demo/index.html`) listing every demo; add new demos there too.
 
 ### Requirements
 
