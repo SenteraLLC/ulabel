@@ -340,7 +340,7 @@ function handle_keydown_event(
             ulabel.hide_id_dialog();
         } else if (current_subtask.state.selected_ids.size > 0 && !current_subtask.state.is_in_progress) {
             ulabel.clear_selection();
-        } else if (current_subtask.state.isolated_annid != null) {
+        } else if (current_subtask.state.isolated_annids != null) {
             ulabel.isolate_annotation(null);
         } else if (current_subtask.state.is_in_erase_mode) {
             // If in erase or brush mode, cancel the brush

@@ -23,16 +23,16 @@ In a read-only subtask, undo and redo act on the only writable subtask, if there
 
 ### Selection
 
-Several annotations can be selected and acted on together. The selection is per subtask and view-only: it is never recorded and doesn't mark the session edited. Selected annotations get the same white border as a hovered one (and their `AnnotationList` rows the hover highlight), and a persistent `<n> selected` indicator shows where the fly-to toast does, pushing that toast below it. Only live, visible, 2D spatial annotations can be selected; one that is deleted, filtered out, dimmed by a focus filter, hidden by isolation, or in a hidden layer (vanished or at opacity 0) drops out of the selection.
+Several annotations can be selected and acted on together. The selection is per subtask and view-only: it is never recorded and doesn't mark the session edited. Selected annotations get the same white border as a hovered one (and their `AnnotationList` rows the hover highlight), and a persistent `<n> selected` indicator shows where the fly-to toast does, pushing that toast below it. Only live, visible, 2D spatial annotations can be selected (under deprecated focus, only deprecated ones instead); one that is deleted, restored or deprecated across that line, filtered out, dimmed by a focus filter, hidden by isolation, or in a hidden layer (vanished or at opacity 0) drops out of the selection.
 
 - `ctrl+click` / `cmd+click` an annotation (or its `AnnotationList` row) to add it to, or remove it from, the selection. A list row ctrl+click doesn't fly to the annotation.
 - `ctrl+drag` / `cmd+drag` on the image draws a selection box: every selectable annotation on the current frame that the box touches is added to the selection, highlighted live while dragging. Hold `shift` as well when starting the drag (`ctrl+shift+drag`) to deselect what the box touches instead; that box is drawn red, and `ctrl+shift+click` deselects a single annotation. `Escape` mid-drag cancels the box and restores the selection it started from. [`on_selection_change`](#on_selection_change) fires once, on release. (Use `scrollclick+drag` to pan.)
 - `ctrl+a` / `cmd+a` selects every selectable annotation in the current subtask.
 - `Escape` clears the selection when no class pie or context menu is open (it closes those first) and nothing is being drawn. Right-clicking an annotation that isn't selected also clears it, and the menu acts on that annotation only.
 - While anything is selected, `ctrl+c` / `ctrl+x` copy / cut the whole selection, and `ctrl+v` pastes all of it (see [`copy_annotations_to_clipboard`](#copy_annotations_to_clipboardannotation_ids-cut)). The [`delete_annotation_keybind`](#delete_annotation_keybind) deletes the selection instead of the hovered annotation.
-- Right-clicking a selected annotation, when more than one is selected, opens a bulk menu: `Change class of <n>` (one class pie, at the centre of the selection, listing the clicked annotation's classes; the pick applies to every selected annotation that can take it), `Copy <n> to` / `Move <n> to` (per target subtask, the selected annotations it can take; see [`copy_annotations_to_subtask`](#copy_annotations_to_subtaskannotation_ids-source_key-target_key-cut-choose_class)), `Delete <n>`, and `Clear selection`. Read-only subtasks only offer `Copy <n> to` and `Clear selection`.
+- Right-clicking a selected annotation, when more than one is selected, opens a bulk menu: `Change class of <n>` (one class pie, at the centre of the selection, listing the clicked annotation's classes; the pick applies to every selected annotation that can take it), `Copy <n> to` / `Move <n> to` (per target subtask, the selected annotations it can take; see [`copy_annotations_to_subtask`](#copy_annotations_to_subtaskannotation_ids-source_key-target_key-cut-choose_class)), `Set class in` / `Erase from` / `Delete from` (per other writable subtask, as for a single annotation but over every selected annotation's counterparts; `Delete <n> from` counts the distinct counterparts), `Delete <n>`, `Isolate <n>` (hides every unselected annotation; reads `Show all` while exactly the selection is isolated, see [`isolate_annotations`](#isolate_annotationsannotation_ids-subtask_key-redraw)), and `Clear selection`. Read-only subtasks offer `Copy <n> to`, `Set class in` / `Erase from` / `Delete from`, `Isolate <n>`, and `Clear selection`. Under deprecated focus the selection holds deprecated annotations and the menu offers `Restore <n>` (the selected annotations [`restore_annotation`](#restore_annotationannotation_id) would accept; hidden when none), `Isolate <n>`, and `Clear selection`. The view stays on the source subtask after `Set class in` / `Erase from` / `Delete from` unless [`paste_switch_to_target`](#paste_switch_to_target) is on.
 
-Each bulk action is one step in the undo history: a single undo (or redo) reverts (or repeats) all of it. Copies into another subtask are undone from that subtask; moves, deletes, and class changes from the source subtask.
+Each bulk action is one step in the undo history: a single undo (or redo) reverts (or repeats) all of it. Copies into another subtask, and `Set class in` / `Erase from` / `Delete from`, are undone from that subtask; moves, deletes, restores, and class changes from the source subtask.
 
 ## ULabel Constructor
 
@@ -583,6 +583,7 @@ The `AnnotationList` toolbox item displays all annotations in the current subtas
 **Isolation:**
 - Each entry has an eye button that isolates that annotation: every other annotation in the subtask is hidden from the canvas and from hover, Tab, fly-to, the list, and bulk delete. The list shows only the isolated entry and a **Show all** button appears in the header.
 - Clear it with **Show all**, the active eye button, `Escape`, or programmatically with [`isolate_annotation(null)`](#isolate_annotationannotation_id-subtask_key-redraw). It also clears when the isolated annotation is deleted, when a new annotation is created, on subtask switch, and on `set_annotations()`.
+- Several annotations can be isolated together from the [selection](#selection) bulk menu (`Isolate <n>`) or with [`isolate_annotations`](#isolate_annotationsannotation_ids-subtask_key-redraw); their eye buttons all show as active, and clicking one shows all again.
 - Isolation is a view-only state: nothing is recorded in the action stream and `get_annotations()` is unaffected.
 
 This toolbox item requires no configuration and can be added to the `toolbox_order` array using `AllowedToolboxItem.AnnotationList`.
@@ -814,7 +815,7 @@ When `true` (the default), ULabel installs a `MutationObserver` on the container
 *(subtask_key: string, enabled: boolean) => void* -- Called after a subtask's `focus_deprecated` flag actually changes, whatever the writer: `set_focus_deprecated`, the `toggle_deprecated_focus_keybind`, or the annotation list's **Show Deprecated** checkbox. Not called when the flag is already at the target value. Default is `null`.
 
 ### `on_isolate_change`
-*(subtask_key: string, annotation_id: string | null) => void* -- Called after a subtask's isolated annotation actually changes, whatever the writer: `isolate_annotation`, the list's eye button, `Show all`, `Escape`, or one of the automatic clears (deletion, creation, subtask switch, `set_annotations`). `annotation_id` is `null` when the isolation clears. Default is `null`.
+*(subtask_key: string, annotation_ids: string[] | null) => void* -- Called after a subtask's isolated annotations actually change, whatever the writer: `isolate_annotation` / `isolate_annotations`, the list's eye button, `Show all`, `Isolate <n>`, `Escape`, or one of the automatic clears (deletion, creation, subtask switch, `set_annotations`). `annotation_ids` holds the isolated ids, or is `null` when the isolation clears. **Changed in 0.34.0:** this was a single `annotation_id: string | null`; a single isolation now arrives as `[annotation_id]`. Default is `null`.
 
 ### `on_selection_change`
 *(subtask_key: string, annotation_ids: string[]) => void* -- Called with the selected ids (in annotation order) after a subtask's selection actually changes, whatever the writer: [`select_annotations`](#select_annotationsannotation_ids-how-subtask_key) and the other selection methods, `ctrl+click`, `ctrl+a`, a `ctrl+drag` selection box (once, on release), `Escape`, or ids dropping out because they can no longer be selected (see [Selection](#selection)). Default is `null`.
@@ -977,7 +978,7 @@ Sets the zoom to focus on the provided annotation, and switches to its subtask i
 
 ### `delete_counterparts(annotation_id, source_key, target_key, erase?)`
 
-*(annotation_id: string, source_key: string, target_key: string, erase?: boolean | null) => string[]* -- Removes the counterparts (see [`find_counterparts`](#find_counterpartsannotation_id-source_key-target_key)) from `target_key`, which must not be read-only; the source may be. With `erase` (default: whether the source is a bitmask; only a bitmask source can erase), the source mask is subtracted from its bitmask counterparts (a mask erased to nothing is deleted) and other counterparts are left alone; otherwise every counterpart is deleted. Recorded as one `delete_counterparts` action on the target subtask's stream (undo there restores every mask and deletion) and reported to [`on_annotation_change`](#on_annotation_change) with the target as `subtask_key` and the changed counterparts as `affected`. Returns the changed ids; nothing is recorded when none changed. When something changed and [`paste_switch_to_target`](#paste_switch_to_target) is on, the target becomes the current subtask.
+*(annotation_id: string, source_key: string, target_key: string, erase?: boolean | null, switch_to_target?: boolean) => string[]* -- Removes the counterparts (see [`find_counterparts`](#find_counterpartsannotation_id-source_key-target_key)) from `target_key`, which must not be read-only; the source may be. With `erase` (default: whether the source is a bitmask; only a bitmask source can erase), the source mask is subtracted from its bitmask counterparts (a mask erased to nothing is deleted) and other counterparts are left alone; otherwise every counterpart is deleted. Recorded as one `delete_counterparts` action on the target subtask's stream (undo there restores every mask and deletion) and reported to [`on_annotation_change`](#on_annotation_change) with the target as `subtask_key` and the changed counterparts as `affected`. Returns the changed ids; nothing is recorded when none changed. When something changed and [`paste_switch_to_target`](#paste_switch_to_target) is on, the target becomes the current subtask, unless `switch_to_target` (default `true`) is `false`.
 
 ### `get_counterpart_class_changes(annotation_id, source_key, target_key)`
 
@@ -985,7 +986,7 @@ Sets the zoom to focus on the provided annotation, and switches to its subtask i
 
 ### `set_counterparts_class(annotation_id, source_key, target_key)`
 
-*(annotation_id: string, source_key: string, target_key: string) => string[]* -- Sets each counterpart from [`get_counterpart_class_changes`](#get_counterpart_class_changesannotation_id-source_key-target_key) to its matched class at full confidence; the rest are left alone. `target_key` must not be read-only; the source may be. Recorded as one `set_counterparts_class` action on the target subtask's stream (undo there restores every previous classification) and reported to [`on_annotation_change`](#on_annotation_change) with the target as `subtask_key` and the changed counterparts as `affected`. Returns the changed ids; nothing is recorded when none changed. When something changed and [`paste_switch_to_target`](#paste_switch_to_target) is on, the target becomes the current subtask.
+*(annotation_id: string, source_key: string, target_key: string, switch_to_target?: boolean) => string[]* -- Sets each counterpart from [`get_counterpart_class_changes`](#get_counterpart_class_changesannotation_id-source_key-target_key) to its matched class at full confidence; the rest are left alone. `target_key` must not be read-only; the source may be. Recorded as one `set_counterparts_class` action on the target subtask's stream (undo there restores every previous classification) and reported to [`on_annotation_change`](#on_annotation_change) with the target as `subtask_key` and the changed counterparts as `affected`. Returns the changed ids; nothing is recorded when none changed. When something changed and [`paste_switch_to_target`](#paste_switch_to_target) is on, the target becomes the current subtask, unless `switch_to_target` (default `true`) is `false`.
 
 ### `set_paste_switch_to_target(enabled)` / `get_paste_switch_to_target()`
 
@@ -1015,7 +1016,7 @@ A multi envelope (`ulabel_annotation: 2`) pastes every annotation the current su
 
 ### `select_annotations(annotation_ids, how?, subtask_key?)`
 
-*(annotation_ids: string[], how?: "replace" | "add" | "remove" | "toggle", subtask_key?: string | null) => string[]* -- Changes a subtask's (default: the current one) [selection](#selection) and returns the selected ids afterwards, in annotation order. `how` defaults to `"replace"`. Ids that can't be selected (unknown, deprecated, dimmed or hidden by isolation, non-spatial, 3D, or being drawn) are ignored.
+*(annotation_ids: string[], how?: "replace" | "add" | "remove" | "toggle", subtask_key?: string | null) => string[]* -- Changes a subtask's (default: the current one) [selection](#selection) and returns the selected ids afterwards, in annotation order. `how` defaults to `"replace"`. Ids that can't be selected (unknown, deprecated outside deprecated focus or live under it, dimmed or hidden by isolation, non-spatial, 3D, or being drawn) are ignored.
 
 ### `select_all_annotations(subtask_key?)`
 
@@ -1035,11 +1036,19 @@ A multi envelope (`ulabel_annotation: 2`) pastes every annotation the current su
 
 ### `isolate_annotation(annotation_id, subtask_key?, redraw?)`
 
-*(annotation_id: string | null, subtask_key?: string | null, redraw?: boolean) => boolean* -- Isolate one annotation in a subtask (default: the current one): every other annotation is hidden from the canvas and from input until cleared by passing `null`. Returns `false` and changes nothing for an unknown subtask or an unknown annotation, or a deprecated one outside deprecated focus (turning deprecated focus off releases a deprecated isolation). View-only: not recorded, does not mark the session edited. Fires [`on_isolate_change`](#on_isolate_change) on an actual change.
+*(annotation_id: string | null, subtask_key?: string | null, redraw?: boolean) => boolean* -- Isolate one annotation in a subtask (default: the current one): every other annotation is hidden from the canvas and from input until cleared by passing `null`. Returns `false` and changes nothing for an unknown subtask or an unknown annotation, or a deprecated one outside deprecated focus (turning deprecated focus off releases a deprecated isolation). View-only: not recorded, does not mark the session edited. Fires [`on_isolate_change`](#on_isolate_change) on an actual change. Same as `isolate_annotations([annotation_id])`.
+
+### `isolate_annotations(annotation_ids, subtask_key?, redraw?)`
+
+*(annotation_ids: string[] | null, subtask_key?: string | null, redraw?: boolean) => boolean* -- Isolate several annotations at once (the bulk menu's `Isolate <n>`); `null` or `[]` shows all again. Every id must pass the checks of [`isolate_annotation`](#isolate_annotationannotation_id-subtask_key-redraw), otherwise the whole request is refused. Deleting one isolated annotation (or deprecating it outside deprecated focus) only drops that id; the isolation clears when none remain.
+
+### `get_isolated_annotation_ids(subtask_key?)`
+
+*(subtask_key?: string | null) => string[]* -- The isolated annotation ids in a subtask (default: the current one), or `[]`.
 
 ### `get_isolated_annotation_id(subtask_key?)`
 
-*(subtask_key?: string | null) => string | null* -- The isolated annotation id in a subtask (default: the current one), or `null`.
+*(subtask_key?: string | null) => string | null* -- The first isolated annotation id in a subtask (default: the current one), or `null`. Use [`get_isolated_annotation_ids`](#get_isolated_annotation_idssubtask_key) when several can be isolated.
 
 ### `restore_annotation(annotation_id)`
 

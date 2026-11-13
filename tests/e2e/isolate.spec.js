@@ -224,11 +224,12 @@ test.describe("isolate annotation", () => {
         const calls = await page.evaluate(() => {
             const u = window.ulabel;
             const calls = [];
-            u.config.on_isolate_change = (subtask_key, annotation_id) => calls.push([subtask_key, annotation_id]);
+            u.config.on_isolate_change = (subtask_key, annotation_ids) => calls.push([subtask_key, annotation_ids]);
             const accepted = [
                 u.isolate_annotation("grid-4"),
                 u.isolate_annotation("grid-4"),
                 u.isolate_annotation("no-such-id"),
+                u.isolate_annotations(["grid-4", "grid-5"]),
                 u.isolate_annotation(null),
             ];
             u.config.on_isolate_change = null;
@@ -236,7 +237,7 @@ test.describe("isolate annotation", () => {
         });
         const key = await page.evaluate(() => window.ulabel.get_current_subtask_key());
 
-        expect(calls.accepted).toEqual([true, true, false, true]);
-        expect(calls.calls).toEqual([[key, "grid-4"], [key, null]]);
+        expect(calls.accepted).toEqual([true, true, false, true, true]);
+        expect(calls.calls).toEqual([[key, ["grid-4"]], [key, ["grid-4", "grid-5"]], [key, null]]);
     });
 });

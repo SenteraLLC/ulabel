@@ -56,7 +56,7 @@ describe("isolate_annotation", () => {
     test("starts with nothing isolated", () => {
         const ulabel = make_ulabel();
 
-        expect(ulabel.subtasks.st.state.isolated_annid).toBeNull();
+        expect(ulabel.subtasks.st.state.isolated_annids).toBeNull();
         expect(ulabel.get_isolated_annotation_id("st")).toBeNull();
     });
 
@@ -67,7 +67,7 @@ describe("isolate_annotation", () => {
 
         expect(ulabel.isolate_annotation(a.id)).toBe(true);
 
-        expect(ulabel.subtasks.st.state.isolated_annid).toBe(a.id);
+        expect(ulabel.subtasks.st.state.isolated_annids).toEqual([a.id]);
         expect(ulabel.get_isolated_annotation_id()).toBe(a.id);
     });
 
@@ -80,7 +80,7 @@ describe("isolate_annotation", () => {
         expect(ulabel.isolate_annotation(gone.id)).toBe(false);
         expect(ulabel.isolate_annotation("x", "no_such_subtask")).toBe(false);
 
-        expect(ulabel.subtasks.st.state.isolated_annid).toBeNull();
+        expect(ulabel.subtasks.st.state.isolated_annids).toBeNull();
     });
 
     test("drops hover, candidates, and fly-to position", () => {
@@ -152,7 +152,7 @@ describe("on_isolate_change", () => {
         ulabel.isolate_annotation(null);
         ulabel.isolate_annotation(null);
 
-        expect(on_isolate_change.mock.calls).toEqual([["st", a.id], ["st", null]]);
+        expect(on_isolate_change.mock.calls).toEqual([["st", [a.id]], ["st", null]]);
     });
 });
 
@@ -243,6 +243,78 @@ describe("gates", () => {
     });
 });
 
+describe("isolate_annotations", () => {
+    test("isolates several; the rest are isolated out", () => {
+        const on_isolate_change = jest.fn();
+        const ulabel = make_ulabel({ ...mock_config, on_isolate_change });
+        const [a, b, c] = [make_annotation(), make_annotation(), make_annotation()];
+        load(ulabel, [a, b, c]);
+
+        expect(ulabel.isolate_annotations([a.id, b.id, a.id])).toBe(true);
+
+        expect(ulabel.get_isolated_annotation_ids()).toEqual([a.id, b.id]);
+        expect(ulabel.get_isolated_annotation_id()).toBe(a.id);
+        expect(ulabel.is_annotation_defocused(a, "st")).toBe(false);
+        expect(ulabel.is_annotation_defocused(b, "st")).toBe(false);
+        expect(ulabel.is_annotation_defocused(c, "st")).toBe(true);
+        expect(on_isolate_change.mock.calls).toEqual([["st", [a.id, b.id]]]);
+    });
+
+    test("the same ids in another order are no change; [] clears", () => {
+        const on_isolate_change = jest.fn();
+        const ulabel = make_ulabel({ ...mock_config, on_isolate_change });
+        const [a, b] = [make_annotation(), make_annotation()];
+        load(ulabel, [a, b]);
+
+        ulabel.isolate_annotations([a.id, b.id]);
+        ulabel.isolate_annotations([b.id, a.id]);
+        ulabel.isolate_annotations([]);
+
+        expect(on_isolate_change.mock.calls).toEqual([["st", [a.id, b.id]], ["st", null]]);
+        expect(ulabel.get_isolated_annotation_ids()).toEqual([]);
+    });
+
+    test("one bad id rejects the whole request", () => {
+        const ulabel = make_ulabel();
+        const a = make_annotation();
+        load(ulabel, [a]);
+
+        expect(ulabel.isolate_annotations([a.id, "nope"])).toBe(false);
+        expect(ulabel.subtasks.st.state.isolated_annids).toBeNull();
+    });
+
+    test("deleting one isolated annotation keeps the others isolated; the last clears it", () => {
+        const on_isolate_change = jest.fn();
+        const ulabel = make_ulabel({ ...mock_config, on_isolate_change });
+        const [a, b, c] = [make_annotation(), make_annotation(), make_annotation()];
+        load(ulabel, [a, b, c]);
+        ulabel.redraw_annotation = jest.fn();
+        ulabel.suggest_edits = jest.fn();
+        ulabel.destroy_polygon_ender = jest.fn();
+        ulabel.isolate_annotations([a.id, b.id]);
+
+        ulabel.delete_annotation(a.id);
+        expect(ulabel.get_isolated_annotation_ids()).toEqual([b.id]);
+
+        ulabel.delete_annotation(b.id);
+        expect(ulabel.subtasks.st.state.isolated_annids).toBeNull();
+        expect(on_isolate_change.mock.calls).toEqual([["st", [a.id, b.id]], ["st", [b.id]], ["st", null]]);
+    });
+
+    test("leaving deprecated focus drops only the deprecated isolated annotations", () => {
+        const ulabel = make_ulabel();
+        const live = make_annotation();
+        const gone = { ...make_annotation(), deprecated: true, deprecated_by: { human: true } };
+        load(ulabel, [live, gone]);
+        ulabel.subtasks.st.focus_deprecated = true;
+        ulabel.isolate_annotations([live.id, gone.id]);
+
+        ulabel.set_focus_deprecated("st", false, false);
+
+        expect(ulabel.get_isolated_annotation_ids()).toEqual([live.id]);
+    });
+});
+
 describe("clears", () => {
     test("deleting the isolated annotation clears the isolation with a full redraw", () => {
         const ulabel = make_ulabel();
@@ -256,7 +328,7 @@ describe("clears", () => {
 
         ulabel.delete_annotation(a.id);
 
-        expect(ulabel.subtasks.st.state.isolated_annid).toBeNull();
+        expect(ulabel.subtasks.st.state.isolated_annids).toBeNull();
         expect(ulabel.redraw_all_annotations).toHaveBeenCalledWith("st");
         expect(a.deprecated).toBe(true);
     });
@@ -273,7 +345,7 @@ describe("clears", () => {
 
         ulabel.delete_annotation(b.id);
 
-        expect(ulabel.subtasks.st.state.isolated_annid).toBe(a.id);
+        expect(ulabel.subtasks.st.state.isolated_annids).toEqual([a.id]);
     });
 
     // set_subtask and set_annotations need the full DOM/canvas init; the e2e
@@ -294,7 +366,7 @@ describe("clears", () => {
 
         ulabel.create_annotation("bbox", [[0, 0], [5, 5]]);
 
-        expect(ulabel.subtasks.st.state.isolated_annid).toBeNull();
+        expect(ulabel.subtasks.st.state.isolated_annids).toBeNull();
     });
 
     test("undoing the creation of the isolated annotation clears the isolation", () => {
@@ -318,7 +390,7 @@ describe("clears", () => {
         ulabel.undo();
 
         expect(ulabel.subtasks.st.annotations.access.fresh).toBeUndefined();
-        expect(ulabel.subtasks.st.state.isolated_annid).toBeNull();
+        expect(ulabel.subtasks.st.state.isolated_annids).toBeNull();
         expect(ulabel.is_annotation_defocused(base, "st")).toBe(false);
         expect(ulabel.redraw_all_annotations).toHaveBeenCalledWith("st");
         expect(on_isolate_change).toHaveBeenLastCalledWith("st", null);
@@ -336,7 +408,7 @@ describe("clears", () => {
         ulabel.finish_annotation__undo("poly");
 
         expect(poly.deprecated).toBe(true);
-        expect(ulabel.subtasks.st.state.isolated_annid).toBeNull();
+        expect(ulabel.subtasks.st.state.isolated_annids).toBeNull();
         expect(ulabel.is_annotation_defocused(base, "st")).toBe(false);
         expect(ulabel.redraw_all_annotations).toHaveBeenCalledWith("st");
         expect(on_isolate_change).toHaveBeenLastCalledWith("st", null);
@@ -361,7 +433,7 @@ describe("isolation follows bitmask deprecation", () => {
     }
 
     function expect_cleared({ ulabel, base, on_isolate_change }, subtask_key = "st") {
-        expect(ulabel.subtasks[subtask_key].state.isolated_annid).toBeNull();
+        expect(ulabel.subtasks[subtask_key].state.isolated_annids).toBeNull();
         expect(ulabel.is_annotation_defocused(base, subtask_key)).toBe(false);
         expect(ulabel.redraw_all_annotations).toHaveBeenCalledWith(subtask_key);
         expect(on_isolate_change).toHaveBeenLastCalledWith(subtask_key, null);
@@ -423,6 +495,6 @@ describe("isolation follows bitmask deprecation", () => {
 
         expect(victim.deprecated).toBe(true);
         expect_cleared({ ...fixture, base: other_base }, "other");
-        expect(ulabel.subtasks.st.state.isolated_annid).toBeNull();
+        expect(ulabel.subtasks.st.state.isolated_annids).toBeNull();
     });
 });

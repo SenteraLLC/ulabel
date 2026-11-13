@@ -23,7 +23,7 @@ function make_ulabel({ read_only = false, compatible = [1, 2], annotation = make
         focus_deprecated,
         class_defs: [{ id: 1, name: "Crop" }, { id: 2, name: "Weed" }],
         annotations: { access: { [annotation.id]: annotation } },
-        state: { edit_candidate: { annid: annotation.id }, move_candidate: null, isolated_annid: null },
+        state: { edit_candidate: { annid: annotation.id }, move_candidate: null, isolated_annids: null },
     };
     const ulabel = {
         config: { container_id: "container" },
@@ -54,7 +54,7 @@ function make_ulabel({ read_only = false, compatible = [1, 2], annotation = make
         can_restore_annotation: jest.fn(() => can_restore),
         restore_annotation: jest.fn(),
         isolate_annotation: jest.fn((annid) => {
-            subtask.state.isolated_annid = annid;
+            subtask.state.isolated_annids = annid === null ? null : [annid];
             hide_context_menu(ulabel);
         }),
         hide_and_clear_action_candidates: jest.fn(() => {
@@ -100,7 +100,7 @@ describe("context menu items", () => {
 
     test("the isolate item reads Show all while the target is isolated", () => {
         const ulabel = make_ulabel({ read_only: true });
-        ulabel.get_current_subtask().state.isolated_annid = "a0";
+        ulabel.get_current_subtask().state.isolated_annids = ["a0"];
         show_context_menu(ulabel, "a0", 100, 100);
         expect(item_labels()).toEqual(["Show all", "Details"]);
     });
@@ -459,6 +459,8 @@ describe("selection menu", () => {
             copy_annotations_to_subtask: jest.fn(() => ["n0", "n1"]),
             delete_selected_annotations: jest.fn(() => true),
             clear_selection: jest.fn(),
+            run_action_batch: jest.fn((fn) => fn()),
+            set_subtask: jest.fn(),
         });
         return ulabel;
     }
@@ -466,13 +468,13 @@ describe("selection menu", () => {
     test("right-clicking a selected annotation shows the bulk items", () => {
         const ulabel = make_selection_ulabel({ copy_targets: ["pred"] });
         expect(show_context_menu(ulabel, "a0", 100, 100)).toBe(true);
-        expect(item_labels()).toEqual(["Change class of 2", "Copy 2 to Predictions", "Move 2 to Predictions", "Delete 2", "Clear selection"]);
+        expect(item_labels()).toEqual(["Change class of 2", "Copy 2 to Predictions", "Move 2 to Predictions", "Delete 2", "Isolate 2", "Clear selection"]);
     });
 
-    test("a read-only subtask offers only Copy N to and Clear selection", () => {
+    test("a read-only subtask offers only Copy N to, Isolate N and Clear selection", () => {
         const ulabel = make_selection_ulabel({ read_only: true, copy_targets: ["pred"] });
         show_context_menu(ulabel, "a0", 100, 100);
-        expect(item_labels()).toEqual(["Copy 2 to Predictions", "Clear selection"]);
+        expect(item_labels()).toEqual(["Copy 2 to Predictions", "Isolate 2", "Clear selection"]);
     });
 
     test("an unselected target gets the single-annotation menu", () => {
@@ -510,5 +512,128 @@ describe("selection menu", () => {
         click_item("Clear selection");
         expect(ulabel.clear_selection).toHaveBeenCalled();
         expect(is_context_menu_open(ulabel)).toBe(false);
+    });
+
+    test("under deprecated focus a deprecated selection offers Restore N of the restorable ones, in one batch", () => {
+        const ulabel = make_selection_ulabel({ annotation: make_annotation({ deprecated: true }), focus_deprecated: true, copy_targets: ["pred"] });
+        ulabel.get_current_subtask().annotations.access.a1.deprecated = true;
+        ulabel.can_restore_annotation = jest.fn((id) => id === "a1");
+
+        expect(show_context_menu(ulabel, "a0", 100, 100)).toBe(true);
+        expect(item_labels()).toEqual(["Restore 1", "Isolate 2", "Clear selection"]);
+        click_item("Restore 1");
+        expect(is_context_menu_open(ulabel)).toBe(false);
+        expect(ulabel.run_action_batch).toHaveBeenCalledTimes(1);
+        expect(ulabel.restore_annotation).toHaveBeenCalledTimes(1);
+        expect(ulabel.restore_annotation).toHaveBeenCalledWith("a1");
+    });
+
+    test("under deprecated focus with nothing restorable there is no Restore", () => {
+        const ulabel = make_selection_ulabel({ annotation: make_annotation({ deprecated: true }), focus_deprecated: true, can_restore: false });
+        ulabel.get_current_subtask().annotations.access.a1.deprecated = true;
+
+        show_context_menu(ulabel, "a0", 100, 100);
+        expect(item_labels()).toEqual(["Isolate 2", "Clear selection"]);
+    });
+
+    test("Isolate N isolates the selection; with exactly the selection isolated it reads Show all", () => {
+        const ulabel = make_selection_ulabel();
+        ulabel.isolate_annotations = jest.fn();
+
+        show_context_menu(ulabel, "a0", 100, 100);
+        expect(item_labels()).toContain("Isolate 2");
+        click_item("Isolate 2");
+        expect(is_context_menu_open(ulabel)).toBe(false);
+        expect(ulabel.isolate_annotations).toHaveBeenCalledWith(["a0", "a1"]);
+
+        ulabel.get_current_subtask().state.isolated_annids = ["a1", "a0"];
+        show_context_menu(ulabel, "a0", 100, 100);
+        click_item("Show all");
+        expect(ulabel.isolate_annotations).toHaveBeenLastCalledWith(null);
+
+        // A wider isolation narrows to the selection
+        ulabel.get_current_subtask().state.isolated_annids = ["a0", "a1", "a2"];
+        show_context_menu(ulabel, "a0", 100, 100);
+        expect(item_labels()).toContain("Isolate 2");
+    });
+
+    test("Delete from N counts distinct counterparts and runs one batch over the linked selection", () => {
+        const ulabel = make_selection_ulabel({ read_only: true });
+        ulabel.subtasks.review.read_only = true;
+        // a0 and a1 share p1; only a0 has p2
+        ulabel.find_counterparts.mockImplementation((annid, source_key, key) => {
+            if (key !== "pred") return [];
+            return annid === "a0" ? ["p1", "p2"] : ["p1"];
+        });
+        ulabel.delete_counterparts.mockReturnValue(["p1"]);
+
+        show_context_menu(ulabel, "a0", 100, 100);
+        expect(item_labels()).toEqual(["Delete 2 from Predictions", "Isolate 2", "Clear selection"]);
+        expect(ulabel.find_counterparts).not.toHaveBeenCalledWith("a0", "main", "review");
+
+        click_item("Delete 2 from Predictions");
+        expect(is_context_menu_open(ulabel)).toBe(false);
+        expect(ulabel.run_action_batch).toHaveBeenCalledTimes(1);
+        expect(ulabel.delete_counterparts.mock.calls).toEqual([
+            ["a0", "main", "pred", false, false],
+            ["a1", "main", "pred", false, false],
+        ]);
+    });
+
+    test("Delete from N with several targets opens a list with counts", () => {
+        const ulabel = make_selection_ulabel();
+        ulabel.find_counterparts.mockImplementation((annid, source_key, key) => (key === "pred" ? [`p_${annid}`] : (annid === "a1" ? ["r1"] : [])));
+
+        show_context_menu(ulabel, "a0", 100, 100);
+        click_item("Delete from\u2026");
+        expect(item_labels()).toEqual(["Predictions (2)", "Review"]);
+        click_item("Review");
+        expect(ulabel.delete_counterparts.mock.calls).toEqual([["a1", "main", "review", false, false]]);
+    });
+
+    test("Set class in N runs only the selected annotations whose counterparts would change", () => {
+        const ulabel = make_selection_ulabel();
+        ulabel.subtasks.review.read_only = true;
+        ulabel.find_counterparts.mockImplementation((annid, source_key, key) => (key === "pred" ? [`p_${annid}`] : []));
+        ulabel.get_counterpart_class_changes.mockImplementation((annid) => (annid === "a1" ? { p_a1: 2 } : {}));
+        ulabel.set_counterparts_class.mockReturnValue(["p_a1"]);
+
+        show_context_menu(ulabel, "a0", 100, 100);
+        expect(item_labels()).toEqual(["Change class of 2", "Set class in Predictions", "Delete 2 from Predictions", "Delete 2", "Isolate 2", "Clear selection"]);
+
+        click_item("Set class in Predictions");
+        expect(ulabel.run_action_batch).toHaveBeenCalledTimes(1);
+        expect(ulabel.set_counterparts_class.mock.calls).toEqual([["a1", "main", "pred", false]]);
+    });
+
+    test("Erase from N takes only the selected bitmasks with bitmask counterparts", () => {
+        const ulabel = make_selection_ulabel({ read_only: true, annotation: make_annotation({ spatial_type: "bitmask" }) });
+        ulabel.subtasks.review.read_only = true;
+        ulabel.subtasks.pred.annotations = { access: { p_a0: { spatial_type: "bitmask" }, p_a1: { spatial_type: "bitmask" } } };
+        ulabel.find_counterparts.mockImplementation((annid, source_key, key) => (key === "pred" ? [`p_${annid}`] : []));
+
+        show_context_menu(ulabel, "a0", 100, 100);
+        expect(item_labels()).toEqual(["Erase from Predictions", "Delete 2 from Predictions", "Isolate 2", "Clear selection"]);
+
+        // a1 is a bbox, so only a0 is erased
+        click_item("Erase from Predictions");
+        expect(ulabel.delete_counterparts.mock.calls).toEqual([["a0", "main", "pred", true, false]]);
+    });
+
+    test("paste_switch_to_target switches once, after the batch, and only when something changed", () => {
+        const ulabel = make_selection_ulabel({ read_only: true });
+        ulabel.subtasks.review.read_only = true;
+        ulabel.config.paste_switch_to_target = true;
+        ulabel.find_counterparts.mockImplementation((annid, source_key, key) => (key === "pred" ? [`p_${annid}`] : []));
+
+        show_context_menu(ulabel, "a0", 100, 100);
+        click_item("Delete 2 from Predictions");
+        expect(ulabel.set_subtask).not.toHaveBeenCalled();
+
+        ulabel.delete_counterparts.mockReturnValue(["p_a0"]);
+        show_context_menu(ulabel, "a0", 100, 100);
+        click_item("Delete 2 from Predictions");
+        expect(ulabel.set_subtask).toHaveBeenCalledTimes(1);
+        expect(ulabel.set_subtask).toHaveBeenCalledWith("pred");
     });
 });

@@ -49,6 +49,7 @@ function make_ulabel(resume = {}, current = "gt") {
     for (const name of [
         "redraw_annotation",
         "redraw_all_annotations",
+        "redraw_multiple_spatial_annotations",
         "update_filter_distance",
         "suggest_edits",
         "destroy_polygon_ender",
@@ -291,6 +292,79 @@ describe("copy_annotations_to_subtask", () => {
         expect(ulabel.copy_annotations_to_subtask(["a", "b"], "ro", "gt", true)).toHaveLength(2);
         expect(live_ids(ulabel, "ro")).toEqual(["a", "b"]);
         expect(live_ids(ulabel, "gt")).toHaveLength(2);
+    });
+});
+
+describe("bulk counterpart menu items", () => {
+    function click_menu_item(label) {
+        const items = Array.from(document.querySelectorAll(".ulabel-context-menu-item"));
+        const item = items.find((el) => el.textContent === label);
+        if (item == null) throw new Error(`No "${label}" in ${items.map((el) => el.textContent)}`);
+        item.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    }
+
+    function make_linked_ulabel() {
+        const ulabel = make_ulabel({ gt: [make_bbox("a"), make_bbox("b", 2), make_bbox("c")] });
+        if (document.getElementById("container") == null) {
+            document.body.insertAdjacentHTML("beforeend", "<div id=\"container\"></div>");
+        }
+        ulabel.copy_annotations_to_subtask(["a", "b"], "gt", "pred");
+        ulabel.select_annotations(["a", "b"]);
+        return ulabel;
+    }
+
+    test("Delete N from removes every selected annotation's counterparts as one undo step", () => {
+        const ulabel = make_linked_ulabel();
+        expect(live_ids(ulabel, "pred")).toHaveLength(2);
+
+        expect(ulabel.show_context_menu("a", 10, 10)).toBe(true);
+        click_menu_item("Delete 2 from Pred");
+
+        expect(live_ids(ulabel, "pred")).toEqual([]);
+        expect(live_ids(ulabel, "gt")).toEqual(["a", "b", "c"]);
+        expect(ulabel.get_selected_annotation_ids()).toEqual(["a", "b"]);
+
+        ulabel.state.current_subtask = "pred";
+        ulabel.undo();
+        expect(live_ids(ulabel, "pred")).toHaveLength(2);
+        ulabel.redo();
+        expect(live_ids(ulabel, "pred")).toEqual([]);
+    });
+
+    test("Set class in sets every changed counterpart as one undo step", () => {
+        const ulabel = make_linked_ulabel();
+        const [copy_a, copy_b] = live_ids(ulabel, "pred");
+        const access = ulabel.subtasks.gt.annotations.access;
+        access.a.classification_payloads = [{ class_id: 1, confidence: 0 }, { class_id: 2, confidence: 1 }];
+        access.b.classification_payloads = [{ class_id: 1, confidence: 1 }, { class_id: 2, confidence: 0 }];
+        // pred copies: a -> Crop, b -> Weed; sources now: a -> Weed, b -> Crop
+        expect([class_of(ulabel, "pred", copy_a), class_of(ulabel, "pred", copy_b)]).toEqual([1, 2]);
+
+        ulabel.show_context_menu("a", 10, 10);
+        click_menu_item("Set class in Pred");
+        expect([class_of(ulabel, "pred", copy_a), class_of(ulabel, "pred", copy_b)]).toEqual([2, 1]);
+
+        ulabel.state.current_subtask = "pred";
+        ulabel.undo();
+        expect([class_of(ulabel, "pred", copy_a), class_of(ulabel, "pred", copy_b)]).toEqual([1, 2]);
+    });
+
+    test("Restore N under deprecated focus restores the selection as one undo step", () => {
+        const ulabel = make_ulabel({ gt: [make_bbox("a"), make_bbox("b"), make_bbox("c")] });
+        if (document.getElementById("container") == null) {
+            document.body.insertAdjacentHTML("beforeend", "<div id=\"container\"></div>");
+        }
+        ["a", "b", "c"].forEach((id) => ulabel.delete_annotation(id));
+        ulabel.subtasks.gt.focus_deprecated = true;
+        expect(ulabel.select_annotations(["a", "b"])).toEqual(["a", "b"]);
+
+        expect(ulabel.show_context_menu("a", 10, 10)).toBe(true);
+        click_menu_item("Restore 2");
+        expect(live_ids(ulabel, "gt")).toEqual(["a", "b"]);
+
+        ulabel.subtasks.gt.focus_deprecated = false;
+        ulabel.undo();
+        expect(live_ids(ulabel, "gt")).toEqual([]);
     });
 });
 

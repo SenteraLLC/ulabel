@@ -59,7 +59,7 @@ export class ULabelSubtask {
         // `focus_active_class` is set. Defocused annotations are still real data.
         selected_class_id: number | null;
         // When set, every other annotation in the subtask is hidden (view-only)
-        isolated_annid: string | null;
+        isolated_annids: string[] | null;
         // Multi-selection, the target of bulk actions (see selection.ts)
         selected_ids: Set<string>;
         defocused_opacity: number;

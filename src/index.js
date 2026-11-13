@@ -44,7 +44,7 @@ import { ULabelMask, is_raw_mask_payload } from "../build/mask_utils";
 import { get_active_class_id, get_local_storage_item, set_local_storage_item } from "../build/utilities";
 import { set_active_class, get_selected_class_id, set_focus_active_class, set_focus_edited, set_focus_deprecated, set_defocused_opacity, can_annotation_be_class } from "../build/active_class";
 import { show_context_menu, hide_context_menu, is_context_menu_open } from "../build/context_menu";
-import { isolate_annotation, is_annotation_isolated_out } from "../build/isolate";
+import { isolate_annotation, isolate_annotations, is_annotation_isolated_out, release_isolated_annotations } from "../build/isolate";
 import {
     is_annotation_selected,
     get_selected_annotation_ids,
@@ -709,7 +709,7 @@ export class ULabel {
                 fly_to_idx: null,
                 // The last non-delete class selected; what class focus follows
                 selected_class_id: ul.subtasks[subtask_key]["class_ids"][0] ?? null,
-                isolated_annid: null,
+                isolated_annids: null,
                 selected_ids: new Set(),
                 defocused_opacity: raw_subtask["defocused_opacity"] ?? DEFAULT_DEFOCUSED_OPACITY,
                 // Cache of the layer opacity slider, synced by readjust_subtask_opacities
@@ -1402,11 +1402,32 @@ export class ULabel {
     }
 
     /**
+     * Isolate several annotations in a subtask (hide all others), or pass `null`
+     * (or `[]`) to show all again. View-only: not recorded, does not mark edited.
+     *
+     * @param {string[]|null} annotation_ids
      * @param {string|null} subtask_key defaults to the current subtask
-     * @returns {string|null} the isolated annotation id, if any
+     * @param {boolean} redraw
+     * @returns {boolean} whether the request was accepted
+     */
+    isolate_annotations(annotation_ids, subtask_key = null, redraw = true) {
+        return isolate_annotations(this, annotation_ids, subtask_key, redraw);
+    }
+
+    /**
+     * @param {string|null} subtask_key defaults to the current subtask
+     * @returns {string|null} the first isolated annotation id, if any
      */
     get_isolated_annotation_id(subtask_key = null) {
-        return this.subtasks[subtask_key ?? this.get_current_subtask_key()]?.["state"]["isolated_annid"] ?? null;
+        return this.get_isolated_annotation_ids(subtask_key)[0] ?? null;
+    }
+
+    /**
+     * @param {string|null} subtask_key defaults to the current subtask
+     * @returns {string[]} the isolated annotation ids (empty when nothing is isolated)
+     */
+    get_isolated_annotation_ids(subtask_key = null) {
+        return [...(this.subtasks[subtask_key ?? this.get_current_subtask_key()]?.["state"]["isolated_annids"] ?? [])];
     }
 
     /**
@@ -4189,9 +4210,7 @@ export class ULabel {
         const current_subtask = this.get_current_subtask();
         // Undoing a creation bypasses delete_annotation; the isolation must
         // not outlive its target
-        if (current_subtask["state"]["isolated_annid"] === annotation_id) {
-            this.isolate_annotation(null);
-        }
+        this.release_isolated_annotation(annotation_id);
         if (annotation_id in current_subtask["annotations"]["access"]) {
             // Remove the annotation from access
             delete current_subtask["annotations"]["access"][annotation_id];
@@ -4200,16 +4219,21 @@ export class ULabel {
         }
     }
 
-    // Clear a subtask's isolation when its target has just been deprecated
+    // Drop an annotation from a subtask's isolation when it has just been deprecated
     // by a path that bypasses delete_annotation (bitmask strokes, undo/redo)
     release_isolation_if_deprecated(annotation_id, subtask_key = null) {
         subtask_key = subtask_key ?? this.get_current_subtask_key();
         const subtask = this.subtasks[subtask_key];
-        if (subtask["state"]["isolated_annid"] !== annotation_id) return;
+        if (!subtask["state"]["isolated_annids"]?.includes(annotation_id)) return;
         const annotation = subtask["annotations"]["access"][annotation_id];
         if (annotation === undefined || (annotation["deprecated"] && !subtask["focus_deprecated"])) {
-            this.isolate_annotation(null, subtask_key);
+            this.release_isolated_annotation(annotation_id, subtask_key);
         }
+    }
+
+    // Drop an annotation from a subtask's isolation; the last one leaving shows all again
+    release_isolated_annotation(annotation_id, subtask_key = null, redraw = true) {
+        release_isolated_annotations(this, annotation_id, subtask_key, redraw);
     }
 
     // Remove all recorded events associated with a specific annotation id
@@ -4744,8 +4768,8 @@ export class ULabel {
         return find_counterparts(this, annotation_id, source_key, target_key);
     }
 
-    delete_counterparts(annotation_id, source_key, target_key, erase = null) {
-        return delete_counterparts(this, annotation_id, source_key, target_key, erase);
+    delete_counterparts(annotation_id, source_key, target_key, erase = null, switch_to_target = true) {
+        return delete_counterparts(this, annotation_id, source_key, target_key, erase, switch_to_target);
     }
 
     delete_counterparts__undo(undo_payload) {
@@ -4760,8 +4784,8 @@ export class ULabel {
         return get_counterpart_class_changes(this, annotation_id, source_key, target_key);
     }
 
-    set_counterparts_class(annotation_id, source_key, target_key) {
-        return set_counterparts_class(this, annotation_id, source_key, target_key);
+    set_counterparts_class(annotation_id, source_key, target_key, switch_to_target = true) {
+        return set_counterparts_class(this, annotation_id, source_key, target_key, switch_to_target);
     }
 
     set_counterparts_class__undo(undo_payload) {
@@ -4861,10 +4885,8 @@ export class ULabel {
         if (this.state["context_menu_annid"] === annotation_id) {
             this.hide_context_menu();
         }
-        // Deleting the isolated annotation must bring the others back
-        if (current_subtask["state"]["isolated_annid"] === annotation_id) {
-            this.isolate_annotation(null);
-        }
+        // A deleted annotation leaves the isolation; the last one leaving shows all again
+        this.release_isolated_annotation(annotation_id);
 
         // Deprecate the annotation and redraw it
         mark_deprecated(annotations[annotation_id], true);
@@ -7014,9 +7036,7 @@ export class ULabel {
     finish_annotation__undo(annotation_id) {
         const current_subtask = this.get_current_subtask();
         // The isolation must not outlive its target
-        if (current_subtask["state"]["isolated_annid"] === annotation_id) {
-            this.isolate_annotation(null);
-        }
+        this.release_isolated_annotation(annotation_id);
         // Deprecate the annotation
         mark_deprecated(current_subtask["annotations"]["access"][annotation_id], true);
     }
