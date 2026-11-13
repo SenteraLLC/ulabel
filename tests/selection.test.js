@@ -1,6 +1,6 @@
 // Unit tests for multi-selection: the target of bulk actions. View-only
-// state, so nothing is recorded, and only live, in-focus, 2D spatial
-// annotations can be selected.
+// state, so nothing is recorded, and only in-focus 2D spatial annotations
+// can be selected (live ones, or deprecated ones under deprecated focus).
 const { ULabel } = require("./testing-utils/build_loader");
 
 let next_id = 0;
@@ -109,6 +109,22 @@ describe("select_annotations", () => {
         const ulabel = make_ulabel();
 
         expect(ulabel.select_annotations(["x"], "replace", "no_such_subtask")).toEqual([]);
+    });
+
+    test("under deprecated focus only deprecated annotations are selectable", () => {
+        const ulabel = make_ulabel();
+        const live = make_annotation();
+        const [gone, gone2] = [make_annotation({ deprecated: true }), make_annotation({ deprecated: true })];
+        load(ulabel, [live, gone, gone2]);
+        ulabel.subtasks.st.focus_deprecated = true;
+
+        expect(ulabel.select_annotations([live.id, gone.id, gone2.id])).toEqual([gone.id, gone2.id]);
+        expect(ulabel.select_all_annotations()).toEqual([gone.id, gone2.id]);
+
+        // Leaving deprecated focus drops them on the next refresh
+        ulabel.subtasks.st.focus_deprecated = false;
+        ulabel.refresh_selection();
+        expect(ulabel.get_selected_annotation_ids()).toEqual([]);
     });
 
     test("select_all_annotations selects every selectable annotation", () => {

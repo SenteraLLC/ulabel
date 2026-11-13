@@ -213,9 +213,10 @@ export function set_focus_deprecated(
     subtask.state.move_candidate = null;
     subtask.state.fly_to_idx = null;
     if (subtask_key === ulabel.get_current_subtask_key()) ulabel.hide_context_menu();
-    const isolated_annid = subtask.state.isolated_annid;
-    if (isolated_annid != null && subtask.annotations.access[isolated_annid]?.deprecated && !subtask.focus_deprecated) {
-        ulabel.isolate_annotation(null, subtask_key, false);
+    if (!subtask.focus_deprecated) {
+        for (const id of ulabel.get_isolated_annotation_ids(subtask_key)) {
+            if (subtask.annotations.access[id]?.deprecated) ulabel.release_isolated_annotation(id, subtask_key, false);
+        }
     }
 
     if (redraw) {

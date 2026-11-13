@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented here.
 
+## [0.34.0] - Nov 13th, 2026
+#### Added
+- The selection bulk menu now covers the remaining single-annotation items except `Details`, each one undo step:
+  - `Set class in <subtask>`, `Erase from <subtask>` and `Delete <n> from <subtask>` act on every selected annotation's counterparts (`<n>` counts distinct counterparts), and are undone from the target subtask.
+  - `Isolate <n>` / `Show all` isolates the selection.
+  - Under Show Deprecated, `Restore <n>` restores the selected annotations that can be restored.
+- Under Show Deprecated, deprecated annotations can be selected (`ctrl+click`, box select, `ctrl+a`) and live ones can't.
+- `isolate_annotations(ids, subtask_key?, redraw?)` and `get_isolated_annotation_ids(subtask_key?)`: several annotations can be isolated at once. Deleting one of them only drops that id from the isolation.
+- `delete_counterparts()` and `set_counterparts_class()` take an optional trailing `switch_to_target` (default `true`) to suppress the `paste_switch_to_target` switch.
+
+#### Changed
+- **Breaking:** `on_isolate_change(subtask_key, annotation_ids)` now receives an array of ids (or `null`) instead of a single id. A single isolation arrives as `[annotation_id]`.
+- **Breaking:** `get_isolated_annotation_id()` is removed; use `get_isolated_annotation_ids()`.
+
 ## [0.33.0] - Nov 13th, 2026
 #### Added
 - Multi-select ([CVML-358](https://sentera.atlassian.net/browse/CVML-358)): `ctrl+click` annotations (or their `AnnotationList` rows) to select several, `ctrl+a` to select all, `Escape` to clear. Selected annotations get the hover border and list highlight, and an `<n> selected` indicator shows where the fly-to toast does (the toast moves below it). After a selection click the hover border stays off until the mouse moves, so the click's result shows immediately. Only live, visible, 2D spatial annotations can be selected. The selection is view-only: never recorded, doesn't mark the session edited.

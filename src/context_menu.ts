@@ -217,7 +217,7 @@ export function show_context_menu(ulabel: ULabel, annid: string, client_x: numbe
         add_edit_items(ulabel, menu, annotation, annid, client_x, client_y);
     }
     // isolate_annotation closes the menu itself
-    const is_isolated = subtask.state.isolated_annid === annid;
+    const is_isolated = subtask.state.isolated_annids?.includes(annid) ?? false;
     add_item(menu, is_isolated ? "Show all" : "Isolate", ICON_ISOLATE, () => {
         ulabel.isolate_annotation(is_isolated ? null : annid);
     });
@@ -319,7 +319,9 @@ function add_edit_items(
  * pick applies to each selected annotation that can take it), Copy N to / Move
  * N to (per target, the selected annotations it can take; Move only on an
  * editable subtask; `hide_copy_to_linked` drops ones already linked there),
- * Delete N (editable subtask), and Clear selection.
+ * Set class in / Erase from / Delete from (see `add_counterpart_selection_items`),
+ * Delete N (editable subtask), Isolate N / Show all, and Clear selection.
+ * Under deprecated focus: Restore N (the restorable ones), Isolate N / Show all, and Clear selection.
  */
 function add_selection_items(
     ulabel: ULabel,
@@ -332,6 +334,18 @@ function add_selection_items(
     const read_only = ulabel.is_subtask_edit_locked();
     const source_key = ulabel.get_current_subtask_key();
     const access = ulabel.get_current_subtask().annotations.access;
+    // Under deprecated focus the selection is deprecated annotations: only Restore applies
+    if (ulabel.get_current_subtask().focus_deprecated) {
+        const restorable = ids.filter((id) => ulabel.can_restore_annotation(id));
+        if (restorable.length > 0) {
+            add_item(menu, `Restore ${restorable.length}`, ICON_RESTORE, () => {
+                hide_context_menu(ulabel);
+                ulabel.run_action_batch(() => restorable.forEach((id) => ulabel.restore_annotation(id)));
+            });
+        }
+        add_isolate_and_clear_items(ulabel, menu, ids);
+        return;
+    }
     if (!read_only && ulabel._get_compatible_class_ids(access[annid]).length >= 2) {
         add_item(menu, `Change class of ${ids.length}`, ICON_CHANGE_CLASS, () => {
             hide_context_menu(ulabel);
@@ -374,16 +388,100 @@ function add_selection_items(
             add_subtask_picker(ulabel, menu, "Move to", ICON_CUT, copy_targets, client_x, client_y, (key) => transfer(key, true), count_of);
         }
     }
+    add_counterpart_selection_items(ulabel, menu, ids, client_x, client_y);
     if (!read_only) {
         add_item(menu, `Delete ${ids.length}`, ICON_DELETE, () => {
             hide_context_menu(ulabel);
             ulabel.delete_selected_annotations();
         });
     }
+    add_isolate_and_clear_items(ulabel, menu, ids);
+}
+
+/** Isolate N (Show all while exactly the selection is isolated) and Clear selection. */
+function add_isolate_and_clear_items(ulabel: ULabel, menu: HTMLDivElement, ids: string[]): void {
+    const isolated = ulabel.get_current_subtask().state.isolated_annids ?? [];
+    const is_isolated = isolated.length === ids.length && ids.every((id) => isolated.includes(id));
+    add_item(menu, is_isolated ? "Show all" : `Isolate ${ids.length}`, ICON_ISOLATE, () => {
+        hide_context_menu(ulabel);
+        ulabel.isolate_annotations(is_isolated ? null : ids);
+    });
     add_item(menu, "Clear selection", ICON_CLEAR, () => {
         hide_context_menu(ulabel);
         ulabel.clear_selection();
     });
+}
+
+/**
+ * Bulk Set class in / Erase from / Delete from for the selection, each one
+ * undo step across the selected annotations with counterparts in the target
+ * (writable subtasks only). Delete from shows the number of distinct
+ * counterparts it removes. `config.paste_switch_to_target` switches once, after the batch.
+ */
+function add_counterpart_selection_items(
+    ulabel: ULabel,
+    menu: HTMLDivElement,
+    ids: string[],
+    client_x: number,
+    client_y: number,
+): void {
+    const source_key = ulabel.get_current_subtask_key();
+    const access = ulabel.get_current_subtask().annotations.access;
+    // Target subtask -> (selected id -> its counterparts there)
+    const counterparts: Record<string, Record<string, string[]>> = {};
+    for (const key of Object.keys(ulabel.subtasks)) {
+        if (key === source_key || ulabel.is_subtask_edit_locked(key)) continue;
+        for (const id of ids) {
+            const found = ulabel.find_counterparts(id, source_key, key);
+            if (found.length > 0) (counterparts[key] ??= {})[id] = found;
+        }
+    }
+    const run_batch = (target_key: string, source_ids: string[], fn: (id: string) => string[]) => {
+        hide_context_menu(ulabel);
+        let changed = false;
+        ulabel.run_action_batch(() => {
+            for (const id of source_ids) {
+                if (fn(id).length > 0) changed = true;
+            }
+        });
+        if (changed && ulabel.config.paste_switch_to_target && target_key !== ulabel.get_current_subtask_key()) {
+            ulabel.set_subtask(target_key);
+        }
+    };
+
+    const class_sources: Record<string, string[]> = {};
+    for (const [key, by_id] of Object.entries(counterparts)) {
+        const changing = Object.keys(by_id).filter(
+            (id) => Object.keys(ulabel.get_counterpart_class_changes(id, source_key, key)).length > 0,
+        );
+        if (changing.length > 0) class_sources[key] = changing;
+    }
+    if (Object.keys(class_sources).length > 0) {
+        add_subtask_picker(ulabel, menu, "Set class in", ICON_CHANGE_CLASS, Object.keys(class_sources), client_x, client_y, (key) => {
+            run_batch(key, class_sources[key], (id) => ulabel.set_counterparts_class(id, source_key, key, false));
+        });
+    }
+
+    const erase_sources: Record<string, string[]> = {};
+    for (const [key, by_id] of Object.entries(counterparts)) {
+        const erasing = Object.keys(by_id).filter((id) => access[id].spatial_type === "bitmask" && by_id[id].some(
+            (cid) => ulabel.subtasks[key].annotations.access[cid].spatial_type === "bitmask",
+        ));
+        if (erasing.length > 0) erase_sources[key] = erasing;
+    }
+    if (Object.keys(erase_sources).length > 0) {
+        add_subtask_picker(ulabel, menu, "Erase from", ICON_DELETE, Object.keys(erase_sources), client_x, client_y, (key) => {
+            run_batch(key, erase_sources[key], (id) => ulabel.delete_counterparts(id, source_key, key, true, false));
+        });
+    }
+
+    const delete_targets = Object.keys(counterparts);
+    if (delete_targets.length > 0) {
+        const count_of = (key: string) => new Set(Object.values(counterparts[key]).flat()).size;
+        add_subtask_picker(ulabel, menu, "Delete from", ICON_DELETE, delete_targets, client_x, client_y, (key) => {
+            run_batch(key, Object.keys(counterparts[key]), (id) => ulabel.delete_counterparts(id, source_key, key, false, false));
+        }, count_of);
+    }
 }
 
 /** Close the menu and drop the hover it was holding. No-op when closed. */

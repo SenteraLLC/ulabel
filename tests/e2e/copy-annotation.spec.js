@@ -277,7 +277,7 @@ test.describe("copy annotations between subtasks", () => {
                 expect(ground_truth[2].spatial_payload).toEqual([[120, 120], [320, 270]]);
                 expect(ground_truth[2].class_id).toBe(10);
                 await expect(page.locator("#id_dialog__ground_truth")).toBeHidden();
-                expect(await page.evaluate(() => window.ulabel.get_isolated_annotation_id())).toBeNull();
+                expect(await page.evaluate(() => window.ulabel.get_isolated_annotation_ids())).toEqual([]);
 
                 await send_clipboard("paste");
                 await expect.poll(() => get_annotations(page, "ground_truth")).toHaveLength(4);

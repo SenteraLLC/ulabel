@@ -173,3 +173,20 @@ in the current subtask; adds to the selection.
 - [x] Move clipboard, paste and counterpart logic into new TS modules; keep thin ULabel wrappers for the public API and `__undo`/`__redo` handlers.
 - [x] Lint, build, Jest, e2e.
 - [x] Review fix: module code calls public methods through the ULabel instance so `ulabel.on(...)` callbacks still fire (regression test in copy_annotation.test.js).
+
+## Multi-select: remaining bulk context-menu items (plan)
+
+Bulk menu gets the single-annotation items it lacks (not Details). Each is one undo step via `run_action_batch`.
+
+- [x] Counterpart helpers take a `switch_subtask` flag (default true) so bulk loops switch to the target once, after the batch (a mid-loop `set_subtask` clears the selection).
+- [x] `Set class in <subtask>` (N): targets where any selected annotation has a counterpart change; count = annotations that would change; loop `set_counterparts_class`.
+- [x] `Delete from <subtask>` (N): targets holding counterparts of any selected annotation; count = counterparts; loop `delete_counterparts(.., false)`.
+- [x] `Erase from <subtask>` (N): selected bitmasks with bitmask counterparts; loop `delete_counterparts(.., true)`.
+- [x] No new public bulk API (menu only); no confirm dialogs. Delete/Erase from count = distinct counterparts changed.
+  Release as 0.34.0; `on_isolate_change` now always gets an array of ids or null (breaking, note in changelog).
+- [x] Isolate N / Show all: `isolated_annid` becomes a set of ids (`isolated_annids`); `isolate_annotation(id)` keeps working,
+  new `isolate_annotations(ids)`; `on_isolate_change` receives an array; update every `isolated_annid` reader
+  (`isolate.ts`, `active_class.ts`, `clipboard.ts`, `listeners.ts`, `index.js` delete/restore paths).
+- [x] Restore N: under Show Deprecated focus, only deprecated annotations are selectable (live ones aren't);
+  bulk menu then offers Restore N (ids passing `can_restore_annotation`) and Isolate N, not the edit items.
+- [x] Docs, changelog; Jest (`tests/bulk_actions.test.js`, `tests/context_menu.test.js`) + e2e; lint, build, jest.

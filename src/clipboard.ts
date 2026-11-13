@@ -284,9 +284,7 @@ function insert_pasted_annotation(ulabel: ULabel, annotation_json: ULabelAnnotat
 function remove_pasted_annotation(ulabel: ULabel, annotation_id: string, subtask_key: string): void {
     const subtask = ulabel.subtasks[subtask_key];
     if (!(annotation_id in subtask["annotations"]["access"])) return;
-    if (subtask["state"]["isolated_annid"] === annotation_id) {
-        ulabel.isolate_annotation(null, subtask_key);
-    }
+    ulabel.release_isolated_annotation(annotation_id, subtask_key);
     ulabel.destroy_annotation_context(annotation_id, subtask_key);
     delete subtask["annotations"]["access"][annotation_id];
     subtask["annotations"]["ordering"] = subtask["annotations"]["ordering"].filter((value) => value !== annotation_id);

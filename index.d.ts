@@ -459,8 +459,8 @@ export type ULabelConstructorArgs = {
     on_focus_edited_change?: (subtask_key: string, enabled: boolean) => void;
     /** Fired after a subtask's `focus_deprecated` flag changes, from any writer (API, toggle keybind, annotation list checkbox). */
     on_focus_deprecated_change?: (subtask_key: string, enabled: boolean) => void;
-    /** Fired after a subtask's isolated annotation changes (`null` when cleared), from any writer (API, list button, Escape). */
-    on_isolate_change?: (subtask_key: string, annotation_id: string | null) => void;
+    /** Fired with the isolated ids after a subtask's isolation changes (`null` when cleared), from any writer (API, list button, context menu, Escape). */
+    on_isolate_change?: (subtask_key: string, annotation_ids: string[] | null) => void;
     /** Fired with the selected ids (in annotation order) after a subtask's selection changes, from any writer (API, Ctrl+click, Ctrl+A, Escape, pruning). */
     on_selection_change?: (subtask_key: string, annotation_ids: string[]) => void;
     /** Fired when an undo/redo from a read-only subtask does nothing because the writable subtask's top action was triggered elsewhere. */
@@ -638,8 +638,13 @@ export class ULabel {
      * was accepted (unknown ids, and deprecated ids outside deprecated focus, are rejected).
      */
     public isolate_annotation(annotation_id: string | null, subtask_key?: string | null, redraw?: boolean): boolean;
-    /** The isolated annotation id in a subtask, if any. */
-    public get_isolated_annotation_id(subtask_key?: string | null): string | null;
+    /**
+     * Isolate several annotations in a subtask, like `isolate_annotation`;
+     * `null` or `[]` clears. Rejected as a whole if any id would be rejected.
+     */
+    public isolate_annotations(annotation_ids: string[] | null, subtask_key?: string | null, redraw?: boolean): boolean;
+    /** The isolated annotation ids in a subtask (empty when nothing is isolated). */
+    public get_isolated_annotation_ids(subtask_key?: string | null): string[];
     /**
      * Change a subtask's selection, the target of bulk actions. Ids that can't
      * be selected (unknown, deprecated, dimmed or isolated out, non-spatial,
@@ -930,9 +935,15 @@ export class ULabel {
      * Delete the counterparts from a writable `target_key`, or with `erase` (default: source is a bitmask)
      * subtract a bitmask source from its bitmask counterparts.
      * One `delete_counterparts` action on the target's stream. Returns the changed ids.
-     * With `config.paste_switch_to_target`, switches to the target when anything changed.
+     * With `config.paste_switch_to_target`, switches to the target when anything changed (unless `switch_to_target` is false).
      */
-    public delete_counterparts(annotation_id: string, source_key: string, target_key: string, erase?: boolean | null): string[];
+    public delete_counterparts(
+        annotation_id: string,
+        source_key: string,
+        target_key: string,
+        erase?: boolean | null,
+        switch_to_target?: boolean,
+    ): string[];
     /**
      * Counterparts in `target_key` that can take the source's class (by id, else by name)
      * and don't already have it, mapped to the class id each would take.
@@ -941,9 +952,9 @@ export class ULabel {
     /**
      * Set the counterparts in a writable `target_key` to the source's class (see `get_counterpart_class_changes`).
      * One `set_counterparts_class` action on the target's stream. Returns the changed ids.
-     * With `config.paste_switch_to_target`, switches to the target when anything changed.
+     * With `config.paste_switch_to_target`, switches to the target when anything changed (unless `switch_to_target` is false).
      */
-    public set_counterparts_class(annotation_id: string, source_key: string, target_key: string): string[];
+    public set_counterparts_class(annotation_id: string, source_key: string, target_key: string, switch_to_target?: boolean): string[];
     /** Whether a context-menu copy/move/delete-from/set-class-in makes the target the current subtask. */
     public set_paste_switch_to_target(enabled: boolean): void;
     public get_paste_switch_to_target(): boolean;
@@ -1127,8 +1138,10 @@ export class ULabel {
     public set_bitmask_from_rle(annotation_object: ULabelAnnotation, rle: ULabelMaskPayload | null): void;
     /** @internal Recompute a bitmask annotation's containing box from its mask. */
     public rebuild_bitmask_containing_box(annotation_object: ULabelAnnotation): void;
-    /** @internal Clear a subtask's isolation when its target was deprecated outside delete_annotation. */
+    /** @internal Drop an annotation from a subtask's isolation when it was deprecated outside delete_annotation. */
     public release_isolation_if_deprecated(annotation_id: string, subtask_key?: string | null): void;
+    /** @internal Drop an annotation from a subtask's isolation; the last one leaving shows all again. */
+    public release_isolated_annotation(annotation_id: string, subtask_key?: string | null, redraw?: boolean): void;
 }
 
 declare global {
