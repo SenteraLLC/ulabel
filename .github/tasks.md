@@ -201,7 +201,7 @@ Host-supplied merge options on an annotation (`merge_options_meta_key`): each jo
   bulk dedupes by option id and chains joins); `apply_merge_option` undo/redo.
 - [x] Wire into `ULabel` (thin wrappers), `actions.ts` (action type, undo/redo, listener map), config default,
   copies drop the key.
-- [x] Context menu: an item per option (`(joins N objects)`), Keep existing / Replace existing / Allow overlap
+- [x] Context menu: an item per option (`(joins N <class> objects, overlaps N <class>)`, tooltip), Allow overlap / Exclude other objects / Overwrite other objects
   submenu only on a conflict; bulk items grouped by label.
 - [x] Types (`index.d.ts`), `api_spec.md`, changelog (0.34.0).
 - [x] Jest (`tests/merge.test.js`, context menu), e2e; lint, build, jest, e2e.

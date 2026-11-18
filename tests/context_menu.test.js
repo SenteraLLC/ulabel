@@ -50,6 +50,7 @@ function make_ulabel({ read_only = false, compatible = [1, 2], annotation = make
         set_counterparts_class: jest.fn(() => []),
         get_merge_options: jest.fn(() => []),
         apply_merge_options: jest.fn(() => []),
+        get_class_name: jest.fn((class_id) => ({ 1: "Crop", 2: "Weed" })[class_id] ?? null),
         show_id_dialog: jest.fn(),
         delete_annotation: jest.fn(),
         is_annotation_defocused: jest.fn((ann) => ann.deprecated !== subtask.focus_deprecated),
@@ -642,28 +643,39 @@ describe("selection menu", () => {
     test("bulk merge items group options by label and apply each distinct option once", () => {
         const ulabel = make_selection_ulabel({ read_only: true });
         ulabel.subtasks.review.read_only = true;
+        set_gt(ulabel, { g1: 2, g2: 2, c1: 1, c2: 1 });
         const info = (id, label, target_ids, conflict_ids = []) => ({ id, label, subtask_key: "pred", target_ids, conflict_ids });
         ulabel.get_merge_options.mockImplementation((annid) => [
-            info(`s_${annid}`, "Merge into GT", ["g1"]),
+            info(`s_${annid}`, "Merge into GT", ["g1"], annid === "a0" ? ["c1"] : ["c1", "c2"]),
             info("full", "Merge prediction into GT", ["g1", "g2"]),
         ]);
 
         show_context_menu(ulabel, "a0", 100, 100);
         expect(item_labels()).toEqual([
-            "Merge into GT (2)",
-            "Merge prediction into GT (joins 2 objects)",
+            "Merge into GT (2, overlaps 2 Crop)\u2026",
+            "Merge prediction into GT (joins 2 Weed objects)",
             "Isolate 2",
             "Clear selection",
         ]);
 
-        click_item("Merge into GT (2)");
-        click_item_after_reopen(ulabel, "Merge prediction into GT (joins 2 objects)");
+        click_item("Merge into GT (2, overlaps 2 Crop)\u2026");
+        click_item("Allow overlap");
+        click_item_after_reopen(ulabel, "Merge prediction into GT (joins 2 Weed objects)");
         expect(ulabel.apply_merge_options.mock.calls).toEqual([
             [[{ annotation_id: "a0", option_id: "s_a0" }, { annotation_id: "a1", option_id: "s_a1" }], "none"],
             [[{ annotation_id: "a0", option_id: "full" }], "none"],
         ]);
     });
 });
+
+/** Give the "pred" subtask live bitmasks with the given class ids. */
+function set_gt(ulabel, classes) {
+    const access = {};
+    for (const [id, class_id] of Object.entries(classes)) {
+        access[id] = make_annotation({ id, spatial_type: "bitmask", classification_payloads: [{ class_id, confidence: 1 }] });
+    }
+    ulabel.subtasks.pred.annotations = { access };
+}
 
 function click_item_after_reopen(ulabel, label) {
     show_context_menu(ulabel, "a0", 100, 100);
@@ -673,31 +685,48 @@ function click_item_after_reopen(ulabel, label) {
 describe("merge items", () => {
     const info = (id, label, target_ids, conflict_ids = []) => ({ id, label, subtask_key: "pred", target_ids, conflict_ids });
 
-    test("one item per option; a join notes the object count", () => {
+    test("one item per option; a join notes the object count and shared class", () => {
         const ulabel = make_ulabel({ read_only: true });
+        set_gt(ulabel, { g1: 2, g2: 2, g3: 2, g4: 1 });
         ulabel.get_merge_options.mockReturnValue([
             info("s", "Merge into GT", ["g1"]),
             info("p", "Merge prediction into GT", ["g1", "g2", "g3"]),
+            info("m", "Merge mixed", ["g1", "g4"]),
         ]);
 
         show_context_menu(ulabel, "a0", 100, 100);
-        expect(item_labels()).toEqual(["Merge into GT", "Merge prediction into GT (joins 3 objects)", "Isolate", "Details"]);
+        expect(item_labels()).toEqual([
+            "Merge into GT",
+            "Merge prediction into GT (joins 3 Weed objects)",
+            "Merge mixed (joins 2 objects)",
+            "Isolate",
+            "Details",
+        ]);
         expect(ulabel.get_merge_options).toHaveBeenCalledWith("a0");
+        const items = Array.from(menu_element().querySelectorAll(".ulabel-context-menu-item"));
+        expect(items[0].title).toBe("");
+        expect(items[1].title).toBe("Joins 3 Weed objects into one.");
 
         click_item("Merge into GT");
         expect(ulabel.apply_merge_options).toHaveBeenCalledWith([{ annotation_id: "a0", option_id: "s" }], "none");
         expect(is_context_menu_open(ulabel)).toBe(false);
     });
 
-    test("a conflicting option opens the overlap choices", () => {
+    test("a conflicting option names the overlapped classes and opens the overlap choices", () => {
         const ulabel = make_ulabel({ read_only: true });
-        ulabel.get_merge_options.mockReturnValue([info("s", "Merge into GT", ["g1"], ["c1"])]);
+        set_gt(ulabel, { g1: 2, g2: 2, c1: 1, c2: 1, c3: 2 });
+        ulabel.get_merge_options.mockReturnValue([info("s", "Merge into GT", ["g1", "g2"], ["c1", "c3", "c2"])]);
+        const label = "Merge into GT (joins 2 Weed objects, overlaps 2 Crop, 1 Weed)\u2026";
 
-        for (const [choice, overlap] of [["Keep existing", "exclude"], ["Replace existing", "overwrite"], ["Allow overlap", "none"]]) {
+        for (const [choice, overlap] of [["Allow overlap", "none"], ["Exclude other objects", "exclude"], ["Overwrite other objects", "overwrite"]]) {
             show_context_menu(ulabel, "a0", 100, 100);
-            expect(item_labels()).toEqual(["Merge into GT\u2026", "Isolate", "Details"]);
-            click_item("Merge into GT\u2026");
-            expect(item_labels()).toEqual(["Keep existing", "Replace existing", "Allow overlap"]);
+            expect(item_labels()).toEqual([label, "Isolate", "Details"]);
+            expect(menu_element().querySelector(".ulabel-context-menu-item").title).toBe(
+                "Joins 2 Weed objects into one. Overlaps other objects (2 Crop, 1 Weed); choose how to resolve.",
+            );
+            click_item(label);
+            expect(item_labels()).toEqual(["Allow overlap", "Exclude other objects", "Overwrite other objects"]);
+            expect(Array.from(menu_element().querySelectorAll(".ulabel-context-menu-item")).every((el) => el.title.startsWith("Merge into the target"))).toBe(true);
             expect(ulabel.apply_merge_options).not.toHaveBeenCalledWith(expect.anything(), overlap);
             click_item(choice);
             expect(ulabel.apply_merge_options).toHaveBeenLastCalledWith([{ annotation_id: "a0", option_id: "s" }], overlap);

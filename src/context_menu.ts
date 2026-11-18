@@ -46,9 +46,10 @@ function ensure_menu_element(ulabel: ULabel): HTMLDivElement | null {
     return menu;
 }
 
-function add_item(menu: HTMLDivElement, label: string, icon_svg: string, on_click: () => void): void {
+function add_item(menu: HTMLDivElement, label: string, icon_svg: string, on_click: () => void, tooltip: string | null = null): void {
     const item = document.createElement("div");
     item.className = `${MENU_CLASS}-item`;
+    if (tooltip !== null) item.title = tooltip;
     const icon = document.createElement("span");
     icon.className = `${MENU_CLASS}-item-icon`;
     icon.innerHTML = icon_svg;
@@ -164,21 +165,50 @@ function add_subtask_picker(
     });
 }
 
+/** "<n> <name>" counts per class name, largest first, e.g. "2 Crop, 1 Soil". */
+function format_class_counts(counts: Map<string, number>): string {
+    return Array.from(counts.entries())
+        .sort((a, b) => b[1] - a[1])
+        .map(([name, n]) => `${n} ${name}`)
+        .join(", ");
+}
+
 /**
  * Merge items (see `get_merge_options`) for the given annotations, one per option
  * label; a label several annotations offer applies all their options (each distinct
- * option once) as one undo step. The text notes the option count above 1 and a merge
- * that joins objects. When a mask overlaps other bitmasks the item opens Keep
- * existing / Replace existing / Allow overlap instead.
+ * option once) as one undo step. The text notes the option count above 1, a merge
+ * that joins objects (with their class when they share one), and the objects the
+ * mask overlaps per class, with a fuller tooltip. When a mask overlaps other bitmasks
+ * the item opens Allow overlap / Exclude other objects / Overwrite other objects
+ * (the brush overlap modes) instead.
  */
 function add_merge_items(ulabel: ULabel, menu: HTMLDivElement, ids: string[], client_x: number, client_y: number): void {
-    type MergeGroup = { merges: ULabelMergeRequest[]; option_keys: Set<string>; joins: number; conflict: boolean };
+    type MergeGroup = {
+        merges: ULabelMergeRequest[];
+        option_keys: Set<string>;
+        joins: number;
+        join_classes: Set<string | null>;
+        conflict_keys: Set<string>;
+        conflict_classes: Map<string, number>;
+    };
+    const class_name_of = (subtask_key: string, annotation_id: string): string | null => {
+        const annotation = ulabel.subtasks[subtask_key]?.annotations?.access[annotation_id];
+        if (annotation == null) return null;
+        return ulabel.get_class_name(Number(get_annotation_class_id(annotation)), subtask_key);
+    };
     const groups = new Map<string, MergeGroup>();
     for (const id of ids) {
         for (const info of ulabel.get_merge_options(id)) {
             let group = groups.get(info.label);
             if (group === undefined) {
-                group = { merges: [], option_keys: new Set(), joins: 0, conflict: false };
+                group = {
+                    merges: [],
+                    option_keys: new Set(),
+                    joins: 0,
+                    join_classes: new Set(),
+                    conflict_keys: new Set(),
+                    conflict_classes: new Map(),
+                };
                 groups.set(info.label, group);
             }
             const option_key = `${info.subtask_key}\u0000${info.id}`;
@@ -186,30 +216,57 @@ function add_merge_items(ulabel: ULabel, menu: HTMLDivElement, ids: string[], cl
             group.option_keys.add(option_key);
             group.merges.push({ annotation_id: id, option_id: info.id });
             group.joins = Math.max(group.joins, info.target_ids.length);
-            group.conflict ||= info.conflict_ids.length > 0;
+            if (info.target_ids.length > 1) {
+                for (const target_id of info.target_ids) group.join_classes.add(class_name_of(info.subtask_key, target_id));
+            }
+            for (const conflict_id of info.conflict_ids) {
+                const conflict_key = `${info.subtask_key}\u0000${conflict_id}`;
+                if (group.conflict_keys.has(conflict_key)) continue;
+                group.conflict_keys.add(conflict_key);
+                const name = class_name_of(info.subtask_key, conflict_id) ?? "unclassified";
+                group.conflict_classes.set(name, (group.conflict_classes.get(name) ?? 0) + 1);
+            }
         }
     }
     for (const [label, group] of Array.from(groups.entries())) {
         const count = group.merges.length;
+        const conflict = group.conflict_keys.size > 0;
+        const [only_join_class] = Array.from(group.join_classes);
+        const join_class = group.join_classes.size === 1 && only_join_class != null ? `${only_join_class} ` : "";
         const notes: string[] = [];
-        if (count > 1) notes.push(String(count));
-        if (group.joins > 1) notes.push(count > 1 ? "joins objects" : `joins ${group.joins} objects`);
+        const tips: string[] = [];
+        if (count > 1) {
+            notes.push(String(count));
+            tips.push(`Applies ${count} merges.`);
+        }
+        if (group.joins > 1) {
+            notes.push(count > 1 ? `joins ${join_class}objects` : `joins ${group.joins} ${join_class}objects`);
+            tips.push(count > 1 ? `Joins the touched ${join_class}objects into one.` : `Joins ${group.joins} ${join_class}objects into one.`);
+        }
+        if (conflict) {
+            const overlaps = format_class_counts(group.conflict_classes);
+            notes.push(`overlaps ${overlaps}`);
+            tips.push(`Overlaps other objects (${overlaps}); choose how to resolve.`);
+        }
         const text = notes.length > 0 ? `${label} (${notes.join(", ")})` : label;
         const apply = (overlap: BrushOverlapMode) => {
             hide_context_menu(ulabel);
             ulabel.apply_merge_options(group.merges, overlap);
         };
-        add_item(menu, group.conflict ? `${text}\u2026` : text, ICON_MERGE, () => {
-            if (!group.conflict) {
+        add_item(menu, conflict ? `${text}\u2026` : text, ICON_MERGE, () => {
+            if (!conflict) {
                 apply("none");
                 return;
             }
             menu.replaceChildren();
-            add_item(menu, "Keep existing", ICON_MERGE, () => apply("exclude"));
-            add_item(menu, "Replace existing", ICON_MERGE, () => apply("overwrite"));
-            add_item(menu, "Allow overlap", ICON_MERGE, () => apply("none"));
+            const allow_tip = "Merge into the target, leaving other objects alone";
+            const exclude_tip = "Merge into the target, except for pixels that already belong to another object";
+            const overwrite_tip = "Merge into the target, overwriting pixels that belong to any other object";
+            add_item(menu, "Allow overlap", ICON_MERGE, () => apply("none"), allow_tip);
+            add_item(menu, "Exclude other objects", ICON_MERGE, () => apply("exclude"), exclude_tip);
+            add_item(menu, "Overwrite other objects", ICON_MERGE, () => apply("overwrite"), overwrite_tip);
             position_menu(menu, client_x, client_y);
-        });
+        }, tips.length > 0 ? tips.join(" ") : null);
     }
 }
 
