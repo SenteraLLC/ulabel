@@ -54,6 +54,7 @@ function add_item(menu: HTMLDivElement, label: string, icon_svg: string, on_clic
     icon.className = `${MENU_CLASS}-item-icon`;
     icon.innerHTML = icon_svg;
     const text = document.createElement("span");
+    text.className = `${MENU_CLASS}-item-text`;
     text.textContent = label;
     item.appendChild(icon);
     item.appendChild(text);
