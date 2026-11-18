@@ -13,8 +13,8 @@ import { log_message, LogLevel } from "./error_logging";
 import { ULabelMaskPayload } from "./mask_utils";
 
 // One half of a `delete_counterparts` payload: masks to set and ids to (un)deprecate
-type CounterpartRemovalState = { masks: Record<string, ULabelMaskPayload>; deprecated_ids: string[] };
-type CounterpartRemovalPayload = { before: CounterpartRemovalState; after: CounterpartRemovalState };
+export type CounterpartRemovalState = { masks: Record<string, ULabelMaskPayload>; deprecated_ids: string[] };
+export type CounterpartRemovalPayload = { before: CounterpartRemovalState; after: CounterpartRemovalState };
 type CounterpartClassPayload = {
     before: Record<string, ULabelClassificationPayload[]>;
     after: Record<string, ULabelClassificationPayload[]>;
@@ -81,7 +81,7 @@ export function find_counterparts(ulabel: ULabel, annotation_id: string, source_
 }
 
 // Non-empty strings under `config.annotation_link_meta_key` (a string or string[])
-function get_link_values(ulabel: ULabel, annotation: ULabelAnnotation): string[] {
+export function get_link_values(ulabel: ULabel, annotation: ULabelAnnotation): string[] {
     const key = ulabel.config["annotation_link_meta_key"];
     if (key == null) return [];
     const value = get_annotation_meta(annotation)?.[key];
@@ -169,8 +169,8 @@ function record_delete_counterparts(ulabel: ULabel, annotation_id: string, targe
     }, is_redo, true, target_key);
 }
 
-// Set masks and deprecation from a `delete_counterparts` payload half, then redraw
-function apply_counterpart_removal(ulabel: ULabel, state: CounterpartRemovalState, subtask_key: string, deprecated: boolean): void {
+// Set masks and deprecation from a `delete_counterparts` (or `apply_merge_option`) payload half, then redraw
+export function apply_counterpart_removal(ulabel: ULabel, state: CounterpartRemovalState, subtask_key: string, deprecated: boolean): void {
     const access = ulabel.subtasks[subtask_key]["annotations"]["access"];
     const ids = new Set<string>();
     for (const [id, rle] of Object.entries(state.masks)) {

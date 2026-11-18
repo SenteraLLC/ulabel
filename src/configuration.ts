@@ -160,6 +160,8 @@ export class Configuration {
     // `annotation_meta` key whose string value names the target class for Set class in
     // and copy/paste, replacing the source class id/name match.
     public counterpart_class_meta_key: string | null = null;
+    // `annotation_meta` key holding merge options (see `get_merge_options`)
+    public merge_options_meta_key: string | null = null;
     // Classes listed on the confidence card: the top class plus up to N - 1 non-zero runner-ups
     public confidence_card_classes: number = 1;
     // Callback returning extra plain-text lines for the confidence card; called once per hovered annotation

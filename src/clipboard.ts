@@ -151,8 +151,8 @@ export function get_class_name(ulabel: ULabel, class_id: number | null, subtask_
 /**
  * Insert a copy of an annotation into a subtask. The copy gets a fresh id,
  * fresh stamps, no deprecation and a class payload for `class_id`; every
- * other field carries over, except the `config.annotation_link_meta_key`
- * and `config.counterpart_class_meta_key` entries of `annotation_meta`. Records a `paste_annotation` action on the
+ * other field carries over, except the `config.annotation_link_meta_key`,
+ * `config.counterpart_class_meta_key` and `config.merge_options_meta_key` entries of `annotation_meta`. Records a `paste_annotation` action on the
  * target subtask's stream.
  *
  * @param ulabel ULabel instance
@@ -191,7 +191,11 @@ export function paste_annotation(ulabel: ULabel, annotation: ULabelAnnotation, t
     copy["deprecated_by"] = { human: false };
     const copy_meta = copy["annotation_meta"];
     if (typeof copy_meta === "object" && copy_meta !== null) {
-        for (const key of [ulabel.config["annotation_link_meta_key"], ulabel.config["counterpart_class_meta_key"]]) {
+        for (const key of [
+            ulabel.config["annotation_link_meta_key"],
+            ulabel.config["counterpart_class_meta_key"],
+            ulabel.config["merge_options_meta_key"],
+        ]) {
             if (key != null) delete copy_meta[key];
         }
     }

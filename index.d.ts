@@ -265,12 +265,43 @@ export type AnnoScalingMode = "fixed" | "inverse-zoom" | "match-zoom";
 // when painting. Resolution is deferred to the end of a stroke.
 export type BrushOverlapMode = "none" | "exclude" | "overwrite";
 
+/**
+ * A mask an annotation offers to merge into bitmasks of another subtask (see `merge_options_meta_key`).
+ * `targets` are `annotation_link_meta_key` values naming the bitmasks in `subtask_key` to join; the first
+ * target's annotation survives as the union of `mask` and every target, the others are deleted.
+ */
+export type ULabelMergeOption = {
+    /** Unique per target subtask; options sharing an id apply once in a bulk merge. */
+    id: string;
+    /** Context menu text. */
+    label: string;
+    subtask_key: string;
+    /** COCO RLE over the full image. */
+    mask: ULabelMaskPayload;
+    targets: string[];
+};
+
+/** A merge option resolved against the current annotations (see `get_merge_options`). */
+export type ULabelMergeOptionInfo = {
+    id: string;
+    label: string;
+    subtask_key: string;
+    /** Annotations the merge joins; the first survives. */
+    target_ids: string[];
+    /** Other live bitmasks in `subtask_key` the mask overlaps. */
+    conflict_ids: string[];
+};
+
+/** An annotation and the id of one of its merge options. */
+export type ULabelMergeRequest = { annotation_id: string; option_id: string };
+
 export type ULabelActionType = "create_nonspatial_annotation" |
     "create_annotation" |
     "paste_annotation" |
     "move_annotation" |
     "delete_counterparts" |
     "set_counterparts_class" |
+    "apply_merge_option" |
     "begin_annotation" |
     "continue_annotation" |
     "finish_annotation" |
@@ -426,7 +457,7 @@ export type ULabelConstructorArgs = {
     allow_body_move?: boolean;
     /** Open the class pie on a paste whose source class has no id/name match in the target. Default true; false takes the target's active class. */
     paste_class_choice?: boolean;
-    /** Make the target the current subtask after a copy/move, `delete_counterparts` or `set_counterparts_class`, and the writable subtask on undo/redo from a read-only one. Default false. */
+    /** Make the target the current subtask after a copy/move, `delete_counterparts`, `set_counterparts_class` or `apply_merge_options`, and the writable subtask on undo/redo from a read-only one. Default false. */
     paste_switch_to_target?: boolean;
     /** `annotation_meta` key whose value (string or string[]) links annotations across subtasks; any shared value links. Copies drop it. Default null. */
     annotation_link_meta_key?: string | null;
@@ -440,6 +471,11 @@ export type ULabelConstructorArgs = {
      * use the id/name match. Copies drop it. Default null.
      */
     counterpart_class_meta_key?: string | null;
+    /**
+     * `annotation_meta` key whose value is an array of `ULabelMergeOption`s: masks the annotation offers to merge
+     * into bitmasks in another subtask (context menu items, `get_merge_options`, `apply_merge_options`). Copies drop it. Default null.
+     */
+    merge_options_meta_key?: string | null;
     /** Classes the hover confidence card lists: the top class plus up to N - 1 runner-ups with non-zero confidence. Default 1. */
     confidence_card_classes?: number;
     /**
@@ -955,6 +991,26 @@ export class ULabel {
      * With `config.paste_switch_to_target`, switches to the target when anything changed (unless `switch_to_target` is false).
      */
     public set_counterparts_class(annotation_id: string, source_key: string, target_key: string, switch_to_target?: boolean): string[];
+    /**
+     * The merge options (see `merge_options_meta_key`) an annotation offers that can apply now: the target subtask
+     * is another writable subtask and every target names a live bitmask there.
+     */
+    public get_merge_options(annotation_id: string, source_key?: string | null): ULabelMergeOptionInfo[];
+    /**
+     * Apply merge options as one undo step, each one `apply_merge_option` action on its target subtask's stream:
+     * the option's mask and every target join into the first target, and the other targets are deleted.
+     * `overlap` resolves the mask's overlap with other bitmasks there: "none" (default) leaves it,
+     * "exclude" drops those pixels from the mask, "overwrite" carves them out of the other bitmasks.
+     * A repeated option id applies once, and a target merged away earlier in the call is replaced by its survivor.
+     * With `config.paste_switch_to_target`, switches to the target when anything changed (unless `switch_to_target` is false).
+     * Returns the changed ids.
+     */
+    public apply_merge_options(
+        merges: ULabelMergeRequest[],
+        overlap?: BrushOverlapMode,
+        source_key?: string | null,
+        switch_to_target?: boolean,
+    ): string[];
     /** Whether a context-menu copy/move/delete-from/set-class-in makes the target the current subtask. */
     public set_paste_switch_to_target(enabled: boolean): void;
     public get_paste_switch_to_target(): boolean;
@@ -996,6 +1052,7 @@ export class ULabel {
     public move_annotation__undo(annotation_id: string, undo_payload: object): void;
     public delete_counterparts__undo(undo_payload: object): void;
     public set_counterparts_class__undo(undo_payload: object): void;
+    public apply_merge_option__undo(undo_payload: object): void;
     public create_nonspatial_annotation__undo(annotation_id: string): void;
     public start_complex_polygon__undo(annotation_id: string): void;
     public merge_polygon_complex_layer__undo(annotation_id: string, undo_payload: object): void;
@@ -1021,6 +1078,7 @@ export class ULabel {
     public move_annotation__redo(annotation_id: string, redo_payload: object): void;
     public delete_counterparts__redo(annotation_id: string, redo_payload: object): void;
     public set_counterparts_class__redo(annotation_id: string, redo_payload: object): void;
+    public apply_merge_option__redo(annotation_id: string, redo_payload: object): void;
     public finish_modify_annotation__redo(annotation_id: string, redo_payload: object): void;
 
     // Mouse event handlers

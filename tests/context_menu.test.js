@@ -48,6 +48,8 @@ function make_ulabel({ read_only = false, compatible = [1, 2], annotation = make
         delete_counterparts: jest.fn(() => []),
         get_counterpart_class_changes: jest.fn(() => ({})),
         set_counterparts_class: jest.fn(() => []),
+        get_merge_options: jest.fn(() => []),
+        apply_merge_options: jest.fn(() => []),
         show_id_dialog: jest.fn(),
         delete_annotation: jest.fn(),
         is_annotation_defocused: jest.fn((ann) => ann.deprecated !== subtask.focus_deprecated),
@@ -635,5 +637,70 @@ describe("selection menu", () => {
         click_item("Delete 2 from Predictions");
         expect(ulabel.set_subtask).toHaveBeenCalledTimes(1);
         expect(ulabel.set_subtask).toHaveBeenCalledWith("pred");
+    });
+
+    test("bulk merge items group options by label and apply each distinct option once", () => {
+        const ulabel = make_selection_ulabel({ read_only: true });
+        ulabel.subtasks.review.read_only = true;
+        const info = (id, label, target_ids, conflict_ids = []) => ({ id, label, subtask_key: "pred", target_ids, conflict_ids });
+        ulabel.get_merge_options.mockImplementation((annid) => [
+            info(`s_${annid}`, "Merge into GT", ["g1"]),
+            info("full", "Merge prediction into GT", ["g1", "g2"]),
+        ]);
+
+        show_context_menu(ulabel, "a0", 100, 100);
+        expect(item_labels()).toEqual([
+            "Merge into GT (2)",
+            "Merge prediction into GT (joins 2 objects)",
+            "Isolate 2",
+            "Clear selection",
+        ]);
+
+        click_item("Merge into GT (2)");
+        click_item_after_reopen(ulabel, "Merge prediction into GT (joins 2 objects)");
+        expect(ulabel.apply_merge_options.mock.calls).toEqual([
+            [[{ annotation_id: "a0", option_id: "s_a0" }, { annotation_id: "a1", option_id: "s_a1" }], "none"],
+            [[{ annotation_id: "a0", option_id: "full" }], "none"],
+        ]);
+    });
+});
+
+function click_item_after_reopen(ulabel, label) {
+    show_context_menu(ulabel, "a0", 100, 100);
+    click_item(label);
+}
+
+describe("merge items", () => {
+    const info = (id, label, target_ids, conflict_ids = []) => ({ id, label, subtask_key: "pred", target_ids, conflict_ids });
+
+    test("one item per option; a join notes the object count", () => {
+        const ulabel = make_ulabel({ read_only: true });
+        ulabel.get_merge_options.mockReturnValue([
+            info("s", "Merge into GT", ["g1"]),
+            info("p", "Merge prediction into GT", ["g1", "g2", "g3"]),
+        ]);
+
+        show_context_menu(ulabel, "a0", 100, 100);
+        expect(item_labels()).toEqual(["Merge into GT", "Merge prediction into GT (joins 3 objects)", "Isolate", "Details"]);
+        expect(ulabel.get_merge_options).toHaveBeenCalledWith("a0");
+
+        click_item("Merge into GT");
+        expect(ulabel.apply_merge_options).toHaveBeenCalledWith([{ annotation_id: "a0", option_id: "s" }], "none");
+        expect(is_context_menu_open(ulabel)).toBe(false);
+    });
+
+    test("a conflicting option opens the overlap choices", () => {
+        const ulabel = make_ulabel({ read_only: true });
+        ulabel.get_merge_options.mockReturnValue([info("s", "Merge into GT", ["g1"], ["c1"])]);
+
+        for (const [choice, overlap] of [["Keep existing", "exclude"], ["Replace existing", "overwrite"], ["Allow overlap", "none"]]) {
+            show_context_menu(ulabel, "a0", 100, 100);
+            expect(item_labels()).toEqual(["Merge into GT\u2026", "Isolate", "Details"]);
+            click_item("Merge into GT\u2026");
+            expect(item_labels()).toEqual(["Keep existing", "Replace existing", "Allow overlap"]);
+            expect(ulabel.apply_merge_options).not.toHaveBeenCalledWith(expect.anything(), overlap);
+            click_item(choice);
+            expect(ulabel.apply_merge_options).toHaveBeenLastCalledWith([{ annotation_id: "a0", option_id: "s" }], overlap);
+        }
     });
 });

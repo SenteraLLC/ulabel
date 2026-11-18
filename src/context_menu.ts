@@ -8,7 +8,7 @@
  * the hover candidate; closing clears it.
  */
 
-import type { ULabel } from "../index";
+import type { BrushOverlapMode, ULabel, ULabelMergeRequest } from "../index";
 import { ULabelAnnotation } from "./annotation";
 import { get_annotation_class_id, get_class_confidences } from "./annotation_operators";
 
@@ -25,6 +25,7 @@ const ICON_COPY = `<svg ${SVG_ATTRS}><rect x="5.5" y="5.5" width="8" height="8" 
 const ICON_CUT = `<svg ${SVG_ATTRS}><circle cx="4.5" cy="11.5" r="2"/><circle cx="11.5" cy="11.5" r="2"/><path d="M6 10l7-8M10 10L3 2"/></svg>`;
 const ICON_RESTORE = `<svg ${SVG_ATTRS}><path d="M2.5 8a5.5 5.5 0 1 0 1.6-3.9M2.5 2.5v3h3"/></svg>`;
 const ICON_CLEAR = `<svg ${SVG_ATTRS}><path d="M4 4l8 8M12 4l-8 8"/></svg>`;
+const ICON_MERGE = `<svg ${SVG_ATTRS}><path d="M3 2v3c0 3 5 3 5 6v3M13 2v3c0 3-5 3-5 6M6 11.5l2 2.5 2-2.5"/></svg>`;
 
 function get_menu_element(ulabel: ULabel): HTMLDivElement | null {
     return document.getElementById(`${MENU_CLASS}__${ulabel.config.container_id}`) as HTMLDivElement | null;
@@ -164,10 +165,60 @@ function add_subtask_picker(
 }
 
 /**
+ * Merge items (see `get_merge_options`) for the given annotations, one per option
+ * label; a label several annotations offer applies all their options (each distinct
+ * option once) as one undo step. The text notes the option count above 1 and a merge
+ * that joins objects. When a mask overlaps other bitmasks the item opens Keep
+ * existing / Replace existing / Allow overlap instead.
+ */
+function add_merge_items(ulabel: ULabel, menu: HTMLDivElement, ids: string[], client_x: number, client_y: number): void {
+    type MergeGroup = { merges: ULabelMergeRequest[]; option_keys: Set<string>; joins: number; conflict: boolean };
+    const groups = new Map<string, MergeGroup>();
+    for (const id of ids) {
+        for (const info of ulabel.get_merge_options(id)) {
+            let group = groups.get(info.label);
+            if (group === undefined) {
+                group = { merges: [], option_keys: new Set(), joins: 0, conflict: false };
+                groups.set(info.label, group);
+            }
+            const option_key = `${info.subtask_key}\u0000${info.id}`;
+            if (group.option_keys.has(option_key)) continue;
+            group.option_keys.add(option_key);
+            group.merges.push({ annotation_id: id, option_id: info.id });
+            group.joins = Math.max(group.joins, info.target_ids.length);
+            group.conflict ||= info.conflict_ids.length > 0;
+        }
+    }
+    for (const [label, group] of Array.from(groups.entries())) {
+        const count = group.merges.length;
+        const notes: string[] = [];
+        if (count > 1) notes.push(String(count));
+        if (group.joins > 1) notes.push(count > 1 ? "joins objects" : `joins ${group.joins} objects`);
+        const text = notes.length > 0 ? `${label} (${notes.join(", ")})` : label;
+        const apply = (overlap: BrushOverlapMode) => {
+            hide_context_menu(ulabel);
+            ulabel.apply_merge_options(group.merges, overlap);
+        };
+        add_item(menu, group.conflict ? `${text}\u2026` : text, ICON_MERGE, () => {
+            if (!group.conflict) {
+                apply("none");
+                return;
+            }
+            menu.replaceChildren();
+            add_item(menu, "Keep existing", ICON_MERGE, () => apply("exclude"));
+            add_item(menu, "Replace existing", ICON_MERGE, () => apply("overwrite"));
+            add_item(menu, "Allow overlap", ICON_MERGE, () => apply("none"));
+            position_menu(menu, client_x, client_y);
+        });
+    }
+}
+
+/**
  * Open the menu for an annotation in the current subtask at a viewport
  * position. Items: Change class (editable subtask with at least two
  * compatible classes), Copy to / Move to (another writable subtask has a
- * compatible class; Move to only on an editable subtask), Set class in
+ * compatible class; Move to only on an editable subtask), merge options (see
+ * `add_merge_items`), Set class in
  * (another writable subtask holds counterparts that can take the source's
  * class and don't have it, see `get_counterpart_class_changes`), Erase from (a
  * bitmask, where another writable subtask holds bitmask counterparts, see
@@ -228,7 +279,7 @@ export function show_context_menu(ulabel: ULabel, annid: string, client_x: numbe
     return true;
 }
 
-/** Change class, Copy/Move to, Set class in, Erase/Delete from, and Delete for a live annotation. */
+/** Change class, Copy/Move to, merge options, Set class in, Erase/Delete from, and Delete for a live annotation. */
 function add_edit_items(
     ulabel: ULabel,
     menu: HTMLDivElement,
@@ -279,6 +330,7 @@ function add_edit_items(
             add_subtask_picker(ulabel, menu, "Move to", ICON_CUT, copy_targets, client_x, client_y, (key) => transfer(key, true));
         }
     }
+    add_merge_items(ulabel, menu, [annid], client_x, client_y);
     const class_targets = Object.keys(counterparts).filter(
         (key) => Object.keys(ulabel.get_counterpart_class_changes(annid, source_key, key)).length > 0,
     );
@@ -319,7 +371,7 @@ function add_edit_items(
  * pick applies to each selected annotation that can take it), Copy N to / Move
  * N to (per target, the selected annotations it can take; Move only on an
  * editable subtask; `hide_copy_to_linked` drops ones already linked there),
- * Set class in / Erase from / Delete from (see `add_counterpart_selection_items`),
+ * merge options (see `add_merge_items`), Set class in / Erase from / Delete from (see `add_counterpart_selection_items`),
  * Delete N (editable subtask), Isolate N / Show all, and Clear selection.
  * Under deprecated focus: Restore N (the restorable ones), Isolate N / Show all, and Clear selection.
  */
@@ -388,6 +440,7 @@ function add_selection_items(
             add_subtask_picker(ulabel, menu, "Move to", ICON_CUT, copy_targets, client_x, client_y, (key) => transfer(key, true), count_of);
         }
     }
+    add_merge_items(ulabel, menu, ids, client_x, client_y);
     add_counterpart_selection_items(ulabel, menu, ids, client_x, client_y);
     if (!read_only) {
         add_item(menu, `Delete ${ids.length}`, ICON_DELETE, () => {

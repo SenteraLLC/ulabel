@@ -89,6 +89,12 @@ import {
     set_counterparts_class__undo,
     set_counterparts_class__redo,
 } from "../build/counterparts";
+import {
+    get_merge_options,
+    apply_merge_options,
+    apply_merge_option__undo,
+    apply_merge_option__redo,
+} from "../build/merge";
 import { get_idd_string } from "../build/html_builder";
 import { SubmitButtons } from "../build/toolbox_items/submit_buttons";
 
@@ -4786,6 +4792,22 @@ export class ULabel {
 
     set_counterparts_class__redo(annotation_id, redo_payload) {
         return set_counterparts_class__redo(this, annotation_id, redo_payload);
+    }
+
+    get_merge_options(annotation_id, source_key = null) {
+        return get_merge_options(this, annotation_id, source_key);
+    }
+
+    apply_merge_options(merges, overlap = "none", source_key = null, switch_to_target = true) {
+        return apply_merge_options(this, merges, overlap, source_key, switch_to_target);
+    }
+
+    apply_merge_option__undo(undo_payload) {
+        return apply_merge_option__undo(this, undo_payload);
+    }
+
+    apply_merge_option__redo(annotation_id, redo_payload) {
+        return apply_merge_option__redo(this, annotation_id, redo_payload);
     }
 
     move_annotation__undo(annotation_id, undo_payload) {

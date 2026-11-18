@@ -11,6 +11,10 @@ All notable changes to this project will be documented here.
 - Under Show Deprecated, deprecated annotations can be selected (`ctrl+click`, box select, `ctrl+a`) and live ones can't.
 - `isolate_annotations(ids, subtask_key?, redraw?)` and `get_isolated_annotation_ids(subtask_key?)`: several annotations can be isolated at once. Deleting one of them only drops that id from the isolation.
 - `delete_counterparts()` and `set_counterparts_class()` take an optional trailing `switch_to_target` (default `true`) to suppress the `paste_switch_to_target` switch.
+- Merge into another subtask ([CVML-383](https://sentera.atlassian.net/browse/CVML-383)): new `merge_options_meta_key` config option (default `null`). Under this `annotation_meta` key, an annotation can carry host-computed merge options, each with a label, a target subtask, an RLE mask and target bitmasks. The context menu shows one item per option that can apply, and the selection bulk menu shows one per label.
+  - A merge adds the mask and every other target into the first target and deletes the rest, so touching several objects joins them (`(joins <n> objects)` on the item).
+  - When the mask overlaps other bitmasks in the target subtask, the item (marked `…`) asks `Keep existing` / `Replace existing` / `Allow overlap`.
+  - New `get_merge_options()` and `apply_merge_options(merges, overlap?)`, recorded as undoable `apply_merge_option` actions on the target subtask, one undo step per click. Copies drop the meta entry.
 
 #### Changed
 - **Breaking:** `on_isolate_change(subtask_key, annotation_ids)` now receives an array of ids (or `null`) instead of a single id. A single isolation arrives as `[annotation_id]`.

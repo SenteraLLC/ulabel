@@ -190,3 +190,18 @@ Bulk menu gets the single-annotation items it lacks (not Details). Each is one u
 - [x] Restore N: under Show Deprecated focus, only deprecated annotations are selectable (live ones aren't);
   bulk menu then offers Restore N (ids passing `can_restore_annotation`) and Isolate N, not the edit items.
 - [x] Docs, changelog; Jest (`tests/bulk_actions.test.js`, `tests/context_menu.test.js`) + e2e; lint, build, jest.
+
+## Merge into GT (CVML-383)
+
+Host-supplied merge options on an annotation (`merge_options_meta_key`): each joins a mask into target bitmasks
+(resolved by `annotation_link_meta_key` in `subtask_key`); the first target survives, the rest are deleted.
+
+- [x] `src/merge.ts`: `get_merge_options()` (resolve targets, conflicts) and `apply_merge_options()` (union into the
+  survivor, delete the other targets, overlap none/exclude/overwrite against other bitmasks, one action per merge,
+  bulk dedupes by option id and chains joins); `apply_merge_option` undo/redo.
+- [x] Wire into `ULabel` (thin wrappers), `actions.ts` (action type, undo/redo, listener map), config default,
+  copies drop the key.
+- [x] Context menu: an item per option (`(joins N objects)`), Keep existing / Replace existing / Allow overlap
+  submenu only on a conflict; bulk items grouped by label.
+- [x] Types (`index.d.ts`), `api_spec.md`, changelog (0.34.0).
+- [x] Jest (`tests/merge.test.js`, context menu), e2e; lint, build, jest, e2e.
