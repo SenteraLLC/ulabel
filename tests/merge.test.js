@@ -90,6 +90,41 @@ function base_gt() {
 }
 
 describe("get_merge_options", () => {
+    test("targets match an annotation id as well as a link value", () => {
+        const ulabel = make_ulabel({
+            gt: [make_bitmask("g1", 0, 10), ...base_gt().slice(1)],
+            diff: [make_bitmask("d1", 12, 3, { merge: [option("by_id", 10, 5, ["g1"]), option("by_hash", 10, 5, ["g1", "h2"])] })],
+        }, { annotation_link_meta_key: null });
+        // Without a link key only ids resolve, so the hash target drops its option
+        expect(ulabel.get_merge_options("d1").map((info) => [info.id, info.target_ids])).toEqual([["by_id", ["g1"]]]);
+
+        const linked = make_ulabel({
+            gt: [make_bitmask("g1", 0, 10), ...base_gt().slice(1)],
+            diff: [make_bitmask("d1", 12, 3, { merge: [option("by_hash", 10, 5, ["g1", "h2"])] })],
+        });
+        expect(linked.get_merge_options("d1").map((info) => info.target_ids)).toEqual([["g1", "g2"]]);
+    });
+
+    test("only targets and conflicts on the source's frame count", () => {
+        const on_frame = (annotation, frame) => ({ ...annotation, frame });
+        const ulabel = make_ulabel({
+            gt: [
+                on_frame(make_bitmask("g0", 0, 10, { hash: "track" }), 0),
+                on_frame(make_bitmask("g1", 20, 10, { hash: "track" }), 1),
+                on_frame(make_bitmask("c1", 10, 5, { hash: "other" }), 1),
+            ],
+            diff: [on_frame(make_bitmask("d1", 10, 5, { merge: [option("m", 10, 5, ["track"])] }), 0)],
+        }, { image_data: ["a.jpg", "b.jpg"] });
+
+        expect(ulabel.get_merge_options("d1")).toEqual([
+            { id: "m", label: "Merge m", subtask_key: "gt", target_ids: ["g0"], conflict_ids: [] },
+        ]);
+        ulabel.apply_merge_options([{ annotation_id: "d1", option_id: "m" }]);
+        expect(rows(ulabel, "g0")).toEqual([0, 14]);
+        expect(gt(ulabel, "g1").deprecated).toBe(false);
+        expect(rows(ulabel, "g1")).toEqual([20, 29]);
+    });
+
     test("resolves targets in order and reports conflicts", () => {
         const ulabel = make_ulabel({
             gt: base_gt(),

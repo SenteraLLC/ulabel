@@ -62,15 +62,22 @@ function merged_key(subtask_key: string, annotation_id: string): string {
     return `${subtask_key}\u0000${annotation_id}`;
 }
 
+/** Whether two annotations' frames can be the same image (an unset frame matches any). */
+function same_frame(a: number | null | undefined, b: number | null | undefined): boolean {
+    return a == null || b == null || a === b;
+}
+
 /**
- * Live bitmasks in `subtask_key` holding each link value, in value order. An
- * annotation merged away earlier in the same call is replaced by its survivor.
- * Null when a value has no live annotation or names a non-bitmask.
+ * Live bitmasks in `subtask_key` on `frame` whose id is, or whose link values
+ * hold, each target value, in value order. An annotation merged away earlier
+ * in the same call is replaced by its survivor. Null when a value has no live
+ * annotation there or names a non-bitmask.
  */
 function resolve_targets(
     ulabel: ULabel,
     subtask_key: string,
     values: string[],
+    frame: number | null | undefined,
     merged_into: Map<string, string>,
 ): string[] | null {
     const subtask = ulabel.subtasks[subtask_key];
@@ -79,7 +86,8 @@ function resolve_targets(
     for (const value of values) {
         let found = false;
         for (const id of subtask.annotations.ordering) {
-            if (!get_link_values(ulabel, access[id]).includes(value)) continue;
+            if (id !== value && !get_link_values(ulabel, access[id]).includes(value)) continue;
+            if (!same_frame(frame, access[id].frame)) continue;
             let live_id = id;
             const seen = new Set<string>();
             while (access[live_id].deprecated && merged_into.has(merged_key(subtask_key, live_id)) && !seen.has(live_id)) {
@@ -114,32 +122,33 @@ function boxes_overlap(a: BoundingBox, b: ULabelContainingBox | undefined): bool
 
 /**
  * Resolve an option: its target subtask must be another writable subtask, every
- * target value must name a live bitmask there, and the mask must fit the image.
- * Conflicts are the other live bitmasks there (on the survivor's frame) that
- * the mask overlaps.
+ * target value must name a live bitmask there on the source's frame, and the
+ * mask must fit the image. Conflicts are the other live bitmasks there (on the
+ * survivor's frame) that the mask overlaps.
  */
 function plan_merge(
     ulabel: ULabel,
     source_key: string,
+    source: ULabelAnnotation,
     option: ULabelMergeOption,
     merged_into: Map<string, string>,
 ): MergePlan | null {
     const subtask_key = option.subtask_key;
     const subtask = ulabel.subtasks[subtask_key];
     if (subtask == null || subtask_key === source_key || ulabel.is_subtask_edit_locked(subtask_key)) return null;
-    const target_ids = resolve_targets(ulabel, subtask_key, option.targets, merged_into);
+    const target_ids = resolve_targets(ulabel, subtask_key, option.targets, source.frame, merged_into);
     if (target_ids === null || target_ids.length === 0) return null;
     const mask = decode_mask(ulabel, option.mask);
     if (mask === null) return null;
     const access = subtask.annotations.access;
-    const frame = access[target_ids[0]].frame;
+    const frame = access[target_ids[0]].frame ?? source.frame;
     const mask_box = mask.get_bounding_box();
     const conflict_ids: string[] = [];
     if (mask_box !== null) {
         for (const id of subtask.annotations.ordering) {
             const other = access[id];
             if (target_ids.includes(id) || other.deprecated || other.spatial_type !== "bitmask") continue;
-            if (frame != null && other.frame != null && other.frame !== frame) continue;
+            if (!same_frame(frame, other.frame)) continue;
             if (!boxes_overlap(mask_box, other.containing_box)) continue;
             if (ulabel.get_bitmask(other).intersects(mask)) conflict_ids.push(id);
         }
@@ -162,7 +171,7 @@ export function get_merge_options(ulabel: ULabel, annotation_id: string, source_
     if (source == null || source.deprecated) return [];
     const infos: ULabelMergeOptionInfo[] = [];
     for (const option of read_merge_options(ulabel, source)) {
-        const plan = plan_merge(ulabel, source_key, option, new Map());
+        const plan = plan_merge(ulabel, source_key, source, option, new Map());
         if (plan === null) continue;
         infos.push({
             id: option.id,
@@ -227,7 +236,7 @@ export function apply_merge_options(
             const applied_key = merged_key(option.subtask_key, option.id);
             if (applied.has(applied_key)) continue;
             applied.add(applied_key);
-            const plan = plan_merge(ulabel, from_key, option, merged_into);
+            const plan = plan_merge(ulabel, from_key, source, option, merged_into);
             if (plan === null) {
                 log_message(`Merge option ${option_id} cannot apply`, LogLevel.WARNING, true);
                 continue;

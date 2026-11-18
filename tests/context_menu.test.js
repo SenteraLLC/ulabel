@@ -712,6 +712,31 @@ describe("merge items", () => {
         expect(is_context_menu_open(ulabel)).toBe(false);
     });
 
+    test("same-label alternatives stay separate for one annotation, and a selection takes the first per annotation", () => {
+        const ulabel = make_ulabel({ read_only: true });
+        ulabel.get_merge_options.mockReturnValue([info("m", "Merge into GT", ["g1"]), info("m2", "Merge into GT", ["g1"])]);
+        show_context_menu(ulabel, "a0", 100, 100);
+        expect(item_labels()).toEqual(["Merge into GT", "Merge into GT", "Isolate", "Details"]);
+        Array.from(menu_element().querySelectorAll(".ulabel-context-menu-item"))[1].dispatchEvent(new MouseEvent("click", { bubbles: true }));
+        expect(ulabel.apply_merge_options).toHaveBeenLastCalledWith([{ annotation_id: "a0", option_id: "m2" }], "none");
+
+        const selection = make_ulabel({ read_only: true });
+        selection.subtasks.review.read_only = true;
+        selection.get_current_subtask().annotations.access.a1 = make_annotation({ id: "a1" });
+        selection.get_current_subtask().state.selected_ids = new Set(["a0", "a1"]);
+        Object.assign(selection, { get_selected_annotation_ids: jest.fn(() => ["a0", "a1"]), clear_selection: jest.fn(), run_action_batch: jest.fn((fn) => fn()) });
+        selection.get_merge_options.mockImplementation((annid) => [
+            info(`${annid}_m`, "Merge into GT", ["g1"]),
+            info(`${annid}_m2`, "Merge into GT", ["g1"]),
+        ]);
+        show_context_menu(selection, "a0", 100, 100);
+        click_item("Merge into GT (2)");
+        expect(selection.apply_merge_options).toHaveBeenLastCalledWith(
+            [{ annotation_id: "a0", option_id: "a0_m" }, { annotation_id: "a1", option_id: "a1_m" }],
+            "none",
+        );
+    });
+
     test("a conflicting option names the overlapped classes and opens the overlap choices", () => {
         const ulabel = make_ulabel({ read_only: true });
         set_gt(ulabel, { g1: 2, g2: 2, c1: 1, c2: 1, c3: 2 });

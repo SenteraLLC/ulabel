@@ -278,6 +278,7 @@ export type ULabelMergeOption = {
     subtask_key: string;
     /** COCO RLE over the full image. */
     mask: ULabelMaskPayload;
+    /** Annotation ids or `annotation_link_meta_key` values of bitmasks in `subtask_key`, on the source's frame; the first survives. */
     targets: string[];
 };
 
