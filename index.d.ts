@@ -998,7 +998,7 @@ export class ULabel {
      */
     public get_merge_options(annotation_id: string, source_key?: string | null): ULabelMergeOptionInfo[];
     /**
-     * Apply merge options as one undo step, each one `apply_merge_option` action on its target subtask's stream:
+     * Apply merge options as one undo step per target subtask, each one `apply_merge_option` action on its target subtask's stream:
      * the option's mask and every target join into the first target, and the other targets are deleted.
      * `overlap` resolves the mask's overlap with other bitmasks there: "none" (default) leaves it,
      * "exclude" drops those pixels from the mask, "overwrite" carves them out of the other bitmasks.

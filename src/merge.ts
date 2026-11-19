@@ -186,7 +186,7 @@ export function get_merge_options(ulabel: ULabel, annotation_id: string, source_
 
 /**
  * Apply merge options, each as one `apply_merge_option` action on its target
- * subtask's stream, all as one undo step. Each merge adds the option's mask
+ * subtask's stream, all as one undo step per target subtask. Each merge adds the option's mask
  * and every other target into the first target and deletes the other targets.
  * `overlap` resolves conflicts with other bitmasks there: "none" leaves them
  * overlapping, "exclude" drops the overlapping pixels from the mask, and

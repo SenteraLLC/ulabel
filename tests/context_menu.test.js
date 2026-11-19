@@ -735,6 +735,15 @@ describe("merge items", () => {
             [{ annotation_id: "a0", option_id: "a0_m" }, { annotation_id: "a1", option_id: "a1_m" }],
             "none",
         );
+
+        // The same label into different target subtasks splits per target, naming it
+        selection.get_merge_options.mockImplementation((annid) => [
+            { ...info(`${annid}_m`, "Merge into GT", ["g1"]), subtask_key: annid === "a0" ? "pred" : "review" },
+        ]);
+        show_context_menu(selection, "a0", 100, 100);
+        expect(item_labels().slice(0, 2)).toEqual(["Merge into GT in Predictions", "Merge into GT in Review"]);
+        click_item("Merge into GT in Review");
+        expect(selection.apply_merge_options).toHaveBeenLastCalledWith([{ annotation_id: "a1", option_id: "a1_m" }], "none");
     });
 
     test("a conflicting option names the overlapped classes and opens the overlap choices", () => {
