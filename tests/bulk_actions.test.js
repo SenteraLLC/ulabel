@@ -318,7 +318,7 @@ describe("bulk counterpart menu items", () => {
         expect(live_ids(ulabel, "pred")).toHaveLength(2);
 
         expect(ulabel.show_context_menu("a", 10, 10)).toBe(true);
-        click_menu_item("Delete 2 from Pred");
+        click_menu_item("Delete 2 annotations from Pred");
 
         expect(live_ids(ulabel, "pred")).toEqual([]);
         expect(live_ids(ulabel, "gt")).toEqual(["a", "b", "c"]);

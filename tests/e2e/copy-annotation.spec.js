@@ -142,23 +142,23 @@ test.describe("copy annotations between subtasks", () => {
         await expect(page.locator("#id_dialog__predictions")).toBeHidden();
     });
 
-    test("Delete from removes the copy on the target's stream; undo there restores it", async ({ page }) => {
+    test("Delete annotations from removes the copy on the target's stream; undo there restores it", async ({ page }) => {
         await wait_for_ulabel_init(page, "/submit-payload.html");
         await open_menu(page, "gt-bbox-1");
         await click_item(page, "Copy to Predictions");
         const copy_id = (await get_annotations(page, "predictions"))[1].id;
 
         await open_menu(page, "gt-bbox-1");
-        await expect(page.locator(MENU).locator(ITEM, { hasText: "Delete from Predictions" })).toBeVisible();
-        await click_item(page, "Delete from Predictions");
+        await expect(page.locator(MENU).locator(ITEM, { hasText: "Delete annotation from Predictions" })).toBeVisible();
+        await click_item(page, "Delete annotation from Predictions");
 
         expect((await get_annotations(page, "predictions"))[1].deprecated).toBe(true);
         expect((await get_annotations(page, "ground_truth"))[0].deprecated).toBe(false);
         expect(await current_subtask_key(page)).toBe("ground_truth");
 
-        // Gone from the target: no more Delete from
+        // Gone from the target: no more Delete annotation from
         await open_menu(page, "gt-bbox-1");
-        await expect(page.locator(MENU).locator(ITEM, { hasText: "Delete from" })).toHaveCount(0);
+        await expect(page.locator(MENU).locator(ITEM, { hasText: "Delete annotation" })).toHaveCount(0);
 
         await page.evaluate(() => {
             window.ulabel.hide_context_menu();

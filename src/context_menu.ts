@@ -132,9 +132,10 @@ function render_details(
 }
 
 /**
- * "Copy to" / "Move to" / "Set class in" / "Delete from" entry. One eligible subtask collapses to a flat
+ * "Copy to" / "Move to" / "Set class in" / "Erase pixels from" / "Delete annotations from" entry. One eligible subtask collapses to a flat
  * "<label> <name>" item; several open an in-place list of subtask names. A `count_of`
- * above 1 is shown as "<verb> <n> <rest> <name>" or "<name> (<n>)".
+ * above 1 is shown as "<verb> <n> <rest> <name>" or "<name> (<n>)". A `noun` ([singular, plural])
+ * always follows the verb: "<verb> <singular> <rest>", "<verb> <n> <plural> <rest>", or "<verb> <plural> <rest>…".
  */
 function add_subtask_picker(
     ulabel: ULabel,
@@ -146,24 +147,51 @@ function add_subtask_picker(
     client_y: number,
     on_pick: (target_key: string) => void,
     count_of: (target_key: string) => number = () => 1,
+    noun: [string, string] | null = null,
+    tooltip_of: ((target_key: string) => string) | null = null,
 ): void {
     const name_of = (key: string) => ulabel.subtasks[key].display_name;
+    const tip = (key: string) => (tooltip_of === null ? null : tooltip_of(key));
+    const [verb, ...rest] = label.split(" ");
     if (target_keys.length === 1) {
         const key = target_keys[0];
         const count = count_of(key);
-        const [verb, ...rest] = label.split(" ");
-        const text = count > 1 ? `${verb} ${count} ${rest.join(" ")}` : label;
-        add_item(menu, `${text} ${name_of(key)}`, icon_svg, () => on_pick(key));
+        let text = label;
+        if (noun !== null) {
+            text = `${verb} ${count > 1 ? `${count} ${noun[1]}` : noun[0]} ${rest.join(" ")}`;
+        } else if (count > 1) {
+            text = `${verb} ${count} ${rest.join(" ")}`;
+        }
+        add_item(menu, `${text} ${name_of(key)}`, icon_svg, () => on_pick(key), tip(key));
         return;
     }
-    add_item(menu, `${label}\u2026`, icon_svg, () => {
+    const picker_label = noun === null ? label : `${verb} ${noun[1]} ${rest.join(" ")}`;
+    add_item(menu, `${picker_label}\u2026`, icon_svg, () => {
         menu.replaceChildren();
         for (const key of target_keys) {
             const count = count_of(key);
-            add_item(menu, count > 1 ? `${name_of(key)} (${count})` : name_of(key), icon_svg, () => on_pick(key));
+            add_item(menu, count > 1 ? `${name_of(key)} (${count})` : name_of(key), icon_svg, () => on_pick(key), tip(key));
         }
         position_menu(menu, client_x, client_y);
     });
+}
+
+const ANNOTATION_NOUN: [string, string] = ["annotation", "annotations"];
+
+function linked_phrase(count: number): string {
+    return count === 1 ? "the linked annotation" : `${count} linked annotations`;
+}
+
+/** Erase pixels from: trims the linked bitmasks, keeping the rest of each. */
+function erase_tooltip(ulabel: ULabel, target_key: string, count: number): string {
+    const name = ulabel.subtasks[target_key].display_name;
+    const rest = count === 1 ? "the rest of it stays" : "the rest of each stays";
+    return `Erase the overlapping pixels from ${linked_phrase(count)} in ${name}; ${rest}.`;
+}
+
+/** Delete annotations from: removes the linked annotations whole. */
+function delete_tooltip(ulabel: ULabel, target_key: string, count: number): string {
+    return `Delete ${linked_phrase(count)} from ${ulabel.subtasks[target_key].display_name} entirely.`;
 }
 
 /** "<n> <name>" counts per class name, largest first, e.g. "2 Crop, 1 Soil". */
@@ -300,9 +328,9 @@ function add_merge_items(ulabel: ULabel, menu: HTMLDivElement, ids: string[], cl
  * compatible class; Move to only on an editable subtask), merge options (see
  * `add_merge_items`), Set class in
  * (another writable subtask holds counterparts that can take the source's
- * class and don't have it, see `get_counterpart_class_changes`), Erase from (a
+ * class and don't have it, see `get_counterpart_class_changes`), Erase pixels from (a
  * bitmask, where another writable subtask holds bitmask counterparts, see
- * `find_counterparts`), Delete from (another writable subtask holds
+ * `find_counterparts`), Delete annotation(s) from (another writable subtask holds
  * counterparts; the count shows when above 1), Delete (editable
  * subtask), Isolate / Show all (always; view-only), Details (always).
  * A deprecated annotation (only reachable under deprecated focus) gets
@@ -359,7 +387,7 @@ export function show_context_menu(ulabel: ULabel, annid: string, client_x: numbe
     return true;
 }
 
-/** Change class, Copy/Move to, merge options, Set class in, Erase/Delete from, and Delete for a live annotation. */
+/** Change class, Copy/Move to, merge options, Set class in, Erase pixels / Delete annotations from, and Delete for a live annotation. */
 function add_edit_items(
     ulabel: ULabel,
     menu: HTMLDivElement,
@@ -425,17 +453,24 @@ function add_edit_items(
         ulabel.delete_counterparts(annid, source_key, target_key, erase);
     };
     if (annotation.spatial_type === "bitmask") {
-        const erase_targets = Object.keys(counterparts).filter((key) => counterparts[key].some(
+        const erased_of = (key: string) => counterparts[key].filter(
             (id) => ulabel.subtasks[key].annotations.access[id].spatial_type === "bitmask",
-        ));
+        ).length;
+        const erase_targets = Object.keys(counterparts).filter((key) => erased_of(key) > 0);
         if (erase_targets.length > 0) {
-            add_subtask_picker(ulabel, menu, "Erase from", ICON_DELETE, erase_targets, client_x, client_y, (key) => remove(key, true));
+            const erase_tip = (key: string) => erase_tooltip(ulabel, key, erased_of(key));
+            add_subtask_picker(ulabel, menu, "Erase pixels from", ICON_DELETE, erase_targets, client_x, client_y, (key) => {
+                remove(key, true);
+            }, undefined, null, erase_tip);
         }
     }
     const delete_targets = Object.keys(counterparts);
     if (delete_targets.length > 0) {
         const count_of = (key: string) => counterparts[key].length;
-        add_subtask_picker(ulabel, menu, "Delete from", ICON_DELETE, delete_targets, client_x, client_y, (key) => remove(key, false), count_of);
+        const delete_tip = (key: string) => delete_tooltip(ulabel, key, count_of(key));
+        add_subtask_picker(ulabel, menu, "Delete from", ICON_DELETE, delete_targets, client_x, client_y, (key) => {
+            remove(key, false);
+        }, count_of, ANNOTATION_NOUN, delete_tip);
     }
     if (!read_only) {
         add_item(menu, "Delete", ICON_DELETE, () => {
@@ -451,7 +486,7 @@ function add_edit_items(
  * pick applies to each selected annotation that can take it), Copy N to / Move
  * N to (per target, the selected annotations it can take; Move only on an
  * editable subtask; `hide_copy_to_linked` drops ones already linked there),
- * merge options (see `add_merge_items`), Set class in / Erase from / Delete from (see `add_counterpart_selection_items`),
+ * merge options (see `add_merge_items`), Set class in / Erase pixels from / Delete annotations from (see `add_counterpart_selection_items`),
  * Delete N (editable subtask), Isolate N / Show all, and Clear selection.
  * Under deprecated focus: Restore N (the restorable ones), Isolate N / Show all, and Clear selection.
  */
@@ -546,10 +581,10 @@ function add_isolate_and_clear_items(ulabel: ULabel, menu: HTMLDivElement, ids: 
 }
 
 /**
- * Bulk Set class in / Erase from / Delete from for the selection, each one
+ * Bulk Set class in / Erase pixels from / Delete annotations from for the selection, each one
  * undo step across the selected annotations with counterparts in the target
- * (writable subtasks only). Delete from shows the number of distinct
- * counterparts it removes. `config.paste_switch_to_target` switches once, after the batch.
+ * (writable subtasks only). Delete shows the number of distinct counterparts it
+ * removes; Erase's tooltip, the number it trims. `config.paste_switch_to_target` switches once, after the batch.
  */
 function add_counterpart_selection_items(
     ulabel: ULabel,
@@ -603,9 +638,13 @@ function add_counterpart_selection_items(
         if (erasing.length > 0) erase_sources[key] = erasing;
     }
     if (Object.keys(erase_sources).length > 0) {
-        add_subtask_picker(ulabel, menu, "Erase from", ICON_DELETE, Object.keys(erase_sources), client_x, client_y, (key) => {
+        // Distinct bitmask counterparts the erase trims, for the tooltip
+        const erased_of = (key: string) => new Set(erase_sources[key].flatMap((id) => counterparts[key][id].filter(
+            (cid) => ulabel.subtasks[key].annotations.access[cid].spatial_type === "bitmask",
+        ))).size;
+        add_subtask_picker(ulabel, menu, "Erase pixels from", ICON_DELETE, Object.keys(erase_sources), client_x, client_y, (key) => {
             run_batch(key, erase_sources[key], (id) => ulabel.delete_counterparts(id, source_key, key, true, false));
-        });
+        }, undefined, null, (key) => erase_tooltip(ulabel, key, erased_of(key)));
     }
 
     const delete_targets = Object.keys(counterparts);
@@ -613,7 +652,7 @@ function add_counterpart_selection_items(
         const count_of = (key: string) => new Set(Object.values(counterparts[key]).flat()).size;
         add_subtask_picker(ulabel, menu, "Delete from", ICON_DELETE, delete_targets, client_x, client_y, (key) => {
             run_batch(key, Object.keys(counterparts[key]), (id) => ulabel.delete_counterparts(id, source_key, key, false, false));
-        }, count_of);
+        }, count_of, ANNOTATION_NOUN, (key) => delete_tooltip(ulabel, key, count_of(key)));
     }
 }
 

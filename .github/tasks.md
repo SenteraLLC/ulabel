@@ -205,3 +205,11 @@ Host-supplied merge options on an annotation (`merge_options_meta_key`): each jo
   submenu only on a conflict; bulk items grouped by label.
 - [x] Types (`index.d.ts`), `api_spec.md`, changelog (0.34.0).
 - [x] Jest (`tests/merge.test.js`, context menu), e2e; lint, build, jest, e2e.
+
+## Erase / Delete from labels
+
+Make the counterpart removal items say what they remove: pixels vs whole annotations.
+
+- [x] `Erase pixels from <subtask>` (no count) with a tooltip naming how many linked annotations it trims.
+- [x] `Delete annotation from <subtask>` / `Delete <n> annotations from <subtask>` (picker: `Delete annotations from...` -> `<name> (<n>)`), tooltip.
+- [x] Update docs, changelog, Jest + e2e labels; lint, build, jest, e2e.

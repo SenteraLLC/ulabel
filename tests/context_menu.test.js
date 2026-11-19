@@ -233,17 +233,17 @@ describe("context menu items", () => {
         confirm_spy.mockRestore();
     });
 
-    test("Delete from lists writable subtasks with counterparts, even from a read-only source", () => {
+    test("Delete annotations from lists writable subtasks with counterparts, even from a read-only source", () => {
         const ulabel = make_ulabel({ read_only: true });
         ulabel.subtasks.pred.annotations = { access: { p1: { spatial_type: "bbox" } } };
         ulabel.subtasks.review.read_only = true;
         ulabel.find_counterparts.mockReturnValue(["p1"]);
 
         show_context_menu(ulabel, "a0", 100, 100);
-        expect(item_labels()).toEqual(["Delete from Predictions", "Isolate", "Details"]);
+        expect(item_labels()).toEqual(["Delete annotation from Predictions", "Isolate", "Details"]);
         expect(ulabel.find_counterparts).not.toHaveBeenCalledWith("a0", "main", "review");
 
-        click_item("Delete from Predictions");
+        click_item("Delete annotation from Predictions");
         expect(is_context_menu_open(ulabel)).toBe(false);
         expect(ulabel.delete_counterparts).toHaveBeenCalledWith("a0", "main", "pred", false);
     });
@@ -258,36 +258,38 @@ describe("context menu items", () => {
             "Change class",
             "Copy to Review",
             "Move to Review",
-            "Delete from Predictions",
+            "Delete annotation from Predictions",
             "Delete",
             "Isolate",
             "Details",
         ]);
     });
 
-    test("Delete from shows how many it would delete", () => {
+    test("Delete annotations from shows how many it would delete", () => {
         const ulabel = make_ulabel({ read_only: true });
         ulabel.find_counterparts.mockImplementation((annid, source_key, key) => (key === "pred" ? ["p1", "p2"] : ["r1"]));
 
         show_context_menu(ulabel, "a0", 100, 100);
-        click_item("Delete from\u2026");
+        click_item("Delete annotations from\u2026");
         expect(item_labels()).toEqual(["Predictions (2)", "Review"]);
 
         ulabel.subtasks.review.read_only = true;
         show_context_menu(ulabel, "a0", 100, 100);
-        expect(item_labels()).toEqual(["Delete 2 from Predictions", "Isolate", "Details"]);
+        expect(item_labels()).toEqual(["Delete 2 annotations from Predictions", "Isolate", "Details"]);
     });
 
-    test("a bitmask offers Erase from where a counterpart is a bitmask, and Delete from anywhere", () => {
+    test("a bitmask offers Erase pixels from where a counterpart is a bitmask, and Delete annotations from anywhere", () => {
         const ulabel = make_ulabel({ read_only: true, annotation: make_annotation({ spatial_type: "bitmask" }) });
         ulabel.subtasks.pred.annotations = { access: { p1: { spatial_type: "bitmask" } } };
         ulabel.subtasks.review.annotations = { access: { r1: { spatial_type: "polygon" } } };
         ulabel.find_counterparts.mockImplementation((annid, source_key, key) => (key === "pred" ? ["p1"] : ["r1"]));
 
         show_context_menu(ulabel, "a0", 100, 100);
-        expect(item_labels()).toEqual(["Erase from Predictions", "Delete from\u2026", "Isolate", "Details"]);
+        expect(item_labels()).toEqual(["Erase pixels from Predictions", "Delete annotations from\u2026", "Isolate", "Details"]);
+        const titles = Array.from(menu_element().querySelectorAll(".ulabel-context-menu-item")).map((el) => el.title);
+        expect(titles[0]).toBe("Erase the overlapping pixels from the linked annotation in Predictions; the rest of it stays.");
 
-        click_item("Erase from Predictions");
+        click_item("Erase pixels from Predictions");
         expect(ulabel.delete_counterparts).toHaveBeenCalledWith("a0", "main", "pred", true);
     });
 
@@ -297,7 +299,7 @@ describe("context menu items", () => {
         ulabel.get_counterpart_class_changes.mockImplementation((annid, source_key, key) => (key === "pred" ? { p1: 2 } : {}));
 
         show_context_menu(ulabel, "a0", 100, 100);
-        expect(item_labels()).toEqual(["Set class in Predictions", "Delete from\u2026", "Isolate", "Details"]);
+        expect(item_labels()).toEqual(["Set class in Predictions", "Delete annotations from\u2026", "Isolate", "Details"]);
 
         click_item("Set class in Predictions");
         expect(is_context_menu_open(ulabel)).toBe(false);
@@ -560,7 +562,7 @@ describe("selection menu", () => {
         expect(item_labels()).toContain("Isolate 2");
     });
 
-    test("Delete from N counts distinct counterparts and runs one batch over the linked selection", () => {
+    test("Delete annotations from N counts distinct counterparts and runs one batch over the linked selection", () => {
         const ulabel = make_selection_ulabel({ read_only: true });
         ulabel.subtasks.review.read_only = true;
         // a0 and a1 share p1; only a0 has p2
@@ -571,10 +573,10 @@ describe("selection menu", () => {
         ulabel.delete_counterparts.mockReturnValue(["p1"]);
 
         show_context_menu(ulabel, "a0", 100, 100);
-        expect(item_labels()).toEqual(["Delete 2 from Predictions", "Isolate 2", "Clear selection"]);
+        expect(item_labels()).toEqual(["Delete 2 annotations from Predictions", "Isolate 2", "Clear selection"]);
         expect(ulabel.find_counterparts).not.toHaveBeenCalledWith("a0", "main", "review");
 
-        click_item("Delete 2 from Predictions");
+        click_item("Delete 2 annotations from Predictions");
         expect(is_context_menu_open(ulabel)).toBe(false);
         expect(ulabel.run_action_batch).toHaveBeenCalledTimes(1);
         expect(ulabel.delete_counterparts.mock.calls).toEqual([
@@ -583,12 +585,12 @@ describe("selection menu", () => {
         ]);
     });
 
-    test("Delete from N with several targets opens a list with counts", () => {
+    test("Delete annotations from N with several targets opens a list with counts", () => {
         const ulabel = make_selection_ulabel();
         ulabel.find_counterparts.mockImplementation((annid, source_key, key) => (key === "pred" ? [`p_${annid}`] : (annid === "a1" ? ["r1"] : [])));
 
         show_context_menu(ulabel, "a0", 100, 100);
-        click_item("Delete from\u2026");
+        click_item("Delete annotations from\u2026");
         expect(item_labels()).toEqual(["Predictions (2)", "Review"]);
         click_item("Review");
         expect(ulabel.delete_counterparts.mock.calls).toEqual([["a1", "main", "review", false, false]]);
@@ -602,24 +604,29 @@ describe("selection menu", () => {
         ulabel.set_counterparts_class.mockReturnValue(["p_a1"]);
 
         show_context_menu(ulabel, "a0", 100, 100);
-        expect(item_labels()).toEqual(["Change class of 2", "Set class in Predictions", "Delete 2 from Predictions", "Delete 2", "Isolate 2", "Clear selection"]);
+        expect(item_labels()).toEqual(["Change class of 2", "Set class in Predictions", "Delete 2 annotations from Predictions", "Delete 2", "Isolate 2", "Clear selection"]);
 
         click_item("Set class in Predictions");
         expect(ulabel.run_action_batch).toHaveBeenCalledTimes(1);
         expect(ulabel.set_counterparts_class.mock.calls).toEqual([["a1", "main", "pred", false]]);
     });
 
-    test("Erase from N takes only the selected bitmasks with bitmask counterparts", () => {
+    test("Erase pixels from N takes only the selected bitmasks with bitmask counterparts", () => {
         const ulabel = make_selection_ulabel({ read_only: true, annotation: make_annotation({ spatial_type: "bitmask" }) });
         ulabel.subtasks.review.read_only = true;
         ulabel.subtasks.pred.annotations = { access: { p_a0: { spatial_type: "bitmask" }, p_a1: { spatial_type: "bitmask" } } };
         ulabel.find_counterparts.mockImplementation((annid, source_key, key) => (key === "pred" ? [`p_${annid}`] : []));
 
         show_context_menu(ulabel, "a0", 100, 100);
-        expect(item_labels()).toEqual(["Erase from Predictions", "Delete 2 from Predictions", "Isolate 2", "Clear selection"]);
+        expect(item_labels()).toEqual(["Erase pixels from Predictions", "Delete 2 annotations from Predictions", "Isolate 2", "Clear selection"]);
+        const titles = Array.from(menu_element().querySelectorAll(".ulabel-context-menu-item")).map((el) => el.title);
+        expect(titles.slice(0, 2)).toEqual([
+            "Erase the overlapping pixels from the linked annotation in Predictions; the rest of it stays.",
+            "Delete 2 linked annotations from Predictions entirely.",
+        ]);
 
         // a1 is a bbox, so only a0 is erased
-        click_item("Erase from Predictions");
+        click_item("Erase pixels from Predictions");
         expect(ulabel.delete_counterparts.mock.calls).toEqual([["a0", "main", "pred", true, false]]);
     });
 
@@ -630,12 +637,12 @@ describe("selection menu", () => {
         ulabel.find_counterparts.mockImplementation((annid, source_key, key) => (key === "pred" ? [`p_${annid}`] : []));
 
         show_context_menu(ulabel, "a0", 100, 100);
-        click_item("Delete 2 from Predictions");
+        click_item("Delete 2 annotations from Predictions");
         expect(ulabel.set_subtask).not.toHaveBeenCalled();
 
         ulabel.delete_counterparts.mockReturnValue(["p_a0"]);
         show_context_menu(ulabel, "a0", 100, 100);
-        click_item("Delete 2 from Predictions");
+        click_item("Delete 2 annotations from Predictions");
         expect(ulabel.set_subtask).toHaveBeenCalledTimes(1);
         expect(ulabel.set_subtask).toHaveBeenCalledWith("pred");
     });

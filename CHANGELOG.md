@@ -2,10 +2,10 @@
 
 All notable changes to this project will be documented here.
 
-## [0.34.0] - Nov 13th, 2026
+## [0.34.0] - Nov 19th, 2026
 #### Added
 - The selection bulk menu now covers the remaining single-annotation items except `Details`, each one undo step:
-  - `Set class in <subtask>`, `Erase from <subtask>` and `Delete <n> from <subtask>` act on every selected annotation's counterparts (`<n>` counts distinct counterparts), and are undone from the target subtask.
+  - `Set class in <subtask>`, `Erase pixels from <subtask>` and `Delete <n> annotations from <subtask>` act on every selected annotation's counterparts (`<n>` counts distinct counterparts), and are undone from the target subtask.
   - `Isolate <n>` / `Show all` isolates the selection.
   - Under Show Deprecated, `Restore <n>` restores the selected annotations that can be restored.
 - Under Show Deprecated, deprecated annotations can be selected (`ctrl+click`, box select, `ctrl+a`) and live ones can't.
@@ -19,6 +19,7 @@ All notable changes to this project will be documented here.
 #### Changed
 - **Breaking:** `on_isolate_change(subtask_key, annotation_ids)` now receives an array of ids (or `null`) instead of a single id. A single isolation arrives as `[annotation_id]`.
 - **Breaking:** `get_isolated_annotation_id()` is removed; use `get_isolated_annotation_ids()`.
+- Context menu: `Erase from` is now `Erase pixels from` and `Delete from` is now `Delete annotation from` / `Delete <n> annotations from` (`Delete annotations from…` with several subtasks), so the two read differently. Both have a tooltip saying how many linked annotations they trim or delete.
 
 ## [0.33.0] - Nov 13th, 2026
 #### Added
