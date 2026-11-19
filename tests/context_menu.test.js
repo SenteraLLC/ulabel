@@ -762,7 +762,7 @@ describe("merge items", () => {
         expect(selection.apply_merge_options).toHaveBeenLastCalledWith([{ annotation_id: "a1", option_id: "a1_m" }], "none");
     });
 
-    test("one annotation's duplicate options show once; a selection keeps every label", () => {
+    test("one annotation's duplicate options show once; a selection keeps a label unless every annotation duplicates it", () => {
         const ulabel = make_ulabel({ read_only: true });
         ulabel.get_merge_options.mockReturnValue([
             info("s", "Merge into GT", []),
@@ -783,6 +783,31 @@ describe("merge items", () => {
             [{ annotation_id: "a0", option_id: "p0" }, { annotation_id: "a1", option_id: "p1" }],
             "none",
         );
+
+        // Every selected annotation's option under the later label does the same as under the first
+        selection.get_merge_options.mockImplementation((annid) => [
+            info(`s_${annid}`, "Merge into GT", []),
+            { ...info("p", "Merge full prediction into GT", []), duplicate_of: `s_${annid}` },
+        ]);
+        show_context_menu(selection, "a0", 100, 100);
+        expect(item_labels().filter((label) => label.startsWith("Merge"))).toEqual(["Merge into GT (2 merges)"]);
+
+        // Not when the later label covers different annotations
+        selection.get_merge_options.mockImplementation((annid) => (annid === "a0" ?
+                [info("s0", "Merge into GT", []), { ...info("p0", "Merge full prediction into GT", []), duplicate_of: "s0" }] :
+                [info("s1", "Merge into GT", [])]));
+        show_context_menu(selection, "a0", 100, 100);
+        expect(item_labels().slice(0, 2)).toEqual(["Merge into GT (2 merges)", "Merge full prediction into GT (1 of 2 merges)"]);
+
+        // A label hidden in one subtask still names the subtask it shows for, and counts its sources as covered
+        selection.get_merge_options.mockImplementation((annid) => (annid === "a0" ?
+                [info("s0", "Merge into GT", []), { ...info("p0", "Merge full prediction into GT", []), duplicate_of: "s0" }] :
+                [{ ...info("p1", "Merge full prediction into GT", []), subtask_key: "review" }]));
+        show_context_menu(selection, "a0", 100, 100);
+        expect(item_labels().filter((label) => label.startsWith("Merge"))).toEqual([
+            "Merge into GT (1 of 2 merges)",
+            "Merge full prediction into GT in Review (1 merge)",
+        ]);
     });
 
     test("a selection item notes the selected annotations it leaves out", () => {

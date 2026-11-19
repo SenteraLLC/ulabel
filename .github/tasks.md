@@ -219,4 +219,5 @@ Make the counterpart removal items say what they remove: pixels vs whole annotat
 - [x] A merge option with `targets: []` adds its mask as a new object via the Copy to path (class rules, `copied_from` link), after the overlap mode; recorded as `paste_annotation` (after any overwrite's `apply_merge_option`), one undo step. Options whose listed targets are all gone still drop.
 - [x] Single-annotation menu shows identical options (same subtask, resolved targets, mask) once, under the first label (`duplicate_of`); `apply_merge_options` applies identical plans once (key also holds the source frame and new-object class, from review).
 - [x] Bulk merge item reads `<n> merges` / `<n> of <m> merges` (tooltip names the left-out count).
+- [x] Bulk menu hides a label whose item does the same as an earlier one (same target subtask and selected annotations, each one's option `duplicate_of` the same).
 - [x] Docs (`api_spec.md`, `index.d.ts`, CHANGELOG), Jest; lint, build, jest, e2e.

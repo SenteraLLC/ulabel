@@ -209,7 +209,9 @@ function format_class_counts(counts: Map<string, number>): string {
  * each annotation contributes its first option with that label there, and each
  * distinct option applies once. A label offered for several target subtasks
  * names the subtask (`<label> in <subtask>`). A single annotation's options that
- * do the same (`duplicate_of`) show once. The text notes, for a selection, how
+ * do the same (`duplicate_of`) show once, as does a selection item whose every
+ * selected annotation contributes an option doing the same as under an earlier
+ * item into the same subtask. The text notes, for a selection, how
  * many selected annotations it covers (`<n> merges` / `<n> of <m> merges`), a merge that joins objects (with their class when
  * they share one), and the objects the mask overlaps per class, with a fuller
  * tooltip (also noting new objects from target-less merges). When a mask overlaps other bitmasks the item opens Allow overlap /
@@ -222,6 +224,8 @@ function add_merge_items(ulabel: ULabel, menu: HTMLDivElement, ids: string[], cl
         merges: ULabelMergeRequest[];
         option_keys: Set<string>;
         sources: Set<string>;
+        // Per source, the first of its options doing the same as the one it contributes
+        effects: Map<string, string>;
         joins: number;
         adds: number;
         join_classes: Set<string | null>;
@@ -249,6 +253,7 @@ function add_merge_items(ulabel: ULabel, menu: HTMLDivElement, ids: string[], cl
                     merges: [],
                     option_keys: new Set(),
                     sources: new Set(),
+                    effects: new Map(),
                     joins: 0,
                     adds: 0,
                     join_classes: new Set(),
@@ -260,6 +265,7 @@ function add_merge_items(ulabel: ULabel, menu: HTMLDivElement, ids: string[], cl
             // Each annotation offers its first option per label and target; a shared option applies once
             if (group.sources.has(id)) continue;
             group.sources.add(id);
+            group.effects.set(id, info.duplicate_of ?? info.id);
             if (group.option_keys.has(option_key)) continue;
             group.option_keys.add(option_key);
             group.merges.push({ annotation_id: id, option_id: info.id });
@@ -277,11 +283,22 @@ function add_merge_items(ulabel: ULabel, menu: HTMLDivElement, ids: string[], cl
             }
         }
     }
-    const all_groups = Array.from(groups.values());
+    // A selection item doing the same as an earlier one (same target subtask and
+    // selected annotations, each contributing an option that does the same) shows once
+    const all_groups: MergeGroup[] = [];
+    for (const group of Array.from(groups.values())) {
+        const same = (other: MergeGroup) => other.subtask_key === group.subtask_key &&
+            other.effects.size === group.effects.size &&
+            Array.from(group.effects.entries()).every(([id, effect]) => other.effects.get(id) === effect);
+        if (bulk && all_groups.some(same)) continue;
+        all_groups.push(group);
+    }
+    // Counted over every group, hidden ones too, so a label keeps naming its subtask
+    // and doesn't call annotations whose merge was folded into another item left out
     const targets_per_label = new Map<string, Set<string>>();
     // Selected annotations offering each label, into any target subtask
     const sources_per_label = new Map<string, Set<string>>();
-    for (const group of all_groups) {
+    for (const group of Array.from(groups.values())) {
         if (!targets_per_label.has(group.label)) targets_per_label.set(group.label, new Set());
         targets_per_label.get(group.label)!.add(group.subtask_key);
         if (!sources_per_label.has(group.label)) sources_per_label.set(group.label, new Set());
