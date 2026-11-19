@@ -213,3 +213,10 @@ Make the counterpart removal items say what they remove: pixels vs whole annotat
 - [x] `Erase pixels from <subtask>` (no count) with a tooltip naming how many linked annotations it trims.
 - [x] `Delete annotation from <subtask>` / `Delete <n> annotations from <subtask>` (picker: `Delete annotations from...` -> `<name> (<n>)`), tooltip.
 - [x] Update docs, changelog, Jest + e2e labels; lint, build, jest, e2e.
+
+## Merge: target-less options, dedupe, bulk counts
+
+- [x] A merge option with `targets: []` adds its mask as a new object via the Copy to path (class rules, `copied_from` link), after the overlap mode; recorded as `paste_annotation` (after any overwrite's `apply_merge_option`), one undo step. Options whose listed targets are all gone still drop.
+- [x] Single-annotation menu shows identical options (same subtask, resolved targets, mask) once, under the first label (`duplicate_of`); `apply_merge_options` applies identical plans once (key also holds the source frame and new-object class, from review).
+- [x] Bulk merge item reads `<n> merges` / `<n> of <m> merges` (tooltip names the left-out count).
+- [x] Docs (`api_spec.md`, `index.d.ts`, CHANGELOG), Jest; lint, build, jest, e2e.

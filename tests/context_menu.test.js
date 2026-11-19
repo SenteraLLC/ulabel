@@ -659,15 +659,15 @@ describe("selection menu", () => {
 
         show_context_menu(ulabel, "a0", 100, 100);
         expect(item_labels()).toEqual([
-            "Merge into GT (2, overlaps 2 Crop)\u2026",
-            "Merge prediction into GT (joins 2 Weed objects)",
+            "Merge into GT (2 merges, overlaps 2 Crop)\u2026",
+            "Merge prediction into GT (2 merges, joins 2 Weed objects)",
             "Isolate 2",
             "Clear selection",
         ]);
 
-        click_item("Merge into GT (2, overlaps 2 Crop)\u2026");
+        click_item("Merge into GT (2 merges, overlaps 2 Crop)\u2026");
         click_item("Allow overlap");
-        click_item_after_reopen(ulabel, "Merge prediction into GT (joins 2 Weed objects)");
+        click_item_after_reopen(ulabel, "Merge prediction into GT (2 merges, joins 2 Weed objects)");
         expect(ulabel.apply_merge_options.mock.calls).toEqual([
             [[{ annotation_id: "a0", option_id: "s_a0" }, { annotation_id: "a1", option_id: "s_a1" }], "none"],
             [[{ annotation_id: "a0", option_id: "full" }], "none"],
@@ -691,6 +691,15 @@ function click_item_after_reopen(ulabel, label) {
 
 describe("merge items", () => {
     const info = (id, label, target_ids, conflict_ids = []) => ({ id, label, subtask_key: "pred", target_ids, conflict_ids });
+    // Read-only source with a0 and a1 selected
+    const make_merge_selection = () => {
+        const selection = make_ulabel({ read_only: true });
+        selection.subtasks.review.read_only = true;
+        selection.get_current_subtask().annotations.access.a1 = make_annotation({ id: "a1" });
+        selection.get_current_subtask().state.selected_ids = new Set(["a0", "a1"]);
+        Object.assign(selection, { get_selected_annotation_ids: jest.fn(() => ["a0", "a1"]), clear_selection: jest.fn(), run_action_batch: jest.fn((fn) => fn()) });
+        return selection;
+    };
 
     test("one item per option; a join notes the object count and shared class", () => {
         const ulabel = make_ulabel({ read_only: true });
@@ -737,7 +746,7 @@ describe("merge items", () => {
             info(`${annid}_m2`, "Merge into GT", ["g1"]),
         ]);
         show_context_menu(selection, "a0", 100, 100);
-        click_item("Merge into GT (2)");
+        click_item("Merge into GT (2 merges)");
         expect(selection.apply_merge_options).toHaveBeenLastCalledWith(
             [{ annotation_id: "a0", option_id: "a0_m" }, { annotation_id: "a1", option_id: "a1_m" }],
             "none",
@@ -748,9 +757,42 @@ describe("merge items", () => {
             { ...info(`${annid}_m`, "Merge into GT", ["g1"]), subtask_key: annid === "a0" ? "pred" : "review" },
         ]);
         show_context_menu(selection, "a0", 100, 100);
-        expect(item_labels().slice(0, 2)).toEqual(["Merge into GT in Predictions", "Merge into GT in Review"]);
-        click_item("Merge into GT in Review");
+        expect(item_labels().slice(0, 2)).toEqual(["Merge into GT in Predictions (1 merge)", "Merge into GT in Review (1 merge)"]);
+        click_item("Merge into GT in Review (1 merge)");
         expect(selection.apply_merge_options).toHaveBeenLastCalledWith([{ annotation_id: "a1", option_id: "a1_m" }], "none");
+    });
+
+    test("one annotation's duplicate options show once; a selection keeps every label", () => {
+        const ulabel = make_ulabel({ read_only: true });
+        ulabel.get_merge_options.mockReturnValue([
+            info("s", "Merge into GT", []),
+            { ...info("p", "Merge full prediction into GT", []), duplicate_of: "s" },
+        ]);
+        show_context_menu(ulabel, "a0", 100, 100);
+        expect(item_labels()).toEqual(["Merge into GT", "Isolate", "Details"]);
+        expect(menu_element().querySelector(".ulabel-context-menu-item").title).toBe("Adds a new object.");
+
+        const selection = make_merge_selection();
+        selection.get_merge_options.mockImplementation((annid) => (annid === "a0" ?
+                [info("s0", "Merge into GT", []), { ...info("p0", "Merge full prediction into GT", []), duplicate_of: "s0" }] :
+                [info("s1", "Merge into GT", ["g1"]), info("p1", "Merge full prediction into GT", ["g1"])]));
+        show_context_menu(selection, "a0", 100, 100);
+        expect(item_labels().slice(0, 2)).toEqual(["Merge into GT (2 merges)", "Merge full prediction into GT (2 merges)"]);
+        click_item("Merge full prediction into GT (2 merges)");
+        expect(selection.apply_merge_options).toHaveBeenLastCalledWith(
+            [{ annotation_id: "a0", option_id: "p0" }, { annotation_id: "a1", option_id: "p1" }],
+            "none",
+        );
+    });
+
+    test("a selection item notes the selected annotations it leaves out", () => {
+        const selection = make_merge_selection();
+        selection.get_merge_options.mockImplementation((annid) => (annid === "a0" ? [info("s0", "Merge into GT", [])] : []));
+        show_context_menu(selection, "a0", 100, 100);
+        expect(item_labels()[0]).toBe("Merge into GT (1 of 2 merges)");
+        expect(menu_element().querySelector(".ulabel-context-menu-item").title).toBe(
+            "Applies to 1 of the 2 selected; 1 has no such merge. Adds a new object.",
+        );
     });
 
     test("a conflicting option names the overlapped classes and opens the overlap choices", () => {

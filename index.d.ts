@@ -268,7 +268,8 @@ export type BrushOverlapMode = "none" | "exclude" | "overwrite";
 /**
  * A mask an annotation offers to merge into bitmasks of another subtask (see `merge_options_meta_key`).
  * `targets` are `annotation_link_meta_key` values naming the bitmasks in `subtask_key` to join; the first
- * target's annotation survives as the union of `mask` and every target, the others are deleted.
+ * target's annotation survives as the union of `mask` and every target, the others are deleted. With no
+ * `targets`, the mask is added as a new object, with the class and `copied_from` link Copy to would give it.
  */
 export type ULabelMergeOption = {
     /** Unique per target subtask; options sharing an id apply once in a bulk merge. */
@@ -278,7 +279,10 @@ export type ULabelMergeOption = {
     subtask_key: string;
     /** COCO RLE over the full image. */
     mask: ULabelMaskPayload;
-    /** Annotation ids or `annotation_link_meta_key` values of bitmasks in `subtask_key`, on the source's frame; the first survives. */
+    /**
+     * Annotation ids or `annotation_link_meta_key` values of bitmasks in `subtask_key`, on the source's frame; the first survives.
+     * Empty adds the mask as a new object. When any listed target is gone, the option no longer applies.
+     */
     targets: string[];
 };
 
@@ -287,10 +291,12 @@ export type ULabelMergeOptionInfo = {
     id: string;
     label: string;
     subtask_key: string;
-    /** Annotations the merge joins; the first survives. */
+    /** Annotations the merge joins; the first survives. Empty when the merge adds a new object. */
     target_ids: string[];
     /** Other live bitmasks in `subtask_key` the mask overlaps. */
     conflict_ids: string[];
+    /** Id of an earlier option of the same annotation that does the same (same target subtask, resolved targets and mask), else null. */
+    duplicate_of: string | null;
 };
 
 /** An annotation and the id of one of its merge options. */
@@ -994,15 +1000,17 @@ export class ULabel {
     public set_counterparts_class(annotation_id: string, source_key: string, target_key: string, switch_to_target?: boolean): string[];
     /**
      * The merge options (see `merge_options_meta_key`) an annotation offers that can apply now: the target subtask
-     * is another writable subtask and every target names a live bitmask there.
+     * is another writable subtask and every target names a live bitmask there (with no targets, the subtask can
+     * take the annotation as a bitmask copy). `duplicate_of` marks options that repeat an earlier one.
      */
     public get_merge_options(annotation_id: string, source_key?: string | null): ULabelMergeOptionInfo[];
     /**
      * Apply merge options as one undo step per target subtask, each one `apply_merge_option` action on its target subtask's stream:
      * the option's mask and every target join into the first target, and the other targets are deleted.
+     * An option with no targets adds the mask as a new object (a `paste_annotation`, class and `copied_from` as Copy to gives them).
      * `overlap` resolves the mask's overlap with other bitmasks there: "none" (default) leaves it,
      * "exclude" drops those pixels from the mask, "overwrite" carves them out of the other bitmasks.
-     * A repeated option id applies once, and a target merged away earlier in the call is replaced by its survivor.
+     * A repeated option (same id, or the same target subtask, source frame, resolved targets, new-object class and mask) applies once, and a target merged away earlier in the call is replaced by its survivor.
      * With `config.paste_switch_to_target`, switches to the target when anything changed (unless `switch_to_target` is false).
      * Returns the changed ids.
      */

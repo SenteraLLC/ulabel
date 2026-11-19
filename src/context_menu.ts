@@ -208,10 +208,11 @@ function format_class_counts(counts: Map<string, number>): string {
  * label and target subtask (so each item undoes in one step from that subtask):
  * each annotation contributes its first option with that label there, and each
  * distinct option applies once. A label offered for several target subtasks
- * names the subtask (`<label> in <subtask>`). The text notes
- * the option count above 1, a merge that joins objects (with their class when
+ * names the subtask (`<label> in <subtask>`). A single annotation's options that
+ * do the same (`duplicate_of`) show once. The text notes, for a selection, how
+ * many selected annotations it covers (`<n> merges` / `<n> of <m> merges`), a merge that joins objects (with their class when
  * they share one), and the objects the mask overlaps per class, with a fuller
- * tooltip. When a mask overlaps other bitmasks the item opens Allow overlap /
+ * tooltip (also noting new objects from target-less merges). When a mask overlaps other bitmasks the item opens Allow overlap /
  * Exclude other objects / Overwrite other objects (the brush overlap modes) instead.
  */
 function add_merge_items(ulabel: ULabel, menu: HTMLDivElement, ids: string[], client_x: number, client_y: number): void {
@@ -222,6 +223,7 @@ function add_merge_items(ulabel: ULabel, menu: HTMLDivElement, ids: string[], cl
         option_keys: Set<string>;
         sources: Set<string>;
         joins: number;
+        adds: number;
         join_classes: Set<string | null>;
         conflict_keys: Set<string>;
         conflict_classes: Map<string, number>;
@@ -235,6 +237,8 @@ function add_merge_items(ulabel: ULabel, menu: HTMLDivElement, ids: string[], cl
     const groups = new Map<string, MergeGroup>();
     for (const id of ids) {
         for (const info of ulabel.get_merge_options(id)) {
+            // One annotation's options that do the same show once, under the first label
+            if (!bulk && info.duplicate_of != null) continue;
             const option_key = `${info.subtask_key}\u0000${info.id}`;
             const group_key = bulk ? `${info.subtask_key}\u0000${info.label}` : option_key;
             let group = groups.get(group_key);
@@ -246,6 +250,7 @@ function add_merge_items(ulabel: ULabel, menu: HTMLDivElement, ids: string[], cl
                     option_keys: new Set(),
                     sources: new Set(),
                     joins: 0,
+                    adds: 0,
                     join_classes: new Set(),
                     conflict_keys: new Set(),
                     conflict_classes: new Map(),
@@ -259,6 +264,7 @@ function add_merge_items(ulabel: ULabel, menu: HTMLDivElement, ids: string[], cl
             group.option_keys.add(option_key);
             group.merges.push({ annotation_id: id, option_id: info.id });
             group.joins = Math.max(group.joins, info.target_ids.length);
+            if (info.target_ids.length === 0) group.adds += 1;
             if (info.target_ids.length > 1) {
                 for (const target_id of info.target_ids) group.join_classes.add(class_name_of(info.subtask_key, target_id));
             }
@@ -273,9 +279,13 @@ function add_merge_items(ulabel: ULabel, menu: HTMLDivElement, ids: string[], cl
     }
     const all_groups = Array.from(groups.values());
     const targets_per_label = new Map<string, Set<string>>();
+    // Selected annotations offering each label, into any target subtask
+    const sources_per_label = new Map<string, Set<string>>();
     for (const group of all_groups) {
         if (!targets_per_label.has(group.label)) targets_per_label.set(group.label, new Set());
         targets_per_label.get(group.label)!.add(group.subtask_key);
+        if (!sources_per_label.has(group.label)) sources_per_label.set(group.label, new Set());
+        group.sources.forEach((id) => sources_per_label.get(group.label)!.add(id));
     }
     for (const group of all_groups) {
         const target_name = ulabel.subtasks[group.subtask_key]?.display_name ?? group.subtask_key;
@@ -286,9 +296,20 @@ function add_merge_items(ulabel: ULabel, menu: HTMLDivElement, ids: string[], cl
         const join_class = group.join_classes.size === 1 && only_join_class != null ? `${only_join_class} ` : "";
         const notes: string[] = [];
         const tips: string[] = [];
-        if (count > 1) {
-            notes.push(String(count));
-            tips.push(`Applies ${count} merges.`);
+        if (bulk) {
+            const covered = group.sources.size;
+            const left_out = ids.length - sources_per_label.get(group.label)!.size;
+            notes.push(left_out > 0 ?
+                `${covered} of ${ids.length} merges` :
+                `${covered} merge${covered === 1 ? "" : "s"}`);
+            if (left_out > 0) {
+                tips.push(`Applies to ${covered} of the ${ids.length} selected; ${left_out} ${left_out === 1 ? "has" : "have"} no such merge.`);
+            } else {
+                tips.push(covered === ids.length ? `Applies to all ${covered} selected.` : `Applies to ${covered} of the ${ids.length} selected.`);
+            }
+        }
+        if (group.adds > 0) {
+            tips.push(group.adds === 1 ? "Adds a new object." : `Adds ${group.adds} new objects.`);
         }
         if (group.joins > 1) {
             notes.push(count > 1 ? `joins ${join_class}objects` : `joins ${group.joins} ${join_class}objects`);

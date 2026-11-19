@@ -3,7 +3,8 @@
  * `config.merge_options_meta_key`) for joining into bitmasks in another
  * subtask. Each option names its target bitmasks by
  * `config.annotation_link_meta_key` value; the first target survives as the
- * union of the mask and every target, and the other targets are deleted.
+ * union of the mask and every target, and the other targets are deleted. An
+ * option with no targets adds the mask as a new object, as Copy to would.
  */
 import type {
     BrushOverlapMode,
@@ -15,6 +16,7 @@ import type {
 import { ULabel } from "../src/index";
 import { ULabelAnnotation } from "./annotation";
 import { record_action } from "./actions";
+import { get_annotation_class_id } from "./annotation_operators";
 import { get_annotation_meta } from "./clipboard";
 import {
     apply_counterpart_removal,
@@ -33,6 +35,8 @@ type MergePlan = {
     target_ids: string[];
     conflict_ids: string[];
     mask: ULabelMask;
+    // Class for the new object when there are no targets
+    class_id: number | null;
 };
 
 function is_merge_option(value: unknown): value is ULabelMergeOption {
@@ -40,8 +44,32 @@ function is_merge_option(value: unknown): value is ULabelMergeOption {
     const option = value as Record<string, unknown>;
     const is_name = (v: unknown) => typeof v === "string" && v !== "";
     return is_name(option.id) && is_name(option.label) && is_name(option.subtask_key) &&
-        Array.isArray(option.targets) && option.targets.length > 0 && option.targets.every(is_name) &&
+        Array.isArray(option.targets) && option.targets.every(is_name) &&
         option.mask !== null && typeof option.mask === "object";
+}
+
+/**
+ * Plans with the same target subtask, source frame, resolved targets, new-object
+ * class and mask do the same thing.
+ */
+function same_merge_key(source: ULabelAnnotation, plan: MergePlan): string {
+    const { subtask_key, mask } = plan.option;
+    return `${subtask_key}\u0000${JSON.stringify([source.frame ?? null, plan.target_ids, plan.class_id, mask.size, mask.counts])}`;
+}
+
+/** The new object a target-less option adds: the source with the mask as its bitmask. */
+function new_object_template(source: ULabelAnnotation, spatial_payload: ULabelMaskPayload | null): ULabelAnnotation {
+    const template = { ...source, spatial_type: "bitmask", spatial_payload } as ULabelAnnotation;
+    delete template.containing_box;
+    return template;
+}
+
+/** Class the new object of a target-less option gets, as Copy to would pick it (no class pie). */
+function new_object_class_id(ulabel: ULabel, source_key: string, source: ULabelAnnotation, target_key: string): number | null {
+    const template = new_object_template(source, null);
+    if (!ulabel.can_paste_into_subtask(template, target_key)) return null;
+    const source_class_name = ulabel.get_class_name(Number(get_annotation_class_id(source)), source_key);
+    return ulabel.resolve_paste_class_id(template, target_key, source_class_name, true);
 }
 
 // Well-formed options under `config.merge_options_meta_key`, first of each id
@@ -122,7 +150,8 @@ function boxes_overlap(a: BoundingBox, b: ULabelContainingBox | undefined): bool
 
 /**
  * Resolve an option: its target subtask must be another writable subtask, every
- * target value must name a live bitmask there on the source's frame, and the
+ * target value must name a live bitmask there on the source's frame (no targets:
+ * the target subtask must take the source as a bitmask copy), and the
  * mask must fit the image. Conflicts are the other live bitmasks there (on the
  * survivor's frame) that the mask overlaps.
  */
@@ -137,11 +166,16 @@ function plan_merge(
     const subtask = ulabel.subtasks[subtask_key];
     if (subtask == null || subtask_key === source_key || ulabel.is_subtask_edit_locked(subtask_key)) return null;
     const target_ids = resolve_targets(ulabel, subtask_key, option.targets, source.frame, merged_into);
-    if (target_ids === null || target_ids.length === 0) return null;
+    if (target_ids === null) return null;
+    let class_id: number | null = null;
+    if (target_ids.length === 0) {
+        class_id = new_object_class_id(ulabel, source_key, source, subtask_key);
+        if (class_id === null) return null;
+    }
     const mask = decode_mask(ulabel, option.mask);
     if (mask === null) return null;
     const access = subtask.annotations.access;
-    const frame = access[target_ids[0]].frame ?? source.frame;
+    const frame = target_ids.length > 0 ? access[target_ids[0]].frame ?? source.frame : source.frame;
     const mask_box = mask.get_bounding_box();
     const conflict_ids: string[] = [];
     if (mask_box !== null) {
@@ -153,13 +187,15 @@ function plan_merge(
             if (ulabel.get_bitmask(other).intersects(mask)) conflict_ids.push(id);
         }
     }
-    return { option, target_ids, conflict_ids, mask };
+    return { option, target_ids, conflict_ids, mask, class_id };
 }
 
 /**
  * The merge options an annotation offers that can apply now (see
  * `config.merge_options_meta_key`): each with its resolved targets (the first
- * survives) and the other bitmasks its mask overlaps there.
+ * survives; none adds a new object) and the other bitmasks its mask overlaps there.
+ * An option doing the same as an earlier one (same target subtask, resolved
+ * targets and mask) names it in `duplicate_of`.
  *
  * @param ulabel ULabel instance
  * @param annotation_id annotation carrying the options
@@ -170,15 +206,20 @@ export function get_merge_options(ulabel: ULabel, annotation_id: string, source_
     const source = ulabel.subtasks[source_key]?.annotations.access[annotation_id];
     if (source == null || source.deprecated) return [];
     const infos: ULabelMergeOptionInfo[] = [];
+    const first_of = new Map<string, string>();
     for (const option of read_merge_options(ulabel, source)) {
         const plan = plan_merge(ulabel, source_key, source, option, new Map());
         if (plan === null) continue;
+        const key = same_merge_key(source, plan);
+        if (!first_of.has(key)) first_of.set(key, option.id);
+        const first_id = first_of.get(key)!;
         infos.push({
             id: option.id,
             label: option.label,
             subtask_key: option.subtask_key,
             target_ids: plan.target_ids,
             conflict_ids: plan.conflict_ids,
+            duplicate_of: first_id === option.id ? null : first_id,
         });
     }
     return infos;
@@ -188,10 +229,14 @@ export function get_merge_options(ulabel: ULabel, annotation_id: string, source_
  * Apply merge options, each as one `apply_merge_option` action on its target
  * subtask's stream, all as one undo step per target subtask. Each merge adds the option's mask
  * and every other target into the first target and deletes the other targets.
+ * An option with no targets adds the mask as a new object instead, as a
+ * `paste_annotation` (class and `copied_from` link as Copy to gives them),
+ * with any overwrite recorded as an `apply_merge_option` before it.
  * `overlap` resolves conflicts with other bitmasks there: "none" leaves them
  * overlapping, "exclude" drops the overlapping pixels from the mask, and
  * "overwrite" carves them out of the other bitmasks (an emptied one is
- * deleted). Repeated option ids (per target subtask) apply once, and a later
+ * deleted). Repeated options (same option id, or the same resolved
+ * target subtask, frame, targets, new-object class and mask) apply once, and a later
  * merge whose target was merged away goes to that merge's survivor.
  * `config.paste_switch_to_target` then switches to the last changed subtask.
  *
@@ -221,6 +266,7 @@ export function apply_merge_options(
     }
     const merged_into = new Map<string, string>();
     const applied = new Set<string>();
+    const applied_same = new Set<string>();
     const changed = new Set<string>();
     let last_target: string | null = null;
     ulabel.run_action_batch(() => {
@@ -241,7 +287,10 @@ export function apply_merge_options(
                 log_message(`Merge option ${option_id} cannot apply`, LogLevel.WARNING, true);
                 continue;
             }
-            const ids = apply_merge_plan(ulabel, annotation_id, plan, overlap, merged_into);
+            const same_key = same_merge_key(source, plan);
+            if (applied_same.has(same_key)) continue;
+            applied_same.add(same_key);
+            const ids = apply_merge_plan(ulabel, from_key, source, plan, overlap, merged_into);
             if (ids.length === 0) continue;
             ids.forEach((id) => changed.add(id));
             last_target = option.subtask_key;
@@ -256,11 +305,13 @@ export function apply_merge_options(
 
 function apply_merge_plan(
     ulabel: ULabel,
-    annotation_id: string,
+    source_key: string,
+    source: ULabelAnnotation,
     plan: MergePlan,
     overlap: BrushOverlapMode,
     merged_into: Map<string, string>,
 ): string[] {
+    const annotation_id = source.id!;
     const subtask_key = plan.option.subtask_key;
     const access = ulabel.subtasks[subtask_key].annotations.access;
     const mask = plan.mask;
@@ -277,6 +328,9 @@ function apply_merge_plan(
             after.masks[id] = carved.to_rle();
             if (carved.is_empty()) before.deprecated_ids.push(id);
         }
+    }
+    if (plan.target_ids.length === 0) {
+        return add_merge_object(ulabel, source_key, source, plan, before, after);
     }
     const [survivor_id, ...joined_ids] = plan.target_ids;
     const current = ulabel.get_bitmask(access[survivor_id]);
@@ -299,6 +353,35 @@ function apply_merge_plan(
     apply_counterpart_removal(ulabel, after, subtask_key, true);
     record_apply_merge_option(ulabel, annotation_id, subtask_key, { before, after }, false);
     for (const id of joined_ids) merged_into.set(merged_key(subtask_key, id), survivor_id);
+    return changed;
+}
+
+/**
+ * Target-less merge: record any overwrite of other bitmasks, then paste the
+ * mask as a new object (class and `copied_from` as Copy to gives them).
+ */
+function add_merge_object(
+    ulabel: ULabel,
+    source_key: string,
+    source: ULabelAnnotation,
+    plan: MergePlan,
+    before: CounterpartRemovalState,
+    after: CounterpartRemovalState,
+): string[] {
+    const subtask_key = plan.option.subtask_key;
+    after.deprecated_ids = before.deprecated_ids;
+    const changed = Array.from(new Set(Object.keys(after.masks).concat(after.deprecated_ids)));
+    if (changed.length > 0) {
+        apply_counterpart_removal(ulabel, after, subtask_key, true);
+        record_apply_merge_option(ulabel, source.id!, subtask_key, { before, after }, false);
+    }
+    if (plan.mask.is_empty()) {
+        log_message(`Merge option ${plan.option.id} adds nothing`, LogLevel.INFO, true);
+        return changed;
+    }
+    const template = new_object_template(source, plan.mask.to_rle());
+    const new_id = ulabel.paste_annotation(template, subtask_key, plan.class_id, [0, 0], true, source_key);
+    if (new_id !== null) changed.push(new_id);
     return changed;
 }
 
