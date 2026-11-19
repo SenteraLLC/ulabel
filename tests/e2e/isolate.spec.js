@@ -54,8 +54,8 @@ async function painted_pixel_count(page) {
     });
 }
 
-async function isolated_id(page) {
-    return await page.evaluate(() => window.ulabel.get_isolated_annotation_id());
+async function isolated_ids(page) {
+    return await page.evaluate(() => window.ulabel.get_isolated_annotation_ids());
 }
 
 async function hover_and_get_hovered(page, position) {
@@ -90,7 +90,7 @@ test.describe("isolate annotation", () => {
         await page.mouse.move(5, 5);
         await page.waitForTimeout(100);
 
-        expect(await isolated_id(page)).toBe("grid-7");
+        expect(await isolated_ids(page)).toEqual(["grid-7"]);
         // Only one of 24 equal boxes remains painted
         const isolated_painted = await painted_pixel_count(page);
         expect(isolated_painted).toBeGreaterThan(0);
@@ -126,20 +126,20 @@ test.describe("isolate annotation", () => {
         await isolate_button("grid-1").click();
         await page.locator("#annotation-list-show-all").click();
         await page.waitForTimeout(100);
-        expect(await isolated_id(page)).toBeNull();
+        expect(await isolated_ids(page)).toEqual([]);
         await expect(page.locator("#annotation-list-show-all")).toBeHidden();
         expect(await painted_pixel_count(page)).toBe(all_painted);
 
         await isolate_button("grid-1").click();
         await isolate_button("grid-1").click();
         await page.waitForTimeout(100);
-        expect(await isolated_id(page)).toBeNull();
+        expect(await isolated_ids(page)).toEqual([]);
 
         await isolate_button("grid-1").click();
         await page.mouse.move(600, 500);
         await page.keyboard.press("Escape");
         await page.waitForTimeout(100);
-        expect(await isolated_id(page)).toBeNull();
+        expect(await isolated_ids(page)).toEqual([]);
         await expect(page.locator(".annotation-list-item")).toHaveCount(COLS * ROWS);
     });
 
@@ -156,7 +156,7 @@ test.describe("isolate annotation", () => {
         await page.locator(".ulabel-context-menu-item", { hasText: "Delete" }).click();
         await page.waitForTimeout(100);
 
-        expect(await isolated_id(page)).toBeNull();
+        expect(await isolated_ids(page)).toEqual([]);
         const deleted = await page.evaluate(() => window.ulabel.get_current_subtask().annotations.access["grid-9"].deprecated);
         expect(deleted).toBe(true);
         await expect(page.locator(".annotation-list-item")).toHaveCount(COLS * ROWS - 1);
@@ -171,14 +171,14 @@ test.describe("isolate annotation", () => {
         await page.evaluate(() => window.ulabel.set_subtask("frame_review"));
         await page.waitForTimeout(100);
 
-        expect(await page.evaluate((k) => window.ulabel.get_isolated_annotation_id(k), key)).toBeNull();
+        expect(await page.evaluate((k) => window.ulabel.get_isolated_annotation_ids(k), key)).toEqual([]);
     });
 
     test("set_annotations clears the isolation", async ({ page }) => {
         await page.evaluate(() => window.ulabel.isolate_annotation("grid-2"));
         await load_grid(page);
 
-        expect(await isolated_id(page)).toBeNull();
+        expect(await isolated_ids(page)).toEqual([]);
     });
 
     test("undoing the creation of the isolated annotation clears the isolation", async ({ page }) => {
@@ -192,13 +192,13 @@ test.describe("isolate annotation", () => {
         expect(await get_annotation_count(page)).toBe(COLS * ROWS + 1);
         const fresh_id = await page.evaluate(() => window.ulabel.get_current_subtask().annotations.ordering.at(-1));
         await page.evaluate((id) => window.ulabel.isolate_annotation(id), fresh_id);
-        expect(await isolated_id(page)).toBe(fresh_id);
+        expect(await isolated_ids(page)).toEqual([fresh_id]);
 
         await page.keyboard.press("Control+z");
         await page.waitForTimeout(100);
 
         expect(await get_annotation_count(page)).toBe(COLS * ROWS);
-        expect(await isolated_id(page)).toBeNull();
+        expect(await isolated_ids(page)).toEqual([]);
         expect(await painted_pixel_count(page)).toBe(all_painted);
     });
 
@@ -209,14 +209,14 @@ test.describe("isolate annotation", () => {
         expect(await get_annotation_count(page)).toBe(COLS * ROWS + 1);
         const poly_id = await page.evaluate(() => window.ulabel.get_current_subtask().annotations.ordering.at(-1));
         await page.evaluate((id) => window.ulabel.isolate_annotation(id), poly_id);
-        expect(await isolated_id(page)).toBe(poly_id);
+        expect(await isolated_ids(page)).toEqual([poly_id]);
 
         await page.keyboard.press("Control+z");
         await page.waitForTimeout(100);
 
         // finish_annotation undo deprecates rather than removes
         expect(await page.evaluate((id) => window.ulabel.get_current_subtask().annotations.access[id].deprecated, poly_id)).toBe(true);
-        expect(await isolated_id(page)).toBeNull();
+        expect(await isolated_ids(page)).toEqual([]);
         expect(await painted_pixel_count(page)).toBe(all_painted);
     });
 
@@ -224,11 +224,12 @@ test.describe("isolate annotation", () => {
         const calls = await page.evaluate(() => {
             const u = window.ulabel;
             const calls = [];
-            u.config.on_isolate_change = (subtask_key, annotation_id) => calls.push([subtask_key, annotation_id]);
+            u.config.on_isolate_change = (subtask_key, annotation_ids) => calls.push([subtask_key, annotation_ids]);
             const accepted = [
                 u.isolate_annotation("grid-4"),
                 u.isolate_annotation("grid-4"),
                 u.isolate_annotation("no-such-id"),
+                u.isolate_annotations(["grid-4", "grid-5"]),
                 u.isolate_annotation(null),
             ];
             u.config.on_isolate_change = null;
@@ -236,7 +237,7 @@ test.describe("isolate annotation", () => {
         });
         const key = await page.evaluate(() => window.ulabel.get_current_subtask_key());
 
-        expect(calls.accepted).toEqual([true, true, false, true]);
-        expect(calls.calls).toEqual([[key, "grid-4"], [key, null]]);
+        expect(calls.accepted).toEqual([true, true, false, true, true]);
+        expect(calls.calls).toEqual([[key, ["grid-4"]], [key, ["grid-4", "grid-5"]], [key, null]]);
     });
 });

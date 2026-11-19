@@ -160,6 +160,8 @@ export class Configuration {
     // `annotation_meta` key whose string value names the target class for Set class in
     // and copy/paste, replacing the source class id/name match.
     public counterpart_class_meta_key: string | null = null;
+    // `annotation_meta` key holding merge options (see `get_merge_options`)
+    public merge_options_meta_key: string | null = null;
     // Classes listed on the confidence card: the top class plus up to N - 1 non-zero runner-ups
     public confidence_card_classes: number = 1;
     // Callback returning extra plain-text lines for the confidence card; called once per hovered annotation
@@ -186,7 +188,7 @@ export class Configuration {
     public on_focus_active_class_change: ((subtask_key: string, enabled: boolean) => void) | null = null;
     public on_focus_edited_change: ((subtask_key: string, enabled: boolean) => void) | null = null;
     public on_focus_deprecated_change: ((subtask_key: string, enabled: boolean) => void) | null = null;
-    public on_isolate_change: ((subtask_key: string, annotation_id: string | null) => void) | null = null;
+    public on_isolate_change: ((subtask_key: string, annotation_ids: string[] | null) => void) | null = null;
     // Fired with the selected ids (in annotation order) whenever a subtask's selection changes
     public on_selection_change: ((subtask_key: string, annotation_ids: string[]) => void) | null = null;
     public on_undo_redo_blocked: ((kind: "undo" | "redo", subtask_key: string, from_subtask_key: string, origin_subtask_key: string | null) => void) | null = null;

@@ -123,7 +123,7 @@ describe("deprecated focus", () => {
         expect(ulabel.isolate_annotation("gone")).toBe(true);
 
         ulabel.set_focus_deprecated("gt", false);
-        expect(ulabel.get_isolated_annotation_id("gt")).toBeNull();
+        expect(ulabel.get_isolated_annotation_ids("gt")).toEqual([]);
         expect(on_focus_deprecated_change).toHaveBeenLastCalledWith("gt", false);
     });
 

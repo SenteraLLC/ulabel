@@ -367,7 +367,7 @@ export class AnnotationListToolboxItem extends ToolboxItem {
             const annotation_id = $(e.currentTarget).closest(".annotation-list-item").data("annotation-id");
             if (!annotation_id) return;
             const id = String(annotation_id);
-            this.ulabel.isolate_annotation(this.ulabel.get_isolated_annotation_id() === id ? null : id);
+            this.ulabel.isolate_annotation(this.ulabel.get_isolated_annotation_ids().includes(id) ? null : id);
         });
 
         // Header button; must not bubble into the collapse toggle
@@ -452,7 +452,7 @@ export class AnnotationListToolboxItem extends ToolboxItem {
 
         const show_all_btn = document.querySelector<HTMLButtonElement>("#annotation-list-show-all");
         if (show_all_btn) {
-            show_all_btn.style.display = this.ulabel.get_isolated_annotation_id() != null ? "inline-block" : "none";
+            show_all_btn.style.display = this.ulabel.get_isolated_annotation_ids().length > 0 ? "inline-block" : "none";
         }
 
         // Update toggle button
@@ -637,7 +637,7 @@ export class AnnotationListToolboxItem extends ToolboxItem {
     }
 
     private build_isolate_button_html(annotation: ULabelAnnotation): string {
-        const active = this.ulabel.get_isolated_annotation_id() === annotation.id;
+        const active = this.ulabel.get_isolated_annotation_ids().includes(annotation.id!);
         const title = active ? "Show all annotations" : "Isolate this annotation";
         return `<button class="annotation-list-item-isolate${active ? " active" : ""}" title="${title}">${ISOLATE_SVG}</button>`;
     }

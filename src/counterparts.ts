@@ -13,8 +13,8 @@ import { log_message, LogLevel } from "./error_logging";
 import { ULabelMaskPayload } from "./mask_utils";
 
 // One half of a `delete_counterparts` payload: masks to set and ids to (un)deprecate
-type CounterpartRemovalState = { masks: Record<string, ULabelMaskPayload>; deprecated_ids: string[] };
-type CounterpartRemovalPayload = { before: CounterpartRemovalState; after: CounterpartRemovalState };
+export type CounterpartRemovalState = { masks: Record<string, ULabelMaskPayload>; deprecated_ids: string[] };
+export type CounterpartRemovalPayload = { before: CounterpartRemovalState; after: CounterpartRemovalState };
 type CounterpartClassPayload = {
     before: Record<string, ULabelClassificationPayload[]>;
     after: Record<string, ULabelClassificationPayload[]>;
@@ -81,7 +81,7 @@ export function find_counterparts(ulabel: ULabel, annotation_id: string, source_
 }
 
 // Non-empty strings under `config.annotation_link_meta_key` (a string or string[])
-function get_link_values(ulabel: ULabel, annotation: ULabelAnnotation): string[] {
+export function get_link_values(ulabel: ULabel, annotation: ULabelAnnotation): string[] {
     const key = ulabel.config["annotation_link_meta_key"];
     if (key == null) return [];
     const value = get_annotation_meta(annotation)?.[key];
@@ -101,9 +101,17 @@ function get_link_values(ulabel: ULabel, annotation: ULabelAnnotation): string[]
  * @param source_key subtask the annotation lives in
  * @param target_key subtask to remove counterparts from
  * @param erase default: whether the source is a bitmask
+ * @param switch_to_target whether `config.paste_switch_to_target` applies (bulk callers switch once at the end)
  * @returns ids of the changed counterparts
  */
-export function delete_counterparts(ulabel: ULabel, annotation_id: string, source_key: string, target_key: string, erase: boolean | null = null): string[] {
+export function delete_counterparts(
+    ulabel: ULabel,
+    annotation_id: string,
+    source_key: string,
+    target_key: string,
+    erase: boolean | null = null,
+    switch_to_target: boolean = true,
+): string[] {
     const source = ulabel.subtasks[source_key]?.["annotations"]["access"][annotation_id];
     const target = ulabel.subtasks[target_key];
     if (source == null || target == null) {
@@ -145,9 +153,7 @@ export function delete_counterparts(ulabel: ULabel, annotation_id: string, sourc
     }
     apply_counterpart_removal(ulabel, after, target_key, true);
     record_delete_counterparts(ulabel, annotation_id, target_key, { before, after }, false);
-    if (ulabel.config["paste_switch_to_target"] && target_key !== ulabel.get_current_subtask_key()) {
-        ulabel.set_subtask(target_key);
-    }
+    if (switch_to_target) switch_to_counterpart_target(ulabel, target_key);
     return changed_ids;
 }
 
@@ -163,8 +169,8 @@ function record_delete_counterparts(ulabel: ULabel, annotation_id: string, targe
     }, is_redo, true, target_key);
 }
 
-// Set masks and deprecation from a `delete_counterparts` payload half, then redraw
-function apply_counterpart_removal(ulabel: ULabel, state: CounterpartRemovalState, subtask_key: string, deprecated: boolean): void {
+// Set masks and deprecation from a `delete_counterparts` (or `apply_merge_option`) payload half, then redraw
+export function apply_counterpart_removal(ulabel: ULabel, state: CounterpartRemovalState, subtask_key: string, deprecated: boolean): void {
     const access = ulabel.subtasks[subtask_key]["annotations"]["access"];
     const ids = new Set<string>();
     for (const [id, rle] of Object.entries(state.masks)) {
@@ -257,9 +263,16 @@ export function get_counterpart_class_changes(ulabel: ULabel, annotation_id: str
  * @param annotation_id source annotation
  * @param source_key subtask the annotation lives in
  * @param target_key subtask whose counterparts change
+ * @param switch_to_target whether `config.paste_switch_to_target` applies (bulk callers switch once at the end)
  * @returns ids of the changed counterparts
  */
-export function set_counterparts_class(ulabel: ULabel, annotation_id: string, source_key: string, target_key: string): string[] {
+export function set_counterparts_class(
+    ulabel: ULabel,
+    annotation_id: string,
+    source_key: string,
+    target_key: string,
+    switch_to_target: boolean = true,
+): string[] {
     const target = ulabel.subtasks[target_key];
     if (ulabel.subtasks[source_key]?.["annotations"]["access"][annotation_id] == null || target == null) {
         log_message(`Annotation ${annotation_id} or subtask ${target_key} not found`, LogLevel.WARNING, true);
@@ -286,10 +299,15 @@ export function set_counterparts_class(ulabel: ULabel, annotation_id: string, so
     }
     apply_counterpart_classes(ulabel, after, target_key);
     record_set_counterparts_class(ulabel, annotation_id, target_key, { before, after }, false);
+    if (switch_to_target) switch_to_counterpart_target(ulabel, target_key);
+    return changed_ids;
+}
+
+// Make `target_key` current when `config.paste_switch_to_target` is set
+function switch_to_counterpart_target(ulabel: ULabel, target_key: string): void {
     if (ulabel.config["paste_switch_to_target"] && target_key !== ulabel.get_current_subtask_key()) {
         ulabel.set_subtask(target_key);
     }
-    return changed_ids;
 }
 
 function record_set_counterparts_class(ulabel: ULabel, annotation_id: string, target_key: string, payload: CounterpartClassPayload, is_redo: boolean): void {

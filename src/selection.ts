@@ -1,9 +1,10 @@
 /**
  * Multi-selection of annotations in the current subtask, the target of bulk
  * actions. View-only state like isolation: nothing is recorded and `edited`
- * is untouched. A selection only ever holds live, in-focus, 2D spatial
- * annotations; anything that stops qualifying (deleted, deprecated, dimmed,
- * isolated out, filtered, layer hidden) drops out on the next refresh, and is never drawn
+ * is untouched. A selection only ever holds in-focus, 2D spatial annotations
+ * (live ones, or under deprecated focus deprecated ones); anything that stops
+ * qualifying (deleted, deprecated, restored, dimmed, isolated out, filtered,
+ * layer hidden) drops out on the next refresh, and is never drawn
  * as selected meanwhile.
  */
 
@@ -26,7 +27,9 @@ const active_boxes = new WeakMap<ULabel, SelectBox>();
 export const CLICK_MOVE_TOLERANCE_PX = 4;
 
 /**
- * Whether an annotation can be part of a selection.
+ * Whether an annotation can be part of a selection. Deprecated annotations
+ * are selectable only under deprecated focus, and then only they are (see
+ * `is_annotation_defocused`).
  *
  * @param ulabel ULabel instance
  * @param annotation the annotation
@@ -38,7 +41,7 @@ export function is_annotation_selectable(
     subtask_key: string,
 ): boolean {
     const subtask = ulabel.subtasks[subtask_key];
-    if (subtask == null || annotation == null || annotation.deprecated) return false;
+    if (subtask == null || annotation == null) return false;
     if (ulabel.is_subtask_hidden(subtask_key)) return false;
     const spatial_type = annotation.spatial_type!;
     if (NONSPATIAL_MODES.includes(spatial_type) || MODES_3D.includes(spatial_type) || DELETE_MODES.includes(spatial_type)) {

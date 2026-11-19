@@ -1987,6 +1987,7 @@ div#${prntid} div.ulabel-context-menu {
    max-width: 320px;
    max-height: calc(100vh - 8px);
    overflow-y: auto;
+   overflow-x: hidden;
    box-sizing: border-box;
    padding: 2px 0;
    background-color: white;
@@ -2015,9 +2016,16 @@ div#${prntid} div.ulabel-context-menu-item {
 }
 div#${prntid} span.ulabel-context-menu-item-icon {
    display: inline-flex;
+   flex: 0 0 14px;
    width: 14px;
    height: 14px;
    opacity: 0.75;
+}
+div#${prntid} span.ulabel-context-menu-item-text {
+   min-width: 0;
+   text-align: left;
+   white-space: normal;
+   overflow-wrap: anywhere;
 }
 div#${prntid} span.ulabel-context-menu-item-icon svg {
    width: 100%;

@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented here.
 
+## [0.34.0] - Nov 19th, 2026
+#### Added
+- The selection bulk menu now covers the remaining single-annotation items except `Details`, each one undo step:
+  - `Set class in <subtask>`, `Erase pixels from <subtask>` and `Delete <n> annotations from <subtask>` act on every selected annotation's counterparts (`<n>` counts distinct counterparts), and are undone from the target subtask.
+  - `Isolate <n>` / `Show all` isolates the selection.
+  - Under Show Deprecated, `Restore <n>` restores the selected annotations that can be restored.
+- Under Show Deprecated, deprecated annotations can be selected (`ctrl+click`, box select, `ctrl+a`) and live ones can't.
+- `isolate_annotations(ids, subtask_key?, redraw?)` and `get_isolated_annotation_ids(subtask_key?)`: several annotations can be isolated at once. Deleting one of them only drops that id from the isolation.
+- `delete_counterparts()` and `set_counterparts_class()` take an optional trailing `switch_to_target` (default `true`) to suppress the `paste_switch_to_target` switch.
+- Merge into another subtask ([CVML-383](https://sentera.atlassian.net/browse/CVML-383)): new `merge_options_meta_key` config option (default `null`). Under this `annotation_meta` key, an annotation can carry host-computed merge options, each with a label, a target subtask, an RLE mask and target bitmasks. The context menu shows one item per option that can apply, and the selection bulk menu shows one per label and target subtask (naming the subtask when a label has several).
+  - A merge adds the mask and every other target into the first target and deletes the rest, so touching several objects joins them (`(joins <n> Weed objects)` on the item).
+  - When the mask overlaps other bitmasks in the target subtask, the item lists them per class (`overlaps 1 Crop`), is marked `…`, and asks `Allow overlap` / `Exclude other objects` / `Overwrite other objects` (the brush overlap modes `none` / `exclude` / `overwrite`).
+  - An option with empty `targets` adds its mask as a new object, classed and linked like `Copy to`. Options doing the same thing (same subtask, resolved targets, mask, and for new objects the frame and class) show once and apply once (`duplicate_of` in `get_merge_options()`). A selection item shows once too when every selected annotation's option under it does the same as under an earlier item.
+  - The selection menu counts merges (`(3 merges)`, or `(2 of 3 merges)` when some selected annotations have no such option), with a tooltip.
+  - New `get_merge_options()` and `apply_merge_options(merges, overlap?)`, recorded as undoable `apply_merge_option` actions on the target subtask, one undo step per click. Copies drop the meta entry.
+
+#### Changed
+- **Breaking:** `on_isolate_change(subtask_key, annotation_ids)` now receives an array of ids (or `null`) instead of a single id. A single isolation arrives as `[annotation_id]`.
+- **Breaking:** `get_isolated_annotation_id()` is removed; use `get_isolated_annotation_ids()`.
+- Context menu: `Erase from` is now `Erase pixels from` and `Delete from` is now `Delete annotation from` / `Delete <n> annotations from` (`Delete annotations from…` with several subtasks), so the two read differently. Both have a tooltip saying how many linked annotations they trim or delete.
+
 ## [0.33.0] - Nov 13th, 2026
 #### Added
 - Multi-select ([CVML-358](https://sentera.atlassian.net/browse/CVML-358)): `ctrl+click` annotations (or their `AnnotationList` rows) to select several, `ctrl+a` to select all, `Escape` to clear. Selected annotations get the hover border and list highlight, and an `<n> selected` indicator shows where the fly-to toast does (the toast moves below it). After a selection click the hover border stays off until the mouse moves, so the click's result shows immediately. Only live, visible, 2D spatial annotations can be selected. The selection is view-only: never recorded, doesn't mark the session edited.

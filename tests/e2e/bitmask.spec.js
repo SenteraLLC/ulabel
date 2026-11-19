@@ -555,7 +555,7 @@ test.describe("Bitmask isolation lifecycle", () => {
                 count: st.annotations.ordering.length,
                 fresh_id: fresh_id,
                 fresh_deprecated: st.annotations.access[fresh_id].deprecated,
-                isolated: u.get_isolated_annotation_id(),
+                isolated: u.get_isolated_annotation_ids(),
                 base_defocused: u.is_annotation_defocused(st.annotations.access.base, "a"),
                 last_action: st.actions.stream.at(-1)?.act_type ?? null,
                 cleared_calls: window.__isolate_calls.filter((c) => c[1] === null).length,
@@ -595,7 +595,7 @@ test.describe("Bitmask isolation lifecycle", () => {
 
         const after = await state(page);
         expect(after.fresh_deprecated).toBe(true);
-        expect(after.isolated).toBeNull();
+        expect(after.isolated).toEqual([]);
         expect(after.base_defocused).toBe(false);
         expect(after.cleared_calls).toBe(1);
     });
@@ -612,7 +612,7 @@ test.describe("Bitmask isolation lifecycle", () => {
         let after = await state(page);
         expect(after.last_action).toBe("bitmask_stroke");
         expect(after.fresh_deprecated).toBe(true);
-        expect(after.isolated).toBeNull();
+        expect(after.isolated).toEqual([]);
         expect(after.base_defocused).toBe(false);
         expect(after.cleared_calls).toBe(1);
 
@@ -626,7 +626,7 @@ test.describe("Bitmask isolation lifecycle", () => {
 
         after = await state(page);
         expect(after.fresh_deprecated).toBe(true);
-        expect(after.isolated).toBeNull();
+        expect(after.isolated).toEqual([]);
         expect(after.base_defocused).toBe(false);
         expect(after.cleared_calls).toBe(2);
     });

@@ -173,3 +173,51 @@ in the current subtask; adds to the selection.
 - [x] Move clipboard, paste and counterpart logic into new TS modules; keep thin ULabel wrappers for the public API and `__undo`/`__redo` handlers.
 - [x] Lint, build, Jest, e2e.
 - [x] Review fix: module code calls public methods through the ULabel instance so `ulabel.on(...)` callbacks still fire (regression test in copy_annotation.test.js).
+
+## Multi-select: remaining bulk context-menu items (plan)
+
+Bulk menu gets the single-annotation items it lacks (not Details). Each is one undo step via `run_action_batch`.
+
+- [x] Counterpart helpers take a `switch_subtask` flag (default true) so bulk loops switch to the target once, after the batch (a mid-loop `set_subtask` clears the selection).
+- [x] `Set class in <subtask>` (N): targets where any selected annotation has a counterpart change; count = annotations that would change; loop `set_counterparts_class`.
+- [x] `Delete from <subtask>` (N): targets holding counterparts of any selected annotation; count = counterparts; loop `delete_counterparts(.., false)`.
+- [x] `Erase from <subtask>` (N): selected bitmasks with bitmask counterparts; loop `delete_counterparts(.., true)`.
+- [x] No new public bulk API (menu only); no confirm dialogs. Delete/Erase from count = distinct counterparts changed.
+  Release as 0.34.0; `on_isolate_change` now always gets an array of ids or null (breaking, note in changelog).
+- [x] Isolate N / Show all: `isolated_annid` becomes a set of ids (`isolated_annids`); `isolate_annotation(id)` keeps working,
+  new `isolate_annotations(ids)`; `on_isolate_change` receives an array; update every `isolated_annid` reader
+  (`isolate.ts`, `active_class.ts`, `clipboard.ts`, `listeners.ts`, `index.js` delete/restore paths).
+- [x] Restore N: under Show Deprecated focus, only deprecated annotations are selectable (live ones aren't);
+  bulk menu then offers Restore N (ids passing `can_restore_annotation`) and Isolate N, not the edit items.
+- [x] Docs, changelog; Jest (`tests/bulk_actions.test.js`, `tests/context_menu.test.js`) + e2e; lint, build, jest.
+
+## Merge into GT (CVML-383)
+
+Host-supplied merge options on an annotation (`merge_options_meta_key`): each joins a mask into target bitmasks
+(resolved by `annotation_link_meta_key` in `subtask_key`); the first target survives, the rest are deleted.
+
+- [x] `src/merge.ts`: `get_merge_options()` (resolve targets, conflicts) and `apply_merge_options()` (union into the
+  survivor, delete the other targets, overlap none/exclude/overwrite against other bitmasks, one action per merge,
+  bulk dedupes by option id and chains joins); `apply_merge_option` undo/redo.
+- [x] Wire into `ULabel` (thin wrappers), `actions.ts` (action type, undo/redo, listener map), config default,
+  copies drop the key.
+- [x] Context menu: an item per option (`(joins N <class> objects, overlaps N <class>)`, tooltip), Allow overlap / Exclude other objects / Overwrite other objects
+  submenu only on a conflict; bulk items grouped by label.
+- [x] Types (`index.d.ts`), `api_spec.md`, changelog (0.34.0).
+- [x] Jest (`tests/merge.test.js`, context menu), e2e; lint, build, jest, e2e.
+
+## Erase / Delete from labels
+
+Make the counterpart removal items say what they remove: pixels vs whole annotations.
+
+- [x] `Erase pixels from <subtask>` (no count) with a tooltip naming how many linked annotations it trims.
+- [x] `Delete annotation from <subtask>` / `Delete <n> annotations from <subtask>` (picker: `Delete annotations from...` -> `<name> (<n>)`), tooltip.
+- [x] Update docs, changelog, Jest + e2e labels; lint, build, jest, e2e.
+
+## Merge: target-less options, dedupe, bulk counts
+
+- [x] A merge option with `targets: []` adds its mask as a new object via the Copy to path (class rules, `copied_from` link), after the overlap mode; recorded as `paste_annotation` (after any overwrite's `apply_merge_option`), one undo step. Options whose listed targets are all gone still drop.
+- [x] Single-annotation menu shows identical options (same subtask, resolved targets, mask) once, under the first label (`duplicate_of`); `apply_merge_options` applies identical plans once (key also holds the source frame and new-object class, from review).
+- [x] Bulk merge item reads `<n> merges` / `<n> of <m> merges` (tooltip names the left-out count).
+- [x] Bulk menu hides a label whose item does the same as an earlier one (same target subtask and selected annotations, each one's option `duplicate_of` the same).
+- [x] Docs (`api_spec.md`, `index.d.ts`, CHANGELOG), Jest; lint, build, jest, e2e.

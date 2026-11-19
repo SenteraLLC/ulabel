@@ -18,7 +18,7 @@ import { log_message, LogLevel } from "./error_logging";
 
 // Actions whose `annotation_id` is a source annotation in another subtask, not
 // one in the stream that records them
-const FOREIGN_ID_ACTIONS: ULabelActionType[] = ["delete_counterparts", "set_counterparts_class"];
+const FOREIGN_ID_ACTIONS: ULabelActionType[] = ["delete_counterparts", "set_counterparts_class", "apply_merge_option"];
 
 /**
  * Whether an action's `annotation_id` names an annotation in its own subtask.
@@ -483,6 +483,9 @@ function trigger_action_listeners(
         set_counterparts_class: {
             // Redraws its target subtask itself
         },
+        apply_merge_option: {
+            // Redraws its target subtask itself
+        },
     };
 
     // Call the appropriate listener
@@ -916,6 +919,9 @@ function undo_action(ulabel: ULabel, action: ULabelAction) {
         case "set_counterparts_class":
             ulabel.set_counterparts_class__undo(undo_payload);
             break;
+        case "apply_merge_option":
+            ulabel.apply_merge_option__undo(undo_payload);
+            break;
         case "create_nonspatial_annotation":
             ulabel.create_nonspatial_annotation__undo(annotation_id);
             break;
@@ -1014,6 +1020,9 @@ export function redo_action(ulabel: ULabel, action: ULabelAction) {
             break;
         case "set_counterparts_class":
             ulabel.set_counterparts_class__redo(annotation_id, redo_payload);
+            break;
+        case "apply_merge_option":
+            ulabel.apply_merge_option__redo(annotation_id, redo_payload);
             break;
         case "create_nonspatial_annotation":
             ulabel.create_nonspatial_annotation(annotation_id, redo_payload);

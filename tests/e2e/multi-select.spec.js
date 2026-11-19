@@ -91,7 +91,7 @@ test.describe("multi-select", () => {
         await page.mouse.move(450, 250);
         await page.waitForTimeout(100);
         await page.mouse.click(450, 250, { button: "right" });
-        await expect(page.locator(ITEM)).toHaveText(["Change class of 2", "Delete 2", "Clear selection"]);
+        await expect(page.locator(ITEM)).toHaveText(["Change class of 2", "Delete 2", "Isolate 2", "Clear selection"]);
 
         await page.locator(ITEM, { hasText: "Delete 2" }).click();
         await page.waitForTimeout(100);
